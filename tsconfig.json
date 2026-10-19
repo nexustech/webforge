@@ -3,6 +3,7 @@
   "references": [
     { "path": "./tsconfig.tools.json" },
     { "path": "./apps/desktop" },
+    { "path": "./e2e" },
     { "path": "./packages/editor-ui" },
     { "path": "./packages/engine" },
     { "path": "./packages/history" },
