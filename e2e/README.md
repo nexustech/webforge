@@ -4,7 +4,8 @@ End-to-end tests with Playwright. They drive the real desktop app through Playwr
 
 | Folder | What |
 |---|---|
-| `app/` | Electron app tests. `smoke.spec.ts` checks the shell: window and version (main → IPC → preload → renderer), OS sandbox, no Node in the renderer, strict CSP, pop-ups and navigation blocked |
+| `app/` | Electron app tests. `smoke.spec.ts` checks the shell: window and version (main → IPC → preload → renderer), OS sandbox, no Node in the renderer, strict CSP, pop-ups and navigation blocked, creating and opening a `.wforge` site |
+| `packaged/` | Tests of the packaged app (`pnpm e2e:packaged`): opens a `.wforge` passed on the command line |
 
 Exported-site, visual and accessibility suites (`e2e/export/`, `e2e/visual/`, `e2e/a11y/`, standards §5) will join this workspace later.
 
@@ -16,6 +17,12 @@ pnpm e2e
 ```
 
 This builds `apps/desktop` and runs the tests against the production build (`out/`, loaded from `file://`), with the Electron version that `apps/desktop` depends on. On Linux, run it under a virtual display (`xvfb-run --auto-servernum pnpm e2e`); CI does this.
+
+```sh
+pnpm e2e:packaged
+```
+
+This packages the app with `electron-builder --dir` (asar, Fuses, unpacked better-sqlite3) and runs `packaged/` against the packaged executable on Windows or macOS. Fuses switch off `--inspect`, so these tests start the executable themselves and connect over the Chrome DevTools Protocol; they reach the renderer only ([ADR 0003](../docs/adr/0003-wforge-sqlite-storage.md)).
 
 ## Writing tests
 - Launch the app with `launchDesktopApp()` from `app/launch.ts`.

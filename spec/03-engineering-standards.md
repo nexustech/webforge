@@ -15,7 +15,7 @@ Versions checked on npm on 2026-10-19.
 | Task runner | **Turborepo** ✅ | 2.x | MIT | Cached `build/lint/test` across packages; remote cache optional later |
 | Bundling (app) | **electron-vite** + Vite | 6 / 8 | MIT | Main, preload, renderer builds |
 | Packaging | **electron-builder** + electron-updater ✅ | 26.x | MIT | NSIS (Win), DMG (macOS); mature (since 2015), actively released |
-| Native modules | **better-sqlite3** ✅ + `@electron/rebuild` | 13 / 4.2 | MIT | Rebuilt against each Electron version in CI; unpacked from asar. Keep native modules to a minimum |
+| Native modules | **better-sqlite3** ✅ | 13 | MIT | Node-API prebuilds load in Node and Electron as shipped: no rebuild; unpacked from asar ([ADR 0003](../docs/adr/0003-wforge-sqlite-storage.md)). `@electron/rebuild` only if a release drops prebuilds. Keep native modules to a minimum |
 | Lint + format | **Biome** ✅ (single tool: linter + formatter) | 2.5 | MIT OR Apache-2.0 | Replaces ESLint + Prettier. Formatting is never debated in review. See §2a for rule set and known gaps |
 | Architecture rules | **dependency-cruiser** | 18 | MIT | Enforces package boundaries (§3). Parses with swc (`@swc/core`, Apache-2.0) because TypeScript 7 has no JavaScript compiler API ([ADR 0001](../docs/adr/0001-monorepo-tooling.md)) |
 | Dead code | **knip** | 6 | ISC | Unused files, exports, dependencies |
