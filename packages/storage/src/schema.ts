@@ -1,0 +1,42 @@
+/**
+ * `PRAGMA application_id` of every `.wforge` file: "WFRG" in ASCII. It lets Webforge (and tools
+ * such as `file`) tell a project apart from any other SQLite database before reading a table.
+ */
+export const APPLICATION_ID = 0x57_46_52_47;
+
+/**
+ * Version of the `.wforge` layout this build writes. Bumped with a migration and a fixture file on
+ * every incompatible change (engineering standards §8). Version 1 stays provisional until Phase 1
+ * ships the first fixture.
+ */
+export const FORMAT_VERSION = 1;
+
+/**
+ * The complete schema of format version {@link FORMAT_VERSION}. Opening a file compares its
+ * `sqlite_schema` with this list, so a file with extra tables, triggers or views is rejected.
+ */
+export const SCHEMA: readonly string[] = [
+  `CREATE TABLE meta (
+  key TEXT PRIMARY KEY NOT NULL,
+  value TEXT NOT NULL
+) STRICT, WITHOUT ROWID`,
+  `CREATE TABLE blobs (
+  hash TEXT PRIMARY KEY NOT NULL,
+  mime TEXT NOT NULL,
+  size INTEGER NOT NULL,
+  data BLOB NOT NULL
+) STRICT, WITHOUT ROWID`,
+  `CREATE TABLE documents (
+  id TEXT PRIMARY KEY NOT NULL,
+  kind TEXT NOT NULL,
+  blob_hash TEXT NOT NULL REFERENCES blobs (hash)
+) STRICT, WITHOUT ROWID`,
+  `CREATE TABLE versions (
+  id TEXT PRIMARY KEY NOT NULL,
+  name TEXT NOT NULL,
+  kind TEXT NOT NULL CHECK (kind IN ('manual', 'auto')),
+  created_at TEXT NOT NULL,
+  format_version INTEGER NOT NULL,
+  manifest TEXT NOT NULL
+) STRICT`,
+];
