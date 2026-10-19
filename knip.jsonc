@@ -1,0 +1,11 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "workspaces": {
+    ".": {
+      // Loaded by dependency-cruiser at runtime (parser: "swc"); never imported directly.
+      "ignoreDependencies": ["@swc/core"]
+    },
+    "apps/*": {},
+    "packages/*": {}
+  }
+}

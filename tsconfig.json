@@ -1,0 +1,18 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.tools.json" },
+    { "path": "./apps/desktop" },
+    { "path": "./packages/editor-ui" },
+    { "path": "./packages/engine" },
+    { "path": "./packages/history" },
+    { "path": "./packages/i18n" },
+    { "path": "./packages/model" },
+    { "path": "./packages/pipeline" },
+    { "path": "./packages/publish" },
+    { "path": "./packages/site-components" },
+    { "path": "./packages/storage" },
+    { "path": "./packages/test-utils" },
+    { "path": "./packages/themes" }
+  ]
+}

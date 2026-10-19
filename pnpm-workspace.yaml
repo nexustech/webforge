@@ -1,0 +1,15 @@
+packages:
+  - apps/*
+  - packages/*
+
+# Versions shared by several workspaces; reference them as "catalog:".
+catalog:
+  "@types/node": 24.19.2
+  vitest: 5.0.5
+
+# pnpm blocks dependency build scripts by default; approve only what we need.
+allowBuilds:
+  "@swc/core": true
+  lefthook: true
+  # Squirrel.Windows installer helper pulled in by electron-builder; we ship NSIS only.
+  electron-winstaller: false
