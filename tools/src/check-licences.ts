@@ -82,6 +82,8 @@ export function parseLicenceReport(json: string): LicensedPackage[] {
     .map((entry) => ({ name: entry.name, versions: entry.versions, licence: entry.license }));
 }
 
+const OPERATORS_AND_PARENS: ReadonlySet<string> = new Set(["AND", "OR", "WITH", "(", ")"]);
+
 /**
  * Whether an SPDX licence expression is acceptable: `A OR B` needs one side allowed, `A AND B`
  * both, and `A WITH exception` is judged by `A` (exceptions only add permissions).
@@ -119,13 +121,7 @@ export function isLicenceAllowed(
 
   function parseAtom(): boolean | null {
     const token = next();
-    if (
-      token === undefined ||
-      token === ")" ||
-      token === "AND" ||
-      token === "OR" ||
-      token === "WITH"
-    ) {
+    if (token === undefined || (token !== "(" && OPERATORS_AND_PARENS.has(token))) {
       return null;
     }
     if (token === "(") {
@@ -135,7 +131,7 @@ export function isLicenceAllowed(
     if (peek() === "WITH") {
       next();
       const exception = next();
-      if (exception === undefined || exception === "(" || exception === ")") {
+      if (exception === undefined || OPERATORS_AND_PARENS.has(exception)) {
         return null;
       }
     }
@@ -190,15 +186,70 @@ export function formatViolations(violations: readonly LicenceViolation[]): strin
   ].join("\n");
 }
 
-async function main(): Promise<void> {
-  const packages = parseLicenceReport(await text(process.stdin));
-  const violations = findLicenceViolations(packages);
+/** Names of excepted packages that are not installed; their entries should be removed. */
+export function findUnusedExceptions(
+  packages: readonly LicensedPackage[],
+  exceptions: ReadonlyMap<string, LicenceException> = LICENCE_EXCEPTIONS,
+): string[] {
+  const installed = new Set(packages.map((pkg) => pkg.name));
+  return [...exceptions.keys()].filter((name) => !installed.has(name));
+}
+
+/** Outcome of a licence check: whether it passed and what to print. */
+export type LicenceCheckResult = {
+  readonly ok: boolean;
+  readonly message: string;
+  readonly warnings: readonly string[];
+};
+
+/**
+ * Checks the JSON output of `pnpm licenses list -r --json`. An empty report fails: it means the
+ * listing went wrong, not that there is nothing to check.
+ */
+export function checkLicenceReport(
+  json: string,
+  exceptions: ReadonlyMap<string, LicenceException> = LICENCE_EXCEPTIONS,
+): LicenceCheckResult {
+  const packages = parseLicenceReport(json);
+  if (packages.length === 0) {
+    return {
+      ok: false,
+      message: "Licence check failed: the licence report lists no packages. Run `pnpm install`.",
+      warnings: [],
+    };
+  }
+  // Unused exceptions are only warnings: some packages are installed on one OS only.
+  const warnings = findUnusedExceptions(packages, exceptions).map(
+    (name) => `Warning: licence exception for "${name}" matches no installed package.`,
+  );
+  const violations = findLicenceViolations(packages, exceptions);
   if (violations.length > 0) {
-    console.error(formatViolations(violations));
-    process.exitCode = 1;
+    return { ok: false, message: formatViolations(violations), warnings };
+  }
+  return {
+    ok: true,
+    message: `Licence check passed: ${packages.length} packages, all with allowed licences.`,
+    warnings,
+  };
+}
+
+async function main(): Promise<void> {
+  if (process.stdin.isTTY) {
+    console.error("Usage: pnpm licenses list -r --json | node tools/src/check-licences.ts");
+    console.error("(or run `pnpm licence-check` from the repository root)");
+    process.exitCode = 2;
     return;
   }
-  console.log(`Licence check passed: ${packages.length} packages, all with allowed licences.`);
+  const result = checkLicenceReport(await text(process.stdin));
+  for (const warning of result.warnings) {
+    console.warn(warning);
+  }
+  if (result.ok) {
+    console.log(result.message);
+  } else {
+    console.error(result.message);
+    process.exitCode = 1;
+  }
 }
 
 if (import.meta.main) {

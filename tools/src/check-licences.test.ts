@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  checkLicenceReport,
   findLicenceViolations,
+  findUnusedExceptions,
   formatViolations,
   isLicenceAllowed,
   type LicenceException,
@@ -53,6 +55,9 @@ describe("isLicenceAllowed", () => {
     "AND MIT",
     "MIT WITH",
     "MIT WITH )",
+    "MIT WITH OR",
+    "MIT WITH AND ISC",
+    "MIT WITH WITH",
   ])("rejects the malformed expression %j", (expression) => {
     expect(isLicenceAllowed(expression)).toBe(false);
   });
@@ -132,5 +137,77 @@ describe("formatViolations", () => {
       'argparse@3.0.0: GPL-3.0-only (exception was reviewed for "Python-2.0")',
     );
     expect(output).toContain("pnpm why <name> -r");
+  });
+});
+
+describe("findUnusedExceptions", () => {
+  it("lists exceptions whose package is not installed", () => {
+    const exceptions = new Map<string, LicenceException>([
+      ["argparse", { licence: "Python-2.0", reason: "Build-time only." }],
+      ["gone-lib", { licence: "WTFPL", reason: "Was build-time only." }],
+    ]);
+    const packages = [{ name: "argparse", versions: ["2.0.1"], licence: "Python-2.0" }];
+
+    expect(findUnusedExceptions(packages, exceptions)).toEqual(["gone-lib"]);
+  });
+});
+
+describe("checkLicenceReport", () => {
+  const report = (entries: Record<string, { name: string; license: string }[]>) =>
+    JSON.stringify(
+      Object.fromEntries(
+        Object.entries(entries).map(([group, pkgs]) => [
+          group,
+          pkgs.map((pkg) => ({ ...pkg, versions: ["1.0.0"] })),
+        ]),
+      ),
+    );
+  const exceptions = new Map<string, LicenceException>([
+    ["argparse", { licence: "Python-2.0", reason: "Build-time only." }],
+  ]);
+
+  it("passes when every package is allowed", () => {
+    const result = checkLicenceReport(
+      report({
+        MIT: [{ name: "react", license: "MIT" }],
+        "Python-2.0": [{ name: "argparse", license: "Python-2.0" }],
+      }),
+      exceptions,
+    );
+
+    expect(result).toEqual({
+      ok: true,
+      message: "Licence check passed: 2 packages, all with allowed licences.",
+      warnings: [],
+    });
+  });
+
+  it("fails on a disallowed licence", () => {
+    const result = checkLicenceReport(
+      report({ "GPL-3.0-only": [{ name: "some-gpl-lib", license: "GPL-3.0-only" }] }),
+      exceptions,
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain("some-gpl-lib@1.0.0: GPL-3.0-only");
+  });
+
+  it("fails on an empty report instead of passing with nothing checked", () => {
+    const result = checkLicenceReport("{}", exceptions);
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain("lists no packages");
+  });
+
+  it("warns about exceptions that match no installed package", () => {
+    const result = checkLicenceReport(
+      report({ MIT: [{ name: "react", license: "MIT" }] }),
+      exceptions,
+    );
+
+    expect(result.ok).toBe(true);
+    expect(result.warnings).toEqual([
+      'Warning: licence exception for "argparse" matches no installed package.',
+    ]);
   });
 });

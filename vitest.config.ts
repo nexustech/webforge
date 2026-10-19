@@ -19,7 +19,7 @@ const workspaces = [
 
 export default defineConfig({
   test: {
-    projects: ["apps/*", "packages/*", "tools"],
+    projects: workspaces.map((ws) => ws.path),
     coverage: {
       provider: "v8",
       include: workspaces.map((ws) => `${ws.path}/src/**/*.{ts,tsx}`),
