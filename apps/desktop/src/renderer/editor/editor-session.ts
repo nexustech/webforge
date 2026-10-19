@@ -4,7 +4,6 @@ import type {
   EngineEdit,
   HistoryCommand,
   PageDoc,
-  Unsubscribe,
 } from "@webforge/engine";
 import { createHistoryManager, type HistoryManager, syncDraft } from "@webforge/history";
 import { t } from "@webforge/i18n";
@@ -78,19 +77,44 @@ export function runHistoryCommand(
 }
 
 /**
+ * How long a text session stays open after the selection moves away. Puck saves rich text with a
+ * debounce of up to 200 ms, so its last keystrokes can arrive after the click that ends the
+ * session; they still belong to it (ADR 0004).
+ */
+export const TEXT_SESSION_GRACE_MS = 300;
+
+/** A canvas engine connected to an {@link EditorSession}; see {@link connectEngine}. */
+export type EngineConnection = {
+  /** Ends a text session whose grace period is still running, before undo, redo or a jump. */
+  flush(): void;
+  disconnect(): void;
+};
+
+/**
  * Connects a mounted canvas engine to the session:
  * - canvas edits become labelled history entries; typing in one text field is one session (D1),
  *   undoable chunk by chunk while it lasts and as one step once the user selects something else;
  * - document changes (undo, redo, jumps) and restored selections go back to the canvas.
  */
-export function connectEngine(engine: CanvasEngine, session: EditorSession): Unsubscribe {
+export function connectEngine(engine: CanvasEngine, session: EditorSession): EngineConnection {
   const { history, ui, library } = session;
   let textSession: string | null = null;
+  let pendingEnd: ReturnType<typeof setTimeout> | null = null;
 
   const endTextSession = () => {
+    if (pendingEnd !== null) {
+      clearTimeout(pendingEnd);
+      pendingEnd = null;
+    }
     if (textSession !== null) {
       history.endSession(textSession);
       textSession = null;
+    }
+  };
+
+  const flush = () => {
+    if (pendingEnd !== null) {
+      endTextSession();
     }
   };
 
@@ -106,21 +130,33 @@ export function connectEngine(engine: CanvasEngine, session: EditorSession): Uns
         (draft) => {
           syncDraft(draft.page, edit.page);
         },
-        { selectionAfter: edit.selection, ...(key === null ? {} : { coalesceKey: key }) },
+        {
+          // A text edit shows its own element, even when it arrives after the user clicked away.
+          selectionAfter: key === null ? edit.selection : edit.nodeId,
+          ...(key === null ? {} : { coalesceKey: key }),
+        },
       );
       textSession = key;
     }),
     engine.onSelectionChange((selection) => {
-      endTextSession();
+      if (textSession !== null && pendingEnd === null) {
+        pendingEnd = setTimeout(endTextSession, TEXT_SESSION_GRACE_MS);
+      }
       ui.setState({ selection });
     }),
-    engine.onHistoryCommand((command) => runHistoryCommand(history, command)),
+    engine.onHistoryCommand((command) => {
+      flush();
+      runHistoryCommand(history, command);
+    }),
     history.document.subscribe((doc) => engine.applyChange({ page: doc.page })),
     ui.subscribe((state) => engine.select(state.selection)),
   ];
 
-  return () => {
-    endTextSession();
-    for (const unsubscribe of unsubscribers) unsubscribe();
+  return {
+    flush,
+    disconnect: () => {
+      endTextSession();
+      for (const unsubscribe of unsubscribers) unsubscribe();
+    },
   };
 }

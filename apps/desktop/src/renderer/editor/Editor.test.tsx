@@ -80,6 +80,15 @@ describe("Editor", () => {
     expect(session.history.state.getState().cursor).toBe(0);
   });
 
+  it("jumps to a step clicked in Undo History", async () => {
+    await removeSection();
+    const opened = [...container.querySelectorAll<HTMLButtonElement>(".undo-history__step")].at(-1);
+
+    await act(async () => opened?.click());
+
+    expect(session.history.state.getState().cursor).toBe(0);
+  });
+
   it("lists the steps in Undo History", async () => {
     await removeSection();
 

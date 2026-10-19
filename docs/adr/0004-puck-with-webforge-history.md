@@ -41,7 +41,8 @@ We built a working prototype:
 4. **Selections that skip `onAction`.** Puck's inline text field selects through an internal `setUi` helper. The engine also watches `selectedItem` (`createUsePuck`), so the history records the right selection before the change.
 5. **Caret jump.** Puck's `InlineTextField` replaces its text node when the value changes from outside, so undoing while typing sent the caret to the start. The engine records the caret offset and puts it back as soon as the field's content changes (`MutationObserver`), before the next key press.
 6. **Swallowed first undo in rich text.** Puck's rich-text editor skips content syncs while a 200 ms "still saving" timer runs. Because that check is computed at render time, the first undo after a text session could be ignored. The engine remounts the rich-text editors of unfocused nodes whose value changed, by keying them with a per-node revision.
-7. **Console noise.** Object-form `setData` logs a warning on every call. The function form does the same thing without the warning.
+7. **Late rich-text saves.** Puck saves rich text with a debounce of up to 200 ms, so the last keystrokes can arrive after the click that ends the session, which split it into two steps on fast machines (CI). The app ends a text session 300 ms after the selection moves away, or at once on undo, redo, a jump or any other edit.
+8. **Console noise.** Object-form `setData` logs a warning on every call. The function form does the same thing without the warning.
 
 ### Limitations and risks
 - **Puck internals we depend on:** the `data-puck-component` attribute, `InlineTextField`'s `replaceChildren`, the rich-text sync timer, and hotkeys being registered on `document` (so a capture listener on `window` comes first). Puck is pre-1.0. The version is pinned, and the E2E suite (`e2e/app/canvas-history.spec.ts`) is the tripwire for upgrades. We should report items 5 and 6 upstream.
