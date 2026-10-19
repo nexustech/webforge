@@ -1,0 +1,33 @@
+/* Temporary shell styles; replaced by Tailwind + shadcn/ui tokens with the editor UI. */
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: Canvas;
+  color: CanvasText;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+.app {
+  display: grid;
+  place-content: center;
+  height: 100%;
+  text-align: center;
+}
+
+.app__title {
+  margin: 0;
+  font-size: 3rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.app__version {
+  margin: 0.5rem 0 0;
+  opacity: 0.6;
+}

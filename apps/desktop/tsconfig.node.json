@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "outDir": "${configDir}/dist/types/node"
+  },
+  "include": ["src/main", "src/preload", "src/shared", "electron.vite.config.ts"],
+  "references": [{ "path": "../../packages/i18n" }]
+}
