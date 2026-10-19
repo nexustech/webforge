@@ -1,0 +1,218 @@
+# Webforge MVP Specification
+
+**Version:** 1.0 draft, 2026-10-19
+**Architecture:** [01-architecture.md](01-architecture.md) · **Engineering standards:** [03-engineering-standards.md](03-engineering-standards.md)
+**Legend:** **[Proposed]** = not yet confirmed by product owner · 🔬 = confirm in spike
+
+## 1. Product goal
+A DIY small-business owner with no web experience can, **in one afternoon**:
+1. pick a template,
+2. change text, images and brand colours,
+3. add pages and sections,
+4. check the site on desktop and phone,
+5. and **publish** it to Netlify or their existing host, **without touching code**.
+
+The result is a fast, accessible, self-contained static website they fully own.
+
+### Primary persona
+**Sam, owns a small café/salon/trades business.**
+- Comfortable with Canva, Word and maybe Wix.
+- Wants a professional site, hates monthly builder fees, and needs to update opening hours and prices themselves.
+- Doesn't know what HTML or hosting really are.
+
+### Platforms
+- **Windows 10/11 x64** and **macOS 13 Ventura or later on Apple Silicon (arm64)**. Linux is not supported in MVP.
+  - **No Intel Mac build at launch.** Apple has confirmed macOS 26 Tahoe is the last major release for Intel Macs, and Electron 44 needs macOS 13+.
+  - A **universal** (Apple Silicon + Intel) build stays possible as a fallback: one electron-builder setting, with better-sqlite3 merged into a universal binary. It would roughly double the macOS download, so add it only if beta users need it.
+- Installer with auto-update: Windows NSIS per-user (no admin), macOS signed + notarised DMG. `.wforge` file association.
+
+## 2. MVP feature list
+
+### 2.1 Sites & files
+| ID | Feature | Acceptance criteria |
+|---|---|---|
+| F-SITE-1 | **New Site from Template** | Start screen shows templates with thumbnails; choosing one asks for site name and theme; opens the editor in < 3 s |
+| F-SITE-2 | **Open / Recent Sites** | Double-clicking a `.wforge` file opens it (single instance). The recent list shows a thumbnail and last edited time |
+| F-SITE-3 | **Periodic autosave** (P2) | Saves ~2 s after edits pause, at least every 30 s, on blur/close. Title bar shows "Saved"/"Saving…". Killing the app loses at most the last few seconds; the file is never corrupt |
+| F-SITE-4 | **Version History** (06, P3) | *Save version…* (Ctrl/Cmd+Alt+S) with a name. Automatic versions daily, before restore, before site-wide actions and on publish; last 20 kept (configurable). Preview a version read-only; **Restore** is one undo step; **Open version as new site** (P5) |
+| F-SITE-5 | **Export as .zip** (project) | Exports JSON + media for backup/interchange; re-importing is lossless |
+| F-SITE-6 | **Backups** | Rolling backups of the `.wforge` file in a backups folder (last N) |
+| F-SITE-7 | **Local crash reports** | On a crash or unhandled error, Webforge writes a report to the local crash-reports folder with a **timestamped filename**. **Nothing is uploaded automatically.** On the next launch: *"Webforge closed unexpectedly. Your work was saved."* with *Open crash reports folder*. Help menu: *Open crash reports folder*. Reports contain no site content, credentials or personal data. Future: in-app review and optional user-initiated sharing |
+
+### 2.2 Editing
+| ID | Feature | Acceptance criteria |
+|---|---|---|
+| F-ED-1 | **Add panel** (Sections / Elements) | Drag or click to insert. Drop indicators show valid targets. Sections only between sections; elements only inside sections/columns |
+| F-ED-2 | **Select, move, duplicate, delete** | Click to select on canvas or in Layers. Drag to reorder. Keyboard: arrows to move selection, Ctrl/Cmd+D duplicate, Delete removes **without confirmation** with an *Undo* toast (D4) |
+| F-ED-3 | **Click-to-edit text** | Double-click text to edit inline (bold, italic, link, lists, alignment). One editing session = **one undo step** "Edited ‹name› text" (D1) |
+| F-ED-4 | **Edit panel**: Content · Style (· Advanced) | Shows friendly controls for the selected item. Style controls are design tokens (Padding S/M/L, Colour from theme…), each optionally per Desktop/Tablet/Mobile |
+| F-ED-5 | **Images** | Upload/drag from disk into Media, replace and crop (aspect presets), alt text field with a hint. Originals kept unmodified |
+| F-ED-6 | **Repeating lists** (M1) | Testimonials, team, services, FAQ, opening hours, prices: add/reorder/remove items in the Edit panel and on canvas |
+| F-ED-7 | **Header & Footer** (C5) | Shared on every page; editing shows the banner *"Editing shared Footer: changes apply to all N pages"*. Page setting *Hide header/footer on this page* |
+| F-ED-8 | **Desktop · Tablet · Mobile** views | Switch instantly; canvas width changes; per-device overrides are visibly marked |
+| F-ED-9 | **Undo / Redo + Undo History panel** (03, Simple mode) | Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z/Ctrl+Y everywhere. Panel lists labelled steps; click to jump. Undo restores selection, page and view. Drags and slider scrubs are single steps |
+| F-ED-10 | **Content mode** (M3) | Toolbar toggle **Design / Content**. Content mode locks layout and styles; text, images, links and list items stay editable |
+| F-ED-11 | **Simple / Advanced mode** (T2) | Advanced adds Layers, the Advanced tab (CSS classes, attributes, anchor ID) and Custom Code. Per-user preference |
+| F-ED-12 | **Layers** (Advanced) | Tree of sections/elements with drag-to-reorder, hide, rename label |
+| F-ED-13 | **Pages panel** | Add, rename, duplicate, reorder (= navigation order), set Home, *Hide from navigation*, folders. **Delete page asks for confirmation** and is undoable (D5/D7) |
+| F-ED-14 | **Confirmation rule** (D7) | Any action affecting more than the current page (theme switch, delete page, delete shared section, global font/colour change) confirms with its impact ("affects 6 pages") and is undoable |
+| F-ED-15 | **Custom Code** (C7, Advanced) | Custom HTML element; site `custom.css`/`custom.js`; head/body snippets. Scripts off in the editor by default |
+
+### 2.3 Design
+| ID | Feature | Acceptance criteria |
+|---|---|---|
+| F-DS-1 | **Theme picker** (05, S3) | **10–12 curated themes** (light + dark), visibly distinct (no "house look"). Changing theme confirms (D7), restyles everything instantly, and is undoable |
+| F-DS-2 | **Brand colours, fonts, roundness** | Primary/secondary/accent colours; **~50 bundled font families with 12–15 tested pairings** (Fontsource, offline) plus **Browse all fonts** (on-demand Fontsource catalogue, cached locally; S4); corner style; spacing scale. Contrast warnings below WCAG AA |
+| F-DS-3 | **Section themes** | A section can use the light/dark variant of the theme (daisyUI nested themes) |
+
+### 2.4 Site settings & checks
+| ID | Feature | Acceptance criteria |
+|---|---|---|
+| F-SET-1 | **Site Settings** (X3) | General, Web address, Social & sharing, Contact details, Search engines, Analytics (GA4 ID, B4), Form defaults. Bound values update all elements; saving is one undo step |
+| F-SET-2 | **Page Settings** | Title, description, share image, slug, hide header/footer, hide from navigation |
+| F-CHK-1 | **Site Check** panel (X5) | Live, background checks grouped **Must fix · Should fix · Tips**; click to jump; Fix buttons; Ignore per item. Export blocks only on *Must fix*; Publish also blocks on broken links, missing web address, placeholder text, unconfigured forms, missing titles |
+
+### 2.5 Preview, export, publish
+| ID | Feature | Acceptance criteria |
+|---|---|---|
+| F-PV-1 | **Preview** | Opens the site in the default browser via the built-in preview server with live reload (CSS hot-swap < 100 ms). **Preview on phone**: QR code for a device on the same Wi-Fi |
+| F-EX-1 | **Export** (07) | Writes a folder or ZIP per the exported-site contract ([01 §8](01-architecture.md#8-exported-site-contract)). Opens from disk in Chrome, Edge, Firefox and Safari with fonts/scripts working; no external requests except allowed ones. Export report shown |
+| F-EX-2 | **Image output** (X2) | WebP + JPEG fallback (PNG if transparent) at responsive widths, `width`/`height`, lazy loading; JPEG share image; favicon set |
+| F-EX-3 | **Readable output** (X4) | Indented HTML, readable CSS/JS; optional *Minify output* |
+| F-EX-4 | **Include developer files** (X6) | Optional: Tailwind source + theme tokens + `site.json` + README |
+| F-PB-1 | **Publish destinations** (08) | Add Netlify (OAuth sign-in, create/pick site), FTP/FTPS/SFTP (presets, Test connection tries FTPS first; plain FTP allowed with warning, B5). Several destinations per site. Secrets in the OS keychain |
+| F-PB-2 | **Publish** | Build (strict checks) → upload changed files only → assets before pages → verify → "Your site is live" with link. Cancel keeps the old site as intact as possible. Creates an automatic version "Published ‹date›" |
+| F-PB-3 | **Republish a version** | From Version History, publish an older version (rollback on any host) |
+
+### 2.6 Content features
+| ID | Feature | Acceptance criteria |
+|---|---|---|
+| F-CM-1 | **Contact form** (B3/B6) | "Send submissions to": Netlify Forms (if a Netlify destination exists), Formspree, Web3Forms, FormSubmit, Custom endpoint. Plain HTML POST, honeypot + timing spam check, Thank-you page redirect |
+| F-CM-2 | **Buy button** (M1) | Label, price text, image, payment link (Stripe Payment Link / PayPal / any https URL). Plain link |
+| F-CM-3 | **Analytics + consent** (B4/B7) | GA4 ID in Site Settings; built-in consent banner (on by default with GA); Consent Mode v2 default denied; GA off in preview and when opened from disk |
+| F-CM-4 | **Embeds** | YouTube, Vimeo, Google Maps/OpenStreetMap as dedicated elements with privacy mode and click-to-load placeholders (C8, B7) |
+| F-CM-5 | **Social links** | Social icons element bound to Site Settings → Social (Lucide/brand SVG icons inlined) |
+
+## 3. MVP component catalogue (decided S1–S5, [starting content](../research/product/03-starting-content.md))
+
+**Sections (18):**
+1. Header (navbar with mobile menu)
+2. Footer
+3. Hero (4 layouts)
+4. Text
+5. Text + Image
+6. Features / Services grid
+7. Gallery
+8. Testimonials (list)
+9. Team (list)
+10. Pricing / Price list
+11. FAQ (accordion)
+12. Opening hours & contact details
+13. Contact form
+14. Call to action
+15. Logos / "As seen in"
+16. Stats / Numbers
+17. Map
+18. Video
+
+**Elements (16):**
+1. Heading
+2. Text
+3. Image
+4. Button
+5. Buy button
+6. Columns
+7. Spacer
+8. Divider
+9. Icon
+10. List
+11. Social links
+12. Embed video
+13. Embed map
+14. Form fields (text, email, phone, message, checkbox, select)
+15. Tabs
+16. Custom Code (Advanced)
+
+**Templates (8, S2):**
+1. Café / Restaurant
+2. Salon / Beauty
+3. Trades / Home services
+4. Consultant / Professional
+5. Photographer / Portfolio
+6. Shop (Buy buttons)
+7. Personal / CV
+8. Blank
+
+**Template images (S5):** public-domain (CC0) and free stock photos, with source and licence recorded per image in a manifest; licence review deferred.
+
+All components must:
+- render to static HTML with daisyUI/Tailwind classes;
+- meet WCAG 2.1 AA (keyboard, focus, ARIA for Tabs/Accordion/Menu via `webforge.js`);
+- work from disk (X1);
+- expose only design-token style fields;
+- have a friendly display name for undo labels (D2).
+
+## 4. Non-functional requirements
+| Area | Requirement |
+|---|---|
+| Performance | Targets in [01 §10](01-architecture.md#10-performance-targets) |
+| Reliability | No data loss on crash/power cut (SQLite transactions); undo-all returns exactly to the starting state (property-tested) |
+| Accessibility | Editor fully keyboard-operable for core flows; exported sites WCAG 2.1 AA by default (axe checks in CI) |
+| Privacy | No telemetry; crash reports stay on the user's computer (F-SITE-7); exported sites make no external requests by default |
+| Security | Electron hardening per [01 §3](01-architecture.md#3-process-model); secrets in OS keychain; signed builds |
+| Licensing | Permissive dependencies only (C1); in-app "Open-source licences" screen; licence check in CI |
+| Localisation | English UI for MVP; all strings externalised in `packages/i18n` using glossary terms ([terminology](../research/product/01-terminology.md)) |
+| Offline | Everything except publishing, updates and "Download and bundle" works offline |
+
+## 5. Explicitly out of MVP
+| Item | When |
+|---|---|
+| Blog collection (posts, tags, RSS, latest posts, Markdown/CSV import) | **v1.1** (M2) |
+| Portfolio/Gallery, Team, Events collections | v1.2+ (M2) |
+| Site search, multilingual | v1.2+ (M4) |
+| Saved sections (user-reusable) | v1.x (C5) |
+| Cloudflare, GitHub Pages, S3 publishing; custom-domain automation | Later (08) |
+| Webforge Hosting / form relay | Deferred business decision (B2) |
+| AVIF, clean URLs, Export as Astro project | Later / on demand (X2, X1, X6) |
+| Importing existing websites | Out of scope (C3) |
+| Free positioning, real-time collaboration, remote client editing, members, carts | Out of scope (T3, M5) |
+| Linux | Not planned |
+
+## 6. Milestones
+| Phase | Milestone | Content | Exit criteria |
+|---|---|---|---|
+| **Phase 0** | **Prototype spikes** (~2 weeks, combined) | Electron secure shell + electron-builder installers (signed NSIS/DMG) + auto-update; Puck with **our** history (critical); daisyUI components; `.wforge` SQLite via **better-sqlite3** (packaging + rebuild on Windows/macOS, crash safety, OneDrive folder); export pipeline + `file://` checks; Netlify + SFTP publish | Every 🔬 item resolved; go/no-go on Puck (else fallback canvas) |
+| **Phase 1** | **Editor core** | Model, history, storage + autosave, engine adapter, Add/Edit/Pages panels, Header/Footer, Undo History, views | Build a 3-page site from blank; undo-all property tests green |
+| **Phase 2** | **Design & components** | Themes, brand colours/fonts, component catalogue, templates, Content mode, Simple/Advanced | All templates pass axe + visual regression |
+| **Phase 3** | **Output** | Preview server, Export, Site Check, Site/Page Settings, forms, Buy button, GA + consent, embeds | Exported templates open from disk in 4 browsers with zero external requests |
+| **Phase 4** | **Publish & versions** | Destinations, Netlify/FTP/SFTP publish, Version History, republish | Publish + rollback on all targets in E2E tests |
+| **Phase 5** | **Beta hardening** | Performance budgets, installer/updates, licences screen, onboarding, help | Beta with 10–20 small-business users |
+
+## 7. Open items to confirm
+1. ~~Starting content~~ → ✅ **Decided (S1–S5):** standard catalogue, 8 templates, 10–12 themes, ~50 fonts + on-demand; CC0/free stock images (licence review deferred).
+2. ~~macOS targets~~ → ✅ **Decided:** Apple Silicon (arm64) only, macOS 13+; universal build as a fallback if beta demand appears.
+3. ~~Packaging toolchain~~ → ✅ **Decided: electron-builder** + electron-updater (mature since 2015, actively released, MIT, used by Bootstrap Studio). Phase 0 only verifies signing, installers and auto-update with it.
+4. ~~SQLite driver~~ → ✅ **Decided: `better-sqlite3`** (MIT, mature, synchronous API, prebuilt binaries; rebuilt for Electron via `@electron/rebuild` in CI).
+5. Default to Content mode for already-published sites (suggested in product/02).
+6. ~~Telemetry/crash reporting~~ → **Decided:** crash reports collected **locally only**, never uploaded (F-SITE-7).
+7. ~~Licensing model~~ → ✅ **Decided:** see §8 (implemented after MVP).
+
+## 8. Business & licensing model (decided 2026-10-19)
+| Item | Decision |
+|---|---|
+| Price | **Single paid licence: US $99, unlimited use** (no subscription, no tiers, unlimited sites) |
+| Trial | **7-day free trial** |
+| Licence mechanism | **After MVP.** A simple **generated licence key**, **validated server-side** against the buyer's **registered email address** |
+| MVP | No licence enforcement in the MVP/beta builds. Beta testers use the full app |
+
+**Design notes for the post-MVP licensing work**
+- **Works offline:** validate on activation, then re-check occasionally with a generous offline grace period (e.g. 30 days), so a desktop app used offline never locks users out unexpectedly.
+- **Privacy:** the server only needs the email, key and an anonymous device ID. No site content is ever sent.
+- **Payment provider:** a "merchant of record" service (e.g. Paddle, Lemon Squeezy, or Stripe with tax handling) handles sales tax/VAT, receipts and refunds. Choose when licensing is built.
+- **Code structure:** keep licence checks in one small `licensing` module behind an interface, so the MVP ships without it and it can be added cleanly later.
+
+**Open questions (for post-MVP):**
+1. Does "unlimited use" include **all future updates**, or updates for a period (e.g. 12 months, then optional renewal)?
+2. Any limit on the number of **computers** per licence?
+3. What happens when the trial ends: read-only (can open and view, can't export/publish), or fully locked?
+

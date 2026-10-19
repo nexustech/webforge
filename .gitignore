@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+out/
+build/
+release/
+*.tsbuildinfo
+storybook-static/
+
+# Caches
+.turbo/
+.cache/
+.vite/
+.eslintcache
+coverage/
+playwright-report/
+test-results/
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+*.pfx
+*.key
+
+# Webforge local artefacts
+*.wforge-journal
+crash-reports/
+
+# OS / editor clutter
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+*.swp
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
