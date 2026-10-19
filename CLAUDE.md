@@ -33,7 +33,7 @@ A desktop builder for non-technical small-business owners that produces self-con
 ## Commands (pnpm 12, run from the repo root)
 - `pnpm dev`: start the desktop app with hot reload.
 - `pnpm check`: the static checks and unit tests CI runs (`lint`, `typecheck`, `deps`, `knip`, `licence-check`, `test`). Run it before opening a PR.
-- `pnpm e2e`: builds the desktop app and runs the Playwright Electron tests in `e2e/app/` (also run in CI). Run it when touching main, preload, the renderer bootstrap or security settings.
+- `pnpm e2e`: builds the desktop app and runs the Playwright tests: the Electron app (`e2e/app/`) and the exported fixture site opened from disk in Chromium, Firefox and WebKit (`e2e/export/`). Also run in CI. Run it when touching main, preload, the renderer bootstrap, security settings, site components or the pipeline. First time: `pnpm --filter @webforge/e2e exec playwright install chromium firefox webkit`.
 - `pnpm e2e:packaged`: packages the app (`electron-builder --dir`) and runs `e2e/packaged/` against it (CI on Windows + macOS). Run it when touching packaging, Fuses or native modules.
 - `pnpm format`: apply Biome fixes. `pnpm build`: build all workspaces.
 - Workspace packages are consumed from source (`exports` → `src/index.ts`). Import them as `@webforge/<name>`, never by path. Relative imports use `.js` extensions (`./foo.js` for `foo.ts`).
