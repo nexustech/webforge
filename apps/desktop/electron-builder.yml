@@ -1,0 +1,46 @@
+# electron-builder configuration: https://www.electron.build/configuration
+# Builds are unsigned for now; code signing and notarisation come with the release pipeline.
+appId: app.webforge.desktop
+productName: Webforge
+directories:
+  output: release/${version}
+  buildResources: build
+files:
+  - out/**
+  - package.json
+asar: true
+
+# Electron Fuses: switch off Node-style entry points into the packaged app.
+electronFuses:
+  runAsNode: false
+  enableCookieEncryption: true
+  enableNodeOptionsEnvironmentVariable: false
+  enableNodeCliInspectArguments: false
+  enableEmbeddedAsarIntegrityValidation: true
+  onlyLoadAppFromAsar: true
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+
+# Per-user install: no administrator rights needed.
+nsis:
+  oneClick: true
+  perMachine: false
+  allowElevation: false
+  artifactName: ${productName}-Setup-${version}.${ext}
+
+mac:
+  target:
+    - target: dmg
+      arch: [arm64]
+  category: public.app-category.productivity
+  minimumSystemVersion: "13.0"
+  # Unsigned until a Developer ID certificate is set up in CI.
+  identity: null
+
+dmg:
+  artifactName: ${productName}-${version}-arm64.${ext}
+
+publish: null

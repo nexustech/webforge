@@ -30,6 +30,14 @@ A desktop builder for non-technical small-business owners that produces self-con
 - **Vitest:** unit/integration. **fast-check:** undo invariants. **Playwright:** Electron E2E + exported-site checks. **Storybook stories:** visual regression and axe.
 - **Coverage ≥ 80%** for every package (core packages ≥ 90%). Every bug fix adds a regression test.
 
+## Commands (pnpm 12, run from the repo root)
+- `pnpm dev`: start the desktop app with hot reload.
+- `pnpm check`: everything CI runs (`lint`, `typecheck`, `deps`, `knip`, `test`). Run it before opening a PR.
+- `pnpm format`: apply Biome fixes. `pnpm build`: build all workspaces.
+- Workspace packages are consumed from source (`exports` → `src/index.ts`). Import them as `@webforge/<name>`, never by path. Relative imports use `.js` extensions (`./foo.js` for `foo.ts`).
+
 ## Workflow
-- Conventional Commits (`feat(history): …`), short-lived branches, PRs into protected `main`, squash merge.
+- Conventional Commits (`feat(history): …`), enforced by commitlint in a lefthook `commit-msg` hook.
+- Short-lived branches, PRs into `main`, squash merge.
+- **`main` is not branch-protected** (GitHub Free plan, private repo), so nothing technically stops a direct push. Always working through PRs with green CI is a **team convention**: never push or merge to `main` directly.
 - Record new architectural decisions as ADRs in `docs/adr/`.

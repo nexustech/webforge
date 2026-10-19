@@ -17,7 +17,7 @@ Versions checked on npm on 2026-10-19.
 | Packaging | **electron-builder** + electron-updater ✅ | 26.x | MIT | NSIS (Win), DMG (macOS); mature (since 2015), actively released |
 | Native modules | **better-sqlite3** ✅ + `@electron/rebuild` | 13 / 4.2 | MIT | Rebuilt against each Electron version in CI; unpacked from asar. Keep native modules to a minimum |
 | Lint + format | **Biome** ✅ (single tool: linter + formatter) | 2.5 | MIT OR Apache-2.0 | Replaces ESLint + Prettier. Formatting is never debated in review. See §2a for rule set and known gaps |
-| Architecture rules | **dependency-cruiser** | 18 | MIT | Enforces package boundaries (§3) |
+| Architecture rules | **dependency-cruiser** | 18 | MIT | Enforces package boundaries (§3). Parses with swc (`@swc/core`, Apache-2.0) because TypeScript 7 has no JavaScript compiler API ([ADR 0001](../docs/adr/0001-monorepo-tooling.md)) |
 | Dead code | **knip** | 6 | ISC | Unused files, exports, dependencies |
 | Unit/integration tests | **Vitest** (+ coverage-v8, browser mode) | 5.0 | MIT | |
 | Component tests | **@testing-library/react** in Vitest browser mode | 16 | MIT | |
@@ -55,7 +55,7 @@ Versions checked on npm on 2026-10-19.
   - the **a11y** group: `useAltText`, `useButtonType`, `useAnchorContent`, `useKeyWithClickEvents`, `useValidAnchor`…, plus nursery a11y rules once stable
   - `noRestrictedImports` / `useImportRestrictions` (nursery; enable and pin the Biome version)
 - **Known gaps vs ESLint, and mitigations:**
-  - **No floating-promise detection.** Mitigation: the convention "every promise is awaited, returned or passed to `void track()`", code review, and tests. Optional later: add **Oxlint**'s type-aware `no-floating-promises` as a second, narrow CI check.
+  - ~~No floating-promise detection.~~ Biome 2.5 has nursery `noFloatingPromises` and `noMisusedPromises`; both are enabled as errors (Biome version pinned). Keep the convention "every promise is awaited, returned or passed to `void track()`"; Oxlint's type-aware rule remains a fallback if the nursery rules prove unreliable.
   - **No React Compiler-specific lint rules.** Mitigation: React Compiler build warnings are treated as errors in CI.
   - **Package boundaries** are enforced by **dependency-cruiser** (§3), not the linter.
 
@@ -128,7 +128,8 @@ Coverage is a floor, not a goal. Every bug fix adds a regression test.
 - **Flakiness:** no flaky tests on `main`. A flaky test is quarantined within 24 h with an issue, and fixed or deleted within a week.
 
 ## 6. Git workflow
-- **Trunk-based:** short-lived branches (`feat/…`, `fix/…`, `chore/…`), PRs into protected `main`, **squash merge**.
+- **Trunk-based:** short-lived branches (`feat/…`, `fix/…`, `chore/…`), PRs into `main`, **squash merge**.
+- **`main` is not branch-protected.** Branch protection and rulesets for private repositories need a paid GitHub plan, and the repository is on GitHub Free. "Always work through PRs" is therefore a **team convention**, not a technical guard: never push or merge to `main` directly, and merge only with green CI. Revisit if the plan changes.
 - **Conventional Commits** (`feat(history): coalesce text sessions`), enforced by commitlint. release-please generates versions and the CHANGELOG.
 - **PR requirements:** green CI, 1 review, description with *what/why/how tested*, screenshots or GIFs for UI changes, ADR link for architectural changes.
 - **Versioning:** SemVer for the app. `format_version` for `.wforge` is independent and bumped with a migration + fixture.
@@ -176,6 +177,6 @@ A change is done when:
 ## 11. Decisions to confirm
 1. ~~ESLint + Prettier vs Biome~~ → ✅ **Decided: Biome** (see §2a for gaps and mitigations).
 2. ~~Turborepo~~ → ✅ **Decided: Turborepo** on pnpm workspaces.
-3. ~~GitHub~~ → ✅ **Decided: GitHub** for the repository, PRs and Actions CI. Repository to be created at project setup (private; branch protection on `main`).
+3. ~~GitHub~~ → ✅ **Decided: GitHub** for the repository, PRs and Actions CI. Private repository on the GitHub Free plan, so no branch protection on `main`; PR-only merges are a team convention (§6).
 4. ~~Storybook~~ → ✅ **Decided: Storybook** for site components (every component × themes × Desktop/Tablet/Mobile) and editor UI components. Stories feed visual regression, a11y and interaction tests.
 5. ~~Coverage floors~~ → ✅ **Decided: minimum 80% for every package**; core packages held at 90%/85%.

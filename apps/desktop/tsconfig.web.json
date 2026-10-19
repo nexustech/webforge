@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.browser.json",
+  "compilerOptions": {
+    "types": ["vite/client"],
+    "outDir": "${configDir}/dist/types/web"
+  },
+  "include": ["src/renderer", "src/shared"],
+  "references": [{ "path": "../../packages/i18n" }]
+}

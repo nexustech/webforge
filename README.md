@@ -14,6 +14,17 @@ A desktop visual website builder for **DIY small-business owners**. Users drag a
 | [docs/adr/](docs/adr/) | Architecture decisions made during implementation |
 | [ideas.md](ideas.md) | Original brief |
 
+## Getting started
+Requires Node 24 and pnpm 12 (`npm install -g pnpm@12`; the exact version is pinned in `package.json`).
+
+```sh
+pnpm install   # also installs the git hooks (lefthook)
+pnpm dev       # start the desktop app with hot reload
+pnpm check     # lint, typecheck, package boundaries, unused code, tests with coverage
+```
+
+Repository layout: `apps/desktop` (Electron app) and `packages/*` (model, history, storage, engine, site-components, themes, pipeline, publish, editor-ui, i18n, test-utils). See [architecture §4](spec/01-architecture.md#4-package--module-structure-pnpm-monorepo).
+
 ## Stack at a glance
 Electron 44 · React 19 + shadcn/ui · Tailwind v4 + daisyUI 5 · Puck (canvas engine) · Zustand + Immer (undo/redo) · SQLite `.wforge` files (better-sqlite3) · TypeScript 7 · pnpm + Turborepo · Biome · Vitest · Playwright · Storybook · electron-builder
 
