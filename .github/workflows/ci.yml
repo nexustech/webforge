@@ -109,3 +109,41 @@ jobs:
           name: playwright-report-${{ matrix.os }}
           path: e2e/playwright-report/
           if-no-files-found: ignore
+
+  package:
+    # Packages the app with electron-builder (asar, Fuses, unpacked better-sqlite3 binary) and
+    # checks that the packaged app opens a .wforge (ADR 0003). macOS runs here only: Windows
+    # machines can't build or run the macOS app.
+    name: Packaged app (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Package (electron-builder --dir) and test the packaged app
+        run: pnpm e2e:packaged
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report-packaged-${{ matrix.os }}
+          path: e2e/playwright-report/
+          if-no-files-found: ignore

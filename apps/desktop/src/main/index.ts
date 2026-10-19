@@ -1,8 +1,18 @@
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { t } from "@webforge/i18n";
-import { app, BrowserWindow, ipcMain, session } from "electron";
+import {
+  app,
+  BrowserWindow,
+  dialog,
+  ipcMain,
+  type OpenDialogOptions,
+  type SaveDialogOptions,
+  session,
+} from "electron";
 import { registerIpcHandler } from "./ipc.js";
+import { type ProjectDialogs, registerProjectHandlers } from "./project-ipc.js";
+import { findProjectArgument, PROJECT_EXTENSION, ProjectSession } from "./project-session.js";
 import {
   createSecureWebPreferences,
   hardenSession,
@@ -25,6 +35,38 @@ app.enableSandbox();
 app.on("web-contents-created", (_event, contents) => {
   hardenWebContents(contents, appUrl);
 });
+
+const projectSession = new ProjectSession();
+const projectFilters = [{ name: t("site.fileType"), extensions: [PROJECT_EXTENSION.slice(1)] }];
+
+// Dialogs are modal to the focused window. E2E tests replace dialog.showSaveDialog and
+// dialog.showOpenDialog, so look them up on the module at call time.
+const projectDialogs: ProjectDialogs = {
+  chooseNewProjectPath: async () => {
+    const options: SaveDialogOptions = {
+      title: t("site.newDialogTitle"),
+      defaultPath: `${t("site.untitledName")}${PROJECT_EXTENSION}`,
+      filters: projectFilters,
+    };
+    const parent = BrowserWindow.getFocusedWindow();
+    const result = await (parent === null
+      ? dialog.showSaveDialog(options)
+      : dialog.showSaveDialog(parent, options));
+    return result.canceled || result.filePath === "" ? undefined : result.filePath;
+  },
+  chooseProjectToOpen: async () => {
+    const options: OpenDialogOptions = {
+      title: t("site.openDialogTitle"),
+      filters: projectFilters,
+      properties: ["openFile"],
+    };
+    const parent = BrowserWindow.getFocusedWindow();
+    const result = await (parent === null
+      ? dialog.showOpenDialog(options)
+      : dialog.showOpenDialog(parent, options));
+    return result.canceled ? undefined : result.filePaths[0];
+  },
+};
 
 function createMainWindow(): void {
   const window = new BrowserWindow({
@@ -56,6 +98,17 @@ async function start(): Promise<void> {
     (senderUrl) => isAppUrl(senderUrl, appUrl),
     () => ({ name: t("app.name"), version: app.getVersion() }),
   );
+  registerProjectHandlers(
+    ipcMain,
+    (senderUrl) => isAppUrl(senderUrl, appUrl),
+    projectSession,
+    projectDialogs,
+  );
+  // A site double-clicked in Explorer arrives as a command-line argument (P1).
+  const projectToOpen = projectFromFinder ?? findProjectArgument(process.argv);
+  if (projectToOpen !== undefined) {
+    projectSession.open(projectToOpen);
+  }
   createMainWindow();
 
   app.on("activate", () => {
@@ -64,6 +117,21 @@ async function start(): Promise<void> {
     }
   });
 }
+
+// macOS delivers a site double-clicked in Finder (P1) as an event, possibly before "ready".
+let projectFromFinder: string | undefined;
+app.on("open-file", (event, path) => {
+  event.preventDefault();
+  if (app.isReady()) {
+    projectSession.open(path);
+  } else {
+    projectFromFinder = path;
+  }
+});
+
+app.on("will-quit", () => {
+  projectSession.close();
+});
 
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {

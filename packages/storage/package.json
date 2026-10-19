@@ -6,7 +6,12 @@
   "exports": {
     ".": "./src/index.ts"
   },
+  "dependencies": {
+    "better-sqlite3": "catalog:",
+    "zod": "catalog:"
+  },
   "devDependencies": {
+    "@types/better-sqlite3": "catalog:",
     "@types/node": "catalog:",
     "vitest": "catalog:"
   }

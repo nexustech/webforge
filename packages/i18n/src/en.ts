@@ -5,4 +5,8 @@
 export const en = {
   "app.name": "Webforge",
   "app.version": "Version {version}",
+  "site.fileType": "Webforge site",
+  "site.newDialogTitle": "New Site",
+  "site.openDialogTitle": "Open Site",
+  "site.untitledName": "My site",
 } as const;

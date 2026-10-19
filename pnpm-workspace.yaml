@@ -6,7 +6,10 @@ packages:
 
 # Versions shared by several workspaces; reference them as "catalog:".
 catalog:
+  "@types/better-sqlite3": 9.6.0
   "@types/node": 24.19.2
+  # Node-API addon with prebuilt binaries for every platform; no install script (ADR 0003).
+  better-sqlite3: 13.0.3
   vitest: 5.0.5
   zod: 4.6.7
 

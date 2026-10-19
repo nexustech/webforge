@@ -6,6 +6,11 @@
       "ignoreDependencies": ["@swc/core"]
     },
     "apps/*": {},
+    "apps/desktop": {
+      // Imported by @webforge/storage, which is bundled from source. Listed as a dependency so
+      // electron-vite keeps it external and electron-builder packages it (ADR 0003).
+      "ignoreDependencies": ["better-sqlite3"]
+    },
     "packages/*": {}
   }
 }
