@@ -100,3 +100,15 @@ body,
 .undo-history__step[data-state="undone"] {
   opacity: 0.5;
 }
+
+.export {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.export__status {
+  margin: 0;
+  font-size: 0.875rem;
+}

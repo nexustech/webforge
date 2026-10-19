@@ -7,14 +7,16 @@
     ".": "./src/index.ts"
   },
   "devDependencies": {
-    "@types/react": "19.3.0",
-    "@types/react-dom": "19.3.0",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
     "happy-dom": "20.14.6",
     "vitest": "catalog:"
   },
   "dependencies": {
     "@puckeditor/core": "0.23.0",
-    "react": "19.3.1",
-    "react-dom": "19.3.1"
+    "@webforge/model": "workspace:*",
+    "@webforge/site-components": "workspace:*",
+    "react": "catalog:",
+    "react-dom": "catalog:"
   }
 }

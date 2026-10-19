@@ -1,7 +1,16 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    // "dom" only for the WebAssembly and ImageData types that jSquash's codecs use; the
+    // pipeline runs in Node (a utilityProcess) and must not touch document or window.
+    "lib": ["es2024", "dom"],
     "types": ["node"]
   },
-  "include": ["src"]
+  "include": ["src", "test"],
+  "references": [
+    { "path": "../i18n" },
+    { "path": "../model" },
+    { "path": "../site-components" },
+    { "path": "../test-utils" }
+  ]
 }

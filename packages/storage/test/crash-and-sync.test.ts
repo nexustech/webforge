@@ -1,10 +1,10 @@
 import { copyFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
+import { tempDirFactory } from "@webforge/test-utils";
 import Database from "better-sqlite3";
 import { describe, expect, it } from "vitest";
 import { ProjectFileError, ProjectStore } from "../src/index.js";
 import { startChildWriter } from "./support/child-writer.js";
-import { tempDirFactory } from "./support/temp-dir.js";
 
 // Integration tests with a real writer process (support/writer.ts) that commits in a loop and is
 // killed abruptly, as a crash or a forced quit would (engineering standards §5, ADR 0003).

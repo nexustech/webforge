@@ -1,8 +1,10 @@
 // @vitest-environment happy-dom
+
+import type { PageDoc } from "@webforge/model";
+import { type ComponentLibrary, textValue } from "@webforge/site-components";
 import { act } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { CanvasEngine, EngineEdit, PageDoc } from "../canvas-engine.js";
-import { type ComponentLibrary, textValue } from "../library.js";
+import type { CanvasEngine, EngineEdit } from "../canvas-engine.js";
 import { createPuckEngine } from "./puck-engine.js";
 
 declare global {

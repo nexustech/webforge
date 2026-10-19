@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { tempDirFactory } from "@webforge/test-utils";
 import Database from "better-sqlite3";
 import { describe, expect, it } from "vitest";
 import {
@@ -10,7 +11,6 @@ import {
   type ProjectFileErrorCode,
   ProjectStore,
 } from "../src/index.js";
-import { tempDirFactory } from "./support/temp-dir.js";
 
 const tempDir = tempDirFactory();
 

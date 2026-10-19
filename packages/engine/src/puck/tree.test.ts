@@ -1,5 +1,5 @@
+import type { PageDoc } from "@webforge/model";
 import { describe, expect, it } from "vitest";
-import type { PageDoc } from "../canvas-engine.js";
 import { allNodes, findNode, nodeAt, ROOT_ZONE, zoneContent } from "./tree.js";
 
 const page: PageDoc = {

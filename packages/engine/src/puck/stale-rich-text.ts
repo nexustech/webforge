@@ -1,5 +1,5 @@
-import type { NodeDoc, PageDoc } from "../canvas-engine.js";
-import type { ComponentLibrary } from "../library.js";
+import type { NodeDoc, PageDoc } from "@webforge/model";
+import type { ComponentLibrary } from "@webforge/site-components";
 import { allNodes } from "./tree.js";
 
 /**

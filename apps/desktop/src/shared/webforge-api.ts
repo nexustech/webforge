@@ -1,4 +1,5 @@
-import type { AppInfo, ProjectResult, ProjectSummary } from "./ipc-contract.js";
+import type { SiteSnapshot } from "@webforge/model";
+import type { AppInfo, ExportResult, ProjectResult, ProjectSummary } from "./ipc-contract.js";
 
 /**
  * The typed API the preload script exposes to the renderer as `window.webforge`.
@@ -16,5 +17,9 @@ export interface WebforgeApi {
     open(): Promise<ProjectResult>;
     /** The site that is open, or `null`. */
     getCurrent(): Promise<ProjectSummary | null>;
+  };
+  readonly site: {
+    /** Shows a folder dialog, then builds the site and writes it there. */
+    export(snapshot: SiteSnapshot): Promise<ExportResult>;
   };
 }

@@ -10,12 +10,18 @@ import {
 } from "./check-licences.js";
 
 describe("isLicenceAllowed", () => {
-  it.each(["MIT", "ISC", "Apache-2.0", "BSD-3-Clause", "MPL-2.0", "0BSD", "BlueOak-1.0.0"])(
-    "allows %s",
-    (licence) => {
-      expect(isLicenceAllowed(licence)).toBe(true);
-    },
-  );
+  it.each([
+    "MIT",
+    "ISC",
+    "Apache-2.0",
+    "BSD-3-Clause",
+    "MPL-2.0",
+    "0BSD",
+    "BlueOak-1.0.0",
+    "OFL-1.1",
+  ])("allows %s", (licence) => {
+    expect(isLicenceAllowed(licence)).toBe(true);
+  });
 
   it.each(["GPL-3.0-only", "AGPL-3.0-or-later", "LGPL-2.1", "UNLICENSED", "WTFPL", "CC-BY-4.0"])(
     "rejects %s",

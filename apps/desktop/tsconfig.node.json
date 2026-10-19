@@ -4,6 +4,25 @@
     "types": ["node"],
     "outDir": "${configDir}/dist/types/node"
   },
-  "include": ["src/main", "src/preload", "src/shared", "electron.vite.config.ts"],
-  "references": [{ "path": "../../packages/i18n" }, { "path": "../../packages/storage" }]
+  "include": ["src/main", "src/preload", "src/shared", "src/worker", "electron.vite.config.ts"],
+  "references": [
+    {
+      "path": "../../packages/i18n"
+    },
+    {
+      "path": "../../packages/model"
+    },
+    {
+      "path": "../../packages/pipeline"
+    },
+    {
+      "path": "../../packages/site-components"
+    },
+    {
+      "path": "../../packages/storage"
+    },
+    {
+      "path": "../../packages/test-utils"
+    }
+  ]
 }

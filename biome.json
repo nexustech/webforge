@@ -6,7 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!**/out", "!**/release", "!**/dist", "!**/coverage"]
+    "includes": ["**", "!**/out", "!**/release", "!**/dist", "!**/coverage", "!**/test/golden"]
   },
   "formatter": {
     "enabled": true,
@@ -78,7 +78,7 @@
       }
     },
     {
-      "includes": ["**/*.config.ts", "**/*.stories.tsx", ".dependency-cruiser.mjs"],
+      "includes": ["**/*.config.ts", "**/*.stories.tsx", "**/*.d.ts", ".dependency-cruiser.mjs"],
       "linter": {
         "rules": {
           "style": {

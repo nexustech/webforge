@@ -8,8 +8,11 @@
     "e2e:packaged": "playwright test --config playwright.packaged.config.ts"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
     "@playwright/test": "1.64.1",
     "@types/node": "catalog:",
-    "@webforge/storage": "workspace:*"
+    "@webforge/model": "workspace:*",
+    "@webforge/storage": "workspace:*",
+    "@webforge/test-utils": "workspace:*"
   }
 }

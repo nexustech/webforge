@@ -7,6 +7,16 @@
     ".": "./src/index.ts"
   },
   "devDependencies": {
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@types/sanitize-html": "2.16.2",
     "vitest": "catalog:"
+  },
+  "dependencies": {
+    "@webforge/i18n": "workspace:*",
+    "@webforge/model": "workspace:*",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "sanitize-html": "2.18.1"
   }
 }

@@ -1,11 +1,11 @@
 // @vitest-environment happy-dom
+import { siteLibrary, starterPage } from "@webforge/site-components";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { Editor } from "./Editor.js";
 import { createEditorSession, type EditorSession } from "./editor-session.js";
 import { createFakeEngine, type FakeEngine } from "./fake-engine.test-helper.js";
-import { spikeLibrary, starterPage } from "./library.js";
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean;
@@ -22,7 +22,7 @@ describe("Editor", () => {
     container = document.createElement("div");
     document.body.append(container);
     root = createRoot(container);
-    session = createEditorSession(spikeLibrary, starterPage());
+    session = createEditorSession(siteLibrary, starterPage());
     engine = createFakeEngine();
     const createEngine = () => engine;
     await act(async () => root.render(<Editor session={session} createEngine={createEngine} />));

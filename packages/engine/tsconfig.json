@@ -1,4 +1,12 @@
 {
   "extends": "../../tsconfig.browser.json",
-  "include": ["src"]
+  "include": ["src"],
+  "references": [
+    {
+      "path": "../model"
+    },
+    {
+      "path": "../site-components"
+    }
+  ]
 }

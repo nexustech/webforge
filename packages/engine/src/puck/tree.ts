@@ -1,20 +1,12 @@
-import type { NodeDoc, PageDoc } from "../canvas-engine.js";
+import { isNodeDoc, type NodeDoc, type PageDoc } from "@webforge/model";
 
 /** Puck's id for the page's top-level list of sections. */
 export const ROOT_ZONE = "root:default-zone";
 
-function isNode(value: unknown): value is NodeDoc {
-  if (typeof value !== "object" || value === null) {
-    return false;
-  }
-  const { type, props } = value as { type?: unknown; props?: { id?: unknown } };
-  return typeof type === "string" && typeof props?.id === "string";
-}
-
 /** The slot arrays inside a node's props (e.g. a Section's `content`). */
 function childLists(node: NodeDoc): NodeDoc[][] {
   return Object.values(node.props).filter(
-    (value): value is NodeDoc[] => Array.isArray(value) && value.every(isNode),
+    (value): value is NodeDoc[] => Array.isArray(value) && value.every(isNodeDoc),
   );
 }
 
@@ -38,7 +30,7 @@ export function zoneContent(page: PageDoc, zone: string = ROOT_ZONE): readonly N
   const separator = zone.lastIndexOf(":");
   const parent = findNode(page, zone.slice(0, separator));
   const list = parent?.props[zone.slice(separator + 1)];
-  return Array.isArray(list) ? list.filter(isNode) : [];
+  return Array.isArray(list) ? list.filter(isNodeDoc) : [];
 }
 
 /** The node at `index` of `zone`. */

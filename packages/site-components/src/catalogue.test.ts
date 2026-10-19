@@ -1,0 +1,60 @@
+import { describe, expect, it } from "vitest";
+import { BEHAVIOUR_SCRIPTS } from "./behaviours.js";
+import { siteLibrary, starterLayout, starterPage } from "./catalogue.js";
+
+describe("siteLibrary", () => {
+  it("names components with glossary terms", () => {
+    const labels = Object.fromEntries(
+      Object.entries(siteLibrary.components).map(([type, def]) => [type, def.label]),
+    );
+
+    expect(labels).toEqual({
+      Header: "Header",
+      Footer: "Footer",
+      Section: "Section",
+      Hero: "Hero",
+      Faq: "FAQ",
+      FaqItem: "Question",
+      Heading: "Heading",
+      Text: "Text",
+    });
+  });
+
+  it("only lets slots hold components that exist", () => {
+    for (const def of Object.values(siteLibrary.components)) {
+      for (const field of Object.values(def.fields)) {
+        if (field.kind === "slot") {
+          for (const type of field.allow ?? []) {
+            expect(siteLibrary.components[type]).toBeDefined();
+          }
+        }
+      }
+    }
+  });
+
+  it("has a script for every behaviour a component declares", () => {
+    for (const def of Object.values(siteLibrary.components)) {
+      for (const name of def.behaviours ?? []) {
+        expect(BEHAVIOUR_SCRIPTS[name]).toContain("(() => {");
+      }
+    }
+  });
+});
+
+describe("starter content", () => {
+  it("starts with a section holding a heading and text", () => {
+    const page = starterPage();
+
+    expect(page.content.map((node) => node.type)).toEqual(["Section"]);
+    expect(
+      (page.content[0]?.props.content as { type: string }[] | undefined)?.map((n) => n.type),
+    ).toEqual(["Heading", "Text"]);
+  });
+
+  it("puts the site name in the header", () => {
+    expect(starterLayout("Rosa's Bakery")).toEqual({
+      header: [{ type: "Header", props: { id: "header", siteName: "Rosa's Bakery" } }],
+      footer: [{ type: "Footer", props: { id: "footer", text: "Thanks for visiting." } }],
+    });
+  });
+});

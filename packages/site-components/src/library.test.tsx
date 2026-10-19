@@ -1,6 +1,12 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { optionValue, slotComponent, textValue } from "./library.js";
+import {
+  EDITOR_RENDER_CONTEXT,
+  optionValue,
+  slotComponent,
+  stringValue,
+  textValue,
+} from "./library.js";
 
 describe("library helpers", () => {
   it("textValue passes renderable text and drops anything else", () => {
@@ -11,6 +17,12 @@ describe("library helpers", () => {
     expect(textValue(undefined)).toBeNull();
   });
 
+  it("stringValue keeps strings only", () => {
+    expect(stringValue("about")).toBe("about");
+    expect(stringValue(1)).toBe("");
+    expect(stringValue(undefined)).toBe("");
+  });
+
   it("optionValue falls back to the first option", () => {
     expect(optionValue("b", ["a", "b"])).toBe("b");
     expect(optionValue("c", ["a", "b"])).toBe("a");
@@ -19,10 +31,16 @@ describe("library helpers", () => {
 
   it("slotComponent returns the slot or an empty one", () => {
     const Slot = () => <i>slot</i>;
-    const props = { id: "x", values: {}, slots: { content: Slot } };
+    const props = { id: "x", values: {}, slots: { content: Slot }, context: EDITOR_RENDER_CONTEXT };
     const Missing = slotComponent(props, "other");
 
     expect(slotComponent(props, "content")).toBe(Slot);
     expect(renderToStaticMarkup(<Missing />)).toBe("");
+  });
+
+  it("the editor context has no navigation, dead links and no images", () => {
+    expect(EDITOR_RENDER_CONTEXT.navigation).toEqual([]);
+    expect(EDITOR_RENDER_CONTEXT.link("about")).toBe("#");
+    expect(EDITOR_RENDER_CONTEXT.image("hero")).toBeNull();
   });
 });

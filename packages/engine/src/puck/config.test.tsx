@@ -1,8 +1,8 @@
 import type { ComponentConfig } from "@puckeditor/core";
+import { type ComponentLibrary, slotComponent, textValue } from "@webforge/site-components";
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { type ComponentLibrary, slotComponent, textValue } from "../library.js";
 import { isTextField, toPuckConfig } from "./config.js";
 
 const library: ComponentLibrary = {

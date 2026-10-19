@@ -3,8 +3,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach } from "vitest";
 
-/** Creates a fresh temporary directory for one test; it is deleted after the test. */
-export function tempDirFactory(): () => string {
+/**
+ * Creates fresh temporary directories for one test (call it at the top of a `describe`); each is
+ * deleted after the test that created it.
+ */
+export function tempDirFactory(prefix = "webforge-test-"): () => string {
   const dirs: string[] = [];
   afterEach(() => {
     for (const dir of dirs.splice(0)) {
@@ -12,7 +15,7 @@ export function tempDirFactory(): () => string {
     }
   });
   return () => {
-    const dir = mkdtempSync(join(tmpdir(), "webforge-storage-"));
+    const dir = mkdtempSync(join(tmpdir(), prefix));
     dirs.push(dir);
     return dir;
   };

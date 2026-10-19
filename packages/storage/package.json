@@ -13,6 +13,7 @@
   "devDependencies": {
     "@types/better-sqlite3": "catalog:",
     "@types/node": "catalog:",
+    "@webforge/test-utils": "workspace:*",
     "vitest": "catalog:"
   }
 }

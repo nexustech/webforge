@@ -5,6 +5,10 @@
     "lib": ["es2024", "dom", "dom.iterable"],
     "types": ["node"]
   },
-  "include": ["app", "packaged", "playwright.config.ts", "playwright.packaged.config.ts"],
-  "references": [{ "path": "../packages/storage" }]
+  "include": ["app", "export", "packaged", "playwright.config.ts", "playwright.packaged.config.ts"],
+  "references": [
+    { "path": "../packages/model" },
+    { "path": "../packages/storage" },
+    { "path": "../packages/test-utils" }
+  ]
 }

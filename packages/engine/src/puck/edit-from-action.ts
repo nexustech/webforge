@@ -1,6 +1,7 @@
 import type { Data, PuckAction } from "@puckeditor/core";
-import type { EngineEdit, EngineEditKind, NodeDoc, PageDoc } from "../canvas-engine.js";
-import type { ComponentLibrary } from "../library.js";
+import type { NodeDoc, PageDoc } from "@webforge/model";
+import type { ComponentLibrary } from "@webforge/site-components";
+import type { EngineEdit, EngineEditKind } from "../canvas-engine.js";
 import { isTextField } from "./config.js";
 import { findNode, nodeAt } from "./tree.js";
 

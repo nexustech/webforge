@@ -1,6 +1,11 @@
 import type { ComponentConfig, Config, Field } from "@puckeditor/core";
+import {
+  type ComponentDef,
+  type ComponentLibrary,
+  EDITOR_RENDER_CONTEXT,
+  type FieldDef,
+} from "@webforge/site-components";
 import { type ComponentType, Fragment, type ReactNode } from "react";
-import type { ComponentDef, ComponentLibrary, FieldDef } from "../library.js";
 
 function toPuckField(field: FieldDef): Field {
   switch (field.kind) {
@@ -10,6 +15,9 @@ function toPuckField(field: FieldDef): Field {
       return { type: "richtext", label: field.label, contentEditable: field.inline ?? true };
     case "select":
       return { type: "select", label: field.label, options: [...field.options] };
+    case "media":
+      // Phase 0: the media id as text; Phase 1 adds a media picker field.
+      return { type: "text", label: field.label };
     case "slot":
       return {
         type: "slot",
@@ -48,7 +56,7 @@ function toPuckComponent(def: ComponentDef, revision: EditorRevision): Component
             (entry): entry is readonly [string, ComponentType] => typeof entry[1] === "function",
           ),
       );
-      return <>{def.render({ id, values, slots })}</>;
+      return <>{def.render({ id, values, slots, context: EDITOR_RENDER_CONTEXT })}</>;
     },
   };
 }

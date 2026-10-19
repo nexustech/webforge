@@ -1,3 +1,4 @@
+import { siteSnapshotSchema } from "@webforge/model";
 import { z } from "zod";
 
 /** Information about the running app. */
@@ -47,6 +48,26 @@ const projectResultSchema = z.discriminatedUnion("status", [
 /** Outcome of asking the main process to create or open a site. */
 export type ProjectResult = z.infer<typeof projectResultSchema>;
 
+/** Why an export failed; the renderer shows a translated message for each. */
+const exportFailureReasonSchema = z.enum(["folder-not-empty", "build-failed", "write-failed"]);
+
+/** Outcome of exporting the site to a folder. */
+const exportResultSchema = z.discriminatedUnion("status", [
+  z.strictObject({
+    status: z.literal("exported"),
+    /** The chosen folder's name; never the full path. */
+    folderName: z.string().min(1),
+    pages: z.int().nonnegative(),
+    files: z.int().nonnegative(),
+    warnings: z.int().nonnegative(),
+  }),
+  z.strictObject({ status: z.literal("canceled") }),
+  z.strictObject({ status: z.literal("failed"), reason: exportFailureReasonSchema }),
+]);
+
+/** Outcome of exporting the site to a folder. */
+export type ExportResult = z.infer<typeof exportResultSchema>;
+
 /**
  * The single list of IPC channels between the renderer and the main process.
  * Each entry names its channel and the zod schemas for the request arguments and the response.
@@ -76,6 +97,15 @@ export const ipcContract = {
     channel: "project:get-current",
     request: z.tuple([]),
     response: projectSummarySchema.nullable(),
+  },
+  /**
+   * Asks for a folder (open dialog in main), builds the site in a utility process and writes it
+   * there (export pipeline, 07).
+   */
+  exportSite: {
+    channel: "site:export",
+    request: z.tuple([siteSnapshotSchema]),
+    response: exportResultSchema,
   },
 } as const;
 

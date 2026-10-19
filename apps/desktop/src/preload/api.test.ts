@@ -36,3 +36,36 @@ describe("createWebforgeApi", () => {
     await expect(api.project.open()).rejects.toThrow();
   });
 });
+
+describe("createWebforgeApi site export", () => {
+  const snapshot = {
+    name: "Bakery",
+    language: "en",
+    theme: { name: "light" },
+    layout: { header: [], footer: [] },
+    pages: [{ path: "index", title: "Home", doc: { root: { props: {} }, content: [] } }],
+    media: [],
+  };
+
+  it("sends the snapshot on the export channel and parses the result", async () => {
+    const result = { status: "exported", folderName: "site", pages: 1, files: 5, warnings: 0 };
+    const invoke = vi.fn(async () => result);
+    const api = createWebforgeApi(invoke);
+
+    await expect(api.site.export(snapshot)).resolves.toEqual(result);
+    expect(invoke).toHaveBeenCalledWith("site:export", snapshot);
+  });
+
+  it("rejects an export result that leaks a path", async () => {
+    const api = createWebforgeApi(async () => ({
+      status: "exported",
+      folderName: "site",
+      path: "C:Userssamsite",
+      pages: 1,
+      files: 5,
+      warnings: 0,
+    }));
+
+    await expect(api.site.export(snapshot)).rejects.toThrow();
+  });
+});

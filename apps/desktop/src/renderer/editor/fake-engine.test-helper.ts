@@ -1,10 +1,5 @@
-import type {
-  CanvasEngine,
-  EngineEdit,
-  HistoryCommand,
-  PageDoc,
-  Unsubscribe,
-} from "@webforge/engine";
+import type { CanvasEngine, EngineEdit, HistoryCommand, Unsubscribe } from "@webforge/engine";
+import type { PageDoc } from "@webforge/model";
 import { vi } from "vitest";
 
 /** A {@link CanvasEngine} driven by the test: it records calls and emits what the test says. */
