@@ -38,7 +38,7 @@ The spike adds a minimal `ProjectStore` in `packages/storage` and wires it throu
   1. Starts the fused `Webforge.exe` with a `.wforge` argument.
   2. Connects over the Chrome DevTools Protocol. Playwright's Electron launcher can't attach, because the `EnableNodeCliInspectArguments` fuse is off.
   3. Checks that the main process opened the file.
-- **macOS can't be built or run from Windows.** The new CI job `Packaged app` runs the same script on `windows-latest` and `macos-latest` (arm64, matching the arm64-only target). Its first run on this PR is the macOS verification. The DMG itself is not built in CI yet.
+- **macOS can't be built or run from Windows.** The new CI job `Packaged app` runs the same script on `windows-latest` and `macos-latest` (arm64, matching the arm64-only target). Its first run on this PR passed on macOS: the unsigned arm64 app, re-signed ad hoc, launched and opened a `.wforge` with the darwin-arm64 prebuild. The DMG itself is not built in CI yet.
 
 ### 3. Rollback journal (`journal_mode=DELETE`, `synchronous=FULL`), not WAL
 - **Every commit lands in the `.wforge` itself.** Copying only the `.wforge` while Webforge is open gets all committed work. That is what a sync client, an e-mail attachment or a USB stick sees (F1).
