@@ -26,8 +26,12 @@ function seqOf(store: ProjectStore, id: string): unknown {
 
 describe("crash safety", () => {
   it("opens after the writer is killed mid-write and loses at most the unfinished commit", async () => {
+    // Kill at varying moments: at least 5 rounds, and more (up to 20) until one kill has hit a
+    // transaction. On a busy machine a few kills can land between commits.
+    const delays = [0, 15, 40, 80, 150];
     let killedMidTransaction = 0;
-    for (const delayMs of [0, 15, 40, 80, 150]) {
+    for (let round = 0; round < 20 && (round < 5 || killedMidTransaction === 0); round += 1) {
+      const delayMs = delays[round % delays.length] ?? 0;
       const path = createProject();
       const writer = startChildWriter(path);
       await writer.waitForCommits(3);
@@ -51,9 +55,9 @@ describe("crash safety", () => {
       store.close();
       expect(existsSync(`${path}-journal`)).toBe(false);
     }
-    // The writer spends nearly all its time inside transactions, so kills land there.
+    // Proves the rounds above really interrupted a write, not only idle moments.
     expect(killedMidTransaction).toBeGreaterThan(0);
-  }, 60_000);
+  }, 120_000);
 });
 
 describe("cloud-synced folders", () => {
