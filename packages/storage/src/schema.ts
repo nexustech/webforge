@@ -20,12 +20,14 @@ export const SCHEMA: readonly string[] = [
   key TEXT PRIMARY KEY NOT NULL,
   value TEXT NOT NULL
 ) STRICT, WITHOUT ROWID`,
+  // A rowid table: blobs hold images of several MB, and WITHOUT ROWID tables are slow with large
+  // rows (single-page commits took 41 ms instead of 9 ms next to 100 MB of images, ADR 0003).
   `CREATE TABLE blobs (
   hash TEXT PRIMARY KEY NOT NULL,
   mime TEXT NOT NULL,
   size INTEGER NOT NULL,
   data BLOB NOT NULL
-) STRICT, WITHOUT ROWID`,
+) STRICT`,
   `CREATE TABLE documents (
   id TEXT PRIMARY KEY NOT NULL,
   kind TEXT NOT NULL,

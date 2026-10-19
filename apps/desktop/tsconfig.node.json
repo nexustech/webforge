@@ -5,5 +5,5 @@
     "outDir": "${configDir}/dist/types/node"
   },
   "include": ["src/main", "src/preload", "src/shared", "electron.vite.config.ts"],
-  "references": [{ "path": "../../packages/i18n" }]
+  "references": [{ "path": "../../packages/i18n" }, { "path": "../../packages/storage" }]
 }

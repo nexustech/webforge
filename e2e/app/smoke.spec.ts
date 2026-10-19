@@ -1,5 +1,9 @@
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { desktopVersion, launchDesktopApp } from "./launch.js";
+import { type RendererWindow, stubFileDialogs } from "./sites.js";
 
 // Smoke test of the desktop shell: it starts, shows its window and keeps the renderer locked down.
 // It also covers the process entry points that unit coverage excludes (main, preload, renderer).
@@ -20,8 +24,12 @@ test.beforeAll(async () => {
   await page.waitForLoadState("domcontentloaded");
 });
 
+const siteDir = mkdtempSync(join(tmpdir(), "webforge-e2e-"));
+
 test.afterAll(async () => {
   await app.close();
+  // The app holds the open site until it quits.
+  rmSync(siteDir, { recursive: true, force: true });
 });
 
 test.describe("desktop shell", () => {
@@ -60,7 +68,11 @@ test.describe("desktop shell", () => {
       webforgeKeys: Object.keys((globalThis as { webforge?: object }).webforge ?? {}),
     }));
 
-    expect(globals).toEqual({ require: "undefined", process: "undefined", webforgeKeys: ["app"] });
+    expect(globals).toEqual({
+      require: "undefined",
+      process: "undefined",
+      webforgeKeys: ["app", "project"],
+    });
   });
 
   test("enforces a strict Content Security Policy", async () => {
@@ -103,6 +115,42 @@ test.describe("desktop shell", () => {
 
     expect(await navigated).toBe(false);
     expect(page.url()).toBe(appUrl);
+  });
+
+  test("creates and reopens a site through the main process (better-sqlite3 in Electron)", async () => {
+    const path = join(siteDir, "Rosa's Bakery.wforge");
+    await stubFileDialogs(app, path);
+    const project = { name: "Rosa's Bakery", fileName: "Rosa's Bakery.wforge", formatVersion: 1 };
+
+    const created = await page.evaluate(() =>
+      (window as unknown as RendererWindow).webforge.project.create(),
+    );
+    expect(created).toEqual({ status: "opened", project });
+    expect(readFileSync(path).subarray(0, 16).toString("latin1")).toBe("SQLite format 3\0");
+
+    const opened = await page.evaluate(() =>
+      (window as unknown as RendererWindow).webforge.project.open(),
+    );
+    expect(opened).toEqual({ status: "opened", project });
+    const current = await page.evaluate(() =>
+      (window as unknown as RendererWindow).webforge.project.getCurrent(),
+    );
+    expect(current).toEqual(project);
+  });
+
+  test("refuses to open a file that is not a site and keeps the current one", async () => {
+    const path = join(siteDir, "notes.wforge");
+    writeFileSync(path, "Just some text, not a Webforge site.");
+    await stubFileDialogs(app, path);
+
+    const opened = await page.evaluate(() =>
+      (window as unknown as RendererWindow).webforge.project.open(),
+    );
+    expect(opened).toEqual({ status: "failed", reason: "not-a-project" });
+    const current = await page.evaluate(() =>
+      (window as unknown as RendererWindow).webforge.project.getCurrent(),
+    );
+    expect(current?.fileName).toBe("Rosa's Bakery.wforge");
   });
 
   test("logs no errors in the renderer", () => {

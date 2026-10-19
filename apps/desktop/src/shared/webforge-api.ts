@@ -1,4 +1,4 @@
-import type { AppInfo } from "./ipc-contract.js";
+import type { AppInfo, ProjectResult, ProjectSummary } from "./ipc-contract.js";
 
 /**
  * The typed API the preload script exposes to the renderer as `window.webforge`.
@@ -8,5 +8,13 @@ export interface WebforgeApi {
   readonly app: {
     /** Returns the app name and version. */
     getInfo(): Promise<AppInfo>;
+  };
+  readonly project: {
+    /** Shows a save dialog, then creates the site there and opens it. */
+    create(): Promise<ProjectResult>;
+    /** Shows an open dialog, then opens the chosen site. */
+    open(): Promise<ProjectResult>;
+    /** The site that is open, or `null`. */
+    getCurrent(): Promise<ProjectSummary | null>;
   };
 }

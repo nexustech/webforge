@@ -222,6 +222,10 @@ importers:
         version: 5.0.5(@types/node@24.19.2)(@vitest/coverage-v8@5.0.5)(vite@8.3.4(@types/node@24.19.2)(jiti@2.7.0)(yaml@2.9.1))
 
   apps/desktop:
+    dependencies:
+      better-sqlite3:
+        specifier: 'catalog:'
+        version: 13.0.3
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -238,6 +242,9 @@ importers:
       '@webforge/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@webforge/storage':
+        specifier: workspace:*
+        version: link:../../packages/storage
       electron:
         specifier: 44.9.0
         version: 44.9.0(supports-color@7.2.0)
@@ -271,6 +278,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 24.19.2
+      '@webforge/storage':
+        specifier: workspace:*
+        version: link:../packages/storage
 
   packages/editor-ui:
     devDependencies:
