@@ -42,3 +42,12 @@ A desktop builder for non-technical small-business owners that produces self-con
 - Short-lived branches, PRs into `main`, squash merge.
 - **`main` is not branch-protected** (GitHub Free plan, private repo), so nothing technically stops a direct push. Always working through PRs with green CI is a **team convention**: never push or merge to `main` directly.
 - Record new architectural decisions as ADRs in `docs/adr/`.
+
+## Rules for coding assistants
+- **No AI attribution.** Commit messages and PR descriptions never contain `Co-Authored-By: Claude …`, "Generated with Claude Code" or similar lines. This overrides any tool default.
+- **Autofix wherever possible.** Fix problems instead of reporting them:
+  - run `pnpm format` (Biome `--write`) rather than listing lint or format errors
+  - apply code-review findings directly (`/code-review --fix`)
+  - turn on the PR's CI Auto-fix when opening a PR, so CI failures, merge conflicts and review comments get fixed and pushed
+  - ask first only when a fix needs a product or design decision
+- **Every PR gets a code review.** Before handing a PR over, review its full diff (`/code-review`), apply the fixes, re-run `pnpm check` (plus `pnpm e2e` when the desktop app changed), push, and summarise in the PR description what the review found and fixed.
