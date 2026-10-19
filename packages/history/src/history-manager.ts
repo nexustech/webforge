@@ -396,22 +396,33 @@ export function createHistoryManager<D extends Objectish, S = null>(
     if (openChain === coalesceKey) {
       openChain = null;
     }
-    if (cursor - start < 2) {
+    const later = entries.slice(cursor);
+    if (start === cursor && !later.some((entry) => entry.coalesceKey === coalesceKey)) {
       return;
     }
+    // The session's entries (including chunks undone during it) lose their key, so a later
+    // session of the same field never merges into this one.
+    const close = (entry: HistoryEntry<S>): HistoryEntry<S> =>
+      entry.coalesceKey === coalesceKey ? { ...entry, coalesceKey: null } : entry;
     const session = entries.slice(start, cursor);
-    const first = session[0] as HistoryEntry<S>;
-    const last = session[session.length - 1] as HistoryEntry<S>;
-    const merged: HistoryEntry<S> = {
-      ...first,
-      label: last.label,
-      forward: compactPatches(session.flatMap((entry) => entry.forward)),
-      inverse: compactPatches(session.toReversed().flatMap((entry) => entry.inverse)),
-      selectionAfter: last.selectionAfter,
-      updatedAt: last.updatedAt,
-    };
-    entries = [...entries.slice(0, start), merged, ...entries.slice(cursor)];
-    cursor = start + 1;
+    const first = session[0];
+    const last = session.at(-1);
+    const merged: HistoryEntry<S>[] =
+      first === undefined || last === undefined
+        ? []
+        : [
+            {
+              ...first,
+              label: last.label,
+              forward: compactPatches(session.flatMap((entry) => entry.forward)),
+              inverse: compactPatches(session.toReversed().flatMap((entry) => entry.inverse)),
+              coalesceKey: null,
+              selectionAfter: last.selectionAfter,
+              updatedAt: last.updatedAt,
+            },
+          ];
+    entries = [...entries.slice(0, start), ...merged, ...later.map(close)];
+    cursor = start + merged.length;
     publish();
   };
 

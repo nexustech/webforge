@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PageDoc } from "../canvas-engine.js";
-import { allNodeIds, findNode, nodeAt, ROOT_ZONE, zoneContent } from "./tree.js";
+import { allNodes, findNode, nodeAt, ROOT_ZONE, zoneContent } from "./tree.js";
 
 const page: PageDoc = {
   root: { props: {} },
@@ -44,7 +44,7 @@ describe("tree helpers", () => {
     expect(nodeAt(page, undefined, 9)).toBeUndefined();
   });
 
-  it("lists every node id in document order", () => {
-    expect(allNodeIds(page)).toEqual(["s1", "h1", "s2", "t1", "t2"]);
+  it("lists every node in document order", () => {
+    expect(allNodes(page).map((node) => node.props.id)).toEqual(["s1", "h1", "s2", "t1", "t2"]);
   });
 });

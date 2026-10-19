@@ -1,6 +1,6 @@
-import type { PageDoc } from "../canvas-engine.js";
+import type { NodeDoc, PageDoc } from "../canvas-engine.js";
 import type { ComponentLibrary } from "../library.js";
-import { allNodeIds, findNode } from "./tree.js";
+import { allNodes } from "./tree.js";
 
 /**
  * Ids of nodes whose rich-text values differ between `before` and `after` and whose editor the
@@ -14,19 +14,20 @@ export function staleRichText(
   after: PageDoc,
   frameDocument: Document | null,
 ): string[] {
-  const focused = frameDocument?.activeElement?.closest("[data-puck-component]");
-  return allNodeIds(after).filter((id) => {
-    const node = findNode(after, id);
-    const fields = node === undefined ? undefined : library.components[node.type]?.fields;
-    if (node === undefined || fields === undefined) {
-      return false;
-    }
-    if (focused?.getAttribute("data-puck-component") === id) {
-      return false;
-    }
-    const previous = findNode(before, id);
-    return Object.entries(fields).some(
-      ([name, field]) => field.kind === "richtext" && previous?.props[name] !== node.props[name],
-    );
-  });
+  const focusedId = frameDocument?.activeElement
+    ?.closest("[data-puck-component]")
+    ?.getAttribute("data-puck-component");
+  const previous = new Map<string, NodeDoc>(allNodes(before).map((node) => [node.props.id, node]));
+  return allNodes(after)
+    .filter((node) => {
+      const fields = library.components[node.type]?.fields;
+      if (fields === undefined || node.props.id === focusedId) {
+        return false;
+      }
+      const old = previous.get(node.props.id);
+      return Object.entries(fields).some(
+        ([name, field]) => field.kind === "richtext" && old?.props[name] !== node.props[name],
+      );
+    })
+    .map((node) => node.props.id);
 }

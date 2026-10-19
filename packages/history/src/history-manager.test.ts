@@ -366,6 +366,33 @@ describe("createHistoryManager", () => {
       expect(ctx.history.entries()).toHaveLength(2);
     });
 
+    it("keeps two sessions of the same field as two steps", () => {
+      const ctx = setup();
+      type(ctx, "Hello there");
+      type(ctx, "Hello there friend");
+      ctx.history.endSession("text:a");
+      type(ctx, "Hello there friend!");
+      type(ctx, "Hello there friend!!");
+
+      ctx.history.endSession("text:a");
+
+      expect(ctx.history.entries()).toHaveLength(2);
+      ctx.history.undo();
+      expect(ctx.doc().items[0]?.text).toBe("Hello there friend");
+    });
+
+    it("closes a one-entry session so the next session stays separate", () => {
+      const ctx = setup();
+      type(ctx, "Hi");
+      ctx.history.endSession("text:a");
+      type(ctx, "Hi!");
+      type(ctx, "Hi!!");
+
+      ctx.history.endSession("text:a");
+
+      expect(ctx.history.entries()).toHaveLength(2);
+    });
+
     it("leaves other chains open", () => {
       const ctx = setup();
       ctx.history.run(

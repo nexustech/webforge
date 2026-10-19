@@ -140,6 +140,31 @@ describe("createPuckEngine", () => {
     expect(edits[0]?.page.content[0]?.props.text).toBe("Changed");
   });
 
+  it("takes back its own edit from the app without re-rendering it", async () => {
+    engine.onUserEdit((edit) => engine.applyChange({ page: structuredClone(edit.page) }));
+    const field = element.querySelector<HTMLElement>(".t-heading [data-puck-overlay-portal]");
+
+    await act(async () => {
+      if (field === null) return;
+      field.innerText = "Typed";
+      field.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await settle();
+
+    expect(headings()).toEqual(["Typed", "Second"]);
+  });
+
+  it("clears the selection when another page is loaded", async () => {
+    const selections = vi.fn();
+    engine.onSelectionChange(selections);
+    await act(async () => engine.select("a"));
+    await settle();
+
+    await act(async () => engine.loadPage(page, NO_LAYOUT));
+
+    expect(selections).toHaveBeenCalledWith(null);
+  });
+
   it("forwards history commands only from the canvas iframe", () => {
     const commands = vi.fn();
     const unsubscribe = engine.onHistoryCommand(commands);

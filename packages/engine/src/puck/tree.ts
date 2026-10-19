@@ -50,15 +50,15 @@ export function nodeAt(
   return zoneContent(page, zone)[index];
 }
 
-/** Every node id in the page, in document order. */
-export function allNodeIds(page: PageDoc): string[] {
-  const ids: string[] = [];
-  const visit = (nodes: readonly NodeDoc[]) => {
-    for (const node of nodes) {
-      ids.push(node.props.id);
-      for (const list of childLists(node)) visit(list);
+/** Every node in the page, in document order. */
+export function allNodes(page: PageDoc): NodeDoc[] {
+  const nodes: NodeDoc[] = [];
+  const visit = (list: readonly NodeDoc[]) => {
+    for (const node of list) {
+      nodes.push(node);
+      for (const children of childLists(node)) visit(children);
     }
   };
   visit(page.content);
-  return ids;
+  return nodes;
 }

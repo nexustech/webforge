@@ -112,8 +112,11 @@ test.describe("Puck canvas with Webforge history", () => {
 
   test("a text-editing session is one step, undoable word by word while it lasts", async () => {
     const field = canvas().locator("h1 [contenteditable]");
+    // Puck makes the field editable only while it is hovered or focused.
     await field.hover();
+    await expect(field).toHaveAttribute("contenteditable", "plaintext-only");
     await field.click();
+    await expect(field).toBeFocused();
     await page.keyboard.press("End");
     await page.keyboard.type(" today", { delay: 20 });
     // Pause longer than the coalescing window: the next words become a separate chunk.
@@ -143,7 +146,8 @@ test.describe("Puck canvas with Webforge history", () => {
   });
 
   test("a rich-text session is one step", async () => {
-    const editor = canvas().locator(".site-text [contenteditable='true']");
+    // The real Tiptap editor: Puck shows a fallback until its lazily loaded editor chunk arrives.
+    const editor = canvas().locator(".site-text .ProseMirror");
     await canvas().getByText(STARTER_TEXT).click();
     await editor.click();
     await expect(editor).toBeFocused();

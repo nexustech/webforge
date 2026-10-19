@@ -29,7 +29,7 @@ import { toPuckConfig } from "./config.js";
 import { isDeepEqual } from "./deep-equal.js";
 import { editFromAction, selectedNodeId, toPageDoc } from "./edit-from-action.js";
 import { staleRichText } from "./stale-rich-text.js";
-import { findNode } from "./tree.js";
+import { allNodes, findNode } from "./tree.js";
 
 /** Options of {@link createPuckEngine}. */
 export type PuckEngineOptions = {
@@ -93,6 +93,8 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   let inAction = false;
   /** True while Webforge itself dispatches to Puck. */
   let applying = false;
+  /** True while listeners handle an edit: its echo through `applyChange` needs no comparison. */
+  let reporting = false;
   /** The canvas iframe's document, once Puck has created it. */
   let frameDocument: Document | null = null;
   /** Per node, bumped to remount its rich-text editors (see toPuckConfig). */
@@ -133,7 +135,12 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
         const edit = editFromAction(action, next, prev, library);
         if (edit !== null) {
           page = edit.page;
-          edits.emit(edit);
+          reporting = true;
+          try {
+            edits.emit(edit);
+          } finally {
+            reporting = false;
+          }
         }
       }
       // After the edit, so the history records the selection from before it.
@@ -160,6 +167,11 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       getPuck = get;
       if (!isDeepEqual(toPageDoc(get().appState.data), page)) {
         dispatch({ type: "setData", data: () => toPuckData(page), recordHistory: false });
+      }
+      // A selection made before Puck was ready. Only when it differs: re-selecting resets Puck's
+      // field focus and remounts an open rich-text editor (this effect re-runs on re-renders).
+      if ((get().selectedItem?.props.id ?? null) !== selection) {
+        dispatch({ type: "setUi", ui: { itemSelector: selectorFor(selection) } });
       }
       return () => {
         getPuck = null;
@@ -215,18 +227,28 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
 
     loadPage(nextPage) {
       page = nextPage;
-      selection = null;
+      editorRevisions.clear();
+      reportSelection(null);
       dispatch({ type: "setData", data: () => toPuckData(nextPage), recordHistory: false });
       dispatch({ type: "setUi", ui: { itemSelector: null } });
     },
 
     applyChange({ page: nextPage }) {
+      if (reporting) {
+        // The document store just took over the edit Puck reported: same content, nothing to show.
+        page = nextPage;
+        return;
+      }
       if (nextPage === page || isDeepEqual(nextPage, page)) {
         return;
       }
       if (library !== null) {
         for (const id of staleRichText(library, page, nextPage, frameDocument)) {
           editorRevisions.set(id, (editorRevisions.get(id) ?? 0) + 1);
+        }
+        const ids = new Set(allNodes(nextPage).map((node) => node.props.id));
+        for (const id of editorRevisions.keys()) {
+          if (!ids.has(id)) editorRevisions.delete(id);
         }
       }
       page = nextPage;
