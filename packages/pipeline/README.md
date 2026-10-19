@@ -12,7 +12,7 @@ Builds a self-contained static site from a `SiteSnapshot` and writes it to a fol
     - WebP images with a JPEG/PNG fallback at 640/1280/1920 px, never upscaled (X2).
 
     Throws `BuildError` (`invalid-site`, `unknown-component`, `missing-media`). Broken page links are reported as warnings.
-  - `writeSiteFolder(files, folder)`: writes to a staging folder and swaps it in. Replaces only an empty folder or an earlier export (`.webforge-export` marker), else throws `WriteError` (`folder-not-empty`, `write-failed`).
+  - `writeSiteFolder(files, folder)`: writes to a staging folder and swaps it in. Replaces only an empty folder or one holding nothing but an earlier export (the `.webforge-export` marker lists the files it wrote), else throws `WriteError` (`folder-not-empty`, `write-failed`).
   - `PipelineResources`, `compileCodecs(bytes)`: the files the pipeline needs, supplied by the caller (Tailwind stylesheets, the daisyUI plugin, fonts, jSquash WebAssembly codecs).
 - `@webforge/pipeline/node` (`src/node-resources.ts`): `loadNodeResources()` loads those resources from `node_modules`, for tests and Node scripts. The desktop app's export worker bundles them instead.
 

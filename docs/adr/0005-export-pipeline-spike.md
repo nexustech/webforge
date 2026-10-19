@@ -33,7 +33,7 @@ The build has to run off the UI thread, in an Electron `utilityProcess`, and wor
 - **Desktop:**
   - an **Export site** button;
   - the `exportSite` IPC call, which takes a validated `SiteSnapshot` and no path (main asks for the folder with a native dialog);
-  - one `utilityProcess` per export (`src/worker/export-worker.ts`), with zod-validated messages in both directions;
+  - one `utilityProcess` per export (`src/worker/export-worker.ts`), with zod-validated messages in both directions, stopped after 10 minutes so an export can never hang;
   - errors are logged as codes only.
 
 ### Findings
@@ -67,7 +67,7 @@ The build has to run off the UI thread, in an Electron `utilityProcess`, and wor
    Firefox runs in CI. It could not start on the spike machine because the Visual C++ runtime that Playwright's Firefox needs is missing.
 6. **The packaged app exports.** `electron-builder --dir` with asar and Fuses, checked by hand on Windows: the utility process starts from inside `app.asar`, compiles the CSS, encodes the image and writes the folder. This needed a temporary, reverted dialog override, because the packaged test reaches only the renderer (Fuses switch off `--inspect`). An automated packaged export test needs a test-only way to answer the folder dialog. Decide that with the E2E strategy in Phase 1.
 7. **Safe destination handling (X5).**
-   - Webforge writes only into an empty folder, or one that holds its own `.webforge-export` marker, so it never deletes a user's files.
+   - Webforge writes only into an empty folder, or one that holds nothing but an earlier export: the `.webforge-export` marker lists the files that export wrote, so a file the user added (say a host's verification page) makes the folder count as someone else's, and Webforge never deletes a user's files.
    - The new site goes to a staging folder first. The old export is swapped out and put back if the swap fails.
    - Windows folder locks (`EBUSY`/`EPERM`) are retried.
 8. **daisyUI details:**

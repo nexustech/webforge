@@ -71,6 +71,18 @@ describe("siteSnapshotSchema", () => {
     },
   );
 
+  it("rejects two media items with the same name, which would share exported files", () => {
+    const photo = (id: string) => ({
+      id,
+      name: "hero",
+      mimeType: "image/jpeg" as const,
+      data: new Uint8Array(),
+    });
+    const result = siteSnapshotSchema.safeParse(site({ media: [photo("a"), photo("b")] }));
+
+    expect(result.error?.issues.map((issue) => issue.message)).toContain("Duplicate media names");
+  });
+
   it("rejects media that is not raw bytes or has an unsafe name", () => {
     const bad = [
       { id: "a", name: "hero", mimeType: "image/jpeg", data: [1, 2, 3] },

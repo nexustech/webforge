@@ -33,11 +33,10 @@ export const header: ComponentDef = {
   behaviours: ["menu"],
   render: ({ id, values, context }) => {
     const menuId = `${id}-menu`;
-    const home = context.navigation[0];
     return (
       <header className="site-header navbar relative bg-base-100 px-4 shadow-sm">
         <div className="flex-1">
-          <a className="text-xl font-bold" href={home?.href ?? "#"}>
+          <a className="text-xl font-bold" href={context.link("index")}>
             {textValue(values.siteName)}
           </a>
         </div>

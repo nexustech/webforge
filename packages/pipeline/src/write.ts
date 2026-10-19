@@ -1,12 +1,42 @@
 import { randomBytes } from "node:crypto";
-import { mkdir, readdir, rename, rm, writeFile } from "node:fs/promises";
-import { basename, dirname, join } from "node:path";
+import { mkdir, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { basename, dirname, join, relative, sep } from "node:path";
+import { z } from "zod";
 
 /**
- * File that marks a folder as a Webforge export. Webforge only replaces folders that are empty or
- * carry this marker, so it never deletes files a user put there themselves (X5).
+ * File that marks a folder as a Webforge export and lists the files the export wrote. Webforge only
+ * replaces a folder that is empty or holds nothing but those files, so it never deletes files a
+ * user put there themselves (X5).
  */
 export const EXPORT_MARKER = ".webforge-export";
+
+const exportMarkerSchema = z.object({
+  generator: z.literal("Webforge"),
+  files: z.array(z.string()),
+});
+
+type ExportMarker = z.infer<typeof exportMarkerSchema>;
+
+/** Whether every file in `folder` is one an earlier export listed in its marker. */
+async function holdsOnlyAnEarlierExport(folder: string): Promise<boolean> {
+  let listed: Set<string>;
+  try {
+    const marker = exportMarkerSchema.parse(
+      JSON.parse(await readFile(join(folder, EXPORT_MARKER), "utf8")),
+    );
+    listed = new Set(marker.files);
+  } catch {
+    // No marker, or not one Webforge wrote: treat the folder as someone else's.
+    return false;
+  }
+  const entries = await readdir(folder, { recursive: true, withFileTypes: true });
+  return entries
+    .filter((entry) => !entry.isDirectory())
+    .every((entry) => {
+      const path = relative(folder, join(entry.parentPath, entry.name)).split(sep).join("/");
+      return path === EXPORT_MARKER || listed.has(path);
+    });
+}
 
 /** Why the site could not be written. */
 export type WriteErrorCode = "folder-not-empty" | "write-failed";
@@ -63,7 +93,7 @@ export async function writeSiteFolder(
   destination: string,
 ): Promise<void> {
   const existing = await entriesOf(destination);
-  if (existing !== null && existing.length > 0 && !existing.includes(EXPORT_MARKER)) {
+  if (existing !== null && existing.length > 0 && !(await holdsOnlyAnEarlierExport(destination))) {
     throw new WriteError("folder-not-empty", "The folder contains files that are not an export");
   }
 
@@ -78,7 +108,8 @@ export async function writeSiteFolder(
       await mkdir(dirname(target), { recursive: true });
       await writeFile(target, data);
     }
-    await writeFile(join(staging, EXPORT_MARKER), "Exported by Webforge.\n");
+    const marker: ExportMarker = { generator: "Webforge", files: [...files.keys()].sort() };
+    await writeFile(join(staging, EXPORT_MARKER), `${JSON.stringify(marker, null, 2)}\n`);
   } catch (error) {
     await rm(staging, { recursive: true, force: true });
     throw new WriteError("write-failed", "Could not write the site files", { cause: error });
@@ -100,5 +131,6 @@ export async function writeSiteFolder(
     await rm(staging, { recursive: true, force: true });
     throw new WriteError("write-failed", "Could not replace the previous export", { cause: error });
   }
-  await rm(previous, { recursive: true, force: true });
+  // The new site is in place; failing to delete the old copy must not turn that into an error.
+  await rm(previous, { recursive: true, force: true }).catch(() => {});
 }

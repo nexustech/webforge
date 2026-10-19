@@ -56,6 +56,40 @@ describe("writeSiteFolder", () => {
     expect(readdirSync(destination)).toEqual(["tax-return.pdf"]);
   });
 
+  it("lists the files it wrote in the export marker", async () => {
+    const destination = join(tempDir(), "my-site");
+
+    await writeSiteFolder(site("v1"), destination);
+
+    expect(JSON.parse(readFileSync(join(destination, EXPORT_MARKER), "utf8"))).toEqual({
+      generator: "Webforge",
+      files: ["assets/css/site.css", "index.html"],
+    });
+  });
+
+  it("refuses an earlier export the user has added files to, and keeps them", async () => {
+    const destination = join(tempDir(), "my-site");
+    await writeSiteFolder(site("v1"), destination);
+    writeFileSync(join(destination, "assets", "google1234.html"), "verification");
+
+    await expect(writeSiteFolder(site("v2"), destination)).rejects.toMatchObject({
+      code: "folder-not-empty",
+    });
+    expect(readFileSync(join(destination, "assets", "google1234.html"), "utf8")).toBe(
+      "verification",
+    );
+    expect(readFileSync(join(destination, "index.html"), "utf8")).toBe("<p>v1</p>");
+  });
+
+  it("refuses a folder whose marker Webforge did not write", async () => {
+    const destination = tempDir();
+    writeFileSync(join(destination, EXPORT_MARKER), "not json");
+
+    await expect(writeSiteFolder(site("v1"), destination)).rejects.toMatchObject({
+      code: "folder-not-empty",
+    });
+  });
+
   it("refuses a destination that is a file", async () => {
     const destination = join(tempDir(), "site.html");
     writeFileSync(destination, "x");

@@ -85,4 +85,23 @@ describe("runExportInWorker", () => {
     finished.exit(0);
     await expect(done).resolves.toMatchObject({ code: "write-failed" });
   });
+
+  it("stops a worker that does not answer in time", async () => {
+    vi.useFakeTimers();
+    try {
+      const { worker } = fakeWorker();
+      const outcome = runExportInWorker(() => worker, job, 1_000);
+
+      await vi.advanceTimersByTimeAsync(1_000);
+
+      await expect(outcome).resolves.toEqual({
+        type: "failed",
+        code: "build-failed",
+        detail: "timeout",
+      });
+      expect(worker.kill).toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

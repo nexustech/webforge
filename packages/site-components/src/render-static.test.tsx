@@ -85,6 +85,14 @@ describe("renderNodesToHtml", () => {
     expect(html).toContain('<span class="sr-only">Menu</span>');
   });
 
+  it("links the site name to the home page, wherever it is in the navigation", () => {
+    const reordered: RenderContext = { ...context, navigation: [...context.navigation].reverse() };
+
+    const html = renderNodesToHtml(starterLayout("Bakery").header, siteLibrary, reordered);
+
+    expect(html).toContain('<a class="text-xl font-bold" href="index.html">Bakery</a>');
+  });
+
   it("renders a hero with a responsive image and a link to another page", () => {
     const nodes: NodeDoc[] = [
       {

@@ -95,4 +95,9 @@ export const siteSnapshotSchema: z.ZodType<SiteSnapshot> = z
     if (new Set(ids).size !== ids.length) {
       ctx.addIssue({ code: "custom", message: "Duplicate media ids", path: ["media"] });
     }
+    // Exported image files are named after the media name (assets/img/<name>-640.webp).
+    const names = site.media.map((item) => item.name);
+    if (new Set(names).size !== names.length) {
+      ctx.addIssue({ code: "custom", message: "Duplicate media names", path: ["media"] });
+    }
   });

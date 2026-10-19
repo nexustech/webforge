@@ -6,7 +6,11 @@ import { writeSiteFolder } from "./write.js";
 
 // Fails chosen renames, which a real disk only does under conditions tests cannot set up
 // portably (a folder locked by another program, a full disk).
-const failures = vi.hoisted(() => ({ matching: null as RegExp | null, code: "EIO" }));
+const failures = vi.hoisted(() => ({
+  matching: null as RegExp | null,
+  code: "EIO",
+  removing: null as RegExp | null,
+}));
 vi.mock("node:fs/promises", async (importOriginal) => {
   const actual = await importOriginal<typeof import("node:fs/promises")>();
   return {
@@ -17,6 +21,12 @@ vi.mock("node:fs/promises", async (importOriginal) => {
       }
       return actual.rename(from, to);
     },
+    rm: async (path: string, options?: Parameters<typeof actual.rm>[1]) => {
+      if (failures.removing?.test(path)) {
+        throw Object.assign(new Error("rm failed"), { code: "EBUSY" });
+      }
+      return actual.rm(path, options);
+    },
   };
 });
 
@@ -26,6 +36,7 @@ const site = (version: string) =>
 
 beforeEach(() => {
   failures.matching = null;
+  failures.removing = null;
   failures.code = "EIO";
 });
 
@@ -55,4 +66,15 @@ describe("writeSiteFolder rollback", () => {
     });
     expect(readFileSync(join(destination, "index.html"), "utf8")).toBe("<p>v1</p>");
   }, 10_000);
+
+  it("reports success when only deleting the old copy fails", async () => {
+    const parent = tempDir();
+    const destination = join(parent, "my-site");
+    await writeSiteFolder(site("v1"), destination);
+    failures.removing = /webforge-old-/;
+
+    await writeSiteFolder(site("v2"), destination);
+
+    expect(readFileSync(join(destination, "index.html"), "utf8")).toBe("<p>v2</p>");
+  });
 });
