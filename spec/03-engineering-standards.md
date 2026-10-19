@@ -30,7 +30,7 @@ Versions checked on npm on 2026-10-19.
 | Git hooks | **lefthook** | 2.2 | MIT | Pre-commit: `biome check --write` on staged files; commit-msg: commitlint |
 | Commits | **commitlint** (Conventional Commits) | 21 | MIT | Drives changelog |
 | Releases | **release-please** | 17 | Apache-2.0 | Version bumps + CHANGELOG from commits |
-| Licence check | **license-checker-rseidelsohn** | 5 | BSD-3 | Allow-list from C1; fails CI |
+| Licence check | **`pnpm licenses list`** (built in) + `tools/src/check-licences.ts` | pnpm 12 | — | Allow-list from C1 with reviewed per-package exceptions; fails CI on every OS (`pnpm licence-check`). Replaces license-checker-rseidelsohn ([ADR 0002](../docs/adr/0002-licence-check.md)) |
 | Mutation testing (later) | Stryker | 10 | Apache-2.0 | Optional, for `history`/`model` |
 
 ## 2. TypeScript rules
@@ -133,7 +133,10 @@ Coverage is a floor, not a goal. Every bug fix adds a regression test.
 - **Conventional Commits** (`feat(history): coalesce text sessions`), enforced by commitlint. release-please generates versions and the CHANGELOG.
 - **PR requirements:** green CI, 1 review, description with *what/why/how tested*, screenshots or GIFs for UI changes, ADR link for architectural changes.
 - **Versioning:** SemVer for the app. `format_version` for `.wforge` is independent and bumped with a migration + fixture.
-- **AI-assisted development:** keep a concise `CLAUDE.md` / `AGENTS.md` at the repo root summarising these standards, commands and boundaries, so coding assistants follow them.
+- **AI-assisted development:** keep a concise `CLAUDE.md` / `AGENTS.md` at the repo root summarising these standards, commands and boundaries, so coding assistants follow them. Assistant-made changes follow the same rules as human ones, plus:
+  - no AI attribution lines in commits or PR descriptions
+  - problems are auto-fixed rather than reported (formatting, review findings, CI failures through PR Auto-fix)
+  - every PR gets a code review of its full diff, with the fixes applied, before it is handed over for review and merge
 
 ## 7. Continuous integration (GitHub Actions ✅)
 | Job | Runs on | When |
