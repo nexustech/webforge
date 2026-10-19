@@ -8,15 +8,18 @@ const CORE_PACKAGES = new Set(["model", "history", "storage", "pipeline", "publi
 const CORE: Thresholds = { lines: 90, branches: 85, functions: 90, statements: 90 };
 const DEFAULT: Thresholds = { lines: 80, branches: 80, functions: 80, statements: 80 };
 
-const workspaces = ["apps", "packages"].flatMap((group) =>
-  readdirSync(group, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => ({ path: `${group}/${entry.name}`, name: entry.name })),
-);
+const workspaces = [
+  ...["apps", "packages"].flatMap((group) =>
+    readdirSync(group, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => ({ path: `${group}/${entry.name}`, name: entry.name })),
+  ),
+  { path: "tools", name: "tools" },
+];
 
 export default defineConfig({
   test: {
-    projects: ["apps/*", "packages/*"],
+    projects: ["apps/*", "packages/*", "tools"],
     coverage: {
       provider: "v8",
       include: workspaces.map((ws) => `${ws.path}/src/**/*.{ts,tsx}`),

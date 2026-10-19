@@ -20,7 +20,7 @@ Requires Node 24 and pnpm 12 (`npm install -g pnpm@12`; the exact version is pin
 ```sh
 pnpm install   # also installs the git hooks (lefthook)
 pnpm dev       # start the desktop app with hot reload
-pnpm check     # lint, typecheck, package boundaries, unused code, tests with coverage
+pnpm check     # lint, typecheck, package boundaries, unused code, licences, tests with coverage
 ```
 
 Repository layout: `apps/desktop` (Electron app) and `packages/*` (model, history, storage, engine, site-components, themes, pipeline, publish, editor-ui, i18n, test-utils). See [architecture §4](spec/01-architecture.md#4-package--module-structure-pnpm-monorepo).

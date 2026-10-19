@@ -2,11 +2,13 @@ packages:
   - apps/*
   - packages/*
   - e2e
+  - tools
 
 # Versions shared by several workspaces; reference them as "catalog:".
 catalog:
   "@types/node": 24.19.2
   vitest: 5.0.5
+  zod: 4.6.7
 
 # pnpm blocks dependency build scripts by default; approve only what we need.
 allowBuilds:

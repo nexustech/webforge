@@ -15,9 +15,10 @@
     "lint": "biome ci .",
     "format": "biome check --write .",
     "typecheck": "tsc -b",
-    "deps": "depcruise apps packages e2e",
+    "deps": "depcruise apps packages e2e tools",
     "knip": "knip",
-    "check": "pnpm lint && pnpm typecheck && pnpm deps && pnpm knip && pnpm test"
+    "licence-check": "pnpm licenses list -r --json | node tools/src/check-licences.ts",
+    "check": "pnpm lint && pnpm typecheck && pnpm deps && pnpm knip && pnpm licence-check && pnpm test"
   },
   "commitlint": {
     "extends": [

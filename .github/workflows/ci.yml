@@ -50,6 +50,10 @@ jobs:
       - name: Unused code and dependencies (knip)
         run: pnpm knip
 
+      - name: Dependency licences (C1)
+        # Runs on every OS because each installs its own platform-specific binary packages.
+        run: pnpm licence-check
+
       - name: Tests with coverage
         run: pnpm test
 

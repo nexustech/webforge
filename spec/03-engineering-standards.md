@@ -30,7 +30,7 @@ Versions checked on npm on 2026-10-19.
 | Git hooks | **lefthook** | 2.2 | MIT | Pre-commit: `biome check --write` on staged files; commit-msg: commitlint |
 | Commits | **commitlint** (Conventional Commits) | 21 | MIT | Drives changelog |
 | Releases | **release-please** | 17 | Apache-2.0 | Version bumps + CHANGELOG from commits |
-| Licence check | **license-checker-rseidelsohn** | 5 | BSD-3 | Allow-list from C1; fails CI |
+| Licence check | **`pnpm licenses list`** (built in) + `tools/src/check-licences.ts` | pnpm 12 | — | Allow-list from C1 with reviewed per-package exceptions; fails CI on every OS (`pnpm licence-check`). Replaces license-checker-rseidelsohn ([ADR 0002](../docs/adr/0002-licence-check.md)) |
 | Mutation testing (later) | Stryker | 10 | Apache-2.0 | Optional, for `history`/`model` |
 
 ## 2. TypeScript rules
