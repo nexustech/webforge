@@ -11,10 +11,11 @@
     "dev": "turbo run dev --filter=@webforge/desktop",
     "build": "turbo run build",
     "test": "vitest run --coverage",
+    "e2e": "turbo run build --filter=@webforge/desktop && pnpm --filter @webforge/e2e e2e",
     "lint": "biome ci .",
     "format": "biome check --write .",
     "typecheck": "tsc -b",
-    "deps": "depcruise apps packages",
+    "deps": "depcruise apps packages e2e",
     "knip": "knip",
     "check": "pnpm lint && pnpm typecheck && pnpm deps && pnpm knip && pnpm test"
   },

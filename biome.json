@@ -71,7 +71,9 @@
       "includes": ["**/*.test.ts", "**/*.test.tsx", "packages/test-utils/**"],
       "linter": {
         "rules": {
-          "style": { "noNonNullAssertion": "off" }
+          "style": {
+            "noNonNullAssertion": "off"
+          }
         }
       }
     },
@@ -79,7 +81,9 @@
       "includes": ["**/*.config.ts", "**/*.stories.tsx", ".dependency-cruiser.mjs"],
       "linter": {
         "rules": {
-          "style": { "noDefaultExport": "off" }
+          "style": {
+            "noDefaultExport": "off"
+          }
         }
       }
     },
@@ -97,7 +101,22 @@
       ],
       "linter": {
         "rules": {
-          "correctness": { "noNodejsModules": "error" }
+          "correctness": {
+            "noNodejsModules": "error"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["e2e/**"],
+      "linter": {
+        "rules": {
+          "nursery": {
+            "noPlaywrightMissingAwait": "error",
+            "noPlaywrightWaitForTimeout": "error",
+            "noPlaywrightPagePause": "error",
+            "noPlaywrightUselessAwait": "error"
+          }
         }
       }
     }

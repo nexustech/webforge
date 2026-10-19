@@ -1,0 +1,9 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    // page.evaluate() callbacks run in the renderer, so tests also need DOM types.
+    "lib": ["es2024", "dom", "dom.iterable"],
+    "types": ["node"]
+  },
+  "include": ["app", "playwright.config.ts"]
+}
