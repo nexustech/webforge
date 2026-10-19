@@ -104,10 +104,10 @@ async function start(): Promise<void> {
     projectSession,
     projectDialogs,
   );
-  // A site double-clicked in Explorer or Finder arrives as a command-line argument (P1).
-  const projectArgument = findProjectArgument(process.argv);
-  if (projectArgument !== undefined) {
-    projectSession.open(projectArgument);
+  // A site double-clicked in Explorer arrives as a command-line argument (P1).
+  const projectToOpen = projectFromFinder ?? findProjectArgument(process.argv);
+  if (projectToOpen !== undefined) {
+    projectSession.open(projectToOpen);
   }
   createMainWindow();
 
@@ -117,6 +117,17 @@ async function start(): Promise<void> {
     }
   });
 }
+
+// macOS delivers a site double-clicked in Finder (P1) as an event, possibly before "ready".
+let projectFromFinder: string | undefined;
+app.on("open-file", (event, path) => {
+  event.preventDefault();
+  if (app.isReady()) {
+    projectSession.open(path);
+  } else {
+    projectFromFinder = path;
+  }
+});
 
 app.on("will-quit", () => {
   projectSession.close();

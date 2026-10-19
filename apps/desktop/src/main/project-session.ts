@@ -24,8 +24,9 @@ export function withProjectExtension(path: string): string {
 }
 
 /**
- * The `.wforge` file passed on the command line, e.g. when the user double-clicks a site and the
- * OS starts Webforge with its path (P1 file association). Switches such as `--inspect` are skipped.
+ * The `.wforge` file passed on the command line: on Windows, double-clicking a site starts
+ * Webforge with its path (P1 file association). macOS sends the app's `open-file` event instead.
+ * Switches such as `--inspect` are skipped.
  */
 export function findProjectArgument(argv: readonly string[]): string | undefined {
   return argv
@@ -47,7 +48,7 @@ function summarise(store: ProjectStore, path: string): ProjectSummary {
 function failure(error: unknown): ProjectResult {
   if (error instanceof ProjectFileError) {
     // The code says what went wrong; paths and file contents are never logged.
-    console.error(`Webforge could not open a site (${error.code})`);
+    console.error(`Webforge could not create or open a site (${error.code})`);
     return { status: "failed", reason: FAILURE_REASONS[error.code] };
   }
   const code = error instanceof Error && "code" in error ? String(error.code) : "no code";

@@ -215,6 +215,32 @@ describe("ProjectStore versions", () => {
     reopened.close();
   });
 
+  it("keeps any document id and the working copy's order in versions", () => {
+    const path = createProject();
+    const store = ProjectStore.open(path);
+    // "__proto__" must stay an ordinary key; "～" (U+FF5E) sorts before "😀" as UTF-8 bytes but
+    // after it as UTF-16 code units.
+    store.commit(
+      ["page:😀", "__proto__", "page:～", "10", "9"].map((id) => ({
+        type: "put" as const,
+        id,
+        kind: "page",
+        content: { id },
+      })),
+    );
+    const version = store.saveVersion("All ids", "manual");
+
+    expect(store.readVersion(version.id)).toEqual(store.readDocuments());
+    expect(store.readDocuments().map((document) => document.id)).toEqual([
+      "10",
+      "9",
+      "__proto__",
+      "page:～",
+      "page:😀",
+    ]);
+    store.close();
+  });
+
   it("shares unchanged content between versions", () => {
     const path = createProject();
     const store = ProjectStore.open(path);

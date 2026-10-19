@@ -72,10 +72,14 @@ const metaSchema = z.strictObject({
   created_at: z.iso.datetime(),
 });
 
+/** A version's documents in `readDocuments` order. An array, so any id (even "__proto__") works. */
 const manifestSchema = z.strictObject({
-  documents: z.record(
-    z.string().min(1),
-    z.strictObject({ kind: z.string().min(1), hash: z.string().regex(/^[0-9a-f]{64}$/) }),
+  documents: z.array(
+    z.strictObject({
+      id: z.string().min(1),
+      kind: z.string().min(1),
+      hash: z.string().regex(/^[0-9a-f]{64}$/),
+    }),
   ),
 });
 
@@ -238,6 +242,8 @@ function validateProject(db: Database.Database): ProjectInfo {
 export class ProjectStore {
   readonly #db: Database.Database;
   readonly #info: ProjectInfo;
+  /** Prepared statements by SQL text, compiled once per connection. */
+  readonly #statements = new Map<string, Database.Statement>();
 
   private constructor(db: Database.Database, info: ProjectInfo) {
     this.#db = db;
@@ -310,8 +316,7 @@ export class ProjectStore {
 
   /** Every document of the working copy, sorted by id. */
   readDocuments(): StoredDocument[] {
-    return this.#db
-      .prepare("SELECT id, kind, blob_hash AS hash FROM documents ORDER BY id")
+    return this.#prepare("SELECT id, kind, blob_hash AS hash FROM documents ORDER BY id")
       .all()
       .map((row) => {
         const { id, kind, hash } = documentRowSchema.parse(row);
@@ -321,9 +326,9 @@ export class ProjectStore {
 
   /** One document of the working copy, or `undefined` if there is none with this id. */
   readDocument(id: string): StoredDocument | undefined {
-    const row = this.#db
-      .prepare("SELECT id, kind, blob_hash AS hash FROM documents WHERE id = ?")
-      .get(id);
+    const row = this.#prepare("SELECT id, kind, blob_hash AS hash FROM documents WHERE id = ?").get(
+      id,
+    );
     if (row === undefined) {
       return undefined;
     }
@@ -336,11 +341,11 @@ export class ProjectStore {
    * all of them or none. When this returns, the changes are on disk.
    */
   commit(changes: readonly DocumentChange[]): void {
-    const upsert = this.#db.prepare(
+    const upsert = this.#prepare(
       `INSERT INTO documents (id, kind, blob_hash) VALUES (?, ?, ?)
        ON CONFLICT (id) DO UPDATE SET kind = excluded.kind, blob_hash = excluded.blob_hash`,
     );
-    const remove = this.#db.prepare("DELETE FROM documents WHERE id = ?");
+    const remove = this.#prepare("DELETE FROM documents WHERE id = ?");
     this.#db.transaction(() => {
       for (const change of changes) {
         if (change.type === "put") {
@@ -363,7 +368,7 @@ export class ProjectStore {
 
   /** The blob stored under `hash`, or `undefined` if there is none. */
   readBlob(hash: string): StoredBlob | undefined {
-    const row = this.#db.prepare("SELECT mime, data FROM blobs WHERE hash = ?").get(hash);
+    const row = this.#prepare("SELECT mime, data FROM blobs WHERE hash = ?").get(hash);
     return row === undefined ? undefined : blobRowSchema.parse(row);
   }
 
@@ -372,37 +377,34 @@ export class ProjectStore {
    * and with each other, so saving one only writes a small manifest.
    */
   saveVersion(name: string, kind: VersionKind): VersionInfo {
-    const documents: Manifest["documents"] = {};
-    for (const row of this.#db.prepare("SELECT id, kind, blob_hash AS hash FROM documents").all()) {
-      const document = documentRowSchema.parse(row);
-      documents[document.id] = { kind: document.kind, hash: document.hash };
-    }
+    const documents: Manifest["documents"] = this.#prepare(
+      "SELECT id, kind, blob_hash AS hash FROM documents ORDER BY id",
+    )
+      .all()
+      .map((row) => documentRowSchema.parse(row));
     const version: VersionInfo = {
       id: randomUUID(),
       name,
       kind,
       createdAt: new Date().toISOString(),
     };
-    this.#db
-      .prepare(
-        `INSERT INTO versions (id, name, kind, created_at, format_version, manifest)
+    this.#prepare(
+      `INSERT INTO versions (id, name, kind, created_at, format_version, manifest)
          VALUES (?, ?, ?, ?, ?, ?)`,
-      )
-      .run(
-        version.id,
-        version.name,
-        version.kind,
-        version.createdAt,
-        FORMAT_VERSION,
-        JSON.stringify({ documents }),
-      );
+    ).run(
+      version.id,
+      version.name,
+      version.kind,
+      version.createdAt,
+      FORMAT_VERSION,
+      JSON.stringify({ documents }),
+    );
     return version;
   }
 
   /** Saved versions, newest first. */
   listVersions(): VersionInfo[] {
-    return this.#db
-      .prepare("SELECT id, name, kind, created_at FROM versions ORDER BY rowid DESC")
+    return this.#prepare("SELECT id, name, kind, created_at FROM versions ORDER BY rowid DESC")
       .all()
       .map((row) => {
         const { id, name, kind, created_at } = versionRowSchema.parse(row);
@@ -412,7 +414,7 @@ export class ProjectStore {
 
   /** The documents of a saved version sorted by id, or `undefined` if there is no such version. */
   readVersion(id: string): StoredDocument[] | undefined {
-    const row = this.#db.prepare("SELECT manifest FROM versions WHERE id = ?").get(id);
+    const row = this.#prepare("SELECT manifest FROM versions WHERE id = ?").get(id);
     if (row === undefined) {
       return undefined;
     }
@@ -423,16 +425,11 @@ export class ProjectStore {
     } catch (error) {
       throw new ProjectFileError("corrupt", "A version's manifest is invalid", { cause: error });
     }
-    return (
-      Object.entries(parsed.documents)
-        // Manifest keys are unique, so two ids never compare equal.
-        .sort(([a], [b]) => (a < b ? -1 : 1))
-        .map(([documentId, { kind, hash }]) => ({
-          id: documentId,
-          kind,
-          content: this.#readJsonBlob(hash),
-        }))
-    );
+    return parsed.documents.map(({ id: documentId, kind, hash }) => ({
+      id: documentId,
+      kind,
+      content: this.#readJsonBlob(hash),
+    }));
   }
 
   /** Closes the file. With the rollback journal, no side files are left next to it. */
@@ -440,11 +437,23 @@ export class ProjectStore {
     this.#db.close();
   }
 
+  #prepare(sql: string): Database.Statement {
+    let statement = this.#statements.get(sql);
+    if (statement === undefined) {
+      statement = this.#db.prepare(sql);
+      this.#statements.set(sql, statement);
+    }
+    return statement;
+  }
+
   #insertBlob(data: Uint8Array, mime: string): string {
     const hash = sha256(data);
-    this.#db
-      .prepare("INSERT OR IGNORE INTO blobs (hash, mime, size, data) VALUES (?, ?, ?, ?)")
-      .run(hash, mime, data.byteLength, data);
+    this.#prepare("INSERT OR IGNORE INTO blobs (hash, mime, size, data) VALUES (?, ?, ?, ?)").run(
+      hash,
+      mime,
+      data.byteLength,
+      data,
+    );
     return hash;
   }
 
