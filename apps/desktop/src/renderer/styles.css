@@ -15,19 +15,88 @@ body,
 
 .app {
   display: grid;
-  place-content: center;
+  grid-template-rows: auto 1fr;
   height: 100%;
-  text-align: center;
+}
+
+.app__header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid color-mix(in srgb, CanvasText 15%, transparent);
 }
 
 .app__title {
   margin: 0;
-  font-size: 3rem;
+  font-size: 1.25rem;
   font-weight: 600;
-  letter-spacing: -0.02em;
 }
 
 .app__version {
-  margin: 0.5rem 0 0;
+  margin: 0;
   opacity: 0.6;
+  font-size: 0.875rem;
+}
+
+.editor {
+  display: grid;
+  grid-template-columns: 1fr 16rem;
+  grid-template-rows: auto 1fr;
+  min-height: 0;
+}
+
+.editor__toolbar {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+}
+
+.editor__canvas {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.editor__canvas-root {
+  height: 100%;
+}
+
+.undo-history {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 1rem 1rem;
+  border-left: 1px solid color-mix(in srgb, CanvasText 15%, transparent);
+}
+
+.undo-history__title {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.undo-history__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.undo-history__step {
+  width: 100%;
+  padding: 0.25rem 0.5rem;
+  border: 0;
+  border-radius: 0.25rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.undo-history__step[data-state="current"] {
+  background: color-mix(in srgb, Highlight 25%, transparent);
+  font-weight: 600;
+}
+
+.undo-history__step[data-state="undone"] {
+  opacity: 0.5;
 }

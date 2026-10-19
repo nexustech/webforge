@@ -5,5 +5,9 @@
     "outDir": "${configDir}/dist/types/web"
   },
   "include": ["src/renderer", "src/shared"],
-  "references": [{ "path": "../../packages/i18n" }]
+  "references": [
+    { "path": "../../packages/engine" },
+    { "path": "../../packages/history" },
+    { "path": "../../packages/i18n" }
+  ]
 }
