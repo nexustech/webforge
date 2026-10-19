@@ -1,4 +1,4 @@
-# 0003. Puck runs under Webforge's own undo history: go
+# 0004. Puck runs under Webforge's own undo history: go
 
 - Status: Accepted
 - Date: 2026-10-19

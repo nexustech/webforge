@@ -1,7 +1,7 @@
 import { type ElectronApplication, expect, type Locator, type Page, test } from "@playwright/test";
 import { launchDesktopApp } from "./launch.js";
 
-// Phase 0 spike (spec/02-mvp-spec.md §6, ADR 0003): Puck runs on the canvas, but every change goes
+// Phase 0 spike (spec/02-mvp-spec.md §6, ADR 0004): Puck runs on the canvas, but every change goes
 // through Webforge's HistoryManager. Puck's own undo history must never act.
 
 let app: ElectronApplication;
@@ -155,7 +155,7 @@ test.describe("Puck canvas with Webforge history", () => {
     await page.keyboard.type(" Really.", { delay: 20 });
     await expect(canvas().locator(".site-text")).toHaveText(`${STARTER_TEXT} Really.`);
 
-    // Click away straight after typing: the first undo must still reach the editor (ADR 0003).
+    // Click away straight after typing: the first undo must still reach the editor (ADR 0004).
     await canvas().locator("h1").click({ force: true });
     await expectSteps(["Edited Text text"], "Edited Text text");
 

@@ -1,6 +1,6 @@
 # @webforge/engine
 
-`CanvasEngine` interface and its Puck implementation. Why Puck and how it runs under Webforge's history: [ADR 0003](../../docs/adr/0003-puck-with-webforge-history.md).
+`CanvasEngine` interface and its Puck implementation. Why Puck and how it runs under Webforge's history: [ADR 0004](../../docs/adr/0004-puck-with-webforge-history.md).
 
 ## Public API
 `src/index.ts` is the only entry point; import the package as `@webforge/engine`, never its internal files.
@@ -20,4 +20,4 @@ history.document.subscribe((doc) => engine.applyChange({ page: doc.page }));
 
 ## Boundaries
 - The only package allowed to import Puck (`@puckeditor/core`), enforced by dependency-cruiser.
-- Puck is pre-1.0 and pinned. The workarounds that depend on Puck internals are listed in ADR 0003; the E2E suite `e2e/app/canvas-history.spec.ts` guards them on upgrades.
+- Puck is pre-1.0 and pinned. The workarounds that depend on Puck internals are listed in ADR 0004; the E2E suite `e2e/app/canvas-history.spec.ts` guards them on upgrades.

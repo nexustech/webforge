@@ -1,6 +1,6 @@
 # Project File Format and Versions
 
-**Status:** Researched 2026-10-19. Format pending a spike; product decisions recorded in [Decisions](#decisions-2026-10-19)
+**Status:** Researched 2026-10-19. Spike done: SQLite confirmed, findings in [ADR 0003](../../docs/adr/0003-wforge-sqlite-storage.md) (packaging, rollback journal, sync folders, untrusted files); product decisions recorded in [Decisions](#decisions-2026-10-19)
 **Recommendation:** a **single-file project (`.wforge`) that is an SQLite database** containing JSON documents and binary assets, stored **content-addressed** so **named versions (snapshots)** are cheap. Offer **"Export as .zip"** (plain JSON + asset files) for backup and interchange. **Fallback:** a ZIP container (Sketch-style) if SQLite causes problems in the spike.
 
 ## Requirements (from discussion)

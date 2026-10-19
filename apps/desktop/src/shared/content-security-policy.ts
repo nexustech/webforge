@@ -13,7 +13,7 @@ export type ContentSecurityPolicyOptions = {
  *
  * Styles allow `'unsafe-inline'` because the canvas engine injects `<style>` elements at runtime
  * (Puck's canvas interaction styles inside the iframe, Tiptap's editor styles), some with
- * per-drag content that no hash can cover (ADR 0003). Scripts stay strict. Inline CSS cannot load
+ * per-drag content that no hash can cover (ADR 0004). Scripts stay strict. Inline CSS cannot load
  * anything from elsewhere either: images and fonts are limited to the app by `img-src`/`font-src`.
  * No nonce goes on `style-src`: with a nonce present, browsers ignore `'unsafe-inline'`.
  */

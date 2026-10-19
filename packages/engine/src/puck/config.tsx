@@ -59,7 +59,7 @@ function toPuckComponent(def: ComponentDef, revision: EditorRevision): Component
  * `revision` keys each node's inline rich-text editors. Puck's editor ignores a value change from
  * outside while it believes the user's last keystrokes are still being saved, which can swallow
  * the first undo after a text session; the engine bumps the revision to remount the editor with
- * the right content instead (ADR 0003).
+ * the right content instead (ADR 0004).
  */
 export function toPuckConfig(
   library: ComponentLibrary,

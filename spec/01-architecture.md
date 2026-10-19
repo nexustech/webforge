@@ -18,7 +18,7 @@ A **paid, closed-source desktop app** (Windows 10/11 x64 + macOS 13+ on Apple Si
 | Language | **TypeScript 7** (strict), ESM | [03-engineering-standards](03-engineering-standards.md) |
 | Editor UI | **React 19** (+ React Compiler) + **shadcn/ui** on **Tailwind v4** | [02](../research/stack/02-react-vs-svelte.md) |
 | Editor state | **Zustand** stores + **Immer** patches; custom History Manager | [03 undo](../research/stack/03-undo-redo.md) |
-| Canvas / editor engine | **Puck** (MIT) behind a `CanvasEngine` adapter (C6) ✅ go, runs under our history ([ADR 0003](../docs/adr/0003-puck-with-webforge-history.md)); fallback: own canvas on dnd-kit + Tiptap | [04](../research/stack/04-canvas-engine.md) |
+| Canvas / editor engine | **Puck** (MIT) behind a `CanvasEngine` adapter (C6) ✅ go, runs under our history ([ADR 0004](../docs/adr/0004-puck-with-webforge-history.md)); fallback: own canvas on dnd-kit + Tiptap | [04](../research/stack/04-canvas-engine.md) |
 | Rich text | **Tiptap** (MIT packages only) via Puck `richtext` fields | 04, C1 |
 | Site components | React components rendering static HTML + Tailwind + **daisyUI 5**; small vanilla `webforge.js` for behaviour | [05](../research/stack/05-site-components.md) |
 | Project file | Single **`.wforge`** = **SQLite** DB via **better-sqlite3** ✅, content-addressed blobs, versions | [06](../research/stack/06-project-file-format.md) |
@@ -128,7 +128,7 @@ interface CanvasEngine {
   onUserEdit(cb: (edit: EngineEdit) => void): Unsubscribe
   select(nodeId: string | null): void
   onSelectionChange(cb: (nodeId: string | null) => void): Unsubscribe
-  onHistoryCommand(cb: (command: 'undo' | 'redo') => void): Unsubscribe   // keys pressed inside the canvas iframe (ADR 0003)
+  onHistoryCommand(cb: (command: 'undo' | 'redo') => void): Unsubscribe   // keys pressed inside the canvas iframe (ADR 0004)
   setViewport(v: 'desktop' | 'tablet' | 'mobile' | number): void
   setMode(mode: 'design' | 'content'): void            // M3
   renderStatic(page: PageDoc, layout: LayoutDoc): string

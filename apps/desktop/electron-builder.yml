@@ -8,7 +8,24 @@ directories:
 files:
   - out/**
   - package.json
+  # Production dependencies (only better-sqlite3) are added from node_modules automatically.
+  # Ship only the prebuilt binary for the platform being packaged, not SQLite's C sources.
+  - "!**/node_modules/better-sqlite3/{deps,src,binding.gyp}"
+  - "!**/node_modules/better-sqlite3/prebuilds/!(${platform}-${arch}).node"
+  - "!**/node_modules/node-addon-api/**"
 asar: true
+# Native addons can't be loaded from inside an asar archive.
+asarUnpack:
+  - "**/*.node"
+# better-sqlite3 ships Node-API prebuilds that load in Electron as they are: nothing to rebuild
+# (ADR 0003). Rebuilding would also rewrite the shared pnpm store copy used by unit tests.
+npmRebuild: false
+
+# Double-clicking a .wforge opens it in Webforge (P1). The main process reads the path from argv.
+fileAssociations:
+  - ext: wforge
+    name: Webforge site
+    role: Editor
 
 # Electron Fuses: switch off Node-style entry points into the packaged app.
 electronFuses:
@@ -18,6 +35,9 @@ electronFuses:
   enableNodeCliInspectArguments: false
   enableEmbeddedAsarIntegrityValidation: true
   onlyLoadAppFromAsar: true
+  # Flipping fuses invalidates the macOS signature; re-sign ad hoc so unsigned arm64 builds still
+  # launch (Apple Silicon refuses unsigned code). Only applies to .app bundles.
+  resetAdHocDarwinSignature: true
 
 win:
   target:

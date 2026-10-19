@@ -1,6 +1,6 @@
 # @webforge/history
 
-History Manager: transactions, coalescing, undo labels and selection restore. Every document change goes through `HistoryManager.run/begin`. Design: [research/stack/03-undo-redo.md](../../research/stack/03-undo-redo.md); spike results: [ADR 0003](../../docs/adr/0003-puck-with-webforge-history.md).
+History Manager: transactions, coalescing, undo labels and selection restore. Every document change goes through `HistoryManager.run/begin`. Design: [research/stack/03-undo-redo.md](../../research/stack/03-undo-redo.md); spike results: [ADR 0004](../../docs/adr/0004-puck-with-webforge-history.md).
 
 ## Public API
 `src/index.ts` is the only entry point; import the package as `@webforge/history`, never its internal files.

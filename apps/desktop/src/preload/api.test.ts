@@ -15,4 +15,24 @@ describe("createWebforgeApi", () => {
 
     await expect(api.app.getInfo()).rejects.toThrow();
   });
+
+  it("calls the site channels and returns their parsed results", async () => {
+    const project = { name: "Bakery", fileName: "Bakery.wforge", formatVersion: 1 };
+    const responses: Record<string, unknown> = {
+      "project:create": { status: "opened", project },
+      "project:open": { status: "canceled" },
+      "project:get-current": null,
+    };
+    const api = createWebforgeApi(async (channel) => responses[channel]);
+
+    await expect(api.project.create()).resolves.toEqual({ status: "opened", project });
+    await expect(api.project.open()).resolves.toEqual({ status: "canceled" });
+    await expect(api.project.getCurrent()).resolves.toBeNull();
+  });
+
+  it("rejects a site result that does not match the contract", async () => {
+    const api = createWebforgeApi(async () => ({ status: "opened", project: { path: "C:\\" } }));
+
+    await expect(api.project.open()).rejects.toThrow();
+  });
 });
