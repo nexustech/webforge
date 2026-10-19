@@ -7,6 +7,11 @@
     ".": "./src/index.ts"
   },
   "devDependencies": {
+    "fast-check": "4.10.2",
     "vitest": "catalog:"
+  },
+  "dependencies": {
+    "immer": "11.1.21",
+    "zustand": "5.0.15"
   }
 }

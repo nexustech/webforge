@@ -82,7 +82,8 @@ test.describe("desktop shell", () => {
 
     expect(csp).toContain("default-src 'none'");
     expect(csp).toContain("script-src 'self'");
-    expect(csp).not.toContain("unsafe-inline");
+    // Inline styles are allowed for the canvas engine (ADR 0004); inline scripts never are.
+    expect(csp).not.toMatch(/script-src[^;]*unsafe-inline/);
     expect(csp).not.toContain("unsafe-eval");
     expect(csp).not.toContain("nonce-");
 
