@@ -7,6 +7,7 @@ import {
 import { t } from "@webforge/i18n";
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import { useCommandRegistry } from "../shell/command-context.js";
+import { COMMAND_IDS } from "../shell/command-ids.js";
 import {
   connectEngine,
   currentPage,
@@ -88,7 +89,7 @@ export function Editor({
       runHistoryCommand(session, command);
     };
     const removeUndo = registry.register({
-      id: "edit.undo",
+      id: COMMAND_IDS.undo,
       label: t("editor.undo"),
       menu: "edit",
       shortcut: "Mod+Z",
@@ -96,7 +97,7 @@ export function Editor({
       run: () => runCommand("undo"),
     });
     const removeRedo = registry.register({
-      id: "edit.redo",
+      id: COMMAND_IDS.redo,
       label: t("editor.redo"),
       menu: "edit",
       shortcut: "Mod+Shift+Z",
@@ -109,8 +110,8 @@ export function Editor({
     };
   }, [registry, session, history]);
   useEffect(() => {
-    registry.update("edit.undo", { enabled: state.canUndo });
-    registry.update("edit.redo", { enabled: state.canRedo });
+    registry.update(COMMAND_IDS.undo, { enabled: state.canUndo });
+    registry.update(COMMAND_IDS.redo, { enabled: state.canRedo });
   }, [registry, state.canUndo, state.canRedo]);
 
   const jumpTo = (entryId: string | null) => {

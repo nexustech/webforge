@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ExportResult } from "../../shared/ipc-contract.js";
+import { COMMAND_IDS } from "../shell/command-ids.js";
 import { createCommandRegistry } from "../shell/commands.js";
-import { EXPORT_COMMAND_ID, exportMessage, registerExportCommand } from "./export-command.js";
+import { exportMessage, registerExportCommand } from "./export-command.js";
+
+const EXPORT_COMMAND_ID = COMMAND_IDS.exportSite;
 
 const toast = vi.hoisted(() => ({
   loading: vi.fn(() => "progress"),

@@ -16,6 +16,8 @@ export type CommandButtonProps = {
   readonly icon: ReactNode;
   /** A short visible label ("Export"); without it the button shows only its icon. */
   readonly text?: string;
+  /** An icon-only button's name until its command is registered (then the command's label). */
+  readonly label?: string;
   readonly className?: string;
   readonly size?: ButtonProps["size"];
 };
@@ -24,13 +26,21 @@ export type CommandButtonProps = {
  * A title-bar button for a registered command. Its tooltip gives the command's full label and
  * shortcut. Disabled while the command is missing (not contributed yet) or disabled.
  */
-export function CommandButton({ commandId, icon, text, className, size }: CommandButtonProps) {
+export function CommandButton({
+  commandId,
+  icon,
+  text,
+  label,
+  className,
+  size,
+}: CommandButtonProps) {
   const registry = useCommandRegistry();
   const command = useCommand(commandId);
   const disabled = command === undefined || command.enabled === false;
+  const name = command?.label ?? label;
   const tip =
     command === undefined
-      ? text
+      ? (text ?? label)
       : command.shortcut === undefined
         ? command.label
         : `${command.label} (${formatShortcut(command.shortcut)})`;
@@ -42,7 +52,7 @@ export function CommandButton({ commandId, icon, text, className, size }: Comman
       // A disabled button mutes its colour-coded icon too.
       className={cn("[&_svg]:transition-colors [&:disabled_svg]:text-disabled", className)}
       disabled={disabled}
-      aria-label={text === undefined ? command?.label : undefined}
+      aria-label={text === undefined ? name : undefined}
       onClick={() => registry.run(commandId)}
     >
       {icon}

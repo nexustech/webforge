@@ -52,7 +52,12 @@ test.describe("desktop shell", () => {
       "Window Controls Overlay is checked on Windows and macOS",
     );
     // titleBarOverlay gives the page the area the controls leave free (env(titlebar-area-*)).
-    expect(await page.evaluate(() => navigator.windowControlsOverlay?.visible)).toBe(true);
+    const visible = await page.evaluate(
+      () =>
+        (navigator as { windowControlsOverlay?: { visible: boolean } }).windowControlsOverlay
+          ?.visible,
+    );
+    expect(visible).toBe(true);
   });
 
   test("loads the production renderer from disk", () => {

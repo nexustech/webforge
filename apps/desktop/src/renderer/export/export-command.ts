@@ -1,10 +1,10 @@
 import { toast } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import type { ExportResult } from "../../shared/ipc-contract.js";
+import { COMMAND_IDS } from "../shell/command-ids.js";
 import type { CommandRegistry } from "../shell/commands.js";
 
-/** The Export command's id; the title bar has a button for it. */
-export const EXPORT_COMMAND_ID = "site.export";
+const EXPORT_COMMAND_ID = COMMAND_IDS.exportSite;
 
 /** What to tell the user about an export; `null` when they cancelled. */
 export function exportMessage(

@@ -12,17 +12,7 @@ import type { ReactNode } from "react";
 import { AppMenu } from "./AppMenu.js";
 import { CommandBox } from "./CommandBox.js";
 import { CommandButton } from "./CommandButton.js";
-
-/** Ids of the commands the title bar has buttons for; areas register them. */
-export const TITLE_BAR_COMMANDS = {
-  newSite: "site.new",
-  openSite: "site.open",
-  undo: "edit.undo",
-  redo: "edit.redo",
-  preview: "site.preview",
-  exportSite: "site.export",
-  publish: "site.publish",
-} as const;
+import { COMMAND_IDS } from "./command-ids.js";
 
 /** Props of {@link TitleBar}. */
 export type TitleBarProps = {
@@ -54,19 +44,19 @@ export function TitleBar({ siteName, saveStatus, tools }: TitleBarProps) {
       <div className={`flex items-center gap-0.5 ${NO_DRAG}`}>
         <AppMenu />
         <CommandButton
-          commandId={TITLE_BAR_COMMANDS.newSite}
+          commandId={COMMAND_IDS.newSite}
           icon={<FilePlusIcon />}
           text={t("shell.new")}
         />
         <CommandButton
-          commandId={TITLE_BAR_COMMANDS.openSite}
+          commandId={COMMAND_IDS.openSite}
           icon={<FolderOpenIcon className="text-warning" />}
           text={t("shell.open")}
         />
         {saveStatus}
         <div className="mx-1 h-5 w-px bg-border" aria-hidden />
-        <CommandButton commandId={TITLE_BAR_COMMANDS.undo} icon={<Undo2Icon />} />
-        <CommandButton commandId={TITLE_BAR_COMMANDS.redo} icon={<Redo2Icon />} />
+        <CommandButton commandId={COMMAND_IDS.undo} icon={<Undo2Icon />} label={t("editor.undo")} />
+        <CommandButton commandId={COMMAND_IDS.redo} icon={<Redo2Icon />} label={t("editor.redo")} />
       </div>
       <div className="flex min-w-0 flex-1 justify-center">
         <div className={`flex w-full max-w-md justify-center ${NO_DRAG}`}>
@@ -81,17 +71,17 @@ export function TitleBar({ siteName, saveStatus, tools }: TitleBarProps) {
       >
         {tools}
         <CommandButton
-          commandId={TITLE_BAR_COMMANDS.preview}
+          commandId={COMMAND_IDS.preview}
           icon={<EyeIcon className="text-info" />}
           text={t("shell.preview")}
         />
         <CommandButton
-          commandId={TITLE_BAR_COMMANDS.exportSite}
+          commandId={COMMAND_IDS.exportSite}
           icon={<DownloadIcon className="text-success" />}
           text={t("shell.export")}
         />
         <CommandButton
-          commandId={TITLE_BAR_COMMANDS.publish}
+          commandId={COMMAND_IDS.publish}
           icon={<CloudUploadIcon className="text-publish" />}
           text={t("shell.publish")}
         />

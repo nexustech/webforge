@@ -1,7 +1,12 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { TITLE_BAR_HEIGHT, titleBarOptions, titleBarOverlay } from "./window-options.js";
+import {
+  TITLE_BAR_HEIGHT,
+  titleBarOptions,
+  titleBarOverlay,
+  windowBackground,
+} from "./window-options.js";
 
 describe("titleBarOptions", () => {
   it.each(["win32", "linux"] as const)(
@@ -49,5 +54,6 @@ describe("the native controls' colours", () => {
       color: token(theme, "titlebar"),
       symbolColor: token(theme, "foreground"),
     });
+    expect(windowBackground(theme)).toBe(token(theme, "background"));
   });
 });

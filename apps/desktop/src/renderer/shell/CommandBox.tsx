@@ -14,10 +14,10 @@ import { t } from "@webforge/i18n";
 import { SearchIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useCommandRegistry, useCommands } from "./command-context.js";
+import { COMMAND_IDS } from "./command-ids.js";
 import { formatShortcut } from "./commands.js";
 
-/** The command that opens the box; Ctrl/Cmd+K. */
-const COMMAND_BOX_ID = "view.commandBox";
+/** Opens the box. */
 const COMMAND_BOX_SHORTCUT = "Mod+K";
 
 /** Props of {@link CommandBox}. */
@@ -38,7 +38,7 @@ export function CommandBox({ siteName }: CommandBoxProps) {
   useEffect(
     () =>
       registry.register({
-        id: COMMAND_BOX_ID,
+        id: COMMAND_IDS.commandBox,
         label: t("command.commandBox"),
         menu: "view",
         shortcut: COMMAND_BOX_SHORTCUT,
@@ -48,7 +48,7 @@ export function CommandBox({ siteName }: CommandBoxProps) {
   );
 
   const runnable = commands.filter(
-    (command) => command.id !== COMMAND_BOX_ID && command.enabled !== false,
+    (command) => command.id !== COMMAND_IDS.commandBox && command.enabled !== false,
   );
 
   return (

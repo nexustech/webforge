@@ -9,6 +9,7 @@ import { t } from "@webforge/i18n";
 import { useEffect, useState } from "react";
 import type { AppInfo } from "../../shared/ipc-contract.js";
 import { useCommandRegistry } from "./command-context.js";
+import { COMMAND_IDS } from "./command-ids.js";
 
 /** Help → About Webforge: the app's name and version. Registers its own command. */
 export function AboutDialog({ info }: { readonly info: AppInfo }) {
@@ -18,7 +19,7 @@ export function AboutDialog({ info }: { readonly info: AppInfo }) {
   useEffect(
     () =>
       registry.register({
-        id: "help.about",
+        id: COMMAND_IDS.about,
         label: t("command.about"),
         menu: "help",
         run: () => setOpen(true),

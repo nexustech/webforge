@@ -2,39 +2,40 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { CheckIcon } from "lucide-react";
 import { useState } from "react";
 import { CommandRegistryProvider } from "./command-context.js";
+import { COMMAND_IDS } from "./command-ids.js";
 import { type Command, createCommandRegistry } from "./commands.js";
-import { TITLE_BAR_COMMANDS, TitleBar } from "./TitleBar.js";
+import { TitleBar } from "./TitleBar.js";
 
 const noop = () => undefined;
 
 /** The commands the title bar shows once every area has contributed its own. */
 const COMMANDS: readonly Command[] = [
   {
-    id: TITLE_BAR_COMMANDS.newSite,
+    id: COMMAND_IDS.newSite,
     label: "New Site…",
     menu: "file",
     shortcut: "Mod+N",
     run: noop,
   },
   {
-    id: TITLE_BAR_COMMANDS.openSite,
+    id: COMMAND_IDS.openSite,
     label: "Open Site…",
     menu: "file",
     shortcut: "Mod+O",
     run: noop,
   },
-  { id: TITLE_BAR_COMMANDS.undo, label: "Undo", menu: "edit", shortcut: "Mod+Z", run: noop },
+  { id: COMMAND_IDS.undo, label: "Undo", menu: "edit", shortcut: "Mod+Z", run: noop },
   {
-    id: TITLE_BAR_COMMANDS.redo,
+    id: COMMAND_IDS.redo,
     label: "Redo",
     menu: "edit",
     shortcut: "Mod+Shift+Z",
     enabled: false,
     run: noop,
   },
-  { id: TITLE_BAR_COMMANDS.preview, label: "Preview", menu: "file", run: noop },
-  { id: TITLE_BAR_COMMANDS.exportSite, label: "Export Site…", menu: "file", run: noop },
-  { id: TITLE_BAR_COMMANDS.publish, label: "Publish…", menu: "file", run: noop },
+  { id: COMMAND_IDS.preview, label: "Preview", menu: "file", run: noop },
+  { id: COMMAND_IDS.exportSite, label: "Export Site…", menu: "file", run: noop },
+  { id: COMMAND_IDS.publish, label: "Publish…", menu: "file", run: noop },
 ];
 
 function WithCommands({ commands }: { readonly commands: readonly Command[] }) {
@@ -73,11 +74,7 @@ export const Complete: Story = {
   render: () => <WithCommands commands={COMMANDS} />,
 };
 
-const EARLY = new Set<string>([
-  TITLE_BAR_COMMANDS.undo,
-  TITLE_BAR_COMMANDS.redo,
-  TITLE_BAR_COMMANDS.exportSite,
-]);
+const EARLY = new Set<string>([COMMAND_IDS.undo, COMMAND_IDS.redo, COMMAND_IDS.exportSite]);
 
 /** Before New, Open, Preview and Publish exist (Phase 1): their buttons are disabled. */
 export const EarlyCommands: Story = {

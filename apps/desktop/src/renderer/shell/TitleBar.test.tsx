@@ -5,8 +5,9 @@ import { TooltipProvider } from "@webforge/editor-ui";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AboutDialog } from "./AboutDialog.js";
 import { CommandRegistryProvider } from "./command-context.js";
+import { COMMAND_IDS } from "./command-ids.js";
 import { type CommandRegistry, createCommandRegistry } from "./commands.js";
-import { TITLE_BAR_COMMANDS, TitleBar } from "./TitleBar.js";
+import { TitleBar } from "./TitleBar.js";
 
 afterEach(() => cleanup());
 
@@ -34,7 +35,8 @@ describe("TitleBar", () => {
   it("disables buttons whose commands nobody has registered yet", () => {
     renderTitleBar();
 
-    for (const name of ["New", "Open", "Preview", "Export", "Publish"]) {
+    // Icon-only Undo and Redo keep their names before the editor registers them.
+    for (const name of ["New", "Open", "Undo", "Redo", "Preview", "Export", "Publish"]) {
       expect((screen.getByRole("button", { name }) as HTMLButtonElement).disabled).toBe(true);
     }
   });
@@ -44,11 +46,11 @@ describe("TitleBar", () => {
     const exportSite = vi.fn();
     const undo = vi.fn();
     registry.register({
-      id: TITLE_BAR_COMMANDS.exportSite,
+      id: COMMAND_IDS.exportSite,
       label: "Export Site…",
       run: exportSite,
     });
-    registry.register({ id: TITLE_BAR_COMMANDS.undo, label: "Undo", shortcut: "Mod+Z", run: undo });
+    registry.register({ id: COMMAND_IDS.undo, label: "Undo", shortcut: "Mod+Z", run: undo });
     renderTitleBar(registry);
 
     await userEvent.click(screen.getByRole("button", { name: "Export" }));
@@ -60,10 +62,10 @@ describe("TitleBar", () => {
 
   it("follows a command becoming disabled", () => {
     const registry = createCommandRegistry();
-    registry.register({ id: TITLE_BAR_COMMANDS.redo, label: "Redo", run: vi.fn() });
+    registry.register({ id: COMMAND_IDS.redo, label: "Redo", run: vi.fn() });
     renderTitleBar(registry);
 
-    act(() => registry.update(TITLE_BAR_COMMANDS.redo, { enabled: false }));
+    act(() => registry.update(COMMAND_IDS.redo, { enabled: false }));
 
     expect((screen.getByRole("button", { name: "Redo" }) as HTMLButtonElement).disabled).toBe(true);
   });
@@ -72,7 +74,7 @@ describe("TitleBar", () => {
     const registry = createCommandRegistry();
     const exportSite = vi.fn();
     registry.register({
-      id: TITLE_BAR_COMMANDS.exportSite,
+      id: COMMAND_IDS.exportSite,
       label: "Export Site…",
       menu: "file",
       shortcut: "Mod+E",
@@ -116,7 +118,7 @@ describe("CommandBox", () => {
     const registry = createCommandRegistry();
     const exportSite = vi.fn();
     registry.register({
-      id: TITLE_BAR_COMMANDS.exportSite,
+      id: COMMAND_IDS.exportSite,
       label: "Export Site…",
       run: exportSite,
     });
