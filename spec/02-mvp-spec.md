@@ -57,11 +57,11 @@ The result is a fast, accessible, self-contained static website they fully own.
 | F-ED-13 | **Pages panel** | Add, rename, duplicate, reorder (= navigation order), set Home, *Hide from navigation*, folders. **Delete page asks for confirmation** and is undoable (D5/D7) |
 | F-ED-14 | **Confirmation rule** (D7) | Any action affecting more than the current page (theme switch, delete page, delete shared section, global font/colour change) confirms with its impact ("affects 6 pages") and is undoable |
 | F-ED-15 | **Custom Code** (C7, Advanced) | Custom HTML element; site `custom.css`/`custom.js`; head/body snippets. Scripts off in the editor by default |
-| F-ED-16 | **Copy & paste** (G1) | Copy/cut/paste sections and elements within a page, between pages and between open sites (Ctrl/Cmd+C/X/V). Pasting an image file or clipboard image adds it to Media and inserts it. Pasting a YouTube/Vimeo URL creates a video embed. Each paste is one undo step |
+| F-ED-16 | **Copy & paste** (G1) | Copy/cut/paste sections and elements within a page, between pages and into another site (Ctrl/Cmd+C/X/V). One site is open at a time (F-SITE-2), so the clipboard keeps the copied items **with their images**: after opening another site, paste adds those images to its Media. Pasting an image file or clipboard image adds it to Media and inserts it. Pasting a YouTube/Vimeo URL creates a video embed. Each paste is one undo step |
 | F-ED-17 | **Navigation menu editor** (G2) | Menu built from pages by default; users can add **external links**, **links to a section**, **"Book now"-style buttons** and **dropdown sub-menus**, reorder freely and hide items. Used by the Header's navbar (desktop + mobile menu) |
 | F-ED-18 | **Link to a section** (G3) | The link dialog offers *Page*, *Section on a page* (anchor picked from a list; IDs created automatically), *Email*, *Phone*, *External URL*, *File* |
-| F-ED-19 | **Spell check** (G5) | Electron spellchecker active while editing text, with the site language from Site Settings; right-click suggestions; add to dictionary |
-| F-ED-20 | **Editable 404 page** (G6) | A special *Page not found* page in the Pages panel (not in navigation), designed like any page, exported as `404.html` |
+| F-ED-19 | **Spell check** (G5) | Electron spellchecker active while editing text; right-click suggestions; add to dictionary. **Windows:** checks in the site language from Site Settings. **macOS:** uses the system spell checker and its languages (Electron cannot set them there) |
+| F-ED-20 | **Editable 404 page** (G6) | A special *Page not found* page in the Pages panel (not in navigation), designed like any page, exported as `404.html`. Hosts serve it at **any** missing URL, including nested ones (`/services/missing`), so unlike other pages (X1) its links and asset URLs are absolute: based on the site's web address (X3), or `/`-rooted when none is set |
 | F-ED-21 | **Image focal point** (G14) | Set a focal point on any image; crops for Desktop/Tablet/Mobile keep it in view (`object-position`) |
 | F-ED-22 | **Icon picker** (G27) | Searchable Lucide icon picker (ISC) used by Icon, Button and List elements; icons inlined as SVG at export |
 
@@ -72,7 +72,7 @@ The result is a fast, accessible, self-contained static website they fully own.
 | F-DS-2 | **Brand colours, fonts, roundness** | Primary/secondary/accent colours; **~50 bundled font families with 12–15 tested pairings** (Fontsource, offline) plus **Browse all fonts** (on-demand Fontsource catalogue, cached locally; S4); corner style; spacing scale. Contrast warnings below WCAG AA |
 | F-DS-3 | **Section themes** | A section can use the light/dark variant of the theme (daisyUI nested themes) |
 | F-DS-4 | **Text and button styles** (G11) | Theme defines a type scale (H1–H6, body, small) and button styles (shape, size, filled/outline/ghost), editable in the Theme panel and applied site-wide (D7 confirm) |
-| F-DS-5 | **Animations** (G8) | Per section/element *Entrance animation* (None, Fade, Slide up/left/right, Zoom) with delay; *Hover effect* for buttons/cards (Lift, Grow, Shadow). CSS + a tiny observer in `webforge.js`; disabled automatically for visitors with *prefers-reduced-motion*; works from disk |
+| F-DS-5 | **Animations** (G8) | Per section/element *Entrance animation* (None, Fade, Slide up/left/right, Zoom) with delay; *Hover effect* for buttons/cards (Lift, Grow, Shadow). CSS + a tiny observer in `webforge.js`; disabled automatically for visitors with *prefers-reduced-motion*; works from disk. **Content is visible by default:** elements are only hidden for their entrance once `webforge.js` has marked the page, so nothing stays invisible without JavaScript, in print or for search engines |
 
 ### 2.4 Site settings & checks
 | ID | Feature | Acceptance criteria |
@@ -103,7 +103,7 @@ The result is a fast, accessible, self-contained static website they fully own.
 | F-CM-5 | **Social links** | Social icons element bound to Site Settings → Social (Lucide/brand SVG icons inlined) |
 | F-CM-6 | **Newsletter signup** (G17) | Newsletter section: email (+ optional name) form that POSTs to the provider's embedded-form URL, plus our honeypot. Generic "form action URL" option in MVP; provider presets per GA3 (open question) |
 | F-CM-7 | **Booking button** (G18) | "Book now" button/element linking to the user's booking page; generic https URL in MVP; provider presets per GA3 (open question). Plain link, no external JS |
-| F-CM-8 | **Dynamic year** (G21) | `{year}` token for text (e.g. footer copyright) filled in at export |
+| F-CM-8 | **Dynamic year** (G21) | `{year}` token for text (e.g. footer copyright) filled in at export, with no script. The year is fixed until the site is next exported or published, so Site Check shows a tip when a published site's year is out of date |
 
 ## 3. MVP component catalogue (decided S1–S5, [starting content](../research/product/03-starting-content.md))
 
