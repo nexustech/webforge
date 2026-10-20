@@ -48,6 +48,7 @@ export function createFakeEngine(): FakeEngine {
       return () => commands.delete(handler);
     },
     setViewport: vi.fn(),
+    setSiteCss: vi.fn(),
     setMode: vi.fn(),
     renderStatic: vi.fn(() => ""),
     destroy: vi.fn(),

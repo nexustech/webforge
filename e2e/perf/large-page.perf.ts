@@ -197,6 +197,8 @@ test("a page with 200+ elements against the editing budgets", async () => {
   const typed = " and some more words typed one by one";
 
   await test.step("baseline: typing on the small starter page", async () => {
+    // The site CSS changes the layout when it arrives (1.12); measure with the final one.
+    await expect(canvasFrame().locator("style[data-webforge-site-css]")).toHaveCount(1);
     await startObservers();
     results.typingStarterPage = await typeInto(
       canvasFrame().locator(".site-heading [contenteditable]").first(),
@@ -212,6 +214,16 @@ test("a page with 200+ elements against the editing budgets", async () => {
       timeout: 30_000,
     });
     results.load = { nodes: countNodes(big), ms: Date.now() - start };
+    // The FAQs bring new classes: wait for the recompiled site CSS (daisyUI's collapse).
+    await expect
+      .poll(
+        () =>
+          canvasFrame()
+            .locator("style[data-webforge-site-css]")
+            .evaluate((style) => style.textContent ?? ""),
+        { timeout: 30_000 },
+      )
+      .toContain(".collapse");
     await startObservers();
   });
 
@@ -235,12 +247,13 @@ test("a page with 200+ elements against the editing budgets", async () => {
     await takeObserved();
 
     const start = Date.now();
-    await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+    // Pressed past the end of the heading's text: pressing on the text selects it instead.
+    const grab = { x: from.x + from.width * 0.97, y: from.y + from.height / 2 };
+    await page.mouse.move(grab.x, grab.y);
     await page.mouse.down();
-    await page.mouse.move(from.x + from.width / 2 + 10, from.y + from.height / 2 + 10, {
-      steps: 5,
-    });
-    await page.mouse.move(to.x + to.width / 2, to.y + to.height + 2, { steps: 25 });
+    await page.mouse.move(grab.x + 10, grab.y + 10, { steps: 5 });
+    // Just inside the text's lower edge, which is a drop target whatever the Section's padding.
+    await page.mouse.move(to.x + to.width / 2, to.y + to.height - 3, { steps: 25 });
     await page.mouse.up();
     await expect(page.locator(".undo-history__step").first()).toHaveText("Moved Heading");
     const observed = await takeObserved();

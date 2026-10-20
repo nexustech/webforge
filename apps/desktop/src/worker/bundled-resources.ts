@@ -6,7 +6,7 @@ import jpegEncode from "@jsquash/jpeg/codec/enc/mozjpeg_enc.wasm?base64";
 import png from "@jsquash/png/codec/pkg/squoosh_png_bg.wasm?base64";
 import resize from "@jsquash/resize/lib/resize/pkg/squoosh_resize_bg.wasm?base64";
 import webpEncode from "@jsquash/webp/codec/enc/webp_enc_simd.wasm?base64";
-import { compileCodecs, type PipelineResources } from "@webforge/pipeline";
+import { compileCodecs, type PipelineResources, type StyleResources } from "@webforge/pipeline";
 import daisyui from "daisyui";
 import preflight from "tailwindcss/preflight.css?raw";
 import theme from "tailwindcss/theme.css?raw";
@@ -20,9 +20,40 @@ function bytesOf(base64: string): Uint8Array<ArrayBuffer> {
   return new Uint8Array(Buffer.from(base64, "base64"));
 }
 
+let styles: StyleResources | null = null;
 let resources: Promise<PipelineResources> | null = null;
 
-/** The pipeline's resources, decoded and compiled once per worker. */
+/** What compiling CSS needs: stylesheets, daisyUI and fonts, decoded once per worker. */
+export function loadStyleResources(): StyleResources {
+  styles ??= {
+    stylesheets: {
+      "tailwindcss/theme.css": theme,
+      "tailwindcss/preflight.css": preflight,
+      "tailwindcss/utilities.css": utilities,
+    },
+    daisyui,
+    fonts: [
+      {
+        family: "Inter",
+        weight: 400,
+        fileName: "inter-latin-400-normal.woff2",
+        data: bytesOf(interRegular),
+      },
+      {
+        family: "Inter",
+        weight: 700,
+        fileName: "inter-latin-700-normal.woff2",
+        data: bytesOf(interBold),
+      },
+    ],
+  };
+  return styles;
+}
+
+/**
+ * The pipeline's resources, decoded and compiled once per worker. The image codecs are compiled
+ * only here, so a worker that only compiles canvas CSS never pays for them.
+ */
 export function loadBundledResources(): Promise<PipelineResources> {
   resources ??= (async () => {
     const codecs = await compileCodecs({
@@ -32,29 +63,7 @@ export function loadBundledResources(): Promise<PipelineResources> {
       webpEncode: bytesOf(webpEncode),
       resize: bytesOf(resize),
     });
-    return {
-      stylesheets: {
-        "tailwindcss/theme.css": theme,
-        "tailwindcss/preflight.css": preflight,
-        "tailwindcss/utilities.css": utilities,
-      },
-      daisyui,
-      fonts: [
-        {
-          family: "Inter",
-          weight: 400,
-          fileName: "inter-latin-400-normal.woff2",
-          data: bytesOf(interRegular),
-        },
-        {
-          family: "Inter",
-          weight: 700,
-          fileName: "inter-latin-700-normal.woff2",
-          data: bytesOf(interBold),
-        },
-      ],
-      codecs,
-    };
+    return { ...loadStyleResources(), codecs };
   })();
   return resources;
 }

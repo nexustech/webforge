@@ -71,7 +71,7 @@ test.describe("desktop shell", () => {
     expect(globals).toEqual({
       require: "undefined",
       process: "undefined",
-      webforgeKeys: ["app", "project", "site"],
+      webforgeKeys: ["app", "canvas", "project", "site"],
     });
   });
 

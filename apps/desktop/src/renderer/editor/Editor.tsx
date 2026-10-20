@@ -13,6 +13,7 @@ import {
   type EngineConnection,
   runHistoryCommand,
 } from "./editor-session.js";
+import { type CompileCanvasCss, connectSiteCss } from "./site-css.js";
 import { UndoHistoryPanel } from "./UndoHistoryPanel.js";
 
 /** Props of {@link Editor}. */
@@ -20,10 +21,19 @@ export type EditorProps = {
   readonly session: EditorSession;
   /** Creates the canvas engine; injectable for tests. */
   readonly createEngine?: () => CanvasEngine;
+  /** Compiles the site CSS for the canvas; injectable for tests. Defaults to the preload API. */
+  readonly compileCss?: CompileCanvasCss;
 };
 
+const compileWithPreload: CompileCanvasCss = (request) =>
+  window.webforge.canvas.compileCss(request);
+
 /** The site editor: toolbar, canvas and Undo History panel around one {@link EditorSession}. */
-export function Editor({ session, createEngine = createPuckEngine }: EditorProps) {
+export function Editor({
+  session,
+  createEngine = createPuckEngine,
+  compileCss = compileWithPreload,
+}: EditorProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const connectionRef = useRef<EngineConnection | null>(null);
   const { history } = session;
@@ -52,6 +62,7 @@ export function Editor({ session, createEngine = createPuckEngine }: EditorProps
     }
     const connection = connectEngine(engine, session);
     connectionRef.current = connection;
+    const stopSiteCss = connectSiteCss(engine, session, compileCss, document.baseURI);
     // One handler for the whole window (U4); the engine reports keys pressed inside its iframe.
     const removeKeys = installHistoryKeys(window, (command) => {
       connection.flush();
@@ -59,13 +70,14 @@ export function Editor({ session, createEngine = createPuckEngine }: EditorProps
     });
 
     return () => {
+      stopSiteCss();
       removeKeys();
       connectionRef.current = null;
       connection.disconnect();
       engine.destroy();
       element.remove();
     };
-  }, [session, history, createEngine]);
+  }, [session, history, createEngine, compileCss]);
 
   const runCommand = (command: HistoryCommand) => {
     connectionRef.current?.flush();

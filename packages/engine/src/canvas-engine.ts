@@ -92,6 +92,11 @@ export interface CanvasEngine {
   /** Undo/redo shortcuts and Esc pressed inside the canvas (U4). */
   onHistoryCommand(cb: HistoryCommandHandler): Unsubscribe;
   setViewport(v: Viewport): void;
+  /**
+   * Styles the canvas with the site's own compiled CSS and the classes exported pages put on
+   * `<body>`, so the page looks as it will when exported (1.12). Replaces the previous styles.
+   */
+  setSiteCss(css: string, bodyClass: string): void;
   setMode(mode: EditorMode): void;
   renderStatic(page: PageDoc, layout: LayoutDoc): string;
   destroy(): void;
