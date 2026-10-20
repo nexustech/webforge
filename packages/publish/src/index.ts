@@ -18,6 +18,11 @@ export {
   netlifyClient,
   netlifyPublisher,
 } from "./netlify.js";
+export {
+  NETLIFY_AUTHORIZE_URL,
+  type NetlifySignInOptions,
+  signInToNetlify,
+} from "./netlify-sign-in.js";
 export { uploadOrder } from "./order.js";
 export {
   type BuildOutput,

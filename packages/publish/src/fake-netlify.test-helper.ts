@@ -14,6 +14,7 @@ type FakeDeploy = {
 };
 
 export const FAKE_TOKEN = "test-token";
+export const FAKE_CLIENT_ID = "webforge-test-client";
 
 export function fakeNetlify() {
   const sites = new Map<string, { id: string; name: string; current: string | null }>();
@@ -30,6 +31,9 @@ export function fakeNetlify() {
   /** How many polls a deploy stays in "processing" once its files are uploaded. */
   let processingPolls = 1;
   let finalState = "ready";
+  const tickets = new Map<string, { id: string; authorized: boolean; polls: number }>();
+  /** How many polls a ticket stays unapproved; `null` never approves. */
+  let approveAfter: number | null = 1;
 
   const json = (status: number, body: unknown) =>
     new Response(JSON.stringify(body), {
@@ -76,7 +80,9 @@ export function fakeNetlify() {
     init?.signal?.throwIfAborted();
 
     const headers = new Headers(init?.headers);
-    if (headers.get("Authorization") !== `Bearer ${FAKE_TOKEN}`) return json(401, {});
+    // Sign-in tickets are requested before there is a token.
+    const signedIn = headers.get("Authorization") === `Bearer ${FAKE_TOKEN}`;
+    if (!signedIn && !path.startsWith("/oauth/")) return json(401, {});
     const failure = failures.findIndex((f) => f.method === method && f.pattern.test(path));
     if (failure !== -1) {
       const [{ status, headers: extra }] = failures.splice(failure, 1) as [
@@ -93,8 +99,29 @@ export function fakeNetlify() {
       const match = method === verb ? path.match(pattern) : null;
       return match === null ? null : match.slice(1).map(decodeURIComponent);
     };
-    let params: string[] | null;
+    let params: string[] | null = null;
 
+    if (route("POST", /^\/oauth\/tickets$/)) {
+      if (url.searchParams.get("client_id") !== FAKE_CLIENT_ID) return json(401, {});
+      const ticket = { id: `ticket-${++ids}`, authorized: false, polls: 0 };
+      tickets.set(ticket.id, ticket);
+      return json(201, { id: ticket.id, authorized: false, client_id: FAKE_CLIENT_ID });
+    }
+    params = route("GET", /^\/oauth\/tickets\/([^/]+)$/);
+    if (params) {
+      const ticket = tickets.get(params[0] ?? "");
+      if (ticket === undefined) return json(404, {});
+      ticket.polls++;
+      if (approveAfter !== null && ticket.polls >= approveAfter) ticket.authorized = true;
+      return json(200, { id: ticket.id, authorized: ticket.authorized });
+    }
+    params = route("POST", /^\/oauth\/tickets\/([^/]+)\/exchange$/);
+    if (params) {
+      const ticket = tickets.get(params[0] ?? "");
+      if (ticket?.authorized !== true) return json(401, {});
+      tickets.delete(ticket.id);
+      return json(201, { id: "token-1", access_token: FAKE_TOKEN, user_id: "user-1" });
+    }
     if (route("GET", /^\/user$/)) return json(200, { id: "user-1" });
     if (route("GET", /^\/sites$/)) return json(200, [...sites.values()].map(siteJson));
     if (route("POST", /^\/sites$/)) {
@@ -199,6 +226,10 @@ export function fakeNetlify() {
       { times = 1, headers = {} }: { times?: number; headers?: Record<string, string> } = {},
     ) {
       for (let i = 0; i < times; i++) failures.push({ method, pattern, status, headers });
+    },
+    /** Sign-in tickets are approved on the `polls`-th check, or never (`null`). */
+    approveTickets(polls: number | null) {
+      approveAfter = polls;
     },
     /** Deploys stay "processing" for `polls` polls, then end in `state`. */
     processing(polls: number, state = "ready") {

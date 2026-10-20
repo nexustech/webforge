@@ -302,6 +302,9 @@ importers:
       '@webforge/pipeline':
         specifier: workspace:*
         version: link:../../packages/pipeline
+      '@webforge/publish':
+        specifier: workspace:*
+        version: link:../../packages/publish
       '@webforge/site-components':
         specifier: workspace:*
         version: link:../../packages/site-components

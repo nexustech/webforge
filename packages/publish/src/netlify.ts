@@ -128,20 +128,27 @@ function retryDelay(response: Response | null, attempt: number, baseMs: number):
   return Math.min(Math.max(ms, 0), MAX_RETRY_DELAY_MS);
 }
 
-/** A small, typed client for the Netlify endpoints Webforge uses. */
-export function netlifyClient(options: NetlifyOptions) {
+/** Options of {@link netlifyRequester}: as {@link NetlifyOptions}, but signing in has no token yet. */
+export type NetlifyRequestOptions = Omit<NetlifyOptions, "token"> & { readonly token?: string };
+
+/**
+ * Makes validated Netlify API requests: retries rate limits and transient errors, maps failures
+ * to {@link PublishError} codes, and keeps the token out of every message.
+ */
+export function netlifyRequester(options: NetlifyRequestOptions) {
   const doFetch = options.fetch ?? fetch;
   const base = options.apiBase ?? NETLIFY_API;
   const retryBaseMs = options.retryBaseMs ?? 1_000;
 
-  async function request<T>(
+  return async function request<T>(
     method: string,
     path: string,
     schema: z.ZodType<T>,
     init: { body?: unknown; bytes?: Uint8Array; signal?: AbortSignal | undefined } = {},
   ): Promise<T> {
     throwIfCancelled(init.signal);
-    const headers: Record<string, string> = { Authorization: `Bearer ${options.token}` };
+    const headers: Record<string, string> =
+      options.token === undefined ? {} : { Authorization: `Bearer ${options.token}` };
     let body: Uint8Array | string | undefined;
     if (init.bytes !== undefined) {
       headers["Content-Type"] = "application/octet-stream";
@@ -192,8 +199,12 @@ export function netlifyClient(options: NetlifyOptions) {
       });
     }
     return parsed.data;
-  }
+  };
+}
 
+/** A small, typed client for the Netlify endpoints Webforge uses. */
+export function netlifyClient(options: NetlifyOptions) {
+  const request = netlifyRequester(options);
   const site = (siteId: string) => `/sites/${encodeURIComponent(siteId)}`;
   const deploy = (deployId: string) => `/deploys/${encodeURIComponent(deployId)}`;
 
