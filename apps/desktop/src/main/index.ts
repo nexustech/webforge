@@ -26,6 +26,7 @@ import {
 } from "./preferences.js";
 import { type ProjectDialogs, registerProjectHandlers } from "./project-ipc.js";
 import { findProjectArgument, PROJECT_EXTENSION, ProjectSession } from "./project-session.js";
+import { createRecentSites } from "./recent-sites.js";
 import { openOrRecover } from "./recovery.js";
 import { recoveryDialogs } from "./recovery-dialogs.js";
 import {
@@ -34,6 +35,7 @@ import {
   hardenWebContents,
   isAppUrl,
 } from "./security.js";
+import { createSiteSwitch } from "./site-switch.js";
 import { titleBarOptions, titleBarOverlay, windowBackground } from "./window-options.js";
 
 // Process wiring only; the logic lives in tested modules and E2E tests cover this file.
@@ -56,10 +58,34 @@ app.on("web-contents-created", (_event, contents) => {
 // Rolling backups of the open site (F-SITE-6), the way back from a damaged file (1.7).
 const backups = createBackups({ root: join(app.getPath("userData"), "backups") });
 const backupSchedule = createBackupSchedule(backups);
+// The start screen's Recent list (F-SITE-2, 1.8).
+const recentSites = createRecentSites({ dir: app.getPath("userData") });
 const projectSession = new ProjectSession({
-  opened: (store, path) => void backupSchedule.opened(store, path),
-  committed: () => backupSchedule.committed(),
+  opened: (store, path) => {
+    void backupSchedule.opened(store, path);
+    recentSites.opened(path, store.info.name);
+  },
+  committed: () => {
+    backupSchedule.committed();
+    const path = projectSession.currentPath();
+    if (path !== undefined) recentSites.edited(path);
+  },
   closed: () => backupSchedule.closed(),
+});
+// Before another site replaces the open one: save it, and capture its canvas for Recent.
+const siteSwitch = createSiteSwitch({
+  currentPath: () => projectSession.currentPath(),
+  requestFlush: async () => {
+    const window = BrowserWindow.getAllWindows()[0];
+    if (window !== undefined) await flushOnClose?.requestFlush(window);
+  },
+  capture: async () => {
+    const window = BrowserWindow.getAllWindows()[0];
+    if (window === undefined || window.isDestroyed()) return undefined;
+    const image = await window.webContents.capturePage();
+    return image.isEmpty() ? undefined : image.resize({ width: 480 }).toJPEG(75);
+  },
+  recent: recentSites,
 });
 const openSite = (path: string) => openOrRecover(projectSession, path, backups, recoveryDialogs);
 
@@ -188,10 +214,16 @@ async function start(): Promise<void> {
     (senderUrl) => isAppUrl(senderUrl, appUrl),
     projectSession,
     projectDialogs,
-    { backups, dialogs: recoveryDialogs },
+    {
+      recovery: { backups, dialogs: recoveryDialogs },
+      recent: recentSites,
+      beforeSwitch: () => siteSwitch.leaveSite(),
+    },
   );
   registerCanvasHandlers(ipcMain, (senderUrl) => isAppUrl(senderUrl, appUrl), compileCanvasCss);
   flushOnClose = createFlushOnClose(ipcMain, (senderUrl) => isAppUrl(senderUrl, appUrl), {
+    // The flush has just run; capture the canvas for the Recent list before the window goes.
+    beforeClose: () => siteSwitch.leaveSite(),
     onClosed: () => {
       if (quitting) app.quit();
     },

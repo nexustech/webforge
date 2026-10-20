@@ -105,6 +105,11 @@ export class ProjectSession {
   }
 
   /** The open site, or `null`. */
+  /** The open site's file, for the main process only (never sent to the renderer). */
+  currentPath(): string | undefined {
+    return this.#path;
+  }
+
   current(): ProjectSummary | null {
     return this.#store === undefined || this.#path === undefined
       ? null
