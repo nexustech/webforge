@@ -4,6 +4,7 @@ Read the specs before making changes:
 - **Architecture:** `spec/01-architecture.md`
 - **MVP spec:** `spec/02-mvp-spec.md`
 - **Engineering standards:** `spec/03-engineering-standards.md` (authoritative)
+- **Implementation plan:** `spec/04-implementation-plan.md` (each work item is a GitHub issue, e.g. "1.12 Canvas: …")
 - **Reasoning behind decisions:** `research/`, with decision IDs such as C5 or X1
 
 ## Product in one line

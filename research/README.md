@@ -2,7 +2,7 @@
 
 Research supporting [`ideas.md`](../ideas.md).
 
-**Consolidated outcome:** see [`../spec/`](../spec/): [Architecture](../spec/01-architecture.md) · [MVP specification](../spec/02-mvp-spec.md) · [Engineering standards](../spec/03-engineering-standards.md)
+**Consolidated outcome:** see [`../spec/`](../spec/): [Architecture](../spec/01-architecture.md) · [MVP specification](../spec/02-mvp-spec.md) · [Engineering standards](../spec/03-engineering-standards.md) · [Implementation plan](../spec/04-implementation-plan.md)
 
 ## Prior art
 - [Bootstrap Studio](bootstrap-studio/README.md): internals, tech stack, file format, features, lessons for Webforge
