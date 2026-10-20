@@ -199,12 +199,14 @@ All components must:
 | Linux | Not planned |
 
 ## 6. Milestones
+The detailed work breakdown (one GitHub issue per item), schedule, risks and open questions are in the [implementation plan](04-implementation-plan.md).
+
 | Phase | Milestone | Content | Exit criteria |
 |---|---|---|---|
 | **Phase 0** | **Prototype spikes** (~2 weeks, combined) | Electron secure shell + electron-builder installers (signed NSIS/DMG) + auto-update; Puck with **our** history (critical); daisyUI components; `.wforge` SQLite via **better-sqlite3** (packaging + rebuild on Windows/macOS, crash safety, OneDrive folder); export pipeline + `file://` checks; Netlify + SFTP publish | Every 🔬 item resolved; go/no-go on Puck (else fallback canvas) |
-| **Phase 1** | **Editor core** | Model, history, storage + autosave, engine adapter, Add/Edit/Pages panels, Header/Footer, Undo History, views, **copy & paste, menu editor, link dialog, spell check** | Build a 3-page site from blank; undo-all property tests green |
-| **Phase 2** | **Design & components** | Themes (incl. **text/button styles**), brand colours/fonts, component catalogue (incl. **carousel, lightbox, animations, newsletter, booking**), templates, Content mode, Simple/Advanced, **icon picker, focal point, media alt text** | All templates pass axe + visual regression |
-| **Phase 3** | **Output** | Preview server, Export, Site Check, Site/Page Settings, forms, Buy button, GA + consent, embeds, **editable 404, dynamic year** | Exported templates open from disk in 4 browsers with zero external requests |
+| **Phase 1** | **Editor core** | Model, history, storage + autosave, engine adapter, Add/Edit/Pages panels, Header/Footer, Undo History, views, Simple/Advanced and Design/Content modes, Site Settings and Page Settings, editable 404 page, media library with alt text and focal point, **copy & paste, menu editor, link dialog, spell check** | Build a 3-page site from blank; undo-all property tests green |
+| **Phase 2** | **Design & components** | Themes (incl. **text/button styles**), brand colours/fonts, component catalogue (incl. **carousel, lightbox, animations, newsletter, booking**, Buy button, embeds), templates, **icon picker** | All templates pass axe + visual regression |
+| **Phase 3** | **Output** | Preview server, Export, Site Check, forms, GA + consent, custom code bundling, **404 output, dynamic year** | Exported templates open from disk in 4 browsers with zero external requests |
 | **Phase 4** | **Publish & versions** | Destinations, Netlify/FTP/SFTP publish, Version History, republish | Publish + rollback on all targets in E2E tests |
 | **Phase 5** | **Beta hardening** | Performance budgets, installer/updates, licences screen, onboarding, help | Beta with 10–20 small-business users |
 

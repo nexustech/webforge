@@ -10,6 +10,7 @@ A desktop visual website builder for **DIY small-business owners**. Users drag a
 | [spec/01-architecture.md](spec/01-architecture.md) | Stack, process model, packages, data model, interfaces, decision register |
 | [spec/02-mvp-spec.md](spec/02-mvp-spec.md) | MVP features and acceptance criteria, components, milestones, licensing |
 | [spec/03-engineering-standards.md](spec/03-engineering-standards.md) | Toolchain, coding conventions, testing, CI, Definition of Done |
+| [spec/04-implementation-plan.md](spec/04-implementation-plan.md) | MVP work breakdown, schedule, risks and open questions (live tracking in GitHub issues) |
 | [research/README.md](research/README.md) | Research notes and the reasoning behind every decision |
 | [docs/adr/](docs/adr/) | Architecture decisions made during implementation |
 | [ideas.md](ideas.md) | Original brief |
