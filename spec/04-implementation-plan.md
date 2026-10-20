@@ -44,7 +44,7 @@ Still open in Phase 0: publishing spikes (Netlify, FTP/SFTP), signed installers 
 Current code size (approx. lines): desktop 2.7k · engine 1.6k · history 1.6k · pipeline 1.1k · site-components 1.0k · storage 0.6k · model 0.3k. `editor-ui`, `publish` and `themes` are placeholders.
 
 ## 3. Timeline
-**Total: 272 working days** (≈ 54 weeks) including the 4-week beta. v1.0 at 100% of estimates: **19 Nov 2027**; with +25% contingency: **25 Feb 2028**.
+**Total: 277 working days** (≈ 55 weeks) including the 4-week beta. Baseline v1.0 (sequential, before the Phase 1 re-plan) at 100% of estimates: **19 Nov 2027**; with +25% contingency: **25 Feb 2028**.
 
 **Re-plan, 20 Oct 2026:** Phase 1 runs in three concurrent streams (82 days of effort in about 28 working days, see [Phase 1](#phase-1-editor-core)). Phase 2–5 dates and the v1.0 date are re-planned at the Phase 1 exit review.
 
@@ -95,10 +95,10 @@ gantt
     1.20 Shared Header and Footer :t1_20, 2026-11-12, 4d
     1.21 Navigation menu editor :crit, t1_21, 2026-11-23, 6d
     1.22 Spell check :t1_22, 2026-11-20, 1d
-    1.23 Inline text editing (Tiptap) :t1_23, 2026-11-20, 4d
+    1.23 Inline text editing (Tiptap) :crit, t1_23, 2026-11-20, 4d
     1.24 Layers panel (Advanced) :t1_24, 2026-11-16, 3d
     1.25 Copy and paste :t1_25, 2026-11-25, 3d
-    1.26 Confirmations (D7) and Content mode locking :t1_26, 2026-11-26, 3d
+    1.26 Confirmations (D7) and Content mode locking :crit, t1_26, 2026-11-26, 3d
     1.27 Editing performance – targeted patches, atomi… :t1_27, 2026-10-22, 3d
     section Phase 2
     2.1 Themes package – theme model → Tailwind/daisyU… :t2_1, 2027-03-02, 4d
@@ -269,7 +269,7 @@ Fold spike learnings into architecture §6 (CanvasEngine, HistoryManager, Pipeli
 | B: Data & site | model, storage, project/media/clipboard IPC, app lifecycle | 1.4 → 1.5 → 1.6 → 1.7 → 1.8 → 1.16 → 1.17 → 1.13 → 1.25 |
 | C: History & canvas | history, engine, editor session | 1.27 → 1.9 → 1.12 → 1.14 → 1.20 → 1.19 → 1.23 → 1.26 |
 
-The longest dependency chain is 1.1 → 1.2 → 1.12 → 1.14 → 1.19 → 1.23 → 1.26 (about 27 days), so the phase takes about 28 working days instead of 82.
+The longest dependency chain is 1.1 → 1.2 → 1.12 → 1.14 → 1.19 → 1.23 → 1.26 (about 27 days), so the phase takes about 28 working days instead of 82. Three items start before one dependency merges and leave the dependent part until last: 1.12 (the site-CSS PR comes first; the selection chrome waits for 1.2), 1.16 (the image field, which needs 1.14, comes last) and 1.23 (the spell-check criterion, which needs 1.22, is checked last).
 
 <details><summary>Scope and acceptance criteria</summary>
 
