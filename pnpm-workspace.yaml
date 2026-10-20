@@ -30,3 +30,7 @@ allowBuilds:
   lefthook: true
   # Squirrel.Windows installer helper pulled in by electron-builder; we ship NSIS only.
   electron-winstaller: false
+
+minimumReleaseAgeExclude:
+  - lucide-react@1.60.0
+  - react-resizable-panels@4.14.7
