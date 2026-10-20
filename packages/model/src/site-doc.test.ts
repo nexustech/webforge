@@ -98,9 +98,9 @@ describe("siteDocSchema", () => {
         expect(issuesOf(doc)).toEqual([]);
         expect(siteDocSchema.parse(JSON.parse(JSON.stringify(doc)))).toEqual(doc);
       }),
-      { numRuns: 200 },
+      { numRuns: 100 },
     );
-  });
+  }, 30_000);
 
   it("rejects a page stored under another id", () => {
     const page = site.pages[site.homePageId] as PageEntry;

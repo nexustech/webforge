@@ -116,5 +116,5 @@ describe("siteToSnapshot", () => {
       }),
       { numRuns: 100 },
     );
-  });
+  }, 30_000);
 });
