@@ -415,3 +415,38 @@ describe("ProjectStore.open with untrusted files", () => {
     db.close();
   });
 });
+
+describe("ProjectStore editor mode", () => {
+  it("starts in Design mode and remembers Content mode across opens", () => {
+    const path = createProject();
+    const store = ProjectStore.open(path);
+    expect(store.readEditorMode()).toBe("design");
+
+    store.writeEditorMode("content");
+    store.writeEditorMode("content");
+    store.close();
+
+    const reopened = ProjectStore.open(path);
+    expect(reopened.readEditorMode()).toBe("content");
+    reopened.writeEditorMode("design");
+    expect(reopened.readEditorMode()).toBe("design");
+    reopened.close();
+  });
+
+  it("falls back to Design mode for a value it doesn't know, and still opens", () => {
+    const path = createProject();
+    tamper(path, (db) => db.exec("INSERT INTO meta (key, value) VALUES ('editor_mode', 'zoom')"));
+
+    const store = ProjectStore.open(path);
+
+    expect(store.readEditorMode()).toBe("design");
+    store.close();
+  });
+
+  it("refuses to change a read-only site's mode", () => {
+    const store = ProjectStore.open(createProject(), { readOnly: true });
+
+    expect(() => store.writeEditorMode("content")).toThrow(ReadOnlyProjectError);
+    store.close();
+  });
+});

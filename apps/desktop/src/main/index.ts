@@ -12,6 +12,8 @@ import {
   session,
   utilityProcess,
 } from "electron";
+import { createBackupSchedule } from "./backup-schedule.js";
+import { createBackups } from "./backups.js";
 import { createCanvasCssCompiler, registerCanvasHandlers } from "./canvas-css.js";
 import { type ExportDialogs, registerExportHandlers } from "./export-ipc.js";
 import { runExportInWorker } from "./export-worker-client.js";
@@ -24,6 +26,8 @@ import {
 } from "./preferences.js";
 import { type ProjectDialogs, registerProjectHandlers } from "./project-ipc.js";
 import { findProjectArgument, PROJECT_EXTENSION, ProjectSession } from "./project-session.js";
+import { openOrRecover } from "./recovery.js";
+import { recoveryDialogs } from "./recovery-dialogs.js";
 import {
   createSecureWebPreferences,
   hardenSession,
@@ -49,7 +53,15 @@ app.on("web-contents-created", (_event, contents) => {
   hardenWebContents(contents, appUrl);
 });
 
-const projectSession = new ProjectSession();
+// Rolling backups of the open site (F-SITE-6), the way back from a damaged file (1.7).
+const backups = createBackups({ root: join(app.getPath("userData"), "backups") });
+const backupSchedule = createBackupSchedule(backups);
+const projectSession = new ProjectSession({
+  opened: (store, path) => void backupSchedule.opened(store, path),
+  committed: () => backupSchedule.committed(),
+  closed: () => backupSchedule.closed(),
+});
+const openSite = (path: string) => openOrRecover(projectSession, path, backups, recoveryDialogs);
 
 // Set once the user quits, so a window that held its close back for a last save quits the app
 // afterwards (macOS keeps the app running when its last window closes).
@@ -176,6 +188,7 @@ async function start(): Promise<void> {
     (senderUrl) => isAppUrl(senderUrl, appUrl),
     projectSession,
     projectDialogs,
+    { backups, dialogs: recoveryDialogs },
   );
   registerCanvasHandlers(ipcMain, (senderUrl) => isAppUrl(senderUrl, appUrl), compileCanvasCss);
   flushOnClose = createFlushOnClose(ipcMain, (senderUrl) => isAppUrl(senderUrl, appUrl), {
@@ -192,7 +205,7 @@ async function start(): Promise<void> {
   // A site double-clicked in Explorer arrives as a command-line argument (P1).
   const projectToOpen = projectFromFinder ?? findProjectArgument(process.argv);
   if (projectToOpen !== undefined) {
-    projectSession.open(projectToOpen);
+    await openSite(projectToOpen);
   }
   createMainWindow(preferences);
 
@@ -208,7 +221,7 @@ let projectFromFinder: string | undefined;
 app.on("open-file", (event, path) => {
   event.preventDefault();
   if (app.isReady()) {
-    projectSession.open(path);
+    void openSite(path);
   } else {
     projectFromFinder = path;
   }

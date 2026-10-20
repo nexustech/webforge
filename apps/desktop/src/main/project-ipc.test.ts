@@ -15,7 +15,10 @@ const project = {
 };
 const opened: ProjectResult = { status: "opened", project };
 
-function setUp(dialogs: Partial<ProjectDialogs> = {}) {
+function setUp(
+  dialogs: Partial<ProjectDialogs> = {},
+  recovery?: Parameters<typeof registerProjectHandlers>[4],
+) {
   const handlers = new Map<string, Handler>();
   const ipc = {
     handle: (channel: string, handler: Handler) => {
@@ -28,12 +31,20 @@ function setUp(dialogs: Partial<ProjectDialogs> = {}) {
     current: vi.fn(() => project),
     readSite: vi.fn(() => ({ status: "empty" })),
     commit: vi.fn(() => ({ status: "saved" })),
+    uiState: vi.fn(() => ({ editorMode: "content" })),
+    setUiState: vi.fn(() => ({ status: "saved" })),
   };
-  registerProjectHandlers(ipc, (url) => url === APP_URL, session as unknown as ProjectSession, {
-    chooseNewProjectPath: async () => "/sites/Bakery.wforge",
-    chooseProjectToOpen: async () => "/sites/Bakery.wforge",
-    ...dialogs,
-  });
+  registerProjectHandlers(
+    ipc,
+    (url) => url === APP_URL,
+    session as unknown as ProjectSession,
+    {
+      chooseNewProjectPath: async () => "/sites/Bakery.wforge",
+      chooseProjectToOpen: async () => "/sites/Bakery.wforge",
+      ...dialogs,
+    },
+    recovery,
+  );
   const invoke = (channel: string, senderUrl = APP_URL, ...args: unknown[]) => {
     const handler = handlers.get(channel);
     if (handler === undefined) {
@@ -103,11 +114,39 @@ describe("registerProjectHandlers", () => {
     expect(session.commit).not.toHaveBeenCalled();
   });
 
+  it("offers a damaged site's backups when one is configured", async () => {
+    const recovery = {
+      backups: { list: vi.fn(() => []), restore: vi.fn(() => "") },
+      dialogs: {
+        ask: vi.fn(async () => "cancel" as const),
+        chooseBackup: vi.fn(async () => undefined),
+        noBackups: vi.fn(async () => undefined),
+      },
+    };
+    const { invoke, session } = setUp({}, recovery);
+    session.open.mockReturnValueOnce({ status: "failed", reason: "corrupt" } as never);
+
+    await expect(invoke("project:open")).resolves.toEqual({ status: "failed", reason: "corrupt" });
+    expect(recovery.backups.list).toHaveBeenCalledWith("/sites/Bakery.wforge");
+    expect(recovery.dialogs.noBackups).toHaveBeenCalled();
+  });
+
   it("rejects calls from other frames before showing a dialog", async () => {
     const chooseNewProjectPath = vi.fn(async () => "/x.wforge");
     const { invoke } = setUp({ chooseNewProjectPath });
 
     await expect(invoke("project:create", "https://example.com/")).rejects.toThrow(/untrusted/);
     expect(chooseNewProjectPath).not.toHaveBeenCalled();
+  });
+
+  it("reads and remembers the editor mode, refusing modes it doesn't know", async () => {
+    const { invoke, session } = setUp();
+
+    await expect(invoke("project:get-ui-state")).resolves.toEqual({ editorMode: "content" });
+    await expect(
+      invoke("project:set-ui-state", APP_URL, { editorMode: "design" }),
+    ).resolves.toEqual({ status: "saved" });
+    expect(session.setUiState).toHaveBeenCalledWith({ editorMode: "design" });
+    await expect(invoke("project:set-ui-state", APP_URL, { editorMode: "zoom" })).rejects.toThrow();
   });
 });

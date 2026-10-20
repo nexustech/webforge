@@ -13,6 +13,8 @@ export type {
   ProjectResult,
   ProjectSummary,
   ReadSiteResult,
+  SiteUiState,
+  UiStateResult,
 } from "./ipc/project.js";
 export type { ExportResult } from "./ipc/site.js";
 

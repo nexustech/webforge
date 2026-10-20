@@ -17,5 +17,7 @@ export const COMMAND_IDS = {
   toggleDrawer: "view.toggleDrawer",
   resetPanels: "view.resetPanels",
   theme: "view.theme",
+  editorMode: "view.editorMode",
+  editorLevel: "view.editorLevel",
   about: "help.about",
 } as const;

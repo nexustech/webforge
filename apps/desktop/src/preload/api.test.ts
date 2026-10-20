@@ -101,6 +101,22 @@ describe("createWebforgeApi site export", () => {
     await expect(api.site.export(snapshot)).rejects.toThrow();
   });
 
+  it("reads and remembers the editor mode through the project UI-state channels", async () => {
+    const invoke = vi.fn(async (channel: string) =>
+      channel === "project:get-ui-state" ? { editorMode: "content" } : { status: "saved" },
+    );
+    const api = apiWith(invoke);
+
+    await expect(api.project.getUiState()).resolves.toEqual({ editorMode: "content" });
+    await expect(api.project.setUiState({ editorMode: "design" })).resolves.toEqual({
+      status: "saved",
+    });
+    expect(invoke).toHaveBeenLastCalledWith("project:set-ui-state", { editorMode: "design" });
+    await expect(
+      apiWith(async () => ({ editorMode: "zoom" })).project.getUiState(),
+    ).rejects.toThrow();
+  });
+
   it("gets and changes the preferences through the prefs channels", async () => {
     const preferences = { theme: "light", editorLevel: "simple", panelLayout: {} };
     const invoke = vi.fn(async () => preferences);

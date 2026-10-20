@@ -49,6 +49,14 @@ export type StoredBlob = {
 /** Who took a version: the user (`manual`) or Webforge (`auto`). */
 export type VersionKind = "manual" | "auto";
 
+/**
+ * The editor's mode for a site (M3, 1.10): Design changes the layout, Content edits text and
+ * images only. Remembered per site, but UI state: not part of the site, never versioned or undone.
+ */
+export type SiteEditorMode = "design" | "content";
+
+const siteEditorModeSchema = z.enum(["design", "content"]);
+
 /** A saved version of the project (snapshot of the working copy). */
 export type VersionInfo = {
   readonly id: string;
@@ -126,6 +134,8 @@ const metaSchema = z.strictObject({
   project_id: z.uuid(),
   name: z.string().min(1),
   created_at: z.iso.datetime(),
+  /** Checked when read (see `readEditorMode`), so a bad value never stops the file opening. */
+  editor_mode: z.string().optional(),
 });
 
 /** A version's documents in `readDocuments` order. An array, so any id (even "__proto__") works. */
@@ -716,16 +726,41 @@ export class ProjectStore {
    * copy even while the site is being edited, written in steps so the main process stays
    * responsive. The copy is built under a temporary name and renamed into place, so `path` never
    * holds half a backup.
+   *
+   * The copy is read through a connection of its own, so this store can be closed (another site
+   * opened, the app quit) while a backup is still running.
    */
   async backupTo(path: string): Promise<void> {
     const tempPath = join(dirname(path), `.${basename(path)}.${randomUUID()}.tmp`);
+    const source = new Database(this.#db.name, { readonly: true, fileMustExist: true });
     try {
-      await this.#db.backup(tempPath);
+      hardenConnection(source);
+      await source.backup(tempPath);
       renameSync(tempPath, path);
     } catch (error) {
       rmSync(tempPath, { force: true });
       throw error;
+    } finally {
+      source.close();
     }
+  }
+
+  /** The editor's mode for this site; Design until someone switches it. */
+  readEditorMode(): SiteEditorMode {
+    const row = this.#prepare("SELECT value FROM meta WHERE key = 'editor_mode'").get() as
+      | { value: unknown }
+      | undefined;
+    const mode = siteEditorModeSchema.safeParse(row?.value);
+    return mode.success ? mode.data : "design";
+  }
+
+  /** Remembers the editor's mode for this site. */
+  writeEditorMode(mode: SiteEditorMode): void {
+    this.#assertWritable();
+    this.#prepare(
+      `INSERT INTO meta (key, value) VALUES ('editor_mode', ?)
+       ON CONFLICT (key) DO UPDATE SET value = excluded.value`,
+    ).run(siteEditorModeSchema.parse(mode));
   }
 
   /** Closes the file. With the rollback journal, no side files are left next to it. */

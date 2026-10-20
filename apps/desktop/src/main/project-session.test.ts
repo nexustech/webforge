@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { changedDocuments, createSite, pageDocumentId } from "@webforge/model";
-import { ProjectStore } from "@webforge/storage";
+import { ProjectStore, ReadOnlyProjectError } from "@webforge/storage";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { findProjectArgument, ProjectSession, withProjectExtension } from "./project-session.js";
 
@@ -172,6 +172,68 @@ describe("ProjectSession site documents", () => {
 
     expect(session.readSite()).toEqual({ status: "failed", reason: "newer-format" });
     expect(session.commit([])).toEqual({ status: "failed", reason: "invalid" });
+  });
+});
+
+describe("ProjectSession editor mode", () => {
+  it("has none without a site, and remembers it with the open site", () => {
+    expect(session.uiState()).toBeNull();
+    expect(session.setUiState({ editorMode: "content" })).toEqual({
+      status: "failed",
+      reason: "no-site",
+    });
+
+    const path = join(dir, "Bakery.wforge");
+    session.create(path);
+    expect(session.uiState()).toEqual({ editorMode: "design" });
+    expect(session.setUiState({ editorMode: "content" })).toEqual({ status: "saved" });
+
+    session.close();
+    session.open(path);
+    expect(session.uiState()).toEqual({ editorMode: "content" });
+  });
+
+  it("reports a read-only site or a write error instead of throwing", () => {
+    session.create(join(dir, "Bakery.wforge"));
+    const write = vi.spyOn(ProjectStore.prototype, "writeEditorMode");
+
+    write.mockImplementationOnce(() => {
+      throw new ReadOnlyProjectError();
+    });
+    expect(session.setUiState({ editorMode: "content" })).toEqual({
+      status: "failed",
+      reason: "read-only",
+    });
+
+    write.mockImplementationOnce(() => {
+      throw Object.assign(new Error("disk full"), { code: "SQLITE_FULL" });
+    });
+    expect(session.setUiState({ editorMode: "content" })).toEqual({
+      status: "failed",
+      reason: "unknown",
+    });
+    expect(console.error).toHaveBeenCalledWith(
+      "Webforge could not remember the editor mode (SQLITE_FULL)",
+    );
+  });
+});
+
+describe("ProjectSession events", () => {
+  it("tells listeners when a site opens, is saved and closes", () => {
+    const events = { opened: vi.fn(), committed: vi.fn(), closed: vi.fn() };
+    const observed = new ProjectSession(events);
+    const path = join(dir, "events.wforge");
+    const site = createSite({ name: "E", language: "en", homeTitle: "Home", notFoundTitle: "404" });
+
+    observed.create(path);
+    expect(events.opened).toHaveBeenCalledWith(expect.any(ProjectStore), path);
+    observed.commit(changedDocuments(undefined, site));
+    expect(events.committed).toHaveBeenCalledTimes(1);
+    observed.commit([{ type: "delete", id: pageDocumentId(site.homePageId) }]);
+    expect(events.committed).toHaveBeenCalledTimes(1);
+    observed.close();
+    observed.close();
+    expect(events.closed).toHaveBeenCalledTimes(1);
   });
 });
 

@@ -1,11 +1,12 @@
 import {
   type CanvasEngine,
   createPuckEngine,
+  type EditorMode,
   type HistoryCommand,
   installHistoryKeys,
 } from "@webforge/engine";
 import { t } from "@webforge/i18n";
-import { useEffect, useRef, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useCommandRegistry } from "../shell/command-context.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { installCommandShortcuts } from "../shell/commands.js";
@@ -29,6 +30,8 @@ export type EditorProps = {
   readonly createEngine?: () => CanvasEngine;
   /** Compiles the site CSS for the canvas; injectable for tests. Defaults to the preload API. */
   readonly compileCss?: CompileCanvasCss;
+  /** Design or Content mode (M3, 1.10): passed to the engine, which locks the layout in Content. */
+  readonly mode?: EditorMode;
 };
 
 const compileWithPreload: CompileCanvasCss = (request) =>
@@ -42,8 +45,15 @@ export function Editor({
   session,
   createEngine = createPuckEngine,
   compileCss = compileWithPreload,
+  mode = "design",
 }: EditorProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
+  const [engine, setEngine] = useState<CanvasEngine | null>(null);
+  // The mode at mount time, so a site opened in Content mode is never unlocked for a moment.
+  const modeRef = useRef(mode);
+  useEffect(() => {
+    modeRef.current = mode;
+  });
   const connectionRef = useRef<EngineConnection | null>(null);
   const { history } = session;
   const registry = useCommandRegistry();
@@ -99,12 +109,16 @@ export function Editor({
     const engine = createEngine();
     const site = history.document.getState();
     engine.mount(element, { library: session.library, theme: site.theme });
+    if (modeRef.current !== "design") {
+      engine.setMode(modeRef.current);
+    }
     const page = currentPage(session);
     if (page !== undefined) {
       engine.loadPage(page.doc, site.layout);
     }
     const connection = connectEngine(engine, session);
     connectionRef.current = connection;
+    setEngine(engine);
     const stopSiteCss = connectSiteCss(engine, session, compileCss, document.baseURI);
     // One handler for the whole window (U4); the engine reports keys pressed inside its iframe.
     const removeKeys = installHistoryKeys(window, (command) => {
@@ -131,6 +145,7 @@ export function Editor({
     });
 
     return () => {
+      setEngine(null);
       stopAdd();
       stopFrameWindow();
       removeFrameShortcuts?.();
@@ -144,6 +159,10 @@ export function Editor({
       element.remove();
     };
   }, [session, history, createEngine, compileCss, registry]);
+
+  useEffect(() => {
+    engine?.setMode(mode);
+  }, [engine, mode]);
 
   // Undo History goes in the left column's bottom (UI1); 1.11 rebuilds it.
   const panels = usePanelRegistry();

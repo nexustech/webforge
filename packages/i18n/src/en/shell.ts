@@ -40,4 +40,13 @@ export const shell = {
   "command.resetPanels": "Reset Panels",
   "command.lightTheme": "Use Light Theme",
   "command.darkTheme": "Use Dark Theme",
+  "command.designMode": "Switch to Design Mode",
+  "command.contentMode": "Switch to Content Mode",
+  "command.advancedMode": "Use Advanced Mode",
+  "command.simpleMode": "Use Simple Mode",
+
+  // Design | Content (M3): Design changes the layout, Content edits text and images only.
+  "shell.mode": "Editing mode",
+  "shell.mode.design": "Design",
+  "shell.mode.content": "Content",
 } as const;

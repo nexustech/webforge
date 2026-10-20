@@ -20,6 +20,8 @@ import type {
   ProjectResult,
   ProjectSummary,
   ReadSiteResult,
+  SiteUiState,
+  UiStateResult,
 } from "../shared/ipc-contract.js";
 
 /** File extension of a Webforge site (P1). */
@@ -49,7 +51,8 @@ export function findProjectArgument(argv: readonly string[]): string | undefined
     .find((arg) => !arg.startsWith("-") && extname(arg).toLowerCase() === PROJECT_EXTENSION);
 }
 
-function samePath(a: string, b: string): boolean {
+/** Whether two paths name the same file (case-insensitively on Windows). */
+export function samePath(a: string, b: string): boolean {
   const normalise = (path: string) =>
     process.platform === "win32" ? resolve(path).toLowerCase() : resolve(path);
   return normalise(a) === normalise(b);
@@ -76,6 +79,16 @@ function failure(error: unknown): ProjectResult {
   return { status: "failed", reason: "unknown" };
 }
 
+/** What a {@link ProjectSession} tells others, e.g. the backup schedule. */
+export type ProjectSessionEvents = {
+  /** A site was opened or created. */
+  opened?(store: ProjectStore, path: string): void;
+  /** Changes to the open site were saved. */
+  committed?(): void;
+  /** The open site was closed. */
+  closed?(): void;
+};
+
 /**
  * The site open in the main process. At most one site is open at a time; opening or creating
  * another replaces it only once the new one is open, so a failure keeps the current site.
@@ -85,6 +98,11 @@ export class ProjectSession {
   #path: string | undefined;
   /** The open site as last read or saved; commits are checked against it. */
   #site: SiteDoc | undefined;
+  readonly #events: ProjectSessionEvents;
+
+  constructor(events: ProjectSessionEvents = {}) {
+    this.#events = events;
+  }
 
   /** The open site, or `null`. */
   current(): ProjectSummary | null {
@@ -183,11 +201,39 @@ export class ProjectSession {
       return { status: "failed", reason: "unknown" };
     }
     this.#site = next.data;
+    this.#events.committed?.();
     return { status: "saved" };
+  }
+
+  /** The open site's editor state, or `null` without an open site. */
+  uiState(): SiteUiState | null {
+    return this.#store === undefined ? null : { editorMode: this.#store.readEditorMode() };
+  }
+
+  /** Remembers the editor state with the open site (not a site change: never versioned). */
+  setUiState(state: SiteUiState): UiStateResult {
+    const store = this.#store;
+    if (store === undefined) {
+      return { status: "failed", reason: "no-site" };
+    }
+    try {
+      store.writeEditorMode(state.editorMode);
+      return { status: "saved" };
+    } catch (error) {
+      if (error instanceof ReadOnlyProjectError) {
+        return { status: "failed", reason: "read-only" };
+      }
+      const code = error instanceof Error && "code" in error ? String(error.code) : "no code";
+      console.error(`Webforge could not remember the editor mode (${code})`);
+      return { status: "failed", reason: "unknown" };
+    }
   }
 
   /** Closes the open site, if any. */
   close(): void {
+    if (this.#store !== undefined) {
+      this.#events.closed?.();
+    }
     this.#store?.close();
     this.#store = undefined;
     this.#path = undefined;
@@ -204,6 +250,7 @@ export class ProjectSession {
     this.close();
     this.#store = store;
     this.#path = path;
+    this.#events.opened?.(store, path);
     return { status: "opened", project: summarise(store, path) };
   }
 }
