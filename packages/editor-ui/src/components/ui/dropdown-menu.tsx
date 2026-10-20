@@ -66,7 +66,7 @@ export function DropdownMenuCheckboxItem({
   return (
     <DropdownMenuPrimitive.CheckboxItem
       data-slot="dropdown-menu-checkbox-item"
-      className={cn(menuStyles.item, menuStyles.indicatorItem, className)}
+      className={cn(menuStyles.item, menuStyles.inset, className)}
       {...props}
     >
       <span className={menuStyles.indicator}>
@@ -95,7 +95,7 @@ export function DropdownMenuRadioItem({
   return (
     <DropdownMenuPrimitive.RadioItem
       data-slot="dropdown-menu-radio-item"
-      className={cn(menuStyles.item, menuStyles.indicatorItem, className)}
+      className={cn(menuStyles.item, menuStyles.inset, className)}
       {...props}
     >
       <span className={menuStyles.indicator}>

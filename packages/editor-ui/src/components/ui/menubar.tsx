@@ -89,7 +89,7 @@ export function MenubarCheckboxItem({
   return (
     <MenubarPrimitive.CheckboxItem
       data-slot="menubar-checkbox-item"
-      className={cn(menuStyles.item, menuStyles.indicatorItem, className)}
+      className={cn(menuStyles.item, menuStyles.inset, className)}
       {...props}
     >
       <span className={menuStyles.indicator}>

@@ -354,6 +354,8 @@ describe("Command", () => {
     expect(screen.queryByRole("option", { name: "Reset Panels" })).toBeNull();
     await user.keyboard("{Enter}");
     expect(onSelect).toHaveBeenCalledOnce();
+    await user.click(screen.getByRole("option", { name: /Add page/ }));
+    expect(onSelect).toHaveBeenCalledTimes(2);
     await user.type(screen.getByRole("combobox"), "zzz");
     expect(screen.getByText("Nothing found")).toBeTruthy();
   });

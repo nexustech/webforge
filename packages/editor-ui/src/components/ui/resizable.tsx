@@ -3,14 +3,9 @@ import { Group, Panel, Separator } from "react-resizable-panels";
 import { cn } from "../../lib/cn.js";
 
 /** A row or column of resizable panels (UI1 panel columns and drawers). */
-export function ResizablePanelGroup({ className, ...props }: ComponentProps<typeof Group>) {
-  return (
-    <Group
-      data-slot="resizable-panel-group"
-      className={cn("flex h-full w-full aria-[orientation=vertical]:flex-col", className)}
-      {...props}
-    />
-  );
+export function ResizablePanelGroup(props: ComponentProps<typeof Group>) {
+  // The library lays the group out itself (inline flex, size and direction).
+  return <Group data-slot="resizable-panel-group" {...props} />;
 }
 
 /** One panel of a {@link ResizablePanelGroup}. */

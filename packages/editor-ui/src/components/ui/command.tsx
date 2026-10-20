@@ -100,7 +100,8 @@ export function CommandItem({ className, ...props }: ComponentProps<typeof Comma
     <CommandPrimitive.Item
       data-slot="command-item"
       className={cn(
-        menuStyles.item,
+        // cmdk sets data-disabled="false" on enabled items, so match the value, not the attribute.
+        menuStyles.row,
         "data-[disabled=true]:pointer-events-none data-[disabled=true]:text-disabled data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground",
         className,
       )}

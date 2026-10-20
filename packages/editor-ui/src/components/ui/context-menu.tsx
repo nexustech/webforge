@@ -59,7 +59,7 @@ export function ContextMenuCheckboxItem({
   return (
     <ContextMenuPrimitive.CheckboxItem
       data-slot="context-menu-checkbox-item"
-      className={cn(menuStyles.item, menuStyles.indicatorItem, className)}
+      className={cn(menuStyles.item, menuStyles.inset, className)}
       {...props}
     >
       <span className={menuStyles.indicator}>
