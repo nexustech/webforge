@@ -95,6 +95,42 @@ describe("connectEngine", () => {
     expect(doc()).toEqual(page);
   });
 
+  it("records a one-field edit as just that field, without comparing the page", () => {
+    const { session, engine, doc } = setup();
+    const before = doc();
+
+    engine.edit({
+      kind: "text",
+      nodeId: "heading-1",
+      componentType: "Heading",
+      field: "text",
+      // A page that differs elsewhere too: only the patch counts.
+      page: { ...withHeadingText(before, "Hello"), content: [] },
+      patch: { nodeId: "heading-1", field: "text", value: "Hello" },
+    });
+
+    expect(doc()).toEqual(withHeadingText(before, "Hello"));
+    expect(session.history.entries()[0]?.forward).toEqual([
+      expect.objectContaining({ op: "replace", value: "Hello" }),
+    ]);
+  });
+
+  it("falls back to the whole page when the patched element isn't in the document", () => {
+    const { engine, doc } = setup();
+    const page = withHeadingText(doc(), "Hello");
+
+    engine.edit({
+      kind: "text",
+      nodeId: "gone",
+      componentType: "Heading",
+      field: "text",
+      page,
+      patch: { nodeId: "gone", field: "text", value: "Hello" },
+    });
+
+    expect(doc()).toEqual(page);
+  });
+
   it("sends undo, redo and jumps back to the canvas", () => {
     const { session, engine } = setup();
     engine.edit({

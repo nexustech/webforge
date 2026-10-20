@@ -89,9 +89,30 @@ describe("createPuckEngine", () => {
   it("ignores a change to the page it already shows", async () => {
     const before = element.innerHTML;
 
-    await act(async () => engine.applyChange({ page: structuredClone(page) }));
+    await act(async () => engine.applyChange({ page }));
 
     expect(element.innerHTML).toBe(before);
+  });
+
+  it("shows a page given before Puck was ready once it is", async () => {
+    const late = createPuckEngine({ iframe: false });
+    const host = document.createElement("div");
+    document.body.append(host);
+    const other: PageDoc = {
+      root: { props: {} },
+      content: [{ type: "Heading", props: { id: "z", text: "Later" } }],
+    };
+
+    await act(async () => {
+      late.mount(host, { library, theme: { name: "test" } });
+      late.applyChange({ page: other });
+    });
+    await settle();
+
+    expect(host.querySelector(".t-heading")?.textContent).toBe("Later");
+    late.destroy();
+    await settle();
+    host.remove();
   });
 
   it("selects by id and keeps the element selected when it moves", async () => {
@@ -138,7 +159,12 @@ describe("createPuckEngine", () => {
     await settle();
 
     expect(edits).toHaveLength(1);
-    expect(edits[0]).toMatchObject({ kind: "text", nodeId: "a", field: "text" });
+    expect(edits[0]).toMatchObject({
+      kind: "text",
+      nodeId: "a",
+      field: "text",
+      patch: { nodeId: "a", field: "text", value: "Changed" },
+    });
     expect(edits[0]?.page.content[0]?.props.text).toBe("Changed");
   });
 

@@ -26,8 +26,7 @@ import type {
 import { installHistoryKeys } from "../history-keys.js";
 import { preserveCaret } from "./caret.js";
 import { toPuckConfig } from "./config.js";
-import { isDeepEqual } from "./deep-equal.js";
-import { editFromAction, selectedNodeId, toPageDoc } from "./edit-from-action.js";
+import { editFromAction, selectedNodeId } from "./edit-from-action.js";
 import { staleRichText } from "./stale-rich-text.js";
 import { allNodes, findNode } from "./tree.js";
 
@@ -85,8 +84,15 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   let library: ComponentLibrary | null = null;
   let config: Config | null = null;
   let getPuck: GetPuck | null = null;
-  /** The page as Puck shows it. */
+  /**
+   * The page as the app last gave it (`loadPage`, `applyChange`) or as Puck last reported it. Kept
+   * as the app's own object, so its next change can be recognised by reference.
+   */
   let page: PageDoc = EMPTY_PAGE;
+  /** Bumped whenever the app gives the engine a different page. */
+  let revision = 0;
+  /** The revision Puck shows; behind `revision` while the app's page hasn't reached Puck yet. */
+  let shownRevision = 0;
   let selection: string | null = null;
   let mode: EditorMode = "design";
   /** True while Puck runs `onAction`, inside its store update: dispatching then would be lost. */
@@ -121,6 +127,14 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     }
   };
 
+  /** Sends `page` to Puck, unless Puck isn't ready yet (then the Bridge sends it once it is). */
+  const showPage = () => {
+    if (getPuck !== null) {
+      dispatch({ type: "setData", data: () => toPuckData(page), recordHistory: false });
+      shownRevision = revision;
+    }
+  };
+
   const selectorFor = (id: string | null) =>
     id === null ? null : (getPuck?.().getSelectorForId(id) ?? null);
 
@@ -128,7 +142,6 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     inAction = true;
     try {
       if (applying) {
-        page = toPageDoc(next.data);
         return;
       }
       if (library !== null) {
@@ -165,8 +178,8 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     useEffect(() => reportSelection(selectedId), [selectedId]);
     useEffect(() => {
       getPuck = get;
-      if (!isDeepEqual(toPageDoc(get().appState.data), page)) {
-        dispatch({ type: "setData", data: () => toPuckData(page), recordHistory: false });
+      if (shownRevision !== revision) {
+        showPage();
       }
       // A selection made before Puck was ready. Only when it differs: re-selecting resets Puck's
       // field focus and remounts an open rich-text editor (this effect re-runs on re-renders).
@@ -223,13 +236,16 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       config = toPuckConfig(opts.library, (id) => editorRevisions.get(id) ?? 0);
       root = createRoot(el);
       render();
+      // Puck starts with the current page.
+      shownRevision = revision;
     },
 
     loadPage(nextPage) {
       page = nextPage;
+      revision++;
       editorRevisions.clear();
       reportSelection(null);
-      dispatch({ type: "setData", data: () => toPuckData(nextPage), recordHistory: false });
+      showPage();
       dispatch({ type: "setUi", ui: { itemSelector: null } });
     },
 
@@ -239,7 +255,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
         page = nextPage;
         return;
       }
-      if (nextPage === page || isDeepEqual(nextPage, page)) {
+      if (nextPage === page) {
         return;
       }
       if (library !== null) {
@@ -252,8 +268,9 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
         }
       }
       page = nextPage;
+      revision++;
       preserveCaret(frameDocument);
-      dispatch({ type: "setData", data: () => toPuckData(nextPage), recordHistory: false });
+      showPage();
       // Puck selects by position; keep the same element selected, or none if it is gone.
       if (selection !== null && findNode(nextPage, selection) === undefined) {
         selection = null;

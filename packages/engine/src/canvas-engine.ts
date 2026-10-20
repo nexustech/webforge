@@ -28,6 +28,17 @@ export type EngineEditKind =
   | "page";
 
 /**
+ * The whole of an edit that set one field of one element to a plain value (text, number, boolean
+ * or `null`), such as a keystroke or a select field. The app can record just this instead of
+ * comparing the whole page (ADR 0007).
+ */
+export type EnginePatch = {
+  readonly nodeId: string;
+  readonly field: string;
+  readonly value: string | number | boolean | null;
+};
+
+/**
  * An edit the user made on the canvas. The engine has already applied it to its own view; the app
  * records it in the history and the document store, which then becomes the source of truth.
  */
@@ -41,6 +52,8 @@ export type EngineEdit = {
   readonly field: string | null;
   /** The whole page after the edit. */
   readonly page: PageDoc;
+  /** Set when the edit changed nothing but one field of one element to a plain value. */
+  readonly patch?: EnginePatch;
   /** The selection after the edit. */
   readonly selection: string | null;
 };
