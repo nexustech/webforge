@@ -567,12 +567,13 @@ export class ProjectStore {
         .all()
         .map((row) => z.object({ hash: z.string(), size: z.number() }).parse(row))
         .filter((blob) => !referenced.has(blob.hash));
-      const removeAssets = this.#prepare("DELETE FROM assets WHERE blob_hash = ?");
+      // Assets first: their foreign key keeps a blob from being deleted while a row points at it.
+      const { changes: assets } = this.#prepare(
+        "DELETE FROM assets WHERE blob_hash IN (SELECT value FROM json_each(?))",
+      ).run(JSON.stringify(unreferenced.map((blob) => blob.hash)));
       const removeBlob = this.#prepare("DELETE FROM blobs WHERE hash = ?");
-      let assets = 0;
       let bytes = 0;
       for (const blob of unreferenced) {
-        assets += removeAssets.run(blob.hash).changes;
         removeBlob.run(blob.hash);
         bytes += blob.size;
       }
