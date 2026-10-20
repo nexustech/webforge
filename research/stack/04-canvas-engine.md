@@ -117,7 +117,7 @@ Build a single-page prototype in the Electron + React + shadcn/ui shell with 6 c
 
 ### Shared sections design (C5)
 - **Site Layout:** every site has a layout with **Header** and **Footer** regions that wrap every page automatically, like a master page. MVP covers exactly this.
-- **Stored once:** `site/layout/header.json` and `site/layout/footer.json` (Puck data), separate from page files. Pages don't contain copies.
+- **Stored once:** the `layout:header` and `layout:footer` documents in the `.wforge` file (Puck data, [ADR 0003](../../docs/adr/0003-wforge-sqlite-storage.md)), separate from the page documents. Pages don't contain copies.
 - **Editing:** click the footer on *any* page to edit it in place. The persistent banner *"Editing shared Footer: changes apply to all 6 pages"* shows while it's selected (D7). Changes appear on every page immediately; one undo reverts it everywhere.
 - **Implementation in Puck:** the page canvas renders `Header` + page content + `Footer`. Header/Footer are fed from the layout store, and edits are routed back to the layout file through the adapter. *Validate in the spike* (fallback: a dedicated "Edit layout" mode that opens the layout in its own Puck instance).
 - **Per-page opt-out (only):** a page setting *"Hide header/footer on this page"* (e.g. a landing page). No per-page variants.
