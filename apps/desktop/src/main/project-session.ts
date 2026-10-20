@@ -49,7 +49,8 @@ export function findProjectArgument(argv: readonly string[]): string | undefined
     .find((arg) => !arg.startsWith("-") && extname(arg).toLowerCase() === PROJECT_EXTENSION);
 }
 
-function samePath(a: string, b: string): boolean {
+/** Whether two paths name the same file (case-insensitively on Windows). */
+export function samePath(a: string, b: string): boolean {
   const normalise = (path: string) =>
     process.platform === "win32" ? resolve(path).toLowerCase() : resolve(path);
   return normalise(a) === normalise(b);
@@ -76,6 +77,16 @@ function failure(error: unknown): ProjectResult {
   return { status: "failed", reason: "unknown" };
 }
 
+/** What a {@link ProjectSession} tells others, e.g. the backup schedule. */
+export type ProjectSessionEvents = {
+  /** A site was opened or created. */
+  opened?(store: ProjectStore, path: string): void;
+  /** Changes to the open site were saved. */
+  committed?(): void;
+  /** The open site was closed. */
+  closed?(): void;
+};
+
 /**
  * The site open in the main process. At most one site is open at a time; opening or creating
  * another replaces it only once the new one is open, so a failure keeps the current site.
@@ -85,6 +96,11 @@ export class ProjectSession {
   #path: string | undefined;
   /** The open site as last read or saved; commits are checked against it. */
   #site: SiteDoc | undefined;
+  readonly #events: ProjectSessionEvents;
+
+  constructor(events: ProjectSessionEvents = {}) {
+    this.#events = events;
+  }
 
   /** The open site, or `null`. */
   current(): ProjectSummary | null {
@@ -183,11 +199,15 @@ export class ProjectSession {
       return { status: "failed", reason: "unknown" };
     }
     this.#site = next.data;
+    this.#events.committed?.();
     return { status: "saved" };
   }
 
   /** Closes the open site, if any. */
   close(): void {
+    if (this.#store !== undefined) {
+      this.#events.closed?.();
+    }
     this.#store?.close();
     this.#store = undefined;
     this.#path = undefined;
@@ -204,6 +224,7 @@ export class ProjectSession {
     this.close();
     this.#store = store;
     this.#path = path;
+    this.#events.opened?.(store, path);
     return { status: "opened", project: summarise(store, path) };
   }
 }

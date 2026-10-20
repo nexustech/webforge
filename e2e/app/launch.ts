@@ -1,5 +1,6 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { createRequire } from "node:module";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, _electron as electron } from "@playwright/test";
 
@@ -20,6 +21,12 @@ export async function launchDesktopApp(
   options: {
     /** Extra command-line arguments, e.g. a `.wforge` path as a double-click passes it. */
     readonly args?: readonly string[];
+    /**
+     * The app's user-data folder (preferences, backups, crash reports). Each launch gets a new
+     * temporary one by default, so tests and parallel runs from other worktrees never share
+     * state or block each other; pass the same folder to relaunch "the same installation".
+     */
+    readonly userDataDir?: string;
   } = {},
 ): Promise<ElectronApplication> {
   if (!existsSync(join(desktopDir, "out/main/index.js"))) {
@@ -34,10 +41,22 @@ export async function launchDesktopApp(
         entry[1] !== undefined && entry[0] !== "ELECTRON_RENDERER_URL",
     ),
   );
-  return electron.launch({
+  const userDataDir = options.userDataDir ?? mkdtempSync(join(tmpdir(), "webforge-user-data-"));
+  const launched = await electron.launch({
     executablePath,
-    args: [desktopDir, ...(options.args ?? [])],
+    args: [desktopDir, `--user-data-dir=${userDataDir}`, ...(options.args ?? [])],
     cwd: desktopDir,
     env,
   });
+  if (options.userDataDir === undefined) {
+    // Best effort: Chromium may still hold a file for a moment after the app exits.
+    launched.once("close", () => {
+      try {
+        rmSync(userDataDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+      } catch {
+        // Left in the temp folder for the OS to clean up.
+      }
+    });
+  }
+  return launched;
 }
