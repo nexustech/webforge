@@ -16,7 +16,7 @@ A **paid, closed-source desktop app** (Windows 10/11 x64 + macOS 13+ on Apple Si
 |---|---|---|
 | Desktop shell | **Electron 44** (Chromium 152, Node 24), secure-by-default configuration | [01](../research/stack/01-electron-vs-tauri.md) |
 | Language | **TypeScript 7** (strict), ESM | [03-engineering-standards](03-engineering-standards.md) |
-| Editor UI | **React 19** (+ React Compiler) + **shadcn/ui** on **Tailwind v4** | [02](../research/stack/02-react-vs-svelte.md) |
+| Editor UI | **React 19** (+ React Compiler) + **shadcn/ui** on **Tailwind v4**; Bootstrap Studio-like layout and dark theme (UI1) | [02](../research/stack/02-react-vs-svelte.md), [product/04](../research/product/04-editor-look-and-feel.md) |
 | Editor state | **Zustand** stores + **Immer** patches; custom History Manager | [03 undo](../research/stack/03-undo-redo.md) |
 | Canvas / editor engine | **Puck** (MIT) behind a `CanvasEngine` adapter (C6) ✅ go, runs under our history ([ADR 0004](../docs/adr/0004-puck-with-webforge-history.md)); fallback: own canvas on dnd-kit + Tiptap | [04](../research/stack/04-canvas-engine.md) |
 | Rich text | **Tiptap** (MIT packages only) via Puck `richtext` fields | 04, C1 |
@@ -249,3 +249,4 @@ interface Publisher {
 | B1–B7 | Targets, hosting deferred, form presets, GA4, FTP rules, consent scope | [08](../research/stack/08-publishing.md) |
 | T1–T4 | DIY users, Simple/Advanced mode, structured layout, "Element" | [product/01](../research/product/01-terminology.md) |
 | M1–M5 | MVP CMS scope, Blog v1.1, Content mode toggle, search/i18n later | [product/02](../research/product/02-cms.md) |
+| UI1 | Editor look and feel: Bootstrap Studio-like layout, dark/light tokens, compact density | [product/04](../research/product/04-editor-look-and-feel.md) |

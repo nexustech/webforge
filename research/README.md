@@ -25,4 +25,5 @@ Research supporting [`ideas.md`](../ideas.md).
 | P1 | [Terminology / glossary](product/01-terminology.md) | ✅ Agreed (T1–T4) | DIY small-business users; Simple/Advanced mode; structured layout; Site → Page → Section → Element; Header/Footer; Theme vs Template; Add panel, Layers, Edit panel; Version History vs Undo History; Site Check |
 | P2 | [CMS features](product/02-cms.md) | ✅ Agreed (M1–M5) | MVP: click-to-edit, Content mode toggle, repeating lists, site-wide values, Buy button · v1.1: Blog · then Portfolio, Team, Events · search/multilingual v1.2+ |
 | P3 | [Starting content](product/03-starting-content.md) | ✅ Decided (S1–S5) | 18 sections (~45 variants) + 16 elements; 8 templates; 10–12 curated themes; ~50 bundled fonts + on-demand catalogue |
+| P4 | [Editor look and feel](product/04-editor-look-and-feel.md) | ✅ Decided (UI1) | Bootstrap Studio-like layout, dark default + light theme, compact density, colour-coded actions; own tokens on shadcn/ui |
 
