@@ -68,9 +68,17 @@ export function migrateSiteWith(raw: unknown, options: MigrateOptions): RawSite 
       version,
     );
   }
-  // A deep copy (site documents are JSON), so migrations may change what they get without touching
-  // the caller's data.
-  let site = JSON.parse(JSON.stringify(raw)) as RawSite;
+  if (version === options.currentVersion) {
+    return raw as RawSite;
+  }
+  let site: RawSite;
+  try {
+    // A deep copy (site documents are JSON), so migrations may change what they get without
+    // touching the caller's data.
+    site = JSON.parse(JSON.stringify(raw)) as RawSite;
+  } catch {
+    throw new SiteFormatError("invalid", "The site is not JSON", version);
+  }
   while (version < options.currentVersion) {
     const step = options.migrations[version];
     if (step === undefined) {
@@ -112,7 +120,9 @@ export function migrateSite(raw: unknown): SiteDoc {
       .map((issue) => `${issue.path.join(".")}: ${issue.code}`)
       .join("; ");
     // No `cause`: the zod error's messages would reach the logs with it.
-    throw new SiteFormatError("invalid", `The site fails validation: ${issues}`, readVersion(raw));
+    // migrateSiteWith has checked that `raw` has a valid format version.
+    const version = (raw as RawSite).formatVersion;
+    throw new SiteFormatError("invalid", `The site fails validation: ${issues}`, version);
   }
   return result.data;
 }

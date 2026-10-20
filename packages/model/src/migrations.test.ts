@@ -112,6 +112,17 @@ describe("migrateSiteWith", () => {
     expect(raw.nested.title).toBe("x");
   });
 
+  it("returns a current document as it is, and rejects one that isn't JSON before migrating it", () => {
+    const current = { formatVersion: 2, theme: "light" };
+    expect(migrateSiteWith(current, { migrations, currentVersion: 2 })).toBe(current);
+
+    const cyclic: Record<string, unknown> = { formatVersion: 1 };
+    cyclic.self = cyclic;
+    expect(
+      formatError(() => migrateSiteWith(cyclic, { migrations, currentVersion: 2 })).message,
+    ).toBe("The site is not JSON");
+  });
+
   it("fails on a gap in the chain or a step that doesn't bump the version", () => {
     expect(
       formatError(() =>
