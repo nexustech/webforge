@@ -1,7 +1,7 @@
 import type { Data, PuckAction } from "@puckeditor/core";
+import type { NodeDoc, PageDoc } from "@webforge/model";
+import type { ComponentLibrary } from "@webforge/site-components";
 import { describe, expect, it } from "vitest";
-import type { NodeDoc, PageDoc } from "../canvas-engine.js";
-import type { ComponentLibrary } from "../library.js";
 import { editFromAction, type PuckState, selectedNodeId, toPageDoc } from "./edit-from-action.js";
 
 const library: ComponentLibrary = {

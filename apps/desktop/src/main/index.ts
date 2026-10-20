@@ -1,6 +1,7 @@
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { t } from "@webforge/i18n";
+import type { SiteSnapshot } from "@webforge/model";
 import {
   app,
   BrowserWindow,
@@ -9,7 +10,10 @@ import {
   type OpenDialogOptions,
   type SaveDialogOptions,
   session,
+  utilityProcess,
 } from "electron";
+import { type ExportDialogs, registerExportHandlers } from "./export-ipc.js";
+import { runExportInWorker } from "./export-worker-client.js";
 import { registerIpcHandler } from "./ipc.js";
 import { type ProjectDialogs, registerProjectHandlers } from "./project-ipc.js";
 import { findProjectArgument, PROJECT_EXTENSION, ProjectSession } from "./project-session.js";
@@ -24,6 +28,7 @@ import {
 
 const rendererHtml = join(import.meta.dirname, "../renderer/index.html");
 const preloadScript = join(import.meta.dirname, "../preload/index.cjs");
+const exportWorkerScript = join(import.meta.dirname, "export-worker.js");
 
 // electron-vite sets ELECTRON_RENDERER_URL to the Vite dev server in development only.
 const devServerUrl = app.isPackaged ? undefined : process.env.ELECTRON_RENDERER_URL;
@@ -68,6 +73,27 @@ const projectDialogs: ProjectDialogs = {
   },
 };
 
+const exportDialogs: ExportDialogs = {
+  chooseExportFolder: async () => {
+    const options: OpenDialogOptions = {
+      title: t("export.dialogTitle"),
+      properties: ["openDirectory", "createDirectory", "promptToCreate"],
+    };
+    const parent = BrowserWindow.getFocusedWindow();
+    const result = await (parent === null
+      ? dialog.showOpenDialog(options)
+      : dialog.showOpenDialog(parent, options));
+    return result.canceled ? undefined : result.filePaths[0];
+  },
+};
+
+// Each export runs in its own utility process, so building never blocks the window (07).
+const runExport = (snapshot: SiteSnapshot, destination: string) =>
+  runExportInWorker(
+    () => utilityProcess.fork(exportWorkerScript, [], { serviceName: "Webforge export" }),
+    { type: "export", snapshot, destination },
+  );
+
 function createMainWindow(): void {
   const window = new BrowserWindow({
     title: t("app.name"),
@@ -103,6 +129,12 @@ async function start(): Promise<void> {
     (senderUrl) => isAppUrl(senderUrl, appUrl),
     projectSession,
     projectDialogs,
+  );
+  registerExportHandlers(
+    ipcMain,
+    (senderUrl) => isAppUrl(senderUrl, appUrl),
+    exportDialogs,
+    runExport,
   );
   // A site double-clicked in Explorer arrives as a command-line argument (P1).
   const projectToOpen = projectFromFinder ?? findProjectArgument(process.argv);

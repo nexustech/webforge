@@ -28,7 +28,8 @@ export default {
       severity: "error",
       comment: "Every import must resolve to a file or an installed package.",
       from: {},
-      to: { couldNotResolve: true },
+      // Vite-only suffixes (?raw, ?base64) on a package's exported file can't be resolved here.
+      to: { couldNotResolve: true, pathNot: "\\?(raw|base64)$" },
     },
     {
       name: "no-non-package-json",
@@ -109,14 +110,19 @@ export default {
       from: { path: "^(apps|packages)/([^/]+)/" },
       to: {
         path: "^packages/",
-        pathNot: ["^packages/$2/", "^packages/[^/]+/src/index\\.tsx?$"],
+        pathNot: [
+          "^packages/$2/",
+          "^packages/[^/]+/src/index\\.tsx?$",
+          // Declared subpath export: @webforge/pipeline/node (the Node-only resource loader).
+          "^packages/pipeline/src/node-resources\\.ts$",
+        ],
       },
     },
     {
       name: "test-utils-only-in-tests",
       severity: "error",
       comment: "test-utils holds fixtures and helpers for tests only.",
-      from: { pathNot: ["\\.test\\.tsx?$", "^packages/test-utils/"] },
+      from: { pathNot: ["\\.test\\.tsx?$", "^packages/test-utils/", "^e2e/"] },
       to: { path: "^packages/test-utils/" },
     },
     {
@@ -136,7 +142,7 @@ export default {
     doNotFollow: { path: "(^|/)node_modules/" },
     // Only our own build output. Excluding node_modules here would drop npm imports from the graph
     // and silently disable the rules above; doNotFollow already stops traversal into it.
-    exclude: { path: "^(apps|packages)/[^/]+/(out|dist|release|coverage)/" },
+    exclude: { path: ["^(apps|packages)/[^/]+/(out|dist|release|coverage)/", "/test/golden/"] },
     combinedDependencies: false,
     enhancedResolveOptions: {
       exportsFields: ["exports"],

@@ -1,30 +1,5 @@
-import type { ComponentLibrary } from "./library.js";
-
-/** An element or section on a page: its component type and its props (always with an `id`). */
-export type NodeDoc = {
-  type: string;
-  props: { id: string } & Record<string, unknown>;
-};
-
-/**
- * One page's content tree. Slots (e.g. a Section's content) are arrays of {@link NodeDoc} inside
- * `props`. Moves to `@webforge/model` (with a zod schema) in Phase 1.
- */
-export type PageDoc = {
-  root: { props: Record<string, unknown> };
-  content: NodeDoc[];
-};
-
-/** The shared Header and Footer (C5). Not used by the Phase 0 spike yet. */
-export type LayoutDoc = {
-  header: NodeDoc[];
-  footer: NodeDoc[];
-};
-
-/** The site's theme. A placeholder until `@webforge/themes` exists. */
-export type Theme = {
-  readonly name: string;
-};
+import type { LayoutDoc, PageDoc, Theme } from "@webforge/model";
+import type { ComponentLibrary } from "@webforge/site-components";
 
 /** Desktop · Tablet · Mobile, or a width in pixels. */
 export type Viewport = "desktop" | "tablet" | "mobile" | number;

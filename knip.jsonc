@@ -1,5 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
+  "ignore": ["**/test/golden/**"],
   "workspaces": {
     ".": {
       // Loaded by dependency-cruiser at runtime (parser: "swc"); never imported directly.
@@ -7,10 +8,20 @@
     },
     "apps/*": {},
     "apps/desktop": {
+      // The export worker is a second main-process input in electron.vite.config.ts.
+      "entry": ["src/worker/export-worker.ts"],
       // Imported by @webforge/storage, which is bundled from source. Listed as a dependency so
       // electron-vite keeps it external and electron-builder packages it (ADR 0003).
       "ignoreDependencies": ["better-sqlite3"]
     },
-    "packages/*": {}
+    "e2e": {
+      // The export-setup project (playwright.config.ts) runs before the exported-site tests.
+      "entry": ["export/*.setup.ts"]
+    },
+    "packages/*": {},
+    "packages/pipeline": {
+      // Font files are read by path (require.resolve) in src/node-resources.ts.
+      "ignoreDependencies": ["@fontsource/inter"]
+    }
   }
 }

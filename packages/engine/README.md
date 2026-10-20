@@ -7,7 +7,7 @@
 
 - `CanvasEngine` ([architecture §6](../../spec/01-architecture.md#6-key-interfaces)): `mount`, `loadPage`, `applyChange`, `onUserEdit`, `select`, `onSelectionChange`, `onHistoryCommand`, `setViewport`, `setMode`, `renderStatic` and `destroy`. The engine shows the page and reports edits as `EngineEdit`s; the app records them in `@webforge/history`, which stays the source of truth.
 - `createPuckEngine({ iframe? })`: the Puck implementation. Puck's own undo history is bypassed.
-- `ComponentLibrary`, `ComponentDef` and `FieldDef`: components described independently of the engine (`text`, `richtext`, `select` and `slot` fields), with the helpers `textValue`, `optionValue` and `slotComponent`.
+- Components come from `@webforge/site-components` (`ComponentLibrary`); the engine maps their fields to Puck fields and renders them with `EDITOR_RENDER_CONTEXT`. Page documents are `@webforge/model` types.
 - `installHistoryKeys(window, onCommand)` and `historyCommandFor(event)`: route Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z and Ctrl/Cmd+Y (and native undo) to the app's history before anything else sees them.
 
 ```ts

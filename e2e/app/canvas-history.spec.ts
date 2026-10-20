@@ -39,10 +39,29 @@ async function expectSteps(labels: string[], current: string): Promise<void> {
   await expect(page.getByText("Edited page")).toHaveCount(0);
 }
 
+type Box = { x: number; y: number; width: number; height: number };
+
+/**
+ * The element's position, once it has one. Puck swaps the rich-text element when its editor
+ * finishes loading (ADR 0004), so a single read can land between the old and the new element.
+ */
+async function boxOf(target: Locator, name: string): Promise<Box> {
+  let box: Box | null = null;
+  await expect
+    .poll(
+      async () => {
+        box = await target.boundingBox();
+        return box !== null;
+      },
+      { message: `${name} is not visible` },
+    )
+    .toBe(true);
+  return box as unknown as Box;
+}
+
 /** Drags with real mouse events, in small steps, as a user would. */
 async function drag(from: Locator, to: { x: number; y: number }): Promise<void> {
-  const box = await from.boundingBox();
-  if (box === null) throw new Error("Drag source is not visible");
+  const box = await boxOf(from, "Drag source");
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
   await page.mouse.move(box.x + box.width / 2 + 10, box.y + box.height / 2 + 10, { steps: 5 });
@@ -52,8 +71,7 @@ async function drag(from: Locator, to: { x: number; y: number }): Promise<void> 
 }
 
 async function below(target: Locator, offset = 3): Promise<{ x: number; y: number }> {
-  const box = await target.boundingBox();
-  if (box === null) throw new Error("Drop target is not visible");
+  const box = await boxOf(target, "Drop target");
   return { x: box.x + box.width / 2, y: box.y + box.height + offset };
 }
 

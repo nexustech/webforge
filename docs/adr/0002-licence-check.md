@@ -10,7 +10,7 @@ Webforge is a paid, closed-source product, so every dependency must have a permi
 ## Decision
 1. **Data:** `pnpm licenses list -r --json` (all workspaces, dev dependencies included). The desktop app bundles its devDependencies, so dev dependencies count too.
 2. **Check:** `tools/src/check-licences.ts` validates the report with zod and evaluates each package's SPDX expression. `A OR B` passes if either side is allowed, `A AND B` needs both, and `A WITH exception` is judged by `A`. Anything else ("UNLICENSED", "SEE LICENSE IN …") fails.
-3. **Allow-list:** MIT, ISC, Apache-2.0, BSD-2-Clause, BSD-3-Clause, 0BSD, BlueOak-1.0.0, CC0-1.0, and MPL-2.0 (allowed only unmodified; we don't patch dependencies).
+3. **Allow-list:** MIT, ISC, Apache-2.0, BSD-2-Clause, BSD-3-Clause, 0BSD, BlueOak-1.0.0, CC0-1.0, MPL-2.0 (allowed only unmodified; we don't patch dependencies) and OFL-1.1 (added by ADR 0005 for the Fontsource fonts that exported sites bundle; it allows embedding and redistribution, only not selling the fonts on their own).
 4. **Exceptions** are named per package and pinned to the exact licence string that was reviewed, each with a reason. If the package's licence changes, it is checked again. Current exceptions are all build-time only:
    | Package | Licence | Pulled in by |
    |---|---|---|

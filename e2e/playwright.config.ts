@@ -1,9 +1,12 @@
 import { defineConfig } from "@playwright/test";
 
-// Electron E2E tests. They run against the production build in apps/desktop/out, so build the
-// app first: `pnpm e2e` at the repository root does both.
+// E2E tests against the production build in apps/desktop/out, so build the app first:
+// `pnpm e2e` at the repository root does both.
+//
+// - app: the Electron app itself.
+// - export-setup → export-*: the app exports the fixture site once, then Chromium, Firefox and
+//   WebKit open it from disk (file://) with the network blocked (X1, C8).
 export default defineConfig({
-  testDir: "./app",
   // One Electron instance at a time keeps runs stable on CI machines.
   workers: 1,
   fullyParallel: false,
@@ -14,4 +17,15 @@ export default defineConfig({
   use: {
     trace: "retain-on-failure",
   },
+  projects: [
+    { name: "app", testDir: "./app" },
+    { name: "export-setup", testDir: "./export", testMatch: /\.setup\.ts$/ },
+    ...(["chromium", "firefox", "webkit"] as const).map((browserName) => ({
+      name: `export-${browserName}`,
+      testDir: "./export",
+      testMatch: /\.spec\.ts$/,
+      dependencies: ["export-setup"],
+      use: { browserName },
+    })),
+  ],
 });

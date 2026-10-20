@@ -3,5 +3,10 @@
   "compilerOptions": {
     "types": ["node"]
   },
-  "include": ["src"]
+  "include": ["src"],
+  "references": [
+    {
+      "path": "../model"
+    }
+  ]
 }

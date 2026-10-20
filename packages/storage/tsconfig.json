@@ -3,5 +3,10 @@
   "compilerOptions": {
     "types": ["node"]
   },
-  "include": ["src", "test", "vitest.config.ts"]
+  "include": ["src", "test", "vitest.config.ts"],
+  "references": [
+    {
+      "path": "../test-utils"
+    }
+  ]
 }

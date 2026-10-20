@@ -1,7 +1,8 @@
 // @vitest-environment happy-dom
+
+import type { PageDoc } from "@webforge/model";
+import type { ComponentLibrary } from "@webforge/site-components";
 import { describe, expect, it } from "vitest";
-import type { PageDoc } from "../canvas-engine.js";
-import type { ComponentLibrary } from "../library.js";
 import { staleRichText } from "./stale-rich-text.js";
 
 const library: ComponentLibrary = {

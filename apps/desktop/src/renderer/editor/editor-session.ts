@@ -1,12 +1,8 @@
-import type {
-  CanvasEngine,
-  ComponentLibrary,
-  EngineEdit,
-  HistoryCommand,
-  PageDoc,
-} from "@webforge/engine";
+import type { CanvasEngine, EngineEdit, HistoryCommand } from "@webforge/engine";
 import { createHistoryManager, type HistoryManager, syncDraft } from "@webforge/history";
 import { t } from "@webforge/i18n";
+import type { PageDoc } from "@webforge/model";
+import type { ComponentLibrary } from "@webforge/site-components";
 import { createStore, type StoreApi } from "zustand/vanilla";
 
 /** The document the spike edits: one page. The full Site model arrives with `@webforge/model`. */

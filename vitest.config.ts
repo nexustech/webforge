@@ -30,6 +30,9 @@ export default defineConfig({
         "apps/desktop/src/main/index.ts",
         "apps/desktop/src/preload/index.ts",
         "apps/desktop/src/renderer/main.tsx",
+        "apps/desktop/src/worker/export-worker.ts",
+        // Exists only in the electron-vite bundle (?base64 imports); the app E2E export covers it.
+        "apps/desktop/src/worker/bundled-resources.ts",
       ],
       reporter: ["text-summary", "html", "lcov"],
       // One threshold set per workspace, so every package meets its floor on its own.

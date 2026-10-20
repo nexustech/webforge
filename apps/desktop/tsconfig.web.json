@@ -6,8 +6,20 @@
   },
   "include": ["src/renderer", "src/shared"],
   "references": [
-    { "path": "../../packages/engine" },
-    { "path": "../../packages/history" },
-    { "path": "../../packages/i18n" }
+    {
+      "path": "../../packages/engine"
+    },
+    {
+      "path": "../../packages/history"
+    },
+    {
+      "path": "../../packages/i18n"
+    },
+    {
+      "path": "../../packages/model"
+    },
+    {
+      "path": "../../packages/site-components"
+    }
   ]
 }

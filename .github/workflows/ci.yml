@@ -94,6 +94,10 @@ jobs:
         if: runner.os == 'Linux'
         run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
 
+      - name: Install browsers for the exported-site tests
+        # The export projects open the exported site from disk in all three engines (X1, C8).
+        run: pnpm --filter @webforge/e2e exec playwright install --with-deps chromium firefox webkit
+
       - name: Electron E2E tests (Linux, virtual display)
         if: runner.os == 'Linux'
         run: xvfb-run --auto-servernum pnpm e2e

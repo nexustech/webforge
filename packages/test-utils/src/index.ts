@@ -1,4 +1,2 @@
-/**
- * Name of this package. Placeholder export until the package gets its first real API.
- */
-export const PACKAGE_NAME = "@webforge/test-utils";
+export { heroPhoto, sampleSite } from "./sample-site.js";
+export { tempDirFactory } from "./temp-dir.js";

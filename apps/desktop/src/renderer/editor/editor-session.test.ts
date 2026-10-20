@@ -1,4 +1,6 @@
-import type { EngineEdit, PageDoc } from "@webforge/engine";
+import type { EngineEdit } from "@webforge/engine";
+import type { PageDoc } from "@webforge/model";
+import { siteLibrary, starterPage } from "@webforge/site-components";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   connectEngine,
@@ -8,7 +10,6 @@ import {
   TEXT_SESSION_GRACE_MS,
 } from "./editor-session.js";
 import { createFakeEngine } from "./fake-engine.test-helper.js";
-import { spikeLibrary, starterPage } from "./library.js";
 
 const withHeadingText = (page: PageDoc, text: string): PageDoc => {
   const section = page.content[0];
@@ -29,7 +30,7 @@ const withHeadingText = (page: PageDoc, text: string): PageDoc => {
 };
 
 function setup() {
-  const session = createEditorSession(spikeLibrary, starterPage());
+  const session = createEditorSession(siteLibrary, starterPage());
   const engine = createFakeEngine();
   const connection = connectEngine(engine, session);
   const doc = () => session.history.document.getState().page;
@@ -71,7 +72,7 @@ describe("labelFor", () => {
     ["insert", { componentType: "Custom" }, "Added Custom"],
     ["insert", { componentType: null }, "Added "],
   ] as const)("labels a %s edit %o as %s", (kind, extra, expected) => {
-    expect(labelFor(edit(kind, extra), spikeLibrary)).toBe(expected);
+    expect(labelFor(edit(kind, extra), siteLibrary)).toBe(expected);
   });
 });
 

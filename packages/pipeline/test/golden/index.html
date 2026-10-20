@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en-GB" data-theme="cupcake">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rosa's Bakery</title>
+  <meta name="description" content="Fresh bread and cakes, baked every morning in Hightown.">
+  <link rel="stylesheet" href="assets/css/site.c8cfb7e5f9.css">
+  <script defer src="assets/js/webforge.d825197fcf.js"></script>
+</head>
+<body class="flex min-h-screen flex-col bg-base-100 font-sans text-base-content">
+  <!-- Header (shared) -->
+  <header class="site-header navbar relative bg-base-100 px-4 shadow-sm">
+    <div class="flex-1"><a class="text-xl font-bold" href="index.html">Rosa&#x27;s Bakery</a></div>
+    <nav aria-label="Main navigation"><button type="button" class="btn btn-square btn-ghost md:hidden" aria-expanded="false" aria-controls="header-menu" data-wf-menu-toggle=""><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <path d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg><span class="sr-only">Menu</span></button>
+      <ul id="header-menu" class="menu absolute inset-x-0 top-full z-10 hidden w-full bg-base-100 p-2 shadow data-open:flex md:static md:flex md:w-auto md:menu-horizontal md:p-0 md:shadow-none">
+        <li><a href="index.html" aria-current="page">Home</a></li>
+        <li><a href="about.html">About us</a></li>
+      </ul>
+    </nav>
+  </header>
+  <main id="main" class="flex-1">
+    <section class="site-hero hero bg-base-200 px-4 py-16">
+      <div class="hero-content max-w-6xl flex-col gap-10 lg:flex-row-reverse text-left">
+        <picture>
+          <source type="image/webp" srcSet="assets/img/hero-640.webp 640w, assets/img/hero-1280.webp 1280w, assets/img/hero-1600.webp 1600w" sizes="(min-width: 1024px) 50vw, 100vw" /><img src="assets/img/hero-1600.jpg" srcSet="assets/img/hero-640.jpg 640w, assets/img/hero-1280.jpg 1280w, assets/img/hero-1600.jpg 1600w" sizes="(min-width: 1024px) 50vw, 100vw" width="1600" height="1000" alt="Green hills under a morning sun" loading="eager" decoding="async" class="h-auto w-full max-w-xl rounded-box shadow-lg" />
+        </picture>
+        <div class="max-w-xl">
+          <h1 class="text-4xl font-bold md:text-5xl">Baked fresh every morning</h1>
+          <p class="py-6 text-lg">Sourdough, cakes and pastries from our oven to your table.</p><a class="btn btn-primary" href="about.html">About us</a>
+        </div>
+      </div>
+    </section>
+    <section class="site-section mx-auto max-w-4xl space-y-6 px-4 py-16">
+      <h2 class="site-heading text-3xl font-bold">Our bakery</h2>
+      <div class="site-text text-lg leading-relaxed [&amp;_a]:underline [&amp;_p+p]:mt-4">
+        <div class="contents">
+          <p>We have baked in Hightown since 1998.</p>
+          <p>Find us on <a href="https://example.com/map">the map</a>.</p>
+        </div>
+      </div>
+      <div class="site-faq space-y-4">
+        <h2 class="text-3xl font-bold">Questions</h2>
+        <div class="space-y-2">
+          <details class="site-faq-item collapse-arrow collapse border border-base-300 bg-base-100">
+            <summary class="collapse-title font-semibold">When are you open?</summary>
+            <div class="collapse-content [&amp;_p+p]:mt-2">
+              <div class="contents">
+                <p>Tuesday to Sunday, 7am to 3pm.</p>
+              </div>
+            </div>
+          </details>
+          <details class="site-faq-item collapse-arrow collapse border border-base-300 bg-base-100">
+            <summary class="collapse-title font-semibold">Do you take orders?</summary>
+            <div class="collapse-content [&amp;_p+p]:mt-2">
+              <div class="contents">
+                <p>Yes, for cakes: order two days ahead.</p>
+              </div>
+            </div>
+          </details>
+        </div>
+      </div>
+    </section>
+  </main>
+  <!-- Footer (shared) -->
+  <footer class="site-footer footer footer-center bg-base-200 p-8 text-base-content">
+    <p>© Rosa&#x27;s Bakery, Hightown</p>
+  </footer>
+</body>
+</html>

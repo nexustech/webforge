@@ -10,7 +10,9 @@ import { z } from "zod";
 
 /**
  * SPDX licence IDs allowed for any dependency (C1). MPL-2.0 is allowed only for unmodified use;
- * we never patch dependencies, so it is accepted here.
+ * we never patch dependencies, so it is accepted here. OFL-1.1 covers the Fontsource fonts that
+ * exported sites bundle (architecture §8): it allows embedding and redistributing the fonts with
+ * any software, only not selling them on their own.
  */
 export const ALLOWED_LICENCES: ReadonlySet<string> = new Set([
   "0BSD",
@@ -22,6 +24,7 @@ export const ALLOWED_LICENCES: ReadonlySet<string> = new Set([
   "ISC",
   "MIT",
   "MPL-2.0",
+  "OFL-1.1",
 ]);
 
 /** A package allowed despite a licence outside {@link ALLOWED_LICENCES}, with the reason. */

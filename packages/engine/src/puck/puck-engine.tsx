@@ -11,6 +11,8 @@ import {
 } from "@puckeditor/core";
 // Puck's default stylesheet loads the Inter font from rsms.me; Webforge makes no external requests.
 import "@puckeditor/core/no-external.css";
+import type { PageDoc } from "@webforge/model";
+import type { ComponentLibrary } from "@webforge/site-components";
 import { type ReactNode, useEffect } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -19,11 +21,9 @@ import type {
   EditorMode,
   EngineEdit,
   HistoryCommand,
-  PageDoc,
   Viewport,
 } from "../canvas-engine.js";
 import { installHistoryKeys } from "../history-keys.js";
-import type { ComponentLibrary } from "../library.js";
 import { preserveCaret } from "./caret.js";
 import { toPuckConfig } from "./config.js";
 import { isDeepEqual } from "./deep-equal.js";
