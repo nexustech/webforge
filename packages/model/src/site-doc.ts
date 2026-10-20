@@ -9,8 +9,7 @@ import {
 } from "./documents.js";
 import { mediaIdSchema, newId, type PageId, pageIdSchema } from "./ids.js";
 import { mediaMetaSchema } from "./media.js";
-import type { MenuItem } from "./menu.js";
-import { menuDocSchema } from "./menu.js";
+import { type MenuItem, menuDocSchema } from "./menu.js";
 import { defaultSiteSettings, siteSettingsSchema } from "./settings.js";
 
 /** The format of {@link SiteDoc} this build writes. Bumped with a migration and a fixture. */
@@ -67,7 +66,7 @@ export const pageEntrySchema = z.strictObject({
   /** Shown in the navigation menu instead of the title, when set (decision S5). */
   navLabel: z.string().min(1).max(100).optional(),
   settings: pageSettingsSchema,
-  doc: pageDocSchema as z.ZodType<PageDoc>,
+  doc: pageDocSchema,
 });
 
 /** See {@link pageEntrySchema}. */
@@ -105,7 +104,7 @@ export const siteDocSchema = z
     formatVersion: z.literal(SITE_FORMAT_VERSION),
     settings: siteSettingsSchema,
     theme: themeSchema,
-    layout: layoutDocSchema as z.ZodType<LayoutDoc>,
+    layout: layoutDocSchema,
     pages: z.record(pageIdSchema, pageEntrySchema),
     /** Every page id exactly once, in Pages panel order. */
     pageOrder: z.array(pageIdSchema),

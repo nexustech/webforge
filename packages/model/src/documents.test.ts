@@ -66,9 +66,9 @@ describe("node options", () => {
     content: [{ type: "Heading", props: { id: "h", ...props } }],
   });
 
-  it("accepts a Layers label, the hidden flag and Advanced options", () => {
+  it("accepts a Layers name, the hidden flag and Advanced options", () => {
     const page = node({
-      label: "Opening times",
+      layerName: "Opening times",
       hidden: true,
       advanced: {
         className: "mt-4 md:w-1/2 text-[13px]",

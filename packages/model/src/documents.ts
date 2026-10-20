@@ -14,14 +14,18 @@ export type NodeAdvanced = {
 
 /**
  * An element or section on a page: its component type and its props (always with an `id`).
- * Slots (e.g. a Section's content) are arrays of nodes inside `props`.
+ * Slots (e.g. a Section's content) are arrays of nodes inside `props`. `id`, `layerName`, `hidden`
+ * and `advanced` are reserved for Webforge; components never use them as field names.
  */
 export type NodeDoc = {
   type: string;
   props: {
     id: string;
-    /** The name the user gave it in Layers, used in undo labels ("Edited 'Opening times' text"). */
-    label?: string | undefined;
+    /**
+     * The name the user gave it in Layers, used in undo labels ("Edited 'Opening times' text").
+     * Not `label`, which components use for their own fields (a Button's label).
+     */
+    layerName?: string | undefined;
     /** Hidden in Layers: shown dimmed on the canvas and left out of the export (F-ED-12). */
     hidden?: boolean | undefined;
     advanced?: NodeAdvanced | undefined;
@@ -66,7 +70,7 @@ const nodeDocSchema: z.ZodType<NodeDoc> = z.object({
   // Props are component-specific; slot arrays inside them are checked when the tree is walked.
   props: z.looseObject({
     id: z.string().min(1),
-    label: z.string().max(100).optional(),
+    layerName: z.string().max(100).optional(),
     hidden: z.boolean().optional(),
     advanced: nodeAdvancedSchema.optional(),
   }),

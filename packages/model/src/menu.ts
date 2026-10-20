@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { menuItemIdSchema, pageIdSchema } from "./ids.js";
-import { linkValueSchema } from "./link.js";
+import { anchorIdSchema, linkValueSchema, pageLinkSchema } from "./link.js";
 
 const label = z.string().min(1).max(100);
 
@@ -26,11 +26,11 @@ const linkItemSchema = z.strictObject({
   label,
 });
 
-/** A link to a section on one of the site's pages (G3). */
+/** A link to a section on one of the site's pages (G3): always a page link with an anchor. */
 const sectionItemSchema = z.strictObject({
   ...itemBase,
   kind: z.literal("section"),
-  link: linkValueSchema,
+  link: pageLinkSchema.extend({ anchor: anchorIdSchema }),
   label,
 });
 

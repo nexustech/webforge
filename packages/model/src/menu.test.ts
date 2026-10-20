@@ -60,6 +60,11 @@ describe("menuDocSchema", () => {
     ["a page item without a page", { id: "p", kind: "page", hidden: false }],
     ["an item without the hidden flag", { id: "p", kind: "page", pageId: "home" }],
     ["an unknown kind", { ...book, kind: "search" }],
+    ["a section item linking elsewhere", { ...book, kind: "section" }],
+    [
+      "a section item without an anchor",
+      { ...book, kind: "section", link: { kind: "page", pageId: "about" } },
+    ],
   ])("rejects %s", (_name, item) => {
     expect(menuDocSchema.safeParse({ follows: "custom", items: [item] }).success).toBe(false);
   });

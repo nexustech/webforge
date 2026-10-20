@@ -90,9 +90,25 @@ describe("siteSettingsSchema", () => {
       { publish: { destinations: [{ ...full.publish.destinations[0], password: "secret" }] } },
     ],
     ["an unknown section", { extra: {} }],
+    [
+      "a host that is neither a name nor an IP address",
+      { publish: { destinations: [{ ...full.publish.destinations[0], host: "ftp://x" }] } },
+    ],
   ])("rejects %s", (_name, change) => {
     expect(siteSettingsSchema.safeParse({ ...full, ...change }).success).toBe(false);
   });
+});
+
+describe("publish destinations", () => {
+  it.each(["203.0.113.10", "2001:db8::1", "ftp.example.co.uk"])(
+    "accept the FTP host %s",
+    (host) => {
+      const destination = { ...full.publish.destinations[0], host };
+      const settings = { ...full, publish: { destinations: [destination] } };
+
+      expect(siteSettingsSchema.safeParse(settings).success).toBe(true);
+    },
+  );
 });
 
 describe("webAddressSchema", () => {

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { mediaIdSchema } from "./ids.js";
-import { webUrlSchema } from "./link.js";
+import { phoneNumberSchema, webUrlSchema } from "./link.js";
 
 /** A BCP 47 language tag for `<html lang>`, e.g. `en` or `en-GB`. */
 export const languageTagSchema = z.string().regex(/^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/);
@@ -65,7 +65,8 @@ const publishDestinationSchema = z.discriminatedUnion("kind", [
     id: z.uuid(),
     name: z.string().min(1).max(100),
     protocol: z.enum(["sftp", "ftps", "ftp"]),
-    host: z.string().regex(z.regexes.domain),
+    /** A host name, or an IP address as many hosting providers give it. */
+    host: z.union([z.string().regex(z.regexes.domain), z.ipv4(), z.ipv6()]),
     port: z.int().min(1).max(65_535),
     username: z.string().min(1).max(200),
     remotePath: z.string().max(500),
@@ -107,10 +108,7 @@ export const siteSettingsSchema = z.strictObject({
   contact: z.strictObject({
     businessName: text(200),
     email: z.email().optional(),
-    phone: z
-      .string()
-      .regex(/^\+?[0-9][0-9 ()-]{2,30}$/)
-      .optional(),
+    phone: phoneNumberSchema.optional(),
     address: text(500),
     openingHours: z.array(openingHoursSchema),
     /** E.g. "Closed on bank holidays". */

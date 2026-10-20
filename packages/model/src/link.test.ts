@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { anchorIdSchema, linkValueSchema } from "./link.js";
+import { anchorIdSchema, linkValueSchema, phoneNumberSchema } from "./link.js";
 
 describe("linkValueSchema", () => {
   it.each([
@@ -37,5 +37,15 @@ describe("anchorIdSchema", () => {
     for (const bad of ["2nd", "a--b", "a b", "-a", "a-", "x".repeat(65)]) {
       expect(anchorIdSchema.safeParse(bad).success).toBe(false);
     }
+  });
+});
+
+describe("phoneNumberSchema", () => {
+  it.each(["+44 1234 567890", "(01234) 567890", "01234-567-890"])("accepts %s", (number) => {
+    expect(phoneNumberSchema.parse(number)).toBe(number);
+  });
+
+  it.each(["call me", "12", "+", "-1234"])("rejects %s", (number) => {
+    expect(phoneNumberSchema.safeParse(number).success).toBe(false);
   });
 });

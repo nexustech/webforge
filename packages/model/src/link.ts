@@ -16,29 +16,33 @@ export const webUrlSchema = z.url({ protocol: /^https?$/, hostname: z.regexes.do
 const newTab = z.boolean().optional();
 
 /**
+ * A phone number as people type it: digits, spaces, brackets, dashes and a leading +, e.g.
+ * `+44 1234 567890` or `(01234) 567890`.
+ */
+export const phoneNumberSchema = z.string().regex(/^\+?[0-9(][0-9 ()-]{2,30}$/);
+
+/** A page of the site, and optionally a section on it. */
+export const pageLinkSchema = z.strictObject({
+  kind: z.literal("page"),
+  pageId: pageIdSchema,
+  anchor: anchorIdSchema.optional(),
+  newTab,
+});
+
+/**
  * Where a link goes (F-ED-18): a page of the site (optionally a section on it), an e-mail address,
  * a phone number, a web address or a file in Media. Internal links store the page's id, so renaming
  * the page or changing its folder never breaks them; the export turns them into relative paths.
  */
 export const linkValueSchema = z.discriminatedUnion("kind", [
-  z.strictObject({
-    kind: z.literal("page"),
-    pageId: pageIdSchema,
-    anchor: anchorIdSchema.optional(),
-    newTab,
-  }),
+  pageLinkSchema,
   z.strictObject({
     kind: z.literal("email"),
     address: z.email(),
     subject: z.string().max(200).optional(),
     newTab,
   }),
-  z.strictObject({
-    kind: z.literal("phone"),
-    // What people type: digits, spaces, brackets, dashes and a leading +.
-    number: z.string().regex(/^\+?[0-9][0-9 ()-]{2,30}$/),
-    newTab,
-  }),
+  z.strictObject({ kind: z.literal("phone"), number: phoneNumberSchema, newTab }),
   z.strictObject({ kind: z.literal("url"), href: webUrlSchema, newTab }),
   z.strictObject({ kind: z.literal("file"), mediaId: mediaIdSchema, newTab }),
 ]);
