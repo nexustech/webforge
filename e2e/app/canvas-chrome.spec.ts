@@ -70,7 +70,8 @@ test.describe("selection chrome", () => {
       "Opened page",
     ]);
 
-    await page.getByRole("button", { name: "Undo", exact: true }).click();
+    // The title bar's Undo: the delete's toast has an Undo button too (1.11).
+    await page.getByRole("banner").getByRole("button", { name: "Undo", exact: true }).click();
     await expect(canvas().locator("h1")).toHaveCount(2);
   });
 });
