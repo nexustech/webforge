@@ -9,6 +9,7 @@
   "devDependencies": {
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
+    "fast-check": "4.10.2",
     "happy-dom": "20.14.6",
     "vitest": "catalog:"
   },
