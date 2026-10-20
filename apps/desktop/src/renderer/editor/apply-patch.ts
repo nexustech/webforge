@@ -25,9 +25,9 @@ function nodePath(page: PageDoc, id: string): Path | undefined {
 }
 
 /**
- * Applies a single-field edit to `draft` (an Immer draft of `page`). The node is looked up in `page` (the document the draft
- * was made from), so only the drafts along its path are created: the Immer patches and the work
- * stay as small as the edit, whatever the size of the page (ADR 0007).
+ * Applies a single-field edit to `draft`, an Immer draft of `page`. The node is looked up in the
+ * plain `page`, so only the drafts along its path are created: the Immer patches and the work stay
+ * as small as the edit, whatever the size of the page (ADR 0007).
  * Returns false if the node isn't in the page; the caller then records the edit some other way.
  */
 export function applyPatch(draft: PageDoc, page: PageDoc, patch: EnginePatch): boolean {

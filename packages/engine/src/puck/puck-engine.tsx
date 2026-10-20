@@ -188,6 +188,8 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       }
       return () => {
         getPuck = null;
+        // A remounted Puck starts from whatever `data` it was last rendered with: resend the page.
+        shownRevision = -1;
       };
     }, [get]);
     return <>{children}</>;

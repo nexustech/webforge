@@ -94,6 +94,16 @@ describe("createPuckEngine", () => {
     expect(element.innerHTML).toBe(before);
   });
 
+  it("ignores a page with the same content", async () => {
+    await settle();
+    const before = element.innerHTML;
+
+    await act(async () => engine.applyChange({ page: structuredClone(page) }));
+    await settle();
+
+    expect(element.innerHTML).toBe(before);
+  });
+
   it("shows a page given before Puck was ready once it is", async () => {
     const late = createPuckEngine({ iframe: false });
     const host = document.createElement("div");
