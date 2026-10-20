@@ -1,5 +1,5 @@
 import { workerJobSchema } from "../shared/export-worker-protocol.js";
-import { loadBundledResources } from "./bundled-resources.js";
+import { loadBundledResources, loadStyleResources } from "./bundled-resources.js";
 import { compileCss } from "./compile-css.js";
 import { runExport } from "./run-export.js";
 
@@ -13,7 +13,7 @@ process.parentPort.on("message", (event) => {
     ? Promise.resolve({ type: "failed", code: "build-failed", detail: "invalid-job" } as const)
     : job.data.type === "export"
       ? runExport(job.data, loadBundledResources)
-      : compileCss(job.data, loadBundledResources);
+      : compileCss(job.data, loadStyleResources);
   outcome
     .then((result) => {
       process.parentPort.postMessage(result);

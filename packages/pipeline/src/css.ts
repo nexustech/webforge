@@ -1,6 +1,9 @@
 import { compile } from "tailwindcss";
 import type { FontFile, PipelineResources } from "./resources.js";
 
+/** The resources compiling CSS needs: no image codecs. */
+export type StyleResources = Pick<PipelineResources, "stylesheets" | "daisyui" | "fonts">;
+
 /** Options of {@link buildSiteCss}. */
 export type SiteCssOptions = {
   /** daisyUI theme name, used as the site's default theme (`data-theme`). */
@@ -29,10 +32,7 @@ function fontFaces(fonts: readonly FontFile[], fontsUrl: string): string {
  * The Tailwind entry stylesheet: theme, base styles and utilities, daisyUI with the site's theme,
  * and the bundled fonts. No `@import "tailwindcss"`: each layer is loaded from the resources.
  */
-export function siteStylesheetSource(
-  resources: PipelineResources,
-  options: SiteCssOptions,
-): string {
+export function siteStylesheetSource(resources: StyleResources, options: SiteCssOptions): string {
   const family = resources.fonts[0]?.family;
   return [
     "@layer theme, base, components, utilities;",
@@ -54,7 +54,7 @@ export function siteStylesheetSource(
  * The output stays readable (X4): no minification.
  */
 export async function buildSiteCss(
-  resources: PipelineResources,
+  resources: StyleResources,
   options: SiteCssOptions,
 ): Promise<string> {
   const compiler = await compile(siteStylesheetSource(resources, options), {

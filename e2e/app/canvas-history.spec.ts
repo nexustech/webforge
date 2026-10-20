@@ -20,6 +20,8 @@ test.beforeEach(async () => {
     if (message.type() === "error") pageErrors.push(message.text());
   });
   await expect(canvas().locator("h1")).toHaveText(STARTER_HEADING);
+  // The site CSS changes the layout when it arrives; drags and clicks need the final positions.
+  await expect(canvas().locator("style[data-webforge-site-css]")).toHaveCount(1);
 });
 
 test.afterEach(async () => {
@@ -59,12 +61,18 @@ async function boxOf(target: Locator, name: string): Promise<Box> {
   return box as unknown as Box;
 }
 
-/** Drags with real mouse events, in small steps, as a user would. */
-async function drag(from: Locator, to: { x: number; y: number }): Promise<void> {
+/**
+ * Drags with real mouse events, in small steps, as a user would. `grabAt` is where to press, as a
+ * fraction of the source's width: pressing on an inline-editable element's text selects text
+ * instead of dragging the element.
+ */
+async function drag(from: Locator, to: { x: number; y: number }, grabAt = 0.5): Promise<void> {
   const box = await boxOf(from, "Drag source");
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  const x = box.x + box.width * grabAt;
+  const y = box.y + box.height / 2;
+  await page.mouse.move(x, y);
   await page.mouse.down();
-  await page.mouse.move(box.x + box.width / 2 + 10, box.y + box.height / 2 + 10, { steps: 5 });
+  await page.mouse.move(x + 10, y + 10, { steps: 5 });
   await page.mouse.move(to.x, to.y, { steps: 25 });
   await page.mouse.move(to.x, to.y + 1, { steps: 2 });
   await page.mouse.up();
@@ -116,10 +124,14 @@ test.describe("Puck canvas with Webforge history", () => {
     const heading = canvas().locator("h1");
     const text = canvas().getByText(STARTER_TEXT);
 
-    await drag(heading, await below(text, 2));
+    // Grabbed past the end of its text, at the right of the heading, and dropped just inside the
+    // text's lower edge: below it is the Section's padding, which isn't a drop zone.
+    await drag(heading, await below(text, -3), 0.97);
 
     await expectSteps(["Moved Heading"], "Moved Heading");
-    await expect(canvas().locator(".site-section > * >> nth=0")).not.toContainText(STARTER_HEADING);
+    await expect(canvas().locator(".site-section")).toContainText(
+      `${STARTER_TEXT}${STARTER_HEADING}`,
+    );
 
     await page.getByRole("button", { name: "Undo", exact: true }).click();
     await expect(canvas().locator(".site-section")).toContainText(
@@ -149,7 +161,11 @@ test.describe("Puck canvas with Webforge history", () => {
     await expect(canvas().locator("h1")).toHaveText(`${STARTER_HEADING} today!`);
 
     // Selecting something else ends the session: the whole edit becomes one step (D1).
-    await canvas().getByText(STARTER_TEXT).click({ force: true });
+    // Near the text's start: the selected heading's action bar covers its middle.
+    const textBox = await boxOf(canvas().getByText(STARTER_TEXT), "Text");
+    await canvas()
+      .getByText(STARTER_TEXT)
+      .click({ force: true, position: { x: 10, y: textBox.height / 2 } });
     await expectSteps(["Edited Heading text"], "Edited Heading text");
 
     await focusHost();

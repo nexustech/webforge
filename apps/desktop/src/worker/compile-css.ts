@@ -1,4 +1,4 @@
-import { BODY_CLASS, buildSiteCss, type PipelineResources } from "@webforge/pipeline";
+import { BODY_CLASS, buildSiteCss, type StyleResources } from "@webforge/pipeline";
 import type { CompileCssJob, CompileCssOutcome } from "../shared/export-worker-protocol.js";
 import { CANVAS_FONT_URL } from "../shared/ipc/canvas.js";
 
@@ -8,7 +8,7 @@ import { CANVAS_FONT_URL } from "../shared/ipc/canvas.js";
  */
 export async function compileCss(
   job: CompileCssJob,
-  loadResources: () => Promise<PipelineResources>,
+  loadResources: () => StyleResources | Promise<StyleResources>,
 ): Promise<CompileCssOutcome> {
   try {
     const css = await buildSiteCss(await loadResources(), {
