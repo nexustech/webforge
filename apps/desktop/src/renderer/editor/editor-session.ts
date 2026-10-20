@@ -4,6 +4,7 @@ import { t } from "@webforge/i18n";
 import type { PageDoc } from "@webforge/model";
 import type { ComponentLibrary } from "@webforge/site-components";
 import { createStore, type StoreApi } from "zustand/vanilla";
+import { applyPatch } from "./apply-patch.js";
 
 /** The document the spike edits: one page. The full Site model arrives with `@webforge/model`. */
 export type SpikeDoc = { page: PageDoc };
@@ -121,10 +122,15 @@ export function connectEngine(engine: CanvasEngine, session: EditorSession): Eng
       if (key !== textSession) {
         endTextSession();
       }
+      const { patch } = edit;
+      const page = history.document.getState().page;
       history.run(
         labelFor(edit, library),
         (draft) => {
-          syncDraft(draft.page, edit.page);
+          // A one-field edit is written directly; anything else is compared with the whole page.
+          if (patch === undefined || !applyPatch(draft.page, page, patch)) {
+            syncDraft(draft.page, edit.page);
+          }
         },
         {
           // A text edit shows its own element, even when it arrives after the user clicked away.
