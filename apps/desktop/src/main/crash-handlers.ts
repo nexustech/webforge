@@ -72,7 +72,12 @@ export function installCrashHandlers(
     }
   });
   sources.app.on("child-process-gone", (_event, details) => {
-    if (details.reason !== "clean-exit") {
+    // Webforge ends its own utility processes (an export worker once its build is done), which
+    // Electron reports as "killed": that is not a crash.
+    const expected =
+      details.reason === "clean-exit" ||
+      (details.type === "Utility" && details.reason === "killed");
+    if (!expected) {
       write({ process: processOf(details.type), kind: details.reason, exitCode: details.exitCode });
     }
   });

@@ -67,14 +67,16 @@ describe("installCrashHandlers", () => {
     emit("render-process-gone", {}, {}, { reason: "crashed", exitCode: 3 });
     emit("render-process-gone", {}, {}, { reason: "clean-exit", exitCode: 0 });
     emit("child-process-gone", {}, { type: "GPU", reason: "oom", exitCode: 9 });
-    emit("child-process-gone", {}, { type: "Utility", reason: "killed", exitCode: 1 });
+    emit("child-process-gone", {}, { type: "Utility", reason: "crashed", exitCode: 1 });
     emit("child-process-gone", {}, { type: "Zygote", reason: "crashed", exitCode: 1 });
     emit("child-process-gone", {}, { type: "Utility", reason: "clean-exit", exitCode: 0 });
+    // Webforge ends its export worker itself after each export.
+    emit("child-process-gone", {}, { type: "Utility", reason: "killed", exitCode: 1 });
 
     expect(written.map((report) => [report.process, report.kind, report.exitCode])).toEqual([
       ["renderer", "crashed", 3],
       ["gpu", "oom", 9],
-      ["utility", "killed", 1],
+      ["utility", "crashed", 1],
       ["other", "crashed", 1],
     ]);
   });
