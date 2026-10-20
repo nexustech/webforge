@@ -36,9 +36,28 @@ test.afterAll(async () => {
 test.describe("desktop shell", () => {
   test("opens a window showing Webforge and the version from the main process", async () => {
     await expect(page).toHaveTitle("Webforge");
-    await expect(page.getByRole("heading", { level: 1, name: "Webforge" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Webforge" })).toBeAttached();
     // The version travels main → IPC → preload → renderer, so this proves the whole round trip.
-    await expect(page.getByText(`Version ${desktopVersion}`)).toBeVisible();
+    await page.getByRole("menuitem", { name: "Help" }).click();
+    await page.getByRole("menuitem", { name: "About Webforge" }).click();
+    await expect(page.getByRole("dialog").getByText(`Version ${desktopVersion}`)).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+  });
+
+  test("draws its own title bar under the native window controls (1.2)", async () => {
+    await expect(page.getByRole("banner")).toBeVisible();
+    test.skip(
+      process.platform === "linux",
+      "Window Controls Overlay is checked on Windows and macOS",
+    );
+    // titleBarOverlay gives the page the area the controls leave free (env(titlebar-area-*)).
+    const visible = await page.evaluate(
+      () =>
+        (navigator as { windowControlsOverlay?: { visible: boolean } }).windowControlsOverlay
+          ?.visible,
+    );
+    expect(visible).toBe(true);
   });
 
   test("loads the production renderer from disk", () => {

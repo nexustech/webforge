@@ -70,7 +70,7 @@ async function openSite(): Promise<Page> {
 }
 
 const canvas = (page: Page) => page.frameLocator(".editor__canvas iframe");
-const saveStatus = (page: Page) => page.locator(".app__header").getByRole("status");
+const saveStatus = (page: Page) => page.getByRole("banner").getByRole("status");
 
 /** Types `text` at the end of the starter heading, as a user editing it on the canvas. */
 async function typeIntoHeading(page: Page, text: string): Promise<void> {

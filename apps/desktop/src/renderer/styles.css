@@ -2,7 +2,7 @@
 @import "@webforge/editor-ui/theme.css";
 @source "./";
 
-/* Temporary spike layout; replaced by the window shell (1.2). Colours come from the theme. */
+/* Spike editor layout; the panel layout (1.2, second PR) replaces it. Colours come from the theme. */
 
 html,
 body,
@@ -11,44 +11,11 @@ body,
   margin: 0;
 }
 
-.app {
-  display: grid;
-  grid-template-rows: auto 1fr;
-  height: 100%;
-}
-
-.app__header {
-  display: flex;
-  align-items: baseline;
-  gap: 0.75rem;
-  padding: 0.5rem 1rem;
-  border-bottom: 1px solid var(--border);
-}
-
-.app__title {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 600;
-}
-
-.app__version {
-  margin: 0;
-  opacity: 0.6;
-  font-size: 0.875rem;
-}
-
 .editor {
   display: grid;
   grid-template-columns: 1fr 16rem;
-  grid-template-rows: auto 1fr;
+  height: 100%;
   min-height: 0;
-}
-
-.editor__toolbar {
-  grid-column: 1 / -1;
-  display: flex;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
 }
 
 .editor__canvas {
@@ -97,16 +64,4 @@ body,
 
 .undo-history__step[data-state="undone"] {
   opacity: 0.5;
-}
-
-.export {
-  display: flex;
-  align-items: baseline;
-  gap: 0.5rem;
-  margin-left: auto;
-}
-
-.export__status {
-  margin: 0;
-  font-size: 0.875rem;
 }
