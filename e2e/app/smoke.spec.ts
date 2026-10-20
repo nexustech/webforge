@@ -1,8 +1,8 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
-import { desktopVersion, launchDesktopApp } from "./launch.js";
+import { desktopDir, desktopVersion, launchDesktopApp } from "./launch.js";
 import { type RendererWindow, stubFileDialogs } from "./sites.js";
 
 // Smoke test of the desktop shell: it starts, shows its window and keeps the renderer locked down.
@@ -73,6 +73,19 @@ test.describe("desktop shell", () => {
       process: "undefined",
       webforgeKeys: ["app", "project", "site"],
     });
+  });
+
+  test("ships without the performance-test hooks", async () => {
+    // Only `electron-vite build --mode perf` includes them (e2e/perf, ADR 0007).
+    const perfHooks = await page.evaluate(
+      () => typeof (globalThis as { __webforgePerf?: unknown }).__webforgePerf,
+    );
+    const rendererFiles = readdirSync(join(desktopDir, "out/renderer/assets"))
+      .filter((file) => file.endsWith(".js"))
+      .map((file) => readFileSync(join(desktopDir, "out/renderer/assets", file), "utf8"));
+
+    expect(perfHooks).toBe("undefined");
+    expect(rendererFiles.filter((code) => code.includes("__webforgePerf"))).toEqual([]);
   });
 
   test("enforces a strict Content Security Policy", async () => {

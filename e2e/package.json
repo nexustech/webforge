@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "e2e": "playwright test",
-    "e2e:packaged": "playwright test --config playwright.packaged.config.ts"
+    "e2e:packaged": "playwright test --config playwright.packaged.config.ts",
+    "e2e:perf": "playwright test --config playwright.perf.config.ts"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",

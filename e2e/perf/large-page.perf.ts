@@ -1,0 +1,267 @@
+import { mkdirSync, writeFileSync } from "node:fs";
+import { cpus, totalmem } from "node:os";
+import { join } from "node:path";
+import { type ElectronApplication, expect, type Locator, type Page, test } from "@playwright/test";
+import { countNodes, largePage } from "@webforge/test-utils";
+import { launchDesktopApp } from "../app/launch.js";
+
+// Large-page performance check (spec/04 item 0.4, ADR 0007). Runs against a `--mode perf` build:
+// `pnpm e2e:perf` from the repository root. Budgets: architecture §10 (keystroke and drag to canvas
+// update < 16 ms) and U7 ("instant" undo, taken as < 100 ms). Misses are recorded, not hidden:
+// expect.soft keeps measuring so the report is complete.
+
+const SECTIONS = 25;
+const QUESTIONS = 4;
+const HISTORY_STEPS = 50;
+const FRAME_BUDGET_MS = 16;
+const INSTANT_MS = 100;
+
+type PerfWindow = Window & {
+  __webforgePerf?: { loadPage(page: unknown): void; addSteps(count: number): void };
+};
+
+let app: ElectronApplication;
+let page: Page;
+const results: Record<string, unknown> = {};
+
+const canvasFrame = () => page.frameLocator(".editor__canvas iframe");
+const p = (values: number[], q: number) =>
+  [...values].sort((a, b) => a - b)[Math.min(values.length - 1, Math.floor(q * values.length))] ??
+  0;
+const summary = (values: number[]) => ({
+  runs: values.length,
+  p50: Math.round(p(values, 0.5)),
+  p95: Math.round(p(values, 0.95)),
+  max: Math.round(Math.max(...values)),
+});
+
+/**
+ * Watches the window and the canvas iframe for long tasks (> 50 ms) and for slow keydowns
+ * (Event Timing reports only events of 16 ms or more). For each keydown it records:
+ * - `keydown`: the full duration up to the next painted frame (includes Chromium's own pipeline);
+ * - `processing`: the time our handlers ran (processingEnd − processingStart), which is what the
+ *   one-frame budget (§10) is about.
+ */
+async function startObservers(): Promise<void> {
+  await page.evaluate(() => {
+    // The canvas iframe has its own realm, so use each window's own PerformanceObserver.
+    const record = (target: Window, longTasks: boolean) => {
+      const store = {
+        longtask: [] as number[],
+        keydown: [] as number[],
+        processing: [] as number[],
+      };
+      (target as unknown as { __perf?: typeof store }).__perf = store;
+      const Observer = (target as unknown as typeof globalThis).PerformanceObserver;
+      if (longTasks) {
+        new Observer((list) => {
+          for (const entry of list.getEntries()) store.longtask.push(entry.duration);
+        }).observe({ type: "longtask" });
+      }
+      new Observer((list) => {
+        for (const entry of list.getEntries() as PerformanceEventTiming[]) {
+          if (entry.name === "keydown") {
+            store.keydown.push(entry.duration);
+            store.processing.push(entry.processingEnd - entry.processingStart);
+          }
+        }
+      }).observe({ type: "event", durationThreshold: 16 } as PerformanceObserverInit);
+    };
+    // Both windows share one main thread: observe long tasks in the app window only, or each
+    // would be counted twice.
+    record(window, true);
+    const frame = document.querySelector<HTMLIFrameElement>(".editor__canvas iframe");
+    if (frame?.contentWindow) record(frame.contentWindow, false);
+  });
+}
+
+type Observed = { longTasks: number[]; keydown: number[]; processing: number[] };
+
+/** Collects and resets what the observers saw since {@link startObservers}. */
+async function takeObserved(): Promise<Observed> {
+  return page.evaluate(() => {
+    const frame = document.querySelector<HTMLIFrameElement>(".editor__canvas iframe");
+    const stores = [window, frame?.contentWindow].map(
+      (target) => (target as unknown as { __perf?: Record<string, number[]> } | null)?.__perf,
+    );
+    const take = (key: string) =>
+      stores.flatMap((store) => (store?.[key] ?? []).splice(0)).map((d) => Math.round(d));
+    return {
+      longTasks: take("longtask"),
+      keydown: take("keydown"),
+      processing: take("processing"),
+    };
+  });
+}
+
+/**
+ * Clicks `selector` in the app window `runs` times and measures, each time, how long until the
+ * canvas DOM changed and the next frame was painted.
+ */
+async function timeClicks(selector: string, runs: number): Promise<number[]> {
+  return page.evaluate(
+    async ({ selector: target, runs: count }) => {
+      const frame = document.querySelector<HTMLIFrameElement>(".editor__canvas iframe");
+      const doc = frame?.contentDocument;
+      if (!doc) throw new Error("No canvas");
+      const times: number[] = [];
+      for (let i = 0; i < count; i++) {
+        const button = document.querySelector<HTMLElement>(target);
+        if (!button) throw new Error(`Missing ${target}`);
+        const changed = new Promise<void>((resolve, reject) => {
+          const observer = new MutationObserver(() => {
+            observer.disconnect();
+            requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+          });
+          observer.observe(doc.body, { subtree: true, childList: true, characterData: true });
+          setTimeout(() => reject(new Error("Canvas did not change")), 5_000);
+        });
+        const start = performance.now();
+        button.click();
+        await changed;
+        times.push(performance.now() - start);
+      }
+      return times;
+    },
+    { selector, runs },
+  );
+}
+
+test.beforeAll(async () => {
+  app = await launchDesktopApp();
+  page = await app.firstWindow();
+  await page.waitForFunction(() => (window as PerfWindow).__webforgePerf !== undefined, null, {
+    timeout: 10_000,
+  });
+});
+
+test.afterAll(async () => {
+  results.machine = {
+    platform: process.platform,
+    cpu: cpus()[0]?.model,
+    cores: cpus().length,
+    memoryGb: Math.round(totalmem() / 2 ** 30),
+  };
+  const dir = join(import.meta.dirname, "../test-results/perf");
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, "large-page.json"), `${JSON.stringify(results, null, 2)}\n`);
+  console.log(JSON.stringify(results, null, 2));
+  await app.close();
+});
+
+/** Types `text` into an inline heading and returns what the observers saw meanwhile. */
+async function typeInto(heading: Locator, text: string) {
+  await heading.click();
+  await page.keyboard.press("End");
+  await takeObserved();
+  await page.keyboard.type(text, { delay: 60 });
+  await expect(heading).toContainText(text.trim());
+  const observed = await takeObserved();
+  await page.locator(".app__title").click();
+  // Keydowns faster than 16 ms are not reported by Event Timing; they count as within budget.
+  const orZero = (values: number[]) => (values.length > 0 ? values : [0]);
+  return {
+    keystrokes: text.length,
+    keydownToPaint: { ...summary(orZero(observed.keydown)), reported: observed.keydown.length },
+    processing: summary(orZero(observed.processing)),
+    overBudget: observed.processing.filter((d) => d > FRAME_BUDGET_MS).length,
+    longTasks: observed.longTasks,
+  };
+}
+
+// One test with steps: every measurement runs and is recorded even when an earlier one misses its
+// budget (expect.soft), which a serial suite would skip.
+test("a page with 200+ elements against the editing budgets", async () => {
+  const typed = " and some more words typed one by one";
+
+  await test.step("baseline: typing on the small starter page", async () => {
+    await startObservers();
+    results.typingStarterPage = await typeInto(
+      canvasFrame().locator(".site-heading [contenteditable]").first(),
+      typed,
+    );
+  });
+
+  await test.step("load the large page into the canvas", async () => {
+    const big = largePage({ sections: SECTIONS, questionsPerSection: QUESTIONS });
+    const start = Date.now();
+    await page.evaluate((doc) => (window as PerfWindow).__webforgePerf?.loadPage(doc), big);
+    await expect(canvasFrame().locator(".site-section")).toHaveCount(SECTIONS, {
+      timeout: 30_000,
+    });
+    results.load = { nodes: countNodes(big), ms: Date.now() - start };
+    await startObservers();
+  });
+
+  await test.step("typing in a heading: within a frame per keystroke (§10)", async () => {
+    const typing = await typeInto(
+      canvasFrame().locator(".site-section").last().locator(".site-heading [contenteditable]"),
+      typed,
+    );
+    results.typing = typing;
+    expect.soft(typing.overBudget, "keystrokes whose handlers took over a frame").toBe(0);
+    expect.soft(typing.longTasks, "long tasks while typing").toEqual([]);
+  });
+
+  await test.step("dragging an element: one smooth step (§10)", async () => {
+    const section = canvasFrame().locator(".site-section").nth(1);
+    // Typing at the bottom of the page left the canvas scrolled away from this section.
+    await section.scrollIntoViewIfNeeded();
+    const from = await section.locator(".site-heading").boundingBox();
+    const to = await section.locator(".site-text").last().boundingBox();
+    if (from === null || to === null) throw new Error("Drag source or target not visible");
+    await takeObserved();
+
+    const start = Date.now();
+    await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(from.x + from.width / 2 + 10, from.y + from.height / 2 + 10, {
+      steps: 5,
+    });
+    await page.mouse.move(to.x + to.width / 2, to.y + to.height + 2, { steps: 25 });
+    await page.mouse.up();
+    await expect(page.locator(".undo-history__step").first()).toHaveText("Moved Heading");
+    const observed = await takeObserved();
+
+    results.drag = { totalMs: Date.now() - start, ...observed };
+    expect.soft(observed.longTasks, "long tasks while dragging").toEqual([]);
+  });
+
+  await test.step("undo, redo and jumps: instant (U7)", async () => {
+    const before = await page.locator(".undo-history__step").count();
+    await page.evaluate(
+      (count) => (window as PerfWindow).__webforgePerf?.addSteps(count),
+      HISTORY_STEPS,
+    );
+    await expect(page.locator(".undo-history__step")).toHaveCount(before + HISTORY_STEPS);
+
+    const undo = await timeClicks(".editor__toolbar button:nth-of-type(1)", 10);
+    const redo = await timeClicks(".editor__toolbar button:nth-of-type(2)", 10);
+    const jumpToStart = await timeClicks("li:last-child > .undo-history__step", 1);
+    const jumpToEnd = await timeClicks("li:first-child > .undo-history__step", 1);
+
+    results.history = {
+      steps: HISTORY_STEPS,
+      undo: summary(undo),
+      redo: summary(redo),
+      jumpToStartMs: Math.round(jumpToStart[0] ?? 0),
+      jumpToEndMs: Math.round(jumpToEnd[0] ?? 0),
+    };
+    expect.soft(p(undo, 0.95), "undo p95 (ms)").toBeLessThan(INSTANT_MS);
+    expect.soft(p(redo, 0.95), "redo p95 (ms)").toBeLessThan(INSTANT_MS);
+    expect.soft(Math.max(...jumpToStart, ...jumpToEnd), "jump (ms)").toBeLessThan(INSTANT_MS);
+  });
+
+  await test.step("memory", async () => {
+    const heapMb = await page.evaluate(() => {
+      const memory = (performance as Performance & { memory?: { usedJSHeapSize: number } }).memory;
+      return memory === undefined ? null : Math.round(memory.usedJSHeapSize / 2 ** 20);
+    });
+    const rendererMb = await app.evaluate(({ app: electronApp, BrowserWindow }) => {
+      const pid = BrowserWindow.getAllWindows()[0]?.webContents.getOSProcessId();
+      const metric = electronApp.getAppMetrics().find((m) => m.pid === pid);
+      return metric === undefined ? null : Math.round(metric.memory.workingSetSize / 1024);
+    });
+    results.memory = { jsHeapMb: heapMb, rendererWorkingSetMb: rendererMb };
+  });
+});
