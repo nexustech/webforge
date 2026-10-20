@@ -62,6 +62,20 @@ describe("siteDocuments and siteFromDocuments", () => {
     expect(() => migrateSite(raw)).toThrow();
   });
 
+  it("takes only the format version and page order from the site document", () => {
+    const [siteDocument, settings, ...rest] = siteDocuments(site);
+    const sneaky = {
+      ...(siteDocument as (typeof rest)[number]),
+      content: { ...(siteDocument?.content as object), settings: { general: {} } },
+    };
+
+    const raw = siteFromDocuments([...rest, settings, sneaky].filter((d) => d !== undefined)) as {
+      settings: unknown;
+    };
+
+    expect(raw.settings).toEqual(site.settings);
+  });
+
   it("keeps ids from the file away from Object.prototype", () => {
     const raw = siteFromDocuments([
       { id: "page:__proto__", kind: "page", content: { polluted: true } },

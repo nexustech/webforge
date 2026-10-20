@@ -76,7 +76,9 @@ export function siteFromDocuments(
   const pages: Record<string, unknown> = Object.create(null);
   for (const { id, kind, content } of documents) {
     if (kind === "site" && id === "site" && typeof content === "object" && content !== null) {
-      Object.assign(site, content);
+      // Only its own keys: anything else in it must not override another part's document.
+      const { formatVersion, pageOrder, homePageId } = content as Record<string, unknown>;
+      Object.assign(site, { formatVersion, pageOrder, homePageId });
     } else if (kind === "page" && id.startsWith(PAGE_PREFIX)) {
       pages[id.slice(PAGE_PREFIX.length)] = content;
     } else if ((PARTS as readonly string[]).includes(kind) && id === kind) {

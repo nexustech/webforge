@@ -450,7 +450,8 @@ export class ProjectStore {
       configureWrites(db);
       if (validated.formatVersion < FORMAT_VERSION) {
         migrateSchema(db, validated.formatVersion);
-        return new ProjectStore(db, { ...validateProject(db), readOnly });
+        // The migration checked nothing new about the file; only its version changed.
+        return new ProjectStore(db, { ...validated, formatVersion: FORMAT_VERSION, readOnly });
       }
       return new ProjectStore(db, { ...validated, readOnly });
     } catch (error) {

@@ -1,6 +1,7 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { ProjectStore } from "@webforge/storage";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { findProjectArgument, ProjectSession, withProjectExtension } from "./project-session.js";
 
@@ -73,6 +74,20 @@ describe("ProjectSession", () => {
       reason: "not-found",
     });
     expect(session.current()?.fileName).toBe("good.wforge");
+  });
+
+  it("asks for an update instead of opening a site from a newer Webforge", () => {
+    const path = join(dir, "newer.wforge");
+    session.create(path);
+    session.close();
+    const store = ProjectStore.open(path);
+    const close = vi.spyOn(store, "close");
+    vi.spyOn(store, "info", "get").mockReturnValue({ ...store.info, newerFormat: true });
+    vi.spyOn(ProjectStore, "open").mockReturnValue(store);
+
+    expect(session.open(path)).toEqual({ status: "failed", reason: "newer-format" });
+    expect(session.current()).toBeNull();
+    expect(close).toHaveBeenCalled();
   });
 
   it("reports other errors as unknown without logging the path", () => {
