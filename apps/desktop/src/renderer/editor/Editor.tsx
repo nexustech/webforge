@@ -141,7 +141,12 @@ export function Editor({
 
   // "Deleted Heading · Undo" after each delete (D4, 1.11).
   useEffect(
-    () => installUndoToasts(session, toast, () => connectionRef.current?.flush()),
+    () =>
+      installUndoToasts(
+        session,
+        { show: (message, options) => toast(message, options), dismiss: (id) => toast.dismiss(id) },
+        () => connectionRef.current?.flush(),
+      ),
     [session],
   );
 
