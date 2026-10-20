@@ -44,6 +44,8 @@ Credentials never go in the `.wforge` file. Item 0.2 checks the Netlify half: di
 - **Limit:** the deploy is created synchronously, and Netlify ends requests after 30 s. A digest list for a few thousand files is far below that. If very large sites ever hit it, switch to `async: true` and poll for `required`.
 
 ### 4. Netlify sign-in: OAuth ticket, not a loopback redirect
+**Approved by the product owner on 2026-10-20**, in place of the loopback redirect in the approved Phase 0 plan. Accepted trade-offs: after approving, the user sees Netlify's generic "authorized" page rather than a Webforge page, and the flow uses a documented API that mainly netlify-cli uses.
+
 Research 08 and the plan proposed OAuth with a loopback redirect on a random port. We use **Netlify's OAuth ticket flow** instead, the one netlify-cli uses:
 1. `POST /oauth/tickets?client_id=…`;
 2. the user approves at `app.netlify.com/authorize?response_type=ticket&ticket=…` in their own browser;
