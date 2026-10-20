@@ -11,17 +11,28 @@ import { PANEL_GROUPS, ShellLayout } from "./ShellLayout.js";
 
 afterEach(() => cleanup());
 
+/** A panel in each column, as once 1.13 (Add) and 1.14 (Edit) have contributed theirs. */
+function fillColumns(panels: PanelRegistry): void {
+  panels.register({ id: "add", slot: "left.top", title: "Add", component: () => <p>Add</p> });
+  panels.register({ id: "edit", slot: "right.top", title: "Edit", component: () => <p>Edit</p> });
+}
+
 function renderLayout({
   editorLevel = "simple" as const,
   layout = {},
   onLayoutChange = vi.fn(),
+  filled = true,
 }: {
   editorLevel?: "simple" | "advanced";
   layout?: Record<string, Record<string, number>>;
   onLayoutChange?: (groupId: string, layout: Record<string, number>) => void;
+  filled?: boolean;
 } = {}) {
   const commands: CommandRegistry = createCommandRegistry();
   const panels: PanelRegistry = createPanelRegistry();
+  if (filled) {
+    fillColumns(panels);
+  }
   const result = render(
     <CommandRegistryProvider registry={commands}>
       <PanelRegistryProvider registry={panels}>
@@ -49,8 +60,50 @@ describe("ShellLayout", () => {
     }
   });
 
+  it("shows a column only once one of its slots has a panel", () => {
+    const { panels, commands } = renderLayout({ filled: false });
+
+    expect(screen.queryByRole("region", { name: "Left panels" })).toBeNull();
+    expect(screen.queryByRole("region", { name: "Right panels" })).toBeNull();
+    expect(commands.get(COMMAND_IDS.toggleLeftPanels)?.enabled).toBe(false);
+
+    act(() => {
+      panels.register({
+        id: "history",
+        slot: "left.bottom",
+        title: "Undo History",
+        component: () => null,
+      });
+    });
+
+    expect(screen.getByRole("region", { name: "Left panels" })).toBeTruthy();
+    expect(screen.queryByRole("region", { name: "Right panels" })).toBeNull();
+    expect(commands.get(COMMAND_IDS.toggleLeftPanels)?.enabled).toBe(true);
+    expect(commands.get(COMMAND_IDS.toggleRightPanels)?.enabled).toBe(false);
+  });
+
+  it("saves nothing on its own: only the person's resizing is remembered", () => {
+    const onLayoutChange = vi.fn();
+    const { panels } = renderLayout({ filled: false, onLayoutChange });
+
+    act(() => {
+      panels.register({ id: "add", slot: "left.top", title: "Add", component: () => null });
+    });
+
+    expect(onLayoutChange).not.toHaveBeenCalled();
+  });
+
+  it("uses a remembered column layout only while the same columns are shown", () => {
+    renderLayout({
+      filled: false,
+      layout: { [PANEL_GROUPS.columns]: { left: 30, center: 40, right: 30 } },
+    });
+
+    expect(screen.getByText("Canvas")).toBeTruthy();
+  });
+
   it("shows a slot's panels as tabs, and Advanced-only ones only in Advanced mode", async () => {
-    const { panels, rerender, commands } = renderLayout();
+    const { panels, rerender, commands } = renderLayout({ filled: false });
     act(() => {
       panels.register({
         id: "history",

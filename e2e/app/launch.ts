@@ -1,5 +1,6 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, _electron as electron } from "@playwright/test";
 
@@ -12,11 +13,19 @@ export const desktopVersion: string = (
   JSON.parse(readFileSync(desktopPackageJson, "utf8")) as { version: string }
 ).version;
 
+/** A fresh folder for the app's user data (preferences, credentials), so tests never share one. */
+export function newUserDataDir(): string {
+  return mkdtempSync(join(tmpdir(), "webforge-e2e-user-"));
+}
+
 /**
  * Launches the built desktop app (`apps/desktop/out`) with the Electron version the app depends on.
  * The app runs as it does in production: it loads the renderer from file://, not a dev server.
+ * Its user data goes to `userDataDir` (a new temporary folder by default), never the tester's own.
  */
-export async function launchDesktopApp(): Promise<ElectronApplication> {
+export async function launchDesktopApp(
+  userDataDir: string = newUserDataDir(),
+): Promise<ElectronApplication> {
   if (!existsSync(join(desktopDir, "out/main/index.js"))) {
     throw new Error("apps/desktop is not built: run `pnpm e2e` from the repository root");
   }
@@ -29,5 +38,10 @@ export async function launchDesktopApp(): Promise<ElectronApplication> {
         entry[1] !== undefined && entry[0] !== "ELECTRON_RENDERER_URL",
     ),
   );
-  return electron.launch({ executablePath, args: [desktopDir], cwd: desktopDir, env });
+  return electron.launch({
+    executablePath,
+    args: [desktopDir, `--user-data-dir=${userDataDir}`],
+    cwd: desktopDir,
+    env,
+  });
 }

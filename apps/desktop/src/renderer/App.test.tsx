@@ -2,7 +2,7 @@
 import { act, cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { DEFAULT_PREFERENCES } from "../shared/ipc/prefs.js";
+import { applyPreferencesChange, DEFAULT_PREFERENCES } from "../shared/ipc/prefs.js";
 import type { ExportResult, PreferencesChange } from "../shared/ipc-contract.js";
 import { App } from "./App.js";
 import { createFakeEngine } from "./editor/fake-engine.test-helper.js";
@@ -11,10 +11,9 @@ afterEach(() => cleanup());
 
 const compileCss = vi.fn(async () => ({ status: "failed" as const }));
 
-const savePreferences = vi.fn(async (change: PreferencesChange) => ({
-  ...DEFAULT_PREFERENCES,
-  ...change,
-}));
+const savePreferences = vi.fn(async (change: PreferencesChange) =>
+  applyPreferencesChange(DEFAULT_PREFERENCES, change),
+);
 
 function renderApp(
   exportSite = vi.fn(async (): Promise<ExportResult> => ({ status: "canceled" })),
