@@ -1,6 +1,8 @@
 import type { IpcMain } from "electron";
+import type { Backups } from "./backups.js";
 import { registerIpcHandler } from "./ipc.js";
 import type { ProjectSession } from "./project-session.js";
+import { openOrRecover, type RecoveryDialogs } from "./recovery.js";
 
 /** Native file dialogs, injected so the handlers can be tested without Electron. */
 export type ProjectDialogs = {
@@ -19,6 +21,11 @@ export function registerProjectHandlers(
   isTrustedSender: (senderUrl: string) => boolean,
   session: ProjectSession,
   dialogs: ProjectDialogs,
+  /** Offers a damaged site's backups when it opens as `corrupt` (1.7). */
+  recovery?: {
+    readonly backups: Pick<Backups, "list" | "restore">;
+    readonly dialogs: RecoveryDialogs;
+  },
 ): void {
   registerIpcHandler(ipc, "createProject", isTrustedSender, async () => {
     const path = await dialogs.chooseNewProjectPath();
@@ -26,7 +33,12 @@ export function registerProjectHandlers(
   });
   registerIpcHandler(ipc, "openProject", isTrustedSender, async () => {
     const path = await dialogs.chooseProjectToOpen();
-    return path === undefined ? { status: "canceled" } : session.open(path);
+    if (path === undefined) {
+      return { status: "canceled" };
+    }
+    return recovery === undefined
+      ? session.open(path)
+      : openOrRecover(session, path, recovery.backups, recovery.dialogs);
   });
   registerIpcHandler(ipc, "getCurrentProject", isTrustedSender, () => session.current());
   registerIpcHandler(ipc, "readSite", isTrustedSender, () => session.readSite());

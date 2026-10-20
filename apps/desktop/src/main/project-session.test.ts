@@ -218,6 +218,25 @@ describe("ProjectSession editor mode", () => {
   });
 });
 
+describe("ProjectSession events", () => {
+  it("tells listeners when a site opens, is saved and closes", () => {
+    const events = { opened: vi.fn(), committed: vi.fn(), closed: vi.fn() };
+    const observed = new ProjectSession(events);
+    const path = join(dir, "events.wforge");
+    const site = createSite({ name: "E", language: "en", homeTitle: "Home", notFoundTitle: "404" });
+
+    observed.create(path);
+    expect(events.opened).toHaveBeenCalledWith(expect.any(ProjectStore), path);
+    observed.commit(changedDocuments(undefined, site));
+    expect(events.committed).toHaveBeenCalledTimes(1);
+    observed.commit([{ type: "delete", id: pageDocumentId(site.homePageId) }]);
+    expect(events.committed).toHaveBeenCalledTimes(1);
+    observed.close();
+    observed.close();
+    expect(events.closed).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("withProjectExtension", () => {
   it("adds .wforge only when it is missing", () => {
     expect(withProjectExtension("site")).toBe("site.wforge");

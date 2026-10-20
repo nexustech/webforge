@@ -726,15 +726,22 @@ export class ProjectStore {
    * copy even while the site is being edited, written in steps so the main process stays
    * responsive. The copy is built under a temporary name and renamed into place, so `path` never
    * holds half a backup.
+   *
+   * The copy is read through a connection of its own, so this store can be closed (another site
+   * opened, the app quit) while a backup is still running.
    */
   async backupTo(path: string): Promise<void> {
     const tempPath = join(dirname(path), `.${basename(path)}.${randomUUID()}.tmp`);
+    const source = new Database(this.#db.name, { readonly: true, fileMustExist: true });
     try {
-      await this.#db.backup(tempPath);
+      hardenConnection(source);
+      await source.backup(tempPath);
       renameSync(tempPath, path);
     } catch (error) {
       rmSync(tempPath, { force: true });
       throw error;
+    } finally {
+      source.close();
     }
   }
 
