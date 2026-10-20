@@ -1,0 +1,11 @@
+/** Exporting the site to a folder. */
+export const exportSite = {
+  "export.button": "Export site",
+  "export.dialogTitle": "Choose a folder for your site",
+  "export.working": "Exporting…",
+  "export.done": "Site exported to “{folder}” ({files} files).",
+  "export.failed.folderNotEmpty":
+    "That folder already contains other files. Choose an empty folder or a previous export.",
+  "export.failed.buildFailed": "Your site could not be built. Nothing was changed on disk.",
+  "export.failed.writeFailed": "Your site could not be saved to that folder.",
+} as const;

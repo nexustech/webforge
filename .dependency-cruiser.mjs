@@ -142,7 +142,14 @@ export default {
     doNotFollow: { path: "(^|/)node_modules/" },
     // Only our own build output. Excluding node_modules here would drop npm imports from the graph
     // and silently disable the rules above; doNotFollow already stops traversal into it.
-    exclude: { path: ["^(apps|packages)/[^/]+/(out|dist|release|coverage)/", "/test/golden/"] },
+    exclude: {
+      path: [
+        "^(apps|packages)/[^/]+/(out|dist|release|coverage)/",
+        "/test/golden/",
+        // Read as data by the UI-string guard's tests, never imported.
+        "^tools/test/fixtures/",
+      ],
+    },
     combinedDependencies: false,
     enhancedResolveOptions: {
       exportsFields: ["exports"],

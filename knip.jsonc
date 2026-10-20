@@ -1,6 +1,7 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "ignore": ["**/test/golden/**"],
+  // Golden output and the UI-string guard's fixtures are read as data, never imported.
+  "ignore": ["**/test/golden/**", "tools/test/fixtures/**"],
   "workspaces": {
     ".": {
       // Loaded by dependency-cruiser at runtime (parser: "swc"); never imported directly.

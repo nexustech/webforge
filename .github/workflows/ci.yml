@@ -80,6 +80,9 @@ jobs:
         # Runs on every OS because each installs its own platform-specific binary packages.
         run: pnpm licence-check
 
+      - name: No hard-coded UI strings
+        run: pnpm ui-strings
+
       - name: Tests with coverage
         run: pnpm test
 
