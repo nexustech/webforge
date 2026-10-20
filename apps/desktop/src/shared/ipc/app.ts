@@ -16,6 +16,12 @@ export const appChannels = {
     request: z.tuple([]),
     response: appInfoSchema,
   },
+  /** Shows the local crash-reports folder in Explorer or Finder (Help menu, F-SITE-7). */
+  openCrashReports: {
+    channel: "app:open-crash-reports",
+    request: z.tuple([]),
+    response: z.null(),
+  },
 } as const;
 
 /**
@@ -34,6 +40,8 @@ export const appEvents = {
 export interface AppApi {
   /** Returns the app name and version. */
   getInfo(): Promise<AppInfo>;
+  /** Shows the local crash-reports folder. */
+  openCrashReports(): Promise<null>;
   /**
    * Runs `save` whenever the window is about to close, and tells the main process once it has
    * finished (or failed), so the window can close. Returns a function that stops listening.

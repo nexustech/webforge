@@ -12,6 +12,7 @@ import { CommandRegistryProvider } from "./shell/command-context.js";
 import { createCommandRegistry, installCommandShortcuts } from "./shell/commands.js";
 import { TitleBar } from "./shell/TitleBar.js";
 import { AutosaveStatus } from "./storage/AutosaveStatus.js";
+import { registerCrashReportsCommand } from "./storage/crash-reports-command.js";
 import type { LoadedSite } from "./storage/load-site.js";
 
 /** Props of {@link App}. */
@@ -45,6 +46,7 @@ export function App({
   );
 
   useEffect(() => installCommandShortcuts(window, registry), [registry]);
+  useEffect(() => registerCrashReportsCommand(registry), [registry]);
 
   useEffect(
     () =>
