@@ -52,3 +52,9 @@ A desktop builder for non-technical small-business owners that produces self-con
   - turn on the PR's CI Auto-fix when opening a PR, so CI failures, merge conflicts and review comments get fixed and pushed
   - ask first only when a fix needs a product or design decision
 - **Every PR gets a code review.** Before handing a PR over, review its full diff (`/code-review`), apply the fixes, re-run `pnpm check` (plus `pnpm e2e` when the desktop app changed), push, and summarise in the PR description what the review found and fixed.
+- **Clean up after every merge.** Once a PR is merged, without asking:
+  - delete its branch locally and on GitHub, after checking the branch tip is the PR's merged head commit (a squash merge leaves the branch outside `main`'s history, so ancestry alone can't confirm it);
+  - remove any worktree that is no longer in use (its branch is merged and no running session works in it), after checking it has no uncommitted changes, then `git worktree prune`;
+  - switch the checkout back to an up-to-date `main`.
+
+  Never delete `main`, a branch with an open PR, a branch another open PR targets as its base, or a worktree with uncommitted work or an active session.
