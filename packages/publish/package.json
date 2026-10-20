@@ -8,6 +8,10 @@
   },
   "devDependencies": {
     "@types/node": "catalog:",
+    "fast-check": "4.10.2",
     "vitest": "catalog:"
+  },
+  "dependencies": {
+    "zod": "catalog:"
   }
 }

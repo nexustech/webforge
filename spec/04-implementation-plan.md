@@ -1,6 +1,6 @@
 # Webforge MVP Implementation Plan
 
-> **Status:** baseline plan, agreed before Phase 1. **Live tracking happens in GitHub:** one issue per work item, one milestone per phase. This document is the baseline. Re-plan at every phase exit (see §10) rather than editing it item by item.
+> **Status:** baseline plan, agreed before Phase 1; Phase 1 re-planned on 20 Oct 2026 as three concurrent streams. **Live tracking happens in GitHub:** one issue per work item, one milestone per phase. This document is the baseline. Re-plan at every phase exit (see §10) rather than editing it item by item.
 >
 > Inputs: [architecture](01-architecture.md), [MVP spec](02-mvp-spec.md), [engineering standards](03-engineering-standards.md), [ADRs](../docs/adr/README.md) and [research](../research/README.md).
 
@@ -20,7 +20,7 @@
 ## 1. Assumptions
 | Item | Assumption |
 |---|---|
-| Team | One developer, full-time, working with Claude Code. Nothing runs in parallel except calendar waits (enrolment, beta) |
+| Team | One developer, full-time, working with Claude Code. From Phase 1, up to three Claude Code sessions work in parallel streams, one item in progress per stream; the developer reviews and merges every PR. Calendar waits (enrolment, beta) also run in parallel |
 | Estimates | **Ideal working days** with Claude Code, including tests, stories, code review and docs for the item (Definition of Done, [standards §8](03-engineering-standards.md#8-definition-of-done)) |
 | Calendar | Start **26 Oct 2026**, 5-day weeks, England & Wales bank holidays excluded. Add personal leave when known |
 | Contingency | Dates are shown at 100% of the estimates and with **+25%** contingency. Plan against the contingency date |
@@ -44,12 +44,14 @@ Still open in Phase 0: publishing spikes (Netlify, FTP/SFTP), signed installers 
 Current code size (approx. lines): desktop 2.7k · engine 1.6k · history 1.6k · pipeline 1.1k · site-components 1.0k · storage 0.6k · model 0.3k. `editor-ui`, `publish` and `themes` are placeholders.
 
 ## 3. Timeline
-**Total: 272 working days** (≈ 54 weeks) including the 4-week beta. v1.0 at 100% of estimates: **19 Nov 2027**; with +25% contingency: **25 Feb 2028**.
+**Total: 277 working days** (≈ 55 weeks) including the 4-week beta. Baseline v1.0 (sequential, before the Phase 1 re-plan) at 100% of estimates: **19 Nov 2027**; with +25% contingency: **25 Feb 2028**.
+
+**Re-plan, 20 Oct 2026:** Phase 1 runs in three concurrent streams (82 days of effort in about 28 working days, see [Phase 1](#phase-1-editor-core)). Phase 2–5 dates and the v1.0 date are re-planned at the Phase 1 exit review.
 
 | Phase | Effort (days) | Starts | Ends (100%) | Ends (+25%) | Exit criteria |
 |---|---|---|---|---|---|
 | [Phase 0: Prototype (finish)](#phase-0-prototype-finish) | 11 | 26 Oct 2026 | 18 Nov 2026 | 24 Nov 2026 | Netlify and SFTP/FTPS publish spikes meet the spike criteria in research/stack/08<br>Signed NSIS and DMG builds install, and auto-update from a test feed on both OSes<br>A large page (200+ elements) stays within the editing performance budget<br>ADRs written; architecture §6 interfaces updated |
-| [Phase 1: Editor core](#phase-1-editor-core) | 77 | 4 Nov 2026 | 1 Mar 2027 | 2 Apr 2027 | Build a 3-page site from blank, close, reopen: everything restored<br>Undo-all property tests green; every edit has a meaningful label<br>Shell matches UI1 in dark and light (Storybook screenshots) |
+| [Phase 1: Editor core](#phase-1-editor-core) | 82 | 22 Oct 2026 | 30 Nov 2026 | 9 Dec 2026 | Build a 3-page site from blank, close, reopen: everything restored<br>Undo-all property tests green; every edit has a meaningful label<br>Shell matches UI1 in dark and light (Storybook screenshots) |
 | [Phase 2: Design & components](#phase-2-design--components) | 93 | 2 Mar 2027 | 14 Jul 2027 | 16 Sep 2027 | Every component has stories × 3 themes × Desktop/Mobile, axe-clean<br>New Site from each of the 8 templates works and looks distinct<br>Theme changes restyle every component; contrast warnings work |
 | [Phase 3: Output](#phase-3-output) | 31 | 15 Jul 2027 | 26 Aug 2027 | 10 Nov 2027 | Exported templates open from disk in Chromium, Firefox, WebKit (+ Edge on Windows) with no external requests<br>Site Check blocks only Must-fix issues on export<br>Preview CSS hot-swap < 100 ms; phone preview via QR works |
 | [Phase 4: Publish & versions](#phase-4-publish--versions) | 22 | 27 Aug 2027 | 28 Sep 2027 | 17 Dec 2027 | Publish + rollback on all targets in E2E tests (mock Netlify, local FTP/SFTP)<br>Version History: save, auto-retention, preview, restore, open as new site, republish |
@@ -71,32 +73,33 @@ gantt
     0.5 Spike – signed installers and auto-update :crit, t0_5, 2026-11-13, 3d
     0.6 Phase 0 wrap-up – interfaces and decision log :t0_6, 2026-11-18, 1d
     section Phase 1
-    1.1 Editor theme tokens, compact density and Story… :crit, t1_1, 2026-11-04, 3d
-    1.2 Window shell – title bar, panels, drawer (UI1… :crit, t1_2, 2026-11-09, 4d
-    1.3 i18n wiring and Puck dictionary :t1_3, 2026-11-19, 1d
-    1.4 Site model – full SiteDoc schema, IDs and migr… :t1_4, 2026-11-20, 3d
-    1.5 Storage – documents, assets, GC, migrations, s… :t1_5, 2026-11-25, 4d
-    1.6 Periodic autosave and save status :t1_6, 2026-12-01, 2d
-    1.7 Backups, corrupt-file recovery and local crash… :t1_7, 2026-12-03, 2d
-    1.8 Site lifecycle – start screen, new/open/recent… :t1_8, 2026-12-07, 3d
-    1.9 History hardening – labels, gestures, selectio… :t1_9, 2026-12-10, 3d
-    1.10 Modes – Simple/Advanced and Design/Content (pl… :t1_10, 2026-12-15, 2d
-    1.11 Undo History panel and Undo toasts :t1_11, 2026-12-17, 2d
-    1.12 Canvas – site CSS, selection chrome and floati… :crit, t1_12, 2026-12-21, 4d
-    1.13 Add panel – sections and elements :t1_13, 2026-12-29, 3d
-    1.14 Edit panel framework and basic field controls :crit, t1_14, 2027-01-04, 5d
-    1.15 Device views, zoom and size readout :t1_15, 2027-01-11, 2d
-    1.16 Media library, image field, alt text and focal… :t1_16, 2027-01-13, 3d
-    1.17 Site Settings dialog and bound values :t1_17, 2027-01-18, 3d
-    1.18 Pages panel, Page Settings and the 404 page :t1_18, 2027-01-21, 3d
-    1.19 Link dialog, link field and link to section :crit, t1_19, 2027-01-26, 2d
-    1.20 Shared Header and Footer :t1_20, 2027-01-28, 3d
-    1.21 Navigation menu editor :crit, t1_21, 2027-02-02, 6d
-    1.22 Spell check :t1_22, 2027-02-10, 1d
-    1.23 Inline text editing (Tiptap) :t1_23, 2027-02-11, 4d
-    1.24 Layers panel (Advanced) :t1_24, 2027-02-17, 3d
-    1.25 Copy and paste :t1_25, 2027-02-22, 3d
-    1.26 Confirmations (D7) and Content mode locking :t1_26, 2027-02-25, 3d
+    1.1 Editor theme tokens, compact density and Story… :crit, t1_1, 2026-10-23, 3d
+    1.2 Window shell – title bar, panels, drawer (UI1… :crit, t1_2, 2026-10-28, 4d
+    1.3 i18n wiring and Puck dictionary :t1_3, 2026-10-22, 1d
+    1.4 Site model – full SiteDoc schema, IDs and migr… :t1_4, 2026-10-22, 3d
+    1.5 Storage – documents, assets, GC, migrations, s… :t1_5, 2026-10-27, 4d
+    1.6 Periodic autosave and save status :t1_6, 2026-11-02, 2d
+    1.7 Backups, corrupt-file recovery and local crash… :t1_7, 2026-11-04, 2d
+    1.8 Site lifecycle – start screen, new/open/recent… :t1_8, 2026-11-06, 3d
+    1.9 History hardening – labels, gestures, selectio… :t1_9, 2026-10-27, 3d
+    1.10 Modes – Simple/Advanced and Design/Content (pl… :t1_10, 2026-11-03, 2d
+    1.11 Undo History panel and Undo toasts :t1_11, 2026-11-05, 2d
+    1.12 Canvas – site CSS, selection chrome and floati… :crit, t1_12, 2026-10-30, 4d
+    1.13 Add panel – sections and elements :t1_13, 2026-11-20, 3d
+    1.14 Edit panel framework and basic field controls :crit, t1_14, 2026-11-05, 5d
+    1.15 Device views, zoom and size readout :t1_15, 2026-11-12, 2d
+    1.16 Media library, image field, alt text and focal… :t1_16, 2026-11-11, 4d
+    1.17 Site Settings dialog and bound values :t1_17, 2026-11-17, 3d
+    1.18 Pages panel, Page Settings and the 404 page :t1_18, 2026-11-09, 3d
+    1.19 Link dialog, link field and link to section :crit, t1_19, 2026-11-18, 2d
+    1.20 Shared Header and Footer :t1_20, 2026-11-12, 4d
+    1.21 Navigation menu editor :crit, t1_21, 2026-11-23, 6d
+    1.22 Spell check :t1_22, 2026-11-20, 1d
+    1.23 Inline text editing (Tiptap) :crit, t1_23, 2026-11-20, 4d
+    1.24 Layers panel (Advanced) :t1_24, 2026-11-16, 3d
+    1.25 Copy and paste :t1_25, 2026-11-25, 3d
+    1.26 Confirmations (D7) and Content mode locking :crit, t1_26, 2026-11-26, 3d
+    1.27 Editing performance – targeted patches, atomi… :t1_27, 2026-10-22, 3d
     section Phase 2
     2.1 Themes package – theme model → Tailwind/daisyU… :t2_1, 2027-03-02, 4d
     2.2 Fonts – bundled catalogue and on-demand download :t2_2, 2027-03-08, 3d
@@ -226,7 +229,7 @@ Fold spike learnings into architecture §6 (CanvasEngine, HistoryManager, Pipeli
 
 ### Phase 1: Editor core
 **Goal:** A real editor on the UI1 shell: create, open and autosave sites; add, edit, move, copy and undo sections and elements across pages with a shared Header/Footer, Site Settings and media.  
-**Effort:** 77 days · **Scheduled:** 4 Nov 2026 → 1 Mar 2027
+**Effort:** 82 days · **Scheduled:** 22 Oct 2026 → 30 Nov 2026 (three streams)
 
 | ID | Item | Issue | Area | Refs | Est | Depends on |
 |---|---|---|---|---|---|---|
@@ -238,24 +241,35 @@ Fold spike learnings into architecture §6 (CanvasEngine, HistoryManager, Pipeli
 | 1.6 | Periodic autosave and save status | [#22](https://github.com/nexustech/webforge/issues/22) | storage | F-SITE-3, P2 | 2 | 1.5 |
 | 1.7 | Backups, corrupt-file recovery and local crash reports | [#23](https://github.com/nexustech/webforge/issues/23) | storage | F-SITE-6, F-SITE-7, [ADR 0003](../docs/adr/0003-wforge-sqlite-storage.md), architecture §9 | 2 | 1.5 |
 | 1.8 | Site lifecycle: start screen, new/open/recent, file association | [#24](https://github.com/nexustech/webforge/issues/24) | shell | F-SITE-1, F-SITE-2, P1 (.wforge), [ADR 0005](../docs/adr/0005-export-pipeline-spike.md) | 3 | 1.5, 1.2 |
-| 1.9 | History hardening: labels, gestures, selection restore | [#25](https://github.com/nexustech/webforge/issues/25) | history | [stack/03](../research/stack/03-undo-redo.md) (U1–U9, D1–D7), [ADR 0004](../docs/adr/0004-puck-with-webforge-history.md) | 3 | 1.4 |
+| 1.9 | History hardening: labels, gestures, selection restore | [#25](https://github.com/nexustech/webforge/issues/25) | history | [stack/03](../research/stack/03-undo-redo.md) (U1–U9, D1–D7), [ADR 0004](../docs/adr/0004-puck-with-webforge-history.md) | 3 | 1.4, 1.27 |
 | 1.10 | Modes: Simple/Advanced and Design/Content (plumbing) | [#26](https://github.com/nexustech/webforge/issues/26) | shell | F-ED-10, F-ED-11, T2, M3 | 2 | 1.2 |
 | 1.11 | Undo History panel and Undo toasts | [#27](https://github.com/nexustech/webforge/issues/27) | history | F-ED-9, D3, D4 | 2 | 1.9, 1.2 |
 | 1.12 | Canvas: site CSS, selection chrome and floating add | [#28](https://github.com/nexustech/webforge/issues/28) | engine | F-ED-2, UI1, [ADR 0005](../docs/adr/0005-export-pipeline-spike.md) (canvas CSS gap), C8 | 4 | 1.2 |
 | 1.13 | Add panel: sections and elements | [#29](https://github.com/nexustech/webforge/issues/29) | engine | F-ED-1, UI1, [ADR 0005](../docs/adr/0005-export-pipeline-spike.md) | 3 | 1.12 |
 | 1.14 | Edit panel framework and basic field controls | [#30](https://github.com/nexustech/webforge/issues/30) | engine | F-ED-4, F-ED-6, [stack/05](../research/stack/05-site-components.md) (design tokens), [ADR 0004](../docs/adr/0004-puck-with-webforge-history.md) | 5 | 1.12, 1.9 |
 | 1.15 | Device views, zoom and size readout | [#31](https://github.com/nexustech/webforge/issues/31) | engine | F-ED-8, UI1 | 2 | 1.12 |
-| 1.16 | Media library, image field, alt text and focal point | [#32](https://github.com/nexustech/webforge/issues/32) | storage | F-ED-5, G15, F-ED-21 | 3 | 1.5, 1.2, 1.14 |
+| 1.16 | Media library, image field, alt text and focal point | [#32](https://github.com/nexustech/webforge/issues/32) | storage | F-ED-5, G14, G15, F-ED-21 | 4 | 1.5, 1.2, 1.14 |
 | 1.17 | Site Settings dialog and bound values | [#33](https://github.com/nexustech/webforge/issues/33) | shell | F-SET-1, X3 | 3 | 1.4, 1.2, 1.9 |
 | 1.18 | Pages panel, Page Settings and the 404 page | [#34](https://github.com/nexustech/webforge/issues/34) | shell | F-ED-13, F-SET-2, F-ED-20, D5, X1 | 3 | 1.4, 1.2 |
 | 1.19 | Link dialog, link field and link to section | [#35](https://github.com/nexustech/webforge/issues/35) | engine | F-ED-18, G3 | 2 | 1.18, 1.14 |
-| 1.20 | Shared Header and Footer | [#36](https://github.com/nexustech/webforge/issues/36) | engine | F-ED-7, C5, D7 | 3 | 1.12, 1.18 |
+| 1.20 | Shared Header and Footer | [#36](https://github.com/nexustech/webforge/issues/36) | engine | F-ED-7, C5, D7 | 4 | 1.12, 1.18 |
 | 1.21 | Navigation menu editor | [#37](https://github.com/nexustech/webforge/issues/37) | engine | F-ED-17, G2 | 6 | 1.18, 1.19, 1.20 |
 | 1.22 | Spell check | [#38](https://github.com/nexustech/webforge/issues/38) | shell | F-ED-19, G5 | 1 | 1.17 |
 | 1.23 | Inline text editing (Tiptap) | [#39](https://github.com/nexustech/webforge/issues/39) | engine | F-ED-3, D1, C1, [ADR 0004](../docs/adr/0004-puck-with-webforge-history.md) | 4 | 1.12, 1.9, 1.19, 1.22 |
 | 1.24 | Layers panel (Advanced) | [#40](https://github.com/nexustech/webforge/issues/40) | engine | F-ED-12, UI1 | 3 | 1.12, 1.10 |
 | 1.25 | Copy and paste | [#41](https://github.com/nexustech/webforge/issues/41) | engine | F-ED-16, G1 | 3 | 1.12, 1.16 |
-| 1.26 | Confirmations (D7) and Content mode locking | [#42](https://github.com/nexustech/webforge/issues/42) | shell | F-ED-14, D7, F-ED-11, M3 | 3 | 1.9, 1.10, 1.18, 1.20, 1.13, 1.14, 1.23, 1.16 |
+| 1.26 | Confirmations (D7) and Content mode locking | [#42](https://github.com/nexustech/webforge/issues/42) | shell | F-ED-14, D7, F-ED-10, M3 | 3 | 1.9, 1.10, 1.18, 1.20, 1.13, 1.14, 1.23, 1.16 |
+| 1.27 | Editing performance: targeted patches, atomic Puck actions, memoised renders | [#89](https://github.com/nexustech/webforge/issues/89) | engine | [ADR 0007](../docs/adr/0007-large-page-performance.md), architecture §10, U7 | 3 | – |
+
+**Streams (re-plan of 20 Oct 2026).** Phase 1 runs as three concurrent streams, each in its own Claude Code session, with one item in progress per stream. A dependency counts as met when its PR is merged to `main`. Shared files are split up front so that streams add files instead of editing the same ones: per-area i18n catalogues (1.3), per-domain IPC files ([#90](https://github.com/nexustech/webforge/issues/90)), and command and panel registries (1.2).
+
+| Stream | Owns | Items, in order |
+|---|---|---|
+| A: Shell & panels | editor-ui, shell layout, registries, title bar, preferences | 1.3 → 1.1 → 1.2 → 1.10 → 1.11 → 1.18 → 1.15 → 1.24 → 1.22 → 1.21 |
+| B: Data & site | model, storage, project/media/clipboard IPC, app lifecycle | 1.4 → 1.5 → 1.6 → 1.7 → 1.8 → 1.16 → 1.17 → 1.13 → 1.25 |
+| C: History & canvas | history, engine, editor session | 1.27 → 1.9 → 1.12 → 1.14 → 1.20 → 1.19 → 1.23 → 1.26 |
+
+The longest dependency chain is 1.1 → 1.2 → 1.12 → 1.14 → 1.19 → 1.23 → 1.26 (about 27 days), so the phase takes about 28 working days instead of 82. Three items start before one dependency merges and leave the dependent part until last: 1.12 (the site-CSS PR comes first; the selection chrome waits for 1.2), 1.16 (the image field, which needs 1.14, comes last) and 1.23 (the spell-check criterion, which needs 1.22, is checked last).
 
 <details><summary>Scope and acceptance criteria</summary>
 
@@ -440,6 +454,13 @@ Shared confirm dialog for actions affecting more than the current page, stating 
 - [ ] Page delete and shared-section delete confirm with impact; both stay undoable
 - [ ] Content mode blocks add/move/delete/style changes but allows text, images, links, list items
 - [ ] E2E covers both mode toggles
+
+**1.27 Editing performance: targeted patches, atomic Puck actions, memoised renders**
+The mitigations from the large-page check (0.4, [ADR 0007](../docs/adr/0007-large-page-performance.md)): record text edits as targeted patches instead of a whole-page `syncDraft`; check engine echoes by revision instead of a whole-page deep-equal; apply undo, redo and jumps as Puck's atomic actions instead of `setData`; memoise component renders; profile the drop hitch.
+
+- [ ] No long tasks while typing or dropping on the 225-element page (`pnpm e2e:perf`)
+- [ ] Keystroke-to-paint within 8 ms of the starter page's
+- [ ] Atomic actions give the same canvas state as `setData` (property test)
 
 </details>
 
@@ -814,8 +835,8 @@ Every MVP feature ID maps to at least one work item (checked when this plan was 
 | F-ED-7 | Header & Footer | 1.20 |
 | F-ED-8 | Desktop · Tablet · Mobile | 1.15 |
 | F-ED-9 | Undo / Redo + Undo History panel | 1.11 |
-| F-ED-10 | Content mode | 1.10 |
-| F-ED-11 | Simple / Advanced mode | 1.10, 1.26 |
+| F-ED-10 | Content mode | 1.10, 1.26 |
+| F-ED-11 | Simple / Advanced mode | 1.10 |
 | F-ED-12 | Layers | 1.24 |
 | F-ED-13 | Pages panel | 1.18 |
 | F-ED-14 | Confirmation rule | 1.26 |
@@ -853,7 +874,7 @@ Every MVP feature ID maps to at least one work item (checked when this plan was 
 | F-CM-8 | Dynamic year | 3.5, 3.6 |
 
 ## 7. Critical path and sequencing
-With one developer the schedule is simply the sum of effort, so dependencies decide the **order**, not the length. Three dependency chains form the backbone (marked `crit` in the Gantt). They must not slip, and they set the floor if help is added later:
+Up to Phase 0 the schedule was simply the sum of effort. From Phase 1, up to three streams run in parallel, so dependency chains set the length as well as the order. Three dependency chains form the backbone (marked `crit` in the Gantt). They must not slip, and they set the floor if help is added later:
 
 | Chain | Items | Length (days) |
 |---|---|---|
@@ -878,7 +899,7 @@ Sequencing rules:
 | R3 | Puck 0.x changes or limits (performance, API churn) | Rework in the engine package | CanvasEngine adapter; pin the version; large-page check (0.5); fallback canvas on dnd-kit + Tiptap documented in ADR 0004 |
 | R4 | Template and theme content takes longer than engineering | Phase 2 overruns | Source copy/photos in parallel (Q6); ship beta with fewer templates if needed (§11) |
 | R5 | Netlify Forms not detected on API deploys | Forms silently fail on Netlify | Spike 0.2 decides; default to Formspree/Web3Forms if needed; Site Check warns |
-| R6 | Windows-specific issues (paths, OneDrive, antivirus vs native modules) | Data loss or crashes on the main user platform | Windows CI + packaged E2E (`pnpm e2e:packaged`); sync-folder warning (1.6); test machine before beta |
+| R6 | Windows-specific issues (paths, OneDrive, antivirus vs native modules) | Data loss or crashes on the main user platform | Windows CI + packaged E2E (`pnpm e2e:packaged`); sync-folder warning (1.5); test machine before beta |
 | R7 | Electron/Chromium release cadence (~8 weeks) and security fixes | Unplanned upgrade work | Upgrade at phase boundaries; Renovate grouped PRs; time comes from contingency |
 | R8 | Visual regression flakiness across OS font rendering | Noisy CI, ignored failures | Screenshots only in the Linux CI container; per-story thresholds |
 | R9 | Scope creep from beta feedback | v1.0 never ships | Only Must-fix bugs block v1.0; everything else goes to v1.1 (MVP §5) |
@@ -896,7 +917,7 @@ Sequencing rules:
 | Q8 | Licensing details: updates included, computers per licence, trial-end behaviour (MVP §8) | After MVP | Not in this plan |
 
 ## 10. How we work through the plan
-1. **Pick the next issue** in the current milestone whose dependencies are closed. Keep one item in progress at a time.
+1. **Pick the next issue** in the current milestone whose dependencies are closed. Keep one item in progress per stream (up to three streams from Phase 1, see [Phase 1](#phase-1-editor-core)).
 2. **Branch → PR** per item (`feat(engine): …`), linking `Closes #n`. Large items may use several PRs; the issue closes with the last.
 3. **Definition of Done** ([standards §8](03-engineering-standards.md#8-definition-of-done)): `/code-review --fix`, `pnpm check`, plus `pnpm e2e` / `pnpm e2e:packaged` where CLAUDE.md requires them; squash merge; branch clean-up.
 4. **Track actuals:** when closing an issue, add a comment `Actual days: <n>` (ideal days, decimals allowed, e.g. `Actual days: 3.5`). Compare against estimates weekly; `/plan-next` reads only this format.
