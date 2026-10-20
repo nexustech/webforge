@@ -17,6 +17,9 @@ function setUp() {
     onClosed,
   });
   let closeListener: ((event: { preventDefault(): void }) => void) | undefined;
+  let inputListener:
+    | ((event: { preventDefault(): void }, input: Record<string, unknown>) => void)
+    | undefined;
   const sent: unknown[][] = [];
   const window: ClosableWindow & { close: ReturnType<typeof vi.fn> } = {
     on: (_event, listener) => {
@@ -27,7 +30,12 @@ function setUp() {
       closeListener?.({ preventDefault: () => undefined });
     }),
     isDestroyed: () => false,
-    webContents: { send: (...args: unknown[]) => sent.push(args) },
+    webContents: {
+      send: (...args: unknown[]) => sent.push(args),
+      on: (_event, listener) => {
+        inputListener = listener as typeof inputListener;
+      },
+    },
   };
   flushOnClose.install(window);
   const userCloses = () => {
@@ -40,7 +48,19 @@ function setUp() {
       { senderFrame: { url: senderUrl } } as unknown as IpcMainInvokeEvent,
       id,
     );
-  return { window, sent, userCloses, answer, onClosed };
+  const press = (input: Record<string, unknown>) => {
+    const event = { preventDefault: vi.fn() };
+    inputListener?.(event, {
+      type: "keyDown",
+      control: false,
+      meta: false,
+      alt: false,
+      shift: false,
+      ...input,
+    });
+    return event;
+  };
+  return { window, sent, userCloses, answer, onClosed, press };
 }
 
 beforeEach(() => {
@@ -88,5 +108,22 @@ describe("createFlushOnClose", () => {
     await vi.advanceTimersByTimeAsync(0);
 
     expect(window.close).not.toHaveBeenCalled();
+  });
+
+  it("asks the renderer to save on Ctrl+S and Cmd+S, even from inside the canvas", () => {
+    const { sent, press } = setUp();
+
+    expect(press({ key: "s", control: true }).preventDefault).toHaveBeenCalled();
+    press({ key: "S", meta: true });
+    press({ key: "s" });
+    press({ key: "s", control: true, shift: true });
+    press({ key: "s", control: true, alt: true });
+    press({ key: "s", control: true, type: "keyUp" });
+    press({ key: "a", control: true });
+
+    expect(sent).toEqual([
+      ["app:flush", 1],
+      ["app:flush", 2],
+    ]);
   });
 });

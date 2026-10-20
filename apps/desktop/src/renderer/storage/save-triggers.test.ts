@@ -1,5 +1,4 @@
-// @vitest-environment happy-dom
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createStore } from "zustand/vanilla";
 import type { Autosave } from "./autosave.js";
 import { installSaveTriggers } from "./save-triggers.js";
@@ -11,39 +10,56 @@ function setUp() {
   const ui = createStore<{ pageId: string }>()(() => ({ pageId: "home" }));
   let flushRequest: (() => Promise<void>) | undefined;
   const stopFlushRequests = vi.fn();
-  const uninstall = installSaveTriggers(target as unknown as Window, autosave, ui, (save) => {
-    flushRequest = save;
-    return stopFlushRequests;
-  });
-  const key = (init: KeyboardEventInit) => {
-    const event = new KeyboardEvent("keydown", { cancelable: true, ...init });
-    target.dispatchEvent(event);
-    return event;
+  const focus = { inApp: false };
+  const uninstall = installSaveTriggers(
+    target as unknown as Window,
+    autosave,
+    ui,
+    (save) => {
+      flushRequest = save;
+      return stopFlushRequests;
+    },
+    () => focus.inApp,
+  );
+  const blur = async () => {
+    target.dispatchEvent(new Event("blur"));
+    await vi.advanceTimersByTimeAsync(0);
   };
-  return { target, flush, ui, key, uninstall, stopFlushRequests, flushRequest: () => flushRequest };
+  return {
+    flush,
+    ui,
+    blur,
+    focus,
+    uninstall,
+    stopFlushRequests,
+    flushRequest: () => flushRequest,
+  };
 }
 
-describe("installSaveTriggers", () => {
-  it("saves when the window loses focus", () => {
-    const { target, flush } = setUp();
+beforeEach(() => {
+  vi.useFakeTimers();
+});
 
-    target.dispatchEvent(new Event("blur"));
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+describe("installSaveTriggers", () => {
+  it("saves when the app loses focus", async () => {
+    const { blur, flush } = setUp();
+
+    await blur();
 
     expect(flush).toHaveBeenCalledTimes(1);
   });
 
-  it("saves now on Ctrl+S and Cmd+S, and keeps the browser's own save from opening", () => {
-    const { key, flush } = setUp();
+  it("doesn't save when focus only moves into the canvas", async () => {
+    const { blur, focus, flush } = setUp();
+    focus.inApp = true;
 
-    const ctrl = key({ key: "s", ctrlKey: true });
-    const cmd = key({ key: "S", metaKey: true });
-    key({ key: "s" });
-    key({ key: "s", ctrlKey: true, altKey: true });
-    key({ key: "s", ctrlKey: true, shiftKey: true });
+    await blur();
 
-    expect(flush).toHaveBeenCalledTimes(2);
-    expect(ctrl.defaultPrevented).toBe(true);
-    expect(cmd.defaultPrevented).toBe(true);
+    expect(flush).not.toHaveBeenCalled();
   });
 
   it("saves when another page is shown, not on other UI changes", () => {
@@ -55,7 +71,7 @@ describe("installSaveTriggers", () => {
     expect(flush).toHaveBeenCalledTimes(1);
   });
 
-  it("answers the main process's flush request with a save", async () => {
+  it("answers the main process's save requests (close, Ctrl/Cmd+S) with a save", async () => {
     const { flush, flushRequest } = setUp();
 
     await flushRequest()?.();
@@ -63,12 +79,13 @@ describe("installSaveTriggers", () => {
     expect(flush).toHaveBeenCalledTimes(1);
   });
 
-  it("removes every trigger", () => {
-    const { target, ui, key, flush, uninstall, stopFlushRequests } = setUp();
+  it("removes every trigger, including a blur check still pending", async () => {
+    const { ui, blur, flush, uninstall, stopFlushRequests } = setUp();
+    await blur();
+    flush.mockClear();
 
     uninstall();
-    target.dispatchEvent(new Event("blur"));
-    key({ key: "s", ctrlKey: true });
+    await blur();
     ui.setState({ pageId: "about" });
 
     expect(flush).not.toHaveBeenCalled();

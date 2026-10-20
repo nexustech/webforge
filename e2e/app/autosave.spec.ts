@@ -120,11 +120,23 @@ test.describe("autosave", () => {
     const page = await openSite();
     await expect(saveStatus(page)).toHaveText("Saved");
 
+    // Pressed while still typing on the canvas, where the habit kicks in.
     await typeIntoHeading(page, " now");
-    await page.locator(".app__title").click();
-    await page.keyboard.press("ControlOrMeta+s");
+    await expect(saveStatus(page)).toHaveText("Saving…");
+    // Through Electron's input pipeline, as a real key press arrives: Playwright's keyboard goes
+    // straight to the page and skips the main process's before-input-event.
+    await app?.evaluate(({ BrowserWindow }) => {
+      const contents = BrowserWindow.getAllWindows()[0]?.webContents;
+      const modifiers = [process.platform === "darwin" ? "meta" : "control"] as (
+        | "meta"
+        | "control"
+      )[];
+      contents?.sendInputEvent({ type: "keyDown", keyCode: "S", modifiers });
+      contents?.sendInputEvent({ type: "keyUp", keyCode: "S", modifiers });
+    });
 
-    await expect(saveStatus(page)).toHaveText("Saved");
+    // Well before the 2 s pause would have saved it.
+    await expect(saveStatus(page)).toHaveText("Saved", { timeout: 1_500 });
   });
 
   test("commits one changed page of a 225-node site in under 50 ms", async () => {
