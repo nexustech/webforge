@@ -32,6 +32,8 @@ export default defineConfig({
         "**/*.d.ts",
         // Process entry points only wire tested modules together; Playwright E2E tests cover them.
         "apps/desktop/src/main/index.ts",
+        // Native message boxes and file dialogs only; recovery.ts holds the tested flow.
+        "apps/desktop/src/main/recovery-dialogs.ts",
         "apps/desktop/src/preload/index.ts",
         "apps/desktop/src/renderer/main.tsx",
         "apps/desktop/src/worker/export-worker.ts",

@@ -15,7 +15,10 @@ const project = {
 };
 const opened: ProjectResult = { status: "opened", project };
 
-function setUp(dialogs: Partial<ProjectDialogs> = {}) {
+function setUp(
+  dialogs: Partial<ProjectDialogs> = {},
+  recovery?: Parameters<typeof registerProjectHandlers>[4],
+) {
   const handlers = new Map<string, Handler>();
   const ipc = {
     handle: (channel: string, handler: Handler) => {
@@ -29,11 +32,17 @@ function setUp(dialogs: Partial<ProjectDialogs> = {}) {
     readSite: vi.fn(() => ({ status: "empty" })),
     commit: vi.fn(() => ({ status: "saved" })),
   };
-  registerProjectHandlers(ipc, (url) => url === APP_URL, session as unknown as ProjectSession, {
-    chooseNewProjectPath: async () => "/sites/Bakery.wforge",
-    chooseProjectToOpen: async () => "/sites/Bakery.wforge",
-    ...dialogs,
-  });
+  registerProjectHandlers(
+    ipc,
+    (url) => url === APP_URL,
+    session as unknown as ProjectSession,
+    {
+      chooseNewProjectPath: async () => "/sites/Bakery.wforge",
+      chooseProjectToOpen: async () => "/sites/Bakery.wforge",
+      ...dialogs,
+    },
+    recovery,
+  );
   const invoke = (channel: string, senderUrl = APP_URL, ...args: unknown[]) => {
     const handler = handlers.get(channel);
     if (handler === undefined) {
@@ -101,6 +110,23 @@ describe("registerProjectHandlers", () => {
       await expect(invoke("project:commit", APP_URL, changes)).rejects.toThrow();
     }
     expect(session.commit).not.toHaveBeenCalled();
+  });
+
+  it("offers a damaged site's backups when one is configured", async () => {
+    const recovery = {
+      backups: { list: vi.fn(() => []), restore: vi.fn(() => "") },
+      dialogs: {
+        ask: vi.fn(async () => "cancel" as const),
+        chooseBackup: vi.fn(async () => undefined),
+        noBackups: vi.fn(async () => undefined),
+      },
+    };
+    const { invoke, session } = setUp({}, recovery);
+    session.open.mockReturnValueOnce({ status: "failed", reason: "corrupt" } as never);
+
+    await expect(invoke("project:open")).resolves.toEqual({ status: "failed", reason: "corrupt" });
+    expect(recovery.backups.list).toHaveBeenCalledWith("/sites/Bakery.wforge");
+    expect(recovery.dialogs.noBackups).toHaveBeenCalled();
   });
 
   it("rejects calls from other frames before showing a dialog", async () => {

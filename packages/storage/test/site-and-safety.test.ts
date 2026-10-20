@@ -180,3 +180,19 @@ describe("detectSyncFolder", () => {
     expect(detectSyncFolder(`${work} Old/bakery.wforge`, env)).toBeUndefined();
   });
 });
+
+describe("ProjectStore.backupTo while closing", () => {
+  it("finishes a backup even when the store is closed while it runs", async () => {
+    const { store } = newStore();
+    store.saveSite(newSite());
+    const backup = join(tempDir(), "backup.wforge");
+
+    const running = store.backupTo(backup);
+    store.close();
+    await running;
+
+    const copy = ProjectStore.open(backup);
+    expect(copy.readSite().settings.general.name).toBe("Rosa's Bakery");
+    copy.close();
+  });
+});
