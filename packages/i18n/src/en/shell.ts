@@ -2,4 +2,5 @@
 export const shell = {
   "editor.undo": "Undo",
   "editor.redo": "Redo",
+  "ui.close": "Close",
 } as const;

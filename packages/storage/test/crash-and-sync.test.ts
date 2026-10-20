@@ -49,6 +49,9 @@ describe("crash safety", () => {
       expect(seq).toBeLessThanOrEqual(writer.lastAcknowledged() + 1);
       // Both documents of a commit land together.
       expect(seqOf(store, "page:home")).toBe(seq);
+      // An asset never points at a blob that isn't there.
+      const asset = store.readAsset("photo");
+      expect(asset === undefined ? undefined : store.readBlob(asset.hash)).toBeDefined();
       // A kill before the journal header was finished leaves a journal SQLite ignores (not
       // "hot"); the next write transaction removes it.
       store.commit([{ type: "put", id: "after-crash", kind: "test", content: true }]);

@@ -1,8 +1,11 @@
 export { ProjectFileError, type ProjectFileErrorCode } from "./errors.js";
 export {
+  type AssetInfo,
   type CreateProjectOptions,
   type DocumentChange,
+  type GarbageReport,
   type JsonValue,
+  type NewAsset,
   type ProjectInfo,
   ProjectStore,
   type StoredBlob,
