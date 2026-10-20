@@ -22,6 +22,13 @@ export {
 } from "./media.js";
 export type { MenuDoc, MenuItem, MenuLeaf } from "./menu.js";
 export { menuDocSchema, menuItemSchema } from "./menu.js";
+export type {
+  MigrateOptions,
+  RawSite,
+  SiteFormatErrorCode,
+  SiteMigration,
+} from "./migrations.js";
+export { MIGRATIONS, migrateSite, migrateSiteWith, SiteFormatError } from "./migrations.js";
 export type { Breakpoint, Responsive, ResponsiveValue } from "./responsive.js";
 export { isResponsiveValue, resolveResponsive, responsiveSchema } from "./responsive.js";
 export type { SiteSettings } from "./settings.js";

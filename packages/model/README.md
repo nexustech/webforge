@@ -14,6 +14,7 @@ The site's documents and their zod schemas: what the editor edits, `.wforge` sto
 - **Menu:** `MenuDoc` (`follows: "pages" | "custom"`) with page, link, section, button and one-level group items.
 - **Per-device values:** `Responsive<T>`, `responsiveSchema(inner)` and `resolveResponsive(value, breakpoint)`.
 - **Nodes:** `PageDoc`, `NodeDoc` (with the optional Layers `layerName`, `hidden` flag and `advanced` options), `LayoutDoc` (Header and Footer, C5), `Theme`, `SiteCode`.
+- **Format versions:** `SITE_FORMAT_VERSION`, `migrateSite(raw)` (runs the `MIGRATIONS` chain from the document's version, then validates) and `SiteFormatError` (`invalid`, or `newer-format` so storage can open the site read-only). A format bump adds a step to `MIGRATIONS` and a fixture in `test/fixtures/v<n>/`; fixtures are never deleted.
 - **Export:** `SiteSnapshot` and `siteSnapshotSchema` (export pipeline stage 1), and `siteToSnapshot(site, blobs)`, which builds one from a `SiteDoc` and the images' bytes.
 
 ```ts
