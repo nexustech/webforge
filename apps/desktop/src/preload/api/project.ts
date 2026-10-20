@@ -8,4 +8,6 @@ export const projectApi = (call: Call): ProjectApi => ({
   getCurrent: () => call("getCurrentProject"),
   readSite: () => call("readSite"),
   commit: (changes) => call("commitSite", [...changes]),
+  getUiState: () => call("getUiState"),
+  setUiState: (state) => call("setUiState", state),
 });

@@ -43,4 +43,6 @@ export function registerProjectHandlers(
   registerIpcHandler(ipc, "getCurrentProject", isTrustedSender, () => session.current());
   registerIpcHandler(ipc, "readSite", isTrustedSender, () => session.readSite());
   registerIpcHandler(ipc, "commitSite", isTrustedSender, (changes) => session.commit(changes));
+  registerIpcHandler(ipc, "getUiState", isTrustedSender, () => session.uiState());
+  registerIpcHandler(ipc, "setUiState", isTrustedSender, (state) => session.setUiState(state));
 }
