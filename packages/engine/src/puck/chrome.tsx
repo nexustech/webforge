@@ -1,9 +1,8 @@
 import { ActionBar, createUsePuck, useGetPuck } from "@puckeditor/core";
 import { t } from "@webforge/i18n";
 import { ArrowDownIcon, ArrowUpIcon } from "lucide-react";
-import { type ReactNode, useLayoutEffect, useRef } from "react";
-import { toPageDoc } from "./edit-from-action.js";
-import { zoneContent } from "./tree.js";
+import { type ReactNode, useLayoutEffect, useRef, useState } from "react";
+import { ROOT_ZONE } from "./tree.js";
 
 const usePuck = createUsePuck();
 
@@ -20,6 +19,7 @@ const CHROME_CSS = `
   position: absolute;
   inset: 0;
   pointer-events: none;
+  /* The editor's --selection-outline token; the canvas document doesn't have the editor's tokens. */
   --wf-outline-color: #f028f3;
 }
 .wf-outline[data-state="hover"] {
@@ -79,22 +79,47 @@ type ActionBarProps = {
   readonly parentAction: ReactNode;
 };
 
-/** Moves the selected element one place up or down in its list, as one undo step ("Moved …"). */
+/**
+ * Whether the action bar holding `marker` is the selected element's. Puck also shows the bar of a
+ * hovered element, and its props don't say which element it belongs to; the outline beside it
+ * does (see {@link SelectionOutline}).
+ */
+function inSelectedBar(marker: Element | null): boolean {
+  return (
+    marker?.closest("[data-puck-overlay]")?.querySelector('.wf-outline[data-state="selected"]') !=
+    null
+  );
+}
+
+/**
+ * Moves the selected element one place up or down in its list, as one undo step ("Moved …").
+ * Shown only in the selected element's bar and only where elements may be moved (not in Content
+ * mode).
+ */
 function MoveActions() {
   const getPuck = useGetPuck();
+  const marker = useRef<HTMLSpanElement>(null);
+  const [selectedBar, setSelectedBar] = useState(false);
+  useLayoutEffect(() => {
+    setSelectedBar(inSelectedBar(marker.current));
+  });
   const selector = usePuck((state) => state.appState.ui.itemSelector);
   const canDrag = usePuck((state) =>
     state.selectedItem === null ? false : state.getPermissions({ item: state.selectedItem }).drag,
   );
-  const count = usePuck(
-    (state) =>
-      zoneContent(toPageDoc(state.appState.data), state.appState.ui.itemSelector?.zone).length,
-  );
-  if (selector === null || canDrag !== true) {
-    return null;
+  const hasNext = usePuck((state) => {
+    const selected = state.appState.ui.itemSelector;
+    return selected === null
+      ? false
+      : state.getItemBySelector({ zone: selected.zone ?? ROOT_ZONE, index: selected.index + 1 }) !==
+          undefined;
+  });
+  const marked = <span ref={marker} hidden />;
+  if (selector === null || canDrag !== true || !selectedBar) {
+    return marked;
   }
   const { index } = selector;
-  const zone = selector.zone ?? "root:default-zone";
+  const zone = selector.zone ?? ROOT_ZONE;
   const move = (to: number) => {
     const { dispatch } = getPuck();
     dispatch({
@@ -109,6 +134,7 @@ function MoveActions() {
   };
   return (
     <>
+      {marked}
       <ActionBar.Action
         label={t("canvas.moveUp")}
         disabled={index === 0}
@@ -118,7 +144,7 @@ function MoveActions() {
       </ActionBar.Action>
       <ActionBar.Action
         label={t("canvas.moveDown")}
-        disabled={index >= count - 1}
+        disabled={!hasNext}
         onClick={() => move(index + 1)}
       >
         <ArrowDownIcon size={16} />
