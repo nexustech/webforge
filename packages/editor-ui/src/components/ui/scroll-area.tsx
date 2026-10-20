@@ -14,8 +14,10 @@ export function ScrollArea({
       className={cn("relative overflow-hidden", className)}
       {...props}
     >
+      {/* Focusable, so keyboard users can scroll it even when it holds no controls (WCAG 2.1.1). */}
       <ScrollAreaPrimitive.Viewport
         data-slot="scroll-area-viewport"
+        tabIndex={0}
         className="size-full rounded-[inherit] outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
       >
         {children}

@@ -25,6 +25,9 @@ Colours are CSS variables with shadcn's names (`--background`, `--primary`, `--r
 
 `src/contrast.test.ts` checks every text pair for at least 4.5:1 and every control, icon and outline for at least 3:1 (WCAG AA) in both themes. A few UI1 values were adjusted to pass; `theme.css` says which.
 
+## Storybook
+Every component has stories (`*.stories.tsx` next to it) showing its states. The toolbar switches between the dark and light theme. `pnpm --filter @webforge/editor-ui storybook` opens it; `pnpm visual` (repository root) builds it and runs axe on every story in both themes, plus screenshot comparison in CI (see `e2e/README.md`). Telemetry is off.
+
 ## Conventions
 - The components in `src/components/ui/` are shadcn/ui code, copied and adapted. They keep shadcn's layout: one kebab-case file per primitive, holding its parts (`DialogContent`, `DialogTitle`…).
 - No hard-coded UI text: labels come from `t()` (`pnpm ui-strings` checks this).

@@ -144,7 +144,7 @@ export default {
     // and silently disable the rules above; doNotFollow already stops traversal into it.
     exclude: {
       path: [
-        "^(apps|packages)/[^/]+/(out|dist|release|coverage)/",
+        "^(apps|packages)/[^/]+/(out|dist|release|coverage|storybook-static)/",
         "/test/golden/",
         // Read as data by the UI-string guard's tests, never imported.
         "^tools/test/fixtures/",
