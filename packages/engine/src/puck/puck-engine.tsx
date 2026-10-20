@@ -370,7 +370,18 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
 
     perform(action) {
       const puck = getPuck;
-      return puck !== null && !inAction && performOnSelected(puck(), action);
+      if (puck === null || inAction || !performOnSelected(puck(), action)) {
+        return false;
+      }
+      if (action === "selectPrevious" || action === "selectNext") {
+        // Walking through a long page with the arrows keeps the selection in view.
+        const id = puck().selectedItem?.props.id;
+        const doc = frameDocument ?? host?.ownerDocument;
+        const element =
+          id === undefined ? null : doc?.querySelector(`[data-puck-component="${id}"]`);
+        element?.scrollIntoView?.({ block: "nearest" });
+      }
+      return true;
     },
 
     onAddRequest: addRequests.add,

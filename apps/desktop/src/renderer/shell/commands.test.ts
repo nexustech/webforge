@@ -163,6 +163,11 @@ describe("shortcuts", () => {
       const list = document.createElement("div");
       list.setAttribute("role", "listbox");
       const plain = document.createElement("div");
+      const dialog = document.createElement("div");
+      dialog.setAttribute("role", "dialog");
+      const inDialog = document.createElement("p");
+      dialog.append(inDialog);
+      document.body.append(dialog);
       // dnd-kit's draggable items are role="button" but take arrows only while dragged.
       const draggable = document.createElement("div");
       draggable.setAttribute("role", "button");
@@ -176,6 +181,7 @@ describe("shortcuts", () => {
       // A focused element that is only selectable, such as the canvas's selected element.
       plain.dispatchEvent(key({ key: "Delete", bubbles: true }));
       draggable.dispatchEvent(key({ key: "Delete", bubbles: true }));
+      inDialog.dispatchEvent(key({ key: "Delete", bubbles: true }));
 
       expect(box).toHaveBeenCalledOnce();
       expect(remove_).toHaveBeenCalledTimes(3);
@@ -183,6 +189,7 @@ describe("shortcuts", () => {
       list.remove();
       plain.remove();
       draggable.remove();
+      dialog.remove();
     });
   });
 });

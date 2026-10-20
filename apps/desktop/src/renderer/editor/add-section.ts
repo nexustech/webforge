@@ -1,7 +1,7 @@
 import type { InsertPoint } from "@webforge/engine";
-import { t } from "@webforge/i18n";
 import { newId } from "@webforge/model";
-import type { EditorSession } from "./editor-session.js";
+import { currentPage, type EditorSession } from "./editor-session.js";
+import { labelFor } from "./labels.js";
 
 /** What the floating + adds until the Add panel (1.13) opens at the insertion point instead. */
 const SECTION_TYPE = "Section";
@@ -16,10 +16,18 @@ export function addSection(session: EditorSession, at: InsertPoint): void {
     return;
   }
   const { pageId, viewport } = session.ui.getState();
+  const page = currentPage(session)?.doc;
+  if (page === undefined) {
+    return;
+  }
   const id = newId("node");
+  const label = labelFor(
+    { kind: "insert", nodeId: id, componentType: SECTION_TYPE, field: null, page, selection: id },
+    session.library,
+  );
   session.edit(
     "insert",
-    t("history.added", { item: definition.label }),
+    label,
     (draft) => {
       const page = draft.pages[pageId];
       if (page !== undefined) {

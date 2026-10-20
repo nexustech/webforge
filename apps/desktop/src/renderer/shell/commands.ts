@@ -198,7 +198,12 @@ function isFocusedControl(target: EventTarget | null): boolean {
     isContentEditable?: boolean;
     tagName?: string;
     getAttribute?: (name: string) => string | null;
+    closest?: (selector: string) => unknown;
   } | null;
+  // Anything inside an open dialog: the page behind it must not change.
+  if (element?.closest?.('[role="dialog"], [role="alertdialog"]') != null) {
+    return true;
+  }
   // A draggable item (the canvas's elements, dnd-kit's role="button") takes arrows only while it
   // is being dragged with the keyboard, which then stops them first.
   if (element?.getAttribute?.("aria-roledescription") === "draggable") {
