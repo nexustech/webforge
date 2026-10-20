@@ -6,7 +6,8 @@
   "scripts": {
     "e2e": "playwright test",
     "e2e:packaged": "playwright test --config playwright.packaged.config.ts",
-    "e2e:perf": "playwright test --config playwright.perf.config.ts"
+    "e2e:perf": "playwright test --config playwright.perf.config.ts",
+    "e2e:visual": "playwright test --config playwright.visual.config.ts"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
@@ -14,6 +15,7 @@
     "@types/node": "catalog:",
     "@webforge/model": "workspace:*",
     "@webforge/storage": "workspace:*",
-    "@webforge/test-utils": "workspace:*"
+    "@webforge/test-utils": "workspace:*",
+    "zod": "catalog:"
   }
 }

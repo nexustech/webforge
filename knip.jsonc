@@ -18,7 +18,8 @@
     "e2e": {
       // The export-setup project (playwright.config.ts) runs before the exported-site tests.
       // The perf tests (perf/*.perf.ts, pnpm e2e:perf) use a custom testMatch.
-      "entry": ["export/*.setup.ts", "perf/*.perf.ts"]
+      // playwright.visual.config.ts starts visual/serve-storybook.ts as its web server.
+      "entry": ["export/*.setup.ts", "perf/*.perf.ts", "visual/serve-storybook.ts"]
     },
     "packages/*": {},
     "packages/pipeline": {

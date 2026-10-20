@@ -8,9 +8,10 @@ End-to-end tests with Playwright: the real desktop app (Playwright's Electron su
 | `app/export.spec.ts` | **Export site** from the editor: the page is built in the export utility process and written to the chosen folder; folders with other files are refused |
 | `export/` | `export.setup.ts` exports the two-page fixture site (with photo) through the app; `exported-site.spec.ts` then opens it from disk (`file://`) in Chromium, Firefox and WebKit with the network blocked: styles, fonts, image, links, mobile menu, FAQ keyboard access, axe (X1, C8) |
 | `packaged/` | Tests of the packaged app (`pnpm e2e:packaged`): opens a `.wforge` passed on the command line |
+| `visual/` | Editor UI stories (`pnpm visual`): every Storybook story of `packages/editor-ui` in dark and light, with axe (no serious or critical violations) and, in CI's Linux container, a screenshot compared with `visual/__screenshots__/` (R8) |
 | `perf/` | Large-page performance check (`pnpm e2e:perf`): typing, dragging, undo/redo and memory on a 225-element page against architecture §10 ([ADR 0007](../docs/adr/0007-large-page-performance.md)). On demand only, not in CI |
 
-Visual-regression and template accessibility suites (`e2e/visual/`, `e2e/a11y/`, standards §5) will join this workspace later.
+The template accessibility suite (`e2e/a11y/`, standards §5) will join this workspace later.
 
 ## Running
 Once per machine, install the browsers for the exported-site tests:
@@ -32,6 +33,12 @@ pnpm e2e:packaged
 ```
 
 This packages the app with `electron-builder --dir` (asar, Fuses, unpacked better-sqlite3) and runs `packaged/` against the packaged executable on Windows or macOS. Fuses switch off `--inspect`, so these tests start the executable themselves and connect over the Chrome DevTools Protocol; they reach the renderer only ([ADR 0003](../docs/adr/0003-wforge-sqlite-storage.md)).
+
+```sh
+pnpm visual
+```
+
+This builds the editor UI's Storybook (`packages/editor-ui/storybook-static`, served on 127.0.0.1 by `visual/serve-storybook.ts`) and runs `visual/` in Chromium: axe on every story in both themes. Screenshots are compared only with `VISUAL_SCREENSHOTS=1`, which CI sets in the pinned `mcr.microsoft.com/playwright` Linux container, because fonts and anti-aliasing differ between machines. When a new story has no screenshot yet, CI writes one, fails, and uploads it as the `visual-screenshots` artifact: commit those files to `visual/__screenshots__/`. After an intended visual change, delete the affected files there and let CI write them again.
 
 ```sh
 pnpm e2e:perf

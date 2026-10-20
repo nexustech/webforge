@@ -10,9 +10,11 @@
     "export",
     "packaged",
     "perf",
+    "visual",
     "playwright.config.ts",
     "playwright.packaged.config.ts",
-    "playwright.perf.config.ts"
+    "playwright.perf.config.ts",
+    "playwright.visual.config.ts"
   ],
   "references": [
     { "path": "../packages/model" },

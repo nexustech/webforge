@@ -83,7 +83,13 @@
       }
     },
     {
-      "includes": ["**/*.config.ts", "**/*.stories.tsx", "**/*.d.ts", ".dependency-cruiser.mjs"],
+      "includes": [
+        "**/*.config.ts",
+        "**/*.stories.tsx",
+        "**/.storybook/*.{ts,tsx}",
+        "**/*.d.ts",
+        ".dependency-cruiser.mjs"
+      ],
       "linter": {
         "rules": {
           "style": {

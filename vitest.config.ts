@@ -25,6 +25,8 @@ export default defineConfig({
       include: workspaces.map((ws) => `${ws.path}/src/**/*.{ts,tsx}`),
       exclude: [
         "**/*.test.{ts,tsx}",
+        // Storybook stories are checked by e2e/visual (axe and screenshots), not unit coverage.
+        "**/*.stories.tsx",
         // Fakes and helpers that only tests import (e.g. fake-engine, fake-netlify).
         "**/*.test-helper.{ts,tsx}",
         "**/*.d.ts",

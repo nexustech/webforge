@@ -100,7 +100,7 @@ export function DropdownMenuRadioItem({
     >
       <span className={menuStyles.indicator}>
         <DropdownMenuPrimitive.ItemIndicator>
-          <CircleIcon className="size-2 fill-current" />
+          <CircleIcon className="size-2! fill-current" />
         </DropdownMenuPrimitive.ItemIndicator>
       </span>
       {children}

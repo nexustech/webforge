@@ -30,6 +30,9 @@ allowBuilds:
   lefthook: true
   # Squirrel.Windows installer helper pulled in by electron-builder; we ship NSIS only.
   electron-winstaller: false
+  # Storybook's bundler; its postinstall only re-checks the platform binary that the optional
+  # @esbuild/<platform> package already provides.
+  esbuild: false
 
 # Puck 0.23 re-walks the whole page for permissions and re-publishes unchanged sidebar fields on
 # every change; the patch skips both when nothing uses them (ADR 0007). pnpm fails the install if

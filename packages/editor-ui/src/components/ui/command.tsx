@@ -86,8 +86,10 @@ export function CommandSeparator({
   ...props
 }: ComponentProps<typeof CommandPrimitive.Separator>) {
   return (
+    // cmdk gives it role="separator", which a listbox may not contain; it is only decoration.
     <CommandPrimitive.Separator
       data-slot="command-separator"
+      aria-hidden
       className={cn(menuStyles.separator, className)}
       {...props}
     />
