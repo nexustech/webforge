@@ -53,17 +53,19 @@ describe("puckDictionary", () => {
       await new Promise((resolve) => setTimeout(resolve, 20));
     });
 
-    const text = element.textContent;
-    // Puck's own words would be "Blocks", "Outline" and "Fields".
-    expect(text).toContain(t("puck.panel.add"));
-    expect(text).toContain(t("puck.panel.layers"));
-    expect(text).toContain(t("puck.panel.edit"));
-    expect(element.querySelector(`[aria-label="${t("puck.layout.maximize")}"]`)).not.toBeNull();
-
-    engine.destroy();
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 20));
-    });
-    element.remove();
+    try {
+      const text = element.textContent;
+      // Puck's own words would be "Blocks", "Outline" and "Fields".
+      expect(text).toContain(t("puck.panel.add"));
+      expect(text).toContain(t("puck.panel.layers"));
+      expect(text).toContain(t("puck.panel.edit"));
+      expect(element.querySelector(`[aria-label="${t("puck.layout.maximize")}"]`)).not.toBeNull();
+    } finally {
+      engine.destroy();
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      });
+      element.remove();
+    }
   });
 });

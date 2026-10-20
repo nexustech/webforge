@@ -14,7 +14,7 @@ t("app.version", { version: "1.2.0" }); // "Version 1.2.0"
 
 ## Boundaries
 - Framework-free: no React, no Electron. Used by both the main process and the renderer.
-- No hard-coded UI strings elsewhere: add a key to the area file under `src/en/` instead (`pnpm ui-strings` checks the renderer and editor-ui).
+- No hard-coded UI strings elsewhere: add a key to the area file under `src/en/` instead (`pnpm ui-strings` checks the renderer, editor-ui, engine and site-components).
 
 ## Catalogue layout
 The English catalogue is split by area: one file per area under `src/en/`, assembled in `src/en.ts`. Each key lives in exactly one area (a test checks this), so work on different areas edits different files.

@@ -3,8 +3,9 @@
 // Usage (see the root "ui-strings" script):
 //   node tools/src/check-ui-strings.ts <folder>...
 //
-// Fails on JSX text and string literals in user-facing attributes (aria-label, title, placeholder…)
-// in the .tsx files under the given folders. Tests and stories are skipped. TypeScript 7 has no
+// Fails on JSX text and on literal text in user-facing attributes and props (aria-label, title,
+// placeholder, emptyText…), including inside `?:`, `&&`, `??` and template literals, in the .tsx
+// files under the given folders. Tests and stories are skipped. TypeScript 7 has no
 // JavaScript compiler API, so the files are parsed with swc, as dependency-cruiser does (ADR 0001).
 //
 // This file has no relative imports so Node can run it directly with type stripping.
@@ -13,18 +14,35 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { parseSync } from "@swc/core";
 
-/** JSX attributes whose value is shown to (or read out for) the user. */
-export const USER_FACING_ATTRIBUTES: ReadonlySet<string> = new Set([
+/**
+ * Last words of attribute or prop names whose value is shown to (or read out for) people: `title`,
+ * `aria-label`, `placeholder`, `alt`, and our own components' props such as `emptyText`,
+ * `tooltip` or `ariaLabel`. `textAlign` ends in "align", so it is not one of them.
+ */
+export const USER_FACING_WORDS: ReadonlySet<string> = new Set([
   "alt",
-  "aria-description",
-  "aria-label",
-  "aria-placeholder",
-  "aria-roledescription",
-  "aria-valuetext",
+  "caption",
+  "description",
+  "heading",
+  "hint",
   "label",
+  "message",
   "placeholder",
+  "roledescription",
+  "text",
   "title",
+  "tooltip",
+  "valuetext",
 ]);
+
+/** Whether a JSX attribute or prop named `name` holds user-facing text. */
+export function isUserFacingAttribute(name: string): boolean {
+  if (name.startsWith("data-")) {
+    return false;
+  }
+  const last = name.split(/[-_]|(?=[A-Z])/).at(-1) ?? name;
+  return USER_FACING_WORDS.has(last.toLowerCase());
+}
 
 /** A hard-coded user-facing string. */
 export type UiStringViolation = {
@@ -45,30 +63,48 @@ function isNode(value: unknown): value is AstNode {
   return typeof value === "object" && value !== null && typeof (value as AstNode).type === "string";
 }
 
-/** The literal text of a string or expression-free template literal, else `null`. */
-function literalText(node: unknown): string | null {
+/**
+ * The literal text an expression can put on screen: string literals, the fixed parts of template
+ * literals, and both branches of `?:`, `&&`, `||` and `??`. Calls such as `t("key")` give none.
+ */
+function literalTexts(node: unknown): string[] {
   if (!isNode(node)) {
-    return null;
+    return [];
   }
-  if (node.type === "StringLiteral") {
-    return typeof node.value === "string" ? node.value : null;
-  }
-  if (node.type === "TemplateLiteral" && Array.isArray(node.expressions)) {
-    const quasis = node.quasis;
-    if (node.expressions.length === 0 && Array.isArray(quasis) && isNode(quasis[0])) {
-      const cooked = quasis[0].cooked;
-      return typeof cooked === "string" ? cooked : null;
+  switch (node.type) {
+    case "StringLiteral":
+      return typeof node.value === "string" ? [node.value] : [];
+    case "TemplateLiteral": {
+      const quasis = Array.isArray(node.quasis) ? node.quasis : [];
+      const fixed = quasis
+        .map((quasi: unknown) =>
+          isNode(quasi) && typeof quasi.cooked === "string" ? quasi.cooked : "",
+        )
+        .join(" ");
+      return [fixed];
     }
+    case "ConditionalExpression":
+      return [...literalTexts(node.consequent), ...literalTexts(node.alternate)];
+    case "BinaryExpression":
+      return node.operator === "&&" || node.operator === "||" || node.operator === "??"
+        ? [...literalTexts(node.left), ...literalTexts(node.right)]
+        : [];
+    case "ParenthesisExpression":
+    case "TsAsExpression":
+    case "TsSatisfiesExpression":
+    case "TsConstAssertion":
+      return literalTexts(node.expression);
+    default:
+      return [];
   }
-  return null;
 }
 
-/** The literal text of a JSX attribute value (`"x"` or `{"x"}`), else `null`. */
-function attributeText(value: unknown): string | null {
+/** The literal texts of a JSX attribute value (`"x"` or `{expression}`). */
+function attributeTexts(value: unknown): string[] {
   if (isNode(value) && value.type === "JSXExpressionContainer") {
-    return literalText(value.expression);
+    return literalTexts(value.expression);
   }
-  return literalText(value);
+  return literalTexts(value);
 }
 
 function attributeName(name: unknown): string | null {
@@ -130,15 +166,13 @@ export function findUiStrings(source: string, file: string): UiStringViolation[]
       // {"Literal"} as a child is JSX text in disguise.
       for (const child of node.children) {
         if (isNode(child) && child.type === "JSXExpressionContainer") {
-          const text = literalText(child.expression);
-          if (text !== null) report(child, "text", text);
+          for (const text of literalTexts(child.expression)) report(child, "text", text);
         }
       }
     } else if (node.type === "JSXAttribute") {
       const name = attributeName(node.name);
-      const text = attributeText(node.value);
-      if (name !== null && text !== null && USER_FACING_ATTRIBUTES.has(name)) {
-        report(node, name, text);
+      if (name !== null && isUserFacingAttribute(name)) {
+        for (const text of attributeTexts(node.value)) report(node, name, text);
       }
     }
   }

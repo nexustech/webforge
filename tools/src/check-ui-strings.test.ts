@@ -5,6 +5,7 @@ import {
   findUiStrings,
   formatUiStringViolations,
   isCheckedFile,
+  isUserFacingAttribute,
 } from "./check-ui-strings.js";
 
 const FIXTURES = join(import.meta.dirname, "../test/fixtures/ui-strings");
@@ -16,12 +17,15 @@ describe("check-ui-strings", () => {
 
   it("reports JSX text and user-facing attributes, with their lines", () => {
     expect(checkFolders([join(FIXTURES, "fail")], FIXTURES)).toEqual([
-      { file: "fail/Hardcoded.tsx", line: 4, where: "aria-label", text: "Pages" },
-      { file: "fail/Hardcoded.tsx", line: 5, where: "text", text: "Pages" },
-      { file: "fail/Hardcoded.tsx", line: 6, where: "placeholder", text: "Search pages" },
-      { file: "fail/Hardcoded.tsx", line: 7, where: "title", text: "Add page" },
-      { file: "fail/Hardcoded.tsx", line: 8, where: "text", text: "Add" },
-      { file: "fail/Hardcoded.tsx", line: 10, where: "alt", text: "Café “logo”" },
+      { file: "fail/Hardcoded.tsx", line: 7, where: "aria-label", text: "Pages" },
+      { file: "fail/Hardcoded.tsx", line: 8, where: "text", text: "Pages" },
+      { file: "fail/Hardcoded.tsx", line: 9, where: "placeholder", text: "Search pages" },
+      { file: "fail/Hardcoded.tsx", line: 10, where: "title", text: "Add page" },
+      { file: "fail/Hardcoded.tsx", line: 11, where: "text", text: "Add" },
+      { file: "fail/Hardcoded.tsx", line: 13, where: "alt", text: "Café “logo”" },
+      { file: "fail/Hardcoded.tsx", line: 14, where: "text", text: "Saving" },
+      { file: "fail/Hardcoded.tsx", line: 15, where: "title", text: "pages" },
+      { file: "fail/Hardcoded.tsx", line: 16, where: "emptyText", text: "No pages yet" },
     ]);
   });
 
@@ -42,6 +46,30 @@ describe("check-ui-strings", () => {
     // biome-ignore lint/suspicious/noTemplateCurlyInString: the source under test has a template literal.
     const source = "const a = <div title={`${t('a')} ${t('b')}`} />;";
     expect(findUiStrings(source, "x.tsx")).toEqual([]);
+  });
+
+  it("finds literals inside ?:, && and ?? but not in calls", () => {
+    const source = [
+      'const a = <p>{open && "Close"}</p>;',
+      'const b = <p aria-label={label ?? "Pages"} />;',
+      'const c = <p>{busy ? t("saving") : t("saved")}</p>;',
+      'const d = <p>{(open ? "Hide" : "Show") as string}</p>;',
+    ].join("\n");
+    expect(findUiStrings(source, "x.tsx").map((v) => [v.line, v.text])).toEqual([
+      [1, "Close"],
+      [2, "Pages"],
+      [4, "Hide"],
+      [4, "Show"],
+    ]);
+  });
+
+  it("treats props that end in label, text, title… as user-facing", () => {
+    for (const name of ["title", "aria-label", "ariaLabel", "emptyText", "tooltip", "alt"]) {
+      expect(isUserFacingAttribute(name), name).toBe(true);
+    }
+    for (const name of ["className", "textAlign", "aria-labelledby", "data-title", "side", "id"]) {
+      expect(isUserFacingAttribute(name), name).toBe(false);
+    }
   });
 
   it("skips tests, stories and non-TSX files", () => {
