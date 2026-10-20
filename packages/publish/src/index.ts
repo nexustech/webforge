@@ -7,6 +7,17 @@ export {
   sha1,
   sitePathSchema,
 } from "./manifest.js";
+export {
+  NETLIFY_API,
+  type NetlifyClient,
+  type NetlifyDeploy,
+  type NetlifyDestination,
+  type NetlifyForm,
+  type NetlifyOptions,
+  type NetlifySite,
+  netlifyClient,
+  netlifyPublisher,
+} from "./netlify.js";
 export { uploadOrder } from "./order.js";
 export {
   type BuildOutput,
