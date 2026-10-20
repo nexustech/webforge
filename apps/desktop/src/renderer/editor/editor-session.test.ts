@@ -460,6 +460,20 @@ describe("gestures (U2)", () => {
     expect(engine.command("cancel")).toBe(false);
   });
 
+  it("undoes the gesture itself when Ctrl+Z comes in the middle of it", () => {
+    const { session, engine, typeHeading, labels } = setup();
+    typeHeading("Typed");
+    const gesture = session.begin("props", "Changed Section padding");
+    gesture.update(setTitle("a"));
+
+    expect(engine.command("undo")).toBe(true);
+
+    expect(gesture.active).toBe(false);
+    expect(title(session)).toBeUndefined();
+    expect(labels()).toEqual(["Edited Heading text"]);
+    expect(session.history.state.getState().cursor).toBe(1);
+  });
+
   it("ends a gesture as it is when a canvas edit or another gesture comes first", () => {
     const { session, labels, typeHeading } = setup();
     const first = session.begin("props", "First");

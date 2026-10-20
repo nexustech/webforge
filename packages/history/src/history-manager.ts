@@ -128,9 +128,10 @@ export type HistoryManagerOptions<D, S> = {
   /** Maximum number of entries kept; the oldest are dropped first (U7). Default 200. */
   readonly limit?: number;
   /**
-   * Memory budget for the entries' patches, measured as the length of their JSON (U7). The oldest
-   * entries are dropped while the history is over it; the current entry is always kept. Default
-   * 50 MB, which a large page's insert-and-delete steps reach long before 200 entries would.
+   * Memory budget for the entries' patches (U7), in characters of their JSON: a cheap stand-in for
+   * their size in memory, close to bytes for typical page content. The oldest entries are dropped
+   * while the history is over it; the current entry is always kept. Default 50 million, which a
+   * large page's insert-and-delete steps reach long before 200 entries would.
    */
   readonly maxBytes?: number;
   /** Default coalescing window in ms. Default 1000. */

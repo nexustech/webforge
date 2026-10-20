@@ -153,12 +153,15 @@ export function createEditorSession(
 
 /**
  * Runs a history command from the keyboard or the toolbar. Returns true if it did something with
- * it (undo and redo always count; Esc only when it cancelled a gesture).
+ * it (undo and redo always count; Esc only when it cancelled a gesture). Undo in the middle of a
+ * gesture undoes the gesture itself.
  */
 export function runHistoryCommand(session: EditorSession, command: HistoryCommand): boolean {
   switch (command) {
     case "undo":
-      session.history.undo();
+      if (!session.cancelGesture()) {
+        session.history.undo();
+      }
       return true;
     case "redo":
       session.history.redo();
