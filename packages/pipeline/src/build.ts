@@ -128,11 +128,13 @@ export async function buildSite(
   const paths = new Set(site.pages.map((page) => page.path));
   const rendered = site.pages.map((page) => {
     const prefix = "../".repeat(depthOf(page.path));
-    const navigation: NavLink[] = site.pages.map((other) => ({
-      label: other.title,
-      href: `${prefix}${other.path}.html`,
-      current: other.path === page.path,
-    }));
+    const navigation: NavLink[] = site.pages
+      .filter((other) => other.hideFromNavigation !== true)
+      .map((other) => ({
+        label: other.navLabel ?? other.title,
+        href: `${prefix}${other.path}.html`,
+        current: other.path === page.path,
+      }));
     const context: RenderContext = {
       navigation,
       link: (target) => {
@@ -153,9 +155,11 @@ export async function buildSite(
     return {
       page,
       prefix,
-      header: renderNodesToHtml(site.layout.header, library, context),
+      header:
+        page.hideHeader === true ? "" : renderNodesToHtml(site.layout.header, library, context),
       main: renderNodesToHtml(page.doc.content, library, context),
-      footer: renderNodesToHtml(site.layout.footer, library, context),
+      footer:
+        page.hideFooter === true ? "" : renderNodesToHtml(site.layout.footer, library, context),
     };
   });
 

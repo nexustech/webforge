@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { isNodeDoc, layoutDocSchema, pageDocSchema, themeSchema } from "./documents.js";
+import {
+  isNodeDoc,
+  layoutDocSchema,
+  pageDocSchema,
+  siteCodeSchema,
+  themeSchema,
+} from "./documents.js";
 
 const heading = { type: "Heading", props: { id: "heading-1", text: "Hello", size: "large" } };
 
@@ -52,4 +58,46 @@ describe("isNodeDoc", () => {
       expect(isNodeDoc(value)).toBe(false);
     },
   );
+});
+
+describe("node options", () => {
+  const node = (props: Record<string, unknown>) => ({
+    root: { props: {} },
+    content: [{ type: "Heading", props: { id: "h", ...props } }],
+  });
+
+  it("accepts a Layers name, the hidden flag and Advanced options", () => {
+    const page = node({
+      layerName: "Opening times",
+      hidden: true,
+      advanced: {
+        className: "mt-4 md:w-1/2 text-[13px]",
+        attributes: { "data-track": "hero", "aria-label": "Intro", role: "note" },
+        anchorId: "opening-times",
+      },
+    });
+
+    expect(pageDocSchema.parse(page)).toEqual(page);
+  });
+
+  it.each([
+    ["an event handler", { attributes: { onclick: "alert(1)" } }],
+    ["an inline style", { attributes: { style: "color:red" } }],
+    ["a link target", { attributes: { href: "javascript:alert(1)" } }],
+    ["markup in class names", { className: 'a" onload="x' }],
+    ["doubled spaces in class names", { className: "a  b" }],
+    ["an invalid anchor", { anchorId: "Opening Times" }],
+    ["an unknown option", { css: "x" }],
+  ])("rejects %s", (_name, advanced) => {
+    expect(pageDocSchema.safeParse(node({ advanced })).success).toBe(false);
+  });
+});
+
+describe("siteCodeSchema", () => {
+  it("accepts the four code documents and nothing else", () => {
+    const code = { css: "a{}", js: "", head: "<meta>", bodyEnd: "" };
+
+    expect(siteCodeSchema.parse(code)).toEqual(code);
+    expect(siteCodeSchema.safeParse({ ...code, php: "" }).success).toBe(false);
+  });
 });

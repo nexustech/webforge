@@ -27,6 +27,11 @@ export type PageDocument = {
   readonly footer: string;
 };
 
+/** A shared region with its marker comment, or nothing when the page hides it. */
+function sharedRegion(name: "Header" | "Footer", html: string): string {
+  return html === "" ? "" : `<!-- ${name} (shared) -->\n${html}`;
+}
+
 /**
  * A complete, readable HTML document (X4): classic deferred script only, no modules (X1), and
  * comments marking the shared Header and Footer.
@@ -48,13 +53,11 @@ export function pageDocument(page: PageDocument): string {
 ${head.join("\n")}
 </head>
 <body class="${BODY_CLASS}">
-<!-- Header (shared) -->
-${page.header}
+${sharedRegion("Header", page.header)}
 <main id="main" class="flex-1">
 ${page.main}
 </main>
-<!-- Footer (shared) -->
-${page.footer}
+${sharedRegion("Footer", page.footer)}
 </body>
 </html>`;
   return formatHtml(html);
