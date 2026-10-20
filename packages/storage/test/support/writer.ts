@@ -13,6 +13,13 @@ const FILLER = "Lorem ipsum dolor sit amet. ".repeat(10_000);
 
 const store = ProjectStore.open(path);
 for (let seq = 1; ; seq += 1) {
+  // An import writes a blob and its assets row together; the kill may land in either transaction.
+  store.putAsset({
+    mediaId: "photo",
+    data: new TextEncoder().encode(`${seq} ${FILLER}`),
+    mime: "image/png",
+    originalName: "photo.png",
+  });
   store.commit([
     { type: "put", id: "page:home", kind: "page", content: { seq, body: `${seq} ${FILLER}` } },
     { type: "put", id: "progress", kind: "test", content: { seq } },
