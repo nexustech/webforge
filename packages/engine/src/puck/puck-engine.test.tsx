@@ -100,14 +100,15 @@ describe("createPuckEngine", () => {
     expect(element.innerHTML).toBe(before);
   });
 
-  it("ignores a page with the same content", async () => {
-    await settle();
-    const before = element.innerHTML;
+  it("sends Puck nothing for a page with the same content", async () => {
+    vi.mocked(pageActions).mockClear();
 
     await act(async () => engine.applyChange({ page: structuredClone(page) }));
     await settle();
 
-    expect(element.innerHTML).toBe(before);
+    // Translated into no actions at all, rather than a whole-page setData.
+    expect(vi.mocked(pageActions).mock.results).toEqual([{ type: "return", value: [] }]);
+    expect(headings()).toEqual(["First", "Second"]);
   });
 
   it("sends an undo step to Puck as the changed element only", async () => {
