@@ -492,6 +492,9 @@ importers:
       '@webforge/site-components':
         specifier: workspace:*
         version: link:../site-components
+      lucide-react:
+        specifier: 1.59.0
+        version: 1.59.0(@types/react@19.3.0)(react@19.3.1)
       react:
         specifier: 'catalog:'
         version: 19.3.1

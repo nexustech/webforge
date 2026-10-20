@@ -25,6 +25,7 @@ import type {
 } from "../canvas-engine.js";
 import { installHistoryKeys } from "../history-keys.js";
 import { preserveCaret } from "./caret.js";
+import { applyChromeStyles, QuickActionBar, SelectionOutline } from "./chrome.js";
 import { toPuckConfig } from "./config.js";
 import { puckDictionary } from "./dictionary.js";
 import { editFromAction, selectedNodeId } from "./edit-from-action.js";
@@ -211,8 +212,9 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   function CanvasFrame({ children, document }: { children: ReactNode; document?: Document }) {
     useEffect(() => {
       frameDocument = document ?? null;
-      if (document !== undefined && siteStyles !== null) {
-        applySiteStyles(document, siteStyles);
+      if (document !== undefined) {
+        applyChromeStyles(document);
+        if (siteStyles !== null) applySiteStyles(document, siteStyles);
       }
       const frameWindow = document?.defaultView;
       return frameWindow ? installHistoryKeys(frameWindow, runCommand) : undefined;
@@ -227,6 +229,9 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     header: () => <></>,
     puck: Bridge,
     iframe: CanvasFrame,
+    // Selection chrome (1.12): magenta outlines and the selected element's quick actions.
+    componentOverlay: SelectionOutline,
+    actionBar: QuickActionBar,
   };
 
   const render = () => {
