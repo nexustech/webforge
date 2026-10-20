@@ -1,10 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { appChannels } from "./ipc/app.js";
-import { projectChannels } from "./ipc/project.js";
-import { siteChannels } from "./ipc/site.js";
-import { ipcContract } from "./ipc-contract.js";
-
-const domains = { app: appChannels, project: projectChannels, site: siteChannels };
+import { ipcDomains as domains, ipcContract } from "./ipc-contract.js";
 
 describe("ipcContract", () => {
   it("contains every domain's entries, none overwritten by another domain", () => {

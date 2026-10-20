@@ -14,12 +14,19 @@ export type { ExportResult } from "./ipc/site.js";
  * this contract.
  *
  * Each domain keeps its schemas and channels in its own file under `./ipc/` (file name = channel
- * prefix = `window.webforge` key), so a new domain adds a file and one line here.
+ * prefix = `window.webforge` key), so a new domain adds a file and one line in each object below.
  */
 export const ipcContract = {
   ...appChannels,
   ...projectChannels,
   ...siteChannels,
+} as const;
+
+/** The channels of each domain, keyed by domain; the tests check none overwrites another. */
+export const ipcDomains = {
+  app: appChannels,
+  project: projectChannels,
+  site: siteChannels,
 } as const;
 
 /** Name of an entry in {@link ipcContract}. */
