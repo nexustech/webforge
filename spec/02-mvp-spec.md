@@ -77,7 +77,7 @@ The result is a fast, accessible, self-contained static website they fully own.
 ### 2.4 Site settings & checks
 | ID | Feature | Acceptance criteria |
 |---|---|---|
-| F-SET-1 | **Site Settings** (X3) | General, Web address, Social & sharing, Contact details, Search engines, Analytics (GA4 ID, B4), Form defaults. Bound values update all elements; saving is one undo step |
+| F-SET-1 | **Site Settings** (X3) | General, Web address, Social & sharing, Contact details & opening hours, Search engines, Analytics (GA4 ID, B4), Form defaults. Bound values update all elements; saving is one undo step |
 | F-SET-2 | **Page Settings** | Title, description, share image, slug, hide header/footer, hide from navigation |
 | F-CHK-1 | **Site Check** panel (X5) | Live, background checks grouped **Must fix · Should fix · Tips**; click to jump; Fix buttons; Ignore per item. Export blocks only on *Must fix*; Publish also blocks on broken links, missing web address, placeholder text, unconfigured forms, missing titles |
 

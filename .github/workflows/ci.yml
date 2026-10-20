@@ -1,24 +1,50 @@
 name: CI
 
+# Cost (GitHub Free, private repository): Windows minutes count twice and macOS ten times, so a
+# full run costs about ten times a Linux-only one. Pull requests therefore run Linux only, and
+# the Windows and macOS jobs run on main, from "Run workflow", or on a PR labelled `full-ci`
+# (packaging, Fuses, native modules, OS-specific code). Docs-only and draft PRs skip CI.
+#
+# PAUSED: the Windows and macOS jobs run only while the repository variable FULL_CI_ENABLED is
+# `true`; unset (as now, to stay within the billing cycle), CI is Linux-only everywhere.
+# Resume with `gh variable set FULL_CI_ENABLED --body true`. See spec/03 §7.
 on:
   push:
     branches: [main]
   pull_request:
+    # `labeled`: adding `full-ci` re-runs CI with the Windows and macOS jobs.
+    # `ready_for_review`: a draft that becomes ready gets its first run.
+    types: [opened, synchronize, reopened, ready_for_review, labeled]
+    paths-ignore:
+      - "docs/**"
+      - "spec/**"
+      - "research/**"
+      - "**/*.md"
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
+  # A new push cancels the run it replaces. Other label events (and `full-ci` while paused) get a
+  # group of their own: their jobs all skip, and they must not cancel the real run.
+  group: ci-${{ github.ref }}${{ github.event.action == 'labeled' && (github.event.label.name != 'full-ci' || vars.FULL_CI_ENABLED != 'true') && format('-label-{0}', github.run_id) || '' }}
   cancel-in-progress: true
 
 jobs:
   check:
     name: Check (${{ matrix.os }})
+    # Skip drafts, and label events other than `full-ci` (all label events while paused).
+    if: >-
+      github.event_name != 'pull_request' ||
+      (!github.event.pull_request.draft &&
+      (github.event.action != 'labeled' ||
+      (github.event.label.name == 'full-ci' && vars.FULL_CI_ENABLED == 'true')))
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        # Windows only on main, manual runs and `full-ci` PRs, and only while FULL_CI_ENABLED is true.
+        os: ${{ fromJSON(vars.FULL_CI_ENABLED == 'true' && (github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'full-ci')) && '["ubuntu-latest", "windows-latest"]' || '["ubuntu-latest"]') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     steps:
@@ -70,10 +96,17 @@ jobs:
 
   e2e:
     name: E2E (${{ matrix.os }})
+    # Skip drafts, and label events other than `full-ci` (all label events while paused).
+    if: >-
+      github.event_name != 'pull_request' ||
+      (!github.event.pull_request.draft &&
+      (github.event.action != 'labeled' ||
+      (github.event.label.name == 'full-ci' && vars.FULL_CI_ENABLED == 'true')))
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        # Windows only on main, manual runs and `full-ci` PRs, and only while FULL_CI_ENABLED is true.
+        os: ${{ fromJSON(vars.FULL_CI_ENABLED == 'true' && (github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'full-ci')) && '["ubuntu-latest", "windows-latest"]' || '["ubuntu-latest"]') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     steps:
@@ -122,6 +155,14 @@ jobs:
     # checks that the packaged app opens a .wforge (ADR 0003). macOS runs here only: Windows
     # machines can't build or run the macOS app.
     name: Packaged app (${{ matrix.os }})
+    # Windows and macOS only, while FULL_CI_ENABLED is true: on main, manual runs and non-draft
+    # `full-ci` PRs.
+    if: >-
+      vars.FULL_CI_ENABLED == 'true' &&
+      (github.event_name != 'pull_request' ||
+      (!github.event.pull_request.draft &&
+      contains(github.event.pull_request.labels.*.name, 'full-ci') &&
+      (github.event.action != 'labeled' || github.event.label.name == 'full-ci')))
     strategy:
       fail-fast: false
       matrix:

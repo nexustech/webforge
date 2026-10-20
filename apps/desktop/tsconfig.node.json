@@ -16,6 +16,9 @@
       "path": "../../packages/pipeline"
     },
     {
+      "path": "../../packages/publish"
+    },
+    {
       "path": "../../packages/site-components"
     },
     {
