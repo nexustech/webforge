@@ -27,6 +27,7 @@ import { installHistoryKeys } from "../history-keys.js";
 import { preserveCaret } from "./caret.js";
 import { toPuckConfig } from "./config.js";
 import { isDeepEqual } from "./deep-equal.js";
+import { puckDictionary } from "./dictionary.js";
 import { editFromAction, selectedNodeId, toPageDoc } from "./edit-from-action.js";
 import { staleRichText } from "./stale-rich-text.js";
 import { allNodes, findNode } from "./tree.js";
@@ -189,6 +190,8 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     return <>{children}</>;
   }
 
+  const dictionary = puckDictionary();
+
   const overrides: Partial<Overrides> = {
     // Replaces Puck's header, which holds Puck's own Undo/Redo buttons.
     header: () => <></>,
@@ -205,6 +208,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
         config={config}
         data={toPuckData(page)}
         onAction={handleAction}
+        dictionary={dictionary}
         overrides={overrides}
         iframe={{ enabled: options.iframe ?? true, syncHostStyles: false }}
         height="100%"

@@ -20,7 +20,8 @@
     "deps": "depcruise apps packages e2e tools",
     "knip": "knip",
     "licence-check": "pnpm licenses list -r --json | node tools/src/check-licences.ts",
-    "check": "pnpm lint && pnpm typecheck && pnpm deps && pnpm knip && pnpm licence-check && pnpm test"
+    "ui-strings": "node tools/src/check-ui-strings.ts apps/desktop/src/renderer packages/editor-ui/src",
+    "check": "pnpm lint && pnpm typecheck && pnpm deps && pnpm knip && pnpm licence-check && pnpm ui-strings && pnpm test"
   },
   "commitlint": {
     "extends": [
