@@ -8,6 +8,12 @@ import {
 /** Sends one IPC request to the main process (`ipcRenderer.invoke` in the preload script). */
 export type Invoke = (channel: string, ...args: unknown[]) => Promise<unknown>;
 
+/**
+ * Listens to messages from the main process on `channel` (`ipcRenderer.on` in the preload
+ * script, without the event object). Returns a function that stops listening.
+ */
+export type Subscribe = (channel: string, listener: (...args: unknown[]) => void) => () => void;
+
 /** Calls the contract entry `name` and validates the response against its schema. */
 export type Call = <N extends IpcName>(name: N, ...args: IpcRequest<N>) => Promise<IpcResponse<N>>;
 

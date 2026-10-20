@@ -10,7 +10,7 @@ let app: ElectronApplication;
 let page: Page;
 
 async function start(): Promise<void> {
-  app = await launchDesktopApp(userDataDir);
+  app = await launchDesktopApp({ userDataDir });
   page = await app.firstWindow();
   await expect(page.getByRole("region", { name: "Left panels" })).toBeVisible();
 }

@@ -24,6 +24,8 @@ import { PanelRegistryProvider } from "./shell/panel-context.js";
 import { createPanelRegistry } from "./shell/panels.js";
 import { ShellLayout } from "./shell/ShellLayout.js";
 import { TitleBar } from "./shell/TitleBar.js";
+import { AutosaveStatus } from "./storage/AutosaveStatus.js";
+import type { LoadedSite } from "./storage/load-site.js";
 
 /** Props of {@link App}. */
 export type AppProps = {
@@ -38,6 +40,8 @@ export type AppProps = {
   readonly compileCss?: EditorProps["compileCss"];
   /** Exports a site; injectable for tests. Defaults to the preload API. */
   readonly exportSite?: (snapshot: SiteSnapshot) => Promise<ExportResult>;
+  /** The site read from the open site file at start-up (1.6); the starter site otherwise. */
+  readonly loaded?: LoadedSite;
 };
 
 const exportWithPreload = (snapshot: SiteSnapshot) => window.webforge.site.export(snapshot);
@@ -51,8 +55,9 @@ export function App({
   createEngine,
   compileCss,
   exportSite = exportWithPreload,
+  loaded,
 }: AppProps) {
-  const [session] = useState(() => createEditorSession(siteLibrary, starterSite()));
+  const [session] = useState(() => createEditorSession(siteLibrary, loaded?.site ?? starterSite()));
   const [registry] = useState(createCommandRegistry);
   const [panels] = useState(createPanelRegistry);
   const [preferences, setPreferences] = useState(initialPreferences);
@@ -120,6 +125,7 @@ export function App({
           <div className="flex h-full flex-col">
             <TitleBar
               siteName={siteName}
+              saveStatus={<AutosaveStatus session={session} loaded={loaded} />}
               tools={
                 <>
                   <CommandButton

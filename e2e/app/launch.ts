@@ -25,7 +25,14 @@ export function newUserDataDir(): string {
  * temporary folder that is deleted when the app closes; a test that restarts the app passes its
  * own folder (from {@link newUserDataDir}) and deletes it.
  */
-export async function launchDesktopApp(userDataDir?: string): Promise<ElectronApplication> {
+export async function launchDesktopApp(
+  options: {
+    /** Extra command-line arguments, e.g. a `.wforge` path as a double-click passes it. */
+    readonly args?: readonly string[];
+    /** Where the app keeps its user data; a new temporary folder by default. */
+    readonly userDataDir?: string;
+  } = {},
+): Promise<ElectronApplication> {
   if (!existsSync(join(desktopDir, "out/main/index.js"))) {
     throw new Error("apps/desktop is not built: run `pnpm e2e` from the repository root");
   }
@@ -38,15 +45,22 @@ export async function launchDesktopApp(userDataDir?: string): Promise<ElectronAp
         entry[1] !== undefined && entry[0] !== "ELECTRON_RENDERER_URL",
     ),
   );
-  const userData = userDataDir ?? newUserDataDir();
+  const userData = options.userDataDir ?? newUserDataDir();
   const app = await electron.launch({
     executablePath,
-    args: [desktopDir, `--user-data-dir=${userData}`],
+    args: [desktopDir, `--user-data-dir=${userData}`, ...(options.args ?? [])],
     cwd: desktopDir,
     env,
   });
-  if (userDataDir === undefined) {
-    app.on("close", () => rmSync(userData, { recursive: true, force: true }));
+  if (options.userDataDir === undefined) {
+    app.on("close", () => {
+      // Best effort: after a killed app, its helper processes can hold files for a moment.
+      try {
+        rmSync(userData, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+      } catch {
+        // Left in the temp folder; the OS cleans it up eventually.
+      }
+    });
   }
   return app;
 }

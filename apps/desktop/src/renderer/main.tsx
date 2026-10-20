@@ -2,6 +2,8 @@ import { t } from "@webforge/i18n";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App.js";
+import { starterSite } from "./editor/starter-site.js";
+import { loadSite } from "./storage/load-site.js";
 import "./styles.css";
 
 // Bootstrap only; App is unit-tested and E2E tests cover this file.
@@ -12,15 +14,16 @@ if (container === null) {
 }
 
 document.title = t("app.name");
-const [info, preferences] = await Promise.all([
+const [info, preferences, loaded] = await Promise.all([
   window.webforge.app.getInfo(),
   window.webforge.prefs.get(),
+  loadSite(window.webforge.project, () => starterSite()),
 ]);
 // The theme before the first paint, so the window never flashes the other one.
 document.documentElement.dataset.theme = preferences.theme;
 
 createRoot(container).render(
   <StrictMode>
-    <App info={info} preferences={preferences} />
+    <App info={info} preferences={preferences} loaded={loaded} />
   </StrictMode>,
 );
