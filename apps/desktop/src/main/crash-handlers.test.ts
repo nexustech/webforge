@@ -82,6 +82,7 @@ describe("installCrashHandlers", () => {
   });
 
   it("never fails itself when a report can't be written", () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
     const { emit, write, onFatal } = setUp();
     write.mockImplementation(() => {
       throw new Error("ENOSPC");

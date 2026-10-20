@@ -54,8 +54,11 @@ export function installCrashHandlers(
   const write = (details: Parameters<typeof buildCrashReport>[1]) => {
     try {
       reports.write(buildCrashReport(context, details));
-    } catch {
-      // A report that can't be written (disk full) must not cause a second crash.
+    } catch (error) {
+      // A report that can't be written (disk full) must not cause a second crash. Only the
+      // error's code is logged, never paths.
+      const code = error instanceof Error && "code" in error ? String(error.code) : "no code";
+      console.error(`Webforge could not write a crash report (${code})`);
     }
   };
 
