@@ -6,6 +6,7 @@ import {
 } from "@webforge/engine";
 import { t } from "@webforge/i18n";
 import { useEffect, useRef, useSyncExternalStore } from "react";
+import { useCommandRegistry } from "../shell/command-context.js";
 import {
   connectEngine,
   currentPage,
@@ -79,10 +80,39 @@ export function Editor({
     };
   }, [session, history, createEngine, compileCss]);
 
-  const runCommand = (command: HistoryCommand) => {
-    connectionRef.current?.flush();
-    runHistoryCommand(session, command);
-  };
+  // Undo and Redo live in the title bar, the Edit menu and the command box (1.2).
+  const registry = useCommandRegistry();
+  useEffect(() => {
+    const runCommand = (command: HistoryCommand) => {
+      connectionRef.current?.flush();
+      runHistoryCommand(session, command);
+    };
+    const removeUndo = registry.register({
+      id: "edit.undo",
+      label: t("editor.undo"),
+      menu: "edit",
+      shortcut: "Mod+Z",
+      enabled: history.state.getState().canUndo,
+      run: () => runCommand("undo"),
+    });
+    const removeRedo = registry.register({
+      id: "edit.redo",
+      label: t("editor.redo"),
+      menu: "edit",
+      shortcut: "Mod+Shift+Z",
+      enabled: history.state.getState().canRedo,
+      run: () => runCommand("redo"),
+    });
+    return () => {
+      removeUndo();
+      removeRedo();
+    };
+  }, [registry, session, history]);
+  useEffect(() => {
+    registry.update("edit.undo", { enabled: state.canUndo });
+    registry.update("edit.redo", { enabled: state.canRedo });
+  }, [registry, state.canUndo, state.canRedo]);
+
   const jumpTo = (entryId: string | null) => {
     connectionRef.current?.flush();
     return history.jumpTo(entryId);
@@ -90,14 +120,6 @@ export function Editor({
 
   return (
     <div className="editor">
-      <div className="editor__toolbar">
-        <button type="button" disabled={!state.canUndo} onClick={() => runCommand("undo")}>
-          {t("editor.undo")}
-        </button>
-        <button type="button" disabled={!state.canRedo} onClick={() => runCommand("redo")}>
-          {t("editor.redo")}
-        </button>
-      </div>
       <section className="editor__canvas" aria-label={t("editor.canvas")} ref={canvasRef} />
       <UndoHistoryPanel history={{ jumpTo }} state={state} />
     </div>

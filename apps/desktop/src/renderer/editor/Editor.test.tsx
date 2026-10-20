@@ -3,6 +3,8 @@ import { siteLibrary, starterPage } from "@webforge/site-components";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { CommandRegistryProvider } from "../shell/command-context.js";
+import { type CommandRegistry, createCommandRegistry } from "../shell/commands.js";
 import { Editor } from "./Editor.js";
 import { createEditorSession, type EditorSession } from "./editor-session.js";
 import { createFakeEngine, type FakeEngine } from "./fake-engine.test-helper.js";
@@ -24,6 +26,7 @@ describe("Editor", () => {
   let root: Root;
   let session: EditorSession;
   let engine: FakeEngine;
+  let registry: CommandRegistry;
 
   beforeEach(async () => {
     container = document.createElement("div");
@@ -32,8 +35,13 @@ describe("Editor", () => {
     session = createEditorSession(siteLibrary, starterSite());
     engine = createFakeEngine();
     const createEngine = () => engine;
+    registry = createCommandRegistry();
     await act(async () =>
-      root.render(<Editor session={session} createEngine={createEngine} compileCss={compileCss} />),
+      root.render(
+        <CommandRegistryProvider registry={registry}>
+          <Editor session={session} createEngine={createEngine} compileCss={compileCss} />
+        </CommandRegistryProvider>,
+      ),
     );
   });
 
@@ -42,10 +50,7 @@ describe("Editor", () => {
     container.remove();
   });
 
-  const button = (name: string) =>
-    [...container.querySelectorAll("button")].find(
-      (b) => b.textContent === name,
-    ) as HTMLButtonElement;
+  const enabled = (id: string) => registry.get(id)?.enabled;
 
   const removeSection = () =>
     act(async () =>
@@ -75,18 +80,19 @@ describe("Editor", () => {
     expect(engine.setSiteCss).toHaveBeenCalledWith(".btn{}", "bg-base-100");
   });
 
-  it("enables Undo and Redo as the history allows", async () => {
-    expect(button("Undo").disabled).toBe(true);
-    expect(button("Redo").disabled).toBe(true);
+  it("offers Undo and Redo as commands, enabled as the history allows", async () => {
+    expect(registry.get("edit.undo")).toMatchObject({ label: "Undo", menu: "edit" });
+    expect(enabled("edit.undo")).toBe(false);
+    expect(enabled("edit.redo")).toBe(false);
 
     await removeSection();
-    expect(button("Undo").disabled).toBe(false);
+    expect(enabled("edit.undo")).toBe(true);
 
-    await act(async () => button("Undo").click());
+    await act(async () => registry.run("edit.undo"));
     expect(session.history.state.getState().cursor).toBe(0);
-    expect(button("Redo").disabled).toBe(false);
+    expect(enabled("edit.redo")).toBe(true);
 
-    await act(async () => button("Redo").click());
+    await act(async () => registry.run("edit.redo"));
     expect(session.history.state.getState().cursor).toBe(1);
   });
 
@@ -124,6 +130,7 @@ describe("Editor", () => {
 
     expect(engine.destroy).toHaveBeenCalledOnce();
     expect(session.history.state.getState().cursor).toBe(1);
+    expect(registry.get("edit.undo")).toBeUndefined();
     root = createRoot(container);
   });
 });

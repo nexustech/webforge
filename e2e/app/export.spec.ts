@@ -28,7 +28,7 @@ test.describe("Export site", () => {
     const folder = join(parent, "my-site");
     await stubFileDialogs(app, folder);
 
-    await page.getByRole("button", { name: "Export site" }).click();
+    await page.getByRole("button", { name: "Export", exact: true }).click();
 
     await expect(page.getByText("Site exported to “my-site” (6 files).")).toBeVisible({
       timeout: 30_000,
@@ -47,7 +47,7 @@ test.describe("Export site", () => {
     writeFileSync(join(folder, "notes.txt"), "mine");
     await stubFileDialogs(app, folder);
 
-    await page.getByRole("button", { name: "Export site" }).click();
+    await page.getByRole("button", { name: "Export", exact: true }).click();
 
     await expect(
       page.getByText("That folder already contains other files. Choose an empty folder"),

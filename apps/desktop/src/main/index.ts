@@ -24,6 +24,7 @@ import {
   hardenWebContents,
   isAppUrl,
 } from "./security.js";
+import { titleBarOptions } from "./window-options.js";
 
 // Process wiring only; the logic lives in tested modules and E2E tests cover this file.
 
@@ -107,6 +108,9 @@ function createMainWindow(): void {
     height: 800,
     minWidth: 960,
     minHeight: 600,
+    // The renderer draws the title bar (1.2). Dark until the theme preference arrives.
+    ...titleBarOptions(process.platform, "dark"),
+    backgroundColor: "#2c3134",
     show: false,
     webPreferences: createSecureWebPreferences(preloadScript),
   });

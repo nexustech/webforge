@@ -1,6 +1,5 @@
 /** Exporting the site to a folder. */
 export const exportSite = {
-  "export.button": "Export site",
   "export.dialogTitle": "Choose a folder for your site",
   "export.working": "Exporting…",
   "export.done": "Site exported to “{folder}” ({files} files).",

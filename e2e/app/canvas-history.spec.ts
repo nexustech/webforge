@@ -89,9 +89,11 @@ async function pauseTyping(): Promise<void> {
   await expect.poll(() => page.evaluate(() => Date.now())).toBeGreaterThan(start + 1_200);
 }
 
-/** Focuses the app shell, outside the canvas iframe, so key presses go to the host window. */
+/** Moves focus out of the canvas iframe, so key presses go to the host window. */
 async function focusHost(): Promise<void> {
-  await page.locator(".app__title").click();
+  await page.evaluate(() => {
+    (document.activeElement as HTMLElement | null)?.blur();
+  });
 }
 
 test.describe("Puck canvas with Webforge history", () => {
