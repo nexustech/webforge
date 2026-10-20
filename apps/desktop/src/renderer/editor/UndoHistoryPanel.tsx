@@ -1,11 +1,10 @@
 import type { HistoryManager, HistoryState } from "@webforge/history";
 import { t } from "@webforge/i18n";
-import type { SpikeDoc } from "./editor-session.js";
 
 /** Props of {@link UndoHistoryPanel}. */
 export type UndoHistoryPanelProps = {
-  readonly history: Pick<HistoryManager<SpikeDoc, string | null>, "jumpTo">;
-  readonly state: HistoryState<string | null>;
+  readonly history: Pick<HistoryManager<unknown, unknown>, "jumpTo">;
+  readonly state: HistoryState<unknown>;
 };
 
 /**

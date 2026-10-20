@@ -1,14 +1,15 @@
 import { syncDraft } from "@webforge/history";
 import { t } from "@webforge/i18n";
 import { isNodeDoc, type NodeDoc, pageDocSchema } from "@webforge/model";
-import { type EditorSession, labelFor } from "../editor/editor-session.js";
+import { currentPage, type EditorSession } from "../editor/editor-session.js";
+import { labelFor } from "../editor/labels.js";
 
 // Hooks for the large-page performance check (spec/04 item 0.4, ADR 0007). Only builds made with
 // `electron-vite build --mode perf` load this module (see App.tsx); normal builds never include it.
 
 /** What the performance tests can call on `window.__webforgePerf`. */
 export type PerfHooks = {
-  /** Replaces the page with `page` (validated), then forgets the history so tests start clean. */
+  /** Replaces the current page with `page` (validated), then forgets the history so tests start clean. */
   loadPage(page: unknown): void;
   /** Adds `count` history steps, each toggling the first heading's size (a real props edit). */
   addSteps(count: number): void;
@@ -44,7 +45,7 @@ export function createPerfHooks(session: EditorSession): PerfHooks {
       nodeId: null,
       componentType: "Heading",
       field: "size",
-      page: session.history.document.getState().page,
+      page: currentPage(session)?.doc ?? { root: { props: {} }, content: [] },
       selection: null,
     },
     session.library,
@@ -52,13 +53,18 @@ export function createPerfHooks(session: EditorSession): PerfHooks {
   return {
     loadPage(raw) {
       const page = pageDocSchema.parse(raw);
-      session.history.run(t("history.editedPage"), (draft) => syncDraft(draft.page, page));
+      const { pageId } = session.ui.getState();
+      session.history.run(t("history.editedPage"), (draft) => {
+        const target = draft.pages[pageId];
+        if (target !== undefined) syncDraft(target.doc, page);
+      });
       session.history.clear();
     },
     addSteps(count) {
       for (let step = 0; step < count; step++) {
+        const { pageId } = session.ui.getState();
         session.history.run(label, (draft) => {
-          const heading = firstHeading(draft.page.content);
+          const heading = firstHeading(draft.pages[pageId]?.doc.content ?? []);
           if (heading !== undefined) {
             heading.props.size = heading.props.size === "large" ? "medium" : "large";
           }

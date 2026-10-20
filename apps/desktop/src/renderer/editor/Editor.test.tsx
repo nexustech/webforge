@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { Editor } from "./Editor.js";
 import { createEditorSession, type EditorSession } from "./editor-session.js";
 import { createFakeEngine, type FakeEngine } from "./fake-engine.test-helper.js";
+import { starterSite } from "./starter-site.js";
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean;
@@ -22,7 +23,7 @@ describe("Editor", () => {
     container = document.createElement("div");
     document.body.append(container);
     root = createRoot(container);
-    session = createEditorSession(siteLibrary, starterPage());
+    session = createEditorSession(siteLibrary, starterSite());
     engine = createFakeEngine();
     const createEngine = () => engine;
     await act(async () => root.render(<Editor session={session} createEngine={createEngine} />));
@@ -50,9 +51,13 @@ describe("Editor", () => {
   it("mounts the engine in the canvas and loads the page", () => {
     const canvas = container.querySelector(".editor__canvas");
 
-    expect(engine.mount).toHaveBeenCalledOnce();
+    const site = session.history.document.getState();
+    expect(engine.mount).toHaveBeenCalledWith(expect.anything(), {
+      library: siteLibrary,
+      theme: site.theme,
+    });
     expect(canvas?.querySelector(".editor__canvas-root")).not.toBeNull();
-    expect(engine.loadPage).toHaveBeenCalledWith(starterPage(), { header: [], footer: [] });
+    expect(engine.loadPage).toHaveBeenCalledWith(starterPage(), site.layout);
   });
 
   it("enables Undo and Redo as the history allows", async () => {

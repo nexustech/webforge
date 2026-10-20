@@ -8,6 +8,7 @@ import { t } from "@webforge/i18n";
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import {
   connectEngine,
+  currentPage,
   type EditorSession,
   type EngineConnection,
   runHistoryCommand,
@@ -21,10 +22,7 @@ export type EditorProps = {
   readonly createEngine?: () => CanvasEngine;
 };
 
-const SPIKE_THEME = { name: "default" } as const;
-const NO_LAYOUT = { header: [], footer: [] };
-
-/** The page editor: toolbar, canvas and Undo History panel around one {@link EditorSession}. */
+/** The site editor: toolbar, canvas and Undo History panel around one {@link EditorSession}. */
 export function Editor({ session, createEngine = createPuckEngine }: EditorProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const connectionRef = useRef<EngineConnection | null>(null);
@@ -46,8 +44,12 @@ export function Editor({ session, createEngine = createPuckEngine }: EditorProps
     container.append(element);
 
     const engine = createEngine();
-    engine.mount(element, { library: session.library, theme: SPIKE_THEME });
-    engine.loadPage(history.document.getState().page, NO_LAYOUT);
+    const site = history.document.getState();
+    engine.mount(element, { library: session.library, theme: site.theme });
+    const page = currentPage(session);
+    if (page !== undefined) {
+      engine.loadPage(page.doc, site.layout);
+    }
     const connection = connectEngine(engine, session);
     connectionRef.current = connection;
     // One handler for the whole window (U4); the engine reports keys pressed inside its iframe.

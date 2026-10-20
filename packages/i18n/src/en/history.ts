@@ -8,4 +8,6 @@ export const history = {
   "history.changed": "Changed {item} {field}",
   "history.changedPage": "Changed page settings",
   "history.editedPage": "Edited page",
+  // An element the user named in Layers, used as {item} above.
+  "history.namedItem": "'{name}'",
 } as const;
