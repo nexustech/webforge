@@ -19,17 +19,17 @@ Item 0.4 measures editing a page with 200+ elements against architecture §10 ("
   - long tasks (> 50 ms) on the main thread;
   - canvas DOM change + next frame after clicking Undo/Redo or a step in the Undo History panel;
   - memory from `performance.memory` and `app.getAppMetrics()`.
-- **Machine:** Windows 11, Intel Core i7-8750H (2018, 6 cores / 12 threads), 16 GB. That's mid-range today, roughly the "mid-range laptop" of §10. Three runs; the ranges are across runs.
+- **Machine:** Windows 11, Intel Core i7-8750H (2018, 6 cores / 12 threads), 16 GB. That's mid-range today, roughly the "mid-range laptop" of §10. Four runs; the ranges are across runs.
 
 ## Results
 
 | What | Result (225 nodes) | Starter page (4 nodes) | Budget | Verdict |
 |---|---|---|---|---|
 | Load the page into the canvas | 1.3–1.4 s | – | (cold start < 3 s for a 5-page site) | ✅ |
-| Keystroke → next painted frame | p50 **48 ms**, p95 **88 ms** | p50 24–32 ms, p95 40–48 ms | < 16 ms | ❌ |
+| Keystroke → next painted frame | p50 **48–64 ms**, p95 **88–104 ms** | p50 24–32 ms, p95 40–48 ms | < 16 ms | ❌ |
 | Our event handlers per keystroke | ≤ 1 ms | ≤ 1 ms | < 16 ms | ✅ |
 | Long tasks while typing 37 characters | 5–9, each 50–67 ms | none | none | ❌ |
-| Drag a heading (drop) | one long task of **140 ms** at the drop (+ one ~55 ms) | – | no dropped frames | ❌ |
+| Drag a heading (drop) | one long task of **134–142 ms** at the drop (+ one ~55 ms) | – | no dropped frames | ❌ |
 | Undo (50-step history) | p50 50–53 ms, p95 75–84 ms | – | < 100 ms | ✅, close |
 | Redo | p50 51 ms, p95 54–65 ms | – | < 100 ms | ✅ |
 | Jump to start / end in Undo History | 77–84 ms | – | < 100 ms | ✅, close |
@@ -41,7 +41,7 @@ The keystroke-to-paint figure includes Chromium's own input and paint pipeline. 
 
 ## Decision
 **Puck stays (ADR 0004's "go" holds), with a performance work item before beta.** Every number here is at most a few times over budget, and each has a known cause with a contained fix:
-- typing feels noticeably laggy only on large pages (48 ms is about three frames; users notice at roughly 100 ms);
+- typing feels noticeably laggy only on large pages (48–64 ms is three to four frames; users notice at roughly 100 ms);
 - undo is already instant by U7's measure.
 
 None of this calls for the fallback canvas.
@@ -51,7 +51,7 @@ Mitigations, in order of expected gain:
 2. **No whole-page equality check per change (ours).** The engine compares the whole page to skip echoes. Compare a document version or the store's reference instead.
 3. **Atomic Puck actions for undo, redo and jumps (ADR 0004's plan).** Translate history patches into Puck's `replace`/`insert`/`remove` actions instead of `setData`, so Puck stops rebuilding its indexes for the whole page.
 4. **Memoise component renders.** Wrap each component's render so unchanged nodes skip re-rendering when one node changes.
-5. **Investigate the drop hitch (140 ms).** Profile the drop: Puck's `move` action plus our whole-page sync and `setData`. Expected to shrink with items 1–3.
+5. **Investigate the drop hitch (about 140 ms).** Profile the drop: Puck's `move` action plus our whole-page sync and `setData`. Expected to shrink with items 1–3.
 
 Target after the mitigations: no long tasks while typing or dropping on this page, and keystroke-to-paint within 8 ms of the starter page's (Chromium's own pipeline sets the floor). `pnpm e2e:perf` is the measuring tool; its soft budget checks show what still misses.
 

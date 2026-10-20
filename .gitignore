@@ -18,6 +18,7 @@ storybook-static/
 coverage/
 playwright-report/
 test-results/
+perf-results/
 
 # Environment & secrets
 .env

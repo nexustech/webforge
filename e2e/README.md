@@ -37,7 +37,7 @@ This packages the app with `electron-builder --dir` (asar, Fuses, unpacked bette
 pnpm e2e:perf
 ```
 
-This builds the app in perf mode (`electron-vite build --mode perf`, which adds the `__webforgePerf` hooks for loading a large page and adding history steps) and runs `perf/`. Results are printed and written to `test-results/perf/large-page.json`. Budget misses fail softly, so every measurement is still recorded. Timings depend on the machine; compare runs on the same one. Afterwards run `pnpm e2e` (or rebuild) before the other tests: the smoke test checks that normal builds don't contain the hooks.
+This builds the app in perf mode (`electron-vite build --mode perf`, which adds the `__webforgePerf` hooks for loading a large page and adding history steps) and runs `perf/`. Results are printed and written to `perf-results/large-page.json` (git-ignored; outside `test-results/`, which every Playwright run empties). Budget misses fail softly, so every measurement is still recorded. Timings depend on the machine; compare runs on the same one. Afterwards run `pnpm e2e` (or rebuild) before the other tests: the smoke test checks that normal builds don't contain the hooks.
 
 ## Writing tests
 - Launch the app with `launchDesktopApp()` from `app/launch.ts`.

@@ -45,27 +45,36 @@ const summary = (values: number[]) => ({
 async function startObservers(): Promise<void> {
   await page.evaluate(() => {
     // The canvas iframe has its own realm, so use each window's own PerformanceObserver.
+    type Recorder = { __perf?: unknown; __perfObservers?: PerformanceObserver[] };
     const record = (target: Window, longTasks: boolean) => {
+      // Called again after the large page loads: stop the previous observers first.
+      const recorder = target as unknown as Recorder;
+      for (const observer of recorder.__perfObservers ?? []) observer.disconnect();
+      recorder.__perfObservers = [];
       const store = {
         longtask: [] as number[],
         keydown: [] as number[],
         processing: [] as number[],
       };
-      (target as unknown as { __perf?: typeof store }).__perf = store;
+      recorder.__perf = store;
       const Observer = (target as unknown as typeof globalThis).PerformanceObserver;
       if (longTasks) {
-        new Observer((list) => {
+        const observer = new Observer((list) => {
           for (const entry of list.getEntries()) store.longtask.push(entry.duration);
-        }).observe({ type: "longtask" });
+        });
+        observer.observe({ type: "longtask" });
+        recorder.__perfObservers.push(observer);
       }
-      new Observer((list) => {
+      const events = new Observer((list) => {
         for (const entry of list.getEntries() as PerformanceEventTiming[]) {
           if (entry.name === "keydown") {
             store.keydown.push(entry.duration);
             store.processing.push(entry.processingEnd - entry.processingStart);
           }
         }
-      }).observe({ type: "event", durationThreshold: 16 } as PerformanceObserverInit);
+      });
+      events.observe({ type: "event", durationThreshold: 16 } as PerformanceObserverInit);
+      recorder.__perfObservers.push(events);
     };
     // Both windows share one main thread: observe long tasks in the app window only, or each
     // would be counted twice.
@@ -109,12 +118,24 @@ async function timeClicks(selector: string, runs: number): Promise<number[]> {
         const button = document.querySelector<HTMLElement>(target);
         if (!button) throw new Error(`Missing ${target}`);
         const changed = new Promise<void>((resolve, reject) => {
-          const observer = new MutationObserver(() => {
+          const timer = setTimeout(() => {
             observer.disconnect();
+            reject(new Error("Canvas did not change"));
+          }, 5_000);
+          // Only changes to the page itself count, not Puck's overlays (outlines, drop zones).
+          const observer = new MutationObserver((mutations) => {
+            const onPage = mutations.some((m) => {
+              // A text change targets a Text node; look from its element.
+              const element =
+                m.target.nodeType === Node.ELEMENT_NODE ? m.target : m.target.parentNode;
+              return (element as Element | null)?.closest(".site-section") != null;
+            });
+            if (!onPage) return;
+            observer.disconnect();
+            clearTimeout(timer);
             requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
           });
           observer.observe(doc.body, { subtree: true, childList: true, characterData: true });
-          setTimeout(() => reject(new Error("Canvas did not change")), 5_000);
         });
         const start = performance.now();
         button.click();
@@ -142,7 +163,8 @@ test.afterAll(async () => {
     cores: cpus().length,
     memoryGb: Math.round(totalmem() / 2 ** 30),
   };
-  const dir = join(import.meta.dirname, "../test-results/perf");
+  // Not in test-results/: Playwright empties that folder at the start of every run.
+  const dir = join(import.meta.dirname, "../perf-results");
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, "large-page.json"), `${JSON.stringify(results, null, 2)}\n`);
   console.log(JSON.stringify(results, null, 2));

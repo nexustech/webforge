@@ -31,4 +31,13 @@ describe("largePage", () => {
   it("counts an empty page as zero nodes", () => {
     expect(countNodes({ root: { props: {} }, content: [] })).toBe(0);
   });
+
+  it("counts only nodes in array props, not other values", () => {
+    const page = {
+      root: { props: {} },
+      content: [{ type: "Gallery", props: { id: "g", tags: ["a", "b"], items: [{ src: "x" }] } }],
+    };
+
+    expect(countNodes(page)).toBe(1);
+  });
 });

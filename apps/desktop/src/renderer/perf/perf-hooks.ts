@@ -1,7 +1,7 @@
 import { syncDraft } from "@webforge/history";
 import { t } from "@webforge/i18n";
 import { isNodeDoc, type NodeDoc, pageDocSchema } from "@webforge/model";
-import type { EditorSession } from "../editor/editor-session.js";
+import { type EditorSession, labelFor } from "../editor/editor-session.js";
 
 // Hooks for the large-page performance check (spec/04 item 0.4, ADR 0007). Only builds made with
 // `electron-vite build --mode perf` load this module (see App.tsx); normal builds never include it.
@@ -37,8 +37,18 @@ function firstHeading(nodes: readonly NodeDoc[]): NodeDoc | undefined {
 
 /** Creates the hooks for `session`. */
 export function createPerfHooks(session: EditorSession): PerfHooks {
-  const headingLabel = session.library.components.Heading?.label ?? "Heading";
-  const sizeLabel = session.library.components.Heading?.fields.size?.label.toLowerCase() ?? "size";
+  // The label a real size change gets ("Changed Heading size").
+  const label = labelFor(
+    {
+      kind: "props",
+      nodeId: null,
+      componentType: "Heading",
+      field: "size",
+      page: session.history.document.getState().page,
+      selection: null,
+    },
+    session.library,
+  );
   return {
     loadPage(raw) {
       const page = pageDocSchema.parse(raw);
@@ -47,15 +57,12 @@ export function createPerfHooks(session: EditorSession): PerfHooks {
     },
     addSteps(count) {
       for (let step = 0; step < count; step++) {
-        session.history.run(
-          t("history.changed", { item: headingLabel, field: sizeLabel }),
-          (draft) => {
-            const heading = firstHeading(draft.page.content);
-            if (heading !== undefined) {
-              heading.props.size = heading.props.size === "large" ? "medium" : "large";
-            }
-          },
-        );
+        session.history.run(label, (draft) => {
+          const heading = firstHeading(draft.page.content);
+          if (heading !== undefined) {
+            heading.props.size = heading.props.size === "large" ? "medium" : "large";
+          }
+        });
       }
     },
   };

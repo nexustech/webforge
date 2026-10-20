@@ -1,4 +1,4 @@
-import type { NodeDoc, PageDoc } from "@webforge/model";
+import { isNodeDoc, type NodeDoc, type PageDoc } from "@webforge/model";
 
 /** Options of {@link largePage}. */
 export type LargePageOptions = {
@@ -59,8 +59,8 @@ export function countNodes(page: PageDoc): number {
         total +
         1 +
         Object.values(node.props)
-          .filter((value): value is NodeDoc[] => Array.isArray(value))
-          .reduce((sum, children) => sum + count(children), 0),
+          .filter((value): value is unknown[] => Array.isArray(value))
+          .reduce((sum, values) => sum + count(values.filter(isNodeDoc)), 0),
       0,
     );
   return count(page.content);
