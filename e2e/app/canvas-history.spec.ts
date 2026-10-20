@@ -163,11 +163,10 @@ test.describe("Puck canvas with Webforge history", () => {
     await expect(canvas().locator("h1")).toHaveText(`${STARTER_HEADING} today!`);
 
     // Selecting something else ends the session: the whole edit becomes one step (D1).
-    // Near the text's start: the selected heading's action bar covers its middle.
-    const textBox = await boxOf(canvas().getByText(STARTER_TEXT), "Text");
-    await canvas()
-      .getByText(STARTER_TEXT)
-      .click({ force: true, position: { x: 10, y: textBox.height / 2 } });
+    // The Section's bottom padding: the selected heading's action bar may cover the text.
+    const section = canvas().locator(".site-section");
+    const sectionBox = await boxOf(section, "Section");
+    await section.click({ force: true, position: { x: 10, y: sectionBox.height - 4 } });
     await expectSteps(["Edited Heading text"], "Edited Heading text");
 
     await focusHost();

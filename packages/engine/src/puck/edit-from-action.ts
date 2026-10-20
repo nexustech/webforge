@@ -100,8 +100,11 @@ export function editFromAction(
     case "insert":
       return edit("insert", nodeAt(page, action.destinationZone, action.destinationIndex));
     case "move":
-    case "reorder":
-      return edit("move", nodeAt(page, action.destinationZone, action.destinationIndex));
+    case "reorder": {
+      const node = nodeAt(page, action.destinationZone, action.destinationIndex);
+      // The moved element stays selected, whatever Puck's positional selection now points at.
+      return { ...edit("move", node), selection: node?.props.id ?? null };
+    }
     case "duplicate":
       return edit("duplicate", nodeAt(page, action.sourceZone, action.sourceIndex + 1));
     case "remove":

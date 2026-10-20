@@ -60,8 +60,9 @@ describe("editFromAction", () => {
     });
   });
 
-  it("reports moves and reorders as moves", () => {
-    const next = state([heading("b"), heading("a")]);
+  it("reports moves and reorders as moves, with the moved element selected", () => {
+    // Puck's positional selection still points at index 0, now the other element.
+    const next = state([heading("b"), heading("a")], { index: 0, zone: ROOT });
     const move: PuckAction = {
       type: "move",
       sourceIndex: 0,
@@ -79,6 +80,7 @@ describe("editFromAction", () => {
     expect(editFromAction(move, next, before, library)).toMatchObject({
       kind: "move",
       nodeId: "a",
+      selection: "a",
     });
     expect(editFromAction(reorder, next, before, library)).toMatchObject({ kind: "move" });
   });

@@ -222,6 +222,58 @@ describe("createPuckEngine", () => {
     expect(headings()).toEqual(["Typed", "Second"]);
   });
 
+  describe("selection chrome (1.12)", () => {
+    const action = (title: string) =>
+      element.querySelector<HTMLButtonElement>(`[title="${title}"]`);
+    const selectA = async () => {
+      await act(async () => engine.select("a"));
+      await settle();
+    };
+
+    it("outlines the selected element", async () => {
+      await selectA();
+
+      expect(element.querySelectorAll('.wf-outline[data-state="selected"]')).toHaveLength(1);
+      expect(document.head.querySelector("style[data-webforge-chrome]")).toBeNull();
+    });
+
+    it("moves the selected element with Move down, as one move that keeps it selected", async () => {
+      const edits: EngineEdit[] = [];
+      engine.onUserEdit((edit) => edits.push(edit));
+      await selectA();
+      expect(action("Move up")?.disabled).toBe(true);
+
+      await act(async () => action("Move down")?.click());
+      await settle();
+
+      expect(edits).toHaveLength(1);
+      expect(edits[0]).toMatchObject({ kind: "move", nodeId: "a", selection: "a" });
+      expect(headings()).toEqual(["Second", "First"]);
+      expect(action("Move down")?.disabled).toBe(true);
+    });
+
+    it("duplicates and deletes with Puck's own actions, one edit each", async () => {
+      const kinds: string[] = [];
+      engine.onUserEdit((edit) => kinds.push(edit.kind));
+      await selectA();
+
+      await act(async () => action("Duplicate")?.click());
+      await settle();
+      await act(async () => action("Delete")?.click());
+      await settle();
+
+      expect(kinds).toEqual(["duplicate", "remove"]);
+    });
+
+    it("offers no move in Content mode, where the layout is locked", async () => {
+      await act(async () => engine.setMode("content"));
+      await selectA();
+
+      expect(action("Move down")).toBeNull();
+      expect(action("Duplicate")).toBeNull();
+    });
+  });
+
   it("clears the selection when another page is loaded", async () => {
     const selections = vi.fn();
     engine.onSelectionChange(selections);

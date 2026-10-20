@@ -320,5 +320,6 @@ describe("undo invariant over the editor session", () => {
       }),
       { numRuns: 200 },
     );
-  });
+    // 200 sequences of up to 40 actions: seconds of work, more under coverage on a busy machine.
+  }, 60_000);
 });
