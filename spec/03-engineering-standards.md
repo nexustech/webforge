@@ -129,7 +129,7 @@ Coverage is a floor, not a goal. Every bug fix adds a regression test.
 
 ## 6. Git workflow
 - **Trunk-based:** short-lived branches (`feat/…`, `fix/…`, `chore/…`), PRs into `main`, **squash merge**.
-- **Clean up after merging:** delete the branch locally and on GitHub once its PR is merged, and remove worktrees that are no longer in use. Only `main` and branches with open PRs stay.
+- **Clean up after merging:** delete the branch locally and on GitHub once its PR is merged, and remove worktrees that are no longer in use, so merged branches don't linger. Keep a merged branch only while another open PR targets it as its base.
 - **`main` is not branch-protected.** Branch protection and rulesets for private repositories need a paid GitHub plan, and the repository is on GitHub Free. "Always work through PRs" is therefore a **team convention**, not a technical guard: never push or merge to `main` directly, and merge only with green CI. Revisit if the plan changes.
 - **Conventional Commits** (`feat(history): coalesce text sessions`), enforced by commitlint. release-please generates versions and the CHANGELOG.
 - **PR requirements:** green CI, 1 review, description with *what/why/how tested*, screenshots or GIFs for UI changes, ADR link for architectural changes.
