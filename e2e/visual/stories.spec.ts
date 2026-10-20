@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
@@ -15,6 +15,9 @@ const indexSchema = z.object({
 });
 
 const INDEX = resolve(import.meta.dirname, "../../packages/editor-ui/storybook-static/index.json");
+if (!existsSync(INDEX)) {
+  throw new Error(`No Storybook build at ${INDEX}. Run \`pnpm visual\` from the repository root.`);
+}
 const stories = Object.values(indexSchema.parse(JSON.parse(readFileSync(INDEX, "utf8"))).entries)
   .filter((entry) => entry.type === "story")
   .toSorted((a, b) => a.id.localeCompare(b.id));
@@ -34,8 +37,13 @@ for (const story of stories) {
 
       await page.goto(`/iframe.html?id=${story.id}&viewMode=story&globals=theme:${theme}`);
       await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
-      // Storybook marks the body once the story has rendered (dialogs render outside the root).
-      await expect(page.locator("body.sb-show-main")).toBeAttached();
+      // Wait until Storybook has rendered the story and run its play function (the ContextMenu
+      // story opens its menu there); dialogs render outside #storybook-root, so don't look there.
+      await page.waitForFunction(
+        () =>
+          (window as { __STORYBOOK_PREVIEW__?: { currentRender?: { phase?: string } } })
+            .__STORYBOOK_PREVIEW__?.currentRender?.phase === "finished",
+      );
       await page.evaluate(() => document.fonts.ready);
 
       const results = await new AxeBuilder({ page })

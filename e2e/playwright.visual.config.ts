@@ -8,6 +8,8 @@ const PORT = 6107;
 
 export default defineConfig({
   testDir: "./visual",
+  // Every story is its own test in one file; run them across workers.
+  fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: 0,
   timeout: 30_000,

@@ -28,8 +28,21 @@ if (!existsSync(join(ROOT, "index.json"))) {
   process.exit(1);
 }
 
+/** The request's path, or null when its escapes are malformed. */
+function requestPath(url: string | undefined): string | null {
+  try {
+    return decodeURIComponent(new URL(url ?? "/", "http://localhost").pathname);
+  } catch {
+    return null;
+  }
+}
+
 createServer((request, response) => {
-  const path = decodeURIComponent(new URL(request.url ?? "/", "http://localhost").pathname);
+  const path = requestPath(request.url);
+  if (path === null) {
+    response.writeHead(400).end();
+    return;
+  }
   const file = normalize(join(ROOT, path.endsWith("/") ? `${path}index.html` : path));
   // Only files inside the build; never anything above it.
   if (
