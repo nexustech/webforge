@@ -118,6 +118,7 @@ describe("editFromAction", () => {
       kind: "text",
       nodeId: "a",
       field: "text",
+      patch: { nodeId: "a", field: "text", value: "New text" },
     });
   });
 
@@ -134,7 +135,44 @@ describe("editFromAction", () => {
     expect(editFromAction(action, next, before, library)).toMatchObject({
       kind: "props",
       field: "size",
+      patch: { nodeId: "a", field: "size", value: "large" },
     });
+  });
+
+  it.each([
+    ["two fields", { text: "New", size: "large" }],
+    ["a list", { text: ["a", "b"] }],
+    ["an object", { text: { html: "<b>a</b>" } }],
+    ["a removed field", { text: undefined }],
+  ])("leaves out the patch when a replace changes %s", (_, props) => {
+    const changed: NodeDoc = { type: "Heading", props: { id: "a", ...props } };
+    const next = state([changed, heading("b")]);
+    const action: PuckAction = {
+      type: "replace",
+      destinationIndex: 0,
+      destinationZone: ROOT,
+      data: changed,
+    };
+
+    expect(editFromAction(action, next, before, library)).not.toHaveProperty("patch");
+  });
+
+  it("reports patches for elements in nested slots", () => {
+    const section = (text: string): NodeDoc => ({
+      type: "Section",
+      props: { id: "s", content: [heading("a", text)] },
+    });
+    const changed = heading("a", "Nested");
+    const action: PuckAction = {
+      type: "replace",
+      destinationIndex: 0,
+      destinationZone: "s:content",
+      data: changed,
+    };
+
+    expect(
+      editFromAction(action, state([section("Nested")]), state([section("a")]), library),
+    ).toMatchObject({ kind: "text", patch: { nodeId: "a", field: "text", value: "Nested" } });
   });
 
   it("reports page settings changes", () => {

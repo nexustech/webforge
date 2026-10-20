@@ -99,6 +99,7 @@ describe("buildSite: pages in folders", () => {
       pages: [
         ...base.pages,
         {
+          id: "cakes",
           path: "services/cakes",
           title: "Cakes",
           doc: { root: { props: {} }, content: base.pages[0]?.doc.content.slice(0, 1) ?? [] },
@@ -119,13 +120,47 @@ describe("buildSite: pages in folders", () => {
   }, 60_000);
 });
 
+describe("buildSite: page settings", () => {
+  it("uses navigation labels, leaves hidden pages out of the menu and hides Header or Footer", async () => {
+    const base = sampleSite();
+    const [home, about] = base.pages;
+    if (home === undefined || about === undefined) throw new Error("sample site changed");
+    const site: SiteSnapshot = {
+      ...base,
+      pages: [
+        { ...home, navLabel: "Start" },
+        { ...about, hideHeader: true, hideFooter: true },
+        {
+          ...about,
+          id: "not-found",
+          path: "404",
+          title: "Page not found",
+          hideFromNavigation: true,
+        },
+      ],
+    };
+
+    const output = await buildSite(site, siteLibrary, resources);
+    const homeHtml = text(output, "index.html");
+    const aboutHtml = text(output, "about.html");
+
+    expect(homeHtml).toContain('<a href="index.html" aria-current="page">Start</a>');
+    expect(homeHtml).toContain('<a href="about.html">About us</a>');
+    expect(homeHtml).not.toContain("404.html");
+    expect(homeHtml).toContain('class="site-footer');
+    expect(aboutHtml).not.toContain("<nav");
+    expect(aboutHtml).not.toContain('class="site-footer');
+    expect(output.files.has("404.html")).toBe(true);
+  }, 60_000);
+});
+
 function siteWith(content: NodeDoc[], overrides: Partial<SiteSnapshot> = {}): SiteSnapshot {
   return {
     name: "Test",
     language: "en",
     theme: { name: "light" },
     layout: { header: [], footer: [] },
-    pages: [{ path: "index", title: "Home", doc: { root: { props: {} }, content } }],
+    pages: [{ id: "home", path: "index", title: "Home", doc: { root: { props: {} }, content } }],
     media: [],
     ...overrides,
   };
