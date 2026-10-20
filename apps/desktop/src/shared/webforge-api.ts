@@ -1,4 +1,5 @@
 import type { AppApi } from "./ipc/app.js";
+import type { CanvasApi } from "./ipc/canvas.js";
 import type { ProjectApi } from "./ipc/project.js";
 import type { SiteApi } from "./ipc/site.js";
 
@@ -9,6 +10,7 @@ import type { SiteApi } from "./ipc/site.js";
  */
 export interface WebforgeApi {
   readonly app: AppApi;
+  readonly canvas: CanvasApi;
   readonly project: ProjectApi;
   readonly site: SiteApi;
 }

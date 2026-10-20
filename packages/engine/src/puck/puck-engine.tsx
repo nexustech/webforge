@@ -29,6 +29,7 @@ import { toPuckConfig } from "./config.js";
 import { puckDictionary } from "./dictionary.js";
 import { editFromAction, selectedNodeId } from "./edit-from-action.js";
 import { pageActions, type SlotsOf } from "./page-actions.js";
+import { applySiteStyles, type SiteStyles } from "./site-styles.js";
 import { staleRichText } from "./stale-rich-text.js";
 import { allNodes, findNode } from "./tree.js";
 
@@ -107,6 +108,8 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   let reporting = false;
   /** The canvas iframe's document, once Puck has created it. */
   let frameDocument: Document | null = null;
+  /** The site's CSS, applied to the canvas document whenever there is one. */
+  let siteStyles: SiteStyles | null = null;
   /** Per node, bumped to remount its rich-text editors (see toPuckConfig). */
   const editorRevisions = new Map<string, number>();
 
@@ -202,6 +205,9 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   function CanvasFrame({ children, document }: { children: ReactNode; document?: Document }) {
     useEffect(() => {
       frameDocument = document ?? null;
+      if (document !== undefined && siteStyles !== null) {
+        applySiteStyles(document, siteStyles);
+      }
       const frameWindow = document?.defaultView;
       return frameWindow ? installHistoryKeys(frameWindow, commands.emit) : undefined;
     }, [document]);
@@ -325,6 +331,13 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
         type: "setUi",
         ui: (ui) => ({ viewports: { ...ui.viewports, current: { width, height: "auto" } } }),
       });
+    },
+
+    setSiteCss(css, bodyClass) {
+      siteStyles = { css, bodyClass };
+      if (frameDocument !== null) {
+        applySiteStyles(frameDocument, siteStyles);
+      }
     },
 
     setMode(nextMode) {

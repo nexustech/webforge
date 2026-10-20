@@ -12,6 +12,7 @@ import {
   session,
   utilityProcess,
 } from "electron";
+import { createCanvasCssCompiler, registerCanvasHandlers } from "./canvas-css.js";
 import { type ExportDialogs, registerExportHandlers } from "./export-ipc.js";
 import { runExportInWorker } from "./export-worker-client.js";
 import { registerIpcHandler } from "./ipc.js";
@@ -94,6 +95,11 @@ const runExport = (snapshot: SiteSnapshot, destination: string) =>
     { type: "export", snapshot, destination },
   );
 
+// The canvas compiles its site CSS in one long-lived worker, started when first needed (1.12).
+const compileCanvasCss = createCanvasCssCompiler(() =>
+  utilityProcess.fork(exportWorkerScript, [], { serviceName: "Webforge canvas styles" }),
+);
+
 function createMainWindow(): void {
   const window = new BrowserWindow({
     title: t("app.name"),
@@ -130,6 +136,7 @@ async function start(): Promise<void> {
     projectSession,
     projectDialogs,
   );
+  registerCanvasHandlers(ipcMain, (senderUrl) => isAppUrl(senderUrl, appUrl), compileCanvasCss);
   registerExportHandlers(
     ipcMain,
     (senderUrl) => isAppUrl(senderUrl, appUrl),

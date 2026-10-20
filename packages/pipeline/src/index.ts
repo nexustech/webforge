@@ -1,5 +1,8 @@
 export type { BuildErrorCode, BuildWarning, BuiltSite } from "./build.js";
 export { BuildError, buildSite } from "./build.js";
+export type { SiteCssOptions } from "./css.js";
+export { buildSiteCss, classCandidates } from "./css.js";
+export { BODY_CLASS } from "./html.js";
 export type { CodecBytes, CodecModules, FontFile, PipelineResources } from "./resources.js";
 export { compileCodecs, TAILWIND_STYLESHEETS } from "./resources.js";
 export type { WriteErrorCode } from "./write.js";

@@ -1,5 +1,6 @@
 import type { z } from "zod";
 import { appChannels } from "./ipc/app.js";
+import { canvasChannels } from "./ipc/canvas.js";
 import { projectChannels } from "./ipc/project.js";
 import { siteChannels } from "./ipc/site.js";
 
@@ -18,6 +19,7 @@ export type { ExportResult } from "./ipc/site.js";
  */
 export const ipcContract = {
   ...appChannels,
+  ...canvasChannels,
   ...projectChannels,
   ...siteChannels,
 } as const;
@@ -25,6 +27,7 @@ export const ipcContract = {
 /** The channels of each domain, keyed by domain; the tests check none overwrites another. */
 export const ipcDomains = {
   app: appChannels,
+  canvas: canvasChannels,
   project: projectChannels,
   site: siteChannels,
 } as const;

@@ -38,6 +38,7 @@ export function createFakeEngine(): FakeEngine {
     onSelectionChange: selections.add,
     onHistoryCommand: commands.add,
     setViewport: vi.fn(),
+    setSiteCss: vi.fn(),
     setMode: vi.fn(),
     renderStatic: vi.fn(() => ""),
     destroy: vi.fn(),

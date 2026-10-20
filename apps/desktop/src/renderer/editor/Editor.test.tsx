@@ -2,7 +2,7 @@
 import { siteLibrary, starterPage } from "@webforge/site-components";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Editor } from "./Editor.js";
 import { createEditorSession, type EditorSession } from "./editor-session.js";
 import { createFakeEngine, type FakeEngine } from "./fake-engine.test-helper.js";
@@ -12,6 +12,12 @@ declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean;
 }
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+
+const compileCss = vi.fn(async () => ({
+  status: "compiled" as const,
+  css: ".btn{}",
+  bodyClass: "bg-base-100",
+}));
 
 describe("Editor", () => {
   let container: HTMLDivElement;
@@ -26,7 +32,9 @@ describe("Editor", () => {
     session = createEditorSession(siteLibrary, starterSite());
     engine = createFakeEngine();
     const createEngine = () => engine;
-    await act(async () => root.render(<Editor session={session} createEngine={createEngine} />));
+    await act(async () =>
+      root.render(<Editor session={session} createEngine={createEngine} compileCss={compileCss} />),
+    );
   });
 
   afterEach(async () => {
@@ -58,6 +66,13 @@ describe("Editor", () => {
     });
     expect(canvas?.querySelector(".editor__canvas-root")).not.toBeNull();
     expect(engine.loadPage).toHaveBeenCalledWith(starterPage(), site.layout);
+  });
+
+  it("styles the canvas with the site's compiled CSS", () => {
+    expect(compileCss).toHaveBeenCalledWith(
+      expect.objectContaining({ theme: session.history.document.getState().theme }),
+    );
+    expect(engine.setSiteCss).toHaveBeenCalledWith(".btn{}", "bg-base-100");
   });
 
   it("enables Undo and Redo as the history allows", async () => {
