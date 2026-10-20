@@ -152,6 +152,7 @@ Coverage is a floor, not a goal. Every bug fix adds a regression test.
 | Release build: sign (Windows code signing, macOS Developer ID + notarisation), publish update feed | Windows + macOS | on release tag |
 
 - **CI cost (GitHub Free, private repository):** Windows minutes count 2× and macOS 10×, so a full run costs about ten times a Linux-only one. **Pull requests run Linux jobs only.** Windows and macOS jobs, including the packaged-app check, run on every push to `main`, from "Run workflow", and on PRs labelled **`full-ci`**. Use the label for packaging, Fuses, native modules and OS-specific code. Docs-only PRs (`docs/`, `spec/`, `research/`, Markdown) and draft PRs skip CI. A Windows- or macOS-only failure can therefore first show on `main`; fix it with a follow-up PR straight away.
+- **Windows/macOS switch:** those jobs run only while the repository variable `FULL_CI_ENABLED` is `true`. **Paused since 2026-10-20** to stay within the billing cycle; resume with `gh variable set FULL_CI_ENABLED --body true`.
 - **Dependency updates:** Renovate or Dependabot, weekly, grouped. **Electron upgraded at least quarterly** (01).
 - **Secrets** (signing certificates, notarisation credentials) only in CI secret storage, never in the repo.
 
