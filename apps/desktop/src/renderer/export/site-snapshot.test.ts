@@ -10,7 +10,7 @@ describe("singlePageSnapshot", () => {
     const snapshot = singlePageSnapshot("My site", page);
 
     expect(siteSnapshotSchema.parse(snapshot)).toEqual(snapshot);
-    expect(snapshot.pages).toEqual([{ path: "index", title: "My site", doc: page }]);
+    expect(snapshot.pages).toEqual([{ id: "home", path: "index", title: "My site", doc: page }]);
     expect(snapshot.layout.header[0]?.props.siteName).toBe("My site");
     expect(snapshot.media).toEqual([]);
   });

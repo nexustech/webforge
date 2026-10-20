@@ -12,7 +12,7 @@ const snapshot: SiteSnapshot = {
   language: "en",
   theme: { name: "light" },
   layout: { header: [], footer: [] },
-  pages: [{ path: "index", title: "Home", doc: { root: { props: {} }, content: [] } }],
+  pages: [{ id: "home", path: "index", title: "Home", doc: { root: { props: {} }, content: [] } }],
   media: [],
 };
 const exported: ExportOutcome = {

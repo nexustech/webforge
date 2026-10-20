@@ -24,6 +24,7 @@ export function sampleSite(): SiteSnapshot {
     },
     pages: [
       {
+        id: "home",
         path: "index",
         title: "Home",
         description: "Fresh bread and cakes, baked every morning in Hightown.",
@@ -92,6 +93,7 @@ export function sampleSite(): SiteSnapshot {
         },
       },
       {
+        id: "about",
         path: "about",
         title: "About us",
         doc: {

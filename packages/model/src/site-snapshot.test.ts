@@ -10,8 +10,9 @@ function site(overrides: Partial<SiteSnapshot> = {}): SiteSnapshot {
     theme: { name: "cupcake" },
     layout: { header: [], footer: [] },
     pages: [
-      { path: "index", title: "Home", doc: emptyPage },
+      { id: "home", path: "index", title: "Home", doc: emptyPage },
       {
+        id: "web-design",
         path: "services/web-design",
         title: "Web design",
         description: "What we do",
@@ -34,7 +35,7 @@ describe("siteSnapshotSchema", () => {
 
   it("requires a home page", () => {
     const result = siteSnapshotSchema.safeParse(
-      site({ pages: [{ path: "about", title: "About", doc: emptyPage }] }),
+      site({ pages: [{ id: "about", path: "about", title: "About", doc: emptyPage }] }),
     );
 
     expect(result.success).toBe(false);
@@ -44,7 +45,7 @@ describe("siteSnapshotSchema", () => {
   });
 
   it("rejects duplicate page paths", () => {
-    const page = { path: "index", title: "Home", doc: emptyPage };
+    const page = { id: "home", path: "index", title: "Home", doc: emptyPage };
     const result = siteSnapshotSchema.safeParse(site({ pages: [page, page] }));
 
     expect(result.error?.issues.map((issue) => issue.message)).toContain(
@@ -63,8 +64,8 @@ describe("siteSnapshotSchema", () => {
     "rejects the page path %j",
     (path) => {
       const pages = [
-        { path: "index", title: "Home", doc: emptyPage },
-        { path, title: "Bad", doc: emptyPage },
+        { id: "home", path: "index", title: "Home", doc: emptyPage },
+        { id: "bad", path, title: "Bad", doc: emptyPage },
       ];
 
       expect(siteSnapshotSchema.safeParse(site({ pages })).success).toBe(false);
