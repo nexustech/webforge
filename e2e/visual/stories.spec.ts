@@ -10,7 +10,13 @@ import { z } from "zod";
 const indexSchema = z.object({
   entries: z.record(
     z.string(),
-    z.object({ id: z.string(), title: z.string(), name: z.string(), type: z.string() }),
+    z.object({
+      id: z.string(),
+      title: z.string(),
+      name: z.string(),
+      type: z.string(),
+      tags: z.array(z.string()).default([]),
+    }),
   ),
 });
 
@@ -35,6 +41,10 @@ for (const story of stories) {
       const errors: string[] = [];
       page.on("pageerror", (error) => errors.push(error.message));
 
+      // Whole-window stories (the UI1 parity story) get a window-sized page.
+      if (story.tags.includes("full-window")) {
+        await page.setViewportSize({ width: 1280, height: 800 });
+      }
       await page.goto(`/iframe.html?id=${story.id}&viewMode=story&globals=theme:${theme}`);
       await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
       // Wait until Storybook has rendered the story and run its play function (the ContextMenu

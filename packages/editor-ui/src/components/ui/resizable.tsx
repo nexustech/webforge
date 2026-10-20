@@ -1,5 +1,12 @@
 import type { ComponentProps } from "react";
 import { Group, Panel, Separator } from "react-resizable-panels";
+
+export type {
+  GroupImperativeHandle as ResizablePanelGroupHandle,
+  Layout as ResizableLayout,
+  PanelImperativeHandle as ResizablePanelHandle,
+} from "react-resizable-panels";
+
 import { cn } from "../../lib/cn.js";
 
 /** A row or column of resizable panels (UI1 panel columns and drawers). */

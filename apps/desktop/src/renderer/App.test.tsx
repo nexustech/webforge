@@ -1,14 +1,22 @@
 // @vitest-environment happy-dom
-import { act, cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { ExportResult } from "../shared/ipc-contract.js";
+import { applyPreferencesChange, DEFAULT_PREFERENCES } from "../shared/ipc/prefs.js";
+import type { ExportResult, PreferencesChange } from "../shared/ipc-contract.js";
 import { App } from "./App.js";
 import { createFakeEngine } from "./editor/fake-engine.test-helper.js";
 
-afterEach(() => cleanup());
+afterEach(() => {
+  cleanup();
+  delete document.documentElement.dataset.theme;
+});
 
 const compileCss = vi.fn(async () => ({ status: "failed" as const }));
+
+const savePreferences = vi.fn(async (change: PreferencesChange) =>
+  applyPreferencesChange(DEFAULT_PREFERENCES, change),
+);
 
 function renderApp(
   exportSite = vi.fn(async (): Promise<ExportResult> => ({ status: "canceled" })),
@@ -16,6 +24,8 @@ function renderApp(
   render(
     <App
       info={{ name: "Webforge", version: "1.2.0" }}
+      preferences={DEFAULT_PREFERENCES}
+      savePreferences={savePreferences}
       createEngine={createFakeEngine}
       compileCss={compileCss}
       exportSite={exportSite}
@@ -64,5 +74,38 @@ describe("App", () => {
     });
 
     expect(await screen.findByRole("combobox")).toBeTruthy();
+  });
+});
+
+describe("App's window layout", () => {
+  it("puts the editor's Undo History in the left column", () => {
+    renderApp();
+
+    const left = screen.getByRole("region", { name: "Left panels" });
+    expect(within(left).getByRole("tab", { name: "Undo History" })).toBeTruthy();
+    expect(within(left).getByText("Opened page")).toBeTruthy();
+  });
+
+  it("switches the theme from the View menu, and saves it", async () => {
+    renderApp();
+    expect(document.documentElement.dataset.theme).toBe("dark");
+
+    await userEvent.click(screen.getByRole("menuitem", { name: "View" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "Use Light Theme" }));
+
+    expect(document.documentElement.dataset.theme).toBe("light");
+    expect(savePreferences).toHaveBeenCalledWith({ theme: "light" });
+  });
+
+  it("has title-bar buttons for the panels", () => {
+    renderApp();
+
+    for (const name of [
+      "Show or Hide Left Panels",
+      "Show or Hide Bottom Panel",
+      "Show or Hide Right Panels",
+    ]) {
+      expect(screen.getByRole("button", { name })).toBeTruthy();
+    }
   });
 });

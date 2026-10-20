@@ -8,6 +8,7 @@ import { t } from "@webforge/i18n";
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import { useCommandRegistry } from "../shell/command-context.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
+import { usePanelRegistry } from "../shell/panel-context.js";
 import {
   connectEngine,
   currentPage,
@@ -30,7 +31,10 @@ export type EditorProps = {
 const compileWithPreload: CompileCanvasCss = (request) =>
   window.webforge.canvas.compileCss(request);
 
-/** The site editor: toolbar, canvas and Undo History panel around one {@link EditorSession}. */
+/**
+ * The site editor around one {@link EditorSession}: the canvas, plus the Undo and Redo commands
+ * and the Undo History panel it contributes to the window shell.
+ */
 export function Editor({
   session,
   createEngine = createPuckEngine,
@@ -114,15 +118,28 @@ export function Editor({
     registry.update(COMMAND_IDS.redo, { enabled: state.canRedo });
   }, [registry, state.canUndo, state.canRedo]);
 
-  const jumpTo = (entryId: string | null) => {
-    connectionRef.current?.flush();
-    return history.jumpTo(entryId);
-  };
+  // Undo History goes in the left column's bottom (UI1); 1.11 rebuilds it.
+  const panels = usePanelRegistry();
+  useEffect(() => {
+    const jumpTo = (entryId: string | null) => {
+      connectionRef.current?.flush();
+      return history.jumpTo(entryId);
+    };
+    function UndoHistory() {
+      const historyState = useSyncExternalStore(
+        history.state.subscribe,
+        history.state.getState,
+        history.state.getState,
+      );
+      return <UndoHistoryPanel history={{ jumpTo }} state={historyState} />;
+    }
+    return panels.register({
+      id: "undoHistory",
+      slot: "left.bottom",
+      title: t("editor.undoHistory"),
+      component: UndoHistory,
+    });
+  }, [panels, history]);
 
-  return (
-    <div className="editor">
-      <section className="editor__canvas" aria-label={t("editor.canvas")} ref={canvasRef} />
-      <UndoHistoryPanel history={{ jumpTo }} state={state} />
-    </div>
-  );
+  return <section className="editor__canvas" aria-label={t("editor.canvas")} ref={canvasRef} />;
 }

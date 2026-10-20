@@ -2,7 +2,7 @@
 @import "@webforge/editor-ui/theme.css";
 @source "./";
 
-/* Spike editor layout; the panel layout (1.2, second PR) replaces it. Colours come from the theme. */
+/* The canvas and the Undo History panel; the window layout itself is ShellLayout (Tailwind). */
 
 html,
 body,
@@ -11,15 +11,8 @@ body,
   margin: 0;
 }
 
-.editor {
-  display: grid;
-  grid-template-columns: 1fr 16rem;
-  height: 100%;
-  min-height: 0;
-}
-
 .editor__canvas {
-  min-height: 0;
+  height: 100%;
   overflow: hidden;
 }
 
@@ -28,15 +21,7 @@ body,
 }
 
 .undo-history {
-  min-height: 0;
-  overflow-y: auto;
-  padding: 0 1rem 1rem;
-  border-left: 1px solid var(--border);
-}
-
-.undo-history__title {
-  font-size: 0.875rem;
-  font-weight: 600;
+  padding: 0.25rem;
 }
 
 .undo-history__list {
