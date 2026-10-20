@@ -4,6 +4,7 @@ export type {
   EditorMode,
   EngineEdit,
   EngineEditKind,
+  EnginePatch,
   HistoryCommand,
   MountOptions,
   Unsubscribe,
