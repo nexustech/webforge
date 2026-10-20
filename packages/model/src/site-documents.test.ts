@@ -3,8 +3,9 @@ import { describe, expect, it } from "vitest";
 import { siteDocArbitrary } from "../test/arbitraries.js";
 import type { PageId } from "./ids.js";
 import { migrateSite } from "./migrations.js";
-import { createSite, type PageEntry, type SiteDoc } from "./site-doc.js";
+import { createSite, type PageEntry, type SiteDoc, siteDocSchema } from "./site-doc.js";
 import {
+  applySiteChanges,
   changedDocuments,
   pageDocumentId,
   siteDocuments,
@@ -128,5 +129,32 @@ describe("changedDocuments", () => {
       },
       { type: "delete", id: "page:about" },
     ]);
+  });
+});
+
+describe("applySiteChanges", () => {
+  it("gives the site the changes describe, so applying a diff reproduces the new state", () => {
+    const home = site.pages[site.homePageId] as PageEntry;
+    const next: SiteDoc = {
+      ...site,
+      theme: { name: "cupcake" },
+      pages: { ...site.pages, [home.id]: { ...home, title: "Welcome" } },
+    };
+
+    expect(siteDocSchema.parse(applySiteChanges(site, changedDocuments(site, next)))).toEqual(next);
+  });
+
+  it("builds a new site from the changes alone", () => {
+    expect(
+      siteDocSchema.parse(applySiteChanges(undefined, changedDocuments(undefined, site))),
+    ).toEqual(site);
+  });
+
+  it("lets validation catch a change that breaks the site", () => {
+    const deleteHome = applySiteChanges(site, [
+      { type: "delete", id: pageDocumentId(site.homePageId) },
+    ]);
+
+    expect(siteDocSchema.safeParse(deleteHome).success).toBe(false);
   });
 });

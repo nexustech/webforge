@@ -4,7 +4,13 @@ import { projectChannels } from "./ipc/project.js";
 import { siteChannels } from "./ipc/site.js";
 
 export type { AppInfo } from "./ipc/app.js";
-export type { ProjectFailureReason, ProjectResult, ProjectSummary } from "./ipc/project.js";
+export type {
+  CommitResult,
+  ProjectFailureReason,
+  ProjectResult,
+  ProjectSummary,
+  ReadSiteResult,
+} from "./ipc/project.js";
 export type { ExportResult } from "./ipc/site.js";
 
 /**

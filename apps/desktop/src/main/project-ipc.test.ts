@@ -7,7 +7,12 @@ import type { ProjectSession } from "./project-session.js";
 type Handler = (event: IpcMainInvokeEvent, ...args: unknown[]) => Promise<unknown>;
 
 const APP_URL = "file:///app/index.html";
-const project = { name: "Bakery", fileName: "Bakery.wforge", formatVersion: 1 };
+const project = {
+  name: "Bakery",
+  fileName: "Bakery.wforge",
+  formatVersion: 1,
+  syncService: null,
+};
 const opened: ProjectResult = { status: "opened", project };
 
 function setUp(dialogs: Partial<ProjectDialogs> = {}) {
@@ -21,18 +26,20 @@ function setUp(dialogs: Partial<ProjectDialogs> = {}) {
     create: vi.fn(() => opened),
     open: vi.fn(() => opened),
     current: vi.fn(() => project),
+    readSite: vi.fn(() => ({ status: "empty" })),
+    commit: vi.fn(() => ({ status: "saved" })),
   };
   registerProjectHandlers(ipc, (url) => url === APP_URL, session as unknown as ProjectSession, {
     chooseNewProjectPath: async () => "/sites/Bakery.wforge",
     chooseProjectToOpen: async () => "/sites/Bakery.wforge",
     ...dialogs,
   });
-  const invoke = (channel: string, senderUrl = APP_URL) => {
+  const invoke = (channel: string, senderUrl = APP_URL, ...args: unknown[]) => {
     const handler = handlers.get(channel);
     if (handler === undefined) {
       throw new Error(`No handler for ${channel}`);
     }
-    return handler({ senderFrame: { url: senderUrl } } as unknown as IpcMainInvokeEvent);
+    return handler({ senderFrame: { url: senderUrl } } as unknown as IpcMainInvokeEvent, ...args);
   };
   return { invoke, session };
 }
@@ -68,6 +75,25 @@ describe("registerProjectHandlers", () => {
     const { invoke } = setUp();
 
     await expect(invoke("project:get-current")).resolves.toEqual(project);
+  });
+
+  it("reads the site and commits validated change lists", async () => {
+    const { invoke, session } = setUp();
+    const changes = [{ type: "delete", id: "page:about" }];
+
+    await expect(invoke("project:read-site")).resolves.toEqual({ status: "empty" });
+    await expect(invoke("project:commit", APP_URL, changes)).resolves.toEqual({ status: "saved" });
+    expect(session.commit).toHaveBeenCalledWith(changes);
+  });
+
+  it("rejects change lists that don't match the contract", async () => {
+    const { invoke, session } = setUp();
+    const bad = [[{ type: "rename", id: "x" }], [{ type: "put", id: "x", kind: "script" }], "x"];
+
+    for (const changes of bad) {
+      await expect(invoke("project:commit", APP_URL, changes)).rejects.toThrow();
+    }
+    expect(session.commit).not.toHaveBeenCalled();
   });
 
   it("rejects calls from other frames before showing a dialog", async () => {

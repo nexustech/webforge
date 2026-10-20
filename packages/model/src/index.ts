@@ -52,6 +52,7 @@ export {
 } from "./site-doc.js";
 export type { SiteDocument, SiteDocumentChange, SiteDocumentKind } from "./site-documents.js";
 export {
+  applySiteChanges,
   changedDocuments,
   pageDocumentId,
   siteDocuments,

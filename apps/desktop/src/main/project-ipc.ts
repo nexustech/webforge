@@ -29,4 +29,6 @@ export function registerProjectHandlers(
     return path === undefined ? { status: "canceled" } : session.open(path);
   });
   registerIpcHandler(ipc, "getCurrentProject", isTrustedSender, () => session.current());
+  registerIpcHandler(ipc, "readSite", isTrustedSender, () => session.readSite());
+  registerIpcHandler(ipc, "commitSite", isTrustedSender, (changes) => session.commit(changes));
 }

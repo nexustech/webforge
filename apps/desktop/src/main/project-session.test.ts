@@ -1,6 +1,7 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { changedDocuments, createSite, pageDocumentId } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { findProjectArgument, ProjectSession, withProjectExtension } from "./project-session.js";
@@ -29,7 +30,12 @@ describe("ProjectSession", () => {
   it("creates a site named after its file and makes it current", () => {
     const result = session.create(join(dir, "Rosa's Bakery.wforge"));
 
-    const project = { name: "Rosa's Bakery", fileName: "Rosa's Bakery.wforge", formatVersion: 1 };
+    const project = {
+      name: "Rosa's Bakery",
+      fileName: "Rosa's Bakery.wforge",
+      formatVersion: 1,
+      syncService: null,
+    };
     expect(result).toEqual({ status: "opened", project });
     expect(session.current()).toEqual(project);
   });
@@ -98,6 +104,74 @@ describe("ProjectSession", () => {
     for (const [message] of vi.mocked(console.error).mock.calls) {
       expect(String(message)).not.toContain(dir);
     }
+  });
+});
+
+describe("ProjectSession site documents", () => {
+  const site = createSite({
+    name: "Rosa's Bakery",
+    language: "en",
+    homeTitle: "Home",
+    notFoundTitle: "Page not found",
+  });
+
+  it("reports no site and an empty new site", () => {
+    expect(session.readSite()).toEqual({ status: "none" });
+    expect(session.commit([])).toEqual({ status: "failed", reason: "no-site" });
+
+    session.create(join(dir, "new.wforge"));
+    expect(session.readSite()).toEqual({ status: "empty" });
+  });
+
+  it("saves the first pages of a new site and reads them back after reopening", () => {
+    const path = join(dir, "site.wforge");
+    session.create(path);
+
+    expect(session.commit(changedDocuments(undefined, site))).toEqual({ status: "saved" });
+    session.close();
+    session.open(path);
+
+    expect(session.readSite()).toEqual({ status: "ok", site });
+  });
+
+  it("refuses changes that would break the site and keeps the file as it was", () => {
+    const path = join(dir, "site.wforge");
+    session.create(path);
+    session.commit(changedDocuments(undefined, site));
+
+    const deleteHome = [{ type: "delete" as const, id: pageDocumentId(site.homePageId) }];
+    expect(session.commit(deleteHome)).toEqual({ status: "failed", reason: "invalid" });
+    const badTheme = [{ type: "put" as const, id: "theme", kind: "theme" as const, content: {} }];
+    expect(session.commit(badTheme)).toEqual({ status: "failed", reason: "invalid" });
+
+    session.close();
+    session.open(path);
+    expect(session.readSite()).toEqual({ status: "ok", site });
+  });
+
+  it("builds on the stored site when changes arrive before the editor read it", () => {
+    const path = join(dir, "site.wforge");
+    session.create(path);
+    session.commit(changedDocuments(undefined, site));
+    session.close();
+    session.open(path);
+
+    const next = { ...site, theme: { name: "cupcake" } };
+    expect(session.commit(changedDocuments(site, next))).toEqual({ status: "saved" });
+    expect(session.readSite()).toEqual({ status: "ok", site: next });
+  });
+
+  it("reports a site whose documents are broken without throwing", () => {
+    const path = join(dir, "site.wforge");
+    session.create(path);
+    session.close();
+    const store = ProjectStore.open(path);
+    store.commit([{ type: "put", id: "site", kind: "site", content: { formatVersion: 99 } }]);
+    store.close();
+    session.open(path);
+
+    expect(session.readSite()).toEqual({ status: "failed", reason: "newer-format" });
+    expect(session.commit([])).toEqual({ status: "failed", reason: "invalid" });
   });
 });
 
