@@ -250,3 +250,4 @@ interface Publisher {
 | T1–T4 | DIY users, Simple/Advanced mode, structured layout, "Element" | [product/01](../research/product/01-terminology.md) |
 | M1–M5 | MVP CMS scope, Blog v1.1, Content mode toggle, search/i18n later | [product/02](../research/product/02-cms.md) |
 | UI1 | Editor look and feel: Bootstrap Studio-like layout, dark/light tokens, compact density | [product/04](../research/product/04-editor-look-and-feel.md) |
+| GA1–GA4 | Competitor gaps: ~14 small MVP additions; AI with the user's own account in v1.1; provider presets deferred; plugin API long-term | [product/05](../research/product/05-feature-gap-analysis.md) |

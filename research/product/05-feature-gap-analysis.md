@@ -1,6 +1,6 @@
 # Competitor Feature Gap Analysis
 
-**Status:** Research + recommendations, 2026-10-20. Awaiting decisions (see [§5](#5-decisions-needed))
+**Status:** ✅ Decided 2026-10-20 (GA1–GA4, see [§5](#5-decisions))
 **Question:** Which features do competitor tools offer that Webforge's plans ([MVP spec](../../spec/02-mvp-spec.md), roadmap and research decisions) don't yet account for?
 
 ## 1. Competitors reviewed
@@ -129,11 +129,18 @@ Bootstrap Studio 8 added an **AI Assistant** (bring-your-own key). Wix, Squaresp
 
 **Out of scope:** G23 cart/store, G29 cloud sync, G30 collaboration, G32 mobile app, G25d AI images.
 
-## 5. Decisions needed
-1. **MVP additions:** accept the list in §4 (adds roughly 4–6 weeks), or trim it?
-2. **AI:** bring-your-own-key in v1.1 (recommended), Webforge-hosted AI later, or no AI?
-3. **Booking and newsletter presets:** which providers to preset (suggested: Calendly, Square Appointments, Fresha, Acuity; Mailchimp, Brevo, MailerLite)?
-4. **Marketplace / plugin API:** keep as a long-term goal (design for it), or explicitly out of scope?
+## 5. Decisions
+| # | Topic | Decision |
+|---|---|---|
+| GA1 | **MVP additions** | ✅ **All §4 MVP items added to the MVP** (G1, G2, G3, G5, G6, G8, G9, G10, G11, G14, G15, G17, G18, G21, G27), about +4–6 weeks. The MVP spec is updated (F-ED-16…22, F-DS-4…5, F-CM-6…8) |
+| GA2 | **AI** | ✅ **Users bring their own AI account in v1.1**: G25b (meta/social descriptions, alt text) and G25a (rewrite text). Opt-in, keys in the OS keychain, every AI edit undoable via `HistoryManager`. G25c later; G25d out of scope |
+| GA3 | **Booking & newsletter presets** | ⏸ **Deferred.** The features stay in MVP with a generic "any https URL / form action" option. Which providers to preset is an open question (see below) |
+| GA4 | **Marketplace / plugin API** | **Long-term goal, out of scope for MVP.** Keep `site-components` and the component registry designed so a plugin API is possible later |
+
+v1.1 and later items stay as listed in §4.
+
+## Open questions
+1. **Booking and newsletter provider presets** (GA3): which providers to preset? Candidates: Calendly, Square Appointments, Fresha, Acuity, SimplyBook (booking); Mailchimp, Brevo, MailerLite (newsletter). Decide before Phase 3; the generic URL option covers everything meanwhile.
 
 ## Sources
 - RapidWeaver Elements: [features](https://realmacsoftware.com/elements/) · [docs](https://docs.realmacsoftware.com/rapidweaver-elements-docs/)

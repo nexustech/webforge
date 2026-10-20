@@ -26,5 +26,5 @@ Research supporting [`ideas.md`](../ideas.md).
 | P2 | [CMS features](product/02-cms.md) | ✅ Agreed (M1–M5) | MVP: click-to-edit, Content mode toggle, repeating lists, site-wide values, Buy button · v1.1: Blog · then Portfolio, Team, Events · search/multilingual v1.2+ |
 | P3 | [Starting content](product/03-starting-content.md) | ✅ Decided (S1–S5) | 18 sections (~45 variants) + 16 elements; 8 templates; 10–12 curated themes; ~50 bundled fonts + on-demand catalogue |
 | P4 | [Editor look and feel](product/04-editor-look-and-feel.md) | ✅ Decided (UI1) | Bootstrap Studio-like layout, dark default + light theme, compact density, colour-coded actions; own tokens on shadcn/ui |
-| P5 | [Competitor feature gap analysis](product/05-feature-gap-analysis.md) | Researched | 32 gaps found; proposes ~14 small MVP additions (copy/paste, menu editor, animations, carousel, lightbox, newsletter/booking presets…), AI (bring-your-own key) in v1.1 |
+| P5 | [Competitor feature gap analysis](product/05-feature-gap-analysis.md) | ✅ Decided (GA1–GA4) | 32 gaps; ~14 small MVP additions (copy/paste, menu editor, animations, carousel, lightbox, newsletter/booking…); AI with the user's own account in v1.1; plugin API long-term |
 
