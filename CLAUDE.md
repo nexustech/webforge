@@ -37,6 +37,7 @@ A desktop builder for non-technical small-business owners that produces self-con
 - `pnpm e2e`: builds the desktop app and runs the Playwright tests: the Electron app (`e2e/app/`) and the exported fixture site opened from disk in Chromium, Firefox and WebKit (`e2e/export/`). Also run in CI. Run it when touching main, preload, the renderer bootstrap, security settings, site components or the pipeline. First time: `pnpm --filter @webforge/e2e exec playwright install chromium firefox webkit`.
 - `pnpm e2e:packaged`: packages the app (`electron-builder --dir`) and runs `e2e/packaged/` against it (CI on Windows + macOS). Run it when touching packaging, Fuses or native modules.
 - `pnpm format`: apply Biome fixes. `pnpm build`: build all workspaces.
+- `/plan-next [phase or item IDs]` (Claude Code command in `.claude/commands/`): plan the next block of work from `spec/04-implementation-plan.md` and the live GitHub milestones and issues. It presents a plan for approval before changing anything.
 - Workspace packages are consumed from source (`exports` → `src/index.ts`). Import them as `@webforge/<name>`, never by path. Relative imports use `.js` extensions (`./foo.js` for `foo.ts`).
 
 ## Workflow
