@@ -43,6 +43,37 @@ export type VersionInfo = {
   readonly createdAt: string;
 };
 
+/** What {@link ProjectStore.putAsset} stores: an imported file's original bytes and facts. */
+export type NewAsset = {
+  /** The id of the site's Media item (`MediaId`). */
+  readonly mediaId: string;
+  readonly data: Uint8Array;
+  readonly mime: string;
+  /** Pixel size, for images. */
+  readonly width?: number | undefined;
+  readonly height?: number | undefined;
+  /** The file's name on the user's computer, e.g. `shop.jpg`. Never a path. */
+  readonly originalName: string;
+};
+
+/** An imported Media item's original, as recorded in the `assets` table. */
+export type AssetInfo = {
+  readonly mediaId: string;
+  /** SHA-256 of the original; {@link ProjectStore.readBlob} returns the bytes. */
+  readonly hash: string;
+  readonly mime: string;
+  readonly width: number | undefined;
+  readonly height: number | undefined;
+  readonly originalName: string;
+};
+
+/** What {@link ProjectStore.collectGarbage} removed. */
+export type GarbageReport = {
+  readonly blobs: number;
+  readonly bytes: number;
+  readonly assets: number;
+};
+
 /** Facts about an open project. */
 export type ProjectInfo = {
   readonly projectId: string;
@@ -100,6 +131,44 @@ const versionRowSchema = z.object({
   kind: z.enum(["manual", "auto"]),
   created_at: z.string(),
 });
+
+const assetRowSchema = z.object({
+  media_id: z.string(),
+  blob_hash: z.string(),
+  mime: z.string(),
+  width: z.number().nullable(),
+  height: z.number().nullable(),
+  original_name: z.string(),
+});
+
+const HASH = /^[0-9a-f]{64}$/;
+
+function toAssetInfo(row: unknown): AssetInfo {
+  const asset = assetRowSchema.parse(row);
+  return {
+    mediaId: asset.media_id,
+    hash: asset.blob_hash,
+    mime: asset.mime,
+    width: asset.width ?? undefined,
+    height: asset.height ?? undefined,
+    originalName: asset.original_name,
+  };
+}
+
+/**
+ * Adds every string in `value` that looks like a blob hash to `into`. Deliberately generous: a
+ * document only has to mention a hash anywhere (media metadata, a future field) to keep its blob,
+ * so garbage collection can only ever keep too much, never remove a blob something uses.
+ */
+function collectHashes(value: JsonValue, into: Set<string>): void {
+  if (typeof value === "string") {
+    if (HASH.test(value)) into.add(value);
+  } else if (Array.isArray(value)) {
+    for (const item of value) collectHashes(item, into);
+  } else if (typeof value === "object" && value !== null) {
+    for (const item of Object.values(value)) collectHashes(item, into);
+  }
+}
 
 function sha256(data: Uint8Array): string {
   return createHash("sha256").update(data).digest("hex");
@@ -419,17 +488,97 @@ export class ProjectStore {
       return undefined;
     }
     const { manifest } = z.object({ manifest: z.string() }).parse(row);
-    let parsed: Manifest;
-    try {
-      parsed = manifestSchema.parse(JSON.parse(manifest));
-    } catch (error) {
-      throw new ProjectFileError("corrupt", "A version's manifest is invalid", { cause: error });
-    }
-    return parsed.documents.map(({ id: documentId, kind, hash }) => ({
+    return this.#parseManifest(manifest).documents.map(({ id: documentId, kind, hash }) => ({
       id: documentId,
       kind,
       content: this.#readJsonBlob(hash),
     }));
+  }
+
+  /**
+   * Stores an imported file's original bytes, unmodified (X2), and records it as a Media item's
+   * asset, in one transaction. Importing the same bytes again reuses the blob; a new `mediaId`
+   * row points at it. Replacing an item's file gives its `mediaId` a new blob.
+   */
+  putAsset(asset: NewAsset): AssetInfo {
+    return this.#db.transaction(() => {
+      const hash = this.#insertBlob(asset.data, asset.mime);
+      this.#prepare(
+        `INSERT INTO assets (media_id, blob_hash, mime, width, height, original_name)
+           VALUES (?, ?, ?, ?, ?, ?)
+         ON CONFLICT (media_id) DO UPDATE SET blob_hash = excluded.blob_hash,
+           mime = excluded.mime, width = excluded.width, height = excluded.height,
+           original_name = excluded.original_name`,
+      ).run(
+        asset.mediaId,
+        hash,
+        asset.mime,
+        asset.width ?? null,
+        asset.height ?? null,
+        asset.originalName,
+      );
+      return {
+        mediaId: asset.mediaId,
+        hash,
+        mime: asset.mime,
+        width: asset.width,
+        height: asset.height,
+        originalName: asset.originalName,
+      };
+    })();
+  }
+
+  /** The asset of a Media item, or `undefined` if none was imported under this id. */
+  readAsset(mediaId: string): AssetInfo | undefined {
+    const row = this.#prepare("SELECT * FROM assets WHERE media_id = ?").get(mediaId);
+    return row === undefined ? undefined : toAssetInfo(row);
+  }
+
+  /** Every asset, sorted by media id. */
+  listAssets(): AssetInfo[] {
+    return this.#prepare("SELECT * FROM assets ORDER BY media_id").all().map(toAssetInfo);
+  }
+
+  /**
+   * Deletes blobs nothing refers to any more, and the assets that point at them (06: "garbage
+   * collection"). A blob is kept when the working copy or any version stores a document in it, or
+   * a hash in such a document names it (media metadata).
+   *
+   * Run it only when no undo step can bring a reference back: when a site is opened, before any
+   * editing, or when it is closed, after the last save. A deleted image stays restorable by Undo
+   * until then. Freed pages are reused by later writes; the file does not shrink until a VACUUM.
+   */
+  collectGarbage(): GarbageReport {
+    return this.#db.transaction(() => {
+      const documentHashes = new Set(
+        this.#prepare("SELECT blob_hash FROM documents").pluck().all().map(String),
+      );
+      for (const row of this.#prepare("SELECT manifest FROM versions").pluck().all()) {
+        for (const { hash } of this.#parseManifest(String(row)).documents) {
+          documentHashes.add(hash);
+        }
+      }
+      const referenced = new Set(documentHashes);
+      for (const hash of documentHashes) {
+        collectHashes(this.#readJsonBlob(hash), referenced);
+      }
+
+      const unreferenced = this.#prepare("SELECT hash, size FROM blobs")
+        .all()
+        .map((row) => z.object({ hash: z.string(), size: z.number() }).parse(row))
+        .filter((blob) => !referenced.has(blob.hash));
+      // Assets first: their foreign key keeps a blob from being deleted while a row points at it.
+      const { changes: assets } = this.#prepare(
+        "DELETE FROM assets WHERE blob_hash IN (SELECT value FROM json_each(?))",
+      ).run(JSON.stringify(unreferenced.map((blob) => blob.hash)));
+      const removeBlob = this.#prepare("DELETE FROM blobs WHERE hash = ?");
+      let bytes = 0;
+      for (const blob of unreferenced) {
+        removeBlob.run(blob.hash);
+        bytes += blob.size;
+      }
+      return { blobs: unreferenced.length, bytes, assets };
+    })();
   }
 
   /** Closes the file. With the rollback journal, no side files are left next to it. */
@@ -455,6 +604,14 @@ export class ProjectStore {
       data,
     );
     return hash;
+  }
+
+  #parseManifest(manifest: string): Manifest {
+    try {
+      return manifestSchema.parse(JSON.parse(manifest));
+    } catch (error) {
+      throw new ProjectFileError("corrupt", "A version's manifest is invalid", { cause: error });
+    }
   }
 
   #readJsonBlob(hash: string): JsonValue {

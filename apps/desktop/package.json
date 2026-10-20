@@ -42,6 +42,7 @@
     "electron": "44.9.0",
     "electron-builder": "26.15.3",
     "electron-vite": "6.0.0",
+    "fast-check": "4.10.2",
     "happy-dom": "20.14.6",
     "react": "catalog:",
     "react-dom": "catalog:",

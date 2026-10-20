@@ -14,6 +14,7 @@
     "@types/better-sqlite3": "catalog:",
     "@types/node": "catalog:",
     "@webforge/test-utils": "workspace:*",
+    "fast-check": "4.10.2",
     "vitest": "catalog:"
   }
 }
