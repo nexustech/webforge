@@ -10,6 +10,7 @@ import {
   ProjectFileError,
   type ProjectFileErrorCode,
   ProjectStore,
+  ReadOnlyProjectError,
 } from "../src/index.js";
 
 const tempDir = tempDirFactory();
@@ -336,15 +337,33 @@ describe("ProjectStore.open with untrusted files", () => {
     expect(openResult(extraKey)).toBe("unexpected-schema");
   });
 
-  it("asks for an update when the project comes from a newer Webforge", () => {
+  it("opens a project from a newer Webforge read-only, with extra tables and metadata", () => {
     const path = createProject();
     tamper(path, (db) => {
       db.exec("CREATE TABLE added_in_v2 (x)");
+      db.exec("INSERT INTO meta VALUES ('added_in_v2', 'yes')");
       db.prepare("UPDATE meta SET value = ? WHERE key = 'format_version'").run(
         String(FORMAT_VERSION + 1),
       );
     });
-    expect(openResult(path)).toBe("newer-format");
+
+    const store = ProjectStore.open(path);
+
+    expect(store.info).toMatchObject({
+      formatVersion: FORMAT_VERSION + 1,
+      readOnly: true,
+      newerFormat: true,
+    });
+    expect(store.readDocuments()).toEqual([]);
+    expect(() => store.commit([{ type: "delete", id: "x" }])).toThrow(ReadOnlyProjectError);
+    store.close();
+  });
+
+  it("rejects an older format whose tables don't match that format", () => {
+    const path = createProject();
+    tamper(path, (db) => db.exec("UPDATE meta SET value = '0' WHERE key = 'format_version'"));
+
+    expect(openResult(path)).toBe("unexpected-schema");
   });
 
   it("rejects a document that points to a missing or invalid blob", () => {

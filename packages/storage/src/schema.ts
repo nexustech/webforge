@@ -6,16 +6,16 @@ export const APPLICATION_ID = 0x57_46_52_47;
 
 /**
  * Version of the `.wforge` layout this build writes. Bumped with a migration and a fixture file on
- * every incompatible change (engineering standards §8). Version 1 stays provisional until Phase 1
- * ships the first fixture.
+ * every incompatible change (engineering standards §8); the format 1 fixture is
+ * `packages/test-utils/fixtures/wforge/v1.wforge`.
  */
 export const FORMAT_VERSION = 1;
 
 /**
- * The complete schema of format version {@link FORMAT_VERSION}. Opening a file compares its
- * `sqlite_schema` with this list, so a file with extra tables, triggers or views is rejected.
+ * The complete schema of format 1. Opening a file compares its `sqlite_schema` with its format's
+ * list, so a file with extra tables, triggers or views is rejected.
  */
-export const SCHEMA: readonly string[] = [
+const SCHEMA_V1: readonly string[] = [
   `CREATE TABLE meta (
   key TEXT PRIMARY KEY NOT NULL,
   value TEXT NOT NULL
@@ -52,3 +52,18 @@ export const SCHEMA: readonly string[] = [
   manifest TEXT NOT NULL
 ) STRICT`,
 ];
+
+/**
+ * The schema of every format this build opens, so an older file is checked against its own
+ * format before it is migrated. Entries are never removed.
+ */
+export const SCHEMAS: Readonly<Record<number, readonly string[]>> = { 1: SCHEMA_V1 };
+
+/** The schema new projects get. */
+export const SCHEMA: readonly string[] = SCHEMA_V1;
+
+/**
+ * SQL that turns format `n` into `n + 1`, keyed by `n`. A format bump adds the new schema to
+ * {@link SCHEMAS}, its step here and a fixture file in `packages/test-utils/fixtures/wforge/`.
+ */
+export const SCHEMA_MIGRATIONS: Readonly<Record<number, readonly string[]>> = {};

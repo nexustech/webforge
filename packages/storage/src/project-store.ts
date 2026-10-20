@@ -1,10 +1,17 @@
 import { createHash, randomUUID } from "node:crypto";
 import { existsSync, renameSync, rmSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
+import {
+  migrateSite,
+  pageDocumentId,
+  type SiteDoc,
+  siteDocuments,
+  siteFromDocuments,
+} from "@webforge/model";
 import Database from "better-sqlite3";
 import { z } from "zod";
-import { ProjectFileError } from "./errors.js";
-import { APPLICATION_ID, FORMAT_VERSION, SCHEMA } from "./schema.js";
+import { ProjectFileError, ReadOnlyProjectError } from "./errors.js";
+import { APPLICATION_ID, FORMAT_VERSION, SCHEMA, SCHEMA_MIGRATIONS, SCHEMAS } from "./schema.js";
 
 const jsonValueSchema = z.json();
 
@@ -20,9 +27,17 @@ export type StoredDocument = {
   readonly content: JsonValue;
 };
 
-/** A change to the working copy. One {@link ProjectStore.commit} applies a list of them atomically. */
+/**
+ * A change to the working copy. One {@link ProjectStore.commit} applies a list of them atomically.
+ * Put content is stored as JSON; `undefined` properties are dropped, as `JSON.stringify` does.
+ */
 export type DocumentChange =
-  | ({ readonly type: "put" } & StoredDocument)
+  | {
+      readonly type: "put";
+      readonly id: string;
+      readonly kind: string;
+      readonly content: unknown;
+    }
   | { readonly type: "delete"; readonly id: string };
 
 /** A binary blob, such as an image, stored once under the SHA-256 hash of its bytes. */
@@ -82,6 +97,16 @@ export type ProjectInfo = {
   readonly formatVersion: number;
   /** ISO 8601 timestamp (UTC). */
   readonly createdAt: string;
+  /** Opened without write access: on request, or because a newer Webforge saved it. */
+  readonly readOnly: boolean;
+  /** Saved by a newer Webforge (format above {@link FORMAT_VERSION}); the user should update. */
+  readonly newerFormat: boolean;
+};
+
+/** Options for {@link ProjectStore.open}. */
+export type OpenProjectOptions = {
+  /** Open without write access, e.g. to look inside a backup. */
+  readonly readOnly?: boolean;
 };
 
 /** Options for {@link ProjectStore.create}. */
@@ -182,22 +207,31 @@ function readSchema(db: Database.Database): string[] {
     .map((row) => JSON.stringify(schemaRowSchema.parse(row)));
 }
 
-let expectedSchema: readonly string[] | undefined;
+const expectedSchemas = new Map<number, readonly string[]>();
 
-/** What `sqlite_schema` of a valid project looks like, read from an in-memory database once. */
-function getExpectedSchema(): readonly string[] {
-  if (expectedSchema === undefined) {
+/**
+ * What `sqlite_schema` of a valid project of format `version` looks like, read from an in-memory
+ * database once per version, or `undefined` for a format this build doesn't know.
+ */
+function getExpectedSchema(version: number): readonly string[] | undefined {
+  const statements = SCHEMAS[version];
+  if (statements === undefined) {
+    return undefined;
+  }
+  let expected = expectedSchemas.get(version);
+  if (expected === undefined) {
     const db = new Database(":memory:");
     try {
-      for (const statement of SCHEMA) {
+      for (const statement of statements) {
         db.exec(statement);
       }
-      expectedSchema = readSchema(db);
+      expected = readSchema(db);
+      expectedSchemas.set(version, expected);
     } finally {
       db.close();
     }
   }
-  return expectedSchema;
+  return expected;
 }
 
 function sqliteErrorCode(error: unknown): string | undefined {
@@ -256,8 +290,15 @@ function readMetaRows(db: Database.Database): Record<string, string> {
   );
 }
 
-/** Checks that `db` is a Webforge project this build can open, and returns its metadata. */
-function validateProject(db: Database.Database): ProjectInfo {
+/** What {@link validateProject} learns about a file. */
+type ValidatedProject = Omit<ProjectInfo, "readOnly">;
+
+/**
+ * Checks that `db` is a Webforge project this build can open, and returns its metadata. A file of
+ * an older format must have exactly that format's tables; a newer one only needs the metadata,
+ * since a newer Webforge may have added tables. It is then only ever opened read-only.
+ */
+function validateProject(db: Database.Database): ValidatedProject {
   if (db.pragma("application_id", { simple: true }) !== APPLICATION_ID) {
     throw new ProjectFileError("not-a-project", "The database is not a Webforge project");
   }
@@ -265,8 +306,6 @@ function validateProject(db: Database.Database): ProjectInfo {
   if (check !== "ok") {
     throw new ProjectFileError("corrupt", "The project fails SQLite's integrity check");
   }
-  // Read the format version before comparing schemas: a newer format has a different schema, and
-  // the user should be told to update rather than that the file is broken.
   let metaRows: Record<string, string>;
   try {
     metaRows = readMetaRows(db);
@@ -275,19 +314,24 @@ function validateProject(db: Database.Database): ProjectInfo {
       cause: error,
     });
   }
-  const formatVersion = metaSchema.shape.format_version.safeParse(metaRows.format_version);
-  if (formatVersion.success && formatVersion.data > FORMAT_VERSION) {
-    throw new ProjectFileError(
-      "newer-format",
-      `The project uses format version ${formatVersion.data}; this build reads up to ${FORMAT_VERSION}`,
-    );
+  const version = metaSchema.shape.format_version.safeParse(metaRows.format_version);
+  const newerFormat = version.success && version.data > FORMAT_VERSION;
+  if (!newerFormat) {
+    const expected = version.success ? getExpectedSchema(version.data) : undefined;
+    const schema = readSchema(db);
+    if (
+      expected === undefined ||
+      schema.length !== expected.length ||
+      schema.some((row, index) => row !== expected[index])
+    ) {
+      throw new ProjectFileError(
+        "unexpected-schema",
+        "The project's tables do not match its format",
+      );
+    }
   }
-  const schema = readSchema(db);
-  const expected = getExpectedSchema();
-  if (schema.length !== expected.length || schema.some((row, index) => row !== expected[index])) {
-    throw new ProjectFileError("unexpected-schema", "The project's tables do not match its format");
-  }
-  const meta = metaSchema.safeParse(metaRows);
+  // A newer Webforge may also have added metadata keys.
+  const meta = (newerFormat ? metaSchema.loose() : metaSchema).safeParse(metaRows);
   if (!meta.success) {
     throw new ProjectFileError("unexpected-schema", "The project's metadata is invalid", {
       cause: meta.error,
@@ -298,7 +342,29 @@ function validateProject(db: Database.Database): ProjectInfo {
     name: meta.data.name,
     formatVersion: meta.data.format_version,
     createdAt: meta.data.created_at,
+    newerFormat,
   };
+}
+
+/**
+ * Brings an older file's tables up to {@link FORMAT_VERSION}, one format at a time, in one
+ * transaction: after a crash the file is either fully migrated or untouched.
+ */
+function migrateSchema(db: Database.Database, from: number): void {
+  db.transaction(() => {
+    for (let version = from; version < FORMAT_VERSION; version += 1) {
+      const step = SCHEMA_MIGRATIONS[version];
+      if (step === undefined) {
+        throw new ProjectFileError("unexpected-schema", `No migration from format ${version}`);
+      }
+      for (const statement of step) {
+        db.exec(statement);
+      }
+    }
+    db.prepare("UPDATE meta SET value = ? WHERE key = 'format_version'").run(
+      String(FORMAT_VERSION),
+    );
+  })();
 }
 
 /**
@@ -361,19 +427,34 @@ export class ProjectStore {
    * Opens an existing project. The file is treated as untrusted: it must carry the Webforge
    * application id, pass SQLite's quick check, have exactly the tables of its format version and
    * valid metadata. Otherwise this throws a {@link ProjectFileError} and leaves the file untouched.
+   *
+   * An older format is migrated to {@link FORMAT_VERSION} first (unless opened read-only). A file
+   * from a newer Webforge opens read-only, with `info.newerFormat` set, instead of failing.
    */
-  static open(path: string): ProjectStore {
+  static open(path: string, options: OpenProjectOptions = {}): ProjectStore {
     if (!existsSync(path)) {
       throw new ProjectFileError("not-found", "The project file does not exist");
     }
-    const db = new Database(path, { fileMustExist: true });
+    const readOnly = options.readOnly === true;
+    const db = new Database(path, { fileMustExist: true, readonly: readOnly });
     try {
       hardenConnection(db);
-      const info = validateProject(db);
+      const validated = validateProject(db);
+      if (validated.newerFormat && !readOnly) {
+        db.close();
+        return ProjectStore.open(path, { readOnly: true });
+      }
+      if (readOnly) {
+        return new ProjectStore(db, { ...validated, readOnly });
+      }
       configureWrites(db);
-      return new ProjectStore(db, info);
+      if (validated.formatVersion < FORMAT_VERSION) {
+        migrateSchema(db, validated.formatVersion);
+        return new ProjectStore(db, { ...validateProject(db), readOnly });
+      }
+      return new ProjectStore(db, { ...validated, readOnly });
     } catch (error) {
-      db.close();
+      if (db.open) db.close();
       throw toProjectFileError(error);
     }
   }
@@ -406,10 +487,45 @@ export class ProjectStore {
   }
 
   /**
+   * The site in the working copy, migrated to the current site format and validated. A site saved
+   * in an older format is written back in the new one straight away (unless the project is
+   * read-only), so its documents never mix formats. Throws `SiteFormatError` from
+   * `@webforge/model` for an invalid site or a newer site format.
+   */
+  readSite(): SiteDoc {
+    const raw = siteFromDocuments(this.readDocuments());
+    const site = migrateSite(raw);
+    const storedVersion = (raw as { formatVersion?: unknown }).formatVersion;
+    if (storedVersion !== site.formatVersion && !this.#info.readOnly) {
+      this.saveSite(site);
+    }
+    return site;
+  }
+
+  /**
+   * Writes a whole site in one transaction, e.g. a new or migrated one, and deletes the documents
+   * of pages it no longer has. Saving edits uses {@link commit} with only the changed documents.
+   */
+  saveSite(site: SiteDoc): void {
+    this.#assertWritable();
+    const keep = new Set(site.pageOrder.map(pageDocumentId));
+    const stalePages = this.#prepare("SELECT id FROM documents WHERE kind = 'page'")
+      .pluck()
+      .all()
+      .map(String)
+      .filter((id) => !keep.has(id));
+    this.commit([
+      ...siteDocuments(site).map((document) => ({ type: "put" as const, ...document })),
+      ...stalePages.map((id) => ({ type: "delete" as const, id })),
+    ]);
+  }
+
+  /**
    * Applies `changes` to the working copy in one transaction: after a crash the file holds either
    * all of them or none. When this returns, the changes are on disk.
    */
   commit(changes: readonly DocumentChange[]): void {
+    this.#assertWritable();
     const upsert = this.#prepare(
       `INSERT INTO documents (id, kind, blob_hash) VALUES (?, ?, ?)
        ON CONFLICT (id) DO UPDATE SET kind = excluded.kind, blob_hash = excluded.blob_hash`,
@@ -418,7 +534,11 @@ export class ProjectStore {
     this.#db.transaction(() => {
       for (const change of changes) {
         if (change.type === "put") {
-          const data = Buffer.from(JSON.stringify(change.content), "utf8");
+          const json = JSON.stringify(change.content);
+          if (json === undefined) {
+            throw new TypeError(`Document "${change.id}" has no JSON content`);
+          }
+          const data = Buffer.from(json, "utf8");
           upsert.run(change.id, change.kind, this.#insertBlob(data, JSON_MIME));
         } else {
           remove.run(change.id);
@@ -432,6 +552,7 @@ export class ProjectStore {
    * again reuses the existing blob.
    */
   putBlob(data: Uint8Array, mime: string): string {
+    this.#assertWritable();
     return this.#db.transaction(() => this.#insertBlob(data, mime))();
   }
 
@@ -446,6 +567,7 @@ export class ProjectStore {
    * and with each other, so saving one only writes a small manifest.
    */
   saveVersion(name: string, kind: VersionKind): VersionInfo {
+    this.#assertWritable();
     const documents: Manifest["documents"] = this.#prepare(
       "SELECT id, kind, blob_hash AS hash FROM documents ORDER BY id",
     )
@@ -501,6 +623,7 @@ export class ProjectStore {
    * row points at it. Replacing an item's file gives its `mediaId` a new blob.
    */
   putAsset(asset: NewAsset): AssetInfo {
+    this.#assertWritable();
     return this.#db.transaction(() => {
       const hash = this.#insertBlob(asset.data, asset.mime);
       this.#prepare(
@@ -549,6 +672,7 @@ export class ProjectStore {
    * until then. Freed pages are reused by later writes; the file does not shrink until a VACUUM.
    */
   collectGarbage(): GarbageReport {
+    this.#assertWritable();
     return this.#db.transaction(() => {
       const documentHashes = new Set(
         this.#prepare("SELECT blob_hash FROM documents").pluck().all().map(String),
@@ -581,9 +705,32 @@ export class ProjectStore {
     })();
   }
 
+  /**
+   * Copies the project to `path` with SQLite's online backup API (06: "Backups"): a consistent
+   * copy even while the site is being edited, written in steps so the main process stays
+   * responsive. The copy is built under a temporary name and renamed into place, so `path` never
+   * holds half a backup.
+   */
+  async backupTo(path: string): Promise<void> {
+    const tempPath = join(dirname(path), `.${basename(path)}.${randomUUID()}.tmp`);
+    try {
+      await this.#db.backup(tempPath);
+      renameSync(tempPath, path);
+    } catch (error) {
+      rmSync(tempPath, { force: true });
+      throw error;
+    }
+  }
+
   /** Closes the file. With the rollback journal, no side files are left next to it. */
   close(): void {
     this.#db.close();
+  }
+
+  #assertWritable(): void {
+    if (this.#info.readOnly) {
+      throw new ReadOnlyProjectError();
+    }
   }
 
   #prepare(sql: string): Database.Statement {

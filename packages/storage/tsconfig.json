@@ -6,6 +6,9 @@
   "include": ["src", "test", "vitest.config.ts"],
   "references": [
     {
+      "path": "../model"
+    },
+    {
       "path": "../test-utils"
     }
   ]

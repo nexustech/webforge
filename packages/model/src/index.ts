@@ -50,6 +50,13 @@ export {
   siteDocSchema,
   slugSchema,
 } from "./site-doc.js";
+export type { SiteDocument, SiteDocumentChange, SiteDocumentKind } from "./site-documents.js";
+export {
+  changedDocuments,
+  pageDocumentId,
+  siteDocuments,
+  siteFromDocuments,
+} from "./site-documents.js";
 export type { MediaItem, SitePage, SiteSnapshot } from "./site-snapshot.js";
 export { siteSnapshotSchema } from "./site-snapshot.js";
 export { siteToSnapshot } from "./to-snapshot.js";
