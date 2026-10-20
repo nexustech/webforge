@@ -46,7 +46,7 @@ The result is a fast, accessible, self-contained static website they fully own.
 | F-ED-2 | **Select, move, duplicate, delete** | Click to select on canvas or in Layers. Drag to reorder. Keyboard: arrows to move selection, Ctrl/Cmd+D duplicate, Delete removes **without confirmation** with an *Undo* toast (D4) |
 | F-ED-3 | **Click-to-edit text** | Double-click text to edit inline (bold, italic, link, lists, alignment). One editing session = **one undo step** "Edited ‹name› text" (D1) |
 | F-ED-4 | **Edit panel**: Content · Style (· Advanced) | Shows friendly controls for the selected item. Style controls are design tokens (Padding S/M/L, Colour from theme…), each optionally per Desktop/Tablet/Mobile |
-| F-ED-5 | **Images** | Upload/drag from disk into Media, replace and crop (aspect presets), alt text field with a hint. Originals kept unmodified |
+| F-ED-5 | **Images** | Upload/drag from disk into Media, replace and crop (aspect presets), alt text field with a hint. **Alt text is stored on the image in Media** and reused wherever it's placed, with a per-use override (G15). Originals kept unmodified |
 | F-ED-6 | **Repeating lists** (M1) | Testimonials, team, services, FAQ, opening hours, prices: add/reorder/remove items in the Edit panel and on canvas |
 | F-ED-7 | **Header & Footer** (C5) | Shared on every page; editing shows the banner *"Editing shared Footer: changes apply to all N pages"*. Page setting *Hide header/footer on this page* |
 | F-ED-8 | **Desktop · Tablet · Mobile** views | Switch instantly; canvas width changes; per-device overrides are visibly marked |
@@ -57,6 +57,13 @@ The result is a fast, accessible, self-contained static website they fully own.
 | F-ED-13 | **Pages panel** | Add, rename, duplicate, reorder (= navigation order), set Home, *Hide from navigation*, folders. **Delete page asks for confirmation** and is undoable (D5/D7) |
 | F-ED-14 | **Confirmation rule** (D7) | Any action affecting more than the current page (theme switch, delete page, delete shared section, global font/colour change) confirms with its impact ("affects 6 pages") and is undoable |
 | F-ED-15 | **Custom Code** (C7, Advanced) | Custom HTML element; site `custom.css`/`custom.js`; head/body snippets. Scripts off in the editor by default |
+| F-ED-16 | **Copy & paste** (G1) | Copy/cut/paste sections and elements within a page, between pages and into another site (Ctrl/Cmd+C/X/V). One site is open at a time (F-SITE-2), so the clipboard keeps the copied items **with their images**: after opening another site, paste adds those images to its Media. Pasting an image file or clipboard image adds it to Media and inserts it. Pasting a YouTube/Vimeo URL creates a video embed. Each paste is one undo step |
+| F-ED-17 | **Navigation menu editor** (G2) | Menu built from pages by default; users can add **external links**, **links to a section**, **"Book now"-style buttons** and **dropdown sub-menus**, reorder freely and hide items. Used by the Header's navbar (desktop + mobile menu) |
+| F-ED-18 | **Link to a section** (G3) | The link dialog offers *Page*, *Section on a page* (anchor picked from a list; IDs created automatically), *Email*, *Phone*, *External URL*, *File* |
+| F-ED-19 | **Spell check** (G5) | Electron spellchecker active while editing text; right-click suggestions; add to dictionary. **Windows:** checks in the site language from Site Settings. **macOS:** uses the system spell checker and its languages (Electron cannot set them there) |
+| F-ED-20 | **Editable 404 page** (G6) | A special *Page not found* page in the Pages panel (not in navigation), designed like any page, exported as `404.html`. Hosts serve it at **any** missing URL, including nested ones (`/services/missing`), so unlike other pages (X1) its links and asset URLs are absolute: based on the site's web address (X3), or `/`-rooted when none is set |
+| F-ED-21 | **Image focal point** (G14) | Set a focal point on any image; crops for Desktop/Tablet/Mobile keep it in view (`object-position`) |
+| F-ED-22 | **Icon picker** (G27) | Searchable Lucide icon picker (ISC) used by Icon, Button and List elements; icons inlined as SVG at export |
 
 ### 2.3 Design
 | ID | Feature | Acceptance criteria |
@@ -64,6 +71,8 @@ The result is a fast, accessible, self-contained static website they fully own.
 | F-DS-1 | **Theme picker** (05, S3) | **10–12 curated themes** (light + dark), visibly distinct (no "house look"). Changing theme confirms (D7), restyles everything instantly, and is undoable |
 | F-DS-2 | **Brand colours, fonts, roundness** | Primary/secondary/accent colours; **~50 bundled font families with 12–15 tested pairings** (Fontsource, offline) plus **Browse all fonts** (on-demand Fontsource catalogue, cached locally; S4); corner style; spacing scale. Contrast warnings below WCAG AA |
 | F-DS-3 | **Section themes** | A section can use the light/dark variant of the theme (daisyUI nested themes) |
+| F-DS-4 | **Text and button styles** (G11) | Theme defines a type scale (H1–H6, body, small) and button styles (shape, size, filled/outline/ghost), editable in the Theme panel and applied site-wide (D7 confirm) |
+| F-DS-5 | **Animations** (G8) | Per section/element *Entrance animation* (None, Fade, Slide up/left/right, Zoom) with delay; *Hover effect* for buttons/cards (Lift, Grow, Shadow). CSS + a tiny observer in `webforge.js`; disabled automatically for visitors with *prefers-reduced-motion*; works from disk. **Content is visible by default:** elements are only hidden for their entrance once `webforge.js` has marked the page, so nothing stays invisible without JavaScript, in print or for search engines |
 
 ### 2.4 Site settings & checks
 | ID | Feature | Acceptance criteria |
@@ -92,17 +101,20 @@ The result is a fast, accessible, self-contained static website they fully own.
 | F-CM-3 | **Analytics + consent** (B4/B7) | GA4 ID in Site Settings; built-in consent banner (on by default with GA); Consent Mode v2 default denied; GA off in preview and when opened from disk |
 | F-CM-4 | **Embeds** | YouTube, Vimeo, Google Maps/OpenStreetMap as dedicated elements with privacy mode and click-to-load placeholders (C8, B7) |
 | F-CM-5 | **Social links** | Social icons element bound to Site Settings → Social (Lucide/brand SVG icons inlined) |
+| F-CM-6 | **Newsletter signup** (G17) | Newsletter section: email (+ optional name) form that POSTs to the provider's embedded-form URL, plus our honeypot. Generic "form action URL" option in MVP; provider presets per GA3 (open question) |
+| F-CM-7 | **Booking button** (G18) | "Book now" button/element linking to the user's booking page; generic https URL in MVP; provider presets per GA3 (open question). Plain link, no external JS |
+| F-CM-8 | **Dynamic year** (G21) | `{year}` token for text (e.g. footer copyright) filled in at export, with no script. The year is fixed until the site is next exported or published, so Site Check shows a tip when a published site's year is out of date |
 
 ## 3. MVP component catalogue (decided S1–S5, [starting content](../research/product/03-starting-content.md))
 
-**Sections (18):**
+**Sections (19):**
 1. Header (navbar with mobile menu)
 2. Footer
 3. Hero (4 layouts)
 4. Text
 5. Text + Image
 6. Features / Services grid
-7. Gallery
+7. Gallery (with **lightbox**: click to enlarge, keyboard + swipe navigation, G10)
 8. Testimonials (list)
 9. Team (list)
 10. Pricing / Price list
@@ -114,8 +126,9 @@ The result is a fast, accessible, self-contained static website they fully own.
 16. Stats / Numbers
 17. Map
 18. Video
+19. **Newsletter signup** (F-CM-6)
 
-**Elements (16):**
+**Elements (17):**
 1. Heading
 2. Text
 3. Image
@@ -131,7 +144,8 @@ The result is a fast, accessible, self-contained static website they fully own.
 13. Embed map
 14. Form fields (text, email, phone, message, checkbox, select)
 15. Tabs
-16. Custom Code (Advanced)
+16. **Carousel** (images, testimonials, logos; autoplay pause, keyboard and swipe, accessible controls; G9)
+17. Custom Code (Advanced)
 
 **Templates (8, S2):**
 1. Café / Restaurant
@@ -176,15 +190,21 @@ All components must:
 | AVIF, clean URLs, Export as Astro project | Later / on demand (X2, X1, X6) |
 | Importing existing websites | Out of scope (C3) |
 | Free positioning, real-time collaboration, remote client editing, members, carts | Out of scope (T3, M5) |
+| Find & replace, page-rename redirects, legal page templates, social share preview, stock photo search (Pexels/Pixabay), site dark mode, video-background hero, announcement bar / popup | **v1.1** (gap analysis G4, G7, G12, G13, G19, G20, G22, G26) |
+| **AI with the user's own account** (rewrite text; meta/social descriptions; alt text) | **v1.1** (GA2) |
+| AI site generation from a description | Later (G25c) |
+| Tables, timeline, countdown, charts; password-protected pages | Later / on demand (G16, G24) |
+| Component/theme marketplace and plugin API | Long-term goal (GA4) |
+| AI image generation, cloud sync, collaboration, mobile app | Out of scope (G25d, G29, G30, G32) |
 | Linux | Not planned |
 
 ## 6. Milestones
 | Phase | Milestone | Content | Exit criteria |
 |---|---|---|---|
 | **Phase 0** | **Prototype spikes** (~2 weeks, combined) | Electron secure shell + electron-builder installers (signed NSIS/DMG) + auto-update; Puck with **our** history (critical); daisyUI components; `.wforge` SQLite via **better-sqlite3** (packaging + rebuild on Windows/macOS, crash safety, OneDrive folder); export pipeline + `file://` checks; Netlify + SFTP publish | Every 🔬 item resolved; go/no-go on Puck (else fallback canvas) |
-| **Phase 1** | **Editor core** | Model, history, storage + autosave, engine adapter, Add/Edit/Pages panels, Header/Footer, Undo History, views | Build a 3-page site from blank; undo-all property tests green |
-| **Phase 2** | **Design & components** | Themes, brand colours/fonts, component catalogue, templates, Content mode, Simple/Advanced | All templates pass axe + visual regression |
-| **Phase 3** | **Output** | Preview server, Export, Site Check, Site/Page Settings, forms, Buy button, GA + consent, embeds | Exported templates open from disk in 4 browsers with zero external requests |
+| **Phase 1** | **Editor core** | Model, history, storage + autosave, engine adapter, Add/Edit/Pages panels, Header/Footer, Undo History, views, **copy & paste, menu editor, link dialog, spell check** | Build a 3-page site from blank; undo-all property tests green |
+| **Phase 2** | **Design & components** | Themes (incl. **text/button styles**), brand colours/fonts, component catalogue (incl. **carousel, lightbox, animations, newsletter, booking**), templates, Content mode, Simple/Advanced, **icon picker, focal point, media alt text** | All templates pass axe + visual regression |
+| **Phase 3** | **Output** | Preview server, Export, Site Check, Site/Page Settings, forms, Buy button, GA + consent, embeds, **editable 404, dynamic year** | Exported templates open from disk in 4 browsers with zero external requests |
 | **Phase 4** | **Publish & versions** | Destinations, Netlify/FTP/SFTP publish, Version History, republish | Publish + rollback on all targets in E2E tests |
 | **Phase 5** | **Beta hardening** | Performance budgets, installer/updates, licences screen, onboarding, help | Beta with 10–20 small-business users |
 
@@ -196,6 +216,8 @@ All components must:
 5. Default to Content mode for already-published sites (suggested in product/02).
 6. ~~Telemetry/crash reporting~~ → **Decided:** crash reports collected **locally only**, never uploaded (F-SITE-7).
 7. ~~Licensing model~~ → ✅ **Decided:** see §8 (implemented after MVP).
+8. **Booking and newsletter provider presets** (GA3, deferred): which providers to preset (e.g. Calendly, Square Appointments, Fresha, Acuity, SimplyBook; Mailchimp, Brevo, MailerLite)? Decide before Phase 3. A generic URL works meanwhile.
+9. ~~Competitor gap analysis~~ → ✅ **Decided (GA1–GA4):** see [gap analysis](../research/product/05-feature-gap-analysis.md). MVP grows by ~4–6 weeks.
 
 ## 8. Business & licensing model (decided 2026-10-19)
 | Item | Decision |

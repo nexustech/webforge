@@ -78,7 +78,7 @@ On-demand fonts are fetched from npm/Fontsource **by the editor at design time**
 ## Decisions (2026-10-19)
 | # | Area | Decision |
 |---|---|---|
-| S1 | Components | **B. Standard:** 18 sections (~45 layout variants) + 16 elements; grow via layout variants |
+| S1 | Components | **B. Standard:** 18 sections (~45 layout variants) + 16 elements; grow via layout variants. **Extended by GA1** ([gap analysis](05-feature-gap-analysis.md)): 19 sections (+ Newsletter signup) and 17 elements (+ Carousel) |
 | S2 | Templates | **B. 8 templates** (Café/Restaurant, Salon/Beauty, Trades/Home services, Consultant/Professional, Photographer/Portfolio, Shop, Personal/CV, Blank); +2–4 per release |
 | S3 | Themes | **B. 10–12 curated Webforge themes** (light + dark); visual regression on 3 representative themes per PR, all themes nightly |
 | S4 | Fonts | **B. ~50 bundled families + 12–15 tested pairings + on-demand Fontsource catalogue** (OFL/Apache/UFL only) |
