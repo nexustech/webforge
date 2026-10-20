@@ -100,6 +100,17 @@ describe("createWebforgeApi site export", () => {
 
     await expect(api.site.export(snapshot)).rejects.toThrow();
   });
+
+  it("gets and changes the preferences through the prefs channels", async () => {
+    const preferences = { theme: "light", editorLevel: "simple", panelLayout: {} };
+    const invoke = vi.fn(async () => preferences);
+    const api = apiWith(invoke);
+
+    await expect(api.prefs.get()).resolves.toEqual(preferences);
+    await expect(api.prefs.set({ theme: "light" })).resolves.toEqual(preferences);
+    expect(invoke).toHaveBeenNthCalledWith(1, "prefs:get");
+    expect(invoke).toHaveBeenNthCalledWith(2, "prefs:set", { theme: "light" });
+  });
 });
 
 describe("createWebforgeApi app events", () => {

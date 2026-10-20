@@ -17,6 +17,11 @@ import { type ExportDialogs, registerExportHandlers } from "./export-ipc.js";
 import { runExportInWorker } from "./export-worker-client.js";
 import { createFlushOnClose } from "./flush-on-close.js";
 import { registerIpcHandler } from "./ipc.js";
+import {
+  openPreferencesStore,
+  type PreferencesStore,
+  registerPreferencesHandlers,
+} from "./preferences.js";
 import { type ProjectDialogs, registerProjectHandlers } from "./project-ipc.js";
 import { findProjectArgument, PROJECT_EXTENSION, ProjectSession } from "./project-session.js";
 import {
@@ -25,7 +30,7 @@ import {
   hardenWebContents,
   isAppUrl,
 } from "./security.js";
-import { titleBarOptions, windowBackground } from "./window-options.js";
+import { titleBarOptions, titleBarOverlay, windowBackground } from "./window-options.js";
 
 // Process wiring only; the logic lives in tested modules and E2E tests cover this file.
 
@@ -110,16 +115,17 @@ const compileCanvasCss = createCanvasCssCompiler(() =>
   utilityProcess.fork(exportWorkerScript, [], { serviceName: "Webforge canvas styles" }),
 );
 
-function createMainWindow(): void {
+function createMainWindow(preferences: PreferencesStore): void {
+  const { theme } = preferences.get();
   const window = new BrowserWindow({
     title: t("app.name"),
     width: 1280,
     height: 800,
     minWidth: 960,
     minHeight: 600,
-    // The renderer draws the title bar (1.2). Dark until the theme preference arrives.
-    ...titleBarOptions(process.platform, "dark"),
-    backgroundColor: windowBackground("dark"),
+    // The renderer draws the title bar (1.2), in the person's theme.
+    ...titleBarOptions(process.platform, theme),
+    backgroundColor: windowBackground(theme),
     show: false,
     webPreferences: createSecureWebPreferences(preloadScript),
   });
@@ -139,6 +145,26 @@ function createMainWindow(): void {
 async function start(): Promise<void> {
   await app.whenReady();
   hardenSession(session.defaultSession);
+  const preferences = await openPreferencesStore(join(app.getPath("userData"), "preferences.json"));
+  let windowTheme = preferences.get().theme;
+  registerPreferencesHandlers(
+    ipcMain,
+    (senderUrl) => isAppUrl(senderUrl, appUrl),
+    preferences,
+    ({ theme }) => {
+      if (theme === windowTheme) {
+        return;
+      }
+      windowTheme = theme;
+      // The native window controls follow the theme (macOS's traffic lights need nothing).
+      for (const window of BrowserWindow.getAllWindows()) {
+        window.setBackgroundColor(windowBackground(theme));
+        if (process.platform !== "darwin") {
+          window.setTitleBarOverlay(titleBarOverlay(theme));
+        }
+      }
+    },
+  );
   registerIpcHandler(
     ipcMain,
     "getAppInfo",
@@ -168,11 +194,11 @@ async function start(): Promise<void> {
   if (projectToOpen !== undefined) {
     projectSession.open(projectToOpen);
   }
-  createMainWindow();
+  createMainWindow(preferences);
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-      createMainWindow();
+      createMainWindow(preferences);
     }
   });
 }

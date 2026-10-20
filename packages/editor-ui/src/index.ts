@@ -77,8 +77,11 @@ export {
 } from "./components/ui/menubar.js";
 export {
   ResizableHandle,
+  type ResizableLayout,
   ResizablePanel,
   ResizablePanelGroup,
+  type ResizablePanelGroupHandle,
+  type ResizablePanelHandle,
 } from "./components/ui/resizable.js";
 export { ScrollArea, ScrollBar } from "./components/ui/scroll-area.js";
 export { Toaster, toast } from "./components/ui/sonner.js";
