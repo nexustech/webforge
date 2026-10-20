@@ -87,6 +87,39 @@ describe("Editor", () => {
     expect(engine.loadPage).toHaveBeenCalledWith(starterPage(), site.layout);
   });
 
+  it("mounts the engine already in Content mode when the site opens in it", async () => {
+    await act(async () => root.unmount());
+    root = createRoot(container);
+    const content = createFakeEngine();
+    const order: string[] = [];
+    vi.mocked(content.mount).mockImplementation(() => {
+      order.push("mount");
+    });
+    vi.mocked(content.setMode).mockImplementation((mode) => {
+      order.push(`setMode ${mode}`);
+    });
+    vi.mocked(content.loadPage).mockImplementation(() => {
+      order.push("loadPage");
+    });
+
+    await act(async () =>
+      root.render(
+        <CommandRegistryProvider registry={createCommandRegistry()}>
+          <PanelRegistryProvider registry={createPanelRegistry()}>
+            <Editor
+              session={session}
+              createEngine={() => content}
+              compileCss={compileCss}
+              mode="content"
+            />
+          </PanelRegistryProvider>
+        </CommandRegistryProvider>,
+      ),
+    );
+
+    expect(order.slice(0, 3)).toEqual(["mount", "setMode content", "loadPage"]);
+  });
+
   it("passes Design or Content mode to the engine, without remounting it", async () => {
     expect(engine.setMode).toHaveBeenLastCalledWith("design");
 

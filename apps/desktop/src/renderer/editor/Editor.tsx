@@ -46,6 +46,11 @@ export function Editor({
 }: EditorProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [engine, setEngine] = useState<CanvasEngine | null>(null);
+  // The mode at mount time, so a site opened in Content mode is never unlocked for a moment.
+  const modeRef = useRef(mode);
+  useEffect(() => {
+    modeRef.current = mode;
+  });
   const connectionRef = useRef<EngineConnection | null>(null);
   const { history } = session;
   const state = useSyncExternalStore(
@@ -67,6 +72,9 @@ export function Editor({
     const engine = createEngine();
     const site = history.document.getState();
     engine.mount(element, { library: session.library, theme: site.theme });
+    if (modeRef.current !== "design") {
+      engine.setMode(modeRef.current);
+    }
     const page = currentPage(session);
     if (page !== undefined) {
       engine.loadPage(page.doc, site.layout);
