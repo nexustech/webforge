@@ -22,6 +22,9 @@ describe("historyCommandFor", () => {
     [{ key: "z" }, null],
     [{ key: "z", ctrlKey: true, altKey: true }, null],
     [{ key: "a", ctrlKey: true }, null],
+    [{ key: "Escape" }, "cancel"],
+    [{ key: "Escape", shiftKey: true }, null],
+    [{ key: "Escape", ctrlKey: true }, null],
   ] as const)("maps %o to %s", (init, expected) => {
     expect(historyCommandFor(key(init))).toBe(expected);
   });
@@ -41,6 +44,30 @@ describe("installHistoryKeys", () => {
     expect(event.defaultPrevented).toBe(true);
     expect(later).not.toHaveBeenCalled();
     remove();
+    document.removeEventListener("keydown", later);
+  });
+
+  it("takes Esc only when it cancelled something", () => {
+    const later = vi.fn();
+    document.addEventListener("keydown", later);
+    const press = (handled: boolean) => {
+      const onCommand = vi.fn(() => handled);
+      const remove = installHistoryKeys(window, onCommand);
+      const event = new KeyboardEvent("keydown", {
+        key: "Escape",
+        bubbles: true,
+        cancelable: true,
+      });
+      document.body.dispatchEvent(event);
+      remove();
+      expect(onCommand).toHaveBeenCalledWith("cancel");
+      return event.defaultPrevented;
+    };
+
+    expect(press(true)).toBe(true);
+    expect(later).not.toHaveBeenCalled();
+    expect(press(false)).toBe(false);
+    expect(later).toHaveBeenCalledOnce();
     document.removeEventListener("keydown", later);
   });
 

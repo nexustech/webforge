@@ -127,7 +127,7 @@ const commands: fc.Arbitrary<Command>[] = [
   })),
 ];
 
-function setup(limit?: number): Ctx {
+function setup(limit?: number, maxBytes?: number): Ctx {
   let time = 0;
   let selected: string | null = null;
   const history = createHistoryManager<Page, string | null>({
@@ -135,6 +135,7 @@ function setup(limit?: number): Ctx {
     selection: { get: () => selected, restore: (value) => (selected = value) },
     now: () => time,
     ...(limit === undefined ? {} : { limit }),
+    ...(maxBytes === undefined ? {} : { maxBytes }),
   });
   return { history, tick: (ms) => (time += ms) };
 }
@@ -190,6 +191,43 @@ describe("undo invariant", () => {
         unbounded.history.jumpTo(all.at(-6)?.id ?? null);
         expect(bounded.history.document.getState()).toEqual(unbounded.history.document.getState());
       }),
+      { numRuns: 100 },
+    );
+  });
+
+  it("with a memory budget, undo all reaches the oldest kept state", () => {
+    const edits = commands.slice(0, 6);
+    fc.assert(
+      fc.property(
+        fc.array(fc.oneof(...edits), { maxLength: 30 }),
+        fc.integer({ min: 100, max: 3_000 }),
+        (sequence, maxBytes) => {
+          const bounded = setup(undefined, maxBytes);
+          const unbounded = setup();
+          for (const command of sequence) {
+            command.run(bounded);
+            command.run(unbounded);
+          }
+          expect(bounded.history.document.getState()).toEqual(
+            unbounded.history.document.getState(),
+          );
+          const all = unbounded.history.entries();
+          const kept = bounded.history.entries();
+          expect(kept).toEqual(all.slice(all.length - kept.length));
+          const size = kept.reduce(
+            (sum, entry) =>
+              sum + JSON.stringify(entry.forward).length + JSON.stringify(entry.inverse).length,
+            0,
+          );
+          if (kept.length > 1) expect(size).toBeLessThanOrEqual(maxBytes);
+
+          bounded.history.jumpTo(null);
+          unbounded.history.jumpTo(all.at(-kept.length - 1)?.id ?? null);
+          expect(bounded.history.document.getState()).toEqual(
+            unbounded.history.document.getState(),
+          );
+        },
+      ),
       { numRuns: 100 },
     );
   });

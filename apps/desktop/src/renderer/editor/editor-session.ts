@@ -6,6 +6,7 @@ import type {
   Viewport,
 } from "@webforge/engine";
 import {
+  type CommitOptions,
   createHistoryManager,
   type HistoryEntry,
   type HistoryManager,
@@ -35,6 +36,17 @@ export type EditKind = EngineEditKind;
 /** Called for each new history entry (not for edits that merge into the current one). */
 type EntryListener = (entry: HistoryEntry<EditorSelection>, kind: EditKind) => void;
 
+/**
+ * A gesture in progress, such as a slider drag: its updates show live and become one undo step on
+ * `commit`; `cancel` (or Esc) puts the document back as it was (U2).
+ */
+export type Gesture = {
+  readonly active: boolean;
+  update(recipe: Recipe<SiteDoc>): void;
+  commit(options?: CommitOptions<EditorSelection>): void;
+  cancel(): void;
+};
+
 /** Everything one open site needs: its history (which owns the document) and the UI store. */
 export type EditorSession = {
   readonly history: HistoryManager<SiteDoc, EditorSelection>;
@@ -47,6 +59,10 @@ export type EditorSession = {
     recipe: Recipe<SiteDoc>,
     options?: RunOptions<EditorSelection>,
   ): void;
+  /** Starts a gesture. A gesture still open from before is committed first. */
+  begin(kind: EditKind, label: string): Gesture;
+  /** Cancels the gesture in progress; false if there is none. */
+  cancelGesture(): boolean;
   onEntryAdded(listener: EntryListener): Unsubscribe;
   /** Shows another page; not an undo step. */
   showPage(pageId: PageId): void;
@@ -76,17 +92,50 @@ export function createEditorSession(
     const { entries, cursor } = history.state.getState();
     return entries[cursor - 1];
   };
+  /** Runs `change` and reports the entry it added, if any. */
+  const reporting = (kind: EditKind, change: () => void) => {
+    const before = currentEntry();
+    change();
+    const entry = currentEntry();
+    if (entry !== undefined && entry.id !== before?.id) {
+      for (const listener of listeners) listener(entry, kind);
+    }
+  };
+  let gesture: Gesture | null = null;
+  /** A canvas edit or another gesture can't wait for a gesture to end: it ends it as it is. */
+  const commitGesture = () => {
+    if (gesture?.active === true) {
+      gesture.commit();
+    }
+  };
   return {
     history,
     ui,
     library,
     edit(kind, label, recipe, options) {
-      const before = currentEntry();
-      history.run(label, recipe, options);
-      const entry = currentEntry();
-      if (entry !== undefined && entry !== before && entry.id !== before?.id) {
-        for (const listener of listeners) listener(entry, kind);
+      commitGesture();
+      reporting(kind, () => history.run(label, recipe, options));
+    },
+    begin(kind, label) {
+      commitGesture();
+      const transaction = history.begin(label);
+      const started: Gesture = {
+        get active() {
+          return transaction.active;
+        },
+        update: (recipe) => transaction.update(recipe),
+        commit: (options) => reporting(kind, () => transaction.commit(options)),
+        cancel: () => transaction.cancel(),
+      };
+      gesture = started;
+      return started;
+    },
+    cancelGesture() {
+      if (gesture?.active !== true) {
+        return false;
       }
+      gesture.cancel();
+      return true;
     },
     onEntryAdded(listener) {
       listeners.add(listener);
@@ -102,15 +151,23 @@ export function createEditorSession(
   };
 }
 
-/** Runs an undo or redo command. */
-export function runHistoryCommand(
-  history: HistoryManager<SiteDoc, EditorSelection>,
-  command: HistoryCommand,
-): void {
-  if (command === "undo") {
-    history.undo();
-  } else {
-    history.redo();
+/**
+ * Runs a history command from the keyboard or the toolbar. Returns true if it did something with
+ * it (undo and redo always count; Esc only when it cancelled a gesture). Undo in the middle of a
+ * gesture undoes the gesture itself.
+ */
+export function runHistoryCommand(session: EditorSession, command: HistoryCommand): boolean {
+  switch (command) {
+    case "undo":
+      if (!session.cancelGesture()) {
+        session.history.undo();
+      }
+      return true;
+    case "redo":
+      session.history.redo();
+      return true;
+    case "cancel":
+      return session.cancelGesture();
   }
 }
 
@@ -207,7 +264,7 @@ export function connectEngine(engine: CanvasEngine, session: EditorSession): Eng
     }),
     engine.onHistoryCommand((command) => {
       flush();
-      runHistoryCommand(history, command);
+      return runHistoryCommand(session, command);
     }),
     // Undo restores the document before the selection, so this shows the change on the page the
     // canvas has; a change on another page arrives with the page switch below.

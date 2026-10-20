@@ -20,7 +20,7 @@ import type {
   CanvasEngine,
   EditorMode,
   EngineEdit,
-  HistoryCommand,
+  HistoryCommandHandler,
   Viewport,
 } from "../canvas-engine.js";
 import { installHistoryKeys } from "../history-keys.js";
@@ -112,7 +112,13 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
 
   const edits = emitter<EngineEdit>();
   const selections = emitter<string | null>();
-  const commands = emitter<HistoryCommand>();
+  const commandHandlers = new Set<HistoryCommandHandler>();
+  /** True if any handler did something with the command (see installHistoryKeys). */
+  const runCommand: HistoryCommandHandler = (command) => {
+    let handled = false;
+    for (const handler of commandHandlers) handled = handler(command) === true || handled;
+    return handled;
+  };
 
   const dispatch = (action: PuckAction) => {
     if (getPuck === null) {
@@ -203,7 +209,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     useEffect(() => {
       frameDocument = document ?? null;
       const frameWindow = document?.defaultView;
-      return frameWindow ? installHistoryKeys(frameWindow, commands.emit) : undefined;
+      return frameWindow ? installHistoryKeys(frameWindow, runCommand) : undefined;
     }, [document]);
     return <>{children}</>;
   }
@@ -309,7 +315,12 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
 
     onUserEdit: edits.add,
     onSelectionChange: selections.add,
-    onHistoryCommand: commands.add,
+    onHistoryCommand(handler) {
+      commandHandlers.add(handler);
+      return () => {
+        commandHandlers.delete(handler);
+      };
+    },
 
     select(nodeId) {
       if (nodeId === selection) {

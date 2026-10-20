@@ -58,8 +58,17 @@ export type EngineEdit = {
   readonly selection: string | null;
 };
 
-/** History commands the user gave inside the canvas, where the app's own key handler can't see. */
-export type HistoryCommand = "undo" | "redo";
+/**
+ * History commands from the keyboard: undo, redo, and `cancel` (Esc), which cancels a gesture in
+ * progress such as a slider drag (U2).
+ */
+export type HistoryCommand = "undo" | "redo" | "cancel";
+
+/**
+ * Runs a history command. Returns true if it did something with it: an Esc that cancelled
+ * nothing is left to the rest of the page (closing a menu, deselecting).
+ */
+export type HistoryCommandHandler = (command: HistoryCommand) => boolean | undefined | void;
 
 /** Options of {@link CanvasEngine.mount}. */
 export type MountOptions = {
@@ -80,8 +89,8 @@ export interface CanvasEngine {
   onUserEdit(cb: (edit: EngineEdit) => void): Unsubscribe;
   select(nodeId: string | null): void;
   onSelectionChange(cb: (nodeId: string | null) => void): Unsubscribe;
-  /** Undo/redo shortcuts pressed inside the canvas (U4). */
-  onHistoryCommand(cb: (command: HistoryCommand) => void): Unsubscribe;
+  /** Undo/redo shortcuts and Esc pressed inside the canvas (U4). */
+  onHistoryCommand(cb: HistoryCommandHandler): Unsubscribe;
   setViewport(v: Viewport): void;
   setMode(mode: EditorMode): void;
   renderStatic(page: PageDoc, layout: LayoutDoc): string;
