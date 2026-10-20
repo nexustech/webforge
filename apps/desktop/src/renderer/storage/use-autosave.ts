@@ -14,19 +14,19 @@ export type AutosaveApi = {
 };
 
 /**
- * Autosaves the session's site while a site file is open (`loaded.kind === "file"`), with the save
+ * Autosaves the session's site while a site file is open (`loaded?.kind === "file"`), with the save
  * triggers of P2. Returns the save status to show, or `undefined` for a site in memory only. `api`
  * defaults to the preload API.
  */
 export function useAutosave(
   session: EditorSession,
-  loaded: LoadedSite,
+  loaded: LoadedSite | undefined,
   api: AutosaveApi | undefined,
 ): StoreApi<{ readonly status: SaveStatus }> | undefined {
   const [status, setStatus] = useState<StoreApi<{ readonly status: SaveStatus }>>();
 
   useEffect(() => {
-    if (loaded.kind !== "file") {
+    if (loaded?.kind !== "file") {
       return undefined;
     }
     const { project, app } = api ?? window.webforge;

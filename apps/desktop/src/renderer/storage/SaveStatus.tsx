@@ -21,7 +21,7 @@ export function SaveStatus({ status }: SaveStatusProps) {
         ? t("storage.saveFailed")
         : t("storage.saving");
   return (
-    <p className="app__save-status" role="status" data-status={current}>
+    <p className="m-0 text-sm text-muted-foreground" role="status" data-status={current}>
       {label}
     </p>
   );

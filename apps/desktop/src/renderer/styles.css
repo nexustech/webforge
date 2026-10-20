@@ -31,8 +31,7 @@ body,
   font-weight: 600;
 }
 
-.app__version,
-.app__save-status {
+.app__version {
   margin: 0;
   opacity: 0.6;
   font-size: 0.875rem;
