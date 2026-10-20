@@ -5,7 +5,13 @@ import { type ComponentLibrary, textValue } from "@webforge/site-components";
 import { act } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CanvasEngine, EngineEdit } from "../canvas-engine.js";
+import { pageActions } from "./page-actions.js";
 import { createPuckEngine } from "./puck-engine.js";
+
+vi.mock("./page-actions.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./page-actions.js")>();
+  return { ...actual, pageActions: vi.fn(actual.pageActions) };
+});
 
 declare global {
   // Tells React that act() is available (testing without @testing-library).
@@ -102,6 +108,30 @@ describe("createPuckEngine", () => {
     await settle();
 
     expect(element.innerHTML).toBe(before);
+  });
+
+  it("sends an undo step to Puck as the changed element only", async () => {
+    const [first, second] = page.content;
+    if (first === undefined || second === undefined) throw new Error("unexpected page");
+    vi.mocked(pageActions).mockClear();
+
+    await act(async () =>
+      engine.applyChange({
+        page: {
+          ...page,
+          content: [{ ...first, props: { ...first.props, text: "Undone" } }, second],
+        },
+      }),
+    );
+    await settle();
+
+    expect(headings()).toEqual(["Undone", "Second"]);
+    expect(vi.mocked(pageActions).mock.results).toEqual([
+      {
+        type: "return",
+        value: [expect.objectContaining({ type: "replace", destinationIndex: 0 })],
+      },
+    ]);
   });
 
   it("shows a page given before Puck was ready once it is", async () => {

@@ -56,9 +56,49 @@ Mitigations, in order of expected gain:
 Target after the mitigations: no long tasks while typing or dropping on this page, and keystroke-to-paint within 8 ms of the starter page's (Chromium's own pipeline sets the floor). `pnpm e2e:perf` is the measuring tool; its soft budget checks show what still misses.
 
 ## Consequences
-- **Proposed plan change (needs approval):** add a Phase 1 item "Editing performance: targeted patches, atomic Puck actions, memoised renders" (about 3 days, area engine/history), depending on 1.9 (History hardening) and checked with `pnpm e2e:perf` against this ADR's targets. Until approved, the plan (spec/04) is unchanged.
+- **Plan change (approved):** Phase 1 item 1.27 "Editing performance: targeted patches, atomic Puck actions, memoised renders" (#89), run before 1.9. Its results are in the addendum below.
 - `pnpm e2e:perf` stays on demand, not in CI: timings on shared runners are too noisy to gate PRs. Run it before and after performance work and when upgrading Puck.
-- **Upstream reports:** the two Puck issues from ADR 0004 are drafted below for filing from the project account.
+- **Upstream reports:** the two Puck issues from ADR 0004, and two more from item 1.27, are drafted below for filing from the project account.
+
+## Addendum: after the mitigations (1.27, 2026-10-20)
+What item 1.27 changed:
+- **#96: mitigations 1 and 2.**
+  - A one-field edit carries an `EnginePatch`, and the editor writes just that field instead of running `syncDraft` over the page.
+  - The engine recognises the app's echo by reference and tracks what Puck shows by revision. The whole-page `isDeepEqual` is gone.
+- **#97: mitigation 3.** Undo and redo reach Puck as `replace`/`insert`/`remove`/`move`/`replaceRoot` actions (`pageActions`). A change with more than one added, removed or moved element, such as a long jump, still uses `setData`.
+- **Mitigation 4 was already in place.** Puck 0.23 memoises every node (`DropZoneChildMemo`, `MemoizeComponent`, shallow comparison of each node's flat props). The profiles show only the changed node re-rendering, so no change was needed.
+- **#100: a patch to Puck.** CPU profiles after #96 showed the remaining per-keystroke work is Puck's:
+  - every store update runs every `useAppStore` selector, about 10 per element (10–14 ms per update on this page);
+  - its permissions slice walks the whole page on every data change, even though no component defines `resolvePermissions` (about 8 ms);
+  - its fields slice re-publishes unchanged sidebar fields for the selected element, costing one more full selector pass.
+
+  A `pnpm patch` (`patches/@puckeditor__core@0.23.0.patch`) skips the last two when they would change nothing. pnpm fails the install if the patch no longer applies after a Puck upgrade. Both are drafted for upstream below (reports 3 and 4).
+
+### Before and after
+Same page, harness and machine as above. Three runs of each state, interleaved; the ranges are across runs. One round overlapped with other work on the machine, so the upper ends are noisy.
+
+| What (225 nodes) | Before 1.27 | #96 + #97 | + #100 (Puck patch) | Target |
+|---|---|---|---|---|
+| Keystroke → next painted frame | p50 56–80 ms, p95 80–96 ms | p50 48–64 ms, p95 72–96 ms | p50 **40 ms**, p95 **48–64 ms** | within 8 ms of the starter page |
+| Starter page (4 nodes), same measure | p50 24–32 ms | p50 24–32 ms | p50 24–32 ms | – |
+| Long tasks while typing 37 characters | 4–30 (50–69 ms each) | 0, 0, 8 | **none** | none |
+| Drop after dragging a heading: longest task | 167–281 ms | 215–384 ms | 252–310 ms | no long tasks |
+| Undo (50-step history) | p50 66–106 ms, p95 91–138 ms | p50 56–68 ms, p95 72–98 ms | p50 **51–54 ms**, p95 **59–77 ms** | < 100 ms |
+| Redo | p50 66–101 ms, p95 68–128 ms | p50 56–66 ms, p95 66–70 ms | p50 51–53 ms, p95 63–82 ms | < 100 ms |
+| Jump to start / end in Undo History | 84–163 / 83–148 ms | 146–149 / 136–141 ms | **63–98 / 56–89 ms** | < 100 ms |
+| Load the page into the canvas | 1.7–2.8 s | 1.9–2.6 s | 1.8–2.0 s | – |
+| Memory: JS heap / renderer | 73–93 / 296–305 MB | 65–73 / 303–304 MB | 82–87 / 295–296 MB | – |
+
+Against the targets:
+- **Typing has no long tasks.** Keystroke-to-paint is now 8–16 ms above the starter page's, down from 24–56 ms. That narrowly misses the 8 ms target. What remains is Puck's single selector pass per keystroke, which grows with the number of elements on the page.
+- **Undo, redo and jumps are within U7's < 100 ms.**
+- **Jumps without the patch got slower (about 146 ms).** A translated jump is two Puck actions, and each paid for the permissions walk and a selector pass, where one `setData` paid once. With the patch they are the fastest of the three. Translating many-step changes into many actions isn't worth it, which is why `pageActions` hands them to `setData`.
+- **The drop hitch is unchanged (mitigation 5).** A profile of the drop alone shows about 150 ms of React re-rendering every draggable element after the drag ends (Puck's drag state), plus layout. Our part is about 18 ms: recording the move compares the whole page through `syncDraft`. No change on our side removes the rest.
+
+### What next
+- **Selector cost.** Puck's `_experimentalVirtualization` renders only the visible top-level sections. It would cut the selector work roughly in proportion, but it takes off-screen sections out of the DOM (find-in-page, scroll positions, E2E counts). Revisit if pages larger than about 25 sections are common, or when Puck makes it stable.
+- **The drop hitch** needs Puck to stop re-rendering every draggable element when a drag ends. That would be a third patch or upstream work. Not pursued in Phase 1: one hitch per drop of about 0.3 s on a 225-element page is noticeable but rare.
+- **Moves and inserts** could carry a targeted change like text edits do, saving the remaining 18 ms of `syncDraft` per drop. This becomes worthwhile once the drop hitch itself is fixed.
 
 ## Upstream reports (drafts)
 
@@ -67,3 +107,9 @@ Target after the mitigations: no long tasks while typing or dropping on this pag
 
 **2. Rich-text editor ignores an external value change for 200 ms after typing**
 > The rich-text field skips syncing an external value while its "still saving" timer runs (up to 200 ms after the last keystroke). The check is computed at render time, so an app-level undo issued right after typing can be ignored entirely: the canvas keeps the old text while the document has the undone value. Expected: apply external values once the timer ends, or let integrators force a sync. Workaround today: remount the editor of unfocused nodes whose value changed, by keying it with a revision. Puck 0.23.0.
+
+**3. The permissions slice walks the whole page on every change, even without `resolvePermissions`**
+> `resolvePermissions()` with no arguments runs on every `state.data` change. It calls `flattenData` (a full `walkAppState`, including `flattenNode` per element) and starts a promise per element, even when no component and no root config define `resolvePermissions`. On a 225-element page that is about 8 ms per keystroke. Expected: skip the walk when nothing resolves permissions. Puck 0.23.0.
+
+**4. The fields slice re-publishes unchanged fields on every change of the selected element**
+> Without `resolveFields`, `resolveFields()` still calls `setState` with a new `fields` object on every change of the selected element (every keystroke in it), with the same `fields` and `id` as before. Every `useAppStore` selector re-runs; on a 225-element page that's a second full selector pass per keystroke. Expected: skip `setState` when nothing changed. Puck 0.23.0.
