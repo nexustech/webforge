@@ -12,5 +12,10 @@ export const COMMAND_IDS = {
   exportSite: "site.export",
   publish: "site.publish",
   commandBox: "view.commandBox",
+  toggleLeftPanels: "view.toggleLeftPanels",
+  toggleRightPanels: "view.toggleRightPanels",
+  toggleDrawer: "view.toggleDrawer",
+  resetPanels: "view.resetPanels",
+  theme: "view.theme",
   about: "help.about",
 } as const;

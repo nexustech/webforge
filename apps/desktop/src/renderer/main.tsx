@@ -12,10 +12,15 @@ if (container === null) {
 }
 
 document.title = t("app.name");
-const info = await window.webforge.app.getInfo();
+const [info, preferences] = await Promise.all([
+  window.webforge.app.getInfo(),
+  window.webforge.prefs.get(),
+]);
+// The theme before the first paint, so the window never flashes the other one.
+document.documentElement.dataset.theme = preferences.theme;
 
 createRoot(container).render(
   <StrictMode>
-    <App info={info} />
+    <App info={info} preferences={preferences} />
   </StrictMode>,
 );

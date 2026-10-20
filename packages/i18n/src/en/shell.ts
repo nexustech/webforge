@@ -34,4 +34,10 @@ export const shell = {
   "command.publish": "Publish…",
   "command.commandBox": "Search Commands…",
   "command.about": "About Webforge",
+  "command.toggleLeftPanels": "Show or Hide Left Panels",
+  "command.toggleRightPanels": "Show or Hide Right Panels",
+  "command.toggleDrawer": "Show or Hide Bottom Panel",
+  "command.resetPanels": "Reset Panels",
+  "command.lightTheme": "Use Light Theme",
+  "command.darkTheme": "Use Dark Theme",
 } as const;
