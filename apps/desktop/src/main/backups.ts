@@ -4,14 +4,12 @@ import {
   existsSync,
   mkdirSync,
   readdirSync,
-  readFileSync,
   renameSync,
   rmSync,
-  writeFileSync,
+  statSync,
 } from "node:fs";
 import { basename, dirname, extname, join, resolve } from "node:path";
 import type { ProjectStore } from "@webforge/storage";
-import { z } from "zod";
 
 /** A backup of a site, newest first in {@link Backups.list}. */
 export type BackupInfo = {
@@ -22,7 +20,7 @@ export type BackupInfo = {
 
 /** Options of {@link createBackups}. */
 export type BackupOptions = {
-  /** `userData/backups`: one folder per site (project id) below it. */
+  /** `userData/backups`: one folder per site below it. */
   readonly root: string;
   /** How many backups to keep per site (F-SITE-6: "last N"). */
   readonly keep?: number;
@@ -30,21 +28,21 @@ export type BackupOptions = {
 };
 
 const KEEP = 5;
-const SOURCE_FILE = "source.json";
 /** `20261020-153000-123.wforge`: UTC, sortable, safe on every file system. */
 const BACKUP_NAME = /^(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})(\d{2})-(\d{3})\.wforge$/;
+/** A backup that never finished (the app was killed while writing it). */
+const UNFINISHED = /\.tmp$/;
+const UNFINISHED_AGE_MS = 60 * 60 * 1_000;
 
 /**
- * Which site file a backup folder belongs to: a hash of its path, so a damaged file can find its
- * backups without opening it, and no path (which can name the user) is stored.
+ * The folder name for a site file: a hash of its path, so a damaged file finds its backups
+ * without being opened, and no path (which can name the user) is stored.
  */
-const sourceSchema = z.strictObject({ pathHash: z.string().regex(/^[0-9a-f]{64}$/) });
-
-function pathHash(path: string): string {
+function pathKey(path: string): string {
   const full = resolve(path);
   // Windows and macOS paths are case-insensitive; one site must not get two backup folders.
   const normalised = process.platform === "linux" ? full : full.toLowerCase();
-  return createHash("sha256").update(normalised).digest("hex");
+  return createHash("sha256").update(normalised).digest("hex").slice(0, 32);
 }
 
 function backupName(date: Date): string {
@@ -65,8 +63,11 @@ function takenAt(name: string): Date | undefined {
   return new Date(Date.UTC(year ?? 0, (month ?? 1) - 1, day, hours, minutes, seconds, ms));
 }
 
-/** The backups of one folder, newest first. */
+/** The finished backups of one folder, newest first. */
 function backupsIn(folder: string): BackupInfo[] {
+  if (!existsSync(folder)) {
+    return [];
+  }
   return readdirSync(folder)
     .flatMap((name): BackupInfo[] => {
       const date = takenAt(name);
@@ -77,8 +78,9 @@ function backupsIn(folder: string): BackupInfo[] {
 
 /**
  * Rolling backups of open sites (F-SITE-6, 06 "Backups"): copies taken with SQLite's online backup
- * API into `userData/backups/<projectId>/`, the last 5 kept per site. They are the way back when a
- * site file is damaged, e.g. torn by a sync client mid-save (ADR 0003 §4).
+ * API into `userData/backups/<projectId>/<path key>/`, the last 5 kept per site file. Copies of a
+ * `.wforge` share its project id, so the path key keeps each copy's backups apart. They are the
+ * way back when a site file is damaged, e.g. torn by a sync client mid-save (ADR 0003 §4).
  */
 export function createBackups(options: BackupOptions) {
   const keep = options.keep ?? KEEP;
@@ -87,12 +89,8 @@ export function createBackups(options: BackupOptions) {
   return {
     /** Backs up the open site at `sourcePath`, then deletes all but its newest backups. */
     async take(store: ProjectStore, sourcePath: string): Promise<BackupInfo> {
-      const folder = join(options.root, store.info.projectId);
+      const folder = join(options.root, store.info.projectId, pathKey(sourcePath));
       mkdirSync(folder, { recursive: true });
-      writeFileSync(
-        join(folder, SOURCE_FILE),
-        JSON.stringify({ pathHash: pathHash(sourcePath) } satisfies z.infer<typeof sourceSchema>),
-      );
       let date = now();
       // Two backups in the same millisecond (tests, a quick reopen) get distinct names.
       while (existsSync(join(folder, backupName(date)))) {
@@ -102,6 +100,12 @@ export function createBackups(options: BackupOptions) {
       await store.backupTo(path);
       for (const old of backupsIn(folder).slice(keep)) {
         rmSync(old.path, { force: true });
+      }
+      for (const name of readdirSync(folder).filter((entry) => UNFINISHED.test(entry))) {
+        const leftover = join(folder, name);
+        if (date.getTime() - statSync(leftover).mtimeMs > UNFINISHED_AGE_MS) {
+          rmSync(leftover, { force: true });
+        }
       }
       return { path, takenAt: date };
     },
@@ -114,27 +118,18 @@ export function createBackups(options: BackupOptions) {
       if (!existsSync(options.root)) {
         return [];
       }
-      const hash = pathHash(sourcePath);
+      const key = pathKey(sourcePath);
       return readdirSync(options.root, { withFileTypes: true })
         .filter((entry) => entry.isDirectory())
-        .flatMap((entry) => {
-          const folder = join(options.root, entry.name);
-          try {
-            const source = sourceSchema.parse(
-              JSON.parse(readFileSync(join(folder, SOURCE_FILE), "utf8")),
-            );
-            return source.pathHash === hash ? backupsIn(folder) : [];
-          } catch {
-            return [];
-          }
-        })
+        .flatMap((entry) => backupsIn(join(options.root, entry.name, key)))
         .sort((a, b) => b.takenAt.getTime() - a.takenAt.getTime());
     },
 
     /**
      * Puts `backup` in place of the damaged site file at `sitePath`. The damaged file is kept
      * next to it as `<name> (damaged <date>).wforge`, never deleted, so nothing is lost if the
-     * backup turns out older than hoped. Returns the damaged copy's path.
+     * backup turns out older than hoped. The backup is copied under a temporary name first, so a
+     * failed copy leaves the damaged file where it was. Returns the damaged copy's path.
      */
     restore(backup: string, sitePath: string): string {
       const extension = extname(sitePath);
@@ -143,10 +138,17 @@ export function createBackups(options: BackupOptions) {
         dirname(sitePath),
         `${basename(sitePath, extension)} (damaged ${stamp})${extension}`,
       );
+      const incoming = join(dirname(sitePath), `.${basename(sitePath)}.restoring.tmp`);
+      try {
+        copyFileSync(backup, incoming);
+      } catch (error) {
+        rmSync(incoming, { force: true });
+        throw error;
+      }
       if (existsSync(sitePath)) {
         renameSync(sitePath, damaged);
       }
-      copyFileSync(backup, sitePath);
+      renameSync(incoming, sitePath);
       return damaged;
     },
   };

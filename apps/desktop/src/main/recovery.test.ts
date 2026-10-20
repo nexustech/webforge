@@ -44,10 +44,22 @@ describe("openOrRecover", () => {
   });
 
   it("passes other failures through", async () => {
-    const { run, dialogs } = setUp([{ status: "failed", reason: "not-a-project" }], [latest], {});
+    const { run, dialogs } = setUp([{ status: "failed", reason: "newer-format" }], [latest], {});
 
-    await expect(run()).resolves.toEqual({ status: "failed", reason: "not-a-project" });
+    await expect(run()).resolves.toEqual({ status: "failed", reason: "newer-format" });
     expect(dialogs.ask).not.toHaveBeenCalled();
+  });
+
+  it("offers backups for a file whose header was torn off, if it has any", async () => {
+    const notASite: ProjectResult = { status: "failed", reason: "not-a-project" };
+    const torn = setUp([notASite, opened], [latest], { ask: vi.fn(async () => "latest" as const) });
+    await expect(torn.run()).resolves.toEqual(opened);
+    expect(torn.backups.restore).toHaveBeenCalledWith(latest.path, "/sites/Bakery.wforge");
+
+    // Any other file that isn't a site: no backups, so just the usual failure, no message.
+    const other = setUp([notASite], [], {});
+    await expect(other.run()).resolves.toEqual(notASite);
+    expect(other.dialogs.noBackups).not.toHaveBeenCalled();
   });
 
   it("restores the latest backup of a damaged site and opens it", async () => {

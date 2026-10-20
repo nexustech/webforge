@@ -35,8 +35,9 @@ export function recoveryMessage(latest: BackupInfo, locale?: string) {
 }
 
 /**
- * Opens the site at `path`, and if the file is damaged (ADR 0003: e.g. torn by a sync client)
- * offers its backups instead of failing: restore the latest, pick another, or leave it. The
+ * Opens the site at `path`, and if the file is damaged (ADR 0003: e.g. torn by a sync client,
+ * reported as `corrupt`, or as `not-a-project` when the header is gone but backups exist) offers
+ * its backups instead of failing: restore the latest, pick another, or leave it. The
  * damaged file is kept next to the restored one (see {@link Backups.restore}).
  */
 export async function openOrRecover(
@@ -46,13 +47,21 @@ export async function openOrRecover(
   dialogs: RecoveryDialogs,
 ): Promise<ProjectResult> {
   const result = session.open(path);
-  if (result.status !== "failed" || result.reason !== "corrupt") {
+  if (result.status !== "failed") {
+    return result;
+  }
+  // A copy torn in its first page loses SQLite's header and fails as "not a project"; it is still
+  // a damaged site if Webforge has backups of that file.
+  const damaged = result.reason === "corrupt" || result.reason === "not-a-project";
+  if (!damaged) {
     return result;
   }
   const available = backups.list(path);
   const latest = available[0];
   if (latest === undefined) {
-    await dialogs.noBackups();
+    if (result.reason === "corrupt") {
+      await dialogs.noBackups();
+    }
     return result;
   }
   const choice = await dialogs.ask(available);
