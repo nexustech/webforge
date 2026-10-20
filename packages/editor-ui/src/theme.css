@@ -1,0 +1,215 @@
+/*
+ * Webforge editor theme (UI1, research/product/04-editor-look-and-feel.md).
+ *
+ * Our own tokens, written fresh: a dark default and a light alternative, chosen by
+ * `data-theme` on <html>. They use the shadcn/ui variable names, so every shadcn component picks
+ * them up, plus Webforge's own (--panel, --titlebar, --publish…). contrast.test.ts checks every
+ * text and control pair for WCAG AA. Where a UI1 value failed, it was adjusted and the comment
+ * says so.
+ *
+ * Only the editor uses this file. The canvas iframe is isolated (syncHostStyles: false), so these
+ * styles never reach users' pages.
+ */
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* Scan editor-ui's components for classes; apps add their own @source. */
+@source "./";
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* Dark (default). */
+:root,
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --background: #2c3134;
+  --foreground: #ffffff;
+  --panel: #2f3438;
+  --panel-group: #32373a;
+  --tabs: #272d2f;
+  --tab-inactive: #97989a;
+  --titlebar: #3b4248;
+  --toolbar: #4d575f;
+  --canvas-backdrop-inner: #262a2d;
+  --canvas-backdrop-outer: #212527;
+  --card: #24282b;
+  --card-foreground: #ffffff;
+  --popover: #24282b;
+  --popover-foreground: #ffffff;
+  --input: #41474c;
+  --border: #3b4144;
+  --border-strong: #24282b;
+  --muted: #353b3f;
+  --muted-foreground: #b3babd;
+  --secondary: #41474c;
+  --secondary-foreground: #ffffff;
+  --primary: #0a6fb7;
+  --primary-foreground: #ffffff;
+  --accent: rgb(10 111 183 / 0.34);
+  --accent-foreground: #ffffff;
+  --hover: rgb(255 255 255 / 0.05);
+  /* UI1 uses the primary blue; it is 2.4:1 on panels, so the focus ring is a lighter blue
+     (3.4:1 on the toolbar, the lightest surface). */
+  --ring: #6cb6f5;
+  /* UI1's #fd66ff is 2.5:1 on a white page; this magenta is 3.3:1 (same as light). */
+  --selection-outline: #f028f3;
+  --destructive: #c83b3d;
+  --destructive-foreground: #ffffff;
+  --success: #28c174;
+  --warning: #fba929;
+  --info: #3bc0f7;
+  /* UI1's #e23c81 is 2.5:1 on the title bar; lightened for the Publish icon. */
+  --publish: #f06aa6;
+  --save-status: #31c5f0;
+  --disabled: #6e7880;
+  --scrollbar-thumb: #677073;
+  --scrollbar-thumb-hover: #767f82;
+}
+
+/* Light. UI1's light values, darkened where they missed WCAG AA (see contrast.test.ts). */
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --background: #edf0f4;
+  --foreground: #26292b;
+  --panel: #f5f5f5;
+  --panel-group: #eceff2;
+  --tabs: #e5e9ef;
+  --tab-inactive: #5b6168;
+  --titlebar: #d4d8de;
+  --toolbar: #e1e5ea;
+  --canvas-backdrop-inner: #f0f0f0;
+  --canvas-backdrop-outer: #e6e6e6;
+  --card: #ffffff;
+  --card-foreground: #26292b;
+  --popover: #ffffff;
+  --popover-foreground: #26292b;
+  --input: #ffffff;
+  --border: #dadada;
+  --border-strong: #c4c9cf;
+  --muted: #e5e9ef;
+  --muted-foreground: #575d65;
+  --secondary: #e5e9ef;
+  --secondary-foreground: #26292b;
+  --primary: #1d6fd0;
+  --primary-foreground: #ffffff;
+  --accent: rgb(29 111 208 / 0.16);
+  --accent-foreground: #26292b;
+  --hover: rgb(0 0 0 / 0.04);
+  --ring: #1d6fd0;
+  --selection-outline: #f028f3;
+  --destructive: #c42f31;
+  --destructive-foreground: #ffffff;
+  --success: #1b7f49;
+  --warning: #9a5b00;
+  --info: #0a6f96;
+  --publish: #b8236a;
+  --save-status: #08617f;
+  --disabled: #9aa1a8;
+  --scrollbar-thumb: #b9bfc5;
+  --scrollbar-thumb-hover: #a3aab1;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-panel: var(--panel);
+  --color-panel-group: var(--panel-group);
+  --color-tabs: var(--tabs);
+  --color-tab-inactive: var(--tab-inactive);
+  --color-titlebar: var(--titlebar);
+  --color-toolbar: var(--toolbar);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-hover: var(--hover);
+  --color-ring: var(--ring);
+  --color-selection-outline: var(--selection-outline);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+  --color-publish: var(--publish);
+  --color-save-status: var(--save-status);
+  --color-disabled: var(--disabled);
+
+  /* Compact density: 13 px base, 12 px labels and rows, 11 px badges. */
+  --font-sans: system-ui, "Segoe UI", -apple-system, Roboto, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace;
+  --text-2xs: 11px;
+  --text-2xs--line-height: 14px;
+  --text-xs: 12px;
+  --text-xs--line-height: 16px;
+  --text-sm: 13px;
+  --text-sm--line-height: 18px;
+  --text-base: 13px;
+  --text-base--line-height: 18px;
+  --text-lg: 15px;
+  --text-lg--line-height: 20px;
+
+  /* Small corners, like Bootstrap Studio: 3–4 px. */
+  --radius-xs: 2px;
+  --radius-sm: 3px;
+  --radius-md: 3px;
+  --radius-lg: 4px;
+  --radius-xl: 6px;
+}
+
+@utility canvas-backdrop {
+  background: radial-gradient(var(--canvas-backdrop-inner), var(--canvas-backdrop-outer));
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) transparent;
+  }
+
+  html,
+  body {
+    @apply bg-background text-foreground font-sans text-sm antialiased;
+  }
+
+  ::-webkit-scrollbar {
+    width: 7px;
+    height: 7px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    border-radius: 4px;
+    background: var(--scrollbar-thumb);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+  }
+
+  /* Must beat every component's own animation and transition classes. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      /* biome-ignore lint/complexity/noImportantStyles: overrides all component motion. */
+      animation-duration: 0.01ms !important;
+      /* biome-ignore lint/complexity/noImportantStyles: overrides all component motion. */
+      animation-iteration-count: 1 !important;
+      /* biome-ignore lint/complexity/noImportantStyles: overrides all component motion. */
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
