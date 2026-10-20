@@ -1,82 +1,45 @@
+import { app } from "./en/app.js";
+import { canvas } from "./en/canvas.js";
+import { components } from "./en/components.js";
+import { exportSite } from "./en/export.js";
+import { history } from "./en/history.js";
+import { panels } from "./en/panels.js";
+import { puck } from "./en/puck.js";
+import { shell } from "./en/shell.js";
+import { site } from "./en/site.js";
+import { storage } from "./en/storage.js";
+
+/**
+ * The per-area catalogues that make up the English UI strings. Each area lives in its own file under
+ * `src/en/`, so work on different areas adds keys to different files. A key belongs to exactly one
+ * area (checked by a test).
+ */
+export const areas = {
+  app,
+  shell,
+  panels,
+  site,
+  storage,
+  canvas,
+  history,
+  components,
+  export: exportSite,
+  puck,
+} as const;
+
 /**
  * English UI strings. Wording follows the glossary in `research/product/01-terminology.md`.
  * Keys are dotted paths (`area.item`); placeholders use `{name}`.
  */
 export const en = {
-  "app.name": "Webforge",
-  "app.version": "Version {version}",
-  "site.fileType": "Webforge site",
-  "site.newDialogTitle": "New Site",
-  "site.openDialogTitle": "Open Site",
-  "site.untitledName": "My site",
-
-  "editor.canvas": "Page",
-  "editor.undo": "Undo",
-  "editor.redo": "Redo",
-  "editor.undoHistory": "Undo History",
-  "editor.historyStart": "Opened page",
-
-  // Undo step labels (D2): verb + item name.
-  "history.added": "Added {item}",
-  "history.moved": "Moved {item}",
-  "history.deleted": "Deleted {item}",
-  "history.duplicated": "Duplicated {item}",
-  "history.editedText": "Edited {item} text",
-  "history.changed": "Changed {item} {field}",
-  "history.changedPage": "Changed page settings",
-  "history.editedPage": "Edited page",
-
-  "element.heading": "Heading",
-  "element.text": "Text",
-  "element.faqItem": "Question",
-  "section.section": "Section",
-  "section.hero": "Hero",
-  "section.faq": "FAQ",
-  "layout.header": "Header",
-  "layout.footer": "Footer",
-  "field.text": "Text",
-  "field.title": "Title",
-  "field.size": "Size",
-  "field.content": "Content",
-  "field.size.large": "Large",
-  "field.size.medium": "Medium",
-  "field.size.small": "Small",
-  "field.padding": "Padding",
-  "field.padding.small": "Small",
-  "field.padding.medium": "Medium",
-  "field.padding.large": "Large",
-  "field.alignment": "Alignment",
-  "field.alignment.left": "Left",
-  "field.alignment.centre": "Centre",
-  "field.siteName": "Site name",
-  "field.buttonLabel": "Button text",
-  "field.buttonLink": "Button link",
-  "field.image": "Image",
-  "field.imageDescription": "Image description",
-  "field.questions": "Questions",
-  "field.question": "Question",
-  "field.answer": "Answer",
-
-  // Text that appears on the exported site itself.
-  "siteText.navigation": "Main navigation",
-  "siteText.menu": "Menu",
-
-  "starter.heading": "Welcome to our business",
-  "starter.text": "Tell visitors what you do and why they will love it.",
-  "starter.heroTitle": "Fresh ideas, made by hand",
-  "starter.heroText": "Say in one sentence what makes your business special.",
-  "starter.heroButton": "Get in touch",
-  "starter.faqTitle": "Frequently asked questions",
-  "starter.faqQuestion": "When are you open?",
-  "starter.faqAnswer": "Add your opening hours here.",
-  "starter.footer": "Thanks for visiting.",
-
-  "export.button": "Export site",
-  "export.dialogTitle": "Choose a folder for your site",
-  "export.working": "Exporting…",
-  "export.done": "Site exported to “{folder}” ({files} files).",
-  "export.failed.folderNotEmpty":
-    "That folder already contains other files. Choose an empty folder or a previous export.",
-  "export.failed.buildFailed": "Your site could not be built. Nothing was changed on disk.",
-  "export.failed.writeFailed": "Your site could not be saved to that folder.",
+  ...app,
+  ...shell,
+  ...panels,
+  ...site,
+  ...storage,
+  ...canvas,
+  ...history,
+  ...components,
+  ...exportSite,
+  ...puck,
 } as const;

@@ -1,12 +1,12 @@
 import { t } from "@webforge/i18n";
-import type { SiteSnapshot } from "@webforge/model";
-import { siteLibrary, starterPage } from "@webforge/site-components";
+import { type SiteSnapshot, siteToSnapshot } from "@webforge/model";
+import { siteLibrary } from "@webforge/site-components";
 import { useEffect, useState } from "react";
 import type { AppInfo, ExportResult } from "../shared/ipc-contract.js";
 import { Editor, type EditorProps } from "./editor/Editor.js";
 import { createEditorSession } from "./editor/editor-session.js";
+import { starterSite } from "./editor/starter-site.js";
 import { ExportButton } from "./export/ExportButton.js";
-import { singlePageSnapshot } from "./export/site-snapshot.js";
 
 /** Props of {@link App}. */
 export type AppProps = {
@@ -21,7 +21,7 @@ const exportWithPreload = (snapshot: SiteSnapshot) => window.webforge.site.expor
 
 /** Root component of the editor window. */
 export function App({ info, createEngine, exportSite = exportWithPreload }: AppProps) {
-  const [session] = useState(() => createEditorSession(siteLibrary, starterPage()));
+  const [session] = useState(() => createEditorSession(siteLibrary, starterSite()));
 
   useEffect(() => {
     // Vite replaces MODE at build time, so normal builds drop this branch and the module with it.
@@ -36,10 +36,9 @@ export function App({ info, createEngine, exportSite = exportWithPreload }: AppP
         <h1 className="app__title">{t("app.name")}</h1>
         <p className="app__version">{t("app.version", { version: info.version })}</p>
         <ExportButton
+          // No media yet (1.16 adds images and their bytes).
           onExport={() =>
-            exportSite(
-              singlePageSnapshot(t("site.untitledName"), session.history.document.getState().page),
-            )
+            exportSite(siteToSnapshot(session.history.document.getState(), new Map()))
           }
         />
       </header>

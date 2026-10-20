@@ -2,12 +2,13 @@
   "name": "@webforge/tools",
   "version": "0.0.0",
   "private": true,
-  "description": "Repository scripts: licence check (later: release, fixture generation)",
+  "description": "Repository scripts: licence check, UI-string guard (later: release, fixture generation)",
   "type": "module",
   "dependencies": {
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@swc/core": "1.16.18",
     "@types/node": "catalog:",
     "vitest": "catalog:"
   }

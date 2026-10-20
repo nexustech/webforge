@@ -30,3 +30,9 @@ allowBuilds:
   lefthook: true
   # Squirrel.Windows installer helper pulled in by electron-builder; we ship NSIS only.
   electron-winstaller: false
+
+# Puck 0.23 re-walks the whole page for permissions and re-publishes unchanged sidebar fields on
+# every change; the patch skips both when nothing uses them (ADR 0007). pnpm fails the install if
+# the patch no longer applies, e.g. after a Puck upgrade: check whether it is still needed then.
+patchedDependencies:
+  '@puckeditor/core@0.23.0': patches/@puckeditor__core@0.23.0.patch
