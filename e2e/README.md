@@ -8,6 +8,7 @@ End-to-end tests with Playwright: the real desktop app (Playwright's Electron su
 | `app/export.spec.ts` | **Export site** from the editor: the page is built in the export utility process and written to the chosen folder; folders with other files are refused |
 | `export/` | `export.setup.ts` exports the two-page fixture site (with photo) through the app; `exported-site.spec.ts` then opens it from disk (`file://`) in Chromium, Firefox and WebKit with the network blocked: styles, fonts, image, links, mobile menu, FAQ keyboard access, axe (X1, C8) |
 | `packaged/` | Tests of the packaged app (`pnpm e2e:packaged`): opens a `.wforge` passed on the command line |
+| `perf/` | Large-page performance check (`pnpm e2e:perf`): typing, dragging, undo/redo and memory on a 225-element page against architecture §10 ([ADR 0007](../docs/adr/0007-large-page-performance.md)). On demand only, not in CI |
 
 Visual-regression and template accessibility suites (`e2e/visual/`, `e2e/a11y/`, standards §5) will join this workspace later.
 
@@ -31,6 +32,12 @@ pnpm e2e:packaged
 ```
 
 This packages the app with `electron-builder --dir` (asar, Fuses, unpacked better-sqlite3) and runs `packaged/` against the packaged executable on Windows or macOS. Fuses switch off `--inspect`, so these tests start the executable themselves and connect over the Chrome DevTools Protocol; they reach the renderer only ([ADR 0003](../docs/adr/0003-wforge-sqlite-storage.md)).
+
+```sh
+pnpm e2e:perf
+```
+
+This builds the app in perf mode (`electron-vite build --mode perf`, which adds the `__webforgePerf` hooks for loading a large page and adding history steps) and runs `perf/`. Results are printed and written to `perf-results/large-page.json` (git-ignored; outside `test-results/`, which every Playwright run empties). Budget misses fail softly, so every measurement is still recorded. Timings depend on the machine; compare runs on the same one. Afterwards run `pnpm e2e` (or rebuild) before the other tests: the smoke test checks that normal builds don't contain the hooks.
 
 ## Writing tests
 - Launch the app with `launchDesktopApp()` from `app/launch.ts`.

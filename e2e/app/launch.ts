@@ -3,7 +3,8 @@ import { createRequire } from "node:module";
 import { join } from "node:path";
 import { type ElectronApplication, _electron as electron } from "@playwright/test";
 
-const desktopDir = join(import.meta.dirname, "../../apps/desktop");
+/** The desktop app's folder; its production build is in `out/`. */
+export const desktopDir = join(import.meta.dirname, "../../apps/desktop");
 const desktopPackageJson = join(desktopDir, "package.json");
 
 /** Version of the desktop app, as the main process reports it through `app.getVersion()`. */

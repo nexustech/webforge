@@ -11,7 +11,8 @@
     "preview": "electron-vite preview",
     "package:win": "electron-vite build && electron-builder --win",
     "package:mac": "electron-vite build && electron-builder --mac",
-    "package:dir": "electron-vite build && electron-builder --dir"
+    "package:dir": "electron-vite build && electron-builder --dir",
+    "build:perf": "electron-vite build --mode perf"
   },
   "dependencies": {
     "better-sqlite3": "catalog:"
