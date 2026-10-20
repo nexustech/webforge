@@ -34,8 +34,8 @@ A desktop builder for non-technical small-business owners that produces self-con
 ## Commands (pnpm 12, run from the repo root)
 - `pnpm dev`: start the desktop app with hot reload.
 - `pnpm check`: the static checks and unit tests CI runs (`lint`, `typecheck`, `deps`, `knip`, `licence-check`, `test`). Run it before opening a PR.
-- `pnpm e2e`: builds the desktop app and runs the Playwright tests: the Electron app (`e2e/app/`) and the exported fixture site opened from disk in Chromium, Firefox and WebKit (`e2e/export/`). Also run in CI. Run it when touching main, preload, the renderer bootstrap, security settings, site components or the pipeline. First time: `pnpm --filter @webforge/e2e exec playwright install chromium firefox webkit`.
-- `pnpm e2e:packaged`: packages the app (`electron-builder --dir`) and runs `e2e/packaged/` against it (CI on Windows + macOS). Run it when touching packaging, Fuses or native modules.
+- `pnpm e2e`: builds the desktop app and runs the Playwright tests: the Electron app (`e2e/app/`) and the exported fixture site opened from disk in Chromium, Firefox and WebKit (`e2e/export/`). Also run in CI (Linux on PRs; Linux + Windows on `main` and `full-ci` PRs). Run it when touching main, preload, the renderer bootstrap, security settings, site components or the pipeline. First time: `pnpm --filter @webforge/e2e exec playwright install chromium firefox webkit`.
+- `pnpm e2e:packaged`: packages the app (`electron-builder --dir`) and runs `e2e/packaged/` against it (CI on Windows + macOS, on `main` and `full-ci` PRs only). Run it when touching packaging, Fuses or native modules, and label the PR `full-ci`.
 - `pnpm e2e:perf`: builds the app in perf mode and runs the large-page performance check (`e2e/perf/`, ADR 0007). On demand only, not in CI. Run it before and after performance work and when upgrading Puck.
 - `pnpm format`: apply Biome fixes. `pnpm build`: build all workspaces.
 - `/plan-next [phase or item IDs]` (Claude Code command in `.claude/commands/`): plan the next block of work from `spec/04-implementation-plan.md` and the live GitHub milestones and issues. It presents a plan for approval before changing anything.
@@ -44,6 +44,8 @@ A desktop builder for non-technical small-business owners that produces self-con
 ## Workflow
 - Conventional Commits (`feat(history): …`), enforced by commitlint in a lefthook `commit-msg` hook.
 - Short-lived branches, PRs into `main`, squash merge.
+- **CI cost (GitHub Free):** Windows minutes count 2× and macOS 10×, so PRs run only the Linux `Check` and `E2E` jobs. **Label a PR `full-ci`** when it touches packaging, Fuses, native modules or OS-specific code (file paths, dialogs, `safeStorage`, installers); that adds the Windows and macOS jobs. They also run on `main` after a merge, and from "Run workflow" (`gh workflow run ci.yml --ref <branch>`). Docs-only and draft PRs skip CI; open PRs as drafts while iterating to save minutes.
+  - **Currently paused (since 2026-10-20, billing):** the Windows and macOS jobs run only while the repository variable `FULL_CI_ENABLED` is `true`. It is unset, so CI is Linux-only everywhere and the `full-ci` label does nothing. Until the product owner says the billing cycle has reset, run `pnpm e2e` locally on Windows for OS-specific changes, and say in the PR that Windows/macOS CI didn't run. To resume: `gh variable set FULL_CI_ENABLED --repo nexustech/webforge --body true`.
 - **`main` is not branch-protected** (GitHub Free plan, private repo), so nothing technically stops a direct push. Always working through PRs with green CI is a **team convention**: never push or merge to `main` directly.
 - Record new architectural decisions as ADRs in `docs/adr/`.
 
