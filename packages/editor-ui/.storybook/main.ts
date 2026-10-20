@@ -7,7 +7,8 @@ import tailwindcss from "@tailwindcss/vite";
  */
 const config: StorybookConfig = {
   framework: "@storybook/react-vite",
-  stories: ["../src/**/*.stories.tsx"],
+  // The editor UI's components, and the desktop shell built from them (title bar, panel layout).
+  stories: ["../src/**/*.stories.tsx", "../../../apps/desktop/src/renderer/**/*.stories.tsx"],
   addons: ["@storybook/addon-a11y", "@storybook/addon-themes"],
   core: {
     // Webforge makes no network requests it doesn't need, the workshop included.
