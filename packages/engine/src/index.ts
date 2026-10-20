@@ -1,4 +1,5 @@
 export type {
+  CanvasAction,
   CanvasEngine,
   DocChange,
   EditorMode,
@@ -7,6 +8,7 @@ export type {
   EnginePatch,
   HistoryCommand,
   HistoryCommandHandler,
+  InsertPoint,
   MountOptions,
   Unsubscribe,
   Viewport,

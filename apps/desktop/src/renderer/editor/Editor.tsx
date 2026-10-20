@@ -8,7 +8,10 @@ import { t } from "@webforge/i18n";
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import { useCommandRegistry } from "../shell/command-context.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
+import { installCommandShortcuts } from "../shell/commands.js";
 import { usePanelRegistry } from "../shell/panel-context.js";
+import { addSection } from "./add-section.js";
+import { registerCanvasCommands } from "./canvas-commands.js";
 import {
   connectEngine,
   currentPage,
@@ -43,50 +46,15 @@ export function Editor({
   const canvasRef = useRef<HTMLDivElement>(null);
   const connectionRef = useRef<EngineConnection | null>(null);
   const { history } = session;
+  const registry = useCommandRegistry();
   const state = useSyncExternalStore(
     history.state.subscribe,
     history.state.getState,
     history.state.getState,
   );
 
-  useEffect(() => {
-    const container = canvasRef.current;
-    if (container === null) {
-      return;
-    }
-    // A fresh element per mount, so React's StrictMode remount never reuses an unmounting root.
-    const element = document.createElement("div");
-    element.className = "editor__canvas-root";
-    container.append(element);
-
-    const engine = createEngine();
-    const site = history.document.getState();
-    engine.mount(element, { library: session.library, theme: site.theme });
-    const page = currentPage(session);
-    if (page !== undefined) {
-      engine.loadPage(page.doc, site.layout);
-    }
-    const connection = connectEngine(engine, session);
-    connectionRef.current = connection;
-    const stopSiteCss = connectSiteCss(engine, session, compileCss, document.baseURI);
-    // One handler for the whole window (U4); the engine reports keys pressed inside its iframe.
-    const removeKeys = installHistoryKeys(window, (command) => {
-      connection.flush();
-      return runHistoryCommand(session, command);
-    });
-
-    return () => {
-      stopSiteCss();
-      removeKeys();
-      connectionRef.current = null;
-      connection.disconnect();
-      engine.destroy();
-      element.remove();
-    };
-  }, [session, history, createEngine, compileCss]);
-
-  // Undo and Redo live in the title bar, the Edit menu and the command box (1.2).
-  const registry = useCommandRegistry();
+  // Undo and Redo live in the title bar, the Edit menu and the command box (1.2); registered
+  // before the canvas's own commands so they head the Edit menu.
   useEffect(() => {
     const runCommand = (command: HistoryCommand) => {
       connectionRef.current?.flush();
@@ -117,6 +85,65 @@ export function Editor({
     registry.update(COMMAND_IDS.undo, { enabled: state.canUndo });
     registry.update(COMMAND_IDS.redo, { enabled: state.canRedo });
   }, [registry, state.canUndo, state.canRedo]);
+
+  useEffect(() => {
+    const container = canvasRef.current;
+    if (container === null) {
+      return;
+    }
+    // A fresh element per mount, so React's StrictMode remount never reuses an unmounting root.
+    const element = document.createElement("div");
+    element.className = "editor__canvas-root";
+    container.append(element);
+
+    const engine = createEngine();
+    const site = history.document.getState();
+    engine.mount(element, { library: session.library, theme: site.theme });
+    const page = currentPage(session);
+    if (page !== undefined) {
+      engine.loadPage(page.doc, site.layout);
+    }
+    const connection = connectEngine(engine, session);
+    connectionRef.current = connection;
+    const stopSiteCss = connectSiteCss(engine, session, compileCss, document.baseURI);
+    // One handler for the whole window (U4); the engine reports keys pressed inside its iframe.
+    const removeKeys = installHistoryKeys(window, (command) => {
+      connection.flush();
+      return runHistoryCommand(session, command);
+    });
+    // Keyboard actions on the selected element (1.12), in the Edit menu and the command box; their
+    // shortcuts also work while the canvas iframe has focus.
+    const canvasCommands = registerCanvasCommands(registry, engine, connection.flush);
+    canvasCommands.setHasSelection(session.ui.getState().nodeId !== null);
+    const stopSelectionWatch = session.ui.subscribe((ui) =>
+      canvasCommands.setHasSelection(ui.nodeId !== null),
+    );
+    let removeFrameShortcuts: (() => void) | undefined;
+    const stopFrameWindow = engine.onFrameWindow((frameWindow) => {
+      removeFrameShortcuts?.();
+      removeFrameShortcuts =
+        frameWindow === null ? undefined : installCommandShortcuts(frameWindow, registry);
+    });
+    // The floating + adds a section; the Add panel (1.13) will open at that point instead.
+    const stopAdd = engine.onAddRequest((at) => {
+      connection.flush();
+      addSection(session, at);
+    });
+
+    return () => {
+      stopAdd();
+      stopFrameWindow();
+      removeFrameShortcuts?.();
+      stopSelectionWatch();
+      canvasCommands.remove();
+      stopSiteCss();
+      removeKeys();
+      connectionRef.current = null;
+      connection.disconnect();
+      engine.destroy();
+      element.remove();
+    };
+  }, [session, history, createEngine, compileCss, registry]);
 
   // Undo History goes in the left column's bottom (UI1); 1.11 rebuilds it.
   const panels = usePanelRegistry();

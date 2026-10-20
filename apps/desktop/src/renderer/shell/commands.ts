@@ -158,18 +158,79 @@ export function formatShortcut(shortcut: string, mac = isMac()): string {
   return [mod && "Ctrl", alt && "Alt", shift && "Shift", name].filter(Boolean).join("+");
 }
 
+/** Tags that use plain keys (arrows, Delete) themselves. */
+const CONTROL_TAGS: ReadonlySet<string> = new Set(["INPUT", "TEXTAREA", "SELECT", "BUTTON", "A"]);
+
+/** Roles of widgets that use plain keys themselves (lists, trees, menus, sliders, …). */
+const CONTROL_ROLES: ReadonlySet<string> = new Set([
+  "button",
+  "checkbox",
+  "combobox",
+  "grid",
+  "link",
+  "listbox",
+  "menu",
+  "menubar",
+  "menuitem",
+  "option",
+  "radio",
+  "radiogroup",
+  "scrollbar",
+  "separator",
+  "slider",
+  "spinbutton",
+  "switch",
+  "tab",
+  "tablist",
+  "textbox",
+  "tree",
+  "treeitem",
+]);
+
 /**
- * Runs registered commands from their shortcuts on `target`. Listens in the bubble phase, so keys
- * that something else already handled (text fields, the history keys) never run a command twice.
+ * Whether a key press goes to a control that uses plain keys itself: a field, editable text, a
+ * button, a list, a menu or a slider. A focused element that is only selectable (such as the
+ * canvas's selected element) isn't one. Duck-typed, because a key pressed in the canvas iframe comes
+ * from another window, where `instanceof` fails.
+ */
+function isFocusedControl(target: EventTarget | null): boolean {
+  const element = target as {
+    isContentEditable?: boolean;
+    tagName?: string;
+    getAttribute?: (name: string) => string | null;
+  } | null;
+  // A draggable item (the canvas's elements, dnd-kit's role="button") takes arrows only while it
+  // is being dragged with the keyboard, which then stops them first.
+  if (element?.getAttribute?.("aria-roledescription") === "draggable") {
+    return false;
+  }
+  return (
+    element?.isContentEditable === true ||
+    CONTROL_TAGS.has(element?.tagName ?? "") ||
+    CONTROL_ROLES.has(element?.getAttribute?.("role") ?? "")
+  );
+}
+
+/**
+ * Runs registered commands from their shortcuts on `target` (the editor window, or the canvas
+ * iframe's). Listens in the bubble phase, so keys that something else already handled (text fields,
+ * the history keys) never run a command twice. Shortcuts without `Mod` (arrows, Delete) don't run
+ * while a control that uses those keys has focus: a text field, editable text, a list or a menu.
  */
 export function installCommandShortcuts(target: Window, registry: CommandRegistry): () => void {
   const onKeyDown = (event: KeyboardEvent) => {
     if (event.defaultPrevented || event.repeat) {
       return;
     }
+    const inControl = isFocusedControl(event.target);
     const command = registry
       .list()
-      .find((entry) => entry.shortcut !== undefined && matchesShortcut(event, entry.shortcut));
+      .find(
+        (entry) =>
+          entry.shortcut !== undefined &&
+          (!inControl || parseShortcut(entry.shortcut).mod) &&
+          matchesShortcut(event, entry.shortcut),
+      );
     if (command !== undefined && registry.run(command.id)) {
       event.preventDefault();
     }

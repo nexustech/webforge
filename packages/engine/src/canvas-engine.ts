@@ -70,6 +70,21 @@ export type HistoryCommand = "undo" | "redo" | "cancel";
  */
 export type HistoryCommandHandler = (command: HistoryCommand) => boolean | undefined | void;
 
+/**
+ * What the user can do to the selected element from the keyboard (1.12): select the element
+ * before or after it in the page, move it within its list, duplicate it or delete it.
+ */
+export type CanvasAction =
+  | "selectPrevious"
+  | "selectNext"
+  | "moveUp"
+  | "moveDown"
+  | "duplicate"
+  | "delete";
+
+/** Where the floating + asks to add a section: a position in the page's top-level list. */
+export type InsertPoint = { readonly index: number };
+
 /** Options of {@link CanvasEngine.mount}. */
 export type MountOptions = {
   readonly library: ComponentLibrary;
@@ -98,6 +113,19 @@ export interface CanvasEngine {
    */
   setSiteCss(css: string, bodyClass: string): void;
   setMode(mode: EditorMode): void;
+  /**
+   * Does `action` to the selected element. Edits are reported through {@link onUserEdit} as one
+   * step each, like the same action done with the mouse. Returns false if there is nothing to do:
+   * no selection, the end of the list, or an action Content mode doesn't allow.
+   */
+  perform(action: CanvasAction): boolean;
+  /** The floating + between sections was clicked; the app decides what to add there. */
+  onAddRequest(cb: (at: InsertPoint) => void): Unsubscribe;
+  /**
+   * The canvas iframe's window whenever it changes (`null` when it goes), so the app can handle its
+   * keyboard shortcuts there too.
+   */
+  onFrameWindow(cb: (frameWindow: Window | null) => void): Unsubscribe;
   renderStatic(page: PageDoc, layout: LayoutDoc): string;
   destroy(): void;
 }
