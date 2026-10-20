@@ -1,7 +1,15 @@
 import { z } from "zod";
 
+/** At most this many panel groups, and panels per group, are remembered. */
+const MAX_LAYOUT_ENTRIES = 32;
+
+const fewEntries = (record: Record<string, unknown>) =>
+  Object.keys(record).length <= MAX_LAYOUT_ENTRIES;
+
 /** A panel group's sizes: panel id → percentage of the group (react-resizable-panels' layout). */
-const panelGroupLayoutSchema = z.record(z.string().min(1).max(64), z.number().min(0).max(100));
+const panelGroupLayoutSchema = z
+  .record(z.string().min(1).max(64), z.number().min(0).max(100))
+  .refine(fewEntries);
 
 /**
  * One person's editor preferences (per user, not per site; T2). Stored by main in
@@ -13,7 +21,7 @@ export const preferencesSchema = z.strictObject({
   /** Simple hides Layers, the Advanced tab and Custom Code (T2, 1.10). */
   editorLevel: z.enum(["simple", "advanced"]),
   /** Remembered panel sizes, by panel group id. Empty means the default layout. */
-  panelLayout: z.record(z.string().min(1).max(64), panelGroupLayoutSchema),
+  panelLayout: z.record(z.string().min(1).max(64), panelGroupLayoutSchema).refine(fewEntries),
 });
 
 /** One person's editor preferences. */

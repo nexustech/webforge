@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -21,11 +21,11 @@ export function newUserDataDir(): string {
 /**
  * Launches the built desktop app (`apps/desktop/out`) with the Electron version the app depends on.
  * The app runs as it does in production: it loads the renderer from file://, not a dev server.
- * Its user data goes to `userDataDir` (a new temporary folder by default), never the tester's own.
+ * Its user data goes to `userDataDir`, never the tester's own. Without one, it gets a new
+ * temporary folder that is deleted when the app closes; a test that restarts the app passes its
+ * own folder (from {@link newUserDataDir}) and deletes it.
  */
-export async function launchDesktopApp(
-  userDataDir: string = newUserDataDir(),
-): Promise<ElectronApplication> {
+export async function launchDesktopApp(userDataDir?: string): Promise<ElectronApplication> {
   if (!existsSync(join(desktopDir, "out/main/index.js"))) {
     throw new Error("apps/desktop is not built: run `pnpm e2e` from the repository root");
   }
@@ -38,10 +38,15 @@ export async function launchDesktopApp(
         entry[1] !== undefined && entry[0] !== "ELECTRON_RENDERER_URL",
     ),
   );
-  return electron.launch({
+  const userData = userDataDir ?? newUserDataDir();
+  const app = await electron.launch({
     executablePath,
-    args: [desktopDir, `--user-data-dir=${userDataDir}`],
+    args: [desktopDir, `--user-data-dir=${userData}`],
     cwd: desktopDir,
     env,
   });
+  if (userDataDir === undefined) {
+    app.on("close", () => rmSync(userData, { recursive: true, force: true }));
+  }
+  return app;
 }

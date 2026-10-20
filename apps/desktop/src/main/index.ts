@@ -135,11 +135,16 @@ async function start(): Promise<void> {
   await app.whenReady();
   hardenSession(session.defaultSession);
   const preferences = await openPreferencesStore(join(app.getPath("userData"), "preferences.json"));
+  let windowTheme = preferences.get().theme;
   registerPreferencesHandlers(
     ipcMain,
     (senderUrl) => isAppUrl(senderUrl, appUrl),
     preferences,
     ({ theme }) => {
+      if (theme === windowTheme) {
+        return;
+      }
+      windowTheme = theme;
       // The native window controls follow the theme (macOS's traffic lights need nothing).
       for (const window of BrowserWindow.getAllWindows()) {
         window.setBackgroundColor(windowBackground(theme));

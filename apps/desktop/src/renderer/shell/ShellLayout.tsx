@@ -108,7 +108,6 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
   const drawer = useRef<ResizablePanelHandle | null>(null);
   const leftSplit = useRef<ResizablePanelGroupHandle | null>(null);
   const rightSplit = useRef<ResizablePanelGroupHandle | null>(null);
-  const columns = useRef<ResizablePanelGroupHandle | null>(null);
   /**
    * When the person last asked for a layout change through a command (toggle, Reset Panels).
    * Only their own changes are saved: the library also reports automatic ones, such as the first
@@ -176,7 +175,8 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
     registry.update(COMMAND_IDS.toggleRightPanels, { enabled: showRight });
   }, [registry, showLeft, showRight]);
 
-  // A remembered layout only fits while the same columns are shown.
+  // A remembered layout only fits while the same columns are shown; when a column appears later,
+  // the library applies the matching layout then.
   const columnIds = [showLeft && "left", "center", showRight && "right"].filter(
     (id): id is string => id !== false,
   );
@@ -187,15 +187,6 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
     columnIds.every((id) => id in savedColumns)
       ? savedColumns
       : undefined;
-
-  // A column that appears after the first render (its area added a panel) gets its remembered size.
-  const columnKey = columnIds.join();
-  // biome-ignore lint/correctness/useExhaustiveDependencies: only when the set of columns changes; the saved layout changes on every resize.
-  useEffect(() => {
-    if (columnsLayout !== undefined) {
-      columns.current?.setLayout(columnsLayout);
-    }
-  }, [columnKey]);
 
   /**
    * Saves a group's sizes when the person changed them (dragging, the arrow keys or a command),
@@ -252,7 +243,6 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
   return (
     <ResizablePanelGroup
       id={PANEL_GROUPS.columns}
-      groupRef={columns}
       orientation="horizontal"
       className="bg-panel-group"
       {...(columnsLayout === undefined ? {} : { defaultLayout: columnsLayout })}

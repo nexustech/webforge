@@ -7,7 +7,10 @@ import type { ExportResult, PreferencesChange } from "../shared/ipc-contract.js"
 import { App } from "./App.js";
 import { createFakeEngine } from "./editor/fake-engine.test-helper.js";
 
-afterEach(() => cleanup());
+afterEach(() => {
+  cleanup();
+  delete document.documentElement.dataset.theme;
+});
 
 const compileCss = vi.fn(async () => ({ status: "failed" as const }));
 

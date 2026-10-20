@@ -93,13 +93,21 @@ describe("ShellLayout", () => {
     expect(onLayoutChange).not.toHaveBeenCalled();
   });
 
-  it("uses a remembered column layout only while the same columns are shown", () => {
-    renderLayout({
+  it("gives columns that appear after the first render their remembered sizes", async () => {
+    const { panels } = renderLayout({
       filled: false,
-      layout: { [PANEL_GROUPS.columns]: { left: 30, center: 40, right: 30 } },
+      layout: { [PANEL_GROUPS.columns]: { left: 30, center: 45, right: 25 } },
+    });
+    const flexOf = (id: string) =>
+      document.querySelector<HTMLElement>(`[data-panel][id="${id}"]`)?.style.flexGrow;
+
+    await act(async () => {
+      fillColumns(panels);
+      await new Promise((resolve) => requestAnimationFrame(resolve));
     });
 
-    expect(screen.getByText("Canvas")).toBeTruthy();
+    expect(flexOf("left")).toBe("30");
+    expect(flexOf("right")).toBe("25");
   });
 
   it("shows a slot's panels as tabs, and Advanced-only ones only in Advanced mode", async () => {

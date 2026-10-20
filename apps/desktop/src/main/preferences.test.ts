@@ -30,6 +30,8 @@ describe("parsePreferences", () => {
       panelLayout: { "shell.columns": { left: 20, center: 60, right: 20 } },
     });
     expect(parsePreferences({ panelLayout: { group: { panel: 250 } } }).panelLayout).toEqual({});
+    const tooMany = Object.fromEntries(Array.from({ length: 33 }, (_, i) => [`g${i}`, {}]));
+    expect(parsePreferences({ panelLayout: tooMany }).panelLayout).toEqual({});
   });
 });
 
