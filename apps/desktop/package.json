@@ -32,6 +32,7 @@
     "@webforge/i18n": "workspace:*",
     "@webforge/model": "workspace:*",
     "@webforge/pipeline": "workspace:*",
+    "@webforge/publish": "workspace:*",
     "@webforge/site-components": "workspace:*",
     "@webforge/storage": "workspace:*",
     "@webforge/test-utils": "workspace:*",
