@@ -1,15 +1,16 @@
-import type { EngineEdit } from "@webforge/engine";
-import type { PageDoc } from "@webforge/model";
+import type { PageDoc, PageId, SiteDoc } from "@webforge/model";
 import { siteLibrary, starterPage } from "@webforge/site-components";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   connectEngine,
   createEditorSession,
-  labelFor,
+  currentPage,
+  type EditKind,
   runHistoryCommand,
   TEXT_SESSION_GRACE_MS,
 } from "./editor-session.js";
 import { createFakeEngine } from "./fake-engine.test-helper.js";
+import { starterSite } from "./starter-site.js";
 
 const withHeadingText = (page: PageDoc, text: string): PageDoc => {
   const section = page.content[0];
@@ -29,11 +30,33 @@ const withHeadingText = (page: PageDoc, text: string): PageDoc => {
   };
 };
 
+/** The starter site plus a second page, "about", with one heading. */
+function siteWithAbout(): { site: SiteDoc; about: PageId } {
+  const site = starterSite();
+  const about = "page-about" as PageId;
+  const home = site.pages[site.homePageId];
+  if (home === undefined) throw new Error("no home page");
+  const doc: PageDoc = {
+    root: { props: {} },
+    content: [{ type: "Heading", props: { id: "about-heading", text: "About us" } }],
+  };
+  return {
+    site: {
+      ...site,
+      pages: { ...site.pages, [about]: { ...home, id: about, slug: "about", title: "About", doc } },
+      pageOrder: [...site.pageOrder, about],
+    },
+    about,
+  };
+}
+
 function setup() {
-  const session = createEditorSession(siteLibrary, starterPage());
+  const { site, about } = siteWithAbout();
+  const session = createEditorSession(siteLibrary, site);
+  const home = site.homePageId;
   const engine = createFakeEngine();
   const connection = connectEngine(engine, session);
-  const doc = () => session.history.document.getState().page;
+  const doc = () => currentPage(session)?.doc as PageDoc;
   const labels = () => session.history.entries().map((entry) => entry.label);
   const typeHeading = (text: string, selection: string | null = "heading-1") =>
     engine.edit({
@@ -44,37 +67,8 @@ function setup() {
       page: withHeadingText(doc(), text),
       selection,
     });
-  return { session, engine, connection, doc, labels, typeHeading };
+  return { session, engine, connection, doc, labels, typeHeading, home, about };
 }
-
-describe("labelFor", () => {
-  const edit = (kind: EngineEdit["kind"], extra: Partial<EngineEdit> = {}): EngineEdit => ({
-    kind,
-    nodeId: "x",
-    componentType: "Heading",
-    field: null,
-    page: starterPage(),
-    selection: null,
-    ...extra,
-  });
-
-  it.each([
-    ["insert", {}, "Added Heading"],
-    ["move", {}, "Moved Heading"],
-    ["remove", {}, "Deleted Heading"],
-    ["duplicate", {}, "Duplicated Heading"],
-    ["text", { field: "text" }, "Edited Heading text"],
-    ["props", { field: "size" }, "Changed Heading size"],
-    ["props", { field: "unknown" }, "Edited page"],
-    ["props", { field: null }, "Edited page"],
-    ["root", { componentType: null }, "Changed page settings"],
-    ["page", { componentType: null }, "Edited page"],
-    ["insert", { componentType: "Custom" }, "Added Custom"],
-    ["insert", { componentType: null }, "Added "],
-  ] as const)("labels a %s edit %o as %s", (kind, extra, expected) => {
-    expect(labelFor(edit(kind, extra), siteLibrary)).toBe(expected);
-  });
-});
 
 describe("connectEngine", () => {
   beforeEach(() => {
@@ -155,7 +149,7 @@ describe("connectEngine", () => {
     vi.advanceTimersByTime(TEXT_SESSION_GRACE_MS);
 
     expect(labels()).toEqual(["Edited Heading text"]);
-    expect(session.ui.getState().selection).toBe("text-1");
+    expect(session.ui.getState().nodeId).toBe("text-1");
     session.history.undo();
     expect(doc()).toEqual(starterPage());
   });
@@ -169,7 +163,7 @@ describe("connectEngine", () => {
     vi.advanceTimersByTime(TEXT_SESSION_GRACE_MS);
 
     expect(labels()).toEqual(["Edited Heading text"]);
-    expect(session.history.entries()[0]?.selectionAfter).toBe("heading-1");
+    expect(session.history.entries()[0]?.selectionAfter.nodeId).toBe("heading-1");
     session.history.undo();
     expect(doc()).toEqual(starterPage());
   });
@@ -218,7 +212,7 @@ describe("connectEngine", () => {
 
     session.history.undo();
 
-    expect(session.ui.getState().selection).toBe("heading-1");
+    expect(session.ui.getState().nodeId).toBe("heading-1");
     expect(engine.select).toHaveBeenLastCalledWith("heading-1");
   });
 
@@ -247,6 +241,161 @@ describe("connectEngine", () => {
 
     expect(labels()).toEqual(["Edited Heading text"]);
     expect(engine.applied).toHaveLength(appliedBefore);
+  });
+});
+
+describe("pages, selection and device view (U3)", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const editAbout = (engine: ReturnType<typeof setup>["engine"], text: string) =>
+    engine.edit({
+      kind: "text",
+      nodeId: "about-heading",
+      componentType: "Heading",
+      field: "text",
+      page: {
+        root: { props: {} },
+        content: [{ type: "Heading", props: { id: "about-heading", text } }],
+      },
+      selection: "about-heading",
+      patch: { nodeId: "about-heading", field: "text", value: text },
+    });
+
+  it("records canvas edits on the page being shown", () => {
+    const { session, engine, home, about } = setup();
+    session.showPage(about);
+
+    editAbout(engine, "About Webforge");
+
+    const site = session.history.document.getState();
+    expect(site.pages[about]?.doc.content[0]?.props.text).toBe("About Webforge");
+    expect(site.pages[home]?.doc).toEqual(starterPage());
+  });
+
+  it("loads the page into the canvas when another page is shown, not as an undo step", () => {
+    const { session, engine, about } = setup();
+
+    session.showPage(about);
+
+    expect(engine.loadPage).toHaveBeenLastCalledWith(
+      session.history.document.getState().pages[about]?.doc,
+      session.history.document.getState().layout,
+    );
+    expect(session.history.entries()).toEqual([]);
+  });
+
+  it("ignores pages that don't exist and the page already shown", () => {
+    const { session, engine, home } = setup();
+
+    session.showPage(home);
+    session.showPage("page-missing" as PageId);
+
+    expect(engine.loadPage).not.toHaveBeenCalled();
+    expect(session.ui.getState().pageId).toBe(home);
+  });
+
+  it("goes back to the page, element and device view of an undone edit", () => {
+    const { session, engine, home, about } = setup();
+    session.showPage(about);
+    session.ui.setState({ viewport: "mobile" });
+    engine.selectFromCanvas("about-heading");
+    editAbout(engine, "Changed");
+    engine.selectFromCanvas(null);
+    vi.advanceTimersByTime(TEXT_SESSION_GRACE_MS);
+    session.showPage(home);
+    session.ui.setState({ viewport: "desktop" });
+
+    session.history.undo();
+
+    expect(session.ui.getState()).toEqual({
+      pageId: about,
+      nodeId: "about-heading",
+      viewport: "mobile",
+    });
+    expect(engine.loadPage).toHaveBeenLastCalledWith(
+      session.history.document.getState().pages[about]?.doc,
+      expect.anything(),
+    );
+    expect(engine.setViewport).toHaveBeenLastCalledWith("mobile");
+    expect(engine.select).toHaveBeenLastCalledWith("about-heading");
+  });
+
+  it("keeps the restored element selected while the canvas loads the page", () => {
+    const { session, engine, about } = setup();
+    session.showPage(about);
+    engine.selectFromCanvas("about-heading");
+    editAbout(engine, "Changed");
+    session.showPage(session.history.document.getState().homePageId);
+    // The engine clears its selection while it loads a page.
+    vi.mocked(engine.loadPage).mockImplementation(() => engine.selectFromCanvas(null));
+
+    session.history.undo();
+
+    expect(session.ui.getState().nodeId).toBe("about-heading");
+  });
+
+  it("ends a text session when another page is shown", () => {
+    const { session, labels, typeHeading, about } = setup();
+    typeHeading("A");
+    vi.advanceTimersByTime(2_000);
+    typeHeading("AB");
+
+    session.showPage(about);
+
+    expect(labels()).toEqual(["Edited Heading text"]);
+  });
+
+  it("ignores canvas edits when the page shown no longer exists", () => {
+    const { session, engine } = setup();
+    session.ui.setState({ pageId: "page-gone" as PageId });
+
+    editAbout(engine, "Lost");
+
+    expect(session.history.entries()).toEqual([]);
+  });
+});
+
+describe("onEntryAdded", () => {
+  it("reports each new entry with its kind, but not edits merged into the current one", () => {
+    const { session, engine, typeHeading } = setup();
+    const added: [string, EditKind][] = [];
+    const stop = session.onEntryAdded((entry, kind) => added.push([entry.label, kind]));
+
+    typeHeading("A");
+    typeHeading("AB");
+    engine.edit({
+      kind: "remove",
+      componentType: "Section",
+      page: { ...starterPage(), content: [] },
+    });
+    stop();
+    session.history.undo();
+    engine.edit({
+      kind: "remove",
+      componentType: "Section",
+      page: { ...starterPage(), content: [] },
+    });
+
+    expect(added).toEqual([
+      ["Edited Heading text", "text"],
+      ["Deleted Section", "remove"],
+    ]);
+  });
+
+  it("reports nothing for an edit that changes nothing", () => {
+    const { session, engine, doc } = setup();
+    const listener = vi.fn();
+    session.onEntryAdded(listener);
+
+    engine.edit({ kind: "move", componentType: "Heading", page: doc() });
+
+    expect(listener).not.toHaveBeenCalled();
   });
 });
 

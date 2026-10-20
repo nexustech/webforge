@@ -5,8 +5,8 @@ import { type ElectronApplication, expect, type Page, test } from "@playwright/t
 import { launchDesktopApp } from "./launch.js";
 import { stubFileDialogs } from "./sites.js";
 
-// Export from the editor: the canvas page is built in the export utility process and written to
-// the folder chosen in the (stubbed) dialog.
+// Export from the editor: the open site is built in the export utility process and written to the
+// folder chosen in the (stubbed) dialog.
 
 let app: ElectronApplication;
 let page: Page;
@@ -24,19 +24,20 @@ test.afterAll(async () => {
 });
 
 test.describe("Export site", () => {
-  test("builds the page on the canvas into a self-contained folder", async () => {
+  test("builds the open site into a self-contained folder", async () => {
     const folder = join(parent, "my-site");
     await stubFileDialogs(app, folder);
 
     await page.getByRole("button", { name: "Export site" }).click();
 
-    await expect(page.getByText("Site exported to “my-site” (5 files).")).toBeVisible({
+    await expect(page.getByText("Site exported to “my-site” (6 files).")).toBeVisible({
       timeout: 30_000,
     });
     const index = readFileSync(join(folder, "index.html"), "utf8");
     expect(index).toContain("<!doctype html>");
     expect(index).toContain("Welcome to our business");
     expect(index).toMatch(/<script defer src="assets\/js\/webforge\.[0-9a-f]{10}\.js">/);
+    expect(readFileSync(join(folder, "404.html"), "utf8")).toContain("<title>Page not found");
     expect(readdirSync(join(folder, "assets")).sort()).toEqual(["css", "fonts", "js"]);
     expect(existsSync(join(folder, ".webforge-export"))).toBe(true);
   });
