@@ -33,6 +33,16 @@ export const SCHEMA: readonly string[] = [
   kind TEXT NOT NULL,
   blob_hash TEXT NOT NULL REFERENCES blobs (hash)
 ) STRICT, WITHOUT ROWID`,
+  // Imported media: which blob holds each item's original, with what the import measured. Alt text,
+  // focal point and crop live in the site document instead, so editing them is undoable.
+  `CREATE TABLE assets (
+  media_id TEXT PRIMARY KEY NOT NULL,
+  blob_hash TEXT NOT NULL REFERENCES blobs (hash),
+  mime TEXT NOT NULL,
+  width INTEGER,
+  height INTEGER,
+  original_name TEXT NOT NULL
+) STRICT, WITHOUT ROWID`,
   `CREATE TABLE versions (
   id TEXT PRIMARY KEY NOT NULL,
   name TEXT NOT NULL,
