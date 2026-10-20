@@ -7,6 +7,9 @@ import { Editor, type EditorProps } from "./editor/Editor.js";
 import { createEditorSession } from "./editor/editor-session.js";
 import { starterSite } from "./editor/starter-site.js";
 import { ExportButton } from "./export/ExportButton.js";
+import type { LoadedSite } from "./storage/load-site.js";
+import { SaveStatus } from "./storage/SaveStatus.js";
+import { type AutosaveApi, useAutosave } from "./storage/use-autosave.js";
 
 /** Props of {@link App}. */
 export type AppProps = {
@@ -15,13 +18,27 @@ export type AppProps = {
   readonly createEngine?: EditorProps["createEngine"];
   /** Exports a site; injectable for tests. Defaults to the preload API. */
   readonly exportSite?: (snapshot: SiteSnapshot) => Promise<ExportResult>;
+  /** The site to edit, read from the open site file at start-up; the starter site by default. */
+  readonly loaded?: LoadedSite;
+  /** Saves the site; injectable for tests. Defaults to the preload API. */
+  readonly autosaveApi?: AutosaveApi;
 };
 
 const exportWithPreload = (snapshot: SiteSnapshot) => window.webforge.site.export(snapshot);
 
 /** Root component of the editor window. */
-export function App({ info, createEngine, exportSite = exportWithPreload }: AppProps) {
-  const [session] = useState(() => createEditorSession(siteLibrary, starterSite()));
+export function App({
+  info,
+  createEngine,
+  exportSite = exportWithPreload,
+  loaded: loadedSite,
+  autosaveApi,
+}: AppProps) {
+  const [loaded] = useState<LoadedSite>(
+    () => loadedSite ?? { kind: "memory", site: starterSite() },
+  );
+  const [session] = useState(() => createEditorSession(siteLibrary, loaded.site));
+  const saveStatus = useAutosave(session, loaded, autosaveApi);
 
   useEffect(() => {
     // Vite replaces MODE at build time, so normal builds drop this branch and the module with it.
@@ -35,6 +52,7 @@ export function App({ info, createEngine, exportSite = exportWithPreload }: AppP
       <header className="app__header">
         <h1 className="app__title">{t("app.name")}</h1>
         <p className="app__version">{t("app.version", { version: info.version })}</p>
+        {saveStatus === undefined ? null : <SaveStatus status={saveStatus} />}
         <ExportButton
           // No media yet (1.16 adds images and their bytes).
           onExport={() =>

@@ -16,7 +16,12 @@ export const desktopVersion: string = (
  * Launches the built desktop app (`apps/desktop/out`) with the Electron version the app depends on.
  * The app runs as it does in production: it loads the renderer from file://, not a dev server.
  */
-export async function launchDesktopApp(): Promise<ElectronApplication> {
+export async function launchDesktopApp(
+  options: {
+    /** Extra command-line arguments, e.g. a `.wforge` path as a double-click passes it. */
+    readonly args?: readonly string[];
+  } = {},
+): Promise<ElectronApplication> {
   if (!existsSync(join(desktopDir, "out/main/index.js"))) {
     throw new Error("apps/desktop is not built: run `pnpm e2e` from the repository root");
   }
@@ -29,5 +34,10 @@ export async function launchDesktopApp(): Promise<ElectronApplication> {
         entry[1] !== undefined && entry[0] !== "ELECTRON_RENDERER_URL",
     ),
   );
-  return electron.launch({ executablePath, args: [desktopDir], cwd: desktopDir, env });
+  return electron.launch({
+    executablePath,
+    args: [desktopDir, ...(options.args ?? [])],
+    cwd: desktopDir,
+    env,
+  });
 }
