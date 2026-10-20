@@ -56,10 +56,11 @@ export function CommandBox({ siteName }: CommandBoxProps) {
       <button
         type="button"
         className="flex h-7 w-full max-w-md min-w-40 items-center gap-2 rounded-md bg-input px-2 text-sm outline-none hover:bg-input/80 focus-visible:ring-2 focus-visible:ring-ring"
-        aria-label={t("shell.commandBox.open")}
         aria-haspopup="dialog"
         onClick={() => setOpen(true)}
       >
+        {/* Named by its content, so the name includes the visible site name (WCAG 2.5.3). */}
+        <span className="sr-only">{t("shell.commandBox.open")}</span>
         <SearchIcon className="size-4 shrink-0 text-muted-foreground" />
         <span className="min-w-0 flex-1 truncate text-left">{siteName}</span>
         <kbd className="font-sans text-xs text-muted-foreground">

@@ -29,7 +29,7 @@ describe("App", () => {
     renderApp();
 
     expect(screen.getByRole("heading", { level: 1, name: "Webforge" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Search commands" }).textContent).toContain(
+    expect(screen.getByRole("button", { name: /^Search commands/ }).textContent).toContain(
       "My site",
     );
     expect(screen.getByRole("main")).toBeTruthy();
