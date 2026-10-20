@@ -90,6 +90,29 @@ export function siteFromDocuments(
 }
 
 /**
+ * The site `changes` would leave behind (`site` is `undefined` for a new, still empty project),
+ * unvalidated: what the main process checks with
+ * `siteDocSchema` before it commits changes from the renderer, so the file never holds a broken
+ * site (a page order naming a deleted page, a change of the wrong kind).
+ */
+export function applySiteChanges(
+  site: SiteDoc | undefined,
+  changes: readonly SiteDocumentChange[],
+): unknown {
+  const documents = new Map<string, SiteDocument>(
+    (site === undefined ? [] : siteDocuments(site)).map((document) => [document.id, document]),
+  );
+  for (const change of changes) {
+    if (change.type === "put") {
+      documents.set(change.id, { id: change.id, kind: change.kind, content: change.content });
+    } else {
+      documents.delete(change.id);
+    }
+  }
+  return siteFromDocuments([...documents.values()]);
+}
+
+/**
  * The documents that differ between two states of a site, found by reference: the history keeps
  * unchanged parts of the tree as the same objects (Immer structural sharing), so `!==` is exact and
  * cheap. Without `previous`, every document is new.

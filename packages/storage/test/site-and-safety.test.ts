@@ -42,8 +42,10 @@ describe("ProjectStore.readSite and saveSite", () => {
   it("saves a whole site and reads it back after reopening", () => {
     const { store, path } = newStore();
     const site = newSite();
+    expect(store.isEmpty()).toBe(true);
 
     store.saveSite(site);
+    expect(store.isEmpty()).toBe(false);
     store.close();
 
     const reopened = ProjectStore.open(path);

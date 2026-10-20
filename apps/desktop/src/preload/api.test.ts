@@ -1,3 +1,4 @@
+import { changedDocuments, createSite } from "@webforge/model";
 import { describe, expect, it, vi } from "vitest";
 import { createWebforgeApi } from "./api.js";
 
@@ -17,23 +18,47 @@ describe("createWebforgeApi", () => {
   });
 
   it("calls the site channels and returns their parsed results", async () => {
-    const project = { name: "Bakery", fileName: "Bakery.wforge", formatVersion: 1 };
+    const project = {
+      name: "Bakery",
+      fileName: "Bakery.wforge",
+      formatVersion: 1,
+      syncService: "onedrive",
+    };
+    const site = createSite({
+      name: "Bakery",
+      language: "en",
+      homeTitle: "Home",
+      notFoundTitle: "Page not found",
+    });
     const responses: Record<string, unknown> = {
       "project:create": { status: "opened", project },
       "project:open": { status: "canceled" },
       "project:get-current": null,
+      "project:read-site": { status: "ok", site },
+      "project:commit": { status: "saved" },
     };
-    const api = createWebforgeApi(async (channel) => responses[channel]);
+    const invoke = vi.fn(async (channel: string, ..._args: unknown[]) => responses[channel]);
+    const api = createWebforgeApi(invoke);
 
     await expect(api.project.create()).resolves.toEqual({ status: "opened", project });
     await expect(api.project.open()).resolves.toEqual({ status: "canceled" });
     await expect(api.project.getCurrent()).resolves.toBeNull();
+    await expect(api.project.readSite()).resolves.toEqual({ status: "ok", site });
+    const changes = changedDocuments(undefined, site);
+    await expect(api.project.commit(changes)).resolves.toEqual({ status: "saved" });
+    expect(invoke).toHaveBeenLastCalledWith("project:commit", changes);
   });
 
   it("rejects a site result that does not match the contract", async () => {
     const api = createWebforgeApi(async () => ({ status: "opened", project: { path: "C:\\" } }));
 
     await expect(api.project.open()).rejects.toThrow();
+  });
+
+  it("rejects a site from main that is not a valid site", async () => {
+    const api = createWebforgeApi(async () => ({ status: "ok", site: { formatVersion: 1 } }));
+
+    await expect(api.project.readSite()).rejects.toThrow();
   });
 });
 

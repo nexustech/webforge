@@ -108,5 +108,6 @@ test("the packaged app opens a .wforge passed on the command line", async () => 
     name: "Packaged check",
     fileName: "Packaged check.wforge",
     formatVersion: 1,
+    syncService: null,
   });
 });
