@@ -123,6 +123,12 @@ export const projectChannels = {
     request: z.tuple([z.array(siteDocumentChangeSchema).max(10_000)]),
     response: commitResultSchema,
   },
+  /** The renderer's answer to `app:flush`: every change is saved, the window may close. */
+  projectFlushed: {
+    channel: "project:flushed",
+    request: z.tuple([z.int().positive()]),
+    response: z.null(),
+  },
 } as const;
 
 /** `window.webforge.project`. */

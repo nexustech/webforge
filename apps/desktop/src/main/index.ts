@@ -15,6 +15,7 @@ import {
 import { createCanvasCssCompiler, registerCanvasHandlers } from "./canvas-css.js";
 import { type ExportDialogs, registerExportHandlers } from "./export-ipc.js";
 import { runExportInWorker } from "./export-worker-client.js";
+import { createFlushOnClose } from "./flush-on-close.js";
 import { registerIpcHandler } from "./ipc.js";
 import { type ProjectDialogs, registerProjectHandlers } from "./project-ipc.js";
 import { findProjectArgument, PROJECT_EXTENSION, ProjectSession } from "./project-session.js";
@@ -44,6 +45,14 @@ app.on("web-contents-created", (_event, contents) => {
 });
 
 const projectSession = new ProjectSession();
+
+// Set once the user quits, so a window that held its close back for a last save quits the app
+// afterwards (macOS keeps the app running when its last window closes).
+let quitting = false;
+app.on("before-quit", () => {
+  quitting = true;
+});
+let flushOnClose: ReturnType<typeof createFlushOnClose> | undefined;
 const projectFilters = [{ name: t("site.fileType"), extensions: [PROJECT_EXTENSION.slice(1)] }];
 
 // Dialogs are modal to the focused window. E2E tests replace dialog.showSaveDialog and
@@ -117,6 +126,8 @@ function createMainWindow(): void {
   window.once("ready-to-show", () => {
     window.show();
   });
+  // Autosave writes the last changes before the window closes (P2).
+  flushOnClose?.install(window);
   const load =
     devServerUrl === undefined ? window.loadFile(rendererHtml) : window.loadURL(devServerUrl);
   // A failed or aborted load (e.g. a reload while loading) is not fatal; the window stays open.
@@ -141,6 +152,11 @@ async function start(): Promise<void> {
     projectDialogs,
   );
   registerCanvasHandlers(ipcMain, (senderUrl) => isAppUrl(senderUrl, appUrl), compileCanvasCss);
+  flushOnClose = createFlushOnClose(ipcMain, (senderUrl) => isAppUrl(senderUrl, appUrl), {
+    onClosed: () => {
+      if (quitting) app.quit();
+    },
+  });
   registerExportHandlers(
     ipcMain,
     (senderUrl) => isAppUrl(senderUrl, appUrl),

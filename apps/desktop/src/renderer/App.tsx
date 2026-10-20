@@ -11,6 +11,8 @@ import { AboutDialog } from "./shell/AboutDialog.js";
 import { CommandRegistryProvider } from "./shell/command-context.js";
 import { createCommandRegistry, installCommandShortcuts } from "./shell/commands.js";
 import { TitleBar } from "./shell/TitleBar.js";
+import { AutosaveStatus } from "./storage/AutosaveStatus.js";
+import type { LoadedSite } from "./storage/load-site.js";
 
 /** Props of {@link App}. */
 export type AppProps = {
@@ -21,13 +23,21 @@ export type AppProps = {
   readonly compileCss?: EditorProps["compileCss"];
   /** Exports a site; injectable for tests. Defaults to the preload API. */
   readonly exportSite?: (snapshot: SiteSnapshot) => Promise<ExportResult>;
+  /** The site read from the open site file at start-up (1.6); the starter site otherwise. */
+  readonly loaded?: LoadedSite;
 };
 
 const exportWithPreload = (snapshot: SiteSnapshot) => window.webforge.site.export(snapshot);
 
 /** Root component of the editor window: the title bar over the editor. */
-export function App({ info, createEngine, compileCss, exportSite = exportWithPreload }: AppProps) {
-  const [session] = useState(() => createEditorSession(siteLibrary, starterSite()));
+export function App({
+  info,
+  createEngine,
+  compileCss,
+  exportSite = exportWithPreload,
+  loaded,
+}: AppProps) {
+  const [session] = useState(() => createEditorSession(siteLibrary, loaded?.site ?? starterSite()));
   const [registry] = useState(createCommandRegistry);
   const siteName = useSyncExternalStore(
     session.history.document.subscribe,
@@ -56,7 +66,10 @@ export function App({ info, createEngine, compileCss, exportSite = exportWithPre
     <CommandRegistryProvider registry={registry}>
       <TooltipProvider>
         <div className="flex h-full flex-col">
-          <TitleBar siteName={siteName} />
+          <TitleBar
+            siteName={siteName}
+            saveStatus={<AutosaveStatus session={session} loaded={loaded} />}
+          />
           <main className="min-h-0 flex-1">
             <Editor
               session={session}
