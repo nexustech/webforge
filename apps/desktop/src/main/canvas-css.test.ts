@@ -98,6 +98,29 @@ describe("createCanvasCssCompiler", () => {
   });
 });
 
+describe("createCanvasCssCompiler after a timeout", () => {
+  it("doesn't let the stopped worker's exit fail the new worker's requests", async () => {
+    vi.useFakeTimers();
+    const old = fakeWorker();
+    const fresh = fakeWorker();
+    const start = vi.fn().mockReturnValueOnce(old.worker).mockReturnValueOnce(fresh.worker);
+    const compile = createCanvasCssCompiler(start, 1_000);
+
+    const stuck = compile(request([]));
+    vi.advanceTimersByTime(1_000);
+    const next = compile(request(["btn"]));
+    old.exit();
+    // A late answer from the stopped worker doesn't count either.
+    old.answer({ type: "css", id: fresh.jobs[0]?.id, css: ".old{}", bodyClass: "" });
+    fresh.answer({ type: "css", id: fresh.jobs[0]?.id, css: ".btn{}", bodyClass: "" });
+
+    expect(await stuck).toEqual({ status: "failed" });
+    expect(await next).toEqual({ status: "compiled", css: ".btn{}", bodyClass: "" });
+    expect(old.worker.kill).toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+});
+
 describe("registerCanvasHandlers", () => {
   it("compiles for the app's own page only", async () => {
     type Handler = (event: IpcMainInvokeEvent, ...args: unknown[]) => Promise<unknown>;

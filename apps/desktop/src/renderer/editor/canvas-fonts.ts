@@ -8,11 +8,8 @@ const FONT_FILES: Readonly<Record<string, string>> = {
   "inter-latin-700-normal.woff2": interBold,
 };
 
-/** `url("webforge-font:<file name>")`, as the worker writes it (see {@link CANVAS_FONT_URL}). */
-const FONT_REFERENCE = /url\("webforge-font:([^"]+)"\)/g;
-if (!FONT_REFERENCE.source.includes(CANVAS_FONT_URL)) {
-  throw new Error("FONT_REFERENCE must match CANVAS_FONT_URL");
-}
+/** `url("<CANVAS_FONT_URL><file name>")`, as the worker writes it. The prefix has no regex syntax. */
+const FONT_REFERENCE = new RegExp(String.raw`url\("${CANVAS_FONT_URL}([^"]+)"\)`, "g");
 
 /**
  * Points the compiled CSS's fonts at the editor's own font files, as absolute URLs: the canvas

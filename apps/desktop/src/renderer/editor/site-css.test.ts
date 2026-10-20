@@ -124,12 +124,32 @@ describe("connectSiteCss", () => {
     expect(engine.setSiteCss).toHaveBeenCalledWith(".css1{}", "bg-base-100");
   });
 
-  it("keeps the last styles when a compile fails", async () => {
-    const { engine, reply } = setup(() => ({ status: "failed" }));
+  it("keeps the last styles when a compile fails, and tries again after the next change", async () => {
+    const { engine, compile, reply, edit } = setup(() => ({ status: "failed" }));
 
     await reply(0);
-
     expect(engine.setSiteCss).not.toHaveBeenCalled();
+
+    // Same classes, but the last compile failed.
+    edit("Edited Heading text", (draft) => {
+      const heading = firstHeading(draft);
+      if (heading !== undefined) heading.text = "Again";
+    });
+    expect(compile).toHaveBeenCalledTimes(2);
+  });
+
+  it("handles a compile call that rejects, and tries again after the next change", async () => {
+    const session = createEditorSession(siteLibrary, starterSite());
+    const compile = vi.fn(() => Promise.reject(new Error("IPC failed")));
+    connectSiteCss(createFakeEngine(), session, compile, BASE);
+    await Promise.resolve();
+
+    session.history.run("Changed site name", (draft) => {
+      draft.settings.general.name = "Bakery";
+    });
+    vi.advanceTimersByTime(SITE_CSS_DEBOUNCE_MS);
+
+    expect(compile).toHaveBeenCalledTimes(2);
   });
 
   it("stops listening and ignores late answers once stopped", async () => {

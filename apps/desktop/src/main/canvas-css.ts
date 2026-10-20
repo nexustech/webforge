@@ -31,7 +31,11 @@ export function createCanvasCssCompiler(
 ): CanvasCssCompiler {
   let worker: CssWorkerProcess | null = null;
   let nextId = 0;
-  const pending = new Map<number, (outcome: CompileCssOutcome | null) => void>();
+  /** Requests waiting for an answer, with the worker each was sent to. */
+  const pending = new Map<
+    number,
+    { readonly worker: CssWorkerProcess; finish(outcome: CompileCssOutcome | null): void }
+  >();
 
   const running = (): CssWorkerProcess => {
     if (worker !== null) {
@@ -40,15 +44,19 @@ export function createCanvasCssCompiler(
     const started = startWorker();
     started.on("message", (message) => {
       const outcome = compileCssOutcomeSchema.safeParse(message);
-      if (outcome.success) {
-        pending.get(outcome.data.id)?.(outcome.data);
+      const request = outcome.success ? pending.get(outcome.data.id) : undefined;
+      if (outcome.success && request?.worker === started) {
+        request.finish(outcome.data);
       }
     });
     started.on("exit", () => {
       if (worker === started) {
         worker = null;
       }
-      for (const finish of [...pending.values()]) finish(null);
+      // Only its own requests: a newer worker may already be answering others.
+      for (const request of [...pending.values()]) {
+        if (request.worker === started) request.finish(null);
+      }
     });
     worker = started;
     return started;
@@ -57,6 +65,7 @@ export function createCanvasCssCompiler(
   return (request) =>
     new Promise((resolve) => {
       const id = nextId++;
+      const target = running();
       const finish = (outcome: CompileCssOutcome | null) => {
         clearTimeout(timer);
         pending.delete(id);
@@ -69,11 +78,11 @@ export function createCanvasCssCompiler(
       const timer = setTimeout(() => {
         finish(null);
         // A stuck worker is replaced on the next request.
-        worker?.kill();
-        worker = null;
+        if (worker === target) worker = null;
+        target.kill();
       }, timeoutMs);
-      pending.set(id, finish);
-      running().postMessage({ type: "compile-css", id, ...request });
+      pending.set(id, { worker: target, finish });
+      target.postMessage({ type: "compile-css", id, ...request });
     });
 }
 
