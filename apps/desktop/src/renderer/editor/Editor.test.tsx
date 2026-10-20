@@ -36,6 +36,7 @@ describe("Editor", () => {
   let engine: FakeEngine;
   let registry: CommandRegistry;
   let panels: PanelRegistry;
+  let createEngine: () => FakeEngine;
 
   beforeEach(async () => {
     container = document.createElement("div");
@@ -43,7 +44,7 @@ describe("Editor", () => {
     root = createRoot(container);
     session = createEditorSession(siteLibrary, starterSite());
     engine = createFakeEngine();
-    const createEngine = () => engine;
+    createEngine = () => engine;
     registry = createCommandRegistry();
     panels = createPanelRegistry();
     await act(async () =>
@@ -84,6 +85,28 @@ describe("Editor", () => {
     });
     expect(canvas?.querySelector(".editor__canvas-root")).not.toBeNull();
     expect(engine.loadPage).toHaveBeenCalledWith(starterPage(), site.layout);
+  });
+
+  it("passes Design or Content mode to the engine, without remounting it", async () => {
+    expect(engine.setMode).toHaveBeenLastCalledWith("design");
+
+    await act(async () =>
+      root.render(
+        <CommandRegistryProvider registry={registry}>
+          <PanelRegistryProvider registry={panels}>
+            <Editor
+              session={session}
+              createEngine={createEngine}
+              compileCss={compileCss}
+              mode="content"
+            />
+          </PanelRegistryProvider>
+        </CommandRegistryProvider>,
+      ),
+    );
+
+    expect(engine.setMode).toHaveBeenLastCalledWith("content");
+    expect(engine.mount).toHaveBeenCalledOnce();
   });
 
   it("styles the canvas with the site's compiled CSS", () => {

@@ -20,6 +20,8 @@ import type {
   ProjectResult,
   ProjectSummary,
   ReadSiteResult,
+  SiteUiState,
+  UiStateResult,
 } from "../shared/ipc-contract.js";
 
 /** File extension of a Webforge site (P1). */
@@ -184,6 +186,30 @@ export class ProjectSession {
     }
     this.#site = next.data;
     return { status: "saved" };
+  }
+
+  /** The open site's editor state, or `null` without an open site. */
+  uiState(): SiteUiState | null {
+    return this.#store === undefined ? null : { editorMode: this.#store.readEditorMode() };
+  }
+
+  /** Remembers the editor state with the open site (not a site change: never versioned). */
+  setUiState(state: SiteUiState): UiStateResult {
+    const store = this.#store;
+    if (store === undefined) {
+      return { status: "failed", reason: "no-site" };
+    }
+    try {
+      store.writeEditorMode(state.editorMode);
+      return { status: "saved" };
+    } catch (error) {
+      if (error instanceof ReadOnlyProjectError) {
+        return { status: "failed", reason: "read-only" };
+      }
+      const code = error instanceof Error && "code" in error ? String(error.code) : "no code";
+      console.error(`Webforge could not remember the editor mode (${code})`);
+      return { status: "failed", reason: "unknown" };
+    }
   }
 
   /** Closes the open site, if any. */

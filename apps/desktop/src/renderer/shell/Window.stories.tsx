@@ -5,6 +5,7 @@ import { CommandButton } from "./CommandButton.js";
 import { CommandRegistryProvider } from "./command-context.js";
 import { COMMAND_IDS } from "./command-ids.js";
 import { type Command, createCommandRegistry } from "./commands.js";
+import { ModeToggle } from "./ModeToggle.js";
 import { PanelRegistryProvider } from "./panel-context.js";
 import { createPanelRegistry, type Panel } from "./panels.js";
 import { ShellLayout } from "./ShellLayout.js";
@@ -112,6 +113,8 @@ function Window() {
             }
             tools={
               <>
+                <ModeToggle mode="design" onModeChange={noop} />
+                <div className="mx-1 h-5 w-px bg-border" aria-hidden />
                 <CommandButton
                   commandId={COMMAND_IDS.toggleLeftPanels}
                   icon={<PanelLeftIcon />}

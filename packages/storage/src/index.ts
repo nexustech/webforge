@@ -9,6 +9,7 @@ export {
   type OpenProjectOptions,
   type ProjectInfo,
   ProjectStore,
+  type SiteEditorMode,
   type StoredBlob,
   type StoredDocument,
   type VersionInfo,

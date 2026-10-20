@@ -1,11 +1,12 @@
 import {
   type CanvasEngine,
   createPuckEngine,
+  type EditorMode,
   type HistoryCommand,
   installHistoryKeys,
 } from "@webforge/engine";
 import { t } from "@webforge/i18n";
-import { useEffect, useRef, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useCommandRegistry } from "../shell/command-context.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { usePanelRegistry } from "../shell/panel-context.js";
@@ -26,6 +27,8 @@ export type EditorProps = {
   readonly createEngine?: () => CanvasEngine;
   /** Compiles the site CSS for the canvas; injectable for tests. Defaults to the preload API. */
   readonly compileCss?: CompileCanvasCss;
+  /** Design or Content mode (M3, 1.10): passed to the engine, which locks the layout in Content. */
+  readonly mode?: EditorMode;
 };
 
 const compileWithPreload: CompileCanvasCss = (request) =>
@@ -39,8 +42,10 @@ export function Editor({
   session,
   createEngine = createPuckEngine,
   compileCss = compileWithPreload,
+  mode = "design",
 }: EditorProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
+  const [engine, setEngine] = useState<CanvasEngine | null>(null);
   const connectionRef = useRef<EngineConnection | null>(null);
   const { history } = session;
   const state = useSyncExternalStore(
@@ -68,6 +73,7 @@ export function Editor({
     }
     const connection = connectEngine(engine, session);
     connectionRef.current = connection;
+    setEngine(engine);
     const stopSiteCss = connectSiteCss(engine, session, compileCss, document.baseURI);
     // One handler for the whole window (U4); the engine reports keys pressed inside its iframe.
     const removeKeys = installHistoryKeys(window, (command) => {
@@ -76,6 +82,7 @@ export function Editor({
     });
 
     return () => {
+      setEngine(null);
       stopSiteCss();
       removeKeys();
       connectionRef.current = null;
@@ -84,6 +91,10 @@ export function Editor({
       element.remove();
     };
   }, [session, history, createEngine, compileCss]);
+
+  useEffect(() => {
+    engine?.setMode(mode);
+  }, [engine, mode]);
 
   // Undo and Redo live in the title bar, the Edit menu and the command box (1.2).
   const registry = useCommandRegistry();

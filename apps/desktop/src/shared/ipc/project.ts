@@ -88,6 +88,27 @@ const commitResultSchema = z.discriminatedUnion("status", [
 /** Outcome of saving changes to the open site. */
 export type CommitResult = z.infer<typeof commitResultSchema>;
 
+/**
+ * The open site's editor state that isn't part of the site (1.10): remembered with the site, but
+ * never versioned or undone. Design changes the layout; Content edits text and images only (M3).
+ */
+const siteUiStateSchema = z.strictObject({ editorMode: z.enum(["design", "content"]) });
+
+/** The open site's editor state that isn't part of the site. */
+export type SiteUiState = z.infer<typeof siteUiStateSchema>;
+
+/** Outcome of remembering the editor state with the open site. */
+const uiStateResultSchema = z.discriminatedUnion("status", [
+  z.strictObject({ status: z.literal("saved") }),
+  z.strictObject({
+    status: z.literal("failed"),
+    reason: z.enum(["no-site", "read-only", "unknown"]),
+  }),
+]);
+
+/** Outcome of remembering the editor state with the open site. */
+export type UiStateResult = z.infer<typeof uiStateResultSchema>;
+
 /** IPC channels of the `project` domain (`project:*`). */
 export const projectChannels = {
   /** Asks where to save a new site (save dialog in main), creates it and makes it current. */
@@ -123,6 +144,18 @@ export const projectChannels = {
     request: z.tuple([z.array(siteDocumentChangeSchema).max(10_000)]),
     response: commitResultSchema,
   },
+  /** The open site's editor state (Design or Content mode), or `null` without an open site. */
+  getUiState: {
+    channel: "project:get-ui-state",
+    request: z.tuple([]),
+    response: siteUiStateSchema.nullable(),
+  },
+  /** Remembers the editor state with the open site. */
+  setUiState: {
+    channel: "project:set-ui-state",
+    request: z.tuple([siteUiStateSchema]),
+    response: uiStateResultSchema,
+  },
   /** The renderer's answer to `app:flush`: every change is saved, the window may close. */
   projectFlushed: {
     channel: "project:flushed",
@@ -143,4 +176,8 @@ export interface ProjectApi {
   readSite(): Promise<ReadSiteResult>;
   /** Saves changed documents of the open site, e.g. from `changedDocuments(previous, next)`. */
   commit(changes: readonly SiteDocumentChange[]): Promise<CommitResult>;
+  /** The open site's editor state (Design or Content mode), or `null` without an open site. */
+  getUiState(): Promise<SiteUiState | null>;
+  /** Remembers the editor state with the open site. */
+  setUiState(state: SiteUiState): Promise<UiStateResult>;
 }

@@ -28,6 +28,8 @@ function setUp(dialogs: Partial<ProjectDialogs> = {}) {
     current: vi.fn(() => project),
     readSite: vi.fn(() => ({ status: "empty" })),
     commit: vi.fn(() => ({ status: "saved" })),
+    uiState: vi.fn(() => ({ editorMode: "content" })),
+    setUiState: vi.fn(() => ({ status: "saved" })),
   };
   registerProjectHandlers(ipc, (url) => url === APP_URL, session as unknown as ProjectSession, {
     chooseNewProjectPath: async () => "/sites/Bakery.wforge",
@@ -109,5 +111,16 @@ describe("registerProjectHandlers", () => {
 
     await expect(invoke("project:create", "https://example.com/")).rejects.toThrow(/untrusted/);
     expect(chooseNewProjectPath).not.toHaveBeenCalled();
+  });
+
+  it("reads and remembers the editor mode, refusing modes it doesn't know", async () => {
+    const { invoke, session } = setUp();
+
+    await expect(invoke("project:get-ui-state")).resolves.toEqual({ editorMode: "content" });
+    await expect(
+      invoke("project:set-ui-state", APP_URL, { editorMode: "design" }),
+    ).resolves.toEqual({ status: "saved" });
+    expect(session.setUiState).toHaveBeenCalledWith({ editorMode: "design" });
+    await expect(invoke("project:set-ui-state", APP_URL, { editorMode: "zoom" })).rejects.toThrow();
   });
 });
