@@ -23,7 +23,7 @@ export function UndoHistoryPanel({ history, state }: UndoHistoryPanelProps) {
 
   return (
     <aside className="undo-history" aria-label={t("editor.undoHistory")}>
-      <h2 className="undo-history__title">{t("editor.undoHistory")}</h2>
+      <h2 className="sr-only">{t("editor.undoHistory")}</h2>
       <ol className="undo-history__list">
         {steps.map((step) => (
           <li key={step.id ?? "start"}>

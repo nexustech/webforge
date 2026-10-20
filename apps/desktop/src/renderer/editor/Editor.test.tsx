@@ -5,6 +5,8 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CommandRegistryProvider } from "../shell/command-context.js";
 import { type CommandRegistry, createCommandRegistry } from "../shell/commands.js";
+import { PanelRegistryProvider, usePanels } from "../shell/panel-context.js";
+import { createPanelRegistry, type PanelRegistry } from "../shell/panels.js";
 import { Editor } from "./Editor.js";
 import { createEditorSession, type EditorSession } from "./editor-session.js";
 import { createFakeEngine, type FakeEngine } from "./fake-engine.test-helper.js";
@@ -21,12 +23,19 @@ const compileCss = vi.fn(async () => ({
   bodyClass: "bg-base-100",
 }));
 
+/** Renders the Undo History panel the editor registers, as the window layout would. */
+function UndoHistoryHost() {
+  const panel = usePanels().find((entry) => entry.id === "undoHistory");
+  return panel === undefined ? null : <panel.component />;
+}
+
 describe("Editor", () => {
   let container: HTMLDivElement;
   let root: Root;
   let session: EditorSession;
   let engine: FakeEngine;
   let registry: CommandRegistry;
+  let panels: PanelRegistry;
 
   beforeEach(async () => {
     container = document.createElement("div");
@@ -36,10 +45,14 @@ describe("Editor", () => {
     engine = createFakeEngine();
     const createEngine = () => engine;
     registry = createCommandRegistry();
+    panels = createPanelRegistry();
     await act(async () =>
       root.render(
         <CommandRegistryProvider registry={registry}>
-          <Editor session={session} createEngine={createEngine} compileCss={compileCss} />
+          <PanelRegistryProvider registry={panels}>
+            <Editor session={session} createEngine={createEngine} compileCss={compileCss} />
+            <UndoHistoryHost />
+          </PanelRegistryProvider>
         </CommandRegistryProvider>,
       ),
     );
@@ -115,6 +128,12 @@ describe("Editor", () => {
     expect(session.history.state.getState().cursor).toBe(0);
   });
 
+  it("puts Undo History in the left column's bottom", () => {
+    expect(panels.list()).toEqual([
+      expect.objectContaining({ id: "undoHistory", slot: "left.bottom", title: "Undo History" }),
+    ]);
+  });
+
   it("lists the steps in Undo History", async () => {
     await removeSection();
 
@@ -131,6 +150,7 @@ describe("Editor", () => {
     expect(engine.destroy).toHaveBeenCalledOnce();
     expect(session.history.state.getState().cursor).toBe(1);
     expect(registry.get("edit.undo")).toBeUndefined();
+    expect(panels.list()).toEqual([]);
     root = createRoot(container);
   });
 });

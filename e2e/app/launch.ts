@@ -13,19 +13,23 @@ export const desktopVersion: string = (
   JSON.parse(readFileSync(desktopPackageJson, "utf8")) as { version: string }
 ).version;
 
+/** A fresh folder for the app's user data (preferences, credentials), so tests never share one. */
+export function newUserDataDir(): string {
+  return mkdtempSync(join(tmpdir(), "webforge-e2e-user-"));
+}
+
 /**
  * Launches the built desktop app (`apps/desktop/out`) with the Electron version the app depends on.
  * The app runs as it does in production: it loads the renderer from file://, not a dev server.
+ * Its user data goes to `userDataDir`, never the tester's own. Without one, it gets a new
+ * temporary folder that is deleted when the app closes; a test that restarts the app passes its
+ * own folder (from {@link newUserDataDir}) and deletes it.
  */
 export async function launchDesktopApp(
   options: {
     /** Extra command-line arguments, e.g. a `.wforge` path as a double-click passes it. */
     readonly args?: readonly string[];
-    /**
-     * The app's user-data folder (preferences, backups, crash reports). Each launch gets a new
-     * temporary one by default, so tests and parallel runs from other worktrees never share
-     * state or block each other; pass the same folder to relaunch "the same installation".
-     */
+    /** Where the app keeps its user data; a new temporary folder by default. */
     readonly userDataDir?: string;
   } = {},
 ): Promise<ElectronApplication> {
@@ -41,22 +45,22 @@ export async function launchDesktopApp(
         entry[1] !== undefined && entry[0] !== "ELECTRON_RENDERER_URL",
     ),
   );
-  const userDataDir = options.userDataDir ?? mkdtempSync(join(tmpdir(), "webforge-user-data-"));
-  const launched = await electron.launch({
+  const userData = options.userDataDir ?? newUserDataDir();
+  const app = await electron.launch({
     executablePath,
-    args: [desktopDir, `--user-data-dir=${userDataDir}`, ...(options.args ?? [])],
+    args: [desktopDir, `--user-data-dir=${userData}`, ...(options.args ?? [])],
     cwd: desktopDir,
     env,
   });
   if (options.userDataDir === undefined) {
-    // Best effort: Chromium may still hold a file for a moment after the app exits.
-    launched.once("close", () => {
+    app.on("close", () => {
+      // Best effort: after a killed app, its helper processes can hold files for a moment.
       try {
-        rmSync(userDataDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+        rmSync(userData, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
       } catch {
-        // Left in the temp folder for the OS to clean up.
+        // Left in the temp folder; the OS cleans it up eventually.
       }
     });
   }
-  return launched;
+  return app;
 }

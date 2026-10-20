@@ -2,6 +2,7 @@ import type { WebforgeApi } from "../shared/webforge-api.js";
 import { appApi } from "./api/app.js";
 import { createCall, type Invoke, type Subscribe } from "./api/call.js";
 import { canvasApi } from "./api/canvas.js";
+import { prefsApi } from "./api/prefs.js";
 import { projectApi } from "./api/project.js";
 import { siteApi } from "./api/site.js";
 
@@ -16,6 +17,7 @@ export function createWebforgeApi(invoke: Invoke, subscribe: Subscribe): Webforg
   return {
     app: appApi(call, subscribe),
     canvas: canvasApi(call),
+    prefs: prefsApi(call),
     project: projectApi(call),
     site: siteApi(call),
   };
