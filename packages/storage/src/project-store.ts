@@ -475,6 +475,11 @@ export class ProjectStore {
       });
   }
 
+  /** Whether the working copy has no documents yet, as in a project just created. */
+  isEmpty(): boolean {
+    return this.#prepare("SELECT 1 FROM documents LIMIT 1").get() === undefined;
+  }
+
   /** One document of the working copy, or `undefined` if there is none with this id. */
   readDocument(id: string): StoredDocument | undefined {
     const row = this.#prepare("SELECT id, kind, blob_hash AS hash FROM documents WHERE id = ?").get(

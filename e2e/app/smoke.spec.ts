@@ -2,6 +2,7 @@ import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "n
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { changedDocuments, createSite } from "@webforge/model";
 import { desktopDir, desktopVersion, launchDesktopApp } from "./launch.js";
 import { type RendererWindow, stubFileDialogs } from "./sites.js";
 
@@ -134,7 +135,12 @@ test.describe("desktop shell", () => {
   test("creates and reopens a site through the main process (better-sqlite3 in Electron)", async () => {
     const path = join(siteDir, "Rosa's Bakery.wforge");
     await stubFileDialogs(app, path);
-    const project = { name: "Rosa's Bakery", fileName: "Rosa's Bakery.wforge", formatVersion: 1 };
+    const project = {
+      name: "Rosa's Bakery",
+      fileName: "Rosa's Bakery.wforge",
+      formatVersion: 1,
+      syncService: null,
+    };
 
     const created = await page.evaluate(() =>
       (window as unknown as RendererWindow).webforge.project.create(),
@@ -165,6 +171,35 @@ test.describe("desktop shell", () => {
       (window as unknown as RendererWindow).webforge.project.getCurrent(),
     );
     expect(current?.fileName).toBe("Rosa's Bakery.wforge");
+  });
+
+  test("saves the site's documents over IPC and reads them back after reopening", async () => {
+    const path = join(siteDir, "Documents.wforge");
+    await stubFileDialogs(app, path);
+    const site = createSite({
+      name: "Documents",
+      language: "en",
+      homeTitle: "Home",
+      notFoundTitle: "Page not found",
+    });
+
+    const result = await page.evaluate(
+      async ({ changes }) => {
+        const { project } = (window as unknown as RendererWindow).webforge;
+        await project.create();
+        const empty = await project.readSite();
+        const saved = await project.commit(changes);
+        await project.open();
+        return { empty, saved, read: await project.readSite() };
+      },
+      { changes: changedDocuments(undefined, site) },
+    );
+
+    expect(result).toEqual({
+      empty: { status: "empty" },
+      saved: { status: "saved" },
+      read: { status: "ok", site },
+    });
   });
 
   test("logs no errors in the renderer", () => {

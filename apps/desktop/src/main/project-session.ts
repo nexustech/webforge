@@ -131,7 +131,7 @@ export class ProjectSession {
     if (store === undefined) {
       return { status: "none" };
     }
-    if (store.readDocuments().length === 0) {
+    if (store.isEmpty()) {
       this.#site = undefined;
       return { status: "empty" };
     }
@@ -162,7 +162,7 @@ export class ProjectSession {
       return { status: "failed", reason: "no-site" };
     }
     // Changes always build on the stored site; read it first if the editor hasn't yet.
-    if (this.#site === undefined && store.readDocuments().length > 0) {
+    if (this.#site === undefined && !store.isEmpty()) {
       if (this.readSite().status !== "ok") {
         return { status: "failed", reason: "invalid" };
       }

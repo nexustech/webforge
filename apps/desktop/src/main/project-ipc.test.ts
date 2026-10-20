@@ -88,7 +88,14 @@ describe("registerProjectHandlers", () => {
 
   it("rejects change lists that don't match the contract", async () => {
     const { invoke, session } = setUp();
-    const bad = [[{ type: "rename", id: "x" }], [{ type: "put", id: "x", kind: "script" }], "x"];
+    const bad = [
+      [{ type: "rename", id: "x" }],
+      [{ type: "put", id: "x", kind: "script" }],
+      [{ type: "put", id: "junk", kind: "theme", content: {} }],
+      [{ type: "put", id: "settings", kind: "page", content: {} }],
+      [{ type: "delete", id: "settings" }],
+      "x",
+    ];
 
     for (const changes of bad) {
       await expect(invoke("project:commit", APP_URL, changes)).rejects.toThrow();

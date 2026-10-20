@@ -1,6 +1,11 @@
 import type { ElectronApplication } from "@playwright/test";
 
-type ProjectSummary = { name: string; fileName: string; formatVersion: number };
+type ProjectSummary = {
+  name: string;
+  fileName: string;
+  formatVersion: number;
+  syncService: string | null;
+};
 
 /** The parts of `window.webforge` the site tests call (the renderer's global, seen from tests). */
 export type RendererWindow = {
@@ -9,6 +14,8 @@ export type RendererWindow = {
       create(): Promise<unknown>;
       open(): Promise<unknown>;
       getCurrent(): Promise<ProjectSummary | null>;
+      readSite(): Promise<unknown>;
+      commit(changes: readonly unknown[]): Promise<unknown>;
     };
   };
 };
