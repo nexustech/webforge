@@ -615,6 +615,9 @@ importers:
 
   packages/storage:
     dependencies:
+      '@webforge/model':
+        specifier: workspace:*
+        version: link:../model
       better-sqlite3:
         specifier: 'catalog:'
         version: 13.0.3

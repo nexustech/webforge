@@ -87,7 +87,16 @@ export class ProjectSession {
 
   /** Opens the site at `path`. */
   open(path: string): ProjectResult {
-    return this.#replaceWith(path, () => ProjectStore.open(path));
+    return this.#replaceWith(path, () => {
+      const store = ProjectStore.open(path);
+      // The storage opens newer files read-only; until the editor can show a read-only site, the
+      // user gets the "update Webforge" message instead.
+      if (store.info.newerFormat) {
+        store.close();
+        throw new ProjectFileError("newer-format", "The site comes from a newer Webforge");
+      }
+      return store;
+    });
   }
 
   /** Closes the open site, if any. */

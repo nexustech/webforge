@@ -1,4 +1,4 @@
-export { ProjectFileError, type ProjectFileErrorCode } from "./errors.js";
+export { ProjectFileError, type ProjectFileErrorCode, ReadOnlyProjectError } from "./errors.js";
 export {
   type AssetInfo,
   type CreateProjectOptions,
@@ -6,6 +6,7 @@ export {
   type GarbageReport,
   type JsonValue,
   type NewAsset,
+  type OpenProjectOptions,
   type ProjectInfo,
   ProjectStore,
   type StoredBlob,
@@ -14,3 +15,4 @@ export {
   type VersionKind,
 } from "./project-store.js";
 export { APPLICATION_ID, FORMAT_VERSION } from "./schema.js";
+export { detectSyncFolder, type SyncService } from "./sync-folders.js";

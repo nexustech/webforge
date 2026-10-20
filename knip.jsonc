@@ -21,6 +21,10 @@
       "entry": ["export/*.setup.ts", "perf/*.perf.ts"]
     },
     "packages/*": {},
+    "packages/storage": {
+      // Run by hand to write a format's .wforge fixture (see the script's header).
+      "entry": ["test/support/make-v1-fixture.ts"]
+    },
     "packages/pipeline": {
       // Font files are read by path (require.resolve) in src/node-resources.ts.
       "ignoreDependencies": ["@fontsource/inter"]

@@ -1,0 +1,128 @@
+import type { PageId } from "./ids.js";
+import type { SiteDoc } from "./site-doc.js";
+
+/**
+ * One document of a site as `.wforge` stores it. A site is split into documents so a save writes
+ * only what changed: changing a heading rewrites one page, not the site (06, F6).
+ */
+export type SiteDocument = {
+  /** `site`, `settings`, `theme`, `layout`, `media`, `code`, `menu` or `page:<PageId>`. */
+  readonly id: string;
+  readonly kind: SiteDocumentKind;
+  readonly content: unknown;
+};
+
+/** What a {@link SiteDocument} holds. */
+export type SiteDocumentKind =
+  | "site"
+  | "settings"
+  | "theme"
+  | "layout"
+  | "media"
+  | "code"
+  | "menu"
+  | "page";
+
+/** A change to the stored site; structurally a `@webforge/storage` `DocumentChange`. */
+export type SiteDocumentChange =
+  | ({ readonly type: "put" } & SiteDocument)
+  | { readonly type: "delete"; readonly id: string };
+
+/** The parts of a {@link SiteDoc} stored as one document each, under their own name. */
+const PARTS = ["settings", "theme", "layout", "media", "code", "menu"] as const;
+
+const PAGE_PREFIX = "page:";
+
+/** The id of a page's document. */
+export function pageDocumentId(id: PageId): string {
+  return `${PAGE_PREFIX}${id}`;
+}
+
+/** The `site` document: the format version and the page order, which concern every page. */
+function siteDocument(site: SiteDoc): SiteDocument {
+  return {
+    id: "site",
+    kind: "site",
+    content: {
+      formatVersion: site.formatVersion,
+      pageOrder: site.pageOrder,
+      homePageId: site.homePageId,
+    },
+  };
+}
+
+/** Every document of `site`, e.g. to save a new or migrated site in full. */
+export function siteDocuments(site: SiteDoc): SiteDocument[] {
+  return [
+    siteDocument(site),
+    ...PARTS.map((part): SiteDocument => ({ id: part, kind: part, content: site[part] })),
+    ...site.pageOrder.flatMap((id): SiteDocument[] => {
+      const page = site.pages[id];
+      return page === undefined ? [] : [{ id: pageDocumentId(id), kind: "page", content: page }];
+    }),
+  ];
+}
+
+/**
+ * Puts stored documents back together into a site, without validating it: the result goes to
+ * `migrateSite`, which migrates and validates. Unknown documents are ignored; missing ones leave
+ * their part out, which validation then rejects.
+ */
+export function siteFromDocuments(
+  documents: readonly { readonly id: string; readonly kind: string; readonly content: unknown }[],
+): unknown {
+  // No prototype: ids come from the file, and `page:__proto__` must not reach Object.prototype.
+  const site: Record<string, unknown> = Object.create(null);
+  const pages: Record<string, unknown> = Object.create(null);
+  for (const { id, kind, content } of documents) {
+    if (kind === "site" && id === "site" && typeof content === "object" && content !== null) {
+      // Only its own keys: anything else in it must not override another part's document.
+      const { formatVersion, pageOrder, homePageId } = content as Record<string, unknown>;
+      Object.assign(site, { formatVersion, pageOrder, homePageId });
+    } else if (kind === "page" && id.startsWith(PAGE_PREFIX)) {
+      pages[id.slice(PAGE_PREFIX.length)] = content;
+    } else if ((PARTS as readonly string[]).includes(kind) && id === kind) {
+      site[kind] = content;
+    }
+  }
+  site.pages = pages;
+  return site;
+}
+
+/**
+ * The documents that differ between two states of a site, found by reference: the history keeps
+ * unchanged parts of the tree as the same objects (Immer structural sharing), so `!==` is exact and
+ * cheap. Without `previous`, every document is new.
+ */
+export function changedDocuments(
+  previous: SiteDoc | undefined,
+  next: SiteDoc,
+): SiteDocumentChange[] {
+  if (previous === undefined) {
+    return siteDocuments(next).map((document) => ({ type: "put", ...document }));
+  }
+  const changes: SiteDocumentChange[] = [];
+  if (
+    previous.formatVersion !== next.formatVersion ||
+    previous.pageOrder !== next.pageOrder ||
+    previous.homePageId !== next.homePageId
+  ) {
+    changes.push({ type: "put", ...siteDocument(next) });
+  }
+  for (const part of PARTS) {
+    if (previous[part] !== next[part]) {
+      changes.push({ type: "put", id: part, kind: part, content: next[part] });
+    }
+  }
+  for (const [id, page] of Object.entries(next.pages)) {
+    if (previous.pages[id as PageId] !== page) {
+      changes.push({ type: "put", id: pageDocumentId(id as PageId), kind: "page", content: page });
+    }
+  }
+  for (const id of Object.keys(previous.pages)) {
+    if (!Object.hasOwn(next.pages, id)) {
+      changes.push({ type: "delete", id: pageDocumentId(id as PageId) });
+    }
+  }
+  return changes;
+}
