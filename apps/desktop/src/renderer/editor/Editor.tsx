@@ -55,7 +55,7 @@ export function Editor({ session, createEngine = createPuckEngine }: EditorProps
     // One handler for the whole window (U4); the engine reports keys pressed inside its iframe.
     const removeKeys = installHistoryKeys(window, (command) => {
       connection.flush();
-      runHistoryCommand(history, command);
+      return runHistoryCommand(session, command);
     });
 
     return () => {
@@ -69,7 +69,7 @@ export function Editor({ session, createEngine = createPuckEngine }: EditorProps
 
   const runCommand = (command: HistoryCommand) => {
     connectionRef.current?.flush();
-    runHistoryCommand(history, command);
+    runHistoryCommand(session, command);
   };
   const jumpTo = (entryId: string | null) => {
     connectionRef.current?.flush();

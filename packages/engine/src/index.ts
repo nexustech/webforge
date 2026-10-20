@@ -6,6 +6,7 @@ export type {
   EngineEditKind,
   EnginePatch,
   HistoryCommand,
+  HistoryCommandHandler,
   MountOptions,
   Unsubscribe,
   Viewport,

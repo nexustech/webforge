@@ -5,7 +5,7 @@ type Doc = { title: string; items: { id: string; text: string }[] };
 
 const initial: Doc = { title: "Home", items: [{ id: "a", text: "Hello" }] };
 
-function setup(options: { limit?: number; coalesceWindowMs?: number } = {}) {
+function setup(options: { limit?: number; coalesceWindowMs?: number; maxBytes?: number } = {}) {
   let time = 1_000;
   let selected: string | null = null;
   const selection: SelectionAdapter<string | null> = {
@@ -625,6 +625,54 @@ describe("createHistoryManager", () => {
         // undo everything that is left
       }
       expect(doc().title).toBe("B");
+    });
+
+    /** A 100-character title. */
+    const big = (letter: string) => letter.repeat(100);
+
+    it("drops the oldest entries beyond the memory budget", () => {
+      // Each entry's patches are 292 characters of JSON (forward + inverse): three fit.
+      const { history, doc } = setup({ maxBytes: 900 });
+      for (const letter of ["a", "b", "c", "d", "e"]) {
+        history.run(`Set ${letter}`, (draft) => {
+          draft.title = big(letter);
+        });
+      }
+
+      expect(history.entries().map((entry) => entry.label)).toEqual(["Set c", "Set d", "Set e"]);
+      while (history.undo()) {
+        // undo everything that is left
+      }
+      expect(doc().title).toBe(big("b"));
+    });
+
+    it("keeps the current entry even when it alone is over the budget", () => {
+      const { history } = setup({ maxBytes: 10 });
+
+      history.run("Set a", (draft) => {
+        draft.title = big("a");
+      });
+
+      expect(history.entries()).toHaveLength(1);
+      expect(history.undo()).toBe(true);
+    });
+
+    it("measures a growing coalesced entry again", () => {
+      const { history } = setup({ maxBytes: 900 });
+      history.run("Set a", (draft) => {
+        draft.title = big("a");
+      });
+      for (let i = 0; i < 10; i++) {
+        history.run(
+          "Edited title",
+          (draft) => {
+            draft.items.push({ id: `n${i}`, text: big("x") });
+          },
+          { coalesceKey: "items" },
+        );
+      }
+
+      expect(history.entries().map((entry) => entry.label)).toEqual(["Edited title"]);
     });
   });
 

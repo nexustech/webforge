@@ -1,4 +1,10 @@
-import type { CanvasEngine, EngineEdit, HistoryCommand, Unsubscribe } from "@webforge/engine";
+import type {
+  CanvasEngine,
+  EngineEdit,
+  HistoryCommand,
+  HistoryCommandHandler,
+  Unsubscribe,
+} from "@webforge/engine";
 import type { PageDoc } from "@webforge/model";
 import { vi } from "vitest";
 
@@ -6,7 +12,8 @@ import { vi } from "vitest";
 export type FakeEngine = CanvasEngine & {
   edit(edit: Partial<EngineEdit> & Pick<EngineEdit, "kind" | "page">): void;
   selectFromCanvas(nodeId: string | null): void;
-  command(command: HistoryCommand): void;
+  /** Presses a history key in the canvas; true if the app did something with it. */
+  command(command: HistoryCommand): boolean;
   readonly applied: PageDoc[];
 };
 
@@ -26,7 +33,7 @@ function listeners<T>() {
 export function createFakeEngine(): FakeEngine {
   const edits = listeners<EngineEdit>();
   const selections = listeners<string | null>();
-  const commands = listeners<HistoryCommand>();
+  const commands = new Set<HistoryCommandHandler>();
   const applied: PageDoc[] = [];
   return {
     applied,
@@ -36,7 +43,10 @@ export function createFakeEngine(): FakeEngine {
     onUserEdit: edits.add,
     select: vi.fn(),
     onSelectionChange: selections.add,
-    onHistoryCommand: commands.add,
+    onHistoryCommand: (handler) => {
+      commands.add(handler);
+      return () => commands.delete(handler);
+    },
     setViewport: vi.fn(),
     setMode: vi.fn(),
     renderStatic: vi.fn(() => ""),
@@ -44,6 +54,6 @@ export function createFakeEngine(): FakeEngine {
     edit: (edit) =>
       edits.emit({ nodeId: null, componentType: null, field: null, selection: null, ...edit }),
     selectFromCanvas: selections.emit,
-    command: commands.emit,
+    command: (command) => [...commands].some((handler) => handler(command) === true),
   };
 }

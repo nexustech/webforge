@@ -127,6 +127,12 @@ export type HistoryManagerOptions<D, S> = {
   readonly selection?: SelectionAdapter<S>;
   /** Maximum number of entries kept; the oldest are dropped first (U7). Default 200. */
   readonly limit?: number;
+  /**
+   * Memory budget for the entries' patches, measured as the length of their JSON (U7). The oldest
+   * entries are dropped while the history is over it; the current entry is always kept. Default
+   * 50 MB, which a large page's insert-and-delete steps reach long before 200 entries would.
+   */
+  readonly maxBytes?: number;
   /** Default coalescing window in ms. Default 1000. */
   readonly coalesceWindowMs?: number;
   /** Clock, injectable for tests. */
@@ -159,6 +165,7 @@ export function createHistoryManager<D extends Objectish, S = null>(
   // Without an adapter S is null (see the type of `selection`).
   const selection = options.selection ?? (NO_SELECTION as unknown as SelectionAdapter<S>);
   const limit = options.limit ?? 200;
+  const maxBytes = options.maxBytes ?? 50 * 1024 * 1024;
   const defaultWindow = options.coalesceWindowMs ?? 1000;
   const now = options.now ?? Date.now;
 
@@ -172,6 +179,29 @@ export function createHistoryManager<D extends Objectish, S = null>(
   }));
 
   let entries: HistoryEntry<S>[] = [];
+  /** The JSON size of each entry's patches, measured once per entry version. */
+  const sizes = new WeakMap<HistoryEntry<S>, number>();
+  const sizeOf = (entry: HistoryEntry<S>) => {
+    let size = sizes.get(entry);
+    if (size === undefined) {
+      size = JSON.stringify(entry.forward).length + JSON.stringify(entry.inverse).length;
+      sizes.set(entry, size);
+    }
+    return size;
+  };
+  /** Drops the oldest entries while over the memory budget, keeping the current one. */
+  const enforceBudget = () => {
+    let total = entries.reduce((sum, entry) => sum + sizeOf(entry), 0);
+    let drop = 0;
+    while (total > maxBytes && drop < cursor - 1) {
+      total -= sizeOf(entries[drop] as HistoryEntry<S>);
+      drop++;
+    }
+    if (drop > 0) {
+      entries = entries.slice(drop);
+      cursor -= drop;
+    }
+  };
   let cursor = 0;
   let nextId = 1;
   /** Key that the next run may merge into the current entry with. */
@@ -179,6 +209,7 @@ export function createHistoryManager<D extends Objectish, S = null>(
   let transaction: { label: string } | null = null;
 
   const publish = () => {
+    enforceBudget();
     stateStore.setState(
       {
         entries,

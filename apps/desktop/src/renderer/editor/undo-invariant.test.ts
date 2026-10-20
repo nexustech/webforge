@@ -8,6 +8,7 @@ import {
   createEditorSession,
   type EditorSession,
   type EngineConnection,
+  runHistoryCommand,
   TEXT_SESSION_GRACE_MS,
 } from "./editor-session.js";
 import { createFakeEngine, type FakeEngine } from "./fake-engine.test-helper.js";
@@ -212,6 +213,25 @@ const commands: fc.Arbitrary<Command>[] = [
         if (footer !== undefined) footer.props.text = text;
       }),
   })),
+  fc
+    .record({
+      names: fc.array(fc.string({ maxLength: 4 }), { maxLength: 5 }),
+      end: fc.constantFrom("commit", "esc", "edit"),
+    })
+    .map(({ names, end }) => ({
+      name: `drag site name ${JSON.stringify(names)} then ${end}`,
+      run: (ctx) => {
+        const gesture = ctx.session.begin("props", "Changed site name");
+        for (const name of names) {
+          gesture.update((draft) => {
+            draft.settings.general.name = name;
+          });
+        }
+        if (end === "commit") gesture.commit();
+        else if (end === "esc") runHistoryCommand(ctx.session, "cancel");
+        // "edit": the next edit ends the gesture as it is; left open until then.
+      },
+    })),
   fc.nat({ max: 1_500 }).map((ms) => ({
     name: `wait ${ms}ms`,
     run: () => vi.advanceTimersByTime(ms),
@@ -276,6 +296,8 @@ describe("undo invariant over the editor session", () => {
         }
         ctx.connection.flush();
         vi.advanceTimersByTime(TEXT_SESSION_GRACE_MS);
+        // A gesture still open at the end is released as the user lets go.
+        ctx.session.begin("props", "Release").commit();
         const current = session.history.document.getState();
         const { entries, cursor } = session.history.state.getState();
 
