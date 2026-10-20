@@ -163,14 +163,14 @@ Each item becomes one GitHub issue (title prefixed with its ID) in its phase mil
 **Goal:** Close the remaining spikes so every 🔬 item in the specs is proven: publishing, signed installers, auto-update and Puck performance.  
 **Effort:** 11 days · **Scheduled:** 26 Oct 2026 → 18 Nov 2026
 
-| ID | Item | Area | Refs | Est | Depends on |
-|---|---|---|---|---|---|
-| 0.1 | Start code-signing enrolment (Apple Developer + Windows signing) | release | [stack/01](../research/stack/01-electron-vs-tauri.md), MVP §6, standards §10 | 1 | – |
-| 0.2 | Spike: Netlify publish (OAuth, digest deploy, restore, Forms) | publish | [stack/08](../research/stack/08-publishing.md), B1, B6, F-PB-1, F-PB-2 | 3 | – |
-| 0.3 | Spike: FTP/FTPS/SFTP incremental publish | publish | [stack/08](../research/stack/08-publishing.md), B5 | 2 | – |
-| 0.4 | Puck large-page performance check | engine | [ADR 0004](../docs/adr/0004-puck-with-webforge-history.md), architecture §10 | 1 | – |
-| 0.5 | Spike: signed installers and auto-update | release | [stack/01](../research/stack/01-electron-vs-tauri.md), MVP §6 | 3 | 0.1 |
-| 0.6 | Phase 0 wrap-up: interfaces and decision log | docs | architecture §6, ADRs 0003–0005 | 1 | 0.2, 0.3, 0.5, 0.4 |
+| ID | Item | Issue | Area | Refs | Est | Depends on |
+|---|---|---|---|---|---|---|
+| 0.1 | Start code-signing enrolment (Apple Developer + Windows signing) | [#11](https://github.com/nexustech/webforge/issues/11) | release | [stack/01](../research/stack/01-electron-vs-tauri.md), MVP §6, standards §10 | 1 | – |
+| 0.2 | Spike: Netlify publish (OAuth, digest deploy, restore, Forms) | [#12](https://github.com/nexustech/webforge/issues/12) | publish | [stack/08](../research/stack/08-publishing.md), B1, B6, F-PB-1, F-PB-2 | 3 | – |
+| 0.3 | Spike: FTP/FTPS/SFTP incremental publish | [#13](https://github.com/nexustech/webforge/issues/13) | publish | [stack/08](../research/stack/08-publishing.md), B5 | 2 | – |
+| 0.4 | Puck large-page performance check | [#14](https://github.com/nexustech/webforge/issues/14) | engine | [ADR 0004](../docs/adr/0004-puck-with-webforge-history.md), architecture §10 | 1 | – |
+| 0.5 | Spike: signed installers and auto-update | [#15](https://github.com/nexustech/webforge/issues/15) | release | [stack/01](../research/stack/01-electron-vs-tauri.md), MVP §6 | 3 | 0.1 |
+| 0.6 | Phase 0 wrap-up: interfaces and decision log | [#16](https://github.com/nexustech/webforge/issues/16) | docs | architecture §6, ADRs 0003–0005 | 1 | 0.2, 0.3, 0.5, 0.4 |
 
 <details><summary>Scope and acceptance criteria</summary>
 
@@ -228,34 +228,34 @@ Fold spike learnings into architecture §6 (CanvasEngine, HistoryManager, Pipeli
 **Goal:** A real editor on the UI1 shell: create, open and autosave sites; add, edit, move, copy and undo sections and elements across pages with a shared Header/Footer, Site Settings and media.  
 **Effort:** 77 days · **Scheduled:** 4 Nov 2026 → 1 Mar 2027
 
-| ID | Item | Area | Refs | Est | Depends on |
-|---|---|---|---|---|---|
-| 1.1 | Editor theme tokens, compact density and Storybook | shell | UI1, standards §5 (Storybook) | 3 | – |
-| 1.2 | Window shell: title bar, panels, drawer (UI1 layout) | shell | UI1, T2 | 4 | 1.1 |
-| 1.3 | i18n wiring and Puck dictionary | shell | glossary (product/01), [ADR 0004](../docs/adr/0004-puck-with-webforge-history.md) | 1 | – |
-| 1.4 | Site model: full SiteDoc schema, IDs and migrations | model | architecture §5, [stack/06](../research/stack/06-project-file-format.md) (F2), X3 | 3 | – |
-| 1.5 | Storage: documents, assets, GC, migrations, safety | storage | [stack/06](../research/stack/06-project-file-format.md), [ADR 0003](../docs/adr/0003-wforge-sqlite-storage.md), P1, architecture §9 | 4 | 1.4 |
-| 1.6 | Periodic autosave and save status | storage | F-SITE-3, P2 | 2 | 1.5 |
-| 1.7 | Backups, corrupt-file recovery and local crash reports | storage | F-SITE-6, F-SITE-7, [ADR 0003](../docs/adr/0003-wforge-sqlite-storage.md), architecture §9 | 2 | 1.5 |
-| 1.8 | Site lifecycle: start screen, new/open/recent, file association | shell | F-SITE-1, F-SITE-2, P1 (.wforge), [ADR 0005](../docs/adr/0005-export-pipeline-spike.md) | 3 | 1.5, 1.2 |
-| 1.9 | History hardening: labels, gestures, selection restore | history | [stack/03](../research/stack/03-undo-redo.md) (U1–U9, D1–D7), [ADR 0004](../docs/adr/0004-puck-with-webforge-history.md) | 3 | 1.4 |
-| 1.10 | Modes: Simple/Advanced and Design/Content (plumbing) | shell | F-ED-10, F-ED-11, T2, M3 | 2 | 1.2 |
-| 1.11 | Undo History panel and Undo toasts | history | F-ED-9, D3, D4 | 2 | 1.9, 1.2 |
-| 1.12 | Canvas: site CSS, selection chrome and floating add | engine | F-ED-2, UI1, [ADR 0005](../docs/adr/0005-export-pipeline-spike.md) (canvas CSS gap), C8 | 4 | 1.2 |
-| 1.13 | Add panel: sections and elements | engine | F-ED-1, UI1, [ADR 0005](../docs/adr/0005-export-pipeline-spike.md) | 3 | 1.12 |
-| 1.14 | Edit panel framework and basic field controls | engine | F-ED-4, F-ED-6, [stack/05](../research/stack/05-site-components.md) (design tokens), [ADR 0004](../docs/adr/0004-puck-with-webforge-history.md) | 5 | 1.12, 1.9 |
-| 1.15 | Device views, zoom and size readout | engine | F-ED-8, UI1 | 2 | 1.12 |
-| 1.16 | Media library, image field, alt text and focal point | storage | F-ED-5, G15, F-ED-21 | 3 | 1.5, 1.2, 1.14 |
-| 1.17 | Site Settings dialog and bound values | shell | F-SET-1, X3 | 3 | 1.4, 1.2, 1.9 |
-| 1.18 | Pages panel, Page Settings and the 404 page | shell | F-ED-13, F-SET-2, F-ED-20, D5, X1 | 3 | 1.4, 1.2 |
-| 1.19 | Link dialog, link field and link to section | engine | F-ED-18, G3 | 2 | 1.18, 1.14 |
-| 1.20 | Shared Header and Footer | engine | F-ED-7, C5, D7 | 3 | 1.12, 1.18 |
-| 1.21 | Navigation menu editor | engine | F-ED-17, G2 | 6 | 1.18, 1.19, 1.20 |
-| 1.22 | Spell check | shell | F-ED-19, G5 | 1 | 1.17 |
-| 1.23 | Inline text editing (Tiptap) | engine | F-ED-3, D1, C1, [ADR 0004](../docs/adr/0004-puck-with-webforge-history.md) | 4 | 1.12, 1.9, 1.19, 1.22 |
-| 1.24 | Layers panel (Advanced) | engine | F-ED-12, UI1 | 3 | 1.12, 1.10 |
-| 1.25 | Copy and paste | engine | F-ED-16, G1 | 3 | 1.12, 1.16 |
-| 1.26 | Confirmations (D7) and Content mode locking | shell | F-ED-14, D7, F-ED-11, M3 | 3 | 1.9, 1.10, 1.18, 1.20, 1.13, 1.14, 1.23, 1.16 |
+| ID | Item | Issue | Area | Refs | Est | Depends on |
+|---|---|---|---|---|---|---|
+| 1.1 | Editor theme tokens, compact density and Storybook | [#17](https://github.com/nexustech/webforge/issues/17) | shell | UI1, standards §5 (Storybook) | 3 | – |
+| 1.2 | Window shell: title bar, panels, drawer (UI1 layout) | [#18](https://github.com/nexustech/webforge/issues/18) | shell | UI1, T2 | 4 | 1.1 |
+| 1.3 | i18n wiring and Puck dictionary | [#19](https://github.com/nexustech/webforge/issues/19) | shell | glossary (product/01), [ADR 0004](../docs/adr/0004-puck-with-webforge-history.md) | 1 | – |
+| 1.4 | Site model: full SiteDoc schema, IDs and migrations | [#20](https://github.com/nexustech/webforge/issues/20) | model | architecture §5, [stack/06](../research/stack/06-project-file-format.md) (F2), X3 | 3 | – |
+| 1.5 | Storage: documents, assets, GC, migrations, safety | [#21](https://github.com/nexustech/webforge/issues/21) | storage | [stack/06](../research/stack/06-project-file-format.md), [ADR 0003](../docs/adr/0003-wforge-sqlite-storage.md), P1, architecture §9 | 4 | 1.4 |
+| 1.6 | Periodic autosave and save status | [#22](https://github.com/nexustech/webforge/issues/22) | storage | F-SITE-3, P2 | 2 | 1.5 |
+| 1.7 | Backups, corrupt-file recovery and local crash reports | [#23](https://github.com/nexustech/webforge/issues/23) | storage | F-SITE-6, F-SITE-7, [ADR 0003](../docs/adr/0003-wforge-sqlite-storage.md), architecture §9 | 2 | 1.5 |
+| 1.8 | Site lifecycle: start screen, new/open/recent, file association | [#24](https://github.com/nexustech/webforge/issues/24) | shell | F-SITE-1, F-SITE-2, P1 (.wforge), [ADR 0005](../docs/adr/0005-export-pipeline-spike.md) | 3 | 1.5, 1.2 |
+| 1.9 | History hardening: labels, gestures, selection restore | [#25](https://github.com/nexustech/webforge/issues/25) | history | [stack/03](../research/stack/03-undo-redo.md) (U1–U9, D1–D7), [ADR 0004](../docs/adr/0004-puck-with-webforge-history.md) | 3 | 1.4 |
+| 1.10 | Modes: Simple/Advanced and Design/Content (plumbing) | [#26](https://github.com/nexustech/webforge/issues/26) | shell | F-ED-10, F-ED-11, T2, M3 | 2 | 1.2 |
+| 1.11 | Undo History panel and Undo toasts | [#27](https://github.com/nexustech/webforge/issues/27) | history | F-ED-9, D3, D4 | 2 | 1.9, 1.2 |
+| 1.12 | Canvas: site CSS, selection chrome and floating add | [#28](https://github.com/nexustech/webforge/issues/28) | engine | F-ED-2, UI1, [ADR 0005](../docs/adr/0005-export-pipeline-spike.md) (canvas CSS gap), C8 | 4 | 1.2 |
+| 1.13 | Add panel: sections and elements | [#29](https://github.com/nexustech/webforge/issues/29) | engine | F-ED-1, UI1, [ADR 0005](../docs/adr/0005-export-pipeline-spike.md) | 3 | 1.12 |
+| 1.14 | Edit panel framework and basic field controls | [#30](https://github.com/nexustech/webforge/issues/30) | engine | F-ED-4, F-ED-6, [stack/05](../research/stack/05-site-components.md) (design tokens), [ADR 0004](../docs/adr/0004-puck-with-webforge-history.md) | 5 | 1.12, 1.9 |
+| 1.15 | Device views, zoom and size readout | [#31](https://github.com/nexustech/webforge/issues/31) | engine | F-ED-8, UI1 | 2 | 1.12 |
+| 1.16 | Media library, image field, alt text and focal point | [#32](https://github.com/nexustech/webforge/issues/32) | storage | F-ED-5, G15, F-ED-21 | 3 | 1.5, 1.2, 1.14 |
+| 1.17 | Site Settings dialog and bound values | [#33](https://github.com/nexustech/webforge/issues/33) | shell | F-SET-1, X3 | 3 | 1.4, 1.2, 1.9 |
+| 1.18 | Pages panel, Page Settings and the 404 page | [#34](https://github.com/nexustech/webforge/issues/34) | shell | F-ED-13, F-SET-2, F-ED-20, D5, X1 | 3 | 1.4, 1.2 |
+| 1.19 | Link dialog, link field and link to section | [#35](https://github.com/nexustech/webforge/issues/35) | engine | F-ED-18, G3 | 2 | 1.18, 1.14 |
+| 1.20 | Shared Header and Footer | [#36](https://github.com/nexustech/webforge/issues/36) | engine | F-ED-7, C5, D7 | 3 | 1.12, 1.18 |
+| 1.21 | Navigation menu editor | [#37](https://github.com/nexustech/webforge/issues/37) | engine | F-ED-17, G2 | 6 | 1.18, 1.19, 1.20 |
+| 1.22 | Spell check | [#38](https://github.com/nexustech/webforge/issues/38) | shell | F-ED-19, G5 | 1 | 1.17 |
+| 1.23 | Inline text editing (Tiptap) | [#39](https://github.com/nexustech/webforge/issues/39) | engine | F-ED-3, D1, C1, [ADR 0004](../docs/adr/0004-puck-with-webforge-history.md) | 4 | 1.12, 1.9, 1.19, 1.22 |
+| 1.24 | Layers panel (Advanced) | [#40](https://github.com/nexustech/webforge/issues/40) | engine | F-ED-12, UI1 | 3 | 1.12, 1.10 |
+| 1.25 | Copy and paste | [#41](https://github.com/nexustech/webforge/issues/41) | engine | F-ED-16, G1 | 3 | 1.12, 1.16 |
+| 1.26 | Confirmations (D7) and Content mode locking | [#42](https://github.com/nexustech/webforge/issues/42) | shell | F-ED-14, D7, F-ED-11, M3 | 3 | 1.9, 1.10, 1.18, 1.20, 1.13, 1.14, 1.23, 1.16 |
 
 <details><summary>Scope and acceptance criteria</summary>
 
@@ -449,24 +449,24 @@ Shared confirm dialog for actions affecting more than the current page, stating 
 **Goal:** The full component catalogue (19 sections with ~45 layout variants, 17 elements), 10–12 curated themes, fonts and the 8 templates, all accessible and visually tested.  
 **Effort:** 93 days · **Scheduled:** 2 Mar 2027 → 14 Jul 2027
 
-| ID | Item | Area | Refs | Est | Depends on |
-|---|---|---|---|---|---|
-| 2.1 | Themes package: theme model → Tailwind/daisyUI CSS | themes | F-DS-1, S3, [stack/05](../research/stack/05-site-components.md) | 4 | 1.12 |
-| 2.2 | Fonts: bundled catalogue and on-demand download | themes | S4, C8 | 3 | – |
-| 2.3 | Theme panel: brand colours, fonts, roundness, text and button styles | themes | F-DS-2, F-DS-4, D7 | 4 | 2.1, 2.2, 1.26 |
-| 2.4 | Section light/dark variants | themes | F-DS-3 | 1 | 2.1 |
-| 2.5 | Component framework: tokens, variants, stories, behaviours | components | [stack/05](../research/stack/05-site-components.md), S1, standards §5, [ADR 0005](../docs/adr/0005-export-pipeline-spike.md) | 3 | 1.14 |
-| 2.6 | Sections A: Header, Footer, Hero, Text, Text + Image, Call to action | components | S1, MVP §3, [ADR 0005](../docs/adr/0005-export-pipeline-spike.md) | 7 | 2.5, 1.21 |
-| 2.7 | Sections B: Features, Gallery + lightbox, Testimonials, Team, Pricing, FAQ, Logos, Stats | components | S1, F-ED-6, G10 | 8 | 2.5 |
-| 2.8 | Sections C: Opening hours & contact, Contact form, Map, Video, Newsletter | components | S1, F-CM-1, F-CM-4, F-CM-6, GA3 | 5 | 2.5, 1.17 |
-| 2.9 | Elements: basic set and icon picker | components | S1, F-ED-21, F-ED-22, F-CM-5 | 5 | 2.5, 1.17 |
-| 2.10 | Carousel element | components | G9, GA1 | 6 | 2.5 |
-| 2.11 | Elements: tabs, commerce, forms, embeds and custom code | components | F-CM-2, F-CM-7, F-ED-15, F-ED-16 | 5 | 2.5 |
-| 2.12 | Animations and hover effects | components | F-DS-5, G8 | 2 | 2.5 |
-| 2.13 | Design 10–12 curated themes | themes | S3, F-DS-1 | 14 | 2.3, 2.6, 2.7, 2.8, 2.9 |
-| 2.14 | Template format and New Site flow | content | F-SITE-1, S2, S5 | 3 | 1.8, 2.13 |
-| 2.15 | Templates: 8 starter sites | content | F-SITE-1, S2, S5 | 20 | 2.14, 2.10, 2.11, 2.12 |
-| 2.16 | Component accessibility and visual regression sweep | components | standards §5, MVP §4 | 3 | 2.6, 2.7, 2.8, 2.9, 2.10, 2.11, 2.12 |
+| ID | Item | Issue | Area | Refs | Est | Depends on |
+|---|---|---|---|---|---|---|
+| 2.1 | Themes package: theme model → Tailwind/daisyUI CSS | [#43](https://github.com/nexustech/webforge/issues/43) | themes | F-DS-1, S3, [stack/05](../research/stack/05-site-components.md) | 4 | 1.12 |
+| 2.2 | Fonts: bundled catalogue and on-demand download | [#44](https://github.com/nexustech/webforge/issues/44) | themes | S4, C8 | 3 | – |
+| 2.3 | Theme panel: brand colours, fonts, roundness, text and button styles | [#45](https://github.com/nexustech/webforge/issues/45) | themes | F-DS-2, F-DS-4, D7 | 4 | 2.1, 2.2, 1.26 |
+| 2.4 | Section light/dark variants | [#46](https://github.com/nexustech/webforge/issues/46) | themes | F-DS-3 | 1 | 2.1 |
+| 2.5 | Component framework: tokens, variants, stories, behaviours | [#47](https://github.com/nexustech/webforge/issues/47) | components | [stack/05](../research/stack/05-site-components.md), S1, standards §5, [ADR 0005](../docs/adr/0005-export-pipeline-spike.md) | 3 | 1.14 |
+| 2.6 | Sections A: Header, Footer, Hero, Text, Text + Image, Call to action | [#48](https://github.com/nexustech/webforge/issues/48) | components | S1, MVP §3, [ADR 0005](../docs/adr/0005-export-pipeline-spike.md) | 7 | 2.5, 1.21 |
+| 2.7 | Sections B: Features, Gallery + lightbox, Testimonials, Team, Pricing, FAQ, Logos, Stats | [#49](https://github.com/nexustech/webforge/issues/49) | components | S1, F-ED-6, G10 | 8 | 2.5 |
+| 2.8 | Sections C: Opening hours & contact, Contact form, Map, Video, Newsletter | [#50](https://github.com/nexustech/webforge/issues/50) | components | S1, F-CM-1, F-CM-4, F-CM-6, GA3 | 5 | 2.5, 1.17 |
+| 2.9 | Elements: basic set and icon picker | [#51](https://github.com/nexustech/webforge/issues/51) | components | S1, F-ED-21, F-ED-22, F-CM-5 | 5 | 2.5, 1.17 |
+| 2.10 | Carousel element | [#52](https://github.com/nexustech/webforge/issues/52) | components | G9, GA1 | 6 | 2.5 |
+| 2.11 | Elements: tabs, commerce, forms, embeds and custom code | [#53](https://github.com/nexustech/webforge/issues/53) | components | F-CM-2, F-CM-7, F-ED-15, F-ED-16 | 5 | 2.5 |
+| 2.12 | Animations and hover effects | [#54](https://github.com/nexustech/webforge/issues/54) | components | F-DS-5, G8 | 2 | 2.5 |
+| 2.13 | Design 10–12 curated themes | [#55](https://github.com/nexustech/webforge/issues/55) | themes | S3, F-DS-1 | 14 | 2.3, 2.6, 2.7, 2.8, 2.9 |
+| 2.14 | Template format and New Site flow | [#56](https://github.com/nexustech/webforge/issues/56) | content | F-SITE-1, S2, S5 | 3 | 1.8, 2.13 |
+| 2.15 | Templates: 8 starter sites | [#57](https://github.com/nexustech/webforge/issues/57) | content | F-SITE-1, S2, S5 | 20 | 2.14, 2.10, 2.11, 2.12 |
+| 2.16 | Component accessibility and visual regression sweep | [#58](https://github.com/nexustech/webforge/issues/58) | components | standards §5, MVP §4 | 3 | 2.6, 2.7, 2.8, 2.9, 2.10, 2.11, 2.12 |
 
 <details><summary>Scope and acceptance criteria</summary>
 
@@ -581,18 +581,18 @@ Screenshot baselines for every component × 3 themes × Desktop/Mobile (PR) and 
 **Goal:** Preview, export and Site Check: every template exports to a self-contained site that opens from disk in all browsers with zero external requests.  
 **Effort:** 31 days · **Scheduled:** 15 Jul 2027 → 26 Aug 2027
 
-| ID | Item | Area | Refs | Est | Depends on |
-|---|---|---|---|---|---|
-| 3.1 | Pipeline API: progress events, worker, caches | pipeline | [stack/07](../research/stack/07-export-pipeline.md), architecture §6, [ADR 0005](../docs/adr/0005-export-pipeline-spike.md) | 4 | 2.5 |
-| 3.2 | Preview server with live reload and phone preview | pipeline | F-PV-1, [stack/07](../research/stack/07-export-pipeline.md) | 3 | 3.1 |
-| 3.3 | Export to folder/ZIP, report, readable output, developer files | pipeline | F-EX-1, F-EX-3, F-EX-4, X1, X3, X4, X6, [ADR 0005](../docs/adr/0005-export-pipeline-spike.md) | 4 | 3.1, 1.17 |
-| 3.4 | Images: responsive WebP + fallback, favicons, share image | pipeline | F-EX-2, X2 | 3 | 3.1, 1.16 |
-| 3.5 | Site files: sitemap, robots, manifest, 404, meta tags, {year} | pipeline | F-ED-20, F-CM-8, X3 | 2 | 3.1, 1.18 |
-| 3.6 | Site Check engine, panel and core rules | site-check | F-CHK-1, X5, F-CM-8 | 4 | 3.1, 1.19 |
-| 3.7 | Forms: services, spam protection, thank-you page | components | F-CM-1, F-CM-6, B3, B6, GA3 | 3 | 2.8, 1.17, 3.6 |
-| 3.8 | Google Analytics with consent banner | pipeline | F-CM-3, B4, B7 | 2 | 1.17, 3.1 |
-| 3.9 | Custom code bundling and external-resource check | pipeline | F-ED-15, C7, C8, [ADR 0005](../docs/adr/0005-export-pipeline-spike.md) | 4 | 3.1, 2.11, 3.6 |
-| 3.10 | Exported-site compatibility E2E | pipeline | X1, C8, MVP §6 Phase 3 exit | 2 | 3.3, 3.4, 3.5, 2.15 |
+| ID | Item | Issue | Area | Refs | Est | Depends on |
+|---|---|---|---|---|---|---|
+| 3.1 | Pipeline API: progress events, worker, caches | [#59](https://github.com/nexustech/webforge/issues/59) | pipeline | [stack/07](../research/stack/07-export-pipeline.md), architecture §6, [ADR 0005](../docs/adr/0005-export-pipeline-spike.md) | 4 | 2.5 |
+| 3.2 | Preview server with live reload and phone preview | [#60](https://github.com/nexustech/webforge/issues/60) | pipeline | F-PV-1, [stack/07](../research/stack/07-export-pipeline.md) | 3 | 3.1 |
+| 3.3 | Export to folder/ZIP, report, readable output, developer files | [#61](https://github.com/nexustech/webforge/issues/61) | pipeline | F-EX-1, F-EX-3, F-EX-4, X1, X3, X4, X6, [ADR 0005](../docs/adr/0005-export-pipeline-spike.md) | 4 | 3.1, 1.17 |
+| 3.4 | Images: responsive WebP + fallback, favicons, share image | [#62](https://github.com/nexustech/webforge/issues/62) | pipeline | F-EX-2, X2 | 3 | 3.1, 1.16 |
+| 3.5 | Site files: sitemap, robots, manifest, 404, meta tags, {year} | [#63](https://github.com/nexustech/webforge/issues/63) | pipeline | F-ED-20, F-CM-8, X3 | 2 | 3.1, 1.18 |
+| 3.6 | Site Check engine, panel and core rules | [#64](https://github.com/nexustech/webforge/issues/64) | site-check | F-CHK-1, X5, F-CM-8 | 4 | 3.1, 1.19 |
+| 3.7 | Forms: services, spam protection, thank-you page | [#65](https://github.com/nexustech/webforge/issues/65) | components | F-CM-1, F-CM-6, B3, B6, GA3 | 3 | 2.8, 1.17, 3.6 |
+| 3.8 | Google Analytics with consent banner | [#66](https://github.com/nexustech/webforge/issues/66) | pipeline | F-CM-3, B4, B7 | 2 | 1.17, 3.1 |
+| 3.9 | Custom code bundling and external-resource check | [#67](https://github.com/nexustech/webforge/issues/67) | pipeline | F-ED-15, C7, C8, [ADR 0005](../docs/adr/0005-export-pipeline-spike.md) | 4 | 3.1, 2.11, 3.6 |
+| 3.10 | Exported-site compatibility E2E | [#68](https://github.com/nexustech/webforge/issues/68) | pipeline | X1, C8, MVP §6 Phase 3 exit | 2 | 3.3, 3.4, 3.5, 2.15 |
 
 <details><summary>Scope and acceptance criteria</summary>
 
@@ -668,15 +668,15 @@ Every template exported and opened from disk in Chromium, Firefox, WebKit (+ Edg
 **Goal:** Publish to Netlify and FTP/FTPS/SFTP with incremental uploads, plus Version History with restore and republish.  
 **Effort:** 22 days · **Scheduled:** 27 Aug 2027 → 28 Sep 2027
 
-| ID | Item | Area | Refs | Est | Depends on |
-|---|---|---|---|---|---|
-| 4.1 | Publish core: Publisher interface, manifests, upload order, verify | publish | [stack/08](../research/stack/08-publishing.md), architecture §6 | 3 | 3.3, 0.2, 0.3 |
-| 4.2 | Netlify publisher and Netlify Forms | publish | B1, B6, F-PB-1, F-CM-1 | 4 | 4.1, 3.7 |
-| 4.3 | FTP/FTPS/SFTP publisher | publish | B1, B5 | 3 | 4.1 |
-| 4.4 | Publish destinations UI and keychain credentials | publish | F-PB-1, architecture §9 | 3 | 4.2, 4.3 |
-| 4.5 | Publish flow UI | publish | F-PB-2, X5 | 2 | 4.4, 3.6 |
-| 4.6 | Version History | storage | F-SITE-4, F-PB-3, P3, P5, D7 | 5 | 1.5, 1.26, 4.5 |
-| 4.7 | Project export/import as ZIP | storage | F-SITE-5 | 2 | 1.5 |
+| ID | Item | Issue | Area | Refs | Est | Depends on |
+|---|---|---|---|---|---|---|
+| 4.1 | Publish core: Publisher interface, manifests, upload order, verify | [#69](https://github.com/nexustech/webforge/issues/69) | publish | [stack/08](../research/stack/08-publishing.md), architecture §6 | 3 | 3.3, 0.2, 0.3 |
+| 4.2 | Netlify publisher and Netlify Forms | [#70](https://github.com/nexustech/webforge/issues/70) | publish | B1, B6, F-PB-1, F-CM-1 | 4 | 4.1, 3.7 |
+| 4.3 | FTP/FTPS/SFTP publisher | [#71](https://github.com/nexustech/webforge/issues/71) | publish | B1, B5 | 3 | 4.1 |
+| 4.4 | Publish destinations UI and keychain credentials | [#72](https://github.com/nexustech/webforge/issues/72) | publish | F-PB-1, architecture §9 | 3 | 4.2, 4.3 |
+| 4.5 | Publish flow UI | [#73](https://github.com/nexustech/webforge/issues/73) | publish | F-PB-2, X5 | 2 | 4.4, 3.6 |
+| 4.6 | Version History | [#74](https://github.com/nexustech/webforge/issues/74) | storage | F-SITE-4, F-PB-3, P3, P5, D7 | 5 | 1.5, 1.26, 4.5 |
+| 4.7 | Project export/import as ZIP | [#75](https://github.com/nexustech/webforge/issues/75) | storage | F-SITE-5 | 2 | 1.5 |
 
 <details><summary>Scope and acceptance criteria</summary>
 
@@ -732,16 +732,16 @@ File → Export as .zip (JSON + media, documented) and import back to a new .wfo
 **Goal:** Production-ready signed builds, performance, onboarding and a closed beta with 10–20 small-business users on Windows and macOS.  
 **Effort:** 38 days · **Scheduled:** 29 Sep 2027 → 19 Nov 2027
 
-| ID | Item | Area | Refs | Est | Depends on |
-|---|---|---|---|---|---|
-| 5.1 | Performance budgets and benchmarks | release | architecture §10, standards §5, [ADR 0004](../docs/adr/0004-puck-with-webforge-history.md) | 3 | – |
-| 5.2 | Production builds, signing and update channels | release | [stack/01](../research/stack/01-electron-vs-tauri.md), standards §7, §10 | 3 | 0.5 |
-| 5.3 | Open-source licences screen and third-party notices | release | C1 | 1 | – |
-| 5.4 | Onboarding, help and keyboard shortcuts | shell | MVP §1, T1 | 4 | – |
-| 5.5 | Editor accessibility pass | shell | MVP §4, standards §4 | 2 | – |
-| 5.6 | Security review | release | architecture §3, §9 | 2 | – |
-| 5.7 | Pre-beta checks and closed beta programme | release | MVP §6 Phase 5, [ADR 0003](../docs/adr/0003-wforge-sqlite-storage.md) | 3 | 5.2, 5.4 |
-| 5.8 | Beta period (4 weeks): fix findings and release v1.0 | release | MVP §6 Phase 5 | 20 | 5.7 |
+| ID | Item | Issue | Area | Refs | Est | Depends on |
+|---|---|---|---|---|---|---|
+| 5.1 | Performance budgets and benchmarks | [#76](https://github.com/nexustech/webforge/issues/76) | release | architecture §10, standards §5, [ADR 0004](../docs/adr/0004-puck-with-webforge-history.md) | 3 | – |
+| 5.2 | Production builds, signing and update channels | [#77](https://github.com/nexustech/webforge/issues/77) | release | [stack/01](../research/stack/01-electron-vs-tauri.md), standards §7, §10 | 3 | 0.5 |
+| 5.3 | Open-source licences screen and third-party notices | [#78](https://github.com/nexustech/webforge/issues/78) | release | C1 | 1 | – |
+| 5.4 | Onboarding, help and keyboard shortcuts | [#79](https://github.com/nexustech/webforge/issues/79) | shell | MVP §1, T1 | 4 | – |
+| 5.5 | Editor accessibility pass | [#80](https://github.com/nexustech/webforge/issues/80) | shell | MVP §4, standards §4 | 2 | – |
+| 5.6 | Security review | [#81](https://github.com/nexustech/webforge/issues/81) | release | architecture §3, §9 | 2 | – |
+| 5.7 | Pre-beta checks and closed beta programme | [#82](https://github.com/nexustech/webforge/issues/82) | release | MVP §6 Phase 5, [ADR 0003](../docs/adr/0003-wforge-sqlite-storage.md) | 3 | 5.2, 5.4 |
+| 5.8 | Beta period (4 weeks): fix findings and release v1.0 | [#83](https://github.com/nexustech/webforge/issues/83) | release | MVP §6 Phase 5 | 20 | 5.7 |
 
 <details><summary>Scope and acceptance criteria</summary>
 
