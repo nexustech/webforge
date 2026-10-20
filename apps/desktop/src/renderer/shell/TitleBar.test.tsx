@@ -125,7 +125,7 @@ describe("CommandBox", () => {
     registry.register({ id: "x.off", label: "Unavailable", enabled: false, run: vi.fn() });
     renderTitleBar(registry);
 
-    const box = screen.getByRole("button", { name: "Search commands" });
+    const box = screen.getByRole("button", { name: /^Search commands/ });
     expect(box.textContent).toContain("Bloom Bakery");
     await userEvent.click(box);
     expect(screen.queryByRole("option", { name: "Unavailable" })).toBeNull();
