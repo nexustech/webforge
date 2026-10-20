@@ -1,12 +1,16 @@
-import type { HistoryCommand, Unsubscribe } from "./canvas-engine.js";
+import type { HistoryCommand, HistoryCommandHandler, Unsubscribe } from "./canvas-engine.js";
 
 type KeyInfo = Pick<KeyboardEvent, "key" | "ctrlKey" | "metaKey" | "altKey" | "shiftKey">;
 
 /**
  * The history command for a key press: Ctrl/Cmd+Z undoes, Ctrl/Cmd+Shift+Z and Ctrl/Cmd+Y redo
- * (U4). Uses the produced character, so it follows the keyboard layout (Ctrl+Z on AZERTY too).
+ * (U4), Esc cancels a gesture. Uses the produced character, so it follows the keyboard layout
+ * (Ctrl+Z on AZERTY too).
  */
 export function historyCommandFor(event: KeyInfo): HistoryCommand | null {
+  if (event.key === "Escape") {
+    return event.ctrlKey || event.metaKey || event.altKey || event.shiftKey ? null : "cancel";
+  }
   if (!(event.ctrlKey || event.metaKey) || event.altKey) {
     return null;
   }
@@ -29,14 +33,19 @@ const NATIVE_HISTORY: Readonly<Record<string, HistoryCommand>> = {
  * Routes every undo/redo gesture in `target` (a window, or a canvas iframe's window) to
  * `onCommand`, before anything else sees it: Puck's own history hotkeys, the rich-text editor and
  * the browser's native `contenteditable` undo (research/stack/03-undo-redo.md rules 5 and 6).
+ * Esc goes to `onCommand` first too, but reaches the rest of the page unless it cancelled something.
  */
-export function installHistoryKeys(
-  target: Window,
-  onCommand: (command: HistoryCommand) => void,
-): Unsubscribe {
+export function installHistoryKeys(target: Window, onCommand: HistoryCommandHandler): Unsubscribe {
   const onKeyDown = (event: KeyboardEvent) => {
     const command = historyCommandFor(event);
     if (command === null) {
+      return;
+    }
+    if (command === "cancel") {
+      if (onCommand(command) === true) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }
       return;
     }
     event.preventDefault();

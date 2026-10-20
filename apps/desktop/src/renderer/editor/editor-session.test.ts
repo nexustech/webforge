@@ -404,9 +404,99 @@ describe("runHistoryCommand", () => {
     const { session, typeHeading, doc } = setup();
     typeHeading("Changed");
 
-    runHistoryCommand(session.history, "undo");
+    expect(runHistoryCommand(session, "undo")).toBe(true);
     expect(doc()).toEqual(starterPage());
-    runHistoryCommand(session.history, "redo");
+    expect(runHistoryCommand(session, "redo")).toBe(true);
     expect(doc()).toEqual(withHeadingText(starterPage(), "Changed"));
+  });
+
+  it("leaves Esc alone when no gesture is in progress", () => {
+    const { session } = setup();
+
+    expect(runHistoryCommand(session, "cancel")).toBe(false);
+  });
+});
+
+describe("gestures (U2)", () => {
+  const setTitle = (title: string) => (draft: SiteDoc) => {
+    const home = draft.pages[draft.homePageId];
+    if (home !== undefined) home.doc.root.props.title = title;
+  };
+  const title = (session: ReturnType<typeof setup>["session"]) =>
+    currentPage(session)?.doc.root.props.title;
+
+  it("shows updates live and records one step on commit", () => {
+    const { session, labels } = setup();
+    const added = vi.fn();
+    session.onEntryAdded(added);
+
+    const gesture = session.begin("props", "Changed Section padding");
+    gesture.update(setTitle("a"));
+    expect(title(session)).toBe("a");
+    gesture.update(setTitle("ab"));
+    gesture.commit();
+
+    expect(labels()).toEqual(["Changed Section padding"]);
+    expect(added).toHaveBeenCalledOnce();
+    expect(added).toHaveBeenCalledWith(
+      expect.objectContaining({ label: "Changed Section padding" }),
+      "props",
+    );
+    session.history.undo();
+    expect(title(session)).toBeUndefined();
+  });
+
+  it("cancels with Esc, leaving no step and the document as it was", () => {
+    const { session, engine, labels } = setup();
+    const before = session.history.document.getState();
+    const gesture = session.begin("props", "Changed Section padding");
+    gesture.update(setTitle("a"));
+
+    expect(engine.command("cancel")).toBe(true);
+
+    expect(gesture.active).toBe(false);
+    expect(session.history.document.getState()).toBe(before);
+    expect(labels()).toEqual([]);
+    expect(engine.command("cancel")).toBe(false);
+  });
+
+  it("undoes the gesture itself when Ctrl+Z comes in the middle of it", () => {
+    const { session, engine, typeHeading, labels } = setup();
+    typeHeading("Typed");
+    const gesture = session.begin("props", "Changed Section padding");
+    gesture.update(setTitle("a"));
+
+    expect(engine.command("undo")).toBe(true);
+
+    expect(gesture.active).toBe(false);
+    expect(title(session)).toBeUndefined();
+    expect(labels()).toEqual(["Edited Heading text"]);
+    expect(session.history.state.getState().cursor).toBe(1);
+  });
+
+  it("ends a gesture as it is when a canvas edit or another gesture comes first", () => {
+    const { session, labels, typeHeading } = setup();
+    const first = session.begin("props", "First");
+    first.update(setTitle("a"));
+
+    typeHeading("Typed");
+    const second = session.begin("props", "Second");
+    second.update(setTitle("b"));
+    session.begin("props", "Third").cancel();
+
+    expect(first.active).toBe(false);
+    expect(second.active).toBe(false);
+    expect(labels()).toEqual(["First", "Edited Heading text", "Second"]);
+  });
+
+  it("records nothing for a gesture that changed nothing", () => {
+    const { session, labels } = setup();
+    const added = vi.fn();
+    session.onEntryAdded(added);
+
+    session.begin("props", "Nothing").commit();
+
+    expect(labels()).toEqual([]);
+    expect(added).not.toHaveBeenCalled();
   });
 });
