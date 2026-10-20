@@ -1,0 +1,66 @@
+diff --git a/dist/chunk-K2LNXU54.mjs b/dist/chunk-K2LNXU54.mjs
+index 81075c39650a79a9eccf7cefffdc7a65cbd00c97..8aa13a1baf0ca0ad724ca2b5a2377b79c1d4742e 100644
+--- a/dist/chunk-K2LNXU54.mjs
++++ b/dist/chunk-K2LNXU54.mjs
+@@ -1050,7 +1050,7 @@ var createPermissionsSlice = (set, get) => {
+       }));
+     } else if (root) {
+       resolvePermissionsForRoot(force);
+-    } else {
++    } else if (Object.values(config.components).some((c) => c == null ? void 0 : c.resolvePermissions) || (config.root == null ? void 0 : config.root.resolvePermissions)) {
+       flattenData(state, config).map((item2) => __async(null, null, function* () {
+         yield resolvePermissionsForItem(item2, force);
+       }));
+@@ -1185,7 +1185,7 @@ var useRegisterFieldsSlice = (appStore, id) => {
+             id
+           }
+         });
+-      } else {
++      } else if (appStore.getState().fields.fields !== defaultFields || appStore.getState().fields.id !== id) {
+         appStore.setState((s) => ({
+           fields: __spreadProps(__spreadValues({}, s.fields), { fields: defaultFields, id })
+         }));
+diff --git a/dist/index.js b/dist/index.js
+index aebc9c0e4d4eed1a407ea72d0d1469d16544d834..e619a58c33628c5a1d80f1c4083957257fede23e 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -3084,7 +3084,7 @@ var init_permissions = __esm({
+           }));
+         } else if (root) {
+           resolvePermissionsForRoot(force);
+-        } else {
++        } else if (Object.values(config.components).some((c) => c == null ? void 0 : c.resolvePermissions) || (config.root == null ? void 0 : config.root.resolvePermissions)) {
+           flattenData(state, config).map((item2) => __async(null, null, function* () {
+             yield resolvePermissionsForItem(item2, force);
+           }));
+@@ -3227,7 +3227,7 @@ var init_fields = __esm({
+                 id
+               }
+             });
+-          } else {
++          } else if (appStore.getState().fields.fields !== defaultFields2 || appStore.getState().fields.id !== id) {
+             appStore.setState((s) => ({
+               fields: __spreadProps(__spreadValues({}, s.fields), { fields: defaultFields2, id })
+             }));
+diff --git a/dist/no-external.js b/dist/no-external.js
+index af3fa6755f42679605e6805aa46fdeb90df48281..4facbf4a16f03d44007bda3e5ee579df3c47af30 100644
+--- a/dist/no-external.js
++++ b/dist/no-external.js
+@@ -3084,7 +3084,7 @@ var init_permissions = __esm({
+           }));
+         } else if (root) {
+           resolvePermissionsForRoot(force);
+-        } else {
++        } else if (Object.values(config.components).some((c) => c == null ? void 0 : c.resolvePermissions) || (config.root == null ? void 0 : config.root.resolvePermissions)) {
+           flattenData(state, config).map((item2) => __async(null, null, function* () {
+             yield resolvePermissionsForItem(item2, force);
+           }));
+@@ -3227,7 +3227,7 @@ var init_fields = __esm({
+                 id
+               }
+             });
+-          } else {
++          } else if (appStore.getState().fields.fields !== defaultFields2 || appStore.getState().fields.id !== id) {
+             appStore.setState((s) => ({
+               fields: __spreadProps(__spreadValues({}, s.fields), { fields: defaultFields2, id })
+             }));

@@ -28,6 +28,7 @@ import { preserveCaret } from "./caret.js";
 import { toPuckConfig } from "./config.js";
 import { puckDictionary } from "./dictionary.js";
 import { editFromAction, selectedNodeId } from "./edit-from-action.js";
+import { pageActions, type SlotsOf } from "./page-actions.js";
 import { staleRichText } from "./stale-rich-text.js";
 import { allNodes, findNode } from "./tree.js";
 
@@ -75,7 +76,8 @@ function emitter<T>(): Emitter<T> {
  *
  * Puck stays in charge of drag-and-drop, selection and inline editing, but not of history:
  * - every user action arrives through `onAction` and is reported as an {@link EngineEdit};
- * - undo, redo and jumps come back through `applyChange` as `setData` with `recordHistory: false`;
+ * - undo, redo and jumps come back through `applyChange` as Puck's atomic actions (or `setData` for
+ *   changes too big to translate), with `recordHistory: false`;
  * - Puck's header (with its Undo/Redo buttons) is replaced, and its Ctrl/Cmd+Z hotkeys never fire
  *   because {@link installHistoryKeys} takes those keys first, in the host and in the iframe.
  */
@@ -84,6 +86,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   let host: HTMLElement | null = null;
   let library: ComponentLibrary | null = null;
   let config: Config | null = null;
+  let slotsOf: SlotsOf = () => undefined;
   let getPuck: GetPuck | null = null;
   /**
    * The page as the app last gave it (`loadPage`, `applyChange`) or as Puck last reported it. Kept
@@ -239,6 +242,15 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       }
       host = el;
       library = opts.library;
+      const slots = new Map(
+        Object.entries(opts.library.components).map(([type, def]) => [
+          type,
+          Object.entries(def.fields)
+            .filter(([, field]) => field.kind === "slot")
+            .map(([name]) => name),
+        ]),
+      );
+      slotsOf = (type) => slots.get(type);
       config = toPuckConfig(opts.library, (id) => editorRevisions.get(id) ?? 0);
       root = createRoot(el);
       render();
@@ -273,10 +285,20 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
           if (!ids.has(id)) editorRevisions.delete(id);
         }
       }
+      // Only what changed, unless Puck shows an older page or the change is too big to translate.
+      const actions =
+        getPuck !== null && shownRevision === revision
+          ? pageActions(page, nextPage, slotsOf)
+          : null;
       page = nextPage;
       revision++;
       preserveCaret(frameDocument);
-      showPage();
+      if (actions === null) {
+        showPage();
+      } else {
+        for (const action of actions) dispatch({ ...action, recordHistory: false });
+        shownRevision = revision;
+      }
       // Puck selects by position; keep the same element selected, or none if it is gone.
       if (selection !== null && findNode(nextPage, selection) === undefined) {
         selection = null;
