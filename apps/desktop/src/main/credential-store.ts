@@ -70,7 +70,9 @@ export function createCredentialStore(file: string, cipher: SecretCipher): Crede
     try {
       text = await readFile(file, "utf8");
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") return {};
+      // No file, or a parent that is a file (Linux reports ENOTDIR where Windows says ENOENT).
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code === "ENOENT" || code === "ENOTDIR") return {};
       throw new CredentialError("read-failed", "The credentials file could not be read", {
         cause: error,
       });
