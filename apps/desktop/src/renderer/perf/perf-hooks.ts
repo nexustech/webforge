@@ -1,15 +1,16 @@
 import { syncDraft } from "@webforge/history";
 import { t } from "@webforge/i18n";
-import { isNodeDoc, type NodeDoc, pageDocSchema } from "@webforge/model";
+import { pageDocSchema } from "@webforge/model";
 import { currentPage, type EditorSession } from "../editor/editor-session.js";
 import { labelFor } from "../editor/labels.js";
+import { findNode } from "../editor/nodes.js";
 
 // Hooks for the large-page performance check (spec/04 item 0.4, ADR 0007). Only builds made with
 // `electron-vite build --mode perf` load this module (see App.tsx); normal builds never include it.
 
 /** What the performance tests can call on `window.__webforgePerf`. */
 export type PerfHooks = {
-  /** Replaces the current page with `page` (validated), then forgets the history so tests start clean. */
+  /** Replaces the current page with `page` (validated) and forgets the history, to start clean. */
   loadPage(page: unknown): void;
   /** Adds `count` history steps, each toggling the first heading's size (a real props edit). */
   addSteps(count: number): void;
@@ -19,21 +20,6 @@ declare global {
   interface Window {
     __webforgePerf?: PerfHooks;
   }
-}
-
-function firstHeading(nodes: readonly NodeDoc[]): NodeDoc | undefined {
-  for (const node of nodes) {
-    if (node.type === "Heading") {
-      return node;
-    }
-    for (const value of Object.values(node.props)) {
-      const found = Array.isArray(value) ? firstHeading(value.filter(isNodeDoc)) : undefined;
-      if (found !== undefined) {
-        return found;
-      }
-    }
-  }
-  return undefined;
 }
 
 /** Creates the hooks for `session`. */
@@ -64,7 +50,8 @@ export function createPerfHooks(session: EditorSession): PerfHooks {
       for (let step = 0; step < count; step++) {
         const { pageId } = session.ui.getState();
         session.history.run(label, (draft) => {
-          const heading = firstHeading(draft.pages[pageId]?.doc.content ?? []);
+          const content = draft.pages[pageId]?.doc.content ?? [];
+          const heading = findNode(content, (node) => node.type === "Heading");
           if (heading !== undefined) {
             heading.props.size = heading.props.size === "large" ? "medium" : "large";
           }

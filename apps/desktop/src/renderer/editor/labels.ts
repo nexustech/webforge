@@ -1,32 +1,19 @@
 import type { EngineEdit } from "@webforge/engine";
 import { t } from "@webforge/i18n";
-import { isNodeDoc, type NodeDoc, type PageDoc } from "@webforge/model";
+import type { PageDoc } from "@webforge/model";
 import type { ComponentLibrary } from "@webforge/site-components";
-
-function findNode(nodes: readonly NodeDoc[], id: string): NodeDoc | undefined {
-  for (const node of nodes) {
-    if (node.props.id === id) {
-      return node;
-    }
-    for (const value of Object.values(node.props)) {
-      const found = Array.isArray(value) ? findNode(value.filter(isNodeDoc), id) : undefined;
-      if (found !== undefined) {
-        return found;
-      }
-    }
-  }
-  return undefined;
-}
+import { findNode } from "./nodes.js";
 
 /**
  * How undo labels name an element: the name the user gave it in Layers ("'Opening times'"), else
  * its component's display name ("Heading"), as the glossary has it (D2).
  */
 function itemName(edit: EngineEdit, library: ComponentLibrary, pages: readonly PageDoc[]): string {
+  const id = edit.nodeId;
   const node =
-    edit.nodeId === null
+    id === null
       ? undefined
-      : pages.map((page) => findNode(page.content, edit.nodeId as string)).find(Boolean);
+      : pages.map((page) => findNode(page.content, (n) => n.props.id === id)).find(Boolean);
   const layerName = node?.props.layerName;
   if (typeof layerName === "string" && layerName.trim() !== "") {
     return t("history.namedItem", { name: layerName.trim() });
