@@ -13,6 +13,7 @@
     "test": "vitest run --coverage",
     "e2e": "turbo run build --filter=@webforge/desktop && pnpm --filter @webforge/e2e e2e",
     "e2e:packaged": "pnpm --filter @webforge/desktop package:dir && pnpm --filter @webforge/e2e e2e:packaged",
+    "e2e:perf": "pnpm --filter @webforge/desktop build:perf && pnpm --filter @webforge/e2e e2e:perf",
     "lint": "biome ci .",
     "format": "biome check --write .",
     "typecheck": "tsc -b",

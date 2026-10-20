@@ -16,7 +16,8 @@
     },
     "e2e": {
       // The export-setup project (playwright.config.ts) runs before the exported-site tests.
-      "entry": ["export/*.setup.ts"]
+      // The perf tests (perf/*.perf.ts, pnpm e2e:perf) use a custom testMatch.
+      "entry": ["export/*.setup.ts", "perf/*.perf.ts"]
     },
     "packages/*": {},
     "packages/pipeline": {

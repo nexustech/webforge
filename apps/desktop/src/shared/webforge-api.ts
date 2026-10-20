@@ -1,25 +1,14 @@
-import type { SiteSnapshot } from "@webforge/model";
-import type { AppInfo, ExportResult, ProjectResult, ProjectSummary } from "./ipc-contract.js";
+import type { AppApi } from "./ipc/app.js";
+import type { ProjectApi } from "./ipc/project.js";
+import type { SiteApi } from "./ipc/site.js";
 
 /**
  * The typed API the preload script exposes to the renderer as `window.webforge`.
- * The renderer reaches the main process only through this object.
+ * The renderer reaches the main process only through this object. Each key is one IPC domain
+ * (`./ipc/<domain>.ts`).
  */
 export interface WebforgeApi {
-  readonly app: {
-    /** Returns the app name and version. */
-    getInfo(): Promise<AppInfo>;
-  };
-  readonly project: {
-    /** Shows a save dialog, then creates the site there and opens it. */
-    create(): Promise<ProjectResult>;
-    /** Shows an open dialog, then opens the chosen site. */
-    open(): Promise<ProjectResult>;
-    /** The site that is open, or `null`. */
-    getCurrent(): Promise<ProjectSummary | null>;
-  };
-  readonly site: {
-    /** Shows a folder dialog, then builds the site and writes it there. */
-    export(snapshot: SiteSnapshot): Promise<ExportResult>;
-  };
+  readonly app: AppApi;
+  readonly project: ProjectApi;
+  readonly site: SiteApi;
 }

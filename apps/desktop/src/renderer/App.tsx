@@ -1,7 +1,7 @@
 import { t } from "@webforge/i18n";
 import type { SiteSnapshot } from "@webforge/model";
 import { siteLibrary, starterPage } from "@webforge/site-components";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { AppInfo, ExportResult } from "../shared/ipc-contract.js";
 import { Editor, type EditorProps } from "./editor/Editor.js";
 import { createEditorSession } from "./editor/editor-session.js";
@@ -22,6 +22,13 @@ const exportWithPreload = (snapshot: SiteSnapshot) => window.webforge.site.expor
 /** Root component of the editor window. */
 export function App({ info, createEngine, exportSite = exportWithPreload }: AppProps) {
   const [session] = useState(() => createEditorSession(siteLibrary, starterPage()));
+
+  useEffect(() => {
+    // Vite replaces MODE at build time, so normal builds drop this branch and the module with it.
+    if (import.meta.env.MODE === "perf") {
+      void import("./perf/perf-hooks.js").then((perf) => perf.installPerfHooks(session));
+    }
+  }, [session]);
 
   return (
     <div className="app">

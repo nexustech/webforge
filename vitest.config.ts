@@ -25,6 +25,8 @@ export default defineConfig({
       include: workspaces.map((ws) => `${ws.path}/src/**/*.{ts,tsx}`),
       exclude: [
         "**/*.test.{ts,tsx}",
+        // Fakes and helpers that only tests import (e.g. fake-engine, fake-netlify).
+        "**/*.test-helper.{ts,tsx}",
         "**/*.d.ts",
         // Process entry points only wire tested modules together; Playwright E2E tests cover them.
         "apps/desktop/src/main/index.ts",
