@@ -27,24 +27,38 @@ function childrenIn(value: unknown): NodeDoc[] {
   return Array.isArray(value) ? value.filter(isNodeDoc) : [];
 }
 
-/** Whether a node is exported: not hidden in Layers (F-ED-12), which leaves out its slots too. */
-const isShown = (node: NodeDoc) => node.props.hidden !== true;
+/** Options of {@link walkNodes} and {@link renderNodesToHtml}. */
+type NodeListOptions = {
+  /**
+   * Include nodes hidden in Layers (F-ED-12). The export leaves them out (the default); the canvas
+   * still shows them, dimmed, so its site CSS needs their classes (#142).
+   */
+  readonly includeHidden?: boolean;
+};
+
+/** Which nodes `options` keeps: all, or those not hidden in Layers (with everything in them). */
+const keeps =
+  (options: NodeListOptions) =>
+  (node: NodeDoc): boolean =>
+    options.includeHidden === true || node.props.hidden !== true;
 
 /**
- * Calls `visit` for every exported node in `nodes` and their slots, in document order. Hidden
- * nodes and everything in them are skipped, so their media and behaviours aren't exported either.
+ * Calls `visit` for every node in `nodes` and their slots, in document order. Hidden nodes and
+ * everything in them are skipped unless `options.includeHidden`, so by default their media and
+ * behaviours aren't exported.
  */
 export function walkNodes(
   nodes: readonly NodeDoc[],
   library: ComponentLibrary,
   visit: (node: NodeDoc, def: ComponentDef) => void,
+  options: NodeListOptions = {},
 ): void {
-  for (const node of nodes.filter(isShown)) {
+  for (const node of nodes.filter(keeps(options))) {
     const def = definitionOf(library, node);
     visit(node, def);
     for (const [name, field] of Object.entries(def.fields)) {
       if (field.kind === "slot") {
-        walkNodes(childrenIn(node.props[name]), library, visit);
+        walkNodes(childrenIn(node.props[name]), library, visit, options);
       }
     }
   }
@@ -76,7 +90,15 @@ export function behavioursUsedBy(
   return [...names].sort();
 }
 
-function renderNode(node: NodeDoc, library: ComponentLibrary, context: RenderContext): ReactNode {
+/** What rendering a list of nodes needs, passed down to the nodes in slots. */
+type Rendering = {
+  readonly library: ComponentLibrary;
+  readonly context: RenderContext;
+  readonly keep: (node: NodeDoc) => boolean;
+};
+
+function renderNode(node: NodeDoc, rendering: Rendering): ReactNode {
+  const { library, context } = rendering;
   const def = definitionOf(library, node);
   const { id, ...props } = node.props;
   const values: Record<string, unknown> = { ...props };
@@ -88,43 +110,35 @@ function renderNode(node: NodeDoc, library: ComponentLibrary, context: RenderCon
       values[name] = <RichText html={value} />;
     } else if (field.kind === "slot") {
       const children = childrenIn(value);
-      slots[name] = () => <>{renderNodes(children, library, context)}</>;
+      slots[name] = () => <>{renderNodes(children, rendering)}</>;
     }
   }
   return def.render({ id, values, slots, context });
 }
 
-function renderNodes(
-  nodes: readonly NodeDoc[],
-  library: ComponentLibrary,
-  context: RenderContext,
-): ReactNode[] {
+function renderNodes(nodes: readonly NodeDoc[], rendering: Rendering): ReactNode[] {
   return nodes
-    .filter(isShown)
-    .map((node) => (
-      <StaticNode key={node.props.id} node={node} library={library} context={context} />
-    ));
+    .filter(rendering.keep)
+    .map((node) => <StaticNode key={node.props.id} node={node} rendering={rendering} />);
 }
 
-function StaticNode(props: {
-  readonly node: NodeDoc;
-  readonly library: ComponentLibrary;
-  readonly context: RenderContext;
-}) {
-  return <>{renderNode(props.node, props.library, props.context)}</>;
+function StaticNode(props: { readonly node: NodeDoc; readonly rendering: Rendering }) {
+  return <>{renderNode(props.node, props.rendering)}</>;
 }
 
 /**
  * Renders a list of nodes (a page's content, or the Header or Footer) to static HTML, without any
- * editor wrappers or hidden nodes. Throws {@link UnknownComponentError} for component types the
- * library lacks.
+ * editor wrappers, and without hidden nodes unless `options.includeHidden`. Throws
+ * {@link UnknownComponentError} for component types the library lacks.
  */
 export function renderNodesToHtml(
   nodes: readonly NodeDoc[],
   library: ComponentLibrary,
   context: RenderContext,
+  options: NodeListOptions = {},
 ): string {
   // Check every type first so an unknown one fails before React swallows it in a render.
-  walkNodes(nodes, library, () => {});
-  return renderToStaticMarkup(<>{renderNodes(nodes, library, context)}</>);
+  walkNodes(nodes, library, () => {}, options);
+  const rendering: Rendering = { library, context, keep: keeps(options) };
+  return renderToStaticMarkup(<>{renderNodes(nodes, rendering)}</>);
 }

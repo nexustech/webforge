@@ -264,6 +264,33 @@ describe("tree helpers", () => {
     expect(visited).toEqual(["s", "shown"]);
   });
 
+  it("includes hidden nodes when asked, for the canvas's styles (#142)", () => {
+    const nodes: NodeDoc[] = [
+      {
+        type: "Hero",
+        props: { id: "hero", title: "Hidden hero", image: { mediaId: "hero" }, hidden: true },
+      },
+      {
+        type: "Section",
+        props: {
+          id: "s",
+          hidden: true,
+          content: [{ type: "Heading", props: { id: "h", text: "Inside a hidden section" } }],
+        },
+      },
+    ];
+
+    const html = renderNodesToHtml(nodes, siteLibrary, context, { includeHidden: true });
+
+    expect(html).toContain("Hidden hero");
+    expect(html).toContain("Inside a hidden section");
+    const visited: string[] = [];
+    walkNodes(nodes, siteLibrary, (node) => visited.push(node.props.id), { includeHidden: true });
+    expect(visited).toEqual(["hero", "s", "h"]);
+    // The export's default still leaves them out.
+    expect(renderNodesToHtml(nodes, siteLibrary, context)).toBe("");
+  });
+
   it("behavioursUsedBy lists the scripts the components need", () => {
     expect(behavioursUsedBy(starterLayout("x").header, siteLibrary)).toEqual(["menu"]);
     expect(behavioursUsedBy(starterPage().content, siteLibrary)).toEqual([]);
