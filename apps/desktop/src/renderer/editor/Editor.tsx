@@ -214,13 +214,17 @@ export function Editor({
       );
       return <UndoHistoryPanel history={{ jumpTo }} state={historyState} />;
     }
-    const removeUndoHistory = panels.register({
+    return panels.register({
       id: "undoHistory",
       slot: "left.bottom",
       title: t("editor.undoHistory"),
       component: UndoHistory,
     });
-    // The Edit panel replaces Puck's own fields (1.14).
+  }, [panels, history]);
+
+  // The Edit panel replaces Puck's own fields (1.14). Registered on its own, so that changing the
+  // editor level redraws it without moving the other panels' tabs.
+  useEffect(() => {
     function Edit() {
       return (
         <EditPanelHost
@@ -230,17 +234,13 @@ export function Editor({
         />
       );
     }
-    const removeEdit = panels.register({
+    return panels.register({
       id: "edit",
       slot: "right.top",
       title: t("editPanel.title"),
       component: Edit,
     });
-    return () => {
-      removeUndoHistory();
-      removeEdit();
-    };
-  }, [panels, history, session, editorLevel]);
+  }, [panels, session, editorLevel]);
 
   useEffect(() => registerMediaPanel(panels, session), [panels, session]);
   useEffect(() => registerImageField({ session }), [session]);
