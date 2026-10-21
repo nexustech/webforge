@@ -30,7 +30,12 @@ test("edits the Footer on one page, shows it on another, and undoes it everywher
   await expect(canvas().locator(".site-header")).toBeVisible();
   await expect(footer()).toHaveText("Thanks for visiting.");
 
-  await footer().click();
+  const field = footer().locator("[contenteditable]");
+  // Puck makes the field editable only while it is hovered or focused.
+  await field.hover();
+  await expect(field).toHaveAttribute("contenteditable", "plaintext-only");
+  await field.click();
+  await expect(field).toBeFocused();
   await page.keyboard.press("End");
   await page.keyboard.type(" Come again!", { delay: 20 });
   await expect(footer()).toHaveText("Thanks for visiting. Come again!");
