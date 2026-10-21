@@ -60,10 +60,11 @@ const canvas = () => page.frameLocator(".editor__canvas iframe");
 const right = () => page.getByRole("region", { name: "Right panels" });
 
 test("links a button to a section, and the exported link follows a renamed page", async () => {
-  // Select the Hero by its edge, clear of its inline-editable text.
+  // Select the Hero in its top padding (64 px), clear of its inline-editable text and, at a small
+  // zoom, of the canvas's own drop zone along its edge.
   const hero = canvas().locator(".site-hero");
-  const { height } = await hero.evaluate((element) => element.getBoundingClientRect());
-  await hero.click({ position: { x: 8, y: height - 8 } });
+  const { width } = await hero.evaluate((element) => element.getBoundingClientRect());
+  await hero.click({ force: true, position: { x: width / 2, y: 32 } });
   await expect(right().getByRole("heading", { name: "Hero", exact: true })).toBeVisible();
 
   await right().getByRole("button", { name: "Add Link…" }).click();
