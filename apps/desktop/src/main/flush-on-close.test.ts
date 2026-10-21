@@ -6,7 +6,7 @@ type Handler = (event: IpcMainInvokeEvent, ...args: unknown[]) => Promise<unknow
 
 const APP_URL = "file:///app/index.html";
 
-function setUp(beforeClose?: () => Promise<void>) {
+function setUp(beforeClose?: () => Promise<void>, crashed = false) {
   const handlers = new Map<string, Handler>();
   const ipc = {
     handle: (channel: string, handler: Handler) => handlers.set(channel, handler),
@@ -33,6 +33,7 @@ function setUp(beforeClose?: () => Promise<void>) {
     isDestroyed: () => false,
     webContents: {
       send: (...args: unknown[]) => sent.push(args),
+      isCrashed: () => crashed,
       on: (_event, listener) => {
         inputListener = listener as typeof inputListener;
       },
@@ -112,6 +113,19 @@ describe("createFlushOnClose", () => {
     await vi.advanceTimersByTimeAsync(1);
 
     expect(window.close).toHaveBeenCalledTimes(1);
+  });
+
+  it("closes a crashed renderer's window at once, without asking it to save (#121)", async () => {
+    const beforeClose = vi.fn(async () => undefined);
+    const { window, sent, userCloses, onClosed } = setUp(beforeClose, true);
+
+    userCloses();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(sent).toEqual([]);
+    expect(beforeClose).toHaveBeenCalledTimes(1);
+    expect(window.close).toHaveBeenCalledTimes(1);
+    expect(onClosed).toHaveBeenCalledTimes(1);
   });
 
   it("ignores answers for other requests and from other frames", async () => {

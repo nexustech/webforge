@@ -55,7 +55,7 @@ describe("createSiteSwitch", () => {
     await expect(failing.siteSwitch.leaveSite()).resolves.toBeUndefined();
   });
 
-  it("goes on without a thumbnail when a crashed renderer never answers the capture", async () => {
+  it("goes on without a thumbnail when a hung renderer never answers the capture (#121)", async () => {
     const hung = setUp("/sites/a.wforge", () => new Promise(() => undefined), 10);
 
     await expect(hung.siteSwitch.leaveSite()).resolves.toBeUndefined();
