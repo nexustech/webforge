@@ -66,14 +66,17 @@ export function labelFor(edit: EngineEdit, library: ComponentLibrary, before?: P
       return t("history.duplicated", { item });
     case "text": {
       // Name the field only where the element has several kinds of text (a Hero's title, text and
-      // button text); a Heading's one text stays "Edited Heading text".
+      // button text); a Heading's one text stays "Edited Heading text", and so does a field named
+      // like its element (a Question's question).
       const component =
         edit.componentType === null ? undefined : library.components[edit.componentType];
       const texts = Object.values(component?.fields ?? {}).filter(
         (field) => field.kind === "text" || field.kind === "richtext",
       );
       const field = fieldOf(edit, library);
-      return texts.length > 1 && field !== undefined
+      return texts.length > 1 &&
+        field !== undefined &&
+        field.label.toLowerCase() !== item.toLowerCase()
         ? t("history.editedField", { item, field: field.label.toLowerCase() })
         : t("history.editedText", { item });
     }

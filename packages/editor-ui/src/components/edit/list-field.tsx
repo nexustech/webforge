@@ -1,6 +1,6 @@
 import { t } from "@webforge/i18n";
 import { ArrowDownIcon, ArrowUpIcon, ChevronRightIcon, PlusIcon, Trash2Icon } from "lucide-react";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { cn } from "../../lib/cn.js";
 import { Button } from "../ui/button.js";
 import type {
@@ -65,9 +65,25 @@ export function ListField({ id, labelId, field, value, onChange, onCommit }: Fie
   const item = field.itemLabel ?? "";
   const fields = field.itemFields ?? [];
   const [open, setOpen] = useState<Open>(null);
+  // Where focus goes once a deleted item's row (and its focused Delete button) has gone: the row
+  // that took its place, else the one before, else Add.
+  const [focusAfterDelete, setFocusAfterDelete] = useState<string | null>(null);
+  const root = useRef<HTMLFieldSetElement>(null);
+  useEffect(() => {
+    if (focusAfterDelete === null) {
+      return;
+    }
+    setFocusAfterDelete(null);
+    const target =
+      root.current?.querySelector<HTMLElement>(
+        `[data-list-row="${CSS.escape(focusAfterDelete)}"]`,
+      ) ?? root.current?.querySelector<HTMLElement>("[data-list-add]");
+    target?.focus();
+  }, [focusAfterDelete]);
   const change = (listChange: ListChange) => onChange(listChange);
   return (
     <fieldset
+      ref={root}
       id={id}
       aria-labelledby={labelId}
       className="m-0 flex min-w-0 flex-col gap-1 border-0 p-0"
@@ -77,8 +93,12 @@ export function ListField({ id, labelId, field, value, onChange, onCommit }: Fie
       ) : (
         <ul className="flex flex-col gap-1">
           {items.map((entry, index) => {
+            // The added item opens only as it arrives, the last of one more item than before.
             const expanded =
-              open !== null && ("key" in open ? open.key === entry.key : open.added === index);
+              open !== null &&
+              ("key" in open
+                ? open.key === entry.key
+                : open.added === index && items.length === index + 1);
             const summary =
               summaryOf(entry, fields) || t("editPanel.list.untitled", { item, number: index + 1 });
             const contentId = `${id}-${entry.key}`;
@@ -87,8 +107,9 @@ export function ListField({ id, labelId, field, value, onChange, onCommit }: Fie
                 <div className="flex items-center gap-0.5 pr-0.5">
                   <button
                     type="button"
+                    data-list-row={entry.key}
                     aria-expanded={expanded}
-                    aria-controls={contentId}
+                    aria-controls={expanded ? contentId : undefined}
                     className={cn(
                       "flex min-w-0 flex-1 items-center gap-1 rounded-sm px-1.5 py-1 text-left text-xs",
                       "outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring",
@@ -120,7 +141,11 @@ export function ListField({ id, labelId, field, value, onChange, onCommit }: Fie
                   </RowAction>
                   <RowAction
                     label={t("editPanel.list.delete", { item })}
-                    onClick={() => change({ type: "remove", key: entry.key })}
+                    onClick={() => {
+                      const next = items[index + 1] ?? items[index - 1];
+                      setFocusAfterDelete(next?.key ?? "");
+                      change({ type: "remove", key: entry.key });
+                    }}
                   >
                     <Trash2Icon className="size-3.5" />
                   </RowAction>
@@ -166,6 +191,7 @@ export function ListField({ id, labelId, field, value, onChange, onCommit }: Fie
         variant="ghost"
         size="sm"
         className="self-start"
+        data-list-add
         onClick={() => {
           setOpen({ added: items.length });
           change({ type: "add" });

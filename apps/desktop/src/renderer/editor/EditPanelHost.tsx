@@ -287,10 +287,12 @@ export function EditPanelHost({ session, flush }: EditPanelHostProps) {
 
   /**
    * One change to a list (F-ED-6), as one step: "Added Question". Typing in an item's text field
-   * is one step per visit, like any text field.
+   * is one step per visit, like any text field, and so is a drag of an item's slider.
    */
   const changeList = (name: string, list: EditableList, change: ListChange) => {
-    const text = change.type === "edit" && list.fields[change.name]?.kind === "text";
+    const itemKind = change.type === "edit" ? list.fields[change.name]?.kind : undefined;
+    const text = itemKind === "text";
+    const merged = text || itemKind === "slider";
     const runKey = change.type === "edit" ? `${name}:${change.key}:${change.name}` : name;
     if (openRun.current?.key !== runKey) {
       endRun();
@@ -326,9 +328,9 @@ export function EditPanelHost({ session, flush }: EditPanelHostProps) {
           return items;
         });
       },
-      { selectionAfter, ...(text ? { coalesceKey: textKey } : {}) },
+      { selectionAfter, ...(merged ? { coalesceKey: textKey } : {}) },
     );
-    if (text) {
+    if (merged) {
       openRun.current = {
         nodeId: id,
         name,

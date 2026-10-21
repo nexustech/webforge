@@ -300,6 +300,32 @@ describe("list renderer (F-ED-6)", () => {
     expect(onCommit).toHaveBeenCalledWith("testimonials");
   });
 
+  it("moves focus to the next row when an item is deleted, or to Add when none is left", async () => {
+    const { view, user } = renderList();
+
+    await user.click(screen.getAllByRole("button", { name: "Delete Testimonial" })[0] as Element);
+    view.rerender(
+      <EditPanel
+        heading="Testimonials"
+        fields={[{ ...testimonials, value: [{ key: "b", values: { quote: "" } }] }]}
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+      />,
+    );
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Testimonial 1" }));
+
+    await user.click(screen.getByRole("button", { name: "Delete Testimonial" }));
+    view.rerender(
+      <EditPanel
+        heading="Testimonials"
+        fields={[{ ...testimonials, value: [] }]}
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+      />,
+    );
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Add Testimonial" }));
+  });
+
   it("opens the item Add creates once it arrives", async () => {
     const { view, user } = renderList([]);
     expect(screen.getByText(t("editPanel.list.empty"))).toBeDefined();

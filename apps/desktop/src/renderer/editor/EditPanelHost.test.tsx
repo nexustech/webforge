@@ -2,7 +2,7 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { PageDoc, PageId } from "@webforge/model";
-import { siteLibrary } from "@webforge/site-components";
+import { type ComponentLibrary, siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { EditPanelHost } from "./EditPanelHost.js";
 import { createEditorSession, currentPage, runHistoryCommand } from "./editor-session.js";
@@ -293,6 +293,58 @@ describe("EditPanelHost", () => {
       expect(questions()?.slice(0, 2)).toEqual(["Open on Sunday?", "Parking?"]);
     });
 
+    it("makes one step of a slider drag in a list item", async () => {
+      const library: ComponentLibrary = {
+        components: {
+          ...siteLibrary.components,
+          Ratings: {
+            label: "Ratings",
+            fields: {
+              items: {
+                kind: "list",
+                label: "Ratings",
+                itemLabel: "Rating",
+                fields: {
+                  stars: {
+                    kind: "slider",
+                    label: "Stars",
+                    steps: ["1", "2", "3"].map((value) => ({ label: value, value })),
+                  },
+                },
+                defaults: { stars: "1" },
+              },
+            },
+            defaults: { items: [] },
+            render: () => null,
+          },
+        },
+      };
+      const site = starterSite();
+      site.pages[site.homePageId]?.doc.content.push({
+        type: "Ratings",
+        props: { id: "ratings", items: [{ id: "r1", stars: "1" }] },
+      });
+      const session = createEditorSession(library, site);
+      session.ui.setState({ nodeId: "ratings" });
+      render(<EditPanelHost session={session} flush={vi.fn()} />);
+      await userEvent.setup().click(screen.getByRole("button", { name: "Rating 1" }));
+      const slider = screen.getByLabelText("Stars");
+
+      fireEvent.pointerDown(slider);
+      fireEvent.change(slider, { target: { value: "1" } });
+      fireEvent.change(slider, { target: { value: "2" } });
+      fireEvent.pointerUp(slider);
+      fireEvent.pointerDown(slider);
+      fireEvent.change(slider, { target: { value: "0" } });
+      fireEvent.pointerUp(slider);
+
+      expect(session.history.entries().map((entry) => entry.label)).toEqual([
+        "Changed Rating stars",
+        "Changed Rating stars",
+      ]);
+      expect(currentPage(session)?.doc.content[1]?.props.items).toEqual([{ id: "r1", stars: "1" }]);
+    });
+
     it("makes one step of typing in a question, and another for the next question", async () => {
       const { labels, questions, user } = setup("faq");
       await user.click(screen.getByRole("button", { name: "Open on Sunday?" }));
@@ -303,7 +355,7 @@ describe("EditPanelHost", () => {
       await user.type(screen.getByLabelText("Question"), "?");
 
       expect(questions()).toEqual(["Open on Sunday?!!", "Parking??"]);
-      expect(labels()).toEqual(["Edited Question question", "Edited Question question"]);
+      expect(labels()).toEqual(["Edited Question text", "Edited Question text"]);
     });
   });
 });

@@ -52,7 +52,10 @@ export function editableList(field: FieldDef, library: ComponentLibrary): Editab
     type,
     itemLabel: component.label,
     fields: Object.fromEntries(
-      Object.entries(component.fields).filter(([, def]) => ITEM_KINDS.has(def.kind)),
+      // An item's value is the same on every device (see ListItemFieldDef).
+      Object.entries(component.fields).filter(
+        ([, def]) => ITEM_KINDS.has(def.kind) && def.responsive !== true,
+      ),
     ),
     defaults: component.defaults,
   };

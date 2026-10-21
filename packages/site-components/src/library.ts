@@ -64,11 +64,14 @@ export type FieldDef = {
     }
 );
 
-/** The kinds of field a list item can have: plain values, edited in the item's row. */
+/**
+ * The kinds of field a list item can have: plain values, edited in the item's row. An item's value
+ * is the same on every device.
+ */
 export type ListItemFieldDef = Extract<
   FieldDef,
   { readonly kind: "text" | "select" | "toggle" | "slider" | "color" | "spacing" }
->;
+> & { readonly responsive?: false };
 
 /**
  * One item of a `list` field: its values and an id that stays with it when the list is reordered.
