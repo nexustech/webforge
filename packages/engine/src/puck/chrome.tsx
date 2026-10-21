@@ -3,6 +3,7 @@ import { t } from "@webforge/i18n";
 import { ArrowDownIcon, ArrowUpIcon } from "lucide-react";
 import { type ReactNode, useLayoutEffect, useRef, useState } from "react";
 import type { InsertPoint } from "../canvas-engine.js";
+import { HIDDEN_ATTRIBUTE } from "./config.js";
 import { canPerform, performOnSelected } from "./selected-actions.js";
 import { ROOT_ZONE } from "./tree.js";
 
@@ -48,6 +49,10 @@ const CHROME_CSS = `
   cursor: pointer;
   pointer-events: auto;
   transform: translate(-50%, 50%) scale(calc(1 / var(--wf-zoom, 1)));
+}
+/* A hidden element (Layers' Hide): dimmed, still there to select and show again. */
+[${HIDDEN_ATTRIBUTE}] {
+  opacity: 0.35;
 }
 .wf-add:focus-visible {
   outline: 2px solid #fff;
