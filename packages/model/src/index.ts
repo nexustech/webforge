@@ -1,7 +1,10 @@
 export type { LayoutDoc, NodeAdvanced, NodeDoc, PageDoc, SiteCode, Theme } from "./documents.js";
 export {
+  attributeNameSchema,
+  classNamesSchema,
   isNodeDoc,
   layoutDocSchema,
+  nodeAdvancedSchema,
   pageDocSchema,
   siteCodeSchema,
   themeSchema,

@@ -23,6 +23,11 @@ function itemName(edit: EngineEdit, library: ComponentLibrary, pages: readonly P
   return component?.label ?? edit.componentType ?? "";
 }
 
+/** "Changed {item} {field}" for a field the component doesn't define, such as the Advanced tab's. */
+export function changedLabel(edit: EngineEdit, library: ComponentLibrary, field: string): string {
+  return t("history.changed", { item: itemName(edit, library, [edit.page]), field });
+}
+
 /** The definition of the field an edit changed, if any. */
 function fieldOf(edit: EngineEdit, library: ComponentLibrary): FieldDef | undefined {
   const component =

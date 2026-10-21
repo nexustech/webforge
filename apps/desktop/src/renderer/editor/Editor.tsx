@@ -8,6 +8,7 @@ import {
 } from "@webforge/engine";
 import { t } from "@webforge/i18n";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import type { Preferences } from "../../shared/ipc-contract.js";
 import { connectCanvasImages } from "../media/canvas-images.js";
 import { registerImageField } from "../media/ImageField.js";
 import { registerMediaPanel } from "../media/register-media-panel.js";
@@ -41,6 +42,8 @@ export type EditorProps = {
   readonly mode?: EditorMode;
   /** The canvas toolbar's zoom and size readout (1.15), kept in step with the engine. */
   readonly canvasView?: CanvasView;
+  /** Simple or Advanced mode (F-ED-11): Advanced adds the Edit panel's Advanced tab. */
+  readonly editorLevel?: Preferences["editorLevel"];
 };
 
 const compileWithPreload: CompileCanvasCss = (request) =>
@@ -56,6 +59,7 @@ export function Editor({
   compileCss = compileWithPreload,
   mode = "design",
   canvasView,
+  editorLevel = "simple",
 }: EditorProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [engine, setEngine] = useState<CanvasEngine | null>(null);
@@ -210,27 +214,33 @@ export function Editor({
       );
       return <UndoHistoryPanel history={{ jumpTo }} state={historyState} />;
     }
-    const removeUndoHistory = panels.register({
+    return panels.register({
       id: "undoHistory",
       slot: "left.bottom",
       title: t("editor.undoHistory"),
       component: UndoHistory,
     });
-    // The Edit panel replaces Puck's own fields (1.14).
+  }, [panels, history]);
+
+  // The Edit panel replaces Puck's own fields (1.14). Registered on its own, so that changing the
+  // editor level redraws it without registering Undo History again.
+  useEffect(() => {
     function Edit() {
-      return <EditPanelHost session={session} flush={() => connectionRef.current?.flush()} />;
+      return (
+        <EditPanelHost
+          session={session}
+          flush={() => connectionRef.current?.flush()}
+          advanced={editorLevel === "advanced"}
+        />
+      );
     }
-    const removeEdit = panels.register({
+    return panels.register({
       id: "edit",
       slot: "right.top",
       title: t("editPanel.title"),
       component: Edit,
     });
-    return () => {
-      removeUndoHistory();
-      removeEdit();
-    };
-  }, [panels, history, session]);
+  }, [panels, session, editorLevel]);
 
   useEffect(() => registerMediaPanel(panels, session), [panels, session]);
   useEffect(() => registerImageField({ session }), [session]);

@@ -5,6 +5,7 @@ import {
   EDITOR_RENDER_CONTEXT,
   type FieldDef,
   type RenderContext,
+  withAdvanced,
 } from "@webforge/site-components";
 import { type ComponentType, Fragment, type ReactNode } from "react";
 
@@ -66,7 +67,9 @@ function toPuckComponent(
             (entry): entry is readonly [string, ComponentType] => typeof entry[1] === "function",
           ),
       );
-      return <>{def.render({ id, values, slots, context: context() })}</>;
+      return (
+        <>{withAdvanced(def.render({ id, values, slots, context: context() }), values.advanced)}</>
+      );
     },
   };
 }

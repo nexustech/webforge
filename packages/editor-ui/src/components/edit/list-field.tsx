@@ -125,20 +125,24 @@ export function ListField({ id, labelId, field, value, onChange, onCommit }: Fie
                     />
                     <span className="truncate">{summary}</span>
                   </button>
-                  <RowAction
-                    label={t("editPanel.list.moveUp", { item })}
-                    disabled={index === 0}
-                    onClick={() => change({ type: "move", key: entry.key, to: index - 1 })}
-                  >
-                    <ArrowUpIcon className="size-3.5" />
-                  </RowAction>
-                  <RowAction
-                    label={t("editPanel.list.moveDown", { item })}
-                    disabled={index === items.length - 1}
-                    onClick={() => change({ type: "move", key: entry.key, to: index + 1 })}
-                  >
-                    <ArrowDownIcon className="size-3.5" />
-                  </RowAction>
+                  {field.orderless === true ? null : (
+                    <>
+                      <RowAction
+                        label={t("editPanel.list.moveUp", { item })}
+                        disabled={index === 0}
+                        onClick={() => change({ type: "move", key: entry.key, to: index - 1 })}
+                      >
+                        <ArrowUpIcon className="size-3.5" />
+                      </RowAction>
+                      <RowAction
+                        label={t("editPanel.list.moveDown", { item })}
+                        disabled={index === items.length - 1}
+                        onClick={() => change({ type: "move", key: entry.key, to: index + 1 })}
+                      >
+                        <ArrowDownIcon className="size-3.5" />
+                      </RowAction>
+                    </>
+                  )}
                   <RowAction
                     label={t("editPanel.list.delete", { item })}
                     onClick={() => {

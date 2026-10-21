@@ -343,3 +343,129 @@ describe("list renderer (F-ED-6)", () => {
     expect(screen.getByLabelText("Quote")).toBeDefined();
   });
 });
+
+describe("Advanced tab and checked text fields (F-ED-11)", () => {
+  const anchor: EditPanelField = {
+    name: "anchor",
+    kind: "text",
+    label: "Anchor ID",
+    group: "advanced",
+    value: "",
+    validate: (value) => (/^[a-z]+(?:-[a-z]+)*$/.test(value) ? undefined : "Not an anchor"),
+  };
+
+  function renderAdvanced(advanced: boolean) {
+    const onChange = vi.fn();
+    const onCommit = vi.fn();
+    render(
+      <EditPanel
+        heading="Heading"
+        fields={[...fields, anchor]}
+        onChange={onChange}
+        onCommit={onCommit}
+        advanced={advanced}
+      />,
+    );
+    return { onChange, onCommit, user: userEvent.setup() };
+  }
+
+  it("shows the Advanced tab only when asked to", () => {
+    renderAdvanced(false);
+    expect(screen.queryByRole("tab", { name: t("editPanel.advanced") })).toBeNull();
+    cleanup();
+
+    renderAdvanced(true);
+    expect(screen.getByRole("tab", { name: t("editPanel.advanced") })).toBeDefined();
+  });
+
+  it("reports a checked field's text only when it is valid and the user is done", async () => {
+    const { onChange, onCommit, user } = renderAdvanced(true);
+    await user.click(screen.getByRole("tab", { name: t("editPanel.advanced") }));
+    const input = screen.getByLabelText("Anchor ID");
+
+    // Passing through invalid text ("my-") on the way is fine.
+    await user.type(input, "my-");
+    expect(onChange).not.toHaveBeenCalled();
+    await user.type(input, "{Enter}");
+    expect(screen.getByText("Not an anchor")).toBeDefined();
+    expect(input.getAttribute("aria-invalid")).toBe("true");
+    expect(onChange).not.toHaveBeenCalled();
+
+    await user.type(input, "prices");
+    fireEvent.blur(input);
+
+    expect(onChange.mock.calls).toEqual([["anchor", "my-prices"]]);
+    expect(onCommit).toHaveBeenCalledWith("anchor");
+    expect(screen.queryByText("Not an anchor")).toBeNull();
+  });
+
+  it("starts afresh for another element, leaving nothing typed for the last one", async () => {
+    const view = render(
+      <EditPanel
+        heading="Heading"
+        fields={[anchor]}
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+        advanced
+        itemKey="a"
+      />,
+    );
+    const user = userEvent.setup();
+    await user.type(screen.getByLabelText("Anchor ID"), "Oops{Enter}");
+    expect(screen.getByText("Not an anchor")).toBeDefined();
+
+    view.rerender(
+      <EditPanel
+        heading="Heading"
+        fields={[anchor]}
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+        advanced
+        itemKey="b"
+      />,
+    );
+
+    expect((screen.getByLabelText("Anchor ID") as HTMLInputElement).value).toBe("");
+    expect(screen.queryByText("Not an anchor")).toBeNull();
+  });
+
+  it("offers no moves in a list whose order means nothing", () => {
+    render(
+      <EditPanel
+        heading="Heading"
+        fields={[
+          {
+            name: "attributes",
+            kind: "list",
+            label: "Attributes",
+            group: "content",
+            itemLabel: "Attribute",
+            orderless: true,
+            itemFields: [{ name: "name", kind: "text", label: "Name" }],
+            value: [
+              { key: "0", values: { name: "role" } },
+              { key: "1", values: { name: "title" } },
+            ],
+          },
+        ]}
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole("button", { name: "Move Attribute up" })).toBeNull();
+    expect(screen.getAllByRole("button", { name: "Delete Attribute" })).toHaveLength(2);
+  });
+
+  it("goes back to the stored text with Esc", async () => {
+    const { onChange, user } = renderAdvanced(true);
+    await user.click(screen.getByRole("tab", { name: t("editPanel.advanced") }));
+    const input = screen.getByLabelText("Anchor ID") as HTMLInputElement;
+
+    await user.type(input, "Oops{Escape}");
+    fireEvent.blur(input);
+
+    expect(input.value).toBe("");
+    expect(onChange).not.toHaveBeenCalled();
+  });
+});

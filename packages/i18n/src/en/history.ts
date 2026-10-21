@@ -13,6 +13,10 @@ export const history = {
   // The device's own value dropped, so it uses Desktop's again.
   "history.resetOn": "Reset {item} {field} on {device}",
   "history.changedPage": "Changed page settings",
+  // The Advanced tab's fields, as {field} names them: "Changed Heading CSS classes".
+  "history.field.className": "CSS classes",
+  "history.field.anchorId": "anchor ID",
+  "history.field.attributes": "attributes",
   "history.editedPage": "Edited page",
   // An element the user named in Layers, used as {item} above.
   "history.namedItem": "'{name}'",

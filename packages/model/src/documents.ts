@@ -53,14 +53,18 @@ export type Theme = {
  * Attribute names Advanced mode accepts: `data-*`, `aria-*` and a few harmless global attributes.
  * An allow-list, so nothing can add event handlers, inline styles or `javascript:` URLs.
  */
-const attributeNameSchema = z
+export const attributeNameSchema = z
   .string()
   .regex(/^(?:data-[a-z0-9-]+|aria-[a-z]+|role|title|lang|dir|translate|tabindex)$/);
 
 const CLASS_NAMES = /^(?:[\w:/.[\]%#-]+(?: [\w:/.[\]%#-]+)*)?$/;
 
-const nodeAdvancedSchema: z.ZodType<NodeAdvanced> = z.strictObject({
-  className: z.string().regex(CLASS_NAMES).optional(),
+/** Space-separated CSS class names (Tailwind's included), as Advanced mode accepts them. */
+export const classNamesSchema = z.string().regex(CLASS_NAMES);
+
+/** A node's Advanced-mode options, as a site file and the renderers accept them. */
+export const nodeAdvancedSchema: z.ZodType<NodeAdvanced> = z.strictObject({
+  className: classNamesSchema.optional(),
   attributes: z.record(attributeNameSchema, z.string().max(1000)).optional(),
   anchorId: anchorIdSchema.optional(),
 });

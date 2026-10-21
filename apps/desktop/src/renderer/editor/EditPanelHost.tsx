@@ -1,12 +1,23 @@
 import { EditPanel, type EditPanelField, type ListChange } from "@webforge/editor-ui";
 import type { EngineEdit } from "@webforge/engine";
 import { t } from "@webforge/i18n";
-import { type Breakpoint, imageValueSchema, type SiteDoc } from "@webforge/model";
+import {
+  type Breakpoint,
+  imageValueSchema,
+  type NodeAdvanced,
+  type SiteDoc,
+} from "@webforge/model";
 import type { FieldDef } from "@webforge/site-components";
 import { useEffect, useRef, useSyncExternalStore } from "react";
+import {
+  advancedFieldLabel,
+  advancedFields,
+  isAdvancedField,
+  withAdvancedChange,
+} from "./advanced-fields.js";
 import { updateField } from "./apply-patch.js";
 import type { EditorSession } from "./editor-session.js";
-import { deviceLabelFor, labelFor } from "./labels.js";
+import { changedLabel, deviceLabelFor, labelFor } from "./labels.js";
 import {
   applyListChange,
   type EditableList,
@@ -123,6 +134,8 @@ export type EditPanelHostProps = {
   readonly session: EditorSession;
   /** Ends a canvas text session before the panel changes the document. */
   readonly flush: () => void;
+  /** Shows the Advanced tab: classes, attributes and the anchor (Advanced mode, F-ED-11). */
+  readonly advanced?: boolean;
 };
 
 /**
@@ -134,7 +147,7 @@ export type EditPanelHostProps = {
  * - a field that may differ per device (F-ED-4) shows and sets the value of the device the canvas
  *   shows: on Tablet or Mobile that is an override of the Desktop value, which can be dropped again.
  */
-export function EditPanelHost({ session, flush }: EditPanelHostProps) {
+export function EditPanelHost({ session, flush, advanced = false }: EditPanelHostProps) {
   const { history, ui, library } = session;
   const site = useSyncExternalStore(history.document.subscribe, history.document.getState);
   const { pageId, nodeId, viewport } = useSyncExternalStore(ui.subscribe, ui.getState);
@@ -205,6 +218,17 @@ export function EditPanelHost({ session, flush }: EditPanelHostProps) {
     ];
   });
 
+  if (advanced) {
+    // Anchors other elements use on this page, including the shared Header and Footer.
+    const takenAnchors: string[] = [];
+    findNode([...site.layout.header, ...page.content, ...site.layout.footer], (other) => {
+      const anchor = other.props.advanced?.anchorId;
+      if (anchor !== undefined && other.props.id !== id) takenAnchors.push(anchor);
+      return false;
+    });
+    fields.push(...advancedFields(node.props.advanced, takenAnchors));
+  }
+
   /** The undo label for a change to `name`; "… on Mobile" where it sets one device's value. */
   const labelOf = (name: string, field: FieldDef, reset = false) => {
     const edit: EngineEdit = {
@@ -229,7 +253,35 @@ export function EditPanelHost({ session, flush }: EditPanelHostProps) {
   };
   const selectionAfter = { pageId, viewport, nodeId: id };
 
+  /** A change on the Advanced tab: one step, "Changed Heading CSS classes". */
+  const changeAdvanced = (name: string, value: unknown) => {
+    endRun();
+    flush();
+    const label = changedLabel(
+      { kind: "props", nodeId: id, componentType: node.type, field: name, page, selection: id },
+      library,
+      advancedFieldLabel(name),
+    );
+    session.edit(
+      "props",
+      label,
+      (draft) => {
+        const target = draft.pages[pageId];
+        if (target !== undefined) {
+          updateField(target.doc, page, id, "advanced", (stored) =>
+            withAdvancedChange(stored as NodeAdvanced | undefined, name, value),
+          );
+        }
+      },
+      { selectionAfter },
+    );
+  };
+
   const change = (name: string, value: unknown) => {
+    if (isAdvancedField(name)) {
+      changeAdvanced(name, value);
+      return;
+    }
     const field = component.fields[name];
     const list = field === undefined ? undefined : editableList(field, library);
     if (list !== undefined) {
@@ -376,6 +428,8 @@ export function EditPanelHost({ session, flush }: EditPanelHostProps) {
         if (openRun.current?.name === name) endRun();
       }}
       onReset={reset}
+      advanced={advanced}
+      itemKey={id}
     />
   );
 }

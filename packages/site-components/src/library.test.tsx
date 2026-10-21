@@ -7,6 +7,7 @@ import {
   slotComponent,
   stringValue,
   textValue,
+  withAdvanced,
 } from "./library.js";
 
 describe("library helpers", () => {
@@ -59,5 +60,30 @@ describe("library helpers", () => {
     expect(
       responsiveClasses<string>({ $responsive: { desktop: "small", tablet: "large" } }, classes),
     ).toBe("py-24 lg:py-8");
+  });
+});
+
+describe("withAdvanced", () => {
+  const html = (advanced: unknown) =>
+    renderToStaticMarkup(<>{withAdvanced(<h2 className="site-heading">Hi</h2>, advanced)}</>);
+
+  it("adds the classes after the component's own, the attributes and the anchor as id", () => {
+    expect(
+      html({
+        className: "shadow-lg",
+        anchorId: "opening-times",
+        attributes: { "data-track": "hero", tabindex: "0", role: "note" },
+      }),
+    ).toBe(
+      '<h2 class="site-heading shadow-lg" data-track="hero" tabindex="0" role="note" id="opening-times">Hi</h2>',
+    );
+  });
+
+  it("leaves the output alone without options, with invalid ones, or without an element root", () => {
+    expect(html(undefined)).toBe('<h2 class="site-heading">Hi</h2>');
+    // Checked again here: an event handler never reaches a page, whatever the document holds.
+    expect(html({ attributes: { onclick: "alert(1)" } })).toBe('<h2 class="site-heading">Hi</h2>');
+    expect(html({ anchorId: "Not valid" })).toBe('<h2 class="site-heading">Hi</h2>');
+    expect(renderToStaticMarkup(<>{withAdvanced("text", { className: "x" })}</>)).toBe("text");
   });
 });

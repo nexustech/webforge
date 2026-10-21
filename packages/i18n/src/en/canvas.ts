@@ -21,6 +21,24 @@ export const canvas = {
   // A value set for one device only (F-ED-4).
   "editPanel.override": "{device} only",
   "editPanel.useDesktop": "Use Desktop value",
+  // The Advanced tab (Advanced mode, F-ED-11): technical words are fine here, clearly labelled.
+  "editPanel.advanced": "Advanced",
+  "editPanel.advanced.className": "CSS classes",
+  "editPanel.advanced.classNamePlaceholder": "e.g. shadow-lg rounded-box",
+  "editPanel.advanced.classNameInvalid": "Use class names separated by spaces",
+  "editPanel.advanced.anchorId": "Anchor ID",
+  "editPanel.advanced.anchorIdPlaceholder": "e.g. opening-times",
+  "editPanel.advanced.anchorIdInvalid":
+    "Use lowercase letters, digits and single hyphens, starting with a letter",
+  "editPanel.advanced.anchorIdTaken": "Another element on this page already uses this anchor",
+  "editPanel.advanced.attributes": "Attributes",
+  "editPanel.advanced.attribute": "Attribute",
+  "editPanel.advanced.attributeName": "Name",
+  "editPanel.advanced.attributeValue": "Value",
+  "editPanel.advanced.attributeNameInvalid":
+    "Use data-…, aria-…, role, title, lang, dir, translate or tabindex",
+  "editPanel.advanced.attributeNameTaken": "This element already has this attribute",
+  "editPanel.advanced.attributeValueTooLong": "Use at most 1000 characters",
   // A repeating list in the Edit panel (F-ED-6); {item} is what one item is called.
   "editPanel.list.add": "Add {item}",
   "editPanel.list.moveUp": "Move {item} up",

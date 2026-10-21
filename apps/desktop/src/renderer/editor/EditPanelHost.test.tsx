@@ -361,6 +361,80 @@ describe("EditPanelHost", () => {
     });
   });
 
+  describe("Advanced tab (F-ED-11)", () => {
+    function setupAdvanced() {
+      const session = createEditorSession(siteLibrary, siteWithHero());
+      session.ui.setState({ nodeId: "heading-1" });
+      render(<EditPanelHost session={session} flush={vi.fn()} advanced />);
+      const labels = () => session.history.entries().map((entry) => entry.label);
+      const advanced = () => {
+        const section = currentPage(session)?.doc.content[0];
+        return (section?.props.content as PageDoc["content"] | undefined)?.[0]?.props.advanced;
+      };
+      return { session, labels, advanced, user: userEvent.setup() };
+    }
+
+    it("is only there in Advanced mode", () => {
+      setup();
+      expect(screen.queryByRole("tab", { name: "Advanced" })).toBeNull();
+    });
+
+    it("sets classes and the anchor, one labelled step each, refusing an invalid anchor", async () => {
+      const { session, labels, advanced, user } = setupAdvanced();
+      await user.click(screen.getByRole("tab", { name: "Advanced" }));
+
+      await user.type(screen.getByLabelText("CSS classes"), "shadow-lg  italic{Enter}");
+      await user.type(screen.getByLabelText("Anchor ID"), "Welcome!{Enter}");
+      expect(screen.getByText(/lowercase letters/)).toBeDefined();
+      await user.clear(screen.getByLabelText("Anchor ID"));
+      await user.type(screen.getByLabelText("Anchor ID"), "welcome{Enter}");
+
+      expect(advanced()).toEqual({ className: "shadow-lg italic", anchorId: "welcome" });
+      expect(labels()).toEqual(["Changed Heading CSS classes", "Changed Heading anchor ID"]);
+      act(() => {
+        session.history.undo();
+        session.history.undo();
+      });
+      expect(advanced()).toBeUndefined();
+    });
+
+    it("refuses an anchor that another element on the page, or the Header, already uses", async () => {
+      const { session, advanced, user } = setupAdvanced();
+      act(() =>
+        session.edit("props", "Changed Header anchor ID", (draft) => {
+          const header = draft.layout.header[0];
+          if (header !== undefined) header.props.advanced = { anchorId: "top" };
+        }),
+      );
+      await user.click(screen.getByRole("tab", { name: "Advanced" }));
+
+      await user.type(screen.getByLabelText("Anchor ID"), "top{Enter}");
+
+      expect(
+        screen.getByText("Another element on this page already uses this anchor"),
+      ).toBeDefined();
+      expect(advanced()).toBeUndefined();
+    });
+
+    it("adds and renames an attribute", async () => {
+      const { labels, advanced, user } = setupAdvanced();
+      await user.click(screen.getByRole("tab", { name: "Advanced" }));
+
+      await user.click(screen.getByRole("button", { name: "Add Attribute" }));
+      const name = screen.getByLabelText("Name");
+      await user.clear(name);
+      await user.type(name, "role{Enter}");
+      await user.type(screen.getByLabelText("Value"), "note{Enter}");
+
+      expect(advanced()).toEqual({ attributes: { role: "note" } });
+      expect(labels()).toEqual([
+        "Changed Heading attributes",
+        "Changed Heading attributes",
+        "Changed Heading attributes",
+      ]);
+    });
+  });
+
   describe("image field", () => {
     const shop = {
       id: "shop" as MediaId,

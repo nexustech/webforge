@@ -222,6 +222,7 @@ export function App({
                         {...(compileCss === undefined ? {} : { compileCss })}
                         mode={mode}
                         canvasView={canvasView}
+                        editorLevel={editorLevel}
                       />
                     </div>
                   </div>
