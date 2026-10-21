@@ -94,6 +94,15 @@ describe("Editor", () => {
 
     await act(async () => session.ui.setState({ nodeId: "header" }));
     expect(banner()).toBe(`Editing shared Header: changes apply to all ${pages} pages`);
+    const notFound = Object.values(session.history.document.getState().pages).find(
+      (page) => page.kind === "not-found",
+    );
+    await act(
+      async () => notFound && session.ui.setState({ pageId: notFound.id, nodeId: "footer" }),
+    );
+    // The new site's two pages: Home hides the Footer, so only this one shows it.
+    expect(pages).toBe(2);
+    expect(banner()).toBe("Editing shared Footer: changes apply to 1 page");
 
     await act(async () => session.ui.setState({ nodeId: "heading-1" }));
     expect(banner()).toBeNull();

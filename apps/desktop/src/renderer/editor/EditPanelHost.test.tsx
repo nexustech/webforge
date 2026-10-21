@@ -447,6 +447,26 @@ describe("EditPanelHost", () => {
       expect(advanced()).toBeUndefined();
     });
 
+    it("refuses a Footer anchor that an element of another page showing it uses", async () => {
+      const { session, user } = setupAdvanced();
+      act(() => {
+        session.edit("props", "Changed Heading anchor ID", (draft) => {
+          const notFound = Object.values(draft.pages).find((page) => page.kind === "not-found");
+          const first = notFound?.doc.content[0];
+          if (first !== undefined) first.props.advanced = { anchorId: "contact" };
+        });
+        session.ui.setState({ nodeId: "footer" });
+      });
+      await user.click(screen.getByRole("tab", { name: "Advanced" }));
+
+      await user.type(screen.getByLabelText("Anchor ID"), "contact{Enter}");
+
+      expect(
+        screen.getByText("Another element on this page already uses this anchor"),
+      ).toBeDefined();
+      expect(session.history.document.getState().layout.footer[0]?.props.advanced).toBeUndefined();
+    });
+
     it("adds and renames an attribute", async () => {
       const { labels, advanced, user } = setupAdvanced();
       await user.click(screen.getByRole("tab", { name: "Advanced" }));

@@ -34,7 +34,7 @@ import {
   withoutOverride,
   withValueAt,
 } from "./responsive-value.js";
-import { sharedRegionOf, updateSharedField } from "./shared-layout.js";
+import { sharedRegionOf, shownLayout, updateSharedField } from "./shared-layout.js";
 
 /** The Edit panel's renderer kind for a field, or undefined for fields edited elsewhere. */
 function rendererKind(field: FieldDef): string | undefined {
@@ -157,10 +157,12 @@ export function EditPanelHost({ session, flush, advanced = false }: EditPanelHos
   const isSelected = (candidate: NodeDoc) => candidate.props.id === nodeId;
   const ownNode =
     page === undefined || nodeId === null ? undefined : findNode(page.content, isSelected);
-  // Not the page's own: an element of the shared Header or Footer, whose changes go to the site's
-  // layout and show on every page (F-ED-7).
+  // Not the page's own: an element of the shared Header or Footer the page shows, whose changes go
+  // to the site's layout and show on every page (F-ED-7).
   const region =
-    ownNode !== undefined || nodeId === null ? undefined : sharedRegionOf(site.layout, nodeId);
+    ownNode !== undefined || nodeId === null
+      ? undefined
+      : sharedRegionOf(shownLayout(site, pageId), nodeId);
   const node = region === undefined ? ownNode : findNode(site.layout[region], isSelected);
   const component = node === undefined ? undefined : library.components[node.type];
   const selectedId = node?.props.id;
@@ -225,9 +227,17 @@ export function EditPanelHost({ session, flush, advanced = false }: EditPanelHos
   });
 
   if (advanced) {
-    // Anchors other elements use on this page, including the shared Header and Footer.
+    // Anchors other elements use on this page, including the shared Header and Footer; for an
+    // element of the Header or Footer, on every page that shows it.
     const takenAnchors: string[] = [];
-    findNode([...site.layout.header, ...page.content, ...site.layout.footer], (other) => {
+    const pages =
+      region === undefined
+        ? [page]
+        : Object.values(site.pages)
+            .filter((other) => shownLayout(site, other.id)[region].length > 0)
+            .map((other) => other.doc);
+    const nodes = pages.flatMap((other) => other.content);
+    findNode([...site.layout.header, ...nodes, ...site.layout.footer], (other) => {
       const anchor = other.props.advanced?.anchorId;
       if (anchor !== undefined && other.props.id !== id) takenAnchors.push(anchor);
       return false;
