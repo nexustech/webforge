@@ -74,6 +74,11 @@ What item 1.27 changed:
 
   A `pnpm patch` (`patches/@puckeditor__core@0.23.0.patch`) skips the last two when they would change nothing. pnpm fails the install if the patch no longer applies after a Puck upgrade. Both are drafted for upstream below (reports 3 and 4).
 
+  **What the Puck patch changes**, for re-applying it after an upgrade (Puck is MIT; the licence check fails if a patched package's licence allows only unmodified use, see ADR 0002):
+  1. The permissions slice skips its whole-page walk when no component and not the root define `resolvePermissions` (#100).
+  2. The fields slice doesn't re-publish the default fields when they and the item's id are unchanged (#100).
+  3. Puck's API object (`useGetPuck()`, `__private`) gains `getZoomConfig` and `setZoomConfig`. Puck keeps its canvas zoom out of its public API, and the engine's `setZoom` and `onCanvasSize` need it for the canvas toolbar (1.15). Without it, zooming does nothing and no size is reported.
+
 ### Before and after
 Same page, harness and machine as above. Three runs of each state, interleaved; the ranges are across runs. One round overlapped with other work on the machine, so the upper ends are noisy.
 
