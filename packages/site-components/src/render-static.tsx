@@ -1,7 +1,13 @@
 import { imageValueSchema, isNodeDoc, type NodeDoc } from "@webforge/model";
 import type { ComponentType, ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import type { BehaviourName, ComponentDef, ComponentLibrary, RenderContext } from "./library.js";
+import {
+  type BehaviourName,
+  type ComponentDef,
+  type ComponentLibrary,
+  type RenderContext,
+  withAdvanced,
+} from "./library.js";
 import { RichText } from "./rich-text.js";
 
 /** A node uses a component type the library does not have (a build failure, X5). */
@@ -91,7 +97,7 @@ function renderNode(node: NodeDoc, library: ComponentLibrary, context: RenderCon
       slots[name] = () => <>{renderNodes(children, library, context)}</>;
     }
   }
-  return def.render({ id, values, slots, context });
+  return withAdvanced(def.render({ id, values, slots, context }), props.advanced);
 }
 
 function renderNodes(

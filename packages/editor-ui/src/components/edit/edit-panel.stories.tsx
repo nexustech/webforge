@@ -164,3 +164,46 @@ export const RepeatingList: Story = {
     );
   },
 };
+
+/** The Advanced tab (Advanced mode): CSS classes, the anchor and attributes, checked as typed. */
+export const AdvancedTab: Story = {
+  args: {
+    heading: "Heading",
+    advanced: true,
+    fields: [
+      {
+        name: "className",
+        kind: "text",
+        label: "CSS classes",
+        group: "advanced",
+        placeholder: "e.g. shadow-lg rounded-box",
+        value: "italic",
+      },
+      {
+        name: "anchorId",
+        kind: "text",
+        label: "Anchor ID",
+        group: "advanced",
+        placeholder: "e.g. opening-times",
+        value: "",
+        validate: (value) =>
+          /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(value)
+            ? undefined
+            : "Use lowercase letters, digits and single hyphens, starting with a letter",
+      },
+      {
+        name: "attributes",
+        kind: "list",
+        label: "Attributes",
+        group: "advanced",
+        itemLabel: "Attribute",
+        orderless: true,
+        itemFields: [
+          { name: "name", kind: "text", label: "Name" },
+          { name: "value", kind: "text", label: "Value" },
+        ],
+        value: [{ key: "0", values: { name: "data-track", value: "hero" } }],
+      },
+    ],
+  },
+};

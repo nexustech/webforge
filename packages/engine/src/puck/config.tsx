@@ -5,6 +5,7 @@ import {
   EDITOR_RENDER_CONTEXT,
   type FieldDef,
   type RenderContext,
+  withAdvanced,
 } from "@webforge/site-components";
 import { type ComponentType, cloneElement, Fragment, isValidElement, type ReactNode } from "react";
 
@@ -66,7 +67,10 @@ function toPuckComponent(
             (entry): entry is readonly [string, ComponentType] => typeof entry[1] === "function",
           ),
       );
-      const output = def.render({ id, values, slots, context: context() });
+      const output = withAdvanced(
+        def.render({ id, values, slots, context: context() }),
+        values.advanced,
+      );
       return <>{values.hidden === true ? markedHidden(output) : output}</>;
     },
   };

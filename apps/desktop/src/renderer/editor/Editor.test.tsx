@@ -239,6 +239,27 @@ describe("Editor", () => {
     ]);
   });
 
+  it("redraws only the Edit panel when the editor level changes, keeping the other tabs in place", async () => {
+    await act(async () =>
+      root.render(
+        <CommandRegistryProvider registry={registry}>
+          <PanelRegistryProvider registry={panels}>
+            <Editor
+              session={session}
+              createEngine={createEngine}
+              compileCss={compileCss}
+              editorLevel="advanced"
+            />
+          </PanelRegistryProvider>
+        </CommandRegistryProvider>,
+      ),
+    );
+
+    // Undo History isn't registered again, so it keeps its place among its slot's tabs.
+    expect(panels.list()[0]).toEqual(expect.objectContaining({ id: "undoHistory" }));
+    expect(panels.list().map((panel) => panel.id)).toContain("edit");
+  });
+
   it("lists the steps in Undo History", async () => {
     await removeSection();
 
