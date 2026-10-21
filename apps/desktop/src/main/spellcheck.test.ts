@@ -130,8 +130,16 @@ describe("spell check languages", () => {
     const ipc = {
       handle: vi.fn((channel: string, handler: never) => handlers.set(channel, handler)),
     };
-    const session = { availableSpellCheckerLanguages: windows, setSpellCheckerLanguages: vi.fn() };
+    const session = {
+      availableSpellCheckerLanguages: windows,
+      setSpellCheckerLanguages: vi.fn(),
+      setSpellCheckerDictionaryDownloadURL: vi.fn(),
+    };
     registerSpellCheckHandlers(ipc, (url) => url === "app://index.html", session, "win32");
+    // Dictionaries are never downloaded: the system's own checkers only.
+    expect(session.setSpellCheckerDictionaryDownloadURL).toHaveBeenCalledWith(
+      "http://127.0.0.1:9/",
+    );
     const handler = handlers.get("app:set-spellcheck-language");
 
     await expect(handler?.({ senderFrame: { url: "app://index.html" } }, "fr")).resolves.toBeNull();

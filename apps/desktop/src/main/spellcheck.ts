@@ -129,13 +129,29 @@ export function installContextMenu(
   });
 }
 
-/** Serves `app:set-spellcheck-language` for the editor's session. */
+/**
+ * Where Electron would fetch Hunspell dictionaries: a local port nothing listens on. On Windows,
+ * a language the system checker lacks would otherwise be downloaded from Google's servers; this
+ * way the download fails and only the system's own checkers are used.
+ */
+const NO_DICTIONARY_DOWNLOADS = "http://127.0.0.1:9/";
+
+/**
+ * Serves `app:set-spellcheck-language` for the editor's session, and stops that session from ever
+ * downloading dictionaries (see {@link NO_DICTIONARY_DOWNLOADS}).
+ */
 export function registerSpellCheckHandlers(
   ipc: Pick<IpcMain, "handle">,
   isTrustedSender: (senderUrl: string) => boolean,
-  session: Pick<Session, "availableSpellCheckerLanguages" | "setSpellCheckerLanguages">,
+  session: Pick<
+    Session,
+    | "availableSpellCheckerLanguages"
+    | "setSpellCheckerLanguages"
+    | "setSpellCheckerDictionaryDownloadURL"
+  >,
   platform: NodeJS.Platform,
 ): void {
+  session.setSpellCheckerDictionaryDownloadURL(NO_DICTIONARY_DOWNLOADS);
   registerIpcHandler(ipc, "setSpellCheckLanguage", isTrustedSender, (language) => {
     setSpellCheckLanguage(session, language, platform);
     return null;
