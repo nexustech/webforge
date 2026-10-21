@@ -118,7 +118,7 @@ describe("createWebforgeApi site export", () => {
   });
 
   it("gets and changes the preferences through the prefs channels", async () => {
-    const preferences = { theme: "light", editorLevel: "simple", panelLayout: {} };
+    const preferences = { theme: "light", editorLevel: "simple", panelLayout: {}, window: null };
     const invoke = vi.fn(async () => preferences);
     const api = apiWith(invoke);
 

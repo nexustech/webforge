@@ -10,6 +10,7 @@ import {
   type OpenDialogOptions,
   type Rectangle,
   type SaveDialogOptions,
+  screen,
   session,
   utilityProcess,
   type WebContents,
@@ -43,7 +44,13 @@ import {
   isAppUrl,
 } from "./security.js";
 import { createSiteSwitch } from "./site-switch.js";
-import { titleBarOptions, titleBarOverlay, windowBackground } from "./window-options.js";
+import {
+  MIN_WINDOW_SIZE,
+  mainWindowPlacement,
+  titleBarOptions,
+  titleBarOverlay,
+  windowBackground,
+} from "./window-options.js";
 
 // Process wiring only; the logic lives in tested modules and E2E tests cover this file.
 
@@ -256,22 +263,32 @@ const compileCanvasCss = createCanvasCssCompiler(() =>
 );
 
 function createMainWindow(preferences: PreferencesStore): void {
-  const { theme } = preferences.get();
+  const { theme, window: saved } = preferences.get();
+  const placement = mainWindowPlacement(
+    saved,
+    screen.getAllDisplays().map((display) => display.workArea),
+  );
   const window = new BrowserWindow({
     title: t("app.name"),
-    width: 1280,
-    height: 800,
-    minWidth: 960,
-    minHeight: 600,
+    ...placement.bounds,
+    minWidth: MIN_WINDOW_SIZE.width,
+    minHeight: MIN_WINDOW_SIZE.height,
     // The renderer draws the title bar (1.2), in the person's theme.
     ...titleBarOptions(process.platform, theme),
     backgroundColor: windowBackground(theme),
     show: false,
     webPreferences: createSecureWebPreferences(preloadScript),
   });
+  // Maximised the first time, so the canvas gets the room (ADR 0008). Maximising shows the window
+  // at once, in the theme's background colour; the editor then lays out at its final size, instead
+  // of at 1280 × 800 and again when the window grows.
+  if (placement.maximized) {
+    window.maximize();
+  }
   window.once("ready-to-show", () => {
     window.show();
   });
+  rememberWindowState(window, preferences);
   // Autosave writes the last changes before the window closes (P2).
   flushOnClose?.install(window);
   const load =
@@ -280,6 +297,45 @@ function createMainWindow(preferences: PreferencesStore): void {
   load.catch((error: unknown) => {
     console.error("Webforge could not load the editor window", error);
   });
+}
+
+/**
+ * Remembers whether the person keeps the window maximised and its size and place when not, as
+ * they change it and when it closes, so the next start opens it the same way.
+ */
+function rememberWindowState(window: BrowserWindow, preferences: PreferencesStore): void {
+  let pending: ReturnType<typeof setTimeout> | undefined;
+  const save = () => {
+    clearTimeout(pending);
+    pending = undefined;
+    if (window.isDestroyed() || window.isMinimized()) {
+      return;
+    }
+    const { x, y, width, height } = window.getNormalBounds();
+    const bounds = {
+      x: Math.round(x),
+      y: Math.round(y),
+      width: Math.round(width),
+      height: Math.round(height),
+    };
+    // Full screen (macOS's green button) counts as maximised.
+    const state = { maximized: window.isMaximized() || window.isFullScreen(), bounds };
+    preferences.set({ window: state }).catch((error: unknown) => {
+      console.error("Webforge could not remember the window size", error);
+    });
+  };
+  // On macOS "moved" fires all through a drag, so moves and resizes are saved once they stop.
+  const saveSoon = () => {
+    clearTimeout(pending);
+    pending = setTimeout(save, 500);
+  };
+  window.on("maximize", save);
+  window.on("unmaximize", save);
+  window.on("enter-full-screen", save);
+  window.on("leave-full-screen", save);
+  window.on("resized", saveSoon);
+  window.on("moved", saveSoon);
+  window.on("close", save);
 }
 
 async function start(): Promise<void> {

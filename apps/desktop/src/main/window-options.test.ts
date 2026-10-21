@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
+  mainWindowPlacement,
   TITLE_BAR_HEIGHT,
   titleBarOptions,
   titleBarOverlay,
@@ -55,5 +56,55 @@ describe("the native controls' colours", () => {
       symbolColor: token(theme, "foreground"),
     });
     expect(windowBackground(theme)).toBe(token(theme, "background"));
+  });
+});
+
+describe("mainWindowPlacement (ADR 0008)", () => {
+  const screen = { x: 0, y: 0, width: 1920, height: 1040 };
+  const second = { x: 1920, y: 0, width: 1280, height: 1024 };
+
+  it("opens maximised at first, 1280 × 800 when un-maximised", () => {
+    expect(mainWindowPlacement(null, [screen])).toEqual({
+      bounds: { width: 1280, height: 800 },
+      maximized: true,
+    });
+  });
+
+  it("opens as the person left it while that is on a screen", () => {
+    const bounds = { x: 2000, y: 40, width: 1100, height: 700 };
+
+    expect(mainWindowPlacement({ maximized: false, bounds }, [screen, second])).toEqual({
+      bounds,
+      maximized: false,
+    });
+  });
+
+  it("centres a window left on a screen that is gone, and keeps the minimum size", () => {
+    const bounds = { x: 2000, y: 40, width: 500, height: 300 };
+
+    expect(mainWindowPlacement({ maximized: true, bounds }, [screen])).toEqual({
+      bounds: { width: 960, height: 600 },
+      maximized: true,
+    });
+  });
+
+  it("keeps a window saved on a bigger screen within the screens there are now", () => {
+    const bounds = { x: 0, y: 0, width: 3000, height: 1600 };
+
+    expect(mainWindowPlacement({ maximized: false, bounds }, [screen]).bounds).toEqual({
+      x: 0,
+      y: 0,
+      width: 1920,
+      height: 1040,
+    });
+  });
+
+  it("doesn't count a sliver at the edge of a screen as visible", () => {
+    const bounds = { x: 1900, y: 100, width: 1000, height: 700 };
+
+    expect(mainWindowPlacement({ maximized: false, bounds }, [screen]).bounds).toEqual({
+      width: 1000,
+      height: 700,
+    });
   });
 });

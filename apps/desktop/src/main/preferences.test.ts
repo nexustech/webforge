@@ -28,6 +28,7 @@ describe("parsePreferences", () => {
       theme: "light",
       editorLevel: "simple",
       panelLayout: { "shell.columns": { left: 20, center: 60, right: 20 } },
+      window: null,
     });
     expect(parsePreferences({ panelLayout: { group: { panel: 250 } } }).panelLayout).toEqual({});
     const tooMany = Object.fromEntries(Array.from({ length: 33 }, (_, i) => [`g${i}`, {}]));
@@ -63,6 +64,17 @@ describe("openPreferencesStore", () => {
     expect(saved).toEqual({ ...DEFAULT_PREFERENCES, theme: "light" });
     expect(JSON.parse(readFileSync(file, "utf8"))).toEqual(saved);
     expect((await openPreferencesStore(file)).get().theme).toBe("light");
+  });
+
+  it("remembers the window, and forgets an invalid one", async () => {
+    const window = { maximized: false, bounds: { x: 10, y: 20, width: 1100, height: 700 } };
+    const store = await openPreferencesStore(file);
+
+    await store.set({ window });
+    await store.set({ theme: "light" });
+
+    expect((await openPreferencesStore(file)).get().window).toEqual(window);
+    expect(parsePreferences({ window: { maximized: "yes" } }).window).toBeNull();
   });
 
   it("applies quick successive changes in order", async () => {

@@ -31,7 +31,7 @@ const savedPreferences = (): { panelLayout?: Record<string, unknown>; theme?: st
 };
 
 test.describe("window layout", () => {
-  test("puts Undo History in the left column, under an empty Add slot", async () => {
+  test("puts Undo History in the left column", async () => {
     const left = page.getByRole("region", { name: "Left panels" });
     await expect(left.getByRole("tab", { name: "Undo History" })).toBeVisible();
     await expect(left.getByText("Opened page")).toBeVisible();
