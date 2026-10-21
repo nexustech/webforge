@@ -89,14 +89,14 @@ describe("ImageField", () => {
     expect(onCommit).toHaveBeenCalledTimes(1);
   });
 
-  it("shows the chosen image, keeps the placement's alt text when it changes, and removes it", async () => {
+  it("shows the chosen image, drops the old image's alt override when it changes, and removes it", async () => {
     const { onChange } = await render({ mediaId: "a1", alt: "The bakery" });
     expect(container.querySelector("figure img")?.getAttribute("src")).toBe("test://a1");
     expect(container.textContent).toContain("a1.jpg");
 
     await act(async () => button("Change image")?.click());
     await act(async () => button("b2.jpg")?.click());
-    expect(onChange).toHaveBeenLastCalledWith({ mediaId: "b2", alt: "The bakery" });
+    expect(onChange).toHaveBeenLastCalledWith({ mediaId: "b2" });
 
     await act(async () => button("Remove image")?.click());
     expect(onChange).toHaveBeenLastCalledWith(undefined);

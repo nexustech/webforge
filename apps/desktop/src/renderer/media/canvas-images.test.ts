@@ -1,6 +1,6 @@
 import type { ImageMeta, MediaId, MediaMeta } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { createEditorSession } from "../editor/editor-session.js";
 import { starterSite } from "../editor/starter-site.js";
 import { canvasImage, connectCanvasImages } from "./canvas-images.js";
@@ -65,7 +65,12 @@ describe("canvasImage", () => {
 });
 
 describe("connectCanvasImages", () => {
-  it("gives the canvas the site's images, again whenever Media changes", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("gives the canvas the site's images, again once Media has changed and settled", () => {
+    vi.useFakeTimers();
     const session = createEditorSession(siteLibrary, starterSite());
     const engine = { setImages: vi.fn() };
     const stop = connectCanvasImages(engine, session);
@@ -74,6 +79,8 @@ describe("connectCanvasImages", () => {
     expect(engine.setImages.mock.calls[0]?.[0]("photo")).toBeNull();
 
     addMedia(session, [photo, prices]);
+    expect(engine.setImages).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(150);
     expect(engine.setImages).toHaveBeenCalledTimes(2);
     const resolve = engine.setImages.mock.calls[1]?.[0];
     expect(resolve("photo")).toMatchObject({ alt: "Our shop" });
@@ -81,18 +88,23 @@ describe("connectCanvasImages", () => {
     expect(resolve("prices")).toBeNull();
     expect(resolve("missing")).toBeNull();
 
+    // Changes in quick succession draw the page once.
     setFocalPoint(session, photo.id, { x: 0.2, y: 0.5 });
+    vi.advanceTimersByTime(100);
     cropMedia(session, photo.id, "square");
-    expect(engine.setImages).toHaveBeenCalledTimes(4);
+    vi.advanceTimersByTime(150);
+    expect(engine.setImages).toHaveBeenCalledTimes(3);
 
     // A change elsewhere in the site doesn't draw the page again.
     session.edit("page", "Renamed site", (draft) => {
       draft.settings.general.name = "Rosa's";
     });
-    expect(engine.setImages).toHaveBeenCalledTimes(4);
+    vi.advanceTimersByTime(150);
+    expect(engine.setImages).toHaveBeenCalledTimes(3);
 
-    stop();
     cropMedia(session, photo.id, "original");
-    expect(engine.setImages).toHaveBeenCalledTimes(4);
+    stop();
+    vi.advanceTimersByTime(150);
+    expect(engine.setImages).toHaveBeenCalledTimes(3);
   });
 });

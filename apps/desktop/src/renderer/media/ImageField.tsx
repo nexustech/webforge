@@ -61,12 +61,8 @@ export function ImageField({
     onCommit();
     setPicking(false);
   };
-  const pick = (chosen: ImageMeta) =>
-    // The placement's own alt text stays with it when the image changes.
-    choose({
-      mediaId: chosen.id,
-      ...(current?.alt === undefined ? {} : { alt: current.alt }),
-    });
+  // Another image gets its own alt text from Media: the old override described the old image.
+  const pick = (chosen: ImageMeta) => choose({ mediaId: chosen.id });
   const addNew = async () => {
     const added = (await importItems(() => api.choose(), notify)).filter(isImageMeta);
     addMedia(session, added);

@@ -56,9 +56,14 @@ function resolverFor(media: SiteDoc["media"]) {
   };
 }
 
+/** How long Media must stay unchanged before the canvas is drawn again, e.g. while alt text is typed. */
+const REDRAW_DELAY_MS = 150;
+
 /**
- * Shows the site's Media images on the canvas (1.16) and draws the page again whenever Media
- * changes: an image added, replaced, cropped or described anew.
+ * Shows the site's Media images on the canvas (1.16) and draws the page again once Media has
+ * changed and then settled for {@link REDRAW_DELAY_MS}: an image added, replaced, cropped or
+ * described anew. Drawing the page again is one setData for the whole page, so typing doesn't
+ * redraw it for every key.
  */
 export function connectCanvasImages(
   engine: Pick<CanvasEngine, "setImages">,
@@ -70,13 +75,23 @@ export function connectCanvasImages(
       };
     };
   },
+  delayMs = REDRAW_DELAY_MS,
 ): Unsubscribe {
   let shown = session.history.document.getState().media;
+  let timer: ReturnType<typeof setTimeout> | undefined;
   engine.setImages(resolverFor(shown));
-  return session.history.document.subscribe((site) => {
-    if (site.media !== shown) {
-      shown = site.media;
-      engine.setImages(resolverFor(shown));
-    }
+  const unsubscribe = session.history.document.subscribe(() => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      const media = session.history.document.getState().media;
+      if (media !== shown) {
+        shown = media;
+        engine.setImages(resolverFor(shown));
+      }
+    }, delayMs);
   });
+  return () => {
+    clearTimeout(timer);
+    unsubscribe();
+  };
 }
