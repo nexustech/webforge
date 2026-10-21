@@ -136,3 +136,88 @@ describe("EditPanel", () => {
     expect(screen.getByText(t("editPanel.noFields"))).toBeDefined();
   });
 });
+
+describe("style field renderers (1.14 part 2)", () => {
+  const sizes = [
+    { label: "Small", value: "small" },
+    { label: "Medium", value: "medium" },
+    { label: "Large", value: "large" },
+  ];
+  const styleFields: EditPanelField[] = [
+    {
+      name: "padding",
+      kind: "spacing",
+      label: "Padding",
+      group: "style",
+      value: "medium",
+      options: sizes,
+    },
+    { name: "gap", kind: "slider", label: "Gap", group: "style", value: "small", steps: sizes },
+    { name: "fullWidth", kind: "toggle", label: "Full width", group: "style", value: false },
+  ];
+
+  function renderStyle(overrides: Partial<EditPanelField> = {}) {
+    const onChange = vi.fn();
+    const onCommit = vi.fn();
+    const onReset = vi.fn();
+    render(
+      <EditPanel
+        heading="Section"
+        device="Mobile"
+        fields={styleFields.map((field) =>
+          field.name === "padding" ? { ...field, ...overrides } : field,
+        )}
+        onChange={onChange}
+        onCommit={onCommit}
+        onReset={onReset}
+      />,
+    );
+    return { onChange, onCommit, onReset, user: userEvent.setup() };
+  }
+
+  it("makes one change and commits it for a choice, keeping the chosen one when clicked again", async () => {
+    const { onChange, onCommit, user } = renderStyle();
+    const group = screen.getByRole("radiogroup", { name: "Padding" });
+    expect(group).toBeDefined();
+
+    await user.click(screen.getByRole("radio", { name: "Large" }));
+    await user.click(screen.getByRole("radio", { name: "Medium" }));
+
+    expect(onChange.mock.calls).toEqual([["padding", "large"]]);
+    expect(onCommit.mock.calls).toEqual([["padding"]]);
+  });
+
+  it("changes a slider step by step and commits when it is let go", () => {
+    const { onChange, onCommit } = renderStyle();
+    const slider = screen.getByLabelText("Gap") as HTMLInputElement;
+    expect(slider.value).toBe("0");
+    expect(slider.getAttribute("aria-valuetext")).toBe("Small");
+
+    fireEvent.pointerDown(slider);
+    fireEvent.change(slider, { target: { value: "2" } });
+    expect(onCommit).not.toHaveBeenCalled();
+    fireEvent.pointerUp(slider);
+
+    expect(onChange.mock.calls).toEqual([["gap", "large"]]);
+    expect(onCommit.mock.calls).toEqual([["gap"]]);
+  });
+
+  it("switches a toggle", async () => {
+    const { onChange, onCommit, user } = renderStyle();
+
+    await user.click(screen.getByRole("switch", { name: "Full width" }));
+
+    expect(onChange.mock.calls).toEqual([["fullWidth", true]]);
+    expect(onCommit.mock.calls).toEqual([["fullWidth"]]);
+  });
+
+  it("marks a value set for this device only, and offers the Desktop value back", async () => {
+    const { onReset, user } = renderStyle({ overridden: true });
+
+    expect(screen.getByText("Mobile only")).toBeDefined();
+    await user.click(screen.getByRole("button", { name: t("editPanel.useDesktop") }));
+
+    expect(onReset).toHaveBeenCalledWith("padding");
+    expect(document.querySelectorAll("[data-override]")).toHaveLength(1);
+  });
+});

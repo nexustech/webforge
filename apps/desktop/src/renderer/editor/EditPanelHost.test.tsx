@@ -5,7 +5,7 @@ import type { PageDoc, PageId } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { EditPanelHost } from "./EditPanelHost.js";
-import { createEditorSession, currentPage } from "./editor-session.js";
+import { createEditorSession, currentPage, runHistoryCommand } from "./editor-session.js";
 import { starterSite } from "./starter-site.js";
 
 afterEach(cleanup);
@@ -32,7 +32,8 @@ function setup(nodeId: string | null = "heading-1") {
     const section = currentPage(session)?.doc.content[0];
     return (section?.props.content as PageDoc["content"] | undefined)?.[0]?.props;
   };
-  return { session, flush, labels, heading, user: userEvent.setup() };
+  const section = () => currentPage(session)?.doc.content[0]?.props;
+  return { session, flush, labels, heading, section, user: userEvent.setup() };
 }
 
 describe("EditPanelHost", () => {
@@ -125,5 +126,121 @@ describe("EditPanelHost", () => {
     act(() => session.ui.setState({ pageId: "page-gone" as PageId }));
 
     expect(screen.getByText("Select an element to edit it")).toBeDefined();
+  });
+
+  describe("style fields (1.14 part 2)", () => {
+    it("sets a value for the device being viewed, marks it and drops it again", async () => {
+      const { session, labels, section, user } = setup("section-1");
+      act(() => session.ui.setState({ viewport: "mobile" }));
+
+      await user.click(screen.getByRole("radio", { name: "Small" }));
+
+      expect(section()?.padding).toEqual({ $responsive: { desktop: "medium", mobile: "small" } });
+      expect(screen.getByText("Mobile only")).toBeDefined();
+      act(() => session.ui.setState({ viewport: "desktop" }));
+      expect(screen.queryByText("Mobile only")).toBeNull();
+      expect(screen.getByRole("radio", { name: "Medium" }).getAttribute("aria-checked")).toBe(
+        "true",
+      );
+
+      act(() => session.ui.setState({ viewport: "mobile" }));
+      await user.click(screen.getByRole("button", { name: "Use Desktop value" }));
+
+      expect(section()?.padding).toBe("medium");
+      expect(labels()).toEqual([
+        "Changed Section padding on Mobile",
+        "Reset Section padding on Mobile",
+      ]);
+    });
+
+    it("sets Desktop's value as the plain value, keeping other devices' own", async () => {
+      const { session, labels, section, user } = setup("section-1");
+      act(() => session.ui.setState({ viewport: "tablet" }));
+      await user.click(screen.getByRole("radio", { name: "Large" }));
+      act(() => session.ui.setState({ viewport: "desktop" }));
+
+      await user.click(screen.getByRole("radio", { name: "Small" }));
+
+      expect(section()?.padding).toEqual({ $responsive: { desktop: "small", tablet: "large" } });
+      expect(labels()).toEqual(["Changed Section padding on Tablet", "Changed Section padding"]);
+    });
+
+    it("makes one step of a slider drag, from the default of a value never set", () => {
+      const { session, labels, section } = setup("section-1");
+      const slider = screen.getByLabelText("Space between elements") as HTMLInputElement;
+      expect(slider.value).toBe("2");
+
+      fireEvent.pointerDown(slider);
+      fireEvent.change(slider, { target: { value: "3" } });
+      fireEvent.change(slider, { target: { value: "1" } });
+      expect(section()?.gap).toBe("small");
+      fireEvent.pointerUp(slider);
+
+      expect(labels()).toEqual(["Changed Section space between elements"]);
+      act(() => {
+        session.history.undo();
+      });
+      expect(section()?.gap).toBeUndefined();
+    });
+
+    it("puts a slider back as it was when the drag is cancelled with Esc", () => {
+      const { session, labels, section } = setup("section-1");
+      const slider = screen.getByLabelText("Space between elements");
+
+      fireEvent.pointerDown(slider);
+      fireEvent.change(slider, { target: { value: "0" } });
+      act(() => {
+        runHistoryCommand(session, "cancel");
+      });
+      fireEvent.pointerUp(slider);
+
+      expect(section()?.gap).toBeUndefined();
+      expect(labels()).toEqual([]);
+
+      fireEvent.pointerDown(slider);
+      fireEvent.change(slider, { target: { value: "3" } });
+      fireEvent.pointerUp(slider);
+      expect(labels()).toEqual(["Changed Section space between elements"]);
+    });
+
+    it("ends a drag when the device view changes, so each step names its device", () => {
+      const { session, labels, section } = setup("section-1");
+      act(() => session.ui.setState({ viewport: "mobile" }));
+      const slider = () => screen.getByLabelText("Space between elements");
+
+      fireEvent.pointerDown(slider());
+      fireEvent.change(slider(), { target: { value: "0" } });
+      act(() => session.ui.setState({ viewport: "desktop" }));
+      fireEvent.change(slider(), { target: { value: "3" } });
+      fireEvent.pointerUp(slider());
+
+      expect(section()?.gap).toEqual({ $responsive: { desktop: "large", mobile: "none" } });
+      expect(labels()).toEqual([
+        "Changed Section space between elements on Mobile",
+        "Changed Section space between elements",
+      ]);
+    });
+
+    it("cancels a drag when the panel closes during it", () => {
+      const { session, labels, section } = setup("section-1");
+      const slider = screen.getByLabelText("Space between elements");
+      fireEvent.pointerDown(slider);
+      fireEvent.change(slider, { target: { value: "0" } });
+
+      cleanup();
+
+      expect(section()?.gap).toBeUndefined();
+      expect(labels()).toEqual([]);
+      expect(session.history.entries()).toEqual([]);
+    });
+
+    it("switches a toggle as one step", async () => {
+      const { labels, section, user } = setup("section-1");
+
+      await user.click(screen.getByRole("switch", { name: "Full width" }));
+
+      expect(section()?.fullWidth).toBe(true);
+      expect(labels()).toEqual(["Changed Section full width"]);
+    });
   });
 });

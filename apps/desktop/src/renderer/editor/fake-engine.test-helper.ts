@@ -5,6 +5,7 @@ import type {
   HistoryCommandHandler,
   InsertPoint,
   Unsubscribe,
+  Viewport,
 } from "@webforge/engine";
 import type { PageDoc } from "@webforge/model";
 import { vi } from "vitest";
@@ -19,6 +20,8 @@ export type FakeEngine = CanvasEngine & {
   requestAdd(at: InsertPoint): void;
   /** Reports the canvas iframe's window (or that it went). */
   showFrame(frameWindow: Window | null): void;
+  /** Switches the device view with the canvas's own controls. */
+  switchView(viewport: Viewport): void;
   readonly applied: PageDoc[];
 };
 
@@ -41,6 +44,7 @@ export function createFakeEngine(): FakeEngine {
   const commands = new Set<HistoryCommandHandler>();
   const adds = listeners<InsertPoint>();
   const frames = listeners<Window | null>();
+  const views = listeners<Viewport>();
   const applied: PageDoc[] = [];
   return {
     applied,
@@ -55,6 +59,7 @@ export function createFakeEngine(): FakeEngine {
       return () => commands.delete(handler);
     },
     setViewport: vi.fn(),
+    onViewportChange: views.add,
     setSiteCss: vi.fn(),
     perform: vi.fn(() => true),
     onAddRequest: adds.add,
@@ -68,5 +73,6 @@ export function createFakeEngine(): FakeEngine {
     command: (command) => [...commands].some((handler) => handler(command) === true),
     requestAdd: adds.emit,
     showFrame: frames.emit,
+    switchView: views.emit,
   };
 }

@@ -59,3 +59,49 @@ export const Hero: Story = {
 export const StyleOnly: Story = {
   args: { heading: "Section", fields: heroFields.filter((field) => field.group === "style") },
 };
+
+const sizes = [
+  { label: "Small", value: "small" },
+  { label: "Medium", value: "medium" },
+  { label: "Large", value: "large" },
+];
+
+/** A Section seen on Mobile: a padding set for Mobile only, a slider, a switch. */
+export const StyleFields: Story = {
+  render: () => {
+    const [fields, setFields] = useState<EditPanelField[]>([
+      {
+        name: "padding",
+        kind: "spacing",
+        label: "Padding",
+        group: "style",
+        value: "small",
+        options: sizes,
+        overridden: true,
+      },
+      {
+        name: "gap",
+        kind: "slider",
+        label: "Space between elements",
+        group: "style",
+        value: "medium",
+        steps: sizes,
+      },
+      { name: "fullWidth", kind: "toggle", label: "Full width", group: "style", value: false },
+    ]);
+    const set = (name: string, change: Partial<EditPanelField>) =>
+      setFields((current) =>
+        current.map((field) => (field.name === name ? { ...field, ...change } : field)),
+      );
+    return (
+      <EditPanel
+        heading="Section"
+        device="Mobile"
+        fields={fields}
+        onChange={(name, value) => set(name, { value, overridden: true })}
+        onCommit={() => undefined}
+        onReset={(name) => set(name, { value: "medium", overridden: false })}
+      />
+    );
+  },
+};

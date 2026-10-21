@@ -262,6 +262,8 @@ export function connectEngine(engine: CanvasEngine, session: EditorSession): Eng
       }
       ui.setState({ nodeId });
     }),
+    // A device view chosen on the canvas; not a history step (U6).
+    engine.onViewportChange((viewport) => ui.setState({ viewport })),
     engine.onHistoryCommand((command) => {
       flush();
       return runHistoryCommand(session, command);

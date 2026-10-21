@@ -18,6 +18,13 @@ export const canvas = {
   "editPanel.style": "Style",
   "editPanel.empty": "Select an element to edit it",
   "editPanel.noFields": "Nothing to change here",
+  // A value set for one device only (F-ED-4).
+  "editPanel.override": "{device} only",
+  "editPanel.useDesktop": "Use Desktop value",
+  // Device views of the canvas (glossary: Desktop · Tablet · Mobile).
+  "device.desktop": "Desktop",
+  "device.tablet": "Tablet",
+  "device.mobile": "Mobile",
   // The site the editor opens with until the start screen creates sites (1.8).
   "starter.notFoundTitle": "Page not found",
 } as const;

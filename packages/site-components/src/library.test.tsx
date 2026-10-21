@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   EDITOR_RENDER_CONTEXT,
   optionValue,
+  responsiveClasses,
   slotComponent,
   stringValue,
   textValue,
@@ -42,5 +43,21 @@ describe("library helpers", () => {
     expect(EDITOR_RENDER_CONTEXT.navigation).toEqual([]);
     expect(EDITOR_RENDER_CONTEXT.link("about")).toBe("#");
     expect(EDITOR_RENDER_CONTEXT.image("hero")).toBeNull();
+  });
+
+  it("responsiveClasses gives a plain value's classes alone", () => {
+    expect(responsiveClasses<string>("small", (value) => `py-${value}`)).toBe("py-small");
+  });
+
+  it("responsiveClasses builds mobile-first classes, prefixed only where a device differs", () => {
+    // Mobile falls back to Tablet, then Desktop.
+    const classes = (value: string | undefined) => (value === "large" ? "py-24" : "py-8");
+
+    expect(
+      responsiveClasses<string>({ $responsive: { desktop: "large", mobile: "small" } }, classes),
+    ).toBe("py-8 md:py-24");
+    expect(
+      responsiveClasses<string>({ $responsive: { desktop: "small", tablet: "large" } }, classes),
+    ).toBe("py-24 lg:py-8");
   });
 });

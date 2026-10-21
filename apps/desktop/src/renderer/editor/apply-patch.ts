@@ -25,13 +25,19 @@ function nodePath(page: PageDoc, id: string): Path | undefined {
 }
 
 /**
- * Applies a single-field edit to `draft`, an Immer draft of `page`. The node is looked up in the
- * plain `page`, so only the drafts along its path are created: the Immer patches and the work stay
- * as small as the edit, whatever the size of the page (ADR 0007).
- * Returns false if the node isn't in the page; the caller then records the edit some other way.
+ * Sets one field of the node `nodeId` in `draft`, an Immer draft of `page`, to what `next` makes of
+ * the field's current value. The node is looked up in the plain `page`, so only the drafts along its
+ * path are created: the Immer patches and the work stay as small as the edit, whatever the size of
+ * the page (ADR 0007). Returns false if the node isn't in the page.
  */
-export function applyPatch(draft: PageDoc, page: PageDoc, patch: EnginePatch): boolean {
-  const path = nodePath(page, patch.nodeId);
+export function updateField(
+  draft: PageDoc,
+  page: PageDoc,
+  nodeId: string,
+  field: string,
+  next: (current: unknown) => unknown,
+): boolean {
+  const path = nodePath(page, nodeId);
   if (path === undefined) {
     return false;
   }
@@ -39,6 +45,15 @@ export function applyPatch(draft: PageDoc, page: PageDoc, patch: EnginePatch): b
   for (const key of path) {
     target = (target as Record<string | number, unknown>)[key];
   }
-  (target as NodeDoc).props[patch.field] = patch.value;
+  const { props } = target as NodeDoc;
+  props[field] = next(props[field]);
   return true;
+}
+
+/**
+ * Applies a single-field edit to `draft`, an Immer draft of `page` (see {@link updateField}).
+ * Returns false if the node isn't in the page; the caller then records the edit some other way.
+ */
+export function applyPatch(draft: PageDoc, page: PageDoc, patch: EnginePatch): boolean {
+  return updateField(draft, page, patch.nodeId, patch.field, () => patch.value);
 }

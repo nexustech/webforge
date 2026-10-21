@@ -108,6 +108,11 @@ export interface CanvasEngine {
   onHistoryCommand(cb: HistoryCommandHandler): Unsubscribe;
   setViewport(v: Viewport): void;
   /**
+   * The user switched the canvas to another device view with the canvas's own controls. A view
+   * change is not a history step (U6). Not called for {@link setViewport}.
+   */
+  onViewportChange(cb: (viewport: Viewport) => void): Unsubscribe;
+  /**
    * Styles the canvas with the site's own compiled CSS and the classes exported pages put on
    * `<body>`, so the page looks as it will when exported (1.12). Replaces the previous styles.
    */

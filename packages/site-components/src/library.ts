@@ -1,11 +1,26 @@
+import {
+  type Breakpoint,
+  isResponsiveValue,
+  type Responsive,
+  resolveResponsive,
+} from "@webforge/model";
 import { type ComponentType, isValidElement, type ReactNode } from "react";
 
+/** A choice offered by a field: its translated label and the stored value. */
+export type FieldOption = { readonly label: string; readonly value: string };
+
 /**
- * One editable property of a component, described independently of the canvas engine. `group`
- * picks the Edit panel tab (1.14): Content for what it says, Style for how it looks. When it is
- * left out, choices (`select`) are Style and everything else is Content.
+ * One editable property of a component, described independently of the canvas engine.
+ * - `group` picks the Edit panel tab (1.14): Content for what it says, Style for how it looks. When
+ *   it is left out, the style kinds (`select`, `toggle`, `slider`, `color`, `spacing`) are Style
+ *   and the rest Content.
+ * - `responsive` lets the value differ per device (F-ED-4): the field then holds a
+ *   {@link Responsive} value, set in the Edit panel for the device being viewed.
  */
-export type FieldDef = { readonly group?: "content" | "style" } & (
+export type FieldDef = {
+  readonly group?: "content" | "style";
+  readonly responsive?: boolean;
+} & (
   | {
       readonly kind: "text";
       readonly label: string;
@@ -13,11 +28,15 @@ export type FieldDef = { readonly group?: "content" | "style" } & (
       readonly inline?: boolean;
     }
   | { readonly kind: "richtext"; readonly label: string; readonly inline?: boolean }
-  | {
-      readonly kind: "select";
-      readonly label: string;
-      readonly options: readonly { readonly label: string; readonly value: string }[];
-    }
+  | { readonly kind: "select"; readonly label: string; readonly options: readonly FieldOption[] }
+  /** On or off, stored as a boolean. */
+  | { readonly kind: "toggle"; readonly label: string }
+  /** A step along a token scale (C4), smallest first, stored as the step's value. */
+  | { readonly kind: "slider"; readonly label: string; readonly steps: readonly FieldOption[] }
+  /** A colour of the site's theme (a daisyUI colour name), never a free colour (C4). */
+  | { readonly kind: "color"; readonly label: string; readonly options: readonly FieldOption[] }
+  /** A spacing token such as Small · Medium · Large (C4). */
+  | { readonly kind: "spacing"; readonly label: string; readonly options: readonly FieldOption[] }
   | {
       readonly kind: "slot";
       readonly label: string;
@@ -115,6 +134,44 @@ export function stringValue(value: unknown): string {
 /** Narrows a select field value to one of `options`, falling back to the first. */
 export function optionValue<T extends string>(value: unknown, options: readonly [T, ...T[]]): T {
   return options.find((option) => option === value) ?? options[0];
+}
+
+/** Where each device's classes start, mobile first: Tablet from `md`, Desktop from `lg`. */
+const BREAKPOINT_PREFIX: readonly (readonly [Breakpoint, string])[] = [
+  ["mobile", ""],
+  ["tablet", "md:"],
+  ["desktop", "lg:"],
+];
+
+/**
+ * The classes for a value that may differ per device (F-ED-4), mobile first: the Mobile value's
+ * classes as they are, then Tablet's with `md:` and Desktop's with `lg:` where they differ from the
+ * device before. A plain value gives its classes alone. `classesFor` maps one value to its
+ * classes, e.g. a padding token to `py-16`; it must give every value classes of its own
+ * (`space-y-0` for none, not nothing), so a larger device can undo a smaller one's.
+ */
+export function responsiveClasses<T>(
+  value: unknown,
+  classesFor: (value: T | undefined) => string,
+): string {
+  if (!isResponsiveValue(value as Responsive<T>)) {
+    return classesFor(value as T);
+  }
+  const parts: string[] = [];
+  let previous: string | undefined;
+  for (const [breakpoint, prefix] of BREAKPOINT_PREFIX) {
+    const classes = classesFor(resolveResponsive(value as Responsive<T>, breakpoint));
+    if (classes !== previous) {
+      parts.push(
+        ...classes
+          .split(/\s+/)
+          .filter((name) => name !== "")
+          .map((name) => `${prefix}${name}`),
+      );
+    }
+    previous = classes;
+  }
+  return parts.join(" ");
 }
 
 const EmptySlot: ComponentType = () => null;

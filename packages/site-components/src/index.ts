@@ -6,6 +6,7 @@ export type {
   ComponentLibrary,
   ComponentRenderProps,
   FieldDef,
+  FieldOption,
   ImageSource,
   NavLink,
   RenderContext,
@@ -14,6 +15,7 @@ export type {
 export {
   EDITOR_RENDER_CONTEXT,
   optionValue,
+  responsiveClasses,
   slotComponent,
   stringValue,
   textValue,

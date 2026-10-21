@@ -161,6 +161,29 @@ describe("renderNodesToHtml", () => {
     expect(html).toContain("py-24");
   });
 
+  it("renders a section's per-device padding and gap, mobile first, and its full width", () => {
+    const html = renderNodesToHtml(
+      [
+        {
+          type: "Section",
+          props: {
+            id: "s",
+            padding: { $responsive: { desktop: "large", mobile: "small" } },
+            gap: { $responsive: { desktop: "medium", tablet: "none" } },
+            fullWidth: true,
+            content: [],
+          },
+        },
+      ],
+      siteLibrary,
+      context,
+    );
+
+    expect(html).toContain(
+      '<section class="site-section mx-auto space-y-0 lg:space-y-6 px-4 py-8 md:py-24">',
+    );
+  });
+
   it("throws for an unknown component type, even inside a slot", () => {
     const nodes: NodeDoc[] = [
       {

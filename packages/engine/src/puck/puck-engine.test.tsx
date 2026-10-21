@@ -363,6 +363,36 @@ describe("createPuckEngine", () => {
     expect(headings()).toEqual(["First", "Second"]);
   });
 
+  it("reports a device view chosen with the canvas's own buttons, not one the app set", async () => {
+    // Puck shows its device buttons only around an iframe canvas.
+    const framed = createPuckEngine();
+    const host = document.createElement("div");
+    document.body.append(host);
+    await act(async () => framed.mount(host, { library, theme: { name: "test" } }));
+    await settle();
+    const views: unknown[] = [];
+    framed.onViewportChange((viewport) => views.push(viewport));
+    const button = (label: string) =>
+      host.querySelector<HTMLButtonElement>(`button[title="Show the ${label} view"]`);
+    expect(button("Mobile")).not.toBeNull();
+
+    await act(async () => framed.setViewport("tablet"));
+    await settle();
+    expect(button("Tablet")?.disabled).toBe(true);
+    await act(async () => button("Mobile")?.click());
+    await settle();
+
+    // Re-rendering Puck (another mode) keeps the view rather than picking one for the window.
+    await act(async () => framed.setMode("content"));
+    await settle();
+
+    expect(views).toEqual(["mobile"]);
+    expect(button("Mobile")?.disabled).toBe(true);
+    framed.destroy();
+    await settle();
+    host.remove();
+  });
+
   it("renders a page to static HTML", () => {
     const html = engine.renderStatic(page, NO_LAYOUT);
 
