@@ -60,6 +60,8 @@ export function createFakeEngine(): FakeEngine {
     },
     setViewport: vi.fn(),
     onViewportChange: views.add,
+    setZoom: vi.fn(),
+    onCanvasSize: () => () => undefined,
     setSiteCss: vi.fn(),
     perform: vi.fn(() => true),
     onAddRequest: adds.add,

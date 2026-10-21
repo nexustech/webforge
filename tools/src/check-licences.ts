@@ -3,14 +3,19 @@
 // Usage (see the root "licence-check" script):
 //   pnpm licenses list -r --json | node tools/src/check-licences.ts
 //
+// It also checks the packages pnpm-workspace.yaml patches (`patchedDependencies`): their licences
+// must allow modification.
+//
 // This file has no relative imports so Node can run it directly with type stripping.
 
+import { readFileSync } from "node:fs";
 import { text } from "node:stream/consumers";
 import { z } from "zod";
 
 /**
- * SPDX licence IDs allowed for any dependency (C1). MPL-2.0 is allowed only for unmodified use;
- * we never patch dependencies, so it is accepted here. OFL-1.1 covers the Fontsource fonts that
+ * SPDX licence IDs allowed for any dependency (C1). MPL-2.0 is allowed only for unmodified use: we
+ * patch only permissively licensed packages (currently @puckeditor/core, MIT) and MPL-2.0 packages
+ * are never patched, which {@link findPatchedViolations} enforces. OFL-1.1 covers the Fontsource fonts that
  * exported sites bundle (architecture §8): it allows embedding and redistributing the fonts with
  * any software, only not selling them on their own.
  */
@@ -26,6 +31,14 @@ export const ALLOWED_LICENCES: ReadonlySet<string> = new Set([
   "MPL-2.0",
   "OFL-1.1",
 ]);
+
+/**
+ * Licences a package may have if we patch it (`patchedDependencies` in pnpm-workspace.yaml): the
+ * allowed ones except MPL-2.0, which allows only unmodified use.
+ */
+export const PATCHABLE_LICENCES: ReadonlySet<string> = new Set(
+  [...ALLOWED_LICENCES].filter((licence) => licence !== "MPL-2.0"),
+);
 
 /** A package allowed despite a licence outside {@link ALLOWED_LICENCES}, with the reason. */
 export type LicenceException = {
@@ -198,6 +211,41 @@ export function findUnusedExceptions(
   return [...exceptions.keys()].filter((name) => !installed.has(name));
 }
 
+/**
+ * The names of the packages pnpm-workspace.yaml patches: the keys of its `patchedDependencies`,
+ * such as `'@puckeditor/core@0.23.0'`, without their versions.
+ */
+export function parsePatchedPackages(workspaceYaml: string): string[] {
+  const lines = workspaceYaml.split(/\r?\n/);
+  const start = lines.findIndex((line) => /^patchedDependencies:/.test(line));
+  if (start === -1) {
+    return [];
+  }
+  const names: string[] = [];
+  for (const line of lines.slice(start + 1)) {
+    if (/^\S/.test(line)) {
+      break; // The next top-level key.
+    }
+    const key = /^\s+(['"]?)([^'"#\s][^'"]*?)\1\s*:/.exec(line)?.[2];
+    if (key !== undefined) {
+      const at = key.lastIndexOf("@");
+      names.push(at > 0 ? key.slice(0, at) : key);
+    }
+  }
+  return names;
+}
+
+/** The patched packages whose licences don't allow modification (see {@link PATCHABLE_LICENCES}). */
+export function findPatchedViolations(
+  packages: readonly LicensedPackage[],
+  patched: readonly string[],
+): LicensedPackage[] {
+  const names = new Set(patched);
+  return packages.filter(
+    (pkg) => names.has(pkg.name) && !isLicenceAllowed(pkg.licence, PATCHABLE_LICENCES),
+  );
+}
+
 /** Outcome of a licence check: whether it passed and what to print. */
 export type LicenceCheckResult = {
   readonly ok: boolean;
@@ -206,12 +254,14 @@ export type LicenceCheckResult = {
 };
 
 /**
- * Checks the JSON output of `pnpm licenses list -r --json`. An empty report fails: it means the
- * listing went wrong, not that there is nothing to check.
+ * Checks the JSON output of `pnpm licenses list -r --json`, and that none of the `patched` packages
+ * has a licence that forbids modifying it. An empty report fails: it means the listing went wrong,
+ * not that there is nothing to check.
  */
 export function checkLicenceReport(
   json: string,
   exceptions: ReadonlyMap<string, LicenceException> = LICENCE_EXCEPTIONS,
+  patched: readonly string[] = [],
 ): LicenceCheckResult {
   const packages = parseLicenceReport(json);
   if (packages.length === 0) {
@@ -229,6 +279,21 @@ export function checkLicenceReport(
   if (violations.length > 0) {
     return { ok: false, message: formatViolations(violations), warnings };
   }
+  const patchedViolations = findPatchedViolations(packages, patched);
+  if (patchedViolations.length > 0) {
+    const lines = patchedViolations.map(
+      (pkg) => `  ${pkg.name}@${pkg.versions.join(", ")}: ${pkg.licence}`,
+    );
+    return {
+      ok: false,
+      message: [
+        "Licence check failed: these patched packages have licences that allow only unmodified use:",
+        ...lines,
+        "Remove the patch (patchedDependencies in pnpm-workspace.yaml) or replace the package.",
+      ].join("\n"),
+      warnings,
+    };
+  }
   return {
     ok: true,
     message: `Licence check passed: ${packages.length} packages, all with allowed licences.`,
@@ -243,7 +308,12 @@ async function main(): Promise<void> {
     process.exitCode = 2;
     return;
   }
-  const result = checkLicenceReport(await text(process.stdin));
+  const workspace = readFileSync(new URL("../../pnpm-workspace.yaml", import.meta.url), "utf8");
+  const result = checkLicenceReport(
+    await text(process.stdin),
+    LICENCE_EXCEPTIONS,
+    parsePatchedPackages(workspace),
+  );
   for (const warning of result.warnings) {
     console.warn(warning);
   }
