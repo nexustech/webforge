@@ -2,7 +2,7 @@
 @import "@webforge/editor-ui/theme.css";
 @source "./";
 
-/* The canvas and the Undo History panel; the window layout itself is ShellLayout (Tailwind). */
+/* The canvas; the window layout (ShellLayout) and the panels use Tailwind and the theme tokens. */
 
 html,
 body,
@@ -18,35 +18,4 @@ body,
 
 .editor__canvas-root {
   height: 100%;
-}
-
-.undo-history {
-  padding: 0.25rem;
-}
-
-.undo-history__list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.undo-history__step {
-  width: 100%;
-  padding: 0.25rem 0.5rem;
-  border: 0;
-  border-radius: 0.25rem;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.undo-history__step[data-state="current"] {
-  background: var(--accent);
-  font-weight: 600;
-}
-
-.undo-history__step[data-state="undone"] {
-  opacity: 0.5;
 }

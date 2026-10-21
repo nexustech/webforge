@@ -1,4 +1,4 @@
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { t } from "@webforge/i18n";
 import type { SiteSnapshot } from "@webforge/model";
@@ -15,13 +15,16 @@ import {
   type WebContents,
 } from "electron";
 import { z } from "zod";
+import { openFailureMessage } from "../shared/open-failure.js";
 import { createBackupSchedule } from "./backup-schedule.js";
 import { createBackups } from "./backups.js";
 import { createCanvasCssCompiler, registerCanvasHandlers } from "./canvas-css.js";
 import { startCrashReports } from "./crash-wiring.js";
+import type { E2eDialog } from "./e2e-dialogs.js";
 import { type ExportDialogs, registerExportHandlers } from "./export-ipc.js";
 import { runExportInWorker } from "./export-worker-client.js";
 import { createFlushOnClose } from "./flush-on-close.js";
+import { createHandOff } from "./hand-off.js";
 import { registerIpcHandler } from "./ipc.js";
 import {
   openPreferencesStore,
@@ -51,6 +54,13 @@ const exportWorkerScript = join(import.meta.dirname, "export-worker.js");
 // electron-vite sets ELECTRON_RENDERER_URL to the Vite dev server in development only.
 const devServerUrl = app.isPackaged ? undefined : process.env.ELECTRON_RENDERER_URL;
 const appUrl = devServerUrl ?? pathToFileURL(rendererHtml).href;
+
+// One Webforge at a time (1.8): a second launch, e.g. a .wforge double-clicked in Explorer while
+// Webforge is open, hands its command line to this one ("second-instance") and quits.
+const primaryInstance = app.requestSingleInstanceLock();
+if (!primaryInstance) {
+  app.quit();
+}
 
 // Local crash reports first, so even a failing start-up leaves one (F-SITE-7).
 const crashReports = startCrashReports();
@@ -107,13 +117,58 @@ const siteSwitch = createSiteSwitch({
   },
   capture: async () => {
     const window = BrowserWindow.getAllWindows()[0];
-    if (window === undefined || window.isDestroyed()) return undefined;
+    // A crashed renderer has no canvas to show.
+    if (window === undefined || window.isDestroyed() || window.webContents.isCrashed()) {
+      return undefined;
+    }
     const image = await window.webContents.capturePage(await canvasArea(window.webContents));
     return image.isEmpty() ? undefined : image.resize({ width: 480 }).toJPEG(75);
   },
   recent: recentSites,
 });
 const openSite = (path: string) => openOrRecover(projectSession, path, backups, recoveryDialogs);
+
+// The preferences, once start() has read them; a window can't be created before.
+let preferencesStore: PreferencesStore | undefined;
+
+/** Brings the window to the front; `undefined` if there is none (macOS, after closing it). */
+function focusMainWindow(): BrowserWindow | undefined {
+  const window = BrowserWindow.getAllWindows()[0];
+  if (window !== undefined) {
+    if (window.isMinimized()) window.restore();
+    window.show();
+    window.focus();
+  }
+  return window;
+}
+
+// Sites handed over while Webforge runs: saved, then replaced in the same window (1.8).
+const handOff = createHandOff({
+  currentPath: () => projectSession.currentPath(),
+  leaveSite: () => siteSwitch.leaveSite(),
+  open: openSite,
+  focus: () => {
+    focusMainWindow();
+  },
+  show: (reload) => {
+    // A hand-off that finishes while the app quits must not bring a window back.
+    if (quitting) return;
+    const window = focusMainWindow();
+    if (window === undefined) {
+      // A new window loads the site that is open now.
+      if (preferencesStore !== undefined) createMainWindow(preferencesStore);
+    } else if (reload) {
+      window.webContents.reload();
+    }
+  },
+  failed: async (reason) => {
+    const options = { type: "warning" as const, message: openFailureMessage(reason) };
+    const parent = BrowserWindow.getAllWindows()[0];
+    await (parent === undefined
+      ? dialog.showMessageBox(options)
+      : dialog.showMessageBox(parent, options));
+  },
+});
 
 // Set once the user quits, so a window that held its close back for a last save quits the app
 // afterwards (macOS keeps the app running when its last window closes).
@@ -124,10 +179,27 @@ app.on("before-quit", () => {
 let flushOnClose: ReturnType<typeof createFlushOnClose> | undefined;
 const projectFilters = [{ name: t("site.fileType"), extensions: [PROJECT_EXTENSION.slice(1)] }];
 
+/**
+ * A test's answer for a native file dialog, in `--mode e2e` builds only (see e2e-dialogs.ts):
+ * the packaged E2E tests can't replace `dialog` as the unpacked ones do. Other builds drop the
+ * branch, and the module with it.
+ */
+async function testDialogAnswer(
+  kind: E2eDialog,
+): Promise<{ path: string | undefined } | undefined> {
+  if (import.meta.env.MODE !== "e2e") {
+    return undefined;
+  }
+  const { e2eDialogAnswer } = await import("./e2e-dialogs.js");
+  return e2eDialogAnswer(kind);
+}
+
 // Dialogs are modal to the focused window. E2E tests replace dialog.showSaveDialog and
 // dialog.showOpenDialog, so look them up on the module at call time.
 const projectDialogs: ProjectDialogs = {
   chooseNewProjectPath: async () => {
+    const answer = await testDialogAnswer("save");
+    if (answer !== undefined) return answer.path;
     const options: SaveDialogOptions = {
       title: t("site.newDialogTitle"),
       defaultPath: `${t("site.untitledName")}${PROJECT_EXTENSION}`,
@@ -140,6 +212,8 @@ const projectDialogs: ProjectDialogs = {
     return result.canceled || result.filePath === "" ? undefined : result.filePath;
   },
   chooseProjectToOpen: async () => {
+    const answer = await testDialogAnswer("open");
+    if (answer !== undefined) return answer.path;
     const options: OpenDialogOptions = {
       title: t("site.openDialogTitle"),
       filters: projectFilters,
@@ -155,6 +229,8 @@ const projectDialogs: ProjectDialogs = {
 
 const exportDialogs: ExportDialogs = {
   chooseExportFolder: async () => {
+    const answer = await testDialogAnswer("folder");
+    if (answer !== undefined) return answer.path;
     const options: OpenDialogOptions = {
       title: t("export.dialogTitle"),
       properties: ["openDirectory", "createDirectory", "promptToCreate"],
@@ -210,6 +286,7 @@ async function start(): Promise<void> {
   await app.whenReady();
   hardenSession(session.defaultSession);
   const preferences = await openPreferencesStore(join(app.getPath("userData"), "preferences.json"));
+  preferencesStore = preferences;
   let windowTheme = preferences.get().theme;
   registerPreferencesHandlers(
     ipcMain,
@@ -276,15 +353,24 @@ async function start(): Promise<void> {
   });
 }
 
-// macOS delivers a site double-clicked in Finder (P1) as an event, possibly before "ready".
+// macOS delivers a site double-clicked in Finder (P1) as an event, possibly before "ready"; once
+// Webforge runs, it is handed over like a second launch's.
 let projectFromFinder: string | undefined;
 app.on("open-file", (event, path) => {
   event.preventDefault();
   if (app.isReady()) {
-    void openSite(path);
+    void started.then(() => handOff.open(path));
   } else {
     projectFromFinder = path;
   }
+});
+
+app.on("second-instance", (_event, argv, workingDirectory) => {
+  const path = findProjectArgument(argv);
+  // A path typed in a terminal is relative to where that launch ran, not to this process.
+  void started.then(() =>
+    handOff.open(path === undefined ? undefined : resolve(workingDirectory, path)),
+  );
 });
 
 app.on("will-quit", () => {
@@ -298,8 +384,10 @@ app.on("window-all-closed", () => {
 });
 
 // No top-level await: Electron emits "ready" only after the ESM entry module has finished
-// evaluating, so awaiting whenReady() at the top level would never resolve.
-start().catch((error: unknown) => {
+// evaluating, so awaiting whenReady() at the top level would never resolve. A second instance
+// never starts: it is quitting.
+const started = primaryInstance ? start() : new Promise<void>(() => undefined);
+started.catch((error: unknown) => {
   console.error("Webforge failed to start", error);
   app.exit(1);
 });

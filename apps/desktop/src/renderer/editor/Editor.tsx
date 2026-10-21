@@ -1,3 +1,4 @@
+import { toast } from "@webforge/editor-ui";
 import {
   type CanvasEngine,
   createPuckEngine,
@@ -23,6 +24,7 @@ import {
 } from "./editor-session.js";
 import { type CompileCanvasCss, connectSiteCss } from "./site-css.js";
 import { UndoHistoryPanel } from "./UndoHistoryPanel.js";
+import { installUndoToasts } from "./undo-toasts.js";
 
 /** Props of {@link Editor}. */
 export type EditorProps = {
@@ -165,7 +167,18 @@ export function Editor({
     engine?.setMode(mode);
   }, [engine, mode]);
 
-  // Undo History goes in the left column's bottom (UI1); 1.11 rebuilds it.
+  // "Deleted Heading · Undo" after each delete (D4, 1.11).
+  useEffect(
+    () =>
+      installUndoToasts(
+        session,
+        { show: (message, options) => toast(message, options), dismiss: (id) => toast.dismiss(id) },
+        () => connectionRef.current?.flush(),
+      ),
+    [session],
+  );
+
+  // Undo History goes in the left column's bottom (UI1).
   const panels = usePanelRegistry();
   useEffect(() => {
     const jumpTo = (entryId: string | null) => {

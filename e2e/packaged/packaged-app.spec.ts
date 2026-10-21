@@ -1,6 +1,6 @@
 import { type ChildProcess, spawn } from "node:child_process";
 import { once } from "node:events";
-import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type Browser, chromium, expect, type Page, test } from "@playwright/test";
@@ -10,7 +10,8 @@ import { desktopVersion } from "../app/launch.js";
 // Checks the packaged app (`pnpm e2e:packaged`): electron-builder output with asar, Fuses and the
 // unpacked better-sqlite3 binary. Fuses switch off --inspect, so Playwright's Electron launcher
 // can't attach; the test starts the executable itself and connects over the Chrome DevTools
-// Protocol, which reaches the renderer only.
+// Protocol, which reaches the renderer only. `pnpm e2e:packaged` builds it with `--mode e2e`, so
+// the native file dialogs answer from the file WEBFORGE_E2E_DIALOGS names (ADR 0005).
 
 const releaseDir = join(import.meta.dirname, "../../apps/desktop/release", desktopVersion);
 
@@ -59,16 +60,45 @@ async function appPage(browser: Browser): Promise<Page> {
     throw new Error("The app has no window");
   }
   await page.waitForFunction(() => "webforge" in window);
+  // Fully loaded, so a later load event is a reload.
+  await page.waitForLoadState("load");
   return page;
 }
 
+/** The renderer's `window.webforge.project`, as far as these tests call it. */
+type ProjectApi = {
+  getCurrent(): Promise<unknown>;
+  create(): Promise<{ status: string }>;
+};
+
+const currentProject = (page: Page) =>
+  page.evaluate(() =>
+    (window as unknown as { webforge: { project: ProjectApi } }).webforge.project.getCurrent(),
+  );
+
+const summary = (name: string) => ({
+  name,
+  fileName: `${name}.wforge`,
+  formatVersion: 1,
+  syncService: null,
+});
+
 const executable = packagedExecutable();
 let siteDir: string;
+let userData: string;
+let dialogAnswers: string;
 let child: ChildProcess | undefined;
 let browser: Browser | undefined;
+let page: Page;
+
+test.describe.configure({ mode: "serial" });
 
 test.beforeAll(() => {
   siteDir = mkdtempSync(join(tmpdir(), "webforge-packaged-"));
+  // Never the tester's own preferences, Recent list or single-instance lock.
+  userData = join(siteDir, "user-data");
+  dialogAnswers = join(siteDir, "dialogs.json");
+  writeFileSync(dialogAnswers, "{}");
 });
 
 test.afterAll(async () => {
@@ -91,23 +121,49 @@ test("the packaged app opens a .wforge passed on the command line", async () => 
   ProjectStore.create(path, { name: "Packaged check" }).close();
 
   // Port 0: Chromium picks a free port and prints the URL.
-  child = spawn(executable, [path, "--remote-debugging-port=0"], {
+  child = spawn(executable, [path, `--user-data-dir=${userData}`, "--remote-debugging-port=0"], {
     stdio: ["ignore", "ignore", "pipe"],
+    env: { ...process.env, WEBFORGE_E2E_DIALOGS: dialogAnswers },
   });
   browser = await chromium.connectOverCDP(await devToolsUrl(child));
-  const page = await appPage(browser);
+  page = await appPage(browser);
 
   // The main process opened the file at start-up (P1), so better-sqlite3 loaded from
   // app.asar.unpacked inside the packaged, fused app.
-  const current = await page.evaluate(() =>
-    (
-      window as unknown as { webforge: { project: { getCurrent(): Promise<unknown> } } }
-    ).webforge.project.getCurrent(),
+  expect(await currentProject(page)).toEqual(summary("Packaged check"));
+});
+
+test("a .wforge double-clicked while the app runs opens in the running window (1.8)", async () => {
+  test.skip(executable === undefined || child === undefined, "Needs the running packaged app");
+  if (executable === undefined) {
+    return;
+  }
+  const path = join(siteDir, "Handed over.wforge");
+  ProjectStore.create(path, { name: "Handed over" }).close();
+
+  // As Explorer or Finder starts it: just the file. It hands the file over and quits.
+  const reloaded = page.waitForEvent("load");
+  const second = spawn(executable, [path, `--user-data-dir=${userData}`], { stdio: "ignore" });
+  const [code] = (await once(second, "exit")) as [number | null];
+  await reloaded;
+
+  expect(code).toBe(0);
+  expect(browser?.contexts().flatMap((context) => context.pages())).toHaveLength(1);
+  // The reloaded renderer may still be starting.
+  await expect(async () => {
+    expect(await currentProject(page)).toEqual(summary("Handed over"));
+  }).toPass();
+});
+
+test("answers the native file dialogs from the test's file in e2e builds (ADR 0005)", async () => {
+  test.skip(child === undefined, "Needs the running packaged app");
+  const path = join(siteDir, "From the dialog.wforge");
+  writeFileSync(dialogAnswers, JSON.stringify({ save: path }));
+
+  const result = await page.evaluate(() =>
+    (window as unknown as { webforge: { project: ProjectApi } }).webforge.project.create(),
   );
-  expect(current).toEqual({
-    name: "Packaged check",
-    fileName: "Packaged check.wforge",
-    formatVersion: 1,
-    syncService: null,
-  });
+
+  expect(result).toEqual({ status: "opened", project: summary("From the dialog") });
+  expect(existsSync(path)).toBe(true);
 });

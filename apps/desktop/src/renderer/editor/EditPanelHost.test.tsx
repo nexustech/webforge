@@ -100,6 +100,26 @@ describe("EditPanelHost", () => {
     expect(labels()).toEqual(["Edited Hero button text"]);
   });
 
+  it("writes nothing back when its element is deleted while a field is open", async () => {
+    const { session, labels, user } = setup();
+    const input = screen.getByLabelText("Text");
+    await user.type(input, "!");
+
+    act(() => {
+      session.edit("remove", "Deleted Heading", (draft) => {
+        const home = draft.pages[draft.homePageId]?.doc.content[0];
+        if (home !== undefined) home.props.content = [];
+      });
+      session.ui.setState({ nodeId: null });
+    });
+    fireEvent.blur(input);
+
+    expect(screen.getByText("Select an element to edit it")).toBeDefined();
+    expect(labels()).toEqual(["Edited Heading text", "Deleted Heading"]);
+    const section = currentPage(session)?.doc.content[0];
+    expect(section?.props.content).toEqual([]);
+  });
+
   it("shows the empty state for a selection on another page", () => {
     const { session } = setup();
 
