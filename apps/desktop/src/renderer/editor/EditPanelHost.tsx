@@ -1,7 +1,7 @@
 import { EditPanel, type EditPanelField, type ListChange } from "@webforge/editor-ui";
 import type { EngineEdit } from "@webforge/engine";
 import { t } from "@webforge/i18n";
-import type { Breakpoint, SiteDoc } from "@webforge/model";
+import { type Breakpoint, imageValueSchema, type SiteDoc } from "@webforge/model";
 import type { FieldDef } from "@webforge/site-components";
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import { updateField } from "./apply-patch.js";
@@ -34,18 +34,20 @@ function rendererKind(field: FieldDef): string | undefined {
     case "spacing":
     case "list":
       return field.kind;
-    // Rich text is edited on the canvas (1.23), images in their own field (1.16), slots by
-    // dragging elements in (a slot of one type is a list: see editableList).
-    case "richtext":
+    // A Media image, with alt text for this placement (1.16): see ImageField.
     case "media":
+      return "image";
+    // Rich text is edited on the canvas (1.23), slots by dragging elements in (a slot of one type
+    // is a list: see editableList).
+    case "richtext":
     case "slot":
       return undefined;
   }
 }
 
-/** The tab a field goes on: its own `group`, else Content for text and Style for the rest. */
+/** The tab a field goes on: its own `group`, else Content for text and images, else Style. */
 function groupOf(field: FieldDef): "content" | "style" {
-  return field.group ?? (field.kind === "text" ? "content" : "style");
+  return field.group ?? (field.kind === "text" || field.kind === "media" ? "content" : "style");
 }
 
 /** The choices or steps a field offers, for its renderer. */
@@ -87,7 +89,15 @@ function listField(
 
 /** Whether `value` is something a field of `field`'s kind stores. */
 function accepts(field: FieldDef, value: unknown): boolean {
-  return field.kind === "toggle" ? typeof value === "boolean" : typeof value === "string";
+  switch (field.kind) {
+    case "toggle":
+      return typeof value === "boolean";
+    // An image value, or none to take the image away.
+    case "media":
+      return value === undefined || imageValueSchema.safeParse(value).success;
+    default:
+      return typeof value === "string";
+  }
 }
 
 /** A run of edits still open: typing in a text field, or a slider drag. */
@@ -263,17 +273,16 @@ export function EditPanelHost({ session, flush }: EditPanelHostProps) {
     }
     flush();
     const textKey = `field:${pageId}:${id}:${name}`;
+    // Typing in a field is one step per visit (D1), like typing on the canvas: a text field, or
+    // an image's alt text for this placement.
+    const typed = field.kind === "text" || field.kind === "media";
     session.edit(
       field.kind === "text" ? "text" : "props",
       labelOf(name, field),
       recipe(name, next),
-      {
-        selectionAfter,
-        // Typing in a field is one step per visit (D1), like typing on the canvas.
-        ...(field.kind === "text" ? { coalesceKey: textKey } : {}),
-      },
+      { selectionAfter, ...(typed ? { coalesceKey: textKey } : {}) },
     );
-    if (field.kind === "text") {
+    if (typed) {
       openRun.current = {
         nodeId: id,
         name,

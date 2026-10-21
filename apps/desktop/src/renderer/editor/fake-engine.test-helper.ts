@@ -61,6 +61,7 @@ export function createFakeEngine(): FakeEngine {
     setViewport: vi.fn(),
     onViewportChange: views.add,
     setSiteCss: vi.fn(),
+    setImages: vi.fn(),
     perform: vi.fn(() => true),
     onAddRequest: adds.add,
     onFrameWindow: frames.add,

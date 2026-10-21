@@ -13,7 +13,11 @@ import {
 import "@puckeditor/core/no-external.css";
 import { t } from "@webforge/i18n";
 import type { PageDoc } from "@webforge/model";
-import type { ComponentLibrary } from "@webforge/site-components";
+import {
+  type ComponentLibrary,
+  EDITOR_RENDER_CONTEXT,
+  type RenderContext,
+} from "@webforge/site-components";
 import { type ReactNode, useEffect } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -129,6 +133,8 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   let frameDocument: Document | null = null;
   /** The site's CSS, applied to the canvas document whenever there is one. */
   let siteStyles: SiteStyles | null = null;
+  /** What the canvas renders with: no navigation or links, and the site's Media images. */
+  let renderContext: RenderContext = EDITOR_RENDER_CONTEXT;
   /** The canvas width Puck shows, or is about to show. */
   let viewportWidth: number = VIEWPORT_WIDTHS.desktop;
   /** A width the app gave Puck that Puck doesn't show yet: until it does, no width is reported. */
@@ -351,7 +357,11 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
         ]),
       );
       slotsOf = (type) => slots.get(type);
-      config = toPuckConfig(opts.library, (id) => editorRevisions.get(id) ?? 0);
+      config = toPuckConfig(
+        opts.library,
+        (id) => editorRevisions.get(id) ?? 0,
+        () => renderContext,
+      );
       root = createRoot(el);
       render();
       // Puck starts with the current page.
@@ -430,6 +440,15 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     },
 
     onViewportChange: viewports.add,
+
+    setImages(image) {
+      renderContext = { ...EDITOR_RENDER_CONTEXT, image };
+      // Puck draws a component again only when its data changes: give it the page anew.
+      revision++;
+      preserveCaret(frameDocument);
+      showPage();
+      dispatch({ type: "setUi", ui: { itemSelector: selectorFor(selection) } });
+    },
 
     setSiteCss(css, bodyClass) {
       siteStyles = { css, bodyClass };
