@@ -286,7 +286,9 @@ type PageMenuProps = {
 function PageMenu(props: PageMenuProps) {
   const { page } = props;
   return (
-    <DropdownMenu>
+    // Not modal: a modal menu hides the rest of the window from screen readers while its buttons
+    // stay focusable (axe: aria-hidden-focus), and this small row menu needs no focus trap.
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"

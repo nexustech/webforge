@@ -56,8 +56,9 @@ function samePageList(a: SiteDoc, b: SiteDoc): boolean {
 }
 
 /**
- * Adds the Site panel to the right column's bottom (UI1), in Simple and Advanced mode. It holds
- * Pages for now; Media and Fonts join it later. Returns a function that removes it.
+ * Adds the Site panel to the right column, as the tab after Edit (UI1, ADR 0008), in Simple and
+ * Advanced mode. It holds Pages for now; Media and Fonts join it later. Returns a function that
+ * removes it.
  */
 export function registerSitePanel(panels: PanelRegistry, session: EditorSession): () => void {
   const actions = pagesPanelActions(session);

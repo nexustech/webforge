@@ -13,6 +13,11 @@ test.beforeEach(async () => {
   app = await launchDesktopApp();
   page = await app.firstWindow();
   await expect(canvas().locator("h1")).toHaveText(STARTER_HEADING);
+  // Pages is the Site tab, after Edit, in the right column (ADR 0008).
+  await page
+    .getByRole("region", { name: "Right panels" })
+    .getByRole("tab", { name: "Site" })
+    .click();
 });
 
 test.afterEach(async () => {
