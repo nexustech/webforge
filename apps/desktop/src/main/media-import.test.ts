@@ -27,6 +27,16 @@ function ids(...values: string[]) {
 
 const pdf = new TextEncoder().encode("%PDF-1.7\nprice list");
 
+/** A PNG header that claims `width` × `height`: small bytes, a huge image. */
+function pngClaiming(width: number, height: number): Uint8Array {
+  const bytes = new Uint8Array(33);
+  bytes.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13, 73, 72, 68, 82]);
+  const view = new DataView(bytes.buffer);
+  view.setUint32(16, width);
+  view.setUint32(20, height);
+  return bytes;
+}
+
 describe("importMediaFiles", () => {
   it("stores the originals byte for byte and describes them as Media items", () => {
     const session = openSession();
@@ -100,6 +110,7 @@ describe("importMediaFiles", () => {
       { fileName: "logo.gif", data: new TextEncoder().encode("GIF89a") },
       { fileName: "photo.jpg", data: new TextEncoder().encode("not really a JPEG") },
       { fileName: "poster.png", data: undefined },
+      { fileName: "huge.png", data: pngClaiming(100_000, 100_000) },
       { fileName: "prices.pdf", data: pdf },
     ]);
 
@@ -110,6 +121,7 @@ describe("importMediaFiles", () => {
         { fileName: "logo.gif", reason: "unsupported" },
         { fileName: "photo.jpg", reason: "unsupported" },
         { fileName: "poster.png", reason: "too-large" },
+        { fileName: "huge.png", reason: "too-large" },
       ],
     });
   });

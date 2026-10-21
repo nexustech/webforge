@@ -65,6 +65,17 @@ describe("createMediaResponder", () => {
     expect(makeThumbnail).toHaveBeenCalledTimes(4);
   });
 
+  it("answers 404 when the site's file can't be read", async () => {
+    const respond = createMediaResponder({
+      readMedia: () => {
+        throw new Error("database closed");
+      },
+      makeThumbnail: async () => undefined,
+    });
+
+    expect((await respond(`webforge-media://original/${PHOTO}`)).status).toBe(404);
+  });
+
   it("answers 404 for anything but an image of the open site", async () => {
     const { respond } = setUp();
 

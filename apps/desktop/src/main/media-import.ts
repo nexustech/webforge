@@ -1,8 +1,14 @@
 import { type MediaId, type MediaMeta, mediaNameFor, newId } from "@webforge/model";
 import { MAX_MEDIA_BYTES } from "../shared/ipc/media.js";
-import type { DroppedFile, MediaImportResult } from "../shared/ipc-contract.js";
+import type { MediaImportResult } from "../shared/ipc-contract.js";
 import { sniffMedia } from "./media-files.js";
 import type { ProjectSession } from "./project-session.js";
+
+/**
+ * The most pixels an imported image may have (50 megapixels, e.g. 8660 × 5774). A small file can
+ * claim a huge size; decoding it for thumbnails and the export would exhaust memory.
+ */
+const MAX_IMAGE_PIXELS = 50_000_000;
 
 /** A file to import: dropped (bytes from the renderer) or chosen in the dialog (read here). */
 export type ImportFile = {
@@ -19,7 +25,7 @@ export type ImportFile = {
  */
 export function importMediaFiles(
   session: Pick<ProjectSession, "storeAsset">,
-  files: readonly (DroppedFile | ImportFile)[],
+  files: readonly ImportFile[],
   createId: () => MediaId = () => newId("media"),
 ): MediaImportResult {
   const items: MediaMeta[] = [];
@@ -32,6 +38,10 @@ export function importMediaFiles(
     const sniffed = sniffMedia(data);
     if (sniffed === undefined) {
       rejected.push({ fileName, reason: "unsupported" });
+      continue;
+    }
+    if (sniffed.kind === "image" && sniffed.width * sniffed.height > MAX_IMAGE_PIXELS) {
+      rejected.push({ fileName, reason: "too-large" });
       continue;
     }
     const id = createId();

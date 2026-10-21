@@ -68,7 +68,13 @@ export function createMediaResponder(options: MediaResponderOptions) {
     if (kind === undefined || hash === undefined) {
       return notFound();
     }
-    const blob = options.readMedia(hash);
+    let blob: StoredBlob | undefined;
+    try {
+      blob = options.readMedia(hash);
+    } catch {
+      // The site closed or its file failed underneath: the image just doesn't show.
+      return notFound();
+    }
     if (blob === undefined || !isImageMime(blob.mime)) {
       return notFound();
     }
