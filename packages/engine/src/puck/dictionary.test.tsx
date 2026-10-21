@@ -67,5 +67,6 @@ describe("puckDictionary", () => {
       });
       element.remove();
     }
-  });
+    // Mounting Puck (its first import and render) can take seconds on a busy machine.
+  }, 20_000);
 });

@@ -2,6 +2,8 @@ import { ActionBar, createUsePuck, useGetPuck } from "@puckeditor/core";
 import { t } from "@webforge/i18n";
 import { ArrowDownIcon, ArrowUpIcon } from "lucide-react";
 import { type ReactNode, useLayoutEffect, useRef, useState } from "react";
+import type { InsertPoint } from "../canvas-engine.js";
+import { canPerform, performOnSelected } from "./selected-actions.js";
 import { ROOT_ZONE } from "./tree.js";
 
 const usePuck = createUsePuck();
@@ -27,6 +29,29 @@ const CHROME_CSS = `
 }
 .wf-outline[data-state="selected"] {
   outline: calc(2px / var(--wf-zoom, 1)) solid var(--wf-outline-color);
+}
+/* The floating + (UI1): the editor's --primary blue, 24 px on screen. */
+.wf-add {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  z-index: 1;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #0a6fb7;
+  color: #fff;
+  font: 600 18px/24px system-ui, sans-serif;
+  text-align: center;
+  cursor: pointer;
+  pointer-events: auto;
+  transform: translate(-50%, 50%) scale(calc(1 / var(--wf-zoom, 1)));
+}
+.wf-add:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 1px;
 }
 `;
 
@@ -59,17 +84,50 @@ type OverlayProps = {
   readonly componentType: string;
 };
 
-/** The outline over an element on the canvas: 1 px magenta on hover, 2 px when selected. */
-export function SelectionOutline({ hover, isSelected }: OverlayProps) {
-  const ref = useRef<HTMLDivElement>(null);
-  useLayoutEffect(() => {
-    const element = ref.current;
-    if (element !== null) {
-      element.style.setProperty("--wf-zoom", String(canvasZoom(element)));
-    }
-  });
-  const state = isSelected ? "selected" : hover ? "hover" : "none";
-  return <div ref={ref} className="wf-outline" data-state={state} />;
+/**
+ * The outline over an element on the canvas: 1 px magenta on hover, 2 px when selected. A hovered
+ * or selected top-level section also gets the floating + on its bottom edge, which asks `onAdd` to
+ * add a section after it (UI1: "opens the Add panel at the insertion point"); not where adding is
+ * locked (Content mode).
+ */
+export function createSelectionOutline(onAdd: (at: InsertPoint) => void) {
+  return function SelectionOutline({ hover, isSelected, componentId }: OverlayProps) {
+    const ref = useRef<HTMLDivElement>(null);
+    useLayoutEffect(() => {
+      const element = ref.current;
+      if (element !== null) {
+        element.style.setProperty("--wf-zoom", String(canvasZoom(element)));
+      }
+    });
+    // Its index in the page's top-level list, or -1 for an element inside a section.
+    const topLevelIndex = usePuck((state) => {
+      const selector = state.getSelectorForId(componentId);
+      return selector?.zone === ROOT_ZONE ? selector.index : -1;
+    });
+    const canInsert = usePuck((state) => state.getPermissions().insert === true);
+    const state = isSelected ? "selected" : hover ? "hover" : "none";
+    const showAdd = state !== "none" && topLevelIndex >= 0 && canInsert;
+    return (
+      <div ref={ref} className="wf-outline" data-state={state}>
+        {showAdd ? (
+          <button
+            type="button"
+            className="wf-add"
+            title={t("canvas.addSection")}
+            aria-label={t("canvas.addSection")}
+            // Not a click on the section underneath: no selecting, no dragging.
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={(event) => {
+              event.stopPropagation();
+              onAdd({ index: topLevelIndex + 1 });
+            }}
+          >
+            +
+          </button>
+        ) : null}
+      </div>
+    );
+  };
 }
 
 /** Props Puck passes to the `actionBar` override. */
@@ -103,49 +161,26 @@ function MoveActions() {
   useLayoutEffect(() => {
     setSelectedBar(inSelectedBar(marker.current));
   });
-  const selector = usePuck((state) => state.appState.ui.itemSelector);
-  const canDrag = usePuck((state) =>
-    state.selectedItem === null ? false : state.getPermissions({ item: state.selectedItem }).drag,
-  );
-  const hasNext = usePuck((state) => {
-    const selected = state.appState.ui.itemSelector;
-    return selected === null
-      ? false
-      : state.getItemBySelector({ zone: selected.zone ?? ROOT_ZONE, index: selected.index + 1 }) !==
-          undefined;
-  });
+  const canMoveUp = usePuck((state) => canPerform(state, "moveUp"));
+  const canMoveDown = usePuck((state) => canPerform(state, "moveDown"));
   const marked = <span ref={marker} hidden />;
-  if (selector === null || canDrag !== true || !selectedBar) {
+  if (!selectedBar || !(canMoveUp || canMoveDown)) {
     return marked;
   }
-  const { index } = selector;
-  const zone = selector.zone ?? ROOT_ZONE;
-  const move = (to: number) => {
-    const { dispatch } = getPuck();
-    dispatch({
-      type: "move",
-      sourceZone: zone,
-      sourceIndex: index,
-      destinationZone: zone,
-      destinationIndex: to,
-    });
-    // Puck selects by position: keep the moved element selected.
-    dispatch({ type: "setUi", ui: { itemSelector: { zone, index: to } } });
-  };
   return (
     <>
       {marked}
       <ActionBar.Action
         label={t("canvas.moveUp")}
-        disabled={index === 0}
-        onClick={() => move(index - 1)}
+        disabled={!canMoveUp}
+        onClick={() => performOnSelected(getPuck(), "moveUp")}
       >
         <ArrowUpIcon size={16} />
       </ActionBar.Action>
       <ActionBar.Action
         label={t("canvas.moveDown")}
-        disabled={!hasNext}
-        onClick={() => move(index + 1)}
+        disabled={!canMoveDown}
+        onClick={() => performOnSelected(getPuck(), "moveDown")}
       >
         <ArrowDownIcon size={16} />
       </ActionBar.Action>

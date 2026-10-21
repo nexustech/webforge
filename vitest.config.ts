@@ -34,6 +34,8 @@ export default defineConfig({
         "apps/desktop/src/main/index.ts",
         // Native message boxes and file dialogs only; recovery.ts holds the tested flow.
         "apps/desktop/src/main/recovery-dialogs.ts",
+        // Electron wiring of the crash reports; crash-reports.ts and crash-handlers.ts are tested.
+        "apps/desktop/src/main/crash-wiring.ts",
         "apps/desktop/src/preload/index.ts",
         "apps/desktop/src/renderer/main.tsx",
         "apps/desktop/src/worker/export-worker.ts",
