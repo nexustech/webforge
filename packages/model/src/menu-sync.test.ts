@@ -18,10 +18,17 @@ function site(): SiteDoc {
   });
   const home = base.pages[base.homePageId];
   if (home === undefined) throw new Error("no home page");
-  base.pages[ABOUT] = { ...structuredClone(home), id: ABOUT, slug: "about", title: "About" };
+  base.pages[ABOUT] = { ...home, id: ABOUT, slug: "about", title: "About" };
   base.pageOrder.splice(1, 0, ABOUT);
   return base;
 }
+
+/** The site's "Page not found" page. */
+const notFoundOf = (doc: SiteDoc): PageId => {
+  const id = doc.pageOrder.find((pageId) => doc.pages[pageId]?.kind === "not-found");
+  if (id === undefined) throw new Error("no 'Page not found' page");
+  return id;
+};
 
 /** The pages a menu lists, in its order, groups included. */
 const pagesIn = (items: readonly MenuItem[]): PageId[] =>
@@ -40,7 +47,7 @@ describe("syncMenuWithPages (F-ED-17)", () => {
     expect(pagesIn(menu.items)).toEqual([doc.homePageId, ABOUT]);
     expect(menu.items[0]).toBe(homeItem);
     // "Page not found" is never in the menu.
-    expect(pagesIn(menu.items)).not.toContain(doc.notFoundPageId);
+    expect(pagesIn(menu.items)).not.toContain(notFoundOf(doc));
   });
 
   it("once edited, drops what was on deleted pages and adds a new page at the end", () => {
@@ -86,7 +93,7 @@ describe("syncMenuWithPages (F-ED-17)", () => {
     const added = "page-new" as PageId;
     const home = doc.pages[doc.homePageId];
     if (home === undefined) throw new Error("no home page");
-    doc.pages[added] = { ...structuredClone(home), id: added, slug: "new", title: "New" };
+    doc.pages[added] = { ...home, id: added, slug: "new", title: "New" };
     doc.pageOrder.push(added);
 
     const menu = syncMenuWithPages(doc, added);
@@ -96,7 +103,7 @@ describe("syncMenuWithPages (F-ED-17)", () => {
     expect(menu.items[3]).toMatchObject({ kind: "page", pageId: added, hidden: false });
     // A page already listed, or "Page not found", isn't added again.
     expect(syncMenuWithPages({ ...doc, menu }, added).items).toHaveLength(4);
-    expect(syncMenuWithPages({ ...doc, menu }, doc.notFoundPageId).items).toHaveLength(4);
+    expect(syncMenuWithPages({ ...doc, menu }, notFoundOf(doc)).items).toHaveLength(4);
   });
 
   it("keeps every page listed exactly while it follows them, and never loses custom items", () => {
@@ -134,7 +141,7 @@ describe("syncMenuWithPages (F-ED-17)", () => {
           );
           if (kind === "add") {
             const id = `page-${count++}` as PageId;
-            doc.pages[id] = { ...structuredClone(home), id, slug: `p${count}`, title: `P${count}` };
+            doc.pages[id] = { ...home, id, slug: `p${count}`, title: `P${count}` };
             doc.pageOrder.splice(Math.min(at, doc.pageOrder.length), 0, id);
             doc.menu = syncMenuWithPages(doc, id);
           } else if (kind === "delete" && pages.length > 0) {
