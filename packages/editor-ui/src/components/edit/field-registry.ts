@@ -10,7 +10,30 @@ export type FieldSpec = {
   readonly options?: readonly { readonly label: string; readonly value: string }[];
   /** For `slider`: its steps, smallest first, labels already translated. */
   readonly steps?: readonly { readonly label: string; readonly value: string }[];
+  /** For `list`: what one item is called ("Testimonial"), already translated. */
+  readonly itemLabel?: string;
+  /** For `list`: the fields of each item. */
+  readonly itemFields?: readonly ListItemFieldSpec[];
 };
+
+/** One field of a list item. */
+export type ListItemFieldSpec = FieldSpec & { readonly name: string };
+
+/** One item of a list's value: a key that stays with it when the list is reordered, its values. */
+export type ListItemValue = {
+  readonly key: string;
+  readonly values: Readonly<Record<string, unknown>>;
+};
+
+/**
+ * What a `list` renderer reports through `onChange` (F-ED-6): one change to the list, so the app
+ * can record it as one labelled step ("Added Testimonial").
+ */
+export type ListChange =
+  | { readonly type: "add" }
+  | { readonly type: "move"; readonly key: string; readonly to: number }
+  | { readonly type: "remove"; readonly key: string }
+  | { readonly type: "edit"; readonly key: string; readonly name: string; readonly value: unknown };
 
 /** Props every field renderer gets. */
 export type FieldRendererProps = {
@@ -22,7 +45,7 @@ export type FieldRendererProps = {
   readonly value: unknown;
   /**
    * The value changed. Called on every keystroke of a text field and every step of a slider drag,
-   * once per choice elsewhere.
+   * once per choice elsewhere. A `list` reports a {@link ListChange} instead of the new value.
    */
   onChange(value: unknown): void;
   /**

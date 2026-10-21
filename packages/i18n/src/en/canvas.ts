@@ -21,6 +21,13 @@ export const canvas = {
   // A value set for one device only (F-ED-4).
   "editPanel.override": "{device} only",
   "editPanel.useDesktop": "Use Desktop value",
+  // A repeating list in the Edit panel (F-ED-6); {item} is what one item is called.
+  "editPanel.list.add": "Add {item}",
+  "editPanel.list.moveUp": "Move {item} up",
+  "editPanel.list.moveDown": "Move {item} down",
+  "editPanel.list.delete": "Delete {item}",
+  "editPanel.list.untitled": "{item} {number}",
+  "editPanel.list.empty": "Nothing in this list yet",
   // Device views of the canvas (glossary: Desktop · Tablet · Mobile).
   "device.desktop": "Desktop",
   "device.tablet": "Tablet",
