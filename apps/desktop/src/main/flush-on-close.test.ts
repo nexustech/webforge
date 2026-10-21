@@ -6,7 +6,7 @@ type Handler = (event: IpcMainInvokeEvent, ...args: unknown[]) => Promise<unknow
 
 const APP_URL = "file:///app/index.html";
 
-function setUp() {
+function setUp(beforeClose?: () => Promise<void>) {
   const handlers = new Map<string, Handler>();
   const ipc = {
     handle: (channel: string, handler: Handler) => handlers.set(channel, handler),
@@ -15,6 +15,7 @@ function setUp() {
   const flushOnClose = createFlushOnClose(ipc, (url) => url === APP_URL, {
     timeoutMs: 5_000,
     onClosed,
+    ...(beforeClose === undefined ? {} : { beforeClose }),
   });
   let closeListener: ((event: { preventDefault(): void }) => void) | undefined;
   let inputListener:
@@ -85,6 +86,21 @@ describe("createFlushOnClose", () => {
 
     expect(window.close).toHaveBeenCalledTimes(1);
     expect(onClosed).toHaveBeenCalledTimes(1);
+  });
+
+  it("runs the before-close step after the save, and closes even if it fails", async () => {
+    const beforeClose = vi.fn(async () => {
+      throw new Error("capture failed");
+    });
+    const { window, userCloses, answer } = setUp(beforeClose);
+
+    userCloses();
+    expect(beforeClose).not.toHaveBeenCalled();
+    await answer(1);
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(beforeClose).toHaveBeenCalledTimes(1);
+    expect(window.close).toHaveBeenCalledTimes(1);
   });
 
   it("closes anyway when the renderer doesn't answer within 5 s", async () => {

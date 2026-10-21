@@ -3,6 +3,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App.js";
 import { starterSite } from "./editor/starter-site.js";
+import { StartScreen } from "./start/StartScreen.js";
 import { loadSite } from "./storage/load-site.js";
 import "./styles.css";
 
@@ -23,8 +24,14 @@ const [info, preferences, loaded, uiState] = await Promise.all([
 // The theme before the first paint, so the window never flashes the other one.
 document.documentElement.dataset.theme = preferences.theme;
 
+// With a site open, the editor; otherwise the start screen (1.8), which reloads the window once
+// it has created or opened one.
 createRoot(container).render(
   <StrictMode>
-    <App info={info} preferences={preferences} loaded={loaded} uiState={uiState} />
+    {loaded.kind === "file" ? (
+      <App info={info} preferences={preferences} loaded={loaded} uiState={uiState} />
+    ) : (
+      <StartScreen info={info} />
+    )}
   </StrictMode>,
 );

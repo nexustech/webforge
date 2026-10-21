@@ -3,6 +3,7 @@ import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, _electron as electron } from "@playwright/test";
+import { ProjectStore } from "@webforge/storage";
 
 /** The desktop app's folder; its production build is in `out/`. */
 export const desktopDir = join(import.meta.dirname, "../../apps/desktop");
@@ -24,6 +25,10 @@ export function newUserDataDir(): string {
  * Its user data goes to `userDataDir`, never the tester's own. Without one, it gets a new
  * temporary folder that is deleted when the app closes; a test that restarts the app passes its
  * own folder (from {@link newUserDataDir}) and deletes it.
+ *
+ * Without a `.wforge` in `args`, the app opens a new, empty site file (in its own temporary
+ * folder), as if the user had just created one, so it starts in the editor with the starter site.
+ * `site: false` starts it without one, on the start screen (1.8).
  */
 export async function launchDesktopApp(
   options: {
@@ -31,6 +36,8 @@ export async function launchDesktopApp(
     readonly args?: readonly string[];
     /** Where the app keeps its user data; a new temporary folder by default. */
     readonly userDataDir?: string;
+    /** Whether to open a new, empty site when `args` name none; true by default. */
+    readonly site?: boolean;
   } = {},
 ): Promise<ElectronApplication> {
   if (!existsSync(join(desktopDir, "out/main/index.js"))) {
@@ -46,19 +53,33 @@ export async function launchDesktopApp(
     ),
   );
   const userData = options.userDataDir ?? newUserDataDir();
+  const args = [...(options.args ?? [])];
+  let siteDir: string | undefined;
+  if (options.site !== false && !args.some((arg) => arg.toLowerCase().endsWith(".wforge"))) {
+    siteDir = mkdtempSync(join(tmpdir(), "webforge-e2e-site-"));
+    const sitePath = join(siteDir, "My site.wforge");
+    ProjectStore.create(sitePath, { name: "My site" }).close();
+    args.push(sitePath);
+  }
   const app = await electron.launch({
     executablePath,
-    args: [desktopDir, `--user-data-dir=${userData}`, ...(options.args ?? [])],
+    args: [desktopDir, `--user-data-dir=${userData}`, ...args],
     cwd: desktopDir,
     env,
   });
-  if (options.userDataDir === undefined) {
+  const temporary = [
+    ...(options.userDataDir === undefined ? [userData] : []),
+    ...(siteDir === undefined ? [] : [siteDir]),
+  ];
+  if (temporary.length > 0) {
     app.on("close", () => {
-      // Best effort: after a killed app, its helper processes can hold files for a moment.
-      try {
-        rmSync(userData, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
-      } catch {
-        // Left in the temp folder; the OS cleans it up eventually.
+      for (const folder of temporary) {
+        // Best effort: after a killed app, its helper processes can hold files for a moment.
+        try {
+          rmSync(folder, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+        } catch {
+          // Left in the temp folder; the OS cleans it up eventually.
+        }
       }
     });
   }

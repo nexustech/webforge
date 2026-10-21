@@ -109,6 +109,25 @@ const uiStateResultSchema = z.discriminatedUnion("status", [
 /** Outcome of remembering the editor state with the open site. */
 export type UiStateResult = z.infer<typeof uiStateResultSchema>;
 
+/** A site on the start screen's Recent list (F-SITE-2); its path stays in the main process. */
+const recentSiteSchema = z.strictObject({
+  id: z.string().regex(/^[0-9a-f]{32}$/),
+  name: z.string().min(1),
+  fileName: z.string().min(1),
+  lastOpened: z.iso.datetime(),
+  lastEdited: z.iso.datetime().nullable(),
+  /** A JPEG data URL of the canvas when the site was last closed. */
+  thumbnail: z
+    .string()
+    .regex(/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/)
+    .nullable(),
+  /** The file is no longer where it was. */
+  missing: z.boolean(),
+});
+
+/** A site on the start screen's Recent list. */
+export type RecentSite = z.infer<typeof recentSiteSchema>;
+
 /** IPC channels of the `project` domain (`project:*`). */
 export const projectChannels = {
   /** Asks where to save a new site (save dialog in main), creates it and makes it current. */
@@ -145,6 +164,24 @@ export const projectChannels = {
     response: commitResultSchema,
   },
   /** The open site's editor state (Design or Content mode), or `null` without an open site. */
+  /** The Recent list, most recently opened first. */
+  listRecentSites: {
+    channel: "project:list-recent",
+    request: z.tuple([]),
+    response: z.array(recentSiteSchema),
+  },
+  /** Opens a site from the Recent list by its id; a missing file is taken off the list. */
+  openRecentSite: {
+    channel: "project:open-recent",
+    request: z.tuple([z.string().regex(/^[0-9a-f]{32}$/)]),
+    response: projectResultSchema,
+  },
+  /** Takes a site off the Recent list; its file is untouched. */
+  removeRecentSite: {
+    channel: "project:remove-recent",
+    request: z.tuple([z.string().regex(/^[0-9a-f]{32}$/)]),
+    response: z.null(),
+  },
   getUiState: {
     channel: "project:get-ui-state",
     request: z.tuple([]),
@@ -178,6 +215,12 @@ export interface ProjectApi {
   commit(changes: readonly SiteDocumentChange[]): Promise<CommitResult>;
   /** The open site's editor state (Design or Content mode), or `null` without an open site. */
   getUiState(): Promise<SiteUiState | null>;
+  /** The start screen's Recent list. */
+  listRecent(): Promise<RecentSite[]>;
+  /** Opens a site from the Recent list. */
+  openRecent(id: string): Promise<ProjectResult>;
+  /** Takes a site off the Recent list. */
+  removeRecent(id: string): Promise<null>;
   /** Remembers the editor state with the open site. */
   setUiState(state: SiteUiState): Promise<UiStateResult>;
 }

@@ -2,6 +2,7 @@ import type { IpcMain } from "electron";
 import type { Backups } from "./backups.js";
 import { registerIpcHandler } from "./ipc.js";
 import type { ProjectSession } from "./project-session.js";
+import type { RecentSites } from "./recent-sites.js";
 import { openOrRecover, type RecoveryDialogs } from "./recovery.js";
 
 /** Native file dialogs, injected so the handlers can be tested without Electron. */
@@ -21,24 +22,55 @@ export function registerProjectHandlers(
   isTrustedSender: (senderUrl: string) => boolean,
   session: ProjectSession,
   dialogs: ProjectDialogs,
-  /** Offers a damaged site's backups when it opens as `corrupt` (1.7). */
-  recovery?: {
-    readonly backups: Pick<Backups, "list" | "restore">;
-    readonly dialogs: RecoveryDialogs;
-  },
+  options: {
+    /** Offers a damaged site's backups when it opens as `corrupt` (1.7). */
+    readonly recovery?: {
+      readonly backups: Pick<Backups, "list" | "restore">;
+      readonly dialogs: RecoveryDialogs;
+    };
+    /** The start screen's Recent list (1.8). */
+    readonly recent?: Pick<RecentSites, "list" | "pathOf" | "remove">;
+    /**
+     * Runs before another site replaces the open one: the renderer saves its last changes and
+     * the canvas is captured for the Recent list.
+     */
+    readonly beforeSwitch?: () => Promise<void>;
+  } = {},
 ): void {
-  registerIpcHandler(ipc, "createProject", isTrustedSender, async () => {
-    const path = await dialogs.chooseNewProjectPath();
-    return path === undefined ? { status: "canceled" } : session.create(path);
-  });
-  registerIpcHandler(ipc, "openProject", isTrustedSender, async () => {
-    const path = await dialogs.chooseProjectToOpen();
-    if (path === undefined) {
-      return { status: "canceled" };
-    }
+  const { recovery, recent, beforeSwitch } = options;
+  const open = async (path: string) => {
+    await beforeSwitch?.();
     return recovery === undefined
       ? session.open(path)
       : openOrRecover(session, path, recovery.backups, recovery.dialogs);
+  };
+  registerIpcHandler(ipc, "createProject", isTrustedSender, async () => {
+    const path = await dialogs.chooseNewProjectPath();
+    if (path === undefined) {
+      return { status: "canceled" };
+    }
+    await beforeSwitch?.();
+    return session.create(path);
+  });
+  registerIpcHandler(ipc, "openProject", isTrustedSender, async () => {
+    const path = await dialogs.chooseProjectToOpen();
+    return path === undefined ? { status: "canceled" } : open(path);
+  });
+  registerIpcHandler(ipc, "listRecentSites", isTrustedSender, () => recent?.list() ?? []);
+  registerIpcHandler(ipc, "openRecentSite", isTrustedSender, async (id) => {
+    const path = recent?.pathOf(id);
+    if (path === undefined) {
+      return { status: "failed", reason: "not-found" };
+    }
+    const result = await open(path);
+    if (result.status === "failed" && result.reason === "not-found") {
+      recent?.remove(id);
+    }
+    return result;
+  });
+  registerIpcHandler(ipc, "removeRecentSite", isTrustedSender, (id) => {
+    recent?.remove(id);
+    return null;
   });
   registerIpcHandler(ipc, "getCurrentProject", isTrustedSender, () => session.current());
   registerIpcHandler(ipc, "readSite", isTrustedSender, () => session.readSite());
