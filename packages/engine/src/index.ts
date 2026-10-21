@@ -1,6 +1,7 @@
 export type {
   CanvasAction,
   CanvasEngine,
+  CanvasSize,
   DocChange,
   EditorMode,
   EngineEdit,
