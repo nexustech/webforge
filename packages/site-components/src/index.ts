@@ -1,5 +1,5 @@
 export { BEHAVIOUR_SCRIPTS } from "./behaviours.js";
-export { siteLibrary, starterLayout, starterPage } from "./catalogue.js";
+export { siteLibrary, starterLayout, starterNotFoundPage, starterPage } from "./catalogue.js";
 export type {
   BehaviourName,
   ComponentDef,

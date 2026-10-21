@@ -45,6 +45,32 @@ export function starterPage(): PageDoc {
   };
 }
 
+/**
+ * The "Page not found" page a new site starts with (F-ED-20): a heading and a pointer to the
+ * menu. No links of its own, so nothing breaks when hosts serve it at any missing address.
+ */
+export function starterNotFoundPage(): PageDoc {
+  return {
+    root: { props: {} },
+    content: [
+      {
+        type: "Section",
+        props: {
+          id: "section-1",
+          padding: "large",
+          content: [
+            {
+              type: "Heading",
+              props: { id: "heading-1", text: t("starter.notFoundHeading"), size: "large" },
+            },
+            { type: "Text", props: { id: "text-1", text: `<p>${t("starter.notFoundText")}</p>` } },
+          ],
+        },
+      },
+    ],
+  };
+}
+
 /** The Header and Footer a new site starts with. */
 export function starterLayout(siteName: string): LayoutDoc {
   return {

@@ -47,6 +47,7 @@ const actions: PagesPanelActions = {
   setHome: noop,
   setHidden: noop,
   remove: noop,
+  changeSettings: noop,
 };
 
 const meta = {
@@ -87,5 +88,14 @@ export const DeleteConfirmation: Story = {
 export const AddPage: Story = {
   play: async ({ canvasElement }) => {
     await userEvent.click(within(canvasElement).getByRole("button", { name: "Add Page" }));
+  },
+};
+
+/** Page Settings (F-SET-2): title, file name, description, share image and what the page shows. */
+export const PageSettings: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "Actions for About us" }));
+    await userEvent.click(within(document.body).getByRole("menuitem", { name: "Page Settings…" }));
   },
 };

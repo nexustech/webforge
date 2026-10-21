@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { NameDialog } from "./NameDialog.js";
+import { PageSettingsDialog } from "./PageSettingsDialog.js";
 import {
   canBeHome,
   canChangeNavigation,
@@ -43,6 +44,8 @@ import {
   fileNameInFolder,
   foldersOf,
   neighbour,
+  type PageSettingsChange,
+  renamedFileName,
 } from "./page-actions.js";
 
 /** What the Pages panel can do; {@link SitePanel} binds them to the editor session. */
@@ -56,6 +59,7 @@ export type PagesPanelActions = {
   setHome(pageId: PageId): void;
   setHidden(pageId: PageId, hidden: boolean): void;
   remove(pageId: PageId): void;
+  changeSettings(pageId: PageId, change: PageSettingsChange): void;
 };
 
 /** Props of {@link PagesPanel}. */
@@ -69,7 +73,7 @@ export type PagesPanelProps = {
 /** A dialog the panel has open. */
 type OpenDialog =
   | { readonly kind: "add" }
-  | { readonly kind: "rename" | "folder" | "delete"; readonly pageId: PageId };
+  | { readonly kind: "rename" | "folder" | "delete" | "settings"; readonly pageId: PageId };
 
 /** A row of the list: a page at the top level, or a folder with its pages. */
 type Row =
@@ -148,6 +152,7 @@ export function PagesPanel({ site, shownPageId, actions }: PagesPanelProps) {
           site={site}
           page={page}
           actions={actions}
+          onSettings={() => openDialog({ kind: "settings", pageId: page.id })}
           onRename={() => openDialog({ kind: "rename", pageId: page.id })}
           onNewFolder={() => openDialog({ kind: "folder", pageId: page.id })}
           onDelete={() => openDialog({ kind: "delete", pageId: page.id })}
@@ -209,7 +214,7 @@ export function PagesPanel({ site, shownPageId, actions }: PagesPanelProps) {
         confirm={t("pages.renameDialog.confirm")}
         describe={(name) =>
           t("pages.fileName", {
-            path: fileNameFor(site, name, dialogPage?.folder, dialogPage?.id),
+            path: dialogPage === undefined ? "" : renamedFileName(site, dialogPage.id, name),
           })
         }
         onSubmit={(name) => {
@@ -235,6 +240,18 @@ export function PagesPanel({ site, shownPageId, actions }: PagesPanelProps) {
         onSubmit={(name) => {
           if (dialogPage !== undefined) {
             actions.moveToFolder(dialogPage.id, name);
+          }
+          close();
+        }}
+        onCancel={close}
+      />
+      <PageSettingsDialog
+        open={open && dialog?.kind === "settings"}
+        site={site}
+        page={dialogPage}
+        onSave={(change) => {
+          if (dialogPage !== undefined) {
+            actions.changeSettings(dialogPage.id, change);
           }
           close();
         }}
@@ -277,6 +294,7 @@ type PageMenuProps = {
   readonly site: SiteDoc;
   readonly page: PageEntry;
   readonly actions: PagesPanelActions;
+  readonly onSettings: () => void;
   readonly onRename: () => void;
   readonly onNewFolder: () => void;
   readonly onDelete: () => void;
@@ -307,10 +325,19 @@ function PageMenu(props: PageMenuProps) {
 }
 
 /** The items of {@link PageMenu}, worked out only while it is open. */
-function PageMenuItems({ site, page, actions, onRename, onNewFolder, onDelete }: PageMenuProps) {
+function PageMenuItems({
+  site,
+  page,
+  actions,
+  onSettings,
+  onRename,
+  onNewFolder,
+  onDelete,
+}: PageMenuProps) {
   const folders = foldersOf(site).filter((folder) => folder !== page.folder);
   return (
     <>
+      <DropdownMenuItem onSelect={onSettings}>{t("pageSettings.open")}</DropdownMenuItem>
       <DropdownMenuItem onSelect={onRename}>{t("pages.rename")}</DropdownMenuItem>
       {canDuplicate(page) && (
         <DropdownMenuItem onSelect={() => actions.duplicate(page.id)}>

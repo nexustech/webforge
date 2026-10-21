@@ -1,5 +1,5 @@
 import { siteDocSchema, siteSnapshotSchema, siteToSnapshot } from "@webforge/model";
-import { starterPage } from "@webforge/site-components";
+import { starterNotFoundPage, starterPage } from "@webforge/site-components";
 import { describe, expect, it } from "vitest";
 import { starterSite } from "./starter-site.js";
 
@@ -10,6 +10,8 @@ describe("starterSite", () => {
     expect(siteDocSchema.parse(site)).toEqual(site);
     expect(site.pages[site.homePageId]?.doc).toEqual(starterPage());
     expect(site.layout.header[0]?.props.siteName).toBe("My site");
+    const notFound = Object.values(site.pages).find((page) => page.kind === "not-found");
+    expect(notFound?.doc).toEqual(starterNotFoundPage());
   });
 
   it("exports as the home page and a 'Page not found' page", () => {

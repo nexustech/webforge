@@ -1,4 +1,4 @@
-import { type PageId, pagePath, type SiteDoc, siteDocSchema } from "@webforge/model";
+import { type MediaId, type PageId, pagePath, type SiteDoc, siteDocSchema } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -7,6 +7,7 @@ import { starterSite } from "../editor/starter-site.js";
 import {
   addPage,
   canDelete,
+  changePageSettings,
   deletePage,
   duplicatePage,
   fileNameFor,
@@ -14,6 +15,8 @@ import {
   foldersOf,
   movePage,
   moveToFolder,
+  type PageSettingsChange,
+  renamedFileName,
   renamePage,
   setHiddenFromNavigation,
   setHomePage,
@@ -293,6 +296,133 @@ describe("page actions (F-ED-13)", () => {
   });
 });
 
+describe("Page Settings (F-SET-2)", () => {
+  /** Page Settings for `id` as they are, with `change` applied. */
+  const settingsOf = (site: SiteDoc, id: PageId, change: Partial<PageSettingsChange> = {}) => {
+    const page = site.pages[id];
+    if (page === undefined) throw new Error("no page");
+    return {
+      title: page.title,
+      slug: page.slug,
+      description: page.settings.description ?? "",
+      shareImage: page.settings.shareImage,
+      hideHeader: page.settings.hideHeader,
+      hideFooter: page.settings.hideFooter,
+      hideFromNavigation: page.settings.hideFromNavigation,
+      ...change,
+    };
+  };
+
+  it("changes them as one step, and does nothing when nothing changed", () => {
+    const { session, site, add, labels } = setUp();
+    const about = add("About");
+    add("Team");
+
+    changePageSettings(session, about, settingsOf(site(), about));
+    expect(labels()).toHaveLength(2);
+
+    changePageSettings(
+      session,
+      about,
+      settingsOf(site(), about, {
+        title: " Our story ",
+        slug: "Team",
+        description: " Who we are ",
+        hideHeader: true,
+        hideFromNavigation: true,
+      }),
+    );
+
+    expect(site().pages[about]).toMatchObject({
+      title: "Our story",
+      slug: "team-2",
+      settings: {
+        description: "Who we are",
+        hideHeader: true,
+        hideFooter: false,
+        hideFromNavigation: true,
+      },
+    });
+    expect(labels().at(-1)).toBe("Changed page settings");
+    session.history.undo();
+    expect(site().pages[about]).toMatchObject({ title: "About", slug: "about" });
+  });
+
+  it("keeps a file name set by hand when the page is renamed, and when the field is emptied", () => {
+    const { session, site, add } = setUp();
+    const about = add("About");
+    const team = add("Team");
+    changePageSettings(session, about, settingsOf(site(), about, { slug: "our-story" }));
+
+    expect(renamedFileName(site(), about, "About Rosa")).toBe("our-story.html");
+    renamePage(session, about, "About Rosa");
+    renamePage(session, team, "Our team");
+    changePageSettings(session, about, settingsOf(site(), about, { slug: " " }));
+
+    expect(site().pages[about]).toMatchObject({ title: "About Rosa", slug: "our-story" });
+    expect(site().pages[team]?.slug).toBe("our-team");
+    expect(renamedFileName(site(), team, "Crew")).toBe("crew.html");
+  });
+
+  it("keeps the title when it is emptied, and drops an empty description", () => {
+    const { session, site, add } = setUp();
+    const about = add("About");
+    changePageSettings(session, about, settingsOf(site(), about, { description: "Hello" }));
+
+    changePageSettings(
+      session,
+      about,
+      settingsOf(site(), about, { title: "  ", description: " " }),
+    );
+
+    expect(site().pages[about]?.title).toBe("About");
+    expect(site().pages[about]?.settings).not.toHaveProperty("description");
+  });
+
+  it("uses only images in Media as the share image", () => {
+    const { session, site, add } = setUp();
+    const about = add("About");
+    const image = "media-photo" as MediaId;
+    session.edit("insert", "Added image", (draft) => {
+      draft.media[image] = {
+        id: image,
+        kind: "image",
+        hash: "a".repeat(64),
+        name: "photo",
+        fileName: "photo.jpg",
+        mimeType: "image/jpeg",
+        width: 800,
+        height: 600,
+        alt: "",
+      };
+    });
+
+    changePageSettings(session, about, settingsOf(site(), about, { shareImage: image }));
+    expect(site().pages[about]?.settings.shareImage).toBe(image);
+    changePageSettings(
+      session,
+      about,
+      settingsOf(site(), about, { shareImage: "media-gone" as MediaId }),
+    );
+    expect(site().pages[about]?.settings).not.toHaveProperty("shareImage");
+  });
+
+  it("keeps 'Page not found' out of navigation", () => {
+    const { session, site, notFound } = setUp();
+
+    changePageSettings(
+      session,
+      notFound,
+      settingsOf(site(), notFound, { hideFromNavigation: false, hideFooter: true }),
+    );
+
+    expect(site().pages[notFound]?.settings).toMatchObject({
+      hideFromNavigation: true,
+      hideFooter: true,
+    });
+  });
+});
+
 /** One Pages panel action, picked by index so it works with whatever pages exist. */
 type Action = { readonly kind: number; readonly page: number; readonly name: string };
 
@@ -321,6 +451,19 @@ function perform(session: EditorSession, { kind, page, name }: Action): void {
     case 6:
       setHiddenFromNavigation(session, id, page % 2 === 0);
       break;
+    case 7: {
+      const entry = session.history.document.getState().pages[id];
+      changePageSettings(session, id, {
+        title: name,
+        slug: name,
+        description: name,
+        shareImage: undefined,
+        hideHeader: page % 2 === 0,
+        hideFooter: page % 3 === 0,
+        hideFromNavigation: entry?.settings.hideFromNavigation !== true,
+      });
+      break;
+    }
     default:
       deletePage(session, id);
   }
@@ -329,7 +472,7 @@ function perform(session: EditorSession, { kind, page, name }: Action): void {
 describe("page actions and undo (U8)", () => {
   it("always leave a valid site; undo all returns to the start and redo all to the end", () => {
     const action = fc.record({
-      kind: fc.nat({ max: 7 }),
+      kind: fc.nat({ max: 8 }),
       page: fc.nat({ max: 20 }),
       name: fc.string({ minLength: 1, maxLength: 20 }),
     });
