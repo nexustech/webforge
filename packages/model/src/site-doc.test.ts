@@ -222,3 +222,24 @@ describe("siteDocSchema", () => {
     expect(siteDocSchema.safeParse({ ...site, extra: true }).success).toBe(false);
   });
 });
+
+describe("unsafe keys anywhere in a site (#138)", () => {
+  /** The site as a crafted file would hold it: `edit` changes its JSON text. */
+  const crafted = (edit: (json: string) => string): unknown =>
+    JSON.parse(edit(JSON.stringify(createSite(options))));
+
+  it("refuses __proto__ as a media or page id, and unsafe keys in settings", () => {
+    const cases = [
+      crafted((json) => json.replace('"media":{}', '"media":{"__proto__":{"polluted":true}}')),
+      crafted((json) => json.replace('"pages":{', '"pages":{"__proto__":{},')),
+      crafted((json) => json.replace('"settings":{', '"settings":{"constructor":{},')),
+    ];
+
+    for (const site of cases) {
+      expect(issuesOf(site)).toEqual([expect.stringMatching(/^Documents may not contain a "/)]);
+    }
+    expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+    // The untouched site still passes.
+    expect(issuesOf(crafted((json) => json))).toEqual([]);
+  });
+});

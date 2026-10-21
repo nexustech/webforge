@@ -9,6 +9,8 @@ import {
 import { t } from "@webforge/i18n";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { Preferences } from "../../shared/ipc-contract.js";
+import { connectCanvasImages } from "../media/canvas-images.js";
+import { registerImageField } from "../media/ImageField.js";
 import { registerMediaPanel } from "../media/register-media-panel.js";
 import { type CanvasView, connectCanvasView } from "../shell/canvas-view.js";
 import { useCommandRegistry } from "../shell/command-context.js";
@@ -132,6 +134,7 @@ export function Editor({
     connectionRef.current = connection;
     setEngine(engine);
     const stopSiteCss = connectSiteCss(engine, session, compileCss, document.baseURI);
+    const stopImages = connectCanvasImages(engine, session);
     // One handler for the whole window (U4); the engine reports keys pressed inside its iframe.
     const removeKeys = installHistoryKeys(window, (command) => {
       connection.flush();
@@ -164,6 +167,7 @@ export function Editor({
       stopSelectionWatch();
       canvasCommands.remove();
       stopSiteCss();
+      stopImages();
       removeKeys();
       connectionRef.current = null;
       connection.disconnect();
@@ -239,6 +243,7 @@ export function Editor({
   }, [panels, history, session, editorLevel]);
 
   useEffect(() => registerMediaPanel(panels, session), [panels, session]);
+  useEffect(() => registerImageField({ session }), [session]);
 
   return <section className="editor__canvas" aria-label={t("editor.canvas")} ref={canvasRef} />;
 }

@@ -401,12 +401,33 @@ describe("createPuckEngine", () => {
 describe("createPuckEngine canvas size and zoom (1.15)", () => {
   let host: HTMLDivElement;
   let framed: CanvasEngine;
+  /** The canvas frame's own width, scrollbars included (`offsetWidth`). */
+  let frameWidth = 640;
+  /** What Puck's ResizeObservers would hear; happy-dom has no layout to resize. */
+  const resizeCallbacks: (() => void)[] = [];
+  const resize = () => {
+    for (const callback of resizeCallbacks) callback();
+  };
 
   beforeEach(async () => {
     // happy-dom has no layout: give every element a 640 × 480 box, so Puck fits the 1280 px
     // Desktop view at 0.5 and leaves the 375 px Mobile view at 1.
     vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue(
       DOMRect.fromRect({ width: 640, height: 480 }),
+    );
+    frameWidth = 640;
+    vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockImplementation(() => frameWidth);
+    resizeCallbacks.length = 0;
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        constructor(callback: () => void) {
+          resizeCallbacks.push(callback);
+        }
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
     );
     framed = createPuckEngine();
     host = document.createElement("div");
@@ -420,12 +441,31 @@ describe("createPuckEngine canvas size and zoom (1.15)", () => {
     await settle();
     host.remove();
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
   });
 
   const run = async (change: () => void) => {
     await act(async () => change());
     await settle();
   };
+
+  it("keeps a zoom above Fit when its scrollbar resizes the canvas, fitting again on a real resize (#134)", async () => {
+    const zooms: number[] = [];
+    framed.onCanvasSize((size) => zooms.push(size.zoom));
+    // A ResizeObserver reports once when it starts observing.
+    await run(resize);
+
+    await run(() => framed.setZoom(1));
+    // The page now overflows the canvas: a scrollbar appears, the frame's own size stays the same.
+    await run(resize);
+    expect(zooms.at(-1)).toBe(1);
+
+    // The window or a column changes the frame's size: the canvas fits again.
+    await run(() => framed.setZoom(1));
+    frameWidth = 900;
+    await run(resize);
+    expect(zooms).toEqual([0.5, 1, 0.5]);
+  });
 
   it("starts fitted and reports the size and zoom at once", () => {
     const sizes: CanvasSize[] = [];

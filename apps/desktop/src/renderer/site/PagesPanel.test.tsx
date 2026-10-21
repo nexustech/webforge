@@ -7,6 +7,9 @@ import { starterSite } from "../editor/starter-site.js";
 import { PagesPanel, type PagesPanelActions } from "./PagesPanel.js";
 
 afterEach(cleanup);
+// Menus, sub-menus and dialogs take many user-event steps; under a full parallel run they can take
+// longer than the default 5 s.
+vi.setConfig({ testTimeout: 20_000 });
 
 /** The starter site plus About (hidden from navigation) and Team in a folder. */
 function siteWithPages(): SiteDoc {

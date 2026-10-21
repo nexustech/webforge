@@ -110,6 +110,11 @@ export type ResolvedImage = {
   readonly alt: string;
   /** Where to keep the image in view when it is cut to fit (`object-position`, G14). */
   readonly objectPosition?: string;
+  /**
+   * Show the image at this shape (`aspect-ratio`, e.g. `1 / 1`), cut to fit around
+   * `objectPosition`. Set on the canvas, which shows the uncut original; exports cut the files.
+   */
+  readonly aspectRatio?: string;
 };
 
 /** What a component may need from outside its own props while rendering. */

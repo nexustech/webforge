@@ -78,6 +78,7 @@ What item 1.27 changed:
   1. The permissions slice skips its whole-page walk when no component and not the root define `resolvePermissions` (#100).
   2. The fields slice doesn't re-publish the default fields when they and the item's id are unchanged (#100).
   3. Puck's API object (`useGetPuck()`, `__private`) gains `getZoomConfig` and `setZoomConfig`. Puck keeps its canvas zoom out of its public API, and the engine's `setZoom` and `onCanvasSize` need it for the canvas toolbar (1.15). Without it, zooming does nothing and no size is reported.
+  4. The canvas re-fits its zoom only when its frame's own size changes (`offsetWidth`/`offsetHeight`, scrollbars included). Puck re-fitted on any change to the frame's content box, so the scrollbar that a zoom above Fit brings undid that zoom at once (#134).
 
 ### Before and after
 Same page, harness and machine as above. Three runs of each state, interleaved; the ranges are across runs. One round overlapped with other work on the machine, so the upper ends are noisy.

@@ -33,13 +33,19 @@ function childrenIn(value: unknown): NodeDoc[] {
   return Array.isArray(value) ? value.filter(isNodeDoc) : [];
 }
 
-/** Calls `visit` for every node in `nodes` and their slots, in document order. */
+/** Whether a node is exported: not hidden in Layers (F-ED-12), which leaves out its slots too. */
+const isShown = (node: NodeDoc) => node.props.hidden !== true;
+
+/**
+ * Calls `visit` for every exported node in `nodes` and their slots, in document order. Hidden
+ * nodes and everything in them are skipped, so their media and behaviours aren't exported either.
+ */
 export function walkNodes(
   nodes: readonly NodeDoc[],
   library: ComponentLibrary,
   visit: (node: NodeDoc, def: ComponentDef) => void,
 ): void {
-  for (const node of nodes) {
+  for (const node of nodes.filter(isShown)) {
     const def = definitionOf(library, node);
     visit(node, def);
     for (const [name, field] of Object.entries(def.fields)) {
@@ -99,9 +105,11 @@ function renderNodes(
   library: ComponentLibrary,
   context: RenderContext,
 ): ReactNode[] {
-  return nodes.map((node) => (
-    <StaticNode key={node.props.id} node={node} library={library} context={context} />
-  ));
+  return nodes
+    .filter(isShown)
+    .map((node) => (
+      <StaticNode key={node.props.id} node={node} library={library} context={context} />
+    ));
 }
 
 function StaticNode(props: {
@@ -114,7 +122,8 @@ function StaticNode(props: {
 
 /**
  * Renders a list of nodes (a page's content, or the Header or Footer) to static HTML, without any
- * editor wrappers. Throws {@link UnknownComponentError} for component types the library lacks.
+ * editor wrappers or hidden nodes. Throws {@link UnknownComponentError} for component types the
+ * library lacks.
  */
 export function renderNodesToHtml(
   nodes: readonly NodeDoc[],

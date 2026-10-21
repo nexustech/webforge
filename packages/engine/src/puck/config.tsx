@@ -4,6 +4,7 @@ import {
   type ComponentLibrary,
   EDITOR_RENDER_CONTEXT,
   type FieldDef,
+  type RenderContext,
   withAdvanced,
 } from "@webforge/site-components";
 import { type ComponentType, Fragment, type ReactNode } from "react";
@@ -36,7 +37,11 @@ function toPuckField(field: FieldDef): Field {
 /** Gives the rich-text editors of a node a new identity; see {@link toPuckConfig}. */
 export type EditorRevision = (nodeId: string) => number;
 
-function toPuckComponent(def: ComponentDef, revision: EditorRevision): ComponentConfig {
+function toPuckComponent(
+  def: ComponentDef,
+  revision: EditorRevision,
+  context: () => RenderContext,
+): ComponentConfig {
   const fieldsOfKind = (kind: FieldDef["kind"]) =>
     Object.entries(def.fields)
       .filter(([, field]) => field.kind === kind)
@@ -63,12 +68,7 @@ function toPuckComponent(def: ComponentDef, revision: EditorRevision): Component
           ),
       );
       return (
-        <>
-          {withAdvanced(
-            def.render({ id, values, slots, context: EDITOR_RENDER_CONTEXT }),
-            values.advanced,
-          )}
-        </>
+        <>{withAdvanced(def.render({ id, values, slots, context: context() }), values.advanced)}</>
       );
     },
   };
@@ -81,10 +81,14 @@ function toPuckComponent(def: ComponentDef, revision: EditorRevision): Component
  * outside while it believes the user's last keystrokes are still being saved, which can swallow
  * the first undo after a text session; the engine bumps the revision to remount the editor with
  * the right content instead (ADR 0004).
+ *
+ * `context` is read on every render, so a newer one (the site's Media images) shows when the page
+ * is drawn again.
  */
 export function toPuckConfig(
   library: ComponentLibrary,
   revision: EditorRevision = () => 0,
+  context: () => RenderContext = () => EDITOR_RENDER_CONTEXT,
 ): Config {
   return {
     // No page-level fields yet (Puck's default root has a "title" field).
@@ -92,7 +96,7 @@ export function toPuckConfig(
     components: Object.fromEntries(
       Object.entries(library.components).map(([type, def]) => [
         type,
-        toPuckComponent(def, revision),
+        toPuckComponent(def, revision, context),
       ]),
     ),
   };

@@ -19,6 +19,7 @@ import { createEditorSession } from "./editor/editor-session.js";
 import { starterSite } from "./editor/starter-site.js";
 import { registerExportCommand } from "./export/export-command.js";
 import { exportRequestFor } from "./export/export-request.js";
+import { registerLayersPanel } from "./layers/register-layers-panel.js";
 import { AboutDialog } from "./shell/AboutDialog.js";
 import { CanvasToolbarHost } from "./shell/CanvasToolbarHost.js";
 import { CommandButton } from "./shell/CommandButton.js";
@@ -111,6 +112,7 @@ export function App({
 
   useEffect(() => installCommandShortcuts(window, registry), [registry]);
   useEffect(() => registerSitePanel(panels, session), [panels, session]);
+  useEffect(() => registerLayersPanel(panels, session), [panels, session]);
   useEffect(() => registerCrashReportsCommand(registry), [registry]);
 
   useEffect(
