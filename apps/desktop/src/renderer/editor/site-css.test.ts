@@ -1,7 +1,7 @@
 import type { SiteDoc } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { CanvasCssResult } from "../../shared/ipc/canvas.js";
+import type { CanvasCssRequest, CanvasCssResult } from "../../shared/ipc/canvas.js";
 import { withCanvasFonts } from "./canvas-fonts.js";
 import { createEditorSession } from "./editor-session.js";
 import { createFakeEngine } from "./fake-engine.test-helper.js";
@@ -191,15 +191,18 @@ describe("connectSiteCss", () => {
     expect(engine.setSiteCss).not.toHaveBeenCalled();
   });
 
-  it("skips a site with a component the library lacks", () => {
+  it("styles the rest of a site with a component the library lacks (#142)", () => {
     const site = starterSite();
     site.layout.header = [{ type: "Carousel", props: { id: "c" } }];
     const session = createEditorSession(siteLibrary, site);
-    const compile = vi.fn();
+    const compile = vi.fn(
+      async (_request: CanvasCssRequest): Promise<CanvasCssResult> => ({ status: "failed" }),
+    );
 
     connectSiteCss(createFakeEngine(), session, compile, BASE)();
 
-    expect(compile).not.toHaveBeenCalled();
+    expect(compile).toHaveBeenCalledOnce();
+    expect(compile.mock.calls[0]?.[0].candidates).toContain("site-section");
   });
 });
 

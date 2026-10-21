@@ -458,7 +458,11 @@ describe("createPuckEngine", () => {
 describe("createPuckEngine canvas size and zoom (1.15)", () => {
   let host: HTMLDivElement;
   let framed: CanvasEngine;
-  /** The canvas frame's own width, scrollbars included (`offsetWidth`). */
+  /**
+   * `offsetWidth` of Puck's scroll container (the canvas's own box, scrollbars included), and of
+   * the frame inside it, which a scrollbar makes narrower.
+   */
+  let canvasWidth = 640;
   let frameWidth = 640;
   /** What Puck's ResizeObservers would hear; happy-dom has no layout to resize. */
   const resizeCallbacks: (() => void)[] = [];
@@ -472,8 +476,13 @@ describe("createPuckEngine canvas size and zoom (1.15)", () => {
     vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue(
       DOMRect.fromRect({ width: 640, height: 480 }),
     );
+    canvasWidth = 640;
     frameWidth = 640;
-    vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockImplementation(() => frameWidth);
+    vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockImplementation(function (
+      this: HTMLElement,
+    ) {
+      return this.className.includes("PuckCanvas-inner") ? frameWidth : canvasWidth;
+    });
     resizeCallbacks.length = 0;
     vi.stubGlobal(
       "ResizeObserver",
@@ -513,12 +522,15 @@ describe("createPuckEngine canvas size and zoom (1.15)", () => {
     await run(resize);
 
     await run(() => framed.setZoom(1));
-    // The page now overflows the canvas: a scrollbar appears, the frame's own size stays the same.
+    // The page now overflows: the canvas's scrollbar takes room from the frame inside it, but the
+    // canvas itself keeps its size.
+    frameWidth = 625;
     await run(resize);
     expect(zooms.at(-1)).toBe(1);
 
-    // The window or a column changes the frame's size: the canvas fits again.
+    // The window or a column changes the canvas's size: it fits again.
     await run(() => framed.setZoom(1));
+    canvasWidth = 900;
     frameWidth = 900;
     await run(resize);
     expect(zooms).toEqual([0.5, 1, 0.5]);

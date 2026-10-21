@@ -37,16 +37,23 @@ function childrenIn(value: unknown): NodeDoc[] {
 type NodeListOptions = {
   /**
    * Include nodes hidden in Layers (F-ED-12). The export leaves them out (the default); the canvas
-   * still shows them, dimmed, so its site CSS needs their classes (#142).
+   * still shows them, dimmed, so its site CSS needs their classes (#142). This also skips nodes of
+   * component types the library lacks instead of failing, so one such node (from an older or
+   * hand-edited file) doesn't stop the canvas styling the rest.
    */
   readonly includeHidden?: boolean;
 };
 
-/** Which nodes `options` keeps: all, or those not hidden in Layers (with everything in them). */
+/**
+ * Which nodes `options` keeps: those not hidden in Layers (with everything in them), or for
+ * `includeHidden` every node of a known component type.
+ */
 const keeps =
-  (options: NodeListOptions) =>
+  (options: NodeListOptions, library: ComponentLibrary) =>
   (node: NodeDoc): boolean =>
-    options.includeHidden === true || node.props.hidden !== true;
+    options.includeHidden === true
+      ? library.components[node.type] !== undefined
+      : node.props.hidden !== true;
 
 /**
  * Calls `visit` for every node in `nodes` and their slots, in document order. Hidden nodes and
@@ -59,7 +66,7 @@ export function walkNodes(
   visit: (node: NodeDoc, def: ComponentDef) => void,
   options: NodeListOptions = {},
 ): void {
-  for (const node of nodes.filter(keeps(options))) {
+  for (const node of nodes.filter(keeps(options, library))) {
     const def = definitionOf(library, node);
     visit(node, def);
     for (const [name, field] of Object.entries(def.fields)) {
@@ -145,6 +152,6 @@ export function renderNodesToHtml(
 ): string {
   // Check every type first so an unknown one fails before React swallows it in a render.
   walkNodes(nodes, library, () => {}, options);
-  const rendering: Rendering = { library, context, keep: keeps(options) };
+  const rendering: Rendering = { library, context, keep: keeps(options, library) };
   return renderToStaticMarkup(<>{renderNodes(nodes, rendering)}</>);
 }
