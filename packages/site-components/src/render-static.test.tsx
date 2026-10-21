@@ -77,6 +77,22 @@ describe("renderNodesToHtml", () => {
     expect(html).not.toMatch(/script|onclick|javascript|style=|<style/);
   });
 
+  it("keeps a paragraph's alignment, and no other style (F-ED-3)", () => {
+    const nodes: NodeDoc[] = [
+      {
+        type: "Text",
+        props: {
+          id: "t",
+          text: '<p style="text-align: center; color: red">Hi</p><p style="font-size: 40px">Big</p><p style="text-align: url(x)">Odd</p>',
+        },
+      },
+    ];
+
+    const html = renderNodesToHtml(nodes, siteLibrary, context);
+
+    expect(html).toContain('<p style="text-align:center">Hi</p><p>Big</p><p>Odd</p>');
+  });
+
   it("renders the header with navigation, the current page and the menu toggle", () => {
     const html = renderNodesToHtml(starterLayout("Rosa's Bakery").header, siteLibrary, context);
 
