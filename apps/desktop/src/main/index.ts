@@ -8,10 +8,13 @@ import {
   dialog,
   ipcMain,
   type OpenDialogOptions,
+  type Rectangle,
   type SaveDialogOptions,
   session,
   utilityProcess,
+  type WebContents,
 } from "electron";
+import { z } from "zod";
 import { createBackupSchedule } from "./backup-schedule.js";
 import { createBackups } from "./backups.js";
 import { createCanvasCssCompiler, registerCanvasHandlers } from "./canvas-css.js";
@@ -72,6 +75,25 @@ const projectSession = new ProjectSession({
   },
   closed: () => backupSchedule.closed(),
 });
+const canvasAreaSchema = z.object({
+  x: z.number().transform(Math.round),
+  y: z.number().transform(Math.round),
+  width: z.number().positive().transform(Math.round),
+  height: z.number().positive().transform(Math.round),
+});
+
+/** Where the canvas is in the window, so the Recent thumbnail shows the page, not the panels. */
+async function canvasArea(contents: WebContents): Promise<Rectangle | undefined> {
+  const area: unknown = await contents
+    .executeJavaScript(
+      `(() => { const r = document.querySelector(".editor__canvas iframe")?.getBoundingClientRect();
+        return r ? { x: r.x, y: r.y, width: r.width, height: r.height } : null; })()`,
+    )
+    .catch(() => null);
+  const parsed = canvasAreaSchema.safeParse(area);
+  return parsed.success ? parsed.data : undefined;
+}
+
 // Before another site replaces the open one: save it, and capture its canvas for Recent.
 const siteSwitch = createSiteSwitch({
   currentPath: () => projectSession.currentPath(),
@@ -82,7 +104,7 @@ const siteSwitch = createSiteSwitch({
   capture: async () => {
     const window = BrowserWindow.getAllWindows()[0];
     if (window === undefined || window.isDestroyed()) return undefined;
-    const image = await window.webContents.capturePage();
+    const image = await window.webContents.capturePage(await canvasArea(window.webContents));
     return image.isEmpty() ? undefined : image.resize({ width: 480 }).toJPEG(75);
   },
   recent: recentSites,

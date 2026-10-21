@@ -2,6 +2,7 @@ import { Button, Toaster, TooltipProvider } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { FilePlusIcon, FolderOpenIcon, XIcon } from "lucide-react";
 import { useEffect, useState } from "react";
+import type { AppApi } from "../../shared/ipc/app.js";
 import type { ProjectApi } from "../../shared/ipc/project.js";
 import type { AppInfo, RecentSite } from "../../shared/ipc-contract.js";
 import { AboutDialog } from "../shell/AboutDialog.js";
@@ -19,6 +20,8 @@ export type StartScreenProps = {
     ProjectApi,
     "create" | "open" | "listRecent" | "openRecent" | "removeRecent"
   >;
+  /** Answers the main process's save requests; injectable for tests. */
+  readonly app?: Pick<AppApi, "onFlushRequest">;
   /** Starts the window over with the newly opened site; injectable for tests. */
   readonly restart?: () => void;
   /** Formats times on the Recent list; injectable for tests. */
@@ -30,13 +33,17 @@ export type StartScreenProps = {
  * of the recently opened sites, each with its thumbnail and when it was last edited. Templates
  * join "Blank site" in Phase 2.
  */
-export function StartScreen({ info, project, restart, locale }: StartScreenProps) {
+export function StartScreen({ info, project, app, restart, locale }: StartScreenProps) {
   const [registry] = useState(createCommandRegistry);
   const [recent, setRecent] = useState<readonly RecentSite[]>([]);
   const [message, setMessage] = useState<string>();
-  const api = project ?? window.webforge.project;
+  // Read once: the effects below must not run again just because this component re-renders.
+  const [api] = useState(() => project ?? window.webforge.project);
 
   useEffect(() => installCommandShortcuts(window, registry), [registry]);
+
+  // Nothing to save here: answer at once, so closing the window never waits for a timeout.
+  useEffect(() => (app ?? window.webforge.app).onFlushRequest(async () => undefined), [app]);
 
   useEffect(() => {
     let current = true;

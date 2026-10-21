@@ -63,6 +63,8 @@ export function createRecentSites(options: {
   const file = join(options.dir, "recent.json");
   const thumbnails = join(options.dir, "recent-thumbnails");
   const thumbnailPath = (id: string) => join(thumbnails, `${id}.jpg`);
+  /** When each site's edit time was last written, so most saves don't even read the file. */
+  const editWritten = new Map<string, number>();
 
   const read = (): Entry[] => {
     try {
@@ -113,12 +115,16 @@ export function createRecentSites(options: {
     /** Records that the open site was saved; written at most once a minute per site. */
     edited(path: string): void {
       const time = now();
+      const id = recentSiteId(path);
+      if (time.getTime() - (editWritten.get(id) ?? Number.NEGATIVE_INFINITY) < 60_000) {
+        return;
+      }
       update(path, (existing) => {
         if (existing === undefined) return undefined;
         const last = existing.lastEdited === null ? 0 : Date.parse(existing.lastEdited);
-        return time.getTime() - last < 60_000
-          ? undefined
-          : { ...existing, lastEdited: time.toISOString() };
+        if (time.getTime() - last < 60_000) return undefined;
+        editWritten.set(id, time.getTime());
+        return { ...existing, lastEdited: time.toISOString() };
       });
     },
 

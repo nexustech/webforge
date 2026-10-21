@@ -33,11 +33,13 @@ const gone: RecentSite = { ...florist, id: "c".repeat(32), name: "Old site", mis
 
 let container: HTMLDivElement;
 let root: Root;
+let flushRequests: ReturnType<typeof vi.fn<(save: () => Promise<void>) => () => void>>;
 
 beforeEach(() => {
   container = document.createElement("div");
   document.body.append(container);
   root = createRoot(container);
+  flushRequests = vi.fn((_save: () => Promise<void>) => () => undefined);
 });
 
 afterEach(async () => {
@@ -57,7 +59,15 @@ function api(recent: RecentSite[], result: ProjectResult = { status: "opened", p
 
 async function render(project: ReturnType<typeof api>, restart = vi.fn()) {
   await act(async () =>
-    root.render(<StartScreen info={info} project={project} restart={restart} locale="en-GB" />),
+    root.render(
+      <StartScreen
+        info={info}
+        project={project}
+        app={{ onFlushRequest: flushRequests }}
+        restart={restart}
+        locale="en-GB"
+      />,
+    ),
   );
   return restart;
 }
@@ -66,6 +76,13 @@ const button = (name: string) =>
   [...container.querySelectorAll("button")].find((element) => element.textContent?.includes(name));
 
 describe("StartScreen", () => {
+  it("answers save requests at once, having nothing to save", async () => {
+    await render(api([]));
+
+    const save = flushRequests.mock.calls[0]?.[0];
+    await expect(save?.()).resolves.toBeUndefined();
+  });
+
   it("offers a blank site and Open, and says when there are no recent sites", async () => {
     const project = api([]);
     const restart = await render(project);

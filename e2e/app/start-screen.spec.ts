@@ -102,4 +102,9 @@ test("says when a site can't be opened, and removes sites from the list", async 
   await stubFileDialogs(running(), notes);
   await page.getByRole("button", { name: "Open a site…" }).click();
   await expect(page.getByRole("alert")).toHaveText("This file isn't a Webforge site.");
+
+  // With nothing to save, closing doesn't wait for a save that never comes (5 s timeout).
+  const started = Date.now();
+  await closeWindow();
+  expect(Date.now() - started).toBeLessThan(3_000);
 });
