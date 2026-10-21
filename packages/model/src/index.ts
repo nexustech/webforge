@@ -1,3 +1,5 @@
+export type { BrokenLink } from "./broken-links.js";
+export { findBrokenLinks } from "./broken-links.js";
 export type { LayoutDoc, NodeAdvanced, NodeDoc, PageDoc, SiteCode, Theme } from "./documents.js";
 export {
   attributeNameSchema,

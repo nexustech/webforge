@@ -18,6 +18,7 @@ function toPuckField(field: FieldDef): Field {
     case "select":
       return { type: "select", label: field.label, options: [...field.options] };
     case "media":
+    case "link":
     // The Edit panel (1.14) edits these; Puck only needs to know the field exists.
     case "toggle":
     case "slider":

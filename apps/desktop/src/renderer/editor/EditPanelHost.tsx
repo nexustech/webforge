@@ -9,6 +9,7 @@ import {
 } from "@webforge/model";
 import type { FieldDef } from "@webforge/site-components";
 import { useEffect, useRef, useSyncExternalStore } from "react";
+import { applyAnchor, asLinkFieldChange } from "../links/link-change.js";
 import {
   advancedFieldLabel,
   advancedFields,
@@ -48,6 +49,9 @@ function rendererKind(field: FieldDef): string | undefined {
     // A Media image, with alt text for this placement (1.16): see ImageField.
     case "media":
       return "image";
+    // Where a link goes (1.19): see LinkField.
+    case "link":
+      return "link";
     // Rich text is edited on the canvas (1.23), slots by dragging elements in (a slot of one type
     // is a list: see editableList).
     case "richtext":
@@ -58,7 +62,10 @@ function rendererKind(field: FieldDef): string | undefined {
 
 /** The tab a field goes on: its own `group`, else Content for text and images, else Style. */
 function groupOf(field: FieldDef): "content" | "style" {
-  return field.group ?? (field.kind === "text" || field.kind === "media" ? "content" : "style");
+  return (
+    field.group ??
+    (field.kind === "text" || field.kind === "media" || field.kind === "link" ? "content" : "style")
+  );
 }
 
 /** The choices or steps a field offers, for its renderer. */
@@ -106,6 +113,9 @@ function accepts(field: FieldDef, value: unknown): boolean {
     // An image value, or none to take the image away.
     case "media":
       return value === undefined || imageValueSchema.safeParse(value).success;
+    // A link, or none, and maybe the anchor a section needs for it (LinkFieldChange).
+    case "link":
+      return asLinkFieldChange(value) !== undefined;
     default:
       return typeof value === "string";
   }
@@ -277,6 +287,36 @@ export function EditPanelHost({ session, flush, advanced = false }: EditPanelHos
     );
   };
 
+  /**
+   * A new link (1.19): one step, "Changed Hero Button link", which also gives the target section
+   * its anchor when the link is the first to it.
+   */
+  const changeLink = (name: string, field: FieldDef, value: unknown) => {
+    const linkChange = asLinkFieldChange(value);
+    if (linkChange === undefined) {
+      return;
+    }
+    endRun();
+    flush();
+    session.edit(
+      "props",
+      labelOf(name, field),
+      (draft) => {
+        const target = draft.pages[pageId];
+        if (target !== undefined) {
+          updateField(target.doc, page, id, name, () => linkChange.link);
+        }
+        const { anchor } = linkChange;
+        const anchorPage = anchor === undefined ? undefined : draft.pages[anchor.pageId];
+        const anchorDoc = anchor === undefined ? undefined : site.pages[anchor.pageId]?.doc;
+        if (anchor !== undefined && anchorPage !== undefined && anchorDoc !== undefined) {
+          applyAnchor(anchorPage.doc, anchorDoc, anchor);
+        }
+      },
+      { selectionAfter },
+    );
+  };
+
   const change = (name: string, value: unknown) => {
     if (isAdvancedField(name)) {
       changeAdvanced(name, value);
@@ -289,6 +329,10 @@ export function EditPanelHost({ session, flush, advanced = false }: EditPanelHos
       return;
     }
     if (field === undefined || !accepts(field, value)) {
+      return;
+    }
+    if (field.kind === "link") {
+      changeLink(name, field, value);
       return;
     }
     const next = (stored: unknown) =>
