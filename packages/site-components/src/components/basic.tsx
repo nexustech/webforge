@@ -41,6 +41,8 @@ const COLOUR_CLASS = {
 /** A page band holding elements. Keeps the `site-section` hook for tests and developers. */
 export const section: ComponentDef = {
   label: t("section.section"),
+  place: "section",
+  category: t("category.basic"),
   fields: {
     padding: {
       kind: "spacing",
@@ -87,6 +89,7 @@ export const section: ComponentDef = {
 /** A heading; its size also sets the heading level. */
 export const heading: ComponentDef = {
   label: t("element.heading"),
+  category: t("category.text"),
   fields: {
     text: {
       kind: "text",
@@ -131,6 +134,7 @@ export const heading: ComponentDef = {
 /** Formatted text (paragraphs, bold, links, lists). */
 export const text: ComponentDef = {
   label: t("element.text"),
+  category: t("category.text"),
   fields: {
     text: { kind: "richtext", label: t("field.text"), inline: true },
   },

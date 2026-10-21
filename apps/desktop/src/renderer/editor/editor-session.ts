@@ -70,7 +70,7 @@ export type EditorSession = {
 };
 
 /** The page the editor shows. */
-export function currentPage(session: EditorSession): PageEntry | undefined {
+export function currentPage(session: Pick<EditorSession, "history" | "ui">): PageEntry | undefined {
   return session.history.document.getState().pages[session.ui.getState().pageId];
 }
 

@@ -182,6 +182,28 @@ describe("ShellLayout", () => {
     expect(within(right).getByText("Pages")).toBeTruthy();
   });
 
+  it("brings a panel asked for to the front of its column", () => {
+    const { panels } = renderLayout();
+    act(() => {
+      panels.register({
+        id: "history",
+        slot: "left.bottom",
+        title: "Undo History",
+        component: () => <p>Steps</p>,
+      });
+    });
+    const left = screen.getByRole("region", { name: "Left panels" });
+    act(() => panels.show("history"));
+    expect(within(left).getByText("Steps")).toBeTruthy();
+
+    // A panel of another column, or none, changes nothing here.
+    act(() => panels.show("edit"));
+    act(() => panels.show("nothing"));
+    expect(within(left).getByText("Steps")).toBeTruthy();
+    act(() => panels.show("add"));
+    expect(within(left).getByText("Add", { selector: "p" })).toBeTruthy();
+  });
+
   it("labels its splitters so they can be found and moved with the keyboard", () => {
     renderLayout();
 

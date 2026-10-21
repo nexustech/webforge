@@ -1,4 +1,4 @@
-import { type ElectronApplication, expect, type Locator, type Page, test } from "@playwright/test";
+import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { launchDesktopApp } from "./launch.js";
 
 // The canvas shows the page with the site's own CSS (1.12): Tailwind and daisyUI compiled by the
@@ -24,22 +24,6 @@ const canvasFrame = () => {
   return frame;
 };
 
-/** Drags with real mouse events, in small steps, as a user would. */
-async function drag(from: Locator, to: Locator): Promise<void> {
-  const source = await from.boundingBox();
-  const target = await to.boundingBox();
-  if (source === null || target === null) throw new Error("Drag source or target not visible");
-  const end = { x: target.x + target.width / 2, y: target.y + target.height + 3 };
-  await page.mouse.move(source.x + source.width / 2, source.y + source.height / 2);
-  await page.mouse.down();
-  await page.mouse.move(source.x + source.width / 2 + 10, source.y + source.height / 2 + 10, {
-    steps: 5,
-  });
-  await page.mouse.move(end.x, end.y, { steps: 25 });
-  await page.mouse.move(end.x, end.y + 1, { steps: 2 });
-  await page.mouse.up();
-}
-
 test.describe("site CSS on the canvas", () => {
   test("styles the page with the site's Tailwind classes and fonts", async () => {
     await expect(canvas().locator("style[data-webforge-site-css]")).toHaveCount(1);
@@ -54,10 +38,10 @@ test.describe("site CSS on the canvas", () => {
   });
 
   test("styles a daisyUI button added to the page", async () => {
-    await drag(
-      page.getByText("Hero", { exact: true }).first(),
-      canvas().locator(".site-section").last(),
-    );
+    await page
+      .getByRole("region", { name: "Left panels" })
+      .getByRole("button", { name: "Hero", exact: true })
+      .click();
     const button = canvas().locator(".btn-primary");
     await expect(button).toBeVisible();
 

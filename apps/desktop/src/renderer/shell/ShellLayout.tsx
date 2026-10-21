@@ -14,7 +14,7 @@ import { type ReactNode, useEffect, useRef, useState } from "react";
 import type { Preferences } from "../../shared/ipc-contract.js";
 import { useCommandRegistry } from "./command-context.js";
 import { COMMAND_IDS } from "./command-ids.js";
-import { usePanels } from "./panel-context.js";
+import { usePanelRegistry, usePanels } from "./panel-context.js";
 import { type PanelSlot, panelsInSlot } from "./panels.js";
 
 /** The panel groups whose sizes are remembered, by id. */
@@ -35,6 +35,13 @@ const DEFAULTS = {
   centerMin: "40%",
   drawer: "25%",
 } as const;
+
+/** The slots each part of the window shows, top slot first. */
+const SLOTS = {
+  left: ["left.top", "left.bottom"],
+  right: ["right.top", "right.bottom"],
+  drawer: ["drawer"],
+} as const satisfies Record<string, readonly PanelSlot[]>;
 
 /** Props of {@link ShellLayout}. */
 export type ShellLayoutProps = {
@@ -58,10 +65,20 @@ function PanelTabs({
   readonly slots: readonly PanelSlot[];
   readonly editorLevel: Preferences["editorLevel"];
 }) {
+  const registry = usePanelRegistry();
   const registered = usePanels();
   const panels = slots.flatMap((slot) => panelsInSlot(registered, slot, editorLevel));
   // The tab the person chose stays chosen while panels come and go; the first one otherwise.
   const [chosen, setChosen] = useState<string | null>(null);
+  // A panel brought to the front by an action elsewhere, such as the canvas's + opening Add.
+  useEffect(
+    () =>
+      registry.onShow((id) => {
+        const shown = slots.flatMap((slot) => panelsInSlot(registry.list(), slot, editorLevel));
+        if (shown.some((panel) => panel.id === id)) setChosen(id);
+      }),
+    [registry, slots, editorLevel],
+  );
   const first = panels[0];
   if (first === undefined) {
     return (
@@ -126,6 +143,7 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
    * layout or a column appearing when an area adds its first panel.
    */
   const commandAt = useRef(Number.NEGATIVE_INFINITY);
+  const panelRegistry = usePanelRegistry();
   const panels = usePanels();
   const hasPanels = (side: "left" | "right") =>
     panelsInSlot(panels, `${side}.top`, editorLevel).length > 0 ||
@@ -178,6 +196,26 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
       for (const remove of removers) remove();
     };
   }, [registry]);
+
+  // A panel asked for is shown even if its column is collapsed.
+  useEffect(
+    () =>
+      panelRegistry.onShow((id) => {
+        for (const [side, column] of [
+          ["left", left.current],
+          ["right", right.current],
+          ["drawer", drawer.current],
+        ] as const) {
+          const holds = SLOTS[side].some((slot) =>
+            panelsInSlot(panelRegistry.list(), slot, editorLevel).some((panel) => panel.id === id),
+          );
+          if (holds && column?.isCollapsed() === true) {
+            toggle(column, side === "drawer" ? DEFAULTS.drawer : DEFAULTS.sideWidth);
+          }
+        }
+      }),
+    [panelRegistry, editorLevel],
+  );
 
   useEffect(() => {
     registry.update(COMMAND_IDS.toggleLeftPanels, { enabled: showLeft });
@@ -245,7 +283,7 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
             groupResizeBehavior="preserve-pixel-size"
           >
             <section aria-label={t("panels.left")} className="h-full">
-              <PanelTabs slots={["left.top", "left.bottom"]} editorLevel={editorLevel} />
+              <PanelTabs slots={SLOTS.left} editorLevel={editorLevel} />
             </section>
           </ResizablePanel>
           <ResizableHandle aria-label={t("panels.resizeLeft")} />
@@ -266,7 +304,7 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
           <ResizableHandle aria-label={t("panels.resizeDrawer")} />
           <ResizablePanel id="drawer" panelRef={drawer} minSize="10%" maxSize="60%" collapsible>
             <section aria-label={t("panels.drawer")} className="h-full">
-              <PanelTabs slots={["drawer"]} editorLevel={editorLevel} />
+              <PanelTabs slots={SLOTS.drawer} editorLevel={editorLevel} />
             </section>
           </ResizablePanel>
         </ResizablePanelGroup>
@@ -284,7 +322,7 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
             groupResizeBehavior="preserve-pixel-size"
           >
             <section aria-label={t("panels.right")} className="h-full">
-              <PanelTabs slots={["right.top", "right.bottom"]} editorLevel={editorLevel} />
+              <PanelTabs slots={SLOTS.right} editorLevel={editorLevel} />
             </section>
           </ResizablePanel>
         </>

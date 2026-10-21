@@ -14,6 +14,8 @@ const ALIGNMENTS = ["centre", "left"] as const;
 /** The large opening section of a page: title, short text, a button and an optional image. */
 export const hero: ComponentDef = {
   label: t("section.hero"),
+  place: "section",
+  category: t("category.heroes"),
   fields: {
     title: { kind: "text", label: t("field.title"), inline: true },
     text: { kind: "text", label: t("field.text"), inline: true },
@@ -70,6 +72,8 @@ export const hero: ComponentDef = {
 /** Questions and answers. Each item is a native `<details>`, so it works without JavaScript. */
 export const faq: ComponentDef = {
   label: t("section.faq"),
+  place: "section",
+  category: t("category.questions"),
   fields: {
     title: { kind: "text", label: t("field.title"), inline: true },
     items: { kind: "slot", label: t("field.questions"), allow: ["FaqItem"] },
@@ -91,6 +95,7 @@ export const faq: ComponentDef = {
 /** One question of an FAQ. */
 export const faqItem: ComponentDef = {
   label: t("element.faqItem"),
+  place: "child",
   fields: {
     question: { kind: "text", label: t("field.question"), inline: true },
     answer: { kind: "richtext", label: t("field.answer"), inline: true },
