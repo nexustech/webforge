@@ -61,9 +61,39 @@ describe("syncDraft", () => {
     expect(result).toEqual({ list: [1, 2, 3] });
   });
 
+  it("syncs keys named like Object's own properties as ordinary keys", () => {
+    const next = { constructor: { a: 1 }, prototype: 2, toString: "text" };
+
+    const [result] = sync<Record<string, unknown>>({ toString: "old" }, next);
+
+    expect(result).toEqual(next);
+    expect(Object.keys(result)).toEqual(["toString", "constructor", "prototype"]);
+  });
+
+  it("refuses a __proto__ key, changing no prototype (#138, fast-check seed 1681463835)", () => {
+    // The counterexample fast-check found, as JSON.parse makes it: an own "__proto__" key.
+    const base = { "": {} };
+    const next = JSON.parse('{"": {"__proto__": false}}') as typeof base;
+    const crafted = JSON.parse('{"": {"__proto__": {"polluted": true}}}') as typeof base;
+
+    expect(() => sync(base, next)).toThrow(/__proto__/);
+    expect(() => sync(base, crafted)).toThrow(/__proto__/);
+    expect(Object.getPrototypeOf(base[""])).toBe(Object.prototype);
+    expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+  });
+
   it("always ends equal to the target value", () => {
-    const json = fc.jsonValue({ maxDepth: 3 });
-    const doc = fc.dictionary(fc.string({ maxLength: 2 }), json, { maxKeys: 4 });
+    // Documents never hold a "__proto__" key (the model refuses it, and so does syncDraft).
+    const hasProtoKey = (value: unknown): boolean =>
+      typeof value === "object" &&
+      value !== null &&
+      (Object.hasOwn(value, "__proto__") || Object.values(value).some(hasProtoKey));
+    const json = fc.jsonValue({ maxDepth: 3 }).filter((value) => !hasProtoKey(value));
+    const doc = fc.dictionary(
+      fc.string({ maxLength: 2 }).filter((key) => key !== "__proto__"),
+      json,
+      { maxKeys: 4 },
+    );
 
     fc.assert(
       fc.property(doc, doc, (base, next) => {

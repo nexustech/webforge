@@ -37,6 +37,40 @@ describe("layoutDocSchema", () => {
   });
 });
 
+describe("unsafe keys (#138)", () => {
+  // As a crafted file would arrive: JSON.parse makes "__proto__" an own key.
+  const page = (props: string) =>
+    JSON.parse(
+      `{"root": {"props": {}}, "content": [{"type": "Section", "props": {"id": "s", "content": [{"type": "Heading", "props": {"id": "h", ${props}}}]}}]}`,
+    ) as unknown;
+
+  it("refuses a document with __proto__, constructor or prototype at any depth", () => {
+    for (const key of ["__proto__", "constructor", "prototype"]) {
+      const result = pageDocSchema.safeParse(page(`"x": {"${key}": {"polluted": true}}`));
+      expect(result.success, key).toBe(false);
+      expect(result.error?.issues[0]?.message).toBe(`Documents may not contain a "${key}" key`);
+    }
+    expect(
+      pageDocSchema.safeParse(JSON.parse('{"root": {"props": {"__proto__": {}}}, "content": []}'))
+        .success,
+    ).toBe(false);
+    expect(
+      layoutDocSchema.safeParse(
+        JSON.parse(
+          '{"header": [{"type": "Header", "props": {"id": "h", "prototype": 1}}], "footer": []}',
+        ),
+      ).success,
+    ).toBe(false);
+    expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+  });
+
+  it("still accepts such words as values and inside longer keys", () => {
+    const ok = page(`"text": "__proto__", "constructorName": "x"`);
+
+    expect(pageDocSchema.safeParse(ok).success).toBe(true);
+  });
+});
+
 describe("themeSchema", () => {
   it.each(["light", "cupcake", "corporate-2"])("accepts the theme name %s", (name) => {
     expect(themeSchema.parse({ name })).toEqual({ name });
