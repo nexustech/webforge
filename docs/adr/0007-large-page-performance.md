@@ -78,7 +78,7 @@ What item 1.27 changed:
   1. The permissions slice skips its whole-page walk when no component and not the root define `resolvePermissions` (#100).
   2. The fields slice doesn't re-publish the default fields when they and the item's id are unchanged (#100).
   3. Puck's API object (`useGetPuck()`, `__private`) gains `getZoomConfig` and `setZoomConfig`. Puck keeps its canvas zoom out of its public API, and the engine's `setZoom` and `onCanvasSize` need it for the canvas toolbar (1.15). Without it, zooming does nothing and no size is reported.
-  4. The canvas re-fits its zoom only when its frame's own size changes (`offsetWidth`/`offsetHeight`, scrollbars included). Puck re-fitted on any change to the frame's content box, so the scrollbar that a zoom above Fit brings undid that zoom at once (#134).
+  4. The canvas re-fits its zoom only when its scroll container's own size changes (the frame's parent, `offsetWidth`/`offsetHeight`, scrollbars included): a window or column resize. Puck re-fitted on any change to the frame, which fills that container's content box, so the scrollbar that a zoom above Fit brings undid that zoom at once (#134).
   5. A rich-text editor sends its last change as soon as it loses focus. Puck sends rich text after a 50 ms debounce (200 ms at most), on timers a background window can throttle further. Clicking elsewhere and pressing Undo inside that window recorded the session without its last keystrokes (canvas-history E2E, about 1 run in 15).
   6. Puck's API object (`__private`) also gains `flushRichText`, which makes the focused rich-text editor send its pending change at once. The engine calls it when Undo or Redo is pressed while typing, and runs the command once that edit is recorded (#146).
 

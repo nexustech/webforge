@@ -26,7 +26,7 @@ index b5ac4340ef70383019a220609914aec985eb84cc..ad53ad1f40ba30fc5cc0e2ab79f8b3e6
    }, [editor, onFocusChange]);
    useEffect(() => {
 diff --git a/dist/chunk-55V3NZVF.mjs b/dist/chunk-55V3NZVF.mjs
-index 01fc32e03adc11d014291a99cc8dbee1806880f8..ef6bdc46f6cd5e3fd5f9a4c56bf12cc872fd3441 100644
+index 01fc32e03adc11d014291a99cc8dbee1806880f8..b699767b46a6e4e78fead3dd9f4b42d56d883e1d 100644
 --- a/dist/chunk-55V3NZVF.mjs
 +++ b/dist/chunk-55V3NZVF.mjs
 @@ -6343,7 +6343,16 @@ var generateUsePuck = (store, getState) => {
@@ -47,19 +47,22 @@ index 01fc32e03adc11d014291a99cc8dbee1806880f8..ef6bdc46f6cd5e3fd5f9a4c56bf12cc8
    };
    return storeData;
  };
-@@ -12605,10 +12614,15 @@ var Canvas = () => {
+@@ -12605,10 +12614,18 @@ var Canvas = () => {
    }, [viewports.current.width, viewports]);
    useEffect26(() => {
      if (!frameRef.current) return;
-+    // Webforge: re-fit only when the frame itself changes size. A scrollbar that the zoom brings
-+    // or takes away changes only its content box, and must not undo the zoom.
++    // Webforge: re-fit only when the canvas itself changes size (the window, a column). The frame
++    // fills its parent's content box, and that parent is what scrolls: a scrollbar the zoom brings
++    // or takes away shrinks or grows the frame, but not the parent's own box, and must not undo
++    // the zoom (#134).
 +    let frameSize = null;
      const resizeObserver = new ResizeObserver(() => {
 -      if (!isResizingRef.current) {
 -        resetAutoZoom();
 -      }
 +      const frame = frameRef.current;
-+      const size = frame ? `${frame.offsetWidth}x${frame.offsetHeight}` : null;
++      const box = frame ? frame.parentElement || frame : null;
++      const size = box ? `${box.offsetWidth}x${box.offsetHeight}` : null;
 +      if (size === frameSize || isResizingRef.current) return;
 +      frameSize = size;
 +      resetAutoZoom();
@@ -89,7 +92,7 @@ index 81075c39650a79a9eccf7cefffdc7a65cbd00c97..8aa13a1baf0ca0ad724ca2b5a2377b79
            fields: __spreadProps(__spreadValues({}, s.fields), { fields: defaultFields, id })
          }));
 diff --git a/dist/index.js b/dist/index.js
-index aebc9c0e4d4eed1a407ea72d0d1469d16544d834..fe7302c74379afcdce6765177d35eeadec1e8088 100644
+index aebc9c0e4d4eed1a407ea72d0d1469d16544d834..3e383128bc594d516a19e135364f9125cb672e83 100644
 --- a/dist/index.js
 +++ b/dist/index.js
 @@ -3084,7 +3084,7 @@ var init_permissions = __esm({
@@ -151,19 +154,22 @@ index aebc9c0e4d4eed1a407ea72d0d1469d16544d834..fe7302c74379afcdce6765177d35eead
    };
    return storeData;
  };
-@@ -18741,10 +18764,15 @@ var Canvas = () => {
+@@ -18741,10 +18764,18 @@ var Canvas = () => {
    }, [viewports.current.width, viewports]);
    (0, import_react102.useEffect)(() => {
      if (!frameRef.current) return;
-+    // Webforge: re-fit only when the frame itself changes size. A scrollbar that the zoom brings
-+    // or takes away changes only its content box, and must not undo the zoom.
++    // Webforge: re-fit only when the canvas itself changes size (the window, a column). The frame
++    // fills its parent's content box, and that parent is what scrolls: a scrollbar the zoom brings
++    // or takes away shrinks or grows the frame, but not the parent's own box, and must not undo
++    // the zoom (#134).
 +    let frameSize = null;
      const resizeObserver = new ResizeObserver(() => {
 -      if (!isResizingRef.current) {
 -        resetAutoZoom();
 -      }
 +      const frame = frameRef.current;
-+      const size = frame ? `${frame.offsetWidth}x${frame.offsetHeight}` : null;
++      const box = frame ? frame.parentElement || frame : null;
++      const size = box ? `${box.offsetWidth}x${box.offsetHeight}` : null;
 +      if (size === frameSize || isResizingRef.current) return;
 +      frameSize = size;
 +      resetAutoZoom();
@@ -171,7 +177,7 @@ index aebc9c0e4d4eed1a407ea72d0d1469d16544d834..fe7302c74379afcdce6765177d35eead
      resizeObserver.observe(frameRef.current);
      return () => {
 diff --git a/dist/no-external.js b/dist/no-external.js
-index af3fa6755f42679605e6805aa46fdeb90df48281..25aabc20d9514b2eb2c00f504b5b5ba75f738d5b 100644
+index af3fa6755f42679605e6805aa46fdeb90df48281..b395a9065571936832932499dfdf448a1a0dda1d 100644
 --- a/dist/no-external.js
 +++ b/dist/no-external.js
 @@ -3084,7 +3084,7 @@ var init_permissions = __esm({
@@ -233,19 +239,22 @@ index af3fa6755f42679605e6805aa46fdeb90df48281..25aabc20d9514b2eb2c00f504b5b5ba7
    };
    return storeData;
  };
-@@ -18741,10 +18764,15 @@ var Canvas = () => {
+@@ -18741,10 +18764,18 @@ var Canvas = () => {
    }, [viewports.current.width, viewports]);
    (0, import_react102.useEffect)(() => {
      if (!frameRef.current) return;
-+    // Webforge: re-fit only when the frame itself changes size. A scrollbar that the zoom brings
-+    // or takes away changes only its content box, and must not undo the zoom.
++    // Webforge: re-fit only when the canvas itself changes size (the window, a column). The frame
++    // fills its parent's content box, and that parent is what scrolls: a scrollbar the zoom brings
++    // or takes away shrinks or grows the frame, but not the parent's own box, and must not undo
++    // the zoom (#134).
 +    let frameSize = null;
      const resizeObserver = new ResizeObserver(() => {
 -      if (!isResizingRef.current) {
 -        resetAutoZoom();
 -      }
 +      const frame = frameRef.current;
-+      const size = frame ? `${frame.offsetWidth}x${frame.offsetHeight}` : null;
++      const box = frame ? frame.parentElement || frame : null;
++      const size = box ? `${box.offsetWidth}x${box.offsetHeight}` : null;
 +      if (size === frameSize || isResizingRef.current) return;
 +      frameSize = size;
 +      resetAutoZoom();
