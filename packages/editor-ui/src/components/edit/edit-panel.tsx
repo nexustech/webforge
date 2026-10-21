@@ -83,7 +83,8 @@ export function EditPanel({ heading, fields, onChange, onCommit }: EditPanelProp
     <div className="flex h-full flex-col">
       <h2 className="truncate px-3 pt-2 text-sm font-semibold text-foreground">{heading}</h2>
       <Tabs
-        // A new element starts on its first tab with fields.
+        // Keyed by the element's type: the tab stays while moving between elements of one type, and
+        // another type starts on its first tab with fields.
         key={heading}
         defaultValue={content.length > 0 || style.length === 0 ? "content" : "style"}
         className="min-h-0 flex-1"

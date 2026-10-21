@@ -79,6 +79,18 @@ describe("EditPanelHost", () => {
     expect((input as HTMLInputElement).value).toBe("Welcome to our business");
   });
 
+  it("ends a field's run of edits when the selection moves on while it has focus", async () => {
+    const { session, labels, user } = setup();
+    const input = screen.getByLabelText("Text");
+    await user.type(input, "!");
+
+    act(() => session.ui.setState({ nodeId: "hero" }));
+    act(() => session.ui.setState({ nodeId: "heading-1" }));
+    await user.type(screen.getByLabelText("Text"), "?");
+
+    expect(labels()).toEqual(["Edited Heading text", "Edited Heading text"]);
+  });
+
   it("names the field for elements with several texts", async () => {
     const { labels, user } = setup("hero");
 

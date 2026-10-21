@@ -1,7 +1,7 @@
 import { EditPanel, type EditPanelField } from "@webforge/editor-ui";
 import type { EngineEditKind } from "@webforge/engine";
 import type { FieldDef } from "@webforge/site-components";
-import { useSyncExternalStore } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 import { applyPatch } from "./apply-patch.js";
 import type { EditorSession } from "./editor-session.js";
 import { labelFor } from "./labels.js";
@@ -49,6 +49,25 @@ export function EditPanelHost({ session, flush }: EditPanelHostProps) {
       ? undefined
       : findNode(page.content, (candidate) => candidate.props.id === nodeId);
   const component = node === undefined ? undefined : library.components[node.type];
+  const selectedId = node?.props.id;
+
+  // The text field being typed in: its run of edits ends when the user leaves the field, and also
+  // when the selection moves on while the field keeps focus (undo, the canvas) or the panel closes.
+  const openSession = useRef<{ readonly nodeId: string; readonly key: string } | null>(null);
+  useEffect(() => {
+    const open = openSession.current;
+    if (open !== null && open.nodeId !== selectedId) {
+      history.endSession(open.key);
+      openSession.current = null;
+    }
+  }, [history, selectedId]);
+  useEffect(
+    () => () => {
+      const open = openSession.current;
+      if (open !== null) history.endSession(open.key);
+    },
+    [history],
+  );
 
   if (page === undefined || node === undefined || component === undefined) {
     return <EditPanel fields={[]} onChange={() => undefined} onCommit={() => undefined} />;
@@ -104,6 +123,9 @@ export function EditPanelHost({ session, flush }: EditPanelHostProps) {
         ...(field.kind === "text" ? { coalesceKey: textKey(name) } : {}),
       },
     );
+    if (field.kind === "text") {
+      openSession.current = { nodeId: node.props.id, key: textKey(name) };
+    }
   };
 
   return (
@@ -111,7 +133,10 @@ export function EditPanelHost({ session, flush }: EditPanelHostProps) {
       heading={component.label}
       fields={fields}
       onChange={change}
-      onCommit={(name) => history.endSession(textKey(name))}
+      onCommit={(name) => {
+        history.endSession(textKey(name));
+        openSession.current = null;
+      }}
     />
   );
 }
