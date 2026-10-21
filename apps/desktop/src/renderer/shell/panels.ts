@@ -28,12 +28,17 @@ export type PanelRegistry = {
   /** The registered panels, in registration order. Stable until something changes. */
   list(): readonly Panel[];
   subscribe(listener: () => void): () => void;
+  /** Brings the panel `id` to the front of its column, opening the column if it is collapsed. */
+  show(id: string): void;
+  /** Calls `listener` with the id of each panel {@link show} asks for. */
+  onShow(listener: (id: string) => void): () => void;
 };
 
 /** Creates an empty registry. */
 export function createPanelRegistry(): PanelRegistry {
   const panels = new Map<string, Panel>();
   const listeners = new Set<() => void>();
+  const showListeners = new Set<(id: string) => void>();
   let snapshot: readonly Panel[] = [];
 
   const changed = () => {
@@ -60,6 +65,15 @@ export function createPanelRegistry(): PanelRegistry {
       listeners.add(listener);
       return () => {
         listeners.delete(listener);
+      };
+    },
+    show(id) {
+      for (const listener of showListeners) listener(id);
+    },
+    onShow(listener) {
+      showListeners.add(listener);
+      return () => {
+        showListeners.delete(listener);
       };
     },
   };

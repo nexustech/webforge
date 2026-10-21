@@ -100,11 +100,14 @@ describe("App", () => {
 });
 
 describe("App's window layout", () => {
-  it("puts the editor's Undo History in the left column", () => {
+  it("puts the Add panel, then the editor's Undo History, in the left column", async () => {
     renderApp();
 
     const left = screen.getByRole("region", { name: "Left panels" });
-    expect(within(left).getByRole("tab", { name: "Undo History" })).toBeTruthy();
+    expect(
+      within(left).getByRole("searchbox", { name: "Search sections and elements" }),
+    ).toBeTruthy();
+    await userEvent.click(within(left).getByRole("tab", { name: "Undo History" }));
     expect(within(left).getByText("Opened page")).toBeTruthy();
   });
 

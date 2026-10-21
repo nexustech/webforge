@@ -26,6 +26,7 @@ function MenuIcon() {
  */
 export const header: ComponentDef = {
   label: t("layout.header"),
+  place: "layout",
   fields: {
     siteName: { kind: "text", label: t("field.siteName"), inline: true },
   },
@@ -72,6 +73,7 @@ export const header: ComponentDef = {
 /** The shared Footer (C5). */
 export const footer: ComponentDef = {
   label: t("layout.footer"),
+  place: "layout",
   fields: {
     text: { kind: "text", label: t("field.text"), inline: true },
   },

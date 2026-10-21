@@ -160,10 +160,22 @@ export type ComponentRenderProps = {
 /** Names of the scripts in `webforge.js` that components can need on the exported site. */
 export type BehaviourName = "menu";
 
+/**
+ * Where a component goes (F-ED-1, ADR 0005): a `section` is a band of the page, at its top level;
+ * an `element` goes inside sections (and columns); `layout` is the shared Header or Footer, never
+ * added to a page; a `child` exists only inside its own parent (an FAQ's questions). Only sections
+ * and elements are offered in the Add panel.
+ */
+type ComponentPlace = "section" | "element" | "layout" | "child";
+
 /** A section or element users can add to a page. */
 export type ComponentDef = {
   /** Display name, already translated (glossary terms: "Heading", "Section"). */
   readonly label: string;
+  /** Where it goes; an element when left out. */
+  readonly place?: ComponentPlace;
+  /** Its group in the Add panel, already translated ("Heroes", "Text"). */
+  readonly category?: string;
   readonly fields: Readonly<Record<string, FieldDef>>;
   readonly defaults: Readonly<Record<string, unknown>>;
   readonly render: (props: ComponentRenderProps) => ReactNode;

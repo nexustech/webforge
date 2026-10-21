@@ -37,6 +37,18 @@ describe("createPanelRegistry", () => {
     expect(registry.list()[0]?.title).toBe("Second");
   });
 
+  it("tells show listeners which panel to bring to the front, until they stop", () => {
+    const registry = createPanelRegistry();
+    const listener = vi.fn();
+    const stop = registry.onShow(listener);
+
+    registry.show("add");
+    stop();
+    registry.show("layers");
+
+    expect(listener.mock.calls).toEqual([["add"]]);
+  });
+
   it("stops telling a listener once it unsubscribes", () => {
     const registry = createPanelRegistry();
     const listener = vi.fn();
