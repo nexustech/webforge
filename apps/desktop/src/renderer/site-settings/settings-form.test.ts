@@ -131,6 +131,14 @@ describe("saveSiteSettings", () => {
     const before = session.history.document.getState().settings;
 
     expect(saveSiteSettings(session, before)).toBe(false);
+    // The same settings with their keys in another order, as the dialog builds them, change nothing.
+    const { general, ...rest } = before;
+    expect(
+      saveSiteSettings(session, {
+        ...rest,
+        general: { language: general.language, name: general.name },
+      }),
+    ).toBe(false);
     expect(
       saveSiteSettings(session, { ...before, contact: { ...before.contact, phone: "+44 1" } }),
     ).toBe(true);

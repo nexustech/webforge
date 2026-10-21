@@ -229,9 +229,30 @@ export function checkSettings(form: SettingsForm, previous: SiteSettings): Setti
   return { ok: false, errors };
 }
 
+/** Whether two JSON values are equal, whatever order their objects' keys are in. */
+function sameJson(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (Array.isArray(a) || Array.isArray(b)) {
+    return (
+      Array.isArray(a) &&
+      Array.isArray(b) &&
+      a.length === b.length &&
+      a.every((item, index) => sameJson(item, b[index]))
+    );
+  }
+  if (typeof a !== "object" || typeof b !== "object" || a === null || b === null) return false;
+  const left = a as Record<string, unknown>;
+  const right = b as Record<string, unknown>;
+  const keys = Object.keys(left);
+  return (
+    keys.length === Object.keys(right).length &&
+    keys.every((key) => Object.hasOwn(right, key) && sameJson(left[key], right[key]))
+  );
+}
+
 /**
  * Saves Site Settings as one undo step, "Changed Site Settings" (F-SET-1). Nothing happens when
- * nothing changed.
+ * nothing changed, even if the dialog built the same settings with their keys in another order.
  */
 export function saveSiteSettings(
   session: Pick<EditorSession, "edit"> & {
@@ -240,7 +261,7 @@ export function saveSiteSettings(
   settings: SiteSettings,
 ): boolean {
   const current = session.history.document.getState().settings;
-  if (JSON.stringify(current) === JSON.stringify(settings)) {
+  if (sameJson(current, settings)) {
     return false;
   }
   session.edit("props", t("site.settings.history"), (draft) => {

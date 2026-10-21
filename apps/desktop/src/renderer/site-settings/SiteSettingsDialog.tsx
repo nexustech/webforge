@@ -93,15 +93,7 @@ function SiteSettingsForm({
   const [section, setSection] = useState<Section>(initialSection);
   const images = Object.values(site.media).filter(isImageMeta);
   const change = (next: Partial<SettingsForm>) => setForm((current) => ({ ...current, ...next }));
-  const errorOf = (field: string) => errors[field];
-  /** What every input needs to show its error: the message's id and whether it is invalid. */
-  const invalid = (field: string, hintId?: string) => ({
-    "aria-invalid": errorOf(field) === undefined ? undefined : true,
-    "aria-describedby":
-      [hintId, errorOf(field) === undefined ? undefined : `error-${field}`]
-        .filter((id) => id !== undefined)
-        .join(" ") || undefined,
-  });
+  const invalid = (field: string, hintId?: string) => errorProps(field, errors, hintId);
 
   return (
     <form
@@ -453,6 +445,21 @@ function SiteSettingsForm({
   );
 }
 
+/**
+ * What an input needs to show a field's error: `aria-invalid`, and `aria-describedby` pointing at
+ * its hint and its message.
+ */
+function errorProps(field: string, errors: Readonly<Record<string, string>>, hintId?: string) {
+  const error = errors[field];
+  const describedBy = [hintId, error === undefined ? undefined : `error-${field}`].filter(
+    (id) => id !== undefined,
+  );
+  return {
+    "aria-invalid": error === undefined ? undefined : true,
+    "aria-describedby": describedBy.length === 0 ? undefined : describedBy.join(" "),
+  } as const;
+}
+
 /** The section a field is in: the first part of its path. */
 function sectionOf(field: string): string {
   return field.split(".")[0] ?? "";
@@ -494,7 +501,6 @@ function TextInput({
   readonly errors: Readonly<Record<string, string>>;
   readonly onChange: (value: string) => void;
 }) {
-  const error = errors[field];
   return (
     <Field label={label} {...(hint === undefined ? {} : { hint })}>
       {({ id, hintId }) => (
@@ -505,12 +511,7 @@ function TextInput({
             className={fieldControlClass}
             value={value}
             {...(maxLength === undefined ? {} : { maxLength })}
-            aria-invalid={error === undefined ? undefined : true}
-            aria-describedby={
-              [hintId, error === undefined ? undefined : `error-${field}`]
-                .filter((part) => part !== undefined)
-                .join(" ") || undefined
-            }
+            {...errorProps(field, errors, hintId)}
             onChange={(event) => onChange(event.currentTarget.value)}
           />
           <ErrorText field={field} errors={errors} />
@@ -685,7 +686,6 @@ function TimeInput({
   readonly errors: Readonly<Record<string, string>>;
   readonly onChange: (value: string) => void;
 }) {
-  const error = errors[field];
   return (
     <label className="flex flex-col gap-0.5 text-muted-foreground">
       <span className="flex items-center gap-1.5">
@@ -694,8 +694,7 @@ function TimeInput({
           type="time"
           className={cn(fieldControlClass, "w-28")}
           value={value}
-          aria-invalid={error === undefined ? undefined : true}
-          aria-describedby={error === undefined ? undefined : `error-${field}`}
+          {...errorProps(field, errors)}
           onChange={(event) => onChange(event.currentTarget.value)}
         />
       </span>
