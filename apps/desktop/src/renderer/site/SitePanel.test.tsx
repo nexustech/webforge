@@ -1,0 +1,76 @@
+// @vitest-environment happy-dom
+import { act, cleanup, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { siteLibrary } from "@webforge/site-components";
+import { afterEach, describe, expect, it } from "vitest";
+import { createEditorSession } from "../editor/editor-session.js";
+import { starterSite } from "../editor/starter-site.js";
+import { createPanelRegistry } from "../shell/panels.js";
+import { pagesPanelActions, registerSitePanel } from "./SitePanel.js";
+
+afterEach(cleanup);
+
+describe("Site panel", () => {
+  it("shows the session's pages in the right column's bottom and follows its changes", async () => {
+    const session = createEditorSession(siteLibrary, starterSite());
+    const panels = createPanelRegistry();
+    const remove = registerSitePanel(panels, session);
+    const panel = panels.list()[0];
+    expect(panel).toMatchObject({ id: "site", slot: "right.bottom", title: "Site" });
+    if (panel === undefined) throw new Error("not registered");
+    const SitePanel = panel.component;
+    render(<SitePanel />);
+
+    await userEvent.click(screen.getByRole("button", { name: "Add Page" }));
+    await userEvent.click(screen.getByRole("button", { name: "Add Page" }));
+
+    const added = screen.getByRole("button", { name: /^New page/ });
+    expect(added.getAttribute("aria-current")).toBe("page");
+    // Content edits leave the list as it is.
+    act(() => {
+      session.edit("props", "Edited page", (draft) => {
+        const page = draft.pages[session.ui.getState().pageId];
+        if (page !== undefined) page.doc.root.props = { title: "Changed" };
+      });
+    });
+    expect(screen.getByRole("button", { name: /^New page/ })).toBe(added);
+    act(() => {
+      session.history.undo();
+      session.history.undo();
+    });
+    expect(screen.queryByRole("button", { name: /^New page/ })).toBeNull();
+
+    remove();
+    expect(panels.list()).toEqual([]);
+  });
+
+  it("binds every action to the session as one undo step", () => {
+    const session = createEditorSession(siteLibrary, starterSite());
+    const actions = pagesPanelActions(session);
+    const site = () => session.history.document.getState();
+    const home = site().homePageId;
+
+    actions.add("About");
+    const about = session.ui.getState().pageId;
+    actions.show(home);
+    expect(session.ui.getState().pageId).toBe(home);
+    actions.rename(about, "Company");
+    actions.duplicate(about);
+    actions.move(about, -1);
+    actions.moveToFolder(about, "Info");
+    actions.setHidden(about, true);
+    actions.setHome(about);
+    actions.remove(home);
+
+    expect(session.history.entries().map((entry) => entry.label)).toEqual([
+      "Added page 'About'",
+      "Renamed page 'Company'",
+      "Duplicated page 'Company'",
+      "Moved page 'Company'",
+      "Moved page 'Company'",
+      "Hid 'Company' from navigation",
+      "Set 'Company' as Home page",
+      "Deleted page 'My site'",
+    ]);
+  });
+});
