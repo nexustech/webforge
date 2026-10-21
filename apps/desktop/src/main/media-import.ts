@@ -2,7 +2,7 @@ import { type MediaId, type MediaMeta, mediaNameFor, newId } from "@webforge/mod
 import { MAX_MEDIA_BYTES } from "../shared/ipc/media.js";
 import type { MediaImportResult } from "../shared/ipc-contract.js";
 import { sniffMedia } from "./media-files.js";
-import type { ProjectSession } from "./project-session.js";
+import type { ProjectSession, StoreAssetResult } from "./project-session.js";
 
 /**
  * The most pixels an imported image may have (50 megapixels, e.g. 8660 × 5774). A small file can
@@ -17,57 +17,83 @@ export type ImportFile = {
   readonly data: Uint8Array | undefined;
 };
 
+/** Why an import stopped: no site, a read-only site, or a write error. */
+type ImportFailure = Extract<StoreAssetResult, { status: "failed" }>;
+
 /**
- * Stores each file's original bytes in the open site (F-ED-5, X2: never re-encoded) and describes
- * it as a Media item. Files Media doesn't take are listed as rejected; the rest are still
- * imported. The items' names are unique within this import; the renderer makes them unique within
- * the site when it adds them.
+ * An import in progress: files are added one at a time, so a caller reading them from disk holds
+ * only one in memory. Each file's original bytes are stored in the open site (F-ED-5, X2: never
+ * re-encoded) and described as a Media item. Files Media doesn't take are listed as rejected; the
+ * rest are still imported. The items' names are unique within this import; the renderer makes
+ * them unique within the site when it adds them.
  */
+export function createMediaImport(
+  session: Pick<ProjectSession, "storeAsset">,
+  createId: () => MediaId = () => newId("media"),
+) {
+  const items: MediaMeta[] = [];
+  const rejected: { fileName: string; reason: "unsupported" | "too-large" }[] = [];
+  return {
+    /** Imports one file; returns why the import has to stop, if it does. */
+    add({ fileName, data }: ImportFile): ImportFailure | undefined {
+      if (data === undefined || data.byteLength > MAX_MEDIA_BYTES) {
+        rejected.push({ fileName, reason: "too-large" });
+        return undefined;
+      }
+      const sniffed = sniffMedia(data);
+      if (sniffed === undefined) {
+        rejected.push({ fileName, reason: "unsupported" });
+        return undefined;
+      }
+      if (sniffed.kind === "image" && sniffed.width * sniffed.height > MAX_IMAGE_PIXELS) {
+        rejected.push({ fileName, reason: "too-large" });
+        return undefined;
+      }
+      const id = createId();
+      const stored = session.storeAsset({
+        mediaId: id,
+        data,
+        mime: sniffed.mimeType,
+        originalName: fileName,
+        ...(sniffed.kind === "image" ? { width: sniffed.width, height: sniffed.height } : {}),
+      });
+      if (stored.status === "failed") {
+        return stored;
+      }
+      const base = {
+        id,
+        hash: stored.hash,
+        name: mediaNameFor(
+          fileName,
+          sniffed.kind,
+          items.map((item) => item.name),
+        ),
+        fileName,
+      };
+      items.push(
+        sniffed.kind === "image" ? { ...base, ...sniffed, alt: "" } : { ...base, ...sniffed },
+      );
+      return undefined;
+    },
+    /** What was imported and what wasn't. */
+    result(): MediaImportResult {
+      return { status: "imported", items: [...items], rejected: [...rejected] };
+    },
+  };
+}
+
+/** Imports files that are all in memory already (a drop); see {@link createMediaImport}. */
 export function importMediaFiles(
   session: Pick<ProjectSession, "storeAsset">,
   files: readonly ImportFile[],
-  createId: () => MediaId = () => newId("media"),
+  createId?: () => MediaId,
 ): MediaImportResult {
-  const items: MediaMeta[] = [];
-  const rejected: { fileName: string; reason: "unsupported" | "too-large" }[] = [];
-  for (const { fileName, data } of files) {
-    if (data === undefined || data.byteLength > MAX_MEDIA_BYTES) {
-      rejected.push({ fileName, reason: "too-large" });
-      continue;
+  const running = createMediaImport(session, createId);
+  for (const file of files) {
+    const failed = running.add(file);
+    if (failed !== undefined) {
+      return failed;
     }
-    const sniffed = sniffMedia(data);
-    if (sniffed === undefined) {
-      rejected.push({ fileName, reason: "unsupported" });
-      continue;
-    }
-    if (sniffed.kind === "image" && sniffed.width * sniffed.height > MAX_IMAGE_PIXELS) {
-      rejected.push({ fileName, reason: "too-large" });
-      continue;
-    }
-    const id = createId();
-    const stored = session.storeAsset({
-      mediaId: id,
-      data,
-      mime: sniffed.mimeType,
-      originalName: fileName,
-      ...(sniffed.kind === "image" ? { width: sniffed.width, height: sniffed.height } : {}),
-    });
-    if (stored.status === "failed") {
-      return stored;
-    }
-    const base = {
-      id,
-      hash: stored.hash,
-      name: mediaNameFor(
-        fileName,
-        sniffed.kind,
-        items.map((item) => item.name),
-      ),
-      fileName,
-    };
-    items.push(
-      sniffed.kind === "image" ? { ...base, ...sniffed, alt: "" } : { ...base, ...sniffed },
-    );
   }
-  return { status: "imported", items, rejected };
+  return running.result();
 }

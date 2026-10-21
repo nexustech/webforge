@@ -8,6 +8,7 @@ import {
 } from "@webforge/engine";
 import { t } from "@webforge/i18n";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { registerMediaPanel } from "../media/register-media-panel.js";
 import { useCommandRegistry } from "../shell/command-context.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { installCommandShortcuts } from "../shell/commands.js";
@@ -214,6 +215,8 @@ export function Editor({
       removeEdit();
     };
   }, [panels, history, session]);
+
+  useEffect(() => registerMediaPanel(panels, session), [panels, session]);
 
   return <section className="editor__canvas" aria-label={t("editor.canvas")} ref={canvasRef} />;
 }

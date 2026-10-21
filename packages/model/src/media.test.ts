@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   altTextFor,
+  cropForAspect,
   type ImageMeta,
   imageValueSchema,
   isImageMeta,
@@ -100,5 +101,48 @@ describe("mediaNameFor", () => {
     expect(mediaNameFor("shop.jpg", "image", ["shop"])).toBe("shop-2");
     expect(mediaNameFor("shop.jpg", "image", ["shop", "shop-2"])).toBe("shop-3");
     expect(mediaNameFor("shop.jpg", "image", ["shop-2"])).toBe("shop");
+  });
+});
+
+describe("cropForAspect", () => {
+  const photo = { width: 1600, height: 1000 };
+
+  it("keeps the full width for a wider shape and the full height for a narrower one", () => {
+    expect(cropForAspect(photo, 16 / 9)).toEqual({ x: 0, y: 0.05, width: 1, height: 0.9 });
+    expect(cropForAspect(photo, 1)).toEqual({ x: 0.1875, y: 0, width: 0.625, height: 1 });
+  });
+
+  it("centres the crop on the focal point, as far as the image allows", () => {
+    expect(cropForAspect({ ...photo, focal: { x: 0.25, y: 0.5 } }, 1)).toEqual({
+      x: 0,
+      y: 0,
+      width: 0.625,
+      height: 1,
+    });
+    expect(cropForAspect({ ...photo, focal: { x: 0.6, y: 0.5 } }, 1)).toEqual({
+      x: 0.2875,
+      y: 0,
+      width: 0.625,
+      height: 1,
+    });
+    expect(cropForAspect({ ...photo, focal: { x: 0.5, y: 1 } }, 16 / 9)).toEqual({
+      x: 0,
+      y: 0.1,
+      width: 1,
+      height: 0.9,
+    });
+  });
+
+  it("cuts nothing when the image already has the shape", () => {
+    expect(cropForAspect(photo, 16 / 10)).toBeUndefined();
+  });
+
+  it("makes crops the Media schema accepts", () => {
+    for (const aspect of [1, 4 / 3, 3 / 2, 16 / 9, 3 / 4]) {
+      for (const x of [0, 0.33, 1]) {
+        const crop = cropForAspect({ width: 1234, height: 777, focal: { x, y: x } }, aspect);
+        expect(mediaMetaSchema.safeParse({ ...image, crop }).success).toBe(true);
+      }
+    }
   });
 });

@@ -119,3 +119,57 @@ test("imports files chosen in the dialog", async () => {
 
   expect(result).toMatchObject({ status: "imported", items: [{ kind: "file", name: "prices" }] });
 });
+
+test("adds a photo in the Media panel, describes and crops it, and keeps it in the site", async () => {
+  const page = await openSite();
+  const photoPath = join(dir, "Shop front.jpg");
+  writeFileSync(photoPath, heroPhoto());
+  await stubFileDialogs(running(), photoPath);
+  await expect(page.getByRole("banner").getByRole("status")).toHaveText("Saved", {
+    timeout: 30_000,
+  });
+
+  await page.getByRole("tab", { name: "Media" }).click();
+  const panel = page.getByRole("region", { name: "Media" });
+  await panel.getByRole("button", { name: "Add images or files…" }).click();
+
+  const item = panel.getByRole("button", { name: "Shop front.jpg" });
+  await expect(item).toHaveAttribute("aria-pressed", "true");
+  // The thumbnail comes through the webforge-media: scheme.
+  await expect
+    .poll(() => item.locator("img").evaluate((image: HTMLImageElement) => image.naturalWidth))
+    .toBe(320);
+
+  const alt = panel.getByRole("textbox", { name: "Alt text" });
+  await alt.fill("Our shop front on a sunny morning");
+  await alt.blur();
+  await panel.getByRole("radio", { name: "Square" }).click();
+  await expect(page.getByRole("banner").getByRole("status")).toHaveText("Saved", {
+    timeout: 10_000,
+  });
+
+  // Delete offers Undo; the image comes back with its alt text.
+  await panel.getByRole("button", { name: "Delete" }).click();
+  await expect(item).toHaveCount(0);
+  await page.getByRole("button", { name: "Undo" }).last().click();
+  await expect(item).toBeVisible();
+  await item.click();
+  await expect(alt).toHaveValue("Our shop front on a sunny morning");
+
+  await app?.close();
+  app = undefined;
+  const store = ProjectStore.open(sitePath, { readOnly: true });
+  try {
+    const media = Object.values(store.readSite().media);
+    expect(media).toEqual([
+      expect.objectContaining({
+        name: "shop-front",
+        fileName: "Shop front.jpg",
+        alt: "Our shop front on a sunny morning",
+        crop: { x: 0.1875, y: 0, width: 0.625, height: 1 },
+      }),
+    ]);
+  } finally {
+    store.close();
+  }
+});

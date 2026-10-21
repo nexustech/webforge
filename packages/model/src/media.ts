@@ -124,6 +124,34 @@ export function mediaNameFor(
   return name;
 }
 
+/** The part of an image to show; see `crop` on {@link ImageMeta}. */
+export type ImageCrop = NonNullable<ImageMeta["crop"]>;
+
+/** Four decimals: a crop edge to a ten-thousandth of the image, without float noise in the site. */
+const roundFraction = (value: number) => Math.round(value * 10_000) / 10_000;
+
+/**
+ * The largest crop of an image with the aspect ratio `aspect` (width / height), centred on its
+ * focal point as far as the image allows (G14: aspect presets). `undefined` when the image already
+ * has that shape, so nothing needs cutting off.
+ */
+export function cropForAspect(
+  image: Pick<ImageMeta, "width" | "height" | "focal">,
+  aspect: number,
+): ImageCrop | undefined {
+  const imageAspect = image.width / image.height;
+  if (Math.abs(aspect - imageAspect) < 0.005) {
+    return undefined;
+  }
+  // A wider shape keeps the full width and cuts height; a narrower one keeps the full height.
+  const width = roundFraction(aspect > imageAspect ? 1 : aspect / imageAspect);
+  const height = roundFraction(aspect > imageAspect ? imageAspect / aspect : 1);
+  const focal = image.focal ?? { x: 0.5, y: 0.5 };
+  const start = (centre: number, size: number) =>
+    roundFraction(Math.min(Math.max(centre - size / 2, 0), 1 - size));
+  return { x: start(focal.x, width), y: start(focal.y, height), width, height };
+}
+
 /** Narrows a Media item to an image. */
 export function isImageMeta(meta: MediaMeta): meta is ImageMeta {
   return meta.kind === "image";
