@@ -230,6 +230,40 @@ describe("tree helpers", () => {
     expect([...mediaUsedBy(nodes, siteLibrary)]).toEqual(["hero"]);
   });
 
+  it("leaves hidden nodes, and everything in them, out of the export (F-ED-12)", () => {
+    const nodes: NodeDoc[] = [
+      {
+        type: "Section",
+        props: {
+          id: "s",
+          content: [
+            { type: "Heading", props: { id: "shown", text: "Shown" } },
+            { type: "Heading", props: { id: "gone", text: "Hidden heading", hidden: true } },
+          ],
+        },
+      },
+      {
+        type: "Hero",
+        props: { id: "hero", title: "Hidden hero", image: { mediaId: "hero" }, hidden: true },
+      },
+      { type: "Section", props: { id: "s2", hidden: true, content: starterLayout("x").header } },
+      // A hidden node isn't rendered, so its unknown type doesn't fail the build either.
+      { type: "Gone", props: { id: "old", hidden: true } },
+    ];
+
+    const html = renderNodesToHtml(nodes, siteLibrary, context);
+
+    expect(html).toContain("Shown");
+    expect(html).not.toContain("Hidden heading");
+    expect(html).not.toContain("Hidden hero");
+    expect(html).not.toContain("hero-640");
+    expect([...mediaUsedBy(nodes, siteLibrary)]).toEqual([]);
+    expect(behavioursUsedBy(nodes, siteLibrary)).toEqual([]);
+    const visited: string[] = [];
+    walkNodes(nodes, siteLibrary, (node) => visited.push(node.props.id));
+    expect(visited).toEqual(["s", "shown"]);
+  });
+
   it("behavioursUsedBy lists the scripts the components need", () => {
     expect(behavioursUsedBy(starterLayout("x").header, siteLibrary)).toEqual(["menu"]);
     expect(behavioursUsedBy(starterPage().content, siteLibrary)).toEqual([]);
