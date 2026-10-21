@@ -20,7 +20,10 @@ const classesOfList = new WeakMap<readonly NodeDoc[], readonly string[]>();
 function listClasses(nodes: readonly NodeDoc[], session: EditorSession): readonly string[] {
   let classes = classesOfList.get(nodes);
   if (classes === undefined) {
-    const html = renderNodesToHtml(nodes, session.library, EDITOR_RENDER_CONTEXT);
+    // Hidden elements too: the canvas shows them, dimmed, so it needs their styles (#142).
+    const html = renderNodesToHtml(nodes, session.library, EDITOR_RENDER_CONTEXT, {
+      includeHidden: true,
+    });
     const found: string[] = [];
     for (const match of html.matchAll(/\sclass="([^"]*)"/g)) {
       // React escapes `&` in attributes; Tailwind needs the raw class name. The same rule as the

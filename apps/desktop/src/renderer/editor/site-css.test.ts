@@ -57,6 +57,31 @@ describe("siteClasses", () => {
     expect(classes).toContain("navbar");
     expect(classes).toEqual([...new Set(classes)].sort());
   });
+
+  it("keeps the classes of elements hidden in Layers, which the canvas still shows (#142)", () => {
+    const site = starterSite();
+    const home = site.pages[site.homePageId];
+    if (home === undefined) throw new Error("no home page");
+    const hidden: SiteDoc = {
+      ...site,
+      pages: {
+        ...site.pages,
+        [home.id]: {
+          ...home,
+          doc: {
+            root: { props: {} },
+            content: [{ type: "Hero", props: { id: "hero", title: "Hidden", hidden: true } }],
+          },
+        },
+      },
+    };
+    const session = createEditorSession(siteLibrary, hidden);
+
+    const classes = siteClasses(hidden, session);
+
+    expect(classes).toContain("hero");
+    expect(classes).toContain("hero-content");
+  });
 });
 
 describe("connectSiteCss", () => {
