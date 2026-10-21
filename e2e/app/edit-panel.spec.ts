@@ -107,7 +107,6 @@ async function selectSection(): Promise<void> {
 }
 
 test("sets a padding for the Mobile view only, marked in the panel (F-ED-4)", async () => {
-  // Select the section again after each switch, as a person would.
   const section = canvas().locator(".site-section");
   await deviceView("Mobile").click();
   await selectSection();
@@ -118,8 +117,9 @@ test("sets a padding for the Mobile view only, marked in the panel (F-ED-4)", as
   await expect(panel().getByText("Mobile only")).toBeVisible();
   await expect(section).toHaveClass(/(^| )py-8 md:py-16( |$)/);
 
+  // The canvas toolbar keeps the selection when the view changes (U3): the panel shows Desktop's.
   await deviceView("Desktop").click();
-  await selectSection();
+  await expect(panel().getByRole("heading", { name: "Section", exact: true })).toBeVisible();
   await expect(panel().getByText("Mobile only")).toHaveCount(0);
   await expect(panel().getByRole("radio", { name: "Medium" })).toHaveAttribute(
     "aria-checked",
