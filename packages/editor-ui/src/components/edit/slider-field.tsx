@@ -26,7 +26,12 @@ export function SliderField({ id, field, value, onChange, onCommit }: FieldRende
           const step = steps[Number(event.target.value)];
           if (step !== undefined) onChange(step.value);
         }}
-        onPointerUp={onCommit}
+        // Wherever the pointer is let go, not only over the slider.
+        onPointerDown={(event) =>
+          event.currentTarget.ownerDocument.defaultView?.addEventListener("pointerup", onCommit, {
+            once: true,
+          })
+        }
         onKeyUp={onCommit}
         onBlur={onCommit}
       />

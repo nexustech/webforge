@@ -81,15 +81,21 @@ test("undoes with Ctrl/Cmd+Z in a panel field through the site's history (ADR 00
   await expect(page.locator('.undo-history__step[aria-current="step"]')).toHaveText("Opened page");
 });
 
-test("sets a padding for the Mobile view only, marked in the panel (F-ED-4)", async () => {
-  // Puck's own device buttons, until the canvas toolbar (1.15).
-  await page.getByTitle("Show the Mobile view").click();
+/** Selects the first Section by clicking its bottom padding. */
+async function selectSection(): Promise<void> {
   const section = canvas().locator(".site-section");
   const box = await section.boundingBox();
   if (box === null) throw new Error("Section not visible");
-  // The Section's bottom padding selects the Section itself.
   await section.click({ force: true, position: { x: 10, y: box.height - 4 } });
   await expect(panel().getByRole("heading", { name: "Section", exact: true })).toBeVisible();
+}
+
+test("sets a padding for the Mobile view only, marked in the panel (F-ED-4)", async () => {
+  // Puck's own device buttons, until the canvas toolbar (1.15). Clicking them also clears Puck's
+  // selection, hence selecting again after each.
+  const section = canvas().locator(".site-section");
+  await page.getByTitle("Show the Mobile view").click();
+  await selectSection();
 
   await panel().getByRole("radio", { name: "Small" }).click();
 
@@ -98,9 +104,16 @@ test("sets a padding for the Mobile view only, marked in the panel (F-ED-4)", as
   await expect(section).toHaveClass(/(^| )py-8 md:py-16( |$)/);
 
   await page.getByTitle("Show the Desktop view").click();
+  await selectSection();
   await expect(panel().getByText("Mobile only")).toHaveCount(0);
   await expect(panel().getByRole("radio", { name: "Medium" })).toHaveAttribute(
     "aria-checked",
     "true",
   );
+
+  // Another mode re-renders the canvas: the view stays, rather than one picked for the window.
+  await page.getByTitle("Show the Mobile view").click();
+  await page.getByRole("radio", { name: "Content", exact: true }).click();
+  await expect(page.getByTitle("Show the Mobile view")).toBeDisabled();
+  await expect(section).toHaveCSS("padding-top", "32px");
 });

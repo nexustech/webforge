@@ -382,7 +382,12 @@ describe("createPuckEngine", () => {
     await act(async () => button("Mobile")?.click());
     await settle();
 
+    // Re-rendering Puck (another mode) keeps the view rather than picking one for the window.
+    await act(async () => framed.setMode("content"));
+    await settle();
+
     expect(views).toEqual(["mobile"]);
+    expect(button("Mobile")?.disabled).toBe(true);
     framed.destroy();
     await settle();
     host.remove();

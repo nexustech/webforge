@@ -176,7 +176,12 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
 
   /** Shows `viewportWidth` in Puck, if it isn't already (the Bridge calls this once Puck is ready). */
   const showViewport = () => {
-    if (getPuck === null || getPuck().appState.ui.viewports.current.width === viewportWidth) {
+    if (getPuck === null) {
+      return;
+    }
+    // A width still on its way to Puck counts as shown: a later one must replace it.
+    const shown = pendingWidth ?? getPuck().appState.ui.viewports.current.width;
+    if (shown === viewportWidth) {
       return;
     }
     pendingWidth = viewportWidth;
@@ -255,6 +260,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       }
       return () => {
         getPuck = null;
+        pendingWidth = null;
         // A remounted Puck starts from whatever `data` it was last rendered with: resend the page.
         shownRevision = -1;
       };
@@ -286,6 +292,9 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   }
 
   const dictionary = puckDictionary();
+  // Kept, not rebuilt per render: Puck resets the canvas width whenever these change.
+  const iframe = { enabled: options.iframe ?? true, syncHostStyles: false };
+  const viewportOptions = puckViewports();
 
   const overrides: Partial<Overrides> = {
     // Replaces Puck's header, which holds Puck's own Undo/Redo buttons.
@@ -308,10 +317,18 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
         onAction={handleAction}
         dictionary={dictionary}
         overrides={overrides}
-        iframe={{ enabled: options.iframe ?? true, syncHostStyles: false }}
+        iframe={iframe}
         // The editor's own Edit panel shows the fields (1.14), not Puck's right sidebar.
-        ui={{ rightSideBarVisible: false }}
-        viewports={puckViewports()}
+        ui={{
+          rightSideBarVisible: false,
+          // Puck starts with the app's width; without one it picks the view nearest the window's.
+          viewports: {
+            current: { width: viewportWidth, height: "auto" },
+            options: [],
+            controlsVisible: true,
+          },
+        }}
+        viewports={viewportOptions}
         height="100%"
         {...(mode === "content" ? { permissions: CONTENT_MODE_PERMISSIONS } : {})}
       />,

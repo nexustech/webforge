@@ -193,6 +193,7 @@ describe("style field renderers (1.14 part 2)", () => {
     expect(slider.value).toBe("0");
     expect(slider.getAttribute("aria-valuetext")).toBe("Small");
 
+    fireEvent.pointerDown(slider);
     fireEvent.change(slider, { target: { value: "2" } });
     expect(onCommit).not.toHaveBeenCalled();
     fireEvent.pointerUp(slider);

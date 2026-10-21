@@ -1,7 +1,7 @@
 import type { EngineEdit } from "@webforge/engine";
 import { t } from "@webforge/i18n";
 import type { PageDoc } from "@webforge/model";
-import type { ComponentLibrary } from "@webforge/site-components";
+import type { ComponentLibrary, FieldDef } from "@webforge/site-components";
 import { findNode } from "./nodes.js";
 
 /**
@@ -23,6 +23,13 @@ function itemName(edit: EngineEdit, library: ComponentLibrary, pages: readonly P
   return component?.label ?? edit.componentType ?? "";
 }
 
+/** The definition of the field an edit changed, if any. */
+function fieldOf(edit: EngineEdit, library: ComponentLibrary): FieldDef | undefined {
+  const component =
+    edit.componentType === null ? undefined : library.components[edit.componentType];
+  return edit.field === null ? undefined : component?.fields[edit.field];
+}
+
 /**
  * The undo label for a change to a value set for one device (F-ED-4), e.g. "Changed Section padding
  * on Mobile", or with `reset` for dropping it again: "Reset Section padding on Mobile".
@@ -34,9 +41,7 @@ export function deviceLabelFor(
   reset = false,
 ): string {
   const item = itemName(edit, library, [edit.page]);
-  const component =
-    edit.componentType === null ? undefined : library.components[edit.componentType];
-  const field = edit.field === null ? undefined : component?.fields[edit.field];
+  const field = fieldOf(edit, library);
   return t(reset ? "history.resetOn" : "history.changedOn", {
     item,
     field: (field?.label ?? edit.field ?? "").toLowerCase(),
@@ -67,15 +72,13 @@ export function labelFor(edit: EngineEdit, library: ComponentLibrary, before?: P
       const texts = Object.values(component?.fields ?? {}).filter(
         (field) => field.kind === "text" || field.kind === "richtext",
       );
-      const field = edit.field === null ? undefined : component?.fields[edit.field];
+      const field = fieldOf(edit, library);
       return texts.length > 1 && field !== undefined
         ? t("history.editedField", { item, field: field.label.toLowerCase() })
         : t("history.editedText", { item });
     }
     case "props": {
-      const component =
-        edit.componentType === null ? undefined : library.components[edit.componentType];
-      const field = edit.field === null ? undefined : component?.fields[edit.field];
+      const field = fieldOf(edit, library);
       return field === undefined
         ? t("history.editedPage")
         : t("history.changed", { item, field: field.label.toLowerCase() });

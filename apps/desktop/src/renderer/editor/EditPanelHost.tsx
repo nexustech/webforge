@@ -1,7 +1,7 @@
 import { EditPanel, type EditPanelField } from "@webforge/editor-ui";
 import type { EngineEdit } from "@webforge/engine";
 import { t } from "@webforge/i18n";
-import type { SiteDoc } from "@webforge/model";
+import type { Breakpoint, SiteDoc } from "@webforge/model";
 import type { FieldDef } from "@webforge/site-components";
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import { updateField } from "./apply-patch.js";
@@ -63,11 +63,15 @@ function accepts(field: FieldDef, value: unknown): boolean {
 type Run = {
   readonly nodeId: string;
   readonly name: string;
+  /** The device whose value the run sets; its label names it. */
+  readonly breakpoint: Breakpoint;
   /** False once the run can take no more changes (a drag cancelled with Esc). */
   active(): boolean;
   /** Changes the document as part of the run (a drag); undefined for runs merged by key. */
   readonly update?: (recipe: (draft: SiteDoc) => void) => void;
   end(): void;
+  /** Puts back what the run changed (a drag); undefined for runs that are kept as they are. */
+  readonly cancel?: () => void;
 };
 
 /** Props of {@link EditPanelHost}. */
@@ -100,20 +104,23 @@ export function EditPanelHost({ session, flush }: EditPanelHostProps) {
   const breakpoint = breakpointOf(viewport);
   const device = t(`device.${breakpoint}`);
 
-  // The run ends when the user leaves the field, and also when the selection moves on while the
-  // field keeps focus (undo, the canvas) or the panel closes.
+  // The run ends when the user leaves the field, and also when the selection or the device view
+  // moves on while the field keeps focus (undo, the canvas). Closing the panel mid-drag cancels the
+  // drag, like any gesture whose control goes away (U2).
   const openRun = useRef<Run | null>(null);
   useEffect(() => {
     const run = openRun.current;
-    if (run !== null && run.nodeId !== selectedId) {
+    if (run !== null && (run.nodeId !== selectedId || run.breakpoint !== breakpoint)) {
       openRun.current = null;
       run.end();
     }
-  }, [selectedId]);
+  }, [selectedId, breakpoint]);
   useEffect(
     () => () => {
-      openRun.current?.end();
+      const run = openRun.current;
       openRun.current = null;
+      if (run?.cancel !== undefined) run.cancel();
+      else run?.end();
     },
     [],
   );
@@ -194,10 +201,14 @@ export function EditPanelHost({ session, flush }: EditPanelHostProps) {
       openRun.current = {
         nodeId: id,
         name,
+        breakpoint,
         active: () => gesture.active,
         update: (change) => gesture.update(change),
         end: () => {
           if (gesture.active) gesture.commit({ selectionAfter });
+        },
+        cancel: () => {
+          if (gesture.active) gesture.cancel();
         },
       };
       gesture.update(recipe(name, next));
@@ -222,6 +233,7 @@ export function EditPanelHost({ session, flush }: EditPanelHostProps) {
       openRun.current = {
         nodeId: id,
         name,
+        breakpoint,
         active: () => true,
         end: () => history.endSession(textKey),
       };

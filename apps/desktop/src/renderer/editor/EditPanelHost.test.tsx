@@ -150,6 +150,7 @@ describe("EditPanelHost", () => {
       const slider = screen.getByLabelText("Space between elements") as HTMLInputElement;
       expect(slider.value).toBe("2");
 
+      fireEvent.pointerDown(slider);
       fireEvent.change(slider, { target: { value: "3" } });
       fireEvent.change(slider, { target: { value: "1" } });
       expect(section()?.gap).toBe("small");
@@ -166,6 +167,7 @@ describe("EditPanelHost", () => {
       const { session, labels, section } = setup("section-1");
       const slider = screen.getByLabelText("Space between elements");
 
+      fireEvent.pointerDown(slider);
       fireEvent.change(slider, { target: { value: "0" } });
       act(() => {
         runHistoryCommand(session, "cancel");
@@ -175,9 +177,41 @@ describe("EditPanelHost", () => {
       expect(section()?.gap).toBeUndefined();
       expect(labels()).toEqual([]);
 
+      fireEvent.pointerDown(slider);
       fireEvent.change(slider, { target: { value: "3" } });
       fireEvent.pointerUp(slider);
       expect(labels()).toEqual(["Changed Section space between elements"]);
+    });
+
+    it("ends a drag when the device view changes, so each step names its device", () => {
+      const { session, labels, section } = setup("section-1");
+      act(() => session.ui.setState({ viewport: "mobile" }));
+      const slider = () => screen.getByLabelText("Space between elements");
+
+      fireEvent.pointerDown(slider());
+      fireEvent.change(slider(), { target: { value: "0" } });
+      act(() => session.ui.setState({ viewport: "desktop" }));
+      fireEvent.change(slider(), { target: { value: "3" } });
+      fireEvent.pointerUp(slider());
+
+      expect(section()?.gap).toEqual({ $responsive: { desktop: "large", mobile: "none" } });
+      expect(labels()).toEqual([
+        "Changed Section space between elements on Mobile",
+        "Changed Section space between elements",
+      ]);
+    });
+
+    it("cancels a drag when the panel closes during it", () => {
+      const { session, labels, section } = setup("section-1");
+      const slider = screen.getByLabelText("Space between elements");
+      fireEvent.pointerDown(slider);
+      fireEvent.change(slider, { target: { value: "0" } });
+
+      cleanup();
+
+      expect(section()?.gap).toBeUndefined();
+      expect(labels()).toEqual([]);
+      expect(session.history.entries()).toEqual([]);
     });
 
     it("switches a toggle as one step", async () => {
