@@ -77,18 +77,30 @@ export function contextMenuTemplate(
 }
 
 /**
- * The checker language for a site language: the same tag (`en-GB`), else the first one of the same
- * language (`en` → `en-US`), else none. Matching ignores case, as Windows reports `en-GB`.
+ * The checker language for a site language. Windows' own checkers know regional languages
+ * (`en-GB`), not bare ones (`en`), so a bare site language takes a region: the system's own when
+ * it speaks that language (`en` on an `en-GB` system → `en-GB`), else the first one available.
+ * A site language with a region is used as it is when available. Matching ignores case.
  */
 export function spellCheckLanguageFor(
   siteLanguage: string,
   available: readonly string[],
+  systemLanguages: readonly string[] = [],
 ): string | undefined {
-  const wanted = siteLanguage.toLowerCase();
-  const base = wanted.split("-")[0] ?? wanted;
+  const lower = (language: string) => language.toLowerCase();
+  const baseOf = (language: string) => lower(language).split("-")[0] ?? "";
+  const regional = available.filter((language) => language.includes("-"));
+  const wanted = lower(siteLanguage);
+  const base = baseOf(siteLanguage);
+  const find = (language: string) =>
+    regional.find((candidate) => lower(candidate) === lower(language));
   return (
-    available.find((language) => language.toLowerCase() === wanted) ??
-    available.find((language) => language.toLowerCase().split("-")[0] === base)
+    find(wanted) ??
+    systemLanguages
+      .filter((language) => baseOf(language) === base)
+      .map(find)
+      .find((language) => language !== undefined) ??
+    regional.find((language) => baseOf(language) === base)
   );
 }
 
@@ -100,11 +112,16 @@ export function setSpellCheckLanguage(
   session: Pick<Session, "availableSpellCheckerLanguages" | "setSpellCheckerLanguages">,
   siteLanguage: string,
   platform: NodeJS.Platform,
+  systemLanguages: readonly string[] = [],
 ): void {
   if (platform !== "win32") {
     return;
   }
-  const language = spellCheckLanguageFor(siteLanguage, session.availableSpellCheckerLanguages);
+  const language = spellCheckLanguageFor(
+    siteLanguage,
+    session.availableSpellCheckerLanguages,
+    systemLanguages,
+  );
   if (language !== undefined) {
     session.setSpellCheckerLanguages([language]);
   }
@@ -150,10 +167,12 @@ export function registerSpellCheckHandlers(
     | "setSpellCheckerDictionaryDownloadURL"
   >,
   platform: NodeJS.Platform,
+  /** The system's languages, most preferred first (`app.getPreferredSystemLanguages()`). */
+  systemLanguages: readonly string[] = [],
 ): void {
   session.setSpellCheckerDictionaryDownloadURL(NO_DICTIONARY_DOWNLOADS);
   registerIpcHandler(ipc, "setSpellCheckLanguage", isTrustedSender, (language) => {
-    setSpellCheckLanguage(session, language, platform);
+    setSpellCheckLanguage(session, language, platform, systemLanguages);
     return null;
   });
 }

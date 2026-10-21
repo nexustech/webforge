@@ -108,17 +108,22 @@ describe("spell check languages", () => {
     expect(spellCheckAvailable("linux")).toBe(false);
   });
 
-  it("picks the site's language, else the same language elsewhere, else none", () => {
-    expect(spellCheckLanguageFor("en-gb", windows)).toBe("en-GB");
-    expect(spellCheckLanguageFor("en", windows)).toBe("en-GB");
-    expect(spellCheckLanguageFor("fr-CA", windows)).toBe("fr-FR");
-    expect(spellCheckLanguageFor("ja", windows)).toBeUndefined();
+  it("picks a regional language: the site's, else the system's, else the first one", () => {
+    const available = ["en", "en-US", "en-GB", "fr", "fr-FR", "de-DE"];
+
+    expect(spellCheckLanguageFor("en-gb", available)).toBe("en-GB");
+    // A bare language takes the system's region when the system speaks it; Windows' own
+    // checkers know only regional languages.
+    expect(spellCheckLanguageFor("en", available, ["de-AT", "en-GB"])).toBe("en-GB");
+    expect(spellCheckLanguageFor("en", available, ["de-DE"])).toBe("en-US");
+    expect(spellCheckLanguageFor("fr-CA", available)).toBe("fr-FR");
+    expect(spellCheckLanguageFor("ja", available)).toBeUndefined();
   });
 
   it("sets the site's language on Windows only, keeping the current one when there is none", () => {
     const session = { availableSpellCheckerLanguages: windows, setSpellCheckerLanguages: vi.fn() };
 
-    setSpellCheckLanguage(session, "de", "win32");
+    setSpellCheckLanguage(session, "de", "win32", ["de-CH"]);
     setSpellCheckLanguage(session, "ja", "win32");
     setSpellCheckLanguage(session, "fr", "darwin");
 

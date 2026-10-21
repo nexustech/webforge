@@ -437,6 +437,7 @@ async function start(): Promise<void> {
     (senderUrl) => isAppUrl(senderUrl, appUrl),
     session.defaultSession,
     process.platform,
+    app.getPreferredSystemLanguages(),
   );
   registerMediaHandlers(
     ipcMain,
