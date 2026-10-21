@@ -1,5 +1,5 @@
 diff --git a/dist/chunk-55V3NZVF.mjs b/dist/chunk-55V3NZVF.mjs
-index 01fc32e03adc11d014291a99cc8dbee1806880f8..6b07de335c6251e35a720549c06b2cb8fe35a59c 100644
+index 01fc32e03adc11d014291a99cc8dbee1806880f8..c9274bf43bc8107e1d579e9e79845aecd7e5164b 100644
 --- a/dist/chunk-55V3NZVF.mjs
 +++ b/dist/chunk-55V3NZVF.mjs
 @@ -6343,7 +6343,10 @@ var generateUsePuck = (store, getState) => {
@@ -14,7 +14,7 @@ index 01fc32e03adc11d014291a99cc8dbee1806880f8..6b07de335c6251e35a720549c06b2cb8
    };
    return storeData;
  };
-@@ -12605,7 +12608,14 @@ var Canvas = () => {
+@@ -12605,10 +12608,15 @@ var Canvas = () => {
    }, [viewports.current.width, viewports]);
    useEffect26(() => {
      if (!frameRef.current) return;
@@ -22,13 +22,17 @@ index 01fc32e03adc11d014291a99cc8dbee1806880f8..6b07de335c6251e35a720549c06b2cb8
 +    // or takes away changes only its content box, and must not undo the zoom.
 +    let frameSize = null;
      const resizeObserver = new ResizeObserver(() => {
+-      if (!isResizingRef.current) {
+-        resetAutoZoom();
+-      }
 +      const frame = frameRef.current;
 +      const size = frame ? `${frame.offsetWidth}x${frame.offsetHeight}` : null;
-+      if (size === frameSize) return;
++      if (size === frameSize || isResizingRef.current) return;
 +      frameSize = size;
-       if (!isResizingRef.current) {
-         resetAutoZoom();
-       }
++      resetAutoZoom();
+     });
+     resizeObserver.observe(frameRef.current);
+     return () => {
 diff --git a/dist/chunk-K2LNXU54.mjs b/dist/chunk-K2LNXU54.mjs
 index 81075c39650a79a9eccf7cefffdc7a65cbd00c97..8aa13a1baf0ca0ad724ca2b5a2377b79c1d4742e 100644
 --- a/dist/chunk-K2LNXU54.mjs
@@ -52,7 +56,7 @@ index 81075c39650a79a9eccf7cefffdc7a65cbd00c97..8aa13a1baf0ca0ad724ca2b5a2377b79
            fields: __spreadProps(__spreadValues({}, s.fields), { fields: defaultFields, id })
          }));
 diff --git a/dist/index.js b/dist/index.js
-index aebc9c0e4d4eed1a407ea72d0d1469d16544d834..73bceb2a9e387f6256ad8acfa650ad9fa3f1b0be 100644
+index aebc9c0e4d4eed1a407ea72d0d1469d16544d834..61b8b396dcca04d059841ae417622b257f28296e 100644
 --- a/dist/index.js
 +++ b/dist/index.js
 @@ -3084,7 +3084,7 @@ var init_permissions = __esm({
@@ -85,7 +89,7 @@ index aebc9c0e4d4eed1a407ea72d0d1469d16544d834..73bceb2a9e387f6256ad8acfa650ad9f
    };
    return storeData;
  };
-@@ -18741,7 +18744,14 @@ var Canvas = () => {
+@@ -18741,10 +18744,15 @@ var Canvas = () => {
    }, [viewports.current.width, viewports]);
    (0, import_react102.useEffect)(() => {
      if (!frameRef.current) return;
@@ -93,15 +97,19 @@ index aebc9c0e4d4eed1a407ea72d0d1469d16544d834..73bceb2a9e387f6256ad8acfa650ad9f
 +    // or takes away changes only its content box, and must not undo the zoom.
 +    let frameSize = null;
      const resizeObserver = new ResizeObserver(() => {
+-      if (!isResizingRef.current) {
+-        resetAutoZoom();
+-      }
 +      const frame = frameRef.current;
 +      const size = frame ? `${frame.offsetWidth}x${frame.offsetHeight}` : null;
-+      if (size === frameSize) return;
++      if (size === frameSize || isResizingRef.current) return;
 +      frameSize = size;
-       if (!isResizingRef.current) {
-         resetAutoZoom();
-       }
++      resetAutoZoom();
+     });
+     resizeObserver.observe(frameRef.current);
+     return () => {
 diff --git a/dist/no-external.js b/dist/no-external.js
-index af3fa6755f42679605e6805aa46fdeb90df48281..fd0757bac650e702c91cb2ea6d83e80d8aea51e4 100644
+index af3fa6755f42679605e6805aa46fdeb90df48281..4673cabd154870ec25b8b6c144012adae9e330d2 100644
 --- a/dist/no-external.js
 +++ b/dist/no-external.js
 @@ -3084,7 +3084,7 @@ var init_permissions = __esm({
@@ -134,7 +142,7 @@ index af3fa6755f42679605e6805aa46fdeb90df48281..fd0757bac650e702c91cb2ea6d83e80d
    };
    return storeData;
  };
-@@ -18741,7 +18744,14 @@ var Canvas = () => {
+@@ -18741,10 +18744,15 @@ var Canvas = () => {
    }, [viewports.current.width, viewports]);
    (0, import_react102.useEffect)(() => {
      if (!frameRef.current) return;
@@ -142,10 +150,14 @@ index af3fa6755f42679605e6805aa46fdeb90df48281..fd0757bac650e702c91cb2ea6d83e80d
 +    // or takes away changes only its content box, and must not undo the zoom.
 +    let frameSize = null;
      const resizeObserver = new ResizeObserver(() => {
+-      if (!isResizingRef.current) {
+-        resetAutoZoom();
+-      }
 +      const frame = frameRef.current;
 +      const size = frame ? `${frame.offsetWidth}x${frame.offsetHeight}` : null;
-+      if (size === frameSize) return;
++      if (size === frameSize || isResizingRef.current) return;
 +      frameSize = size;
-       if (!isResizingRef.current) {
-         resetAutoZoom();
-       }
++      resetAutoZoom();
+     });
+     resizeObserver.observe(frameRef.current);
+     return () => {
