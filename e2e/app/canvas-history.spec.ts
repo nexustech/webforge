@@ -218,6 +218,32 @@ test.describe("Puck canvas with Webforge history", () => {
     await expect(canvas().locator(".site-text")).toHaveText(`${STARTER_TEXT} Indeed.`);
   });
 
+  test("runs a second Ctrl/Cmd+Z after the first when both follow typing at once", async () => {
+    // An earlier step: the heading made smaller in the Edit panel.
+    const heading = canvas().locator("h1");
+    const box = await heading.boundingBox();
+    if (box === null) throw new Error("Heading not visible");
+    await heading.click({ position: { x: box.width * 0.97, y: 2 } });
+    const panel = page.getByRole("region", { name: "Right panels" });
+    await panel.getByRole("tab", { name: "Style" }).click();
+    await panel.getByLabel("Size", { exact: true }).selectOption("small");
+    await expect(canvas().locator("h3")).toHaveCount(1);
+
+    const editor = canvas().locator(".site-text .ProseMirror");
+    await canvas().getByText(STARTER_TEXT).click();
+    await editor.click();
+    await expect(editor).toBeFocused();
+    await page.keyboard.press("End");
+    await page.keyboard.type(" Indeed.", { delay: 20 });
+    await page.keyboard.press("ControlOrMeta+z");
+    await page.keyboard.press("ControlOrMeta+z");
+
+    // Both undone, in order: the typing, then the heading.
+    await expect(canvas().locator(".site-text")).toHaveText(STARTER_TEXT);
+    await expect(canvas().locator("h1")).toHaveText(STARTER_HEADING);
+    await expect(currentStep()).toHaveText("Opened page");
+  });
+
   test("clicking a step in Undo History jumps there", async () => {
     await drag(
       page.getByText("Heading", { exact: true }).first(),

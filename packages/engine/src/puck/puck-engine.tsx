@@ -34,6 +34,7 @@ import { installHistoryKeys } from "../history-keys.js";
 import { preserveCaret, refocusRichText } from "./caret.js";
 import { applyChromeStyles, createSelectionOutline, QuickActionBar } from "./chrome.js";
 import { toPuckConfig } from "./config.js";
+import { deferredCommands } from "./deferred-commands.js";
 import { puckDictionary } from "./dictionary.js";
 import { editFromAction, selectedNodeId } from "./edit-from-action.js";
 import { pageActions, type SlotsOf } from "./page-actions.js";
@@ -193,32 +194,13 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     for (const handler of commandHandlers) handled = handler(command) === true || handled;
     return handled;
   };
-  /** An Undo or Redo waiting for the rich-text edit it asked Puck to send. */
-  let awaitingEdit: (() => void) | null = null;
-  const runCommand: HistoryCommandHandler = (command) => {
-    // Undo or Redo pressed while typing rich text: Puck still holds the last keystrokes back. They
-    // are sent first, to belong to the session being undone, and the command runs once their edit
-    // is recorded (#146).
-    if (
-      command !== "cancel" &&
-      awaitingEdit === null &&
-      getPuck !== null &&
-      flushRichText(getPuck())
-    ) {
-      const run = () => {
-        if (awaitingEdit !== run) {
-          return;
-        }
-        clearTimeout(timer);
-        awaitingEdit = null;
-        runHandlers(command);
-      };
-      const timer = setTimeout(run, RICH_TEXT_FLUSH_TIMEOUT_MS);
-      awaitingEdit = run;
-      return true;
-    }
-    return runHandlers(command);
-  };
+  // Undo and Redo pressed while typing rich text wait for its last keystrokes (#146).
+  const commands = deferredCommands(
+    runHandlers,
+    () => getPuck !== null && flushRichText(getPuck()),
+    RICH_TEXT_FLUSH_TIMEOUT_MS,
+  );
+  const runCommand = commands.run;
 
   const dispatch = (action: PuckAction) => {
     if (getPuck === null) {
@@ -338,7 +320,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
             reporting = false;
           }
           // An Undo or Redo was waiting for this edit: it runs now, outside Puck's own update.
-          if (awaitingEdit !== null) queueMicrotask(awaitingEdit);
+          commands.edited();
         }
       }
       // After the edit, so the history records the selection from before it.
@@ -640,6 +622,8 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     },
 
     destroy() {
+      // An Undo still waiting for its rich-text edit goes with the canvas.
+      commands.dispose();
       const mounted = root;
       const element = host;
       root = null;

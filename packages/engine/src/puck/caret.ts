@@ -68,9 +68,10 @@ export function preserveCaret(doc: Document | null): void {
 }
 
 /**
- * Puts the focus, and the caret at the end, back into the rich-text editor of node `id` once it has
- * been remounted: Undo or Redo pressed while typing in it remounts it to show the new value
- * (see `staleRichText`), which would otherwise leave the person typing into nothing.
+ * Puts the focus, and the caret at the same place in the text (or the end, if the text is now
+ * shorter), back into the rich-text editor of node `id` once it has been remounted: Undo or Redo
+ * pressed while typing in it remounts it to show the new value (see `staleRichText`), which would
+ * otherwise leave the person typing into nothing. Call it just before the change.
  */
 export function refocusRichText(doc: Document | null, id: string): void {
   const MutationObserverImpl = doc?.defaultView?.MutationObserver;
@@ -78,14 +79,15 @@ export function refocusRichText(doc: Document | null, id: string): void {
     return;
   }
   const selector = `[data-puck-component="${CSS.escape(id)}"] .ProseMirror`;
-  const before = doc.querySelector(selector);
+  const before = doc.querySelector<HTMLElement>(selector);
+  const offset = (before === null ? null : caretOffset(before)) ?? Number.MAX_SAFE_INTEGER;
   const observer = new MutationObserverImpl(() => {
     const editor = doc.querySelector<HTMLElement>(selector);
     if (editor !== null && editor !== before) {
       observer.disconnect();
       clearTimeout(timer);
       editor.focus();
-      placeCaret(editor, Number.MAX_SAFE_INTEGER);
+      placeCaret(editor, offset);
     }
   });
   observer.observe(doc.body, { childList: true, subtree: true });
