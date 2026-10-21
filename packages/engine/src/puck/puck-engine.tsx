@@ -258,6 +258,8 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
         dictionary={dictionary}
         overrides={overrides}
         iframe={{ enabled: options.iframe ?? true, syncHostStyles: false }}
+        // The editor's own Edit panel shows the fields (1.14), not Puck's right sidebar.
+        ui={{ rightSideBarVisible: false }}
         height="100%"
         {...(mode === "content" ? { permissions: CONTENT_MODE_PERMISSIONS } : {})}
       />,

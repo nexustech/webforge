@@ -38,8 +38,19 @@ export function labelFor(edit: EngineEdit, library: ComponentLibrary, before?: P
       return t("history.deleted", { item });
     case "duplicate":
       return t("history.duplicated", { item });
-    case "text":
-      return t("history.editedText", { item });
+    case "text": {
+      // Name the field only where the element has several kinds of text (a Hero's title, text and
+      // button text); a Heading's one text stays "Edited Heading text".
+      const component =
+        edit.componentType === null ? undefined : library.components[edit.componentType];
+      const texts = Object.values(component?.fields ?? {}).filter(
+        (field) => field.kind === "text" || field.kind === "richtext",
+      );
+      const field = edit.field === null ? undefined : component?.fields[edit.field];
+      return texts.length > 1 && field !== undefined
+        ? t("history.editedField", { item, field: field.label.toLowerCase() })
+        : t("history.editedText", { item });
+    }
     case "props": {
       const component =
         edit.componentType === null ? undefined : library.components[edit.componentType];

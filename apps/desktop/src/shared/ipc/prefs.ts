@@ -11,6 +11,20 @@ const panelGroupLayoutSchema = z
   .record(z.string().min(1).max(64), z.number().min(0).max(100))
   .refine(fewEntries);
 
+/** The main window's size and place when it isn't maximised, in screen pixels. */
+const windowBoundsSchema = z.strictObject({
+  x: z.number().int(),
+  y: z.number().int(),
+  width: z.number().int().min(1).max(100_000),
+  height: z.number().int().min(1).max(100_000),
+});
+
+/** How the person left the main window: maximised or not, and its size when it isn't. */
+const windowStateSchema = z.strictObject({
+  maximized: z.boolean(),
+  bounds: windowBoundsSchema,
+});
+
 /**
  * One person's editor preferences (per user, not per site; T2). Stored by main in
  * `<userData>/preferences.json`.
@@ -22,6 +36,8 @@ export const preferencesSchema = z.strictObject({
   editorLevel: z.enum(["simple", "advanced"]),
   /** Remembered panel sizes, by panel group id. Empty means the default layout. */
   panelLayout: z.record(z.string().min(1).max(64), panelGroupLayoutSchema).refine(fewEntries),
+  /** The main window as the person last left it; null until then (it opens maximised, ADR 0008). */
+  window: windowStateSchema.nullable(),
 });
 
 /** One person's editor preferences. */
@@ -32,6 +48,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   theme: "dark",
   editorLevel: "simple",
   panelLayout: {},
+  window: null,
 };
 
 /** A change to some preferences; the rest stay as they are. */
@@ -49,6 +66,7 @@ export function applyPreferencesChange(
     theme: change.theme ?? preferences.theme,
     editorLevel: change.editorLevel ?? preferences.editorLevel,
     panelLayout: change.panelLayout ?? preferences.panelLayout,
+    window: change.window === undefined ? preferences.window : change.window,
   };
 }
 

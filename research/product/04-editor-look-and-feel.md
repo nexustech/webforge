@@ -51,7 +51,11 @@ Bootstrap Studio's window and the Webforge equivalent:
 - Each column can collapse.
 - Sizes are remembered per user.
 - **Reset Panels** command in the View menu.
-- Default widths: left 300 px, right 300 px. Top/bottom split in each column 60/40.
+- ~~Default widths: left 300 px, right 300 px. Top/bottom split in each column 60/40.~~ **Changed 2026-10-21 ([ADR 0008](../../docs/adr/0008-roomier-canvas-layout.md)):**
+  - At 1280 px, two 300 px columns left the canvas about 290 px wide.
+  - The window now **starts maximised** and remembers how the person leaves it.
+  - **Side columns default to 240 px**, between 200 and 360 px, and the canvas keeps at least 40% of the width.
+  - Each column shows **one panel at a time, as tabs**: its top-slot panels, then its bottom-slot panels. On the right, for example: Edit · Site.
 
 ## 2. Colour scheme: dark (default) and light
 

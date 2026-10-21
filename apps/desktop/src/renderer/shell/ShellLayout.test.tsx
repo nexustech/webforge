@@ -49,15 +49,18 @@ function renderLayout({
 }
 
 describe("ShellLayout", () => {
-  it("puts the canvas in the middle and an empty state in each slot nobody filled", () => {
+  it("puts the canvas in the middle, panels around it and an empty state in the drawer", () => {
     renderLayout();
 
     expect(screen.getByText("Canvas")).toBeTruthy();
-    for (const region of ["Left panels", "Right panels", "Bottom panel"]) {
-      expect(
-        within(screen.getByRole("region", { name: region })).getAllByText("Nothing here yet"),
-      ).not.toHaveLength(0);
-    }
+    expect(
+      within(screen.getByRole("region", { name: "Left panels" })).getByText("Add", {
+        selector: "p",
+      }),
+    ).toBeTruthy();
+    expect(
+      within(screen.getByRole("region", { name: "Bottom panel" })).getByText("Nothing here yet"),
+    ).toBeTruthy();
   });
 
   it("shows a column only once one of its slots has a panel", () => {
@@ -150,6 +153,35 @@ describe("ShellLayout", () => {
     expect(screen.getByText("Steps")).toBeTruthy();
   });
 
+  it("shows one panel of a column at a time: the top slot's tabs, then the bottom slot's", async () => {
+    const { panels } = renderLayout();
+    act(() => {
+      panels.register({
+        id: "site",
+        slot: "right.bottom",
+        title: "Site",
+        component: () => <p>Pages</p>,
+      });
+    });
+
+    const right = screen.getByRole("region", { name: "Right panels" });
+    const tabs = within(right).getAllByRole("tab");
+    expect(tabs.map((tab) => tab.textContent)).toEqual(["Edit", "Site"]);
+    expect(within(right).getByText("Edit", { selector: "p" })).toBeTruthy();
+    expect(within(right).queryByText("Pages")).toBeNull();
+
+    await userEvent.click(tabs[1] as HTMLElement);
+
+    expect(within(right).getByText("Pages")).toBeTruthy();
+    expect(within(right).queryByText("Edit", { selector: "p" })).toBeNull();
+
+    // The chosen tab stays while panels come and go.
+    act(() => {
+      panels.register({ id: "theme", slot: "right.top", title: "Theme", component: () => null });
+    });
+    expect(within(right).getByText("Pages")).toBeTruthy();
+  });
+
   it("labels its splitters so they can be found and moved with the keyboard", () => {
     renderLayout();
 
@@ -157,8 +189,6 @@ describe("ShellLayout", () => {
       "Resize the left panels",
       "Resize the right panels",
       "Resize the bottom panel",
-      "Resize the left panels' top and bottom",
-      "Resize the right panels' top and bottom",
     ]) {
       expect(screen.getByRole("separator", { name })).toBeTruthy();
     }
@@ -183,14 +213,12 @@ describe("ShellLayout", () => {
   it("starts from the remembered sizes and doesn't save them again unchanged", () => {
     const onLayoutChange = vi.fn();
     renderLayout({
-      layout: { [PANEL_GROUPS.left]: { "left.top": 70, "left.bottom": 30 } },
+      layout: { [PANEL_GROUPS.center]: { canvas: 70, drawer: 30 } },
       onLayoutChange,
     });
 
-    const top = screen
-      .getByRole("region", { name: "Left panels" })
-      .querySelector('[data-panel][id="left.top"]');
-    expect(top?.getAttribute("style") ?? "").toContain("70");
-    expect(onLayoutChange).not.toHaveBeenCalledWith(PANEL_GROUPS.left, expect.anything());
+    const canvas = document.querySelector('[data-panel][id="canvas"]');
+    expect(canvas?.getAttribute("style") ?? "").toContain("70");
+    expect(onLayoutChange).not.toHaveBeenCalledWith(PANEL_GROUPS.center, expect.anything());
   });
 });

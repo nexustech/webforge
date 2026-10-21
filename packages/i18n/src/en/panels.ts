@@ -11,8 +11,7 @@ export const panels = {
   "panels.resizeLeft": "Resize the left panels",
   "panels.resizeRight": "Resize the right panels",
   "panels.resizeDrawer": "Resize the bottom panel",
-  "panels.resizeLeftSplit": "Resize the left panels' top and bottom",
-  "panels.resizeRightSplit": "Resize the right panels' top and bottom",
+
   // Site panel → Pages (F-ED-13, F-ED-20).
   "panels.site": "Site",
   "pages.title": "Pages",

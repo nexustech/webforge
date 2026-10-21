@@ -1,3 +1,5 @@
+import { spawn } from "node:child_process";
+import { once } from "node:events";
 import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
@@ -17,6 +19,42 @@ export const desktopVersion: string = (
 /** A fresh folder for the app's user data (preferences, credentials), so tests never share one. */
 export function newUserDataDir(): string {
   return mkdtempSync(join(tmpdir(), "webforge-e2e-user-"));
+}
+
+/** The Electron binary the app depends on, and an environment that runs its production build. */
+function electronCommand(): { executablePath: string; env: Record<string, string> } {
+  if (!existsSync(join(desktopDir, "out/main/index.js"))) {
+    throw new Error("apps/desktop is not built: run `pnpm e2e` from the repository root");
+  }
+  // The electron package exports the path of its binary (downloaded on first use).
+  const executablePath = String(createRequire(desktopPackageJson)("electron"));
+  // Never point the app at a dev server, even if one is set in the shell.
+  const env = Object.fromEntries(
+    Object.entries(process.env).filter(
+      (entry): entry is [string, string] =>
+        entry[1] !== undefined && entry[0] !== "ELECTRON_RENDERER_URL",
+    ),
+  );
+  return { executablePath, env };
+}
+
+/**
+ * Starts Webforge again while it runs, with the same user data, as a double-click on a `.wforge`
+ * does (1.8). The new launch hands its command line to the running app and quits; this resolves
+ * with its exit code.
+ */
+export async function launchSecondInstance(options: {
+  readonly args: readonly string[];
+  readonly userDataDir: string;
+}): Promise<number | null> {
+  const { executablePath, env } = electronCommand();
+  const child = spawn(
+    executablePath,
+    [desktopDir, `--user-data-dir=${options.userDataDir}`, ...options.args],
+    { cwd: desktopDir, env, stdio: "ignore" },
+  );
+  const [code] = (await once(child, "exit")) as [number | null];
+  return code;
 }
 
 /**
@@ -40,18 +78,7 @@ export async function launchDesktopApp(
     readonly site?: boolean;
   } = {},
 ): Promise<ElectronApplication> {
-  if (!existsSync(join(desktopDir, "out/main/index.js"))) {
-    throw new Error("apps/desktop is not built: run `pnpm e2e` from the repository root");
-  }
-  // The electron package exports the path of its binary (downloaded on first use).
-  const executablePath = String(createRequire(desktopPackageJson)("electron"));
-  // Never point the app at a dev server, even if one is set in the shell.
-  const env = Object.fromEntries(
-    Object.entries(process.env).filter(
-      (entry): entry is [string, string] =>
-        entry[1] !== undefined && entry[0] !== "ELECTRON_RENDERER_URL",
-    ),
-  );
+  const { executablePath, env } = electronCommand();
   const userData = options.userDataDir ?? newUserDataDir();
   const args = [...(options.args ?? [])];
   let siteDir: string | undefined;

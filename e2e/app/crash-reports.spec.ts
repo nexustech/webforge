@@ -84,4 +84,10 @@ test("a renderer crash leaves a local report", async () => {
   const { name, report } = await onlyReport();
   expect(name).toMatch(/^crash-\d{8}-\d{6}-renderer\.json$/);
   expect(report).toMatchObject({ process: "renderer", kind: "crashed" });
+
+  // The crashed window has nothing to save or capture, so it closes at once (#121).
+  const started = Date.now();
+  await app.close();
+  app = undefined;
+  expect(Date.now() - started).toBeLessThan(5_000);
 });

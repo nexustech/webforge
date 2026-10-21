@@ -55,6 +55,7 @@ export function parsePreferences(raw: unknown): Preferences {
     theme: field("theme"),
     editorLevel: field("editorLevel"),
     panelLayout: field("panelLayout"),
+    window: field("window"),
   };
 }
 
