@@ -56,8 +56,8 @@ export function PageSettingsDialog({
   );
 }
 
-/** A labelled field; `hint` goes under it and describes it. */
-function Field({
+/** A labelled field; `hint` goes under it and describes it. Site Settings uses it too. */
+export function Field({
   label,
   hint,
   children,
@@ -84,7 +84,7 @@ function Field({
 }
 
 /** A checkbox with its label to the right. */
-function Check({
+export function Check({
   label,
   checked,
   onChange,
@@ -246,17 +246,22 @@ function PageSettingsForm({
   );
 }
 
-/** One choice of share image: a radio button showing the image, or the site's default. */
-function ImageChoice({
+/**
+ * One choice of image: a radio button showing the image, or the default. `name` groups the
+ * choices of one picker, so a form can have several.
+ */
+export function ImageChoice({
   label,
   thumbnail,
   selected,
   onSelect,
+  name = "share-image",
 }: {
   readonly label: string;
   readonly thumbnail?: string;
   readonly selected: boolean;
   readonly onSelect: () => void;
+  readonly name?: string;
 }) {
   return (
     <label
@@ -266,13 +271,7 @@ function ImageChoice({
         selected && "border-primary bg-accent text-accent-foreground",
       )}
     >
-      <input
-        type="radio"
-        name="share-image"
-        className="sr-only"
-        checked={selected}
-        onChange={onSelect}
-      />
+      <input type="radio" name={name} className="sr-only" checked={selected} onChange={onSelect} />
       {thumbnail === undefined ? (
         <span
           className="flex size-12 items-center justify-center rounded-sm bg-input"

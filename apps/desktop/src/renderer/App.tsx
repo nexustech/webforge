@@ -32,6 +32,7 @@ import { createPanelRegistry } from "./shell/panels.js";
 import { ShellLayout } from "./shell/ShellLayout.js";
 import { TitleBar } from "./shell/TitleBar.js";
 import { registerSitePanel } from "./site/SitePanel.js";
+import { SiteSettingsHost } from "./site-settings/SiteSettingsHost.js";
 import { SiteCommands } from "./start/SiteCommands.js";
 import { AutosaveStatus } from "./storage/AutosaveStatus.js";
 import { registerCrashReportsCommand } from "./storage/crash-reports-command.js";
@@ -229,6 +230,7 @@ export function App({
           </div>
           <AboutDialog info={info} />
           <SiteCommands />
+          <SiteSettingsHost session={session} />
           <Toaster theme={theme} />
         </TooltipProvider>
       </PanelRegistryProvider>
