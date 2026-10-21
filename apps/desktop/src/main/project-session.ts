@@ -248,7 +248,7 @@ export class ProjectSession {
   /**
    * Stores a pasted Media item's bytes (1.25) unless the open site already has them under its id
    * and hash. `read` gives the bytes kept with the clipboard, only when they are needed;
-   * `"missing"` when it has none. Like an import, the item joins the site when the renderer
+   * `"missing"` when neither it nor the site has them. Like an import, the item joins the site when the renderer
    * commits the paste.
    */
   storeCopiedMedia(
@@ -263,7 +263,8 @@ export class ProjectSession {
     if (hasAsset && store.hasBlob(item.hash)) {
       return { status: "stored", hash: item.hash };
     }
-    const data = read();
+    // The kept bytes, else the same bytes this site already has under another item.
+    const data = read() ?? store.readBlob(item.hash)?.data;
     if (data === undefined) {
       return { status: "missing" };
     }

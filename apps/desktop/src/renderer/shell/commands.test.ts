@@ -155,7 +155,7 @@ describe("shortcuts", () => {
       registry.register({ id: "copy", label: "Copy", shortcut: "Mod+C", textShortcut: true, run });
       remove = installCommandShortcuts(window, registry);
       const ctrl = !isMac();
-      const copy = () => key({ key: "c", ctrlKey: ctrl, metaKey: !ctrl });
+      const copy = () => key({ key: "c", ctrlKey: ctrl, metaKey: !ctrl, bubbles: true });
 
       const input = document.createElement("input");
       const paragraph = document.createElement("p");
@@ -172,6 +172,10 @@ describe("shortcuts", () => {
         window.dispatchEvent(event);
         expect(run).toHaveBeenCalledOnce();
         expect(event.defaultPrevented).toBe(true);
+        // A checkbox has no text to copy: the command runs.
+        input.type = "checkbox";
+        input.dispatchEvent(copy());
+        expect(run).toHaveBeenCalledTimes(2);
       } finally {
         input.remove();
         paragraph.remove();

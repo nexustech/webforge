@@ -297,6 +297,17 @@ describe("ProjectSession storeCopiedMedia (1.25)", () => {
     });
     session.create(join(dir, "Missing.wforge"));
     expect(session.storeCopiedMedia(photo, () => undefined)).toEqual({ status: "missing" });
+    // The same bytes under another item: those do.
+    session.storeAsset({
+      mediaId: "other",
+      data: bytes,
+      mime: "image/jpeg",
+      originalName: "b.jpg",
+    });
+    expect(session.storeCopiedMedia(photo, () => undefined)).toEqual({
+      status: "stored",
+      hash: photo.hash,
+    });
 
     session.close();
     const path = join(dir, "Missing.wforge");
@@ -304,7 +315,8 @@ describe("ProjectSession storeCopiedMedia (1.25)", () => {
       throw new ReadOnlyProjectError();
     });
     session.open(path);
-    expect(session.storeCopiedMedia(photo, () => bytes)).toEqual({
+    const fresh = { ...photo, id: "fresh" as MediaId };
+    expect(session.storeCopiedMedia(fresh, () => bytes)).toEqual({
       status: "failed",
       reason: "read-only",
     });

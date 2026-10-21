@@ -15,6 +15,7 @@ import type {
 import { type AddTarget, addTarget } from "../add/add-items.js";
 import { currentPage, type EditorSession } from "../editor/editor-session.js";
 import { findNode } from "../editor/nodes.js";
+import { layerItem } from "../layers/layers.js";
 import { putInMedia } from "../media/media-commands.js";
 
 /**
@@ -28,10 +29,11 @@ export type ClipboardSession = Pick<EditorSession, "history" | "ui" | "edit" | "
 
 /** How undo labels and messages name an element: its Layers name, else its component's name. */
 function itemName(session: ClipboardSession, node: NodeDoc): string {
-  const layerName = node.props.layerName?.trim();
-  return layerName === undefined || layerName === ""
-    ? (session.library.components[node.type]?.label ?? node.type)
-    : t("history.namedItem", { name: layerName });
+  const name = node.props.layerName?.trim();
+  return layerItem({
+    kind: session.library.components[node.type]?.label ?? node.type,
+    name: name === "" ? undefined : name,
+  });
 }
 
 /** The selected element of the shown page, if one is selected there. */
@@ -81,6 +83,8 @@ export async function copySelected(
   if (node === undefined) {
     return false;
   }
+  // The page it is on: the user may have moved on by the time the copy is on the clipboard.
+  const ui = session.ui.getState();
   let result: ClipboardWriteResult;
   try {
     result = await clipboard.write({ nodes: [node], media: mediaOf(session, [node]) });
@@ -92,7 +96,6 @@ export async function copySelected(
     return false;
   }
   if (cut) {
-    const ui = session.ui.getState();
     const id = node.props.id;
     session.edit(
       "remove",
@@ -103,7 +106,7 @@ export async function copySelected(
       },
       { selectionAfter: { ...ui, nodeId: null } },
     );
-    session.ui.setState({ nodeId: null });
+    if (session.ui.getState().nodeId === id) session.ui.setState({ nodeId: null });
   }
   return true;
 }
@@ -191,7 +194,12 @@ export async function pasteElements(
     notify(t("site.clipboard.cantPaste", { item: itemName(session, first) }));
     return false;
   }
-  const copies = pastedCopies(nodes, anchorsIn(page.doc.content));
+  // The shared Header and Footer show on the page too: their anchors are taken as well.
+  const { layout } = session.history.document.getState();
+  const copies = pastedCopies(
+    nodes,
+    anchorsIn([...layout.header, ...page.doc.content, ...layout.footer]),
+  );
   const firstId = copies[0]?.props.id ?? null;
   const label =
     copies.length === 1

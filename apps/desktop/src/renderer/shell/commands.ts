@@ -226,12 +226,13 @@ function isForText(target: Window, event: KeyboardEvent): boolean {
   const element = event.target as {
     isContentEditable?: boolean;
     tagName?: string;
+    selectionStart?: number | null;
   } | null;
-  if (
-    element?.isContentEditable === true ||
-    element?.tagName === "INPUT" ||
-    element?.tagName === "TEXTAREA"
-  ) {
+  // A text field has a caret (`selectionStart`); a checkbox, switch or button input has none.
+  const textField =
+    (element?.tagName === "INPUT" || element?.tagName === "TEXTAREA") &&
+    typeof element.selectionStart === "number";
+  if (element?.isContentEditable === true || textField) {
     return true;
   }
   const selection = target.getSelection();

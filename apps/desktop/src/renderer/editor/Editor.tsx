@@ -75,6 +75,7 @@ export function Editor({
     modeRef.current = mode;
   });
   const connectionRef = useRef<EngineConnection | null>(null);
+  const clipboardCommandsRef = useRef<ReturnType<typeof registerClipboardCommands> | null>(null);
   const addPanelRef = useRef<AddPanelRegistration | null>(null);
   const { history } = session;
   const registry = useCommandRegistry();
@@ -158,6 +159,8 @@ export function Editor({
       connection.flush,
       (message) => toast(message),
     );
+    clipboardCommands.setLayoutLocked(modeRef.current !== "design");
+    clipboardCommandsRef.current = clipboardCommands;
     const canvasCommands = registerCanvasCommands(registry, engine, connection.flush);
     canvasCommands.setHasSelection(session.ui.getState().nodeId !== null);
     const stopSelectionWatch = session.ui.subscribe((ui) => {
@@ -180,6 +183,7 @@ export function Editor({
       removeFrameShortcuts?.();
       stopSelectionWatch();
       canvasCommands.remove();
+      clipboardCommandsRef.current = null;
       clipboardCommands.remove();
       stopSiteCss();
       stopImages();
@@ -194,6 +198,7 @@ export function Editor({
 
   useEffect(() => {
     engine?.setMode(mode);
+    clipboardCommandsRef.current?.setLayoutLocked(mode !== "design");
   }, [engine, mode]);
 
   useEffect(

@@ -9,14 +9,12 @@ export const preloadClipboard: Pick<ClipboardApi, "write" | "read"> = {
   read: () => window.webforge.clipboard.read(),
 };
 
-/** Cut and Copy work on the selected element; Paste needs none. */
-const NEEDS_SELECTION = ["edit.cut", "edit.copy"] as const;
-
 /**
  * Registers Cut, Copy and Paste for sections and elements (1.25) in the Edit menu and the command
  * box, with their usual shortcuts. In a text field or editable text, or with text selected, the
- * shortcuts stay the text's. Returns a function that removes them and one that enables Cut and
- * Copy as the selection comes and goes.
+ * shortcuts stay the text's. Cut and Copy need a selected element; Cut and Paste change the
+ * layout, so Content mode's lock (M3) turns them off. Returns a function that removes them, and
+ * ones that follow the selection and the lock.
  */
 export function registerClipboardCommands(
   registry: CommandRegistry,
@@ -24,8 +22,13 @@ export function registerClipboardCommands(
   clipboard: Pick<ClipboardApi, "write" | "read">,
   beforeAction: () => void,
   notify: (message: string) => void,
-): { readonly remove: () => void; readonly setHasSelection: (selected: boolean) => void } {
-  const hasSelection = session.ui.getState().nodeId !== null;
+): {
+  readonly remove: () => void;
+  readonly setHasSelection: (selected: boolean) => void;
+  readonly setLayoutLocked: (locked: boolean) => void;
+} {
+  let selected = session.ui.getState().nodeId !== null;
+  let locked = false;
   const removers = [
     registry.register({
       id: "edit.cut",
@@ -33,7 +36,7 @@ export function registerClipboardCommands(
       menu: "edit",
       shortcut: "Mod+X",
       textShortcut: true,
-      enabled: hasSelection,
+      enabled: selected,
       run: async () => {
         beforeAction();
         await copySelected(session, clipboard, notify, true);
@@ -45,7 +48,7 @@ export function registerClipboardCommands(
       menu: "edit",
       shortcut: "Mod+C",
       textShortcut: true,
-      enabled: hasSelection,
+      enabled: selected,
       run: async () => {
         beforeAction();
         await copySelected(session, clipboard, notify);
@@ -63,12 +66,22 @@ export function registerClipboardCommands(
       },
     }),
   ];
+  const update = () => {
+    registry.update("edit.cut", { enabled: selected && !locked });
+    registry.update("edit.copy", { enabled: selected });
+    registry.update("edit.paste", { enabled: !locked });
+  };
   return {
     remove: () => {
       for (const remove of removers) remove();
     },
-    setHasSelection: (selected) => {
-      for (const id of NEEDS_SELECTION) registry.update(id, { enabled: selected });
+    setHasSelection: (next) => {
+      selected = next;
+      update();
+    },
+    setLayoutLocked: (next) => {
+      locked = next;
+      update();
     },
   };
 }

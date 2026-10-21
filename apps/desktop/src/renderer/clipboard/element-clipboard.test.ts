@@ -125,6 +125,28 @@ describe("copy and paste (1.25)", () => {
     });
   });
 
+  it("leaves out an anchor the Header or Footer already uses", async () => {
+    const session = createEditorSession(siteLibrary, starterSite());
+    session.edit("page", "Anchored the footer", (draft) => {
+      draft.layout.footer.push({
+        type: "Footer",
+        props: { id: "footer", advanced: { anchorId: "contact" } },
+      });
+    });
+    const section: NodeDoc = {
+      type: "Section",
+      props: { id: "s", advanced: { anchorId: "contact" }, content: [] },
+    };
+
+    await pasteElements(
+      session,
+      fakeClipboard({ status: "elements", elements: { nodes: [section], media: [] } }),
+      vi.fn(),
+    );
+
+    expect(content(session).at(-1)?.props).not.toHaveProperty("advanced");
+  });
+
   it("refuses a place that doesn't take the elements, changing nothing", async () => {
     const session = createEditorSession(siteLibrary, starterSite());
     const question: NodeDoc = { type: "FaqItem", props: { id: "q", question: "Open on Sundays?" } };
