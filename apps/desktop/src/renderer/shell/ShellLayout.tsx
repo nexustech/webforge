@@ -3,7 +3,6 @@ import {
   type ResizableLayout,
   ResizablePanel,
   ResizablePanelGroup,
-  type ResizablePanelGroupHandle,
   type ResizablePanelHandle,
   Tabs,
   TabsContent,
@@ -11,7 +10,7 @@ import {
   TabsTrigger,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
-import { type ReactNode, type RefObject, useEffect, useRef } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import type { Preferences } from "../../shared/ipc-contract.js";
 import { useCommandRegistry } from "./command-context.js";
 import { COMMAND_IDS } from "./command-ids.js";
@@ -21,15 +20,19 @@ import { type PanelSlot, panelsInSlot } from "./panels.js";
 /** The panel groups whose sizes are remembered, by id. */
 export const PANEL_GROUPS = {
   columns: "shell.columns",
-  left: "shell.left",
   center: "shell.center",
-  right: "shell.right",
 } as const;
 
-/** UI1's default layout: 300 px side columns, each split 60/40, the drawer closed. */
+/**
+ * The default layout: 240 px side columns, the drawer closed. Side columns stay between 200 and
+ * 360 px and the canvas keeps at least 40% of the width, so it is never squeezed to an unusable
+ * zoom (ADR 0008).
+ */
 const DEFAULTS = {
-  sideWidth: "300px",
-  split: { top: 60, bottom: 40 },
+  sideWidth: "240px",
+  sideMin: "200px",
+  sideMax: "360px",
+  centerMin: "40%",
   drawer: "25%",
 } as const;
 
@@ -44,15 +47,21 @@ export type ShellLayoutProps = {
   readonly editorLevel: Preferences["editorLevel"];
 };
 
-/** One slot's panels as tabs, or an empty state when no area has put a panel there yet. */
-function PanelSlotView({
-  slot,
+/**
+ * The panels of some slots as tabs, one shown at a time, or an empty state when no area has put a
+ * panel there yet. A side column shows its top slot's panels first, then its bottom slot's.
+ */
+function PanelTabs({
+  slots,
   editorLevel,
 }: {
-  readonly slot: PanelSlot;
+  readonly slots: readonly PanelSlot[];
   readonly editorLevel: Preferences["editorLevel"];
 }) {
-  const panels = panelsInSlot(usePanels(), slot, editorLevel);
+  const registered = usePanels();
+  const panels = slots.flatMap((slot) => panelsInSlot(registered, slot, editorLevel));
+  // The tab the person chose stays chosen while panels come and go; the first one otherwise.
+  const [chosen, setChosen] = useState<string | null>(null);
   const first = panels[0];
   if (first === undefined) {
     return (
@@ -62,7 +71,11 @@ function PanelSlotView({
     );
   }
   return (
-    <Tabs key={panels.map((panel) => panel.id).join()} defaultValue={first.id} className="h-full">
+    <Tabs
+      value={panels.some((panel) => panel.id === chosen) ? (chosen ?? first.id) : first.id}
+      onValueChange={setChosen}
+      className="h-full"
+    >
       <TabsList>
         {panels.map((panel) => (
           <TabsTrigger key={panel.id} value={panel.id}>
@@ -97,7 +110,8 @@ function toggle(panel: ResizablePanelHandle | null, size: string): void {
 /**
  * The window below the title bar (UI1): left and right columns of tabbed panels around the
  * canvas, a bottom drawer under it, resizable splitters (also with the arrow keys) and
- * collapsible columns. Sizes are remembered per person, and Reset Panels restores the defaults.
+ * collapsible columns. Each column shows one panel at a time, as tabs (ADR 0008). Sizes are
+ * remembered per person, and Reset Panels restores the defaults.
  * Areas fill the slots with `registerPanel`; a column shows once one of its slots has a panel, so
  * the canvas isn't squeezed by empty columns while Phase 1 fills them.
  */
@@ -106,8 +120,6 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
   const left = useRef<ResizablePanelHandle | null>(null);
   const right = useRef<ResizablePanelHandle | null>(null);
   const drawer = useRef<ResizablePanelHandle | null>(null);
-  const leftSplit = useRef<ResizablePanelGroupHandle | null>(null);
-  const rightSplit = useRef<ResizablePanelGroupHandle | null>(null);
   /**
    * When the person last asked for a layout change through a command (toggle, Reset Panels).
    * Only their own changes are saved: the library also reports automatic ones, such as the first
@@ -159,9 +171,6 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
             column?.resize(DEFAULTS.sideWidth);
           }
           drawer.current?.collapse();
-          const split = { top: DEFAULTS.split.top, bottom: DEFAULTS.split.bottom };
-          leftSplit.current?.setLayout({ "left.top": split.top, "left.bottom": split.bottom });
-          rightSplit.current?.setLayout({ "right.top": split.top, "right.bottom": split.bottom });
         }),
       }),
     ];
@@ -216,30 +225,6 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
       }
     };
 
-  const split = (
-    groupId: string,
-    side: "left" | "right",
-    groupRef: RefObject<ResizablePanelGroupHandle | null>,
-  ) => (
-    <ResizablePanelGroup
-      id={groupId}
-      orientation="vertical"
-      groupRef={groupRef}
-      {...(layout[groupId] === undefined ? {} : { defaultLayout: layout[groupId] })}
-      onLayoutChanged={remember(groupId)}
-    >
-      <ResizablePanel id={`${side}.top`} defaultSize={`${DEFAULTS.split.top}%`} minSize="15%">
-        <PanelSlotView slot={`${side}.top`} editorLevel={editorLevel} />
-      </ResizablePanel>
-      <ResizableHandle
-        aria-label={t(side === "left" ? "panels.resizeLeftSplit" : "panels.resizeRightSplit")}
-      />
-      <ResizablePanel id={`${side}.bottom`} defaultSize={`${DEFAULTS.split.bottom}%`} minSize="15%">
-        <PanelSlotView slot={`${side}.bottom`} editorLevel={editorLevel} />
-      </ResizablePanel>
-    </ResizablePanelGroup>
-  );
-
   return (
     <ResizablePanelGroup
       id={PANEL_GROUPS.columns}
@@ -254,19 +239,19 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
             id="left"
             panelRef={left}
             defaultSize={DEFAULTS.sideWidth}
-            minSize="200px"
-            maxSize="40%"
+            minSize={DEFAULTS.sideMin}
+            maxSize={DEFAULTS.sideMax}
             collapsible
             groupResizeBehavior="preserve-pixel-size"
           >
             <section aria-label={t("panels.left")} className="h-full">
-              {split(PANEL_GROUPS.left, "left", leftSplit)}
+              <PanelTabs slots={["left.top", "left.bottom"]} editorLevel={editorLevel} />
             </section>
           </ResizablePanel>
           <ResizableHandle aria-label={t("panels.resizeLeft")} />
         </>
       )}
-      <ResizablePanel id="center" minSize="30%">
+      <ResizablePanel id="center" minSize={DEFAULTS.centerMin}>
         <ResizablePanelGroup
           id={PANEL_GROUPS.center}
           orientation="vertical"
@@ -281,7 +266,7 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
           <ResizableHandle aria-label={t("panels.resizeDrawer")} />
           <ResizablePanel id="drawer" panelRef={drawer} minSize="10%" maxSize="60%" collapsible>
             <section aria-label={t("panels.drawer")} className="h-full">
-              <PanelSlotView slot="drawer" editorLevel={editorLevel} />
+              <PanelTabs slots={["drawer"]} editorLevel={editorLevel} />
             </section>
           </ResizablePanel>
         </ResizablePanelGroup>
@@ -293,13 +278,13 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
             id="right"
             panelRef={right}
             defaultSize={DEFAULTS.sideWidth}
-            minSize="200px"
-            maxSize="40%"
+            minSize={DEFAULTS.sideMin}
+            maxSize={DEFAULTS.sideMax}
             collapsible
             groupResizeBehavior="preserve-pixel-size"
           >
             <section aria-label={t("panels.right")} className="h-full">
-              {split(PANEL_GROUPS.right, "right", rightSplit)}
+              <PanelTabs slots={["right.top", "right.bottom"]} editorLevel={editorLevel} />
             </section>
           </ResizablePanel>
         </>

@@ -188,22 +188,65 @@ function MoveActions() {
   );
 }
 
+/** Space between the element and its bar when the bar goes below it, in screen pixels. */
+const BELOW_GAP = 4;
+
+/**
+ * Keeps the selected element's bar inside the canvas: Puck draws it above its element at a fixed
+ * size on screen, so on a zoomed-out canvas the bar of an element near the top of the page would
+ * sit above the frame, where it can't be clicked. It then goes just below the element instead, so
+ * it covers neither the element nor the frame's edge. A hovered element's bar stays put.
+ */
+function useKeptInFrame() {
+  const ref = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const bar = ref.current;
+    const frame = bar?.ownerDocument.defaultView;
+    if (bar === null || !frame) {
+      return;
+    }
+    const place = () => {
+      bar.style.transform = "";
+      const element = bar.closest("[data-puck-overlay]");
+      if (element === null || !inSelectedBar(bar)) {
+        return;
+      }
+      const { top, height } = bar.getBoundingClientRect();
+      if (top >= 0 || height === 0) {
+        return;
+      }
+      // The bar is scaled to stay the same size on screen: `scale` turns screen into frame pixels.
+      const scale = height / bar.offsetHeight;
+      const below = element.getBoundingClientRect().bottom + BELOW_GAP * scale;
+      const target = Math.max(0, Math.min(below, frame.innerHeight - height));
+      bar.style.transform = `translateY(${(target - top) / scale}px)`;
+    };
+    place();
+    frame.addEventListener("resize", place);
+    return () => frame.removeEventListener("resize", place);
+  });
+  return ref;
+}
+
 /**
  * The selected element's bar (UI1 §3): its label chip, select-parent, move up and down, and Puck's
  * own duplicate and delete (and the rich-text format menu while text is edited). Every action is
  * one Puck action, so it reaches the history as one labelled step through the usual edit path.
  */
 export function QuickActionBar({ label, children, parentAction }: ActionBarProps) {
+  const kept = useKeptInFrame();
   return (
-    <ActionBar>
-      <ActionBar.Group>
-        {parentAction}
-        {label === undefined ? null : <ActionBar.Label label={label} />}
-      </ActionBar.Group>
-      <ActionBar.Group>
-        <MoveActions />
-        {children}
-      </ActionBar.Group>
-    </ActionBar>
+    <div ref={kept}>
+      <ActionBar>
+        <ActionBar.Group>
+          {parentAction}
+          {label === undefined ? null : <ActionBar.Label label={label} />}
+        </ActionBar.Group>
+        <ActionBar.Group>
+          <MoveActions />
+          {children}
+        </ActionBar.Group>
+      </ActionBar>
+    </div>
   );
 }
