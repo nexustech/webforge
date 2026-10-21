@@ -5,7 +5,7 @@ import {
   EDITOR_RENDER_CONTEXT,
   type FieldDef,
 } from "@webforge/site-components";
-import { type ComponentType, Fragment, type ReactNode } from "react";
+import { type ComponentType, cloneElement, Fragment, isValidElement, type ReactNode } from "react";
 
 function toPuckField(field: FieldDef): Field {
   switch (field.kind) {
@@ -61,9 +61,24 @@ function toPuckComponent(def: ComponentDef, revision: EditorRevision): Component
             (entry): entry is readonly [string, ComponentType] => typeof entry[1] === "function",
           ),
       );
-      return <>{def.render({ id, values, slots, context: EDITOR_RENDER_CONTEXT })}</>;
+      const output = def.render({ id, values, slots, context: EDITOR_RENDER_CONTEXT });
+      return <>{values.hidden === true ? markedHidden(output) : output}</>;
     },
   };
+}
+
+/** Marks a hidden element's HTML on the canvas (F-ED-12); the chrome's styles dim it. */
+export const HIDDEN_ATTRIBUTE = "data-webforge-hidden";
+
+/**
+ * A hidden element's output (Layers' Hide, F-ED-12), marked so the canvas shows it dimmed: it stays
+ * on the canvas, and selectable, so it can be shown again. The export leaves it out instead.
+ * Output whose root isn't an HTML element is left as it is.
+ */
+function markedHidden(output: ReactNode): ReactNode {
+  return isValidElement(output) && typeof output.type === "string"
+    ? cloneElement(output, { [HIDDEN_ATTRIBUTE]: "" } as Record<string, unknown>)
+    : output;
 }
 
 /**
