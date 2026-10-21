@@ -188,6 +188,49 @@ describe("MediaPanel", () => {
     expect(container.textContent).toContain("No images or files yet.");
   });
 
+  it("warns before deleting an image pages use, and Undo brings it back for them", async () => {
+    addMedia(session, [photo]);
+    // The home page places the photo in a Hero.
+    session.edit("insert", "Added Hero", (draft) => {
+      draft.pages[draft.homePageId]?.doc.content.push({
+        type: "Hero",
+        props: { id: "hero", title: "Fresh bread", image: { mediaId: photo.id } },
+      });
+    });
+    await render();
+    await act(async () => button("shop.jpg")?.click());
+
+    await act(async () => button("Delete")?.click());
+    const dialog = document.querySelector('[role="alertdialog"]');
+    expect(dialog?.textContent).toContain("Delete shop.jpg?");
+    expect(dialog?.textContent).toContain("It's used on 1 page.");
+    // Cancel keeps it.
+    await act(async () => {
+      [...document.querySelectorAll<HTMLButtonElement>('[role="alertdialog"] button')]
+        .find((element) => element.textContent === "Cancel")
+        ?.click();
+    });
+    expect(media()[photo.id]).toEqual(photo);
+
+    await act(async () => button("Delete")?.click());
+    await act(async () => {
+      [...document.querySelectorAll<HTMLButtonElement>('[role="alertdialog"] button')]
+        .find((element) => element.textContent === "Delete")
+        ?.click();
+    });
+    expect(lastLabel()).toBe("Deleted image 'shop.jpg'");
+    expect(media()).toEqual({});
+    // The placement still points at the image, so one Undo restores both.
+    act(() => {
+      session.history.undo();
+    });
+    expect(media()[photo.id]).toEqual(photo);
+    const home = session.history.document.getState();
+    expect(home.pages[home.homePageId]?.doc.content.at(-1)?.props.image).toEqual({
+      mediaId: photo.id,
+    });
+  });
+
   it("shows a file without an image, with Replace and Delete only", async () => {
     addMedia(session, [prices]);
     await render();
