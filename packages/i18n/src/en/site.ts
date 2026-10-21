@@ -28,6 +28,14 @@ export const site = {
   "site.media.crop.portrait": "3:4",
   "site.media.replace": "Replace…",
   "site.media.delete": "Delete",
+  "site.media.deleteDialog.title": "Delete {name}?",
+  "site.media.deleteDialog.usedOnOne":
+    "It's used on 1 page. That place will show no image until you choose another. You can undo this.",
+  "site.media.deleteDialog.usedOnMany":
+    "It's used on {count} pages. Those places will show no image until you choose another. You can undo this.",
+  "site.media.deleteDialog.cancel": "Cancel",
+  "site.media.deleteDialog.confirm": "Delete",
+  "site.media.removedImage": "Image deleted from Media",
   "site.media.fileSize": "{width} × {height} px",
   "site.media.history.addedImage": "Added image {name}",
   "site.media.history.addedFile": "Added file {name}",

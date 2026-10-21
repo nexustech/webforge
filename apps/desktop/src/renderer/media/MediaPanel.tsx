@@ -1,4 +1,12 @@
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
   Button,
   cn,
   fieldControlClass,
@@ -31,6 +39,7 @@ import {
   replaceMedia,
   setFocalPoint,
 } from "./media-commands.js";
+import { mediaUsage } from "./media-usage.js";
 
 /** Props of {@link MediaPanel}. */
 export type MediaPanelProps = {
@@ -71,6 +80,8 @@ export function MediaPanel({
   );
   const [selectedId, setSelectedId] = useState<MediaId>();
   const [dragging, setDragging] = useState(false);
+  /** An image to delete that pages still use, and how many: the user confirms first. */
+  const [confirming, setConfirming] = useState<{ item: MediaMeta; pages: number }>();
   const api = media ?? window.webforge.media;
   const list = Object.values(items);
   // Undo or another change can take the chosen item away.
@@ -174,12 +185,53 @@ export function MediaPanel({
               })
             }
             onDelete={() => {
-              deleteMedia(session, selected.id);
-              setSelectedId(undefined);
+              const pages =
+                mediaUsage(session.history.document.getState(), session.library).get(selected.id) ??
+                0;
+              if (pages === 0) {
+                deleteMedia(session, selected.id);
+                setSelectedId(undefined);
+              } else {
+                setConfirming({ item: selected, pages });
+              }
             }}
           />
         )}
       </ScrollArea>
+      <AlertDialog
+        open={confirming !== undefined}
+        onOpenChange={(open) => {
+          if (!open) setConfirming(undefined);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t("site.media.deleteDialog.title", { name: confirming?.item.fileName ?? "" })}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirming?.pages === 1
+                ? t("site.media.deleteDialog.usedOnOne")
+                : t("site.media.deleteDialog.usedOnMany", { count: confirming?.pages ?? 0 })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("site.media.deleteDialog.cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => {
+                if (confirming !== undefined) {
+                  // Placements keep pointing at the image, so Undo brings every one of them back.
+                  deleteMedia(session, confirming.item.id);
+                  setSelectedId(undefined);
+                }
+              }}
+            >
+              {t("site.media.deleteDialog.confirm")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 }
