@@ -37,13 +37,14 @@ async function render(cursor: number) {
     createRoot(container).render(<UndoHistoryPanel history={history} state={state(cursor)} />),
   );
   const steps = [...container.querySelectorAll<HTMLButtonElement>(".undo-history__step")];
-  return { history, steps };
+  return { history, steps, container };
 }
 
 describe("UndoHistoryPanel", () => {
-  it("lists steps newest first, ending with the opened page", async () => {
-    const { steps } = await render(2);
+  it("lists steps newest first, ending with the opened page, in a list named Undo History", async () => {
+    const { steps, container } = await render(2);
 
+    expect(container.querySelector("ol")?.getAttribute("aria-label")).toBe("Undo History");
     expect(steps.map((step) => step.textContent)).toEqual([
       "Moved Heading",
       "Added Heading",
