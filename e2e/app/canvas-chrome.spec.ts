@@ -74,3 +74,54 @@ test.describe("selection chrome", () => {
     await expect(canvas().locator("h1")).toHaveCount(2);
   });
 });
+
+test.describe("keyboard and floating add", () => {
+  test("arrows select, Alt+arrows move, Mod+D duplicates, Delete deletes; one step each", async () => {
+    await selectHeading();
+
+    await page.keyboard.press("ArrowDown");
+    // The Text is selected now: its bar shows its label.
+    await expect(quickAction("Move up")).toBeVisible();
+    await page.keyboard.press("Alt+ArrowUp");
+    await expect(steps().first()).toHaveText("Moved Text");
+    await expect(canvas().locator(".site-section")).toContainText(
+      `${STARTER_TEXT}${STARTER_HEADING}`,
+    );
+
+    await page.keyboard.press("ControlOrMeta+d");
+    await expect(steps().first()).toHaveText("Duplicated Text");
+    await page.keyboard.press("Delete");
+    await expect(steps()).toHaveText([
+      "Deleted Text",
+      "Duplicated Text",
+      "Moved Text",
+      "Opened page",
+    ]);
+  });
+
+  test("leaves arrows and Delete to text being edited", async () => {
+    const field = canvas().locator("h1 [contenteditable]");
+    await field.hover();
+    await field.click();
+    await page.keyboard.press("End");
+    await page.keyboard.press("Backspace");
+    await page.keyboard.press("ArrowLeft");
+    await page.keyboard.press("Delete");
+
+    await expect(canvas().locator("h1")).toHaveText("Welcome to our busine");
+    await expect(steps().first()).toHaveText("Edited Heading text");
+  });
+
+  test("adds a section with the floating + below a section", async () => {
+    const section = canvas().locator(".site-section");
+    const box = await section.boundingBox();
+    if (box === null) throw new Error("Section not visible");
+    // The Section's bottom padding selects the Section itself.
+    await section.click({ force: true, position: { x: 10, y: box.height - 4 } });
+
+    await canvas().getByTitle("Add a section here").click();
+
+    await expect(steps().first()).toHaveText("Added Section");
+    await expect(canvas().locator(".site-section")).toHaveCount(2);
+  });
+});

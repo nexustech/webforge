@@ -21,15 +21,17 @@ import type {
   EditorMode,
   EngineEdit,
   HistoryCommandHandler,
+  InsertPoint,
   Viewport,
 } from "../canvas-engine.js";
 import { installHistoryKeys } from "../history-keys.js";
 import { preserveCaret } from "./caret.js";
-import { applyChromeStyles, QuickActionBar, SelectionOutline } from "./chrome.js";
+import { applyChromeStyles, createSelectionOutline, QuickActionBar } from "./chrome.js";
 import { toPuckConfig } from "./config.js";
 import { puckDictionary } from "./dictionary.js";
 import { editFromAction, selectedNodeId } from "./edit-from-action.js";
 import { pageActions, type SlotsOf } from "./page-actions.js";
+import { performOnSelected } from "./selected-actions.js";
 import { applySiteStyles, type SiteStyles } from "./site-styles.js";
 import { staleRichText } from "./stale-rich-text.js";
 import { allNodes, findNode } from "./tree.js";
@@ -115,6 +117,8 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   const editorRevisions = new Map<string, number>();
 
   const edits = emitter<EngineEdit>();
+  const addRequests = emitter<InsertPoint>();
+  const frameWindows = emitter<Window | null>();
   const selections = emitter<string | null>();
   const commandHandlers = new Set<HistoryCommandHandler>();
   /** True if any handler did something with the command (see installHistoryKeys). */
@@ -217,7 +221,15 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
         if (siteStyles !== null) applySiteStyles(document, siteStyles);
       }
       const frameWindow = document?.defaultView;
-      return frameWindow ? installHistoryKeys(frameWindow, runCommand) : undefined;
+      if (!frameWindow) {
+        return undefined;
+      }
+      frameWindows.emit(frameWindow);
+      const removeKeys = installHistoryKeys(frameWindow, runCommand);
+      return () => {
+        removeKeys();
+        frameWindows.emit(null);
+      };
     }, [document]);
     return <>{children}</>;
   }
@@ -230,7 +242,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     puck: Bridge,
     iframe: CanvasFrame,
     // Selection chrome (1.12): magenta outlines and the selected element's quick actions.
-    componentOverlay: SelectionOutline,
+    componentOverlay: createSelectionOutline(addRequests.emit),
     actionBar: QuickActionBar,
   };
 
@@ -354,6 +366,32 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       if (frameDocument !== null) {
         applySiteStyles(frameDocument, siteStyles);
       }
+    },
+
+    perform(action) {
+      const puck = getPuck;
+      if (puck === null || inAction || !performOnSelected(puck(), action)) {
+        return false;
+      }
+      if (action === "selectPrevious" || action === "selectNext") {
+        // Walking through a long page with the arrows keeps the selection in view.
+        const id = puck().selectedItem?.props.id;
+        const doc = frameDocument ?? host?.ownerDocument;
+        const element =
+          id === undefined ? null : doc?.querySelector(`[data-puck-component="${id}"]`);
+        element?.scrollIntoView?.({ block: "nearest" });
+      }
+      return true;
+    },
+
+    onAddRequest: addRequests.add,
+
+    onFrameWindow(cb) {
+      const current = frameDocument?.defaultView;
+      if (current) {
+        cb(current);
+      }
+      return frameWindows.add(cb);
     },
 
     setMode(nextMode) {

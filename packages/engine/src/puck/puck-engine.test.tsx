@@ -100,14 +100,15 @@ describe("createPuckEngine", () => {
     expect(element.innerHTML).toBe(before);
   });
 
-  it("ignores a page with the same content", async () => {
-    await settle();
-    const before = element.innerHTML;
+  it("sends Puck nothing for a page with the same content", async () => {
+    vi.mocked(pageActions).mockClear();
 
     await act(async () => engine.applyChange({ page: structuredClone(page) }));
     await settle();
 
-    expect(element.innerHTML).toBe(before);
+    // Translated into no actions at all, rather than a whole-page setData.
+    expect(vi.mocked(pageActions).mock.results).toEqual([{ type: "return", value: [] }]);
+    expect(headings()).toEqual(["First", "Second"]);
   });
 
   it("sends an undo step to Puck as the changed element only", async () => {
@@ -265,12 +266,62 @@ describe("createPuckEngine", () => {
       expect(kinds).toEqual(["duplicate", "remove"]);
     });
 
+    it("does keyboard actions on the selected element, one edit each", async () => {
+      const edits: EngineEdit[] = [];
+      engine.onUserEdit((edit) => edits.push(edit));
+      const selections: (string | null)[] = [];
+      engine.onSelectionChange((id) => selections.push(id));
+
+      await act(async () => {
+        expect(engine.perform("selectNext")).toBe(true);
+      });
+      await settle();
+      expect(selections.at(-1)).toBe("a");
+      expect(engine.perform("moveUp")).toBe(false);
+
+      await act(async () => {
+        expect(engine.perform("moveDown")).toBe(true);
+      });
+      await settle();
+      expect(headings()).toEqual(["Second", "First"]);
+      await act(async () => {
+        expect(engine.perform("selectPrevious")).toBe(true);
+      });
+      await settle();
+      expect(selections.at(-1)).toBe("b");
+      await act(async () => {
+        expect(engine.perform("duplicate")).toBe(true);
+      });
+      await settle();
+      await act(async () => {
+        expect(engine.perform("delete")).toBe(true);
+      });
+      await settle();
+
+      expect(edits.map((edit) => edit.kind)).toEqual(["move", "duplicate", "remove"]);
+      expect(headings()).toEqual(["Second", "First"]);
+    });
+
+    it("adds a section after a top-level element with the floating +", async () => {
+      const requests: unknown[] = [];
+      engine.onAddRequest((at) => requests.push(at));
+      await selectA();
+
+      await act(async () => element.querySelector<HTMLButtonElement>(".wf-add")?.click());
+
+      expect(requests).toEqual([{ index: 1 }]);
+    });
+
     it("offers no move in Content mode, where the layout is locked", async () => {
       await act(async () => engine.setMode("content"));
       await selectA();
 
       expect(action("Move down")).toBeNull();
       expect(action("Duplicate")).toBeNull();
+      expect(element.querySelector(".wf-add")).toBeNull();
+      expect(engine.perform("moveDown")).toBe(false);
+      expect(engine.perform("duplicate")).toBe(false);
+      expect(engine.perform("delete")).toBe(false);
     });
   });
 
@@ -334,6 +385,7 @@ describe("createPuckEngine before mount", () => {
       engine.select("a");
       engine.setViewport("tablet");
       engine.setMode("content");
+      expect(engine.perform("delete")).toBe(false);
       engine.destroy();
     }).not.toThrow();
   });

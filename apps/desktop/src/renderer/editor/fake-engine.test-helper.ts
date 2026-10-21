@@ -3,6 +3,7 @@ import type {
   EngineEdit,
   HistoryCommand,
   HistoryCommandHandler,
+  InsertPoint,
   Unsubscribe,
 } from "@webforge/engine";
 import type { PageDoc } from "@webforge/model";
@@ -14,6 +15,10 @@ export type FakeEngine = CanvasEngine & {
   selectFromCanvas(nodeId: string | null): void;
   /** Presses a history key in the canvas; true if the app did something with it. */
   command(command: HistoryCommand): boolean;
+  /** Clicks the floating + asking for a section at `at`. */
+  requestAdd(at: InsertPoint): void;
+  /** Reports the canvas iframe's window (or that it went). */
+  showFrame(frameWindow: Window | null): void;
   readonly applied: PageDoc[];
 };
 
@@ -34,6 +39,8 @@ export function createFakeEngine(): FakeEngine {
   const edits = listeners<EngineEdit>();
   const selections = listeners<string | null>();
   const commands = new Set<HistoryCommandHandler>();
+  const adds = listeners<InsertPoint>();
+  const frames = listeners<Window | null>();
   const applied: PageDoc[] = [];
   return {
     applied,
@@ -49,6 +56,9 @@ export function createFakeEngine(): FakeEngine {
     },
     setViewport: vi.fn(),
     setSiteCss: vi.fn(),
+    perform: vi.fn(() => true),
+    onAddRequest: adds.add,
+    onFrameWindow: frames.add,
     setMode: vi.fn(),
     renderStatic: vi.fn(() => ""),
     destroy: vi.fn(),
@@ -56,5 +66,7 @@ export function createFakeEngine(): FakeEngine {
       edits.emit({ nodeId: null, componentType: null, field: null, selection: null, ...edit }),
     selectFromCanvas: selections.emit,
     command: (command) => [...commands].some((handler) => handler(command) === true),
+    requestAdd: adds.emit,
+    showFrame: frames.emit,
   };
 }

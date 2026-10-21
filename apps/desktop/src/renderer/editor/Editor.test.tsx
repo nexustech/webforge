@@ -75,6 +75,53 @@ describe("Editor", () => {
       }),
     );
 
+  it("lists Undo and Redo first in the Edit menu, then the canvas's actions", () => {
+    const edit = registry
+      .list()
+      .filter((command) => command.menu === "edit")
+      .map((command) => command.id);
+
+    expect(edit.slice(0, 2)).toEqual(["edit.undo", "edit.redo"]);
+    expect(edit).toContain("edit.delete");
+  });
+
+  it("enables the canvas's edits only while an element is selected", async () => {
+    expect(enabled("edit.delete")).toBe(false);
+
+    await act(async () => engine.selectFromCanvas("heading-1"));
+
+    expect(enabled("edit.delete")).toBe(true);
+  });
+
+  it("runs the canvas's shortcuts pressed inside the canvas iframe", async () => {
+    const frame = document.createElement("iframe");
+    document.body.append(frame);
+    const frameWindow = frame.contentWindow;
+    if (frameWindow === null) throw new Error("no iframe window");
+    await act(async () => engine.showFrame(frameWindow));
+
+    frameWindow.document.body.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "ArrowDown",
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+    await act(async () => engine.showFrame(null));
+    frameWindow.document.body.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "ArrowUp", bubbles: true, cancelable: true }),
+    );
+
+    expect(engine.perform).toHaveBeenCalledExactlyOnceWith("selectNext");
+    frame.remove();
+  });
+
+  it("adds a section where the floating + asks, as one step", async () => {
+    await act(async () => engine.requestAdd({ index: 1 }));
+
+    expect(session.history.entries().map((entry) => entry.label)).toEqual(["Added Section"]);
+  });
+
   it("mounts the engine in the canvas and loads the page", () => {
     const canvas = container.querySelector(".editor__canvas");
 

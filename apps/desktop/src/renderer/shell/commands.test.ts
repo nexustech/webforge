@@ -148,5 +148,48 @@ describe("shortcuts", () => {
       expect(run).not.toHaveBeenCalled();
       expect(other.defaultPrevented).toBe(false);
     });
+
+    it("leaves plain-key shortcuts to a focused field, list or editable text", () => {
+      const registry = createCommandRegistry();
+      const remove_ = vi.fn();
+      const box = vi.fn();
+      registry.register({ id: "delete", label: "Delete", shortcut: "Delete", run: remove_ });
+      registry.register({ id: "box", label: "Box", shortcut: "Mod+K", run: box });
+      remove = installCommandShortcuts(window, registry);
+      const field = document.createElement("input");
+      document.body.append(field);
+      const ctrl = !isMac();
+
+      const list = document.createElement("div");
+      list.setAttribute("role", "listbox");
+      const plain = document.createElement("div");
+      const dialog = document.createElement("div");
+      dialog.setAttribute("role", "dialog");
+      const inDialog = document.createElement("p");
+      dialog.append(inDialog);
+      document.body.append(dialog);
+      // dnd-kit's draggable items are role="button" but take arrows only while dragged.
+      const draggable = document.createElement("div");
+      draggable.setAttribute("role", "button");
+      draggable.setAttribute("aria-roledescription", "draggable");
+      document.body.append(list, plain, draggable);
+
+      field.dispatchEvent(key({ key: "Delete", bubbles: true }));
+      list.dispatchEvent(key({ key: "Delete", bubbles: true }));
+      field.dispatchEvent(key({ key: "k", ctrlKey: ctrl, metaKey: !ctrl, bubbles: true }));
+      document.body.dispatchEvent(key({ key: "Delete", bubbles: true }));
+      // A focused element that is only selectable, such as the canvas's selected element.
+      plain.dispatchEvent(key({ key: "Delete", bubbles: true }));
+      draggable.dispatchEvent(key({ key: "Delete", bubbles: true }));
+      inDialog.dispatchEvent(key({ key: "Delete", bubbles: true }));
+
+      expect(box).toHaveBeenCalledOnce();
+      expect(remove_).toHaveBeenCalledTimes(3);
+      field.remove();
+      list.remove();
+      plain.remove();
+      draggable.remove();
+      dialog.remove();
+    });
   });
 });
