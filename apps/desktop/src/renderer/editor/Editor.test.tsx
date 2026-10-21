@@ -255,7 +255,7 @@ describe("Editor", () => {
       ),
     );
 
-    // Undo History keeps its place, so another panel in its slot (Layers) doesn't take its tab.
+    // Undo History isn't registered again, so it keeps its place among its slot's tabs.
     expect(panels.list()[0]).toEqual(expect.objectContaining({ id: "undoHistory" }));
     expect(panels.list().map((panel) => panel.id)).toContain("edit");
   });

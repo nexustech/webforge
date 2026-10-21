@@ -223,7 +223,7 @@ export function Editor({
   }, [panels, history]);
 
   // The Edit panel replaces Puck's own fields (1.14). Registered on its own, so that changing the
-  // editor level redraws it without moving the other panels' tabs.
+  // editor level redraws it without registering Undo History again.
   useEffect(() => {
     function Edit() {
       return (

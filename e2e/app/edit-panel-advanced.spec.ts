@@ -52,6 +52,8 @@ test("sets an element's anchor and classes on the Advanced tab, in Advanced mode
   await expect(heading).toHaveClass(/(^| )italic$/);
   // The site's CSS is compiled with the new class too.
   await expect(heading).toHaveCSS("font-style", "italic");
+  // In Advanced mode, Layers shares the left column with Undo History, and comes first.
+  await page.getByRole("tab", { name: "Undo History" }).click();
   await expect(steps()).toHaveText([
     "Changed Heading CSS classes",
     "Changed Heading anchor ID",
