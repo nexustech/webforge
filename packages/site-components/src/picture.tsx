@@ -1,4 +1,16 @@
+import type { CSSProperties } from "react";
 import type { ResolvedImage } from "./library.js";
+
+/** The inline style that keeps the focal point in view and, on the canvas, shows the crop. */
+function pictureStyle(image: ResolvedImage): CSSProperties | undefined {
+  const style: CSSProperties = {
+    ...(image.objectPosition === undefined ? {} : { objectPosition: image.objectPosition }),
+    ...(image.aspectRatio === undefined
+      ? {}
+      : { aspectRatio: image.aspectRatio, objectFit: "cover" }),
+  };
+  return Object.keys(style).length === 0 ? undefined : style;
+}
 
 /** Props of {@link Picture}. */
 export type PictureProps = {
@@ -31,9 +43,7 @@ export function Picture({ image, alt, sizes, eager = false, className }: Picture
         loading={eager ? "eager" : "lazy"}
         decoding="async"
         className={className}
-        style={
-          image.objectPosition === undefined ? undefined : { objectPosition: image.objectPosition }
-        }
+        style={pictureStyle(image)}
       />
     </picture>
   );

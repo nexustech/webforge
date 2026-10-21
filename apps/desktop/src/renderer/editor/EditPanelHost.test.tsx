@@ -1,9 +1,11 @@
 // @vitest-environment happy-dom
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { PageDoc, PageId } from "@webforge/model";
+import type { MediaId, PageDoc, PageId } from "@webforge/model";
 import { type ComponentLibrary, siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { registerImageField } from "../media/ImageField.js";
+import { addMedia } from "../media/media-commands.js";
 import { EditPanelHost } from "./EditPanelHost.js";
 import { createEditorSession, currentPage, runHistoryCommand } from "./editor-session.js";
 import { starterSite } from "./starter-site.js";
@@ -356,6 +358,54 @@ describe("EditPanelHost", () => {
 
       expect(questions()).toEqual(["Open on Sunday?!!", "Parking??"]);
       expect(labels()).toEqual(["Edited Question text", "Edited Question text"]);
+    });
+  });
+
+  describe("image field", () => {
+    const shop = {
+      id: "shop" as MediaId,
+      hash: "a".repeat(64),
+      name: "shop",
+      fileName: "shop.jpg",
+      kind: "image",
+      mimeType: "image/jpeg",
+      width: 800,
+      height: 600,
+      alt: "Our shop",
+    } as const;
+
+    it("places a Media image in one step, then types its alt text here as another", async () => {
+      const { session, labels, user } = setup("hero");
+      const unregister = registerImageField({
+        session,
+        media: { choose: async () => ({ status: "canceled" }) },
+        imageUrl: (item) => `test://${item.name}`,
+      });
+      act(() => addMedia(session, [shop]));
+      const hero = () => currentPage(session)?.doc.content[1]?.props;
+
+      try {
+        // The image is content, like the Hero's texts.
+        await user.click(screen.getByRole("tab", { name: "Content" }));
+        await user.click(screen.getByRole("button", { name: "Image Choose an image…" }));
+        await user.click(screen.getByRole("button", { name: "shop.jpg" }));
+        const alt = screen.getByLabelText("Alt text here");
+        await user.type(alt, "Fresh");
+        fireEvent.blur(alt);
+
+        expect(hero()?.image).toEqual({ mediaId: "shop", alt: "Fresh" });
+        expect(labels()).toEqual([
+          "Added image 'shop.jpg'",
+          "Changed Hero image",
+          "Changed Hero image",
+        ]);
+        act(() => {
+          session.history.undo();
+        });
+        expect(hero()?.image).toEqual({ mediaId: "shop" });
+      } finally {
+        unregister();
+      }
     });
   });
 });

@@ -1,5 +1,11 @@
 import type { ComponentConfig } from "@puckeditor/core";
-import { type ComponentLibrary, slotComponent, textValue } from "@webforge/site-components";
+import {
+  type ComponentLibrary,
+  EDITOR_RENDER_CONTEXT,
+  type RenderContext,
+  slotComponent,
+  textValue,
+} from "@webforge/site-components";
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
@@ -71,6 +77,44 @@ describe("toPuckConfig", () => {
     expect(renderToStaticMarkup(<Section content={[]} />)).toBe('<section data-id=""></section>');
     expect(renderToStaticMarkup(<Text id="t" title="Hi" size="large" body="x" />)).toBe(
       "<p>Hi|large</p>",
+    );
+  });
+});
+
+describe("toPuckConfig render context", () => {
+  it("renders with the context as it is at render time: no images until the app gives some", () => {
+    const withImage: ComponentLibrary = {
+      components: {
+        Photo: {
+          label: "Photo",
+          fields: { image: { kind: "media", label: "Image" } },
+          defaults: {},
+          render: ({ context }) => <img alt="" src={context.image("shop")?.src ?? "none"} />,
+        },
+      },
+    };
+    let context: RenderContext = EDITOR_RENDER_CONTEXT;
+    const config = toPuckConfig(
+      withImage,
+      () => 0,
+      () => context,
+    );
+    const Photo = config.components.Photo?.render as (props: Record<string, unknown>) => ReactNode;
+
+    expect(renderToStaticMarkup(<Photo id="p" />)).toContain('<img alt="" src="none"/>');
+    context = {
+      ...EDITOR_RENDER_CONTEXT,
+      image: (id) => ({
+        sources: [],
+        src: `webforge-media://original/${id}`,
+        fallback: { type: "image/jpeg", srcset: "" },
+        width: 1,
+        height: 1,
+        alt: "",
+      }),
+    };
+    expect(renderToStaticMarkup(<Photo id="p" />)).toContain(
+      '<img alt="" src="webforge-media://original/shop"/>',
     );
   });
 });
