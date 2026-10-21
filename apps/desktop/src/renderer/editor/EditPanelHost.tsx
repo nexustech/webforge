@@ -10,6 +10,13 @@ import {
 import type { FieldDef } from "@webforge/site-components";
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import {
+  bindingLabel,
+  boundFieldOf,
+  isBindingField,
+  withBinding,
+  withBindingChoice,
+} from "../site-settings/binding-fields.js";
+import {
   advancedFieldLabel,
   advancedFields,
   isAdvancedField,
@@ -205,7 +212,8 @@ export function EditPanelHost({ session, flush, advanced = false }: EditPanelHos
     }
     const stored = storedOr(name, node.props[name]);
     const responsive = field.responsive === true;
-    return [
+    // A text field that can show a Site Settings value gets a choice of what it shows (1.17).
+    return withBindingChoice(name, field, node.props.bindings, [
       {
         name,
         kind,
@@ -215,7 +223,7 @@ export function EditPanelHost({ session, flush, advanced = false }: EditPanelHos
         ...(responsive && isOverridden(stored, breakpoint) ? { overridden: true } : {}),
         ...choicesOf(field),
       },
-    ];
+    ]);
   });
 
   if (advanced) {
@@ -277,9 +285,26 @@ export function EditPanelHost({ session, flush, advanced = false }: EditPanelHos
     );
   };
 
+  /** What a text field shows: its own text or a Site Settings value; one step (1.17). */
+  const changeBinding = (name: string, value: unknown) => {
+    if (component.fields[name] === undefined) return;
+    endRun();
+    flush();
+    session.edit(
+      "props",
+      bindingLabel(component.label, value),
+      recipe("bindings", (stored) => withBinding(stored, name, value)),
+      { selectionAfter },
+    );
+  };
+
   const change = (name: string, value: unknown) => {
     if (isAdvancedField(name)) {
       changeAdvanced(name, value);
+      return;
+    }
+    if (isBindingField(name)) {
+      changeBinding(boundFieldOf(name), value);
       return;
     }
     const field = component.fields[name];

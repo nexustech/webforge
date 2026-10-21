@@ -435,6 +435,23 @@ describe("EditPanelHost", () => {
     });
   });
 
+  it("shows a Site Settings value in a Heading, and its own text again, one step each (1.17)", async () => {
+    const { labels, heading, user } = setup();
+
+    await user.selectOptions(screen.getByLabelText("Text shows"), "contact.phone");
+    expect(heading()?.bindings).toEqual({ text: "contact.phone" });
+    // Its own text waits, kept, while it shows the Site Settings value.
+    expect(screen.queryByLabelText("Text")).toBeNull();
+    expect(heading()?.text).toBe("Welcome to our business");
+
+    await user.selectOptions(screen.getByLabelText("Text shows"), "");
+    expect(heading()?.bindings).toBeUndefined();
+    expect((screen.getByLabelText("Text") as HTMLInputElement).value).toBe(
+      "Welcome to our business",
+    );
+    expect(labels()).toEqual(["Heading shows Phone number", "Heading shows its own text"]);
+  });
+
   describe("image field", () => {
     const shop = {
       id: "shop" as MediaId,
