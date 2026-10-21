@@ -1,6 +1,8 @@
 import {
   type Breakpoint,
   isResponsiveValue,
+  type LinkValue,
+  linkValueSchema,
   nodeAdvancedSchema,
   type Responsive,
   resolveResponsive,
@@ -52,6 +54,11 @@ export type FieldDef = {
    * overrides the image's own alt text for this placement (G15).
    */
   | { readonly kind: "media"; readonly label: string }
+  /**
+   * Where a link goes (F-ED-18), stored as a `LinkValue`: a page of the site (optionally a section
+   * on it), an e-mail address, a phone number or a web address, optionally in a new tab.
+   */
+  | { readonly kind: "link"; readonly label: string }
   /**
    * A repeating list (F-ED-6), such as testimonials or opening hours, stored as an array of
    * {@link ListItem}s. Items are added, reordered and removed in the Edit panel.
@@ -123,6 +130,11 @@ export type RenderContext = {
   readonly navigation: readonly NavLink[];
   /** The relative URL of a page path (`about`) or the link itself if it is external. */
   readonly link: (target: string) => string;
+  /**
+   * Where a link field's value goes (F-ED-18): a page by its id, as a relative URL (with
+   * `#anchor` for a section), `mailto:`, `tel:` or the web address. `#` when it goes nowhere.
+   */
+  readonly href: (link: LinkValue) => string;
   /** The image for a media id, or `null` if there is none (yet). */
   readonly image: (mediaId: string) => ResolvedImage | null;
 };
@@ -131,6 +143,7 @@ export type RenderContext = {
 export const EDITOR_RENDER_CONTEXT: RenderContext = {
   navigation: [],
   link: () => "#",
+  href: () => "#",
   image: () => null,
 };
 
@@ -174,6 +187,33 @@ export function textValue(value: unknown): ReactNode {
 /** Narrows a plain-text value (e.g. a link target or alt text) to a string. */
 export function stringValue(value: unknown): string {
   return typeof value === "string" ? value : "";
+}
+
+/** The attributes of an `<a>` for a link field's value. */
+export type LinkAttributes = {
+  readonly href: string;
+  readonly target?: "_blank";
+  readonly rel?: "noopener";
+};
+
+/**
+ * The `href` (and `target`/`rel` for a new tab) of a link field's value: a `LinkValue`, or a page
+ * path or web address typed as text before link fields (older sites). No value links to `#`.
+ */
+export function linkAttributes(value: unknown, context: RenderContext): LinkAttributes {
+  const link = linkValueSchema.safeParse(value);
+  if (link.success) {
+    const href = context.href(link.data);
+    return link.data.newTab === true ? { href, target: "_blank", rel: "noopener" } : { href };
+  }
+  const text = stringValue(value);
+  return { href: text === "" ? "#" : context.link(text) };
+}
+
+/** A link field's value, if it holds one. */
+export function linkValue(value: unknown): LinkValue | undefined {
+  const link = linkValueSchema.safeParse(value);
+  return link.success ? link.data : undefined;
 }
 
 /** Narrows a select field value to one of `options`, falling back to the first. */

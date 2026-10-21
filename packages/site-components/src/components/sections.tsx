@@ -2,9 +2,9 @@ import { t } from "@webforge/i18n";
 import { imageValueSchema } from "@webforge/model";
 import {
   type ComponentDef,
+  linkAttributes,
   optionValue,
   slotComponent,
-  stringValue,
   textValue,
 } from "../library.js";
 import { Picture } from "../picture.js";
@@ -18,7 +18,7 @@ export const hero: ComponentDef = {
     title: { kind: "text", label: t("field.title"), inline: true },
     text: { kind: "text", label: t("field.text"), inline: true },
     buttonLabel: { kind: "text", label: t("field.buttonLabel") },
-    buttonLink: { kind: "text", label: t("field.buttonLink") },
+    buttonLink: { kind: "link", label: t("field.buttonLink") },
     alignment: {
       kind: "select",
       label: t("field.alignment"),
@@ -30,7 +30,6 @@ export const hero: ComponentDef = {
     title: t("starter.heroTitle"),
     text: t("starter.heroText"),
     buttonLabel: t("starter.heroButton"),
-    buttonLink: "",
     alignment: "centre",
   },
   render: ({ values, context }) => {
@@ -38,7 +37,7 @@ export const hero: ComponentDef = {
     const placed = imageValueSchema.safeParse(values.image);
     const image = placed.success ? context.image(placed.data.mediaId) : null;
     const buttonLabel = textValue(values.buttonLabel);
-    const buttonLink = stringValue(values.buttonLink);
+    const buttonLink = linkAttributes(values.buttonLink, context);
     return (
       <section className="site-hero hero bg-base-200 px-4 py-16">
         <div
@@ -57,7 +56,7 @@ export const hero: ComponentDef = {
             <h1 className="text-4xl font-bold md:text-5xl">{textValue(values.title)}</h1>
             <p className="py-6 text-lg">{textValue(values.text)}</p>
             {buttonLabel !== null && buttonLabel !== "" && (
-              <a className="btn btn-primary" href={context.link(buttonLink)}>
+              <a className="btn btn-primary" {...buttonLink}>
                 {buttonLabel}
               </a>
             )}
