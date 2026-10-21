@@ -13,6 +13,7 @@ import { installCommandShortcuts } from "../shell/commands.js";
 import { usePanelRegistry } from "../shell/panel-context.js";
 import { addSection } from "./add-section.js";
 import { registerCanvasCommands } from "./canvas-commands.js";
+import { EditPanelHost } from "./EditPanelHost.js";
 import {
   connectEngine,
   currentPage,
@@ -179,13 +180,27 @@ export function Editor({
       );
       return <UndoHistoryPanel history={{ jumpTo }} state={historyState} />;
     }
-    return panels.register({
+    const removeUndoHistory = panels.register({
       id: "undoHistory",
       slot: "left.bottom",
       title: t("editor.undoHistory"),
       component: UndoHistory,
     });
-  }, [panels, history]);
+    // The Edit panel replaces Puck's own fields (1.14).
+    function Edit() {
+      return <EditPanelHost session={session} flush={() => connectionRef.current?.flush()} />;
+    }
+    const removeEdit = panels.register({
+      id: "edit",
+      slot: "right.top",
+      title: t("editPanel.title"),
+      component: Edit,
+    });
+    return () => {
+      removeUndoHistory();
+      removeEdit();
+    };
+  }, [panels, history, session]);
 
   return <section className="editor__canvas" aria-label={t("editor.canvas")} ref={canvasRef} />;
 }

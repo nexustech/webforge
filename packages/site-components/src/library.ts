@@ -1,7 +1,11 @@
 import { type ComponentType, isValidElement, type ReactNode } from "react";
 
-/** One editable property of a component, described independently of the canvas engine. */
-export type FieldDef =
+/**
+ * One editable property of a component, described independently of the canvas engine. `group`
+ * picks the Edit panel tab (1.14): Content for what it says, Style for how it looks. When it is
+ * left out, choices (`select`) are Style and everything else is Content.
+ */
+export type FieldDef = { readonly group?: "content" | "style" } & (
   | {
       readonly kind: "text";
       readonly label: string;
@@ -21,7 +25,8 @@ export type FieldDef =
       readonly allow?: readonly string[];
     }
   /** An image from the site's media, stored as its media id. */
-  | { readonly kind: "media"; readonly label: string };
+  | { readonly kind: "media"; readonly label: string }
+);
 
 /** A link in the site's navigation. */
 export type NavLink = {
