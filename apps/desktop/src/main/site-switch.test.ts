@@ -1,7 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import { createSiteSwitch } from "./site-switch.js";
 
-function setUp(path: string | undefined, capture: () => Promise<Uint8Array | undefined>) {
+function setUp(
+  path: string | undefined,
+  capture: () => Promise<Uint8Array | undefined>,
+  captureTimeoutMs?: number,
+) {
   const order: string[] = [];
   const requestFlush = vi.fn(async () => {
     order.push("flush");
@@ -14,6 +18,7 @@ function setUp(path: string | undefined, capture: () => Promise<Uint8Array | und
     requestFlush,
     capture,
     recent: { saveThumbnail },
+    ...(captureTimeoutMs === undefined ? {} : { captureTimeoutMs }),
   });
   return { siteSwitch, requestFlush, saveThumbnail, order };
 }
@@ -48,5 +53,12 @@ describe("createSiteSwitch", () => {
       throw new Error("window gone");
     });
     await expect(failing.siteSwitch.leaveSite()).resolves.toBeUndefined();
+  });
+
+  it("goes on without a thumbnail when a hung renderer never answers the capture (#121)", async () => {
+    const hung = setUp("/sites/a.wforge", () => new Promise(() => undefined), 10);
+
+    await expect(hung.siteSwitch.leaveSite()).resolves.toBeUndefined();
+    expect(hung.saveThumbnail).not.toHaveBeenCalled();
   });
 });
