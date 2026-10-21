@@ -62,7 +62,7 @@ test("says how far a change reaches, edits the Footer in the Edit panel, and hid
     .click({ position: { x: 4, y: 4 } });
   await expect(banner).toHaveText("Editing shared Footer: changes apply to all 2 pages");
   const panel = page.getByRole("region", { name: "Right panels" });
-  await panel.getByLabel("Text").fill("See you soon");
+  await panel.getByRole("textbox", { name: "Text" }).fill("See you soon");
   await expect(footer()).toHaveText("See you soon");
   await expect(steps().first()).toHaveText("Edited shared Footer text");
 
