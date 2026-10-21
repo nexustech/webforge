@@ -2,12 +2,12 @@ import type { Recipe } from "@webforge/history";
 import { t } from "@webforge/i18n";
 import {
   type MediaId,
-  type MenuItem,
   newId,
   type PageEntry,
   type PageId,
   type SiteDoc,
   slugify,
+  syncMenuWithPages,
   uniqueSlug,
 } from "@webforge/model";
 import type { EditKind, EditorSelection, EditorSession } from "../editor/editor-session.js";
@@ -82,38 +82,6 @@ export function fileNameInFolder(site: SiteDoc, pageId: PageId, name: string): s
   return `${folder}/${slug}.html`;
 }
 
-/**
- * Keeps the menu's page items in step with the pages (S6): while the menu follows the pages it
- * lists every page in order (hiding is a page setting); once edited, new pages go at the end. Items
- * of deleted pages go either way.
- */
-function syncMenu(draft: SiteDoc, added?: PageId): void {
-  const { menu } = draft;
-  if (menu.follows === "pages") {
-    const existing = new Map<PageId, MenuItem>(
-      menu.items.flatMap((item) => (item.kind === "page" ? [[item.pageId, item] as const] : [])),
-    );
-    menu.items = draft.pageOrder
-      .filter((id) => draft.pages[id]?.kind === "page")
-      .map(
-        (pageId): MenuItem =>
-          existing.get(pageId) ?? { id: newId("menuItem"), kind: "page", pageId, hidden: false },
-      );
-    return;
-  }
-  const exists = (item: { kind: string; pageId?: PageId }) =>
-    item.kind !== "page" || (item.pageId !== undefined && draft.pages[item.pageId] !== undefined);
-  menu.items = menu.items.filter(exists);
-  for (const item of menu.items) {
-    if (item.kind === "group") {
-      item.children = item.children.filter(exists);
-    }
-  }
-  if (added !== undefined) {
-    menu.items.push({ id: newId("menuItem"), kind: "page", pageId: added, hidden: false });
-  }
-}
-
 /** Runs `recipe` as one undo step, then shows `pageId` (the step remembers it for redo). */
 function editShowing(
   session: PagesSession,
@@ -149,7 +117,7 @@ export function addPage(session: PagesSession, name: string): PageId | null {
     const last = draft.pageOrder.at(-1);
     const beforeNotFound = last !== undefined && draft.pages[last]?.kind === "not-found";
     draft.pageOrder.splice(beforeNotFound ? -1 : draft.pageOrder.length, 0, id);
-    syncMenu(draft, id);
+    draft.menu = syncMenuWithPages(draft, id);
   });
   return id;
 }
@@ -218,7 +186,7 @@ export function duplicatePage(session: PagesSession, pageId: PageId): PageId | n
       doc: structuredClone(page.doc),
     };
     draft.pageOrder.splice(draft.pageOrder.indexOf(pageId) + 1, 0, id);
-    syncMenu(draft, id);
+    draft.menu = syncMenuWithPages(draft, id);
   });
   return id;
 }
@@ -246,7 +214,7 @@ export function movePage(session: PagesSession, pageId: PageId, direction: -1 | 
     const to = draft.pageOrder.indexOf(other);
     draft.pageOrder[from] = other;
     draft.pageOrder[to] = pageId;
-    syncMenu(draft);
+    draft.menu = syncMenuWithPages(draft);
   });
 }
 
@@ -368,7 +336,7 @@ export function deletePage(session: PagesSession, pageId: PageId): void {
     (draft) => {
       delete draft.pages[pageId];
       draft.pageOrder.splice(draft.pageOrder.indexOf(pageId), 1);
-      syncMenu(draft);
+      draft.menu = syncMenuWithPages(draft);
     },
   );
 }
