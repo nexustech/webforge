@@ -120,7 +120,11 @@ function SiteSettingsForm({
       </DialogHeader>
 
       <Tabs value={section} onValueChange={(value) => setSection(value as Section)}>
-        <TabsList aria-label={t("site.settings.sections")} className="flex-wrap">
+        <TabsList
+          aria-label={t("site.settings.sections")}
+          // Seven sections wrap onto a second row in a narrow window; each row keeps the tabs' height.
+          className="h-auto flex-wrap [&>*]:h-8"
+        >
           {SECTIONS.map((name) => (
             <TabsTrigger key={name} value={name}>
               {t(`site.settings.section.${name}`)}
@@ -692,7 +696,8 @@ function TimeInput({
         {label}
         <input
           type="time"
-          className={cn(fieldControlClass, "w-28")}
+          // Wide enough for a 12-hour clock ("07:00 AM") as well as a 24-hour one.
+          className={cn(fieldControlClass, "w-32")}
           value={value}
           {...errorProps(field, errors)}
           onChange={(event) => onChange(event.currentTarget.value)}
