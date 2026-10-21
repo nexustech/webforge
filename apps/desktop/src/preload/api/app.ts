@@ -5,6 +5,7 @@ import type { Call, Subscribe } from "./call.js";
 export const appApi = (call: Call, subscribe: Subscribe): AppApi => ({
   getInfo: () => call("getAppInfo"),
   openCrashReports: () => call("openCrashReports"),
+  setSpellCheckLanguage: (language) => call("setSpellCheckLanguage", language),
   onFlushRequest: (save) =>
     subscribe(appEvents.flushRequest.channel, (...args) => {
       const parsed = appEvents.flushRequest.args.safeParse(args);

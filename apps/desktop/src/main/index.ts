@@ -7,6 +7,7 @@ import {
   BrowserWindow,
   dialog,
   ipcMain,
+  Menu,
   type OpenDialogOptions,
   protocol,
   type Rectangle,
@@ -49,6 +50,11 @@ import {
   isAppUrl,
 } from "./security.js";
 import { createSiteSwitch } from "./site-switch.js";
+import {
+  installContextMenu,
+  registerSpellCheckHandlers,
+  spellCheckAvailable,
+} from "./spellcheck.js";
 import {
   MIN_WINDOW_SIZE,
   mainWindowPlacement,
@@ -317,8 +323,13 @@ function createMainWindow(preferences: PreferencesStore): void {
     ...titleBarOptions(process.platform, theme),
     backgroundColor: windowBackground(theme),
     show: false,
-    webPreferences: createSecureWebPreferences(preloadScript),
+    webPreferences: createSecureWebPreferences(
+      preloadScript,
+      spellCheckAvailable(process.platform),
+    ),
   });
+  // Spelling suggestions, Add to Dictionary, Cut, Copy and Paste on right-clicks (F-ED-19).
+  installContextMenu(window, (template) => Menu.buildFromTemplate(template));
   // Maximised the first time, so the canvas gets the room (ADR 0008). Maximising shows the window
   // at once, in the theme's background colour; the editor then lays out at its final size, instead
   // of at 1280 × 800 and again when the window grows.
@@ -421,6 +432,12 @@ async function start(): Promise<void> {
     },
   );
   registerCanvasHandlers(ipcMain, (senderUrl) => isAppUrl(senderUrl, appUrl), compileCanvasCss);
+  registerSpellCheckHandlers(
+    ipcMain,
+    (senderUrl) => isAppUrl(senderUrl, appUrl),
+    session.defaultSession,
+    process.platform,
+  );
   registerMediaHandlers(
     ipcMain,
     (senderUrl) => isAppUrl(senderUrl, appUrl),
