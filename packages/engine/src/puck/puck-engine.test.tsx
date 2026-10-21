@@ -680,6 +680,28 @@ describe("createPuckEngine with a shared Header and Footer (F-ED-7)", () => {
     expect(requests).toEqual([{ index: 0 }, { index: 2 }, { index: 2 }]);
   });
 
+  it("shows a Site Settings value bound in the shared Header, and keeps the binding (1.17)", async () => {
+    const edits: EngineEdit[] = [];
+    engine.onUserEdit((edit) => edits.push(edit));
+    const bound = {
+      type: "Bound",
+      props: { id: "hb", text: "Own", bindings: { text: "contact.phone" } },
+    };
+    await act(async () => {
+      engine.setSettings((key) => (key === "contact.phone" ? "0123" : undefined));
+      engine.loadPage(page, { ...layout, header: [bound] });
+    });
+    await settle();
+
+    expect(headings()).toEqual(["0123", "First", "Second", "Thanks"]);
+
+    // A page edit leaves the shared Header and its binding alone. Bound text isn't edited in
+    // place, so the first inline text is the page's.
+    await typeInto(0, "Changed");
+    expect(edits[0]?.shared).toBeUndefined();
+    expect(headings()).toEqual(["0123", "Changed", "Second", "Thanks"]);
+  });
+
   it("offers no move, duplicate or delete on the Header or Footer itself", async () => {
     await act(async () => engine.select("f"));
     await settle();
