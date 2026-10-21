@@ -60,6 +60,16 @@ describe("findBrokenLinks (F-ED-18)", () => {
     ).toEqual([]);
   });
 
+  it("keeps a link to a section valid when the section is renamed in Layers", () => {
+    const renamed = site([button("b", { kind: "page", pageId: ABOUT, anchor: "opening-times" })]);
+    const section = renamed.pages[ABOUT]?.doc.content[0];
+    if (section === undefined) throw new Error("no section");
+    // Renaming sets the layer's name; the anchor links use stays as it is.
+    section.props.layerName = "Hours";
+
+    expect(findBrokenLinks(renamed)).toEqual([]);
+  });
+
   it("flags links to a deleted page or a section that's gone, naming their element", () => {
     const home = site([
       button("gone", { kind: "page", pageId: "page-gone" }),
