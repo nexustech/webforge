@@ -66,3 +66,42 @@ test("zooms the canvas and shows the size and scale, back to Fit when the view c
   await expect(zoom).toHaveValue("fit");
   await expect(steps()).toHaveText(["Opened page"]);
 });
+
+test("keeps a zoom above Fit, though the page then overflows the canvas (#134)", async () => {
+  // A 1280 × 800 window, so Fit is well under 150% (on a large screen it might not be).
+  await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.unmaximize());
+  await app.evaluate(({ BrowserWindow }) =>
+    BrowserWindow.getAllWindows()[0]?.setBounds({ x: 40, y: 40, width: 1280, height: 800 }),
+  );
+  const zoom = toolbar().getByRole("combobox", { name: "Zoom" });
+  const readout = toolbar().getByText(/^1280 × \d+ @ \d+%$/);
+  // Let the window finish resizing (a resize does make the canvas fit the page again): the
+  // readout shows the same small Fit four times in a row.
+  const seen: string[] = [];
+  await expect
+    .poll(
+      async () => {
+        seen.push((await readout.textContent()) ?? "");
+        const last = seen.slice(-4);
+        return last.length === 4 && last.every((text) => text === last[0]) ? last[0] : "";
+      },
+      { intervals: [250], timeout: 10_000 },
+    )
+    .toMatch(/@ [1-9]?\d%$/);
+
+  await zoom.selectOption("150%");
+
+  await expect(toolbar().getByText(/^1280 × \d+ @ 150%$/)).toBeVisible();
+  // The scrollbars the overflow adds don't make the canvas fit the page again: the zoom stays at
+  // 150% for five samples over a second.
+  const zooms: string[] = [];
+  await expect
+    .poll(
+      async () => {
+        zooms.push(await zoom.inputValue());
+        return zooms.slice(-5);
+      },
+      { intervals: [250], timeout: 5_000 },
+    )
+    .toEqual(["1.5", "1.5", "1.5", "1.5", "1.5"]);
+});

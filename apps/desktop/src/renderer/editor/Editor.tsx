@@ -9,6 +9,7 @@ import {
 import { t } from "@webforge/i18n";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { Preferences } from "../../shared/ipc-contract.js";
+import { registerLinkField } from "../links/LinkField.js";
 import { connectCanvasImages } from "../media/canvas-images.js";
 import { registerImageField } from "../media/ImageField.js";
 import { registerMediaPanel } from "../media/register-media-panel.js";
@@ -246,6 +247,7 @@ export function Editor({
 
   useEffect(() => registerMediaPanel(panels, session), [panels, session]);
   useEffect(() => registerImageField({ session }), [session]);
+  useEffect(() => registerLinkField({ session }), [session]);
 
   return (
     <div className="editor">

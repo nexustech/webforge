@@ -142,8 +142,9 @@ describe("zoom and size readout", () => {
   });
 });
 
-describe("a zoom the canvas wasn't ready for", () => {
-  it("is asked for again, then given up for Fit", () => {
+describe("a zoom not shown yet", () => {
+  function setUp() {
+    let time = 0;
     const view = createCanvasView();
     view.setState({ zoom: 0.5 });
     let report: ((size: CanvasSize) => void) | undefined;
@@ -154,11 +155,38 @@ describe("a zoom the canvas wasn't ready for", () => {
         return () => undefined;
       },
     };
+    connectCanvasView(engine, view, () => time);
+    const fitted = { width: 1280, height: 700, zoom: 0.58 };
+    return {
+      view,
+      engine,
+      report: (size = fitted) => report?.(size),
+      wait: (ms: number) => {
+        time += ms;
+      },
+    };
+  }
 
-    connectCanvasView(engine, view);
-    report?.({ width: 1280, height: 700, zoom: 0.58 });
+  it("is asked for again by every report from before it took effect (#134)", () => {
+    const { view, engine, report, wait } = setUp();
+
+    report();
+    wait(100);
+    report();
+    report({ width: 1280, height: 400, zoom: 0.5 });
+    wait(2_000);
+    report({ width: 1280, height: 420, zoom: 0.5 });
+
+    expect(engine.setZoom.mock.calls).toEqual([[0.5], [0.5], [0.5]]);
     expect(view.getState().zoom).toBe(0.5);
-    report?.({ width: 1280, height: 700, zoom: 0.58 });
+  });
+
+  it("is given up for Fit when the canvas still doesn't show it after a second", () => {
+    const { view, engine, report, wait } = setUp();
+
+    report();
+    wait(1_000);
+    report();
 
     expect(engine.setZoom.mock.calls).toEqual([[0.5], [0.5], ["fit"]]);
     expect(view.getState().zoom).toBe("fit");

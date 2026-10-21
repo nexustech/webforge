@@ -32,21 +32,28 @@ type ZoomableCanvas = Pick<CanvasEngine, "setZoom" | "onCanvasSize">;
 const sameZoom = (a: number, b: number) => Math.abs(a - b) < 0.005;
 
 /**
+ * How long a chosen zoom may take to show. Reports until then are from before it took effect (or
+ * the engine wasn't ready and dropped it), so the zoom is asked for again; after that, a report
+ * without it means the canvas fits the page instead.
+ */
+const ZOOM_SETTLE_MS = 1_000;
+
+/**
  * Keeps a canvas engine and the canvas view in step: the chosen zoom goes to the engine, and the
  * size and scale it shows come back for the readout. The engine's reports are the truth: the
  * canvas fits the page again whenever its frame or the device view changes, so a chosen zoom that
- * the canvas no longer shows becomes Fit. A report sent before a chosen zoom took effect is only
- * shown, not taken for a re-fit, and the zoom is asked for once more, since an engine that wasn't
- * ready yet drops it. Returns a function that disconnects them.
+ * the canvas no longer shows becomes Fit (see {@link ZOOM_SETTLE_MS} for one not shown yet).
+ * Returns a function that disconnects them.
  */
-export function connectCanvasView(engine: ZoomableCanvas, view: CanvasView): () => void {
-  /** A zoom asked of the engine that no report has shown yet. */
-  let requested: number | null = null;
-  /** Whether `requested` was asked for again after a report that didn't show it. */
-  let askedAgain = false;
+export function connectCanvasView(
+  engine: ZoomableCanvas,
+  view: CanvasView,
+  now: () => number = () => performance.now(),
+): () => void {
+  /** A zoom asked of the engine that no report has shown yet, and when it was asked. */
+  let requested: { readonly zoom: number; readonly at: number } | null = null;
   const send = (zoom: CanvasZoom) => {
-    requested = zoom === "fit" ? null : zoom;
-    askedAgain = false;
+    requested = zoom === "fit" ? null : { zoom, at: now() };
     engine.setZoom(zoom);
   };
   send(view.getState().zoom);
@@ -59,18 +66,17 @@ export function connectCanvasView(engine: ZoomableCanvas, view: CanvasView): () 
   const stopSize = engine.onCanvasSize((size) => {
     const { zoom } = view.getState();
     if (requested !== null) {
-      if (sameZoom(size.zoom, requested)) {
+      if (sameZoom(size.zoom, requested.zoom)) {
         requested = null;
         view.setState({ size });
         return;
       }
-      if (!askedAgain) {
-        askedAgain = true;
-        engine.setZoom(requested);
+      if (now() - requested.at < ZOOM_SETTLE_MS) {
+        engine.setZoom(requested.zoom);
         view.setState({ size });
         return;
       }
-      // Asked twice and still not shown: the canvas fits the page instead.
+      // Still not shown after a while: the canvas fits the page instead.
       requested = null;
     }
     const refitted = zoom !== "fit" && !sameZoom(size.zoom, zoom);

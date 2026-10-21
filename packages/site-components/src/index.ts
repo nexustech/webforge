@@ -8,6 +8,7 @@ export type {
   FieldDef,
   FieldOption,
   ImageSource,
+  LinkAttributes,
   ListItem,
   ListItemFieldDef,
   NavLink,
@@ -16,6 +17,8 @@ export type {
 } from "./library.js";
 export {
   EDITOR_RENDER_CONTEXT,
+  linkAttributes,
+  linkValue,
   optionValue,
   responsiveClasses,
   slotComponent,
