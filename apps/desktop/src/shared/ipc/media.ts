@@ -20,7 +20,7 @@ const droppedFileSchema = z.strictObject({
 });
 
 /** A file dropped on Webforge. */
-export type DroppedFile = z.infer<typeof droppedFileSchema>;
+type DroppedFile = z.infer<typeof droppedFileSchema>;
 
 /** Why a file wasn't imported; the others in the same import still are. */
 const rejectedFileSchema = z.strictObject({
