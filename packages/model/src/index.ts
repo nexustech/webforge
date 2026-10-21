@@ -1,3 +1,12 @@
+export type { BindableSetting, Bindings } from "./bindings.js";
+export {
+  BINDABLE_SETTINGS,
+  bindableSettingSchema,
+  bindingOf,
+  bindingsSchema,
+  settingValue,
+  settingValues,
+} from "./bindings.js";
 export type { LayoutDoc, NodeAdvanced, NodeDoc, PageDoc, SiteCode, Theme } from "./documents.js";
 export {
   attributeNameSchema,

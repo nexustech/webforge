@@ -1,3 +1,4 @@
+import { settingValues } from "./bindings.js";
 import { isImageMeta } from "./media.js";
 import { pagePath, type SiteDoc } from "./site-doc.js";
 import type { MediaItem, SitePage, SiteSnapshot } from "./site-snapshot.js";
@@ -59,5 +60,6 @@ export function siteToSnapshot(
     layout: site.layout,
     pages,
     media,
+    settings: settingValues(site.settings),
   };
 }

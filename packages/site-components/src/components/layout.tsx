@@ -1,5 +1,5 @@
 import { t } from "@webforge/i18n";
-import { type ComponentDef, textValue } from "../library.js";
+import { boundText, type ComponentDef } from "../library.js";
 
 /** Three-line menu icon, drawn inline so the site needs no icon font (C8). */
 function MenuIcon() {
@@ -27,7 +27,12 @@ function MenuIcon() {
 export const header: ComponentDef = {
   label: t("layout.header"),
   fields: {
-    siteName: { kind: "text", label: t("field.siteName"), inline: true },
+    siteName: {
+      kind: "text",
+      label: t("field.siteName"),
+      inline: true,
+      bindable: ["general.name", "contact.businessName"],
+    },
   },
   defaults: { siteName: t("site.untitledName") },
   behaviours: ["menu"],
@@ -37,7 +42,7 @@ export const header: ComponentDef = {
       <header className="site-header navbar relative bg-base-100 px-4 shadow-sm">
         <div className="flex-1">
           <a className="text-xl font-bold" href={context.link("index")}>
-            {textValue(values.siteName)}
+            {boundText(values, "siteName", context)}
           </a>
         </div>
         <nav aria-label={t("siteText.navigation")}>
@@ -73,12 +78,23 @@ export const header: ComponentDef = {
 export const footer: ComponentDef = {
   label: t("layout.footer"),
   fields: {
-    text: { kind: "text", label: t("field.text"), inline: true },
+    text: {
+      kind: "text",
+      label: t("field.text"),
+      inline: true,
+      bindable: [
+        "contact.businessName",
+        "contact.address",
+        "contact.phone",
+        "contact.email",
+        "contact.openingHoursNote",
+      ],
+    },
   },
   defaults: { text: t("starter.footer") },
-  render: ({ values }) => (
+  render: ({ values, context }) => (
     <footer className="site-footer footer footer-center bg-base-200 p-8 text-base-content">
-      <p>{textValue(values.text)}</p>
+      <p>{boundText(values, "text", context)}</p>
     </footer>
   ),
 };

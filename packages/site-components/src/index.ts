@@ -15,6 +15,7 @@ export type {
   ResolvedImage,
 } from "./library.js";
 export {
+  boundText,
   EDITOR_RENDER_CONTEXT,
   optionValue,
   responsiveClasses,

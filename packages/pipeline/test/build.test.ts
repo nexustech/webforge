@@ -166,6 +166,34 @@ function siteWith(content: NodeDoc[], overrides: Partial<SiteSnapshot> = {}): Si
   };
 }
 
+describe("buildSite: Site Settings values (1.17)", () => {
+  it("shows bound values from Site Settings and leaves empty ones out", async () => {
+    const site = siteWith([], {
+      layout: {
+        header: [
+          {
+            type: "Header",
+            props: { id: "h", siteName: "Typed", bindings: { siteName: "general.name" } },
+          },
+        ],
+        footer: [
+          {
+            type: "Footer",
+            props: { id: "f", text: "Typed", bindings: { text: "contact.phone" } },
+          },
+        ],
+      },
+      settings: { "general.name": "Rosa's Bakery" },
+    });
+
+    const built = await buildSite(site, siteLibrary, resources);
+    const index = new TextDecoder().decode(built.files.get("index.html"));
+
+    expect(index).toContain(">Rosa&#x27;s Bakery</a>");
+    expect(index).not.toContain("Typed");
+  });
+});
+
 describe("buildSite: checks (X5)", () => {
   it("warns about links to pages that do not exist and keeps building", async () => {
     const site = siteWith([
