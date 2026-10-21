@@ -76,6 +76,39 @@ describe("Editor", () => {
       }),
     );
 
+  it("says how many pages a change reaches while a shared element is selected (F-ED-7)", async () => {
+    const banner = () => container.querySelector('[role="status"]')?.textContent ?? null;
+    const pages = Object.keys(session.history.document.getState().pages).length;
+    expect(banner()).toBeNull();
+
+    await act(async () => session.ui.setState({ nodeId: "footer" }));
+    expect(banner()).toBe(`Editing shared Footer: changes apply to all ${pages} pages`);
+
+    // Hidden on the page shown: not on the canvas, so nothing selected there to edit.
+    await act(async () =>
+      session.edit("props", "Changed page settings", (draft) => {
+        const home = draft.pages[draft.homePageId];
+        if (home !== undefined) home.settings.hideFooter = true;
+      }),
+    );
+    expect(banner()).toBeNull();
+
+    await act(async () => session.ui.setState({ nodeId: "header" }));
+    expect(banner()).toBe(`Editing shared Header: changes apply to all ${pages} pages`);
+    const notFound = Object.values(session.history.document.getState().pages).find(
+      (page) => page.kind === "not-found",
+    );
+    await act(
+      async () => notFound && session.ui.setState({ pageId: notFound.id, nodeId: "footer" }),
+    );
+    // The new site's two pages: Home hides the Footer, so only this one shows it.
+    expect(pages).toBe(2);
+    expect(banner()).toBe("Editing shared Footer: changes apply to 1 page");
+
+    await act(async () => session.ui.setState({ nodeId: "heading-1" }));
+    expect(banner()).toBeNull();
+  });
+
   it("lists Undo and Redo first in the Edit menu, then the canvas's actions", () => {
     const edit = registry
       .list()

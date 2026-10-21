@@ -29,6 +29,8 @@ import {
   type EngineConnection,
   runHistoryCommand,
 } from "./editor-session.js";
+import { SharedRegionBanner } from "./SharedRegionBanner.js";
+import { shownLayout } from "./shared-layout.js";
 import { type CompileCanvasCss, connectSiteCss } from "./site-css.js";
 import { UndoHistoryPanel } from "./UndoHistoryPanel.js";
 import { installUndoToasts } from "./undo-toasts.js";
@@ -131,7 +133,7 @@ export function Editor({
     }
     const page = currentPage(session);
     if (page !== undefined) {
-      engine.loadPage(page.doc, site.layout);
+      engine.loadPage(page.doc, shownLayout(site, page.id));
     }
     const connection = connectEngine(engine, session);
     connectionRef.current = connection;
@@ -260,5 +262,10 @@ export function Editor({
   useEffect(() => registerImageField({ session }), [session]);
   useEffect(() => registerLinkField({ session }), [session]);
 
-  return <section className="editor__canvas" aria-label={t("editor.canvas")} ref={canvasRef} />;
+  return (
+    <div className="editor">
+      <SharedRegionBanner session={session} />
+      <section className="editor__canvas" aria-label={t("editor.canvas")} ref={canvasRef} />
+    </div>
+  );
 }

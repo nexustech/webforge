@@ -23,6 +23,8 @@ export type Unsubscribe = () => void;
 /** A document change from outside the engine (undo, redo, jump) to show on the canvas. */
 export type DocChange = {
   readonly page: PageDoc;
+  /** The shared Header and Footer shown around it (F-ED-7); left as they are if left out. */
+  readonly layout?: LayoutDoc;
 };
 
 /** What kind of edit the user made on the canvas; drives the undo label (D2). */
@@ -60,8 +62,15 @@ export type EngineEdit = {
   readonly componentType: string | null;
   /** The changed field for `text` and `props` edits. */
   readonly field: string | null;
-  /** The whole page after the edit. */
+  /** The whole page after the edit: its own content, without the shared Header and Footer. */
   readonly page: PageDoc;
+  /**
+   * True if the edit changed the shared Header or Footer (F-ED-7): it belongs in the site's layout,
+   * which every page shows, not in the page. `layout` then holds the layout after the edit.
+   */
+  readonly shared?: boolean;
+  /** The shared Header and Footer after a `shared` edit. */
+  readonly layout?: LayoutDoc;
   /** Set when the edit changed nothing but one field of one element to a plain value. */
   readonly patch?: EnginePatch;
   /** The selection after the edit. */

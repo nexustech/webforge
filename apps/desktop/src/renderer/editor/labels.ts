@@ -9,11 +9,20 @@ import { findNode } from "./nodes.js";
  * its component's display name ("Heading"), as the glossary has it (D2).
  */
 function itemName(edit: EngineEdit, library: ComponentLibrary, pages: readonly PageDoc[]): string {
+  const name = ownName(edit, library, pages);
+  // An element of the shared Header or Footer: "Edited shared Footer text" (F-ED-7).
+  return edit.shared === true ? t("history.sharedItem", { item: name }) : name;
+}
+
+function ownName(edit: EngineEdit, library: ComponentLibrary, pages: readonly PageDoc[]): string {
   const id = edit.nodeId;
+  const layout = edit.layout === undefined ? [] : [...edit.layout.header, ...edit.layout.footer];
   const node =
     id === null
       ? undefined
-      : pages.map((page) => findNode(page.content, (n) => n.props.id === id)).find(Boolean);
+      : [...pages.map((page) => page.content), layout]
+          .map((nodes) => findNode(nodes, (n) => n.props.id === id))
+          .find(Boolean);
   const layerName = node?.props.layerName;
   if (typeof layerName === "string" && layerName.trim() !== "") {
     return t("history.namedItem", { name: layerName.trim() });

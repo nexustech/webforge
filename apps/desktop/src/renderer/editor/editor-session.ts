@@ -19,6 +19,7 @@ import type { ComponentLibrary } from "@webforge/site-components";
 import { createStore, type StoreApi } from "zustand/vanilla";
 import { applyPatch } from "./apply-patch.js";
 import { labelFor } from "./labels.js";
+import { shownLayout } from "./shared-layout.js";
 
 /**
  * What undo shows again (U3): the page, the selected element and the device view. It is also the
@@ -236,6 +237,15 @@ export function connectEngine(engine: CanvasEngine, session: EditorSession): Eng
         edit.kind,
         labelFor(edit, library, page),
         (draft) => {
+          if (edit.shared === true && edit.layout !== undefined) {
+            // The shared Header or Footer (F-ED-7): the site's layout, which every page shows. Not a
+            // region this page hides: the canvas showed none, so the edit can't be to it.
+            const shown = shownLayout(history.document.getState(), pageId);
+            for (const region of ["header", "footer"] as const) {
+              if (shown[region].length > 0) syncDraft(draft.layout[region], edit.layout[region]);
+            }
+            return;
+          }
           const target = draft.pages[pageId];
           // A one-field edit is written directly; anything else is compared with the whole page.
           if (
@@ -273,7 +283,8 @@ export function connectEngine(engine: CanvasEngine, session: EditorSession): Eng
     history.document.subscribe((site) => {
       const page = pageDoc(site, ui.getState().pageId);
       if (page !== undefined) {
-        engine.applyChange({ page });
+        // With the shared Header and Footer: undoing an edit of one shows on every page (F-ED-7).
+        engine.applyChange({ page, layout: shownLayout(site, ui.getState().pageId) });
       }
     }),
     ui.subscribe((state, previous) => {
@@ -284,7 +295,7 @@ export function connectEngine(engine: CanvasEngine, session: EditorSession): Eng
         if (page !== undefined) {
           loading = true;
           try {
-            engine.loadPage(page, site.layout);
+            engine.loadPage(page, shownLayout(site, state.pageId));
           } finally {
             loading = false;
           }
