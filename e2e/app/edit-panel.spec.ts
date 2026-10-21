@@ -20,6 +20,9 @@ const canvas = () => page.frameLocator(".editor__canvas iframe");
 /** The editor's right-hand panels, where the Edit panel is (not Puck's own field UI). */
 const panel = () => page.getByRole("region", { name: "Right panels" });
 const steps = () => page.locator(".undo-history__step");
+/** A device view in the canvas toolbar (1.15). */
+const deviceView = (name: "Desktop" | "Mobile") =>
+  page.getByRole("toolbar", { name: "Canvas" }).getByRole("radio", { name });
 
 /** Selects the heading by clicking past the end of its text (clicking the text edits it). */
 async function selectHeading(): Promise<void> {
@@ -98,15 +101,14 @@ async function selectSection(): Promise<void> {
     .toBe(true);
   const box = await section.boundingBox();
   if (box === null) throw new Error("Section not visible");
-  await section.click({ force: true, position: { x: 10, y: box.height - 4 } });
+  // Inside its bottom padding (32 px or more), clear of the edge: at a small zoom 4 px is a pixel.
+  await section.click({ force: true, position: { x: 10, y: box.height - 16 } });
   await expect(panel().getByRole("heading", { name: "Section", exact: true })).toBeVisible();
 }
 
 test("sets a padding for the Mobile view only, marked in the panel (F-ED-4)", async () => {
-  // Puck's own device buttons, until the canvas toolbar (1.15). Clicking them also clears Puck's
-  // selection, hence selecting again after each.
   const section = canvas().locator(".site-section");
-  await page.getByTitle("Show the Mobile view").click();
+  await deviceView("Mobile").click();
   await selectSection();
 
   await panel().getByRole("radio", { name: "Small" }).click();
@@ -115,8 +117,9 @@ test("sets a padding for the Mobile view only, marked in the panel (F-ED-4)", as
   await expect(panel().getByText("Mobile only")).toBeVisible();
   await expect(section).toHaveClass(/(^| )py-8 md:py-16( |$)/);
 
-  await page.getByTitle("Show the Desktop view").click();
-  await selectSection();
+  // The canvas toolbar keeps the selection when the view changes (U3): the panel shows Desktop's.
+  await deviceView("Desktop").click();
+  await expect(panel().getByRole("heading", { name: "Section", exact: true })).toBeVisible();
   await expect(panel().getByText("Mobile only")).toHaveCount(0);
   await expect(panel().getByRole("radio", { name: "Medium" })).toHaveAttribute(
     "aria-checked",
@@ -124,8 +127,8 @@ test("sets a padding for the Mobile view only, marked in the panel (F-ED-4)", as
   );
 
   // Another mode re-renders the canvas: the view stays, rather than one picked for the window.
-  await page.getByTitle("Show the Mobile view").click();
+  await deviceView("Mobile").click();
   await page.getByRole("radio", { name: "Content", exact: true }).click();
-  await expect(page.getByTitle("Show the Mobile view")).toBeDisabled();
+  await expect(deviceView("Mobile")).toHaveAttribute("aria-checked", "true");
   await expect(section).toHaveCSS("padding-top", "32px");
 });

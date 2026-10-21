@@ -20,7 +20,9 @@ import { starterSite } from "./editor/starter-site.js";
 import { registerExportCommand } from "./export/export-command.js";
 import { exportRequestFor } from "./export/export-request.js";
 import { AboutDialog } from "./shell/AboutDialog.js";
+import { CanvasToolbarHost } from "./shell/CanvasToolbarHost.js";
 import { CommandButton } from "./shell/CommandButton.js";
+import { createCanvasView } from "./shell/canvas-view.js";
 import { CommandRegistryProvider } from "./shell/command-context.js";
 import { COMMAND_IDS } from "./shell/command-ids.js";
 import { createCommandRegistry, installCommandShortcuts } from "./shell/commands.js";
@@ -75,6 +77,7 @@ export function App({
   const [session] = useState(() => createEditorSession(siteLibrary, loaded?.site ?? starterSite()));
   const [registry] = useState(createCommandRegistry);
   const [panels] = useState(createPanelRegistry);
+  const [canvasView] = useState(createCanvasView);
   const [preferences, setPreferences] = useState(initialPreferences);
   // Design or Content (M3): remembered with the open site, never an undo step.
   const [mode, setMode] = useState<EditorMode>(uiState?.editorMode ?? "design");
@@ -208,12 +211,18 @@ export function App({
                 onLayoutChange={rememberLayout}
                 editorLevel={editorLevel}
                 center={
-                  <Editor
-                    session={session}
-                    {...(createEngine === undefined ? {} : { createEngine })}
-                    {...(compileCss === undefined ? {} : { compileCss })}
-                    mode={mode}
-                  />
+                  <div className="flex h-full flex-col">
+                    <CanvasToolbarHost session={session} view={canvasView} />
+                    <div className="min-h-0 flex-1">
+                      <Editor
+                        session={session}
+                        {...(createEngine === undefined ? {} : { createEngine })}
+                        {...(compileCss === undefined ? {} : { compileCss })}
+                        mode={mode}
+                        canvasView={canvasView}
+                      />
+                    </div>
+                  </div>
                 }
               />
             </main>

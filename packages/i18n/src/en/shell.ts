@@ -45,6 +45,18 @@ export const shell = {
   "command.advancedMode": "Use Advanced Mode",
   "command.simpleMode": "Use Simple Mode",
 
+  // The canvas toolbar (F-ED-8): the page shown, the device view and the canvas width.
+  "canvasToolbar.label": "Canvas",
+  "canvasToolbar.page": "Page shown",
+  "canvasToolbar.device": "Device view",
+  "canvasToolbar.width": "Canvas width in pixels",
+  "canvasToolbar.px": "px",
+  "canvasToolbar.zoom": "Zoom",
+  "canvasToolbar.zoomFit": "Fit",
+  "canvasToolbar.zoomFitAt": "Fit ({zoom}%)",
+  "canvasToolbar.zoomLevel": "{zoom}%",
+  "canvasToolbar.size": "{width} × {height} @ {zoom}%",
+
   // Design | Content (M3): Design changes the layout, Content edits text and images only.
   "shell.mode": "Editing mode",
   "shell.mode.design": "Design",
