@@ -38,9 +38,6 @@ export type EditorProps = {
   readonly mode?: EditorMode;
 };
 
-/** The canvas, with Puck's own device and zoom buttons until the canvas toolbar (1.15). */
-const createCanvasEngine = () => createPuckEngine({ canvasControls: true });
-
 const compileWithPreload: CompileCanvasCss = (request) =>
   window.webforge.canvas.compileCss(request);
 
@@ -50,7 +47,7 @@ const compileWithPreload: CompileCanvasCss = (request) =>
  */
 export function Editor({
   session,
-  createEngine = createCanvasEngine,
+  createEngine = createPuckEngine,
   compileCss = compileWithPreload,
   mode = "design",
 }: EditorProps) {

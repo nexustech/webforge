@@ -370,8 +370,8 @@ describe("createPuckEngine", () => {
   });
 
   it("reports a device view chosen with the canvas's own buttons, not one the app set", async () => {
-    // Puck shows its device buttons only around an iframe canvas, and only when asked to.
-    const framed = createPuckEngine({ canvasControls: true });
+    // Puck shows its device buttons only around an iframe canvas.
+    const framed = createPuckEngine();
     const host = document.createElement("div");
     document.body.append(host);
     await act(async () => framed.mount(host, { library, theme: { name: "test" } }));
@@ -435,11 +435,6 @@ describe("createPuckEngine canvas size and zoom (1.15)", () => {
     await act(async () => change());
     await settle();
   };
-
-  it("hides Puck's own device and zoom buttons unless asked for them", () => {
-    expect(host.querySelector('button[title="Show the Mobile view"]')).toBeNull();
-    expect(host.querySelector('button[title="Zoom in"]')).toBeNull();
-  });
 
   it("starts fitted and reports the size and zoom at once", () => {
     const sizes: CanvasSize[] = [];

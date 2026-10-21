@@ -42,11 +42,6 @@ import { allNodes, findNode } from "./tree.js";
 export type PuckEngineOptions = {
   /** Render the canvas in an iframe (default). Tests without layout may turn it off. */
   readonly iframe?: boolean;
-  /**
-   * Show Puck's own device and zoom buttons under the canvas. Off by default: the editor's canvas
-   * toolbar (1.15) does that through {@link CanvasEngine.setViewport} and `setZoom`.
-   */
-  readonly canvasControls?: boolean;
 };
 
 /** Puck's canvas zoom (`zoomConfig`), which its public API leaves out. */
@@ -387,7 +382,6 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   const dictionary = puckDictionary();
   // Kept, not rebuilt per render: Puck resets the canvas width whenever these change.
   const iframe = { enabled: options.iframe ?? true, syncHostStyles: false };
-  const controlsVisible = options.canvasControls ?? false;
   const viewportOptions = puckViewports();
 
   const overrides: Partial<Overrides> = {
@@ -419,7 +413,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
           viewports: {
             current: { width: viewportWidth, height: "auto" },
             options: [],
-            controlsVisible,
+            controlsVisible: true,
           },
         }}
         viewports={viewportOptions}
