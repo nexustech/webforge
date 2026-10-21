@@ -221,3 +221,125 @@ describe("style field renderers (1.14 part 2)", () => {
     expect(document.querySelectorAll("[data-override]")).toHaveLength(1);
   });
 });
+
+describe("list renderer (F-ED-6)", () => {
+  const testimonials: EditPanelField = {
+    name: "testimonials",
+    kind: "list",
+    label: "Testimonials",
+    group: "content",
+    itemLabel: "Testimonial",
+    itemFields: [{ name: "quote", kind: "text", label: "Quote" }],
+    value: [
+      { key: "a", values: { quote: "Lovely bread" } },
+      { key: "b", values: { quote: "" } },
+    ],
+  };
+
+  function renderList(value: unknown = testimonials.value) {
+    const onChange = vi.fn();
+    const onCommit = vi.fn();
+    const view = render(
+      <EditPanel
+        heading="Testimonials"
+        fields={[{ ...testimonials, value }]}
+        onChange={onChange}
+        onCommit={onCommit}
+      />,
+    );
+    return { onChange, onCommit, view, user: userEvent.setup() };
+  }
+
+  it("shows a row per item, named by its text or its place", () => {
+    renderList();
+
+    expect(screen.getByRole("group", { name: "Testimonials" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "Lovely bread" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "Testimonial 2" })).toBeDefined();
+    expect(screen.getAllByRole("button", { name: "Move Testimonial up" })[0]).toHaveProperty(
+      "disabled",
+      true,
+    );
+    expect(screen.getAllByRole("button", { name: "Move Testimonial down" })[1]).toHaveProperty(
+      "disabled",
+      true,
+    );
+  });
+
+  it("reports moves, deletes and adds as list changes", async () => {
+    const { onChange, user } = renderList();
+
+    await user.click(
+      screen.getAllByRole("button", { name: "Move Testimonial down" })[0] as Element,
+    );
+    await user.click(screen.getAllByRole("button", { name: "Delete Testimonial" })[1] as Element);
+    await user.click(screen.getByRole("button", { name: "Add Testimonial" }));
+
+    expect(onChange.mock.calls).toEqual([
+      ["testimonials", { type: "move", key: "a", to: 1 }],
+      ["testimonials", { type: "remove", key: "b" }],
+      ["testimonials", { type: "add" }],
+    ]);
+  });
+
+  it("opens an item to edit its fields, reporting each change and the end of typing", async () => {
+    const { onChange, onCommit, user } = renderList();
+    const row = screen.getByRole("button", { name: "Lovely bread" });
+
+    await user.click(row);
+    expect(row.getAttribute("aria-expanded")).toBe("true");
+    fireEvent.change(screen.getByLabelText("Quote"), { target: { value: "Lovely buns" } });
+    fireEvent.blur(screen.getByLabelText("Quote"));
+
+    expect(onChange).toHaveBeenCalledWith("testimonials", {
+      type: "edit",
+      key: "a",
+      name: "quote",
+      value: "Lovely buns",
+    });
+    expect(onCommit).toHaveBeenCalledWith("testimonials");
+  });
+
+  it("moves focus to the next row when an item is deleted, or to Add when none is left", async () => {
+    const { view, user } = renderList();
+
+    await user.click(screen.getAllByRole("button", { name: "Delete Testimonial" })[0] as Element);
+    view.rerender(
+      <EditPanel
+        heading="Testimonials"
+        fields={[{ ...testimonials, value: [{ key: "b", values: { quote: "" } }] }]}
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+      />,
+    );
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Testimonial 1" }));
+
+    await user.click(screen.getByRole("button", { name: "Delete Testimonial" }));
+    view.rerender(
+      <EditPanel
+        heading="Testimonials"
+        fields={[{ ...testimonials, value: [] }]}
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+      />,
+    );
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Add Testimonial" }));
+  });
+
+  it("opens the item Add creates once it arrives", async () => {
+    const { view, user } = renderList([]);
+    expect(screen.getByText(t("editPanel.list.empty"))).toBeDefined();
+
+    await user.click(screen.getByRole("button", { name: "Add Testimonial" }));
+    view.rerender(
+      <EditPanel
+        heading="Testimonials"
+        fields={[{ ...testimonials, value: [{ key: "new", values: { quote: "" } }] }]}
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByLabelText("Quote")).toBeDefined();
+  });
+});

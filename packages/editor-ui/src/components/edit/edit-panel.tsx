@@ -1,12 +1,9 @@
 import { t } from "@webforge/i18n";
 import { useId } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs.js";
-import { ChoiceField } from "./choice-field.js";
 import { type FieldRenderer, type FieldSpec, fieldRenderer } from "./field-registry.js";
-import { SelectField } from "./select-field.js";
-import { SliderField } from "./slider-field.js";
-import { TextField } from "./text-field.js";
-import { ToggleField } from "./toggle-field.js";
+import { ListField } from "./list-field.js";
+import { PLAIN_RENDERERS } from "./plain-renderers.js";
 
 /** Which tab a field belongs on (Content for what it says, Style for how it looks). */
 export type FieldGroup = "content" | "style";
@@ -36,14 +33,7 @@ export type EditPanelProps = {
 };
 
 /** The renderers every Edit panel has; `registerFieldRenderer` adds kinds or replaces these. */
-const BUILT_IN: Readonly<Record<string, FieldRenderer>> = {
-  text: TextField,
-  select: SelectField,
-  toggle: ToggleField,
-  slider: SliderField,
-  color: ChoiceField,
-  spacing: ChoiceField,
-};
+const BUILT_IN: Readonly<Record<string, FieldRenderer>> = { ...PLAIN_RENDERERS, list: ListField };
 
 const rendererFor = (kind: string) => fieldRenderer(kind) ?? BUILT_IN[kind];
 

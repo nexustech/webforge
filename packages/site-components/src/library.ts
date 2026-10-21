@@ -16,6 +16,9 @@ export type FieldOption = { readonly label: string; readonly value: string };
  *   and the rest Content.
  * - `responsive` lets the value differ per device (F-ED-4): the field then holds a
  *   {@link Responsive} value, set in the Edit panel for the device being viewed.
+ *
+ * A `slot` that allows one component type only (a FAQ's questions) is edited in the Edit panel as
+ * a repeating list too (F-ED-6), its items being those elements.
  */
 export type FieldDef = {
   readonly group?: "content" | "style";
@@ -45,7 +48,36 @@ export type FieldDef = {
     }
   /** An image from the site's media, stored as its media id. */
   | { readonly kind: "media"; readonly label: string }
+  /**
+   * A repeating list (F-ED-6), such as testimonials or opening hours, stored as an array of
+   * {@link ListItem}s. Items are added, reordered and removed in the Edit panel.
+   */
+  | {
+      readonly kind: "list";
+      readonly label: string;
+      /** What one item is called, already translated: "Testimonial". */
+      readonly itemLabel: string;
+      /** Each item's fields. Never named `id`, `type` or `props`: see {@link ListItem}. */
+      readonly fields: Readonly<Record<string, ListItemFieldDef>>;
+      /** A new item's values. */
+      readonly defaults: Readonly<Record<string, unknown>>;
+    }
 );
+
+/**
+ * The kinds of field a list item can have: plain values, edited in the item's row. An item's value
+ * is the same on every device.
+ */
+export type ListItemFieldDef = Extract<
+  FieldDef,
+  { readonly kind: "text" | "select" | "toggle" | "slider" | "color" | "spacing" }
+> & { readonly responsive?: false };
+
+/**
+ * One item of a `list` field: its values and an id that stays with it when the list is reordered.
+ * It has no `type` and `props`, so it is never mistaken for an element (`NodeDoc`).
+ */
+export type ListItem = { readonly id: string } & Readonly<Record<string, unknown>>;
 
 /** A link in the site's navigation. */
 export type NavLink = {

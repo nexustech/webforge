@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
 import { EditPanel, type EditPanelField } from "./edit-panel.js";
+import type { ListChange } from "./field-registry.js";
 
 const meta = {
   title: "Edit/EditPanel",
@@ -101,6 +102,64 @@ export const StyleFields: Story = {
         onChange={(name, value) => set(name, { value, overridden: true })}
         onCommit={() => undefined}
         onReset={(name) => set(name, { value: "medium", overridden: false })}
+      />
+    );
+  },
+};
+
+/** A repeating list: a row per testimonial, the open one's fields below it (F-ED-6). */
+export const RepeatingList: Story = {
+  render: () => {
+    const [items, setItems] = useState([
+      { key: "a", values: { quote: "The best bread in town", author: "Sam" } },
+      { key: "b", values: { quote: "Friendly and fast", author: "Alex" } },
+      { key: "c", values: { quote: "", author: "" } },
+    ]);
+    return (
+      <EditPanel
+        heading="Testimonials"
+        fields={[
+          {
+            name: "testimonials",
+            kind: "list",
+            label: "Testimonials",
+            group: "content",
+            itemLabel: "Testimonial",
+            itemFields: [
+              { name: "quote", kind: "text", label: "Quote" },
+              { name: "author", kind: "text", label: "Name" },
+            ],
+            value: items,
+          },
+        ]}
+        onChange={(_name, change) => {
+          const listChange = change as ListChange;
+          setItems((current) => {
+            switch (listChange.type) {
+              case "add":
+                return [
+                  ...current,
+                  { key: String(current.length + 1), values: { quote: "", author: "" } },
+                ];
+              case "remove":
+                return current.filter((item) => item.key !== listChange.key);
+              case "move": {
+                const moved = current.find((item) => item.key === listChange.key);
+                const rest = current.filter((item) => item.key !== listChange.key);
+                return moved === undefined
+                  ? current
+                  : [...rest.slice(0, listChange.to), moved, ...rest.slice(listChange.to)];
+              }
+              case "edit":
+                return current.map((item) =>
+                  item.key === listChange.key
+                    ? { ...item, values: { ...item.values, [listChange.name]: listChange.value } }
+                    : item,
+                );
+            }
+          });
+        }}
+        onCommit={() => undefined}
       />
     );
   },

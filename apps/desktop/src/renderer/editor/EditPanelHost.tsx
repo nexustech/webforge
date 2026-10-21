@@ -1,4 +1,4 @@
-import { EditPanel, type EditPanelField } from "@webforge/editor-ui";
+import { EditPanel, type EditPanelField, type ListChange } from "@webforge/editor-ui";
 import type { EngineEdit } from "@webforge/engine";
 import { t } from "@webforge/i18n";
 import type { Breakpoint, SiteDoc } from "@webforge/model";
@@ -7,6 +7,13 @@ import { useEffect, useRef, useSyncExternalStore } from "react";
 import { updateField } from "./apply-patch.js";
 import type { EditorSession } from "./editor-session.js";
 import { deviceLabelFor, labelFor } from "./labels.js";
+import {
+  applyListChange,
+  type EditableList,
+  editableList,
+  listChangeLabel,
+  listItems,
+} from "./list-edit.js";
 import { findNode } from "./nodes.js";
 import {
   breakpointOf,
@@ -25,9 +32,10 @@ function rendererKind(field: FieldDef): string | undefined {
     case "slider":
     case "color":
     case "spacing":
+    case "list":
       return field.kind;
     // Rich text is edited on the canvas (1.23), images in their own field (1.16), slots by
-    // dragging elements in.
+    // dragging elements in (a slot of one type is a list: see editableList).
     case "richtext":
     case "media":
     case "slot":
@@ -54,6 +62,29 @@ function choicesOf(field: FieldDef): Pick<EditPanelField, "options" | "steps"> {
   }
 }
 
+/** The Edit panel field for a list: its items, and the fields of an item's row. */
+function listField(
+  name: string,
+  field: FieldDef,
+  list: EditableList,
+  stored: unknown,
+): EditPanelField {
+  return {
+    name,
+    kind: "list",
+    label: field.label,
+    group: field.group ?? "content",
+    value: listItems(stored, list),
+    itemLabel: list.itemLabel,
+    itemFields: Object.entries(list.fields).flatMap(([itemName, def]) => {
+      const kind = rendererKind(def);
+      return kind === undefined
+        ? []
+        : [{ name: itemName, kind, label: def.label, ...choicesOf(def) }];
+    }),
+  };
+}
+
 /** Whether `value` is something a field of `field`'s kind stores. */
 function accepts(field: FieldDef, value: unknown): boolean {
   return field.kind === "toggle" ? typeof value === "boolean" : typeof value === "string";
@@ -62,7 +93,10 @@ function accepts(field: FieldDef, value: unknown): boolean {
 /** A run of edits still open: typing in a text field, or a slider drag. */
 type Run = {
   readonly nodeId: string;
+  /** The panel field the run is in. */
   readonly name: string;
+  /** The field, or a list item's field (`items:<key>:<field>`), the run is in. */
+  readonly key: string;
   /** The device whose value the run sets; its label names it. */
   readonly breakpoint: Breakpoint;
   /** False once the run can take no more changes (a drag cancelled with Esc). */
@@ -138,6 +172,10 @@ export function EditPanelHost({ session, flush }: EditPanelHostProps) {
   const storedOr = (name: string, stored: unknown) => stored ?? component.defaults[name];
 
   const fields = Object.entries(component.fields).flatMap(([name, field]): EditPanelField[] => {
+    const list = editableList(field, library);
+    if (list !== undefined) {
+      return [listField(name, field, list, node.props[name])];
+    }
     const kind = rendererKind(field);
     if (kind === undefined) {
       return [];
@@ -183,6 +221,11 @@ export function EditPanelHost({ session, flush }: EditPanelHostProps) {
 
   const change = (name: string, value: unknown) => {
     const field = component.fields[name];
+    const list = field === undefined ? undefined : editableList(field, library);
+    if (list !== undefined) {
+      changeList(name, list, value as ListChange);
+      return;
+    }
     if (field === undefined || !accepts(field, value)) {
       return;
     }
@@ -191,7 +234,7 @@ export function EditPanelHost({ session, flush }: EditPanelHostProps) {
     if (field.kind === "slider") {
       // A drag is one step, shown live as it goes (U2).
       const run = openRun.current;
-      if (run?.update !== undefined && run.name === name && run.nodeId === id && run.active()) {
+      if (run?.update !== undefined && run.key === name && run.nodeId === id && run.active()) {
         run.update(recipe(name, next));
         return;
       }
@@ -201,6 +244,7 @@ export function EditPanelHost({ session, flush }: EditPanelHostProps) {
       openRun.current = {
         nodeId: id,
         name,
+        key: name,
         breakpoint,
         active: () => gesture.active,
         update: (change) => gesture.update(change),
@@ -214,7 +258,7 @@ export function EditPanelHost({ session, flush }: EditPanelHostProps) {
       gesture.update(recipe(name, next));
       return;
     }
-    if (openRun.current?.name !== name) {
+    if (openRun.current?.key !== name) {
       endRun();
     }
     flush();
@@ -233,6 +277,64 @@ export function EditPanelHost({ session, flush }: EditPanelHostProps) {
       openRun.current = {
         nodeId: id,
         name,
+        key: name,
+        breakpoint,
+        active: () => true,
+        end: () => history.endSession(textKey),
+      };
+    }
+  };
+
+  /**
+   * One change to a list (F-ED-6), as one step: "Added Question". Typing in an item's text field
+   * is one step per visit, like any text field, and so is a drag of an item's slider.
+   */
+  const changeList = (name: string, list: EditableList, change: ListChange) => {
+    const itemKind = change.type === "edit" ? list.fields[change.name]?.kind : undefined;
+    const text = itemKind === "text";
+    const merged = text || itemKind === "slider";
+    const runKey = change.type === "edit" ? `${name}:${change.key}:${change.name}` : name;
+    if (openRun.current?.key !== runKey) {
+      endRun();
+    }
+    flush();
+    const textKey = `field:${pageId}:${id}:${runKey}`;
+    const textLabel = (key: string, field: string) =>
+      labelFor(
+        {
+          kind: "text",
+          nodeId: key,
+          componentType: list.holds === "elements" ? list.type : null,
+          field,
+          page,
+          selection: id,
+        },
+        library,
+      );
+    session.edit(
+      text ? "text" : "props",
+      listChangeLabel(change, list, textLabel),
+      (draft) => {
+        const target = draft.pages[pageId];
+        if (target === undefined) {
+          return;
+        }
+        updateField(target.doc, page, id, name, (stored) => {
+          // A list never set starts from (a copy of) the component's default.
+          const items = Array.isArray(stored)
+            ? stored
+            : structuredClone(component.defaults[name] ?? []);
+          applyListChange(Array.isArray(items) ? items : [], change, list);
+          return items;
+        });
+      },
+      { selectionAfter, ...(merged ? { coalesceKey: textKey } : {}) },
+    );
+    if (merged) {
+      openRun.current = {
+        nodeId: id,
+        name,
+        key: runKey,
         breakpoint,
         active: () => true,
         end: () => history.endSession(textKey),

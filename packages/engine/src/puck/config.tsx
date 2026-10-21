@@ -21,6 +21,7 @@ function toPuckField(field: FieldDef): Field {
     case "slider":
     case "color":
     case "spacing":
+    case "list":
       return { type: "text", label: field.label };
     case "slot":
       return {
