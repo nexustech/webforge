@@ -1,12 +1,14 @@
 import type { z } from "zod";
 import { appChannels } from "./ipc/app.js";
 import { canvasChannels } from "./ipc/canvas.js";
+import { clipboardChannels } from "./ipc/clipboard.js";
 import { mediaChannels } from "./ipc/media.js";
 import { prefsChannels } from "./ipc/prefs.js";
 import { projectChannels } from "./ipc/project.js";
 import { siteChannels } from "./ipc/site.js";
 
 export type { AppInfo } from "./ipc/app.js";
+export type { ClipboardReadResult, ClipboardWriteResult } from "./ipc/clipboard.js";
 export type { MediaImportResult } from "./ipc/media.js";
 export type { Preferences, PreferencesChange } from "./ipc/prefs.js";
 export type {
@@ -33,6 +35,7 @@ export type { ExportResult } from "./ipc/site.js";
 export const ipcContract = {
   ...appChannels,
   ...canvasChannels,
+  ...clipboardChannels,
   ...mediaChannels,
   ...prefsChannels,
   ...projectChannels,
@@ -43,6 +46,7 @@ export const ipcContract = {
 export const ipcDomains = {
   app: appChannels,
   canvas: canvasChannels,
+  clipboard: clipboardChannels,
   media: mediaChannels,
   prefs: prefsChannels,
   project: projectChannels,

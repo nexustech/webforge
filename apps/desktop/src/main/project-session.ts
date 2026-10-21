@@ -4,6 +4,7 @@ import {
   applySiteChanges,
   FILE_MIME_TYPES,
   IMAGE_MIME_TYPES,
+  type MediaMeta,
   type SiteDoc,
   type SiteDocumentChange,
   SiteFormatError,
@@ -240,6 +241,53 @@ export class ProjectSession {
       }
       const code = error instanceof Error && "code" in error ? String(error.code) : "no code";
       console.error(`Webforge could not store an imported file (${code})`);
+      return { status: "failed", reason: "unknown" };
+    }
+  }
+
+  /**
+   * Stores a pasted Media item's bytes (1.25) unless the open site already has them under its id
+   * and hash. `read` gives the bytes kept with the clipboard, only when they are needed;
+   * `"missing"` when it has none. Like an import, the item joins the site when the renderer
+   * commits the paste.
+   */
+  storeCopiedMedia(
+    item: MediaMeta,
+    read: () => Uint8Array | undefined,
+  ): StoreAssetResult | { readonly status: "missing" } {
+    const store = this.#store;
+    if (store === undefined) {
+      return { status: "failed", reason: "no-site" };
+    }
+    const hasAsset = store.readAsset(item.id) !== undefined;
+    if (hasAsset && store.hasBlob(item.hash)) {
+      return { status: "stored", hash: item.hash };
+    }
+    const data = read();
+    if (data === undefined) {
+      return { status: "missing" };
+    }
+    try {
+      // An item of this site keeps its own asset (it may have been replaced since the copy).
+      if (hasAsset) {
+        store.putBlob(data, item.mimeType);
+      } else {
+        store.putAsset({
+          mediaId: item.id,
+          data,
+          mime: item.mimeType,
+          width: item.kind === "image" ? item.width : undefined,
+          height: item.kind === "image" ? item.height : undefined,
+          originalName: item.fileName,
+        });
+      }
+      return { status: "stored", hash: item.hash };
+    } catch (error) {
+      if (error instanceof ReadOnlyProjectError) {
+        return { status: "failed", reason: "read-only" };
+      }
+      const code = error instanceof Error && "code" in error ? String(error.code) : "no code";
+      console.error(`Webforge could not store a pasted file (${code})`);
       return { status: "failed", reason: "unknown" };
     }
   }
