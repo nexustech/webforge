@@ -9,9 +9,11 @@ export type HandOffOptions = {
   readonly leaveSite: () => Promise<void>;
   /** Opens the site, offering its backups if it is damaged. */
   readonly open: (path: string) => Promise<ProjectResult>;
+  /** Brings the window to the front, if there is one, while the site is saved and opened. */
+  readonly focus: () => void;
   /**
-   * Brings the window to the front, or opens one if there is none; `reload` starts it over with
-   * the newly opened site, as the renderer does after its own Open.
+   * Brings the window to the front, or opens one if there is none; `reload` starts an open
+   * window over with the newly opened site, as the renderer does after its own Open.
    */
   readonly show: (reload: boolean) => void;
   /** Tells the user why the site didn't open; the site that was open stays open. */
@@ -29,11 +31,13 @@ export function createHandOff(options: HandOffOptions) {
   let queue = Promise.resolve();
 
   const run = async (path: string | undefined) => {
-    options.show(false);
     const current = options.currentPath();
     if (path === undefined || (current !== undefined && samePath(current, path))) {
+      options.show(false);
       return;
     }
+    // Only focus here: a window opened now would load the old site and need a reload at once.
+    options.focus();
     await options.leaveSite();
     const result = await options.open(path);
     if (result.status === "opened") {

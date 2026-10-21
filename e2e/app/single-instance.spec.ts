@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { ProjectStore } from "@webforge/storage";
 import { launchDesktopApp, launchSecondInstance } from "./launch.js";
+import type { RendererWindow } from "./sites.js";
 
 // One Webforge at a time (1.8, P1): a .wforge double-clicked while Webforge runs opens in the
 // running window, after the open site is saved; quitting saves the last edit, then closes the file.
@@ -64,11 +65,7 @@ function fileContains(path: string, text: string): boolean {
 /** The open site's file name, as the main process reports it to the renderer. */
 const currentFile = (page: Page) =>
   page.evaluate(async () => {
-    const current = await (
-      window as unknown as {
-        webforge: { project: { getCurrent(): Promise<{ fileName: string } | null> } };
-      }
-    ).webforge.project.getCurrent();
+    const current = await (window as unknown as RendererWindow).webforge.project.getCurrent();
     return current?.fileName;
   });
 

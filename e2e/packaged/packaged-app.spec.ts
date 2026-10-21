@@ -60,6 +60,8 @@ async function appPage(browser: Browser): Promise<Page> {
     throw new Error("The app has no window");
   }
   await page.waitForFunction(() => "webforge" in window);
+  // Fully loaded, so a later load event is a reload.
+  await page.waitForLoadState("load");
   return page;
 }
 
@@ -147,7 +149,10 @@ test("a .wforge double-clicked while the app runs opens in the running window (1
 
   expect(code).toBe(0);
   expect(browser?.contexts().flatMap((context) => context.pages())).toHaveLength(1);
-  expect(await currentProject(page)).toEqual(summary("Handed over"));
+  // The reloaded renderer may still be starting.
+  await expect(async () => {
+    expect(await currentProject(page)).toEqual(summary("Handed over"));
+  }).toPass();
 });
 
 test("answers the native file dialogs from the test's file in e2e builds (ADR 0005)", async () => {

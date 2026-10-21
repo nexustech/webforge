@@ -117,7 +117,10 @@ const siteSwitch = createSiteSwitch({
   },
   capture: async () => {
     const window = BrowserWindow.getAllWindows()[0];
-    if (window === undefined || window.isDestroyed()) return undefined;
+    // A crashed renderer has no canvas to show.
+    if (window === undefined || window.isDestroyed() || window.webContents.isCrashed()) {
+      return undefined;
+    }
     const image = await window.webContents.capturePage(await canvasArea(window.webContents));
     return image.isEmpty() ? undefined : image.resize({ width: 480 }).toJPEG(75);
   },
@@ -128,23 +131,35 @@ const openSite = (path: string) => openOrRecover(projectSession, path, backups, 
 // The preferences, once start() has read them; a window can't be created before.
 let preferencesStore: PreferencesStore | undefined;
 
+/** Brings the window to the front; `undefined` if there is none (macOS, after closing it). */
+function focusMainWindow(): BrowserWindow | undefined {
+  const window = BrowserWindow.getAllWindows()[0];
+  if (window !== undefined) {
+    if (window.isMinimized()) window.restore();
+    window.show();
+    window.focus();
+  }
+  return window;
+}
+
 // Sites handed over while Webforge runs: saved, then replaced in the same window (1.8).
 const handOff = createHandOff({
   currentPath: () => projectSession.currentPath(),
   leaveSite: () => siteSwitch.leaveSite(),
   open: openSite,
+  focus: () => {
+    focusMainWindow();
+  },
   show: (reload) => {
     // A hand-off that finishes while the app quits must not bring a window back.
     if (quitting) return;
-    const window = BrowserWindow.getAllWindows()[0];
+    const window = focusMainWindow();
     if (window === undefined) {
+      // A new window loads the site that is open now.
       if (preferencesStore !== undefined) createMainWindow(preferencesStore);
-      return;
+    } else if (reload) {
+      window.webContents.reload();
     }
-    if (window.isMinimized()) window.restore();
-    window.show();
-    window.focus();
-    if (reload) window.webContents.reload();
   },
   failed: async (reason) => {
     const options = { type: "warning" as const, message: openFailureMessage(reason) };

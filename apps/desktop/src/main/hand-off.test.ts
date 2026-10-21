@@ -21,6 +21,9 @@ function setup(overrides: Partial<HandOffOptions> = {}) {
       calls.push(`open ${path}`);
       return opened;
     }),
+    focus: vi.fn(() => {
+      calls.push("focus");
+    }),
     show: vi.fn((reload: boolean) => {
       calls.push(reload ? "reload" : "show");
     }),
@@ -33,12 +36,12 @@ function setup(overrides: Partial<HandOffOptions> = {}) {
 }
 
 describe("createHandOff", () => {
-  it("shows the window, saves the open site, then opens the new one in its place", async () => {
+  it("focuses the window, saves the open site, then opens the new one in its place", async () => {
     const { handOff, calls } = setup();
 
     await handOff.open("/sites/Florist.wforge");
 
-    expect(calls).toEqual(["show", "leave", "open /sites/Florist.wforge", "reload"]);
+    expect(calls).toEqual(["focus", "leave", "open /sites/Florist.wforge", "reload"]);
   });
 
   it("only shows the window for a launch without a site, or for the site already open", async () => {
@@ -55,7 +58,7 @@ describe("createHandOff", () => {
 
     await handOff.open("/sites/Florist.wforge");
 
-    expect(calls).toEqual(["show", "leave", "open /sites/Florist.wforge", "reload"]);
+    expect(calls).toEqual(["focus", "leave", "open /sites/Florist.wforge", "reload"]);
   });
 
   it("says why a site didn't open and keeps the window as it is", async () => {
@@ -65,7 +68,7 @@ describe("createHandOff", () => {
 
     await handOff.open("/sites/Florist.wforge");
 
-    expect(calls).toEqual(["show", "leave", "failed newer-format"]);
+    expect(calls).toEqual(["focus", "leave", "failed newer-format"]);
   });
 
   it("does nothing more when the user cancels the recovery of a damaged site", async () => {
@@ -73,7 +76,7 @@ describe("createHandOff", () => {
 
     await handOff.open("/sites/Florist.wforge");
 
-    expect(calls).toEqual(["show", "leave"]);
+    expect(calls).toEqual(["focus", "leave"]);
   });
 
   it("runs hand-offs one at a time, and a failed one doesn't block the next", async () => {
