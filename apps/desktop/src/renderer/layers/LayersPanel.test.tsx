@@ -70,6 +70,8 @@ describe("LayersPanel (F-ED-12)", () => {
     fireEvent.keyDown(rows[0] as HTMLElement, { key: "ArrowUp" });
     fireEvent.keyDown(rows[1] as HTMLElement, { key: "ArrowDown", altKey: true });
     fireEvent.keyDown(rows[2] as HTMLElement, { key: "ArrowUp", altKey: true });
+    fireEvent.keyDown(rows[1] as HTMLElement, { key: "Delete" });
+    expect(actions.remove).toHaveBeenCalledOnce();
 
     expect(actions.select.mock.calls).toEqual([["s2"], ["b"], ["s1"]]);
     expect(actions.move.mock.calls).toEqual([

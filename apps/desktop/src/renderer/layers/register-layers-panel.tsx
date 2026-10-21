@@ -28,14 +28,21 @@ function useCommandAction(id: string): (() => void) | undefined {
  */
 export function registerLayersPanel(panels: PanelRegistry, session: EditorSession): () => void {
   const { history, ui, library } = session;
-  let shown: { key: string; layers: Layer[] } = { key: "", layers: [] };
+  // The tree as last shown, for the page content it was made from: rebuilt only when that content
+  // changes, and kept (same object) when the rebuilt tree is the same, e.g. after typing.
+  let shown: { content: unknown; key: string; layers: Layer[] } = {
+    content: undefined,
+    key: "",
+    layers: [],
+  };
   const currentLayers = () => {
-    const page = history.document.getState().pages[ui.getState().pageId]?.doc;
-    const layers = page === undefined ? [] : layersOf(page.content, library);
-    const key = JSON.stringify(layers);
-    if (key !== shown.key) {
-      shown = { key, layers };
+    const content = history.document.getState().pages[ui.getState().pageId]?.doc.content;
+    if (content === shown.content) {
+      return shown.layers;
     }
+    const layers = content === undefined ? [] : layersOf(content, library);
+    const key = JSON.stringify(layers);
+    shown = key === shown.key ? { ...shown, content } : { content, key, layers };
     return shown.layers;
   };
   const subscribe = (listener: () => void) => {

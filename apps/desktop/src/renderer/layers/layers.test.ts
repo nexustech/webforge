@@ -100,8 +100,9 @@ describe("Layers changes, one undo step each", () => {
     ]);
   });
 
-  it("hides a layer and shows it again", () => {
+  it("hides a layer and shows it again, leaving the selection as it is", () => {
     const { session, first, labels } = setUp();
+    session.ui.setState({ nodeId: "a" });
 
     setLayerHidden(session, "b", true);
     setLayerHidden(session, "b", true);
@@ -111,5 +112,8 @@ describe("Layers changes, one undo step each", () => {
 
     expect(first()?.[1]?.props).not.toHaveProperty("hidden");
     expect(labels()).toEqual(["Hid 'Hours'", "Showed 'Hours'", "Showed Section"]);
+    expect(session.ui.getState().nodeId).toBe("a");
+    session.history.undo();
+    expect(session.ui.getState().nodeId).toBe("a");
   });
 });

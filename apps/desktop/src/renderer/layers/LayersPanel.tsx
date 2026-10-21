@@ -100,6 +100,10 @@ export function LayersPanel({ layers, selectedId, actions }: LayersPanelProps) {
     } else if (event.key === "F2") {
       event.preventDefault();
       setRenaming(row.layer.id);
+    } else if ((event.key === "Delete" || event.key === "Backspace") && actions.remove) {
+      // The canvas's Delete shortcut leaves keys in a tree to the tree: delete the selected layer.
+      event.preventDefault();
+      actions.remove();
     }
   };
 
@@ -183,7 +187,12 @@ export function LayersPanel({ layers, selectedId, actions }: LayersPanelProps) {
                   setDrop(null);
                 }}
                 onDragOver={(event) => onDragOver(event, row)}
-                onDragLeave={() => setDrop(null)}
+                onDragLeave={(event) => {
+                  // Moving onto the row's own label or button isn't leaving it.
+                  if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+                    setDrop(null);
+                  }
+                }}
                 onDrop={(event) => onDrop(event, row)}
               >
                 {renaming === layer.id ? (

@@ -90,15 +90,19 @@ function target(session: LayersSession, id: string) {
   return layer === undefined ? undefined : { pageId, layer };
 }
 
-/** Runs `change` on the node `id` of the shown page as one step that leaves it selected. */
+/** Runs `change` on the node `id` of the shown page as one undo step. */
 function editNode(
   session: LayersSession,
   id: string,
   kind: "props" | "move",
+  /** Whether the step selects the layer (a move does; a hide or rename leaves the selection). */
+  select: boolean,
   label: string,
   change: (node: NodeDoc, place: { list: NodeDoc[]; index: number }) => void,
 ): void {
-  const { pageId, viewport } = session.ui.getState();
+  const current = session.ui.getState();
+  const { pageId } = current;
+  const selectionAfter = select ? { ...current, nodeId: id } : current;
   session.edit(
     kind,
     label,
@@ -110,9 +114,9 @@ function editNode(
         change(node, place);
       }
     },
-    { selectionAfter: { pageId, viewport, nodeId: id } },
+    { selectionAfter },
   );
-  session.ui.setState({ nodeId: id });
+  session.ui.setState(selectionAfter, true);
 }
 
 /**
@@ -129,7 +133,7 @@ export function renameLayer(session: LayersSession, id: string, name: string): v
     next === ""
       ? t("layers.history.unnamed", { item: layerItem(found.layer) })
       : t("layers.history.renamed", { item: found.layer.kind, name: next });
-  editNode(session, id, "props", label, (node) => {
+  editNode(session, id, "props", false, label, (node) => {
     if (next === "") {
       delete node.props.layerName;
     } else {
@@ -145,7 +149,7 @@ export function setLayerHidden(session: LayersSession, id: string, hidden: boole
     return;
   }
   const key = hidden ? "layers.history.hid" : "layers.history.showed";
-  editNode(session, id, "props", t(key, { item: layerItem(found.layer) }), (node) => {
+  editNode(session, id, "props", false, t(key, { item: layerItem(found.layer) }), (node) => {
     if (hidden) {
       node.props.hidden = true;
     } else {
@@ -176,6 +180,7 @@ export function moveLayer(session: LayersSession, id: string, index: number): vo
     session,
     id,
     "move",
+    true,
     t("history.moved", { item: layerItem(found.layer) }),
     (node, at) => {
       at.list.splice(at.index, 1);
