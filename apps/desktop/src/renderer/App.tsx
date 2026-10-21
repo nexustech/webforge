@@ -1,11 +1,11 @@
 import { type ResizableLayout, Toaster, TooltipProvider } from "@webforge/editor-ui";
 import type { EditorMode } from "@webforge/engine";
 import { t } from "@webforge/i18n";
-import { type SiteSnapshot, siteToSnapshot } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { PanelBottomIcon, PanelLeftIcon, PanelRightIcon } from "lucide-react";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { applyPreferencesChange } from "../shared/ipc/prefs.js";
+import { type ExportRequest, exportRequestFor } from "../shared/ipc/site.js";
 import type {
   AppInfo,
   ExportResult,
@@ -46,7 +46,7 @@ export type AppProps = {
   /** Compiles the canvas's site CSS; injectable for tests. */
   readonly compileCss?: EditorProps["compileCss"];
   /** Exports a site; injectable for tests. Defaults to the preload API. */
-  readonly exportSite?: (snapshot: SiteSnapshot) => Promise<ExportResult>;
+  readonly exportSite?: (request: ExportRequest) => Promise<ExportResult>;
   /** The site read from the open site file at start-up (1.6); the starter site otherwise. */
   readonly loaded?: LoadedSite;
   /** The open site's editor state (Design or Content mode) as main loaded it; none for no site. */
@@ -55,7 +55,7 @@ export type AppProps = {
   readonly saveUiState?: (state: SiteUiState) => Promise<UiStateResult>;
 };
 
-const exportWithPreload = (snapshot: SiteSnapshot) => window.webforge.site.export(snapshot);
+const exportWithPreload = (request: ExportRequest) => window.webforge.site.export(request);
 const saveWithPreload = (change: PreferencesChange) => window.webforge.prefs.set(change);
 const saveUiStateWithPreload = (state: SiteUiState) => window.webforge.project.setUiState(state);
 
@@ -112,8 +112,7 @@ export function App({
   useEffect(
     () =>
       registerExportCommand(registry, () =>
-        // No media yet (1.16 adds images and their bytes).
-        exportSite(siteToSnapshot(session.history.document.getState(), new Map())),
+        exportSite(exportRequestFor(session.history.document.getState())),
       ),
     [registry, session, exportSite],
   );

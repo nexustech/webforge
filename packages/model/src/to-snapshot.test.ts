@@ -98,7 +98,31 @@ describe("siteToSnapshot", () => {
 
   it("includes images whose bytes are available, and no files", () => {
     expect(snapshot.media).toEqual([
-      { id: "hero", name: "hero", mimeType: "image/jpeg", data: bytes },
+      { id: "hero", name: "hero", mimeType: "image/jpeg", data: bytes, alt: expect.any(String) },
+    ]);
+  });
+
+  it("carries an image's alt text, focal point and crop for the export", () => {
+    const site = bakery();
+    const hero = site.media["hero" as MediaId];
+    if (hero?.kind !== "image") throw new Error("no hero image");
+    site.media[hero.id] = {
+      ...hero,
+      alt: "Fresh loaves",
+      focal: { x: 0.3, y: 0.6 },
+      crop: { x: 0, y: 0.1, width: 1, height: 0.8 },
+    };
+
+    expect(siteToSnapshot(site, new Map([[HASH, bytes]])).media).toEqual([
+      {
+        id: "hero",
+        name: "hero",
+        mimeType: "image/jpeg",
+        data: bytes,
+        alt: "Fresh loaves",
+        focal: { x: 0.3, y: 0.6 },
+        crop: { x: 0, y: 0.1, width: 1, height: 0.8 },
+      },
     ]);
   });
 

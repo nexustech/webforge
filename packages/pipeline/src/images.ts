@@ -74,6 +74,34 @@ export async function makeThumbnail(
   return new Uint8Array(await encodeWebp(scaled, { quality: WEBP_QUALITY }));
 }
 
+/** The part of `image` inside `crop` (fractions of it), as a new image; at least 1 × 1 pixel. */
+function cropPixels(image: ImageData, crop: NonNullable<MediaItem["crop"]>): ImageData {
+  const x = Math.min(Math.round(crop.x * image.width), image.width - 1);
+  const y = Math.min(Math.round(crop.y * image.height), image.height - 1);
+  const width = Math.max(1, Math.min(Math.round(crop.width * image.width), image.width - x));
+  const height = Math.max(1, Math.min(Math.round(crop.height * image.height), image.height - y));
+  const data = new Uint8ClampedArray(width * height * 4);
+  for (let row = 0; row < height; row++) {
+    const start = ((y + row) * image.width + x) * 4;
+    data.set(image.data.subarray(start, start + width * 4), row * width * 4);
+  }
+  return new ImageData(data, width, height);
+}
+
+/**
+ * The focal point as CSS `object-position`, measured in the exported (cropped) image: e.g.
+ * `30% 50%`. `undefined` without a focal point, so the browser's centre applies.
+ */
+function objectPositionOf(item: MediaItem): string | undefined {
+  if (item.focal === undefined) {
+    return undefined;
+  }
+  const crop = item.crop ?? { x: 0, y: 0, width: 1, height: 1 };
+  const percent = (point: number, start: number, size: number) =>
+    Math.round(Math.min(Math.max((point - start) / size, 0), 1) * 100);
+  return `${percent(item.focal.x, crop.x, crop.width)}% ${percent(item.focal.y, crop.y, crop.height)}%`;
+}
+
 /** One exported image file. */
 type ImageFile = { readonly path: string; readonly data: Uint8Array };
 
@@ -94,7 +122,8 @@ function hasTransparency(image: ImageData): boolean {
 
 /**
  * Converts an original image into responsive WebP files plus a JPEG fallback (PNG when the image
- * has transparency), at each of {@link IMAGE_WIDTHS} up to the original's width (X2).
+ * has transparency), at each of {@link IMAGE_WIDTHS} up to the original's width (X2), cut to the
+ * image's crop first. The result carries the image's alt text and its focal point.
  * `assetsUrl` is the path from a page at the site root to `assets/img/`.
  */
 export async function processImage(
@@ -103,7 +132,9 @@ export async function processImage(
   assetsUrl = "assets/img/",
 ): Promise<ProcessedImage> {
   await initCodecs(codecs);
-  const original = await decodeOriginal(item.data, item.mimeType);
+  const decoded = await decodeOriginal(item.data, item.mimeType);
+  // The crop is cut before resizing, so every width shows the same part of the image (G14).
+  const original = item.crop === undefined ? decoded : cropPixels(decoded, item.crop);
   const transparent = item.mimeType === "image/png" && hasTransparency(original);
   const fallbackType = transparent ? "image/png" : "image/jpeg";
   const fallbackExtension = transparent ? "png" : "jpg";
@@ -140,6 +171,7 @@ export async function processImage(
   }
 
   const fallbackSource: ImageSource = { type: fallbackType, srcset: fallback.join(", ") };
+  const objectPosition = objectPositionOf(item);
   return {
     files,
     image: {
@@ -148,6 +180,8 @@ export async function processImage(
       fallback: fallbackSource,
       width: largest.width,
       height: largest.height,
+      alt: item.alt ?? "",
+      ...(objectPosition === undefined ? {} : { objectPosition }),
     },
   };
 }

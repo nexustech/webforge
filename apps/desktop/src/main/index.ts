@@ -440,6 +440,7 @@ async function start(): Promise<void> {
     (senderUrl) => isAppUrl(senderUrl, appUrl),
     exportDialogs,
     runExport,
+    (hash) => projectSession.readMedia(hash),
   );
   // A site double-clicked in Explorer arrives as a command-line argument (P1).
   const projectToOpen = projectFromFinder ?? findProjectArgument(process.argv);

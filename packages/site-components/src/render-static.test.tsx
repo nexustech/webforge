@@ -16,6 +16,8 @@ const heroImage: ResolvedImage = {
   fallback: { type: "image/jpeg", srcset: "assets/img/hero-640.jpg 640w" },
   width: 640,
   height: 427,
+  alt: "Our bakery",
+  objectPosition: "30% 50%",
 };
 
 const context: RenderContext = {
@@ -104,8 +106,7 @@ describe("renderNodesToHtml", () => {
           buttonLabel: "About us",
           buttonLink: "about",
           alignment: "left",
-          image: "hero",
-          imageDescription: "Loaves on a shelf",
+          image: { mediaId: "hero", alt: "Loaves on a shelf" },
         },
       },
     ];
@@ -119,6 +120,8 @@ describe("renderNodesToHtml", () => {
       '<source type="image/webp" srcSet="assets/img/hero-640.webp 640w" sizes="(min-width: 1024px) 50vw, 100vw"/>',
     );
     expect(html).toContain('alt="Loaves on a shelf" loading="eager" decoding="async"');
+    // The focal point keeps the important part in view where CSS cuts the image (G14).
+    expect(html).toContain('style="object-position:30% 50%"');
     expect(html).toContain('width="640" height="427"');
     expect(html).toContain('<a class="btn btn-primary" href="about.html">About us</a>');
   });
@@ -207,10 +210,21 @@ describe("tree helpers", () => {
     expect(types).toEqual(["Section", "Heading", "Text", "Faq", "FaqItem"]);
   });
 
+  it("uses the image's own alt text when the placement has none (G15)", () => {
+    const html = renderNodesToHtml(
+      [{ type: "Hero", props: { id: "hero", title: "Fresh bread", image: { mediaId: "hero" } } }],
+      siteLibrary,
+      context,
+    );
+
+    expect(html).toContain('alt="Our bakery"');
+  });
+
   it("mediaUsedBy finds media ids in media fields only", () => {
     const nodes: NodeDoc[] = [
-      { type: "Hero", props: { id: "a", image: "hero", title: "hero2" } },
-      { type: "Hero", props: { id: "b", image: "" } },
+      { type: "Hero", props: { id: "a", image: { mediaId: "hero" }, title: "hero2" } },
+      { type: "Hero", props: { id: "b", image: "old-style id" } },
+      { type: "Hero", props: { id: "c" } },
     ];
 
     expect([...mediaUsedBy(nodes, siteLibrary)]).toEqual(["hero"]);

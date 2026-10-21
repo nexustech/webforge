@@ -14,7 +14,9 @@ export type { FileMeta, ImageCrop, ImageMeta, ImageValue, MediaMeta } from "./me
 export {
   altTextFor,
   cropForAspect,
+  cropSchema,
   FILE_MIME_TYPES,
+  focalPointSchema,
   IMAGE_MIME_TYPES,
   imageValueSchema,
   isImageMeta,

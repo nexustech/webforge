@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import v1Site from "../test/fixtures/v1/site.json" with { type: "json" };
+import v2Site from "../test/fixtures/v2/site.json" with { type: "json" };
 import {
   MIGRATIONS,
   migrateSite,
@@ -21,12 +22,17 @@ function formatError(run: () => unknown): SiteFormatError {
 }
 
 describe("migrateSite", () => {
-  it("opens the format 1 fixture unchanged", () => {
-    // Fixtures of released formats are never deleted: every old site must keep opening.
-    const site = migrateSite(v1Site);
+  it("opens the format 2 fixture unchanged", () => {
+    const site = migrateSite(v2Site);
 
-    expect(site).toEqual(v1Site);
+    expect(site).toEqual(v2Site);
     expect(site.formatVersion).toBe(SITE_FORMAT_VERSION);
+  });
+
+  it("opens the format 1 fixture as format 2", () => {
+    // Fixtures of released formats are never deleted: every old site must keep opening. This one
+    // already has its Hero image in the format 2 shape.
+    expect(migrateSite(v1Site)).toEqual({ ...v1Site, formatVersion: 2 });
   });
 
   it("opens a new site after a JSON round trip", () => {
@@ -143,5 +149,61 @@ describe("migrateSiteWith", () => {
         migrateSiteWith({ formatVersion: 1 }, { migrations: { 1: failing }, currentVersion: 2 }),
       ).message,
     ).toBe("Migration from format 1 failed");
+  });
+});
+
+describe("migration 1 → 2: a Hero's image value", () => {
+  /** The format 1 fixture with its Hero's props replaced by `props`. */
+  function withHero(props: Record<string, unknown>) {
+    const site = JSON.parse(JSON.stringify(v1Site)) as typeof v1Site;
+    const page = Object.values(site.pages)[0];
+    const hero = page?.doc.content[0];
+    if (hero === undefined) throw new Error("no Hero in the fixture");
+    hero.props = { id: "hero", title: "Baked fresh", ...props } as typeof hero.props;
+    // A Hero inside a slot is found too.
+    site.layout.footer.push({
+      type: "Section",
+      props: { id: "s", content: [{ type: "Hero", props: { id: "inner", ...props } }] },
+    } as never);
+    return site;
+  }
+
+  const heroes = (site: ReturnType<typeof migrateSite>) => {
+    const page = site.pages[site.pageOrder[0] ?? site.homePageId];
+    const inner = site.layout.footer.at(-1)?.props.content as { props: unknown }[] | undefined;
+    return [page?.doc.content[0]?.props, inner?.[0]?.props];
+  };
+
+  it("turns a media id and its description into one image value", () => {
+    const site = migrateSite(withHero({ image: "hero000000000000", imageDescription: "Our shop" }));
+
+    for (const props of heroes(site)) {
+      expect(props).toMatchObject({ image: { mediaId: "hero000000000000", alt: "Our shop" } });
+      expect(props).not.toHaveProperty("imageDescription");
+    }
+  });
+
+  it("keeps the image's own alt text when there was no description", () => {
+    const site = migrateSite(withHero({ image: "hero000000000000", imageDescription: "" }));
+
+    expect(heroes(site)[0]).toMatchObject({ image: { mediaId: "hero000000000000" } });
+    expect(heroes(site)[0]).not.toHaveProperty("image.alt");
+  });
+
+  it("drops an empty image", () => {
+    const site = migrateSite(withHero({ image: "", imageDescription: "Nothing" }));
+
+    expect(heroes(site)[0]).not.toHaveProperty("image");
+    expect(heroes(site)[0]).not.toHaveProperty("imageDescription");
+  });
+
+  it("keeps an image value, adding the description as its alt text if it had none", () => {
+    const site = migrateSite(
+      withHero({ image: { mediaId: "hero000000000000" }, imageDescription: "Our shop" }),
+    );
+
+    expect(heroes(site)[0]).toMatchObject({
+      image: { mediaId: "hero000000000000", alt: "Our shop" },
+    });
   });
 });

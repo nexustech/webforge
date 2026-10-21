@@ -2,7 +2,14 @@ import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { siteDocArbitrary } from "../test/arbitraries.js";
 import type { PageId } from "./ids.js";
-import { createSite, type PageEntry, pagePath, type SiteDoc, siteDocSchema } from "./site-doc.js";
+import {
+  createSite,
+  type PageEntry,
+  pagePath,
+  SITE_FORMAT_VERSION,
+  type SiteDoc,
+  siteDocSchema,
+} from "./site-doc.js";
 
 const options = {
   name: "Rosa's Bakery",
@@ -206,7 +213,12 @@ describe("siteDocSchema", () => {
   });
 
   it("rejects another format version and unknown keys", () => {
-    expect(siteDocSchema.safeParse({ ...site, formatVersion: 2 }).success).toBe(false);
+    expect(
+      siteDocSchema.safeParse({ ...site, formatVersion: SITE_FORMAT_VERSION + 1 }).success,
+    ).toBe(false);
+    expect(
+      siteDocSchema.safeParse({ ...site, formatVersion: SITE_FORMAT_VERSION - 1 }).success,
+    ).toBe(false);
     expect(siteDocSchema.safeParse({ ...site, extra: true }).success).toBe(false);
   });
 });

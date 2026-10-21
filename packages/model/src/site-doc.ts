@@ -13,7 +13,7 @@ import { type MenuItem, menuDocSchema } from "./menu.js";
 import { defaultSiteSettings, siteSettingsSchema } from "./settings.js";
 
 /** The format of {@link SiteDoc} this build writes. Bumped with a migration and a fixture. */
-export const SITE_FORMAT_VERSION = 1;
+export const SITE_FORMAT_VERSION = 2;
 
 const SEGMENT = "[a-z0-9]+(?:-[a-z0-9]+)*";
 

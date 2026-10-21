@@ -84,8 +84,8 @@ describe("createWebforgeApi site export", () => {
     const invoke = vi.fn(async () => result);
     const api = apiWith(invoke);
 
-    await expect(api.site.export(snapshot)).resolves.toEqual(result);
-    expect(invoke).toHaveBeenCalledWith("site:export", snapshot);
+    await expect(api.site.export({ snapshot, media: [] })).resolves.toEqual(result);
+    expect(invoke).toHaveBeenCalledWith("site:export", { snapshot, media: [] });
   });
 
   it("rejects an export result that leaks a path", async () => {
@@ -98,7 +98,7 @@ describe("createWebforgeApi site export", () => {
       warnings: 0,
     }));
 
-    await expect(api.site.export(snapshot)).rejects.toThrow();
+    await expect(api.site.export({ snapshot, media: [] })).rejects.toThrow();
   });
 
   it("reads and remembers the editor mode through the project UI-state channels", async () => {

@@ -35,7 +35,70 @@ export type SiteMigration = (site: RawSite) => RawSite;
  * turns version 1 into version 2. Every bump of {@link SITE_FORMAT_VERSION} adds one step and a
  * fixture in `test/fixtures/v<n>/`; fixtures are never deleted, so every old site keeps opening.
  */
-export const MIGRATIONS: Readonly<Record<number, SiteMigration>> = {};
+export const MIGRATIONS: Readonly<Record<number, SiteMigration>> = {
+  1: heroImageValues,
+};
+
+type RawNode = { type: string; props: Record<string, unknown> };
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const isRawNode = (value: unknown): value is RawNode =>
+  isRecord(value) && typeof value.type === "string" && isRecord(value.props);
+
+/** Calls `visit` for every node in `nodes` and in the slot arrays of their props, depth first. */
+function walkNodes(nodes: unknown, visit: (node: RawNode) => void): void {
+  if (!Array.isArray(nodes)) return;
+  for (const node of nodes) {
+    if (!isRawNode(node)) continue;
+    visit(node);
+    for (const value of Object.values(node.props)) {
+      if (Array.isArray(value) && value.some(isRawNode)) walkNodes(value, visit);
+    }
+  }
+}
+
+/** Every node of a raw site: its pages' content, then the shared Header and Footer. */
+function walkSite(site: RawSite, visit: (node: RawNode) => void): void {
+  if (isRecord(site.pages)) {
+    for (const page of Object.values(site.pages)) {
+      if (isRecord(page) && isRecord(page.doc)) walkNodes(page.doc.content, visit);
+    }
+  }
+  if (isRecord(site.layout)) {
+    walkNodes(site.layout.header, visit);
+    walkNodes(site.layout.footer, visit);
+  }
+}
+
+/**
+ * Format 1 → 2 (1.16): a Hero's image becomes one image value, `{ mediaId, alt? }`, with the alt
+ * text for that placement, instead of a media id plus a separate `imageDescription`. An empty id
+ * means no image; an empty description means the image's own alt text from Media applies. Heroes
+ * that already have the new shape keep it.
+ */
+function heroImageValues(site: RawSite): RawSite {
+  walkSite(site, (node) => {
+    if (node.type !== "Hero") return;
+    const { image, imageDescription } = node.props;
+    const alt =
+      typeof imageDescription === "string" && imageDescription !== ""
+        ? imageDescription
+        : undefined;
+    if (typeof image === "string") {
+      if (image === "") {
+        delete node.props.image;
+      } else {
+        node.props.image = { mediaId: image, ...(alt === undefined ? {} : { alt }) };
+      }
+    } else if (isRecord(image) && alt !== undefined && image.alt === undefined) {
+      image.alt = alt;
+    }
+    delete node.props.imageDescription;
+  });
+  return { ...site, formatVersion: 2 };
+}
 
 /** Options of {@link migrateSiteWith}; the defaults are this build's chain and version. */
 export type MigrateOptions = {

@@ -218,7 +218,7 @@ describe("buildSite: checks (X5)", () => {
   });
 
   it("fails when a used image is missing from the media", async () => {
-    const site = siteWith([{ type: "Hero", props: { id: "h", image: "gone" } }]);
+    const site = siteWith([{ type: "Hero", props: { id: "h", image: { mediaId: "gone" } } }]);
 
     const failure = buildSite(site, siteLibrary, resources);
 

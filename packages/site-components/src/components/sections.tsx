@@ -1,4 +1,5 @@
 import { t } from "@webforge/i18n";
+import { imageValueSchema } from "@webforge/model";
 import {
   type ComponentDef,
   optionValue,
@@ -24,7 +25,6 @@ export const hero: ComponentDef = {
       options: ALIGNMENTS.map((value) => ({ label: t(`field.alignment.${value}`), value })),
     },
     image: { kind: "media", label: t("field.image") },
-    imageDescription: { kind: "text", label: t("field.imageDescription") },
   },
   defaults: {
     title: t("starter.heroTitle"),
@@ -32,12 +32,11 @@ export const hero: ComponentDef = {
     buttonLabel: t("starter.heroButton"),
     buttonLink: "",
     alignment: "centre",
-    image: "",
-    imageDescription: "",
   },
   render: ({ values, context }) => {
     const centred = optionValue(values.alignment, ALIGNMENTS) === "centre";
-    const image = context.image(stringValue(values.image));
+    const placed = imageValueSchema.safeParse(values.image);
+    const image = placed.success ? context.image(placed.data.mediaId) : null;
     const buttonLabel = textValue(values.buttonLabel);
     const buttonLink = stringValue(values.buttonLink);
     return (
@@ -48,7 +47,7 @@ export const hero: ComponentDef = {
           {image !== null && (
             <Picture
               image={image}
-              alt={stringValue(values.imageDescription)}
+              alt={placed.data?.alt ?? image.alt}
               sizes="(min-width: 1024px) 50vw, 100vw"
               eager
               className="h-auto w-full max-w-xl rounded-box shadow-lg"
