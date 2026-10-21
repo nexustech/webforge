@@ -55,9 +55,10 @@ test("zooms the canvas and shows the size and scale, back to Fit when the view c
   // The readout appears once the canvas has measured the page: "1280 × 640 @ 52%".
   await expect(toolbar().getByText(/^1280 × \d+ @ \d+%$/)).toBeVisible();
 
-  await zoom.selectOption("50%");
-  await expect(toolbar().getByText(/^1280 × \d+ @ 50%$/)).toBeVisible();
-  await expect(zoom).toHaveValue("0.5");
+  // Smaller than Fit, so the page never overflows the canvas and makes it fit again.
+  await zoom.selectOption("25%");
+  await expect(toolbar().getByText(/^1280 × \d+ @ 25%$/)).toBeVisible();
+  await expect(zoom).toHaveValue("0.25");
 
   // Another view fits the page again.
   await toolbar().getByRole("radio", { name: "Tablet" }).click();

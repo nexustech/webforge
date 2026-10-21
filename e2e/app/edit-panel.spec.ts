@@ -101,7 +101,8 @@ async function selectSection(): Promise<void> {
     .toBe(true);
   const box = await section.boundingBox();
   if (box === null) throw new Error("Section not visible");
-  await section.click({ force: true, position: { x: 10, y: box.height - 4 } });
+  // Inside its bottom padding (32 px or more), clear of the edge: at a small zoom 4 px is a pixel.
+  await section.click({ force: true, position: { x: 10, y: box.height - 16 } });
   await expect(panel().getByRole("heading", { name: "Section", exact: true })).toBeVisible();
 }
 
