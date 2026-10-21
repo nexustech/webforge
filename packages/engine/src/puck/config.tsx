@@ -48,11 +48,18 @@ function toPuckComponent(
       .map(([name]) => name);
   const slotNames = fieldsOfKind("slot");
   const richTextNames = fieldsOfKind("richtext");
+  const fields: Record<string, Field> = Object.fromEntries(
+    Object.entries(def.fields).map(([name, field]) => [name, toPuckField(field)]),
+  );
+  if (Object.values(def.fields).some((field) => field.kind === "text" && field.bindable)) {
+    // Puck walks a prop it has no field for with the element's own fields, so it would take
+    // `bindings.text` for the inline `text` field and put its editor there. An object field with
+    // no fields of its own keeps the bindings as they are (1.17).
+    fields.bindings = { type: "object", objectFields: {} };
+  }
   return {
     label: def.label,
-    fields: Object.fromEntries(
-      Object.entries(def.fields).map(([name, field]) => [name, toPuckField(field)]),
-    ),
+    fields,
     defaultProps: { ...def.defaults },
     render: (props: Record<string, unknown>) => {
       const { puck: _puck, id: rawId, ...values } = props;
