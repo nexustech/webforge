@@ -228,6 +228,11 @@ test.describe("Puck canvas with Webforge history", () => {
     await panel.getByRole("tab", { name: "Style" }).click();
     await panel.getByLabel("Size", { exact: true }).selectOption("small");
     await expect(canvas().locator("h3")).toHaveCount(1);
+    // Select the Section (its bottom padding), so the heading's quick actions don't cover the text.
+    const section = canvas().locator(".site-section");
+    const sectionBox = await section.boundingBox();
+    if (sectionBox === null) throw new Error("Section not visible");
+    await section.click({ force: true, position: { x: 10, y: sectionBox.height - 4 } });
 
     const editor = canvas().locator(".site-text .ProseMirror");
     await canvas().getByText(STARTER_TEXT).click();
