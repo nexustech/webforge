@@ -4,6 +4,16 @@ import type { ComponentLibrary } from "@webforge/site-components";
 /** Desktop · Tablet · Mobile, or a width in pixels. */
 export type Viewport = "desktop" | "tablet" | "mobile" | number;
 
+/** The canvas's size and zoom, as the canvas toolbar's readout shows them (1.15). */
+export type CanvasSize = {
+  /** The width of the page shown, in the page's CSS pixels: the device view's width. */
+  readonly width: number;
+  /** The height of the part of the page in view, in the page's CSS pixels. */
+  readonly height: number;
+  /** How the page is scaled on screen: 1 is its real size, 0.5 half of it. */
+  readonly zoom: number;
+};
+
 /** Design mode edits everything; Content mode only text and images (M3). */
 export type EditorMode = "design" | "content";
 
@@ -112,6 +122,14 @@ export interface CanvasEngine {
    * change is not a history step (U6). Not called for {@link setViewport}.
    */
   onViewportChange(cb: (viewport: Viewport) => void): Unsubscribe;
+  /**
+   * Scales the canvas (1.15): a factor (1 is real size), or `"fit"` to fit the device view's width
+   * into the space the canvas has. The canvas starts fitted, and fits again whenever that space or
+   * the view changes. Before the canvas is ready, this does nothing.
+   */
+  setZoom(zoom: number | "fit"): void;
+  /** Reports the canvas's size and zoom now, if known, and whenever any of them changes. */
+  onCanvasSize(cb: (size: CanvasSize) => void): Unsubscribe;
   /**
    * Styles the canvas with the site's own compiled CSS and the classes exported pages put on
    * `<body>`, so the page looks as it will when exported (1.12). Replaces the previous styles.

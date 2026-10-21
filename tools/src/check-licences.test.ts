@@ -1,12 +1,15 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   checkLicenceReport,
   findLicenceViolations,
+  findPatchedViolations,
   findUnusedExceptions,
   formatViolations,
   isLicenceAllowed,
   type LicenceException,
   parseLicenceReport,
+  parsePatchedPackages,
 } from "./check-licences.js";
 
 describe("isLicenceAllowed", () => {
@@ -215,5 +218,54 @@ describe("checkLicenceReport", () => {
     expect(result.warnings).toEqual([
       'Warning: licence exception for "argparse" matches no installed package.',
     ]);
+  });
+
+  it("fails when a patched package's licence allows only unmodified use", () => {
+    const packages = report({
+      MIT: [{ name: "@puckeditor/core", license: "MIT" }],
+      "MPL-2.0": [{ name: "some-mpl-lib", license: "MPL-2.0" }],
+    });
+
+    expect(checkLicenceReport(packages, exceptions, ["@puckeditor/core"]).ok).toBe(true);
+    // Using an MPL-2.0 package unmodified is fine; patching it isn't.
+    expect(checkLicenceReport(packages, exceptions, []).ok).toBe(true);
+    const patched = checkLicenceReport(packages, exceptions, ["some-mpl-lib"]);
+    expect(patched.ok).toBe(false);
+    expect(patched.message).toContain("some-mpl-lib@1.0.0: MPL-2.0");
+  });
+});
+
+describe("patched packages", () => {
+  it("reads the patched package names from pnpm-workspace.yaml", () => {
+    const workspace = [
+      "packages:",
+      "  - apps/*",
+      "",
+      "# Why we patch.",
+      "patchedDependencies:",
+      "  '@puckeditor/core@0.23.0': patches/@puckeditor__core@0.23.0.patch",
+      '  "left-pad@1.3.0": patches/left-pad@1.3.0.patch',
+      "  # A comment inside the block.",
+      "",
+      "onlyBuiltDependencies:",
+      "  - esbuild",
+    ].join("\n");
+
+    expect(parsePatchedPackages(workspace)).toEqual(["@puckeditor/core", "left-pad"]);
+    expect(parsePatchedPackages("packages:\n  - apps/*\n")).toEqual([]);
+  });
+
+  it("finds the repository's own patch of Puck", () => {
+    const workspace = readFileSync(new URL("../../pnpm-workspace.yaml", import.meta.url), "utf8");
+
+    expect(parsePatchedPackages(workspace)).toContain("@puckeditor/core");
+  });
+
+  it("allows patching any allowed licence except MPL-2.0", () => {
+    const pkg = (licence: string) => ({ name: "lib", versions: ["1.0.0"], licence });
+
+    expect(findPatchedViolations([pkg("MIT"), pkg("Apache-2.0 OR MPL-2.0")], ["lib"])).toEqual([]);
+    expect(findPatchedViolations([pkg("MPL-2.0")], ["lib"])).toEqual([pkg("MPL-2.0")]);
+    expect(findPatchedViolations([pkg("MPL-2.0")], ["other"])).toEqual([]);
   });
 });

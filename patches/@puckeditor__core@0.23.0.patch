@@ -1,3 +1,19 @@
+diff --git a/dist/chunk-55V3NZVF.mjs b/dist/chunk-55V3NZVF.mjs
+index 01fc32e03adc11d014291a99cc8dbee1806880f8..d39df219c35a5af355fdb29144ecdc64538433cb 100644
+--- a/dist/chunk-55V3NZVF.mjs
++++ b/dist/chunk-55V3NZVF.mjs
+@@ -6343,7 +6343,10 @@ var generateUsePuck = (store, getState) => {
+     dictionary: store.dictionary
+   };
+   storeData.__private = {
+-    appState: store.state
++    appState: store.state,
++    // Webforge: the canvas zoom, which Puck keeps out of its public API.
++    getZoomConfig: () => getState().zoomConfig,
++    setZoomConfig: (zoomConfig) => getState().setZoomConfig(zoomConfig)
+   };
+   return storeData;
+ };
 diff --git a/dist/chunk-K2LNXU54.mjs b/dist/chunk-K2LNXU54.mjs
 index 81075c39650a79a9eccf7cefffdc7a65cbd00c97..8aa13a1baf0ca0ad724ca2b5a2377b79c1d4742e 100644
 --- a/dist/chunk-K2LNXU54.mjs
@@ -21,7 +37,7 @@ index 81075c39650a79a9eccf7cefffdc7a65cbd00c97..8aa13a1baf0ca0ad724ca2b5a2377b79
            fields: __spreadProps(__spreadValues({}, s.fields), { fields: defaultFields, id })
          }));
 diff --git a/dist/index.js b/dist/index.js
-index aebc9c0e4d4eed1a407ea72d0d1469d16544d834..e619a58c33628c5a1d80f1c4083957257fede23e 100644
+index aebc9c0e4d4eed1a407ea72d0d1469d16544d834..c7ed2f87dd2b96828a5d06a79c52a696f0213e58 100644
 --- a/dist/index.js
 +++ b/dist/index.js
 @@ -3084,7 +3084,7 @@ var init_permissions = __esm({
@@ -42,8 +58,20 @@ index aebc9c0e4d4eed1a407ea72d0d1469d16544d834..e619a58c33628c5a1d80f1c408395725
              appStore.setState((s) => ({
                fields: __spreadProps(__spreadValues({}, s.fields), { fields: defaultFields2, id })
              }));
+@@ -17919,7 +17919,10 @@ var generateUsePuck = (store, getState) => {
+     dictionary: store.dictionary
+   };
+   storeData.__private = {
+-    appState: store.state
++    appState: store.state,
++    // Webforge: the canvas zoom, which Puck keeps out of its public API.
++    getZoomConfig: () => getState().zoomConfig,
++    setZoomConfig: (zoomConfig) => getState().setZoomConfig(zoomConfig)
+   };
+   return storeData;
+ };
 diff --git a/dist/no-external.js b/dist/no-external.js
-index af3fa6755f42679605e6805aa46fdeb90df48281..4facbf4a16f03d44007bda3e5ee579df3c47af30 100644
+index af3fa6755f42679605e6805aa46fdeb90df48281..f758618bfb282d6da1e8ca7661501679a02cf170 100644
 --- a/dist/no-external.js
 +++ b/dist/no-external.js
 @@ -3084,7 +3084,7 @@ var init_permissions = __esm({
@@ -64,3 +92,15 @@ index af3fa6755f42679605e6805aa46fdeb90df48281..4facbf4a16f03d44007bda3e5ee579df
              appStore.setState((s) => ({
                fields: __spreadProps(__spreadValues({}, s.fields), { fields: defaultFields2, id })
              }));
+@@ -17919,7 +17919,10 @@ var generateUsePuck = (store, getState) => {
+     dictionary: store.dictionary
+   };
+   storeData.__private = {
+-    appState: store.state
++    appState: store.state,
++    // Webforge: the canvas zoom, which Puck keeps out of its public API.
++    getZoomConfig: () => getState().zoomConfig,
++    setZoomConfig: (zoomConfig) => getState().setZoomConfig(zoomConfig)
+   };
+   return storeData;
+ };

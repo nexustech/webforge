@@ -3,8 +3,8 @@
 import type { PageDoc } from "@webforge/model";
 import { type ComponentLibrary, textValue } from "@webforge/site-components";
 import { act } from "react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { CanvasEngine, EngineEdit } from "../canvas-engine.js";
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { CanvasEngine, CanvasSize, EngineEdit } from "../canvas-engine.js";
 import { pageActions } from "./page-actions.js";
 import { createPuckEngine } from "./puck-engine.js";
 
@@ -18,6 +18,12 @@ declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean;
 }
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+
+// Puck's canvas starts a 500 ms timer when it mounts (to show its loader). One left from the last
+// test would fire after the test environment is gone, where React finds no `window`.
+afterAll(async () => {
+  await new Promise((resolve) => setTimeout(resolve, 600));
+});
 
 const library: ComponentLibrary = {
   components: {
@@ -392,6 +398,73 @@ describe("createPuckEngine", () => {
   });
 });
 
+describe("createPuckEngine canvas size and zoom (1.15)", () => {
+  let host: HTMLDivElement;
+  let framed: CanvasEngine;
+
+  beforeEach(async () => {
+    // happy-dom has no layout: give every element a 640 × 480 box, so Puck fits the 1280 px
+    // Desktop view at 0.5 and leaves the 375 px Mobile view at 1.
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue(
+      DOMRect.fromRect({ width: 640, height: 480 }),
+    );
+    framed = createPuckEngine();
+    host = document.createElement("div");
+    document.body.append(host);
+    await act(async () => framed.mount(host, { library, theme: { name: "test" } }));
+    await settle();
+  });
+
+  afterEach(async () => {
+    framed.destroy();
+    await settle();
+    host.remove();
+    vi.restoreAllMocks();
+  });
+
+  const run = async (change: () => void) => {
+    await act(async () => change());
+    await settle();
+  };
+
+  it("starts fitted and reports the size and zoom at once", () => {
+    const sizes: CanvasSize[] = [];
+    framed.onCanvasSize((size) => sizes.push(size));
+
+    expect(sizes).toEqual([{ width: 1280, height: 960, zoom: 0.5 }]);
+  });
+
+  it("zooms as asked, fits again on a view change or when asked, reporting each change", async () => {
+    const sizes: CanvasSize[] = [];
+    framed.onCanvasSize((size) => sizes.push(size));
+
+    await run(() => framed.setZoom(0.25));
+    await run(() => framed.setViewport("mobile"));
+    await run(() => framed.setZoom(2));
+    await run(() => framed.setZoom("fit"));
+
+    // One report per change, with the height that goes with the zoom: the 480 px in view.
+    expect(sizes.map(({ width, height, zoom }) => [width, height, zoom])).toEqual([
+      [1280, 960, 0.5],
+      [1280, 1920, 0.25],
+      [375, 480, 1],
+      [375, 240, 2],
+      [375, 480, 1],
+    ]);
+  });
+
+  it("ignores zooms that aren't one, and reports nothing that didn't change", async () => {
+    const sizes: CanvasSize[] = [];
+    framed.onCanvasSize((size) => sizes.push(size));
+
+    await run(() => framed.setZoom(0));
+    await run(() => framed.setZoom(Number.NaN));
+    await run(() => framed.setZoom(0.5));
+
+    expect(sizes).toHaveLength(1);
+  });
+});
+
 describe("createPuckEngine before mount", () => {
   it("cannot render static HTML without a library", () => {
     expect(() => createPuckEngine().renderStatic(page, NO_LAYOUT)).toThrow(/Mount/);
@@ -405,6 +478,7 @@ describe("createPuckEngine before mount", () => {
       engine.applyChange({ page });
       engine.select("a");
       engine.setViewport("tablet");
+      engine.setZoom(0.5);
       engine.setMode("content");
       expect(engine.perform("delete")).toBe(false);
       engine.destroy();

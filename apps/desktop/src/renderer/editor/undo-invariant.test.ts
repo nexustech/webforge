@@ -1,3 +1,4 @@
+import type { ListChange } from "@webforge/editor-ui";
 import type { EngineEdit } from "@webforge/engine";
 import type { NodeDoc, PageDoc, PageId, SiteDoc } from "@webforge/model";
 import { siteLibrary, starterPage } from "@webforge/site-components";
@@ -12,6 +13,7 @@ import {
   TEXT_SESSION_GRACE_MS,
 } from "./editor-session.js";
 import { createFakeEngine, type FakeEngine } from "./fake-engine.test-helper.js";
+import { applyListChange, editableList, listItems } from "./list-edit.js";
 import { withoutOverride, withValueAt } from "./responsive-value.js";
 import { starterSite } from "./starter-site.js";
 
@@ -35,6 +37,18 @@ function initialSite(): SiteDoc {
   const site = starterSite();
   const home = site.pages[site.homePageId];
   if (home === undefined) throw new Error("no home page");
+  // A FAQ, whose questions the Edit panel edits as a list (F-ED-6).
+  home.doc.content.push({
+    type: "Faq",
+    props: {
+      id: "faq",
+      title: "Questions",
+      items: [
+        { type: "FaqItem", props: { id: "q1", question: "One?", answer: "<p>1</p>" } },
+        { type: "FaqItem", props: { id: "q2", question: "Two?", answer: "<p>2</p>" } },
+      ],
+    },
+  });
   return {
     ...site,
     pages: {
@@ -118,6 +132,26 @@ function sectionEdit(ctx: Ctx, at: number, field: string, next: (stored: unknown
   });
 }
 let ids = 0;
+
+const faqList = (() => {
+  const items = siteLibrary.components.Faq?.fields.items;
+  const list = items === undefined ? undefined : editableList(items, siteLibrary);
+  if (list === undefined) throw new Error("no FAQ list");
+  return list;
+})();
+
+/** Changes the questions of the shown page's first FAQ, as the Edit panel's list does. */
+function faqEdit(ctx: Ctx, change: (keys: readonly string[]) => ListChange) {
+  const { pageId } = ctx.session.ui.getState();
+  ctx.session.edit("props", "Changed FAQ questions", (draft) => {
+    const page = draft.pages[pageId]?.doc;
+    const faq = page === undefined ? undefined : nodesOf(page).find((x) => x.type === "Faq");
+    const items = faq?.props.items;
+    if (Array.isArray(items)) {
+      applyListChange(items, change(listItems(items, faqList).map((item) => item.key)), faqList);
+    }
+  });
+}
 
 const commands: fc.Arbitrary<Command>[] = [
   fc.record({ at: n, to: n }).map(({ at, to }) => ({
@@ -234,6 +268,30 @@ const commands: fc.Arbitrary<Command>[] = [
         }
         gesture.commit();
       },
+    })),
+  fc
+    .record({
+      op: fc.constantFrom("add", "move", "remove", "edit"),
+      at: n,
+      to: n,
+      text: fc.string({ maxLength: 4 }),
+    })
+    .map(({ op, at, to, text }) => ({
+      name: `faq ${op} ${at} ${to} "${text}"`,
+      run: (ctx) =>
+        faqEdit(ctx, (keys): ListChange => {
+          const key = keys[at % Math.max(keys.length, 1)] ?? "none";
+          switch (op) {
+            case "add":
+              return { type: "add" };
+            case "move":
+              return { type: "move", key, to: to % Math.max(keys.length, 1) };
+            case "remove":
+              return { type: "remove", key };
+            default:
+              return { type: "edit", key, name: "question", value: text };
+          }
+        }),
     })),
   devices.map((device) => ({
     name: `view ${device}`,

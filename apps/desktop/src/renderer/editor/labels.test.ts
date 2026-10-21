@@ -56,6 +56,10 @@ describe("labelFor", () => {
     expect(hero("title")).toBe("Edited Hero title");
     // One text only: no field name, as on the canvas.
     expect(labelFor(edit("text", { field: "text" }), siteLibrary)).toBe("Edited Heading text");
+    // A field named like its element isn't repeated: not "Edited Question question".
+    expect(
+      labelFor(edit("text", { componentType: "FaqItem", field: "question" }), siteLibrary),
+    ).toBe("Edited Question text");
   });
 
   it("names an element by the name it has in Layers", () => {

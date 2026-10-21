@@ -8,8 +8,12 @@ export type {
   FieldRenderer,
   FieldRendererProps,
   FieldSpec,
+  ListChange,
+  ListItemFieldSpec,
+  ListItemValue,
 } from "./components/edit/field-registry.js";
 export { fieldRenderer, registerFieldRenderer } from "./components/edit/field-registry.js";
+export { ListField } from "./components/edit/list-field.js";
 export { SelectField } from "./components/edit/select-field.js";
 export { SliderField } from "./components/edit/slider-field.js";
 export { fieldControlClass, TextField } from "./components/edit/text-field.js";
