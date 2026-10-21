@@ -108,6 +108,17 @@ test.describe("desktop shell", () => {
     expect(rendererFiles.filter((code) => code.includes("__webforgePerf"))).toEqual([]);
   });
 
+  test("ships without the test-only dialog answers (ADR 0005)", () => {
+    // Only `electron-vite build --mode e2e` (pnpm e2e:packaged) includes them.
+    const mainDir = join(desktopDir, "out/main");
+    const mainFiles = readdirSync(mainDir, { recursive: true, encoding: "utf8" })
+      .filter((file) => file.endsWith(".js"))
+      .map((file) => readFileSync(join(mainDir, file), "utf8"));
+
+    expect(mainFiles.length).toBeGreaterThan(0);
+    expect(mainFiles.filter((code) => code.includes("WEBFORGE_E2E_DIALOGS"))).toEqual([]);
+  });
+
   test("enforces a strict Content Security Policy", async () => {
     const csp = await page
       .locator('meta[http-equiv="Content-Security-Policy"]')

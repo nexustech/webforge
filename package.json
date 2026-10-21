@@ -12,7 +12,7 @@
     "build": "turbo run build",
     "test": "vitest run --coverage",
     "e2e": "turbo run build --filter=@webforge/desktop && pnpm --filter @webforge/e2e e2e",
-    "e2e:packaged": "pnpm --filter @webforge/desktop package:dir && pnpm --filter @webforge/e2e e2e:packaged",
+    "e2e:packaged": "pnpm --filter @webforge/desktop package:e2e && pnpm --filter @webforge/e2e e2e:packaged",
     "e2e:perf": "pnpm --filter @webforge/desktop build:perf && pnpm --filter @webforge/e2e e2e:perf",
     "visual": "pnpm --filter @webforge/editor-ui build-storybook && pnpm --filter @webforge/e2e e2e:visual",
     "lint": "biome ci .",
