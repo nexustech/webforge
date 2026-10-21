@@ -400,6 +400,14 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     actionBar: QuickActionBar,
   };
 
+  /** The Puck config for `library`, rendering with the current editor revisions and context. */
+  const configFor = (forLibrary: ComponentLibrary) =>
+    toPuckConfig(
+      forLibrary,
+      (id) => editorRevisions.get(id) ?? 0,
+      () => renderContext,
+    );
+
   const render = () => {
     if (root === null || config === null) {
       return;
@@ -446,11 +454,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
         ]),
       );
       slotsOf = (type) => slots.get(type);
-      config = toPuckConfig(
-        opts.library,
-        (id) => editorRevisions.get(id) ?? 0,
-        () => renderContext,
-      );
+      config = configFor(opts.library);
       root = createRoot(el);
       render();
       // Puck starts with the current page.
@@ -532,11 +536,13 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
 
     setImages(image) {
       renderContext = { ...EDITOR_RENDER_CONTEXT, image };
-      // Puck draws a component again only when its data changes: give it the page anew.
-      revision++;
-      preserveCaret(frameDocument);
-      showPage();
-      dispatch({ type: "setUi", ui: { itemSelector: selectorFor(selection) } });
+      // Puck draws a component again only when its props or its config change, and an image can
+      // change without any props changing (deleted from Media, cropped): give Puck a new config.
+      if (library !== null) {
+        config = configFor(library);
+        preserveCaret(frameDocument);
+        render();
+      }
     },
 
     setZoom: applyZoom,

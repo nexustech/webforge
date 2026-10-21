@@ -2,7 +2,7 @@ import type { NodeDoc, SiteSnapshot } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { sampleSite } from "@webforge/test-utils";
 import { beforeAll, describe, expect, it } from "vitest";
-import { BuildError, type BuiltSite, buildSite } from "../src/build.js";
+import { type BuiltSite, buildSite } from "../src/build.js";
 import { loadNodeResources } from "../src/node-resources.js";
 import type { PipelineResources } from "../src/resources.js";
 
@@ -245,12 +245,21 @@ describe("buildSite: checks (X5)", () => {
     });
   });
 
-  it("fails when a used image is missing from the media", async () => {
-    const site = siteWith([{ type: "Hero", props: { id: "h", image: { mediaId: "gone" } } }]);
+  it("leaves out an image deleted from Media, with a warning, instead of failing (1.16)", async () => {
+    const site = siteWith([
+      { type: "Hero", props: { id: "h", title: "Fresh bread", image: { mediaId: "gone" } } },
+    ]);
 
-    const failure = buildSite(site, siteLibrary, resources);
+    const built = await buildSite(site, siteLibrary, resources);
 
-    await expect(failure).rejects.toBeInstanceOf(BuildError);
-    await expect(failure).rejects.toMatchObject({ code: "missing-media" });
+    expect(built.report.warnings).toContainEqual({
+      code: "missing-image",
+      page: "index",
+      detail: "gone",
+    });
+    const index = new TextDecoder().decode(built.files.get("index.html"));
+    expect(index).toContain("Fresh bread");
+    expect(index).not.toContain("<img");
+    expect([...built.files.keys()].some((path) => path.startsWith("assets/img/"))).toBe(false);
   });
 });

@@ -17,7 +17,7 @@ import { imageForDepth, processImage } from "./images.js";
 import type { PipelineResources } from "./resources.js";
 
 /** Why a build failed (X5 errors). The app shows a translated message for each code. */
-export type BuildErrorCode = "invalid-site" | "unknown-component" | "missing-media";
+export type BuildErrorCode = "invalid-site" | "unknown-component";
 
 /** A build that cannot produce a working site. */
 export class BuildError extends Error {
@@ -30,9 +30,12 @@ export class BuildError extends Error {
   }
 }
 
-/** A problem that does not stop the build (X5 warnings). */
+/**
+ * A problem that does not stop the build (X5 warnings): a link to a page that isn't there, or an
+ * image deleted from Media that a page still places (that place is left out).
+ */
 export type BuildWarning = {
-  readonly code: "broken-link";
+  readonly code: "broken-link" | "missing-image";
   /** The page path the problem is on. */
   readonly page: string;
   readonly detail: string;
@@ -99,12 +102,15 @@ export async function buildSite(
     throw error;
   }
 
-  // Images first: pages need their sizes and file names.
+  // Images first: pages need their sizes and file names. An image deleted from Media while a page
+  // still places it is left out there, with a warning, rather than failing the export (1.16).
   const images = new Map<string, ResolvedImage>();
+  const missing = new Set<string>();
   for (const id of [...mediaIds].sort()) {
     const item = site.media.find((media) => media.id === id);
     if (item === undefined) {
-      throw new BuildError("missing-media", `Media "${id}" is used but missing`);
+      missing.add(id);
+      continue;
     }
     const processed = await processImage(item, resources.codecs);
     for (const file of processed.files) {
@@ -149,7 +155,12 @@ export async function buildSite(
       },
       image: (id) => {
         const image = images.get(id);
-        return image === undefined ? null : imageForDepth(image, depthOf(page.path));
+        if (image === undefined) {
+          if (missing.has(id))
+            warnings.push({ code: "missing-image", page: page.path, detail: id });
+          return null;
+        }
+        return imageForDepth(image, depthOf(page.path));
       },
       // An empty binding has no emptySetting here: the export leaves it out (1.17).
       setting: (key) => site.settings?.[key],
