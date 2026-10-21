@@ -7,9 +7,12 @@ import {
   resolveResponsive,
 } from "@webforge/model";
 
-/** Below these widths the canvas shows Mobile, then Tablet (the engine's device widths). */
+/**
+ * Where Tablet and Desktop start: Tailwind's `md` and `lg`, the classes `responsiveClasses` gives
+ * the site, so a custom canvas width shows the values the page uses at that width.
+ */
 const TABLET_FROM = 768;
-const DESKTOP_FROM = 1280;
+const DESKTOP_FROM = 1024;
 
 /** The device whose values the Edit panel shows for a canvas view. */
 export function breakpointOf(viewport: Viewport): Breakpoint {

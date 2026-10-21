@@ -11,6 +11,8 @@ describe("responsive values in the Edit panel", () => {
   it("maps a canvas view to a device", () => {
     expect(breakpointOf("tablet")).toBe("tablet");
     expect(breakpointOf(1440)).toBe("desktop");
+    expect(breakpointOf(1024)).toBe("desktop");
+    expect(breakpointOf(1023)).toBe("tablet");
     expect(breakpointOf(800)).toBe("tablet");
     expect(breakpointOf(400)).toBe("mobile");
   });

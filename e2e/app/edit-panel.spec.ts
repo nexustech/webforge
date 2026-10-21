@@ -80,3 +80,27 @@ test("undoes with Ctrl/Cmd+Z in a panel field through the site's history (ADR 00
   await expect(canvas().locator(".site-heading")).toHaveText("Welcome to our business");
   await expect(page.locator('.undo-history__step[aria-current="step"]')).toHaveText("Opened page");
 });
+
+test("sets a padding for the Mobile view only, marked in the panel (F-ED-4)", async () => {
+  // Puck's own device buttons, until the canvas toolbar (1.15).
+  await page.getByTitle("Show the Mobile view").click();
+  const section = canvas().locator(".site-section");
+  const box = await section.boundingBox();
+  if (box === null) throw new Error("Section not visible");
+  // The Section's bottom padding selects the Section itself.
+  await section.click({ force: true, position: { x: 10, y: box.height - 4 } });
+  await expect(panel().getByRole("heading", { name: "Section", exact: true })).toBeVisible();
+
+  await panel().getByRole("radio", { name: "Small" }).click();
+
+  await expect(steps().first()).toHaveText("Changed Section padding on Mobile");
+  await expect(panel().getByText("Mobile only")).toBeVisible();
+  await expect(section).toHaveClass(/(^| )py-8 md:py-16( |$)/);
+
+  await page.getByTitle("Show the Desktop view").click();
+  await expect(panel().getByText("Mobile only")).toHaveCount(0);
+  await expect(panel().getByRole("radio", { name: "Medium" })).toHaveAttribute(
+    "aria-checked",
+    "true",
+  );
+});

@@ -12,6 +12,7 @@ import {
   TEXT_SESSION_GRACE_MS,
 } from "./editor-session.js";
 import { createFakeEngine, type FakeEngine } from "./fake-engine.test-helper.js";
+import { withoutOverride, withValueAt } from "./responsive-value.js";
 import { starterSite } from "./starter-site.js";
 
 // Undo invariant (U8) over the editor as wired: canvas edits of every kind on any page, page
@@ -104,6 +105,18 @@ function canvasEdit(
 type Command = { readonly name: string; run(ctx: Ctx): void };
 
 const n = fc.nat({ max: 20 });
+const devices = fc.constantFrom("desktop" as const, "tablet" as const, "mobile" as const);
+
+/** Changes a Section's field on the page shown, as the Edit panel does (1.14). */
+function sectionEdit(ctx: Ctx, at: number, field: string, next: (stored: unknown) => unknown) {
+  const { pageId } = ctx.session.ui.getState();
+  ctx.session.edit("props", `Changed Section ${field}`, (draft) => {
+    const page = draft.pages[pageId]?.doc;
+    const section =
+      page === undefined ? undefined : nodesOf(page).filter((x) => x.type === "Section")[at % 3];
+    if (section !== undefined) section.props[field] = next(section.props[field]);
+  });
+}
 let ids = 0;
 
 const commands: fc.Arbitrary<Command>[] = [
@@ -185,6 +198,46 @@ const commands: fc.Arbitrary<Command>[] = [
         },
         (node) => ({ nodeId: node.props.id, field: "size", value: size }),
       ),
+  })),
+  fc
+    .record({ at: n, device: devices, padding: fc.constantFrom("small", "medium", "large") })
+    .map(({ at, device, padding }) => ({
+      name: `padding ${at} ${device} ${padding}`,
+      run: (ctx) =>
+        sectionEdit(ctx, at, "padding", (stored) => withValueAt(stored, device, padding)),
+    })),
+  fc.record({ at: n, device: devices }).map(({ at, device }) => ({
+    name: `reset padding ${at} ${device}`,
+    run: (ctx) => sectionEdit(ctx, at, "padding", (stored) => withoutOverride(stored, device)),
+  })),
+  fc
+    .record({
+      at: n,
+      device: devices,
+      gaps: fc.array(fc.constantFrom("none", "small", "medium", "large"), { maxLength: 4 }),
+    })
+    .map(({ at, device, gaps }) => ({
+      name: `drag gap ${at} ${device} ${JSON.stringify(gaps)}`,
+      run: (ctx) => {
+        const { pageId } = ctx.session.ui.getState();
+        const gesture = ctx.session.begin("props", "Changed Section gap");
+        for (const gap of gaps) {
+          gesture.update((draft) => {
+            const page = draft.pages[pageId]?.doc;
+            const section =
+              page === undefined
+                ? undefined
+                : nodesOf(page).filter((x) => x.type === "Section")[at % 3];
+            if (section !== undefined)
+              section.props.gap = withValueAt(section.props.gap, device, gap);
+          });
+        }
+        gesture.commit();
+      },
+    })),
+  devices.map((device) => ({
+    name: `view ${device}`,
+    run: (ctx) => ctx.engine.switchView(device),
   })),
   fc.string({ maxLength: 4 }).map((title) => ({
     name: `root "${title}"`,

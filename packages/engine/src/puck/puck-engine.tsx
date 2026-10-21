@@ -11,6 +11,7 @@ import {
 } from "@puckeditor/core";
 // Puck's default stylesheet loads the Inter font from rsms.me; Webforge makes no external requests.
 import "@puckeditor/core/no-external.css";
+import { t } from "@webforge/i18n";
 import type { PageDoc } from "@webforge/model";
 import type { ComponentLibrary } from "@webforge/site-components";
 import { type ReactNode, useEffect } from "react";
@@ -43,6 +44,21 @@ export type PuckEngineOptions = {
 };
 
 const VIEWPORT_WIDTHS = { desktop: 1280, tablet: 768, mobile: 375 } as const;
+
+/** A canvas width as the app names it: a device view, or a custom width. */
+function viewportOf(width: number): Viewport {
+  const named = (Object.keys(VIEWPORT_WIDTHS) as (keyof typeof VIEWPORT_WIDTHS)[]).find(
+    (name) => VIEWPORT_WIDTHS[name] === width,
+  );
+  return named ?? width;
+}
+
+/** The device views Puck's canvas controls offer: Desktop · Tablet · Mobile (until 1.15). */
+const puckViewports = () => [
+  { width: VIEWPORT_WIDTHS.mobile, label: t("device.mobile"), icon: "Smartphone" as const },
+  { width: VIEWPORT_WIDTHS.tablet, label: t("device.tablet"), icon: "Tablet" as const },
+  { width: VIEWPORT_WIDTHS.desktop, label: t("device.desktop"), icon: "Monitor" as const },
+];
 
 /** Content mode: text stays editable, the layout is locked (M3). */
 const CONTENT_MODE_PERMISSIONS = { drag: false, duplicate: false, delete: false, insert: false };
@@ -113,6 +129,10 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   let frameDocument: Document | null = null;
   /** The site's CSS, applied to the canvas document whenever there is one. */
   let siteStyles: SiteStyles | null = null;
+  /** The canvas width Puck shows, or is about to show. */
+  let viewportWidth: number = VIEWPORT_WIDTHS.desktop;
+  /** A width the app gave Puck that Puck doesn't show yet: until it does, no width is reported. */
+  let pendingWidth: number | null = null;
   /** Per node, bumped to remount its rich-text editors (see toPuckConfig). */
   const editorRevisions = new Map<string, number>();
 
@@ -120,6 +140,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   const addRequests = emitter<InsertPoint>();
   const frameWindows = emitter<Window | null>();
   const selections = emitter<string | null>();
+  const viewports = emitter<Viewport>();
   const commandHandlers = new Set<HistoryCommandHandler>();
   /** True if any handler did something with the command (see installHistoryKeys). */
   const runCommand: HistoryCommandHandler = (command) => {
@@ -150,6 +171,31 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     if (getPuck !== null) {
       dispatch({ type: "setData", data: () => toPuckData(page), recordHistory: false });
       shownRevision = revision;
+    }
+  };
+
+  /** Shows `viewportWidth` in Puck, if it isn't already (the Bridge calls this once Puck is ready). */
+  const showViewport = () => {
+    if (getPuck === null || getPuck().appState.ui.viewports.current.width === viewportWidth) {
+      return;
+    }
+    pendingWidth = viewportWidth;
+    const width = viewportWidth;
+    dispatch({
+      type: "setUi",
+      ui: (ui) => ({ viewports: { ...ui.viewports, current: { width, height: "auto" } } }),
+    });
+  };
+
+  /** Puck shows `width`: the app's own width arriving, or the user's choice in Puck's controls. */
+  const reportViewport = (width: number | "100%") => {
+    if (pendingWidth !== null) {
+      if (width === pendingWidth) pendingWidth = null;
+      return;
+    }
+    if (typeof width === "number" && width !== viewportWidth) {
+      viewportWidth = width;
+      viewports.emit(viewportOf(width));
     }
   };
 
@@ -194,11 +240,14 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     // helper), so watch the selected item too.
     const selectedId = usePuck((state) => state.selectedItem?.props.id ?? null);
     useEffect(() => reportSelection(selectedId), [selectedId]);
+    const width = usePuck((state) => state.appState.ui.viewports.current.width);
     useEffect(() => {
       getPuck = get;
       if (shownRevision !== revision) {
         showPage();
       }
+      // A width set before Puck was ready, or Puck's own starting width.
+      showViewport();
       // A selection made before Puck was ready. Only when it differs: re-selecting resets Puck's
       // field focus and remounts an open rich-text editor (this effect re-runs on re-renders).
       if ((get().selectedItem?.props.id ?? null) !== selection) {
@@ -210,6 +259,8 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
         shownRevision = -1;
       };
     }, [get]);
+    // After the effect above, so the width it sends to Puck isn't taken for the user's choice.
+    useEffect(() => reportViewport(width), [width]);
     return <>{children}</>;
   }
 
@@ -260,6 +311,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
         iframe={{ enabled: options.iframe ?? true, syncHostStyles: false }}
         // The editor's own Edit panel shows the fields (1.14), not Puck's right sidebar.
         ui={{ rightSideBarVisible: false }}
+        viewports={puckViewports()}
         height="100%"
         {...(mode === "content" ? { permissions: CONTENT_MODE_PERMISSIONS } : {})}
       />,
@@ -356,12 +408,11 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     },
 
     setViewport(viewport: Viewport) {
-      const width = typeof viewport === "number" ? viewport : VIEWPORT_WIDTHS[viewport];
-      dispatch({
-        type: "setUi",
-        ui: (ui) => ({ viewports: { ...ui.viewports, current: { width, height: "auto" } } }),
-      });
+      viewportWidth = typeof viewport === "number" ? viewport : VIEWPORT_WIDTHS[viewport];
+      showViewport();
     },
+
+    onViewportChange: viewports.add,
 
     setSiteCss(css, bodyClass) {
       siteStyles = { css, bodyClass };

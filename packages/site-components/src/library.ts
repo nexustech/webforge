@@ -147,7 +147,8 @@ const BREAKPOINT_PREFIX: readonly (readonly [Breakpoint, string])[] = [
  * The classes for a value that may differ per device (F-ED-4), mobile first: the Mobile value's
  * classes as they are, then Tablet's with `md:` and Desktop's with `lg:` where they differ from the
  * device before. A plain value gives its classes alone. `classesFor` maps one value to its
- * classes, e.g. a padding token to `py-16`.
+ * classes, e.g. a padding token to `py-16`; it must give every value classes of its own
+ * (`space-y-0` for none, not nothing), so a larger device can undo a smaller one's.
  */
 export function responsiveClasses<T>(
   value: unknown,

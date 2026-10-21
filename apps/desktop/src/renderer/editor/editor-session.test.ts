@@ -326,6 +326,15 @@ describe("pages, selection and device view (U3)", () => {
     expect(engine.select).toHaveBeenLastCalledWith("about-heading");
   });
 
+  it("follows a device view chosen on the canvas, not as an undo step (U6)", () => {
+    const { session, engine } = setup();
+
+    engine.switchView("tablet");
+
+    expect(session.ui.getState().viewport).toBe("tablet");
+    expect(session.history.entries()).toEqual([]);
+  });
+
   it("keeps the restored element selected while the canvas loads the page", () => {
     const { session, engine, about } = setup();
     session.showPage(about);

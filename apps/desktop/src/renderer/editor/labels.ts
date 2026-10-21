@@ -24,6 +24,27 @@ function itemName(edit: EngineEdit, library: ComponentLibrary, pages: readonly P
 }
 
 /**
+ * The undo label for a change to a value set for one device (F-ED-4), e.g. "Changed Section padding
+ * on Mobile", or with `reset` for dropping it again: "Reset Section padding on Mobile".
+ */
+export function deviceLabelFor(
+  edit: EngineEdit,
+  library: ComponentLibrary,
+  device: string,
+  reset = false,
+): string {
+  const item = itemName(edit, library, [edit.page]);
+  const component =
+    edit.componentType === null ? undefined : library.components[edit.componentType];
+  const field = edit.field === null ? undefined : component?.fields[edit.field];
+  return t(reset ? "history.resetOn" : "history.changedOn", {
+    item,
+    field: (field?.label ?? edit.field ?? "").toLowerCase(),
+    device,
+  });
+}
+
+/**
  * The undo label for a canvas edit (D2), e.g. "Moved Heading", "Edited Heading text" or "Edited
  * 'Opening times' text". `before` is the page as it was, where a removed element is still found.
  */
