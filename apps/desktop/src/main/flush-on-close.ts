@@ -52,7 +52,12 @@ function isSaveShortcut(input: KeyInput): boolean {
 export function createFlushOnClose(
   ipc: Pick<IpcMain, "handle">,
   isTrustedSender: (senderUrl: string) => boolean,
-  options: { readonly timeoutMs?: number; readonly onClosed?: () => void } = {},
+  options: {
+    readonly timeoutMs?: number;
+    /** After the last save and before the window goes, e.g. to capture the Recent thumbnail. */
+    readonly beforeClose?: (window: ClosableWindow) => Promise<void>;
+    readonly onClosed?: () => void;
+  } = {},
 ) {
   const timeoutMs = options.timeoutMs ?? FLUSH_TIMEOUT_MS;
   const waiting = new Map<number, () => void>();
@@ -94,12 +99,15 @@ export function createFlushOnClose(
         }
         event.preventDefault();
         flushed = true;
-        void requestFlush(window).then(() => {
-          if (!window.isDestroyed()) {
-            window.close();
-          }
-          options.onClosed?.();
-        });
+        void requestFlush(window)
+          .then(() => options.beforeClose?.(window))
+          .catch(() => undefined)
+          .then(() => {
+            if (!window.isDestroyed()) {
+              window.close();
+            }
+            options.onClosed?.();
+          });
       });
     },
   };

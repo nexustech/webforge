@@ -4,6 +4,7 @@ import type { Call, Subscribe } from "./call.js";
 /** `window.webforge.app`. */
 export const appApi = (call: Call, subscribe: Subscribe): AppApi => ({
   getInfo: () => call("getAppInfo"),
+  openCrashReports: () => call("openCrashReports"),
   onFlushRequest: (save) =>
     subscribe(appEvents.flushRequest.channel, (...args) => {
       const parsed = appEvents.flushRequest.args.safeParse(args);

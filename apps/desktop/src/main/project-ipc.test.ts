@@ -17,7 +17,7 @@ const opened: ProjectResult = { status: "opened", project };
 
 function setUp(
   dialogs: Partial<ProjectDialogs> = {},
-  recovery?: Parameters<typeof registerProjectHandlers>[4],
+  options: Parameters<typeof registerProjectHandlers>[4] = {},
 ) {
   const handlers = new Map<string, Handler>();
   const ipc = {
@@ -43,7 +43,7 @@ function setUp(
       chooseProjectToOpen: async () => "/sites/Bakery.wforge",
       ...dialogs,
     },
-    recovery,
+    options,
   );
   const invoke = (channel: string, senderUrl = APP_URL, ...args: unknown[]) => {
     const handler = handlers.get(channel);
@@ -123,12 +123,77 @@ describe("registerProjectHandlers", () => {
         noBackups: vi.fn(async () => undefined),
       },
     };
-    const { invoke, session } = setUp({}, recovery);
+    const { invoke, session } = setUp({}, { recovery });
     session.open.mockReturnValueOnce({ status: "failed", reason: "corrupt" } as never);
 
     await expect(invoke("project:open")).resolves.toEqual({ status: "failed", reason: "corrupt" });
     expect(recovery.backups.list).toHaveBeenCalledWith("/sites/Bakery.wforge");
     expect(recovery.dialogs.noBackups).toHaveBeenCalled();
+  });
+
+  it("saves the open site before another replaces it", async () => {
+    const order: string[] = [];
+    const beforeSwitch = vi.fn(async () => {
+      order.push("before");
+    });
+    const { invoke, session } = setUp({}, { beforeSwitch });
+    session.create.mockImplementation(() => {
+      order.push("create");
+      return opened;
+    });
+    session.open.mockImplementation(() => {
+      order.push("open");
+      return opened;
+    });
+
+    await invoke("project:create");
+    await invoke("project:open");
+
+    expect(order).toEqual(["before", "create", "before", "open"]);
+  });
+
+  it("lists, opens and removes recent sites by id, never by path", async () => {
+    const id = "a".repeat(32);
+    const recent = {
+      list: vi.fn(() => []),
+      pathOf: vi.fn((asked: string) => (asked === id ? "/sites/Bakery.wforge" : undefined)),
+      remove: vi.fn(),
+    };
+    const { invoke, session } = setUp({}, { recent });
+
+    await expect(invoke("project:list-recent")).resolves.toEqual([]);
+    await expect(invoke("project:open-recent", APP_URL, id)).resolves.toEqual(opened);
+    expect(session.open).toHaveBeenCalledWith("/sites/Bakery.wforge");
+    await expect(invoke("project:open-recent", APP_URL, "b".repeat(32))).resolves.toEqual({
+      status: "failed",
+      reason: "not-found",
+    });
+    await expect(invoke("project:open-recent", APP_URL, "/etc/passwd")).rejects.toThrow();
+    await expect(invoke("project:remove-recent", APP_URL, id)).resolves.toBeNull();
+    expect(recent.remove).toHaveBeenCalledWith(id);
+  });
+
+  it("takes a recent site whose file has gone off the list", async () => {
+    const id = "a".repeat(32);
+    const recent = { list: vi.fn(() => []), pathOf: vi.fn(() => "/gone.wforge"), remove: vi.fn() };
+    const { invoke, session } = setUp({}, { recent });
+    session.open.mockReturnValueOnce({ status: "failed", reason: "not-found" } as never);
+
+    await expect(invoke("project:open-recent", APP_URL, id)).resolves.toMatchObject({
+      status: "failed",
+    });
+    expect(recent.remove).toHaveBeenCalledWith(id);
+  });
+
+  it("has an empty Recent list without one configured", async () => {
+    const { invoke } = setUp();
+
+    await expect(invoke("project:list-recent")).resolves.toEqual([]);
+    await expect(invoke("project:open-recent", APP_URL, "a".repeat(32))).resolves.toEqual({
+      status: "failed",
+      reason: "not-found",
+    });
+    await expect(invoke("project:remove-recent", APP_URL, "a".repeat(32))).resolves.toBeNull();
   });
 
   it("rejects calls from other frames before showing a dialog", async () => {
