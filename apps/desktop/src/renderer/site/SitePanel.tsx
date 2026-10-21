@@ -6,6 +6,7 @@ import type { PanelRegistry } from "../shell/panels.js";
 import { PagesPanel, type PagesPanelActions } from "./PagesPanel.js";
 import {
   addPage,
+  changePageSettings,
   deletePage,
   duplicatePage,
   movePage,
@@ -31,6 +32,7 @@ export function pagesPanelActions(session: EditorSession): PagesPanelActions {
     setHome: (pageId) => setHomePage(session, pageId),
     setHidden: (pageId, hidden) => setHiddenFromNavigation(session, pageId, hidden),
     remove: (pageId) => deletePage(session, pageId),
+    changeSettings: (pageId, change) => changePageSettings(session, pageId, change),
   };
 }
 

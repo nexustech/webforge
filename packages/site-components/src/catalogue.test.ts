@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { BEHAVIOUR_SCRIPTS } from "./behaviours.js";
-import { siteLibrary, starterLayout, starterPage } from "./catalogue.js";
+import { siteLibrary, starterLayout, starterNotFoundPage, starterPage } from "./catalogue.js";
 
 describe("siteLibrary", () => {
   it("names components with glossary terms", () => {
@@ -49,6 +49,15 @@ describe("starter content", () => {
     expect(
       (page.content[0]?.props.content as { type: string }[] | undefined)?.map((n) => n.type),
     ).toEqual(["Heading", "Text"]);
+  });
+
+  it("gives the 'Page not found' page a heading and a message, with no links (F-ED-20)", () => {
+    const page = starterNotFoundPage();
+    const section = page.content[0]?.props.content as { type: string; props: { text: string } }[];
+
+    expect(section.map((node) => node.type)).toEqual(["Heading", "Text"]);
+    expect(JSON.stringify(page)).not.toContain("href");
+    expect(section[0]?.props.text).toBe("Sorry, this page doesn't exist");
   });
 
   it("puts the site name in the header", () => {

@@ -47,6 +47,25 @@ export const panels = {
   "pages.deleteDialog.description":
     "This removes the page and its content. You can undo it afterwards.",
   "pages.deleteDialog.confirm": "Delete Page",
+  // Page Settings (F-SET-2).
+  "pageSettings.open": "Page Settings…",
+  "pageSettings.title": "Settings for '{name}'",
+  "pageSettings.description":
+    "How this page shows in search results, browser tabs and when shared.",
+  "pageSettings.pageTitle": "Title",
+  "pageSettings.fileName": "File name",
+  "pageSettings.homeFile": "The Home page is always index.html.",
+  "pageSettings.notFoundFile": "The 'Page not found' page is always 404.html.",
+  "pageSettings.metaDescription": "Description",
+  "pageSettings.metaDescriptionHint":
+    "Shown under the title in search results. Leave it empty to use the site's description.",
+  "pageSettings.shareImage": "Share image",
+  "pageSettings.siteShareImage": "The site's image",
+  "pageSettings.noImages": "Add images to Media to choose one here.",
+  "pageSettings.hideHeader": "Hide the Header on this page",
+  "pageSettings.hideFooter": "Hide the Footer on this page",
+  "pageSettings.hideFromNavigation": "Hide from navigation",
+  "pageSettings.save": "Save",
   // Undo steps; "Added {item}", "Moved {item}"… use pages.item.
   "pages.item": "page '{name}'",
   "pages.history.renamed": "Renamed page '{name}'",

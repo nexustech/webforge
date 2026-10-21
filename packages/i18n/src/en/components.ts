@@ -55,4 +55,7 @@ export const components = {
   "starter.faqQuestion": "When are you open?",
   "starter.faqAnswer": "Add your opening hours here.",
   "starter.footer": "Thanks for visiting.",
+  "starter.notFoundHeading": "Sorry, this page doesn't exist",
+  "starter.notFoundText":
+    "It may have moved or been renamed. Use the menu above to find what you're looking for.",
 } as const;

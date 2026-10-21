@@ -1,6 +1,7 @@
 import type { Recipe } from "@webforge/history";
 import { t } from "@webforge/i18n";
 import {
+  type MediaId,
   type MenuItem,
   newId,
   type PageEntry,
@@ -153,18 +154,40 @@ export function addPage(session: PagesSession, name: string): PageId | null {
   return id;
 }
 
-/** Renames a page; its file name follows (`About us` → `about-us.html`). */
+/**
+ * The slug a page gets when renamed to `title`: it follows the name (`About us` → `about-us`)
+ * while it still matches the old name, and stays as it is once set by hand in Page Settings, so
+ * a rename never breaks links to a file name the person chose.
+ */
+function slugAfterRename(site: SiteDoc, page: PageEntry, title: string): string {
+  const followsName = page.slug === slugFor(site, page.title, page.folder, page.id);
+  return followsName ? slugFor(site, title, page.folder, page.id) : page.slug;
+}
+
+/** The file a page would get if renamed to `name`, as the rename dialog shows it. */
+export function renamedFileName(site: SiteDoc, pageId: PageId, name: string): string {
+  const page = site.pages[pageId];
+  if (page === undefined || page.id === site.homePageId || page.kind === "not-found") {
+    return fileNameFor(site, name, page?.folder, pageId);
+  }
+  const slug = slugAfterRename(site, page, titleOf(name));
+  return page.folder === undefined ? `${slug}.html` : `${page.folder}/${slug}.html`;
+}
+
+/** Renames a page; its file name follows unless it was set by hand (see `slugAfterRename`). */
 export function renamePage(session: PagesSession, pageId: PageId, name: string): void {
-  const page = session.history.document.getState().pages[pageId];
+  const site = session.history.document.getState();
+  const page = site.pages[pageId];
   const title = titleOf(name);
   if (page === undefined || title === "" || title === page.title) {
     return;
   }
+  const slug = slugAfterRename(site, page, title);
   session.edit("props", t("pages.history.renamed", { name: title }), (draft) => {
     const target = draft.pages[pageId];
     if (target !== undefined) {
       target.title = title;
-      target.slug = slugFor(draft, title, target.folder, pageId);
+      target.slug = slug;
     }
   });
 }
@@ -348,4 +371,74 @@ export function deletePage(session: PagesSession, pageId: PageId): void {
       syncMenu(draft);
     },
   );
+}
+
+/** What Page Settings edits (F-SET-2). Empty `description` and no `shareImage` use the site's. */
+export type PageSettingsChange = {
+  readonly title: string;
+  /** A file name as typed; made file-friendly and unique in the page's folder. */
+  readonly slug: string;
+  readonly description: string;
+  readonly shareImage: MediaId | undefined;
+  readonly hideHeader: boolean;
+  readonly hideFooter: boolean;
+  readonly hideFromNavigation: boolean;
+};
+
+/** The longest description `pageEntrySchema` accepts. */
+const MAX_DESCRIPTION_LENGTH = 300;
+
+/**
+ * Applies Page Settings as one undo step, "Changed page settings", or nothing when nothing
+ * changed. An empty title keeps the old one; "Page not found" stays out of navigation.
+ */
+export function changePageSettings(
+  session: PagesSession,
+  pageId: PageId,
+  change: PageSettingsChange,
+): void {
+  const site = session.history.document.getState();
+  const page = site.pages[pageId];
+  if (page === undefined) {
+    return;
+  }
+  const title = titleOf(change.title) || page.title;
+  // An emptied file name keeps the current one, as an emptied title does.
+  const slug =
+    change.slug.trim() === "" || slugify(change.slug) === page.slug
+      ? page.slug
+      : slugFor(site, change.slug, page.folder, pageId);
+  const description = change.description.trim().slice(0, MAX_DESCRIPTION_LENGTH);
+  const shareImage =
+    change.shareImage !== undefined && site.media[change.shareImage]?.kind === "image"
+      ? change.shareImage
+      : undefined;
+  const hideFromNavigation = page.kind === "not-found" || change.hideFromNavigation;
+  const { settings } = page;
+  if (
+    title === page.title &&
+    slug === page.slug &&
+    description === (settings.description ?? "") &&
+    shareImage === settings.shareImage &&
+    change.hideHeader === settings.hideHeader &&
+    change.hideFooter === settings.hideFooter &&
+    hideFromNavigation === settings.hideFromNavigation
+  ) {
+    return;
+  }
+  session.edit("props", t("history.changedPage"), (draft) => {
+    const target = draft.pages[pageId];
+    if (target === undefined) {
+      return;
+    }
+    target.title = title;
+    target.slug = slug;
+    target.settings = {
+      ...(description === "" ? {} : { description }),
+      ...(shareImage === undefined ? {} : { shareImage }),
+      hideHeader: change.hideHeader,
+      hideFooter: change.hideFooter,
+      hideFromNavigation,
+    };
+  });
 }

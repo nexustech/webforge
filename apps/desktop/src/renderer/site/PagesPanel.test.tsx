@@ -45,6 +45,7 @@ function setUp() {
     setHome: vi.fn(),
     setHidden: vi.fn(),
     remove: vi.fn(),
+    changeSettings: vi.fn(),
   };
   render(<PagesPanel site={site} shownPageId={site.homePageId} actions={actions} />);
   const notFound = site.pageOrder.at(-1) as PageId;
@@ -160,12 +161,65 @@ describe("PagesPanel (F-ED-13)", () => {
     expect(actions.moveToFolder).toHaveBeenCalledWith("page-about", "Our Shop");
   });
 
+  it("changes a page's settings in Page Settings (F-SET-2)", async () => {
+    const { actions } = setUp();
+
+    await openMenu("Team");
+    await userEvent.click(screen.getByRole("menuitem", { name: "Page Settings…" }));
+    const dialog = screen.getByRole("dialog", { name: "Settings for 'Team'" });
+    const slug = within(dialog).getByRole("textbox", { name: "File name" });
+    await userEvent.clear(slug);
+    await userEvent.type(slug, "Our Team");
+    expect(within(dialog).getByText("File name: company/our-team.html")).toBeTruthy();
+    await userEvent.type(
+      within(dialog).getByRole("textbox", { name: "Description" }),
+      "Who we are",
+    );
+    await userEvent.click(
+      within(dialog).getByRole("checkbox", { name: "Hide the Footer on this page" }),
+    );
+    await userEvent.click(within(dialog).getByRole("button", { name: "Save" }));
+
+    expect(actions.changeSettings).toHaveBeenCalledWith("page-team", {
+      title: "Team",
+      slug: "Our Team",
+      description: "Who we are",
+      shareImage: undefined,
+      hideHeader: false,
+      hideFooter: true,
+      hideFromNavigation: false,
+    });
+  });
+
+  it("keeps the Home page's and 'Page not found''s file names fixed", async () => {
+    setUp();
+
+    await openMenu("Page not found");
+    await userEvent.click(screen.getByRole("menuitem", { name: "Page Settings…" }));
+    const dialog = screen.getByRole("dialog");
+    const file = within(dialog).getByRole("textbox", { name: "File name" }) as HTMLInputElement;
+    expect(file.value).toBe("404.html");
+    expect(file.disabled).toBe(true);
+    expect(within(dialog).queryByRole("checkbox", { name: "Hide from navigation" })).toBeNull();
+    await userEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
+
+    await openMenu("My site");
+    await userEvent.click(screen.getByRole("menuitem", { name: "Page Settings…" }));
+    expect(
+      (
+        within(screen.getByRole("dialog")).getByRole("textbox", {
+          name: "File name",
+        }) as HTMLInputElement
+      ).value,
+    ).toBe("index.html");
+  });
+
   it("offers only Rename and moves for 'Page not found', and no Delete for the Home page", async () => {
     setUp();
 
     await openMenu("Page not found");
     const items = screen.getAllByRole("menuitem").map((item) => item.textContent);
-    expect(items).toEqual(["Rename…", "Move Up", "Move Down"]);
+    expect(items).toEqual(["Page Settings…", "Rename…", "Move Up", "Move Down"]);
     expect(screen.queryByRole("menuitemcheckbox")).toBeNull();
     await userEvent.keyboard("{Escape}");
 

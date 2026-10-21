@@ -57,9 +57,43 @@ test.describe("Pages panel", () => {
   test("shows another page when it is clicked, and 'Page not found' can't be deleted", async () => {
     await pageButton("Page not found").click();
     await expect(pageButton("Page not found")).toHaveAttribute("aria-current", "page");
+    // A new site's "Page not found" page starts with a message (F-ED-20).
+    await expect(canvas().locator("h1")).toHaveText("Sorry, this page doesn't exist");
 
     await pages().getByRole("button", { name: "Actions for Page not found" }).click();
     await expect(page.getByRole("menuitem", { name: "Rename…" })).toBeVisible();
     await expect(page.getByRole("menuitem", { name: "Delete…" })).toHaveCount(0);
+  });
+
+  test("changes a page's settings as one undo step (F-SET-2)", async () => {
+    await page.getByRole("button", { name: "Add Page" }).click();
+    await page.getByRole("textbox", { name: "Page name" }).fill("About us");
+    await page.getByRole("dialog").getByRole("button", { name: "Add Page" }).click();
+
+    await pages().getByRole("button", { name: "Actions for About us" }).click();
+    await page.getByRole("menuitem", { name: "Page Settings…" }).click();
+    const dialog = page.getByRole("dialog", { name: "Settings for 'About us'" });
+    await dialog.getByRole("textbox", { name: "File name" }).fill("our story");
+    await expect(dialog.getByText("File name: our-story.html")).toBeVisible();
+    await dialog.getByRole("textbox", { name: "Description" }).fill("How we started");
+    await dialog.getByRole("checkbox", { name: "Hide the Footer on this page" }).check();
+    await dialog.getByRole("button", { name: "Save" }).click();
+    await expect(dialog).toHaveCount(0);
+
+    const history = page.getByRole("list", { name: "Undo History" });
+    await expect(history.getByRole("button", { name: "Changed page settings" })).toHaveAttribute(
+      "aria-current",
+      "step",
+    );
+
+    await pages().getByRole("button", { name: "Actions for About us" }).click();
+    await page.getByRole("menuitem", { name: "Page Settings…" }).click();
+    await expect(dialog.getByRole("textbox", { name: "File name" })).toHaveValue("our-story");
+    await expect(dialog.getByRole("textbox", { name: "Description" })).toHaveValue(
+      "How we started",
+    );
+    await expect(
+      dialog.getByRole("checkbox", { name: "Hide the Footer on this page" }),
+    ).toBeChecked();
   });
 });
