@@ -93,6 +93,31 @@ describe("renderNodesToHtml", () => {
     expect(html).toContain('<p style="text-align:center">Hi</p><p>Big</p><p>Odd</p>');
   });
 
+  // Hostile input a future sanitize-html upgrade must keep refusing (#160 review).
+  it.each([
+    ['<p style="text-align: url(x)">a</p>', "<p>a</p>"],
+    [
+      '<p style="text-align: center; text-align: expression(alert(1))">a</p>',
+      '<p style="text-align:center">a</p>',
+    ],
+    // A CSS escape: `\63 enter` is "center".
+    ['<p style="text-align: \\63 enter">a</p>', "<p>a</p>"],
+    ['<p style="TEXT-ALIGN: CENTER">a</p>', "<p>a</p>"],
+    ['<p style="text-align: center;}body{color:red">a</p>', '<p style="text-align:center">a</p>'],
+    ['<p style="background: url(javascript:alert(1))">a</p>', "<p>a</p>"],
+    ['<ul><li style="text-align: center">a</li></ul>', "<ul><li>a</li></ul>"],
+    ['<p><a href="javascript:alert(1)">a</a></p>', "<p><a>a</a></p>"],
+    ['<p><a href=" JavaScript:alert(1)">a</a></p>', "<p><a>a</a></p>"],
+    ['<p><a href="data:text/html,x">a</a></p>', "<p><a>a</a></p>"],
+    ['<p><a href="//evil.example/x">a</a></p>', "<p><a>a</a></p>"],
+  ])("refuses hostile rich text: %s", (text, expected) => {
+    const nodes: NodeDoc[] = [{ type: "Text", props: { id: "t", text } }];
+
+    expect(renderNodesToHtml(nodes, siteLibrary, context)).toContain(
+      `<div class="contents">${expected}</div>`,
+    );
+  });
+
   it("renders the header with navigation, the current page and the menu toggle", () => {
     const html = renderNodesToHtml(starterLayout("Rosa's Bakery").header, siteLibrary, context);
 
