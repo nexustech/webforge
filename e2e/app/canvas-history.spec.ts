@@ -201,6 +201,25 @@ test.describe("Puck canvas with Webforge history", () => {
     await expect(canvas().locator(".site-text")).toHaveText(`${STARTER_TEXT} Really.`);
   });
 
+  test("keeps the last keystrokes of a rich-text session when Undo follows straight away", async () => {
+    const editor = canvas().locator(".site-text .ProseMirror");
+    await canvas().getByText(STARTER_TEXT).click();
+    await editor.click();
+    await expect(editor).toBeFocused();
+    await page.keyboard.press("End");
+    await page.keyboard.type(" Again", { delay: 10 });
+
+    // No wait at all: Puck sent rich text up to 200 ms late, and the end of the typing was lost.
+    await canvas().locator("h1").click({ force: true });
+    await focusHost();
+    await page.keyboard.press("ControlOrMeta+z");
+    await expect(canvas().locator(".site-text")).toHaveText(STARTER_TEXT);
+    await page.keyboard.press("ControlOrMeta+Shift+z");
+
+    await expect(canvas().locator(".site-text")).toHaveText(`${STARTER_TEXT} Again`);
+    await expectSteps(["Edited Text text"], "Edited Text text");
+  });
+
   test("clicking a step in Undo History jumps there", async () => {
     await drag(
       page.getByText("Heading", { exact: true }).first(),
