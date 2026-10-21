@@ -236,12 +236,13 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     }
   };
 
-  /** Reports the canvas's size and zoom if they changed. */
+  /** Reports the canvas's size and zoom if they changed, once Puck has measured the canvas. */
   const reportSize = () => {
+    sizeFrame = null;
     const puck = getPuck?.();
     const config = puck === undefined ? undefined : zoomAccess(puck)?.getZoomConfig();
     const width = puck?.appState.ui.viewports.current.width;
-    if (config === undefined || typeof width !== "number") {
+    if (config === undefined || typeof width !== "number" || !(config.rootHeight > 0)) {
       return;
     }
     const size = { width, height: Math.round(config.rootHeight), zoom: config.zoom };
@@ -254,6 +255,15 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       canvasSize = size;
       canvasSizes.emit(size);
     }
+  };
+
+  /**
+   * Reports the size at the next frame: Puck sets a new zoom and the height that goes with it in
+   * two renders, which then arrive as one change.
+   */
+  let sizeFrame: number | null = null;
+  const scheduleSize = () => {
+    sizeFrame ??= requestAnimationFrame(reportSize);
   };
 
   /** Puck shows `width`: the app's own width arriving, or the user's choice in Puck's controls. */
@@ -332,7 +342,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     // After the effect above, so the width it sends to Puck isn't taken for the user's choice.
     useEffect(() => {
       reportViewport(width);
-      reportSize();
+      scheduleSize();
     }, [width]);
     // Puck changes the zoom inside its store, where nothing reports it, and shows it on the canvas
     // root's style (its scale and height): watch that.
@@ -341,10 +351,14 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       if (!canvasRoot) {
         return;
       }
-      reportSize();
-      const observer = new MutationObserver(reportSize);
+      scheduleSize();
+      const observer = new MutationObserver(scheduleSize);
       observer.observe(canvasRoot, { attributes: true, attributeFilter: ["style"] });
-      return () => observer.disconnect();
+      return () => {
+        observer.disconnect();
+        if (sizeFrame !== null) cancelAnimationFrame(sizeFrame);
+        sizeFrame = null;
+      };
     }, []);
     return <>{children}</>;
   }
