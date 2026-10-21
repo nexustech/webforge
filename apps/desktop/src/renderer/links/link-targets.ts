@@ -10,7 +10,7 @@ import {
 import type { ComponentLibrary } from "@webforge/site-components";
 
 /** A section a link can go to: a top-level element of a page. */
-export type SectionTarget = {
+type SectionTarget = {
   readonly nodeId: string;
   /** Its name in Layers, else its component's ("Opening times", "Hero"). */
   readonly label: string;

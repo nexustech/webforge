@@ -19,7 +19,7 @@ type LinkFieldContext = {
  * A link field in the Edit panel (F-ED-18): where the link goes in a few words, a button that opens
  * the {@link LinkDialog}, and one that removes the link. It reports a {@link LinkFieldChange}.
  */
-export function LinkField({
+function LinkField({
   id,
   value,
   onChange,
