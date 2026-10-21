@@ -1,5 +1,9 @@
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { launchDesktopApp } from "./launch.js";
+import { stubFileDialogs } from "./sites.js";
 
 // Layers (1.24, F-ED-12): Advanced mode only; selection in step with the canvas both ways; a move
 // or a hide is one undo step.
@@ -28,14 +32,14 @@ const row = (name: string) => tree().getByRole("treeitem", { name: new RegExp(`^
 const selected = () => canvas().locator('[class*="ActionBar-label"]');
 const steps = () => page.locator(".undo-history__step");
 
-async function useAdvancedMode(): Promise<void> {
+async function switchToAdvancedMode(): Promise<void> {
   await page.getByRole("menuitem", { name: "View" }).click();
   await page.getByRole("menuitem", { name: "Use Advanced Mode" }).click();
 }
 
 test("Layers shows in Advanced mode only, and selects in step with the canvas", async () => {
   await expect(left().getByRole("tab", { name: "Layers" })).toHaveCount(0);
-  await useAdvancedMode();
+  await switchToAdvancedMode();
   await left().getByRole("tab", { name: "Layers" }).click();
   await expect(row("Section")).toBeVisible();
 
@@ -50,7 +54,7 @@ test("Layers shows in Advanced mode only, and selects in step with the canvas", 
 });
 
 test("moves a layer with Alt+↓ and hides one, each as one undo step", async () => {
-  await useAdvancedMode();
+  await switchToAdvancedMode();
   await left().getByRole("tab", { name: "Layers" }).click();
 
   await row("Heading").click();
@@ -65,4 +69,25 @@ test("moves a layer with Alt+↓ and hides one, each as one undo step", async ()
 
   await left().getByRole("tab", { name: "Undo History" }).click();
   await expect(steps()).toHaveText(["Hid Text", "Moved Heading", "Opened page"]);
+});
+
+test("leaves a hidden layer out of the exported site (F-ED-12)", async () => {
+  const parent = mkdtempSync(join(tmpdir(), "webforge-e2e-layers-"));
+  try {
+    await switchToAdvancedMode();
+    await left().getByRole("tab", { name: "Layers" }).click();
+    await row("Heading").hover();
+    await tree().getByRole("button", { name: "Hide Heading" }).click();
+
+    const folder = join(parent, "site");
+    await stubFileDialogs(app, folder);
+    await page.getByRole("button", { name: "Export", exact: true }).click();
+    await expect(page.getByText(/^Site exported to/)).toBeVisible({ timeout: 30_000 });
+
+    const index = readFileSync(join(folder, "index.html"), "utf8");
+    expect(index).not.toContain(STARTER_HEADING);
+    expect(index).toContain(STARTER_TEXT);
+  } finally {
+    rmSync(parent, { recursive: true, force: true });
+  }
 });
