@@ -68,7 +68,8 @@ export function CanvasToolbar({
     <div
       role="toolbar"
       aria-label={t("canvasToolbar.label")}
-      className="flex h-9 shrink-0 items-center gap-2 border-b border-border-strong bg-toolbar px-2"
+      // Text in the toolbar's own colour: muted text is under 4.5:1 on the toolbar.
+      className="flex h-9 shrink-0 items-center gap-2 border-b border-border-strong bg-toolbar px-2 text-foreground"
     >
       <label htmlFor={pageId} className="sr-only">
         {t("canvasToolbar.page")}
@@ -137,13 +138,14 @@ export function CanvasToolbar({
       </select>
 
       {size !== null && (
-        <output className="ml-auto text-xs whitespace-nowrap text-muted-foreground tabular-nums">
+        // Not an <output>: a live region would read out every size change while panels resize.
+        <span className="ml-auto text-xs whitespace-nowrap tabular-nums">
           {t("canvasToolbar.size", {
             width: Math.round(size.width),
             height: Math.round(size.height),
             zoom: percent(size.zoom),
           })}
-        </output>
+        </span>
       )}
     </div>
   );
@@ -172,7 +174,7 @@ function CustomWidth({
     }
   };
   return (
-    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+    <div className="flex items-center gap-1 text-xs">
       <label htmlFor={id} className="sr-only">
         {t("canvasToolbar.width")}
       </label>

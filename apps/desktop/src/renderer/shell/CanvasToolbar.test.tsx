@@ -106,7 +106,7 @@ describe("zoom and size readout", () => {
   it("shows no size before the canvas has shown the page", () => {
     setUp();
 
-    expect(screen.queryByRole("status")).toBeNull();
+    expect(screen.queryByText(/ @ /)).toBeNull();
     expect(screen.getByRole("option", { name: "Fit" })).toBeTruthy();
   });
 
@@ -124,7 +124,7 @@ describe("zoom and size readout", () => {
 
     const disconnect = connectCanvasView(engine, view);
     view.setState({ zoom: 2 });
-    // A report from before the zoom took effect is shown, but isn't a re-fit.
+    // A report from before the zoom took effect is shown, isn't a re-fit, and asks again.
     report?.({ width: 375, height: 900, zoom: 0.6 });
     expect(view.getState()).toEqual({ zoom: 2, size: { width: 375, height: 900, zoom: 0.6 } });
     report?.({ width: 375, height: 450, zoom: 2 });
@@ -137,8 +137,31 @@ describe("zoom and size readout", () => {
     disconnect();
     view.setState({ zoom: 1 });
 
-    expect(engine.setZoom.mock.calls).toEqual([["fit"], [2], ["fit"]]);
+    expect(engine.setZoom.mock.calls).toEqual([["fit"], [2], [2], ["fit"]]);
     expect(stopSize).toHaveBeenCalledOnce();
+  });
+});
+
+describe("a zoom the canvas wasn't ready for", () => {
+  it("is asked for again, then given up for Fit", () => {
+    const view = createCanvasView();
+    view.setState({ zoom: 0.5 });
+    let report: ((size: CanvasSize) => void) | undefined;
+    const engine = {
+      setZoom: vi.fn<(zoom: CanvasZoom) => void>(),
+      onCanvasSize: (cb: (size: CanvasSize) => void) => {
+        report = cb;
+        return () => undefined;
+      },
+    };
+
+    connectCanvasView(engine, view);
+    report?.({ width: 1280, height: 700, zoom: 0.58 });
+    expect(view.getState().zoom).toBe(0.5);
+    report?.({ width: 1280, height: 700, zoom: 0.58 });
+
+    expect(engine.setZoom.mock.calls).toEqual([[0.5], [0.5], ["fit"]]);
+    expect(view.getState().zoom).toBe("fit");
   });
 });
 
