@@ -102,6 +102,16 @@ describe("siteToSnapshot", () => {
     ]);
   });
 
+  it("carries the Site Settings values elements can be bound to", () => {
+    const site = bakery();
+    site.settings.contact.phone = "+44 1234 567890";
+
+    expect(siteToSnapshot(site, new Map()).settings).toEqual({
+      "general.name": "Rosa's Bakery",
+      "contact.phone": "+44 1234 567890",
+    });
+  });
+
   it("carries an image's alt text, focal point and crop for the export", () => {
     const site = bakery();
     const hero = site.media["hero" as MediaId];

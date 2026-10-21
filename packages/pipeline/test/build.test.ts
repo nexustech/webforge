@@ -166,6 +166,67 @@ function siteWith(content: NodeDoc[], overrides: Partial<SiteSnapshot> = {}): Si
   };
 }
 
+describe("buildSite: Site Settings values (1.17)", () => {
+  it("shows bound values from Site Settings and leaves empty ones out", async () => {
+    const site = siteWith([], {
+      layout: {
+        header: [
+          {
+            type: "Header",
+            props: { id: "h", siteName: "Typed", bindings: { siteName: "general.name" } },
+          },
+        ],
+        footer: [
+          {
+            type: "Footer",
+            props: { id: "f", text: "Typed", bindings: { text: "contact.phone" } },
+          },
+        ],
+      },
+      settings: { "general.name": "Rosa's Bakery" },
+    });
+
+    const built = await buildSite(site, siteLibrary, resources);
+    const index = new TextDecoder().decode(built.files.get("index.html"));
+
+    expect(index).toContain(">Rosa&#x27;s Bakery</a>");
+    expect(index).not.toContain("Typed");
+  });
+});
+
+describe("buildSite: a value bound on several pages (1.17 acceptance)", () => {
+  it("shows the same Site Settings value on every page, and a new one everywhere at once", async () => {
+    const heading = (id: string) => ({
+      type: "Heading",
+      props: { id, text: "Typed", bindings: { text: "contact.phone" } },
+    });
+    const base = siteWith([], {
+      pages: ["index", "about", "contact"].map((path) => ({
+        id: path,
+        path,
+        title: path,
+        doc: { root: { props: {} }, content: [heading(`h-${path}`)] },
+      })),
+    });
+    const html = async (phone: string) => {
+      const built = await buildSite(
+        { ...base, settings: { "contact.phone": phone } },
+        siteLibrary,
+        resources,
+      );
+      return ["index", "about", "contact"].map((path) =>
+        new TextDecoder().decode(built.files.get(`${path}.html`)),
+      );
+    };
+
+    for (const page of await html("+44 1234 567890")) expect(page).toContain("+44 1234 567890");
+    for (const page of await html("+44 9876 543210")) {
+      expect(page).toContain("+44 9876 543210");
+      expect(page).not.toContain("+44 1234 567890");
+    }
+  });
+});
+
 describe("buildSite: checks (X5)", () => {
   it("warns about links to pages that do not exist and keeps building", async () => {
     const site = siteWith([

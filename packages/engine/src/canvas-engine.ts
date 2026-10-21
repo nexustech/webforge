@@ -1,5 +1,5 @@
 import type { LayoutDoc, PageDoc, Theme } from "@webforge/model";
-import type { ComponentLibrary, ResolvedImage } from "@webforge/site-components";
+import type { ComponentLibrary, RenderContext, ResolvedImage } from "@webforge/site-components";
 
 /** Desktop · Tablet · Mobile, or a width in pixels. */
 export type Viewport = "desktop" | "tablet" | "mobile" | number;
@@ -140,6 +140,15 @@ export interface CanvasEngine {
    * into an image to show, or `null`. Called again when Media changes; the page is drawn again.
    */
   setImages(image: (mediaId: string) => ResolvedImage | null): void;
+  /**
+   * Shows the site's Site Settings values in elements bound to them (1.17): `setting` gives a
+   * value, `emptySetting` what an empty one shows instead (a hint). Called again when Site
+   * Settings change; the page is drawn again.
+   */
+  setSettings(
+    setting: RenderContext["setting"],
+    emptySetting?: RenderContext["emptySetting"],
+  ): void;
   setMode(mode: EditorMode): void;
   /**
    * Does `action` to the selected element. Edits are reported through {@link onUserEdit} as one

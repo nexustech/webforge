@@ -19,6 +19,7 @@ import { useCommandRegistry } from "../shell/command-context.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { installCommandShortcuts } from "../shell/commands.js";
 import { usePanelRegistry } from "../shell/panel-context.js";
+import { connectCanvasSettings } from "../site-settings/canvas-settings.js";
 import { registerCanvasCommands } from "./canvas-commands.js";
 import { EditPanelHost } from "./EditPanelHost.js";
 import {
@@ -137,6 +138,7 @@ export function Editor({
     setEngine(engine);
     const stopSiteCss = connectSiteCss(engine, session, compileCss, document.baseURI);
     const stopImages = connectCanvasImages(engine, session);
+    const stopSettings = connectCanvasSettings(engine, session);
     // One handler for the whole window (U4); the engine reports keys pressed inside its iframe.
     const removeKeys = installHistoryKeys(window, (command) => {
       connection.flush();
@@ -167,6 +169,7 @@ export function Editor({
       canvasCommands.remove();
       stopSiteCss();
       stopImages();
+      stopSettings();
       removeKeys();
       connectionRef.current = null;
       connection.disconnect();

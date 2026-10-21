@@ -1,5 +1,7 @@
 import {
+  type BindableSetting,
   type Breakpoint,
+  bindingOf,
   isResponsiveValue,
   type LinkValue,
   linkValueSchema,
@@ -32,6 +34,12 @@ export type FieldDef = {
       readonly label: string;
       /** Editable by clicking the text on the canvas. */
       readonly inline?: boolean;
+      /**
+       * Site Settings values the field can show instead of its own text (1.17), typed once in
+       * Site Settings and updated on every page. The choice is stored in the element's
+       * `props.bindings`; render the field with {@link boundText}.
+       */
+      readonly bindable?: readonly BindableSetting[];
     }
   | { readonly kind: "richtext"; readonly label: string; readonly inline?: boolean }
   | { readonly kind: "select"; readonly label: string; readonly options: readonly FieldOption[] }
@@ -137,6 +145,10 @@ export type RenderContext = {
   readonly href: (link: LinkValue) => string;
   /** The image for a media id, or `null` if there is none (yet). */
   readonly image: (mediaId: string) => ResolvedImage | null;
+  /** A Site Settings value a field is bound to (1.17), or `undefined` while it is empty. */
+  readonly setting: (key: BindableSetting) => string | undefined;
+  /** What an empty binding shows instead: a hint on the canvas; nothing in the export. */
+  readonly emptySetting?: (key: BindableSetting) => ReactNode;
 };
 
 /** The context on the editor canvas: no site navigation, links go nowhere, no images yet. */
@@ -145,6 +157,7 @@ export const EDITOR_RENDER_CONTEXT: RenderContext = {
   link: () => "#",
   href: () => "#",
   image: () => null,
+  setting: () => undefined,
 };
 
 /** Props a component's `render` receives. */
@@ -189,6 +202,22 @@ export type ComponentLibrary = {
 };
 
 /** Narrows a text field value for rendering: strings, numbers and elements pass, others are empty. */
+/**
+ * A text field's content: the Site Settings value it is bound to (1.17), else its own text. An
+ * empty binding shows the context's hint on the canvas and nothing in the export.
+ */
+export function boundText(
+  values: Readonly<Record<string, unknown>>,
+  name: string,
+  context: RenderContext,
+): ReactNode {
+  const key = bindingOf(values.bindings, name);
+  if (key === undefined) {
+    return textValue(values[name]);
+  }
+  return context.setting(key) ?? context.emptySetting?.(key) ?? null;
+}
+
 export function textValue(value: unknown): ReactNode {
   if (typeof value === "string" || typeof value === "number" || isValidElement(value)) {
     return value;

@@ -1,5 +1,6 @@
 import { t } from "@webforge/i18n";
 import {
+  boundText,
   type ComponentDef,
   optionValue,
   responsiveClasses,
@@ -90,7 +91,19 @@ export const heading: ComponentDef = {
   label: t("element.heading"),
   category: t("category.text"),
   fields: {
-    text: { kind: "text", label: t("field.text"), inline: true },
+    text: {
+      kind: "text",
+      label: t("field.text"),
+      inline: true,
+      bindable: [
+        "general.name",
+        "contact.businessName",
+        "contact.phone",
+        "contact.email",
+        "contact.address",
+        "contact.openingHoursNote",
+      ],
+    },
     size: {
       kind: "select",
       label: t("field.size"),
@@ -103,13 +116,16 @@ export const heading: ComponentDef = {
     },
   },
   defaults: { text: t("element.heading"), size: "medium", color: "default" },
-  render: ({ values }) => {
+  render: ({ values, context }) => {
     const size = optionValue(values.size, SIZES);
     const Tag = HEADING_TAG[size];
     const colour = COLOUR_CLASS[optionValue(values.color, COLOURS)];
+    const content = boundText(values, "text", context);
+    // Bound to an empty Site Settings value in the export: no empty heading.
+    if (content === null) return null;
     return (
       <Tag className={`site-heading ${HEADING_CLASS[size]}${colour === "" ? "" : ` ${colour}`}`}>
-        {textValue(values.text)}
+        {content}
       </Tag>
     );
   },
