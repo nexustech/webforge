@@ -330,6 +330,29 @@ describe("tree helpers", () => {
     expect(renderNodesToHtml(nodes, siteLibrary, context)).toBe("");
   });
 
+  it("skips unknown component types with includeHidden, so the canvas styles the rest", () => {
+    const nodes: NodeDoc[] = [
+      { type: "Gone", props: { id: "old", hidden: true } },
+      {
+        type: "Section",
+        props: {
+          id: "s",
+          content: [
+            { type: "Removed", props: { id: "r" } },
+            { type: "Heading", props: { id: "h", text: "Still styled" } },
+          ],
+        },
+      },
+    ];
+
+    const html = renderNodesToHtml(nodes, siteLibrary, context, { includeHidden: true });
+
+    expect(html).toContain("site-section");
+    expect(html).toContain("Still styled");
+    // The export still fails on an unknown type it would export (X5).
+    expect(() => renderNodesToHtml(nodes, siteLibrary, context)).toThrow(UnknownComponentError);
+  });
+
   it("behavioursUsedBy lists the scripts the components need", () => {
     expect(behavioursUsedBy(starterLayout("x").header, siteLibrary)).toEqual(["menu"]);
     expect(behavioursUsedBy(starterPage().content, siteLibrary)).toEqual([]);

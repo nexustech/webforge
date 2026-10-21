@@ -67,6 +67,10 @@ test("moves a layer with Alt+↓ and hides one, each as one undo step", async ()
   await row("Text").hover();
   await tree().getByRole("button", { name: "Hide Text" }).click();
   await expect(tree().getByRole("button", { name: "Show Text" })).toBeVisible();
+  // Still on the canvas, dimmed (#141), but left out of the export.
+  const text = canvas().locator(".site-text");
+  await expect(text).toHaveAttribute("data-webforge-hidden", "");
+  await expect(text).toHaveCSS("opacity", "0.35");
 
   await left().getByRole("tab", { name: "Undo History" }).click();
   await expect(steps()).toHaveText(["Hid Text", "Moved Heading", "Opened page"]);
