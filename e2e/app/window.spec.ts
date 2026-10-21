@@ -47,7 +47,10 @@ test.describe("window and canvas size", () => {
       if ((await column.count()) === 0) {
         continue;
       }
-      await expect(column.getByRole("tabpanel")).toHaveCount(1);
+      // The column's own tab panel, not those of a panel's own tabs (Add's Sections, Elements).
+      await expect(
+        column.locator('[data-slot="tabs"]').first().locator(':scope > [role="tabpanel"]:visible'),
+      ).toHaveCount(1);
       const width = (await column.boundingBox())?.width ?? 0;
       expect(width).toBeGreaterThan(190);
       expect(width).toBeLessThan(370);

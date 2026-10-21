@@ -9,6 +9,7 @@ import {
 import { t } from "@webforge/i18n";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { Preferences } from "../../shared/ipc-contract.js";
+import { type AddPanelRegistration, registerAddPanel } from "../add/register-add-panel.js";
 import { registerLinkField } from "../links/LinkField.js";
 import { connectCanvasImages } from "../media/canvas-images.js";
 import { registerImageField } from "../media/ImageField.js";
@@ -19,7 +20,6 @@ import { COMMAND_IDS } from "../shell/command-ids.js";
 import { installCommandShortcuts } from "../shell/commands.js";
 import { usePanelRegistry } from "../shell/panel-context.js";
 import { connectCanvasSettings } from "../site-settings/canvas-settings.js";
-import { addSection } from "./add-section.js";
 import { registerCanvasCommands } from "./canvas-commands.js";
 import { EditPanelHost } from "./EditPanelHost.js";
 import {
@@ -71,6 +71,7 @@ export function Editor({
     modeRef.current = mode;
   });
   const connectionRef = useRef<EngineConnection | null>(null);
+  const addPanelRef = useRef<AddPanelRegistration | null>(null);
   const { history } = session;
   const registry = useCommandRegistry();
   const state = useSyncExternalStore(
@@ -156,11 +157,8 @@ export function Editor({
       removeFrameShortcuts =
         frameWindow === null ? undefined : installCommandShortcuts(frameWindow, registry);
     });
-    // The floating + adds a section; the Add panel (1.13) will open at that point instead.
-    const stopAdd = engine.onAddRequest((at) => {
-      connection.flush();
-      addSection(session, at);
-    });
+    // The floating + opens the Add panel's Sections, ready to add one at its place (UI1).
+    const stopAdd = engine.onAddRequest((at) => addPanelRef.current?.openAt(at));
 
     return () => {
       setEngine(null);
@@ -246,6 +244,18 @@ export function Editor({
     });
   }, [panels, session, editorLevel]);
 
+  // The Add panel (1.13), hidden in Content mode (M3).
+  useEffect(() => {
+    if (mode !== "design") {
+      return;
+    }
+    const addPanel = registerAddPanel(panels, session, () => connectionRef.current?.flush());
+    addPanelRef.current = addPanel;
+    return () => {
+      addPanelRef.current = null;
+      addPanel.remove();
+    };
+  }, [panels, session, mode]);
   useEffect(() => registerMediaPanel(panels, session), [panels, session]);
   useEffect(() => registerImageField({ session }), [session]);
   useEffect(() => registerLinkField({ session }), [session]);

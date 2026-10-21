@@ -32,6 +32,27 @@ describe("siteLibrary", () => {
     }
   });
 
+  it("says where each component goes, and groups the ones the Add panel offers (ADR 0005)", () => {
+    const places = Object.fromEntries(
+      Object.entries(siteLibrary.components).map(([type, def]) => [type, def.place ?? "element"]),
+    );
+
+    expect(places).toEqual({
+      Header: "layout",
+      Footer: "layout",
+      Section: "section",
+      Hero: "section",
+      Faq: "section",
+      FaqItem: "child",
+      Heading: "element",
+      Text: "element",
+    });
+    for (const def of Object.values(siteLibrary.components)) {
+      const offered = def.place === undefined || def.place === "section" || def.place === "element";
+      expect(def.category !== undefined).toBe(offered);
+    }
+  });
+
   it("has a script for every behaviour a component declares", () => {
     for (const def of Object.values(siteLibrary.components)) {
       for (const name of def.behaviours ?? []) {
