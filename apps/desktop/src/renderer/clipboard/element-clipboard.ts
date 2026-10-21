@@ -12,9 +12,10 @@ import type {
   ClipboardReadResult,
   ClipboardWriteResult,
 } from "../../shared/ipc/clipboard.js";
-import { type AddTarget, addTarget } from "../add/add-items.js";
+import { type AddTarget, addTarget, insertAt } from "../add/add-items.js";
 import { currentPage, type EditorSession } from "../editor/editor-session.js";
 import { findNode } from "../editor/nodes.js";
+import { type SharedRegion, sharedRegionOf } from "../editor/shared-layout.js";
 import { layerItem } from "../layers/layers.js";
 import { putInMedia } from "../media/media-commands.js";
 
@@ -36,13 +37,22 @@ function itemName(session: ClipboardSession, node: NodeDoc): string {
   });
 }
 
-/** The selected element of the shown page, if one is selected there. */
-function selectedNode(session: ClipboardSession): NodeDoc | undefined {
+/**
+ * The selected element: on the shown page, or in the shared Header or Footer (`region`, F-ED-7),
+ * which every page shows.
+ */
+function selectedNode(
+  session: ClipboardSession,
+): { readonly node: NodeDoc; readonly region?: SharedRegion } | undefined {
   const { nodeId } = session.ui.getState();
-  const content = currentPage(session)?.doc.content;
-  return nodeId === null || content === undefined
-    ? undefined
-    : findNode(content, (node) => node.props.id === nodeId);
+  if (nodeId === null) return undefined;
+  const isSelected = (node: NodeDoc) => node.props.id === nodeId;
+  const own = findNode(currentPage(session)?.doc.content ?? [], isSelected);
+  if (own !== undefined) return { node: own };
+  const { layout } = session.history.document.getState();
+  const region = sharedRegionOf(layout, nodeId);
+  const node = region === undefined ? undefined : findNode(layout[region], isSelected);
+  return node === undefined || region === undefined ? undefined : { node, region };
 }
 
 /** The Media items `nodes` show, as the site has them. */
@@ -70,8 +80,9 @@ function removeNode(nodes: NodeDoc[], id: string): boolean {
 
 /**
  * Copies the selected element, with everything in it, to the clipboard. With `cut`, also removes
- * it from the page as one step ("Cut Heading"), once the copy is on the clipboard. Returns whether
- * it copied.
+ * it as one step ("Cut Heading"), once the copy is on the clipboard: from the page, or from the
+ * shared Header or Footer and so every page. The Header and Footer themselves are never copied or
+ * cut. Returns whether it copied.
  */
 export async function copySelected(
   session: ClipboardSession,
@@ -79,8 +90,16 @@ export async function copySelected(
   notify: (message: string) => void,
   cut = false,
 ): Promise<boolean> {
-  const node = selectedNode(session);
-  if (node === undefined) {
+  const selected = selectedNode(session);
+  if (selected === undefined) {
+    return false;
+  }
+  const { node, region } = selected;
+  // The shared Header and Footer themselves stay, like Duplicate and Delete leave them (F-ED-7);
+  // the elements inside them can be copied and cut.
+  const { layout } = session.history.document.getState();
+  if (region !== undefined && layout[region].some((top) => top.props.id === node.props.id)) {
+    notify(t("site.clipboard.sharedRegion", { item: itemName(session, node) }));
     return false;
   }
   // The page it is on: the user may have moved on by the time the copy is on the clipboard.
@@ -101,31 +120,16 @@ export async function copySelected(
       "remove",
       t("site.clipboard.history.cut", { item: itemName(session, node) }),
       (draft) => {
-        const content = draft.pages[ui.pageId]?.doc.content;
-        if (content !== undefined) removeNode(content, id);
+        // From the shared Header or Footer, it goes from every page.
+        const list =
+          region === undefined ? draft.pages[ui.pageId]?.doc.content : draft.layout[region];
+        if (list !== undefined) removeNode(list, id);
       },
       { selectionAfter: { ...ui, nodeId: null } },
     );
     if (session.ui.getState().nodeId === id) session.ui.setState({ nodeId: null });
   }
   return true;
-}
-
-/** Inserts `nodes` at `target` in a page's top-level `content`. */
-function insertAt(content: NodeDoc[], target: AddTarget, nodes: readonly NodeDoc[]): void {
-  if (target.parentId === null || target.slot === null) {
-    content.splice(target.index, 0, ...nodes);
-    return;
-  }
-  const { parentId, slot } = target;
-  const parent = findNode(content, (candidate) => candidate.props.id === parentId);
-  if (parent === undefined) return;
-  const list = parent.props[slot];
-  if (Array.isArray(list)) {
-    list.splice(target.index, 0, ...nodes);
-  } else {
-    parent.props[slot] = [...nodes];
-  }
 }
 
 /**
@@ -189,13 +193,18 @@ export async function pasteElements(
   if (first === undefined || page === undefined || nodes.length > MAX_COPIED_NODES) {
     return false;
   }
-  const target = pasteTarget(session.library, page.doc.content, nodes, ui.nodeId);
+  // Pasting goes into the page, never into the shared Header or Footer: elements don't move between
+  // them and the page (F-ED-7). With a shared element selected, the page takes it as the Add panel
+  // would with nothing selected.
+  const { layout } = session.history.document.getState();
+  const selectedId =
+    ui.nodeId === null || sharedRegionOf(layout, ui.nodeId) !== undefined ? null : ui.nodeId;
+  const target = pasteTarget(session.library, page.doc.content, nodes, selectedId);
   if (target === undefined) {
     notify(t("site.clipboard.cantPaste", { item: itemName(session, first) }));
     return false;
   }
   // The shared Header and Footer show on the page too: their anchors are taken as well.
-  const { layout } = session.history.document.getState();
   const copies = pastedCopies(
     nodes,
     anchorsIn([...layout.header, ...page.doc.content, ...layout.footer]),

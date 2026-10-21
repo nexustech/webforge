@@ -1,5 +1,5 @@
 import type { CopiedElements, ImageMeta, MediaId, NodeDoc } from "@webforge/model";
-import { siteLibrary } from "@webforge/site-components";
+import { type ComponentLibrary, siteLibrary } from "@webforge/site-components";
 import { describe, expect, it, vi } from "vitest";
 import type { ClipboardReadResult } from "../../shared/ipc/clipboard.js";
 import { createEditorSession, currentPage, type EditorSession } from "../editor/editor-session.js";
@@ -210,5 +210,85 @@ describe("copy and paste (1.25)", () => {
     });
     expect(pasteTarget(siteLibrary, page, [heading, section], "heading-1")).toBeUndefined();
     expect(pasteTarget(siteLibrary, page, [], null)).toBeUndefined();
+  });
+
+  describe("the shared Header and Footer (F-ED-7)", () => {
+    /** The site library plus a shared Banner whose slot holds elements, as the Header could. */
+    const library: ComponentLibrary = {
+      components: {
+        ...siteLibrary.components,
+        Banner: {
+          label: "Banner",
+          place: "layout",
+          fields: { content: { kind: "slot", label: "Content", allow: ["Heading"] } },
+          defaults: { content: [] },
+          render: () => null,
+        },
+      },
+    };
+    const withBanner = () => {
+      const session = createEditorSession(library, starterSite());
+      session.edit("page", "Added a banner", (draft) => {
+        draft.layout.header.push({
+          type: "Banner",
+          props: {
+            id: "banner",
+            content: [{ type: "Heading", props: { id: "notice", text: "Closed Monday" } }],
+          },
+        });
+      });
+      return session;
+    };
+    const bannerContent = (session: EditorSession) =>
+      session.history.document.getState().layout.header.at(-1)?.props.content;
+
+    it("never copies or cuts the Header or Footer themselves", async () => {
+      const session = createEditorSession(siteLibrary, starterSite());
+      const clipboard = fakeClipboard();
+      const notify = vi.fn();
+      select(session, "header");
+
+      expect(await copySelected(session, clipboard, notify, true)).toBe(false);
+
+      expect(clipboard.write).not.toHaveBeenCalled();
+      expect(notify).toHaveBeenCalledWith(
+        "The Header is on every page, so it can't be copied or cut. Its elements can.",
+      );
+      expect(session.history.document.getState().layout.header).toHaveLength(1);
+    });
+
+    it("cuts an element from the shared layout as one step, so it goes from every page", async () => {
+      const session = withBanner();
+      const clipboard = fakeClipboard();
+      select(session, "notice");
+
+      expect(await copySelected(session, clipboard, vi.fn(), true)).toBe(true);
+
+      expect(bannerContent(session)).toEqual([]);
+      expect(sectionContent(session)).toHaveLength(2);
+      expect(labels(session).at(-1)).toBe("Cut Heading");
+      session.history.undo();
+      expect(bannerContent(session)).toEqual([
+        { type: "Heading", props: { id: "notice", text: "Closed Monday" } },
+      ]);
+    });
+
+    it("pastes into the page, never into the shared layout, with a shared element selected", async () => {
+      const session = withBanner();
+      const clipboard = fakeClipboard();
+      select(session, "notice");
+      await copySelected(session, clipboard, vi.fn());
+
+      await pasteElements(session, clipboard, vi.fn());
+
+      // Where the Add panel puts a Heading with nothing selected: the end of the last section.
+      expect(sectionContent(session).map((node) => node.type)).toEqual([
+        "Heading",
+        "Text",
+        "Heading",
+      ]);
+      expect(sectionContent(session).at(-1)?.props.text).toBe("Closed Monday");
+      expect(bannerContent(session)).toHaveLength(1);
+    });
   });
 });

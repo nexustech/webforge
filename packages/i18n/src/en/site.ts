@@ -70,6 +70,8 @@ export const site = {
   "site.clipboard.nothing": "There's nothing to paste. Copy a section or element first.",
   "site.clipboard.cantPaste":
     "That {item} can't go here. Select a place that takes it, then paste.",
+  "site.clipboard.sharedRegion":
+    "The {item} is on every page, so it can't be copied or cut. Its elements can.",
   "site.clipboard.copyFailed": "Webforge couldn't copy that.",
   "site.clipboard.pasteFailed": "Webforge couldn't paste that.",
   "site.clipboard.readOnly": "This site is read-only, so nothing can be pasted into it.",

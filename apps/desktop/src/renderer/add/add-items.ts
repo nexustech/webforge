@@ -167,6 +167,26 @@ export function addTarget(
   return undefined;
 }
 
+/**
+ * Inserts `nodes` at `target` in a page's top-level `content` (an undo step's draft), as the Add
+ * panel and Paste do. Nothing happens if the target's element is no longer there.
+ */
+export function insertAt(content: NodeDoc[], target: AddTarget, nodes: readonly NodeDoc[]): void {
+  if (target.parentId === null || target.slot === null) {
+    content.splice(target.index, 0, ...nodes);
+    return;
+  }
+  const { parentId, slot } = target;
+  const parent = findNode(content, (candidate) => candidate.props.id === parentId);
+  if (parent === undefined) return;
+  const list = parent.props[slot];
+  if (Array.isArray(list)) {
+    list.splice(target.index, 0, ...nodes);
+  } else {
+    parent.props[slot] = [...nodes];
+  }
+}
+
 /** The parts of an editor session adding uses. */
 export type AddSession = Pick<EditorSession, "history" | "ui" | "edit" | "library">;
 
@@ -204,19 +224,7 @@ export function addComponent(session: AddSession, type: string, point?: InsertPo
       const content = draft.pages[pageId]?.doc.content;
       if (content === undefined) return;
       const node: NodeDoc = { type, props: { ...structuredClone(definition.defaults), id } };
-      if (target.parentId === null || target.slot === null) {
-        content.splice(target.index, 0, node);
-        return;
-      }
-      const parentId = target.parentId;
-      const parent = findNode(content, (candidate) => candidate.props.id === parentId);
-      if (parent === undefined) return;
-      const list = parent.props[target.slot];
-      if (Array.isArray(list)) {
-        list.splice(target.index, 0, node);
-      } else {
-        parent.props[target.slot] = [node];
-      }
+      insertAt(content, target, [node]);
     },
     { selectionAfter: { pageId, viewport, nodeId: id } },
   );

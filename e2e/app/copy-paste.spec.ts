@@ -148,3 +148,40 @@ test("leaves Copy to text being edited on the canvas", async () => {
     await app.evaluate(({ clipboard }) => clipboard.has("web application/x-webforge-elements")),
   ).toBe(false);
 });
+
+test("keeps the shared Header out of copying, and pastes into the page while it is selected", async () => {
+  app = await launchDesktopApp({ userDataDir: userData });
+  const page = await app.firstWindow();
+  await waitForCanvas(page);
+  const headings = canvas(page).locator(".site-heading");
+  await expect(headings).toHaveCount(1);
+
+  // Copy the heading (selected by clicking past the end of its text).
+  const box = await headings.first().boundingBox();
+  if (box === null) throw new Error("Heading not visible");
+  await headings.first().click({ position: { x: box.width * 0.97, y: 2 } });
+  await page.keyboard.press("ControlOrMeta+c");
+  await expect
+    .poll(() =>
+      app?.evaluate(({ clipboard }) => clipboard.has("web application/x-webforge-elements")),
+    )
+    .toBe(true);
+
+  // The Header is on every page: it can't be copied.
+  const header = canvas(page).locator(".site-header");
+  const headerBox = await header.boundingBox();
+  if (headerBox === null) throw new Error("Header not visible");
+  await header.click({ position: { x: headerBox.width / 2, y: 4 } });
+  await expect(
+    page.getByRole("region", { name: "Right panels" }).getByRole("heading", { name: "Header" }),
+  ).toBeVisible();
+  await page.keyboard.press("ControlOrMeta+c");
+  await expect(
+    page.getByText("The Header is on every page, so it can't be copied or cut."),
+  ).toBeVisible();
+
+  // Pasting with the Header selected goes into the page, not the Header.
+  await page.keyboard.press("ControlOrMeta+v");
+  await expect(headings).toHaveCount(2);
+  await expect(header.locator(".site-heading")).toHaveCount(0);
+});
