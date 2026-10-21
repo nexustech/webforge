@@ -35,6 +35,11 @@ export type EditPanelProps = {
   onReset?(name: string): void;
   /** Shows the Advanced tab and its fields (Advanced mode, F-ED-11). */
   readonly advanced?: boolean | undefined;
+  /**
+   * Which element the fields are for (its id). The fields start afresh for another element, so
+   * nothing typed for one (an unfinished anchor) shows up on the next.
+   */
+  readonly itemKey?: string | undefined;
 };
 
 /** The renderers every Edit panel has; `registerFieldRenderer` adds kinds or replaces these. */
@@ -113,6 +118,7 @@ export function EditPanel({
   device,
   onReset,
   advanced = false,
+  itemKey,
 }: EditPanelProps) {
   const idPrefix = useId();
   if (heading === undefined) {
@@ -129,6 +135,7 @@ export function EditPanel({
   const list = (group: FieldGroup, groupFields: readonly EditPanelField[]) => (
     <TabsContent value={group} className="overflow-auto">
       <FieldList
+        key={itemKey}
         idPrefix={`${idPrefix}${group}`}
         fields={groupFields}
         onChange={onChange}

@@ -204,7 +204,14 @@ export function EditPanelHost({ session, flush, advanced = false }: EditPanelHos
   });
 
   if (advanced) {
-    fields.push(...advancedFields(node.props.advanced));
+    // Anchors other elements use on this page, including the shared Header and Footer.
+    const takenAnchors: string[] = [];
+    findNode([...site.layout.header, ...page.content, ...site.layout.footer], (other) => {
+      const anchor = other.props.advanced?.anchorId;
+      if (anchor !== undefined && other.props.id !== id) takenAnchors.push(anchor);
+      return false;
+    });
+    fields.push(...advancedFields(node.props.advanced, takenAnchors));
   }
 
   /** The undo label for a change to `name`; "… on Mobile" where it sets one device's value. */
@@ -408,6 +415,7 @@ export function EditPanelHost({ session, flush, advanced = false }: EditPanelHos
       }}
       onReset={reset}
       advanced={advanced}
+      itemKey={id}
     />
   );
 }

@@ -396,6 +396,24 @@ describe("EditPanelHost", () => {
       expect(advanced()).toBeUndefined();
     });
 
+    it("refuses an anchor that another element on the page, or the Header, already uses", async () => {
+      const { session, advanced, user } = setupAdvanced();
+      act(() =>
+        session.edit("props", "Changed Header anchor ID", (draft) => {
+          const header = draft.layout.header[0];
+          if (header !== undefined) header.props.advanced = { anchorId: "top" };
+        }),
+      );
+      await user.click(screen.getByRole("tab", { name: "Advanced" }));
+
+      await user.type(screen.getByLabelText("Anchor ID"), "top{Enter}");
+
+      expect(
+        screen.getByText("Another element on this page already uses this anchor"),
+      ).toBeDefined();
+      expect(advanced()).toBeUndefined();
+    });
+
     it("adds and renames an attribute", async () => {
       const { labels, advanced, user } = setupAdvanced();
       await user.click(screen.getByRole("tab", { name: "Advanced" }));

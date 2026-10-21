@@ -399,6 +399,64 @@ describe("Advanced tab and checked text fields (F-ED-11)", () => {
     expect(screen.queryByText("Not an anchor")).toBeNull();
   });
 
+  it("starts afresh for another element, leaving nothing typed for the last one", async () => {
+    const view = render(
+      <EditPanel
+        heading="Heading"
+        fields={[anchor]}
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+        advanced
+        itemKey="a"
+      />,
+    );
+    const user = userEvent.setup();
+    await user.type(screen.getByLabelText("Anchor ID"), "Oops{Enter}");
+    expect(screen.getByText("Not an anchor")).toBeDefined();
+
+    view.rerender(
+      <EditPanel
+        heading="Heading"
+        fields={[anchor]}
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+        advanced
+        itemKey="b"
+      />,
+    );
+
+    expect((screen.getByLabelText("Anchor ID") as HTMLInputElement).value).toBe("");
+    expect(screen.queryByText("Not an anchor")).toBeNull();
+  });
+
+  it("offers no moves in a list whose order means nothing", () => {
+    render(
+      <EditPanel
+        heading="Heading"
+        fields={[
+          {
+            name: "attributes",
+            kind: "list",
+            label: "Attributes",
+            group: "content",
+            itemLabel: "Attribute",
+            orderless: true,
+            itemFields: [{ name: "name", kind: "text", label: "Name" }],
+            value: [
+              { key: "0", values: { name: "role" } },
+              { key: "1", values: { name: "title" } },
+            ],
+          },
+        ]}
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole("button", { name: "Move Attribute up" })).toBeNull();
+    expect(screen.getAllByRole("button", { name: "Delete Attribute" })).toHaveLength(2);
+  });
+
   it("goes back to the stored text with Esc", async () => {
     const { onChange, user } = renderAdvanced(true);
     await user.click(screen.getByRole("tab", { name: t("editPanel.advanced") }));

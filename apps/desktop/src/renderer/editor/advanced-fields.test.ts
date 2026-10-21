@@ -39,9 +39,10 @@ describe("advancedFields", () => {
   it("accepts only what a site file accepts", () => {
     const classes = fieldNamed(ADVANCED_FIELDS.className).validate;
     const anchor = fieldNamed(ADVANCED_FIELDS.anchorId).validate;
-    const [name, value] = fieldNamed(ADVANCED_FIELDS.attributes, {
-      attributes: { "data-a": "1" },
-    }).itemFields ?? [{}, {}];
+    const [name, value] =
+      fieldNamed(ADVANCED_FIELDS.attributes, {
+        attributes: { "data-a": "1" },
+      }).itemFields ?? [];
 
     expect(classes?.("  shadow-lg   md:p-4 ")).toBeUndefined();
     expect(classes?.('bad"class')).toBe("Use class names separated by spaces");
@@ -55,6 +56,17 @@ describe("advancedFields", () => {
     expect(name?.validate?.("data-a")).toBe("This element already has this attribute");
     expect(value?.validate?.("x".repeat(1000))).toBeUndefined();
     expect(value?.validate?.("x".repeat(1001))).toBe("Use at most 1000 characters");
+  });
+
+  it("refuses an anchor another element on the page uses", () => {
+    const anchor = advancedFields(undefined, ["prices"]).find(
+      (field) => field.name === ADVANCED_FIELDS.anchorId,
+    );
+
+    expect(anchor?.validate?.("prices")).toBe(
+      "Another element on this page already uses this anchor",
+    );
+    expect(anchor?.validate?.("opening-times")).toBeUndefined();
   });
 
   it("names its fields for undo labels", () => {

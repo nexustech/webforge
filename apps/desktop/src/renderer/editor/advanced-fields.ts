@@ -50,9 +50,13 @@ function newAttributeName(taken: readonly string[]): string {
 
 /**
  * The Advanced tab's fields for a node's `advanced`. Each text field accepts only what a site file
- * accepts (see `nodeAdvancedSchema`), so nothing invalid can be stored.
+ * accepts (see `nodeAdvancedSchema`), so nothing invalid can be stored, and the anchor none of
+ * `takenAnchors`: the other elements' on the page, so links to it reach one place.
  */
-export function advancedFields(advanced: NodeAdvanced | undefined): EditPanelField[] {
+export function advancedFields(
+  advanced: NodeAdvanced | undefined,
+  takenAnchors: readonly string[] = [],
+): EditPanelField[] {
   const attributes = Object.entries(advanced?.attributes ?? {});
   const names = attributes.map(([name]) => name);
   return [
@@ -76,9 +80,11 @@ export function advancedFields(advanced: NodeAdvanced | undefined): EditPanelFie
       placeholder: t("editPanel.advanced.anchorIdPlaceholder"),
       value: advanced?.anchorId ?? "",
       validate: (value) =>
-        value === "" || anchorIdSchema.safeParse(value).success
-          ? undefined
-          : t("editPanel.advanced.anchorIdInvalid"),
+        value !== "" && !anchorIdSchema.safeParse(value).success
+          ? t("editPanel.advanced.anchorIdInvalid")
+          : takenAnchors.includes(value)
+            ? t("editPanel.advanced.anchorIdTaken")
+            : undefined,
     },
     {
       name: ADVANCED_FIELDS.attributes,
@@ -86,6 +92,7 @@ export function advancedFields(advanced: NodeAdvanced | undefined): EditPanelFie
       group: "advanced",
       label: t("editPanel.advanced.attributes"),
       itemLabel: t("editPanel.advanced.attribute"),
+      orderless: true,
       itemFields: [
         {
           name: "name",

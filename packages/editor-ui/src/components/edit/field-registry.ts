@@ -21,6 +21,8 @@ export type FieldSpec = {
   readonly itemLabel?: string;
   /** For `list`: the fields of each item. */
   readonly itemFields?: readonly ListItemFieldSpec[];
+  /** For `list`: the order of the items means nothing (attributes), so they can't be moved. */
+  readonly orderless?: boolean;
 };
 
 /** One field of a list item. */

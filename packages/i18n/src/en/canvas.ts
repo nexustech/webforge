@@ -30,6 +30,7 @@ export const canvas = {
   "editPanel.advanced.anchorIdPlaceholder": "e.g. opening-times",
   "editPanel.advanced.anchorIdInvalid":
     "Use lowercase letters, digits and single hyphens, starting with a letter",
+  "editPanel.advanced.anchorIdTaken": "Another element on this page already uses this anchor",
   "editPanel.advanced.attributes": "Attributes",
   "editPanel.advanced.attribute": "Attribute",
   "editPanel.advanced.attributeName": "Name",
