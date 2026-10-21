@@ -1,7 +1,9 @@
 import { basename } from "node:path";
-import type { SiteSnapshot } from "@webforge/model";
+import type { MediaItem, SiteSnapshot } from "@webforge/model";
+import type { StoredBlob } from "@webforge/storage";
 import type { IpcMain } from "electron";
 import type { ExportOutcome } from "../shared/export-worker-protocol.js";
+import type { ExportRequest } from "../shared/ipc/site.js";
 import type { ExportResult } from "../shared/ipc-contract.js";
 import { registerIpcHandler } from "./ipc.js";
 
@@ -31,20 +33,38 @@ export function toExportResult(outcome: ExportOutcome, destination: string): Exp
 }
 
 /**
+ * The snapshot to build: the renderer's, with the bytes of its images read from the open site's
+ * file. An image whose bytes aren't there is left out; the build fails only if a page uses it.
+ */
+function snapshotWithMedia(
+  request: ExportRequest,
+  readMedia: (hash: string) => StoredBlob | undefined,
+): SiteSnapshot {
+  const media = request.media.flatMap(({ hash, ...image }): MediaItem[] => {
+    const blob = readMedia(hash);
+    return blob === undefined ? [] : [{ ...image, data: blob.data }];
+  });
+  return { ...request.snapshot, media };
+}
+
+/**
  * Registers the export IPC call. The renderer sends the site snapshot but never a path: the main
  * process asks the user for the folder, so a compromised renderer cannot write anywhere it likes.
+ * Image bytes come from the open site's file (`readMedia`), not from the renderer.
  */
 export function registerExportHandlers(
   ipc: Pick<IpcMain, "handle">,
   isTrustedSender: (senderUrl: string) => boolean,
   dialogs: ExportDialogs,
   runExport: RunExport,
+  readMedia: (hash: string) => StoredBlob | undefined,
 ): void {
-  registerIpcHandler(ipc, "exportSite", isTrustedSender, async (snapshot) => {
+  registerIpcHandler(ipc, "exportSite", isTrustedSender, async (request) => {
     const destination = await dialogs.chooseExportFolder();
     if (destination === undefined) {
       return { status: "canceled" };
     }
+    const snapshot = snapshotWithMedia(request, readMedia);
     return toExportResult(await runExport(snapshot, destination), destination);
   });
 }

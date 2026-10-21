@@ -69,7 +69,10 @@ describe("App", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "Export" }));
 
-    expect(exportSite).toHaveBeenCalledWith(expect.objectContaining({ pages: expect.any(Array) }));
+    expect(exportSite).toHaveBeenCalledWith({
+      snapshot: expect.objectContaining({ pages: expect.any(Array), media: [] }),
+      media: [],
+    });
     expect(await screen.findByText("Site exported to “my-site” (6 files).")).toBeTruthy();
   });
 

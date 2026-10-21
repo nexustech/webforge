@@ -3,5 +3,5 @@ import type { Call } from "./call.js";
 
 /** `window.webforge.site`. */
 export const siteApi = (call: Call): SiteApi => ({
-  export: (snapshot) => call("exportSite", snapshot),
+  export: (request) => call("exportSite", request),
 });

@@ -15,6 +15,22 @@ const snapshot: SiteSnapshot = {
   pages: [{ id: "home", path: "index", title: "Home", doc: { root: { props: {} }, content: [] } }],
   media: [],
 };
+const PHOTO = "a".repeat(64);
+const photo = { mime: "image/jpeg", data: new Uint8Array([0xff, 0xd8, 0xff]) };
+const request = {
+  snapshot,
+  media: [
+    {
+      id: "hero",
+      name: "hero",
+      mimeType: "image/jpeg",
+      hash: PHOTO,
+      alt: "Our shop",
+      crop: { x: 0, y: 0, width: 1, height: 0.5 },
+    },
+    { id: "gone", name: "gone", mimeType: "image/png", hash: "b".repeat(64), alt: "" },
+  ],
+} as const;
 const exported: ExportOutcome = {
   type: "exported",
   pages: 1,
@@ -32,7 +48,8 @@ function setUp(dialogs: ExportDialogs, outcome: ExportOutcome = exported) {
     },
   } as unknown as Pick<IpcMain, "handle">;
   const runExport = vi.fn(async () => outcome);
-  registerExportHandlers(ipc, (url) => url === APP_URL, dialogs, runExport);
+  const readMedia = vi.fn((hash: string) => (hash === PHOTO ? photo : undefined));
+  registerExportHandlers(ipc, (url) => url === APP_URL, dialogs, runExport, readMedia);
   const invoke = (...args: unknown[]) => {
     const handler = handlers.get("site:export");
     if (handler === undefined) {
@@ -51,7 +68,7 @@ describe("registerExportHandlers", () => {
   it("exports to the folder the user chose and returns only its name", async () => {
     const { invoke, runExport } = setUp({ chooseExportFolder: async () => "/sites/my-site" });
 
-    await expect(invoke(snapshot)).resolves.toEqual({
+    await expect(invoke({ snapshot, media: [] })).resolves.toEqual({
       status: "exported",
       folderName: "my-site",
       pages: 1,
@@ -61,10 +78,33 @@ describe("registerExportHandlers", () => {
     expect(runExport).toHaveBeenCalledWith(snapshot, "/sites/my-site");
   });
 
+  it("builds with image bytes read from the open site, leaving out images without them", async () => {
+    const { invoke, runExport } = setUp({ chooseExportFolder: async () => "/sites/my-site" });
+
+    await invoke(request);
+
+    expect(runExport).toHaveBeenCalledWith(
+      {
+        ...snapshot,
+        media: [
+          {
+            id: "hero",
+            name: "hero",
+            mimeType: "image/jpeg",
+            alt: "Our shop",
+            crop: { x: 0, y: 0, width: 1, height: 0.5 },
+            data: photo.data,
+          },
+        ],
+      },
+      "/sites/my-site",
+    );
+  });
+
   it("does nothing when the user cancels the dialog", async () => {
     const { invoke, runExport } = setUp({ chooseExportFolder: async () => undefined });
 
-    await expect(invoke(snapshot)).resolves.toEqual({ status: "canceled" });
+    await expect(invoke(request)).resolves.toEqual({ status: "canceled" });
     expect(runExport).not.toHaveBeenCalled();
   });
 
@@ -72,7 +112,10 @@ describe("registerExportHandlers", () => {
     const chooseExportFolder = vi.fn(async () => "/sites/my-site");
     const { invoke } = setUp({ chooseExportFolder });
 
-    await expect(invoke({ ...snapshot, pages: [] })).rejects.toThrow();
+    await expect(invoke({ snapshot: { ...snapshot, pages: [] }, media: [] })).rejects.toThrow();
+    await expect(
+      invoke({ snapshot, media: [{ ...request.media[0], hash: "../secret" }] }),
+    ).rejects.toThrow();
     expect(chooseExportFolder).not.toHaveBeenCalled();
   });
 });

@@ -1,4 +1,4 @@
-import { isNodeDoc, type NodeDoc } from "@webforge/model";
+import { imageValueSchema, isNodeDoc, type NodeDoc } from "@webforge/model";
 import type { ComponentType, ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { BehaviourName, ComponentDef, ComponentLibrary, RenderContext } from "./library.js";
@@ -44,14 +44,14 @@ export function walkNodes(
   }
 }
 
-/** The media ids that `nodes` use in `media` fields. */
+/** The media ids that `nodes` use in `media` fields (image values). */
 export function mediaUsedBy(nodes: readonly NodeDoc[], library: ComponentLibrary): Set<string> {
   const ids = new Set<string>();
   walkNodes(nodes, library, (node, def) => {
     for (const [name, field] of Object.entries(def.fields)) {
-      const value = node.props[name];
-      if (field.kind === "media" && typeof value === "string" && value !== "") {
-        ids.add(value);
+      const placed = field.kind === "media" ? imageValueSchema.safeParse(node.props[name]) : null;
+      if (placed?.success === true) {
+        ids.add(placed.data.mediaId);
       }
     }
   });

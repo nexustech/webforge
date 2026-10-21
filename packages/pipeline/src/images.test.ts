@@ -51,6 +51,7 @@ describe("processImage", () => {
       },
       width: 1600,
       height: 1000,
+      alt: "",
     });
   }, 60_000);
 
@@ -77,6 +78,48 @@ describe("processImage", () => {
   });
 });
 
+describe("processImage with alt text, focal point and crop", () => {
+  it("cuts the crop before resizing and moves the focal point into the cut image", async () => {
+    const result = await processImage(
+      {
+        id: "a",
+        name: "hero",
+        mimeType: "image/jpeg",
+        data: heroPhoto(),
+        alt: "Green hills",
+        focal: { x: 0.3, y: 0.5 },
+        crop: { x: 0.1875, y: 0, width: 0.625, height: 1 },
+      },
+      codecs,
+    );
+
+    // 1600 × 1000 cut to its centre 1000 × 1000: exported at 640 and 1000 wide.
+    expect(result.files.map((file) => file.path)).toEqual([
+      "hero-640.webp",
+      "hero-640.jpg",
+      "hero-1000.webp",
+      "hero-1000.jpg",
+    ]);
+    expect(result.image).toMatchObject({
+      width: 1000,
+      height: 1000,
+      alt: "Green hills",
+      // 0.3 of the original is (0.3 - 0.1875) / 0.625 = 18% of the cut image.
+      objectPosition: "18% 50%",
+    });
+  });
+
+  it("has empty alt text and no position without them", async () => {
+    const result = await processImage(
+      { id: "a", name: "hero", mimeType: "image/jpeg", data: heroPhoto() },
+      codecs,
+    );
+
+    expect(result.image.alt).toBe("");
+    expect(result.image).not.toHaveProperty("objectPosition");
+  });
+});
+
 describe("imageForDepth", () => {
   const image: ResolvedImage = {
     sources: [
@@ -86,6 +129,7 @@ describe("imageForDepth", () => {
     fallback: { type: "image/jpeg", srcset: "assets/img/a-640.jpg 640w" },
     width: 1280,
     height: 720,
+    alt: "",
   };
 
   it("keeps URLs for pages at the site root", () => {

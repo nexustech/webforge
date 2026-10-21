@@ -11,7 +11,10 @@ export type PictureProps = {
   readonly className?: string;
 };
 
-/** A responsive image: WebP sources with a JPEG/PNG fallback, sized to avoid layout shift (X2). */
+/**
+ * A responsive image: WebP sources with a JPEG/PNG fallback, sized to avoid layout shift (X2). Its
+ * focal point keeps the important part in view wherever CSS cuts the image to fit.
+ */
 export function Picture({ image, alt, sizes, eager = false, className }: PictureProps) {
   return (
     <picture>
@@ -28,6 +31,9 @@ export function Picture({ image, alt, sizes, eager = false, className }: Picture
         loading={eager ? "eager" : "lazy"}
         decoding="async"
         className={className}
+        style={
+          image.objectPosition === undefined ? undefined : { objectPosition: image.objectPosition }
+        }
       />
     </picture>
   );

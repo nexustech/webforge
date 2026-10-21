@@ -1,5 +1,35 @@
-import { type SiteSnapshot, siteSnapshotSchema } from "@webforge/model";
+import {
+  cropSchema,
+  focalPointSchema,
+  IMAGE_MIME_TYPES,
+  mediaNameSchema,
+  siteSnapshotSchema,
+} from "@webforge/model";
 import { z } from "zod";
+
+/**
+ * An image the export needs, named by its hash: the main process reads its bytes from the open
+ * site's file, so up to 50 MB per image never travels from the renderer (1.16).
+ */
+const exportMediaSchema = z.strictObject({
+  id: z.string().regex(/^[A-Za-z0-9_-]+$/),
+  name: mediaNameSchema,
+  mimeType: z.enum(IMAGE_MIME_TYPES),
+  hash: z.string().regex(/^[0-9a-f]{64}$/),
+  alt: z.string(),
+  focal: focalPointSchema.optional(),
+  crop: cropSchema.optional(),
+});
+
+/** What the renderer sends to export the site: its snapshot, and the Media images it may use. */
+const exportRequestSchema = z.strictObject({
+  /** The site, without image bytes (`media` is filled in by the main process). */
+  snapshot: siteSnapshotSchema,
+  media: z.array(exportMediaSchema).max(10_000),
+});
+
+/** What the renderer sends to export the site. */
+export type ExportRequest = z.infer<typeof exportRequestSchema>;
 
 /** Why an export failed; the renderer shows a translated message for each. */
 const exportFailureReasonSchema = z.enum(["folder-not-empty", "build-failed", "write-failed"]);
@@ -29,7 +59,7 @@ export const siteChannels = {
    */
   exportSite: {
     channel: "site:export",
-    request: z.tuple([siteSnapshotSchema]),
+    request: z.tuple([exportRequestSchema]),
     response: exportResultSchema,
   },
 } as const;
@@ -37,5 +67,5 @@ export const siteChannels = {
 /** `window.webforge.site`. */
 export interface SiteApi {
   /** Shows a folder dialog, then builds the site and writes it there. */
-  export(snapshot: SiteSnapshot): Promise<ExportResult>;
+  export(request: ExportRequest): Promise<ExportResult>;
 }

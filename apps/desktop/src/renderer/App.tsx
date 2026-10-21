@@ -1,11 +1,11 @@
 import { type ResizableLayout, Toaster, TooltipProvider } from "@webforge/editor-ui";
 import type { EditorMode } from "@webforge/engine";
 import { t } from "@webforge/i18n";
-import { type SiteSnapshot, siteToSnapshot } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { PanelBottomIcon, PanelLeftIcon, PanelRightIcon } from "lucide-react";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { applyPreferencesChange } from "../shared/ipc/prefs.js";
+import type { ExportRequest } from "../shared/ipc/site.js";
 import type {
   AppInfo,
   ExportResult,
@@ -18,8 +18,11 @@ import { Editor, type EditorProps } from "./editor/Editor.js";
 import { createEditorSession } from "./editor/editor-session.js";
 import { starterSite } from "./editor/starter-site.js";
 import { registerExportCommand } from "./export/export-command.js";
+import { exportRequestFor } from "./export/export-request.js";
 import { AboutDialog } from "./shell/AboutDialog.js";
+import { CanvasToolbarHost } from "./shell/CanvasToolbarHost.js";
 import { CommandButton } from "./shell/CommandButton.js";
+import { createCanvasView } from "./shell/canvas-view.js";
 import { CommandRegistryProvider } from "./shell/command-context.js";
 import { COMMAND_IDS } from "./shell/command-ids.js";
 import { createCommandRegistry, installCommandShortcuts } from "./shell/commands.js";
@@ -46,7 +49,7 @@ export type AppProps = {
   /** Compiles the canvas's site CSS; injectable for tests. */
   readonly compileCss?: EditorProps["compileCss"];
   /** Exports a site; injectable for tests. Defaults to the preload API. */
-  readonly exportSite?: (snapshot: SiteSnapshot) => Promise<ExportResult>;
+  readonly exportSite?: (request: ExportRequest) => Promise<ExportResult>;
   /** The site read from the open site file at start-up (1.6); the starter site otherwise. */
   readonly loaded?: LoadedSite;
   /** The open site's editor state (Design or Content mode) as main loaded it; none for no site. */
@@ -55,7 +58,7 @@ export type AppProps = {
   readonly saveUiState?: (state: SiteUiState) => Promise<UiStateResult>;
 };
 
-const exportWithPreload = (snapshot: SiteSnapshot) => window.webforge.site.export(snapshot);
+const exportWithPreload = (request: ExportRequest) => window.webforge.site.export(request);
 const saveWithPreload = (change: PreferencesChange) => window.webforge.prefs.set(change);
 const saveUiStateWithPreload = (state: SiteUiState) => window.webforge.project.setUiState(state);
 
@@ -74,6 +77,7 @@ export function App({
   const [session] = useState(() => createEditorSession(siteLibrary, loaded?.site ?? starterSite()));
   const [registry] = useState(createCommandRegistry);
   const [panels] = useState(createPanelRegistry);
+  const [canvasView] = useState(createCanvasView);
   const [preferences, setPreferences] = useState(initialPreferences);
   // Design or Content (M3): remembered with the open site, never an undo step.
   const [mode, setMode] = useState<EditorMode>(uiState?.editorMode ?? "design");
@@ -112,8 +116,7 @@ export function App({
   useEffect(
     () =>
       registerExportCommand(registry, () =>
-        // No media yet (1.16 adds images and their bytes).
-        exportSite(siteToSnapshot(session.history.document.getState(), new Map())),
+        exportSite(exportRequestFor(session.history.document.getState(), siteLibrary)),
       ),
     [registry, session, exportSite],
   );
@@ -208,12 +211,18 @@ export function App({
                 onLayoutChange={rememberLayout}
                 editorLevel={editorLevel}
                 center={
-                  <Editor
-                    session={session}
-                    {...(createEngine === undefined ? {} : { createEngine })}
-                    {...(compileCss === undefined ? {} : { compileCss })}
-                    mode={mode}
-                  />
+                  <div className="flex h-full flex-col">
+                    <CanvasToolbarHost session={session} view={canvasView} />
+                    <div className="min-h-0 flex-1">
+                      <Editor
+                        session={session}
+                        {...(createEngine === undefined ? {} : { createEngine })}
+                        {...(compileCss === undefined ? {} : { compileCss })}
+                        mode={mode}
+                        canvasView={canvasView}
+                      />
+                    </div>
+                  </div>
                 }
               />
             </main>
