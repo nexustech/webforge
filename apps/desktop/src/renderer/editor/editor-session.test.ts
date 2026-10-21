@@ -110,6 +110,38 @@ describe("connectEngine", () => {
     expect(session.history.document.getState().layout.footer[0]).toEqual(footer);
   });
 
+  it("shows a page without the Header it hides, and keeps that Header for the other pages", () => {
+    const { session, engine, about } = setup();
+    const layout = session.history.document.getState().layout;
+    const [footer] = layout.footer;
+    if (footer === undefined) throw new Error("no footer");
+    session.edit("props", "Changed page settings", (draft) => {
+      const page = draft.pages[about];
+      if (page !== undefined) page.settings.hideHeader = true;
+    });
+
+    session.showPage(about);
+
+    expect(engine.loadPage).toHaveBeenLastCalledWith(expect.anything(), {
+      header: [],
+      footer: layout.footer,
+    });
+    // An edit of the Footer there reports the Header the canvas showed: none. It stays as it was.
+    engine.edit({
+      kind: "text",
+      nodeId: footer.props.id,
+      componentType: "Footer",
+      field: "text",
+      page: currentPage(session)?.doc as PageDoc,
+      selection: footer.props.id,
+      shared: true,
+      layout: { header: [], footer: [{ ...footer, props: { ...footer.props, text: "Bye" } }] },
+    });
+    const site = session.history.document.getState();
+    expect(site.layout.header).toEqual(layout.header);
+    expect(site.layout.footer[0]?.props.text).toBe("Bye");
+  });
+
   it("records canvas edits as labelled steps in the document store", () => {
     const { engine, doc, labels } = setup();
     const page = { ...starterPage(), content: [] };

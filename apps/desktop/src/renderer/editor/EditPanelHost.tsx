@@ -5,6 +5,7 @@ import {
   type Breakpoint,
   imageValueSchema,
   type NodeAdvanced,
+  type NodeDoc,
   type SiteDoc,
 } from "@webforge/model";
 import type { FieldDef } from "@webforge/site-components";
@@ -33,6 +34,7 @@ import {
   withoutOverride,
   withValueAt,
 } from "./responsive-value.js";
+import { sharedRegionOf, updateSharedField } from "./shared-layout.js";
 
 /** The Edit panel's renderer kind for a field, or undefined for fields edited elsewhere. */
 function rendererKind(field: FieldDef): string | undefined {
@@ -152,10 +154,14 @@ export function EditPanelHost({ session, flush, advanced = false }: EditPanelHos
   const site = useSyncExternalStore(history.document.subscribe, history.document.getState);
   const { pageId, nodeId, viewport } = useSyncExternalStore(ui.subscribe, ui.getState);
   const page = site.pages[pageId]?.doc;
-  const node =
-    page === undefined || nodeId === null
-      ? undefined
-      : findNode(page.content, (candidate) => candidate.props.id === nodeId);
+  const isSelected = (candidate: NodeDoc) => candidate.props.id === nodeId;
+  const ownNode =
+    page === undefined || nodeId === null ? undefined : findNode(page.content, isSelected);
+  // Not the page's own: an element of the shared Header or Footer, whose changes go to the site's
+  // layout and show on every page (F-ED-7).
+  const region =
+    ownNode !== undefined || nodeId === null ? undefined : sharedRegionOf(site.layout, nodeId);
+  const node = region === undefined ? ownNode : findNode(site.layout[region], isSelected);
   const component = node === undefined ? undefined : library.components[node.type];
   const selectedId = node?.props.id;
   const breakpoint = breakpointOf(viewport);
@@ -229,50 +235,53 @@ export function EditPanelHost({ session, flush, advanced = false }: EditPanelHos
     fields.push(...advancedFields(node.props.advanced, takenAnchors));
   }
 
+  /** An edit of the selected element, to name in undo labels: "Changed shared Footer size". */
+  const editOf = (kind: EngineEdit["kind"], field: string): EngineEdit => ({
+    kind,
+    nodeId: id,
+    componentType: node.type,
+    field,
+    page,
+    selection: id,
+    ...(region === undefined ? {} : { shared: true, layout: site.layout }),
+  });
+
   /** The undo label for a change to `name`; "… on Mobile" where it sets one device's value. */
   const labelOf = (name: string, field: FieldDef, reset = false) => {
-    const edit: EngineEdit = {
-      kind: field.kind === "text" ? "text" : "props",
-      nodeId: id,
-      componentType: node.type,
-      field: name,
-      page,
-      selection: id,
-    };
+    const edit = editOf(field.kind === "text" ? "text" : "props", name);
     return field.responsive === true && (reset || breakpoint !== "desktop")
       ? deviceLabelFor(edit, library, device, reset)
       : labelFor(edit, library);
   };
 
-  /** Sets field `name` to what `next` makes of its stored value, in the document being edited. */
-  const recipe = (name: string, next: (stored: unknown) => unknown) => (draft: SiteDoc) => {
+  /** Sets field `name` of the selected element to what `next` makes of it, in `draft`. */
+  const write = (draft: SiteDoc, name: string, next: (stored: unknown) => unknown) => {
+    if (region !== undefined) {
+      updateSharedField(draft.layout, site.layout, region, id, name, next);
+      return;
+    }
     const target = draft.pages[pageId];
     if (target !== undefined) {
-      updateField(target.doc, page, id, name, (stored) => next(storedOr(name, stored)));
+      updateField(target.doc, page, id, name, next);
     }
   };
+  /** Sets field `name` to what `next` makes of its stored value, in the document being edited. */
+  const recipe = (name: string, next: (stored: unknown) => unknown) => (draft: SiteDoc) =>
+    write(draft, name, (stored) => next(storedOr(name, stored)));
   const selectionAfter = { pageId, viewport, nodeId: id };
 
   /** A change on the Advanced tab: one step, "Changed Heading CSS classes". */
   const changeAdvanced = (name: string, value: unknown) => {
     endRun();
     flush();
-    const label = changedLabel(
-      { kind: "props", nodeId: id, componentType: node.type, field: name, page, selection: id },
-      library,
-      advancedFieldLabel(name),
-    );
+    const label = changedLabel(editOf("props", name), library, advancedFieldLabel(name));
     session.edit(
       "props",
       label,
-      (draft) => {
-        const target = draft.pages[pageId];
-        if (target !== undefined) {
-          updateField(target.doc, page, id, "advanced", (stored) =>
-            withAdvancedChange(stored as NodeAdvanced | undefined, name, value),
-          );
-        }
-      },
+      (draft) =>
+        write(draft, "advanced", (stored) =>
+          withAdvancedChange(stored as NodeAdvanced | undefined, name, value),
+        ),
       { selectionAfter },
     );
   };
@@ -363,32 +372,24 @@ export function EditPanelHost({ session, flush, advanced = false }: EditPanelHos
     const textLabel = (key: string, field: string) =>
       labelFor(
         {
-          kind: "text",
+          ...editOf("text", field),
           nodeId: key,
           componentType: list.holds === "elements" ? list.type : null,
-          field,
-          page,
-          selection: id,
         },
         library,
       );
     session.edit(
       text ? "text" : "props",
       listChangeLabel(change, list, textLabel),
-      (draft) => {
-        const target = draft.pages[pageId];
-        if (target === undefined) {
-          return;
-        }
-        updateField(target.doc, page, id, name, (stored) => {
+      (draft) =>
+        write(draft, name, (stored) => {
           // A list never set starts from (a copy of) the component's default.
           const items = Array.isArray(stored)
             ? stored
             : structuredClone(component.defaults[name] ?? []);
           applyListChange(Array.isArray(items) ? items : [], change, list);
           return items;
-        });
-      },
+        }),
       { selectionAfter, ...(merged ? { coalesceKey: textKey } : {}) },
     );
     if (merged) {

@@ -46,3 +46,31 @@ test("edits the Footer on one page, shows it on another, and undoes it everywher
   await showPage("My site");
   await expect(footer()).toHaveText("Thanks for visiting.");
 });
+
+test("says how far a change reaches, edits the Footer in the Edit panel, and hides it on one page", async () => {
+  const banner = page.locator(".editor > [role='status']");
+  await expect(banner).toHaveCount(0);
+
+  // Its edge, not its text: clicking the text edits it.
+  await canvas()
+    .locator(".site-footer")
+    .click({ position: { x: 4, y: 4 } });
+  await expect(banner).toHaveText("Editing shared Footer: changes apply to all 2 pages");
+  const panel = page.getByRole("region", { name: "Right panels" });
+  await panel.getByLabel("Text").fill("See you soon");
+  await expect(footer()).toHaveText("See you soon");
+  await expect(steps().first()).toHaveText("Edited shared Footer text");
+
+  await panel.getByRole("tab", { name: "Site" }).click();
+  await panel.getByRole("button", { name: "Actions for My site" }).click();
+  await page.getByRole("menuitem", { name: "Page Settings…" }).click();
+  const dialog = page.getByRole("dialog", { name: "Settings for 'My site'" });
+  await dialog.getByRole("checkbox", { name: "Hide the Footer on this page" }).check();
+  await dialog.getByRole("button", { name: "Save" }).click();
+
+  await expect(canvas().locator(".site-footer")).toHaveCount(0);
+  await expect(canvas().locator(".site-header")).toBeVisible();
+  await expect(banner).toHaveCount(0);
+  await showPage("Page not found");
+  await expect(footer()).toHaveText("See you soon");
+});
