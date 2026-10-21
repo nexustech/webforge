@@ -76,17 +76,69 @@ const nodeDocSchema: z.ZodType<NodeDoc> = z.object({
   }),
 });
 
+/**
+ * Keys that reach an object's prototype or constructor when code copies or merges them naively
+ * (prototype pollution). Documents come from files a person may open from anywhere, so none may
+ * hold such a key, at any depth.
+ */
+const UNSAFE_KEYS: ReadonlySet<string> = new Set(["__proto__", "constructor", "prototype"]);
+
+/** The first key in {@link UNSAFE_KEYS} at any depth of `value`, or undefined if there is none. */
+function findUnsafeKey(value: unknown): string | undefined {
+  // Iterative: a crafted file nested very deeply can't overflow the stack.
+  const pending: unknown[] = [value];
+  // Structured clone (IPC) keeps cycles, and this runs before zod refuses anything: each object
+  // is visited once, so a cycle can't loop forever.
+  const seen = new WeakSet<object>();
+  while (pending.length > 0) {
+    const item = pending.pop();
+    // Image bytes (a snapshot's `media[].data`) have no keys worth checking, only millions of
+    // indices.
+    if (typeof item !== "object" || item === null || ArrayBuffer.isView(item) || seen.has(item)) {
+      continue;
+    }
+    seen.add(item);
+    for (const key of Object.keys(item)) {
+      if (UNSAFE_KEYS.has(key)) {
+        return key;
+      }
+      pending.push((item as Record<string, unknown>)[key]);
+    }
+  }
+  return undefined;
+}
+
+/**
+ * `schema`, refusing input with an unsafe key anywhere before zod copies any of it. Used for
+ * everything that can come from a file: node trees here, and whole sites (`siteDocSchema`).
+ */
+export function withoutUnsafeKeys<T>(schema: z.ZodType<T>): z.ZodType<T> {
+  return z
+    .unknown()
+    .superRefine((value, context) => {
+      const key = findUnsafeKey(value);
+      if (key !== undefined) {
+        context.addIssue({ code: "custom", message: `Documents may not contain a "${key}" key` });
+      }
+    })
+    .pipe(schema);
+}
+
 /** Validates a {@link PageDoc} arriving from outside (IPC, files). */
-export const pageDocSchema: z.ZodType<PageDoc> = z.object({
-  root: z.object({ props: z.record(z.string(), z.unknown()) }),
-  content: z.array(nodeDocSchema),
-});
+export const pageDocSchema: z.ZodType<PageDoc> = withoutUnsafeKeys(
+  z.object({
+    root: z.object({ props: z.record(z.string(), z.unknown()) }),
+    content: z.array(nodeDocSchema),
+  }),
+);
 
 /** Validates a {@link LayoutDoc} arriving from outside (IPC, files). */
-export const layoutDocSchema: z.ZodType<LayoutDoc> = z.object({
-  header: z.array(nodeDocSchema),
-  footer: z.array(nodeDocSchema),
-});
+export const layoutDocSchema: z.ZodType<LayoutDoc> = withoutUnsafeKeys(
+  z.object({
+    header: z.array(nodeDocSchema),
+    footer: z.array(nodeDocSchema),
+  }),
+);
 
 /** Validates a {@link Theme}: a daisyUI-style theme name (lowercase letters, digits, hyphens). */
 export const themeSchema: z.ZodType<Theme> = z.object({
