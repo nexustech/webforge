@@ -236,6 +236,11 @@ export function connectEngine(engine: CanvasEngine, session: EditorSession): Eng
         edit.kind,
         labelFor(edit, library, page),
         (draft) => {
+          if (edit.shared === true && edit.layout !== undefined) {
+            // The shared Header or Footer (F-ED-7): the site's layout, which every page shows.
+            syncDraft(draft.layout, edit.layout);
+            return;
+          }
           const target = draft.pages[pageId];
           // A one-field edit is written directly; anything else is compared with the whole page.
           if (
@@ -273,7 +278,8 @@ export function connectEngine(engine: CanvasEngine, session: EditorSession): Eng
     history.document.subscribe((site) => {
       const page = pageDoc(site, ui.getState().pageId);
       if (page !== undefined) {
-        engine.applyChange({ page });
+        // With the shared Header and Footer: undoing an edit of one shows on every page (F-ED-7).
+        engine.applyChange({ page, layout: site.layout });
       }
     }),
     ui.subscribe((state, previous) => {

@@ -18,6 +18,8 @@ export const history = {
   "history.field.anchorId": "anchor ID",
   "history.field.attributes": "attributes",
   "history.editedPage": "Edited page",
+  // An element of the shared Header or Footer, used as {item} above (F-ED-7).
+  "history.sharedItem": "shared {item}",
   // An element the user named in Layers, used as {item} above.
   "history.namedItem": "'{name}'",
 } as const;
