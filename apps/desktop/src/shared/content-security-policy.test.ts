@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildContentSecurityPolicy } from "./content-security-policy.js";
+import { MEDIA_SCHEME } from "./ipc/media.js";
 
 describe("buildContentSecurityPolicy", () => {
   it("allows only the app's own scripts in production", () => {
@@ -15,6 +16,10 @@ describe("buildContentSecurityPolicy", () => {
 
     expect(csp).toContain("style-src 'self' 'unsafe-inline';");
     expect(csp).not.toMatch(/script-src[^;]*unsafe-inline/);
+  });
+
+  it("shows images from the app and Media's own scheme only", () => {
+    expect(buildContentSecurityPolicy()).toContain(`img-src 'self' data: blob: ${MEDIA_SCHEME}:;`);
   });
 
   it("adds the dev server nonce to scripts only in development", () => {

@@ -5,6 +5,8 @@ import {
   imageValueSchema,
   isImageMeta,
   mediaMetaSchema,
+  mediaNameFor,
+  mediaNameSchema,
 } from "./media.js";
 
 const image = {
@@ -77,5 +79,26 @@ describe("isImageMeta", () => {
   it("tells images from files", () => {
     expect(isImageMeta(mediaMetaSchema.parse(image))).toBe(true);
     expect(isImageMeta(mediaMetaSchema.parse(pdf))).toBe(false);
+  });
+});
+
+describe("mediaNameFor", () => {
+  it("makes a valid export name from the file name", () => {
+    expect(mediaNameFor("Shop Front (1).JPG", "image")).toBe("shop-front-1");
+    expect(mediaNameFor("Café crème.png", "image")).toBe("cafe-creme");
+    expect(mediaNameFor("menu.v2.pdf", "file")).toBe("menu-v2");
+    expect(mediaNameFor("--__--.jpg", "image")).toBe("image");
+    expect(mediaNameFor("日本.pdf", "file")).toBe("file");
+    const long = mediaNameFor(`${"a".repeat(59)} b.jpg`, "image");
+    expect(long).toBe("a".repeat(59));
+    for (const name of ["shop-front-1", "cafe-creme", "menu-v2", "image", "file", long]) {
+      expect(mediaNameSchema.safeParse(name).success).toBe(true);
+    }
+  });
+
+  it("adds a number when another item has the name", () => {
+    expect(mediaNameFor("shop.jpg", "image", ["shop"])).toBe("shop-2");
+    expect(mediaNameFor("shop.jpg", "image", ["shop", "shop-2"])).toBe("shop-3");
+    expect(mediaNameFor("shop.jpg", "image", ["shop-2"])).toBe("shop");
   });
 });

@@ -1,11 +1,13 @@
 import type { z } from "zod";
 import { appChannels } from "./ipc/app.js";
 import { canvasChannels } from "./ipc/canvas.js";
+import { mediaChannels } from "./ipc/media.js";
 import { prefsChannels } from "./ipc/prefs.js";
 import { projectChannels } from "./ipc/project.js";
 import { siteChannels } from "./ipc/site.js";
 
 export type { AppInfo } from "./ipc/app.js";
+export type { DroppedFile, MediaImportResult } from "./ipc/media.js";
 export type { Preferences, PreferencesChange } from "./ipc/prefs.js";
 export type {
   CommitResult,
@@ -31,6 +33,7 @@ export type { ExportResult } from "./ipc/site.js";
 export const ipcContract = {
   ...appChannels,
   ...canvasChannels,
+  ...mediaChannels,
   ...prefsChannels,
   ...projectChannels,
   ...siteChannels,
@@ -40,6 +43,7 @@ export const ipcContract = {
 export const ipcDomains = {
   app: appChannels,
   canvas: canvasChannels,
+  media: mediaChannels,
   prefs: prefsChannels,
   project: projectChannels,
   site: siteChannels,

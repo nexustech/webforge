@@ -8,6 +8,7 @@ import {
   dialog,
   ipcMain,
   type OpenDialogOptions,
+  protocol,
   type Rectangle,
   type SaveDialogOptions,
   session,
@@ -15,6 +16,8 @@ import {
   type WebContents,
 } from "electron";
 import { z } from "zod";
+import { thumbnailOutcomeSchema } from "../shared/export-worker-protocol.js";
+import { MEDIA_SCHEME } from "../shared/ipc/media.js";
 import { openFailureMessage } from "../shared/open-failure.js";
 import { createBackupSchedule } from "./backup-schedule.js";
 import { createBackups } from "./backups.js";
@@ -26,6 +29,8 @@ import { runExportInWorker } from "./export-worker-client.js";
 import { createFlushOnClose } from "./flush-on-close.js";
 import { createHandOff } from "./hand-off.js";
 import { registerIpcHandler } from "./ipc.js";
+import { type MediaDialogs, registerMediaHandlers } from "./media-ipc.js";
+import { createMediaResponder } from "./media-protocol.js";
 import {
   openPreferencesStore,
   type PreferencesStore,
@@ -44,6 +49,7 @@ import {
 } from "./security.js";
 import { createSiteSwitch } from "./site-switch.js";
 import { titleBarOptions, titleBarOverlay, windowBackground } from "./window-options.js";
+import { createWorkerRequests } from "./worker-requests.js";
 
 // Process wiring only; the logic lives in tested modules and E2E tests cover this file.
 
@@ -67,6 +73,11 @@ const crashReports = startCrashReports();
 
 // Sandbox every renderer, including any created later by dependencies.
 app.enableSandbox();
+
+// Media images reach the editor through their own scheme (1.16); it must be known before "ready".
+protocol.registerSchemesAsPrivileged([
+  { scheme: MEDIA_SCHEME, privileges: { standard: true, secure: true } },
+]);
 
 app.on("web-contents-created", (_event, contents) => {
   hardenWebContents(contents, appUrl);
@@ -250,6 +261,35 @@ const runExport = (snapshot: SiteSnapshot, destination: string) =>
     { type: "export", snapshot, destination },
   );
 
+// Media thumbnails are made in a long-lived worker too, started when first needed (1.16).
+const requestThumbnail = createWorkerRequests(
+  () => utilityProcess.fork(exportWorkerScript, [], { serviceName: "Webforge thumbnails" }),
+  thumbnailOutcomeSchema,
+  60_000,
+);
+const respondWithMedia = createMediaResponder({
+  readMedia: (hash) => projectSession.readMedia(hash),
+  makeThumbnail: async (data, mimeType) => {
+    const outcome = await requestThumbnail({ type: "thumbnail", mimeType, data });
+    return outcome?.type === "thumbnail" ? outcome.data : undefined;
+  },
+});
+
+const mediaDialogs: MediaDialogs = {
+  chooseMediaFiles: async () => {
+    const options: OpenDialogOptions = {
+      title: t("site.media.chooseTitle"),
+      filters: [{ name: t("site.media.fileType"), extensions: ["jpg", "jpeg", "png", "pdf"] }],
+      properties: ["openFile", "multiSelections"],
+    };
+    const parent = BrowserWindow.getFocusedWindow();
+    const result = await (parent === null
+      ? dialog.showOpenDialog(options)
+      : dialog.showOpenDialog(parent, options));
+    return result.canceled ? undefined : result.filePaths;
+  },
+};
+
 // The canvas compiles its site CSS in one long-lived worker, started when first needed (1.12).
 const compileCanvasCss = createCanvasCssCompiler(() =>
   utilityProcess.fork(exportWorkerScript, [], { serviceName: "Webforge canvas styles" }),
@@ -285,6 +325,7 @@ function createMainWindow(preferences: PreferencesStore): void {
 async function start(): Promise<void> {
   await app.whenReady();
   hardenSession(session.defaultSession);
+  session.defaultSession.protocol.handle(MEDIA_SCHEME, (request) => respondWithMedia(request.url));
   const preferences = await openPreferencesStore(join(app.getPath("userData"), "preferences.json"));
   preferencesStore = preferences;
   let windowTheme = preferences.get().theme;
@@ -324,6 +365,12 @@ async function start(): Promise<void> {
     },
   );
   registerCanvasHandlers(ipcMain, (senderUrl) => isAppUrl(senderUrl, appUrl), compileCanvasCss);
+  registerMediaHandlers(
+    ipcMain,
+    (senderUrl) => isAppUrl(senderUrl, appUrl),
+    projectSession,
+    mediaDialogs,
+  );
   crashReports.registerHandlers(ipcMain, (senderUrl) => isAppUrl(senderUrl, appUrl));
   flushOnClose = createFlushOnClose(ipcMain, (senderUrl) => isAppUrl(senderUrl, appUrl), {
     // The flush has just run; capture the canvas for the Recent list before the window goes.

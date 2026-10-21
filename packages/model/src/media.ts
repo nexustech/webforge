@@ -93,6 +93,37 @@ export function altTextFor(value: ImageValue, media: ImageMeta | undefined): str
   return value.alt ?? media?.alt ?? "";
 }
 
+/** The longest {@link mediaNameSchema} name {@link mediaNameFor} makes, before any `-2`. */
+const MAX_MEDIA_NAME = 60;
+
+/**
+ * A Media name for an imported file that no other item in `taken` has: the file name without its
+ * extension, lower-case, with anything but letters and digits turned into single hyphens
+ * (`Shop Front (1).JPG` → `shop-front-1`), then `-2`, `-3`… if needed. A name with no usable
+ * letters becomes `image` or `file`.
+ */
+export function mediaNameFor(
+  fileName: string,
+  kind: MediaMeta["kind"],
+  taken: Iterable<string> = [],
+): string {
+  const base =
+    fileName
+      .replace(/\.[^.]*$/, "")
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .slice(0, MAX_MEDIA_NAME)
+      .replace(/^-+|-+$/g, "") || kind;
+  const used = new Set(taken);
+  let name = base;
+  for (let suffix = 2; used.has(name); suffix++) {
+    name = `${base}-${suffix}`;
+  }
+  return name;
+}
+
 /** Narrows a Media item to an image. */
 export function isImageMeta(meta: MediaMeta): meta is ImageMeta {
   return meta.kind === "image";

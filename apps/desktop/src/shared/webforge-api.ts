@@ -1,5 +1,6 @@
 import type { AppApi } from "./ipc/app.js";
 import type { CanvasApi } from "./ipc/canvas.js";
+import type { MediaApi } from "./ipc/media.js";
 import type { PrefsApi } from "./ipc/prefs.js";
 import type { ProjectApi } from "./ipc/project.js";
 import type { SiteApi } from "./ipc/site.js";
@@ -12,6 +13,7 @@ import type { SiteApi } from "./ipc/site.js";
 export interface WebforgeApi {
   readonly app: AppApi;
   readonly canvas: CanvasApi;
+  readonly media: MediaApi;
   readonly prefs: PrefsApi;
   readonly project: ProjectApi;
   readonly site: SiteApi;

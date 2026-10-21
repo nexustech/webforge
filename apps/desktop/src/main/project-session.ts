@@ -2,6 +2,8 @@ import { basename, extname, resolve } from "node:path";
 import { t } from "@webforge/i18n";
 import {
   applySiteChanges,
+  FILE_MIME_TYPES,
+  IMAGE_MIME_TYPES,
   type SiteDoc,
   type SiteDocumentChange,
   SiteFormatError,
@@ -9,10 +11,12 @@ import {
 } from "@webforge/model";
 import {
   detectSyncFolder,
+  type NewAsset,
   ProjectFileError,
   type ProjectFileErrorCode,
   ProjectStore,
   ReadOnlyProjectError,
+  type StoredBlob,
 } from "@webforge/storage";
 import type {
   CommitResult,
@@ -23,6 +27,14 @@ import type {
   SiteUiState,
   UiStateResult,
 } from "../shared/ipc-contract.js";
+
+/** The blob types a Media item's file can have; documents (JSON) are never served as media. */
+const MEDIA_MIME_TYPES: ReadonlySet<string> = new Set([...IMAGE_MIME_TYPES, ...FILE_MIME_TYPES]);
+
+/** Outcome of storing an imported file in the open site. */
+export type StoreAssetResult =
+  | { readonly status: "stored"; readonly hash: string }
+  | { readonly status: "failed"; readonly reason: "no-site" | "read-only" | "unknown" };
 
 /** File extension of a Webforge site (P1). */
 export const PROJECT_EXTENSION = ".wforge";
@@ -208,6 +220,34 @@ export class ProjectSession {
     this.#site = next.data;
     this.#events.committed?.();
     return { status: "saved" };
+  }
+
+  /**
+   * Stores an imported file's original bytes, unmodified, as a Media item's asset (1.16). The item
+   * itself joins the site when the renderer commits it; until then, and after an Undo, garbage
+   * collection at the next open or close removes the unused bytes again.
+   */
+  storeAsset(asset: NewAsset): StoreAssetResult {
+    const store = this.#store;
+    if (store === undefined) {
+      return { status: "failed", reason: "no-site" };
+    }
+    try {
+      return { status: "stored", hash: store.putAsset(asset).hash };
+    } catch (error) {
+      if (error instanceof ReadOnlyProjectError) {
+        return { status: "failed", reason: "read-only" };
+      }
+      const code = error instanceof Error && "code" in error ? String(error.code) : "no code";
+      console.error(`Webforge could not store an imported file (${code})`);
+      return { status: "failed", reason: "unknown" };
+    }
+  }
+
+  /** The bytes of a Media file in the open site, by hash; never a site document. */
+  readMedia(hash: string): StoredBlob | undefined {
+    const blob = this.#store?.readBlob(hash);
+    return blob !== undefined && MEDIA_MIME_TYPES.has(blob.mime) ? blob : undefined;
   }
 
   /** The open site's editor state, or `null` without an open site. */
