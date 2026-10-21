@@ -113,7 +113,7 @@ export function createSelectionOutline(onAdd: (at: InsertPoint) => void) {
     const state = isSelected ? "selected" : hover ? "hover" : "none";
     const showAdd = state !== "none" && topLevelIndex >= 0 && canInsert;
     return (
-      <div ref={ref} className="wf-outline" data-state={state}>
+      <div ref={ref} className="wf-outline" data-state={state} data-wf-id={componentId}>
         {showAdd ? (
           <button
             type="button"
@@ -141,6 +141,21 @@ type ActionBarProps = {
   readonly children: ReactNode;
   readonly parentAction: ReactNode;
 };
+
+/** Props of {@link QuickActionBar}. */
+type QuickActionBarProps = ActionBarProps & {
+  /**
+   * Whether the element with this id is locked, like the shared Header or Footer itself (F-ED-7):
+   * it can't be moved, duplicated or deleted from the canvas, so its bar shows only its name.
+   */
+  readonly isLocked?: (id: string) => boolean;
+};
+
+/** The id of the element whose bar holds `marker`, from the outline beside it. */
+function barElementId(marker: Element | null): string | null {
+  const outline = marker?.closest("[data-puck-overlay]")?.querySelector(".wf-outline");
+  return outline instanceof HTMLElement ? (outline.dataset.wfId ?? null) : null;
+}
 
 /**
  * Whether the action bar holding `marker` is the selected element's. Puck also shows the bar of a
@@ -238,8 +253,13 @@ function useKeptInFrame() {
  * own duplicate and delete (and the rich-text format menu while text is edited). Every action is
  * one Puck action, so it reaches the history as one labelled step through the usual edit path.
  */
-export function QuickActionBar({ label, children, parentAction }: ActionBarProps) {
+export function QuickActionBar({ label, children, parentAction, isLocked }: QuickActionBarProps) {
   const kept = useKeptInFrame();
+  const [locked, setLocked] = useState(false);
+  useLayoutEffect(() => {
+    const id = barElementId(kept.current);
+    setLocked(id !== null && isLocked?.(id) === true);
+  });
   return (
     <div ref={kept}>
       <ActionBar>
@@ -247,10 +267,12 @@ export function QuickActionBar({ label, children, parentAction }: ActionBarProps
           {parentAction}
           {label === undefined ? null : <ActionBar.Label label={label} />}
         </ActionBar.Group>
-        <ActionBar.Group>
-          <MoveActions />
-          {children}
-        </ActionBar.Group>
+        {locked ? null : (
+          <ActionBar.Group>
+            <MoveActions />
+            {children}
+          </ActionBar.Group>
+        )}
       </ActionBar>
     </div>
   );

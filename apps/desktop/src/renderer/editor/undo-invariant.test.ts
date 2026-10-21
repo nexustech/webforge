@@ -324,6 +324,31 @@ const commands: fc.Arbitrary<Command>[] = [
         if (footer !== undefined) footer.props.text = text;
       }),
   })),
+  fc.string({ maxLength: 4 }).map((text) => ({
+    name: `type in the footer on the canvas "${text}"`,
+    run: (ctx) => {
+      // As the engine reports it (F-ED-7): a shared edit, with the layout after it.
+      const site = ctx.session.history.document.getState();
+      const page = site.pages[ctx.session.ui.getState().pageId]?.doc;
+      const [footer] = site.layout.footer;
+      if (page === undefined || footer === undefined) return;
+      ctx.engine.edit({
+        kind: "text",
+        page,
+        nodeId: footer.props.id,
+        componentType: "Footer",
+        field: "text",
+        selection: footer.props.id,
+        shared: true,
+        layout: {
+          ...site.layout,
+          footer: [
+            { ...footer, props: { ...footer.props, text: `${String(footer.props.text)}${text}` } },
+          ],
+        },
+      });
+    },
+  })),
   fc
     .record({
       names: fc.array(fc.string({ maxLength: 4 }), { maxLength: 5 }),

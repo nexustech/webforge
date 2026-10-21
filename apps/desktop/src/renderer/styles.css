@@ -11,8 +11,16 @@ body,
   margin: 0;
 }
 
-.editor__canvas {
+/* The canvas, under the shared-region banner while a Header or Footer element is selected. */
+.editor {
+  display: flex;
+  flex-direction: column;
   height: 100%;
+}
+
+.editor__canvas {
+  flex: 1 1 0;
+  min-height: 0;
   overflow: hidden;
 }
 

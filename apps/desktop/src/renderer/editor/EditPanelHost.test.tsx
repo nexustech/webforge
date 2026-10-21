@@ -150,6 +150,25 @@ describe("EditPanelHost", () => {
     expect(screen.getByText("Select an element to edit it")).toBeDefined();
   });
 
+  it("edits the shared Footer in the site's layout, which every page shows (F-ED-7)", async () => {
+    const { session, labels, user } = setup("footer");
+    const footer = () => session.history.document.getState().layout.footer[0]?.props;
+    const pageBefore = currentPage(session)?.doc;
+    const input = screen.getByLabelText("Text");
+    expect(screen.getByRole("heading", { name: "Footer" })).toBeDefined();
+
+    await user.type(input, " Bye!");
+    fireEvent.blur(input);
+
+    expect(footer()?.text).toBe("Thanks for visiting. Bye!");
+    expect(labels()).toEqual(["Edited shared Footer text"]);
+    expect(currentPage(session)?.doc).toBe(pageBefore);
+    act(() => {
+      session.history.undo();
+    });
+    expect(footer()?.text).toBe("Thanks for visiting.");
+  });
+
   describe("style fields (1.14 part 2)", () => {
     it("sets a value for the device being viewed, marks it and drops it again", async () => {
       const { session, labels, section, user } = setup("section-1");
@@ -398,6 +417,18 @@ describe("EditPanelHost", () => {
       expect(advanced()).toBeUndefined();
     });
 
+    it("sets the shared Footer's classes in the site's layout", async () => {
+      const { session, labels, user } = setupAdvanced();
+      act(() => session.ui.setState({ nodeId: "footer" }));
+      await user.click(screen.getByRole("tab", { name: "Advanced" }));
+
+      await user.type(screen.getByLabelText("CSS classes"), "italic{Enter}");
+
+      const footer = session.history.document.getState().layout.footer[0];
+      expect(footer?.props.advanced).toEqual({ className: "italic" });
+      expect(labels()).toEqual(["Changed shared Footer CSS classes"]);
+    });
+
     it("refuses an anchor that another element on the page, or the Header, already uses", async () => {
       const { session, advanced, user } = setupAdvanced();
       act(() =>
@@ -414,6 +445,26 @@ describe("EditPanelHost", () => {
         screen.getByText("Another element on this page already uses this anchor"),
       ).toBeDefined();
       expect(advanced()).toBeUndefined();
+    });
+
+    it("refuses a Footer anchor that an element of another page showing it uses", async () => {
+      const { session, user } = setupAdvanced();
+      act(() => {
+        session.edit("props", "Changed Heading anchor ID", (draft) => {
+          const notFound = Object.values(draft.pages).find((page) => page.kind === "not-found");
+          const first = notFound?.doc.content[0];
+          if (first !== undefined) first.props.advanced = { anchorId: "contact" };
+        });
+        session.ui.setState({ nodeId: "footer" });
+      });
+      await user.click(screen.getByRole("tab", { name: "Advanced" }));
+
+      await user.type(screen.getByLabelText("Anchor ID"), "contact{Enter}");
+
+      expect(
+        screen.getByText("Another element on this page already uses this anchor"),
+      ).toBeDefined();
+      expect(session.history.document.getState().layout.footer[0]?.props.advanced).toBeUndefined();
     });
 
     it("adds and renames an attribute", async () => {

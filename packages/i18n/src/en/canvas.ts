@@ -10,6 +10,12 @@ export const canvas = {
   "canvas.selectNext": "Select next element",
   // The floating + between sections (1.12).
   "canvas.addSection": "Add a section here",
+  // While an element of the shared Header or Footer is selected (1.20, F-ED-7, D7).
+  "canvas.sharedRegion.header": "Header",
+  "canvas.sharedRegion.footer": "Footer",
+  "canvas.sharedBanner.all": "Editing shared {region}: changes apply to all {count} pages",
+  "canvas.sharedBanner.some": "Editing shared {region}: changes apply to {count} pages",
+  "canvas.sharedBanner.one": "Editing shared {region}: changes apply to 1 page",
 
   // The Edit panel (1.14): the selected element's fields.
   "editPanel.title": "Edit",

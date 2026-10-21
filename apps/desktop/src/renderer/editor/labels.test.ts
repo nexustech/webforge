@@ -62,6 +62,28 @@ describe("labelFor", () => {
     ).toBe("Edited Question text");
   });
 
+  it("says when an edit is to the shared Header or Footer (F-ED-7)", () => {
+    const footer = { type: "Footer", props: { id: "f", text: "Bye", layerName: "Small print" } };
+    const shared = (extra: Partial<EngineEdit>) =>
+      labelFor(
+        edit("text", {
+          componentType: "Footer",
+          nodeId: "f",
+          field: "text",
+          shared: true,
+          layout: { header: [], footer: [footer] },
+          ...extra,
+        }),
+        siteLibrary,
+      );
+
+    // Its name in Layers is found in the layout, not the page.
+    expect(shared({})).toBe("Edited shared 'Small print' text");
+    expect(
+      shared({ layout: { header: [], footer: [{ ...footer, props: { id: "f", text: "Bye" } }] } }),
+    ).toBe("Edited shared Footer text");
+  });
+
   it("names an element by the name it has in Layers", () => {
     expect(labelFor(edit("text", { nodeId: "h", field: "text", page: named }), siteLibrary)).toBe(
       "Edited 'Opening times' text",
