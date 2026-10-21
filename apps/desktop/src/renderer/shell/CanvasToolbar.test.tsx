@@ -128,13 +128,20 @@ describe("zoom and size readout", () => {
 
     const disconnect = connectCanvasView(engine, view);
     view.setState({ zoom: 2 });
-    view.setState({ size: null });
-    report?.({ width: 375, height: 900, zoom: 1 });
+    // A report from before the zoom took effect is shown, but isn't a re-fit.
+    report?.({ width: 375, height: 900, zoom: 0.6 });
+    expect(view.getState()).toEqual({ zoom: 2, size: { width: 375, height: 900, zoom: 0.6 } });
+    report?.({ width: 375, height: 450, zoom: 2 });
+    expect(view.getState().zoom).toBe(2);
+    // The canvas fitted the page again (its frame or the device view changed): Fit is shown.
+    report?.({ width: 768, height: 1200, zoom: 0.7 });
+    expect(view.getState()).toEqual({ zoom: "fit", size: { width: 768, height: 1200, zoom: 0.7 } });
+    report?.({ width: 768, height: 1100, zoom: 0.65 });
+    expect(view.getState().zoom).toBe("fit");
     disconnect();
     view.setState({ zoom: 1 });
 
-    expect(engine.setZoom.mock.calls).toEqual([["fit"], [2]]);
-    expect(view.getState().size).toEqual({ width: 375, height: 900, zoom: 1 });
+    expect(engine.setZoom.mock.calls).toEqual([["fit"], [2], ["fit"]]);
     expect(stopSize).toHaveBeenCalledOnce();
   });
 });

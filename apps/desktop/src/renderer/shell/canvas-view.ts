@@ -38,18 +38,40 @@ export type ZoomableCanvas = {
   onCanvasSize(cb: (size: CanvasSize) => void): Unsubscribe;
 };
 
+/** Scales this close are the same zoom (reports round, and floats aren't exact). */
+const sameZoom = (a: number, b: number) => Math.abs(a - b) < 0.005;
+
 /**
  * Keeps a canvas engine and the canvas view in step: the chosen zoom goes to the engine, and the
- * size and scale it shows come back for the readout. Returns a function that disconnects them.
+ * size and scale it shows come back for the readout. The engine's reports are the truth: the
+ * canvas fits the page again whenever its frame or the device view changes, so a chosen zoom that
+ * the canvas no longer shows becomes Fit. A report sent before a chosen zoom took effect is only
+ * shown, not taken for a re-fit. Returns a function that disconnects them.
  */
 export function connectCanvasView(engine: ZoomableCanvas, view: CanvasView): () => void {
-  engine.setZoom(view.getState().zoom);
+  /** A zoom asked of the engine that no report has shown yet. */
+  let requested: number | null = null;
+  const send = (zoom: CanvasZoom) => {
+    requested = zoom === "fit" ? null : zoom;
+    engine.setZoom(zoom);
+  };
+  send(view.getState().zoom);
   const stopZoom = view.subscribe((state, previous) => {
+    // Also after a re-fit set Fit below: asking a fitted canvas to fit again changes nothing.
     if (state.zoom !== previous.zoom) {
-      engine.setZoom(state.zoom);
+      send(state.zoom);
     }
   });
-  const stopSize = engine.onCanvasSize((size) => view.setState({ size }));
+  const stopSize = engine.onCanvasSize((size) => {
+    const { zoom } = view.getState();
+    if (requested !== null) {
+      if (sameZoom(size.zoom, requested)) requested = null;
+      view.setState({ size });
+      return;
+    }
+    const refitted = zoom !== "fit" && !sameZoom(size.zoom, zoom);
+    view.setState(refitted ? { size, zoom: "fit" } : { size });
+  });
   return () => {
     stopZoom();
     stopSize();
