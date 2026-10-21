@@ -81,9 +81,21 @@ test("undoes with Ctrl/Cmd+Z in a panel field through the site's history (ADR 00
   await expect(page.locator('.undo-history__step[aria-current="step"]')).toHaveText("Opened page");
 });
 
-/** Selects the first Section by clicking its bottom padding. */
+/**
+ * Selects the first Section by clicking its bottom padding, once the canvas has finished resizing
+ * to the device view (Puck animates it).
+ */
 async function selectSection(): Promise<void> {
   const section = canvas().locator(".site-section");
+  let last = "";
+  await expect
+    .poll(async () => {
+      const box = JSON.stringify(await section.boundingBox());
+      const settled = box === last;
+      last = box;
+      return settled;
+    })
+    .toBe(true);
   const box = await section.boundingBox();
   if (box === null) throw new Error("Section not visible");
   await section.click({ force: true, position: { x: 10, y: box.height - 4 } });
