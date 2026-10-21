@@ -100,7 +100,7 @@ export function AddPanel({
       onValueChange={(value) => onTabChange(value === "elements" ? "elements" : "sections")}
       className="h-full min-h-0"
     >
-      <TabsList aria-label={t("add.kinds")} className="bg-panel">
+      <TabsList aria-label={t("add.kinds")}>
         <TabsTrigger value="sections" className="normal-case tracking-normal">
           {t("add.sections")}
         </TabsTrigger>
