@@ -1,5 +1,5 @@
 import type { LayoutDoc, NodeDoc, PageDoc } from "@webforge/model";
-import { findNode } from "./tree.js";
+import { allNodes, findNode } from "./tree.js";
 
 /** A site without a shared Header or Footer. */
 export const EMPTY_LAYOUT: LayoutDoc = { header: [], footer: [] };
@@ -35,11 +35,23 @@ export function splitPage(
   return { page: { root: composed.root, content }, layout: { header, footer } };
 }
 
+const asPage = (nodes: readonly NodeDoc[]): PageDoc => ({
+  root: { props: {} },
+  content: [...nodes],
+});
+
 /** Whether `id` is the Header's or Footer's own node, or an element inside one (F-ED-7). */
 export function isShared(layout: LayoutDoc, id: string): boolean {
+  return findNode(asPage([...layout.header, ...layout.footer]), id) !== undefined;
+}
+
+/** Whether two lists hold the same elements, at any depth, in the same order. */
+export function sameNodes(a: readonly NodeDoc[], b: readonly NodeDoc[]): boolean {
+  const left = allNodes(asPage(a));
+  const right = allNodes(asPage(b));
   return (
-    findNode({ root: { props: {} }, content: [...layout.header, ...layout.footer] }, id) !==
-    undefined
+    left.length === right.length &&
+    left.every((node, index) => node.props.id === right[index]?.props.id)
   );
 }
 

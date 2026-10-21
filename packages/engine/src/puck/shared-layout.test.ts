@@ -1,6 +1,13 @@
 import type { LayoutDoc, NodeDoc, PageDoc } from "@webforge/model";
 import { describe, expect, it } from "vitest";
-import { composePage, isShared, isSharedRegion, sameOrder, splitPage } from "./shared-layout.js";
+import {
+  composePage,
+  isShared,
+  isSharedRegion,
+  sameNodes,
+  sameOrder,
+  splitPage,
+} from "./shared-layout.js";
 
 const node = (id: string, props: Record<string, unknown> = {}): NodeDoc => ({
   type: "Box",
@@ -51,5 +58,13 @@ describe("shared layout (F-ED-7)", () => {
 
     expect(sameOrder(composed, composePage(page, layout))).toBe(true);
     expect(sameOrder(composed, moved)).toBe(false);
+  });
+
+  it("notices an element moved into or out of the Header, at any depth", () => {
+    const moved = [node("header", { links: [] })];
+
+    expect(sameNodes(layout.header, [node("header", { links: [node("link")] })])).toBe(true);
+    expect(sameNodes(layout.header, moved)).toBe(false);
+    expect(sameNodes(page.content, [...page.content, node("link")])).toBe(false);
   });
 });

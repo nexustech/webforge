@@ -43,6 +43,7 @@ import {
   EMPTY_LAYOUT,
   isShared,
   isSharedRegion,
+  sameNodes,
   sameOrder,
   splitPage,
 } from "./shared-layout.js";
@@ -298,13 +299,14 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
 
   /**
    * Puts Puck's view back in step with the page and layout, from `shown`, what Puck shows now: the
-   * Header and Footer in their places, the page's content between them (F-ED-7). Runs after Puck's
-   * own update, where a dispatch would be lost.
+   * Header and Footer in their places, the page's content between them (F-ED-7). With
+   * `whenOutOfOrder`, only if their top-level order differs. Runs after Puck's own update, where a
+   * dispatch would be lost.
    */
-  const realign = (shown: PageDoc) => {
+  const putBack = (shown: PageDoc, whenOutOfOrder = false) => {
     queueMicrotask(() => {
       const wanted = composePage(page, layout);
-      if (getPuck === null || sameOrder(shown, wanted)) {
+      if (getPuck === null || (whenOutOfOrder && sameOrder(shown, wanted))) {
         return;
       }
       const actions = pageActions(shown, wanted, slotsOf);
@@ -319,9 +321,10 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   /**
    * Reports an edit Puck made to the page as the canvas shows it, split back into the page and the
    * shared layout (F-ED-7). An edit inside the Header or Footer goes to the layout, which every page
-   * shows. The Header and Footer themselves can't be moved, duplicated or deleted from the canvas:
-   * Puck's view is put back instead. A page element Puck shows above the Header or below the Footer
-   * belongs to the page, and goes back between them.
+   * shows. The Header and Footer themselves can't be moved, duplicated or deleted from the canvas,
+   * and an element can't be moved between them and the page: Puck's view is put back instead. A
+   * page element Puck shows above the Header or below the Footer belongs to the page, and goes back
+   * between them.
    */
   const reportEdit = (edit: EngineEdit, action: PuckAction, prev: AppState) => {
     const before = toPageDoc(prev.data);
@@ -334,11 +337,23 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
             ? edit.nodeId
             : null;
     if (typeof touched === "string" && isSharedRegion(layout, touched)) {
-      realign(edit.page);
+      putBack(edit.page);
       return;
     }
-    const shared = edit.nodeId !== null && edit.kind !== "insert" && isShared(layout, edit.nodeId);
     const split = splitPage(edit.page, layout);
+    const id = edit.nodeId;
+    // In the Header or Footer as they were (an edit, a removal) or are now (an element added in one).
+    const shared = id !== null && (isShared(layout, id) || isShared(split.layout, id));
+    const crossed = shared
+      ? !sameNodes(split.page.content, page.content)
+      : !sameNodes(
+          [...split.layout.header, ...split.layout.footer],
+          [...layout.header, ...layout.footer],
+        );
+    if (crossed) {
+      putBack(edit.page);
+      return;
+    }
     const reported: EngineEdit = shared
       ? { ...edit, page, shared: true, layout: split.layout }
       : { ...edit, page: split.page };
@@ -350,7 +365,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     } finally {
       reporting = false;
     }
-    realign(edit.page);
+    putBack(edit.page, true);
   };
 
   const handleAction = (action: PuckAction, next: AppState, prev: AppState) => {
@@ -431,13 +446,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
 
   /** The quick actions, locked on the shared Header or Footer itself (F-ED-7). */
   function SharedAwareActionBar(props: ComponentProps<typeof QuickActionBar>) {
-    const selectedId = usePuck((state) => state.selectedItem?.props.id ?? null);
-    return (
-      <QuickActionBar
-        {...props}
-        locked={selectedId !== null && isSharedRegion(layout, selectedId)}
-      />
-    );
+    return <QuickActionBar {...props} isLocked={(id) => isSharedRegion(layout, id)} />;
   }
 
   function CanvasFrame({ children, document }: { children: ReactNode; document?: Document }) {
