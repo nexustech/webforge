@@ -59,15 +59,14 @@ export function AddPanel({
           </p>
         ) : (
           groups.map((group) => (
-            <section
-              key={group.category}
-              aria-label={group.category || t("add.other")}
-              className="px-2 pb-2"
-            >
+            <div key={group.category} className="px-2 pb-2">
               <h3 className="m-0 py-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                 {group.category || t("add.other")}
               </h3>
-              <ul className="m-0 grid list-none gap-1 p-0">
+              <ul
+                aria-label={group.category || t("add.other")}
+                className="m-0 grid list-none gap-1 p-0"
+              >
                 {group.items.map((item) => (
                   <li key={item.type}>
                     <Button
@@ -84,7 +83,7 @@ export function AddPanel({
                   </li>
                 ))}
               </ul>
-            </section>
+            </div>
           ))
         )}
       </ScrollArea>

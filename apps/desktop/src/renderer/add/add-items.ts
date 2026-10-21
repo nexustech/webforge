@@ -1,8 +1,9 @@
 import type { InsertPoint } from "@webforge/engine";
 import { isNodeDoc, type NodeDoc, newId } from "@webforge/model";
 import type { ComponentLibrary } from "@webforge/site-components";
-import type { EditorSession } from "../editor/editor-session.js";
+import { currentPage, type EditorSession } from "../editor/editor-session.js";
 import { labelFor } from "../editor/labels.js";
+import { findNode } from "../editor/nodes.js";
 
 /**
  * The Add panel's catalogue (F-ED-1) and where a click adds to the page: sections between
@@ -169,17 +170,13 @@ export function addTarget(
 /** The parts of an editor session adding uses. */
 export type AddSession = Pick<EditorSession, "history" | "ui" | "edit" | "library">;
 
-/** The shown page's top-level nodes. */
-export const shownContent = (session: AddSession): readonly NodeDoc[] =>
-  session.history.document.getState().pages[session.ui.getState().pageId]?.doc.content ?? [];
-
 /** Where a click on `type` would add it on the shown page, if anywhere. */
 export function addTargetFor(
   session: AddSession,
   type: string,
   point?: InsertPoint,
 ): AddTarget | undefined {
-  const content = shownContent(session);
+  const content = currentPage(session)?.doc.content ?? [];
   return addTarget(session.library, content, type, session.ui.getState().nodeId, point);
 }
 
@@ -189,7 +186,7 @@ export function addTargetFor(
  */
 export function addComponent(session: AddSession, type: string, point?: InsertPoint): boolean {
   const definition = session.library.components[type];
-  const page = session.history.document.getState().pages[session.ui.getState().pageId]?.doc;
+  const page = currentPage(session)?.doc;
   const target = addTargetFor(session, type, point);
   if (definition === undefined || page === undefined || target === undefined) {
     return false;
@@ -211,7 +208,8 @@ export function addComponent(session: AddSession, type: string, point?: InsertPo
         content.splice(target.index, 0, node);
         return;
       }
-      const parent = pathTo(content, target.parentId)?.at(-1)?.node;
+      const parentId = target.parentId;
+      const parent = findNode(content, (candidate) => candidate.props.id === parentId);
       if (parent === undefined) return;
       const list = parent.props[target.slot];
       if (Array.isArray(list)) {

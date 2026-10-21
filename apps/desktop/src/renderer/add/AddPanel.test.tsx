@@ -8,7 +8,7 @@ import { starterSite } from "../editor/starter-site.js";
 import { PanelRegistryProvider, usePanels } from "../shell/panel-context.js";
 import { createPanelRegistry, type PanelRegistry } from "../shell/panels.js";
 import { AddPanel } from "./AddPanel.js";
-import { addItems } from "./add-items.js";
+import { addComponent, addItems } from "./add-items.js";
 import { registerAddPanel } from "./register-add-panel.js";
 
 afterEach(cleanup);
@@ -39,7 +39,7 @@ describe("AddPanel (F-ED-1)", () => {
   it("lists sections by category and adds the one clicked", async () => {
     const { onAdd } = setUp();
 
-    expect(screen.getByRole("region", { name: "Heroes" })).toBeTruthy();
+    expect(screen.getByRole("list", { name: "Heroes" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Header" })).toBeNull();
     await userEvent.click(button("Hero"));
 
@@ -104,6 +104,28 @@ describe("registerAddPanel", () => {
     expect(screen.queryByRole("status")).toBeNull();
     addPanel.remove();
     expect(panels.list()).toEqual([]);
+  });
+
+  it("keeps the + button's place with its section while the page changes, and drops it once gone", async () => {
+    const session = createEditorSession(siteLibrary, starterSite());
+    const panels = createPanelRegistry();
+    const addPanel = registerAddPanel(panels, session);
+    render(<Host panels={panels} />);
+
+    act(() => addPanel.openAt({ index: 1 }));
+    // A Hero added at the top moves the Section down: the place stays after the Section.
+    act(() => void addComponent(session, "Hero", { index: 0 }));
+    await userEvent.click(button("FAQ"));
+    expect(currentPage(session)?.doc.content.map((node) => node.type)).toEqual([
+      "Hero",
+      "Section",
+      "Faq",
+    ]);
+
+    act(() => addPanel.openAt({ index: 3 }));
+    expect(screen.getByRole("status").textContent).toContain("after FAQ");
+    act(() => session.history.undo());
+    expect(screen.queryByRole("status")).toBeNull();
   });
 
   it("forgets the + button's place when cancelled or when another page is shown", async () => {
