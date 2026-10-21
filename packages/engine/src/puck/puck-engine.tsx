@@ -521,6 +521,19 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       () => renderContext,
     );
 
+  /**
+   * Draws the page again with the current render context. Puck draws a component again only when
+   * its props or its config change, and an image or a Site Settings value can change without any
+   * props changing (deleted from Media, cropped, renamed): give Puck a new config.
+   */
+  const redraw = () => {
+    if (library !== null) {
+      config = configFor(library);
+      preserveCaret(frameDocument);
+      render();
+    }
+  };
+
   const render = () => {
     if (root === null || config === null) {
       return;
@@ -656,14 +669,14 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     onViewportChange: viewports.add,
 
     setImages(image) {
-      renderContext = { ...EDITOR_RENDER_CONTEXT, image };
-      // Puck draws a component again only when its props or its config change, and an image can
-      // change without any props changing (deleted from Media, cropped): give Puck a new config.
-      if (library !== null) {
-        config = configFor(library);
-        preserveCaret(frameDocument);
-        render();
-      }
+      renderContext = { ...renderContext, image };
+      redraw();
+    },
+
+    setSettings(setting, emptySetting) {
+      const { emptySetting: _previous, ...rest } = renderContext;
+      renderContext = { ...rest, setting, ...(emptySetting === undefined ? {} : { emptySetting }) };
+      redraw();
     },
 
     setZoom: applyZoom,

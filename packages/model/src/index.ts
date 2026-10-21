@@ -1,3 +1,12 @@
+export type { BindableSetting, Bindings } from "./bindings.js";
+export {
+  BINDABLE_SETTINGS,
+  bindableSettingSchema,
+  bindingOf,
+  settingValue,
+  settingValues,
+  validBindings,
+} from "./bindings.js";
 export type { BrokenLink } from "./broken-links.js";
 export { findBrokenLinks } from "./broken-links.js";
 export type { LayoutDoc, NodeAdvanced, NodeDoc, PageDoc, SiteCode, Theme } from "./documents.js";

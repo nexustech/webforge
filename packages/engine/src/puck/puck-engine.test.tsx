@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 
 import type { PageDoc } from "@webforge/model";
-import { type ComponentLibrary, textValue } from "@webforge/site-components";
+import { boundText, type ComponentLibrary, textValue } from "@webforge/site-components";
 import { act } from "react";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CanvasEngine, CanvasSize, EngineEdit } from "../canvas-engine.js";
@@ -32,6 +32,16 @@ const library: ComponentLibrary = {
       fields: { text: { kind: "text", label: "Text", inline: true } },
       defaults: { text: "Heading" },
       render: ({ values }) => <p className="t-heading">{textValue(values.text)}</p>,
+    },
+    Bound: {
+      label: "Bound",
+      fields: {
+        text: { kind: "text", label: "Text", inline: true, bindable: ["contact.phone"] },
+      },
+      defaults: { text: "Bound" },
+      render: ({ values, context }) => (
+        <p className="t-heading">{boundText(values, "text", context)}</p>
+      ),
     },
   },
 };
@@ -410,6 +420,33 @@ describe("createPuckEngine", () => {
     expect(element.querySelectorAll('.wf-outline[data-state="selected"]')).toHaveLength(1);
   });
 
+  it("shows a bound element's Site Settings value, or the hint, as they change (1.17)", async () => {
+    const bound = (bindings?: Record<string, string>): PageDoc => ({
+      ...page,
+      content: [{ type: "Bound", props: { id: "b", text: "Own", ...(bindings && { bindings }) } }],
+    });
+    await act(async () => {
+      engine.setSettings(
+        () => undefined,
+        (key) => `Add ${key}`,
+      );
+      engine.applyChange({ page: bound() });
+    });
+    await settle();
+    expect(headings()).toEqual(["Own"]);
+
+    // Binding it is a change of its props only, which Puck must not take for the inline text.
+    await act(async () => engine.applyChange({ page: bound({ text: "contact.phone" }) }));
+    await settle();
+    expect(headings()).toEqual(["Add contact.phone"]);
+
+    await act(async () =>
+      engine.setSettings((key) => (key === "contact.phone" ? "0123" : undefined)),
+    );
+    await settle();
+    expect(headings()).toEqual(["0123"]);
+  });
+
   it("renders a page to static HTML", () => {
     const html = engine.renderStatic(page, NO_LAYOUT);
 
@@ -641,6 +678,28 @@ describe("createPuckEngine with a shared Header and Footer (F-ED-7)", () => {
 
     // After the Header: the page's start; after the Footer: the page's end.
     expect(requests).toEqual([{ index: 0 }, { index: 2 }, { index: 2 }]);
+  });
+
+  it("shows a Site Settings value bound in the shared Header, and keeps the binding (1.17)", async () => {
+    const edits: EngineEdit[] = [];
+    engine.onUserEdit((edit) => edits.push(edit));
+    const bound = {
+      type: "Bound",
+      props: { id: "hb", text: "Own", bindings: { text: "contact.phone" } },
+    };
+    await act(async () => {
+      engine.setSettings((key) => (key === "contact.phone" ? "0123" : undefined));
+      engine.loadPage(page, { ...layout, header: [bound] });
+    });
+    await settle();
+
+    expect(headings()).toEqual(["0123", "First", "Second", "Thanks"]);
+
+    // A page edit leaves the shared Header and its binding alone. Bound text isn't edited in
+    // place, so the first inline text is the page's.
+    await typeInto(0, "Changed");
+    expect(edits[0]?.shared).toBeUndefined();
+    expect(headings()).toEqual(["0123", "Changed", "Second", "Thanks"]);
   });
 
   it("offers no move, duplicate or delete on the Header or Footer itself", async () => {

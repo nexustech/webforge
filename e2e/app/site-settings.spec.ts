@@ -1,12 +1,14 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, test } from "@playwright/test";
 import { ProjectStore } from "@webforge/storage";
 import { launchDesktopApp } from "./launch.js";
+import { stubFileDialogs } from "./sites.js";
 
 // Site Settings (1.17, F-SET-1): opened from the File menu, checked on Save, saved as one undo
-// step, and kept in the site file.
+// step, and kept in the site file; elements bound to a value show it on the canvas and in the
+// export.
 
 let dir: string;
 let sitePath: string;
@@ -60,4 +62,47 @@ test("edits Site Settings from the File menu, fixing what Save points at, as one
   } finally {
     store.close();
   }
+});
+
+test("shows Site Settings values in bound elements, on the canvas and in the export", async () => {
+  app = await launchDesktopApp();
+  const page = await app.firstWindow();
+  const canvas = page.frameLocator(".editor__canvas iframe");
+  const panel = page.getByRole("region", { name: "Right panels" });
+  await expect(canvas.locator("style[data-webforge-site-css]")).toHaveCount(1);
+
+  // Select the heading by clicking past the end of its text (clicking the text edits it).
+  const heading = canvas.locator(".site-heading");
+  const box = await heading.boundingBox();
+  if (box === null) throw new Error("Heading not visible");
+  await heading.click({ position: { x: box.width * 0.97, y: 2 } });
+  await panel.getByLabel("Text shows").selectOption("contact.phone");
+
+  // Until the phone number is added, the canvas says where to add it.
+  await expect(page.locator(".undo-history__step").first()).toHaveText(
+    "Heading shows Phone number",
+  );
+  await expect(heading).toHaveText("Add your phone number in Site Settings");
+
+  await page.getByRole("menuitem", { name: "File" }).click();
+  await page.getByRole("menuitem", { name: "Site Settings…" }).click();
+  const dialog = page.getByRole("dialog", { name: "Site Settings" });
+  await dialog.getByLabel("Site name").fill("Hightown Bakery");
+  await dialog.getByRole("tab", { name: "Contact & hours" }).click();
+  await dialog.getByLabel("Phone number").fill("+44 1234 567890");
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(dialog).toHaveCount(0);
+
+  await expect(heading).toHaveText("+44 1234 567890");
+
+  const folder = join(dir, "export");
+  await stubFileDialogs(app, folder);
+  await page.getByRole("button", { name: "Export", exact: true }).click();
+  await expect(page.getByText(/Site exported to/)).toBeVisible({ timeout: 30_000 });
+  const index = readFileSync(join(folder, "index.html"), "utf8");
+  // A new site's Header shows the site name (the canvas doesn't show the Header yet).
+  expect(index).toMatch(/<header class="site-header[\s\S]*Hightown Bakery[\s\S]*<\/header>/);
+  expect(index).toContain("+44 1234 567890");
+  expect(index).not.toContain("Welcome to our business");
+  expect(index).not.toContain("Site Settings");
 });

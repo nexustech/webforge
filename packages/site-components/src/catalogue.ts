@@ -74,7 +74,10 @@ export function starterNotFoundPage(): PageDoc {
 /** The Header and Footer a new site starts with. */
 export function starterLayout(siteName: string): LayoutDoc {
   return {
-    header: [{ type: "Header", props: { id: "header", siteName } }],
+    // The site name shows Site Settings' name, so renaming the site renames it everywhere (1.17).
+    header: [
+      { type: "Header", props: { id: "header", siteName, bindings: { siteName: "general.name" } } },
+    ],
     footer: [{ type: "Footer", props: { id: "footer", text: t("starter.footer") } }],
   };
 }

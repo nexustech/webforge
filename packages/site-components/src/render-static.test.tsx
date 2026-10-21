@@ -28,6 +28,7 @@ const context: RenderContext = {
   link: (target) => `${target}.html`,
   href: (link) => (link.kind === "page" ? `${link.pageId}.html` : "#"),
   image: (id) => (id === "hero" ? heroImage : null),
+  setting: (key) => (key === "general.name" ? "Rosa's Bakery" : undefined),
 };
 
 const faqNodes: NodeDoc[] = [
@@ -93,7 +94,49 @@ describe("renderNodesToHtml", () => {
 
     const html = renderNodesToHtml(starterLayout("Bakery").header, siteLibrary, reordered);
 
-    expect(html).toContain('<a class="text-xl font-bold" href="index.html">Bakery</a>');
+    // The starter Header shows Site Settings' name, not the text it was created with (1.17).
+    expect(html).toContain('<a class="text-xl font-bold" href="index.html">Rosa&#x27;s Bakery</a>');
+  });
+
+  it("shows a field's own text until it is bound, and leaves an empty binding out", () => {
+    const footer = (props: Record<string, unknown>): NodeDoc[] => [
+      { type: "Footer", props: { id: "footer", text: "Thanks for visiting.", ...props } },
+    ];
+
+    expect(renderNodesToHtml(footer({}), siteLibrary, context)).toContain(
+      "<p>Thanks for visiting.</p>",
+    );
+    // contact.phone is empty here: the export leaves it out, with no empty paragraph or heading.
+    const empty = renderNodesToHtml(
+      footer({ bindings: { text: "contact.phone" } }),
+      siteLibrary,
+      context,
+    );
+    expect(empty).toContain("site-footer");
+    expect(empty).not.toContain("<p>");
+    expect(
+      renderNodesToHtml(
+        [
+          {
+            type: "Heading",
+            props: { id: "h", text: "Call", bindings: { text: "contact.phone" } },
+          },
+        ],
+        siteLibrary,
+        context,
+      ),
+    ).toBe("");
+    // The canvas shows a hint instead.
+    expect(
+      renderNodesToHtml(footer({ bindings: { text: "contact.phone" } }), siteLibrary, {
+        ...context,
+        emptySetting: (key) => `Add ${key}`,
+      }),
+    ).toContain("<p>Add contact.phone</p>");
+    // A binding to a setting that does not exist is ignored.
+    expect(
+      renderNodesToHtml(footer({ bindings: { text: "contact.fax" } }), siteLibrary, context),
+    ).toContain("<p>Thanks for visiting.</p>");
   });
 
   it("renders a hero with a responsive image and a link to another page", () => {
