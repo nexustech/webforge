@@ -6,6 +6,7 @@ import {
   pageDocSchema,
   siteCodeSchema,
   themeSchema,
+  withoutUnsafeKeys,
 } from "./documents.js";
 import { mediaIdSchema, newId, type PageId, pageIdSchema } from "./ids.js";
 import { mediaMetaSchema } from "./media.js";
@@ -99,7 +100,7 @@ function duplicatesOf(values: readonly string[]): string[] {
  * separate `.wforge` documents so a save writes only what changed. Pages are keyed by id and
  * ordered by `pageOrder`, which is also the navigation order until the menu is edited (S6).
  */
-export const siteDocSchema = z
+const siteDocObjectSchema = z
   .strictObject({
     formatVersion: z.literal(SITE_FORMAT_VERSION),
     settings: siteSettingsSchema,
@@ -175,8 +176,14 @@ export const siteDocSchema = z
     }
   });
 
+/**
+ * The site document. Every part of it (settings, media, menu, code, not only the pages' element
+ * trees) is refused if it holds a `__proto__`, `constructor` or `prototype` key (#138).
+ */
+export const siteDocSchema = withoutUnsafeKeys(siteDocObjectSchema);
+
 /** See {@link siteDocSchema}. */
-export type SiteDoc = z.infer<typeof siteDocSchema>;
+export type SiteDoc = z.infer<typeof siteDocObjectSchema>;
 
 /** Options of {@link createSite}. Titles come from the caller, translated. */
 export type CreateSiteOptions = {

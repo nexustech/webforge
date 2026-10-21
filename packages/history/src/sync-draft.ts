@@ -17,8 +17,18 @@ function isUnchanged(current: unknown, next: unknown): boolean {
   return Object.is(current, next) || (isDraft(current) && original(current) === next);
 }
 
+/**
+ * A key that plain property access doesn't treat as a key: reading `__proto__` gives the object's
+ * prototype, and assigning it replaces the prototype. Documents never have one (the model refuses
+ * them at the boundary); meeting one here means something bypassed that check.
+ */
+const PROTOTYPE_KEY = "__proto__";
+
 function syncValue(target: Container, key: string | number, next: unknown): void {
-  const current = (target as Record<string | number, unknown>)[key];
+  // Only the target's own value: an inherited one (`constructor`) isn't part of the document.
+  const current = Object.hasOwn(target, key)
+    ? (target as Record<string | number, unknown>)[key]
+    : undefined;
   if (isUnchanged(current, next)) {
     return;
   }
@@ -44,6 +54,10 @@ function syncContainer(target: Container, next: Container): void {
   }
   const record = target as Record<string, unknown>;
   const nextRecord = next as Record<string, unknown>;
+  if (Object.hasOwn(nextRecord, PROTOTYPE_KEY)) {
+    // Copying it would change the draft's prototype (or Object.prototype) instead of a key.
+    throw new Error(`syncDraft refuses a "${PROTOTYPE_KEY}" key: it would change a prototype`);
+  }
   for (const key of Object.keys(record)) {
     if (!Object.hasOwn(nextRecord, key)) {
       delete record[key];
