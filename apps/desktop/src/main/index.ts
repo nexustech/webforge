@@ -15,6 +15,7 @@ import {
 import { createBackupSchedule } from "./backup-schedule.js";
 import { createBackups } from "./backups.js";
 import { createCanvasCssCompiler, registerCanvasHandlers } from "./canvas-css.js";
+import { startCrashReports } from "./crash-wiring.js";
 import { type ExportDialogs, registerExportHandlers } from "./export-ipc.js";
 import { runExportInWorker } from "./export-worker-client.js";
 import { createFlushOnClose } from "./flush-on-close.js";
@@ -45,6 +46,9 @@ const exportWorkerScript = join(import.meta.dirname, "export-worker.js");
 // electron-vite sets ELECTRON_RENDERER_URL to the Vite dev server in development only.
 const devServerUrl = app.isPackaged ? undefined : process.env.ELECTRON_RENDERER_URL;
 const appUrl = devServerUrl ?? pathToFileURL(rendererHtml).href;
+
+// Local crash reports first, so even a failing start-up leaves one (F-SITE-7).
+const crashReports = startCrashReports();
 
 // Sandbox every renderer, including any created later by dependencies.
 app.enableSandbox();
@@ -191,6 +195,7 @@ async function start(): Promise<void> {
     { backups, dialogs: recoveryDialogs },
   );
   registerCanvasHandlers(ipcMain, (senderUrl) => isAppUrl(senderUrl, appUrl), compileCanvasCss);
+  crashReports.registerHandlers(ipcMain, (senderUrl) => isAppUrl(senderUrl, appUrl));
   flushOnClose = createFlushOnClose(ipcMain, (senderUrl) => isAppUrl(senderUrl, appUrl), {
     onClosed: () => {
       if (quitting) app.quit();
@@ -208,6 +213,7 @@ async function start(): Promise<void> {
     await openSite(projectToOpen);
   }
   createMainWindow(preferences);
+  void crashReports.noticeAfterLaunch();
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {

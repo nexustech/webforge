@@ -13,4 +13,11 @@ export const storage = {
   "storage.recovery.chooseTitle": "Choose a backup",
   "storage.recovery.noBackups":
     "This site file is damaged and can't be opened, and there is no backup of it yet.",
+  "storage.crash.title": "Webforge closed unexpectedly",
+  "storage.crash.message": "Webforge closed unexpectedly. Your work was saved.",
+  "storage.crash.detail":
+    "A crash report was saved on this computer. It contains no site content or personal details, and nothing was sent anywhere.",
+  "storage.crash.openFolder": "Open crash reports folder",
+  "storage.crash.ok": "OK",
+  "storage.command.openCrashReports": "Open Crash Reports Folder",
 } as const;
