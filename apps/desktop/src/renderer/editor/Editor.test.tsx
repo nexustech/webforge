@@ -231,10 +231,11 @@ describe("Editor", () => {
     expect(session.history.state.getState().cursor).toBe(0);
   });
 
-  it("puts Undo History in the left column's bottom and the Edit panel on the right", () => {
+  it("puts Undo History on the left, and the Edit panel and Media on the right", () => {
     expect(panels.list()).toEqual([
       expect.objectContaining({ id: "undoHistory", slot: "left.bottom", title: "Undo History" }),
       expect.objectContaining({ id: "edit", slot: "right.top", title: "Edit" }),
+      expect.objectContaining({ id: "media", slot: "right.bottom", title: "Media" }),
     ]);
   });
 

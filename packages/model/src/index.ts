@@ -10,9 +10,10 @@ export type { Brand, IdKind, MediaId, MenuItemId, NodeId, PageId } from "./ids.j
 export { mediaIdSchema, menuItemIdSchema, newId, nodeIdSchema, pageIdSchema } from "./ids.js";
 export type { LinkValue } from "./link.js";
 export { anchorIdSchema, linkValueSchema, webUrlSchema } from "./link.js";
-export type { FileMeta, ImageMeta, ImageValue, MediaMeta } from "./media.js";
+export type { FileMeta, ImageCrop, ImageMeta, ImageValue, MediaMeta } from "./media.js";
 export {
   altTextFor,
+  cropForAspect,
   FILE_MIME_TYPES,
   IMAGE_MIME_TYPES,
   imageValueSchema,

@@ -52,6 +52,37 @@ describe("registerMediaHandlers", () => {
     ).rejects.toThrow();
   });
 
+  it("refuses one request carrying more than 100 MB in all", async () => {
+    const { invoke, session } = setUp(undefined);
+    const full = new Uint8Array(MAX_MEDIA_BYTES);
+
+    await expect(
+      invoke("media:import", [
+        { fileName: "a.pdf", data: full },
+        { fileName: "b.pdf", data: full },
+        { fileName: "c.pdf", data: pdf },
+      ]),
+    ).rejects.toThrow();
+    expect(session.storeAsset).not.toHaveBeenCalled();
+  });
+
+  it("stores each chosen file before reading the next, and stops when storing fails", async () => {
+    const dir = tempDir();
+    const paths = ["One.pdf", "Two.pdf"].map((name) => {
+      const path = join(dir, name);
+      writeFileSync(path, pdf);
+      return path;
+    });
+    const { invoke, session } = setUp(paths);
+    vi.mocked(session.storeAsset).mockReturnValueOnce({ status: "failed", reason: "read-only" });
+
+    await expect(invoke("media:choose")).resolves.toEqual({
+      status: "failed",
+      reason: "read-only",
+    });
+    expect(session.storeAsset).toHaveBeenCalledTimes(1);
+  });
+
   it("reads the chosen files, and doesn't read one that is too large", async () => {
     const dir = tempDir();
     const prices = join(dir, "Prices.pdf");

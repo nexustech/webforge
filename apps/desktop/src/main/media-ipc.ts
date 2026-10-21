@@ -3,7 +3,7 @@ import { basename } from "node:path";
 import type { IpcMain } from "electron";
 import { MAX_MEDIA_BYTES, MAX_MEDIA_FILES } from "../shared/ipc/media.js";
 import { registerIpcHandler } from "./ipc.js";
-import { type ImportFile, importMediaFiles } from "./media-import.js";
+import { createMediaImport, type ImportFile, importMediaFiles } from "./media-import.js";
 import type { ProjectSession } from "./project-session.js";
 
 /** The native dialog of the Media import, injected so the handlers can be tested. */
@@ -41,9 +41,16 @@ export function registerMediaHandlers(
     if (paths === undefined || paths.length === 0) {
       return { status: "canceled" };
     }
+    // One file at a time, so only one is ever in memory.
+    const running = createMediaImport(session);
     try {
-      const files = await Promise.all(paths.slice(0, MAX_MEDIA_FILES).map(readChosenFile));
-      return importMediaFiles(session, files);
+      for (const path of paths.slice(0, MAX_MEDIA_FILES)) {
+        const failed = running.add(await readChosenFile(path));
+        if (failed !== undefined) {
+          return failed;
+        }
+      }
+      return running.result();
     } catch (error) {
       const code = error instanceof Error && "code" in error ? String(error.code) : "no code";
       console.error(`Webforge could not read a chosen file (${code})`);

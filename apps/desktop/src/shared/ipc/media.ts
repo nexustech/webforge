@@ -7,6 +7,12 @@ export const MAX_MEDIA_BYTES = 50 * 1024 * 1024;
 /** How many files one import takes, so one drop can't hold the main process for long. */
 export const MAX_MEDIA_FILES = 50;
 
+/**
+ * The most bytes one `media:import` request carries, so a large drop never travels as one huge
+ * IPC message; the renderer sends a large drop in several requests.
+ */
+export const MAX_IMPORT_REQUEST_BYTES = 2 * MAX_MEDIA_BYTES;
+
 /** A file dropped on Webforge: its name on the user's computer and its bytes, never its path. */
 const droppedFileSchema = z.strictObject({
   fileName: z
@@ -56,12 +62,27 @@ export type MediaImportResult = z.infer<typeof importResultSchema>;
  */
 export const MEDIA_SCHEME = "webforge-media";
 
+/** Where the editor shows a Media image: its thumbnail, or its original bytes. */
+export function mediaImageUrl(item: { readonly hash: string }, size: "thumbnail" | "original") {
+  return `${MEDIA_SCHEME}://${size}/${item.hash}`;
+}
+
 /** IPC channels of the `media` domain (`media:*`). */
 export const mediaChannels = {
   /** Imports files dropped on Webforge (F-ED-5). */
   importMedia: {
     channel: "media:import",
-    request: z.tuple([z.array(droppedFileSchema).min(1).max(MAX_MEDIA_FILES)]),
+    request: z.tuple([
+      z
+        .array(droppedFileSchema)
+        .min(1)
+        .max(MAX_MEDIA_FILES)
+        .refine(
+          (files) =>
+            files.reduce((total, file) => total + file.data.byteLength, 0) <=
+            MAX_IMPORT_REQUEST_BYTES,
+        ),
+    ]),
     response: importResultSchema,
   },
   /** Asks for images or PDFs with a native dialog, then imports them. */

@@ -1,0 +1,106 @@
+import { t } from "@webforge/i18n";
+import type { MediaMeta } from "@webforge/model";
+import {
+  MAX_IMPORT_REQUEST_BYTES,
+  MAX_MEDIA_BYTES,
+  MAX_MEDIA_FILES,
+  type MediaApi,
+} from "../../shared/ipc/media.js";
+import type { MediaImportResult } from "../../shared/ipc-contract.js";
+
+/** The parts of a dropped `File` the import reads. */
+export type DroppedFileLike = Pick<File, "name" | "size" | "arrayBuffer">;
+
+type Rejected = Extract<MediaImportResult, { status: "imported" }>["rejected"][number];
+
+/** Groups files into requests the main process takes: at most 100 MB and 50 files each. */
+function batches(files: readonly DroppedFileLike[]): DroppedFileLike[][] {
+  const groups: DroppedFileLike[][] = [];
+  let current: DroppedFileLike[] = [];
+  let bytes = 0;
+  for (const file of files) {
+    if (
+      current.length > 0 &&
+      (bytes + file.size > MAX_IMPORT_REQUEST_BYTES || current.length === MAX_MEDIA_FILES)
+    ) {
+      groups.push(current);
+      current = [];
+      bytes = 0;
+    }
+    current.push(file);
+    bytes += file.size;
+  }
+  if (current.length > 0) groups.push(current);
+  return groups;
+}
+
+/**
+ * Imports files dropped on the Media panel. They go to the main process in batches, each read only
+ * when it is sent, so a large drop never sits in memory at once; a file over 50 MB isn't read at
+ * all. The results come back as one import.
+ */
+export async function importDroppedFiles(
+  files: readonly DroppedFileLike[],
+  media: Pick<MediaApi, "import">,
+): Promise<MediaImportResult> {
+  const items: MediaMeta[] = [];
+  const rejected: Rejected[] = files
+    .filter((file) => file.size > MAX_MEDIA_BYTES)
+    .map((file) => ({ fileName: file.name, reason: "too-large" }));
+  for (const group of batches(files.filter((file) => file.size <= MAX_MEDIA_BYTES))) {
+    const payload = await Promise.all(
+      group.map(async (file) => ({
+        fileName: file.name,
+        data: new Uint8Array(await file.arrayBuffer()),
+      })),
+    );
+    const result = await media.import(payload);
+    if (result.status !== "imported") {
+      return result;
+    }
+    items.push(...result.items);
+    rejected.push(...result.rejected);
+  }
+  return { status: "imported", items, rejected };
+}
+
+/** What the user is told about files that weren't added, or about an import that failed. */
+function importMessages(result: MediaImportResult): string[] {
+  switch (result.status) {
+    case "canceled":
+      return [];
+    case "failed":
+      return [
+        result.reason === "read-only"
+          ? t("site.media.failed.readOnly")
+          : t("site.media.failed.unknown"),
+      ];
+    case "imported":
+      return result.rejected.map(({ fileName, reason }) =>
+        t(
+          reason === "too-large"
+            ? "site.media.rejected.tooLarge"
+            : "site.media.rejected.unsupported",
+          { name: fileName },
+        ),
+      );
+  }
+}
+
+/**
+ * Runs an import (a drop, the Add dialog or Replace) and tells the user about anything left out.
+ * Returns the items it brought, for the caller to add to Media or put in an item's place.
+ */
+export async function importItems(
+  request: () => Promise<MediaImportResult>,
+  notify: (message: string) => void,
+): Promise<readonly MediaMeta[]> {
+  let result: MediaImportResult;
+  try {
+    result = await request();
+  } catch {
+    result = { status: "failed", reason: "unknown" };
+  }
+  for (const message of importMessages(result)) notify(message);
+  return result.status === "imported" ? result.items : [];
+}
