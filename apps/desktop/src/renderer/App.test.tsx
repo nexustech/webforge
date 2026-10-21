@@ -24,6 +24,8 @@ const savePreferences = vi.fn(async (change: PreferencesChange) =>
 
 const saveUiState = vi.fn(async (): Promise<UiStateResult> => ({ status: "saved" }));
 
+const setSpellCheckLanguage = vi.fn(async () => null);
+
 function renderApp(
   exportSite = vi.fn(async (): Promise<ExportResult> => ({ status: "canceled" })),
   extra: Partial<AppProps> = {},
@@ -31,6 +33,7 @@ function renderApp(
   render(
     <App
       saveUiState={saveUiState}
+      setSpellCheckLanguage={setSpellCheckLanguage}
       info={{ name: "Webforge", version: "1.2.0" }}
       preferences={DEFAULT_PREFERENCES}
       savePreferences={savePreferences}
@@ -52,6 +55,13 @@ describe("App", () => {
       "My site",
     );
     expect(screen.getByRole("main")).toBeTruthy();
+  });
+
+  it("spell checks in the site's language (F-ED-19)", () => {
+    setSpellCheckLanguage.mockClear();
+    renderApp();
+
+    expect(setSpellCheckLanguage).toHaveBeenCalledWith("en");
   });
 
   it("exports the site from the title bar and says where it went", async () => {

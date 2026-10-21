@@ -4,9 +4,14 @@ import type { Session, WebContents, WebPreferences } from "electron";
  * Web preferences for every window that shows editor UI. The renderer is sandboxed and isolated
  * from Node and Electron; it reaches the main process only through the preload API.
  */
-export function createSecureWebPreferences(preloadPath: string): WebPreferences {
+export function createSecureWebPreferences(
+  preloadPath: string,
+  /** Spell check in text fields (F-ED-19); only where the system's own checker is used. */
+  spellcheck = false,
+): WebPreferences {
   return {
     preload: preloadPath,
+    spellcheck,
     contextIsolation: true,
     sandbox: true,
     nodeIntegration: false,

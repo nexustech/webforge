@@ -10,6 +10,7 @@ export const COMMAND_IDS = {
   redo: "edit.redo",
   preview: "site.preview",
   exportSite: "site.export",
+  siteSettings: "site.settings",
   publish: "site.publish",
   commandBox: "view.commandBox",
   toggleLeftPanels: "view.toggleLeftPanels",
