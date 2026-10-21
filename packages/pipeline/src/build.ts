@@ -14,6 +14,7 @@ import {
 import { buildSiteCss, classCandidates } from "./css.js";
 import { BODY_CLASS, pageDocument } from "./html.js";
 import { imageForDepth, processImage } from "./images.js";
+import { hrefFor } from "./links.js";
 import type { PipelineResources } from "./resources.js";
 
 /** Why a build failed (X5 errors). The app shows a translated message for each code. */
@@ -132,6 +133,7 @@ export async function buildSite(
 
   // Render every page, then compile one stylesheet from all the classes they use.
   const paths = new Set(site.pages.map((page) => page.path));
+  const pathById = new Map(site.pages.map((page) => [page.id as string, page.path]));
   const rendered = site.pages.map((page) => {
     const prefix = "../".repeat(depthOf(page.path));
     const navigation: NavLink[] = site.pages
@@ -152,6 +154,15 @@ export async function buildSite(
         }
         warnings.push({ code: "broken-link", page: page.path, detail: target });
         return "#";
+      },
+      href: (link) => {
+        const href = hrefFor(link, (id) => pathById.get(id), prefix);
+        if (href === undefined) {
+          const detail = link.kind === "page" ? link.pageId : link.kind;
+          warnings.push({ code: "broken-link", page: page.path, detail });
+          return "#";
+        }
+        return href;
       },
       image: (id) => {
         const image = images.get(id);

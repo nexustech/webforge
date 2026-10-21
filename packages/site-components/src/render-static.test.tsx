@@ -26,6 +26,7 @@ const context: RenderContext = {
     { label: "About", href: "about.html", current: false },
   ],
   link: (target) => `${target}.html`,
+  href: (link) => (link.kind === "page" ? `${link.pageId}.html` : "#"),
   image: (id) => (id === "hero" ? heroImage : null),
   setting: (key) => (key === "general.name" ? "Rosa's Bakery" : undefined),
 };
@@ -283,6 +284,22 @@ describe("tree helpers", () => {
     );
 
     expect(html).toContain('alt="Our bakery"');
+  });
+
+  it("renders a link field's value, opening a new tab safely (F-ED-18)", () => {
+    const hero = (buttonLink: unknown): NodeDoc => ({
+      type: "Hero",
+      props: { id: "h", title: "Hi", buttonLabel: "Go", buttonLink },
+    });
+    const render = (link: unknown) => renderNodesToHtml([hero(link)], siteLibrary, context);
+
+    expect(render({ kind: "page", pageId: "about" })).toContain('href="about.html"');
+    expect(render({ kind: "page", pageId: "about", newTab: true })).toContain(
+      'href="about.html" target="_blank" rel="noopener"',
+    );
+    // A page path typed before link fields, and no link at all.
+    expect(render("about")).toContain('href="about.html"');
+    expect(render(undefined)).toContain('href="#"');
   });
 
   it("mediaUsedBy finds media ids in media fields only", () => {

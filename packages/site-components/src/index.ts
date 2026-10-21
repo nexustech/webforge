@@ -8,6 +8,7 @@ export type {
   FieldDef,
   FieldOption,
   ImageSource,
+  LinkAttributes,
   ListItem,
   ListItemFieldDef,
   NavLink,
@@ -17,6 +18,8 @@ export type {
 export {
   boundText,
   EDITOR_RENDER_CONTEXT,
+  linkAttributes,
+  linkValue,
   optionValue,
   responsiveClasses,
   slotComponent,
