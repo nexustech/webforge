@@ -39,7 +39,17 @@ export function siteToSnapshot(
       const data = blobs.get(item.hash);
       return data === undefined
         ? []
-        : [{ id: item.id, name: item.name, mimeType: item.mimeType, data }];
+        : [
+            {
+              id: item.id,
+              name: item.name,
+              mimeType: item.mimeType,
+              data,
+              alt: item.alt,
+              ...(item.focal === undefined ? {} : { focal: item.focal }),
+              ...(item.crop === undefined ? {} : { crop: item.crop }),
+            },
+          ];
     });
 
   return {

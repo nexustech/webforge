@@ -9,10 +9,10 @@ export const FILE_MIME_TYPES = ["application/pdf"] as const;
 const fraction = z.number().min(0).max(1);
 
 /** A point on an image as fractions of its width and height; `{x: 0.5, y: 0.5}` is the centre. */
-const focalPointSchema = z.strictObject({ x: fraction, y: fraction });
+export const focalPointSchema = z.strictObject({ x: fraction, y: fraction });
 
 /** The part of an image to show, as fractions of the original's width and height. */
-const cropSchema = z
+export const cropSchema = z
   .strictObject({
     x: fraction,
     y: fraction,

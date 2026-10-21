@@ -37,7 +37,6 @@ export const components = {
   "field.buttonLabel": "Button text",
   "field.buttonLink": "Button link",
   "field.image": "Image",
-  "field.imageDescription": "Image description",
   "field.questions": "Questions",
   "field.question": "Question",
   "field.answer": "Answer",
