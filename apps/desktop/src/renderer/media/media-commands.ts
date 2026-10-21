@@ -143,12 +143,13 @@ export function cropPresetOf(item: ImageMeta): CropPreset | undefined {
 
 /**
  * Moves an image's focal point (G14), the part kept in view when a device view or a crop cuts it;
- * a crop moves with it, keeping its shape.
+ * a crop moves with it, keeping its shape. `nudge` merges a run of arrow-key moves into one step.
  */
 export function setFocalPoint(
   session: MediaSession,
   id: MediaId,
   focal: { readonly x: number; readonly y: number },
+  nudge = false,
 ): void {
   const item = session.history.document.getState().media[id];
   if (item === undefined || !isImageMeta(item)) {
@@ -165,10 +166,15 @@ export function setFocalPoint(
           { ...item, focal: point },
           (item.crop.width * item.width) / (item.crop.height * item.height),
         );
-  session.edit("props", t("site.media.history.focal"), (draft) => {
-    const image = draft.media[id];
-    if (image?.kind !== "image") return;
-    image.focal = point;
-    if (crop !== undefined) image.crop = crop;
-  });
+  session.edit(
+    "props",
+    t("site.media.history.focal"),
+    (draft) => {
+      const image = draft.media[id];
+      if (image?.kind !== "image") return;
+      image.focal = point;
+      if (crop !== undefined) image.crop = crop;
+    },
+    nudge ? { coalesceKey: `media:${id}:focal` } : undefined,
+  );
 }

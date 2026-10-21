@@ -15,7 +15,6 @@ export const site = {
   "site.media.alt": "Alt text",
   "site.media.altHint":
     "Describe the image for people who can't see it. Used wherever it's placed.",
-  "site.media.focal": "Focal point",
   "site.media.focalHint":
     "Click the part of the image that must stay in view, or use the arrow keys.",
   "site.media.focalValue": "{x}% across, {y}% down",

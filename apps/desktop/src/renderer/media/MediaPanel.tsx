@@ -247,7 +247,7 @@ function ImageDetails({ image, session, imageUrl }: ImageDetailsProps) {
     const step = ARROWS[event.key];
     if (step !== undefined) {
       event.preventDefault();
-      setFocalPoint(session, image.id, { x: focal.x + step.x, y: focal.y + step.y });
+      setFocalPoint(session, image.id, { x: focal.x + step.x, y: focal.y + step.y }, true);
     }
   };
 

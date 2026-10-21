@@ -48,12 +48,21 @@ export async function importDroppedFiles(
     .filter((file) => file.size > MAX_MEDIA_BYTES)
     .map((file) => ({ fileName: file.name, reason: "too-large" }));
   for (const group of batches(files.filter((file) => file.size <= MAX_MEDIA_BYTES))) {
-    const payload = await Promise.all(
-      group.map(async (file) => ({
-        fileName: file.name,
-        data: new Uint8Array(await file.arrayBuffer()),
-      })),
+    const read = await Promise.all(
+      group.map(async (file) => {
+        try {
+          return { fileName: file.name, data: new Uint8Array(await file.arrayBuffer()) };
+        } catch {
+          // A dropped folder, or a file gone since the drop.
+          rejected.push({ fileName: file.name, reason: "unsupported" });
+          return undefined;
+        }
+      }),
     );
+    const payload = read.filter((file) => file !== undefined);
+    if (payload.length === 0) {
+      continue;
+    }
     const result = await media.import(payload);
     if (result.status !== "imported") {
       return result;

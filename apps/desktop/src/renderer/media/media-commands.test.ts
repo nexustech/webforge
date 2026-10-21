@@ -196,6 +196,19 @@ describe("setFocalPoint", () => {
     });
   });
 
+  it("merges a run of arrow-key nudges into one step", () => {
+    const session = sessionWith(photo);
+
+    setFocalPoint(session, photo.id, { x: 0.55, y: 0.5 }, true);
+    setFocalPoint(session, photo.id, { x: 0.6, y: 0.5 }, true);
+
+    expect(session.history.state.getState().entries.map((entry) => entry.label)).toEqual([
+      "Added image 'shop.jpg'",
+      "Changed focal point",
+    ]);
+    expect(media(session)[photo.id]).toMatchObject({ focal: { x: 0.6, y: 0.5 } });
+  });
+
   it("leaves files alone", () => {
     const session = sessionWith(prices);
     setFocalPoint(session, prices.id, { x: 0.5, y: 0.5 });

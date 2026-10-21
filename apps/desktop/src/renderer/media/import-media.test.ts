@@ -71,6 +71,25 @@ describe("importDroppedFiles", () => {
   });
 });
 
+describe("importDroppedFiles, unreadable entries", () => {
+  it("lists a dropped folder as not added, and still imports the rest", async () => {
+    const folder = file("Photos", 0);
+    folder.read.mockRejectedValue(new Error("NotFoundError"));
+    const media = { import: vi.fn(async () => imported([prices])) };
+
+    await expect(importDroppedFiles([folder, file("prices.pdf", 10)], media)).resolves.toEqual({
+      status: "imported",
+      items: [prices],
+      rejected: [{ fileName: "Photos", reason: "unsupported" }],
+    });
+    expect(media.import).toHaveBeenCalledWith([
+      { fileName: "prices.pdf", data: new Uint8Array([1, 2, 3]) },
+    ]);
+    await expect(importDroppedFiles([folder], media)).resolves.toMatchObject({ items: [] });
+    expect(media.import).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("importItems", () => {
   it("returns what was imported and says what wasn't", async () => {
     const notify = vi.fn();
