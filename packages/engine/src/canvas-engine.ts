@@ -172,7 +172,9 @@ export interface CanvasEngine {
    * it, with the canvas's drop indicators and only where that element may go (F-ED-1). The drop is
    * reported through {@link onUserEdit} as one `insert` edit that selects the new element. The
    * engine fills `element` with a see-through handle, so give it `position: relative`; clicks still
-   * reach the element. Until the returned call, which removes the handle.
+   * reach the element, though a click doesn't focus it (Puck's handle prevents the mouse-down). The
+   * handle can't be focused or seen by screen readers: the element keeps its own keyboard use.
+   * Until the returned call, which removes the handle.
    */
   addDragSource(element: HTMLElement, componentType: string): Unsubscribe;
   /**

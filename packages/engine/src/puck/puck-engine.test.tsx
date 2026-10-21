@@ -464,6 +464,14 @@ describe("createPuckEngine", () => {
     expect(item.querySelector(".wf-drag-source__label")?.textContent).toBe("Heading");
     handle?.click();
     expect(clicks).toHaveBeenCalledTimes(1);
+    // Not a second tab stop or a button inside the app's button (#158): the item keeps the keys.
+    for (const drawerItem of item.querySelectorAll("[data-puck-drawer-item]")) {
+      expect(drawerItem.getAttribute("tabindex")).toBe("-1");
+      expect(drawerItem.getAttribute("aria-hidden")).toBe("true");
+      expect(drawerItem.getAttribute("role")).toBe("presentation");
+    }
+    // One copy of the styles, in the app's document.
+    expect(document.querySelectorAll("style[data-webforge-drag-sources]")).toHaveLength(1);
 
     await act(async () => remove());
     expect(item.querySelector(".wf-drag-source")).toBeNull();
