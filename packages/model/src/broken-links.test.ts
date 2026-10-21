@@ -88,6 +88,36 @@ describe("findBrokenLinks (F-ED-18)", () => {
     ]);
   });
 
+  it("checks the menu's page and section items, in dropdowns too", () => {
+    const withMenu = site([]);
+    withMenu.menu = {
+      follows: "custom",
+      items: [
+        { id: "m1" as never, kind: "page", pageId: "page-gone" as PageId, hidden: false },
+        {
+          id: "m2" as never,
+          kind: "group",
+          label: "More",
+          hidden: false,
+          children: [
+            {
+              id: "m3" as never,
+              kind: "section",
+              label: "Prices",
+              hidden: false,
+              link: { kind: "page", pageId: ABOUT, anchor: "prices" },
+            },
+          ],
+        },
+      ],
+    };
+
+    expect(findBrokenLinks(withMenu)).toEqual([
+      { on: "menu", nodeId: "m1", pageId: "page-gone" },
+      { on: "menu", nodeId: "m3", pageId: ABOUT, anchor: "prices" },
+    ]);
+  });
+
   it("counts the Header's anchors on every page, and checks the Header's own links", () => {
     const withHeader = site(
       [button("a", { kind: "page", pageId: ABOUT, anchor: "top" })],
