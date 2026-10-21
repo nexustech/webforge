@@ -219,6 +219,7 @@ export function App({
                         {...(createEngine === undefined ? {} : { createEngine })}
                         {...(compileCss === undefined ? {} : { compileCss })}
                         mode={mode}
+                        canvasView={canvasView}
                       />
                     </div>
                   </div>

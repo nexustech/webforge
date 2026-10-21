@@ -49,3 +49,19 @@ test("switches device views and widths at once, without undo steps", async () =>
 
   await expect(steps()).toHaveText(["Opened page"]);
 });
+
+test("zooms the canvas and shows the size and scale, back to Fit when the view changes", async () => {
+  const zoom = toolbar().getByRole("combobox", { name: "Zoom" });
+  // The readout appears once the canvas has measured the page: "1280 × 640 @ 52%".
+  await expect(toolbar().getByText(/^1280 × \d+ @ \d+%$/)).toBeVisible();
+
+  await zoom.selectOption("50%");
+  await expect(toolbar().getByText(/^1280 × \d+ @ 50%$/)).toBeVisible();
+  await expect(zoom).toHaveValue("0.5");
+
+  // Another view fits the page again.
+  await toolbar().getByRole("radio", { name: "Tablet" }).click();
+  await expect(toolbar().getByText(/^768 × \d+ @ \d+%$/)).toBeVisible();
+  await expect(zoom).toHaveValue("fit");
+  await expect(steps()).toHaveText(["Opened page"]);
+});

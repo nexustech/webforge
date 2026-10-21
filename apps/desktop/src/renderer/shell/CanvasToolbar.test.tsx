@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { act, cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { CanvasSize } from "@webforge/engine";
 import type { PageId } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -8,12 +9,7 @@ import { createEditorSession } from "../editor/editor-session.js";
 import { starterSite } from "../editor/starter-site.js";
 import { CanvasToolbar, viewportFor, widthOf } from "./CanvasToolbar.js";
 import { CanvasToolbarHost } from "./CanvasToolbarHost.js";
-import {
-  type CanvasSize,
-  type CanvasZoom,
-  connectCanvasView,
-  createCanvasView,
-} from "./canvas-view.js";
+import { type CanvasZoom, connectCanvasView, createCanvasView } from "./canvas-view.js";
 
 afterEach(cleanup);
 

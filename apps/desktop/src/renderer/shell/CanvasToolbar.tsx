@@ -1,10 +1,10 @@
 import { cn, fieldControlClass, ToggleGroup, ToggleGroupItem } from "@webforge/editor-ui";
-import type { Viewport } from "@webforge/engine";
+import type { CanvasSize, Viewport } from "@webforge/engine";
 import { t } from "@webforge/i18n";
 import type { PageId } from "@webforge/model";
 import { MonitorIcon, SmartphoneIcon, TabletIcon } from "lucide-react";
 import { useId, useState } from "react";
-import { type CanvasSize, type CanvasZoom, ZOOM_LEVELS } from "./canvas-view.js";
+import { type CanvasZoom, ZOOM_LEVELS } from "./canvas-view.js";
 
 /** The device views' canvas widths, as the canvas engine shows them. */
 const DEVICE_WIDTHS = { desktop: 1280, tablet: 768, mobile: 375 } as const;
