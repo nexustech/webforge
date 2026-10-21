@@ -67,9 +67,7 @@ test("zooms the canvas and shows the size and scale, back to Fit when the view c
   await expect(steps()).toHaveText(["Opened page"]);
 });
 
-// In a 1280 × 800 window the engine still fits the page again right after a zoom above Fit: it
-// reports 150%, then Fit, by itself (#134, reported to stream C). Enable once that's fixed.
-test.fixme("keeps a zoom above Fit, though the page then overflows the canvas (#134)", async () => {
+test("keeps a zoom above Fit, though the page then overflows the canvas (#134)", async () => {
   // A 1280 × 800 window, so Fit is well under 150% (on a large screen it might not be).
   await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.unmaximize());
   await app.evaluate(({ BrowserWindow }) =>
