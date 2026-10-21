@@ -13,6 +13,11 @@ test.beforeEach(async () => {
   app = await launchDesktopApp();
   page = await app.firstWindow();
   await expect(canvas().locator("style[data-webforge-site-css]")).toHaveCount(1);
+  // Undo History is the left column's second tab, after Add.
+  await page
+    .getByRole("region", { name: "Left panels" })
+    .getByRole("tab", { name: "Undo History" })
+    .click();
 });
 
 test.afterEach(async () => {
