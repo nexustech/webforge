@@ -1,7 +1,14 @@
+import { createHash } from "node:crypto";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { changedDocuments, createSite, pageDocumentId } from "@webforge/model";
+import {
+  changedDocuments,
+  createSite,
+  type ImageMeta,
+  type MediaId,
+  pageDocumentId,
+} from "@webforge/model";
 import { ProjectStore, ReadOnlyProjectError } from "@webforge/storage";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { findProjectArgument, ProjectSession, withProjectExtension } from "./project-session.js";
@@ -234,6 +241,73 @@ describe("ProjectSession events", () => {
     observed.close();
     observed.close();
     expect(events.closed).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("ProjectSession storeCopiedMedia (1.25)", () => {
+  const bytes = new Uint8Array([0xff, 0xd8, 0xff, 1, 2, 3]);
+  const photo: ImageMeta = {
+    id: "photo" as MediaId,
+    hash: createHash("sha256").update(bytes).digest("hex"),
+    name: "shop",
+    fileName: "shop.jpg",
+    kind: "image",
+    mimeType: "image/jpeg",
+    width: 10,
+    height: 10,
+    alt: "",
+  };
+
+  it("stores a pasted item the site lacks, reading its bytes only then", () => {
+    session.create(join(dir, "Pasted.wforge"));
+    const read = vi.fn(() => bytes);
+
+    expect(session.storeCopiedMedia(photo, read)).toEqual({ status: "stored", hash: photo.hash });
+    expect([...(session.readMedia(photo.hash)?.data ?? [])]).toEqual([...bytes]);
+    // Already there: its bytes aren't read again.
+    expect(session.storeCopiedMedia(photo, read)).toEqual({ status: "stored", hash: photo.hash });
+    expect(read).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the site's own item under that id, adding only missing bytes", () => {
+    session.create(join(dir, "Own.wforge"));
+    const replaced = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
+    session.storeAsset({
+      mediaId: photo.id,
+      data: replaced,
+      mime: "image/png",
+      originalName: "a.png",
+    });
+
+    session.storeCopiedMedia(photo, () => bytes);
+
+    expect([...(session.readMedia(photo.hash)?.data ?? [])]).toEqual([...bytes]);
+    const store = ProjectStore.open(join(dir, "Own.wforge"), { readOnly: true });
+    try {
+      expect(store.readAsset(photo.id)?.mime).toBe("image/png");
+    } finally {
+      store.close();
+    }
+  });
+
+  it("reports missing bytes, no site and a read-only site", () => {
+    expect(session.storeCopiedMedia(photo, () => bytes)).toEqual({
+      status: "failed",
+      reason: "no-site",
+    });
+    session.create(join(dir, "Missing.wforge"));
+    expect(session.storeCopiedMedia(photo, () => undefined)).toEqual({ status: "missing" });
+
+    session.close();
+    const path = join(dir, "Missing.wforge");
+    vi.spyOn(ProjectStore.prototype, "putAsset").mockImplementation(() => {
+      throw new ReadOnlyProjectError();
+    });
+    session.open(path);
+    expect(session.storeCopiedMedia(photo, () => bytes)).toEqual({
+      status: "failed",
+      reason: "read-only",
+    });
   });
 });
 

@@ -21,6 +21,11 @@ export type Command = {
   readonly shortcut?: string;
   /** Defaults to true; a disabled command is shown but can't run. */
   readonly enabled?: boolean;
+  /**
+   * The shortcut is text's own too (Copy, Cut, Paste): it doesn't run the command while focus is
+   * in editable text or some text is selected, so the text gets it.
+   */
+  readonly textShortcut?: boolean;
   readonly run: () => void | Promise<void>;
 };
 
@@ -216,11 +221,29 @@ function isFocusedControl(target: EventTarget | null): boolean {
   );
 }
 
+/** Whether a key press goes to editable text, or there is selected text in `target`. */
+function isForText(target: Window, event: KeyboardEvent): boolean {
+  const element = event.target as {
+    isContentEditable?: boolean;
+    tagName?: string;
+  } | null;
+  if (
+    element?.isContentEditable === true ||
+    element?.tagName === "INPUT" ||
+    element?.tagName === "TEXTAREA"
+  ) {
+    return true;
+  }
+  const selection = target.getSelection();
+  return selection !== null && !selection.isCollapsed && selection.toString() !== "";
+}
+
 /**
  * Runs registered commands from their shortcuts on `target` (the editor window, or the canvas
  * iframe's). Listens in the bubble phase, so keys that something else already handled (text fields,
  * the history keys) never run a command twice. Shortcuts without `Mod` (arrows, Delete) don't run
  * while a control that uses those keys has focus: a text field, editable text, a list or a menu.
+ * Text shortcuts (Copy, Cut, Paste) don't run while text would take them.
  */
 export function installCommandShortcuts(target: Window, registry: CommandRegistry): () => void {
   const onKeyDown = (event: KeyboardEvent) => {
@@ -234,7 +257,8 @@ export function installCommandShortcuts(target: Window, registry: CommandRegistr
         (entry) =>
           entry.shortcut !== undefined &&
           (!inControl || parseShortcut(entry.shortcut).mod) &&
-          matchesShortcut(event, entry.shortcut),
+          matchesShortcut(event, entry.shortcut) &&
+          !(entry.textShortcut === true && isForText(target, event)),
       );
     if (command !== undefined && registry.run(command.id)) {
       event.preventDefault();

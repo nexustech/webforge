@@ -8,7 +8,6 @@ import { projectChannels } from "./ipc/project.js";
 import { siteChannels } from "./ipc/site.js";
 
 export type { AppInfo } from "./ipc/app.js";
-export type { ClipboardReadResult, ClipboardWriteResult } from "./ipc/clipboard.js";
 export type { MediaImportResult } from "./ipc/media.js";
 export type { Preferences, PreferencesChange } from "./ipc/prefs.js";
 export type {

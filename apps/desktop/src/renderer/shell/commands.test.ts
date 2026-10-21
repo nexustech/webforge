@@ -149,6 +149,35 @@ describe("shortcuts", () => {
       expect(other.defaultPrevented).toBe(false);
     });
 
+    it("leaves text shortcuts (Copy) to a text field or selected text", () => {
+      const registry = createCommandRegistry();
+      const run = vi.fn();
+      registry.register({ id: "copy", label: "Copy", shortcut: "Mod+C", textShortcut: true, run });
+      remove = installCommandShortcuts(window, registry);
+      const ctrl = !isMac();
+      const copy = () => key({ key: "c", ctrlKey: ctrl, metaKey: !ctrl });
+
+      const input = document.createElement("input");
+      const paragraph = document.createElement("p");
+      paragraph.textContent = "Opening times";
+      document.body.append(input, paragraph);
+      try {
+        input.dispatchEvent(copy());
+        window.getSelection()?.selectAllChildren(paragraph);
+        window.dispatchEvent(copy());
+        expect(run).not.toHaveBeenCalled();
+
+        window.getSelection()?.removeAllRanges();
+        const event = copy();
+        window.dispatchEvent(event);
+        expect(run).toHaveBeenCalledOnce();
+        expect(event.defaultPrevented).toBe(true);
+      } finally {
+        input.remove();
+        paragraph.remove();
+      }
+    });
+
     it("leaves plain-key shortcuts to a focused field, list or editable text", () => {
       const registry = createCommandRegistry();
       const remove_ = vi.fn();

@@ -10,6 +10,10 @@ import { t } from "@webforge/i18n";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { Preferences } from "../../shared/ipc-contract.js";
 import { type AddPanelRegistration, registerAddPanel } from "../add/register-add-panel.js";
+import {
+  preloadClipboard,
+  registerClipboardCommands,
+} from "../clipboard/register-clipboard-commands.js";
 import { registerLinkField } from "../links/LinkField.js";
 import { connectCanvasImages } from "../media/canvas-images.js";
 import { registerImageField } from "../media/ImageField.js";
@@ -146,11 +150,20 @@ export function Editor({
     });
     // Keyboard actions on the selected element (1.12), in the Edit menu and the command box; their
     // shortcuts also work while the canvas iframe has focus.
+    // Cut, Copy and Paste of sections and elements (1.25) come first, as in other apps' menus.
+    const clipboardCommands = registerClipboardCommands(
+      registry,
+      session,
+      preloadClipboard,
+      connection.flush,
+      (message) => toast(message),
+    );
     const canvasCommands = registerCanvasCommands(registry, engine, connection.flush);
     canvasCommands.setHasSelection(session.ui.getState().nodeId !== null);
-    const stopSelectionWatch = session.ui.subscribe((ui) =>
-      canvasCommands.setHasSelection(ui.nodeId !== null),
-    );
+    const stopSelectionWatch = session.ui.subscribe((ui) => {
+      canvasCommands.setHasSelection(ui.nodeId !== null);
+      clipboardCommands.setHasSelection(ui.nodeId !== null);
+    });
     let removeFrameShortcuts: (() => void) | undefined;
     const stopFrameWindow = engine.onFrameWindow((frameWindow) => {
       removeFrameShortcuts?.();
@@ -167,6 +180,7 @@ export function Editor({
       removeFrameShortcuts?.();
       stopSelectionWatch();
       canvasCommands.remove();
+      clipboardCommands.remove();
       stopSiteCss();
       stopImages();
       stopSettings();

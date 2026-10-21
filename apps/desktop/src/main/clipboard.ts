@@ -17,7 +17,7 @@ import type { ProjectSession } from "./project-session.js";
  * Webforge's own format on the system clipboard: copied elements, as JSON. Electron's clipboard
  * keeps a custom format only as a web custom format ("web " and a MIME type).
  */
-export const ELEMENTS_FORMAT = "web application/x-webforge-elements";
+const ELEMENTS_FORMAT = "web application/x-webforge-elements";
 
 /** The most bytes of copied elements read back, so a huge clipboard can't hold the app up. */
 const MAX_ELEMENTS_BYTES = 10 * 1024 * 1024;
