@@ -14,6 +14,9 @@ const IMAGE_WIDTHS = [640, 1280, 1920] as const;
 const WEBP_QUALITY = 80;
 const JPEG_QUALITY = 80;
 
+/** Width of the previews the editor shows of Media images (1.16). */
+const THUMBNAIL_WIDTH = 320;
+
 /** The browser's `ImageData`, which jSquash creates and expects. Node has none. */
 class NodeImageData {
   readonly data: Uint8ClampedArray;
@@ -47,6 +50,30 @@ function initCodecs(codecs: CodecModules): Promise<void> {
   return ready;
 }
 
+/** Decodes an original JPEG or PNG. */
+function decodeOriginal(data: Uint8Array, mimeType: MediaItem["mimeType"]): Promise<ImageData> {
+  // The decoders take an ArrayBuffer; copy so a view into a larger buffer cannot leak extra bytes.
+  const bytes = data.slice().buffer;
+  return mimeType === "image/png" ? decodePng(bytes) : decodeJpeg(bytes);
+}
+
+/**
+ * A small WebP preview of an original image, {@link THUMBNAIL_WIDTH} pixels wide (or the
+ * original's width, if narrower), for the editor's Media panel and image field.
+ */
+export async function makeThumbnail(
+  data: Uint8Array,
+  mimeType: MediaItem["mimeType"],
+  codecs: CodecModules,
+): Promise<Uint8Array> {
+  await initCodecs(codecs);
+  const original = await decodeOriginal(data, mimeType);
+  const width = Math.min(THUMBNAIL_WIDTH, original.width);
+  const height = Math.max(1, Math.round((original.height * width) / original.width));
+  const scaled = width === original.width ? original : await resize(original, { width, height });
+  return new Uint8Array(await encodeWebp(scaled, { quality: WEBP_QUALITY }));
+}
+
 /** One exported image file. */
 type ImageFile = { readonly path: string; readonly data: Uint8Array };
 
@@ -76,9 +103,7 @@ export async function processImage(
   assetsUrl = "assets/img/",
 ): Promise<ProcessedImage> {
   await initCodecs(codecs);
-  // The decoders take an ArrayBuffer; copy so a view into a larger buffer cannot leak extra bytes.
-  const bytes = item.data.slice().buffer;
-  const original = item.mimeType === "image/png" ? await decodePng(bytes) : await decodeJpeg(bytes);
+  const original = await decodeOriginal(item.data, item.mimeType);
   const transparent = item.mimeType === "image/png" && hasTransparency(original);
   const fallbackType = transparent ? "image/png" : "image/jpeg";
   const fallbackExtension = transparent ? "png" : "jpg";

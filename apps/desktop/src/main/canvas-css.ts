@@ -1,18 +1,11 @@
 import type { IpcMain } from "electron";
-import {
-  type CompileCssOutcome,
-  compileCssOutcomeSchema,
-} from "../shared/export-worker-protocol.js";
+import { compileCssOutcomeSchema } from "../shared/export-worker-protocol.js";
 import type { CanvasCssRequest, CanvasCssResult } from "../shared/ipc/canvas.js";
 import { registerIpcHandler } from "./ipc.js";
+import { createWorkerRequests, type WorkerProcess } from "./worker-requests.js";
 
 /** The parts of an Electron `UtilityProcess` the compiler uses; injectable for tests. */
-export type CssWorkerProcess = {
-  postMessage(message: unknown): void;
-  on(event: "message", listener: (message: unknown) => void): unknown;
-  on(event: "exit", listener: (code: number) => void): unknown;
-  kill(): boolean;
-};
+export type CssWorkerProcess = WorkerProcess;
 
 /** Compiles canvas CSS; see {@link createCanvasCssCompiler}. */
 export type CanvasCssCompiler = (request: CanvasCssRequest) => Promise<CanvasCssResult>;
@@ -21,69 +14,21 @@ export type CanvasCssCompiler = (request: CanvasCssRequest) => Promise<CanvasCss
 const COMPILE_TIMEOUT_MS = 60_000;
 
 /**
- * Compiles the canvas's site CSS in one long-lived utility process, started on first use and again
- * after it exits, so a recompile costs no process start. Answers are matched to requests by id and
- * validated; anything unexpected, a timeout or an exit fails the request instead of trusting it.
+ * Compiles the canvas's site CSS in one long-lived utility process (see
+ * {@link createWorkerRequests}), so a recompile costs no process start. Anything unexpected, a
+ * timeout or an exit fails the request instead of trusting it.
  */
 export function createCanvasCssCompiler(
   startWorker: () => CssWorkerProcess,
   timeoutMs = COMPILE_TIMEOUT_MS,
 ): CanvasCssCompiler {
-  let worker: CssWorkerProcess | null = null;
-  let nextId = 0;
-  /** Requests waiting for an answer, with the worker each was sent to. */
-  const pending = new Map<
-    number,
-    { readonly worker: CssWorkerProcess; finish(outcome: CompileCssOutcome | null): void }
-  >();
-
-  const running = (): CssWorkerProcess => {
-    if (worker !== null) {
-      return worker;
-    }
-    const started = startWorker();
-    started.on("message", (message) => {
-      const outcome = compileCssOutcomeSchema.safeParse(message);
-      const request = outcome.success ? pending.get(outcome.data.id) : undefined;
-      if (outcome.success && request?.worker === started) {
-        request.finish(outcome.data);
-      }
-    });
-    started.on("exit", () => {
-      if (worker === started) {
-        worker = null;
-      }
-      // Only its own requests: a newer worker may already be answering others.
-      for (const request of [...pending.values()]) {
-        if (request.worker === started) request.finish(null);
-      }
-    });
-    worker = started;
-    return started;
+  const request = createWorkerRequests(startWorker, compileCssOutcomeSchema, timeoutMs);
+  return async (css) => {
+    const outcome = await request({ type: "compile-css", ...css });
+    return outcome?.type === "css"
+      ? { status: "compiled", css: outcome.css, bodyClass: outcome.bodyClass }
+      : { status: "failed" };
   };
-
-  return (request) =>
-    new Promise((resolve) => {
-      const id = nextId++;
-      const target = running();
-      const finish = (outcome: CompileCssOutcome | null) => {
-        clearTimeout(timer);
-        pending.delete(id);
-        resolve(
-          outcome?.type === "css"
-            ? { status: "compiled", css: outcome.css, bodyClass: outcome.bodyClass }
-            : { status: "failed" },
-        );
-      };
-      const timer = setTimeout(() => {
-        finish(null);
-        // A stuck worker is replaced on the next request.
-        if (worker === target) worker = null;
-        target.kill();
-      }, timeoutMs);
-      pending.set(id, { worker: target, finish });
-      target.postMessage({ type: "compile-css", id, ...request });
-    });
 }
 
 /** Registers the canvas IPC calls. */

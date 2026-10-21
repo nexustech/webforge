@@ -4,6 +4,8 @@ export const site = {
   "site.newDialogTitle": "New Site",
   "site.openDialogTitle": "Open Site",
   "site.untitledName": "My site",
+  "site.media.chooseTitle": "Add Images or Files",
+  "site.media.fileType": "Images and PDFs",
   "site.start.title": "Start a site",
   "site.start.blank": "Blank site",
   "site.start.open": "Open a site…",

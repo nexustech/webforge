@@ -2,7 +2,7 @@ import encodePng from "@jsquash/png/encode.js";
 import type { ResolvedImage } from "@webforge/site-components";
 import { heroPhoto } from "@webforge/test-utils";
 import { beforeAll, describe, expect, it } from "vitest";
-import { imageForDepth, processImage } from "./images.js";
+import { imageForDepth, makeThumbnail, processImage } from "./images.js";
 import { loadNodeResources } from "./node-resources.js";
 import type { CodecModules } from "./resources.js";
 
@@ -100,5 +100,24 @@ describe("imageForDepth", () => {
       "../../assets/img/a-640.webp 640w, ../../assets/img/a-1280.webp 1280w",
     );
     expect(moved.fallback.srcset).toBe("../../assets/img/a-640.jpg 640w");
+  });
+});
+
+describe("makeThumbnail", () => {
+  it("makes a 320 px wide WebP preview of a larger image", async () => {
+    const thumbnail = await makeThumbnail(heroPhoto(), "image/jpeg", codecs);
+
+    expect(String.fromCharCode(...thumbnail.subarray(8, 12))).toBe("WEBP");
+    // VP8 frame size: the original's 1600 × 1000, scaled to 320 wide.
+    const view = new DataView(thumbnail.buffer, thumbnail.byteOffset);
+    expect(view.getUint16(26, true) & 0x3fff).toBe(320);
+    expect(view.getUint16(28, true) & 0x3fff).toBe(200);
+  });
+
+  it("keeps a narrower image's size", async () => {
+    const thumbnail = await makeThumbnail(await png(40, 10, 128), "image/png", codecs);
+
+    expect(String.fromCharCode(...thumbnail.subarray(0, 4))).toBe("RIFF");
+    expect(thumbnail.byteLength).toBeGreaterThan(0);
   });
 });

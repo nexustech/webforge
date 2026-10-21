@@ -18,6 +18,7 @@ export {
   imageValueSchema,
   isImageMeta,
   mediaMetaSchema,
+  mediaNameFor,
   mediaNameSchema,
 } from "./media.js";
 export type { MenuDoc, MenuItem, MenuLeaf } from "./menu.js";

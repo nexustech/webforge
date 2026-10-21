@@ -127,6 +127,32 @@ describe("createWebforgeApi site export", () => {
     expect(invoke).toHaveBeenNthCalledWith(1, "prefs:get");
     expect(invoke).toHaveBeenNthCalledWith(2, "prefs:set", { theme: "light" });
   });
+
+  it("imports dropped or chosen files through the media channels", async () => {
+    const item = {
+      id: "shop",
+      hash: "a".repeat(64),
+      name: "shop",
+      fileName: "shop.jpg",
+      kind: "image",
+      mimeType: "image/jpeg",
+      width: 640,
+      height: 480,
+      alt: "",
+    };
+    const result = { status: "imported", items: [item], rejected: [] };
+    const invoke = vi.fn(async () => result);
+    const api = apiWith(invoke);
+    const files = [{ fileName: "shop.jpg", data: new Uint8Array([0xff, 0xd8]) }];
+
+    await expect(api.media.import(files)).resolves.toEqual(result);
+    await expect(api.media.choose()).resolves.toEqual(result);
+    expect(invoke).toHaveBeenNthCalledWith(1, "media:import", files);
+    expect(invoke).toHaveBeenNthCalledWith(2, "media:choose");
+    await expect(
+      apiWith(async () => ({ ...result, items: [{ ...item, hash: "x" }] })).media.choose(),
+    ).rejects.toThrow();
+  });
 });
 
 describe("createWebforgeApi app events", () => {

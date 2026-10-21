@@ -1,4 +1,4 @@
-import { siteSnapshotSchema, themeSchema } from "@webforge/model";
+import { IMAGE_MIME_TYPES, siteSnapshotSchema, themeSchema } from "@webforge/model";
 import { z } from "zod";
 
 /** What the main process asks the export worker to do. */
@@ -24,8 +24,40 @@ const compileCssJobSchema = z.strictObject({
 /** Compiles the site CSS for the canvas. */
 export type CompileCssJob = z.infer<typeof compileCssJobSchema>;
 
+/** Bytes of any buffer kind (a Node `Buffer` too), which `z.instanceof` would narrow. */
+const bytesSchema = z.custom<Uint8Array>((value) => value instanceof Uint8Array);
+
+/** Makes the editor's preview of a Media image (1.16); a long-lived worker answers many. */
+const thumbnailJobSchema = z.strictObject({
+  type: z.literal("thumbnail"),
+  id: z.int().nonnegative(),
+  mimeType: z.enum(IMAGE_MIME_TYPES),
+  /** The original's bytes. */
+  data: bytesSchema,
+});
+
+/** Makes the editor's preview of a Media image. */
+export type ThumbnailJob = z.infer<typeof thumbnailJobSchema>;
+
 /** Any job the worker accepts. */
-export const workerJobSchema = z.discriminatedUnion("type", [exportJobSchema, compileCssJobSchema]);
+export const workerJobSchema = z.discriminatedUnion("type", [
+  exportJobSchema,
+  compileCssJobSchema,
+  thumbnailJobSchema,
+]);
+
+/** The worker's answer to a {@link ThumbnailJob}: a WebP, or a failure without details. */
+export const thumbnailOutcomeSchema = z.discriminatedUnion("type", [
+  z.strictObject({
+    type: z.literal("thumbnail"),
+    id: z.int().nonnegative(),
+    data: bytesSchema,
+  }),
+  z.strictObject({ type: z.literal("thumbnail-failed"), id: z.int().nonnegative() }),
+]);
+
+/** The worker's answer to a {@link ThumbnailJob}. */
+export type ThumbnailOutcome = z.infer<typeof thumbnailOutcomeSchema>;
 
 /** The worker's answer to a {@link CompileCssJob}. */
 export const compileCssOutcomeSchema = z.discriminatedUnion("type", [
