@@ -31,7 +31,7 @@ import type {
   Viewport,
 } from "../canvas-engine.js";
 import { installHistoryKeys } from "../history-keys.js";
-import { preserveCaret } from "./caret.js";
+import { preserveCaret, refocusRichText } from "./caret.js";
 import { applyChromeStyles, createSelectionOutline, QuickActionBar } from "./chrome.js";
 import { toPuckConfig } from "./config.js";
 import { puckDictionary } from "./dictionary.js";
@@ -39,7 +39,7 @@ import { editFromAction, selectedNodeId } from "./edit-from-action.js";
 import { pageActions, type SlotsOf } from "./page-actions.js";
 import { performOnSelected } from "./selected-actions.js";
 import { applySiteStyles, type SiteStyles } from "./site-styles.js";
-import { staleRichText } from "./stale-rich-text.js";
+import { focusedRichTextId, staleRichText } from "./stale-rich-text.js";
 import { allNodes, findNode } from "./tree.js";
 
 /** Options of {@link createPuckEngine}. */
@@ -47,6 +47,19 @@ export type PuckEngineOptions = {
   /** Render the canvas in an iframe (default). Tests without layout may turn it off. */
   readonly iframe?: boolean;
 };
+
+/**
+ * Asks the focused rich-text editor to send the change Puck still holds back (it sends after a
+ * short debounce), through our Puck patch. True if there was one: its edit is then on its way.
+ */
+function flushRichText(puck: ReturnType<GetPuck>): boolean {
+  const flush = (puck as { readonly __private?: { readonly flushRichText?: () => boolean } })
+    .__private?.flushRichText;
+  return flush?.() === true;
+}
+
+/** How long Undo or Redo waits at most for a rich-text change it asked Puck to send. */
+const RICH_TEXT_FLUSH_TIMEOUT_MS = 500;
 
 /** Puck's canvas zoom (`zoomConfig`), which its public API leaves out. */
 type ZoomConfig = { readonly zoom: number; readonly autoZoom: number; readonly rootHeight: number };
@@ -175,10 +188,36 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   const viewports = emitter<Viewport>();
   const commandHandlers = new Set<HistoryCommandHandler>();
   /** True if any handler did something with the command (see installHistoryKeys). */
-  const runCommand: HistoryCommandHandler = (command) => {
+  const runHandlers: HistoryCommandHandler = (command) => {
     let handled = false;
     for (const handler of commandHandlers) handled = handler(command) === true || handled;
     return handled;
+  };
+  /** An Undo or Redo waiting for the rich-text edit it asked Puck to send. */
+  let awaitingEdit: (() => void) | null = null;
+  const runCommand: HistoryCommandHandler = (command) => {
+    // Undo or Redo pressed while typing rich text: Puck still holds the last keystrokes back. They
+    // are sent first, to belong to the session being undone, and the command runs once their edit
+    // is recorded (#146).
+    if (
+      command !== "cancel" &&
+      awaitingEdit === null &&
+      getPuck !== null &&
+      flushRichText(getPuck())
+    ) {
+      const run = () => {
+        if (awaitingEdit !== run) {
+          return;
+        }
+        clearTimeout(timer);
+        awaitingEdit = null;
+        runHandlers(command);
+      };
+      const timer = setTimeout(run, RICH_TEXT_FLUSH_TIMEOUT_MS);
+      awaitingEdit = run;
+      return true;
+    }
+    return runHandlers(command);
   };
 
   const dispatch = (action: PuckAction) => {
@@ -298,6 +337,8 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
           } finally {
             reporting = false;
           }
+          // An Undo or Redo was waiting for this edit: it runs now, outside Puck's own update.
+          if (awaitingEdit !== null) queueMicrotask(awaitingEdit);
         }
       }
       // After the edit, so the history records the selection from before it.
@@ -475,9 +516,13 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       if (nextPage === page) {
         return;
       }
+      // The rich-text editor being typed in, if this change remounts it (Undo while typing).
+      let refocus: string | null = null;
       if (library !== null) {
-        for (const id of staleRichText(library, page, nextPage, frameDocument)) {
+        const focused = focusedRichTextId(frameDocument);
+        for (const id of staleRichText(library, page, nextPage)) {
           editorRevisions.set(id, (editorRevisions.get(id) ?? 0) + 1);
+          if (id === focused) refocus = id;
         }
         const ids = new Set(allNodes(nextPage).map((node) => node.props.id));
         for (const id of editorRevisions.keys()) {
@@ -492,6 +537,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       page = nextPage;
       revision++;
       preserveCaret(frameDocument);
+      if (refocus !== null) refocusRichText(frameDocument, refocus);
       if (actions === null) {
         showPage();
       } else {

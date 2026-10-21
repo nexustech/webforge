@@ -214,7 +214,7 @@ catalogs:
       version: 4.6.7
 
 patchedDependencies:
-  '@puckeditor/core@0.23.0': e403243e8210e400fb68ea936b020d4849f2e1b66e7b246fed9656096d8c2617
+  '@puckeditor/core@0.23.0': fa371e8518e0bf8130f22476942ad3881323a3a32db02ef5151449a83dfafab9
 
 importers:
 
@@ -485,7 +485,7 @@ importers:
     dependencies:
       '@puckeditor/core':
         specifier: 0.23.0
-        version: 0.23.0(patch_hash=e403243e8210e400fb68ea936b020d4849f2e1b66e7b246fed9656096d8c2617)(@floating-ui/dom@1.8.0)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(immer@11.1.21)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(use-sync-external-store@1.7.0(react@19.3.1))
+        version: 0.23.0(patch_hash=fa371e8518e0bf8130f22476942ad3881323a3a32db02ef5151449a83dfafab9)(@floating-ui/dom@1.8.0)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(immer@11.1.21)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(use-sync-external-store@1.7.0(react@19.3.1))
       '@webforge/i18n':
         specifier: workspace:*
         version: link:../i18n
@@ -6449,7 +6449,7 @@ snapshots:
 
   '@preact/signals-core@1.14.4': {}
 
-  '@puckeditor/core@0.23.0(patch_hash=e403243e8210e400fb68ea936b020d4849f2e1b66e7b246fed9656096d8c2617)(@floating-ui/dom@1.8.0)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(immer@11.1.21)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(use-sync-external-store@1.7.0(react@19.3.1))':
+  '@puckeditor/core@0.23.0(patch_hash=fa371e8518e0bf8130f22476942ad3881323a3a32db02ef5151449a83dfafab9)(@floating-ui/dom@1.8.0)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(immer@11.1.21)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(use-sync-external-store@1.7.0(react@19.3.1))':
     dependencies:
       '@dnd-kit/abstract': 0.4.0
       '@dnd-kit/dom': 0.4.0

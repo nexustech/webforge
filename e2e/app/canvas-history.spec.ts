@@ -201,6 +201,23 @@ test.describe("Puck canvas with Webforge history", () => {
     await expect(canvas().locator(".site-text")).toHaveText(`${STARTER_TEXT} Really.`);
   });
 
+  test("undoes all of a rich-text session with Ctrl/Cmd+Z pressed straight after typing (#146)", async () => {
+    const editor = canvas().locator(".site-text .ProseMirror");
+    await canvas().getByText(STARTER_TEXT).click();
+    await editor.click();
+    await expect(editor).toBeFocused();
+    await page.keyboard.press("End");
+    await page.keyboard.type(" Indeed.", { delay: 20 });
+
+    // Still in the editor, before Puck has sent the last keystrokes on: they belong to this step.
+    await page.keyboard.press("ControlOrMeta+z");
+
+    await expect(canvas().locator(".site-text")).toHaveText(STARTER_TEXT);
+    await expectSteps(["Edited Text text"], "Opened page");
+    await page.keyboard.press("ControlOrMeta+Shift+z");
+    await expect(canvas().locator(".site-text")).toHaveText(`${STARTER_TEXT} Indeed.`);
+  });
+
   test("clicking a step in Undo History jumps there", async () => {
     await drag(
       page.getByText("Heading", { exact: true }).first(),

@@ -1,8 +1,8 @@
 diff --git a/dist/Editor-44C53YAG.mjs b/dist/Editor-44C53YAG.mjs
-index b5ac4340ef70383019a220609914aec985eb84cc..bfba1a5940872ce767309778cae7ce956f67b94e 100644
+index b5ac4340ef70383019a220609914aec985eb84cc..ad53ad1f40ba30fc5cc0e2ab79f8b3e68fab060d 100644
 --- a/dist/Editor-44C53YAG.mjs
 +++ b/dist/Editor-44C53YAG.mjs
-@@ -84,8 +84,15 @@ function useSyncedEditor({
+@@ -84,8 +84,22 @@ function useSyncedEditor({
        onFocusChange == null ? void 0 : onFocusChange(editor);
      };
      editor.on("focus", handleFocus);
@@ -10,6 +10,13 @@ index b5ac4340ef70383019a220609914aec985eb84cc..bfba1a5940872ce767309778cae7ce95
 +    // when the user may already have clicked elsewhere or pressed Undo, and they would be lost.
 +    const handleBlur = () => {
 +      setDebouncedState.flush();
++    };
++    // Webforge: lets the canvas send the pending change before an Undo or Redo pressed while
++    // typing (#146), through Puck's API (`__private.flushRichText`).
++    editor.webforgeFlushPending = () => {
++      if (!setDebouncedState.isPending()) return false;
++      setDebouncedState.flush();
++      return true;
 +    };
 +    editor.on("blur", handleBlur);
      return () => {
@@ -19,10 +26,10 @@ index b5ac4340ef70383019a220609914aec985eb84cc..bfba1a5940872ce767309778cae7ce95
    }, [editor, onFocusChange]);
    useEffect(() => {
 diff --git a/dist/chunk-55V3NZVF.mjs b/dist/chunk-55V3NZVF.mjs
-index 01fc32e03adc11d014291a99cc8dbee1806880f8..c9274bf43bc8107e1d579e9e79845aecd7e5164b 100644
+index 01fc32e03adc11d014291a99cc8dbee1806880f8..ef6bdc46f6cd5e3fd5f9a4c56bf12cc872fd3441 100644
 --- a/dist/chunk-55V3NZVF.mjs
 +++ b/dist/chunk-55V3NZVF.mjs
-@@ -6343,7 +6343,10 @@ var generateUsePuck = (store, getState) => {
+@@ -6343,7 +6343,16 @@ var generateUsePuck = (store, getState) => {
      dictionary: store.dictionary
    };
    storeData.__private = {
@@ -30,11 +37,17 @@ index 01fc32e03adc11d014291a99cc8dbee1806880f8..c9274bf43bc8107e1d579e9e79845aec
 +    appState: store.state,
 +    // Webforge: the canvas zoom, which Puck keeps out of its public API.
 +    getZoomConfig: () => getState().zoomConfig,
-+    setZoomConfig: (zoomConfig) => getState().setZoomConfig(zoomConfig)
++    setZoomConfig: (zoomConfig) => getState().setZoomConfig(zoomConfig),
++    // Webforge: sends the focused rich-text editor's pending change now; false if there is none.
++    flushRichText: () => {
++      const richText = getState().currentRichText;
++      const flush = richText && richText.editor && richText.editor.webforgeFlushPending;
++      return typeof flush === "function" ? flush() === true : false;
++    }
    };
    return storeData;
  };
-@@ -12605,10 +12608,15 @@ var Canvas = () => {
+@@ -12605,10 +12614,15 @@ var Canvas = () => {
    }, [viewports.current.width, viewports]);
    useEffect26(() => {
      if (!frameRef.current) return;
@@ -76,7 +89,7 @@ index 81075c39650a79a9eccf7cefffdc7a65cbd00c97..8aa13a1baf0ca0ad724ca2b5a2377b79
            fields: __spreadProps(__spreadValues({}, s.fields), { fields: defaultFields, id })
          }));
 diff --git a/dist/index.js b/dist/index.js
-index aebc9c0e4d4eed1a407ea72d0d1469d16544d834..331366c689c9d1767e1350be2fc5e53e6608ae85 100644
+index aebc9c0e4d4eed1a407ea72d0d1469d16544d834..fe7302c74379afcdce6765177d35eeadec1e8088 100644
 --- a/dist/index.js
 +++ b/dist/index.js
 @@ -3084,7 +3084,7 @@ var init_permissions = __esm({
@@ -97,7 +110,7 @@ index aebc9c0e4d4eed1a407ea72d0d1469d16544d834..331366c689c9d1767e1350be2fc5e53e
              appStore.setState((s) => ({
                fields: __spreadProps(__spreadValues({}, s.fields), { fields: defaultFields2, id })
              }));
-@@ -5511,8 +5511,15 @@ function useSyncedEditor({
+@@ -5511,8 +5511,22 @@ function useSyncedEditor({
        onFocusChange == null ? void 0 : onFocusChange(editor);
      };
      editor.on("focus", handleFocus);
@@ -106,6 +119,13 @@ index aebc9c0e4d4eed1a407ea72d0d1469d16544d834..331366c689c9d1767e1350be2fc5e53e
 +    const handleBlur = () => {
 +      setDebouncedState.flush();
 +    };
++    // Webforge: lets the canvas send the pending change before an Undo or Redo pressed while
++    // typing (#146), through Puck's API (`__private.flushRichText`).
++    editor.webforgeFlushPending = () => {
++      if (!setDebouncedState.isPending()) return false;
++      setDebouncedState.flush();
++      return true;
++    };
 +    editor.on("blur", handleBlur);
      return () => {
        editor.off("focus", handleFocus);
@@ -113,7 +133,7 @@ index aebc9c0e4d4eed1a407ea72d0d1469d16544d834..331366c689c9d1767e1350be2fc5e53e
      };
    }, [editor, onFocusChange]);
    (0, import_react40.useEffect)(() => {
-@@ -17919,7 +17926,10 @@ var generateUsePuck = (store, getState) => {
+@@ -17919,7 +17933,16 @@ var generateUsePuck = (store, getState) => {
      dictionary: store.dictionary
    };
    storeData.__private = {
@@ -121,11 +141,17 @@ index aebc9c0e4d4eed1a407ea72d0d1469d16544d834..331366c689c9d1767e1350be2fc5e53e
 +    appState: store.state,
 +    // Webforge: the canvas zoom, which Puck keeps out of its public API.
 +    getZoomConfig: () => getState().zoomConfig,
-+    setZoomConfig: (zoomConfig) => getState().setZoomConfig(zoomConfig)
++    setZoomConfig: (zoomConfig) => getState().setZoomConfig(zoomConfig),
++    // Webforge: sends the focused rich-text editor's pending change now; false if there is none.
++    flushRichText: () => {
++      const richText = getState().currentRichText;
++      const flush = richText && richText.editor && richText.editor.webforgeFlushPending;
++      return typeof flush === "function" ? flush() === true : false;
++    }
    };
    return storeData;
  };
-@@ -18741,10 +18751,15 @@ var Canvas = () => {
+@@ -18741,10 +18764,15 @@ var Canvas = () => {
    }, [viewports.current.width, viewports]);
    (0, import_react102.useEffect)(() => {
      if (!frameRef.current) return;
@@ -145,7 +171,7 @@ index aebc9c0e4d4eed1a407ea72d0d1469d16544d834..331366c689c9d1767e1350be2fc5e53e
      resizeObserver.observe(frameRef.current);
      return () => {
 diff --git a/dist/no-external.js b/dist/no-external.js
-index af3fa6755f42679605e6805aa46fdeb90df48281..564f3bec0f163ea28c51615cd95fdf725cf7a6d3 100644
+index af3fa6755f42679605e6805aa46fdeb90df48281..25aabc20d9514b2eb2c00f504b5b5ba75f738d5b 100644
 --- a/dist/no-external.js
 +++ b/dist/no-external.js
 @@ -3084,7 +3084,7 @@ var init_permissions = __esm({
@@ -166,7 +192,7 @@ index af3fa6755f42679605e6805aa46fdeb90df48281..564f3bec0f163ea28c51615cd95fdf72
              appStore.setState((s) => ({
                fields: __spreadProps(__spreadValues({}, s.fields), { fields: defaultFields2, id })
              }));
-@@ -5511,8 +5511,15 @@ function useSyncedEditor({
+@@ -5511,8 +5511,22 @@ function useSyncedEditor({
        onFocusChange == null ? void 0 : onFocusChange(editor);
      };
      editor.on("focus", handleFocus);
@@ -175,6 +201,13 @@ index af3fa6755f42679605e6805aa46fdeb90df48281..564f3bec0f163ea28c51615cd95fdf72
 +    const handleBlur = () => {
 +      setDebouncedState.flush();
 +    };
++    // Webforge: lets the canvas send the pending change before an Undo or Redo pressed while
++    // typing (#146), through Puck's API (`__private.flushRichText`).
++    editor.webforgeFlushPending = () => {
++      if (!setDebouncedState.isPending()) return false;
++      setDebouncedState.flush();
++      return true;
++    };
 +    editor.on("blur", handleBlur);
      return () => {
        editor.off("focus", handleFocus);
@@ -182,7 +215,7 @@ index af3fa6755f42679605e6805aa46fdeb90df48281..564f3bec0f163ea28c51615cd95fdf72
      };
    }, [editor, onFocusChange]);
    (0, import_react40.useEffect)(() => {
-@@ -17919,7 +17926,10 @@ var generateUsePuck = (store, getState) => {
+@@ -17919,7 +17933,16 @@ var generateUsePuck = (store, getState) => {
      dictionary: store.dictionary
    };
    storeData.__private = {
@@ -190,11 +223,17 @@ index af3fa6755f42679605e6805aa46fdeb90df48281..564f3bec0f163ea28c51615cd95fdf72
 +    appState: store.state,
 +    // Webforge: the canvas zoom, which Puck keeps out of its public API.
 +    getZoomConfig: () => getState().zoomConfig,
-+    setZoomConfig: (zoomConfig) => getState().setZoomConfig(zoomConfig)
++    setZoomConfig: (zoomConfig) => getState().setZoomConfig(zoomConfig),
++    // Webforge: sends the focused rich-text editor's pending change now; false if there is none.
++    flushRichText: () => {
++      const richText = getState().currentRichText;
++      const flush = richText && richText.editor && richText.editor.webforgeFlushPending;
++      return typeof flush === "function" ? flush() === true : false;
++    }
    };
    return storeData;
  };
-@@ -18741,10 +18751,15 @@ var Canvas = () => {
+@@ -18741,10 +18764,15 @@ var Canvas = () => {
    }, [viewports.current.width, viewports]);
    (0, import_react102.useEffect)(() => {
      if (!frameRef.current) return;
