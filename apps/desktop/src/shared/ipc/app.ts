@@ -1,3 +1,4 @@
+import { languageTagSchema } from "@webforge/model";
 import { z } from "zod";
 
 /** Information about the running app. */
@@ -22,6 +23,12 @@ export const appChannels = {
     request: z.tuple([]),
     response: z.null(),
   },
+  /** Spell checks text in the site's language (F-ED-19); Windows only, macOS chooses itself. */
+  setSpellCheckLanguage: {
+    channel: "app:set-spellcheck-language",
+    request: z.tuple([languageTagSchema]),
+    response: z.null(),
+  },
 } as const;
 
 /**
@@ -42,6 +49,8 @@ export interface AppApi {
   getInfo(): Promise<AppInfo>;
   /** Shows the local crash-reports folder. */
   openCrashReports(): Promise<null>;
+  /** Spell checks text in `language`, the site's (a language tag such as `en-GB`). */
+  setSpellCheckLanguage(language: string): Promise<null>;
   /**
    * Runs `save` whenever the window is about to close, and tells the main process once it has
    * finished (or failed), so the window can close. Returns a function that stops listening.

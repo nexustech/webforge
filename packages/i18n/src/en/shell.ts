@@ -45,6 +45,14 @@ export const shell = {
   "command.advancedMode": "Use Advanced Mode",
   "command.simpleMode": "Use Simple Mode",
 
+  // The text context menu: spelling (F-ED-19) and editing.
+  "spellcheck.noSuggestions": "No Suggestions",
+  "spellcheck.addToDictionary": "Add to Dictionary",
+  "edit.cut": "Cut",
+  "edit.copy": "Copy",
+  "edit.paste": "Paste",
+  "edit.selectAll": "Select All",
+
   // The canvas toolbar (F-ED-8): the page shown, the device view and the canvas width.
   "canvasToolbar.label": "Canvas",
   "canvasToolbar.page": "Page shown",
