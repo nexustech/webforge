@@ -6,6 +6,7 @@ import {
   pageDocSchema,
   type Theme,
   themeSchema,
+  withoutUnsafeKeys,
 } from "./documents.js";
 import { pageIdSchema } from "./ids.js";
 import { cropSchema, focalPointSchema, IMAGE_MIME_TYPES, type ImageCrop } from "./media.js";
@@ -95,39 +96,41 @@ const mediaItemSchema = z.object({
  * Validates a {@link SiteSnapshot} arriving from outside (IPC, worker messages). Page paths must be
  * unique and one page must be the home page (`index`): both would otherwise break the export (X5).
  */
-export const siteSnapshotSchema: z.ZodType<SiteSnapshot> = z
-  .object({
-    name: z.string().min(1),
-    language: languageTagSchema,
-    theme: themeSchema,
-    layout: layoutDocSchema,
-    pages: z.array(sitePageSchema).min(1),
-    media: z.array(mediaItemSchema),
-  })
-  .superRefine((site, ctx) => {
-    const paths = site.pages.map((page) => page.path);
-    if (!paths.includes("index")) {
-      ctx.addIssue({ code: "custom", message: "The site has no home page", path: ["pages"] });
-    }
-    const duplicates = paths.filter((path, index) => paths.indexOf(path) !== index);
-    if (duplicates.length > 0) {
-      ctx.addIssue({
-        code: "custom",
-        message: `Duplicate page paths: ${[...new Set(duplicates)].join(", ")}`,
-        path: ["pages"],
-      });
-    }
-    const pageIds = site.pages.map((page) => page.id);
-    if (new Set(pageIds).size !== pageIds.length) {
-      ctx.addIssue({ code: "custom", message: "Duplicate page ids", path: ["pages"] });
-    }
-    const ids = site.media.map((item) => item.id);
-    if (new Set(ids).size !== ids.length) {
-      ctx.addIssue({ code: "custom", message: "Duplicate media ids", path: ["media"] });
-    }
-    // Exported image files are named after the media name (assets/img/<name>-640.webp).
-    const names = site.media.map((item) => item.name);
-    if (new Set(names).size !== names.length) {
-      ctx.addIssue({ code: "custom", message: "Duplicate media names", path: ["media"] });
-    }
-  });
+export const siteSnapshotSchema: z.ZodType<SiteSnapshot> = withoutUnsafeKeys(
+  z
+    .object({
+      name: z.string().min(1),
+      language: languageTagSchema,
+      theme: themeSchema,
+      layout: layoutDocSchema,
+      pages: z.array(sitePageSchema).min(1),
+      media: z.array(mediaItemSchema),
+    })
+    .superRefine((site, ctx) => {
+      const paths = site.pages.map((page) => page.path);
+      if (!paths.includes("index")) {
+        ctx.addIssue({ code: "custom", message: "The site has no home page", path: ["pages"] });
+      }
+      const duplicates = paths.filter((path, index) => paths.indexOf(path) !== index);
+      if (duplicates.length > 0) {
+        ctx.addIssue({
+          code: "custom",
+          message: `Duplicate page paths: ${[...new Set(duplicates)].join(", ")}`,
+          path: ["pages"],
+        });
+      }
+      const pageIds = site.pages.map((page) => page.id);
+      if (new Set(pageIds).size !== pageIds.length) {
+        ctx.addIssue({ code: "custom", message: "Duplicate page ids", path: ["pages"] });
+      }
+      const ids = site.media.map((item) => item.id);
+      if (new Set(ids).size !== ids.length) {
+        ctx.addIssue({ code: "custom", message: "Duplicate media ids", path: ["media"] });
+      }
+      // Exported image files are named after the media name (assets/img/<name>-640.webp).
+      const names = site.media.map((item) => item.name);
+      if (new Set(names).size !== names.length) {
+        ctx.addIssue({ code: "custom", message: "Duplicate media names", path: ["media"] });
+      }
+    }),
+);

@@ -102,8 +102,11 @@ function findUnsafeKey(value: unknown): string | undefined {
   return undefined;
 }
 
-/** `schema`, refusing input with an unsafe key anywhere before zod copies any of it. */
-function withoutUnsafeKeys<T>(schema: z.ZodType<T>): z.ZodType<T> {
+/**
+ * `schema`, refusing input with an unsafe key anywhere before zod copies any of it. Used for
+ * everything that can come from a file: node trees here, and whole sites (`siteDocSchema`).
+ */
+export function withoutUnsafeKeys<T>(schema: z.ZodType<T>): z.ZodType<T> {
   return z
     .unknown()
     .superRefine((value, context) => {
