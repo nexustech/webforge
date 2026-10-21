@@ -21,6 +21,7 @@ export {
   slotComponent,
   stringValue,
   textValue,
+  withAdvanced,
 } from "./library.js";
 export {
   behavioursUsedBy,

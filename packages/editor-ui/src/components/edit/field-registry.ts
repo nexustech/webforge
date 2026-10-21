@@ -10,6 +10,13 @@ export type FieldSpec = {
   readonly options?: readonly { readonly label: string; readonly value: string }[];
   /** For `slider`: its steps, smallest first, labels already translated. */
   readonly steps?: readonly { readonly label: string; readonly value: string }[];
+  /** For `text`: shown while the field is empty, already translated. */
+  readonly placeholder?: string;
+  /**
+   * For `text`: why a value isn't acceptable (translated), or undefined if it is. The field then
+   * reports its text only when the user is done with it, and only if it is acceptable.
+   */
+  readonly validate?: (value: string) => string | undefined;
   /** For `list`: what one item is called ("Testimonial"), already translated. */
   readonly itemLabel?: string;
   /** For `list`: the fields of each item. */

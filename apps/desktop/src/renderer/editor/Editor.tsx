@@ -8,6 +8,7 @@ import {
 } from "@webforge/engine";
 import { t } from "@webforge/i18n";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import type { Preferences } from "../../shared/ipc-contract.js";
 import { registerMediaPanel } from "../media/register-media-panel.js";
 import { useCommandRegistry } from "../shell/command-context.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
@@ -36,6 +37,8 @@ export type EditorProps = {
   readonly compileCss?: CompileCanvasCss;
   /** Design or Content mode (M3, 1.10): passed to the engine, which locks the layout in Content. */
   readonly mode?: EditorMode;
+  /** Simple or Advanced mode (F-ED-11): Advanced adds the Edit panel's Advanced tab. */
+  readonly editorLevel?: Preferences["editorLevel"];
 };
 
 const compileWithPreload: CompileCanvasCss = (request) =>
@@ -50,6 +53,7 @@ export function Editor({
   createEngine = createPuckEngine,
   compileCss = compileWithPreload,
   mode = "design",
+  editorLevel = "simple",
 }: EditorProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [engine, setEngine] = useState<CanvasEngine | null>(null);
@@ -202,7 +206,13 @@ export function Editor({
     });
     // The Edit panel replaces Puck's own fields (1.14).
     function Edit() {
-      return <EditPanelHost session={session} flush={() => connectionRef.current?.flush()} />;
+      return (
+        <EditPanelHost
+          session={session}
+          flush={() => connectionRef.current?.flush()}
+          advanced={editorLevel === "advanced"}
+        />
+      );
     }
     const removeEdit = panels.register({
       id: "edit",
@@ -214,7 +224,7 @@ export function Editor({
       removeUndoHistory();
       removeEdit();
     };
-  }, [panels, history, session]);
+  }, [panels, history, session, editorLevel]);
 
   useEffect(() => registerMediaPanel(panels, session), [panels, session]);
 

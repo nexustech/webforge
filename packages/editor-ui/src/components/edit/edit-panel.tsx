@@ -5,8 +5,11 @@ import { type FieldRenderer, type FieldSpec, fieldRenderer } from "./field-regis
 import { ListField } from "./list-field.js";
 import { PLAIN_RENDERERS } from "./plain-renderers.js";
 
-/** Which tab a field belongs on (Content for what it says, Style for how it looks). */
-export type FieldGroup = "content" | "style";
+/**
+ * Which tab a field belongs on: Content for what it says, Style for how it looks, Advanced for
+ * classes, attributes and the anchor (Advanced mode only, F-ED-11).
+ */
+export type FieldGroup = "content" | "style" | "advanced";
 
 /** One field of the selected element, with its current value. */
 export type EditPanelField = FieldSpec & {
@@ -30,6 +33,8 @@ export type EditPanelProps = {
   readonly device?: string | undefined;
   /** Drops a field's override, so the device uses the Desktop value again. */
   onReset?(name: string): void;
+  /** Shows the Advanced tab and its fields (Advanced mode, F-ED-11). */
+  readonly advanced?: boolean | undefined;
 };
 
 /** The renderers every Edit panel has; `registerFieldRenderer` adds kinds or replaces these. */
@@ -107,6 +112,7 @@ export function EditPanel({
   onCommit,
   device,
   onReset,
+  advanced = false,
 }: EditPanelProps) {
   const idPrefix = useId();
   if (heading === undefined) {
@@ -119,6 +125,19 @@ export function EditPanel({
   const shown = fields.filter((field) => rendererFor(field.kind) !== undefined);
   const content = shown.filter((field) => field.group === "content");
   const style = shown.filter((field) => field.group === "style");
+  const advancedFields = shown.filter((field) => field.group === "advanced");
+  const list = (group: FieldGroup, groupFields: readonly EditPanelField[]) => (
+    <TabsContent value={group} className="overflow-auto">
+      <FieldList
+        idPrefix={`${idPrefix}${group}`}
+        fields={groupFields}
+        onChange={onChange}
+        onCommit={onCommit}
+        device={device}
+        {...(onReset === undefined ? {} : { onReset })}
+      />
+    </TabsContent>
+  );
   return (
     <div className="flex h-full flex-col">
       <h2 className="truncate px-3 pt-2 text-sm font-semibold text-foreground">{heading}</h2>
@@ -126,33 +145,25 @@ export function EditPanel({
         // Keyed by the element's type: the tab stays while moving between elements of one type, and
         // another type starts on its first tab with fields.
         key={heading}
-        defaultValue={content.length > 0 || style.length === 0 ? "content" : "style"}
+        defaultValue={
+          content.length > 0
+            ? "content"
+            : style.length > 0
+              ? "style"
+              : advanced && advancedFields.length > 0
+                ? "advanced"
+                : "content"
+        }
         className="min-h-0 flex-1"
       >
         <TabsList aria-label={t("editPanel.tabs")}>
           <TabsTrigger value="content">{t("editPanel.content")}</TabsTrigger>
           <TabsTrigger value="style">{t("editPanel.style")}</TabsTrigger>
+          {advanced ? <TabsTrigger value="advanced">{t("editPanel.advanced")}</TabsTrigger> : null}
         </TabsList>
-        <TabsContent value="content" className="overflow-auto">
-          <FieldList
-            idPrefix={`${idPrefix}content`}
-            fields={content}
-            onChange={onChange}
-            onCommit={onCommit}
-            device={device}
-            {...(onReset === undefined ? {} : { onReset })}
-          />
-        </TabsContent>
-        <TabsContent value="style" className="overflow-auto">
-          <FieldList
-            idPrefix={`${idPrefix}style`}
-            fields={style}
-            onChange={onChange}
-            onCommit={onCommit}
-            device={device}
-            {...(onReset === undefined ? {} : { onReset })}
-          />
-        </TabsContent>
+        {list("content", content)}
+        {list("style", style)}
+        {advanced ? list("advanced", advancedFields) : null}
       </Tabs>
     </div>
   );

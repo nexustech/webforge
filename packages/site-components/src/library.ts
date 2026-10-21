@@ -1,10 +1,11 @@
 import {
   type Breakpoint,
   isResponsiveValue,
+  nodeAdvancedSchema,
   type Responsive,
   resolveResponsive,
 } from "@webforge/model";
-import { type ComponentType, isValidElement, type ReactNode } from "react";
+import { type ComponentType, cloneElement, isValidElement, type ReactNode } from "react";
 
 /** A choice offered by a field: its translated label and the stored value. */
 export type FieldOption = { readonly label: string; readonly value: string };
@@ -211,4 +212,37 @@ const EmptySlot: ComponentType = () => null;
 /** The slot component for `name`, or one that renders nothing. */
 export function slotComponent(props: ComponentRenderProps, name: string): ComponentType {
   return props.slots[name] ?? EmptySlot;
+}
+
+/** Attribute names React expects in camel case; the others pass as they are. */
+const REACT_ATTRIBUTE_NAMES: Readonly<Record<string, string>> = { tabindex: "tabIndex" };
+
+/**
+ * A component's output with the node's Advanced-mode options (F-ED-11) on its root element: the
+ * extra classes after its own, the attributes, and the anchor as its `id`. The options are checked
+ * again here, so nothing outside the allow-list reaches a page whatever the document holds. Output
+ * whose root isn't an HTML element is left as it is.
+ */
+export function withAdvanced(output: ReactNode, advanced: unknown): ReactNode {
+  if (advanced === undefined || !isValidElement(output) || typeof output.type !== "string") {
+    return output;
+  }
+  const parsed = nodeAdvancedSchema.safeParse(advanced);
+  if (!parsed.success) {
+    return output;
+  }
+  const { className, attributes = {}, anchorId } = parsed.data;
+  const own = (output.props as { readonly className?: unknown }).className;
+  return cloneElement(output, {
+    ...Object.fromEntries(
+      Object.entries(attributes).map(([name, value]) => [
+        REACT_ATTRIBUTE_NAMES[name] ?? name,
+        value,
+      ]),
+    ),
+    ...(anchorId === undefined || anchorId === "" ? {} : { id: anchorId }),
+    ...(className === undefined || className === ""
+      ? {}
+      : { className: typeof own === "string" && own !== "" ? `${own} ${className}` : className }),
+  } as Record<string, unknown>);
 }

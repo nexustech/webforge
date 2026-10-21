@@ -161,6 +161,28 @@ describe("renderNodesToHtml", () => {
     expect(html).toContain("py-24");
   });
 
+  it("puts an element's Advanced-mode classes, attributes and anchor on its root element", () => {
+    const html = renderNodesToHtml(
+      [
+        {
+          type: "Heading",
+          props: {
+            id: "h",
+            text: "Prices",
+            size: "medium",
+            advanced: { className: "shadow-lg", anchorId: "prices", attributes: { role: "note" } },
+          },
+        },
+      ],
+      siteLibrary,
+      context,
+    );
+
+    expect(html).toBe(
+      '<h2 class="site-heading text-3xl font-bold shadow-lg" role="note" id="prices">Prices</h2>',
+    );
+  });
+
   it("renders a section's per-device padding and gap, mobile first, and its full width", () => {
     const html = renderNodesToHtml(
       [
