@@ -76,7 +76,9 @@ describe("connectCanvasImages", () => {
     const stop = connectCanvasImages(engine, session);
 
     expect(engine.setImages).toHaveBeenCalledTimes(1);
-    expect(engine.setImages.mock.calls[0]?.[0]("photo")).toBeNull();
+    expect(engine.setImages.mock.calls[0]?.[0]("photo")).toMatchObject({
+      alt: "Image deleted from Media",
+    });
 
     addMedia(session, [photo, prices]);
     expect(engine.setImages).toHaveBeenCalledTimes(1);
@@ -84,9 +86,12 @@ describe("connectCanvasImages", () => {
     expect(engine.setImages).toHaveBeenCalledTimes(2);
     const resolve = engine.setImages.mock.calls[1]?.[0];
     expect(resolve("photo")).toMatchObject({ alt: "Our shop" });
-    // Files and unknown ids show nothing.
+    // A file isn't an image; an image no longer in Media shows a placeholder.
     expect(resolve("prices")).toBeNull();
-    expect(resolve("missing")).toBeNull();
+    expect(resolve("missing")).toMatchObject({
+      src: expect.stringMatching(/^data:image\/svg\+xml,/),
+      alt: "Image deleted from Media",
+    });
 
     // Changes in quick succession draw the page once.
     setFocalPoint(session, photo.id, { x: 0.2, y: 0.5 });

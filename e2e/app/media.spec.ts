@@ -1,4 +1,4 @@
-import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
@@ -313,4 +313,82 @@ test("places a Media image on the Hero from the Edit panel, shows it on the canv
   const index = readFileSync(join(folder, "index.html"), "utf8");
   expect(index).toContain('alt="Loaves in the window"');
   expect(index).toContain('srcSet="assets/img/shop-front-640.webp 640w');
+});
+
+test("warns before deleting a placed image, shows a placeholder, undoes it, and exports without it", async () => {
+  // A site whose Hero places a photo from Media.
+  const store = ProjectStore.open(sitePath);
+  try {
+    const { hash } = store.putAsset({
+      mediaId: "shop",
+      data: heroPhoto(),
+      mime: "image/jpeg",
+      width: 1600,
+      height: 1000,
+      originalName: "Shop front.jpg",
+    });
+    const site = createSite({
+      name: "Media",
+      language: "en-GB",
+      homeTitle: "Home",
+      notFoundTitle: "Page not found",
+    });
+    site.media = {
+      ["shop" as MediaId]: {
+        id: "shop" as MediaId,
+        hash,
+        name: "shop-front",
+        fileName: "Shop front.jpg",
+        kind: "image",
+        mimeType: "image/jpeg",
+        width: 1600,
+        height: 1000,
+        alt: "Our shop front",
+      },
+    };
+    const home = site.pages[site.homePageId];
+    if (home === undefined) throw new Error("no home page");
+    home.doc.content = [
+      { type: "Hero", props: { id: "hero", title: "Fresh bread", image: { mediaId: "shop" } } },
+    ];
+    store.saveSite(site);
+  } finally {
+    store.close();
+  }
+
+  const page = await openSite();
+  const canvas = page.frameLocator(".editor__canvas iframe");
+  const shown = canvas.locator("img");
+  await expect(shown).toHaveAttribute("alt", "Our shop front", { timeout: 30_000 });
+
+  await page.getByRole("tab", { name: "Media" }).click();
+  const panel = page.getByRole("region", { name: "Media" });
+  await panel.getByRole("button", { name: "Shop front.jpg" }).click();
+  await panel.getByRole("button", { name: "Delete" }).click();
+  const warning = page.getByRole("alertdialog");
+  await expect(warning).toContainText("Delete Shop front.jpg?");
+  await expect(warning).toContainText("It's used on 1 page.");
+  await warning.getByRole("button", { name: "Delete" }).click();
+
+  // The place shows a placeholder until another image is chosen.
+  await expect(shown).toHaveAttribute("alt", "Image deleted from Media");
+  await expect(shown).toHaveAttribute("src", /^data:image\/svg\+xml,/);
+
+  // One Undo brings the image back for the Hero.
+  await page.getByRole("button", { name: "Undo" }).last().click();
+  await expect(shown).toHaveAttribute("alt", "Our shop front");
+  await expect(panel.getByRole("button", { name: "Shop front.jpg" })).toBeVisible();
+
+  // Deleted again, the export leaves the place out: no picture, no image files.
+  await panel.getByRole("button", { name: "Shop front.jpg" }).click();
+  await panel.getByRole("button", { name: "Delete" }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
+  const folder = join(dir, "exported");
+  await stubFileDialogs(running(), folder);
+  await page.getByRole("button", { name: "Export", exact: true }).click();
+  await expect(page.getByText(/Site exported to “exported”/)).toBeVisible({ timeout: 60_000 });
+  const index = readFileSync(join(folder, "index.html"), "utf8");
+  expect(index).toContain("Fresh bread");
+  expect(index).not.toContain("<img");
+  expect(existsSync(join(folder, "assets", "img"))).toBe(false);
 });

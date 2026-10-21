@@ -21,7 +21,9 @@ describe("createSecureWebPreferences", () => {
       webSecurity: true,
       allowRunningInsecureContent: false,
       webviewTag: false,
+      spellcheck: false,
     });
+    expect(createSecureWebPreferences("/p.cjs", true).spellcheck).toBe(true);
   });
 });
 

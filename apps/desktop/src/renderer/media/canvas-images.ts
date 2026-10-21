@@ -1,4 +1,5 @@
 import type { CanvasEngine } from "@webforge/engine";
+import { t } from "@webforge/i18n";
 import { type ImageMeta, isImageMeta, type SiteDoc } from "@webforge/model";
 import type { ResolvedImage } from "@webforge/site-components";
 import { mediaImageUrl } from "../../shared/ipc/media.js";
@@ -48,11 +49,38 @@ export function canvasImage(
   };
 }
 
+/** A grey box with a crossed-out picture: no text, so it reads the same in every language. */
+const REMOVED_IMAGE_SVG = [
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300">',
+  '<rect width="400" height="300" fill="#e5e7eb"/>',
+  '<g fill="none" stroke="#9ca3af" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">',
+  '<rect x="140" y="105" width="120" height="90" rx="8"/>',
+  '<path d="M150 185l35-35 25 25 15-15 25 25"/><path d="M130 95l140 110"/>',
+  "</g></svg>",
+].join("");
+const REMOVED_IMAGE_URL = `data:image/svg+xml,${encodeURIComponent(REMOVED_IMAGE_SVG)}`;
+
+/**
+ * What the canvas shows where an image deleted from Media is still placed (1.16): a placeholder,
+ * so the place is visible and can be given another image. The export leaves such places out.
+ */
+function removedImage(): ResolvedImage {
+  return {
+    sources: [],
+    src: REMOVED_IMAGE_URL,
+    fallback: { type: "image/png", srcset: "" },
+    width: 400,
+    height: 300,
+    alt: t("site.media.removedImage"),
+  };
+}
+
 /** The canvas's image resolver for `media`. */
 function resolverFor(media: SiteDoc["media"]) {
   return (mediaId: string) => {
     const item = media[mediaId as keyof typeof media];
-    return item !== undefined && isImageMeta(item) ? canvasImage(item) : null;
+    if (item === undefined) return removedImage();
+    return isImageMeta(item) ? canvasImage(item) : null;
   };
 }
 

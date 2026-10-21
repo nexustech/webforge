@@ -390,6 +390,26 @@ describe("createPuckEngine", () => {
     host.remove();
   });
 
+  it("marks a hidden element for dimming, keeping it selectable (F-ED-12)", async () => {
+    const [first, second] = page.content;
+    if (first === undefined || second === undefined) throw new Error("unexpected page");
+    await act(async () =>
+      engine.applyChange({
+        page: { ...page, content: [{ ...first, props: { ...first.props, hidden: true } }, second] },
+      }),
+    );
+    await settle();
+
+    const marked = [...element.querySelectorAll(".t-heading")].map((heading) =>
+      heading.hasAttribute("data-webforge-hidden"),
+    );
+    expect(marked).toEqual([true, false]);
+
+    await act(async () => engine.select("a"));
+    await settle();
+    expect(element.querySelectorAll('.wf-outline[data-state="selected"]')).toHaveLength(1);
+  });
+
   it("renders a page to static HTML", () => {
     const html = engine.renderStatic(page, NO_LAYOUT);
 

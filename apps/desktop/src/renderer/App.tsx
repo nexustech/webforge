@@ -33,6 +33,7 @@ import { createPanelRegistry } from "./shell/panels.js";
 import { ShellLayout } from "./shell/ShellLayout.js";
 import { TitleBar } from "./shell/TitleBar.js";
 import { registerSitePanel } from "./site/SitePanel.js";
+import { SiteSettingsHost } from "./site-settings/SiteSettingsHost.js";
 import { SiteCommands } from "./start/SiteCommands.js";
 import { AutosaveStatus } from "./storage/AutosaveStatus.js";
 import { registerCrashReportsCommand } from "./storage/crash-reports-command.js";
@@ -57,11 +58,15 @@ export type AppProps = {
   readonly uiState?: SiteUiState | null;
   /** Remembers the editor state with the open site; injectable for tests. */
   readonly saveUiState?: (state: SiteUiState) => Promise<UiStateResult>;
+  /** Spell checks text in the site's language (F-ED-19); injectable for tests. */
+  readonly setSpellCheckLanguage?: (language: string) => Promise<null>;
 };
 
 const exportWithPreload = (request: ExportRequest) => window.webforge.site.export(request);
 const saveWithPreload = (change: PreferencesChange) => window.webforge.prefs.set(change);
 const saveUiStateWithPreload = (state: SiteUiState) => window.webforge.project.setUiState(state);
+const spellCheckWithPreload = (language: string) =>
+  window.webforge.app.setSpellCheckLanguage(language);
 
 /** Root component of the editor window: the title bar over the panel layout and canvas. */
 export function App({
@@ -74,6 +79,7 @@ export function App({
   loaded,
   uiState,
   saveUiState = saveUiStateWithPreload,
+  setSpellCheckLanguage = spellCheckWithPreload,
 }: AppProps) {
   const [session] = useState(() => createEditorSession(siteLibrary, loaded?.site ?? starterSite()));
   const [registry] = useState(createCommandRegistry);
@@ -88,6 +94,16 @@ export function App({
     session.history.document.subscribe,
     () => session.history.document.getState().settings.general.name,
   );
+  const siteLanguage = useSyncExternalStore(
+    session.history.document.subscribe,
+    () => session.history.document.getState().settings.general.language,
+  );
+  // Spelling is checked in the site's language, including after Site Settings changes it (1.22).
+  useEffect(() => {
+    setSpellCheckLanguage(siteLanguage).catch((error: unknown) => {
+      console.error("Webforge could not set the spell-check language", error);
+    });
+  }, [setSpellCheckLanguage, siteLanguage]);
 
   const change = (update: PreferencesChange) => {
     latest.current = applyPreferencesChange(latest.current, update);
@@ -232,6 +248,7 @@ export function App({
           </div>
           <AboutDialog info={info} />
           <SiteCommands />
+          <SiteSettingsHost session={session} />
           <Toaster theme={theme} />
         </TooltipProvider>
       </PanelRegistryProvider>
