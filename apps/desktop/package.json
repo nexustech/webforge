@@ -50,6 +50,7 @@
     "lucide-react": "1.59.0",
     "react": "catalog:",
     "react-dom": "catalog:",
+    "storybook": "10.6.2",
     "tailwindcss": "catalog:",
     "vite": "8.3.4",
     "vitest": "catalog:",

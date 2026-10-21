@@ -60,4 +60,5 @@ export {
 } from "./site-documents.js";
 export type { MediaItem, SitePage, SiteSnapshot } from "./site-snapshot.js";
 export { siteSnapshotSchema } from "./site-snapshot.js";
+export { slugify, uniqueSlug } from "./slugs.js";
 export { siteToSnapshot } from "./to-snapshot.js";

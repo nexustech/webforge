@@ -28,6 +28,7 @@ import { PanelRegistryProvider } from "./shell/panel-context.js";
 import { createPanelRegistry } from "./shell/panels.js";
 import { ShellLayout } from "./shell/ShellLayout.js";
 import { TitleBar } from "./shell/TitleBar.js";
+import { registerSitePanel } from "./site/SitePanel.js";
 import { SiteCommands } from "./start/SiteCommands.js";
 import { AutosaveStatus } from "./storage/AutosaveStatus.js";
 import { registerCrashReportsCommand } from "./storage/crash-reports-command.js";
@@ -105,6 +106,7 @@ export function App({
   }, [theme]);
 
   useEffect(() => installCommandShortcuts(window, registry), [registry]);
+  useEffect(() => registerSitePanel(panels, session), [panels, session]);
   useEffect(() => registerCrashReportsCommand(registry), [registry]);
 
   useEffect(
