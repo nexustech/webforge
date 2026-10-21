@@ -23,6 +23,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import type {
   CanvasEngine,
+  CanvasSize,
   EditorMode,
   EngineEdit,
   HistoryCommandHandler,
@@ -46,6 +47,28 @@ export type PuckEngineOptions = {
   /** Render the canvas in an iframe (default). Tests without layout may turn it off. */
   readonly iframe?: boolean;
 };
+
+/** Puck's canvas zoom (`zoomConfig`), which its public API leaves out. */
+type ZoomConfig = { readonly zoom: number; readonly autoZoom: number; readonly rootHeight: number };
+
+/** What our Puck patch adds to Puck's API object: its canvas zoom. */
+type ZoomAccess = {
+  readonly getZoomConfig: () => ZoomConfig;
+  readonly setZoomConfig: (zoomConfig: ZoomConfig) => void;
+};
+
+/**
+ * The canvas zoom in Puck's store, reached through our Puck patch (see `pnpm-workspace.yaml`), or
+ * undefined if the patch is missing, e.g. after a Puck upgrade: zooming then does nothing.
+ */
+function zoomAccess(puck: ReturnType<GetPuck>): ZoomAccess | undefined {
+  const internal = (puck as { readonly __private?: Partial<ZoomAccess> }).__private;
+  const get = internal?.getZoomConfig;
+  const set = internal?.setZoomConfig;
+  return get === undefined || set === undefined
+    ? undefined
+    : { getZoomConfig: get, setZoomConfig: set };
+}
 
 const VIEWPORT_WIDTHS = { desktop: 1280, tablet: 768, mobile: 375 } as const;
 
@@ -139,6 +162,8 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   let viewportWidth: number = VIEWPORT_WIDTHS.desktop;
   /** A width the app gave Puck that Puck doesn't show yet: until it does, no width is reported. */
   let pendingWidth: number | null = null;
+  /** The size and zoom last reported. */
+  let canvasSize: CanvasSize | null = null;
   /** Per node, bumped to remount its rich-text editors (see toPuckConfig). */
   const editorRevisions = new Map<string, number>();
 
@@ -146,6 +171,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   const addRequests = emitter<InsertPoint>();
   const frameWindows = emitter<Window | null>();
   const selections = emitter<string | null>();
+  const canvasSizes = emitter<CanvasSize>();
   const viewports = emitter<Viewport>();
   const commandHandlers = new Set<HistoryCommandHandler>();
   /** True if any handler did something with the command (see installHistoryKeys). */
@@ -196,6 +222,49 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       type: "setUi",
       ui: (ui) => ({ viewports: { ...ui.viewports, current: { width, height: "auto" } } }),
     });
+  };
+
+  /** Scales Puck's canvas to `zoom`, or to its fitting zoom. Does nothing before Puck is ready. */
+  const applyZoom = (zoom: number | "fit") => {
+    const access = getPuck === null ? undefined : zoomAccess(getPuck());
+    if (access === undefined) {
+      return;
+    }
+    const config = access.getZoomConfig();
+    const next = zoom === "fit" ? config.autoZoom : zoom;
+    if (Number.isFinite(next) && next > 0 && next !== config.zoom) {
+      access.setZoomConfig({ ...config, zoom: next });
+    }
+  };
+
+  /** Reports the canvas's size and zoom if they changed, once Puck has measured the canvas. */
+  const reportSize = () => {
+    sizeFrame = null;
+    const puck = getPuck?.();
+    const config = puck === undefined ? undefined : zoomAccess(puck)?.getZoomConfig();
+    const width = puck?.appState.ui.viewports.current.width;
+    if (config === undefined || typeof width !== "number" || !(config.rootHeight > 0)) {
+      return;
+    }
+    const size = { width, height: Math.round(config.rootHeight), zoom: config.zoom };
+    if (
+      canvasSize === null ||
+      canvasSize.width !== size.width ||
+      canvasSize.height !== size.height ||
+      canvasSize.zoom !== size.zoom
+    ) {
+      canvasSize = size;
+      canvasSizes.emit(size);
+    }
+  };
+
+  /**
+   * Reports the size at the next frame: Puck sets a new zoom and the height that goes with it in
+   * two renders, which then arrive as one change.
+   */
+  let sizeFrame: number | null = null;
+  const scheduleSize = () => {
+    sizeFrame ??= requestAnimationFrame(reportSize);
   };
 
   /** Puck shows `width`: the app's own width arriving, or the user's choice in Puck's controls. */
@@ -272,7 +341,26 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       };
     }, [get]);
     // After the effect above, so the width it sends to Puck isn't taken for the user's choice.
-    useEffect(() => reportViewport(width), [width]);
+    useEffect(() => {
+      reportViewport(width);
+      scheduleSize();
+    }, [width]);
+    // Puck changes the zoom inside its store, where nothing reports it, and shows it on the canvas
+    // root's style (its scale and height): watch that.
+    useEffect(() => {
+      const canvasRoot = host?.querySelector('[class*="PuckCanvas-root"]');
+      if (!canvasRoot) {
+        return;
+      }
+      scheduleSize();
+      const observer = new MutationObserver(scheduleSize);
+      observer.observe(canvasRoot, { attributes: true, attributeFilter: ["style"] });
+      return () => {
+        observer.disconnect();
+        if (sizeFrame !== null) cancelAnimationFrame(sizeFrame);
+        sizeFrame = null;
+      };
+    }, []);
     return <>{children}</>;
   }
 
@@ -448,6 +536,15 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       preserveCaret(frameDocument);
       showPage();
       dispatch({ type: "setUi", ui: { itemSelector: selectorFor(selection) } });
+    },
+
+    setZoom: applyZoom,
+
+    onCanvasSize(cb) {
+      if (canvasSize !== null) {
+        cb(canvasSize);
+      }
+      return canvasSizes.add(cb);
     },
 
     setSiteCss(css, bodyClass) {
