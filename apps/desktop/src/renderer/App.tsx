@@ -5,7 +5,7 @@ import { siteLibrary } from "@webforge/site-components";
 import { PanelBottomIcon, PanelLeftIcon, PanelRightIcon } from "lucide-react";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { applyPreferencesChange } from "../shared/ipc/prefs.js";
-import { type ExportRequest, exportRequestFor } from "../shared/ipc/site.js";
+import type { ExportRequest } from "../shared/ipc/site.js";
 import type {
   AppInfo,
   ExportResult,
@@ -18,6 +18,7 @@ import { Editor, type EditorProps } from "./editor/Editor.js";
 import { createEditorSession } from "./editor/editor-session.js";
 import { starterSite } from "./editor/starter-site.js";
 import { registerExportCommand } from "./export/export-command.js";
+import { exportRequestFor } from "./export/export-request.js";
 import { AboutDialog } from "./shell/AboutDialog.js";
 import { CommandButton } from "./shell/CommandButton.js";
 import { CommandRegistryProvider } from "./shell/command-context.js";
@@ -112,7 +113,7 @@ export function App({
   useEffect(
     () =>
       registerExportCommand(registry, () =>
-        exportSite(exportRequestFor(session.history.document.getState())),
+        exportSite(exportRequestFor(session.history.document.getState(), siteLibrary)),
       ),
     [registry, session, exportSite],
   );

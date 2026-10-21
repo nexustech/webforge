@@ -1,9 +1,10 @@
 import { createSite, type MediaId } from "@webforge/model";
+import { siteLibrary } from "@webforge/site-components";
 import { describe, expect, it } from "vitest";
-import { exportRequestFor } from "./site.js";
+import { exportRequestFor } from "./export-request.js";
 
 describe("exportRequestFor", () => {
-  it("names the site's images by hash, with their alt text, focal point and crop", () => {
+  it("names the images the site uses by hash, with their alt text, focal point and crop", () => {
     const site = createSite({
       name: "Rosa's Bakery",
       language: "en-GB",
@@ -23,6 +24,18 @@ describe("exportRequestFor", () => {
         alt: "Our shop",
         focal: { x: 0.3, y: 0.5 },
       },
+      // In Media, but on no page: its bytes needn't be read.
+      ["unused" as MediaId]: {
+        id: "unused" as MediaId,
+        hash: "c".repeat(64),
+        name: "unused",
+        fileName: "unused.jpg",
+        kind: "image",
+        mimeType: "image/jpeg",
+        width: 10,
+        height: 10,
+        alt: "",
+      },
       ["prices" as MediaId]: {
         id: "prices" as MediaId,
         hash: "b".repeat(64),
@@ -33,7 +46,13 @@ describe("exportRequestFor", () => {
       },
     };
 
-    const request = exportRequestFor(site);
+    const home = site.pages[site.homePageId];
+    if (home === undefined) throw new Error("no home page");
+    home.doc.content = [
+      { type: "Hero", props: { id: "hero", title: "Fresh", image: { mediaId: "hero" } } },
+    ];
+
+    const request = exportRequestFor(site, siteLibrary);
 
     expect(request.snapshot.media).toEqual([]);
     expect(request.media).toEqual([

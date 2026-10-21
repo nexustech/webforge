@@ -2,11 +2,8 @@ import {
   cropSchema,
   focalPointSchema,
   IMAGE_MIME_TYPES,
-  isImageMeta,
   mediaNameSchema,
-  type SiteDoc,
   siteSnapshotSchema,
-  siteToSnapshot,
 } from "@webforge/model";
 import { z } from "zod";
 
@@ -33,24 +30,6 @@ const exportRequestSchema = z.strictObject({
 
 /** What the renderer sends to export the site. */
 export type ExportRequest = z.infer<typeof exportRequestSchema>;
-
-/** The export request for `site`: the snapshot plus its images by hash. */
-export function exportRequestFor(site: SiteDoc): ExportRequest {
-  return {
-    snapshot: siteToSnapshot(site, new Map()),
-    media: Object.values(site.media)
-      .filter(isImageMeta)
-      .map((image) => ({
-        id: image.id,
-        name: image.name,
-        mimeType: image.mimeType,
-        hash: image.hash,
-        alt: image.alt,
-        ...(image.focal === undefined ? {} : { focal: image.focal }),
-        ...(image.crop === undefined ? {} : { crop: image.crop }),
-      })),
-  };
-}
 
 /** Why an export failed; the renderer shows a translated message for each. */
 const exportFailureReasonSchema = z.enum(["folder-not-empty", "build-failed", "write-failed"]);
