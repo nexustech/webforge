@@ -64,6 +64,22 @@ describe("unsafe keys (#138)", () => {
     expect(({} as Record<string, unknown>).polluted).toBeUndefined();
   });
 
+  it("doesn't loop on a cyclic value, as structured clone (IPC) can deliver", () => {
+    const loop: Record<string, unknown> = { name: "loop" };
+    loop.self = loop;
+    const cyclic = {
+      root: { props: {} },
+      content: [{ type: "Heading", props: { id: "h", loop } }],
+    };
+    const withUnsafeKey = {
+      root: { props: { loop } },
+      content: [{ type: "Heading", props: { id: "h", x: { constructor: 1 } } }],
+    };
+
+    expect(pageDocSchema.safeParse(cyclic).success).toBe(true);
+    expect(pageDocSchema.safeParse(withUnsafeKey).success).toBe(false);
+  });
+
   it("still accepts such words as values and inside longer keys", () => {
     const ok = page(`"text": "__proto__", "constructorName": "x"`);
 

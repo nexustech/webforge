@@ -99,4 +99,18 @@ describe("siteSnapshotSchema", () => {
   it("rejects an invalid language tag", () => {
     expect(siteSnapshotSchema.safeParse(site({ language: "English" })).success).toBe(false);
   });
+
+  it("checks for unsafe keys without walking image bytes (#138)", () => {
+    // A 20 MB photo: walking its indices one by one would take seconds and gigabytes.
+    const photo = {
+      id: "big",
+      name: "photo",
+      mimeType: "image/jpeg" as const,
+      data: new Uint8Array(20 * 1024 * 1024),
+    };
+    const started = Date.now();
+
+    expect(siteSnapshotSchema.safeParse(site({ media: [photo] })).success).toBe(true);
+    expect(Date.now() - started).toBeLessThan(2000);
+  });
 });

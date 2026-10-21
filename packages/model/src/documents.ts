@@ -87,11 +87,17 @@ const UNSAFE_KEYS: ReadonlySet<string> = new Set(["__proto__", "constructor", "p
 function findUnsafeKey(value: unknown): string | undefined {
   // Iterative: a crafted file nested very deeply can't overflow the stack.
   const pending: unknown[] = [value];
+  // Structured clone (IPC) keeps cycles, and this runs before zod refuses anything: each object
+  // is visited once, so a cycle can't loop forever.
+  const seen = new WeakSet<object>();
   while (pending.length > 0) {
     const item = pending.pop();
-    if (typeof item !== "object" || item === null) {
+    // Image bytes (a snapshot's `media[].data`) have no keys worth checking, only millions of
+    // indices.
+    if (typeof item !== "object" || item === null || ArrayBuffer.isView(item) || seen.has(item)) {
       continue;
     }
+    seen.add(item);
     for (const key of Object.keys(item)) {
       if (UNSAFE_KEYS.has(key)) {
         return key;
