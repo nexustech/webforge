@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { type BindableSetting, bindableSettingSchema } from "./bindings.js";
 import {
   type LayoutDoc,
   layoutDocSchema,
@@ -68,6 +69,8 @@ export type SiteSnapshot = {
   readonly layout: LayoutDoc;
   readonly pages: readonly SitePage[];
   readonly media: readonly MediaItem[];
+  /** The Site Settings values elements can be bound to (1.17); empty ones are left out. */
+  readonly settings?: Readonly<Partial<Record<BindableSetting, string>>> | undefined;
 };
 
 const sitePageSchema = z.object({
@@ -105,6 +108,7 @@ export const siteSnapshotSchema: z.ZodType<SiteSnapshot> = withoutUnsafeKeys(
       layout: layoutDocSchema,
       pages: z.array(sitePageSchema).min(1),
       media: z.array(mediaItemSchema),
+      settings: z.partialRecord(bindableSettingSchema, z.string()).optional(),
     })
     .superRefine((site, ctx) => {
       const paths = site.pages.map((page) => page.path);

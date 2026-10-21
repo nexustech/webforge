@@ -173,6 +173,8 @@ export async function buildSite(
         }
         return imageForDepth(image, depthOf(page.path));
       },
+      // An empty binding has no emptySetting here: the export leaves it out (1.17).
+      setting: (key) => site.settings?.[key],
     };
     return {
       page,
