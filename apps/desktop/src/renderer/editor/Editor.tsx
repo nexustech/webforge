@@ -10,6 +10,7 @@ import { t } from "@webforge/i18n";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { Preferences } from "../../shared/ipc-contract.js";
 import { registerMediaPanel } from "../media/register-media-panel.js";
+import { type CanvasView, connectCanvasView } from "../shell/canvas-view.js";
 import { useCommandRegistry } from "../shell/command-context.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { installCommandShortcuts } from "../shell/commands.js";
@@ -37,6 +38,8 @@ export type EditorProps = {
   readonly compileCss?: CompileCanvasCss;
   /** Design or Content mode (M3, 1.10): passed to the engine, which locks the layout in Content. */
   readonly mode?: EditorMode;
+  /** The canvas toolbar's zoom and size readout (1.15), kept in step with the engine. */
+  readonly canvasView?: CanvasView;
   /** Simple or Advanced mode (F-ED-11): Advanced adds the Edit panel's Advanced tab. */
   readonly editorLevel?: Preferences["editorLevel"];
 };
@@ -53,6 +56,7 @@ export function Editor({
   createEngine = createPuckEngine,
   compileCss = compileWithPreload,
   mode = "design",
+  canvasView,
   editorLevel = "simple",
 }: EditorProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -171,6 +175,14 @@ export function Editor({
   useEffect(() => {
     engine?.setMode(mode);
   }, [engine, mode]);
+
+  useEffect(
+    () =>
+      engine === null || canvasView === undefined
+        ? undefined
+        : connectCanvasView(engine, canvasView),
+    [engine, canvasView],
+  );
 
   // "Deleted Heading · Undo" after each delete (D4, 1.11).
   useEffect(

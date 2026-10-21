@@ -8,7 +8,7 @@ import {
   themeSchema,
 } from "./documents.js";
 import { pageIdSchema } from "./ids.js";
-import { IMAGE_MIME_TYPES } from "./media.js";
+import { cropSchema, focalPointSchema, IMAGE_MIME_TYPES, type ImageCrop } from "./media.js";
 import { languageTagSchema } from "./settings.js";
 
 /**
@@ -47,6 +47,12 @@ export type MediaItem = {
   readonly mimeType: (typeof IMAGE_MIME_TYPES)[number];
   /** The original file, never modified (X2). */
   readonly data: Uint8Array;
+  /** The image's own alt text from Media; a placement may override it (G15). */
+  readonly alt?: string | undefined;
+  /** The part kept in view where the image is cut to fit, as fractions of the original (G14). */
+  readonly focal?: { readonly x: number; readonly y: number } | undefined;
+  /** The part of the original the site shows, as fractions of it; the export cuts the rest. */
+  readonly crop?: ImageCrop | undefined;
 };
 
 /**
@@ -80,6 +86,9 @@ const mediaItemSchema = z.object({
   name: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
   mimeType: z.enum(IMAGE_MIME_TYPES),
   data: z.instanceof(Uint8Array),
+  alt: z.string().optional(),
+  focal: focalPointSchema.optional(),
+  crop: cropSchema.optional(),
 });
 
 /**

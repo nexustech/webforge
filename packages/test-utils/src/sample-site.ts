@@ -40,8 +40,7 @@ export function sampleSite(): SiteSnapshot {
                 buttonLabel: "About us",
                 buttonLink: "about",
                 alignment: "left",
-                image: "hero-photo",
-                imageDescription: "Green hills under a morning sun",
+                image: { mediaId: "hero-photo", alt: "Green hills under a morning sun" },
               },
             },
             {

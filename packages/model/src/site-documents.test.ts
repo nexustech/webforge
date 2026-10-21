@@ -3,7 +3,13 @@ import { describe, expect, it } from "vitest";
 import { siteDocArbitrary } from "../test/arbitraries.js";
 import type { PageId } from "./ids.js";
 import { migrateSite } from "./migrations.js";
-import { createSite, type PageEntry, type SiteDoc, siteDocSchema } from "./site-doc.js";
+import {
+  createSite,
+  type PageEntry,
+  SITE_FORMAT_VERSION,
+  type SiteDoc,
+  siteDocSchema,
+} from "./site-doc.js";
 import {
   applySiteChanges,
   changedDocuments,
@@ -34,7 +40,7 @@ describe("siteDocuments and siteFromDocuments", () => {
       ...site.pageOrder.map(pageDocumentId),
     ]);
     expect(documents[0]?.content).toEqual({
-      formatVersion: 1,
+      formatVersion: SITE_FORMAT_VERSION,
       pageOrder: site.pageOrder,
       homePageId: site.homePageId,
     });
@@ -58,7 +64,7 @@ describe("siteDocuments and siteFromDocuments", () => {
       { id: "menu-old", kind: "menu", content: {} },
     ]) as Record<string, unknown>;
 
-    expect(raw.formatVersion).toBe(1);
+    expect(raw.formatVersion).toBe(SITE_FORMAT_VERSION);
     expect("menu" in raw).toBe(false);
     expect(() => migrateSite(raw)).toThrow();
   });

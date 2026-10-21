@@ -47,7 +47,10 @@ export type FieldDef = {
       /** Component types that may be dropped into the slot; all if omitted. */
       readonly allow?: readonly string[];
     }
-  /** An image from the site's media, stored as its media id. */
+  /**
+   * An image from the site's Media, stored as an `ImageValue`: `{ mediaId, alt? }`, where `alt`
+   * overrides the image's own alt text for this placement (G15).
+   */
   | { readonly kind: "media"; readonly label: string }
   /**
    * A repeating list (F-ED-6), such as testimonials or opening hours, stored as an array of
@@ -103,6 +106,10 @@ export type ResolvedImage = {
   readonly fallback: ImageSource;
   readonly width: number;
   readonly height: number;
+  /** The image's own alt text from Media; a placement may override it. */
+  readonly alt: string;
+  /** Where to keep the image in view when it is cut to fit (`object-position`, G14). */
+  readonly objectPosition?: string;
 };
 
 /** What a component may need from outside its own props while rendering. */

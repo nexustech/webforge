@@ -197,6 +197,7 @@ export const AdvancedTab: Story = {
         label: "Attributes",
         group: "advanced",
         itemLabel: "Attribute",
+        orderless: true,
         itemFields: [
           { name: "name", kind: "text", label: "Name" },
           { name: "value", kind: "text", label: "Value" },
