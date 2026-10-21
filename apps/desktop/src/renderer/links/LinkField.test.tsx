@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { act, cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { NodeDoc, PageDoc } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
@@ -99,6 +99,29 @@ describe("LinkField and LinkDialog (F-ED-18)", () => {
 
     expect(node("hero")?.buttonLink).toBeUndefined();
     expect(labels()).toEqual(["Changed Hero button link"]);
+    remove();
+  });
+
+  it("sets the link of an element in the shared Footer in the site's layout (F-ED-7)", async () => {
+    const { session, user, remove } = setUp();
+    act(() => {
+      session.edit("insert", "Added Hero", (draft) => {
+        const hero = draft.pages[draft.homePageId]?.doc.content.find((n) => n.props.id === "hero");
+        if (hero !== undefined)
+          draft.layout.footer.push({ ...hero, props: { ...hero.props, id: "shared-hero" } });
+      });
+      session.ui.setState({ nodeId: "shared-hero" });
+    });
+
+    await user.click(screen.getByRole("button", { name: "Add Link…" }));
+    const dialog = within(screen.getByRole("dialog"));
+    await user.click(dialog.getByRole("radio", { name: "Web address" }));
+    await user.type(dialog.getByRole("textbox", { name: "Web address" }), "example.com");
+    await user.click(dialog.getByRole("button", { name: "Save Link" }));
+
+    const shared = session.history.document.getState().layout.footer.at(-1);
+    expect(shared?.props.buttonLink).toEqual({ kind: "url", href: "https://example.com" });
+    expect(session.history.entries().at(-1)?.label).toBe("Changed shared Hero button link");
     remove();
   });
 
