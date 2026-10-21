@@ -1,5 +1,5 @@
 import type { LayoutDoc, PageDoc, Theme } from "@webforge/model";
-import type { ComponentLibrary } from "@webforge/site-components";
+import type { ComponentLibrary, ResolvedImage } from "@webforge/site-components";
 
 /** Desktop · Tablet · Mobile, or a width in pixels. */
 export type Viewport = "desktop" | "tablet" | "mobile" | number;
@@ -135,6 +135,11 @@ export interface CanvasEngine {
    * `<body>`, so the page looks as it will when exported (1.12). Replaces the previous styles.
    */
   setSiteCss(css: string, bodyClass: string): void;
+  /**
+   * Shows the site's Media images on the canvas (1.16): `image` turns a placed image's media id
+   * into an image to show, or `null`. Called again when Media changes; the page is drawn again.
+   */
+  setImages(image: (mediaId: string) => ResolvedImage | null): void;
   setMode(mode: EditorMode): void;
   /**
    * Does `action` to the selected element. Edits are reported through {@link onUserEdit} as one

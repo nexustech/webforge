@@ -47,6 +47,19 @@ export const panels = {
   "pages.deleteDialog.description":
     "This removes the page and its content. You can undo it afterwards.",
   "pages.deleteDialog.confirm": "Delete Page",
+  // Layers (F-ED-12, Advanced).
+  "layers.title": "Layers",
+  "layers.empty": "This page has no sections yet. Add one from the canvas.",
+  "layers.toolbar": "Layer actions",
+  "layers.hide": "Hide {item}",
+  "layers.show": "Show {item}",
+  "layers.rename": "Rename",
+  "layers.nameField": "Name for this {item}",
+  "layers.history.renamed": "Renamed {item} to '{name}'",
+  "layers.history.unnamed": "Removed the name of {item}",
+  "layers.history.hid": "Hid {item}",
+  "layers.history.showed": "Showed {item}",
+
   // Page Settings (F-SET-2).
   "pageSettings.open": "Page Settings…",
   "pageSettings.title": "Settings for '{name}'",

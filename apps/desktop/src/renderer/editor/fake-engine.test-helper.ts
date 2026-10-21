@@ -63,6 +63,7 @@ export function createFakeEngine(): FakeEngine {
     setZoom: vi.fn(),
     onCanvasSize: () => () => undefined,
     setSiteCss: vi.fn(),
+    setImages: vi.fn(),
     perform: vi.fn(() => true),
     onAddRequest: adds.add,
     onFrameWindow: frames.add,

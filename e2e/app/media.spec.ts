@@ -238,3 +238,79 @@ test("exports a placed photo cut to its crop, as WebP with a JPEG fallback and i
   expect(index).toContain('width="1000" height="1000" alt="Our shop front"');
   expect(index).toContain('style="object-position:50% 40%"');
 });
+
+test("places a Media image on the Hero from the Edit panel, shows it on the canvas and exports it", async () => {
+  // A site with a photo in Media and a Hero without an image.
+  const store = ProjectStore.open(sitePath);
+  try {
+    const { hash } = store.putAsset({
+      mediaId: "shop",
+      data: heroPhoto(),
+      mime: "image/jpeg",
+      width: 1600,
+      height: 1000,
+      originalName: "Shop front.jpg",
+    });
+    const site = createSite({
+      name: "Media",
+      language: "en-GB",
+      homeTitle: "Home",
+      notFoundTitle: "Page not found",
+    });
+    site.media = {
+      ["shop" as MediaId]: {
+        id: "shop" as MediaId,
+        hash,
+        name: "shop-front",
+        fileName: "Shop front.jpg",
+        kind: "image",
+        mimeType: "image/jpeg",
+        width: 1600,
+        height: 1000,
+        alt: "Our shop front",
+      },
+    };
+    const home = site.pages[site.homePageId];
+    if (home === undefined) throw new Error("no home page");
+    home.doc.content = [{ type: "Hero", props: { id: "hero", title: "Fresh bread" } }];
+    store.saveSite(site);
+  } finally {
+    store.close();
+  }
+
+  const page = await openSite();
+  const canvas = page.frameLocator(".editor__canvas iframe");
+  await expect(canvas.locator("style[data-webforge-site-css]")).toHaveCount(1, { timeout: 30_000 });
+  await canvas.locator("h1").click();
+
+  await page.getByRole("button", { name: "Image Choose an image…" }).click();
+  await page.getByRole("button", { name: "Shop front.jpg" }).click();
+  // The canvas shows the photo through the webforge-media: scheme, with its alt text.
+  const shown = canvas.locator("img");
+  await expect(shown).toHaveAttribute("alt", "Our shop front");
+  await expect
+    .poll(() =>
+      shown.evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth > 0),
+    )
+    .toBe(true);
+  expect(await shown.evaluate((image: HTMLImageElement) => image.currentSrc)).toMatch(
+    /^webforge-media:\/\/original\/[0-9a-f]{64}$/,
+  );
+
+  // Alt text for this placement only.
+  const alt = page.getByLabel("Alt text here");
+  await alt.fill("Loaves in the window");
+  await alt.blur();
+  await expect(shown).toHaveAttribute("alt", "Loaves in the window");
+  await expect(page.getByRole("banner").getByRole("status")).toHaveText("Saved", {
+    timeout: 10_000,
+  });
+
+  const folder = join(dir, "exported");
+  await stubFileDialogs(running(), folder);
+  await page.getByRole("button", { name: "Export", exact: true }).click();
+  await expect(page.getByText(/Site exported to “exported”/)).toBeVisible({ timeout: 60_000 });
+  const index = readFileSync(join(folder, "index.html"), "utf8");
+  expect(index).toContain('alt="Loaves in the window"');
+  expect(index).toContain('srcSet="assets/img/shop-front-640.webp 640w');
+});
