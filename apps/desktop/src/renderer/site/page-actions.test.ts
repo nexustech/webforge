@@ -486,11 +486,6 @@ describe("page actions and undo (U8)", () => {
           expect(
             session.history.document.getState().pages[session.ui.getState().pageId],
           ).toBeDefined();
-          // The menu follows the pages: every page, in order, and nothing else (F-ED-17).
-          const site = session.history.document.getState();
-          expect(site.menu.items.map((item) => item.kind === "page" && item.pageId)).toEqual(
-            site.pageOrder.filter((id) => site.pages[id]?.kind === "page"),
-          );
         }
         const end = session.history.document.getState();
 

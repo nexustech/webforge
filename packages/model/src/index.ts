@@ -40,7 +40,6 @@ export {
 } from "./media.js";
 export type { MenuDoc, MenuItem, MenuLeaf } from "./menu.js";
 export { menuDocSchema, menuItemSchema } from "./menu.js";
-export { syncMenuWithPages } from "./menu-sync.js";
 export type {
   MigrateOptions,
   RawSite,

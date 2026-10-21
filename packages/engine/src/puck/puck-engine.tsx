@@ -555,8 +555,10 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
         dictionary={dictionary}
         overrides={overrides}
         iframe={iframe}
-        // The editor's own Edit panel shows the fields (1.14), not Puck's right sidebar.
+        // The editor's own Edit panel shows the fields (1.14), not Puck's right sidebar; its Add
+        // panel (1.13) and Layers (1.24) replace Puck's left one.
         ui={{
+          leftSideBarVisible: false,
           rightSideBarVisible: false,
           // Puck starts with the app's width; without one it picks the view nearest the window's.
           viewports: {
