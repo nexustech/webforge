@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { BINDABLE_SETTINGS, bindingOf, settingValue, settingValues } from "./bindings.js";
+import {
+  BINDABLE_SETTINGS,
+  bindingOf,
+  settingValue,
+  settingValues,
+  validBindings,
+} from "./bindings.js";
 import { defaultSiteSettings } from "./settings.js";
 
 const settings = {
@@ -20,6 +26,15 @@ describe("bindings", () => {
     expect(bindingOf({ siteName: "contact.fax" }, "siteName")).toBeUndefined();
     expect(bindingOf("general.name", "siteName")).toBeUndefined();
     expect(bindingOf(undefined, "siteName")).toBeUndefined();
+    expect(bindingOf({}, "toString")).toBeUndefined();
+  });
+
+  it("keeps the valid bindings when another one isn't, e.g. from a newer version", () => {
+    const bindings = { siteName: "general.name", tagline: "contact.fax", n: 3 };
+
+    expect(bindingOf(bindings, "siteName")).toBe("general.name");
+    expect(validBindings(bindings)).toEqual({ siteName: "general.name" });
+    expect(validBindings(["general.name"])).toEqual({});
   });
 
   it("resolves each setting, treating blank values as empty", () => {

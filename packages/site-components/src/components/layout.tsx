@@ -92,9 +92,12 @@ export const footer: ComponentDef = {
     },
   },
   defaults: { text: t("starter.footer") },
-  render: ({ values, context }) => (
-    <footer className="site-footer footer footer-center bg-base-200 p-8 text-base-content">
-      <p>{boundText(values, "text", context)}</p>
-    </footer>
-  ),
+  render: ({ values, context }) => {
+    const content = boundText(values, "text", context);
+    return (
+      <footer className="site-footer footer footer-center bg-base-200 p-8 text-base-content">
+        {content === null ? null : <p>{content}</p>}
+      </footer>
+    );
+  },
 };

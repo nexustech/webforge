@@ -1,6 +1,6 @@
 import type { EditPanelField } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
-import { type Bindings, bindableSettingSchema, bindingOf, bindingsSchema } from "@webforge/model";
+import { type Bindings, bindableSettingSchema, bindingOf, validBindings } from "@webforge/model";
 import type { FieldDef } from "@webforge/site-components";
 
 /** What the Edit panel's "shows" choice for field `name` is called: `text:shows`. */
@@ -61,13 +61,12 @@ export function bindingLabel(item: string, value: unknown): string {
  * own text again. `undefined` when no field is bound any more, so the prop goes away.
  */
 export function withBinding(bindings: unknown, name: string, value: unknown): Bindings | undefined {
-  const current = bindingsSchema.safeParse(bindings);
-  const next: Record<string, string> = { ...(current.success ? current.data : {}) };
+  const next = validBindings(bindings);
   const setting = bindableSettingSchema.safeParse(value);
   if (setting.success) {
     next[name] = setting.data;
   } else {
     delete next[name];
   }
-  return Object.keys(next).length === 0 ? undefined : (next as Bindings);
+  return Object.keys(next).length === 0 ? undefined : next;
 }

@@ -3,9 +3,9 @@ export {
   BINDABLE_SETTINGS,
   bindableSettingSchema,
   bindingOf,
-  bindingsSchema,
   settingValue,
   settingValues,
+  validBindings,
 } from "./bindings.js";
 export type { LayoutDoc, NodeAdvanced, NodeDoc, PageDoc, SiteCode, Theme } from "./documents.js";
 export {

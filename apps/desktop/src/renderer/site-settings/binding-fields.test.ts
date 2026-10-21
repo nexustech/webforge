@@ -54,6 +54,11 @@ describe("binding fields", () => {
     });
     expect(withBinding({ text: "contact.phone" }, "text", "")).toBeUndefined();
     expect(withBinding("broken", "text", "contact.fax")).toBeUndefined();
+    // Another field's binding this version doesn't know is dropped; the valid ones stay.
+    expect(withBinding({ siteName: "general.name", x: "y" }, "text", "contact.phone")).toEqual({
+      siteName: "general.name",
+      text: "contact.phone",
+    });
     expect(isBindingField("text:shows")).toBe(true);
     expect(isBindingField("text")).toBe(false);
     expect(boundFieldOf("text:shows")).toBe("text");

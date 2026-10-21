@@ -117,9 +117,12 @@ export const heading: ComponentDef = {
     const size = optionValue(values.size, SIZES);
     const Tag = HEADING_TAG[size];
     const colour = COLOUR_CLASS[optionValue(values.color, COLOURS)];
+    const content = boundText(values, "text", context);
+    // Bound to an empty Site Settings value in the export: no empty heading.
+    if (content === null) return null;
     return (
       <Tag className={`site-heading ${HEADING_CLASS[size]}${colour === "" ? "" : ` ${colour}`}`}>
-        {boundText(values, "text", context)}
+        {content}
       </Tag>
     );
   },

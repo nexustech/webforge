@@ -105,10 +105,26 @@ describe("renderNodesToHtml", () => {
     expect(renderNodesToHtml(footer({}), siteLibrary, context)).toContain(
       "<p>Thanks for visiting.</p>",
     );
-    // contact.phone is empty here: the export leaves it out.
+    // contact.phone is empty here: the export leaves it out, with no empty paragraph or heading.
+    const empty = renderNodesToHtml(
+      footer({ bindings: { text: "contact.phone" } }),
+      siteLibrary,
+      context,
+    );
+    expect(empty).toContain("site-footer");
+    expect(empty).not.toContain("<p>");
     expect(
-      renderNodesToHtml(footer({ bindings: { text: "contact.phone" } }), siteLibrary, context),
-    ).toContain("<p></p>");
+      renderNodesToHtml(
+        [
+          {
+            type: "Heading",
+            props: { id: "h", text: "Call", bindings: { text: "contact.phone" } },
+          },
+        ],
+        siteLibrary,
+        context,
+      ),
+    ).toBe("");
     // The canvas shows a hint instead.
     expect(
       renderNodesToHtml(footer({ bindings: { text: "contact.phone" } }), siteLibrary, {

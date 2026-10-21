@@ -27,15 +27,29 @@ export const bindableSettingSchema = z.enum(BINDABLE_SETTINGS);
  * field keeps its own text for when the binding is removed, and the canvas's inline text editing
  * only ever sees strings.
  */
-export const bindingsSchema = z.record(z.string(), bindableSettingSchema);
+export type Bindings = Record<string, BindableSetting>;
 
-/** See {@link bindingsSchema}. */
-export type Bindings = z.infer<typeof bindingsSchema>;
+/**
+ * The valid entries of an element's `props.bindings`. An entry this version doesn't know (a
+ * setting added later) is left out on its own, so it doesn't unbind the element's other fields.
+ */
+export function validBindings(bindings: unknown): Bindings {
+  if (typeof bindings !== "object" || bindings === null || Array.isArray(bindings)) {
+    return {};
+  }
+  // fromEntries defines own properties, so even a "__proto__" entry stays a plain key.
+  return Object.fromEntries(
+    Object.entries(bindings).filter(
+      (entry): entry is [string, BindableSetting] =>
+        bindableSettingSchema.safeParse(entry[1]).success,
+    ),
+  );
+}
 
 /** The binding of field `name` in an element's `props.bindings`, if it has a valid one. */
 export function bindingOf(bindings: unknown, name: string): BindableSetting | undefined {
-  const parsed = bindingsSchema.safeParse(bindings);
-  return parsed.success ? parsed.data[name] : undefined;
+  const valid = validBindings(bindings);
+  return Object.hasOwn(valid, name) ? valid[name] : undefined;
 }
 
 /** The value of a bindable setting, or `undefined` while it is empty. */
