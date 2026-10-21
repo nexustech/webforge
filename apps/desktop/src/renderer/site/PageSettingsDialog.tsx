@@ -46,7 +46,8 @@ export function PageSettingsDialog({
       }}
     >
       {/* The content mounts with each opening, so the form starts from the page every time. */}
-      <DialogContent className="sm:max-w-lg">
+      {/* Taller than a small window can show, so it scrolls instead of hiding Save. */}
+      <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-lg">
         {page !== undefined && (
           <PageSettingsForm site={site} page={page} onSave={onSave} onCancel={onCancel} />
         )}
