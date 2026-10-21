@@ -325,7 +325,8 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
           viewports: {
             current: { width: viewportWidth, height: "auto" },
             options: [],
-            controlsVisible: true,
+            // The canvas toolbar chooses the view and zoom (1.15), not Puck's own controls.
+            controlsVisible: false,
           },
         }}
         viewports={viewportOptions}
