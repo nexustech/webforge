@@ -47,8 +47,12 @@ test("Layers shows in Advanced mode only, and selects in step with the canvas", 
   await row("Heading").click();
   await expect(selected()).toHaveText("Heading");
 
-  // Canvas → Layers.
-  await canvas().getByText(STARTER_TEXT).click();
+  // Canvas → Layers. Near the text's lower edge: the Heading's action bar can cover its top when
+  // the canvas is zoomed out.
+  const text = canvas().getByText(STARTER_TEXT);
+  // In the canvas page's own pixels, which the click position uses, not the zoomed ones on screen.
+  const { width, height } = await text.evaluate((element) => element.getBoundingClientRect());
+  await text.click({ position: { x: width / 2, y: height - 2 } });
   await expect(selected()).toHaveText("Text");
   await expect(row("Text")).toHaveAttribute("aria-selected", "true");
 });
