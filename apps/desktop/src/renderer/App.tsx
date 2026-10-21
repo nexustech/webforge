@@ -28,6 +28,7 @@ import { PanelRegistryProvider } from "./shell/panel-context.js";
 import { createPanelRegistry } from "./shell/panels.js";
 import { ShellLayout } from "./shell/ShellLayout.js";
 import { TitleBar } from "./shell/TitleBar.js";
+import { SiteCommands } from "./start/SiteCommands.js";
 import { AutosaveStatus } from "./storage/AutosaveStatus.js";
 import { registerCrashReportsCommand } from "./storage/crash-reports-command.js";
 import type { LoadedSite } from "./storage/load-site.js";
@@ -216,6 +217,7 @@ export function App({
             </main>
           </div>
           <AboutDialog info={info} />
+          <SiteCommands />
           <Toaster theme={theme} />
         </TooltipProvider>
       </PanelRegistryProvider>
