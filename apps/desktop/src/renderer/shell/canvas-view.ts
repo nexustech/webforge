@@ -15,7 +15,7 @@ export type CanvasSize = {
  * The canvas's zoom and size (F-ED-8). Like the device view, they are view state: never an undo
  * step (U6), and not saved with the site.
  */
-export type CanvasViewState = {
+type CanvasViewState = {
   readonly zoom: CanvasZoom;
   /** Unknown until the canvas has shown the page. */
   readonly size: CanvasSize | null;

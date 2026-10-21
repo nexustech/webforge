@@ -7,7 +7,7 @@ import { useId, useState } from "react";
 import { type CanvasSize, type CanvasZoom, ZOOM_LEVELS } from "./canvas-view.js";
 
 /** The device views' canvas widths, as the canvas engine shows them. */
-export const DEVICE_WIDTHS = { desktop: 1280, tablet: 768, mobile: 375 } as const;
+const DEVICE_WIDTHS = { desktop: 1280, tablet: 768, mobile: 375 } as const;
 
 /** The narrowest and widest custom canvas width. */
 const CUSTOM_WIDTH = { min: 320, max: 2560 } as const;
