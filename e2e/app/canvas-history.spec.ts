@@ -15,6 +15,11 @@ test.beforeEach(async () => {
   pageErrors.length = 0;
   app = await launchDesktopApp();
   page = await app.firstWindow();
+  // Undo History is the left column's second tab, after Add.
+  await page
+    .getByRole("region", { name: "Left panels" })
+    .getByRole("tab", { name: "Undo History" })
+    .click();
   page.on("pageerror", (error) => pageErrors.push(error.message));
   page.on("console", (message) => {
     if (message.type() === "error") pageErrors.push(message.text());

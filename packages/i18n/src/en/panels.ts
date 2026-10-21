@@ -47,6 +47,21 @@ export const panels = {
   "pages.deleteDialog.description":
     "This removes the page and its content. You can undo it afterwards.",
   "pages.deleteDialog.confirm": "Delete Page",
+  // Add panel (F-ED-1): sections and elements to add to the page.
+  "add.title": "Add",
+  "add.kinds": "Sections or elements",
+  "add.sections": "Sections",
+  "add.elements": "Elements",
+  "add.search": "Search sections and elements",
+  "add.searchPlaceholder": "Search",
+  "add.sectionsHint": "Click a section to add it after the selected one.",
+  "add.elementsHint": "Click an element to add it to the selected section.",
+  "add.noSection": "Add a section first: elements go inside sections.",
+  "add.noMatch": "Nothing matches '{query}'.",
+  "add.other": "Other",
+  "add.point.start": "Choose a section to add at the top of the page.",
+  "add.point.after": "Choose a section to add after {item}.",
+  "add.point.cancel": "Cancel",
   // Layers (F-ED-12, Advanced).
   "layers.title": "Layers",
   "layers.empty": "This page has no sections yet. Add one from the canvas.",

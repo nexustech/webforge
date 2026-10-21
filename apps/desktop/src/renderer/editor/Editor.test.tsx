@@ -23,9 +23,9 @@ const compileCss = vi.fn(async () => ({
   bodyClass: "bg-base-100",
 }));
 
-/** Renders the Undo History panel the editor registers, as the window layout would. */
-function UndoHistoryHost() {
-  const panel = usePanels().find((entry) => entry.id === "undoHistory");
+/** Renders a panel the editor registers, as the window layout would. */
+function PanelHost({ id }: { readonly id: string }) {
+  const panel = usePanels().find((entry) => entry.id === id);
   return panel === undefined ? null : <panel.component />;
 }
 
@@ -52,7 +52,8 @@ describe("Editor", () => {
         <CommandRegistryProvider registry={registry}>
           <PanelRegistryProvider registry={panels}>
             <Editor session={session} createEngine={createEngine} compileCss={compileCss} />
-            <UndoHistoryHost />
+            <PanelHost id="undoHistory" />
+            <PanelHost id="add" />
           </PanelRegistryProvider>
         </CommandRegistryProvider>,
       ),
@@ -149,10 +150,40 @@ describe("Editor", () => {
     frame.remove();
   });
 
-  it("adds a section where the floating + asks, as one step", async () => {
-    await act(async () => engine.requestAdd({ index: 1 }));
+  it("opens the Add panel where the floating + asks, and adds the section chosen there", async () => {
+    const shown = vi.fn();
+    panels.onShow(shown);
 
-    expect(session.history.entries().map((entry) => entry.label)).toEqual(["Added Section"]);
+    await act(async () => engine.requestAdd({ index: 0 }));
+    const hero = [...container.querySelectorAll("button")].find((b) => b.textContent === "Hero");
+    await act(async () => hero?.click());
+
+    expect(shown).toHaveBeenCalledWith("add");
+    expect(session.history.entries().map((entry) => entry.label)).toEqual(["Added Hero"]);
+    expect(
+      session.history.document.getState().pages[session.ui.getState().pageId]?.doc.content[0]?.type,
+    ).toBe("Hero");
+  });
+
+  it("hides the Add panel in Content mode", async () => {
+    expect(panels.list().map((panel) => panel.id)).toContain("add");
+
+    await act(async () =>
+      root.render(
+        <CommandRegistryProvider registry={registry}>
+          <PanelRegistryProvider registry={panels}>
+            <Editor
+              session={session}
+              createEngine={createEngine}
+              compileCss={compileCss}
+              mode="content"
+            />
+          </PanelRegistryProvider>
+        </CommandRegistryProvider>,
+      ),
+    );
+
+    expect(panels.list().map((panel) => panel.id)).not.toContain("add");
   });
 
   it("mounts the engine in the canvas and loads the page", () => {
@@ -264,10 +295,11 @@ describe("Editor", () => {
     expect(session.history.state.getState().cursor).toBe(0);
   });
 
-  it("puts Undo History on the left, and the Edit panel and Media on the right", () => {
+  it("puts Add and Undo History on the left, and the Edit panel and Media on the right", () => {
     expect(panels.list()).toEqual([
       expect.objectContaining({ id: "undoHistory", slot: "left.bottom", title: "Undo History" }),
       expect.objectContaining({ id: "edit", slot: "right.top", title: "Edit" }),
+      expect.objectContaining({ id: "add", slot: "left.top", title: "Add" }),
       expect.objectContaining({ id: "media", slot: "right.bottom", title: "Media" }),
     ]);
   });

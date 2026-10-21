@@ -13,6 +13,11 @@ const STARTER_TEXT = "Tell visitors what you do and why they will love it.";
 test.beforeEach(async () => {
   app = await launchDesktopApp();
   page = await app.firstWindow();
+  // Undo History is the left column's second tab, after Add.
+  await page
+    .getByRole("region", { name: "Left panels" })
+    .getByRole("tab", { name: "Undo History" })
+    .click();
   await expect(canvas().locator("style[data-webforge-site-css]")).toHaveCount(1);
 });
 
@@ -116,7 +121,7 @@ test.describe("keyboard and floating add", () => {
     await expect(steps().first()).toHaveText("Edited Heading text");
   });
 
-  test("adds a section with the floating + below a section", async () => {
+  test("adds a section with the floating + below a section, chosen in the Add panel", async () => {
     const section = canvas().locator(".site-section");
     const box = await section.boundingBox();
     if (box === null) throw new Error("Section not visible");
@@ -124,6 +129,14 @@ test.describe("keyboard and floating add", () => {
     await section.click({ force: true, position: { x: 10, y: box.height - 4 } });
 
     await canvas().getByTitle("Add a section here").click();
+    await page
+      .getByRole("region", { name: "Left panels" })
+      .getByRole("button", { name: "Section", exact: true })
+      .click();
+    await page
+      .getByRole("region", { name: "Left panels" })
+      .getByRole("tab", { name: "Undo History" })
+      .click();
 
     await expect(steps().first()).toHaveText("Added Section");
     await expect(canvas().locator(".site-section")).toHaveCount(2);

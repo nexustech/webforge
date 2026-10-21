@@ -70,6 +70,11 @@ test("shows Site Settings values in bound elements, on the canvas and in the exp
   const canvas = page.frameLocator(".editor__canvas iframe");
   const panel = page.getByRole("region", { name: "Right panels" });
   await expect(canvas.locator("style[data-webforge-site-css]")).toHaveCount(1);
+  // Undo History is the left column's second tab, after Add.
+  await page
+    .getByRole("region", { name: "Left panels" })
+    .getByRole("tab", { name: "Undo History" })
+    .click();
 
   // Select the heading by clicking past the end of its text (clicking the text edits it).
   const heading = canvas.locator(".site-heading");
