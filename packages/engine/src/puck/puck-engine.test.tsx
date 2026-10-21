@@ -3,7 +3,7 @@
 import type { PageDoc } from "@webforge/model";
 import { type ComponentLibrary, textValue } from "@webforge/site-components";
 import { act } from "react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CanvasEngine, EngineEdit } from "../canvas-engine.js";
 import { pageActions } from "./page-actions.js";
 import { createPuckEngine } from "./puck-engine.js";
@@ -18,6 +18,12 @@ declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean;
 }
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+
+// Puck's canvas starts a 500 ms timer when it mounts (to show its loader). One left from the last
+// test would fire after the test environment is gone, where React finds no `window`.
+afterAll(async () => {
+  await new Promise((resolve) => setTimeout(resolve, 600));
+});
 
 const library: ComponentLibrary = {
   components: {
