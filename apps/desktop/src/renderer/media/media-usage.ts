@@ -21,10 +21,31 @@ function placedIn(nodes: readonly NodeDoc[], library: ComponentLibrary, into: Se
 }
 
 /**
+ * Media used by the whole site, so on every page: the site icon, the site's share image, and files
+ * the navigation menu links to (menu items hidden in the menu editor included).
+ */
+function usedSiteWide(site: SiteDoc): Set<string> {
+  const used = new Set<string>();
+  const { icon } = site.settings.general;
+  const { shareImage } = site.settings.social;
+  if (icon !== undefined) used.add(icon);
+  if (shareImage !== undefined) used.add(shareImage);
+  const items = site.menu.items.flatMap((item) => (item.kind === "group" ? item.children : [item]));
+  for (const item of items) {
+    if ((item.kind === "link" || item.kind === "button") && item.link.kind === "file") {
+      used.add(item.link.mediaId);
+    }
+  }
+  return used;
+}
+
+/**
  * How many pages use each Media item (1.16): in their content, in the Header or Footer they show,
- * or as the image shown when they are shared. Deleting an image that is used warns with this count.
+ * as the image shown when they are shared, or site-wide (the site icon, the site's share image, a
+ * file the menu links to). Deleting an item that is used warns with this count.
  */
 export function mediaUsage(site: SiteDoc, library: ComponentLibrary): ReadonlyMap<string, number> {
+  const siteWide = usedSiteWide(site);
   const header = new Set<string>();
   const footer = new Set<string>();
   placedIn(site.layout.header, library, header);
@@ -33,7 +54,7 @@ export function mediaUsage(site: SiteDoc, library: ComponentLibrary): ReadonlyMa
   for (const id of site.pageOrder) {
     const page = site.pages[id];
     if (page === undefined) continue;
-    const used = new Set<string>();
+    const used = new Set(siteWide);
     placedIn(page.doc.content, library, used);
     if (!page.settings.hideHeader) for (const mediaId of header) used.add(mediaId);
     if (!page.settings.hideFooter) for (const mediaId of footer) used.add(mediaId);

@@ -1,4 +1,4 @@
-import type { MediaId, NodeDoc, PageEntry, PageId, SiteDoc } from "@webforge/model";
+import type { MediaId, MenuItemId, NodeDoc, PageEntry, PageId, SiteDoc } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { describe, expect, it } from "vitest";
 import { starterSite } from "../editor/starter-site.js";
@@ -62,6 +62,33 @@ describe("mediaUsage", () => {
     // The home page, the "Page not found" page and "about"; "shop" hides the Footer.
     expect(usage.get("logo")).toBe(site.pageOrder.length - 1);
     expect(usage.get("cakes")).toBe(1);
+  });
+
+  it("counts the site icon, the site's share image and files the menu links to on every page", () => {
+    const site = siteWith({ about: [] });
+    site.settings.general.icon = "icon" as MediaId;
+    site.settings.social.shareImage = "share" as MediaId;
+    site.menu.items.push({
+      id: "group" as MenuItemId,
+      kind: "group",
+      hidden: false,
+      label: "More",
+      children: [
+        {
+          id: "prices" as MenuItemId,
+          kind: "link",
+          hidden: true,
+          label: "Prices",
+          link: { kind: "file", mediaId: "prices" as MediaId },
+        },
+      ],
+    });
+
+    const usage = mediaUsage(site, siteLibrary);
+
+    for (const id of ["icon", "share", "prices"]) {
+      expect(usage.get(id)).toBe(site.pageOrder.length);
+    }
   });
 
   it("ignores values that aren't image placements", () => {
