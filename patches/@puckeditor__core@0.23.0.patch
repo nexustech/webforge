@@ -1,5 +1,5 @@
 diff --git a/dist/chunk-55V3NZVF.mjs b/dist/chunk-55V3NZVF.mjs
-index 01fc32e03adc11d014291a99cc8dbee1806880f8..d39df219c35a5af355fdb29144ecdc64538433cb 100644
+index 01fc32e03adc11d014291a99cc8dbee1806880f8..6b07de335c6251e35a720549c06b2cb8fe35a59c 100644
 --- a/dist/chunk-55V3NZVF.mjs
 +++ b/dist/chunk-55V3NZVF.mjs
 @@ -6343,7 +6343,10 @@ var generateUsePuck = (store, getState) => {
@@ -14,6 +14,21 @@ index 01fc32e03adc11d014291a99cc8dbee1806880f8..d39df219c35a5af355fdb29144ecdc64
    };
    return storeData;
  };
+@@ -12605,7 +12608,14 @@ var Canvas = () => {
+   }, [viewports.current.width, viewports]);
+   useEffect26(() => {
+     if (!frameRef.current) return;
++    // Webforge: re-fit only when the frame itself changes size. A scrollbar that the zoom brings
++    // or takes away changes only its content box, and must not undo the zoom.
++    let frameSize = null;
+     const resizeObserver = new ResizeObserver(() => {
++      const frame = frameRef.current;
++      const size = frame ? `${frame.offsetWidth}x${frame.offsetHeight}` : null;
++      if (size === frameSize) return;
++      frameSize = size;
+       if (!isResizingRef.current) {
+         resetAutoZoom();
+       }
 diff --git a/dist/chunk-K2LNXU54.mjs b/dist/chunk-K2LNXU54.mjs
 index 81075c39650a79a9eccf7cefffdc7a65cbd00c97..8aa13a1baf0ca0ad724ca2b5a2377b79c1d4742e 100644
 --- a/dist/chunk-K2LNXU54.mjs
@@ -37,7 +52,7 @@ index 81075c39650a79a9eccf7cefffdc7a65cbd00c97..8aa13a1baf0ca0ad724ca2b5a2377b79
            fields: __spreadProps(__spreadValues({}, s.fields), { fields: defaultFields, id })
          }));
 diff --git a/dist/index.js b/dist/index.js
-index aebc9c0e4d4eed1a407ea72d0d1469d16544d834..c7ed2f87dd2b96828a5d06a79c52a696f0213e58 100644
+index aebc9c0e4d4eed1a407ea72d0d1469d16544d834..73bceb2a9e387f6256ad8acfa650ad9fa3f1b0be 100644
 --- a/dist/index.js
 +++ b/dist/index.js
 @@ -3084,7 +3084,7 @@ var init_permissions = __esm({
@@ -70,8 +85,23 @@ index aebc9c0e4d4eed1a407ea72d0d1469d16544d834..c7ed2f87dd2b96828a5d06a79c52a696
    };
    return storeData;
  };
+@@ -18741,7 +18744,14 @@ var Canvas = () => {
+   }, [viewports.current.width, viewports]);
+   (0, import_react102.useEffect)(() => {
+     if (!frameRef.current) return;
++    // Webforge: re-fit only when the frame itself changes size. A scrollbar that the zoom brings
++    // or takes away changes only its content box, and must not undo the zoom.
++    let frameSize = null;
+     const resizeObserver = new ResizeObserver(() => {
++      const frame = frameRef.current;
++      const size = frame ? `${frame.offsetWidth}x${frame.offsetHeight}` : null;
++      if (size === frameSize) return;
++      frameSize = size;
+       if (!isResizingRef.current) {
+         resetAutoZoom();
+       }
 diff --git a/dist/no-external.js b/dist/no-external.js
-index af3fa6755f42679605e6805aa46fdeb90df48281..f758618bfb282d6da1e8ca7661501679a02cf170 100644
+index af3fa6755f42679605e6805aa46fdeb90df48281..fd0757bac650e702c91cb2ea6d83e80d8aea51e4 100644
 --- a/dist/no-external.js
 +++ b/dist/no-external.js
 @@ -3084,7 +3084,7 @@ var init_permissions = __esm({
@@ -104,3 +134,18 @@ index af3fa6755f42679605e6805aa46fdeb90df48281..f758618bfb282d6da1e8ca7661501679
    };
    return storeData;
  };
+@@ -18741,7 +18744,14 @@ var Canvas = () => {
+   }, [viewports.current.width, viewports]);
+   (0, import_react102.useEffect)(() => {
+     if (!frameRef.current) return;
++    // Webforge: re-fit only when the frame itself changes size. A scrollbar that the zoom brings
++    // or takes away changes only its content box, and must not undo the zoom.
++    let frameSize = null;
+     const resizeObserver = new ResizeObserver(() => {
++      const frame = frameRef.current;
++      const size = frame ? `${frame.offsetWidth}x${frame.offsetHeight}` : null;
++      if (size === frameSize) return;
++      frameSize = size;
+       if (!isResizingRef.current) {
+         resetAutoZoom();
+       }
