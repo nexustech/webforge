@@ -1,6 +1,7 @@
 // Editor UI: the editor's theme tokens and compact shadcn/ui components (UI1). The theme's CSS is
 // imported separately as "@webforge/editor-ui/theme.css".
 
+export { ChoiceField } from "./components/edit/choice-field.js";
 export type { EditPanelField, EditPanelProps, FieldGroup } from "./components/edit/edit-panel.js";
 export { EditPanel } from "./components/edit/edit-panel.js";
 export type {
@@ -10,7 +11,9 @@ export type {
 } from "./components/edit/field-registry.js";
 export { fieldRenderer, registerFieldRenderer } from "./components/edit/field-registry.js";
 export { SelectField } from "./components/edit/select-field.js";
+export { SliderField } from "./components/edit/slider-field.js";
 export { fieldControlClass, TextField } from "./components/edit/text-field.js";
+export { ToggleField } from "./components/edit/toggle-field.js";
 export {
   AlertDialog,
   AlertDialogAction,

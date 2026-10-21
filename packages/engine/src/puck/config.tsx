@@ -16,7 +16,11 @@ function toPuckField(field: FieldDef): Field {
     case "select":
       return { type: "select", label: field.label, options: [...field.options] };
     case "media":
-      // Phase 0: the media id as text; Phase 1 adds a media picker field.
+    // The Edit panel (1.14) edits these; Puck only needs to know the field exists.
+    case "toggle":
+    case "slider":
+    case "color":
+    case "spacing":
       return { type: "text", label: field.label };
     case "slot":
       return {

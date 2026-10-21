@@ -1,5 +1,11 @@
 import { t } from "@webforge/i18n";
-import { type ComponentDef, optionValue, slotComponent, textValue } from "../library.js";
+import {
+  type ComponentDef,
+  optionValue,
+  responsiveClasses,
+  slotComponent,
+  textValue,
+} from "../library.js";
 
 const SIZES = ["large", "medium", "small"] as const;
 const HEADING_TAG = { large: "h1", medium: "h2", small: "h3" } as const;
@@ -13,27 +19,64 @@ const PADDINGS = ["medium", "small", "large"] as const;
 // Design tokens (C4): users choose a size, never a raw value.
 const PADDING_CLASS = { small: "py-8", medium: "py-16", large: "py-24" } as const;
 
+/** Space between a section's elements, smallest first (the slider's steps). */
+const GAPS = ["none", "small", "medium", "large"] as const;
+const GAP_CLASS = {
+  none: "space-y-0",
+  small: "space-y-3",
+  medium: "space-y-6",
+  large: "space-y-10",
+};
+
+/** Text colours from the site's theme; `default` adds no class. */
+const COLOURS = ["default", "primary", "secondary", "accent"] as const;
+const COLOUR_CLASS = {
+  default: "",
+  primary: "text-primary",
+  secondary: "text-secondary",
+  accent: "text-accent",
+} as const;
+
 /** A page band holding elements. Keeps the `site-section` hook for tests and developers. */
 export const section: ComponentDef = {
   label: t("section.section"),
   fields: {
     padding: {
-      kind: "select",
+      kind: "spacing",
       label: t("field.padding"),
-      options: PADDINGS.map((value) => ({ label: t(`field.padding.${value}`), value })),
+      responsive: true,
+      options: (["small", "medium", "large"] as const).map((value) => ({
+        label: t(`field.padding.${value}`),
+        value,
+      })),
     },
+    gap: {
+      kind: "slider",
+      label: t("field.gap"),
+      responsive: true,
+      steps: GAPS.map((value) => ({ label: t(`field.gap.${value}`), value })),
+    },
+    fullWidth: { kind: "toggle", label: t("field.fullWidth"), group: "style" },
     content: {
       kind: "slot",
       label: t("field.content"),
       allow: ["Heading", "Text", "Faq"],
     },
   },
-  defaults: { padding: "medium", content: [] },
+  defaults: { padding: "medium", gap: "medium", fullWidth: false, content: [] },
   render: (props) => {
     const Content = slotComponent(props, "content");
-    const padding = PADDING_CLASS[optionValue(props.values.padding, PADDINGS)];
+    const padding = responsiveClasses<string>(
+      props.values.padding,
+      (value) => PADDING_CLASS[optionValue(value, PADDINGS)],
+    );
+    const gap = responsiveClasses<string>(
+      props.values.gap,
+      (value) => GAP_CLASS[optionValue(value, ["medium", ...GAPS])],
+    );
+    const width = props.values.fullWidth === true ? "" : "max-w-4xl ";
     return (
-      <section className={`site-section mx-auto max-w-4xl space-y-6 px-4 ${padding}`}>
+      <section className={`site-section mx-auto ${width}${gap} px-4 ${padding}`}>
         <Content />
       </section>
     );
@@ -50,12 +93,22 @@ export const heading: ComponentDef = {
       label: t("field.size"),
       options: SIZES.map((size) => ({ label: t(`field.size.${size}`), value: size })),
     },
+    color: {
+      kind: "color",
+      label: t("field.color"),
+      options: COLOURS.map((value) => ({ label: t(`field.color.${value}`), value })),
+    },
   },
-  defaults: { text: t("element.heading"), size: "medium" },
+  defaults: { text: t("element.heading"), size: "medium", color: "default" },
   render: ({ values }) => {
     const size = optionValue(values.size, SIZES);
     const Tag = HEADING_TAG[size];
-    return <Tag className={`site-heading ${HEADING_CLASS[size]}`}>{textValue(values.text)}</Tag>;
+    const colour = COLOUR_CLASS[optionValue(values.color, COLOURS)];
+    return (
+      <Tag className={`site-heading ${HEADING_CLASS[size]}${colour === "" ? "" : ` ${colour}`}`}>
+        {textValue(values.text)}
+      </Tag>
+    );
   },
 };
 

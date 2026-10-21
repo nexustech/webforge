@@ -6,19 +6,29 @@ export type FieldSpec = {
   readonly kind: string;
   /** Already translated. */
   readonly label: string;
-  /** For `select`: the choices, labels already translated. */
+  /** For `select`, `color` and `spacing`: the choices, labels already translated. */
   readonly options?: readonly { readonly label: string; readonly value: string }[];
+  /** For `slider`: its steps, smallest first, labels already translated. */
+  readonly steps?: readonly { readonly label: string; readonly value: string }[];
 };
 
 /** Props every field renderer gets. */
 export type FieldRendererProps = {
   /** Unique within the panel; the control's DOM id, so its label points at it. */
   readonly id: string;
+  /** The label's DOM id, for controls a `<label for>` can't name (groups): `aria-labelledby`. */
+  readonly labelId: string;
   readonly field: FieldSpec;
   readonly value: unknown;
-  /** The value changed. Called on every keystroke of a text field, once per choice of a select. */
+  /**
+   * The value changed. Called on every keystroke of a text field and every step of a slider drag,
+   * once per choice elsewhere.
+   */
   onChange(value: unknown): void;
-  /** The user is done with the field (it lost focus): a run of changes ends here. */
+  /**
+   * The user is done with the field: it lost focus, a slider was let go, a choice was made. A run
+   * of changes (typing, a drag) ends here.
+   */
   onCommit(): void;
 };
 

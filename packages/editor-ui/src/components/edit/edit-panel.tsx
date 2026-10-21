@@ -1,9 +1,12 @@
 import { t } from "@webforge/i18n";
 import { useId } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs.js";
+import { ChoiceField } from "./choice-field.js";
 import { type FieldRenderer, type FieldSpec, fieldRenderer } from "./field-registry.js";
 import { SelectField } from "./select-field.js";
+import { SliderField } from "./slider-field.js";
 import { TextField } from "./text-field.js";
+import { ToggleField } from "./toggle-field.js";
 
 /** Which tab a field belongs on (Content for what it says, Style for how it looks). */
 export type FieldGroup = "content" | "style";
@@ -12,7 +15,10 @@ export type FieldGroup = "content" | "style";
 export type EditPanelField = FieldSpec & {
   readonly name: string;
   readonly group: FieldGroup;
+  /** The value for the device being viewed. */
   readonly value: unknown;
+  /** The value is set for this device only, overriding Desktop's (F-ED-4). */
+  readonly overridden?: boolean;
 };
 
 /** Props of {@link EditPanel}. */
@@ -23,10 +29,21 @@ export type EditPanelProps = {
   onChange(name: string, value: unknown): void;
   /** The user is done with a field (it lost focus, or a choice was made). */
   onCommit(name: string): void;
+  /** The device being viewed, translated ("Mobile"), named in the override marker. */
+  readonly device?: string | undefined;
+  /** Drops a field's override, so the device uses the Desktop value again. */
+  onReset?(name: string): void;
 };
 
 /** The renderers every Edit panel has; `registerFieldRenderer` adds kinds or replaces these. */
-const BUILT_IN: Readonly<Record<string, FieldRenderer>> = { text: TextField, select: SelectField };
+const BUILT_IN: Readonly<Record<string, FieldRenderer>> = {
+  text: TextField,
+  select: SelectField,
+  toggle: ToggleField,
+  slider: SliderField,
+  color: ChoiceField,
+  spacing: ChoiceField,
+};
 
 const rendererFor = (kind: string) => fieldRenderer(kind) ?? BUILT_IN[kind];
 
@@ -35,6 +52,8 @@ function FieldList({
   fields,
   onChange,
   onCommit,
+  device,
+  onReset,
 }: Omit<EditPanelProps, "heading"> & { readonly idPrefix: string }) {
   if (fields.length === 0) {
     return <p className="p-3 text-xs text-muted-foreground">{t("editPanel.noFields")}</p>;
@@ -44,13 +63,37 @@ function FieldList({
       {fields.map((field) => {
         const Renderer = rendererFor(field.kind) as FieldRenderer;
         const id = `${idPrefix}-${field.name}`;
+        const labelId = `${id}-label`;
         return (
           <div key={field.name} className="flex flex-col gap-1">
-            <label htmlFor={id} className="text-xs text-muted-foreground">
-              {field.label}
-            </label>
+            <div className="flex items-center gap-1.5">
+              <label id={labelId} htmlFor={id} className="text-xs text-muted-foreground">
+                {field.label}
+              </label>
+              {field.overridden === true ? (
+                <>
+                  <span
+                    className="inline-flex items-center gap-1 rounded-sm bg-accent px-1 text-2xs text-accent-foreground"
+                    data-override
+                  >
+                    <span aria-hidden className="size-1.5 rounded-full bg-ring" />
+                    {t("editPanel.override", { device: device ?? "" })}
+                  </span>
+                  {onReset === undefined ? null : (
+                    <button
+                      type="button"
+                      className="ml-auto text-2xs text-info underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+                      onClick={() => onReset(field.name)}
+                    >
+                      {t("editPanel.useDesktop")}
+                    </button>
+                  )}
+                </>
+              ) : null}
+            </div>
             <Renderer
               id={id}
+              labelId={labelId}
               field={field}
               value={field.value}
               onChange={(value) => onChange(field.name, value)}
@@ -67,7 +110,14 @@ function FieldList({
  * The Edit panel (1.14): the selected element's fields on a Content and a Style tab, each drawn
  * by its kind's renderer. It only shows and reports; the app records each change in the history.
  */
-export function EditPanel({ heading, fields, onChange, onCommit }: EditPanelProps) {
+export function EditPanel({
+  heading,
+  fields,
+  onChange,
+  onCommit,
+  device,
+  onReset,
+}: EditPanelProps) {
   const idPrefix = useId();
   if (heading === undefined) {
     return (
@@ -99,6 +149,8 @@ export function EditPanel({ heading, fields, onChange, onCommit }: EditPanelProp
             fields={content}
             onChange={onChange}
             onCommit={onCommit}
+            device={device}
+            {...(onReset === undefined ? {} : { onReset })}
           />
         </TabsContent>
         <TabsContent value="style" className="overflow-auto">
@@ -107,6 +159,8 @@ export function EditPanel({ heading, fields, onChange, onCommit }: EditPanelProp
             fields={style}
             onChange={onChange}
             onCommit={onCommit}
+            device={device}
+            {...(onReset === undefined ? {} : { onReset })}
           />
         </TabsContent>
       </Tabs>

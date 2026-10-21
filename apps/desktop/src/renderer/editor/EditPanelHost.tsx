@@ -12,6 +12,10 @@ function rendererKind(field: FieldDef): string | undefined {
   switch (field.kind) {
     case "text":
     case "select":
+    case "toggle":
+    case "slider":
+    case "color":
+    case "spacing":
       return field.kind;
     // Rich text is edited on the canvas (1.23), images in their own field (1.16), slots by
     // dragging elements in.
