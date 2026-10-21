@@ -22,6 +22,8 @@ export type ClosableWindow = {
   isDestroyed(): boolean;
   readonly webContents: {
     send(channel: string, ...args: unknown[]): void;
+    /** A crashed renderer can't answer, and has nothing left to save. */
+    isCrashed(): boolean;
     on(
       event: "before-input-event",
       listener: (event: { preventDefault(): void }, input: KeyInput) => void,
@@ -44,7 +46,8 @@ function isSaveShortcut(input: KeyInput): boolean {
  * Asks the renderer to save before its window closes (P2: "on close"): the first close is held
  * back, the renderer gets `app:flush` and answers `project:flushed` once its autosave has written
  * every change, and then the window closes for real. A renderer that doesn't answer within 5 s
- * (hung, crashed) doesn't keep the window open; the file then holds the last completed save.
+ * (hung) doesn't keep the window open; the file then holds the last completed save. A crashed
+ * renderer isn't asked at all, so its window closes at once (#121).
  *
  * Ctrl/Cmd+S uses the same request. The main process sees every key press in the window, including
  * those typed into the canvas iframe, which the renderer's own key handlers never get.
@@ -71,6 +74,10 @@ export function createFlushOnClose(
   /** Sends `app:flush` and resolves when the renderer answers or the timeout passes. */
   const requestFlush = (window: ClosableWindow): Promise<void> =>
     new Promise((resolve) => {
+      if (window.webContents.isCrashed()) {
+        resolve();
+        return;
+      }
       const id = nextId++;
       const done = () => {
         clearTimeout(timer);
