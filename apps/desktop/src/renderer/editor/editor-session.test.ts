@@ -79,6 +79,37 @@ describe("connectEngine", () => {
     vi.useRealTimers();
   });
 
+  it("records an edit of the shared Footer in the site's layout, for every page (F-ED-7)", () => {
+    const { session, engine, doc, labels, about } = setup();
+    const layout = session.history.document.getState().layout;
+    const [footer] = layout.footer;
+    if (footer === undefined) throw new Error("no footer");
+    const page = doc();
+
+    engine.edit({
+      kind: "text",
+      nodeId: footer.props.id,
+      componentType: "Footer",
+      field: "text",
+      page,
+      selection: footer.props.id,
+      shared: true,
+      layout: { ...layout, footer: [{ ...footer, props: { ...footer.props, text: "Bye" } }] },
+    });
+
+    const site = session.history.document.getState();
+    expect(site.layout.footer[0]?.props.text).toBe("Bye");
+    expect(doc()).toBe(page);
+    expect(labels()).toEqual(["Edited shared Footer text"]);
+    // Shown with the layout, so the canvas has it whatever page it shows.
+    session.showPage(about);
+    session.history.undo();
+    expect(engine.applyChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ layout: expect.objectContaining({ footer: [footer] }) }),
+    );
+    expect(session.history.document.getState().layout.footer[0]).toEqual(footer);
+  });
+
   it("records canvas edits as labelled steps in the document store", () => {
     const { engine, doc, labels } = setup();
     const page = { ...starterPage(), content: [] };

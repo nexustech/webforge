@@ -12,13 +12,13 @@ import {
 // Puck's default stylesheet loads the Inter font from rsms.me; Webforge makes no external requests.
 import "@puckeditor/core/no-external.css";
 import { t } from "@webforge/i18n";
-import type { PageDoc } from "@webforge/model";
+import type { LayoutDoc, PageDoc } from "@webforge/model";
 import {
   type ComponentLibrary,
   EDITOR_RENDER_CONTEXT,
   type RenderContext,
 } from "@webforge/site-components";
-import { type ReactNode, useEffect } from "react";
+import { type ComponentProps, type ReactNode, useEffect } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import type {
@@ -35,12 +35,20 @@ import { preserveCaret } from "./caret.js";
 import { applyChromeStyles, createSelectionOutline, QuickActionBar } from "./chrome.js";
 import { toPuckConfig } from "./config.js";
 import { puckDictionary } from "./dictionary.js";
-import { editFromAction, selectedNodeId } from "./edit-from-action.js";
+import { editFromAction, selectedNodeId, toPageDoc } from "./edit-from-action.js";
 import { pageActions, type SlotsOf } from "./page-actions.js";
 import { performOnSelected } from "./selected-actions.js";
+import {
+  composePage,
+  EMPTY_LAYOUT,
+  isShared,
+  isSharedRegion,
+  sameOrder,
+  splitPage,
+} from "./shared-layout.js";
 import { applySiteStyles, type SiteStyles } from "./site-styles.js";
 import { staleRichText } from "./stale-rich-text.js";
-import { allNodes, findNode } from "./tree.js";
+import { allNodes, findNode, nodeAt } from "./tree.js";
 
 /** Options of {@link createPuckEngine}. */
 export type PuckEngineOptions = {
@@ -140,6 +148,8 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
    * as the app's own object, so its next change can be recognised by reference.
    */
   let page: PageDoc = EMPTY_PAGE;
+  /** The shared Header and Footer the canvas shows around the page (F-ED-7). */
+  let layout: LayoutDoc = EMPTY_LAYOUT;
   /** Bumped whenever the app gives the engine a different page. */
   let revision = 0;
   /** The revision Puck shows; behind `revision` while the app's page hasn't reached Puck yet. */
@@ -201,7 +211,11 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   /** Sends `page` to Puck, unless Puck isn't ready yet (then the Bridge sends it once it is). */
   const showPage = () => {
     if (getPuck !== null) {
-      dispatch({ type: "setData", data: () => toPuckData(page), recordHistory: false });
+      dispatch({
+        type: "setData",
+        data: () => toPuckData(composePage(page, layout)),
+        recordHistory: false,
+      });
       shownRevision = revision;
     }
   };
@@ -282,6 +296,63 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   const selectorFor = (id: string | null) =>
     id === null ? null : (getPuck?.().getSelectorForId(id) ?? null);
 
+  /**
+   * Puts Puck's view back in step with the page and layout, from `shown`, what Puck shows now: the
+   * Header and Footer in their places, the page's content between them (F-ED-7). Runs after Puck's
+   * own update, where a dispatch would be lost.
+   */
+  const realign = (shown: PageDoc) => {
+    queueMicrotask(() => {
+      const wanted = composePage(page, layout);
+      if (getPuck === null || sameOrder(shown, wanted)) {
+        return;
+      }
+      const actions = pageActions(shown, wanted, slotsOf);
+      if (actions === null) {
+        showPage();
+      } else {
+        for (const action of actions) dispatch({ ...action, recordHistory: false });
+      }
+    });
+  };
+
+  /**
+   * Reports an edit Puck made to the page as the canvas shows it, split back into the page and the
+   * shared layout (F-ED-7). An edit inside the Header or Footer goes to the layout, which every page
+   * shows. The Header and Footer themselves can't be moved, duplicated or deleted from the canvas:
+   * Puck's view is put back instead. A page element Puck shows above the Header or below the Footer
+   * belongs to the page, and goes back between them.
+   */
+  const reportEdit = (edit: EngineEdit, action: PuckAction, prev: AppState) => {
+    const before = toPageDoc(prev.data);
+    const touched =
+      action.type === "duplicate"
+        ? nodeAt(before, action.sourceZone, action.sourceIndex)?.props.id
+        : action.type === "remove"
+          ? nodeAt(before, action.zone, action.index)?.props.id
+          : edit.kind === "move"
+            ? edit.nodeId
+            : null;
+    if (typeof touched === "string" && isSharedRegion(layout, touched)) {
+      realign(edit.page);
+      return;
+    }
+    const shared = edit.nodeId !== null && edit.kind !== "insert" && isShared(layout, edit.nodeId);
+    const split = splitPage(edit.page, layout);
+    const reported: EngineEdit = shared
+      ? { ...edit, page, shared: true, layout: split.layout }
+      : { ...edit, page: split.page };
+    page = reported.page;
+    if (shared) layout = split.layout;
+    reporting = true;
+    try {
+      edits.emit(reported);
+    } finally {
+      reporting = false;
+    }
+    realign(edit.page);
+  };
+
   const handleAction = (action: PuckAction, next: AppState, prev: AppState) => {
     inAction = true;
     try {
@@ -291,13 +362,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       if (library !== null) {
         const edit = editFromAction(action, next, prev, library);
         if (edit !== null) {
-          page = edit.page;
-          reporting = true;
-          try {
-            edits.emit(edit);
-          } finally {
-            reporting = false;
-          }
+          reportEdit(edit, action, prev);
         }
       }
       // After the edit, so the history records the selection from before it.
@@ -364,6 +429,17 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     return <>{children}</>;
   }
 
+  /** The quick actions, locked on the shared Header or Footer itself (F-ED-7). */
+  function SharedAwareActionBar(props: ComponentProps<typeof QuickActionBar>) {
+    const selectedId = usePuck((state) => state.selectedItem?.props.id ?? null);
+    return (
+      <QuickActionBar
+        {...props}
+        locked={selectedId !== null && isSharedRegion(layout, selectedId)}
+      />
+    );
+  }
+
   function CanvasFrame({ children, document }: { children: ReactNode; document?: Document }) {
     useEffect(() => {
       frameDocument = document ?? null;
@@ -396,8 +472,13 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     puck: Bridge,
     iframe: CanvasFrame,
     // Selection chrome (1.12): magenta outlines and the selected element's quick actions.
-    componentOverlay: createSelectionOutline(addRequests.emit),
-    actionBar: QuickActionBar,
+    componentOverlay: createSelectionOutline((at) =>
+      // The floating + counts the Header's nodes; the app adds to the page's own content.
+      addRequests.emit({
+        index: Math.min(Math.max(at.index - layout.header.length, 0), page.content.length),
+      }),
+    ),
+    actionBar: SharedAwareActionBar,
   };
 
   /** The Puck config for `library`, rendering with the current editor revisions and context. */
@@ -415,7 +496,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     root.render(
       <Puck
         config={config}
-        data={toPuckData(page)}
+        data={toPuckData(composePage(page, layout))}
         onAction={handleAction}
         dictionary={dictionary}
         overrides={overrides}
@@ -461,8 +542,9 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       shownRevision = revision;
     },
 
-    loadPage(nextPage) {
+    loadPage(nextPage, nextLayout) {
       page = nextPage;
+      layout = nextLayout;
       revision++;
       editorRevisions.clear();
       reportSelection(null);
@@ -470,30 +552,32 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       dispatch({ type: "setUi", ui: { itemSelector: null } });
     },
 
-    applyChange({ page: nextPage }) {
+    applyChange({ page: nextPage, layout: nextLayout = layout }) {
       if (reporting) {
         // The document store just took over the edit Puck reported: same content, nothing to show.
         page = nextPage;
+        layout = nextLayout;
         return;
       }
-      if (nextPage === page) {
+      if (nextPage === page && nextLayout === layout) {
         return;
       }
+      const before = composePage(page, layout);
+      const after = composePage(nextPage, nextLayout);
       if (library !== null) {
-        for (const id of staleRichText(library, page, nextPage, frameDocument)) {
+        for (const id of staleRichText(library, before, after, frameDocument)) {
           editorRevisions.set(id, (editorRevisions.get(id) ?? 0) + 1);
         }
-        const ids = new Set(allNodes(nextPage).map((node) => node.props.id));
+        const ids = new Set(allNodes(after).map((node) => node.props.id));
         for (const id of editorRevisions.keys()) {
           if (!ids.has(id)) editorRevisions.delete(id);
         }
       }
       // Only what changed, unless Puck shows an older page or the change is too big to translate.
       const actions =
-        getPuck !== null && shownRevision === revision
-          ? pageActions(page, nextPage, slotsOf)
-          : null;
+        getPuck !== null && shownRevision === revision ? pageActions(before, after, slotsOf) : null;
       page = nextPage;
+      layout = nextLayout;
       revision++;
       preserveCaret(frameDocument);
       if (actions === null) {
@@ -503,7 +587,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
         shownRevision = revision;
       }
       // Puck selects by position; keep the same element selected, or none if it is gone.
-      if (selection !== null && findNode(nextPage, selection) === undefined) {
+      if (selection !== null && findNode(after, selection) === undefined) {
         selection = null;
         selections.emit(null);
       }

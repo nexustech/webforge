@@ -142,6 +142,15 @@ type ActionBarProps = {
   readonly parentAction: ReactNode;
 };
 
+/** Props of {@link QuickActionBar}. */
+type QuickActionBarProps = ActionBarProps & {
+  /**
+   * The shared Header or Footer itself (F-ED-7): it can't be moved, duplicated or deleted from the
+   * canvas, so the bar shows only its name.
+   */
+  readonly locked?: boolean;
+};
+
 /**
  * Whether the action bar holding `marker` is the selected element's. Puck also shows the bar of a
  * hovered element, and its props don't say which element it belongs to; the outline beside it
@@ -238,7 +247,12 @@ function useKeptInFrame() {
  * own duplicate and delete (and the rich-text format menu while text is edited). Every action is
  * one Puck action, so it reaches the history as one labelled step through the usual edit path.
  */
-export function QuickActionBar({ label, children, parentAction }: ActionBarProps) {
+export function QuickActionBar({
+  label,
+  children,
+  parentAction,
+  locked = false,
+}: QuickActionBarProps) {
   const kept = useKeptInFrame();
   return (
     <div ref={kept}>
@@ -247,10 +261,12 @@ export function QuickActionBar({ label, children, parentAction }: ActionBarProps
           {parentAction}
           {label === undefined ? null : <ActionBar.Label label={label} />}
         </ActionBar.Group>
-        <ActionBar.Group>
-          <MoveActions />
-          {children}
-        </ActionBar.Group>
+        {locked ? null : (
+          <ActionBar.Group>
+            <MoveActions />
+            {children}
+          </ActionBar.Group>
+        )}
       </ActionBar>
     </div>
   );

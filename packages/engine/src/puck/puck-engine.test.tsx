@@ -525,6 +525,122 @@ describe("createPuckEngine canvas size and zoom (1.15)", () => {
   });
 });
 
+describe("createPuckEngine with a shared Header and Footer (F-ED-7)", () => {
+  let element: HTMLDivElement;
+  let engine: CanvasEngine;
+  const layout = {
+    header: [{ type: "Heading", props: { id: "h", text: "Shop" } }],
+    footer: [{ type: "Heading", props: { id: "f", text: "Thanks" } }],
+  };
+
+  beforeEach(async () => {
+    element = document.createElement("div");
+    document.body.append(element);
+    engine = createPuckEngine({ iframe: false });
+    await act(async () => {
+      engine.mount(element, { library, theme: { name: "test" } });
+      engine.loadPage(page, layout);
+    });
+    await settle();
+  });
+
+  afterEach(async () => {
+    engine.destroy();
+    await settle();
+    element.remove();
+  });
+
+  const headings = () => [...element.querySelectorAll(".t-heading")].map((h) => h.textContent);
+  /** Types into the inline text of the heading at `index` on the canvas. */
+  const typeInto = async (index: number, text: string) => {
+    const field = element.querySelectorAll<HTMLElement>(".t-heading [data-puck-overlay-portal]")[
+      index
+    ];
+    await act(async () => {
+      if (field === undefined) return;
+      field.innerText = text;
+      field.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await settle();
+  };
+
+  it("shows the Header, the page and the Footer", () => {
+    expect(headings()).toEqual(["Shop", "First", "Second", "Thanks"]);
+  });
+
+  it("reports an edit in the Footer as shared, with the layout, and leaves the page alone", async () => {
+    const edits: EngineEdit[] = [];
+    engine.onUserEdit((edit) => edits.push(edit));
+
+    await typeInto(3, "Thank you");
+
+    expect(edits).toHaveLength(1);
+    expect(edits[0]).toMatchObject({ kind: "text", nodeId: "f", shared: true });
+    expect(edits[0]?.layout?.footer[0]?.props.text).toBe("Thank you");
+    expect(edits[0]?.page.content.map((node) => node.props.id)).toEqual(["a", "b"]);
+  });
+
+  it("reports a page edit with the page's own content only", async () => {
+    const edits: EngineEdit[] = [];
+    engine.onUserEdit((edit) => edits.push(edit));
+
+    await typeInto(1, "Changed");
+
+    expect(edits[0]?.shared).toBeUndefined();
+    expect(edits[0]?.page.content.map((node) => node.props.text)).toEqual(["Changed", "Second"]);
+  });
+
+  it("doesn't let the Footer itself be deleted, and keeps showing it", async () => {
+    const edits: EngineEdit[] = [];
+    engine.onUserEdit((edit) => edits.push(edit));
+    await act(async () => engine.select("f"));
+    await settle();
+
+    await act(async () => {
+      engine.perform("delete");
+    });
+    await settle();
+
+    expect(edits).toEqual([]);
+    expect(headings()).toEqual(["Shop", "First", "Second", "Thanks"]);
+  });
+
+  it("shows a layout change from outside, such as an undo", async () => {
+    await act(async () =>
+      engine.applyChange({
+        page,
+        layout: { ...layout, footer: [{ type: "Heading", props: { id: "f", text: "Bye" } }] },
+      }),
+    );
+    await settle();
+
+    expect(headings()).toEqual(["Shop", "First", "Second", "Bye"]);
+  });
+
+  it("adds a section within the page's own content with the floating +", async () => {
+    const requests: unknown[] = [];
+    engine.onAddRequest((at) => requests.push(at));
+
+    for (const id of ["h", "b", "f"]) {
+      await act(async () => engine.select(id));
+      await settle();
+      await act(async () => element.querySelector<HTMLButtonElement>(".wf-add")?.click());
+    }
+
+    // After the Header: the page's start; after the Footer: the page's end.
+    expect(requests).toEqual([{ index: 0 }, { index: 2 }, { index: 2 }]);
+  });
+
+  it("offers no move, duplicate or delete on the Header or Footer itself", async () => {
+    await act(async () => engine.select("f"));
+    await settle();
+
+    // Puck's own Layers list has its own Delete buttons; the quick actions are the action bar's.
+    expect(element.querySelector('[class*="ActionBarAction"][title="Delete"]')).toBeNull();
+    expect(element.querySelector('[title="Move up"]')).toBeNull();
+  });
+});
+
 describe("createPuckEngine before mount", () => {
   it("cannot render static HTML without a library", () => {
     expect(() => createPuckEngine().renderStatic(page, NO_LAYOUT)).toThrow(/Mount/);
