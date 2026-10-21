@@ -168,6 +168,16 @@ export interface CanvasEngine {
   /** The floating + between sections was clicked; the app decides what to add there. */
   onAddRequest(cb: (at: InsertPoint) => void): Unsubscribe;
   /**
+   * Makes `element`, outside the canvas (an Add panel item, 1.13), drag a new `componentType` onto
+   * it, with the canvas's drop indicators and only where that element may go (F-ED-1). The drop is
+   * reported through {@link onUserEdit} as one `insert` edit that selects the new element. The
+   * engine fills `element` with a see-through handle, so give it `position: relative`; clicks still
+   * reach the element, though a click doesn't focus it (Puck's handle prevents the mouse-down). The
+   * handle can't be focused or seen by screen readers: the element keeps its own keyboard use.
+   * Until the returned call, which removes the handle.
+   */
+  addDragSource(element: HTMLElement, componentType: string): Unsubscribe;
+  /**
    * The canvas iframe's window whenever it changes (`null` when it goes), so the app can handle its
    * keyboard shortcuts there too.
    */

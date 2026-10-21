@@ -36,6 +36,7 @@ import { applyChromeStyles, createSelectionOutline, QuickActionBar } from "./chr
 import { toPuckConfig } from "./config.js";
 import { deferredCommands } from "./deferred-commands.js";
 import { puckDictionary } from "./dictionary.js";
+import { createDragSources } from "./drag-sources.js";
 import { editFromAction, selectedNodeId, toPageDoc } from "./edit-from-action.js";
 import { pageActions, type SlotsOf } from "./page-actions.js";
 import { performOnSelected } from "./selected-actions.js";
@@ -194,6 +195,9 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
 
   const edits = emitter<EngineEdit>();
   const addRequests = emitter<InsertPoint>();
+  const dragSources = createDragSources(
+    (componentType) => library?.components[componentType]?.label ?? componentType,
+  );
   const frameWindows = emitter<Window | null>();
   const selections = emitter<string | null>();
   const canvasSizes = emitter<CanvasSize>();
@@ -464,7 +468,12 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
         sizeFrame = null;
       };
     }, []);
-    return <>{children}</>;
+    return (
+      <>
+        {children}
+        <dragSources.Portals />
+      </>
+    );
   }
 
   /** The quick actions, locked on the shared Header or Footer itself (F-ED-7). */
@@ -712,6 +721,8 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     },
 
     onAddRequest: addRequests.add,
+
+    addDragSource: dragSources.add,
 
     onFrameWindow(cb) {
       const current = frameDocument?.defaultView;
