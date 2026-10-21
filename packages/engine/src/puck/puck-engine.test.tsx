@@ -4,7 +4,7 @@ import type { PageDoc } from "@webforge/model";
 import { boundText, type ComponentLibrary, textValue } from "@webforge/site-components";
 import { act } from "react";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { CanvasEngine, CanvasSize, EngineEdit } from "../canvas-engine.js";
+import type { CanvasEngine, CanvasSize, EngineEdit, Unsubscribe } from "../canvas-engine.js";
 import { pageActions } from "./page-actions.js";
 import { createPuckEngine } from "./puck-engine.js";
 
@@ -445,6 +445,29 @@ describe("createPuckEngine", () => {
     );
     await settle();
     expect(headings()).toEqual(["0123"]);
+  });
+
+  it("makes an element outside the canvas a drag source for a new element, until removed (1.13)", async () => {
+    const item = document.createElement("button");
+    item.style.position = "relative";
+    document.body.append(item);
+    const clicks = vi.fn();
+    item.addEventListener("click", clicks);
+
+    let remove: Unsubscribe = () => undefined;
+    await act(async () => {
+      remove = engine.addDragSource(item, "Heading");
+    });
+    const handle = item.querySelector<HTMLElement>(".wf-drag-source [data-puck-drawer-item]");
+    expect(handle).not.toBeNull();
+    // The name shows only on the chip that follows the pointer while dragging.
+    expect(item.querySelector(".wf-drag-source__label")?.textContent).toBe("Heading");
+    handle?.click();
+    expect(clicks).toHaveBeenCalledTimes(1);
+
+    await act(async () => remove());
+    expect(item.querySelector(".wf-drag-source")).toBeNull();
+    item.remove();
   });
 
   it("renders a page to static HTML", () => {
