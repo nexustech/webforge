@@ -1,7 +1,8 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { createSite, type MediaId } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
 import { heroPhoto } from "@webforge/test-utils";
 import { launchDesktopApp } from "./launch.js";
@@ -172,4 +173,68 @@ test("adds a photo in the Media panel, describes and crops it, and keeps it in t
   } finally {
     store.close();
   }
+});
+
+test("exports a placed photo cut to its crop, as WebP with a JPEG fallback and its alt text", async () => {
+  // A site whose Hero shows a cropped photo with alt text, as the Media panel and Edit panel leave it.
+  const photo = heroPhoto();
+  const store = ProjectStore.open(sitePath);
+  try {
+    const { hash } = store.putAsset({
+      mediaId: "shop",
+      data: photo,
+      mime: "image/jpeg",
+      width: 1600,
+      height: 1000,
+      originalName: "Shop front.jpg",
+    });
+    const site = createSite({
+      name: "Media",
+      language: "en-GB",
+      homeTitle: "Home",
+      notFoundTitle: "Page not found",
+    });
+    site.media = {
+      ["shop" as MediaId]: {
+        id: "shop" as MediaId,
+        hash,
+        name: "shop-front",
+        fileName: "Shop front.jpg",
+        kind: "image",
+        mimeType: "image/jpeg",
+        width: 1600,
+        height: 1000,
+        alt: "Our shop front",
+        focal: { x: 0.5, y: 0.4 },
+        crop: { x: 0.1875, y: 0, width: 0.625, height: 1 },
+      },
+    };
+    const home = site.pages[site.homePageId];
+    if (home === undefined) throw new Error("no home page");
+    home.doc.content = [
+      { type: "Hero", props: { id: "hero", title: "Fresh bread", image: { mediaId: "shop" } } },
+    ];
+    store.saveSite(site);
+  } finally {
+    store.close();
+  }
+
+  const page = await openSite();
+  const folder = join(dir, "exported");
+  await stubFileDialogs(running(), folder);
+  await page.getByRole("button", { name: "Export", exact: true }).click();
+  await expect(page.getByText(/Site exported to “exported”/)).toBeVisible({ timeout: 60_000 });
+
+  // Cut to the square crop (1000 × 1000), so exported at 640 and 1000 wide.
+  expect(readdirSync(join(folder, "assets", "img")).sort()).toEqual([
+    "shop-front-1000.jpg",
+    "shop-front-1000.webp",
+    "shop-front-640.jpg",
+    "shop-front-640.webp",
+  ]);
+  const index = readFileSync(join(folder, "index.html"), "utf8");
+  expect(index).toContain('type="image/webp" srcSet="assets/img/shop-front-640.webp 640w');
+  expect(index).toContain('src="assets/img/shop-front-1000.jpg"');
+  expect(index).toContain('width="1000" height="1000" alt="Our shop front"');
+  expect(index).toContain('style="object-position:50% 40%"');
 });
