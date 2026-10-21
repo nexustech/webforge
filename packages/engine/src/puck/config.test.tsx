@@ -60,6 +60,24 @@ describe("toPuckConfig", () => {
     });
   });
 
+  it("gives an element with bindable text a field for its bindings, so Puck leaves them as they are", () => {
+    const bound = toPuckConfig({
+      components: {
+        Heading: {
+          label: "Heading",
+          fields: {
+            text: { kind: "text", label: "Text", inline: true, bindable: ["contact.phone"] },
+          },
+          defaults: {},
+          render: () => null,
+        },
+      },
+    }).components.Heading as ComponentConfig;
+
+    expect(bound.fields?.bindings).toEqual({ type: "object", objectFields: {} });
+    expect(component("Text").fields).not.toHaveProperty("bindings");
+  });
+
   it("keeps labels and defaults and hides Puck's default page fields", () => {
     expect(component("Text").label).toBe("Text");
     expect(component("Text").defaultProps).toEqual({ title: "Title" });

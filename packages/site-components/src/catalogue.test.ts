@@ -60,9 +60,18 @@ describe("starter content", () => {
     expect(section[0]?.props.text).toBe("Sorry, this page doesn't exist");
   });
 
-  it("puts the site name in the header", () => {
+  it("puts the site name in the header, bound to Site Settings' name", () => {
     expect(starterLayout("Rosa's Bakery")).toEqual({
-      header: [{ type: "Header", props: { id: "header", siteName: "Rosa's Bakery" } }],
+      header: [
+        {
+          type: "Header",
+          props: {
+            id: "header",
+            siteName: "Rosa's Bakery",
+            bindings: { siteName: "general.name" },
+          },
+        },
+      ],
       footer: [{ type: "Footer", props: { id: "footer", text: "Thanks for visiting." } }],
     });
   });
