@@ -5,6 +5,8 @@ export const history = {
   "history.deleted": "Deleted {item}",
   "history.duplicated": "Duplicated {item}",
   "history.editedText": "Edited {item} text",
+  // For components with several text fields: "Edited Hero button text".
+  "history.editedField": "Edited {item} {field}",
   "history.changed": "Changed {item} {field}",
   "history.changedPage": "Changed page settings",
   "history.editedPage": "Edited page",

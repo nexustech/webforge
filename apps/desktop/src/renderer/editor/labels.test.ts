@@ -48,6 +48,16 @@ describe("labelFor", () => {
     expect(labelFor(edit(kind, extra), siteLibrary)).toBe(expected);
   });
 
+  it("names the text field for elements with several texts, like a Hero", () => {
+    const hero = (field: string) =>
+      labelFor(edit("text", { componentType: "Hero", field }), siteLibrary);
+
+    expect(hero("buttonLabel")).toBe("Edited Hero button text");
+    expect(hero("title")).toBe("Edited Hero title");
+    // One text only: no field name, as on the canvas.
+    expect(labelFor(edit("text", { field: "text" }), siteLibrary)).toBe("Edited Heading text");
+  });
+
   it("names an element by the name it has in Layers", () => {
     expect(labelFor(edit("text", { nodeId: "h", field: "text", page: named }), siteLibrary)).toBe(
       "Edited 'Opening times' text",
