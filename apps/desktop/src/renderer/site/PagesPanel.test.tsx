@@ -105,7 +105,8 @@ describe("PagesPanel (F-ED-13)", () => {
     await openMenu("Team");
     await userEvent.click(screen.getByRole("menuitem", { name: "Rename…" }));
     // The dialog opens once the menu has closed, with its field focused and its text selected:
-    // typing replaces the name without a click (the closing menu used to take the focus).
+    // typing replaces the name without a click. (happy-dom doesn't take focus back as a closing
+    // menu does in the app; pages.spec.ts checks that in the real app.)
     const field = await screen.findByRole("textbox", { name: "Page name" });
     expect((field as HTMLInputElement).value).toBe("Team");
     expect(document.activeElement).toBe(field);
