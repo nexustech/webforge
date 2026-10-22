@@ -64,6 +64,17 @@ export const site = {
   "site.media.field.altHint": "Leave empty to use the image's own alt text from Media.",
   "site.media.field.altFrom": "From Media: {alt}",
   "site.media.field.altNone": "The image has no alt text in Media yet",
+  "site.clipboard.history.pasted": "Pasted {item}",
+  "site.clipboard.history.pastedMany": "Pasted {count} elements",
+  "site.clipboard.history.cut": "Cut {item}",
+  "site.clipboard.nothing": "There's nothing to paste. Copy a section or element first.",
+  "site.clipboard.cantPaste":
+    "That {item} can't go here. Select a place that takes it, then paste.",
+  "site.clipboard.sharedRegion":
+    "The {item} is on every page, so it can't be copied or cut. Its elements can.",
+  "site.clipboard.copyFailed": "Webforge couldn't copy that.",
+  "site.clipboard.pasteFailed": "Webforge couldn't paste that.",
+  "site.clipboard.readOnly": "This site is read-only, so nothing can be pasted into it.",
   "site.settings.command": "Site Settings…",
   "site.binding.shows": "{field} shows",
   "site.binding.ownText": "Text typed here",

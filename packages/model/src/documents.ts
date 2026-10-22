@@ -69,7 +69,8 @@ export const nodeAdvancedSchema: z.ZodType<NodeAdvanced> = z.strictObject({
   anchorId: anchorIdSchema.optional(),
 });
 
-const nodeDocSchema: z.ZodType<NodeDoc> = z.object({
+/** A node as files and IPC carry it; slot arrays inside its props are not checked here. */
+export const nodeDocSchema: z.ZodType<NodeDoc> = z.object({
   type: z.string().min(1),
   // Props are component-specific; slot arrays inside them are checked when the tree is walked.
   props: z.looseObject({
