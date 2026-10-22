@@ -396,7 +396,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
         : undefined;
     if (copy !== undefined) {
       const at = page.content.indexOf(copy);
-      const added = newSharedCopy(page.content, copy.props.sharedSectionId);
+      const added = newSharedCopy(page.content, copy.props.sharedSectionId, shared, layout);
       const content = [...page.content];
       content.splice(at + 1, 0, added);
       page = { ...page, content };

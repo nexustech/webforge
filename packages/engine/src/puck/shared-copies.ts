@@ -1,4 +1,5 @@
 import {
+  copiedAnchor,
   copiedNodeId,
   isNodeDoc,
   isSharedCopy,
@@ -17,24 +18,43 @@ function sectionOf(shared: SharedSectionsDoc, copy: Copy): NodeDoc | undefined {
   return Object.hasOwn(shared, id) ? shared[id]?.section : undefined;
 }
 
+/** The anchors of `node` and everything in it, by element id. */
+function anchorsById(node: NodeDoc, found = new Map<string, string>()): Map<string, string> {
+  const anchor = node.props.advanced?.anchorId;
+  if (anchor !== undefined) found.set(node.props.id, anchor);
+  for (const value of Object.values(node.props)) {
+    if (Array.isArray(value)) for (const item of value.filter(isNodeDoc)) anchorsById(item, found);
+  }
+  return found;
+}
+
 /**
- * `node`, shown in `copy`, as its shared section holds it: ids and anchors back as they are there.
- * An element added inside the copy keeps the id Puck gave it.
+ * `node`, shown in `copy`, as its shared section holds it: ids and anchors back as they are there
+ * (`anchors`, the section's by id; a long one the copy shortened included). An element added
+ * inside the copy keeps the id Puck gave it.
  */
-function fromCopy(node: NodeDoc, copy: Copy): NodeDoc {
+function fromCopy(node: NodeDoc, copy: Copy, anchors: ReadonlyMap<string, string>): NodeDoc {
   const prefix = copiedNodeId(copy.props.id, "");
-  const suffix = copy.props.anchorSuffix === undefined ? undefined : `-${copy.props.anchorSuffix}`;
+  const suffix = copy.props.anchorSuffix;
   const props: Record<string, unknown> = {};
   for (const [name, value] of Object.entries(node.props)) {
     props[name] = Array.isArray(value)
-      ? value.map((item) => (isNodeDoc(item) ? fromCopy(item, copy) : item))
+      ? value.map((item) => (isNodeDoc(item) ? fromCopy(item, copy, anchors) : item))
       : value;
   }
   const id = node.props.id;
   props.id = id.startsWith(prefix) ? id.slice(prefix.length) : id;
   const anchor = node.props.advanced?.anchorId;
-  if (anchor !== undefined && suffix !== undefined && anchor.endsWith(suffix)) {
-    props.advanced = { ...node.props.advanced, anchorId: anchor.slice(0, -suffix.length) };
+  if (anchor !== undefined && suffix !== undefined) {
+    const original = anchors.get(props.id as string);
+    const end = `-${suffix}`;
+    const anchorId =
+      original !== undefined && copiedAnchor(original, suffix) === anchor
+        ? original
+        : anchor.endsWith(end)
+          ? anchor.slice(0, -end.length)
+          : anchor;
+    props.advanced = { ...node.props.advanced, anchorId };
   }
   return { type: node.type, props: props as NodeDoc["props"] };
 }
@@ -102,8 +122,9 @@ export function foldCopies(
     }
     content.push(copy);
     const section = sectionOf(shared, copy);
-    const now = fromCopy(node, copy);
-    if (section !== undefined && !sameValue(now, section)) {
+    if (section === undefined) continue;
+    const now = fromCopy(node, copy, anchorsById(section));
+    if (!sameValue(now, section)) {
       changedCopies++;
       sections.set(copy.props.sharedSectionId, { section: now, copyId: copy.props.id });
     }

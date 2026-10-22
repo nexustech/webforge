@@ -100,6 +100,22 @@ describe("foldCopies (F-ED-23)", () => {
     expect(foldCopies(now, own, shared).sections.size).toBe(0);
   });
 
+  it("folds an anchor the copy shortened back to the section's own", () => {
+    const long = `a${"-b".repeat(31)}c`;
+    const section = shared[HOURS]?.section as NodeDoc;
+    const withLong: SharedSectionsDoc = {
+      [HOURS]: {
+        id: HOURS,
+        name: "Opening hours",
+        section: { ...section, props: { ...section.props, advanced: { anchorId: long } } },
+      },
+    };
+    const now = structuredClone(expandSharedCopies(own, withLong));
+    expect((now[2] as NodeDoc).props.advanced?.anchorId).not.toContain(long);
+
+    expect(foldCopies(now, own, withLong).sections.size).toBe(0);
+  });
+
   it("gives an element added inside a copy the copy's id for it, and leaves other ids", () => {
     const changed = {
       copyId: "c2",
