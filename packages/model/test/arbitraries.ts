@@ -1,5 +1,5 @@
 import fc from "fast-check";
-import type { MediaId, MenuItemId, PageId } from "../src/ids.js";
+import type { MediaId, MenuItemId, PageId, SharedSectionId } from "../src/ids.js";
 import type { LinkValue } from "../src/link.js";
 import type { MediaMeta } from "../src/media.js";
 import type { MenuItem } from "../src/menu.js";
@@ -196,6 +196,13 @@ export const siteDocArbitrary: fc.Arbitrary<SiteDoc> = fc
           media: Object.fromEntries(items.map((item) => [item.id, item])),
           code: { css: "", js: "", head: "", bodyEnd: "" },
           menu: menuDoc,
+          sharedSections: {
+            ["shared-hours" as SharedSectionId]: {
+              id: "shared-hours" as SharedSectionId,
+              name: "Opening hours",
+              section: { type: "Section", props: { id: "hours", content: [] } },
+            },
+          },
         }),
       );
   });

@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { act, cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { LinkPicker, RichTextAt } from "@webforge/engine";
 import type { MediaId, RichTextLink } from "@webforge/model";

@@ -92,7 +92,7 @@ export function pagesChangedByDeleting(site: SiteDoc, pageId: PageId): number {
   const others = site.pageOrder.filter((id) => id !== pageId && site.pages[id] !== undefined);
   const linking = new Set(
     findBrokenLinks({ ...site, pages: rest })
-      .filter((link) => link.pageId === pageId)
+      .filter((link) => "pageId" in link && link.pageId === pageId)
       .map((link) => link.on),
   );
   const shared = linking.has("menu") || linking.has("header") || linking.has("footer");

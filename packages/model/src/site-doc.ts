@@ -12,9 +12,10 @@ import { mediaIdSchema, newId, type PageId, pageIdSchema } from "./ids.js";
 import { mediaMetaSchema } from "./media.js";
 import { type MenuItem, menuDocSchema } from "./menu.js";
 import { defaultSiteSettings, siteSettingsSchema } from "./settings.js";
+import { containsCopy, copyIssues, sharedSectionsDocSchema } from "./shared-sections.js";
 
 /** The format of {@link SiteDoc} this build writes. Bumped with a migration and a fixture. */
-export const SITE_FORMAT_VERSION = 2;
+export const SITE_FORMAT_VERSION = 3;
 
 const SEGMENT = "[a-z0-9]+(?:-[a-z0-9]+)*";
 
@@ -114,6 +115,8 @@ const siteDocObjectSchema = z
     media: z.record(mediaIdSchema, mediaMetaSchema),
     code: siteCodeSchema,
     menu: menuDocSchema,
+    /** Shared sections (F-ED-23): saved once, placed on pages as linked copies. */
+    sharedSections: sharedSectionsDocSchema,
   })
   .superRefine((site, ctx) => {
     const issue = (message: string, path: PropertyKey[]) =>
@@ -136,6 +139,16 @@ const siteDocObjectSchema = z
           key,
           "folder",
         ]);
+      }
+      for (const { message, path } of copyIssues(page.doc.content)) {
+        issue(message, ["pages", key, "doc", "content", ...path]);
+      }
+    }
+
+    // Copies of shared sections go on pages, never in the Header or Footer (F-ED-23).
+    for (const region of ["header", "footer"] as const) {
+      if (containsCopy(site.layout[region])) {
+        issue("The Header and Footer can't hold a copy of a shared section", ["layout", region]);
       }
     }
 
@@ -240,5 +253,6 @@ export function createSite(options: CreateSiteOptions): SiteDoc {
       follows: "pages",
       items: [{ id: newId("menuItem"), kind: "page", pageId: homeId, hidden: false }],
     },
+    sharedSections: {},
   };
 }

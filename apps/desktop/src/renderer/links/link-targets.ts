@@ -1,18 +1,26 @@
 import { t } from "@webforge/i18n";
 import {
   anchorIdSchema,
+  copiedAnchor,
+  copyHolding,
+  expandSharedCopies,
+  isSharedCopy,
   type LinkValue,
   type NodeDoc,
   type PageId,
+  pageAnchors,
   type SiteDoc,
   slugify,
 } from "@webforge/model";
 import type { ComponentLibrary } from "@webforge/site-components";
 
-/** A section a link can go to: a top-level element of a page. */
+/**
+ * A section a link can go to: a top-level element of a page, or the section a copy of a shared
+ * section shows there (F-ED-23), under the id and anchor the copy gives it.
+ */
 type SectionTarget = {
   readonly nodeId: string;
-  /** Its name in Layers, else its component's ("Opening times", "Hero"). */
+  /** Its name in Layers or its shared section's, else its component's ("Opening times", "Hero"). */
   readonly label: string;
   /** Its anchor, if it has one already. */
   readonly anchorId: string | undefined;
@@ -35,45 +43,80 @@ export function linkTargets(site: SiteDoc, library: ComponentLibrary): PageTarge
   return site.pageOrder.flatMap((id) => {
     const page = site.pages[id];
     if (page === undefined) return [];
-    const sections = page.doc.content.map((node) => ({
-      nodeId: node.props.id,
-      label: node.props.layerName?.trim() || (library.components[node.type]?.label ?? node.type),
-      anchorId: anchorOf(node),
-    }));
+    const sections = page.doc.content.flatMap((node) => {
+      const shared = isSharedCopy(node)
+        ? site.sharedSections[node.props.sharedSectionId]
+        : undefined;
+      return expandSharedCopies([node], site.sharedSections).map((shown) => ({
+        nodeId: shown.props.id,
+        label:
+          shown.props.layerName?.trim() ||
+          shared?.name ||
+          (library.components[shown.type]?.label ?? shown.type),
+        anchorId: anchorOf(shown),
+      }));
+    });
     return [{ id, title: page.title, sections }];
   });
 }
 
-/** Every anchor in use on page `pageId`: its own elements' and the shared Header and Footer's. */
-function anchorsOn(site: SiteDoc, pageId: PageId): Set<string> {
-  const found = new Set<string>();
-  const walk = (nodes: readonly unknown[]) => {
-    for (const node of nodes as NodeDoc[]) {
-      const anchor = anchorOf(node);
-      if (anchor !== undefined) found.add(anchor);
-      for (const value of Object.values(node.props)) {
-        if (Array.isArray(value)) walk(value);
-      }
-    }
-  };
-  walk([...site.layout.header, ...(site.pages[pageId]?.doc.content ?? []), ...site.layout.footer]);
-  return found;
+/**
+ * Whether an anchor given to section `nodeId` of page `pageId` would clash with one in use. A
+ * section in a copy gets its anchor in its shared section, so every copy of it shows it, on every
+ * page: as each copy gives it (`hours-2`), it must be free on each of those pages.
+ */
+function clashes(site: SiteDoc, pageId: PageId, nodeId: string): (anchor: string) => boolean {
+  const { sharedSections: shared, layout } = site;
+  const content = site.pages[pageId]?.doc.content ?? [];
+  const copy = copyHolding(content, nodeId);
+  if (copy === undefined) {
+    const taken = pageAnchors(content, shared, layout);
+    return (anchor) => taken.has(anchor);
+  }
+  const places = Object.values(site.pages).flatMap(({ doc }) => {
+    const copies = doc.content
+      .filter(isSharedCopy)
+      .filter((node) => node.props.sharedSectionId === copy.props.sharedSectionId);
+    const taken =
+      copies.length === 0 ? new Set<string>() : pageAnchors(doc.content, shared, layout);
+    return copies.map((node) => ({ taken, suffix: node.props.anchorSuffix }));
+  });
+  return (anchor) => places.some(({ taken, suffix }) => taken.has(copiedAnchor(anchor, suffix)));
 }
 
 /**
- * A new anchor for a section that is linked to for the first time (F-ED-18): made from its name
- * ("Opening times" → `opening-times`), starting with a letter, and unique on its page.
+ * A new anchor for section `nodeId` of page `pageId`, linked to for the first time (F-ED-18): made
+ * from its name ("Opening times" → `opening-times`), starting with a letter, and unique on its page
+ * (on every page with a copy, for a section in a copy of a shared section).
  */
-export function newAnchorFor(site: SiteDoc, pageId: PageId, label: string): string {
+export function newAnchorFor(site: SiteDoc, pageId: PageId, nodeId: string, label: string): string {
   const base = slugify(label);
   const start = /^[a-z]/.test(base) ? base : `section-${base}`;
   const stem = start.slice(0, 56).replace(/-+$/, "");
-  const taken = anchorsOn(site, pageId);
+  const taken = clashes(site, pageId, nodeId);
   let anchor = stem;
-  for (let number = 2; taken.has(anchor) || !anchorIdSchema.safeParse(anchor).success; number++) {
+  for (let number = 2; taken(anchor) || !anchorIdSchema.safeParse(anchor).success; number++) {
     anchor = `${stem}-${number}`;
   }
   return anchor;
+}
+
+/**
+ * Where a link to `target`, a section of page `pageId`, goes: its anchor, as the page shows it.
+ * When it has none yet, also the anchor to give it (`given`); for a section in a copy, that goes
+ * in the shared section, and the link to the anchor this copy gives it (`hours-2`).
+ */
+export function sectionAnchor(
+  site: SiteDoc,
+  pageId: PageId,
+  target: SectionTarget,
+): { readonly anchor: string; readonly given?: string } {
+  if (target.anchorId !== undefined) {
+    return { anchor: target.anchorId };
+  }
+  const given = newAnchorFor(site, pageId, target.nodeId, target.label);
+  const copy = copyHolding(site.pages[pageId]?.doc.content ?? [], target.nodeId);
+  return { anchor: copiedAnchor(given, copy?.props.anchorSuffix), given };
 }
 
 /**

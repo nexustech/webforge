@@ -37,10 +37,7 @@ function giveAnchor(
   }
   const { pageId } = session.ui.getState();
   const node = at === null ? undefined : findNode(shown.content, (n) => n.props.id === at.nodeId);
-  const recipe = (draft: SiteDoc) => {
-    const target = draft.pages[anchor.pageId];
-    if (target !== undefined) applyAnchor(target.doc, page.doc, anchor);
-  };
+  const recipe = (draft: SiteDoc) => applyAnchor(draft, site, anchor);
   if (at === null || node === undefined) {
     const section = findNode(page.doc.content, (n) => n.props.id === anchor.nodeId);
     const label = changedLabel(

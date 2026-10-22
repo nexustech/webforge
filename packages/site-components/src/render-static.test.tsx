@@ -1,4 +1,9 @@
-import type { NodeDoc } from "@webforge/model";
+import {
+  expandSharedCopies,
+  type NodeDoc,
+  SHARED_COPY_TYPE,
+  type SharedSectionId,
+} from "@webforge/model";
 import { describe, expect, it } from "vitest";
 import { siteLibrary, starterLayout, starterPage } from "./catalogue.js";
 import { EDITOR_RENDER_CONTEXT, type RenderContext, type ResolvedImage } from "./library.js";
@@ -449,6 +454,27 @@ describe("tree helpers", () => {
     ];
 
     expect([...mediaUsedBy(nodes, siteLibrary)]).toEqual(["hero"]);
+  });
+
+  it("leaves a copy of a shared section hidden in Layers out of the export (F-ED-12, F-ED-23)", () => {
+    const id = "shared-hours" as SharedSectionId;
+    const section: NodeDoc = {
+      type: "Section",
+      props: { id: "s", content: [{ type: "Heading", props: { id: "h", text: "Opening hours" } }] },
+    };
+    const shared = { [id]: { id, name: "Hours", section } };
+    const copy = (copyId: string, hidden: boolean): NodeDoc => ({
+      type: SHARED_COPY_TYPE,
+      props: { id: copyId, sharedSectionId: id, ...(hidden ? { hidden } : {}) },
+    });
+
+    const html = renderNodesToHtml(
+      expandSharedCopies([copy("c1", true), copy("c2", false)], shared),
+      siteLibrary,
+      context,
+    );
+
+    expect(html.match(/Opening hours/g)).toHaveLength(1);
   });
 
   it("leaves hidden nodes, and everything in them, out of the export (F-ED-12)", () => {

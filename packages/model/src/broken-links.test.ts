@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { findBrokenLinks } from "./broken-links.js";
 import type { NodeDoc } from "./documents.js";
-import type { MediaId, PageId } from "./ids.js";
+import type { MediaId, PageId, SharedSectionId } from "./ids.js";
+import { SHARED_COPY_TYPE } from "./shared-sections.js";
 import { createSite, type SiteDoc } from "./site-doc.js";
 
 const ABOUT = "page-about" as PageId;
@@ -58,6 +59,39 @@ describe("findBrokenLinks (F-ED-18)", () => {
         ]),
       ),
     ).toEqual([]);
+  });
+
+  it("finds sections in copies of shared sections, by each copy's anchor (F-ED-23)", () => {
+    const HOURS = "shared-hours" as SharedSectionId;
+    const withCopies = site([
+      button("first", { kind: "page", pageId: ABOUT, anchor: "hours" }),
+      button("second", { kind: "page", pageId: ABOUT, anchor: "hours-2" }),
+      button("third", { kind: "page", pageId: ABOUT, anchor: "hours-3" }),
+    ]);
+    withCopies.sharedSections = {
+      [HOURS]: {
+        id: HOURS,
+        name: "Opening hours",
+        section: {
+          type: "Section",
+          props: {
+            id: "s",
+            advanced: { anchorId: "hours" },
+            content: [button("inside", { kind: "page", pageId: "page-gone" })],
+          },
+        },
+      },
+    };
+    withCopies.pages[ABOUT]?.doc.content.push(
+      { type: SHARED_COPY_TYPE, props: { id: "c1", sharedSectionId: HOURS } },
+      { type: SHARED_COPY_TYPE, props: { id: "c2", sharedSectionId: HOURS, anchorSuffix: "2" } },
+    );
+
+    expect(findBrokenLinks(withCopies)).toEqual([
+      { on: withCopies.homePageId, nodeId: "third", pageId: ABOUT, anchor: "hours-3" },
+      // A link inside the shared section is on every page with a copy: named by the section.
+      { on: HOURS, nodeId: "inside", pageId: "page-gone" },
+    ]);
   });
 
   it("keeps a link to a section valid when the section is renamed in Layers", () => {

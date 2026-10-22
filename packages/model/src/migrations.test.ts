@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import v1Site from "../test/fixtures/v1/site.json" with { type: "json" };
 import v2Site from "../test/fixtures/v2/site.json" with { type: "json" };
+import v3Site from "../test/fixtures/v3/site.json" with { type: "json" };
 import {
   MIGRATIONS,
   migrateSite,
@@ -22,17 +23,21 @@ function formatError(run: () => unknown): SiteFormatError {
 }
 
 describe("migrateSite", () => {
-  it("opens the format 2 fixture unchanged", () => {
-    const site = migrateSite(v2Site);
+  it("opens the format 3 fixture unchanged, with its shared section and linked copy", () => {
+    const site = migrateSite(v3Site);
 
-    expect(site).toEqual(v2Site);
+    expect(site).toEqual(v3Site);
     expect(site.formatVersion).toBe(SITE_FORMAT_VERSION);
   });
 
-  it("opens the format 1 fixture as format 2", () => {
+  it("opens the format 2 fixture as format 3, with no shared sections yet", () => {
+    expect(migrateSite(v2Site)).toEqual({ ...v2Site, formatVersion: 3, sharedSections: {} });
+  });
+
+  it("opens the format 1 fixture as format 3", () => {
     // Fixtures of released formats are never deleted: every old site must keep opening. This one
     // already has its Hero image in the format 2 shape.
-    expect(migrateSite(v1Site)).toEqual({ ...v1Site, formatVersion: 2 });
+    expect(migrateSite(v1Site)).toEqual({ ...v1Site, formatVersion: 3, sharedSections: {} });
   });
 
   it("opens a new site after a JSON round trip", () => {

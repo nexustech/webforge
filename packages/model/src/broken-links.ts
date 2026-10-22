@@ -1,7 +1,8 @@
-import { isNodeDoc, type NodeDoc } from "./documents.js";
-import type { MediaId, PageId } from "./ids.js";
+import { anchorsIn, isNodeDoc, type NodeDoc } from "./documents.js";
+import type { MediaId, PageId, SharedSectionId } from "./ids.js";
 import { linkValueSchema } from "./link.js";
 import { richTextFileLinks, richTextPageLinks } from "./rich-text-links.js";
+import { expandSharedCopies } from "./shared-sections.js";
 import type { SiteDoc } from "./site-doc.js";
 
 /**
@@ -9,8 +10,11 @@ import type { SiteDoc } from "./site-doc.js";
  * what it points at that is gone, a page (or a section of one) or a document in Media (1.28).
  */
 export type BrokenLink = {
-  /** The page the link is on; `"header"` or `"footer"` for the shared layout, `"menu"`. */
-  readonly on: PageId | "header" | "footer" | "menu";
+  /**
+   * The page the link is on; `"header"` or `"footer"` for the shared layout, `"menu"`, or a shared
+   * section's id (F-ED-23): a link there is on every page with a copy of it.
+   */
+  readonly on: PageId | "header" | "footer" | "menu" | SharedSectionId;
   /** The element holding the link, or the menu item. */
   readonly nodeId: string;
 } & (
@@ -30,20 +34,6 @@ export type BrokenLink = {
 type SiteTarget =
   | { readonly kind: "page"; readonly pageId: PageId; readonly anchor?: string | undefined }
   | { readonly kind: "file"; readonly mediaId: MediaId };
-
-/** The section anchors (`advanced.anchorId`) of `nodes` and everything in them. */
-export function anchorsIn(nodes: readonly unknown[], found = new Set<string>()): Set<string> {
-  for (const node of nodes) {
-    if (typeof node !== "object" || node === null) continue;
-    const props = (node as { props?: Record<string, unknown> }).props ?? {};
-    const anchor = (props.advanced as { anchorId?: unknown } | undefined)?.anchorId;
-    if (typeof anchor === "string" && anchor !== "") found.add(anchor);
-    for (const value of Object.values(props)) {
-      if (Array.isArray(value)) anchorsIn(value, found);
-    }
-  }
-  return found;
-}
 
 /**
  * Calls `visit` for every link to a page or a document in `value`, a field's value, but not in
@@ -83,7 +73,9 @@ export function findBrokenLinks(site: SiteDoc): BrokenLink[] {
   const anchorsOn = (pageId: PageId) => {
     let anchors = anchorsOf.get(pageId);
     if (anchors === undefined) {
-      anchors = anchorsIn(site.pages[pageId]?.doc.content ?? [], new Set(shared));
+      // Copies of shared sections included, with the anchors they have on this page.
+      const content = site.pages[pageId]?.doc.content ?? [];
+      anchors = anchorsIn(expandSharedCopies(content, site.sharedSections), new Set(shared));
       anchorsOf.set(pageId, anchors);
     }
     return anchors;
@@ -131,5 +123,6 @@ export function findBrokenLinks(site: SiteDoc): BrokenLink[] {
     const page = site.pages[id];
     if (page !== undefined) check(id, page.doc.content);
   }
+  for (const entry of Object.values(site.sharedSections)) check(entry.id, [entry.section]);
   return broken;
 }

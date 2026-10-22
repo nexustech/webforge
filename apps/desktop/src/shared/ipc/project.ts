@@ -64,7 +64,17 @@ const siteDocumentChangeSchema = z.discriminatedUnion("type", [
     .strictObject({
       type: z.literal("put"),
       id: z.string().min(1).max(100),
-      kind: z.enum(["site", "settings", "theme", "layout", "media", "code", "menu", "page"]),
+      kind: z.enum([
+        "site",
+        "settings",
+        "theme",
+        "layout",
+        "media",
+        "code",
+        "menu",
+        "sharedSections",
+        "page",
+      ]),
       content: z.unknown(),
     })
     // Only documents a site is made of: `page:<id>` pages, every other part under its own name.

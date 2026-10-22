@@ -1,7 +1,9 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { siteDocArbitrary } from "../test/arbitraries.js";
+import type { NodeDoc } from "./documents.js";
 import type { PageId } from "./ids.js";
+import { SHARED_COPY_TYPE } from "./shared-sections.js";
 import {
   createSite,
   type PageEntry,
@@ -108,6 +110,73 @@ describe("siteDocSchema", () => {
       { numRuns: 100 },
     );
   }, 30_000);
+
+  it("rejects copies of shared sections that aren't valid, or aren't at the top of a page", () => {
+    const copy = (props: Record<string, unknown>): NodeDoc => ({
+      type: SHARED_COPY_TYPE,
+      props: { id: "c", sharedSectionId: "shared-hours", ...props },
+    });
+    const page = (content: NodeDoc[]) =>
+      issuesOf(withPage(site, { id: "page-about", doc: { root: { props: {} }, content } }));
+
+    expect(page([copy({}), copy({ id: "d", anchorSuffix: "2" })])).toEqual([]);
+    // Its suffix goes into HTML ids: digits only.
+    expect(page([copy({ anchorSuffix: "2 onclick" })])).toContain(
+      "Not a valid copy of a shared section",
+    );
+    expect(page([copy({ sharedSectionId: "not an id" })])).toContain(
+      "Not a valid copy of a shared section",
+    );
+    // Only a page's top level is shown as the shared section; deeper, it would be an unknown element.
+    expect(page([{ type: "Section", props: { id: "s", content: [copy({})] } }])).toContain(
+      "A copy of a shared section can only be at the top of a page",
+    );
+    // Two copies with one suffix would give the page two elements with one anchor.
+    expect(page([copy({}), copy({ id: "d" })])).toContain(
+      "Two copies of a shared section have the same anchors",
+    );
+  });
+
+  it("keeps a copy renamed or hidden in Layers through a save and a reopen (F-ED-12)", () => {
+    const content: NodeDoc[] = [
+      {
+        type: SHARED_COPY_TYPE,
+        props: {
+          id: "c",
+          sharedSectionId: "shared-hours",
+          layerName: "Hours, again",
+          hidden: true,
+          advanced: { className: "mt-4" },
+        },
+      },
+    ];
+    const doc = withPage(site, { id: "page-about", doc: { root: { props: {} }, content } });
+
+    expect(issuesOf(doc)).toEqual([]);
+    expect(siteDocSchema.parse(JSON.parse(JSON.stringify(doc)))).toEqual(doc);
+    const [renamed] = content;
+    const long = withPage(site, {
+      id: "page-about",
+      doc: {
+        root: { props: {} },
+        content: [
+          { ...renamed, props: { ...renamed?.props, layerName: "x".repeat(101) } } as NodeDoc,
+        ],
+      },
+    });
+    expect(issuesOf(long)).toContain("Not a valid copy of a shared section");
+  });
+
+  it("rejects a copy of a shared section in the Header or Footer", () => {
+    const copy: NodeDoc = {
+      type: SHARED_COPY_TYPE,
+      props: { id: "c", sharedSectionId: "shared-hours" },
+    };
+
+    expect(issuesOf({ ...site, layout: { ...site.layout, footer: [copy] } })).toContain(
+      "The Header and Footer can't hold a copy of a shared section",
+    );
+  });
 
   it("rejects a page stored under another id", () => {
     const page = site.pages[site.homePageId] as PageEntry;

@@ -37,6 +37,7 @@ export type SiteMigration = (site: RawSite) => RawSite;
  */
 export const MIGRATIONS: Readonly<Record<number, SiteMigration>> = {
   1: heroImageValues,
+  2: sharedSections,
 };
 
 type RawNode = { type: string; props: Record<string, unknown> };
@@ -98,6 +99,18 @@ function heroImageValues(site: RawSite): RawSite {
     delete node.props.imageDescription;
   });
   return { ...site, formatVersion: 2 };
+}
+
+/**
+ * Format 2 → 3 (1.29): the site gets its shared sections (F-ED-23), none yet. A site that already
+ * has them keeps them.
+ */
+function sharedSections(site: RawSite): RawSite {
+  return {
+    ...site,
+    sharedSections: isRecord(site.sharedSections) ? site.sharedSections : {},
+    formatVersion: 3,
+  };
 }
 
 /** Options of {@link migrateSiteWith}; the defaults are this build's chain and version. */
