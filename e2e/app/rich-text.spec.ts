@@ -172,7 +172,9 @@ test("removes a link from the toolbar", async () => {
 
 test("links text and removes links in Content mode, which keeps text and links editable (M3)", async () => {
   await page.getByRole("radio", { name: "Content", exact: true }).click();
-  await editText();
+  // In Content mode the first click puts the caret in the text.
+  await canvas().getByText(STARTER_TEXT).click();
+  await expect(editor()).toBeFocused();
   await page.keyboard.press("Home");
   await page.keyboard.press("Shift+End");
   const toolbar = canvas().locator("[data-puck-rte-menu]");
@@ -188,7 +190,11 @@ test("links text and removes links in Content mode, which keeps text and links e
   const anchor = (await link.getAttribute("href"))?.split("#")[1] ?? "";
   await expect(canvas().locator(`#${anchor}`)).toHaveCount(1);
 
-  await link.click();
+  // The caret into the link, from the keyboard: Content mode keeps the canvas's elements from
+  // ever looking still to a test's click.
+  await expect(editor()).toBeFocused();
+  await page.keyboard.press("Home");
+  await page.keyboard.press("ArrowRight");
   await toolbar.getByRole("button", { name: "Remove link" }).click();
   await expect(editor().locator("a")).toHaveCount(0);
   await leaveText();
