@@ -104,6 +104,14 @@ export async function buildSite(
     behaviours = behavioursUsedBy(allNodes(site), library);
     mediaIds = mediaUsedBy(allNodes(site), library);
     documentIds = documentsLinkedBy(allNodes(site), library);
+    // Documents the navigation menu links to are exported too.
+    for (const item of site.menu?.items.flatMap((entry) =>
+      entry.kind === "group" ? entry.children : [entry],
+    ) ?? []) {
+      if ((item.kind === "link" || item.kind === "button") && item.link.kind === "file") {
+        documentIds.add(item.link.mediaId);
+      }
+    }
   } catch (error) {
     if (error instanceof UnknownComponentError) {
       throw new BuildError("unknown-component", error.message);
@@ -155,8 +163,12 @@ export async function buildSite(
   const pathById = new Map(site.pages.map((page) => [page.id as string, page.path]));
   const rendered = site.pages.map((page) => {
     const prefix = "../".repeat(depthOf(page.path));
-    const navigation = navigationFor(site, page, prefix, (detail) =>
-      warnings.push({ code: "broken-link", page: page.path, detail }),
+    const navigation = navigationFor(
+      site,
+      page,
+      prefix,
+      (detail) => warnings.push({ code: "broken-link", page: page.path, detail }),
+      (id) => documentPaths.get(id),
     );
     const context: RenderContext = {
       navigation,

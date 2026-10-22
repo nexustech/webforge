@@ -1,4 +1,4 @@
-import type { MenuItemId, PageId, SitePage, SiteSnapshot } from "@webforge/model";
+import type { MediaId, MenuItemId, PageId, SitePage, SiteSnapshot } from "@webforge/model";
 import { sampleSite } from "@webforge/test-utils";
 import { describe, expect, it } from "vitest";
 import { navigationFor } from "./navigation.js";
@@ -120,5 +120,50 @@ describe("navigationFor (F-ED-17)", () => {
     );
 
     expect(items[0]).toMatchObject({ current: true, children: [{ current: true }] });
+  });
+
+  it("links to documents at their exported files, saved when so set, and reports deleted ones (1.28)", () => {
+    const menu: SiteSnapshot["menu"] = {
+      follows: "custom",
+      items: [
+        {
+          id: id("prices"),
+          kind: "link",
+          label: "Price list",
+          link: { kind: "file", mediaId: "price-list" as MediaId, download: true },
+          hidden: false,
+        },
+        {
+          id: id("old"),
+          kind: "button",
+          label: "Old menu",
+          link: { kind: "file", mediaId: "gone" as MediaId },
+          hidden: false,
+        },
+      ],
+    };
+    const snapshot = site(menu);
+    const shown = snapshot.pages.find((candidate) => candidate.path === "company/team");
+    if (shown === undefined) throw new Error("no team page");
+    const broken: string[] = [];
+
+    const items = navigationFor(
+      snapshot,
+      shown,
+      "../",
+      (detail) => broken.push(detail),
+      (mediaId) => (mediaId === "price-list" ? "files/price-list.pdf" : undefined),
+    );
+
+    expect(items).toEqual([
+      {
+        id: "prices",
+        label: "Price list",
+        href: "../files/price-list.pdf",
+        current: false,
+        download: true,
+      },
+    ]);
+    expect(broken).toEqual(["gone"]);
   });
 });

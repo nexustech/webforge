@@ -1,4 +1,4 @@
-import type { MenuItemId, NodeDoc, PageId, SiteSnapshot } from "@webforge/model";
+import type { MediaId, MenuItemId, NodeDoc, PageId, SiteSnapshot } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { sampleSite } from "@webforge/test-utils";
 import { beforeAll, describe, expect, it } from "vitest";
@@ -455,6 +455,36 @@ describe("buildSite: documents (1.28)", () => {
         '<a href="../files/price-list.pdf" target="_blank" rel="noopener">open them</a>',
     );
     expect([...(output.files.get("files/price-list.pdf") ?? [])]).toEqual([...pdf]);
+    expect(output.report.warnings).toEqual([]);
+  });
+
+  it("copies a document the navigation menu links to, and links to it from the Header", async () => {
+    const site = siteWith([], {
+      documents,
+      layout: {
+        header: [{ type: "Header", props: { id: "header", siteName: "Test" } }],
+        footer: [],
+      },
+      menu: {
+        follows: "custom",
+        items: [
+          {
+            id: "m" as MenuItemId,
+            kind: "link",
+            label: "Stock list",
+            link: { kind: "file", mediaId: "stock" as MediaId, download: true },
+            hidden: false,
+          },
+        ],
+      },
+    });
+
+    const output = await buildSite(site, siteLibrary, resources);
+
+    expect([...(output.files.get("files/stock.xlsx") ?? [])]).toEqual([...sheet]);
+    expect(text(output, "index.html")).toContain(
+      '<a href="files/stock.xlsx" download="">Stock list</a>',
+    );
     expect(output.report.warnings).toEqual([]);
   });
 });

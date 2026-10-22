@@ -111,6 +111,8 @@ export type NavLink = {
   readonly button?: boolean;
   /** Opens in a new tab. */
   readonly newTab?: boolean;
+  /** A document saved rather than opened (1.28). */
+  readonly download?: boolean;
 };
 
 /** A dropdown in the site's navigation (F-ED-17): its links, one level deep. */
