@@ -34,6 +34,23 @@ const pages = () => page.getByRole("list", { name: "Pages" });
 const pageButton = (name: string) => pages().getByRole("button", { name: new RegExp(`^${name}`) });
 
 test.describe("Pages panel", () => {
+  test("types straight into a dialog opened from a page's menu", async () => {
+    // Typed, not filled: fill() focuses the field itself, which hid the menu taking the focus back
+    // as it closed.
+    await pages().getByRole("button", { name: "Actions for My site" }).click();
+    await page.getByRole("menuitem", { name: "Rename…" }).click();
+    const field = page.getByRole("dialog").getByRole("textbox", { name: "Page name" });
+    await expect(field).toBeFocused();
+    await page.keyboard.type("Start");
+    await page.keyboard.press("Enter");
+    await expect(pageButton("Start")).toBeVisible();
+
+    await pages().getByRole("button", { name: "Actions for Start" }).click();
+    await page.getByRole("menuitem", { name: "Page Settings…" }).click();
+    const settings = page.getByRole("dialog", { name: "Settings for 'Start'" });
+    await expect(settings.getByRole("textbox").first()).toBeFocused();
+  });
+
   test("adds a page, deletes it after confirming, and undo brings it back", async () => {
     await page.getByRole("button", { name: "Add Page" }).click();
     const field = page.getByRole("textbox", { name: "Page name" });

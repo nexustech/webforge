@@ -23,6 +23,7 @@ import { type DragEvent, type KeyboardEvent, useMemo, useRef, useState } from "r
 import { LinkDialog } from "../links/LinkDialog.js";
 import type { LinkFieldChange } from "../links/link-change.js";
 import type { PageTarget } from "../links/link-targets.js";
+import { useMenuDialog } from "../shell/use-menu-dialog.js";
 import { NameDialog } from "../site/NameDialog.js";
 import { itemLabel, type MenuPosition, type NewMenuItem } from "./menu-actions.js";
 
@@ -104,20 +105,8 @@ export function MenuPanel({ site, linkContext, actions }: MenuPanelProps) {
     setDialog(next);
     setOpen(true);
   };
-  // A dialog chosen from a menu opens once the menu has closed: opened at once, the closing menu
-  // takes focus from the dialog's field, so typing went nowhere.
-  const pending = useRef<Dialog | null>(null);
-  const openFromMenu = (next: Dialog) => {
-    pending.current = next;
-  };
-  const keepDialogFocus = (event: Event) => {
-    const next = pending.current;
-    pending.current = null;
-    if (next !== null) {
-      event.preventDefault();
-      openDialog(next);
-    }
-  };
+  // Dialogs chosen from a menu open once it has closed, so their field keeps the focus.
+  const menuDialog = useMenuDialog(openDialog);
   const close = () => setOpen(false);
   const editing =
     dialog?.kind === "edit" ? rows.find((row) => row.item.id === dialog.id)?.item : undefined;
@@ -270,8 +259,8 @@ export function MenuPanel({ site, linkContext, actions }: MenuPanelProps) {
           name={name}
           groups={groups}
           actions={actions}
-          onEdit={() => openFromMenu({ kind: "edit", id: item.id })}
-          onCloseAutoFocus={keepDialogFocus}
+          onEdit={() => menuDialog.choose({ kind: "edit", id: item.id })}
+          onCloseAutoFocus={menuDialog.onCloseAutoFocus}
         />
       </li>
     );
@@ -287,14 +276,14 @@ export function MenuPanel({ site, linkContext, actions }: MenuPanelProps) {
               <PlusIcon />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" onCloseAutoFocus={keepDialogFocus}>
-            <DropdownMenuItem onSelect={() => openFromMenu({ kind: "addLink" })}>
+          <DropdownMenuContent align="end" onCloseAutoFocus={menuDialog.onCloseAutoFocus}>
+            <DropdownMenuItem onSelect={() => menuDialog.choose({ kind: "addLink" })}>
               {t("menu.addLink")}
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => openFromMenu({ kind: "addButton" })}>
+            <DropdownMenuItem onSelect={() => menuDialog.choose({ kind: "addButton" })}>
               {t("menu.addButton")}
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => openFromMenu({ kind: "addGroup" })}>
+            <DropdownMenuItem onSelect={() => menuDialog.choose({ kind: "addGroup" })}>
               {t("menu.addGroup")}
             </DropdownMenuItem>
             {menu.follows === "custom" && (
