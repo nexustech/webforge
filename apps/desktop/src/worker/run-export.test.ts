@@ -16,7 +16,7 @@ describe("runExport", () => {
       loadNodeResources,
     );
 
-    expect(outcome).toMatchObject({ type: "exported", pages: 2, files: 12, warnings: 0 });
+    expect(outcome).toMatchObject({ type: "exported", pages: 2, files: 13, warnings: 0 });
     expect(readFileSync(join(destination, "about.html"), "utf8")).toContain(
       "A family bakery since 1998.",
     );
