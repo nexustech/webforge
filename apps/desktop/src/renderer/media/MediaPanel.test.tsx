@@ -1,5 +1,11 @@
 // @vitest-environment happy-dom
-import type { ImageMeta, MediaId, MediaMeta } from "@webforge/model";
+import {
+  type ImageMeta,
+  type MediaId,
+  type MediaMeta,
+  SHARED_COPY_TYPE,
+  type SharedSectionId,
+} from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -188,6 +194,51 @@ describe("MediaPanel", () => {
     expect(lastLabel()).toBe("Deleted image 'new.jpg'");
     expect(media()).toEqual({});
     expect(container.textContent).toContain("No images or files yet.");
+  });
+
+  it("warns before deleting an image or a document used only inside a shared section (F-ED-23)", async () => {
+    addMedia(session, [photo, prices]);
+    session.edit("insert", "Added a copy", (draft) => {
+      draft.sharedSections["offer" as SharedSectionId] = {
+        id: "offer" as SharedSectionId,
+        name: "Weekly offer",
+        section: {
+          type: "Hero",
+          props: {
+            id: "h",
+            title: "Offer",
+            image: { mediaId: photo.id },
+            buttonLink: { kind: "file", mediaId: prices.id },
+          },
+        },
+      };
+      draft.pages[draft.homePageId]?.doc.content.push({
+        type: SHARED_COPY_TYPE,
+        props: { id: "copy", sharedSectionId: "offer" as SharedSectionId },
+      });
+    });
+    await render();
+    await act(async () => button("shop.jpg")?.click());
+
+    await act(async () => button("Delete")?.click());
+
+    expect(document.querySelector('[role="alertdialog"]')?.textContent).toContain(
+      "It's used on 1 page.",
+    );
+    await act(async () => {
+      [...document.querySelectorAll<HTMLButtonElement>('[role="alertdialog"] button')]
+        .find((element) => element.textContent === "Cancel")
+        ?.click();
+    });
+
+    await act(async () => button("prices.pdf")?.click());
+    await act(async () => button("Delete")?.click());
+
+    expect(document.querySelector('[role="alertdialog"]')?.textContent).toContain(
+      "1 page links to it.",
+    );
+    expect(media()[photo.id]).toEqual(photo);
+    expect(media()[prices.id]).toEqual(prices);
   });
 
   it("warns before deleting an image pages use, and Undo brings it back for them", async () => {

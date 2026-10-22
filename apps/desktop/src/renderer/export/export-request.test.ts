@@ -1,4 +1,10 @@
-import { createSite, type MediaId, type MenuItemId } from "@webforge/model";
+import {
+  createSite,
+  type MediaId,
+  type MenuItemId,
+  SHARED_COPY_TYPE,
+  type SharedSectionId,
+} from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { describe, expect, it } from "vitest";
 import { exportRequestFor } from "./export-request.js";
@@ -115,5 +121,70 @@ describe("exportRequestFor", () => {
       "a1",
       "b2",
     ]);
+  });
+
+  it("sends the images and documents used only inside a shared section with a copy (F-ED-23)", () => {
+    const site = createSite({
+      name: "Rosa's Bakery",
+      language: "en-GB",
+      homeTitle: "Home",
+      notFoundTitle: "Page not found",
+    });
+    site.media = {
+      ["photo" as MediaId]: {
+        id: "photo" as MediaId,
+        hash: "a".repeat(64),
+        name: "photo",
+        fileName: "photo.jpg",
+        kind: "image",
+        mimeType: "image/jpeg",
+        width: 10,
+        height: 10,
+        alt: "",
+      },
+      ["menu" as MediaId]: {
+        id: "menu" as MediaId,
+        hash: "b".repeat(64),
+        name: "menu",
+        fileName: "menu.pdf",
+        kind: "file",
+        mimeType: "application/pdf",
+      },
+    };
+    site.sharedSections = {
+      ["offer" as SharedSectionId]: {
+        id: "offer" as SharedSectionId,
+        name: "Weekly offer",
+        section: {
+          type: "Hero",
+          props: {
+            id: "offer-hero",
+            title: "This week",
+            image: { mediaId: "photo" },
+            buttonLink: { kind: "file", mediaId: "menu" },
+          },
+        },
+      },
+    };
+    const home = site.pages[site.homePageId];
+    if (home === undefined) throw new Error("no home page");
+    home.doc.content = [
+      { type: SHARED_COPY_TYPE, props: { id: "copy", sharedSectionId: "offer" } },
+    ];
+
+    const request = exportRequestFor(site, siteLibrary);
+
+    expect(request.media.map((item) => item.id)).toEqual(["photo"]);
+    expect(request.documents?.map((item) => item.id)).toEqual(["menu"]);
+    // The snapshot shows the copy as its section, so the build places both.
+    expect(request.snapshot.pages[0]?.doc.content[0]?.props.image).toEqual({ mediaId: "photo" });
+
+    // A hidden copy is left out of the export, and so are its files.
+    home.doc.content = [
+      { type: SHARED_COPY_TYPE, props: { id: "copy", sharedSectionId: "offer", hidden: true } },
+    ];
+    const hidden = exportRequestFor(site, siteLibrary);
+    expect(hidden.media).toEqual([]);
+    expect(hidden.documents).toEqual([]);
   });
 });
