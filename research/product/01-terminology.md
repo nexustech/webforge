@@ -49,6 +49,9 @@
 | **Shared section** | A section stored once and placed on several pages; edits apply everywhere (MVP, F-ED-23, GA6). A separate, later feature is a library of **saved sections** reused across sites (C5) | Plain English; Squarespace "Saved Sections" | Linked Component, Symbol, Synced pattern, Global Template |
 | **AI apps** | AI apps on the user's computer (Claude, ChatGPT…) connected to Webforge through MCP (F-AI-1). UI: *Connect AI apps* | Plain English | MCP server, connector, integration |
 | **File** | A non-image item in Media (PDF, Word, Excel…), linked for download with the link dialog's *File* option (F-ED-24). "Document" is avoided in the UI because specs use it for the site's data | Plain English | Resource, asset, attachment, document |
+| **Theme Studio** | The larger window for editing a theme: palettes, text styles, spacing, corners (F-DS-7) | Elements | Design system, tokens |
+| **Favourites** | Sections and elements the user pins at the top of the Add panel (F-ED-26) | Bootstrap Studio | Pinned components |
+| **Select parent** | Select the section or element that contains the current one (F-ED-25) | Bootstrap Studio | Go up the DOM |
 | **Detach** | Turn one copy of a shared section into a normal section | Wix, Squarespace | Unlink, break link |
 | **Pair** (an AI app) | Connect an AI app to Webforge with a one-time code (F-AI-1) | Plain English | Authorise, register client |
 | **Template** | A ready-made starting site chosen at "New Site" | Universal | Starter, Kit |
