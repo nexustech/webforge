@@ -1,7 +1,8 @@
-import { readFile, stat } from "node:fs/promises";
+import { type FileHandle, open } from "node:fs/promises";
 import { basename } from "node:path";
 import type { IpcMain } from "electron";
 import { MAX_MEDIA_BYTES, MAX_MEDIA_FILES } from "../shared/ipc/media.js";
+import type { MediaImportResult } from "../shared/ipc-contract.js";
 import { registerIpcHandler } from "./ipc.js";
 import { createMediaImport, type ImportFile, importMediaFiles } from "./media-import.js";
 import type { ProjectSession } from "./project-session.js";
@@ -12,11 +13,53 @@ export type MediaDialogs = {
   chooseMediaFiles(): Promise<readonly string[] | undefined>;
 };
 
-/** Reads a chosen file, unless it is too large to import (then its bytes aren't read at all). */
-async function readChosenFile(path: string): Promise<ImportFile> {
+/** How much of a file is read at a time. */
+const CHUNK_BYTES = 1024 * 1024;
+
+/**
+ * The bytes of the open file `handle`, read to its end, or `undefined` once there are more than
+ * `maxBytes`: a file that grows after its size was checked is never read whole.
+ */
+export async function readAtMost(
+  handle: Pick<FileHandle, "read">,
+  maxBytes: number,
+): Promise<Uint8Array | undefined> {
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const chunk = new Uint8Array(Math.min(CHUNK_BYTES, maxBytes + 1 - total));
+    const { bytesRead } = await handle.read(chunk, 0, chunk.length, null);
+    if (bytesRead === 0) break;
+    total += bytesRead;
+    if (total > maxBytes) return undefined;
+    chunks.push(chunk.subarray(0, bytesRead));
+  }
+  return Buffer.concat(chunks, total);
+}
+
+/**
+ * Reads a chosen file through one open handle: its size is checked on that handle, and no more
+ * than the size limit is read (`data` is `undefined` when it is over). `undefined` for a folder, or
+ * a file that is gone (a copy pasted after the file moved).
+ */
+async function readChosenFile(path: string): Promise<ImportFile | undefined> {
   const fileName = basename(path).slice(0, 255);
-  const { size } = await stat(path);
-  return { fileName, data: size > MAX_MEDIA_BYTES ? undefined : await readFile(path) };
+  const handle = await open(path, "r").catch(() => undefined);
+  if (handle === undefined) {
+    return undefined;
+  }
+  try {
+    const info = await handle.stat();
+    if (!info.isFile()) {
+      return undefined;
+    }
+    return {
+      fileName,
+      data: info.size > MAX_MEDIA_BYTES ? undefined : await readAtMost(handle, MAX_MEDIA_BYTES),
+    };
+  } finally {
+    await handle.close();
+  }
 }
 
 /**
@@ -41,20 +84,36 @@ export function registerMediaHandlers(
     if (paths === undefined || paths.length === 0) {
       return { status: "canceled" };
     }
-    // One file at a time, so only one is ever in memory.
-    const running = createMediaImport(session);
-    try {
-      for (const path of paths.slice(0, MAX_MEDIA_FILES)) {
-        const failed = running.add(await readChosenFile(path));
-        if (failed !== undefined) {
-          return failed;
-        }
-      }
-      return running.result();
-    } catch (error) {
-      const code = error instanceof Error && "code" in error ? String(error.code) : "no code";
-      console.error(`Webforge could not read a chosen file (${code})`);
-      return { status: "failed", reason: "unknown" };
-    }
+    return importFilesAt(session, paths);
   });
+}
+
+/**
+ * Imports the files at `paths` (chosen in the dialog, or copied in the file manager and pasted), at
+ * most {@link MAX_MEDIA_FILES}. One file at a time, so only one is ever in memory. A folder or a
+ * missing file is listed as not taken; the others are still imported.
+ */
+export async function importFilesAt(
+  session: Pick<ProjectSession, "storeAsset">,
+  paths: readonly string[],
+): Promise<MediaImportResult> {
+  const running = createMediaImport(session);
+  try {
+    for (const path of paths.slice(0, MAX_MEDIA_FILES)) {
+      const file = await readChosenFile(path);
+      if (file === undefined) {
+        running.skip(basename(path).slice(0, 255));
+        continue;
+      }
+      const failed = running.add(file);
+      if (failed !== undefined) {
+        return failed;
+      }
+    }
+    return running.result();
+  } catch (error) {
+    const code = error instanceof Error && "code" in error ? String(error.code) : "no code";
+    console.error(`Webforge could not read a chosen file (${code})`);
+    return { status: "failed", reason: "unknown" };
+  }
 }
