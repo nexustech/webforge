@@ -40,6 +40,7 @@ import { deferredCommands } from "./deferred-commands.js";
 import { puckDictionary } from "./dictionary.js";
 import { createDragSources } from "./drag-sources.js";
 import { editFromAction, selectedNodeId, toPageDoc } from "./edit-from-action.js";
+import { keepElementsEnabled } from "./enabled-elements.js";
 import { pageActions, type SlotsOf } from "./page-actions.js";
 import { createFormatToolbar } from "./rich-text.js";
 import { performOnSelected } from "./selected-actions.js";
@@ -116,6 +117,11 @@ const puckViewports = () => [
 
 /** Content mode: text stays editable, the layout is locked (M3). */
 const CONTENT_MODE_PERMISSIONS = { drag: false, duplicate: false, delete: false, insert: false };
+/**
+ * Design mode: everything. Always passed, never left out: Puck merges the permissions it is given
+ * into those it has, so leaving them out after Content mode would keep the layout locked.
+ */
+const DESIGN_MODE_PERMISSIONS = { drag: true, duplicate: true, delete: true, insert: true };
 
 type GetPuck = ReturnType<typeof useGetPuck>;
 
@@ -183,6 +189,13 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   let reporting = false;
   /** The canvas iframe's document, once Puck has created it. */
   let frameDocument: Document | null = null;
+  /** Stops keeping the canvas's elements enabled; set in Content mode (see `keepElementsEnabled`). */
+  let stopKeepingEnabled: (() => void) | null = null;
+  const followMode = () => {
+    stopKeepingEnabled?.();
+    stopKeepingEnabled =
+      mode === "content" && frameDocument !== null ? keepElementsEnabled(frameDocument) : null;
+  };
   /** The site's CSS, applied to the canvas document whenever there is one. */
   let siteStyles: SiteStyles | null = null;
   /** What the canvas renders with: no navigation or links, and the site's Media images. */
@@ -491,6 +504,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
         applyChromeStyles(document);
         if (siteStyles !== null) applySiteStyles(document, siteStyles);
       }
+      followMode();
       const frameWindow = document?.defaultView;
       if (!frameWindow) {
         return undefined;
@@ -498,6 +512,8 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       frameWindows.emit(frameWindow);
       const removeKeys = installHistoryKeys(frameWindow, runCommand);
       return () => {
+        stopKeepingEnabled?.();
+        stopKeepingEnabled = null;
         removeKeys();
         frameWindows.emit(null);
       };
@@ -593,7 +609,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
         }}
         viewports={viewportOptions}
         height="100%"
-        {...(mode === "content" ? { permissions: CONTENT_MODE_PERMISSIONS } : {})}
+        permissions={mode === "content" ? CONTENT_MODE_PERMISSIONS : DESIGN_MODE_PERMISSIONS}
       />,
     );
   };
@@ -768,6 +784,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
 
     setMode(nextMode) {
       mode = nextMode;
+      followMode();
       render();
     },
 

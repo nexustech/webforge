@@ -1,6 +1,7 @@
 import type { Recipe } from "@webforge/history";
 import { t } from "@webforge/i18n";
 import {
+  findBrokenLinks,
   type MediaId,
   newId,
   type PageEntry,
@@ -80,6 +81,22 @@ export function fileNameInFolder(site: SiteDoc, pageId: PageId, name: string): s
   const folder = folderNamed(site, name);
   const slug = uniqueSlug(site.pages[pageId]?.slug ?? "", slugsInFolder(site, folder, pageId));
   return `${folder}/${slug}.html`;
+}
+
+/**
+ * How many pages deleting `pageId` changes (D7): the page itself, and every page left with a link
+ * to it, in its content or in what all pages share (the menu, the Header, the Footer).
+ */
+export function pagesChangedByDeleting(site: SiteDoc, pageId: PageId): number {
+  const { [pageId]: _deleted, ...rest } = site.pages;
+  const others = site.pageOrder.filter((id) => id !== pageId && site.pages[id] !== undefined);
+  const linking = new Set(
+    findBrokenLinks({ ...site, pages: rest })
+      .filter((link) => link.pageId === pageId)
+      .map((link) => link.on),
+  );
+  const shared = linking.has("menu") || linking.has("header") || linking.has("footer");
+  return 1 + (shared ? others.length : others.filter((id) => linking.has(id)).length);
 }
 
 /** Runs `recipe` as one undo step, then shows `pageId` (the step remembers it for redo). */

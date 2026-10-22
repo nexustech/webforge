@@ -35,6 +35,8 @@ export type EditPanelProps = {
   onReset?(name: string): void;
   /** Shows the Advanced tab and its fields (Advanced mode, F-ED-11). */
   readonly advanced?: boolean | undefined;
+  /** Shows the Content tab only, without Style and Advanced (Content mode, M3). */
+  readonly contentOnly?: boolean | undefined;
   /**
    * Which element the fields are for (its id). The fields start afresh for another element, so
    * nothing typed for one (an unfinished anchor) shows up on the next.
@@ -118,6 +120,7 @@ export function EditPanel({
   device,
   onReset,
   advanced = false,
+  contentOnly = false,
   itemKey,
 }: EditPanelProps) {
   const idPrefix = useId();
@@ -151,9 +154,9 @@ export function EditPanel({
       <Tabs
         // Keyed by the element's type: the tab stays while moving between elements of one type, and
         // another type starts on its first tab with fields.
-        key={heading}
+        key={`${heading}${contentOnly ? ":content" : ""}`}
         defaultValue={
-          content.length > 0
+          contentOnly || content.length > 0
             ? "content"
             : style.length > 0
               ? "style"
@@ -165,12 +168,14 @@ export function EditPanel({
       >
         <TabsList aria-label={t("editPanel.tabs")}>
           <TabsTrigger value="content">{t("editPanel.content")}</TabsTrigger>
-          <TabsTrigger value="style">{t("editPanel.style")}</TabsTrigger>
-          {advanced ? <TabsTrigger value="advanced">{t("editPanel.advanced")}</TabsTrigger> : null}
+          {contentOnly ? null : <TabsTrigger value="style">{t("editPanel.style")}</TabsTrigger>}
+          {advanced && !contentOnly ? (
+            <TabsTrigger value="advanced">{t("editPanel.advanced")}</TabsTrigger>
+          ) : null}
         </TabsList>
         {list("content", content)}
-        {list("style", style)}
-        {advanced ? list("advanced", advancedFields) : null}
+        {contentOnly ? null : list("style", style)}
+        {advanced && !contentOnly ? list("advanced", advancedFields) : null}
       </Tabs>
     </div>
   );

@@ -44,8 +44,7 @@ export const panels = {
   "pages.folderDialog.description": "Move '{name}' into a new folder.",
   "pages.folderDialog.confirm": "Move",
   "pages.deleteDialog.title": "Delete page '{name}'?",
-  "pages.deleteDialog.description":
-    "This removes the page and its content. You can undo it afterwards.",
+  "pages.deleteDialog.description": "This removes the page and its content.",
   "pages.deleteDialog.confirm": "Delete Page",
   // Add panel (F-ED-1): sections and elements to add to the page.
   "add.title": "Add",

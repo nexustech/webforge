@@ -16,6 +16,9 @@ export const canvas = {
   // While an element of the shared Header or Footer is selected (1.20, F-ED-7, D7).
   "canvas.sharedRegion.header": "Header",
   "canvas.sharedRegion.footer": "Footer",
+  // Asked before an element of the shared Header or Footer goes from every page (D7).
+  "canvas.sharedDelete.title": "Delete {item} from the shared {region}?",
+  "canvas.sharedCut.title": "Cut {item} from the shared {region}?",
   "canvas.sharedBanner.all": "Editing shared {region}: changes apply to all {count} pages",
   "canvas.sharedBanner.some": "Editing shared {region}: changes apply to {count} pages",
   "canvas.sharedBanner.one": "Editing shared {region}: changes apply to 1 page",

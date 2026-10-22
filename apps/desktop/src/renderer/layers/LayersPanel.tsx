@@ -31,6 +31,11 @@ export type LayersPanelProps = {
   readonly layers: readonly Layer[];
   readonly selectedId: string | null;
   readonly actions: LayersPanelActions;
+  /**
+   * Content mode locks the layout (M3): no dragging, moving or hiding. Selecting and naming layers
+   * stay; the toolbar's commands are off as their commands are.
+   */
+  readonly layoutLocked?: boolean;
 };
 
 /** A layer as a row: where it sits among its siblings, so moves stay within its parent. */
@@ -67,7 +72,12 @@ const DRAG_TYPE = "application/x-webforge-layer";
  * double-click renames it; the eye hides it (dimmed on the canvas, left out of the export). The
  * toolbar moves, duplicates and deletes the selected element. Every change is one undo step.
  */
-export function LayersPanel({ layers, selectedId, actions }: LayersPanelProps) {
+export function LayersPanel({
+  layers,
+  selectedId,
+  actions,
+  layoutLocked = false,
+}: LayersPanelProps) {
   const rows = rowsOf(layers);
   const [renaming, setRenaming] = useState<string | null>(null);
   const [drop, setDrop] = useState<{ id: string; after: boolean } | null>(null);
@@ -92,7 +102,7 @@ export function LayersPanel({ layers, selectedId, actions }: LayersPanelProps) {
       event.preventDefault();
       const step = event.key === "ArrowUp" ? -1 : 1;
       if (event.altKey) {
-        actions.move(row.layer.id, row.index + step);
+        if (!layoutLocked) actions.move(row.layer.id, row.index + step);
       } else {
         const next = rows[at + step];
         if (next !== undefined) focusRow(next.layer.id);
@@ -162,7 +172,7 @@ export function LayersPanel({ layers, selectedId, actions }: LayersPanelProps) {
                 aria-setsize={row.siblings}
                 aria-posinset={row.index + 1}
                 tabIndex={focusable ? 0 : -1}
-                draggable={renaming !== layer.id}
+                draggable={!layoutLocked && renaming !== layer.id}
                 className={cn(
                   "group relative flex h-6 items-center gap-1 rounded-sm pr-1 text-xs outline-none",
                   "hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
@@ -218,6 +228,7 @@ export function LayersPanel({ layers, selectedId, actions }: LayersPanelProps) {
                 <button
                   type="button"
                   tabIndex={-1}
+                  disabled={layoutLocked}
                   aria-label={t(layer.hidden ? "layers.show" : "layers.hide", {
                     item: layerItem(layer),
                   })}
@@ -261,7 +272,7 @@ export function LayersPanel({ layers, selectedId, actions }: LayersPanelProps) {
             item: selected === undefined ? "" : layerItem(selected),
           })}
           onClick={
-            selected === undefined
+            selected === undefined || layoutLocked
               ? undefined
               : () => actions.setHidden(selected.id, !selected.hidden)
           }
