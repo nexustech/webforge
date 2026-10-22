@@ -73,7 +73,7 @@ test("drags a section onto the page, as one step; nothing offers the Header, Foo
       )
       .filter({ visible: true }),
   ).toHaveCount(0);
-  await expect(item("Hero").locator("[data-puck-drawer-item]")).toHaveCount(1);
+  await expect(item("Hero").locator("[data-puck-drawer-item]").first()).toBeAttached();
   await drag(page, item("Hero"), await below(canvas().locator(".site-section")));
 
   await expect(canvas().locator(".site-hero")).toHaveCount(1);

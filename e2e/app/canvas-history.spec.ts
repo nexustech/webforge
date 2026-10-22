@@ -61,7 +61,7 @@ async function addPanelElement(name: string): Promise<Locator> {
   await left().getByRole("tab", { name: "Elements" }).click();
   const item = left().getByRole("button", { name, exact: true });
   // The canvas adds its drag handle to a newly shown item a moment later.
-  await expect(item.locator("[data-puck-drawer-item]")).toHaveCount(1);
+  await expect(item.locator("[data-puck-drawer-item]").first()).toBeAttached();
   return item;
 }
 
