@@ -300,7 +300,7 @@ describe("copy and paste (1.25)", () => {
       );
 
       expect(content(session).at(-1)?.props).not.toHaveProperty("image");
-      expect(site(session).media.prices).toBeDefined();
+      expect(site(session).media[prices.id]).toBeDefined();
       expect(notify.mock.calls.map(([message]) => message)).toEqual([
         "notes.txt isn't a JPEG, PNG or PDF, so it wasn't added.",
         "Added 'prices.pdf' to Media.",

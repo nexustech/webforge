@@ -1,8 +1,9 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
-import { changedDocuments, createSite, type MediaId } from "@webforge/model";
+import { changedDocuments, createSite, type MediaId, type SiteDoc } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
 import { heroPhoto } from "@webforge/test-utils";
 import { launchDesktopApp, launchSecondInstance } from "./launch.js";
@@ -184,4 +185,62 @@ test("keeps the shared Header out of copying, and pastes into the page while it 
   await page.keyboard.press("ControlOrMeta+v");
   await expect(headings).toHaveCount(2);
   await expect(header.locator(".site-heading")).toHaveCount(0);
+});
+
+test("pastes a copied image into the selected Hero, as one step with its Media item", async () => {
+  app = await launchDesktopApp({ args: [bakery], userDataDir: userData });
+  const page = await app.firstWindow();
+  await waitForCanvas(page);
+  await canvas(page)
+    .locator(".site-hero")
+    .click({ position: { x: 6, y: 6 } });
+  // A screenshot on the clipboard: an image, as PNG.
+  await app.evaluate(
+    async ({ clipboard, ClipboardItem, nativeImage }, jpeg) => {
+      const png = nativeImage.createFromBuffer(Buffer.from(jpeg)).toPNG();
+      await clipboard.write([
+        new ClipboardItem({ "image/png": new Blob([new Uint8Array(png)], { type: "image/png" }) }),
+      ]);
+    },
+    [...heroPhoto()],
+  );
+
+  await page.keyboard.press("ControlOrMeta+v");
+
+  await page.getByRole("tab", { name: "Undo History" }).click();
+  await expect(page.locator(".undo-history__step").first()).toHaveText(
+    "Pasted 'Pasted image.png' into Hero",
+  );
+  await expect(page.getByRole("banner").getByRole("status")).toHaveText("Saved", {
+    timeout: 10_000,
+  });
+  const site = await page.evaluate(async () => {
+    const read = await (window as unknown as RendererWindow).webforge.project.readSite();
+    return (read as { site?: SiteDoc }).site;
+  });
+  const hero = site?.pages[site.homePageId]?.doc.content.at(-1);
+  const pasted = Object.values(site?.media ?? {}).find(
+    (item) => item.fileName === "Pasted image.png",
+  );
+  expect(pasted).toMatchObject({ kind: "image", mimeType: "image/png" });
+  expect(hero?.props.image).toEqual({ mediaId: pasted?.id });
+});
+
+test("adds image files copied in the file manager to Media", async () => {
+  app = await launchDesktopApp({ args: [florist], userDataDir: userData });
+  const page = await app.firstWindow();
+  await waitForCanvas(page);
+  const file = join(dir, "Shop front.jpg");
+  writeFileSync(file, heroPhoto());
+  await app.evaluate(async ({ clipboard, ClipboardItem }, uri) => {
+    await clipboard.write([
+      new ClipboardItem({ "text/uri-list": new Blob([uri], { type: "text/uri-list" }) }),
+    ]);
+  }, pathToFileURL(file).href);
+
+  await page.keyboard.press("ControlOrMeta+v");
+
+  await expect(page.getByText("Added 'Shop front.jpg' to Media.")).toBeVisible();
+  await page.getByRole("tab", { name: "Media" }).click();
+  await expect(page.getByRole("button", { name: "Shop front.jpg" })).toBeVisible();
 });
