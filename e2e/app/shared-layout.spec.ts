@@ -72,7 +72,10 @@ test("says how far a change reaches, edits the Footer in the Edit panel, and hid
   await expect(steps().first()).toHaveText("Edited shared Footer text");
 
   await panel.getByRole("tab", { name: "Site" }).click();
-  await panel.getByRole("button", { name: "Actions for My site" }).click();
+  await panel
+    .getByRole("list", { name: "Pages" })
+    .getByRole("button", { name: "Actions for My site" })
+    .click();
   await page.getByRole("menuitem", { name: "Page Settings…" }).click();
   const dialog = page.getByRole("dialog", { name: "Settings for 'My site'" });
   await dialog.getByRole("checkbox", { name: "Hide the Footer on this page" }).check();

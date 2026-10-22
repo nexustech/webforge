@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { act, cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it } from "vitest";
@@ -20,11 +20,13 @@ describe("Site panel", () => {
     if (panel === undefined) throw new Error("not registered");
     const SitePanel = panel.component;
     render(<SitePanel />);
+    // The page list, not the Menu under it, which lists the pages too.
+    const pages = () => within(screen.getByRole("list", { name: "Pages" }));
 
     await userEvent.click(screen.getByRole("button", { name: "Add Page" }));
     await userEvent.click(screen.getByRole("button", { name: "Add Page" }));
 
-    const added = screen.getByRole("button", { name: /^New page/ });
+    const added = pages().getByRole("button", { name: /^New page/ });
     expect(added.getAttribute("aria-current")).toBe("page");
     // Content edits leave the list as it is.
     act(() => {
@@ -33,12 +35,12 @@ describe("Site panel", () => {
         if (page !== undefined) page.doc.root.props = { title: "Changed" };
       });
     });
-    expect(screen.getByRole("button", { name: /^New page/ })).toBe(added);
+    expect(pages().getByRole("button", { name: /^New page/ })).toBe(added);
     act(() => {
       session.history.undo();
       session.history.undo();
     });
-    expect(screen.queryByRole("button", { name: /^New page/ })).toBeNull();
+    expect(pages().queryByRole("button", { name: /^New page/ })).toBeNull();
 
     remove();
     expect(panels.list()).toEqual([]);

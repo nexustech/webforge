@@ -1,9 +1,18 @@
 import type { ListChange } from "@webforge/editor-ui";
 import type { EngineEdit } from "@webforge/engine";
-import type { NodeDoc, PageDoc, PageId, SiteDoc } from "@webforge/model";
+import type { MenuItemId, NodeDoc, PageDoc, PageId, SiteDoc } from "@webforge/model";
 import { siteLibrary, starterPage } from "@webforge/site-components";
 import fc from "fast-check";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  addMenuItem,
+  editMenuLink,
+  followPages,
+  moveMenuItem,
+  removeMenuItem,
+  renameMenuItem,
+  setMenuItemHidden,
+} from "../menu/menu-actions.js";
 import {
   connectEngine,
   createEditorSession,
@@ -18,7 +27,8 @@ import { withoutOverride, withValueAt } from "./responsive-value.js";
 import { starterSite } from "./starter-site.js";
 
 // Undo invariant (U8) over the editor as wired: canvas edits of every kind on any page, page
-// switches, site settings and the shared layout, interleaved with undo, redo and jumps. Undo all
+// switches, site settings, the shared layout and the menu editor, interleaved with undo, redo and
+// jumps. Undo all
 // returns exactly to the opened site and redo all to the final one, and the canvas always shows
 // the document's current page.
 
@@ -153,7 +163,98 @@ function faqEdit(ctx: Ctx, change: (keys: readonly string[]) => ListChange) {
   });
 }
 
+/** The menu's items, dropdowns' contents included, in menu order. */
+function menuItemIds(ctx: Ctx): MenuItemId[] {
+  return ctx.session.history.document
+    .getState()
+    .menu.items.flatMap((item) => [
+      item.id,
+      ...(item.kind === "group" ? item.children.map((child) => child.id) : []),
+    ]);
+}
+
+/** Item `at` of the menu (counting around), if it has any. */
+const menuItemAt = (ctx: Ctx, at: number) => {
+  const ids = menuItemIds(ctx);
+  return ids[at % Math.max(ids.length, 1)];
+};
+
+/** The menu editor's changes (F-ED-17), as its panel makes them. */
+const menuCommands: fc.Arbitrary<Command>[] = [
+  fc.constantFrom("link", "button", "section", "group").map((kind) => ({
+    name: `add menu ${kind}`,
+    run: (ctx) => {
+      if (kind === "group") {
+        addMenuItem(ctx.session, { kind, label: "More" });
+      } else if (kind === "section") {
+        // A section linked to for the first time: it gets its anchor in the same step.
+        const anchorId = `menu-${ids++}`;
+        addMenuItem(ctx.session, {
+          kind: "link",
+          label: "Hours",
+          change: {
+            link: { kind: "page", pageId: ABOUT, anchor: anchorId },
+            anchor: { pageId: ABOUT, nodeId: "section-1", anchorId },
+          },
+        });
+      } else {
+        addMenuItem(ctx.session, {
+          kind,
+          label: "Book",
+          change: { link: { kind: "url", href: "https://book.example" } },
+        });
+      }
+    },
+  })),
+  fc.record({ at: n, into: n, index: n }).map(({ at, into, index }) => ({
+    name: `move menu item ${at} to ${into}:${index}`,
+    run: (ctx) => {
+      const id = menuItemAt(ctx, at);
+      const groups = ctx.session.history.document
+        .getState()
+        .menu.items.filter((item) => item.kind === "group");
+      // Into a dropdown, or (one in three) the menu itself.
+      const group = into % 3 === 0 ? null : (groups[into % Math.max(groups.length, 1)]?.id ?? null);
+      if (id !== undefined) moveMenuItem(ctx.session, id, { group, index });
+    },
+  })),
+  n.map((at) => ({
+    name: `remove menu item ${at}`,
+    run: (ctx) => {
+      const id = menuItemAt(ctx, at);
+      if (id !== undefined) removeMenuItem(ctx.session, id);
+    },
+  })),
+  fc.record({ at: n, label: fc.string({ maxLength: 4 }) }).map(({ at, label }) => ({
+    name: `rename menu item ${at} "${label}"`,
+    run: (ctx) => {
+      const id = menuItemAt(ctx, at);
+      if (id !== undefined) renameMenuItem(ctx.session, id, label);
+    },
+  })),
+  fc.record({ at: n, hidden: fc.boolean() }).map(({ at, hidden }) => ({
+    name: `${hidden ? "hide" : "show"} menu item ${at}`,
+    run: (ctx) => {
+      const id = menuItemAt(ctx, at);
+      if (id !== undefined) setMenuItemHidden(ctx.session, id, hidden);
+    },
+  })),
+  n.map((at) => ({
+    name: `relink menu item ${at}`,
+    run: (ctx) => {
+      const id = menuItemAt(ctx, at);
+      if (id !== undefined) {
+        editMenuLink(ctx.session, id, "Shop", {
+          link: { kind: "url", href: "https://shop.example" },
+        });
+      }
+    },
+  })),
+  fc.constant<Command>({ name: "follow the page order", run: (ctx) => followPages(ctx.session) }),
+];
+
 const commands: fc.Arbitrary<Command>[] = [
+  ...menuCommands,
   fc.record({ at: n, to: n }).map(({ at, to }) => ({
     name: `insert ${at} ${to}`,
     run: (ctx) =>

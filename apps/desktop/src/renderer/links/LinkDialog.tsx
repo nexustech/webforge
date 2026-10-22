@@ -28,7 +28,15 @@ export type LinkDialogProps = {
   readonly link: LinkValue | undefined;
   readonly site: SiteDoc;
   readonly targets: readonly PageTarget[];
-  readonly onSave: (change: LinkFieldChange) => void;
+  /**
+   * For a link that shows a label of its own (a menu item, F-ED-17): the label to start from. The
+   * dialog then asks for it too, and saves only with one.
+   */
+  readonly label?: string | undefined;
+  /** The dialog's title, "Link" by default. */
+  readonly title?: string | undefined;
+  /** Called with the link and, when the dialog asks for one, its trimmed label. */
+  readonly onSave: (change: LinkFieldChange, label: string) => void;
   readonly onCancel: () => void;
 };
 
@@ -76,7 +84,19 @@ function Field({
 const withScheme = (address: string) =>
   /^[a-z][a-z0-9+.-]*:/i.test(address) ? address : `https://${address}`;
 
-function LinkForm({ link, site, targets, onSave, onCancel }: Omit<LinkDialogProps, "open">) {
+function LinkForm({
+  link,
+  site,
+  targets,
+  label,
+  title,
+  onSave,
+  onCancel,
+}: Omit<LinkDialogProps, "open">) {
+  const [labelText, setLabelText] = useState(label ?? "");
+  // Said only once the label has been typed in and emptied again, not while it waits to be filled.
+  const [labelTouched, setLabelTouched] = useState(false);
+  const labelMissing = label !== undefined && labelText.trim() === "";
   const [kind, setKind] = useState<Kind>(
     link === undefined || link.kind === "file" ? "page" : link.kind,
   );
@@ -139,13 +159,30 @@ function LinkForm({ link, site, targets, onSave, onCancel }: Omit<LinkDialogProp
       noValidate
       onSubmit={(event) => {
         event.preventDefault();
-        if ("change" in result) onSave(result.change);
+        if ("change" in result && !labelMissing) onSave(result.change, labelText.trim());
       }}
     >
       <DialogHeader>
-        <DialogTitle>{t("link.title")}</DialogTitle>
+        <DialogTitle>{title ?? t("link.title")}</DialogTitle>
         <DialogDescription>{t("link.description")}</DialogDescription>
       </DialogHeader>
+
+      {label !== undefined && (
+        <Field label={t("link.label")}>
+          {(id) => (
+            <input
+              id={id}
+              className={fieldControlClass}
+              value={labelText}
+              maxLength={100}
+              onChange={(event) => {
+                setLabelText(event.currentTarget.value);
+                setLabelTouched(true);
+              }}
+            />
+          )}
+        </Field>
+      )}
 
       <ToggleGroup
         type="single"
@@ -271,15 +308,22 @@ function LinkForm({ link, site, targets, onSave, onCancel }: Omit<LinkDialogProp
         </label>
       )}
 
-      <p role="status" className={cn("min-h-4 text-xs text-destructive", !typed && "invisible")}>
-        {"error" in result && typed ? result.error : ""}
+      <p
+        role="status"
+        className={cn("min-h-4 text-xs text-destructive", !typed && !labelTouched && "invisible")}
+      >
+        {"error" in result && typed
+          ? result.error
+          : labelMissing && labelTouched
+            ? t("link.error.label")
+            : ""}
       </p>
 
       <DialogFooter>
         <Button type="button" variant="secondary" onClick={onCancel}>
           {t("pages.cancel")}
         </Button>
-        <Button type="submit" disabled={!("change" in result)}>
+        <Button type="submit" disabled={!("change" in result) || labelMissing}>
           {t("link.save")}
         </Button>
       </DialogFooter>
