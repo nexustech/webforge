@@ -37,6 +37,7 @@ describe("siteDocuments and siteFromDocuments", () => {
       "media",
       "code",
       "menu",
+      "sharedSections",
       ...site.pageOrder.map(pageDocumentId),
     ]);
     expect(documents[0]?.content).toEqual({

@@ -1,8 +1,9 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { siteDocArbitrary } from "../test/arbitraries.js";
-import type { MediaId, PageId } from "./ids.js";
+import type { MediaId, PageId, SharedSectionId } from "./ids.js";
 import type { MediaMeta } from "./media.js";
+import { copiedNodeId, SHARED_COPY_TYPE } from "./shared-sections.js";
 import { createSite, type SiteDoc } from "./site-doc.js";
 import { siteSnapshotSchema } from "./site-snapshot.js";
 import { siteToSnapshot } from "./to-snapshot.js";
@@ -133,6 +134,36 @@ describe("siteToSnapshot", () => {
         focal: { x: 0.3, y: 0.6 },
         crop: { x: 0, y: 0.1, width: 1, height: 0.8 },
       },
+    ]);
+  });
+
+  it("exports copies of shared sections inline, as their section (F-ED-23)", () => {
+    const HOURS = "shared-hours" as SharedSectionId;
+    const withCopy: SiteDoc = {
+      ...site,
+      sharedSections: {
+        [HOURS]: {
+          id: HOURS,
+          name: "Opening hours",
+          section: { type: "Section", props: { id: "s", content: [] } },
+        },
+      },
+      pages: {
+        ...site.pages,
+        [site.homePageId]: {
+          ...(site.pages[site.homePageId] as SiteDoc["pages"][PageId]),
+          doc: {
+            root: { props: {} },
+            content: [{ type: SHARED_COPY_TYPE, props: { id: "c1", sharedSectionId: HOURS } }],
+          },
+        },
+      },
+    };
+
+    const [home] = siteToSnapshot(withCopy, new Map()).pages;
+
+    expect(home?.doc.content).toEqual([
+      { type: "Section", props: { id: copiedNodeId("c1", "s"), content: [] } },
     ]);
   });
 

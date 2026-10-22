@@ -6,7 +6,10 @@ import type { SiteDoc } from "./site-doc.js";
  * only what changed: changing a heading rewrites one page, not the site (06, F6).
  */
 export type SiteDocument = {
-  /** `site`, `settings`, `theme`, `layout`, `media`, `code`, `menu` or `page:<PageId>`. */
+  /**
+   * `site`, `settings`, `theme`, `layout`, `media`, `code`, `menu`, `sharedSections` or
+   * `page:<PageId>`.
+   */
   readonly id: string;
   readonly kind: SiteDocumentKind;
   readonly content: unknown;
@@ -21,6 +24,7 @@ export type SiteDocumentKind =
   | "media"
   | "code"
   | "menu"
+  | "sharedSections"
   | "page";
 
 /** A change to the stored site; structurally a `@webforge/storage` `DocumentChange`. */
@@ -29,7 +33,7 @@ export type SiteDocumentChange =
   | { readonly type: "delete"; readonly id: string };
 
 /** The parts of a {@link SiteDoc} stored as one document each, under their own name. */
-const PARTS = ["settings", "theme", "layout", "media", "code", "menu"] as const;
+const PARTS = ["settings", "theme", "layout", "media", "code", "menu", "sharedSections"] as const;
 
 const PAGE_PREFIX = "page:";
 

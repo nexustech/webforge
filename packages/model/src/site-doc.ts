@@ -12,9 +12,10 @@ import { mediaIdSchema, newId, type PageId, pageIdSchema } from "./ids.js";
 import { mediaMetaSchema } from "./media.js";
 import { type MenuItem, menuDocSchema } from "./menu.js";
 import { defaultSiteSettings, siteSettingsSchema } from "./settings.js";
+import { sharedSectionsDocSchema } from "./shared-sections.js";
 
 /** The format of {@link SiteDoc} this build writes. Bumped with a migration and a fixture. */
-export const SITE_FORMAT_VERSION = 2;
+export const SITE_FORMAT_VERSION = 3;
 
 const SEGMENT = "[a-z0-9]+(?:-[a-z0-9]+)*";
 
@@ -114,6 +115,8 @@ const siteDocObjectSchema = z
     media: z.record(mediaIdSchema, mediaMetaSchema),
     code: siteCodeSchema,
     menu: menuDocSchema,
+    /** Shared sections (F-ED-23): saved once, placed on pages as linked copies. */
+    sharedSections: sharedSectionsDocSchema,
   })
   .superRefine((site, ctx) => {
     const issue = (message: string, path: PropertyKey[]) =>
@@ -240,5 +243,6 @@ export function createSite(options: CreateSiteOptions): SiteDoc {
       follows: "pages",
       items: [{ id: newId("menuItem"), kind: "page", pageId: homeId, hidden: false }],
     },
+    sharedSections: {},
   };
 }

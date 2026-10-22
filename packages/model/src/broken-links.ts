@@ -1,12 +1,16 @@
 import { isNodeDoc, type NodeDoc } from "./documents.js";
-import type { PageId } from "./ids.js";
+import type { PageId, SharedSectionId } from "./ids.js";
 import { pageLinkSchema } from "./link.js";
+import { expandSharedCopies } from "./shared-sections.js";
 import type { SiteDoc } from "./site-doc.js";
 
 /** Where a broken link is: the page it is on (or the Header, Footer or menu), and its element. */
 export type BrokenLink = {
-  /** The page the link is on; `"header"` or `"footer"` for the shared layout, `"menu"`. */
-  readonly on: PageId | "header" | "footer" | "menu";
+  /**
+   * The page the link is on; `"header"` or `"footer"` for the shared layout, `"menu"`, or a shared
+   * section's id (F-ED-23): a link there is on every page with a copy of it.
+   */
+  readonly on: PageId | "header" | "footer" | "menu" | SharedSectionId;
   /** The element holding the link, or the menu item. */
   readonly nodeId: string;
   /** The page it points at. */
@@ -60,7 +64,9 @@ export function findBrokenLinks(site: SiteDoc): BrokenLink[] {
   const anchorsOn = (pageId: PageId) => {
     let anchors = anchorsOf.get(pageId);
     if (anchors === undefined) {
-      anchors = anchorsIn(site.pages[pageId]?.doc.content ?? [], new Set(shared));
+      // Copies of shared sections included, with the anchors they have on this page.
+      const content = site.pages[pageId]?.doc.content ?? [];
+      anchors = anchorsIn(expandSharedCopies(content, site.sharedSections), new Set(shared));
       anchorsOf.set(pageId, anchors);
     }
     return anchors;
@@ -109,5 +115,6 @@ export function findBrokenLinks(site: SiteDoc): BrokenLink[] {
     const page = site.pages[id];
     if (page !== undefined) check(id, page.doc.content);
   }
+  for (const entry of Object.values(site.sharedSections)) check(entry.id, [entry.section]);
   return broken;
 }

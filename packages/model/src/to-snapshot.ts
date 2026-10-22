@@ -1,5 +1,6 @@
 import { settingValues } from "./bindings.js";
 import { isImageMeta } from "./media.js";
+import { expandSharedCopies } from "./shared-sections.js";
 import { pagePath, type SiteDoc } from "./site-doc.js";
 import type { MediaItem, SitePage, SiteSnapshot } from "./site-snapshot.js";
 
@@ -29,7 +30,8 @@ export function siteToSnapshot(
         hideFromNavigation: hideFromNavigation || page.kind === "not-found",
         hideHeader,
         hideFooter,
-        doc: page.doc,
+        // Copies of shared sections are exported inline, as their shared section (F-ED-23).
+        doc: { ...page.doc, content: expandSharedCopies(page.doc.content, site.sharedSections) },
       },
     ];
   });

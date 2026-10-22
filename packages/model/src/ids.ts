@@ -11,12 +11,15 @@ export type NodeId = Brand<string, "NodeId">;
 export type MediaId = Brand<string, "MediaId">;
 /** Identifies an item of the navigation menu. */
 export type MenuItemId = Brand<string, "MenuItemId">;
+/** Identifies a shared section (F-ED-23): its linked copies point at it. */
+export type SharedSectionId = Brand<string, "SharedSectionId">;
 
 type IdTypes = {
   page: PageId;
   node: NodeId;
   media: MediaId;
   menuItem: MenuItemId;
+  sharedSection: SharedSectionId;
 };
 
 /** The kinds of id {@link newId} creates. */
@@ -67,3 +70,5 @@ export const nodeIdSchema = idSchema<"node">();
 export const mediaIdSchema = idSchema<"media">();
 /** Validates a {@link MenuItemId}. */
 export const menuItemIdSchema = idSchema<"menuItem">();
+/** Validates a {@link SharedSectionId}. */
+export const sharedSectionIdSchema = idSchema<"sharedSection">();

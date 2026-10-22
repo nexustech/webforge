@@ -23,8 +23,23 @@ export {
   siteCodeSchema,
   themeSchema,
 } from "./documents.js";
-export type { Brand, IdKind, MediaId, MenuItemId, NodeId, PageId } from "./ids.js";
-export { mediaIdSchema, menuItemIdSchema, newId, nodeIdSchema, pageIdSchema } from "./ids.js";
+export type {
+  Brand,
+  IdKind,
+  MediaId,
+  MenuItemId,
+  NodeId,
+  PageId,
+  SharedSectionId,
+} from "./ids.js";
+export {
+  mediaIdSchema,
+  menuItemIdSchema,
+  newId,
+  nodeIdSchema,
+  pageIdSchema,
+  sharedSectionIdSchema,
+} from "./ids.js";
 export type { LinkValue } from "./link.js";
 export { anchorIdSchema, linkValueSchema, webUrlSchema } from "./link.js";
 export type {
@@ -69,6 +84,15 @@ export {
   siteSettingsSchema,
   webAddressSchema,
 } from "./settings.js";
+export type { SharedCopyNode, SharedSection, SharedSectionsDoc } from "./shared-sections.js";
+export {
+  copiedAnchor,
+  copiedNodeId,
+  expandSharedCopies,
+  isSharedCopy,
+  SHARED_COPY_TYPE,
+  sharedSectionsDocSchema,
+} from "./shared-sections.js";
 export type { CreateSiteOptions, PageEntry, PageSettings, SiteDoc } from "./site-doc.js";
 export {
   createSite,
