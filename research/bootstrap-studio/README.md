@@ -34,6 +34,8 @@ Details: [03-project-file-format.md](03-project-file-format.md)
 
 **What it means for Webforge:** [05-lessons-for-webforge.md](05-lessons-for-webforge.md)
 
+**Version 9.0 (Oct 2026), competitor review:** [06-bootstrap-studio-9.md](06-bootstrap-studio-9.md). This covers the new CMS, components, editor and AI changes, and proposes MVP and v1.1 additions (BS9-1…10). The notes above describe v8.0.1.
+
 ## What was examined
 
 | Location | Finding |
