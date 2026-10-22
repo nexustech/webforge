@@ -15,9 +15,11 @@ import {
   registerClipboardCommands,
 } from "../clipboard/register-clipboard-commands.js";
 import { registerLinkField } from "../links/LinkField.js";
+import { RichTextLinkHost } from "../links/RichTextLinkHost.js";
 import { connectCanvasImages } from "../media/canvas-images.js";
 import { registerImageField } from "../media/ImageField.js";
 import { registerMediaPanel } from "../media/register-media-panel.js";
+import { connectCanvasNavigation } from "../menu/canvas-navigation.js";
 import { type CanvasView, connectCanvasView } from "../shell/canvas-view.js";
 import { useCommandRegistry } from "../shell/command-context.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
@@ -158,6 +160,7 @@ export function Editor({
     const stopSiteCss = connectSiteCss(engine, session, compileCss, document.baseURI);
     const stopImages = connectCanvasImages(engine, session);
     const stopSettings = connectCanvasSettings(engine, session);
+    const stopNavigation = connectCanvasNavigation(engine, session);
     // One handler for the whole window (U4); the engine reports keys pressed inside its iframe.
     const removeKeys = installHistoryKeys(window, (command) => {
       // Nothing changes while a question about the whole site waits for its answer (D7); Esc
@@ -209,6 +212,7 @@ export function Editor({
       stopSiteCss();
       stopImages();
       stopSettings();
+      stopNavigation();
       removeKeys();
       connectionRef.current = null;
       connection.disconnect();
@@ -310,6 +314,7 @@ export function Editor({
   return (
     <div className="editor">
       <SharedRegionBanner session={session} />
+      <RichTextLinkHost session={session} engine={engine} />
       <section className="editor__canvas" aria-label={t("editor.canvas")} ref={canvasRef} />
     </div>
   );

@@ -1,5 +1,18 @@
-import type { LayoutDoc, PageDoc, Theme } from "@webforge/model";
+import type { LayoutDoc, PageDoc, RichTextLink, Theme } from "@webforge/model";
 import type { ComponentLibrary, RenderContext, ResolvedImage } from "@webforge/site-components";
+
+/** The rich-text field being edited on the canvas: its element and the field's name. */
+export type RichTextAt = { readonly nodeId: string; readonly field: string };
+
+/**
+ * Asks the app for a link in rich text (F-ED-18), starting from `current`, the link at the caret if
+ * there is one, in the field being edited (`at`, when known): resolves to the new link, `null` to
+ * remove it, or `undefined` to leave it as it is.
+ */
+export type LinkPicker = (
+  current: RichTextLink | null,
+  at: RichTextAt | null,
+) => Promise<RichTextLink | null | undefined>;
 
 /** Desktop · Tablet · Mobile, or a width in pixels. */
 export type Viewport = "desktop" | "tablet" | "mobile" | number;
@@ -150,6 +163,13 @@ export interface CanvasEngine {
    */
   setImages(image: (mediaId: string) => ResolvedImage | null): void;
   /**
+   * Lets the app pick links in rich text (F-ED-3, F-ED-18): the format toolbar's Link button calls
+   * `picker` with the link at the caret, if any, and sets what it resolves to on the selected text
+   * (`null` removes the link, `undefined` leaves it). Without a picker the toolbar has no Link
+   * button.
+   */
+  setLinkPicker(picker: LinkPicker | null): void;
+  /**
    * Shows the site's Site Settings values in elements bound to them (1.17): `setting` gives a
    * value, `emptySetting` what an empty one shows instead (a hint). Called again when Site
    * Settings change; the page is drawn again.
@@ -158,6 +178,11 @@ export interface CanvasEngine {
     setting: RenderContext["setting"],
     emptySetting?: RenderContext["emptySetting"],
   ): void;
+  /**
+   * Shows the site's navigation menu in the Header on the canvas (1.21), as the export draws it.
+   * Called again when the menu, the pages or the page shown change; the page is drawn again.
+   */
+  setNavigation(navigation: RenderContext["navigation"]): void;
   setMode(mode: EditorMode): void;
   /**
    * Does `action` to the selected element. Edits are reported through {@link onUserEdit} as one

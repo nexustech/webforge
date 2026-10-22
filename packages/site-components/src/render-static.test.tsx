@@ -118,16 +118,69 @@ describe("renderNodesToHtml", () => {
     );
   });
 
+  it("points rich text's links to the site's pages at their files, new tabs as the dialog makes them", () => {
+    const nodes: NodeDoc[] = [
+      {
+        type: "Text",
+        props: {
+          id: "t",
+          text:
+            '<p><a href="webforge:page/page-about">About</a> ' +
+            '<a target="_blank" rel="noopener noreferrer nofollow" href="https://example.com">Web</a> ' +
+            '<a target="_top" rel="opener" href="https://example.com/x">Top</a></p>',
+        },
+      },
+    ];
+
+    expect(renderNodesToHtml(nodes, siteLibrary, context)).toContain(
+      '<p><a href="page-about.html">About</a> ' +
+        '<a href="https://example.com" target="_blank" rel="noopener">Web</a> ' +
+        '<a href="https://example.com/x">Top</a></p>',
+    );
+  });
+
   it("renders the header with navigation, the current page and the menu toggle", () => {
     const html = renderNodesToHtml(starterLayout("Rosa's Bakery").header, siteLibrary, context);
 
     expect(html).toContain('<a class="text-xl font-bold" href="index.html">Rosa&#x27;s Bakery</a>');
-    expect(html).toContain('<nav aria-label="Main navigation">');
+    expect(html).toContain(
+      '<nav aria-label="Main navigation" class="[&amp;:not([data-wf-ready]):focus-within&gt;ul]:flex">',
+    );
     expect(html).toContain('aria-controls="header-menu" data-wf-menu-toggle=""');
     expect(html).toContain('<ul id="header-menu"');
     expect(html).toContain('<a href="index.html" aria-current="page">Home</a>');
     expect(html).toContain('<a href="about.html">About</a>');
     expect(html).toContain('<span class="sr-only">Menu</span>');
+  });
+
+  it("renders the menu's buttons, new tabs and dropdowns (F-ED-17)", () => {
+    const html = renderNodesToHtml(starterLayout("Rosa's Bakery").header, siteLibrary, {
+      ...context,
+      navigation: [
+        {
+          label: "Visit us",
+          current: false,
+          children: [
+            { label: "Questions", href: "index.html#questions", current: false },
+            { label: "Find us", href: "https://example.com/map", current: false, newTab: true },
+          ],
+        },
+        { label: "Order a cake", href: "about.html", current: false, button: true },
+      ],
+    });
+
+    // The dropdown: a button that says whether it is open, controlling its own list.
+    expect(html).toContain(
+      'aria-expanded="false" aria-controls="header-menu-0" data-wf-submenu-toggle="">Visit us',
+    );
+    expect(html).toContain('<ul id="header-menu-0" class="hidden data-open:block');
+    expect(html).toContain('<a href="index.html#questions">Questions</a>');
+    expect(html).toContain(
+      '<a href="https://example.com/map" target="_blank" rel="noopener">Find us</a>',
+    );
+    expect(html).toContain(
+      '<a href="about.html" class="btn btn-primary btn-sm md:ml-2">Order a cake</a>',
+    );
   });
 
   it("links the site name to the home page, wherever it is in the navigation", () => {

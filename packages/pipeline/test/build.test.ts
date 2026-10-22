@@ -1,4 +1,4 @@
-import type { NodeDoc, SiteSnapshot } from "@webforge/model";
+import type { MenuItemId, NodeDoc, PageId, SiteSnapshot } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { sampleSite } from "@webforge/test-utils";
 import { beforeAll, describe, expect, it } from "vitest";
@@ -54,9 +54,16 @@ describe("buildSite: self-contained output (X1, C8)", () => {
     expect(index).toMatch(/<link rel="stylesheet" href="assets\/css\/site\.[0-9a-f]{10}\.css">/);
     expect(index).toMatch(/<script defer src="assets\/js\/webforge\.[0-9a-f]{10}\.js"><\/script>/);
     expect(index).toContain('<a href="about.html">About us</a>');
-    // The only absolute URLs are the SVG namespace and the user's own outbound link.
-    expect(index.match(/(?:src|href|srcSet)="[a-z]+:/gi)).toEqual(['href="https:']);
+    // The only absolute URLs are the user's own outbound links: in the menu and in the text.
+    expect(index.match(/(?:src|href|srcSet)="[a-z]+:/gi)).toEqual(['href="https:', 'href="https:']);
     expect(index).not.toContain('type="module"');
+  });
+
+  it("styles a dropdown to open on focus without the script (F-ED-17)", () => {
+    const css = text(built, [...built.files.keys()].find((path) => path.endsWith(".css")) ?? "");
+
+    expect(css).toContain("focus-within");
+    expect(css).toMatch(/data-wf-ready/);
   });
 
   it("compiles readable CSS with daisyUI, the site theme, the fonts and only the classes used", () => {
@@ -105,6 +112,14 @@ describe("buildSite: pages in folders", () => {
           doc: { root: { props: {} }, content: base.pages[0]?.doc.content.slice(0, 1) ?? [] },
         },
       ],
+      // Added to the (edited) menu, as the Pages panel adds a new page.
+      menu: {
+        follows: "custom",
+        items: [
+          ...(base.menu?.items ?? []),
+          { id: "cakes" as MenuItemId, kind: "page", pageId: "cakes" as PageId, hidden: false },
+        ],
+      },
     };
 
     const nested = await buildSite(site, siteLibrary, resources);
@@ -239,6 +254,48 @@ describe("buildSite: checks (X5)", () => {
       { code: "broken-link", page: "index", detail: "contact" },
     ]);
     expect(text(result, "index.html")).toContain('<a class="btn btn-primary" href="#">Go</a>');
+  });
+
+  it("points links in rich text at pages by relative path, ../ in a folder, # for a deleted page", async () => {
+    const richText = (id: string) => ({
+      type: "Text",
+      props: {
+        id,
+        text:
+          '<p><a href="webforge:page/home">Home</a> <a href="webforge:page/menu#cakes">Cakes</a> ' +
+          '<a href="webforge:page/gone">Old</a></p>',
+      },
+    });
+    const site = siteWith([richText("t")], {
+      pages: [
+        {
+          id: "home",
+          path: "index",
+          title: "Home",
+          doc: { root: { props: {} }, content: [richText("t")] },
+        },
+        { id: "menu", path: "menu", title: "Menu", doc: { root: { props: {} }, content: [] } },
+        {
+          id: "cakes",
+          path: "services/cakes",
+          title: "Cakes",
+          doc: { root: { props: {} }, content: [richText("c")] },
+        },
+      ],
+    });
+
+    const result = await buildSite(site, siteLibrary, resources);
+
+    expect(text(result, "index.html")).toContain(
+      '<a href="index.html">Home</a> <a href="menu.html#cakes">Cakes</a> <a href="#">Old</a>',
+    );
+    expect(text(result, "services/cakes.html")).toContain(
+      '<a href="../index.html">Home</a> <a href="../menu.html#cakes">Cakes</a> <a href="#">Old</a>',
+    );
+    expect(result.report.warnings).toEqual([
+      { code: "broken-link", page: "index", detail: "gone" },
+      { code: "broken-link", page: "services/cakes", detail: "gone" },
+    ]);
   });
 
   it("passes external links through unchanged", async () => {

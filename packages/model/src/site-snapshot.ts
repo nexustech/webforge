@@ -11,6 +11,7 @@ import {
 } from "./documents.js";
 import { pageIdSchema } from "./ids.js";
 import { cropSchema, focalPointSchema, IMAGE_MIME_TYPES, type ImageCrop } from "./media.js";
+import { type MenuDoc, menuDocSchema } from "./menu.js";
 import { languageTagSchema } from "./settings.js";
 
 /**
@@ -71,6 +72,11 @@ export type SiteSnapshot = {
   readonly media: readonly MediaItem[];
   /** The Site Settings values elements can be bound to (1.17); empty ones are left out. */
   readonly settings?: Readonly<Partial<Record<BindableSetting, string>>> | undefined;
+  /**
+   * The navigation menu (F-ED-17), which the Header renders. Without one, the navigation lists the
+   * pages in order.
+   */
+  readonly menu?: MenuDoc | undefined;
 };
 
 const sitePageSchema = z.object({
@@ -109,6 +115,7 @@ export const siteSnapshotSchema: z.ZodType<SiteSnapshot> = withoutUnsafeKeys(
       pages: z.array(sitePageSchema).min(1),
       media: z.array(mediaItemSchema),
       settings: z.partialRecord(bindableSettingSchema, z.string()).optional(),
+      menu: menuDocSchema.optional(),
     })
     .superRefine((site, ctx) => {
       const paths = site.pages.map((page) => page.path);
