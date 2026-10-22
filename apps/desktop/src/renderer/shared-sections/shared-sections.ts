@@ -152,9 +152,10 @@ export function savableSection(
 
 /**
  * Saves the selected section as shared section `name` (F-ED-23), in one step ("Saved 'Opening
- * hours' as a shared section"): the section goes to the site's shared sections as it is, and the
- * page shows it as its first copy, with the same anchors, so links to it keep working. Returns
- * whether it saved.
+ * hours' as a shared section"): the section goes to the site's shared sections, and the page shows
+ * it as its first copy, with the same anchors, so links to it keep working. Its Layers name and
+ * hidden state (F-ED-12) stay on the page, as that copy's own: other copies are neither.
+ * Returns whether it saved.
  */
 export function saveAsSharedSection(session: SharedSectionSession, name: string): boolean {
   const site = session.history.document.getState();
@@ -162,9 +163,16 @@ export function saveAsSharedSection(session: SharedSectionSession, name: string)
   const section = savableSection(site, ui.pageId, ui.nodeId);
   if (section === undefined) return false;
   const id = newId("sharedSection");
+  const { layerName, hidden, ...props } = section.props;
+  const stored: NodeDoc = { type: section.type, props: props as NodeDoc["props"] };
   const copy: SharedCopyNode = {
     type: SHARED_COPY_TYPE,
-    props: { id: newId("node"), sharedSectionId: id },
+    props: {
+      id: newId("node"),
+      sharedSectionId: id,
+      ...(layerName === undefined ? {} : { layerName }),
+      ...(hidden === true ? { hidden } : {}),
+    },
   };
   const selected = copiedNodeId(copy.props.id, section.props.id);
   session.edit(
@@ -174,7 +182,7 @@ export function saveAsSharedSection(session: SharedSectionSession, name: string)
       const content = draft.pages[ui.pageId]?.doc.content;
       const index = content?.findIndex((node) => node.props.id === section.props.id) ?? -1;
       if (content === undefined || index === -1) return;
-      draft.sharedSections[id] = { id, name, section };
+      draft.sharedSections[id] = { id, name, section: stored };
       content[index] = copy;
     },
     { selectionAfter: { ...ui, nodeId: selected } },
