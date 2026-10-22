@@ -1,11 +1,12 @@
 // @vitest-environment happy-dom
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { MediaId, PageDoc, PageId } from "@webforge/model";
+import { copiedNodeId, type MediaId, type PageDoc, type PageId } from "@webforge/model";
 import { type ComponentLibrary, siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { registerImageField } from "../media/ImageField.js";
 import { addMedia } from "../media/media-commands.js";
+import { saveAsSharedSection } from "../shared-sections/shared-sections.js";
 import { EditPanelHost } from "./EditPanelHost.js";
 import { createEditorSession, currentPage, runHistoryCommand } from "./editor-session.js";
 import { starterSite } from "./starter-site.js";
@@ -175,6 +176,43 @@ describe("EditPanelHost", () => {
     act(() => session.ui.setState({ pageId: "page-gone" as PageId }));
 
     expect(screen.getByText("Select an element to edit it")).toBeDefined();
+  });
+
+  it("edits an element of a linked copy in its shared section, which every copy shows (F-ED-23)", async () => {
+    const { session, labels, user } = setup("section-1");
+    act(() => {
+      saveAsSharedSection(session, "Welcome");
+    });
+    const [shared] = Object.values(session.history.document.getState().sharedSections);
+    if (shared === undefined) throw new Error("not saved");
+    const copyId = currentPage(session)?.doc.content[0]?.props.id ?? "";
+    act(() => session.ui.setState({ nodeId: copiedNodeId(copyId, "heading-1") }));
+    const sharedHeading = () =>
+      (
+        session.history.document.getState().sharedSections[shared.id]?.section.props.content as
+          | PageDoc["content"]
+          | undefined
+      )?.[0]?.props;
+    const pageBefore = currentPage(session)?.doc;
+    const input = screen.getByLabelText("Text");
+
+    await user.type(input, " today");
+    fireEvent.blur(input);
+
+    expect(sharedHeading()?.text).toBe("Welcome to our business today");
+    expect(currentPage(session)?.doc).toBe(pageBefore);
+    expect(labels()).toEqual([
+      "Saved 'Welcome' as a shared section",
+      "Edited shared section 'Welcome'",
+    ]);
+    // Still selected as the canvas shows it.
+    expect(session.history.entries()[1]?.selectionAfter.nodeId).toBe(
+      copiedNodeId(copyId, "heading-1"),
+    );
+    act(() => {
+      session.history.undo();
+    });
+    expect(sharedHeading()?.text).toBe("Welcome to our business");
   });
 
   it("edits the shared Footer in the site's layout, which every page shows (F-ED-7)", async () => {

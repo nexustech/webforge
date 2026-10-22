@@ -2,6 +2,7 @@ import type { ListChange } from "@webforge/editor-ui";
 import type { EngineEdit } from "@webforge/engine";
 import {
   copiedNodeId,
+  isSharedCopy,
   type MenuItemId,
   type NodeDoc,
   type PageDoc,
@@ -22,6 +23,11 @@ import {
   renameMenuItem,
   setMenuItemHidden,
 } from "../menu/menu-actions.js";
+import {
+  detachCopy,
+  saveAsSharedSection,
+  updateSectionField,
+} from "../shared-sections/shared-sections.js";
 import {
   connectEngine,
   createEditorSession,
@@ -469,6 +475,52 @@ const commands: fc.Arbitrary<Command>[] = [
             props: { ...section.props, text: `${String(section.props.text)}${text}` },
           },
         },
+      });
+    },
+  })),
+  fc.record({ at: n, name: fc.constantFrom("Team", "Prices") }).map(({ at, name }) => ({
+    name: `save section ${at} as shared section "${name}"`,
+    run: (ctx) => {
+      // As the command does (1.29): the selected section of the page; nothing for anything else.
+      const { pageId } = ctx.session.ui.getState();
+      const content = ctx.session.history.document.getState().pages[pageId]?.doc.content ?? [];
+      const node = content[at % Math.max(content.length, 1)];
+      ctx.session.ui.setState({ nodeId: node?.props.id ?? null });
+      saveAsSharedSection(ctx.session, name);
+    },
+  })),
+  fc.record({ at: n, inside: fc.boolean() }).map(({ at, inside }) => ({
+    name: `detach copy ${at}${inside ? " from an element in it" : ""}`,
+    run: (ctx) => {
+      const site = ctx.session.history.document.getState();
+      const { pageId } = ctx.session.ui.getState();
+      const copies = (site.pages[pageId]?.doc.content ?? []).filter(isSharedCopy);
+      const copy = copies[at % Math.max(copies.length, 1)];
+      const section =
+        copy === undefined ? undefined : site.sharedSections[copy.props.sharedSectionId]?.section;
+      if (copy === undefined || section === undefined) return;
+      const [first] = Array.isArray(section.props.content)
+        ? (section.props.content as NodeDoc[])
+        : [];
+      const id = inside && first !== undefined ? first.props.id : section.props.id;
+      ctx.session.ui.setState({ nodeId: copiedNodeId(copy.props.id, id) });
+      detachCopy(ctx.session);
+    },
+  })),
+  fc.string({ maxLength: 4 }).map((text) => ({
+    name: `edit a copy's element in the Edit panel "${text}"`,
+    run: (ctx) => {
+      // As the Edit panel does for an element of a copy: in the shared section itself.
+      const site = ctx.session.history.document.getState();
+      ctx.session.edit("text", "Edited shared section 'Opening hours'", (draft) => {
+        updateSectionField(
+          draft,
+          site,
+          HOURS,
+          "hours",
+          "text",
+          (stored) => `${String(stored)}${text}`,
+        );
       });
     },
   })),

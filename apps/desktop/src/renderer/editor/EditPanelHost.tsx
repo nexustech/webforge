@@ -12,6 +12,11 @@ import type { FieldDef } from "@webforge/site-components";
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import { applyAnchor, asLinkFieldChange } from "../links/link-change.js";
 import {
+  anchorsTakenInSection,
+  copySelection,
+  updateSectionField,
+} from "../shared-sections/shared-sections.js";
+import {
   bindingLabel,
   boundFieldOf,
   isBindingField,
@@ -187,9 +192,15 @@ export function EditPanelHost({
     ownNode !== undefined || nodeId === null
       ? undefined
       : sharedRegionOf(shownLayout(site, pageId), nodeId);
-  const node = region === undefined ? ownNode : findNode(site.layout[region], isSelected);
+  // Nor that: an element of a linked copy of a shared section, whose changes go to the shared
+  // section and show in every copy (F-ED-23).
+  const inCopy =
+    ownNode !== undefined || region !== undefined ? undefined : copySelection(site, pageId, nodeId);
+  const node =
+    region === undefined ? (ownNode ?? inCopy?.node) : findNode(site.layout[region], isSelected);
   const component = node === undefined ? undefined : library.components[node.type];
-  const selectedId = node?.props.id;
+  // As the canvas shows it: two copies show one element of their section under two ids.
+  const selectedId = node === undefined ? undefined : (nodeId ?? undefined);
   const breakpoint = breakpointOf(viewport);
   const device = t(`device.${breakpoint}`);
 
@@ -222,7 +233,7 @@ export function EditPanelHost({
   if (page === undefined || node === undefined || component === undefined) {
     return <EditPanel fields={[]} onChange={() => undefined} onCommit={() => undefined} />;
   }
-  const id = node.props.id;
+  const id = selectedId ?? node.props.id;
   /** A field's stored value; one never set (older sites, new fields) has the component's default. */
   const storedOr = (name: string, stored: unknown) => stored ?? component.defaults[name];
 
@@ -251,7 +262,11 @@ export function EditPanelHost({
     ]);
   });
 
-  if (advanced) {
+  if (advanced && inCopy !== undefined) {
+    // An anchor of a shared section shows in every copy, on every page with one.
+    const taken = anchorsTakenInSection(site, inCopy.shared.id, inCopy.node.props.id);
+    fields.push(...advancedFields(node.props.advanced, taken));
+  } else if (advanced) {
     // Anchors other elements use on this page, including the shared Header and Footer; for an
     // element of the Header or Footer, on every page that shows it.
     const takenAnchors: string[] = [];
@@ -281,8 +296,17 @@ export function EditPanelHost({
     ...(region === undefined ? {} : { shared: true, layout: site.layout }),
   });
 
+  /** In a copy, every change is named as the canvas names it: "Edited shared section '…'". */
+  const copyLabel =
+    inCopy === undefined
+      ? undefined
+      : t("history.editedSharedSection", {
+          name: t("history.namedItem", { name: inCopy.shared.name }),
+        });
+
   /** The undo label for a change to `name`; "… on Mobile" where it sets one device's value. */
   const labelOf = (name: string, field: FieldDef, reset = false) => {
+    if (copyLabel !== undefined) return copyLabel;
     const edit = editOf(field.kind === "text" ? "text" : "props", name);
     return field.responsive === true && (reset || breakpoint !== "desktop")
       ? deviceLabelFor(edit, library, device, reset)
@@ -293,6 +317,10 @@ export function EditPanelHost({
   const write = (draft: SiteDoc, name: string, next: (stored: unknown) => unknown) => {
     if (region !== undefined) {
       updateSharedField(draft.layout, site.layout, region, id, name, next);
+      return;
+    }
+    if (inCopy !== undefined) {
+      updateSectionField(draft, site, inCopy.shared.id, inCopy.node.props.id, name, next);
       return;
     }
     const target = draft.pages[pageId];
@@ -309,7 +337,8 @@ export function EditPanelHost({
   const changeAdvanced = (name: string, value: unknown) => {
     endRun();
     flush();
-    const label = changedLabel(editOf("props", name), library, advancedFieldLabel(name));
+    const label =
+      copyLabel ?? changedLabel(editOf("props", name), library, advancedFieldLabel(name));
     session.edit(
       "props",
       label,
@@ -328,7 +357,7 @@ export function EditPanelHost({
     flush();
     session.edit(
       "props",
-      bindingLabel(component.label, value),
+      copyLabel ?? bindingLabel(component.label, value),
       recipe("bindings", (stored) => withBinding(stored, name, value)),
       { selectionAfter },
     );
@@ -458,7 +487,7 @@ export function EditPanelHost({
       );
     session.edit(
       text ? "text" : "props",
-      listChangeLabel(change, list, textLabel),
+      copyLabel ?? listChangeLabel(change, list, textLabel),
       (draft) =>
         write(draft, name, (stored) => {
           // A list never set starts from (a copy of) the component's default.

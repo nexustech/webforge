@@ -22,6 +22,20 @@ export const canvas = {
   "canvas.sharedBanner.all": "Editing shared {region}: changes apply to all {count} pages",
   "canvas.sharedBanner.some": "Editing shared {region}: changes apply to {count} pages",
   "canvas.sharedBanner.one": "Editing shared {region}: changes apply to 1 page",
+  // An element of a linked copy of a shared section selected (1.29, F-ED-23).
+  "canvas.sharedSectionBanner.one":
+    "Editing shared section {name}: changes apply to 1 copy on 1 page",
+  "canvas.sharedSectionBanner.onePage":
+    "Editing shared section {name}: changes apply to {copies} copies on 1 page",
+  "canvas.sharedSectionBanner.pages":
+    "Editing shared section {name}: changes apply to {copies} copies on {pages} pages",
+  "canvas.saveSharedSection": "Save as shared section…",
+  "canvas.detachSharedSection": "Detach from shared section",
+  "canvas.saveSharedSection.title": "Save as shared section",
+  "canvas.saveSharedSection.description":
+    "A shared section is stored once. Place copies of it on any page; editing one copy changes them all.",
+  "canvas.saveSharedSection.name": "Name",
+  "canvas.saveSharedSection.confirm": "Save",
 
   // The Edit panel (1.14): the selected element's fields.
   "editPanel.title": "Edit",

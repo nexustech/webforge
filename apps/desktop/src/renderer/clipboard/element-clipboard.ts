@@ -1,9 +1,11 @@
 import { t } from "@webforge/i18n";
 import {
-  anchorsIn,
+  copiedNodeId,
   MAX_COPIED_NODES,
   type MediaMeta,
   type NodeDoc,
+  newSharedCopy,
+  pageAnchors,
   pastedCopies,
 } from "@webforge/model";
 import { mediaUsedBy } from "@webforge/site-components";
@@ -20,6 +22,7 @@ import { type SharedRegion, sharedRegionOf, shownLayout } from "../editor/shared
 import { layerItem } from "../layers/layers.js";
 import { importMessages } from "../media/import-media.js";
 import { addMedia, putInMedia } from "../media/media-commands.js";
+import { type CopySelection, copySelection } from "../shared-sections/shared-sections.js";
 
 /**
  * Copy, Cut and Paste of sections and elements (1.25, F-ED-16): within a page, between pages and
@@ -40,23 +43,28 @@ function itemName(session: ClipboardSession, node: NodeDoc): string {
 }
 
 /**
- * The selected element: on the shown page, or in the shared Header or Footer (`region`, F-ED-7),
- * which every page shows.
+ * The selected element: on the shown page, in the shared Header or Footer (`region`, F-ED-7),
+ * which every page shows, or in a linked copy of a shared section (`copy`, F-ED-23), as its shared
+ * section holds it.
  */
 function selectedNode(
   session: ClipboardSession,
-): { readonly node: NodeDoc; readonly region?: SharedRegion } | undefined {
-  const { nodeId } = session.ui.getState();
+):
+  | { readonly node: NodeDoc; readonly region?: SharedRegion; readonly copy?: CopySelection }
+  | undefined {
+  const { nodeId, pageId } = session.ui.getState();
   if (nodeId === null) return undefined;
   const isSelected = (node: NodeDoc) => node.props.id === nodeId;
   const own = findNode(currentPage(session)?.doc.content ?? [], isSelected);
   if (own !== undefined) return { node: own };
   // The Header and Footer as this page shows them: never one its Page Settings hide.
   const site = session.history.document.getState();
-  const layout = shownLayout(site, session.ui.getState().pageId);
+  const layout = shownLayout(site, pageId);
   const region = sharedRegionOf(layout, nodeId);
   const node = region === undefined ? undefined : findNode(layout[region], isSelected);
-  return node === undefined || region === undefined ? undefined : { node, region };
+  if (node !== undefined && region !== undefined) return { node, region };
+  const copy = copySelection(site, pageId, nodeId);
+  return copy === undefined ? undefined : { node: copy.node, copy };
 }
 
 /** The Media items `nodes` show, as the site has them. */
@@ -72,7 +80,10 @@ function mediaOf(session: ClipboardSession, nodes: readonly NodeDoc[]): MediaMet
  * Copies the selected element, with everything in it, to the clipboard. With `cut`, also removes
  * it as one step ("Cut Heading"), once the copy is on the clipboard: from the page, or from the
  * shared Header or Footer and so every page, after `confirmSharedCut` agrees (D7). The Header and
- * Footer themselves are never copied or cut. Returns whether it copied.
+ * Footer themselves are never copied or cut. A linked copy of a shared section is copied as its
+ * section, with the shared section's id (F-ED-23); cutting it removes the copy from the page.
+ * Cutting an element inside a copy removes it from the shared section, so from every copy.
+ * Returns whether it copied.
  */
 export async function copySelected(
   session: ClipboardSession,
@@ -85,7 +96,9 @@ export async function copySelected(
   if (selected === undefined) {
     return false;
   }
-  const { node, region } = selected;
+  const { node, region, copy } = selected;
+  // The copy itself, not an element in it: pasted into this site, it places another linked copy.
+  const whole = copy !== undefined && copy.node === copy.shared.section;
   // The shared Header and Footer themselves stay, like Duplicate and Delete leave them (F-ED-7);
   // the elements inside them can be copied and cut.
   const { layout } = session.history.document.getState();
@@ -101,7 +114,11 @@ export async function copySelected(
   const ui = session.ui.getState();
   let result: ClipboardWriteResult;
   try {
-    result = await clipboard.write({ nodes: [node], media: mediaOf(session, [node]) });
+    result = await clipboard.write({
+      nodes: [node],
+      media: mediaOf(session, [node]),
+      ...(whole ? { sharedSectionId: copy.shared.id } : {}),
+    });
   } catch {
     result = { status: "failed", reason: "unknown" };
   }
@@ -110,25 +127,38 @@ export async function copySelected(
     return false;
   }
   if (cut) {
-    const id = node.props.id;
+    // What goes: the copy node for a whole copy; else the element where it really is.
+    const id = whole ? copy.copy.props.id : node.props.id;
+    const shared =
+      copy === undefined ? undefined : t("history.namedItem", { name: copy.shared.name });
+    const inSection = copy !== undefined && !whole;
     session.edit(
       "remove",
-      t("site.clipboard.history.cut", {
-        // "Cut shared Heading", as the other steps in the Header or Footer name it (F-ED-7).
-        item:
-          region === undefined
-            ? itemName(session, node)
-            : t("history.sharedItem", { item: itemName(session, node) }),
-      }),
+      inSection && shared !== undefined
+        ? // Inside a copy, as the canvas names any edit there (F-ED-23).
+          t("history.editedSharedSection", { name: shared })
+        : t("site.clipboard.history.cut", {
+            // "Cut shared Heading", as the other steps in the Header or Footer name it (F-ED-7).
+            item:
+              shared ??
+              (region === undefined
+                ? itemName(session, node)
+                : t("history.sharedItem", { item: itemName(session, node) })),
+          }),
       (draft) => {
-        // From the shared Header or Footer, it goes from every page.
+        // From the shared Header or Footer, or a shared section, it goes from every page.
+        const section = inSection ? draft.sharedSections[copy.shared.id]?.section : undefined;
         const list =
-          region === undefined ? draft.pages[ui.pageId]?.doc.content : draft.layout[region];
+          section !== undefined
+            ? [section]
+            : region === undefined
+              ? draft.pages[ui.pageId]?.doc.content
+              : draft.layout[region];
         if (list !== undefined) removeNode(list, id);
       },
       { selectionAfter: { ...ui, nodeId: null } },
     );
-    if (session.ui.getState().nodeId === id) session.ui.setState({ nodeId: null });
+    if (session.ui.getState().nodeId === ui.nodeId) session.ui.setState({ nodeId: null });
   }
   return true;
 }
@@ -191,7 +221,7 @@ export async function pasteElements(
     notify(readMessage(result));
     return false;
   }
-  const { nodes, media } = result.elements;
+  const { nodes, media, sharedSectionId } = result.elements;
   const [first] = nodes;
   const page = currentPage(session);
   const ui = session.ui.getState();
@@ -201,19 +231,40 @@ export async function pasteElements(
   // Pasting goes into the page, never into the shared Header or Footer: elements don't move between
   // them and the page (F-ED-7). With a shared element selected, the page takes it as the Add panel
   // would with nothing selected. The Header and Footer as this page shows them, as when copying.
-  const layout = shownLayout(session.history.document.getState(), ui.pageId);
+  const site = session.history.document.getState();
+  const layout = shownLayout(site, ui.pageId);
+  // In a linked copy, the page holds the copy: what's pasted goes next to it.
   const selectedId =
-    ui.nodeId === null || sharedRegionOf(layout, ui.nodeId) !== undefined ? null : ui.nodeId;
+    ui.nodeId === null || sharedRegionOf(layout, ui.nodeId) !== undefined
+      ? null
+      : (copySelection(site, ui.pageId, ui.nodeId)?.copy.props.id ?? ui.nodeId);
   const target = pasteTarget(session.library, page.doc.content, nodes, selectedId);
   if (target === undefined) {
     notify(t("site.clipboard.cantPaste", { item: itemName(session, first) }));
     return false;
   }
-  // The shared Header and Footer show on the page too: their anchors are taken as well.
-  const copies = pastedCopies(
-    nodes,
-    anchorsIn([...layout.header, ...page.doc.content, ...layout.footer]),
-  );
+  const shared =
+    sharedSectionId !== undefined && Object.hasOwn(site.sharedSections, sharedSectionId)
+      ? site.sharedSections[sharedSectionId]
+      : undefined;
+  if (shared !== undefined && target.parentId === null) {
+    // A copy of a shared section this site has: another linked copy (F-ED-23).
+    const copy = newSharedCopy(page.doc.content, shared.id, site.sharedSections, layout);
+    const selected = copiedNodeId(copy.props.id, shared.section.props.id);
+    session.edit(
+      "insert",
+      t("history.addedSharedCopy", { name: t("history.namedItem", { name: shared.name }) }),
+      (draft) => {
+        const content = draft.pages[ui.pageId]?.doc.content;
+        if (content !== undefined) insertAt(content, target, [copy]);
+      },
+      { selectionAfter: { ...ui, nodeId: selected } },
+    );
+    session.ui.setState({ nodeId: selected });
+    return true;
+  }
+  // The page's own anchors, its copies' and the shared Header's and Footer's are taken.
+  const copies = pastedCopies(nodes, pageAnchors(page.doc.content, site.sharedSections, layout));
   const firstId = copies[0]?.props.id ?? null;
   const label =
     copies.length === 1

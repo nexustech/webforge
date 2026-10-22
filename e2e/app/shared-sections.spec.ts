@@ -1,0 +1,104 @@
+import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { launchDesktopApp } from "./launch.js";
+
+// Shared sections (1.29, F-ED-23): a section saved once and placed as linked copies; editing any
+// copy changes them all in one undo step, and Detach makes one copy a normal section again.
+
+let app: ElectronApplication;
+let page: Page;
+
+test.beforeEach(async () => {
+  app = await launchDesktopApp();
+  page = await app.firstWindow();
+  // Undo History is the left column's second tab, after Add.
+  await page
+    .getByRole("region", { name: "Left panels" })
+    .getByRole("tab", { name: "Undo History" })
+    .click();
+  await expect(canvas().locator("style[data-webforge-site-css]")).toHaveCount(1);
+});
+
+test.afterEach(async () => {
+  await app.close();
+});
+
+const canvas = () => page.frameLocator(".editor__canvas iframe");
+const panel = () => page.getByRole("region", { name: "Right panels" });
+const steps = () => page.locator(".undo-history__step");
+const banner = () => page.locator(".editor > [role='status']");
+const headings = () => canvas().locator(".site-heading");
+
+/** Runs an Edit menu command. */
+async function editMenu(name: string): Promise<void> {
+  await page.getByRole("menuitem", { name: "Edit" }).click();
+  await page.getByRole("menuitem", { name }).click();
+}
+
+/**
+ * Selects the first Section by clicking its bottom padding, once the canvas has finished resizing
+ * to the device view (Puck animates it).
+ */
+async function selectSection(): Promise<void> {
+  const section = canvas().locator(".site-section").first();
+  let last = "";
+  await expect
+    .poll(async () => {
+      const box = JSON.stringify(await section.boundingBox());
+      const settled = box === last;
+      last = box;
+      return settled;
+    })
+    .toBe(true);
+  const box = await section.boundingBox();
+  if (box === null) throw new Error("Section not visible");
+  await section.click({ force: true, position: { x: 10, y: box.height - 16 } });
+  await expect(panel().getByRole("heading", { name: "Section", exact: true })).toBeVisible();
+}
+
+/** Selects heading `index` by clicking past the end of its text (clicking the text edits it). */
+async function selectHeading(index: number): Promise<void> {
+  const heading = headings().nth(index);
+  const box = await heading.boundingBox();
+  if (box === null) throw new Error("Heading not visible");
+  await heading.click({ position: { x: box.width * 0.97, y: box.height - 2 } });
+  await expect(panel().getByRole("heading", { name: "Heading", exact: true })).toBeVisible();
+}
+
+test("saves a shared section, edits every copy at once, undoes it, and detaches one", async () => {
+  await selectSection();
+  await editMenu("Save as shared section…");
+  const dialog = page.getByRole("dialog", { name: "Save as shared section" });
+  await dialog.getByRole("textbox", { name: "Name" }).fill("Welcome");
+  await dialog.getByRole("button", { name: "Save" }).click();
+
+  await expect(steps().first()).toHaveText("Saved 'Welcome' as a shared section");
+  await expect(banner()).toHaveText(
+    "Editing shared section 'Welcome': changes apply to 1 copy on 1 page",
+  );
+
+  // Duplicating a copy places another linked copy.
+  await editMenu("Duplicate");
+  await expect(steps().first()).toHaveText("Added a copy of 'Welcome'");
+  await expect(headings()).toHaveCount(2);
+  await expect(banner()).toHaveText(
+    "Editing shared section 'Welcome': changes apply to 2 copies on 1 page",
+  );
+
+  // An edit in the second copy shows in both, as one step.
+  await selectHeading(1);
+  await panel().getByLabel("Text", { exact: true }).fill("Opening hours");
+  await expect(headings()).toHaveText(["Opening hours", "Opening hours"]);
+  await expect(steps().first()).toHaveText("Edited shared section 'Welcome'");
+  await page.keyboard.press("ControlOrMeta+z");
+  await expect(headings()).toHaveText(["Welcome to our business", "Welcome to our business"]);
+
+  // Detached, the second copy is a normal section: its edits stay its own.
+  await selectHeading(1);
+  await editMenu("Detach from shared section");
+  await expect(steps().first()).toHaveText("Detached 'Welcome'");
+  await expect(banner()).toHaveCount(0);
+  await selectHeading(1);
+  await panel().getByLabel("Text", { exact: true }).fill("Only here");
+  await expect(headings()).toHaveText(["Welcome to our business", "Only here"]);
+  await expect(steps().first()).toHaveText("Edited Heading text");
+});

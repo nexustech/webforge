@@ -1,8 +1,10 @@
 // @vitest-environment happy-dom
+import { copiedNodeId, newSharedCopy } from "@webforge/model";
 import { siteLibrary, starterPage } from "@webforge/site-components";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { saveAsSharedSection } from "../shared-sections/shared-sections.js";
 import { CommandRegistryProvider } from "../shell/command-context.js";
 import { type CommandRegistry, createCommandRegistry } from "../shell/commands.js";
 import { PanelRegistryProvider, usePanels } from "../shell/panel-context.js";
@@ -75,6 +77,90 @@ describe("Editor", () => {
         page: { ...starterPage(), content: [] },
       }),
     );
+
+  it("says how many copies a change reaches while an element of a copy is selected (F-ED-23)", async () => {
+    const banner = () => container.querySelector('[role="status"]')?.textContent ?? null;
+    await act(async () => {
+      session.ui.setState({ nodeId: "section-1" });
+      saveAsSharedSection(session, "Welcome");
+    });
+    const site = () => session.history.document.getState();
+    const [shared] = Object.values(site().sharedSections);
+    if (shared === undefined) throw new Error("not saved");
+    const copyId = site().pages[site().homePageId]?.doc.content[0]?.props.id ?? "";
+    await act(async () => session.ui.setState({ nodeId: copiedNodeId(copyId, "heading-1") }));
+    expect(banner()).toBe("Editing shared section 'Welcome': changes apply to 1 copy on 1 page");
+
+    const place = (onHome: boolean) =>
+      act(async () =>
+        session.edit("insert", "Added a copy", (draft) => {
+          const page = Object.values(draft.pages).find(
+            (entry) => (entry.id === draft.homePageId) === onHome,
+          );
+          page?.doc.content.push(
+            newSharedCopy(page.doc.content, shared.id, draft.sharedSections, draft.layout),
+          );
+        }),
+      );
+    await place(true);
+    expect(banner()).toBe("Editing shared section 'Welcome': changes apply to 2 copies on 1 page");
+    await place(false);
+    expect(banner()).toBe("Editing shared section 'Welcome': changes apply to 3 copies on 2 pages");
+  });
+
+  it("saves the selected section as a shared section under the name it asks for, and detaches", async () => {
+    const save = "edit.saveSharedSection";
+    const detach = "edit.detachSharedSection";
+    expect(enabled(save)).toBe(false);
+    await act(async () => session.ui.setState({ nodeId: "heading-1" }));
+    expect(enabled(save)).toBe(false);
+    await act(async () => session.ui.setState({ nodeId: "section-1" }));
+    expect(enabled(save)).toBe(true);
+    expect(enabled(detach)).toBe(false);
+
+    await act(async () => registry.run(save));
+    const input = document.querySelector<HTMLInputElement>('[role="dialog"] input');
+    expect(input?.value).toBe("Section");
+    const form = input?.closest("form");
+    await act(async () => {
+      if (input === null || input === undefined) return;
+      const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+      setValue?.call(input, "Opening hours");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await act(async () => form?.requestSubmit());
+
+    const site = session.history.document.getState();
+    expect(Object.values(site.sharedSections).map((shared) => shared.name)).toEqual([
+      "Opening hours",
+    ]);
+    expect(enabled(save)).toBe(false);
+    expect(enabled(detach)).toBe(true);
+
+    await act(async () => registry.run(detach));
+    expect(enabled(detach)).toBe(false);
+    expect(session.history.entries().at(-1)?.label).toBe("Detached 'Opening hours'");
+  });
+
+  it("turns Save as shared section and Detach off in Content mode (M3)", async () => {
+    await act(async () =>
+      root.render(
+        <CommandRegistryProvider registry={registry}>
+          <PanelRegistryProvider registry={panels}>
+            <Editor
+              session={session}
+              createEngine={createEngine}
+              compileCss={compileCss}
+              mode="content"
+            />
+          </PanelRegistryProvider>
+        </CommandRegistryProvider>,
+      ),
+    );
+    await act(async () => session.ui.setState({ nodeId: "section-1" }));
+
+    expect(enabled("edit.saveSharedSection")).toBe(false);
+  });
 
   it("says how many pages a change reaches while a shared element is selected (F-ED-7)", async () => {
     const banner = () => container.querySelector('[role="status"]')?.textContent ?? null;

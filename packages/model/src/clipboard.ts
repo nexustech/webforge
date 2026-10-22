@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { isNodeDoc, type NodeDoc, nodeDocSchema, withoutUnsafeKeys } from "./documents.js";
-import { newId } from "./ids.js";
+import { newId, type SharedSectionId, sharedSectionIdSchema } from "./ids.js";
 import { type MediaMeta, mediaMetaSchema } from "./media.js";
 
 /**
@@ -10,6 +10,11 @@ import { type MediaMeta, mediaMetaSchema } from "./media.js";
 export type CopiedElements = {
   readonly nodes: readonly NodeDoc[];
   readonly media: readonly MediaMeta[];
+  /**
+   * For a copied linked copy of a shared section (F-ED-23), the shared section's id: pasted into a
+   * site that has it, it places another linked copy; elsewhere, `nodes` (the section) is pasted.
+   */
+  readonly sharedSectionId?: SharedSectionId | undefined;
 };
 
 /** The most elements one copy holds. */
@@ -23,6 +28,7 @@ export const copiedElementsSchema: z.ZodType<CopiedElements> = withoutUnsafeKeys
   z.strictObject({
     nodes: z.array(nodeDocSchema).min(1).max(MAX_COPIED_NODES),
     media: z.array(mediaMetaSchema).max(500),
+    sharedSectionId: sharedSectionIdSchema.optional(),
   }),
 );
 
