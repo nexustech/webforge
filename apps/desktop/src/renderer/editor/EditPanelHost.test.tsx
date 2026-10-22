@@ -55,7 +55,17 @@ function setup(nodeId: string | null = "heading-1") {
     (currentPage(session)?.doc.content[2]?.props.items as PageDoc["content"] | undefined)?.map(
       (item) => item.props.question,
     );
-  return { session, flush, labels, heading, section, questions, user: userEvent.setup() };
+  // No wait between keystrokes: each redraws the panel, which in a busy full run took the Advanced
+  // tab's tests past their timeout (see LinkField.test.tsx).
+  return {
+    session,
+    flush,
+    labels,
+    heading,
+    section,
+    questions,
+    user: userEvent.setup({ delay: null }),
+  };
 }
 
 describe("EditPanelHost", () => {
@@ -348,7 +358,9 @@ describe("EditPanelHost", () => {
       const session = createEditorSession(library, site);
       session.ui.setState({ nodeId: "ratings" });
       render(<EditPanelHost session={session} flush={vi.fn()} />);
-      await userEvent.setup().click(screen.getByRole("button", { name: "Rating 1" }));
+      await userEvent
+        .setup({ delay: null })
+        .click(screen.getByRole("button", { name: "Rating 1" }));
       const slider = screen.getByLabelText("Stars");
 
       fireEvent.pointerDown(slider);
@@ -390,7 +402,7 @@ describe("EditPanelHost", () => {
         const section = currentPage(session)?.doc.content[0];
         return (section?.props.content as PageDoc["content"] | undefined)?.[0]?.props.advanced;
       };
-      return { session, labels, advanced, user: userEvent.setup() };
+      return { session, labels, advanced, user: userEvent.setup({ delay: null }) };
     }
 
     it("is only there in Advanced mode", () => {
