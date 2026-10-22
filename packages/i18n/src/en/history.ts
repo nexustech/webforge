@@ -22,6 +22,7 @@ export const history = {
   "history.sharedItem": "shared {item}",
   // An edit inside a linked copy of a shared section (1.29, F-ED-23).
   "history.editedSharedSection": "Edited shared section {name}",
+  "history.addedSharedCopy": "Added a copy of {name}",
   // An element the user named in Layers, used as {item} above.
   "history.namedItem": "'{name}'",
 } as const;

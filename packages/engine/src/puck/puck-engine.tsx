@@ -50,7 +50,7 @@ import { editFromAction, selectedNodeId, toPageDoc } from "./edit-from-action.js
 import { pageActions, type SlotsOf } from "./page-actions.js";
 import { createFormatToolbar } from "./rich-text.js";
 import { performOnSelected } from "./selected-actions.js";
-import { copiesOn, copyShownBy, foldCopies } from "./shared-copies.js";
+import { copiesOn, copyShownBy, foldCopies, shownInCopy } from "./shared-copies.js";
 import {
   composePage,
   EMPTY_LAYOUT,
@@ -403,12 +403,18 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       // The new copy selected as the canvas shows it: its section, by the copy's id for it.
       const root = shared[copy.props.sharedSectionId]?.section.props.id;
       const shown = root === undefined ? null : copiedNodeId(added.props.id, root);
-      emitEdit({ ...edit, nodeId: shown, page, selection: shown });
+      emitEdit({
+        ...edit,
+        nodeId: shown,
+        page,
+        selection: shown,
+        copyOf: copy.props.sharedSectionId,
+      });
       putBack(edit.page);
       return;
     }
     const split = splitPage(edit.page, layout);
-    const folded = foldCopies(split.page.content, page.content, shared, edit.nodeId);
+    const folded = foldCopies(split.page.content, page.content, shared);
     const id = edit.nodeId;
     // In the Header or Footer as they were (an edit, a removal) or are now (an element added in one).
     const inLayout = id !== null && (isShared(layout, id) || isShared(split.layout, id));
@@ -421,7 +427,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     const crossed = inLayout
       ? pageChanged || section !== undefined
       : section !== undefined
-        ? pageChanged || layoutChanged || others.length > 0
+        ? pageChanged || layoutChanged || others.length > 0 || folded.refused
         : layoutChanged;
     if (crossed) {
       putBack(edit.page);
@@ -431,12 +437,21 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       layout = split.layout;
       emitEdit({ ...edit, page, shared: true, layout });
     } else if (section !== undefined) {
-      const [sectionId, content] = section;
+      const [sectionId, changed] = section;
+      const content = changed.section;
       const entry = shared[sectionId];
       if (entry !== undefined) shared = { ...shared, [sectionId]: { ...entry, section: content } };
+      // An element added inside the copy shows under the copy's id for it once put back.
+      const inCopy = (nodeId: string | null) => shownInCopy(changed, nodeId);
       // A one-field patch names the copy's element; the section is recorded whole instead.
       const { patch: _patch, ...whole } = edit;
-      emitEdit({ ...whole, page, sharedSection: { id: sectionId, section: content } });
+      emitEdit({
+        ...whole,
+        nodeId: inCopy(edit.nodeId),
+        selection: inCopy(edit.selection),
+        page,
+        sharedSection: { id: sectionId, section: content },
+      });
       // Every other copy of the section shows the change too.
       putBack(edit.page);
       return;

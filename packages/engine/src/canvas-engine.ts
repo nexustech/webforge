@@ -99,6 +99,8 @@ export type EngineEdit = {
    * and so every copy of it. `section` is the shared section after the edit; `page` is unchanged.
    */
   readonly sharedSection?: { readonly id: SharedSectionId; readonly section: NodeDoc };
+  /** Set when the edit placed another linked copy of this shared section (a copy duplicated). */
+  readonly copyOf?: SharedSectionId;
   /** Set when the edit changed nothing but one field of one element to a plain value. */
   readonly patch?: EnginePatch;
   /** The selection after the edit. */

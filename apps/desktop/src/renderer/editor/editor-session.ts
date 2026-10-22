@@ -241,18 +241,21 @@ export function connectEngine(engine: CanvasEngine, session: EditorSession): Eng
       if (key !== textSession) {
         endTextSession();
       }
-      const { patch, sharedSection } = edit;
+      const { patch, sharedSection, copyOf } = edit;
+      // An edit inside a copy, or another copy placed (F-ED-23): named by its shared section.
+      const sharedOf = sharedSection?.id ?? copyOf;
       const sharedName =
-        sharedSection === undefined
+        sharedOf === undefined
           ? undefined
-          : history.document.getState().sharedSections[sharedSection.id]?.name;
+          : history.document.getState().sharedSections[sharedOf]?.name;
+      const named = sharedName === undefined ? "" : t("history.namedItem", { name: sharedName });
       session.edit(
         edit.kind,
         sharedName === undefined
           ? labelFor(edit, library, page)
-          : t("history.editedSharedSection", {
-              name: t("history.namedItem", { name: sharedName }),
-            }),
+          : copyOf === undefined
+            ? t("history.editedSharedSection", { name: named })
+            : t("history.addedSharedCopy", { name: named }),
         (draft) => {
           if (sharedSection !== undefined) {
             // Inside a linked copy (F-ED-23): its shared section, which every copy shows.

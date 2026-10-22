@@ -6,8 +6,10 @@ import {
   type SharedSectionId,
   type SharedSectionsDoc,
 } from "@webforge/model";
+import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { foldCopies } from "./shared-copies.js";
+import { foldCopies, shownInCopy } from "./shared-copies.js";
+import { sameNodes } from "./shared-layout.js";
 
 const HOURS = "shared-hours" as SharedSectionId;
 const shared: SharedSectionsDoc = {
@@ -33,7 +35,7 @@ const shown = () => structuredClone(expandSharedCopies(own, shared));
 
 describe("foldCopies (F-ED-23)", () => {
   it("folds each copy back into its copy node, with no change to its section", () => {
-    const folded = foldCopies(shown(), own, shared, null);
+    const folded = foldCopies(shown(), own, shared);
 
     expect(folded.content).toEqual(own);
     expect(folded.content[1]).toBe(own[1]);
@@ -48,10 +50,10 @@ describe("foldCopies (F-ED-23)", () => {
     // An element added inside the copy keeps the id Puck gave it.
     (second.props.content as NodeDoc[]).push({ type: "Text", props: { id: "new", text: "x" } });
 
-    const folded = foldCopies(now, own, shared, copiedNodeId("c2", "t"));
+    const folded = foldCopies(now, own, shared);
 
     expect(folded.content).toEqual(own);
-    expect(folded.sections.get(HOURS)).toEqual({
+    expect(folded.sections.get(HOURS)?.section).toEqual({
       type: "Section",
       props: {
         id: "s",
@@ -64,20 +66,84 @@ describe("foldCopies (F-ED-23)", () => {
     });
   });
 
-  it("takes the copy the edit was in, when another still shows the section as it was", () => {
+  it("counts only the copy that changed, not one still showing the section as it was", () => {
     const now = shown();
-    ((now[1] as NodeDoc).props.content as NodeDoc[])[0] = {
-      type: "Heading",
-      props: { id: copiedNodeId("c1", "t"), text: "Stale" },
-    };
     ((now[2] as NodeDoc).props.content as NodeDoc[])[0] = {
       type: "Heading",
       props: { id: copiedNodeId("c2", "t"), text: "Typed" },
     };
 
-    const folded = foldCopies(now, own, shared, copiedNodeId("c2", "t"));
+    const folded = foldCopies(now, own, shared);
 
-    expect(JSON.stringify(folded.sections.get(HOURS))).toContain("Typed");
+    expect(folded.refused).toBe(false);
+    expect(folded.sections.get(HOURS)?.copyId).toBe("c2");
+    expect(JSON.stringify(folded.sections.get(HOURS)?.section)).toContain("Typed");
+  });
+
+  it("refuses an element moved from one copy to another of the same section", () => {
+    const now = shown();
+    const moved = ((now[1] as NodeDoc).props.content as NodeDoc[]).pop() as NodeDoc;
+    ((now[2] as NodeDoc).props.content as NodeDoc[]).push(moved);
+
+    // Both copies changed: taking either would leave the section with the other copy's id (c1~t).
+    expect(foldCopies(now, own, shared).refused).toBe(true);
+  });
+
+  it("sees no change in a section whose keys Puck put in another order", () => {
+    const now = shown();
+    const section = now[1] as NodeDoc;
+    now[1] = {
+      type: section.type,
+      props: Object.fromEntries(Object.entries(section.props).reverse()) as NodeDoc["props"],
+    };
+
+    expect(foldCopies(now, own, shared).sections.size).toBe(0);
+  });
+
+  it("gives an element added inside a copy the copy's id for it, and leaves other ids", () => {
+    const changed = {
+      copyId: "c2",
+      section: {
+        ...(shared[HOURS]?.section as NodeDoc),
+        props: { id: "s", content: [{ type: "Text", props: { id: "new" } }] },
+      },
+    };
+
+    expect(shownInCopy(changed, "new")).toBe(copiedNodeId("c2", "new"));
+    expect(shownInCopy(changed, copiedNodeId("c2", "t"))).toBe(copiedNodeId("c2", "t"));
+    expect(shownInCopy(changed, "a")).toBe("a");
+    expect(shownInCopy(changed, null)).toBeNull();
+  });
+
+  it("never lets an id a copy gives an element into a shared section", () => {
+    // Every move of one element anywhere on the page, its copies' slots included: whatever the
+    // engine would take as an edit of one shared section, the section holds only its own ids.
+    const places = (nodes: NodeDoc[]): NodeDoc[][] => [
+      nodes,
+      ...nodes.flatMap((node) =>
+        Array.isArray(node.props.content) ? places(node.props.content as NodeDoc[]) : [],
+      ),
+    ];
+    fc.assert(
+      fc.property(fc.nat(), fc.nat(), fc.nat(), fc.nat(), (from, at, to, index) => {
+        const now = shown();
+        const lists = places(now);
+        const source = lists[from % lists.length] as NodeDoc[];
+        if (source.length === 0) return;
+        const [moved] = source.splice(at % source.length, 1);
+        if (moved === undefined) return;
+        const target = places(now)[to % lists.length] ?? now;
+        target.splice(index % (target.length + 1), 0, moved);
+
+        const folded = foldCopies(now, own, shared);
+        const pageChanged = !sameNodes(folded.content, own);
+        if (folded.refused || pageChanged || folded.sections.size > 1) return;
+        for (const { section } of folded.sections.values()) {
+          expect(JSON.stringify(section)).not.toContain("~");
+        }
+      }),
+      { numRuns: 300 },
+    );
   });
 
   it("shows an element moved out of a copy as a change to the page and the section both", () => {
@@ -85,7 +151,7 @@ describe("foldCopies (F-ED-23)", () => {
     const moved = ((now[1] as NodeDoc).props.content as NodeDoc[]).pop() as NodeDoc;
     now.push(moved);
 
-    const folded = foldCopies(now, own, shared, moved.props.id);
+    const folded = foldCopies(now, own, shared);
 
     // The engine refuses such a move: an element goes in or out of a copy only by copy and paste.
     expect(folded.content.map((node) => node.props.id)).toEqual(["a", "c1", "c2", moved.props.id]);
@@ -95,9 +161,6 @@ describe("foldCopies (F-ED-23)", () => {
   it("leaves a copy that was deleted out", () => {
     const now = shown().filter((node) => node.props.id !== copiedNodeId("c1", "s"));
 
-    expect(foldCopies(now, own, shared, null).content.map((node) => node.props.id)).toEqual([
-      "a",
-      "c2",
-    ]);
+    expect(foldCopies(now, own, shared).content.map((node) => node.props.id)).toEqual(["a", "c2"]);
   });
 });

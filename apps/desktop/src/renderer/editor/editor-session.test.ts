@@ -181,6 +181,31 @@ describe("connectEngine", () => {
     expect(session.history.document.getState().sharedSections[HOURS]?.section).toEqual(section);
   });
 
+  it("labels another copy placed by duplicating one by its shared section (F-ED-23)", () => {
+    const { session, engine, doc, labels } = setup();
+    const HOURS = "shared-hours" as SharedSectionId;
+    session.edit("props", "Saved", (draft) => {
+      draft.sharedSections[HOURS] = {
+        id: HOURS,
+        name: "Opening hours",
+        section: { type: "Heading", props: { id: "hours", text: "Hours" } },
+      };
+    });
+    const copy = { type: "SharedSectionCopy", props: { id: "c2", sharedSectionId: HOURS } };
+
+    engine.edit({
+      kind: "duplicate",
+      nodeId: copiedNodeId("c2", "hours"),
+      componentType: "Heading",
+      page: { ...doc(), content: [...doc().content, copy] },
+      selection: copiedNodeId("c2", "hours"),
+      copyOf: HOURS,
+    });
+
+    expect(labels().at(-1)).toBe("Added a copy of 'Opening hours'");
+    expect(doc().content.at(-1)).toEqual(copy);
+  });
+
   it("records canvas edits as labelled steps in the document store", () => {
     const { engine, doc, labels } = setup();
     const page = { ...starterPage(), content: [] };
