@@ -1,4 +1,4 @@
-import { createSite, type MediaId } from "@webforge/model";
+import { createSite, type MediaId, type MenuItemId } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { describe, expect, it } from "vitest";
 import { exportRequestFor } from "./export-request.js";
@@ -96,6 +96,24 @@ describe("exportRequestFor", () => {
 
     expect(exportRequestFor(site, siteLibrary).documents).toEqual([
       { id: "a1", name: "a1", mimeType: "application/pdf", hash: "a1".padEnd(64, "0") },
+    ]);
+
+    // The navigation menu can link to one too.
+    site.menu = {
+      follows: "custom",
+      items: [
+        {
+          id: "m1" as MenuItemId,
+          kind: "link",
+          label: "Menu",
+          hidden: false,
+          link: { kind: "file", mediaId: "b2" as MediaId },
+        },
+      ],
+    };
+    expect(exportRequestFor(site, siteLibrary).documents?.map((item) => item.id)).toEqual([
+      "a1",
+      "b2",
     ]);
   });
 });

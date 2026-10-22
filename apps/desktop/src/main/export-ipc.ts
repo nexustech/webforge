@@ -45,9 +45,10 @@ function snapshotWithMedia(
     const blob = readMedia(hash);
     return blob === undefined ? [] : [{ ...image, data: blob.data }];
   });
+  // A document is exported under its type's extension, so its stored bytes must be that type.
   const documents = (request.documents ?? []).flatMap(({ hash, ...file }): DocumentItem[] => {
     const blob = readMedia(hash);
-    return blob === undefined ? [] : [{ ...file, data: blob.data }];
+    return blob === undefined || blob.mime !== file.mimeType ? [] : [{ ...file, data: blob.data }];
   });
   return { ...request.snapshot, media, documents };
 }

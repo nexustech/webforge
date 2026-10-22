@@ -14,7 +14,15 @@ export function exportRequestFor(site: SiteDoc, library: ComponentLibrary): Expo
     ...site.pageOrder.flatMap((id) => site.pages[id]?.doc.content ?? []),
   ];
   const used = mediaUsedBy(nodes, library);
+  // Documents elements link to, and those the navigation menu links to.
   const linked = documentsLinkedBy(nodes, library);
+  for (const item of site.menu.items.flatMap((entry) =>
+    entry.kind === "group" ? entry.children : [entry],
+  )) {
+    if ((item.kind === "link" || item.kind === "button") && item.link.kind === "file") {
+      linked.add(item.link.mediaId);
+    }
+  }
   return {
     snapshot: siteToSnapshot(site, new Map()),
     media: Object.values(site.media)
