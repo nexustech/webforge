@@ -101,6 +101,7 @@ describe("importItems", () => {
         rejected: [
           { fileName: "logo.gif", reason: "unsupported" },
           { fileName: "poster.png", reason: "too-large" },
+          { fileName: "notes.txt", reason: "not-text" },
         ],
       }),
       notify,
@@ -108,8 +109,9 @@ describe("importItems", () => {
 
     expect(added).toEqual([prices]);
     expect(notify.mock.calls).toEqual([
-      ["logo.gif isn't a JPEG, PNG or PDF, so it wasn't added."],
+      ["logo.gif isn't an image or document Media takes, so it wasn't added."],
       ["poster.png is too large. Media takes files up to 50 MB and images up to 50 megapixels."],
+      ["notes.txt isn't plain text, so it wasn't added. It may be another kind of file renamed."],
     ]);
   });
 

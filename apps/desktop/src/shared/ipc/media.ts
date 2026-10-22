@@ -32,7 +32,8 @@ type DroppedFile = z.infer<typeof droppedFileSchema>;
 export const rejectedFileSchema = z.strictObject({
   fileName: z.string().min(1).max(255),
   /** Not a JPEG, PNG or PDF (judged by its bytes), or over 50 MB or 50 megapixels. */
-  reason: z.enum(["unsupported", "too-large"]),
+  /** `not-text`: named as plain text or CSV, but not text (another kind of file renamed). */
+  reason: z.enum(["unsupported", "too-large", "not-text"]),
 });
 
 /**

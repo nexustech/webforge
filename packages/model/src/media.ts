@@ -3,8 +3,47 @@ import { mediaIdSchema } from "./ids.js";
 
 /** Image types Media accepts; the export makes WebP plus a fallback in the original type (X2). */
 export const IMAGE_MIME_TYPES = ["image/jpeg", "image/png"] as const;
-/** Other files a link can point at (F-ED-18 "File"). */
-export const FILE_MIME_TYPES = ["application/pdf"] as const;
+/**
+ * Documents Media takes besides images (F-ED-24): PDF, Word, Excel, PowerPoint, OpenDocument, plain
+ * text and CSV. A link can point at one (F-ED-18 "File"); they are never opened in the editor, and
+ * the export copies them unchanged.
+ */
+export const FILE_MIME_TYPES = [
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "application/vnd.oasis.opendocument.text",
+  "application/vnd.oasis.opendocument.spreadsheet",
+  "application/vnd.oasis.opendocument.presentation",
+  "text/plain",
+  "text/csv",
+] as const;
+
+/** A document type Media takes. */
+export type FileMimeType = (typeof FILE_MIME_TYPES)[number];
+
+/**
+ * The file extension each document type comes with, lower case, without the dot: an import must
+ * have it (as well as the content), and the export names the file with it.
+ */
+export const DOCUMENT_EXTENSIONS: Readonly<Record<FileMimeType, string>> = {
+  "application/pdf": "pdf",
+  "application/msword": "doc",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+  "application/vnd.ms-excel": "xls",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
+  "application/vnd.ms-powerpoint": "ppt",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation": "pptx",
+  "application/vnd.oasis.opendocument.text": "odt",
+  "application/vnd.oasis.opendocument.spreadsheet": "ods",
+  "application/vnd.oasis.opendocument.presentation": "odp",
+  "text/plain": "txt",
+  "text/csv": "csv",
+};
 
 const fraction = z.number().min(0).max(1);
 
@@ -60,6 +99,11 @@ const fileMetaSchema = z.strictObject({
   ...mediaBaseShape,
   kind: z.literal("file"),
   mimeType: z.enum(FILE_MIME_TYPES),
+  /**
+   * The file's size in bytes, for the Media panel and Site Check's tip on large downloads. Files
+   * imported before 1.28 (PDFs only) don't have it.
+   */
+  size: z.int().nonnegative().optional(),
 });
 
 /**

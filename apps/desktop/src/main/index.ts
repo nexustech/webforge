@@ -1,7 +1,7 @@
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { t } from "@webforge/i18n";
-import type { SiteSnapshot } from "@webforge/model";
+import { DOCUMENT_EXTENSIONS, type SiteSnapshot } from "@webforge/model";
 import {
   app,
   BrowserWindow,
@@ -297,7 +297,12 @@ const mediaDialogs: MediaDialogs = {
   chooseMediaFiles: async () => {
     const options: OpenDialogOptions = {
       title: t("site.media.chooseTitle"),
-      filters: [{ name: t("site.media.fileType"), extensions: ["jpg", "jpeg", "png", "pdf"] }],
+      filters: [
+        {
+          name: t("site.media.fileType"),
+          extensions: ["jpg", "jpeg", "png", ...Object.values(DOCUMENT_EXTENSIONS)],
+        },
+      ],
       properties: ["openFile", "multiSelections"],
     };
     const parent = BrowserWindow.getFocusedWindow();
