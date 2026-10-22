@@ -81,7 +81,14 @@ async function drag(from: Locator, to: { x: number; y: number }, grabAt = 0.5): 
   await page.mouse.move(to.x, to.y, { steps: 25 });
   // A hand settles on the target before letting go: Puck takes the zone under the pointer a move
   // after entering it, and the page's top level, crossed on the way, takes sections only.
-  for (const dx of [6, -6, 0]) await page.mouse.move(to.x + dx, to.y + 1, { steps: 3 });
+  // Each move needs a render to take effect, which a slow machine may not fit between instant
+  // moves: wait for the next frames.
+  for (const dx of [6, -6, 4, -4, 0]) {
+    await page.mouse.move(to.x + dx, to.y + 1, { steps: 4 });
+    await page.evaluate(
+      () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))),
+    );
+  }
   await page.mouse.up();
 }
 
@@ -119,9 +126,10 @@ test.describe("Puck canvas with Webforge history", () => {
   test("adding an element by drag is one step; Ctrl+Z and Ctrl+Shift+Z undo and redo it", async () => {
     await drag(
       page.getByText("Heading", { exact: true }).first(),
-      // On the text's lower half, so after it in the Section: the Section's padding below it is
-      // the page's top level, which takes sections only (F-ED-1).
-      await inLowerHalf(canvas().getByText(STARTER_TEXT)),
+      // On the heading's lower half, so after it in the Section: the Section's padding is the page's
+      // top level, which takes sections only (F-ED-1). Not the rich text, which Puck swaps for its
+      // editor when that loads (ADR 0004), so a drop there can find nothing.
+      await inLowerHalf(canvas().locator("h1")),
     );
 
     await expectSteps(["Added Heading"], "Added Heading");
@@ -267,9 +275,10 @@ test.describe("Puck canvas with Webforge history", () => {
   test("clicking a step in Undo History jumps there", async () => {
     await drag(
       page.getByText("Heading", { exact: true }).first(),
-      // On the text's lower half, so after it in the Section: the Section's padding below it is
-      // the page's top level, which takes sections only (F-ED-1).
-      await inLowerHalf(canvas().getByText(STARTER_TEXT)),
+      // On the heading's lower half, so after it in the Section: the Section's padding is the page's
+      // top level, which takes sections only (F-ED-1). Not the rich text, which Puck swaps for its
+      // editor when that loads (ADR 0004), so a drop there can find nothing.
+      await inLowerHalf(canvas().locator("h1")),
     );
     await expect(canvas().locator("h2")).toHaveCount(1);
     await drag(

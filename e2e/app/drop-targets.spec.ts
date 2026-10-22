@@ -42,7 +42,14 @@ async function drag(from: Locator, to: { x: number; y: number }, grabAt: number)
   await page.mouse.move(x + 10, y + 10, { steps: 5 });
   await page.mouse.move(to.x, to.y, { steps: 25 });
   // A hand settles on the target before letting go.
-  for (const dx of [6, -6, 0]) await page.mouse.move(to.x + dx, to.y + 1, { steps: 3 });
+  // Each move needs a render to take effect, which a slow machine may not fit between instant
+  // moves: wait for the next frames.
+  for (const dx of [6, -6, 4, -4, 0]) {
+    await page.mouse.move(to.x + dx, to.y + 1, { steps: 4 });
+    await page.evaluate(
+      () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))),
+    );
+  }
   await page.mouse.up();
 }
 
