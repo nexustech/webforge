@@ -270,13 +270,18 @@ export function Editor({
     if (mode !== "design") {
       return;
     }
-    const addPanel = registerAddPanel(panels, session, () => connectionRef.current?.flush());
+    // Its items drag new elements onto the canvas once there is one.
+    const addPanel = registerAddPanel(panels, session, {
+      flush: () => connectionRef.current?.flush(),
+      dragSource:
+        engine === null ? undefined : (element, type) => engine.addDragSource(element, type),
+    });
     addPanelRef.current = addPanel;
     return () => {
       addPanelRef.current = null;
       addPanel.remove();
     };
-  }, [panels, session, mode]);
+  }, [panels, session, mode, engine]);
   useEffect(() => registerMediaPanel(panels, session), [panels, session]);
   useEffect(() => registerImageField({ session }), [session]);
   useEffect(() => registerLinkField({ session }), [session]);

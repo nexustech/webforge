@@ -72,6 +72,38 @@ describe("AddPanel (F-ED-1)", () => {
   });
 });
 
+describe("dragging from the Add panel", () => {
+  it("makes every item it can add a drag source, until it goes", () => {
+    const stops = new Map<string, ReturnType<typeof vi.fn>>();
+    const dragSource = vi.fn((element: HTMLElement, type: string) => {
+      const stop = vi.fn();
+      stops.set(type, stop);
+      expect(element.textContent).toContain(type === "Faq" ? "FAQ" : type);
+      return stop;
+    });
+    const props = {
+      sections: addItems(siteLibrary, "sections"),
+      elements: addItems(siteLibrary, "elements"),
+      tab: "sections" as const,
+      onTabChange: vi.fn(),
+      onAdd: vi.fn(),
+      canAdd: (type: string) => type !== "Faq",
+      point: null,
+      onCancelPoint: vi.fn(),
+      dragSource,
+    };
+    const view = render(<AddPanel {...props} />);
+
+    // Not the FAQ, which has nowhere to go.
+    expect(dragSource.mock.calls.map(([, type]) => type)).toEqual(["Section", "Hero"]);
+    expect(button("Hero").className).toContain("relative");
+    view.unmount();
+
+    expect(stops.get("Hero")).toHaveBeenCalledOnce();
+    expect(stops.get("Section")).toHaveBeenCalledOnce();
+  });
+});
+
 describe("registerAddPanel", () => {
   function AddHost() {
     const panel = usePanels().find((entry) => entry.id === "add");
@@ -89,7 +121,7 @@ describe("registerAddPanel", () => {
     const shown = vi.fn();
     panels.onShow(shown);
     const flush = vi.fn();
-    const addPanel = registerAddPanel(panels, session, flush);
+    const addPanel = registerAddPanel(panels, session, { flush });
     render(<Host panels={panels} />);
 
     act(() => addPanel.openAt({ index: 1 }));

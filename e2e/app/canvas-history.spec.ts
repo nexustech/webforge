@@ -1,4 +1,5 @@
 import { type ElectronApplication, expect, type Locator, type Page, test } from "@playwright/test";
+import { below, boxOf, drag, lowerHalf } from "./drag.js";
 import { launchDesktopApp } from "./launch.js";
 
 // Phase 0 spike (spec/02-mvp-spec.md §6, ADR 0004): Puck runs on the canvas, but every change goes
@@ -46,67 +47,27 @@ async function expectSteps(labels: string[], current: string): Promise<void> {
   await expect(page.getByText("Edited page")).toHaveCount(0);
 }
 
-type Box = { x: number; y: number; width: number; height: number };
-
-/**
- * The element's position, once it has one. Puck swaps the rich-text element when its editor
- * finishes loading (ADR 0004), so a single read can land between the old and the new element.
- */
-async function boxOf(target: Locator, name: string): Promise<Box> {
-  let box: Box | null = null;
-  await expect
-    .poll(
-      async () => {
-        box = await target.boundingBox();
-        return box !== null;
-      },
-      { message: `${name} is not visible` },
-    )
-    .toBe(true);
-  return box as unknown as Box;
-}
-
-/**
- * Drags with real mouse events, in small steps, as a user would. `grabAt` is where to press, as a
- * fraction of the source's width: pressing on an inline-editable element's text selects text
- * instead of dragging the element.
- */
-async function drag(from: Locator, to: { x: number; y: number }, grabAt = 0.5): Promise<void> {
-  const box = await boxOf(from, "Drag source");
-  const x = box.x + box.width * grabAt;
-  const y = box.y + box.height / 2;
-  await page.mouse.move(x, y);
-  await page.mouse.down();
-  await page.mouse.move(x + 10, y + 10, { steps: 5 });
-  await page.mouse.move(to.x, to.y, { steps: 25 });
-  // A hand settles on the target before letting go: Puck takes the zone under the pointer a move
-  // after entering it, and the page's top level, crossed on the way, takes sections only.
-  // Each move needs a render to take effect, which a slow machine may not fit between instant
-  // moves: wait for the next frames.
-  for (const dx of [6, -6, 4, -4, 0]) {
-    await page.mouse.move(to.x + dx, to.y + 1, { steps: 4 });
-    await page.evaluate(
-      () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))),
-    );
-  }
-  await page.mouse.up();
-}
-
-async function below(target: Locator, offset = 3): Promise<{ x: number; y: number }> {
-  const box = await boxOf(target, "Drop target");
-  return { x: box.x + box.width / 2, y: box.y + box.height + offset };
-}
-
-/** A point on `target`'s lower half, where a drop goes after it. */
-async function inLowerHalf(target: Locator): Promise<{ x: number; y: number }> {
-  const box = await boxOf(target, "Drop target");
-  return { x: box.x + box.width / 2, y: box.y + box.height * 0.75 };
-}
-
 /** Waits until the history's coalescing window (1 s) has passed, as a pause in typing would. */
 async function pauseTyping(): Promise<void> {
   const start = await page.evaluate(() => Date.now());
   await expect.poll(() => page.evaluate(() => Date.now())).toBeGreaterThan(start + 1_200);
+}
+
+const left = () => page.getByRole("region", { name: "Left panels" });
+
+/** The Add panel's element `name`, on its Elements tab (1.13), to drag onto the canvas. */
+async function addPanelElement(name: string): Promise<Locator> {
+  await left().getByRole("tab", { name: "Add" }).click();
+  await left().getByRole("tab", { name: "Elements" }).click();
+  const item = left().getByRole("button", { name, exact: true });
+  // The canvas adds its drag handle to a newly shown item a moment later.
+  await expect(item.locator("[data-puck-drawer-item]").first()).toBeAttached();
+  return item;
+}
+
+/** Brings Undo History, the left column's second tab, back to the front. */
+async function showUndoHistory(): Promise<void> {
+  await left().getByRole("tab", { name: "Undo History" }).click();
 }
 
 /** Moves focus out of the canvas iframe, so key presses go to the host window. */
@@ -125,12 +86,11 @@ test.describe("Puck canvas with Webforge history", () => {
 
   test("adding an element by drag is one step; Ctrl+Z and Ctrl+Shift+Z undo and redo it", async () => {
     await drag(
-      page.getByText("Heading", { exact: true }).first(),
-      // On the heading's lower half, so after it in the Section: the Section's padding is the page's
-      // top level, which takes sections only (F-ED-1). Not the rich text, which Puck swaps for its
-      // editor when that loads (ADR 0004), so a drop there can find nothing.
-      await inLowerHalf(canvas().locator("h1")),
+      page,
+      await addPanelElement("Heading"),
+      await lowerHalf(canvas().getByText(STARTER_TEXT)),
     );
+    await showUndoHistory();
 
     await expectSteps(["Added Heading"], "Added Heading");
     await expect(canvas().locator("h2")).toHaveText("Heading");
@@ -151,7 +111,7 @@ test.describe("Puck canvas with Webforge history", () => {
 
     // Grabbed past the end of its text, at the right of the heading, and dropped just inside the
     // text's lower edge: below it is the Section's padding, which isn't a drop zone.
-    await drag(heading, await below(text, -3), 0.97);
+    await drag(page, heading, await below(text, -3), 0.97);
 
     await expectSteps(["Moved Heading"], "Moved Heading");
     await expect(canvas().locator(".site-section")).toContainText(
@@ -274,17 +234,13 @@ test.describe("Puck canvas with Webforge history", () => {
 
   test("clicking a step in Undo History jumps there", async () => {
     await drag(
-      page.getByText("Heading", { exact: true }).first(),
-      // On the heading's lower half, so after it in the Section: the Section's padding is the page's
-      // top level, which takes sections only (F-ED-1). Not the rich text, which Puck swaps for its
-      // editor when that loads (ADR 0004), so a drop there can find nothing.
-      await inLowerHalf(canvas().locator("h1")),
+      page,
+      await addPanelElement("Heading"),
+      await lowerHalf(canvas().getByText(STARTER_TEXT)),
     );
     await expect(canvas().locator("h2")).toHaveCount(1);
-    await drag(
-      page.getByText("Text", { exact: true }).first(),
-      await inLowerHalf(canvas().locator("h2")),
-    );
+    await drag(page, await addPanelElement("Text"), await lowerHalf(canvas().locator("h2")));
+    await showUndoHistory();
     await expectSteps(["Added Text", "Added Heading"], "Added Text");
 
     await steps().filter({ hasText: "Opened page" }).click();

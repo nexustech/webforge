@@ -165,6 +165,10 @@ describe("Editor", () => {
     ).toBe("Hero");
   });
 
+  it("lets the Add panel's items be dragged onto the canvas", () => {
+    expect(engine.addDragSource).toHaveBeenCalledWith(expect.any(HTMLButtonElement), "Hero");
+  });
+
   it("hides the Add panel in Content mode", async () => {
     expect(panels.list().map((panel) => panel.id)).toContain("add");
 
@@ -296,12 +300,16 @@ describe("Editor", () => {
   });
 
   it("puts Add and Undo History on the left, and the Edit panel and Media on the right", () => {
-    expect(panels.list()).toEqual([
-      expect.objectContaining({ id: "undoHistory", slot: "left.bottom", title: "Undo History" }),
-      expect.objectContaining({ id: "edit", slot: "right.top", title: "Edit" }),
-      expect.objectContaining({ id: "add", slot: "left.top", title: "Add" }),
-      expect.objectContaining({ id: "media", slot: "right.bottom", title: "Media" }),
-    ]);
+    // In any order: Add is registered again once the canvas engine is there.
+    expect(panels.list()).toHaveLength(4);
+    expect(panels.list()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: "undoHistory", slot: "left.bottom", title: "Undo History" }),
+        expect.objectContaining({ id: "edit", slot: "right.top", title: "Edit" }),
+        expect.objectContaining({ id: "add", slot: "left.top", title: "Add" }),
+        expect.objectContaining({ id: "media", slot: "right.bottom", title: "Media" }),
+      ]),
+    );
   });
 
   it("redraws only the Edit panel when the editor level changes, keeping the other tabs in place", async () => {

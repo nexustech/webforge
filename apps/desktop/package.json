@@ -6,9 +6,10 @@
   "type": "module",
   "main": "./out/main/index.js",
   "scripts": {
-    "dev": "electron-vite dev",
+    "dev": "pnpm run ensure-electron && electron-vite dev",
     "build": "electron-vite build",
-    "preview": "electron-vite preview",
+    "preview": "pnpm run ensure-electron && electron-vite preview",
+    "ensure-electron": "node ../../tools/src/ensure-electron.ts",
     "package:win": "electron-vite build && electron-builder --win",
     "package:mac": "electron-vite build && electron-builder --mac",
     "package:dir": "electron-vite build && electron-builder --dir",
