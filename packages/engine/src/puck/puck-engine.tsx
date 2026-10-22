@@ -29,6 +29,7 @@ import type {
   HistoryCommandHandler,
   InsertPoint,
   LinkPicker,
+  RichTextAt,
   Viewport,
 } from "../canvas-engine.js";
 import { installHistoryKeys } from "../history-keys.js";
@@ -526,7 +527,22 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
 
   /** Picks links in rich text for the format toolbar (F-ED-18); none until the app gives one. */
   let linkPicker: LinkPicker | null = null;
-  const formatToolbar = createFormatToolbar(() => linkPicker);
+  /**
+   * The rich-text field being edited: the selected element, and the inline field Puck has focused
+   * (`text::inline`). Read when the toolbar's Link button is clicked, before the dialog takes focus.
+   */
+  const editingRichText = (): RichTextAt | null => {
+    const state = getPuck?.();
+    const nodeId = state?.selectedItem?.props.id;
+    const focus = state?.appState.ui.field.focus;
+    return typeof nodeId === "string" && typeof focus === "string"
+      ? { nodeId, field: focus.replace(/::inline$/, "") }
+      : null;
+  };
+  const formatToolbar = createFormatToolbar(() => {
+    const picker = linkPicker;
+    return picker === null ? null : (current) => picker(current, editingRichText());
+  });
 
   /** The Puck config for `library`, rendering with the current editor revisions and context. */
   const configFor = (forLibrary: ComponentLibrary) =>

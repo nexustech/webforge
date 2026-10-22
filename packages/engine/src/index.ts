@@ -12,6 +12,7 @@ export type {
   InsertPoint,
   LinkPicker,
   MountOptions,
+  RichTextAt,
   Unsubscribe,
   Viewport,
 } from "./canvas-engine.js";

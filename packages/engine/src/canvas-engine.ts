@@ -1,11 +1,18 @@
 import type { LayoutDoc, PageDoc, RichTextLink, Theme } from "@webforge/model";
 import type { ComponentLibrary, RenderContext, ResolvedImage } from "@webforge/site-components";
 
+/** The rich-text field being edited on the canvas: its element and the field's name. */
+export type RichTextAt = { readonly nodeId: string; readonly field: string };
+
 /**
  * Asks the app for a link in rich text (F-ED-18), starting from `current`, the link at the caret if
- * there is one: resolves to the new link, `null` to remove it, or `undefined` to leave it as it is.
+ * there is one, in the field being edited (`at`, when known): resolves to the new link, `null` to
+ * remove it, or `undefined` to leave it as it is.
  */
-export type LinkPicker = (current: RichTextLink | null) => Promise<RichTextLink | null | undefined>;
+export type LinkPicker = (
+  current: RichTextLink | null,
+  at: RichTextAt | null,
+) => Promise<RichTextLink | null | undefined>;
 
 /** Desktop · Tablet · Mobile, or a width in pixels. */
 export type Viewport = "desktop" | "tablet" | "mobile" | number;

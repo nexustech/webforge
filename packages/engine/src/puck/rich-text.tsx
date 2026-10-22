@@ -1,9 +1,13 @@
 import { type Field, RichTextMenu } from "@puckeditor/core";
 import { t } from "@webforge/i18n";
+import type { RichTextLink } from "@webforge/model";
 import { RICH_TEXT_PAGE_LINK } from "@webforge/model";
 import { LinkIcon, UnlinkIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { LinkPicker } from "../canvas-engine.js";
+
+/** Asks for a link for the rich text being edited; see {@link LinkPicker}. */
+type PickLink = (current: RichTextLink | null) => ReturnType<LinkPicker>;
 
 /** Puck's rich-text field, with the options and menus it takes. */
 type RichtextField = Extract<Field, { type: "richtext" }>;
@@ -62,7 +66,7 @@ function useRedrawOnChange(editor: ToolbarProps["editor"]): void {
  * The link button: asks the app for a link (through `pick`) and sets it on the selected text, or
  * changes the link at the caret. Without text selected or a link to change, there's nothing to link.
  */
-function LinkControl({ editor, pick }: { editor: ToolbarProps["editor"]; pick: LinkPicker }) {
+function LinkControl({ editor, pick }: { editor: ToolbarProps["editor"]; pick: PickLink }) {
   const isLink = editor?.isActive("link") === true;
   return (
     <RichTextMenu.Control
@@ -94,7 +98,7 @@ function LinkControl({ editor, pick }: { editor: ToolbarProps["editor"]; pick: L
  * element's quick-action bar: bold and italic, a link and its removal (when the app picks links,
  * `picker()`), the two lists, and left, centre and right alignment.
  */
-export function createFormatToolbar(picker: () => LinkPicker | null) {
+export function createFormatToolbar(picker: () => PickLink | null) {
   return function FormatToolbar({ editor }: ToolbarProps) {
     useRedrawOnChange(editor);
     const pick = picker();
