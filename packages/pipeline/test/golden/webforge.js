@@ -25,6 +25,12 @@
       },
     };
     dropdowns.push(dropdown);
+    // Tabbing on past its links closes it, so it doesn't stay drawn over the page.
+    item.addEventListener("focusout", (event) => {
+      if (!(event.relatedTarget instanceof Node && item.contains(event.relatedTarget))) {
+        dropdown.setOpen(false);
+      }
+    });
     toggle.addEventListener("click", () => {
       const open = !dropdown.isOpen();
       for (const other of dropdowns) {
@@ -38,7 +44,12 @@
     "keydown",
     (event) => {
       const open = dropdowns.find((dropdown) => dropdown.isOpen());
-      if (event.key === "Escape" && open !== undefined) {
+      // Only while focus is in the dropdown (or nowhere): Escape elsewhere is someone else's.
+      const focus = document.activeElement;
+      const here =
+        open !== undefined &&
+        (focus === null || focus === document.body || open.item.contains(focus));
+      if (event.key === "Escape" && open !== undefined && here) {
         event.preventDefault();
         event.stopPropagation();
         open.setOpen(false);

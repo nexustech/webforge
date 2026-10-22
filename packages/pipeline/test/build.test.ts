@@ -59,6 +59,13 @@ describe("buildSite: self-contained output (X1, C8)", () => {
     expect(index).not.toContain('type="module"');
   });
 
+  it("styles a dropdown to open on focus without the script (F-ED-17)", () => {
+    const css = text(built, [...built.files.keys()].find((path) => path.endsWith(".css")) ?? "");
+
+    expect(css).toContain("focus-within");
+    expect(css).toMatch(/data-wf-ready/);
+  });
+
   it("compiles readable CSS with daisyUI, the site theme, the fonts and only the classes used", () => {
     const css = text(built, fileNamed(built, /^assets\/css\//));
 

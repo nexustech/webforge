@@ -131,6 +131,31 @@ test.describe("exported site from disk", () => {
     await page.getByRole("main").click({ position: { x: 5, y: 5 } });
     await expect(dropdown).toHaveAttribute("aria-expanded", "false");
     await expect(navigation.getByRole("link", { name: "Find us" })).toBeHidden();
+
+    // So does tabbing on past its links.
+    await dropdown.focus();
+    await page.keyboard.press("Enter");
+    await expect(dropdown).toHaveAttribute("aria-expanded", "true");
+    await page.keyboard.press("Tab");
+    await page.keyboard.press("Tab");
+    await page.keyboard.press("Tab");
+    await expect(navigation.getByRole("link", { name: "Order a cake" })).toBeFocused();
+    await expect(dropdown).toHaveAttribute("aria-expanded", "false");
+  });
+
+  test.describe("without JavaScript", () => {
+    test.use({ javaScriptEnabled: false });
+
+    test("opens a dropdown while it has the focus", async ({ page }) => {
+      await page.setViewportSize({ width: 1280, height: 800 });
+      await open(page, "index.html");
+      const navigation = page.getByRole("navigation");
+      const questions = navigation.getByRole("link", { name: "Questions" });
+
+      await expect(questions).toBeHidden();
+      await navigation.getByRole("button", { name: "Visit us" }).focus();
+      await expect(questions).toBeVisible();
+    });
   });
 
   test("opens an FAQ answer with the keyboard", async ({ page }) => {
