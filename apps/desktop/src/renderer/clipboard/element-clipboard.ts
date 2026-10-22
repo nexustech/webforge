@@ -1,6 +1,7 @@
 import { t } from "@webforge/i18n";
 import {
   anchorsIn,
+  isNodeDoc,
   MAX_COPIED_NODES,
   type MediaMeta,
   type NodeDoc,
@@ -15,7 +16,7 @@ import type {
 import { type AddTarget, addTarget, insertAt } from "../add/add-items.js";
 import { currentPage, type EditorSession } from "../editor/editor-session.js";
 import { findNode } from "../editor/nodes.js";
-import { type SharedRegion, sharedRegionOf } from "../editor/shared-layout.js";
+import { type SharedRegion, sharedRegionOf, shownLayout } from "../editor/shared-layout.js";
 import { layerItem } from "../layers/layers.js";
 import { putInMedia } from "../media/media-commands.js";
 
@@ -49,7 +50,9 @@ function selectedNode(
   const isSelected = (node: NodeDoc) => node.props.id === nodeId;
   const own = findNode(currentPage(session)?.doc.content ?? [], isSelected);
   if (own !== undefined) return { node: own };
-  const { layout } = session.history.document.getState();
+  // The Header and Footer as this page shows them: never one its Page Settings hide.
+  const site = session.history.document.getState();
+  const layout = shownLayout(site, session.ui.getState().pageId);
   const region = sharedRegionOf(layout, nodeId);
   const node = region === undefined ? undefined : findNode(layout[region], isSelected);
   return node === undefined || region === undefined ? undefined : { node, region };
@@ -64,7 +67,10 @@ function mediaOf(session: ClipboardSession, nodes: readonly NodeDoc[]): MediaMet
   });
 }
 
-/** Removes the node `id` from `nodes` or their slots; whether it was there. */
+/**
+ * Removes the node `id` from `nodes` or their slots; whether it was there. Only arrays of nodes are
+ * slots: a list field's plain items (an FAQ's questions as data, menu links) are left alone.
+ */
 function removeNode(nodes: NodeDoc[], id: string): boolean {
   const index = nodes.findIndex((node) => node.props.id === id);
   if (index !== -1) {
@@ -73,7 +79,11 @@ function removeNode(nodes: NodeDoc[], id: string): boolean {
   }
   return nodes.some((node) =>
     Object.values(node.props).some(
-      (value) => Array.isArray(value) && removeNode(value as NodeDoc[], id),
+      (value) =>
+        Array.isArray(value) &&
+        value.length > 0 &&
+        value.every(isNodeDoc) &&
+        removeNode(value as NodeDoc[], id),
     ),
   );
 }
@@ -118,7 +128,13 @@ export async function copySelected(
     const id = node.props.id;
     session.edit(
       "remove",
-      t("site.clipboard.history.cut", { item: itemName(session, node) }),
+      t("site.clipboard.history.cut", {
+        // "Cut shared Heading", as the other steps in the Header or Footer name it (F-ED-7).
+        item:
+          region === undefined
+            ? itemName(session, node)
+            : t("history.sharedItem", { item: itemName(session, node) }),
+      }),
       (draft) => {
         // From the shared Header or Footer, it goes from every page.
         const list =
@@ -195,8 +211,8 @@ export async function pasteElements(
   }
   // Pasting goes into the page, never into the shared Header or Footer: elements don't move between
   // them and the page (F-ED-7). With a shared element selected, the page takes it as the Add panel
-  // would with nothing selected.
-  const { layout } = session.history.document.getState();
+  // would with nothing selected. The Header and Footer as this page shows them, as when copying.
+  const layout = shownLayout(session.history.document.getState(), ui.pageId);
   const selectedId =
     ui.nodeId === null || sharedRegionOf(layout, ui.nodeId) !== undefined ? null : ui.nodeId;
   const target = pasteTarget(session.library, page.doc.content, nodes, selectedId);

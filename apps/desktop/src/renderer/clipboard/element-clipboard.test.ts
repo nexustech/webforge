@@ -212,6 +212,25 @@ describe("copy and paste (1.25)", () => {
     expect(pasteTarget(siteLibrary, page, [], null)).toBeUndefined();
   });
 
+  it("cuts past elements whose list fields hold plain items, not elements", async () => {
+    const session = createEditorSession(siteLibrary, starterSite());
+    session.edit("insert", "Added a list", (draft) => {
+      const section = draft.pages[draft.homePageId]?.doc.content[0];
+      const list = section?.props.content;
+      if (Array.isArray(list)) {
+        list.unshift({
+          type: "Text",
+          props: { id: "links", text: "<p>Links</p>", items: [{ label: "Opening times" }] },
+        });
+      }
+    });
+    select(session, "text-1");
+
+    expect(await copySelected(session, fakeClipboard(), vi.fn(), true)).toBe(true);
+
+    expect(sectionContent(session).map((node) => node.props.id)).toEqual(["links", "heading-1"]);
+  });
+
   describe("the shared Header and Footer (F-ED-7)", () => {
     /** The site library plus a shared Banner whose slot holds elements, as the Header could. */
     const library: ComponentLibrary = {
@@ -266,11 +285,25 @@ describe("copy and paste (1.25)", () => {
 
       expect(bannerContent(session)).toEqual([]);
       expect(sectionContent(session)).toHaveLength(2);
-      expect(labels(session).at(-1)).toBe("Cut Heading");
+      expect(labels(session).at(-1)).toBe("Cut shared Heading");
       session.history.undo();
       expect(bannerContent(session)).toEqual([
         { type: "Heading", props: { id: "notice", text: "Closed Monday" } },
       ]);
+    });
+
+    it("never takes a Header or Footer the page hides", async () => {
+      const session = withBanner();
+      session.edit("page", "Hid the Header", (draft) => {
+        const home = draft.pages[draft.homePageId];
+        if (home !== undefined) home.settings.hideHeader = true;
+      });
+      const clipboard = fakeClipboard();
+      select(session, "notice");
+
+      expect(await copySelected(session, clipboard, vi.fn(), true)).toBe(false);
+      expect(clipboard.write).not.toHaveBeenCalled();
+      expect(bannerContent(session)).toHaveLength(1);
     });
 
     it("pastes into the page, never into the shared layout, with a shared element selected", async () => {
