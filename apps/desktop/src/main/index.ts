@@ -5,6 +5,8 @@ import type { SiteSnapshot } from "@webforge/model";
 import {
   app,
   BrowserWindow,
+  ClipboardItem,
+  clipboard,
   dialog,
   ipcMain,
   Menu,
@@ -24,6 +26,8 @@ import { openFailureMessage } from "../shared/open-failure.js";
 import { createBackupSchedule } from "./backup-schedule.js";
 import { createBackups } from "./backups.js";
 import { createCanvasCssCompiler, registerCanvasHandlers } from "./canvas-css.js";
+import { createElementClipboard, systemClipboard } from "./clipboard.js";
+import { registerClipboardHandlers } from "./clipboard-ipc.js";
 import { startCrashReports } from "./crash-wiring.js";
 import type { E2eDialog } from "./e2e-dialogs.js";
 import { type ExportDialogs, registerExportHandlers } from "./export-ipc.js";
@@ -444,6 +448,15 @@ async function start(): Promise<void> {
     (senderUrl) => isAppUrl(senderUrl, appUrl),
     projectSession,
     mediaDialogs,
+  );
+  registerClipboardHandlers(
+    ipcMain,
+    (senderUrl) => isAppUrl(senderUrl, appUrl),
+    createElementClipboard(
+      systemClipboard({ clipboard, ClipboardItem }),
+      join(app.getPath("userData"), "clipboard"),
+      projectSession,
+    ),
   );
   crashReports.registerHandlers(ipcMain, (senderUrl) => isAppUrl(senderUrl, appUrl));
   flushOnClose = createFlushOnClose(ipcMain, (senderUrl) => isAppUrl(senderUrl, appUrl), {
