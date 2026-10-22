@@ -10,6 +10,7 @@ import {
   resolveResponsive,
 } from "@webforge/model";
 import { type ComponentType, cloneElement, isValidElement, type ReactNode } from "react";
+import { isDocumentPath } from "./document-path.js";
 
 /** A choice offered by a field: its translated label and the stored value. */
 export type FieldOption = { readonly label: string; readonly value: string };
@@ -110,6 +111,8 @@ export type NavLink = {
   readonly button?: boolean;
   /** Opens in a new tab. */
   readonly newTab?: boolean;
+  /** A document saved rather than opened (1.28). */
+  readonly download?: boolean;
 };
 
 /** A dropdown in the site's navigation (F-ED-17): its links, one level deep. */
@@ -254,17 +257,27 @@ export type LinkAttributes = {
   readonly href: string;
   readonly target?: "_blank";
   readonly rel?: "noopener";
+  /** A document saved rather than opened (1.28). */
+  readonly download?: "";
 };
 
 /**
- * The `href` (and `target`/`rel` for a new tab) of a link field's value: a `LinkValue`, or a page
- * path or web address typed as text before link fields (older sites). No value links to `#`.
+ * The `href` (and `target`/`rel` for a new tab, `download` for a document to save) of a link
+ * field's value: a `LinkValue`, or a page path or web address typed as text before link fields
+ * (older sites). No value links to `#`.
  */
 export function linkAttributes(value: unknown, context: RenderContext): LinkAttributes {
   const link = linkValueSchema.safeParse(value);
   if (link.success) {
     const href = context.href(link.data);
-    return link.data.newTab === true ? { href, target: "_blank", rel: "noopener" } : { href };
+    return {
+      href,
+      ...(link.data.newTab === true ? { target: "_blank", rel: "noopener" } : {}),
+      // Only on the document's own file: a deleted one links to `#`, which mustn't be saved.
+      ...(link.data.kind === "file" && link.data.download === true && isDocumentPath(href)
+        ? { download: "" }
+        : {}),
+    };
   }
   const text = stringValue(value);
   return { href: text === "" ? "#" : context.link(text) };

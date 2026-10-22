@@ -38,8 +38,13 @@ export type CommandRegistry = {
   register(command: Command): () => void;
   /** Changes a registered command; ignored if it isn't registered. */
   update(id: string, changes: CommandChanges): void;
-  /** Runs a command if it is registered and enabled; returns whether it ran. */
+  /** Runs a command if it is registered and enabled, and not paused; returns whether it ran. */
   run(id: string): boolean;
+  /**
+   * Stops every command from running, from any surface, until the returned function is called:
+   * while a question about the whole site is open (D7). Pauses nest.
+   */
+  pause(): () => void;
   /** The registered commands, in registration order. Stable until something changes. */
   list(): readonly Command[];
   get(id: string): Command | undefined;
@@ -54,6 +59,7 @@ export function createCommandRegistry(): CommandRegistry {
   const owners = new Map<string, object>();
   const listeners = new Set<() => void>();
   let snapshot: readonly Command[] = [];
+  let pauses = 0;
 
   const changed = () => {
     snapshot = [...commands.values()];
@@ -91,7 +97,7 @@ export function createCommandRegistry(): CommandRegistry {
     },
     run(id) {
       const command = commands.get(id);
-      if (command === undefined || command.enabled === false) {
+      if (command === undefined || command.enabled === false || pauses > 0) {
         return false;
       }
       const result = command.run();
@@ -101,6 +107,16 @@ export function createCommandRegistry(): CommandRegistry {
         });
       }
       return true;
+    },
+    pause() {
+      pauses++;
+      let resumed = false;
+      return () => {
+        if (!resumed) {
+          resumed = true;
+          pauses--;
+        }
+      };
     },
     list: () => snapshot,
     get: (id) => commands.get(id),

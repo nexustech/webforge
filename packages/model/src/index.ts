@@ -8,11 +8,12 @@ export {
   validBindings,
 } from "./bindings.js";
 export type { BrokenLink } from "./broken-links.js";
-export { anchorsIn, findBrokenLinks } from "./broken-links.js";
+export { findBrokenLinks } from "./broken-links.js";
 export type { CopiedElements } from "./clipboard.js";
 export { copiedElementsSchema, MAX_COPIED_NODES, pastedCopies } from "./clipboard.js";
 export type { LayoutDoc, NodeAdvanced, NodeDoc, PageDoc, SiteCode, Theme } from "./documents.js";
 export {
+  anchorsIn,
   attributeNameSchema,
   classNamesSchema,
   isNodeDoc,
@@ -23,8 +24,23 @@ export {
   siteCodeSchema,
   themeSchema,
 } from "./documents.js";
-export type { Brand, IdKind, MediaId, MenuItemId, NodeId, PageId } from "./ids.js";
-export { mediaIdSchema, menuItemIdSchema, newId, nodeIdSchema, pageIdSchema } from "./ids.js";
+export type {
+  Brand,
+  IdKind,
+  MediaId,
+  MenuItemId,
+  NodeId,
+  PageId,
+  SharedSectionId,
+} from "./ids.js";
+export {
+  mediaIdSchema,
+  menuItemIdSchema,
+  newId,
+  nodeIdSchema,
+  pageIdSchema,
+  sharedSectionIdSchema,
+} from "./ids.js";
 export type { LinkValue } from "./link.js";
 export { anchorIdSchema, linkValueSchema, webUrlSchema } from "./link.js";
 export type {
@@ -63,8 +79,10 @@ export type { Breakpoint, Responsive, ResponsiveValue } from "./responsive.js";
 export { isResponsiveValue, resolveResponsive, responsiveSchema } from "./responsive.js";
 export type { RichTextLink } from "./rich-text-links.js";
 export {
+  RICH_TEXT_FILE_LINK,
   RICH_TEXT_PAGE_LINK,
   rewriteRichTextLinks,
+  richTextFileLinks,
   richTextHref,
   richTextLinkValue,
   richTextPageLinks,
@@ -77,6 +95,18 @@ export {
   siteSettingsSchema,
   webAddressSchema,
 } from "./settings.js";
+export type { SharedCopyNode, SharedSection, SharedSectionsDoc } from "./shared-sections.js";
+export {
+  copiedAnchor,
+  copiedNodeId,
+  copyHolding,
+  expandSharedCopies,
+  isSharedCopy,
+  newSharedCopy,
+  pageAnchors,
+  SHARED_COPY_TYPE,
+  sharedSectionsDocSchema,
+} from "./shared-sections.js";
 export type { CreateSiteOptions, PageEntry, PageSettings, SiteDoc } from "./site-doc.js";
 export {
   createSite,
@@ -96,7 +126,7 @@ export {
   siteDocuments,
   siteFromDocuments,
 } from "./site-documents.js";
-export type { MediaItem, SitePage, SiteSnapshot } from "./site-snapshot.js";
+export type { DocumentItem, MediaItem, SitePage, SiteSnapshot } from "./site-snapshot.js";
 export { siteSnapshotSchema } from "./site-snapshot.js";
 export { slugify, uniqueSlug } from "./slugs.js";
 export { siteToSnapshot } from "./to-snapshot.js";

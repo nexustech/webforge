@@ -100,6 +100,26 @@ describe("siteSnapshotSchema", () => {
     expect(result.error?.issues.map((issue) => issue.message)).toContain("Duplicate media names");
   });
 
+  it("takes documents, but not two with the same name, which would share an exported file", () => {
+    const document = {
+      id: "prices",
+      name: "prices",
+      mimeType: "application/pdf",
+      data: new Uint8Array([1]),
+    } as const;
+    const withDocuments = (documents: unknown[]) => ({ ...site(), documents });
+
+    expect(siteSnapshotSchema.safeParse(withDocuments([document])).success).toBe(true);
+    expect(
+      siteSnapshotSchema.safeParse(withDocuments([document, { ...document, id: "b" }])).success,
+    ).toBe(false);
+    expect(
+      siteSnapshotSchema.safeParse(
+        withDocuments([{ ...document, mimeType: "application/x-msdownload" }]),
+      ).success,
+    ).toBe(false);
+  });
+
   it("rejects media that is not raw bytes or has an unsafe name", () => {
     const bad = [
       { id: "a", name: "hero", mimeType: "image/jpeg", data: [1, 2, 3] },

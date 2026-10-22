@@ -1,9 +1,15 @@
 import { createHash } from "node:crypto";
-import { type NodeDoc, type SiteSnapshot, siteSnapshotSchema } from "@webforge/model";
+import {
+  DOCUMENT_EXTENSIONS,
+  type NodeDoc,
+  type SiteSnapshot,
+  siteSnapshotSchema,
+} from "@webforge/model";
 import {
   BEHAVIOUR_SCRIPTS,
   behavioursUsedBy,
   type ComponentLibrary,
+  documentsLinkedBy,
   mediaUsedBy,
   type RenderContext,
   type ResolvedImage,
@@ -93,9 +99,19 @@ export async function buildSite(
 
   let behaviours: ReturnType<typeof behavioursUsedBy>;
   let mediaIds: Set<string>;
+  let documentIds: Set<string>;
   try {
     behaviours = behavioursUsedBy(allNodes(site), library);
     mediaIds = mediaUsedBy(allNodes(site), library);
+    documentIds = documentsLinkedBy(allNodes(site), library);
+    // Documents the navigation menu links to are exported too.
+    for (const item of site.menu?.items.flatMap((entry) =>
+      entry.kind === "group" ? entry.children : [entry],
+    ) ?? []) {
+      if ((item.kind === "link" || item.kind === "button") && item.link.kind === "file") {
+        documentIds.add(item.link.mediaId);
+      }
+    }
   } catch (error) {
     if (error instanceof UnknownComponentError) {
       throw new BuildError("unknown-component", error.message);
@@ -120,6 +136,17 @@ export async function buildSite(
     images.set(id, processed.image);
   }
 
+  // Documents pages link to, copied unchanged under their Media name (1.28). Documents nothing
+  // links to aren't exported; a link to one deleted from Media goes nowhere, with a warning.
+  const documentPaths = new Map<string, string>();
+  for (const id of [...documentIds].sort()) {
+    const item = site.documents?.find((document) => document.id === id);
+    if (item === undefined) continue;
+    const path = `files/${item.name}.${DOCUMENT_EXTENSIONS[item.mimeType]}`;
+    files.set(path, item.data);
+    documentPaths.set(id, path);
+  }
+
   const script =
     behaviours.length === 0
       ? undefined
@@ -136,8 +163,12 @@ export async function buildSite(
   const pathById = new Map(site.pages.map((page) => [page.id as string, page.path]));
   const rendered = site.pages.map((page) => {
     const prefix = "../".repeat(depthOf(page.path));
-    const navigation = navigationFor(site, page, prefix, (detail) =>
-      warnings.push({ code: "broken-link", page: page.path, detail }),
+    const navigation = navigationFor(
+      site,
+      page,
+      prefix,
+      (detail) => warnings.push({ code: "broken-link", page: page.path, detail }),
+      (id) => documentPaths.get(id),
     );
     const context: RenderContext = {
       navigation,
@@ -152,9 +183,15 @@ export async function buildSite(
         return "#";
       },
       href: (link) => {
-        const href = hrefFor(link, (id) => pathById.get(id), prefix);
+        const href = hrefFor(
+          link,
+          (id) => pathById.get(id),
+          prefix,
+          (id) => documentPaths.get(id),
+        );
         if (href === undefined) {
-          const detail = link.kind === "page" ? link.pageId : link.kind;
+          const detail =
+            link.kind === "page" ? link.pageId : link.kind === "file" ? link.mediaId : link.kind;
           warnings.push({ code: "broken-link", page: page.path, detail });
           return "#";
         }

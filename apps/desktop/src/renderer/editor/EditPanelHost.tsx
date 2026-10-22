@@ -155,6 +155,8 @@ export type EditPanelHostProps = {
   readonly flush: () => void;
   /** Shows the Advanced tab: classes, attributes and the anchor (Advanced mode, F-ED-11). */
   readonly advanced?: boolean;
+  /** Shows the Content tab only: Content mode locks styles and the Advanced settings (M3). */
+  readonly contentOnly?: boolean;
 };
 
 /**
@@ -166,7 +168,12 @@ export type EditPanelHostProps = {
  * - a field that may differ per device (F-ED-4) shows and sets the value of the device the canvas
  *   shows: on Tablet or Mobile that is an override of the Desktop value, which can be dropped again.
  */
-export function EditPanelHost({ session, flush, advanced = false }: EditPanelHostProps) {
+export function EditPanelHost({
+  session,
+  flush,
+  advanced = false,
+  contentOnly = false,
+}: EditPanelHostProps) {
   const { history, ui, library } = session;
   const site = useSyncExternalStore(history.document.subscribe, history.document.getState);
   const { pageId, nodeId, viewport } = useSyncExternalStore(ui.subscribe, ui.getState);
@@ -343,12 +350,7 @@ export function EditPanelHost({ session, flush, advanced = false }: EditPanelHos
       labelOf(name, field),
       (draft) => {
         write(draft, name, () => linkChange.link);
-        const { anchor } = linkChange;
-        const anchorPage = anchor === undefined ? undefined : draft.pages[anchor.pageId];
-        const anchorDoc = anchor === undefined ? undefined : site.pages[anchor.pageId]?.doc;
-        if (anchor !== undefined && anchorPage !== undefined && anchorDoc !== undefined) {
-          applyAnchor(anchorPage.doc, anchorDoc, anchor);
-        }
+        if (linkChange.anchor !== undefined) applyAnchor(draft, site, linkChange.anchor);
       },
       { selectionAfter },
     );
@@ -506,6 +508,7 @@ export function EditPanelHost({ session, flush, advanced = false }: EditPanelHos
       }}
       onReset={reset}
       advanced={advanced}
+      contentOnly={contentOnly}
       itemKey={id}
     />
   );

@@ -24,6 +24,7 @@ import { type CanvasView, connectCanvasView } from "../shell/canvas-view.js";
 import { useCommandRegistry } from "../shell/command-context.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { installCommandShortcuts } from "../shell/commands.js";
+import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
 import { usePanelRegistry } from "../shell/panel-context.js";
 import { connectCanvasSettings } from "../site-settings/canvas-settings.js";
 import { registerCanvasCommands } from "./canvas-commands.js";
@@ -36,6 +37,7 @@ import {
   runHistoryCommand,
 } from "./editor-session.js";
 import { SharedRegionBanner } from "./SharedRegionBanner.js";
+import { confirmSharedRemovals, sharedCutConfirmation } from "./shared-confirmations.js";
 import { shownLayout } from "./shared-layout.js";
 import { type CompileCanvasCss, connectSiteCss } from "./site-css.js";
 import { UndoHistoryPanel } from "./UndoHistoryPanel.js";
@@ -54,6 +56,11 @@ export type EditorProps = {
   readonly canvasView?: CanvasView;
   /** Simple or Advanced mode (F-ED-11): Advanced adds the Edit panel's Advanced tab. */
   readonly editorLevel?: Preferences["editorLevel"];
+  /**
+   * Asks before what changes more than the page shown (D7): deleting or cutting an element of the
+   * shared Header or Footer. Undo and Redo wait while it asks. Without it, they happen at once.
+   */
+  readonly siteWide?: Pick<SiteWideConfirm, "confirmSiteWide" | "current">;
 };
 
 const compileWithPreload: CompileCanvasCss = (request) =>
@@ -70,6 +77,7 @@ export function Editor({
   mode = "design",
   canvasView,
   editorLevel = "simple",
+  siteWide,
 }: EditorProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [engine, setEngine] = useState<CanvasEngine | null>(null);
@@ -80,6 +88,7 @@ export function Editor({
   });
   const connectionRef = useRef<EngineConnection | null>(null);
   const clipboardCommandsRef = useRef<ReturnType<typeof registerClipboardCommands> | null>(null);
+  const canvasCommandsRef = useRef<ReturnType<typeof registerCanvasCommands> | null>(null);
   const addPanelRef = useRef<AddPanelRegistration | null>(null);
   const { history } = session;
   const registry = useCommandRegistry();
@@ -142,7 +151,10 @@ export function Editor({
     if (page !== undefined) {
       engine.loadPage(page.doc, shownLayout(site, page.id));
     }
-    const connection = connectEngine(engine, session);
+    const connection = connectEngine(
+      siteWide === undefined ? engine : confirmSharedRemovals(engine, session, siteWide),
+      session,
+    );
     connectionRef.current = connection;
     setEngine(engine);
     const stopSiteCss = connectSiteCss(engine, session, compileCss, document.baseURI);
@@ -151,6 +163,9 @@ export function Editor({
     const stopNavigation = connectCanvasNavigation(engine, session);
     // One handler for the whole window (U4); the engine reports keys pressed inside its iframe.
     const removeKeys = installHistoryKeys(window, (command) => {
+      // Nothing changes while a question about the whole site waits for its answer (D7); Esc
+      // goes to its dialog.
+      if (siteWide !== undefined && siteWide.current() !== null) return false;
       connection.flush();
       return runHistoryCommand(session, command);
     });
@@ -163,11 +178,14 @@ export function Editor({
       preloadClipboard,
       connection.flush,
       (message) => toast(message),
+      siteWide === undefined ? undefined : sharedCutConfirmation(session, siteWide),
     );
     clipboardCommands.setLayoutLocked(modeRef.current !== "design");
     clipboardCommandsRef.current = clipboardCommands;
     const canvasCommands = registerCanvasCommands(registry, engine, connection.flush);
     canvasCommands.setHasSelection(session.ui.getState().nodeId !== null);
+    canvasCommands.setLayoutLocked(modeRef.current !== "design");
+    canvasCommandsRef.current = canvasCommands;
     const stopSelectionWatch = session.ui.subscribe((ui) => {
       canvasCommands.setHasSelection(ui.nodeId !== null);
       clipboardCommands.setHasSelection(ui.nodeId !== null);
@@ -187,6 +205,7 @@ export function Editor({
       stopFrameWindow();
       removeFrameShortcuts?.();
       stopSelectionWatch();
+      canvasCommandsRef.current = null;
       canvasCommands.remove();
       clipboardCommandsRef.current = null;
       clipboardCommands.remove();
@@ -200,11 +219,12 @@ export function Editor({
       engine.destroy();
       element.remove();
     };
-  }, [session, history, createEngine, compileCss, registry]);
+  }, [session, history, createEngine, compileCss, registry, siteWide]);
 
   useEffect(() => {
     engine?.setMode(mode);
     clipboardCommandsRef.current?.setLayoutLocked(mode !== "design");
+    canvasCommandsRef.current?.setLayoutLocked(mode !== "design");
   }, [engine, mode]);
 
   useEffect(
@@ -250,7 +270,7 @@ export function Editor({
   }, [panels, history]);
 
   // The Edit panel replaces Puck's own fields (1.14). Registered on its own, so that changing the
-  // editor level redraws it without registering Undo History again.
+  // editor level or mode (Content shows its Content tab only) redraws it alone.
   useEffect(() => {
     function Edit() {
       return (
@@ -258,6 +278,7 @@ export function Editor({
           session={session}
           flush={() => connectionRef.current?.flush()}
           advanced={editorLevel === "advanced"}
+          contentOnly={mode !== "design"}
         />
       );
     }
@@ -267,7 +288,7 @@ export function Editor({
       title: t("editPanel.title"),
       component: Edit,
     });
-  }, [panels, session, editorLevel]);
+  }, [panels, session, editorLevel, mode]);
 
   // The Add panel (1.13), hidden in Content mode (M3).
   useEffect(() => {

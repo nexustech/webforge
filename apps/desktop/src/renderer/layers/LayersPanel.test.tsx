@@ -24,7 +24,7 @@ const LAYERS: Layer[] = [
   layer("s2", { kind: "Section" }),
 ];
 
-function setUp(selectedId: string | null = "a", toolbar = true) {
+function setUp(selectedId: string | null = "a", toolbar = true, layoutLocked = false) {
   const command = () => (toolbar ? vi.fn() : undefined);
   const actions = {
     select: vi.fn(),
@@ -36,7 +36,14 @@ function setUp(selectedId: string | null = "a", toolbar = true) {
     duplicate: command(),
     remove: command(),
   } satisfies LayersPanelActions;
-  render(<LayersPanel layers={LAYERS} selectedId={selectedId} actions={actions} />);
+  render(
+    <LayersPanel
+      layers={LAYERS}
+      selectedId={selectedId}
+      actions={actions}
+      layoutLocked={layoutLocked}
+    />,
+  );
   const item = (name: RegExp) => screen.getByRole("treeitem", { name });
   return { actions, item };
 }
@@ -58,6 +65,22 @@ describe("LayersPanel (F-ED-12)", () => {
     expect(items[1]?.tabIndex).toBe(0);
     expect(items[0]?.tabIndex).toBe(-1);
     expect(screen.getByRole("button", { name: "Show Heading" })).toBeTruthy();
+  });
+
+  it("locks dragging, moving and hiding in Content mode, keeping selection and names (M3)", async () => {
+    const { actions } = setUp("a", false, true);
+    const rows = screen.getAllByRole("treeitem");
+
+    expect(rows.every((row) => row.getAttribute("draggable") === "false")).toBe(true);
+    fireEvent.keyDown(rows[1] as HTMLElement, { key: "ArrowDown", altKey: true });
+    for (const hide of screen.getAllByRole("button", { name: /^Hide/, hidden: true })) {
+      fireEvent.click(hide);
+    }
+    fireEvent.keyDown(rows[1] as HTMLElement, { key: "ArrowDown" });
+
+    expect(actions.move).not.toHaveBeenCalled();
+    expect(actions.setHidden).not.toHaveBeenCalled();
+    expect(actions.select).toHaveBeenCalled();
   });
 
   it("selects on click and with the arrow keys; Alt+arrows move among siblings", async () => {

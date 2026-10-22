@@ -37,10 +37,7 @@ function giveAnchor(
   }
   const { pageId } = session.ui.getState();
   const node = at === null ? undefined : findNode(shown.content, (n) => n.props.id === at.nodeId);
-  const recipe = (draft: SiteDoc) => {
-    const target = draft.pages[anchor.pageId];
-    if (target !== undefined) applyAnchor(target.doc, page.doc, anchor);
-  };
+  const recipe = (draft: SiteDoc) => applyAnchor(draft, site, anchor);
   if (at === null || node === undefined) {
     const section = findNode(page.doc.content, (n) => n.props.id === anchor.nodeId);
     const label = changedLabel(
@@ -130,13 +127,12 @@ export function RichTextLinkHost({
       targets={request === null ? [] : linkTargets(site, session.library)}
       onSave={(change) => {
         if (request === null) return;
-        const href = change.link === undefined ? undefined : richTextHref(change.link);
-        if (change.link === undefined || href === undefined) {
-          request.answer(change.link === undefined ? null : undefined);
+        if (change.link === undefined) {
+          request.answer(null);
           return;
         }
         giveAnchor(session, site, change, request.at);
-        request.answer({ href, newTab: change.link.newTab === true });
+        request.answer({ href: richTextHref(change.link), newTab: change.link.newTab === true });
       }}
       onCancel={() => request?.answer(undefined)}
     />

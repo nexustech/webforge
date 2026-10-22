@@ -10,7 +10,14 @@ import {
   withoutUnsafeKeys,
 } from "./documents.js";
 import { pageIdSchema } from "./ids.js";
-import { cropSchema, focalPointSchema, IMAGE_MIME_TYPES, type ImageCrop } from "./media.js";
+import {
+  cropSchema,
+  FILE_MIME_TYPES,
+  type FileMimeType,
+  focalPointSchema,
+  IMAGE_MIME_TYPES,
+  type ImageCrop,
+} from "./media.js";
 import { type MenuDoc, menuDocSchema } from "./menu.js";
 import { languageTagSchema } from "./settings.js";
 
@@ -59,6 +66,19 @@ export type MediaItem = {
 };
 
 /**
+ * A document in Media that a page links to (1.28, F-ED-24): the export copies it unchanged to
+ * `files/<name>.<extension>`. Documents nothing links to aren't in the snapshot.
+ */
+export type DocumentItem = {
+  readonly id: string;
+  /** Base name of the exported file, e.g. `price-list` → `files/price-list.pdf`. */
+  readonly name: string;
+  readonly mimeType: FileMimeType;
+  /** The original file, never modified. */
+  readonly data: Uint8Array;
+};
+
+/**
  * An immutable copy of everything a build needs (export pipeline stage 1). Created by the app from
  * the open site and passed to the build worker.
  */
@@ -70,6 +90,8 @@ export type SiteSnapshot = {
   readonly layout: LayoutDoc;
   readonly pages: readonly SitePage[];
   readonly media: readonly MediaItem[];
+  /** The documents pages link to (1.28); none when left out. */
+  readonly documents?: readonly DocumentItem[] | undefined;
   /** The Site Settings values elements can be bound to (1.17); empty ones are left out. */
   readonly settings?: Readonly<Partial<Record<BindableSetting, string>>> | undefined;
   /**
@@ -101,6 +123,13 @@ const mediaItemSchema = z.object({
   crop: cropSchema.optional(),
 });
 
+const documentItemSchema = z.object({
+  id: z.string().regex(/^[A-Za-z0-9_-]+$/),
+  name: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+  mimeType: z.enum(FILE_MIME_TYPES),
+  data: z.instanceof(Uint8Array),
+});
+
 /**
  * Validates a {@link SiteSnapshot} arriving from outside (IPC, worker messages). Page paths must be
  * unique and one page must be the home page (`index`): both would otherwise break the export (X5).
@@ -114,6 +143,7 @@ export const siteSnapshotSchema: z.ZodType<SiteSnapshot> = withoutUnsafeKeys(
       layout: layoutDocSchema,
       pages: z.array(sitePageSchema).min(1),
       media: z.array(mediaItemSchema),
+      documents: z.array(documentItemSchema).optional(),
       settings: z.partialRecord(bindableSettingSchema, z.string()).optional(),
       menu: menuDocSchema.optional(),
     })
@@ -142,6 +172,16 @@ export const siteSnapshotSchema: z.ZodType<SiteSnapshot> = withoutUnsafeKeys(
       const names = site.media.map((item) => item.name);
       if (new Set(names).size !== names.length) {
         ctx.addIssue({ code: "custom", message: "Duplicate media names", path: ["media"] });
+      }
+      // Exported documents are named after theirs too (files/<name>.<extension>).
+      const documents = site.documents ?? [];
+      const documentIds = documents.map((item) => item.id);
+      const documentNames = documents.map((item) => item.name);
+      if (
+        new Set(documentIds).size !== documentIds.length ||
+        new Set(documentNames).size !== documentNames.length
+      ) {
+        ctx.addIssue({ code: "custom", message: "Duplicate documents", path: ["documents"] });
       }
     }),
 );

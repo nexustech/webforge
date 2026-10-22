@@ -159,6 +159,20 @@ export function isNodeDoc(value: unknown): value is NodeDoc {
   return typeof type === "string" && typeof props?.id === "string";
 }
 
+/** The section anchors (`advanced.anchorId`) of `nodes` and everything in them. */
+export function anchorsIn(nodes: readonly unknown[], found = new Set<string>()): Set<string> {
+  for (const node of nodes) {
+    if (typeof node !== "object" || node === null) continue;
+    const props = (node as { props?: Record<string, unknown> }).props ?? {};
+    const anchor = (props.advanced as { anchorId?: unknown } | undefined)?.anchorId;
+    if (typeof anchor === "string" && anchor !== "") found.add(anchor);
+    for (const value of Object.values(props)) {
+      if (Array.isArray(value)) anchorsIn(value, found);
+    }
+  }
+  return found;
+}
+
 /** The site's own code (C7, Advanced mode). Scripts never run in the editor by default. */
 export type SiteCode = {
   /** `custom.css`, added after the site's stylesheet. */

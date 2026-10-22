@@ -5,9 +5,11 @@ import { siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it } from "vitest";
 import { createEditorSession } from "../editor/editor-session.js";
 import { starterSite } from "../editor/starter-site.js";
+import { openedDialog } from "../shell/opened-dialog.test-helper.js";
 import { createPanelRegistry } from "../shell/panels.js";
 import { addPage, setHiddenFromNavigation } from "../site/page-actions.js";
 import { registerSitePanel } from "../site/SitePanel.js";
+import { addMenuItem } from "./menu-actions.js";
 
 afterEach(cleanup);
 
@@ -41,7 +43,7 @@ describe("MenuPanel (F-ED-17)", () => {
     await user.click(menu().getByRole("button", { name: "Add to Menu" }));
     await user.click(screen.getByRole("menuitem", { name: "Button…" }));
     // The dialog opens once the menu has closed.
-    const dialog = within(await screen.findByRole("dialog", { name: "Menu button" }));
+    const dialog = await openedDialog("Menu button");
     await user.click(dialog.getByRole("textbox", { name: "Label" }));
     await user.paste("Book now");
     await user.click(dialog.getByRole("radio", { name: "Web address" }));
@@ -55,11 +57,25 @@ describe("MenuPanel (F-ED-17)", () => {
       link: { kind: "url", href: "https://book.example" },
     });
     expect(labels().at(-1)).toBe("Added menu item 'Book now'");
-    // Edited now: it no longer follows the pages, and can be made to again.
+    // Edited now: it no longer follows the pages.
     expect(menu().queryByText(/The menu lists your pages in order/)).toBeNull();
+    remove();
+  });
+
+  // Apart from adding: each step redraws the panel, and together they took one test past 5 s in a
+  // busy full run.
+  it("follows the page order again once the menu was edited", async () => {
+    const { session, menu, rows, user, remove } = setUp();
+    act(() => {
+      addMenuItem(session, { kind: "group", label: "More" });
+    });
+    expect(rows()).toEqual(["My site, page", "About, page", "More, dropdown"]);
+
     await user.click(menu().getByRole("button", { name: "Add to Menu" }));
     await user.click(screen.getByRole("menuitem", { name: "Follow Page Order" }));
+
     expect(rows()).toEqual(["My site, page", "About, page"]);
+    expect(menu().getByText(/The menu lists your pages in order/)).toBeTruthy();
     remove();
   });
 
@@ -67,7 +83,7 @@ describe("MenuPanel (F-ED-17)", () => {
     const { menu, rows, user, remove } = setUp();
 
     await user.click(menu().getByRole("button", { name: "About, page" }));
-    const dialog = within(screen.getByRole("dialog", { name: "Rename menu item" }));
+    const dialog = await openedDialog("Rename menu item");
     await user.clear(dialog.getByRole("textbox", { name: "Name in the menu" }));
     await user.paste("Our story");
     await user.click(dialog.getByRole("button", { name: "Rename" }));
@@ -121,7 +137,7 @@ describe("MenuPanel (F-ED-17)", () => {
     await user.click(menu().getByRole("button", { name: "Add to Menu" }));
     await user.click(screen.getByRole("menuitem", { name: "Dropdown…" }));
     // Its field has focus, so typing goes there.
-    await screen.findByRole("dialog", { name: "Add a dropdown" });
+    await openedDialog("Add a dropdown");
     await user.paste("More");
     await user.click(screen.getByRole("button", { name: "Add Dropdown" }));
     await user.click(menu().getByRole("button", { name: "Actions for About" }));

@@ -1,9 +1,15 @@
-import type { NodeDoc } from "@webforge/model";
+import {
+  expandSharedCopies,
+  type NodeDoc,
+  SHARED_COPY_TYPE,
+  type SharedSectionId,
+} from "@webforge/model";
 import { describe, expect, it } from "vitest";
 import { siteLibrary, starterLayout, starterPage } from "./catalogue.js";
 import { EDITOR_RENDER_CONTEXT, type RenderContext, type ResolvedImage } from "./library.js";
 import {
   behavioursUsedBy,
+  documentsLinkedBy,
   mediaUsedBy,
   renderNodesToHtml,
   UnknownComponentError,
@@ -136,6 +142,38 @@ describe("renderNodesToHtml", () => {
       '<p><a href="page-about.html">About</a> ' +
         '<a href="https://example.com" target="_blank" rel="noopener">Web</a> ' +
         '<a href="https://example.com/x">Top</a></p>',
+    );
+  });
+
+  it("points rich text's links to documents at their files, saved when so set (1.28)", () => {
+    const documents: RenderContext = {
+      ...context,
+      href: (link) =>
+        link.kind === "file" && link.mediaId === "menu" ? `files/${link.mediaId}.pdf` : "#",
+    };
+    const nodes: NodeDoc[] = [
+      {
+        type: "Text",
+        props: {
+          id: "t",
+          text:
+            '<p><a target="_blank" href="webforge:file/menu">Menu</a> ' +
+            '<a href="webforge:file/menu?download">Save</a> ' +
+            '<a href="webforge:file/gone?download">Gone</a> ' +
+            '<a href="https://example.com" download="evil.exe">Web</a> ' +
+            '<a href="about.html" download>Page</a></p>',
+        },
+      },
+    ];
+
+    expect(renderNodesToHtml(nodes, siteLibrary, documents)).toContain(
+      '<p><a href="files/menu.pdf" target="_blank" rel="noopener">Menu</a> ' +
+        '<a href="files/menu.pdf" download>Save</a> ' +
+        // `download` only on a document's file: never on `#` (a deleted document), a web address
+        // or a page, where it would save that page instead.
+        '<a href="#">Gone</a> ' +
+        '<a href="https://example.com">Web</a> ' +
+        '<a href="about.html">Page</a></p>',
     );
   });
 
@@ -396,6 +434,18 @@ describe("tree helpers", () => {
     expect(render(undefined)).toContain('href="#"');
   });
 
+  it("documentsLinkedBy finds the documents link fields and rich text point to (1.28)", () => {
+    const nodes: NodeDoc[] = [
+      { type: "Text", props: { id: "t", text: '<p><a href="webforge:file/menu">Menu</a></p>' } },
+      { type: "Hero", props: { id: "a", buttonLink: { kind: "file", mediaId: "prices" } } },
+      { type: "Hero", props: { id: "b", buttonLink: { kind: "url", href: "https://a.b" } } },
+      // Not a link field: a document id elsewhere isn't a link.
+      { type: "Hero", props: { id: "c", image: { mediaId: "menu" } } },
+    ];
+
+    expect([...documentsLinkedBy(nodes, siteLibrary)]).toEqual(["menu", "prices"]);
+  });
+
   it("mediaUsedBy finds media ids in media fields only", () => {
     const nodes: NodeDoc[] = [
       { type: "Hero", props: { id: "a", image: { mediaId: "hero" }, title: "hero2" } },
@@ -404,6 +454,27 @@ describe("tree helpers", () => {
     ];
 
     expect([...mediaUsedBy(nodes, siteLibrary)]).toEqual(["hero"]);
+  });
+
+  it("leaves a copy of a shared section hidden in Layers out of the export (F-ED-12, F-ED-23)", () => {
+    const id = "shared-hours" as SharedSectionId;
+    const section: NodeDoc = {
+      type: "Section",
+      props: { id: "s", content: [{ type: "Heading", props: { id: "h", text: "Opening hours" } }] },
+    };
+    const shared = { [id]: { id, name: "Hours", section } };
+    const copy = (copyId: string, hidden: boolean): NodeDoc => ({
+      type: SHARED_COPY_TYPE,
+      props: { id: copyId, sharedSectionId: id, ...(hidden ? { hidden } : {}) },
+    });
+
+    const html = renderNodesToHtml(
+      expandSharedCopies([copy("c1", true), copy("c2", false)], shared),
+      siteLibrary,
+      context,
+    );
+
+    expect(html.match(/Opening hours/g)).toHaveLength(1);
   });
 
   it("leaves hidden nodes, and everything in them, out of the export (F-ED-12)", () => {

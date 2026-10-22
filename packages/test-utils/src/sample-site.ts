@@ -9,10 +9,20 @@ export function heroPhoto(): Uint8Array {
   return new Uint8Array(readFileSync(join(FIXTURES, "media/hero.jpg")));
 }
 
+/** The fixture document: a small PDF price list, linked from the About page (1.28). */
+export function priceList(): Uint8Array {
+  return new TextEncoder().encode(
+    "%PDF-1.4\n1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n" +
+      "2 0 obj << /Type /Pages /Kids [] /Count 0 >> endobj\n" +
+      "trailer << /Root 1 0 R >>\n%%EOF\n",
+  );
+}
+
 /**
  * A small two-page site: Header and Footer, a home page with a Hero (with photo), text and an FAQ,
- * and an About page. Its menu has both pages, a "Visit us" dropdown (a link to the FAQ section and
- * a web address in a new tab) and an "Order a cake" button. Used by pipeline tests and the export E2E tests.
+ * and an About page linking to a price list (a document). Its menu has both pages, a "Visit us"
+ * dropdown (a link to the FAQ section and a web address in a new tab) and an "Order a cake"
+ * button. Used by pipeline tests and the export E2E tests.
  */
 export function sampleSite(): SiteSnapshot {
   return {
@@ -101,20 +111,14 @@ export function sampleSite(): SiteSnapshot {
           root: { props: {} },
           content: [
             {
-              type: "Section",
+              // The page's one heading, and a link to the price list (a document, 1.28).
+              type: "Hero",
               props: {
                 id: "about",
-                padding: "large",
-                content: [
-                  {
-                    type: "Heading",
-                    props: { id: "about-heading", text: "About Rosa's Bakery", size: "large" },
-                  },
-                  {
-                    type: "Text",
-                    props: { id: "about-text", text: "<p>A family bakery since 1998.</p>" },
-                  },
-                ],
+                title: "About Rosa's Bakery",
+                text: "A family bakery since 1998. Cakes to order, with two days' notice.",
+                buttonLabel: "Price list (PDF)",
+                buttonLink: { kind: "file", mediaId: "price-list", newTab: true },
               },
             },
           ],
@@ -122,6 +126,9 @@ export function sampleSite(): SiteSnapshot {
       },
     ],
     media: [{ id: "hero-photo", name: "hero", mimeType: "image/jpeg", data: heroPhoto() }],
+    documents: [
+      { id: "price-list", name: "price-list", mimeType: "application/pdf", data: priceList() },
+    ],
     menu: {
       follows: "custom",
       items: [

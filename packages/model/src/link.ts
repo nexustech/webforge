@@ -1,13 +1,16 @@
 import { z } from "zod";
 import { mediaIdSchema, pageIdSchema } from "./ids.js";
 
+/** The longest an anchor may be. */
+export const ANCHOR_ID_MAX = 64;
+
 /**
  * An anchor on a page, e.g. `opening-times` in `about.html#opening-times`: a section's
  * `advanced.anchorId`, created when the user first links to it (F-ED-18).
  */
 export const anchorIdSchema = z
   .string()
-  .max(64)
+  .max(ANCHOR_ID_MAX)
   .regex(/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/);
 
 /** `https://` or `http://` with a host. */
@@ -44,7 +47,13 @@ export const linkValueSchema = z.discriminatedUnion("kind", [
   }),
   z.strictObject({ kind: z.literal("phone"), number: phoneNumberSchema, newTab }),
   z.strictObject({ kind: z.literal("url"), href: webUrlSchema, newTab }),
-  z.strictObject({ kind: z.literal("file"), mediaId: mediaIdSchema, newTab }),
+  z.strictObject({
+    kind: z.literal("file"),
+    mediaId: mediaIdSchema,
+    newTab,
+    /** Saves the file instead of opening it (the link's `download` attribute, 1.28). */
+    download: z.boolean().optional(),
+  }),
 ]);
 
 /** See {@link linkValueSchema}. */
