@@ -165,3 +165,5 @@ These must be checked for WCAG AA contrast. Adjust light values where needed. Th
 
 ## Decision
 **UI1:** Webforge's editor adopts a Bootstrap Studio-like **layout, dark default colour scheme with a light alternative, compact density and colour-coded title-bar actions**, implemented with our own tokens on shadcn/ui and Lucide icons, adapted to Webforge's terminology and Simple/Advanced modes.
+
+**Extended 2026-10-22 by UI2–UI4** ([06-editor-ui-ux-parity.md](06-editor-ui-ux-parity.md)): Bootstrap Studio's interaction patterns, Elements' Inspector and Theme Studio ideas in the MVP, and Bootstrap Studio's keyboard shortcuts as the standard. This adds custom device sizes and a Theme Studio window to the layout above.

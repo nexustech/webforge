@@ -1,6 +1,6 @@
 # Editor UI/UX: Bootstrap Studio Parity and Elements Ideas
 
-**Status:** 📝 Proposed, awaiting product owner decisions ([§6](#6-decisions-needed))
+**Status:** ✅ Decided 2026-10-22 (UI2–UI4, see [§6](#6-decisions))
 **Date:** 2026-10-22
 **Goal (product owner, 2026-10-22):** "UI and UX are very important… replicate as much of Bootstrap Studio as possible with similar UI elements, also look at Elements and see which UI and UX we can implement."
 **Builds on:** [UI1](04-editor-look-and-feel.md), which already copies Bootstrap Studio's layout, dark palette, density and colour-coded actions. This note goes one level deeper, into **interactions**: what happens on click, drag, right-click and keypress.
@@ -79,7 +79,7 @@ Effort: **S** ≤ 1 day · **M** 2–4 days. Estimates are ideal days, as in the
 | UX-18 | **Inspector cues:**<br>• a group title turns the accent colour when anything in it is changed;<br>• right-click *Reset to Default* / *Reset Group to Defaults*;<br>• *Single Group Mode* (accordion) | Changed-group cue and reset in the Edit panel (with UX-13); optional "one group open at a time" | S | MVP |
 | UX-19 | **Per-breakpoint "dots":**<br>• at larger screens each control shows a grey dot;<br>• clicking it turns it blue and creates an override that carries upward | Replace our "‹device› only" text marker with a **dot control**:<br>• grey: inherits;<br>• accent: set for this device;<br>• click the dot to clear.<br>Clearer and more compact | S | MVP |
 | UX-20 | **Drag on a number** to change it; **Shift** for fine steps; Theme/Manual switch for spacing | Scrubbing on number fields (sliders, sizes); Shift for fine steps. Keep token values first; manual values only in Advanced | S | MVP |
-| UX-21 | **Theme Studio** window:<br>• theme cards grid;<br>• colour palettes as 50–950 swatch rows with roles (**Brand, Accent, Surface, Text**);<br>• font roles; type, spacing and radius scales;<br>• a **visual shadow editor**;<br>• typography presets per tag (H1–H6, paragraph, link states);<br>• light and dark values | Shape the Theme panel (2.2) like a studio. Quick controls stay in the right column (preset, brand colours, fonts, roundness); **Open Theme Studio** opens a larger window with:<br>• the theme cards grid with live mini previews;<br>• palette rows with generated shades and roles;<br>• text styles per tag;<br>• spacing/radius/shadow scales;<br>• light/dark values side by side | M (+2 days on 2.2) | MVP |
+| UX-21 | **Theme Studio** window:<br>• theme cards grid;<br>• colour palettes as 50–950 swatch rows with roles (**Brand, Accent, Surface, Text**);<br>• font roles; type, spacing and radius scales;<br>• a **visual shadow editor**;<br>• typography presets per tag (H1–H6, paragraph, link states);<br>• light and dark values | Shape the Theme panel (2.3) like a studio. Quick controls stay in the right column (preset, brand colours, fonts, roundness); **Open Theme Studio** opens a larger window with:<br>• the theme cards grid with live mini previews;<br>• palette rows with generated shades and roles;<br>• text styles per tag;<br>• spacing/radius/shadow scales;<br>• light/dark values side by side | M (+2 days on 2.3) | MVP |
 | UX-22 | **Custom Workspaces:** move panels, resize, collapse, multiple monitors, switch workspaces with ⌘⌥. / ⌘⌥, | MVP: collapse a column to an **icon strip** (with UX-13) and remember it. v1.1: drag a panel tab to the other column; saved layouts | S / M | MVP / v1.1 |
 | UX-23 | **Display modes per component:** *Visible*, *Hide in Editor*, *Do Not Publish*, *Hide and Do Not Publish* | Layers' hide becomes a small menu: *Show* · *Hide while editing* · *Don't publish* (kept in the site, left out of export) | S | v1.1 (with draft pages, G37) |
 | UX-24 | **Node Browser context menu:** Rename, Duplicate, **Duplicate without Content**, Convert to Global / Unlink, **Select Similar**, **View Help…** | Layers and canvas right-click menu:<br>• Rename, Duplicate;<br>• *Save as shared section* / *Detach*;<br>• **Select similar**;<br>• **Help for this element** (opens our help page) | S | MVP |
@@ -119,23 +119,16 @@ Bootstrap Studio's keys, plus a few from Elements, so users of either feel at ho
 
 A **Keyboard shortcuts** sheet (Help menu and `?`) lists them all (with 5.4).
 
-## 6. Decisions needed
-**MVP proposals.** UX-1, 2, 4, 7, 9, 10, 14, 16, 18, 19, 20, 24, 26, 29 are S; UX-3, 5, 6, 8, 11, 12, 13, 21, 25 are M. Total: **about 33 ideal days**. At the current actuals ratio (~0.4×) that's roughly 3 weeks of calendar time. They split into four groups:
+## 6. Decisions
+Decided by the product owner on 2026-10-22:
 
-| Group | Items | Ideal days | Fits |
-|---|---|---|---|
-| **A. Canvas & selection** | UX-1–9, 26 | ~15 | New Phase 1 item(s) after 1.26; UX-6/26 with 2.6/2.9 |
-| **B. Panels** | UX-10–16, 18–20, 24, 25 | ~14 | New Phase 1 item(s); UX-15 inside 1.16/2.3/2.9 |
-| **C. Theme Studio** | UX-21 | ~2 extra | Item 2.2 |
-| **D. Shortcuts & help** | the rest of the §5 map (palette, preview and publish, zoom, device and panel keys, a shortcut sheet), UX-29 | ~2 | New Phase 1 item; help sheet in 5.4 |
+| # | Decision |
+|---|---|
+| **UI2** | ✅ **Groups A–D are adopted in the MVP:** canvas and selection, panels, Theme Studio, shortcuts and help (UX-1–16, 18–21, 24–26, 29). Spec F-ED-25, F-ED-26, F-ED-27 and F-DS-7. Plan items 1.30–1.38 and 2.17; 2.3 +2 days; 2.14 +1 day |
+| **UI3** | ✅ **Bootstrap Studio's keyboard shortcuts are the standard** (§5), including **Mod + P** for the command palette, with Mod + K kept as an alias outside text editing |
+| **UI4** | ✅ **v1.1:** notes on elements (UX-17), movable panels and saved layouts (UX-22), hide-while-editing / don't-publish modes (UX-23), and the AI assistant panel design (UX-28) |
 
-**v1.1 proposals:** UX-17 notes on elements, UX-22 movable panels and saved layouts, UX-23 display modes, and the UX-28 assistant panel design.
-
-**Questions for the product owner:**
-1. Adopt groups **A, B, C and D** in the MVP? If not all, which?
-2. Adopt **Bootstrap Studio's keyboard shortcuts** as the standard (§5), including **Mod + P** for the command palette?
-3. Accept the v1.1 list?
-4. Turn on computer use on the laptop with Bootstrap Studio open, so a screenshot pass can check visual details before group A starts?
+Still open: a screenshot pass of Bootstrap Studio once computer use is switched on, to check visual details (hover outlines, drop indicators, toolbar icons) before items 1.30–1.33 start. UX-27 (hover-state editor) stays not proposed.
 
 ## Sources
 - **Bootstrap Studio docs:**
