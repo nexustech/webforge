@@ -1,5 +1,5 @@
 import { type ElectronApplication, expect, type Locator, type Page, test } from "@playwright/test";
-import { below, boxOf, drag } from "./drag.js";
+import { below, boxOf, drag, lowerHalf } from "./drag.js";
 import { launchDesktopApp } from "./launch.js";
 
 // Phase 0 spike (spec/02-mvp-spec.md §6, ADR 0004): Puck runs on the canvas, but every change goes
@@ -88,7 +88,7 @@ test.describe("Puck canvas with Webforge history", () => {
     await drag(
       page,
       await addPanelElement("Heading"),
-      await below(canvas().getByText(STARTER_TEXT)),
+      await lowerHalf(canvas().getByText(STARTER_TEXT)),
     );
     await showUndoHistory();
 
@@ -236,10 +236,10 @@ test.describe("Puck canvas with Webforge history", () => {
     await drag(
       page,
       await addPanelElement("Heading"),
-      await below(canvas().getByText(STARTER_TEXT)),
+      await lowerHalf(canvas().getByText(STARTER_TEXT)),
     );
     await expect(canvas().locator("h2")).toHaveCount(1);
-    await drag(page, await addPanelElement("Text"), await below(canvas().locator("h2")));
+    await drag(page, await addPanelElement("Text"), await lowerHalf(canvas().locator("h2")));
     await showUndoHistory();
     await expectSteps(["Added Text", "Added Heading"], "Added Text");
 

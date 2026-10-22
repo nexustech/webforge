@@ -59,14 +59,26 @@ export async function drag(
     .poll(
       async () => {
         nudge += 1;
-        await page.mouse.move(to.x, to.y + (nudge % 2), { steps: 2 });
+        // Come down onto the point again, a few pixels at a time, as a hand would: Puck finds the
+        // zone nested under the pointer from its movement, which one jump may not give it.
+        await page.mouse.move(to.x, to.y - 12, { steps: 2 });
+        await page.mouse.move(to.x, to.y + (nudge % 2), { steps: 6 });
         return canvas.locator(DROP_PREVIEW).count();
       },
-      { message: "No drop preview where the drag ends" },
+      { message: "No drop preview where the drag ends", timeout: 10_000 },
     )
     .toBeGreaterThan(0);
   await page.mouse.up();
   await expect(canvas.locator(DRAGGING)).toHaveCount(0);
+}
+
+/**
+ * A point in the lower part of `target`, centred: dropping there puts the new element after it,
+ * and it stays over the target however small the canvas is drawn.
+ */
+export async function lowerHalf(target: Locator): Promise<{ x: number; y: number }> {
+  const box = await boxOf(target, "Drop target");
+  return { x: box.x + box.width / 2, y: box.y + box.height * 0.75 };
 }
 
 /** A point just below `target`'s bottom edge (or above it, for a negative `offset`), centred. */
