@@ -1,8 +1,9 @@
-import type { CanvasEngine } from "@webforge/engine";
+import type { CanvasEngine, RichTextAt } from "@webforge/engine";
 import { type RichTextLink, richTextHref, richTextLinkValue, type SiteDoc } from "@webforge/model";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { ADVANCED_FIELDS, advancedFieldLabel } from "../editor/advanced-fields.js";
 import { currentPage, type EditorSession, textSessionKey } from "../editor/editor-session.js";
-import { labelFor } from "../editor/labels.js";
+import { changedLabel, labelFor } from "../editor/labels.js";
 import { findNode } from "../editor/nodes.js";
 import { LinkDialog } from "./LinkDialog.js";
 import { applyAnchor, type LinkFieldChange } from "./link-change.js";
@@ -11,51 +12,63 @@ import { linkTargets } from "./link-targets.js";
 /** A link the format toolbar asked for, waiting for the dialog. */
 type Request = {
   readonly current: RichTextLink | null;
+  /** The rich-text field the link goes in, when the engine knows it. */
+  readonly at: RichTextAt | null;
   readonly answer: (link: RichTextLink | null | undefined) => void;
 };
 
 /**
  * Gives a section linked to for the first time its anchor (F-ED-18), as part of the text-editing
- * session the link is made in: the session ends as one step ("Edited Text text"), and undoing it
- * takes the anchor away with the link (D1).
+ * session the link is made in (`at`, the field being edited): the session ends as one step
+ * ("Edited Text text"), and undoing it takes the anchor away with the link (D1). Without that
+ * field, the anchor is a step of its own.
  */
-function giveAnchor(session: EditorSession, site: SiteDoc, change: LinkFieldChange): void {
+function giveAnchor(
+  session: EditorSession,
+  site: SiteDoc,
+  change: LinkFieldChange,
+  at: RichTextAt | null,
+): void {
   const { anchor } = change;
-  const { pageId, nodeId } = session.ui.getState();
-  const node =
-    nodeId === null
-      ? undefined
-      : findNode(currentPage(session)?.doc.content ?? [], (n) => n.props.id === nodeId);
   const page = anchor === undefined ? undefined : site.pages[anchor.pageId];
   const shown = currentPage(session)?.doc;
-  const fields = node === undefined ? {} : (session.library.components[node.type]?.fields ?? {});
-  const field = Object.entries(fields).find(([, def]) => def.kind === "richtext")?.[0];
-  if (
-    anchor === undefined ||
-    page === undefined ||
-    shown === undefined ||
-    node === undefined ||
-    field === undefined
-  ) {
+  if (anchor === undefined || page === undefined || shown === undefined) {
+    return;
+  }
+  const { pageId } = session.ui.getState();
+  const node = at === null ? undefined : findNode(shown.content, (n) => n.props.id === at.nodeId);
+  const recipe = (draft: SiteDoc) => {
+    const target = draft.pages[anchor.pageId];
+    if (target !== undefined) applyAnchor(target.doc, page.doc, anchor);
+  };
+  if (at === null || node === undefined) {
+    const section = findNode(page.doc.content, (n) => n.props.id === anchor.nodeId);
+    const label = changedLabel(
+      {
+        kind: "props",
+        nodeId: anchor.nodeId,
+        componentType: section?.type ?? null,
+        field: ADVANCED_FIELDS.anchorId,
+        page: page.doc,
+        selection: null,
+      },
+      session.library,
+      advancedFieldLabel(ADVANCED_FIELDS.anchorId),
+    );
+    session.edit("props", label, recipe);
     return;
   }
   const edit = {
     kind: "text" as const,
-    nodeId: node.props.id,
+    nodeId: at.nodeId,
     componentType: node.type,
-    field,
+    field: at.field,
     page: shown,
-    selection: node.props.id,
+    selection: at.nodeId,
   };
-  session.edit(
-    "text",
-    labelFor(edit, session.library),
-    (draft) => {
-      const target = draft.pages[anchor.pageId];
-      if (target !== undefined) applyAnchor(target.doc, page.doc, anchor);
-    },
-    { coalesceKey: textSessionKey(pageId, node.props.id, field) },
-  );
+  session.edit("text", labelFor(edit, session.library), recipe, {
+    coalesceKey: textSessionKey(pageId, at.nodeId, at.field),
+  });
 }
 
 /**
@@ -80,12 +93,13 @@ export function RichTextLinkHost({
       return;
     }
     engine.setLinkPicker(
-      (current) =>
+      (current, at) =>
         new Promise((resolve) => {
           // A new request answers one still open: it leaves its text as it is.
           open.current?.answer(undefined);
           const next: Request = {
             current,
+            at,
             answer: (link) => {
               if (open.current === next) {
                 open.current = null;
@@ -121,7 +135,7 @@ export function RichTextLinkHost({
           request.answer(change.link === undefined ? null : undefined);
           return;
         }
-        giveAnchor(session, site, change);
+        giveAnchor(session, site, change, request.at);
         request.answer({ href, newTab: change.link.newTab === true });
       }}
       onCancel={() => request?.answer(undefined)}
