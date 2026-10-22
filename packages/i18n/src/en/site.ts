@@ -68,9 +68,9 @@ export const site = {
   "site.clipboard.history.pasted": "Pasted {item}",
   "site.clipboard.history.pastedMany": "Pasted {count} elements",
   "site.clipboard.history.cut": "Cut {item}",
-  "site.clipboard.history.pastedImage": "Pasted {name} into {item}",
-  "site.clipboard.addedToMedia": "Added {name} to Media.",
-  "site.clipboard.addedManyToMedia": "Added {count} images and files to Media.",
+  "site.clipboard.history.pastedImage": "Pasted image {name}",
+  "site.clipboard.addedToMedia": "Added {name} to Media",
+  "site.clipboard.addedManyToMedia": "Added {count} images and files to Media",
   "site.clipboard.nothing": "There's nothing to paste. Copy a section or element first.",
   "site.clipboard.cantPaste":
     "That {item} can't go here. Select a place that takes it, then paste.",

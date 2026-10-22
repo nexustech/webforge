@@ -266,7 +266,7 @@ describe("copy and paste (1.25)", () => {
 
       expect(content(session).at(-1)?.props.image).toEqual({ mediaId: photo.id });
       expect(site(session).media[photo.id]).toMatchObject({ fileName: "shop.jpg" });
-      expect(labels(session).at(-1)).toBe("Pasted 'shop.jpg' into Hero");
+      expect(labels(session).at(-1)).toBe("Pasted image 'shop.jpg'");
       session.history.undo();
       expect(content(session).at(-1)?.props).not.toHaveProperty("image");
       expect(site(session).media).toEqual({});
@@ -283,8 +283,8 @@ describe("copy and paste (1.25)", () => {
       expect(Object.keys(site(session).media)).toEqual(["photo", "two", "prices"]);
       expect(sectionContent(session).map((node) => node.type)).toEqual(["Heading", "Text"]);
       expect(notify.mock.calls.map(([message]) => message)).toEqual([
-        "Added 'shop.jpg' to Media.",
-        "Added 2 images and files to Media.",
+        "Added 'shop.jpg' to Media",
+        "Added 2 images and files to Media",
       ]);
     });
 
@@ -303,7 +303,7 @@ describe("copy and paste (1.25)", () => {
       expect(site(session).media[prices.id]).toBeDefined();
       expect(notify.mock.calls.map(([message]) => message)).toEqual([
         "notes.txt isn't a JPEG, PNG or PDF, so it wasn't added.",
-        "Added 'prices.pdf' to Media.",
+        "Added 'prices.pdf' to Media",
       ]);
       // Nothing Media takes: nothing pasted.
       expect(

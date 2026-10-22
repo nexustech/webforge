@@ -257,11 +257,12 @@ export async function pasteElements(
 
 /**
  * Pastes imported image files or a copied image (F-ED-16): one image goes into the selected
- * element's image field, if it has one ("Pasted 'shop.png' into Hero"), and joins Media in the same
- * step. Anything else is added to Media, which says so. Files Media didn't take are named in a
+ * element's image field, if it has one ("Pasted image 'shop.png'"), and joins Media in the same
+ * step. Anything else is added to Media ("Added image 'shop.png'"), which a message says.
+ * Inserting a new element for it comes with Phase 2's Image element. Files Media didn't take are named in a
  * message, as for a drop.
  */
-export function pasteMedia(
+function pasteMedia(
   session: ClipboardSession,
   items: readonly MediaMeta[],
   rejected: Extract<MediaImportResult, { status: "imported" }>["rejected"],
@@ -299,10 +300,6 @@ export function pasteMedia(
     "props",
     t("site.clipboard.history.pastedImage", {
       name: t("history.namedItem", { name: item.fileName }),
-      item:
-        region === undefined
-          ? itemName(session, node)
-          : t("history.sharedItem", { item: itemName(session, node) }),
     }),
     (draft) => {
       putInMedia(draft, [item]);

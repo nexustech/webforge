@@ -209,7 +209,7 @@ test("pastes a copied image into the selected Hero, as one step with its Media i
 
   await page.getByRole("tab", { name: "Undo History" }).click();
   await expect(page.locator(".undo-history__step").first()).toHaveText(
-    "Pasted 'Pasted image.png' into Hero",
+    "Pasted image 'Pasted image.png'",
   );
   await expect(page.getByRole("banner").getByRole("status")).toHaveText("Saved", {
     timeout: 10_000,
@@ -240,7 +240,7 @@ test("adds image files copied in the file manager to Media", async () => {
 
   await page.keyboard.press("ControlOrMeta+v");
 
-  await expect(page.getByText("Added 'Shop front.jpg' to Media.")).toBeVisible();
+  await expect(page.getByText("Added 'Shop front.jpg' to Media")).toBeVisible();
   await page.getByRole("tab", { name: "Media" }).click();
   await expect(page.getByRole("button", { name: "Shop front.jpg" })).toBeVisible();
 });
