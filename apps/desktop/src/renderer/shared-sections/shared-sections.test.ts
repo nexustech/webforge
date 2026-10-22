@@ -1,5 +1,6 @@
 import {
   copiedNodeId,
+  expandSharedCopies,
   isSharedCopy,
   type NodeDoc,
   SHARED_COPY_TYPE,
@@ -69,6 +70,36 @@ describe("shared sections in the editor (1.29, F-ED-23)", () => {
     expect(content(session)[0]?.props.id).toBe("section-1");
     session.history.redo();
     expect(theShared(session).id).toBe(shared.id);
+  });
+
+  it("keeps a saved section's Layers name and hidden state on its first copy only (F-ED-12)", () => {
+    const start = starterSite();
+    const section = start.pages[start.homePageId]?.doc.content[0];
+    if (section !== undefined) Object.assign(section.props, { layerName: "Welcome", hidden: true });
+    const session = createEditorSession(siteLibrary, start);
+    select(session, "section-1");
+
+    saveAsSharedSection(session, "Hours");
+
+    const shared = theShared(session);
+    expect(shared.section.props.layerName).toBeUndefined();
+    expect(shared.section.props.hidden).toBeUndefined();
+    const [copy] = copiesOn(session);
+    expect(copy?.props).toMatchObject({ layerName: "Welcome", hidden: true });
+    // The page shows it as before, hidden and named; a copy placed later is neither.
+    const [shown, later] = expandSharedCopies(
+      [
+        ...content(session),
+        {
+          type: SHARED_COPY_TYPE,
+          props: { id: "c2", sharedSectionId: shared.id, anchorSuffix: "2" },
+        },
+      ],
+      site(session).sharedSections,
+    );
+    expect(shown?.props).toMatchObject({ layerName: "Welcome", hidden: true });
+    expect(later?.props.hidden).toBeUndefined();
+    expect(later?.props.layerName).toBeUndefined();
   });
 
   it("saves only a section of the page itself: not a copy, not an element in a section", () => {
