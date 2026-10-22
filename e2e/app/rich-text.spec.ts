@@ -46,6 +46,18 @@ async function editText(): Promise<void> {
   await expect(editor()).toBeFocused();
 }
 
+test("keeps every keystroke typed straight after the first click into rich text (ADR 0004)", async () => {
+  // A smoke test: no waiting for the editor. The engine test (rich-text-eager.test.tsx) checks
+  // that Puck's fallback, which lost what was typed while the editor loaded, never mounts.
+  await canvas().getByText(STARTER_TEXT).click();
+  await page.keyboard.press("End");
+  await page.keyboard.type(" Open daily.", { delay: 5 });
+
+  await expect(editor()).toHaveText(`${STARTER_TEXT} Open daily.`);
+  await leaveText();
+  await expect(steps().first()).toHaveText("Edited Text text");
+});
+
 test("formats rich text from its toolbar, which offers only the site's formatting", async () => {
   await editText();
   const toolbar = canvas().locator("[data-puck-rte-menu]");
@@ -157,4 +169,35 @@ test("removes a link from the toolbar", async () => {
   await editor().locator("a").click();
   await toolbar.getByRole("button", { name: "Remove link" }).click();
   await expect(editor().locator("a")).toHaveCount(0);
+});
+
+test("links text and removes links in Content mode, which keeps text and links editable (M3)", async () => {
+  await page.getByRole("radio", { name: "Content", exact: true }).click();
+  // In Content mode the first click puts the caret in the text.
+  await canvas().getByText(STARTER_TEXT).click();
+  await expect(editor()).toBeFocused();
+  await page.keyboard.press("Home");
+  await page.keyboard.press("Shift+End");
+  const toolbar = canvas().locator("[data-puck-rte-menu]");
+  const dialog = page.getByRole("dialog", { name: "Link" });
+
+  // To a section of this page: the anchor it gives the section is allowed in Content mode too.
+  await toolbar.getByRole("button", { name: "Link…" }).click();
+  await dialog.getByRole("combobox", { name: "Section" }).selectOption({ index: 1 });
+  await dialog.getByRole("button", { name: "Save Link" }).click();
+  await expect(dialog).toHaveCount(0);
+  const link = editor().locator("a");
+  await expect(link).toHaveAttribute("href", /^webforge:page\/[^#]+#[a-z]/);
+  const anchor = (await link.getAttribute("href"))?.split("#")[1] ?? "";
+  await expect(canvas().locator(`#${anchor}`)).toHaveCount(1);
+
+  // The caret into the link, from the keyboard: in Content mode dnd-kit marks each element
+  // `aria-disabled`, so a test's click inside one waits for it to be enabled (1.26 removes that).
+  await expect(editor()).toBeFocused();
+  await page.keyboard.press("Home");
+  await page.keyboard.press("ArrowRight");
+  await toolbar.getByRole("button", { name: "Remove link" }).click();
+  await expect(editor().locator("a")).toHaveCount(0);
+  await leaveText();
+  await expect(steps()).toHaveText(["Edited Text text", "Opened page"]);
 });

@@ -81,6 +81,7 @@ What item 1.27 changed:
   4. The canvas re-fits its zoom only when its scroll container's own size changes (the frame's parent, `offsetWidth`/`offsetHeight`, scrollbars included): a window or column resize. Puck re-fitted on any change to the frame, which fills that container's content box, so the scrollbar that a zoom above Fit brings undid that zoom at once (#134).
   5. A rich-text editor sends its last change as soon as it loses focus. Puck sends rich text after a 50 ms debounce (200 ms at most), on timers a background window can throttle further. Clicking elsewhere and pressing Undo inside that window recorded the session without its last keystrokes (canvas-history E2E, about 1 run in 15).
   6. Puck's API object (`__private`) also gains `flushRichText`, which makes the focused rich-text editor send its pending change at once. The engine calls it when Undo or Redo is pressed while typing, and runs the command once that edit is recorded (#146).
+  7. The inline rich-text editor is imported with the canvas instead of lazily. Puck drew each rich text as a fallback `contenteditable` until its Tiptap chunk loaded, in the first moments after the canvas showed, then replaced it, losing what was typed meanwhile (ADR 0004, 1.23). The chunk (about 0.6 MB) is now part of the renderer's main bundle.
 
 ### Before and after
 Same page, harness and machine as above. Three runs of each state, interleaved; the ranges are across runs. One round overlapped with other work on the machine, so the upper ends are noisy.
