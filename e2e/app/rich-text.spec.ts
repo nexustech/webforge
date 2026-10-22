@@ -47,7 +47,8 @@ async function editText(): Promise<void> {
 }
 
 test("keeps every keystroke typed straight after the first click into rich text (ADR 0004)", async () => {
-  // No waiting for the editor: the first click puts the caret in the real one at once.
+  // A smoke test: no waiting for the editor. The engine test (rich-text-eager.test.tsx) checks
+  // that Puck's fallback, which lost what was typed while the editor loaded, never mounts.
   await canvas().getByText(STARTER_TEXT).click();
   await page.keyboard.press("End");
   await page.keyboard.type(" Open daily.", { delay: 5 });
@@ -190,8 +191,8 @@ test("links text and removes links in Content mode, which keeps text and links e
   const anchor = (await link.getAttribute("href"))?.split("#")[1] ?? "";
   await expect(canvas().locator(`#${anchor}`)).toHaveCount(1);
 
-  // The caret into the link, from the keyboard: Content mode keeps the canvas's elements from
-  // ever looking still to a test's click.
+  // The caret into the link, from the keyboard: in Content mode dnd-kit marks each element
+  // `aria-disabled`, so a test's click inside one waits for it to be enabled (1.26 removes that).
   await expect(editor()).toBeFocused();
   await page.keyboard.press("Home");
   await page.keyboard.press("ArrowRight");
