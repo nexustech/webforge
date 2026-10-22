@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import type { LinkPicker } from "@webforge/engine";
 import type { RichTextLink } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { createEditorSession, currentPage } from "../editor/editor-session.js";
 import { createFakeEngine } from "../editor/fake-engine.test-helper.js";
 import { starterSite } from "../editor/starter-site.js";
@@ -25,7 +25,7 @@ function setUp() {
   session.ui.setState({ nodeId: "text-1" });
   const engine = createFakeEngine();
   render(<RichTextLinkHost session={session} engine={engine} />);
-  const picker = engine.setLinkPicker.mock.calls.at(-1)?.[0] as LinkPicker;
+  const picker = vi.mocked(engine.setLinkPicker).mock.calls.at(-1)?.[0] as LinkPicker;
   /** Asks for a link as the format toolbar does, and returns its answer, once it comes. */
   const ask = (current: RichTextLink | null) => {
     let answer: Promise<RichTextLink | null | undefined> = Promise.resolve(undefined);
