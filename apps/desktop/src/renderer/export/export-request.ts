@@ -1,4 +1,4 @@
-import { isImageMeta, type SiteDoc, siteToSnapshot } from "@webforge/model";
+import { expandSharedCopies, isImageMeta, type SiteDoc, siteToSnapshot } from "@webforge/model";
 import { type ComponentLibrary, documentsLinkedBy, mediaUsedBy } from "@webforge/site-components";
 import type { ExportRequest } from "../../shared/ipc/site.js";
 
@@ -11,7 +11,11 @@ export function exportRequestFor(site: SiteDoc, library: ComponentLibrary): Expo
   const nodes = [
     ...site.layout.header,
     ...site.layout.footer,
-    ...site.pageOrder.flatMap((id) => site.pages[id]?.doc.content ?? []),
+    // Copies of shared sections as the export shows them (F-ED-23): their images and documents
+    // are the pages' too.
+    ...site.pageOrder.flatMap((id) =>
+      expandSharedCopies(site.pages[id]?.doc.content ?? [], site.sharedSections),
+    ),
   ];
   const used = mediaUsedBy(nodes, library);
   // Documents elements link to, and those the navigation menu links to.
