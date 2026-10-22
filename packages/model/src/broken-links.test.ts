@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { findBrokenLinks } from "./broken-links.js";
 import type { NodeDoc } from "./documents.js";
-import type { PageId, SharedSectionId } from "./ids.js";
+import type { MediaId, PageId, SharedSectionId } from "./ids.js";
 import { SHARED_COPY_TYPE } from "./shared-sections.js";
 import { createSite, type SiteDoc } from "./site-doc.js";
 
@@ -188,6 +188,32 @@ describe("findBrokenLinks (F-ED-18)", () => {
 
     expect(findBrokenLinks(withHeader)).toEqual([
       { on: "header", nodeId: "h", pageId: "page-gone" },
+    ]);
+  });
+
+  it("finds links to documents deleted from Media, in link fields and rich text (1.28)", () => {
+    const doc = site([
+      { type: "Hero", props: { id: "hero", buttonLink: { kind: "file", mediaId: "gone" } } },
+      {
+        type: "Text",
+        props: {
+          id: "text",
+          text: '<p><a href="webforge:file/kept">a</a> <a href="webforge:file/lost">b</a></p>',
+        },
+      },
+    ]);
+    doc.media["kept" as MediaId] = {
+      id: "kept" as MediaId,
+      hash: "a".repeat(64),
+      name: "kept",
+      fileName: "kept.pdf",
+      kind: "file",
+      mimeType: "application/pdf",
+    };
+
+    expect(findBrokenLinks(doc)).toEqual([
+      { on: doc.homePageId, nodeId: "hero", mediaId: "gone" },
+      { on: doc.homePageId, nodeId: "text", mediaId: "lost" },
     ]);
   });
 });

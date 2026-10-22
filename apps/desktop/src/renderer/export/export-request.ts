@@ -1,20 +1,28 @@
 import { isImageMeta, type SiteDoc, siteToSnapshot } from "@webforge/model";
-import { type ComponentLibrary, mediaUsedBy } from "@webforge/site-components";
+import { type ComponentLibrary, documentsLinkedBy, mediaUsedBy } from "@webforge/site-components";
 import type { ExportRequest } from "../../shared/ipc/site.js";
 
 /**
  * What the export command sends for `site`: its snapshot, and the images its pages, Header and
- * Footer use, by hash. The main process reads only those images' bytes from the site file.
+ * Footer use and the documents they link to, by hash. The main process reads only those files'
+ * bytes from the site file.
  */
 export function exportRequestFor(site: SiteDoc, library: ComponentLibrary): ExportRequest {
-  const used = mediaUsedBy(
-    [
-      ...site.layout.header,
-      ...site.layout.footer,
-      ...site.pageOrder.flatMap((id) => site.pages[id]?.doc.content ?? []),
-    ],
-    library,
-  );
+  const nodes = [
+    ...site.layout.header,
+    ...site.layout.footer,
+    ...site.pageOrder.flatMap((id) => site.pages[id]?.doc.content ?? []),
+  ];
+  const used = mediaUsedBy(nodes, library);
+  // Documents elements link to, and those the navigation menu links to.
+  const linked = documentsLinkedBy(nodes, library);
+  for (const item of site.menu.items.flatMap((entry) =>
+    entry.kind === "group" ? entry.children : [entry],
+  )) {
+    if ((item.kind === "link" || item.kind === "button") && item.link.kind === "file") {
+      linked.add(item.link.mediaId);
+    }
+  }
   return {
     snapshot: siteToSnapshot(site, new Map()),
     media: Object.values(site.media)
@@ -29,5 +37,10 @@ export function exportRequestFor(site: SiteDoc, library: ComponentLibrary): Expo
         ...(image.focal === undefined ? {} : { focal: image.focal }),
         ...(image.crop === undefined ? {} : { crop: image.crop }),
       })),
+    documents: Object.values(site.media).flatMap((item) =>
+      item.kind === "file" && linked.has(item.id)
+        ? [{ id: item.id, name: item.name, mimeType: item.mimeType, hash: item.hash }]
+        : [],
+    ),
   };
 }

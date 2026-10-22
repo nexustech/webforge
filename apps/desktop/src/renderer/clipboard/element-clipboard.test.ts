@@ -380,6 +380,23 @@ describe("copy and paste (1.25)", () => {
       ]);
     });
 
+    it("asks before cutting from the shared layout, and on No changes and copies nothing (D7)", async () => {
+      const session = withBanner();
+      const clipboard = fakeClipboard();
+      const confirmCut = vi.fn(async () => false);
+      select(session, "notice");
+
+      expect(await copySelected(session, clipboard, vi.fn(), true, confirmCut)).toBe(false);
+
+      expect(confirmCut).toHaveBeenCalledWith("Heading", "header");
+      expect(clipboard.write).not.toHaveBeenCalled();
+      expect(bannerContent(session)).toHaveLength(1);
+      // A page's own element is cut without asking.
+      select(session, "heading-1");
+      expect(await copySelected(session, clipboard, vi.fn(), true, confirmCut)).toBe(true);
+      expect(confirmCut).toHaveBeenCalledOnce();
+    });
+
     it("says a pasted image goes into the shared layout, on every page", async () => {
       const session = withBanner();
       select(session, "banner");

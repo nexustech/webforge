@@ -2,6 +2,7 @@ import {
   copiedNodeId,
   findBrokenLinks,
   type LinkValue,
+  type MediaId,
   type NodeDoc,
   type PageId,
   SHARED_COPY_TYPE,
@@ -141,7 +142,23 @@ describe("link targets (F-ED-18)", () => {
     expect(describe({ kind: "email", address: "hi@example.com" })).toBe("hi@example.com");
     expect(describe({ kind: "phone", number: "01234 567890" })).toBe("01234 567890");
     expect(describe({ kind: "url", href: "https://example.com" })).toBe("https://example.com");
-    expect(describe({ kind: "file", mediaId: "media-a" as never })).toBe("A file");
+    // A document by its file name, or one deleted from Media since (1.28).
+    const media = {
+      ["media-a" as MediaId]: {
+        id: "media-a" as MediaId,
+        hash: "a".repeat(64),
+        name: "prices",
+        fileName: "Price list.pdf",
+        kind: "file" as const,
+        mimeType: "application/pdf" as const,
+      },
+    };
+    expect(describeLink({ kind: "file", mediaId: "media-a" as MediaId }, targets, media)).toBe(
+      "Price list.pdf",
+    );
+    expect(describe({ kind: "file", mediaId: "media-b" as MediaId })).toBe(
+      "A file deleted from Media",
+    );
   });
 });
 

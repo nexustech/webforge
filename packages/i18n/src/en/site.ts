@@ -31,6 +31,10 @@ export const site = {
   "site.media.deleteDialog.title": "Delete {name}?",
   "site.media.deleteDialog.usedOnOne":
     "It's used on 1 page. That place will show no image until you choose another. You can undo this.",
+  "site.media.deleteDialog.linkedFromOne":
+    "1 page links to it. That link will go nowhere until you choose another file. You can undo this.",
+  "site.media.deleteDialog.linkedFromMany":
+    "{count} pages link to it. Those links will go nowhere until you choose another file. You can undo this.",
   "site.media.deleteDialog.usedOnMany":
     "It's used on {count} pages. Those places will show no image until you choose another. You can undo this.",
   "site.media.deleteDialog.cancel": "Cancel",
@@ -95,6 +99,12 @@ export const site = {
   "site.clipboard.copyFailed": "Webforge couldn't copy that.",
   "site.clipboard.pasteFailed": "Webforge couldn't paste that.",
   "site.clipboard.readOnly": "This site is read-only, so nothing can be pasted into it.",
+  // Links to documents in Media (1.28), beside the link dialog's own `link.*` strings.
+  "link.kind.file": "File",
+  "link.document": "Document",
+  "link.download": "Download the file instead of opening it",
+  "link.missingFile": "A file deleted from Media",
+  "link.error.file": "Add a document to Media first, then link to it.",
   "site.settings.command": "Site Settings…",
   "site.binding.shows": "{field} shows",
   "site.binding.ownText": "Text typed here",

@@ -63,5 +63,6 @@ export function siteToSnapshot(
     pages,
     media,
     settings: settingValues(site.settings),
+    menu: site.menu,
   };
 }

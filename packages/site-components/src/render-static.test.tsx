@@ -4,6 +4,7 @@ import { siteLibrary, starterLayout, starterPage } from "./catalogue.js";
 import { EDITOR_RENDER_CONTEXT, type RenderContext, type ResolvedImage } from "./library.js";
 import {
   behavioursUsedBy,
+  documentsLinkedBy,
   mediaUsedBy,
   renderNodesToHtml,
   UnknownComponentError,
@@ -139,16 +140,80 @@ describe("renderNodesToHtml", () => {
     );
   });
 
+  it("points rich text's links to documents at their files, saved when so set (1.28)", () => {
+    const documents: RenderContext = {
+      ...context,
+      href: (link) =>
+        link.kind === "file" && link.mediaId === "menu" ? `files/${link.mediaId}.pdf` : "#",
+    };
+    const nodes: NodeDoc[] = [
+      {
+        type: "Text",
+        props: {
+          id: "t",
+          text:
+            '<p><a target="_blank" href="webforge:file/menu">Menu</a> ' +
+            '<a href="webforge:file/menu?download">Save</a> ' +
+            '<a href="webforge:file/gone?download">Gone</a> ' +
+            '<a href="https://example.com" download="evil.exe">Web</a> ' +
+            '<a href="about.html" download>Page</a></p>',
+        },
+      },
+    ];
+
+    expect(renderNodesToHtml(nodes, siteLibrary, documents)).toContain(
+      '<p><a href="files/menu.pdf" target="_blank" rel="noopener">Menu</a> ' +
+        '<a href="files/menu.pdf" download>Save</a> ' +
+        // `download` only on a document's file: never on `#` (a deleted document), a web address
+        // or a page, where it would save that page instead.
+        '<a href="#">Gone</a> ' +
+        '<a href="https://example.com">Web</a> ' +
+        '<a href="about.html">Page</a></p>',
+    );
+  });
+
   it("renders the header with navigation, the current page and the menu toggle", () => {
     const html = renderNodesToHtml(starterLayout("Rosa's Bakery").header, siteLibrary, context);
 
     expect(html).toContain('<a class="text-xl font-bold" href="index.html">Rosa&#x27;s Bakery</a>');
-    expect(html).toContain('<nav aria-label="Main navigation">');
+    expect(html).toContain(
+      '<nav aria-label="Main navigation" class="[&amp;:not([data-wf-ready]):focus-within&gt;ul]:flex">',
+    );
     expect(html).toContain('aria-controls="header-menu" data-wf-menu-toggle=""');
     expect(html).toContain('<ul id="header-menu"');
     expect(html).toContain('<a href="index.html" aria-current="page">Home</a>');
     expect(html).toContain('<a href="about.html">About</a>');
     expect(html).toContain('<span class="sr-only">Menu</span>');
+  });
+
+  it("renders the menu's buttons, new tabs and dropdowns (F-ED-17)", () => {
+    const html = renderNodesToHtml(starterLayout("Rosa's Bakery").header, siteLibrary, {
+      ...context,
+      navigation: [
+        {
+          label: "Visit us",
+          current: false,
+          children: [
+            { label: "Questions", href: "index.html#questions", current: false },
+            { label: "Find us", href: "https://example.com/map", current: false, newTab: true },
+          ],
+        },
+        { label: "Order a cake", href: "about.html", current: false, button: true },
+      ],
+    });
+
+    // The dropdown: a button that says whether it is open, controlling its own list.
+    expect(html).toContain(
+      'aria-expanded="false" aria-controls="header-menu-0" data-wf-submenu-toggle="">Visit us',
+    );
+    expect(html).toContain('<ul id="header-menu-0" class="hidden data-open:block');
+    expect(html).toContain('<a href="index.html#questions">Questions</a>');
+    expect(html).toContain(
+      '<a href="https://example.com/map" target="_blank" rel="noopener">Find us</a>',
+    );
+    expect(html).toContain(
+      '<a href="about.html" class="btn btn-primary btn-sm md:ml-2">Order a cake</a>',
+    );
   });
 
   it("links the site name to the home page, wherever it is in the navigation", () => {
@@ -362,6 +427,18 @@ describe("tree helpers", () => {
     // A page path typed before link fields, and no link at all.
     expect(render("about")).toContain('href="about.html"');
     expect(render(undefined)).toContain('href="#"');
+  });
+
+  it("documentsLinkedBy finds the documents link fields and rich text point to (1.28)", () => {
+    const nodes: NodeDoc[] = [
+      { type: "Text", props: { id: "t", text: '<p><a href="webforge:file/menu">Menu</a></p>' } },
+      { type: "Hero", props: { id: "a", buttonLink: { kind: "file", mediaId: "prices" } } },
+      { type: "Hero", props: { id: "b", buttonLink: { kind: "url", href: "https://a.b" } } },
+      // Not a link field: a document id elsewhere isn't a link.
+      { type: "Hero", props: { id: "c", image: { mediaId: "menu" } } },
+    ];
+
+    expect([...documentsLinkedBy(nodes, siteLibrary)]).toEqual(["menu", "prices"]);
   });
 
   it("mediaUsedBy finds media ids in media fields only", () => {

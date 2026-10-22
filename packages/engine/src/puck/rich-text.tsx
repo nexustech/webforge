@@ -1,7 +1,7 @@
 import { type Field, RichTextMenu } from "@puckeditor/core";
 import { t } from "@webforge/i18n";
 import type { RichTextLink } from "@webforge/model";
-import { RICH_TEXT_PAGE_LINK } from "@webforge/model";
+import { RICH_TEXT_FILE_LINK, RICH_TEXT_PAGE_LINK } from "@webforge/model";
 import { LinkIcon, UnlinkIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { LinkPicker } from "../canvas-engine.js";
@@ -16,10 +16,13 @@ type RichtextField = Extract<Field, { type: "richtext" }>;
 type ToolbarProps = Parameters<NonNullable<RichtextField["renderInlineMenu"]>>[0];
 
 /**
- * Link addresses rich text may hold: the site's own pages, web pages, email and phone. Others are
- * dropped, pasted ones too.
+ * Link addresses rich text may hold: the site's own pages and documents (1.28), web pages, email
+ * and phone. Others are dropped, pasted ones too.
  */
-const ALLOWED_LINK = new RegExp(`^(https?:|mailto:|tel:|${RICH_TEXT_PAGE_LINK})`, "i");
+const ALLOWED_LINK = new RegExp(
+  `^(https?:|mailto:|tel:|${RICH_TEXT_PAGE_LINK}|${RICH_TEXT_FILE_LINK})`,
+  "i",
+);
 
 /**
  * The formatting rich text allows (F-ED-3, C1): bold, italic, links, bullet and numbered lists

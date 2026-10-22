@@ -82,6 +82,7 @@ describe("App", () => {
     expect(exportSite).toHaveBeenCalledWith({
       snapshot: expect.objectContaining({ pages: expect.any(Array), media: [] }),
       media: [],
+      documents: [],
     });
     expect(await screen.findByText("Site exported to “my-site” (6 files).")).toBeTruthy();
   });

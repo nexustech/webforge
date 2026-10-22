@@ -1,12 +1,4 @@
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
   Button,
   cn,
   DropdownMenu,
@@ -74,7 +66,7 @@ export type PagesPanelProps = {
 /** A dialog the panel has open. */
 type OpenDialog =
   | { readonly kind: "add" }
-  | { readonly kind: "rename" | "folder" | "delete" | "settings"; readonly pageId: PageId };
+  | { readonly kind: "rename" | "folder" | "settings"; readonly pageId: PageId };
 
 /** A row of the list: a page at the top level, or a folder with its pages. */
 type Row =
@@ -117,7 +109,10 @@ export function PagesPanel({ site, shownPageId, actions }: PagesPanelProps) {
     setOpen(true);
   };
   // The page menu's dialogs open once the menu has closed, so their field keeps the focus.
-  const menuDialog = useMenuDialog(openDialog);
+  // Delete asks through the shared site-wide confirmation (D7), which `actions.remove` opens.
+  const menuDialog = useMenuDialog((next: OpenDialog | { kind: "delete"; pageId: PageId }) =>
+    next.kind === "delete" ? actions.remove(next.pageId) : openDialog(next),
+  );
   const close = () => setOpen(false);
   const dialogPage =
     dialog !== null && dialog.kind !== "add" ? site.pages[dialog.pageId] : undefined;
@@ -261,34 +256,6 @@ export function PagesPanel({ site, shownPageId, actions }: PagesPanelProps) {
         }}
         onCancel={close}
       />
-      <AlertDialog
-        open={open && dialog?.kind === "delete" && dialogPage !== undefined}
-        onOpenChange={(open) => {
-          if (!open) close();
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t("pages.deleteDialog.title", { name: dialogPage?.title ?? "" })}
-            </AlertDialogTitle>
-            <AlertDialogDescription>{t("pages.deleteDialog.description")}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("pages.cancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              onClick={() => {
-                if (dialogPage !== undefined) {
-                  actions.remove(dialogPage.id);
-                }
-              }}
-            >
-              {t("pages.deleteDialog.confirm")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

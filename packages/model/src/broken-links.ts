@@ -1,11 +1,14 @@
 import { anchorsIn, isNodeDoc, type NodeDoc } from "./documents.js";
-import type { PageId, SharedSectionId } from "./ids.js";
-import { pageLinkSchema } from "./link.js";
-import { richTextPageLinks } from "./rich-text-links.js";
+import type { MediaId, PageId, SharedSectionId } from "./ids.js";
+import { linkValueSchema } from "./link.js";
+import { richTextFileLinks, richTextPageLinks } from "./rich-text-links.js";
 import { expandSharedCopies } from "./shared-sections.js";
 import type { SiteDoc } from "./site-doc.js";
 
-/** Where a broken link is: the page it is on (or the Header, Footer or menu), and its element. */
+/**
+ * Where a broken link is: the page it is on (or the Header, Footer or menu), and its element; and
+ * what it points at that is gone, a page (or a section of one) or a document in Media (1.28).
+ */
 export type BrokenLink = {
   /**
    * The page the link is on; `"header"` or `"footer"` for the shared layout, `"menu"`, or a shared
@@ -14,22 +17,32 @@ export type BrokenLink = {
   readonly on: PageId | "header" | "footer" | "menu" | SharedSectionId;
   /** The element holding the link, or the menu item. */
   readonly nodeId: string;
-  /** The page it points at. */
-  readonly pageId: PageId;
-  /** The section it points at, when that is what is missing. */
-  readonly anchor?: string;
-};
+} & (
+  | {
+      /** The page it points at. */
+      readonly pageId: PageId;
+      /** The section it points at, when that is what is missing. */
+      readonly anchor?: string;
+    }
+  | {
+      /** The document it points at, deleted from Media. */
+      readonly mediaId: MediaId;
+    }
+);
+
+/** What a link points at in the site: a page (and section), or a document in Media. */
+type SiteTarget =
+  | { readonly kind: "page"; readonly pageId: PageId; readonly anchor?: string | undefined }
+  | { readonly kind: "file"; readonly mediaId: MediaId };
 
 /**
- * Calls `visit` for every page link in `value`, a field's value, but not in elements inside it:
- * link values, and links in rich text's HTML.
+ * Calls `visit` for every link to a page or a document in `value`, a field's value, but not in
+ * elements inside it: link values, and links in rich text's HTML.
  */
-function walkLinks(
-  value: unknown,
-  visit: (link: { pageId: PageId; anchor?: string | undefined }) => void,
-): void {
+function walkLinks(value: unknown, visit: (link: SiteTarget) => void): void {
   if (typeof value === "string") {
-    for (const link of richTextPageLinks(value)) visit(link);
+    for (const link of richTextPageLinks(value)) visit({ kind: "page", ...link });
+    for (const { mediaId } of richTextFileLinks(value)) visit({ kind: "file", mediaId });
     return;
   }
   if (Array.isArray(value)) {
@@ -39,18 +52,20 @@ function walkLinks(
   if (typeof value !== "object" || value === null || isNodeDoc(value)) {
     return;
   }
-  const link = pageLinkSchema.safeParse(value);
+  const link = linkValueSchema.safeParse(value);
   if (link.success) {
-    visit(link.data);
+    if (link.data.kind === "page") visit(link.data);
+    if (link.data.kind === "file") visit({ kind: "file", mediaId: link.data.mediaId });
     return;
   }
   for (const item of Object.values(value)) walkLinks(item, visit);
 }
 
 /**
- * The links to pages, or sections of pages, that don't exist any more (F-ED-18): the page was
- * deleted, or the section with that anchor was. Site Check lists them (3.6). Links to the Header
- * or Footer's anchors count as found on every page.
+ * The links to pages, sections of pages or documents that don't exist any more (F-ED-18, 1.28):
+ * the page was deleted, or the section with that anchor was, or the document was deleted from
+ * Media. Site Check lists them (3.6). Links to the Header or Footer's anchors count as found on
+ * every page.
  */
 export function findBrokenLinks(site: SiteDoc): BrokenLink[] {
   const shared = anchorsIn([...site.layout.header, ...site.layout.footer]);
@@ -67,12 +82,11 @@ export function findBrokenLinks(site: SiteDoc): BrokenLink[] {
   };
 
   const broken: BrokenLink[] = [];
-  const checkLink = (
-    on: BrokenLink["on"],
-    id: string,
-    link: { pageId: PageId; anchor?: string | undefined },
-  ) => {
-    if (site.pages[link.pageId] === undefined) {
+  const checkLink = (on: BrokenLink["on"], id: string, link: SiteTarget) => {
+    if (link.kind === "file") {
+      const item = Object.hasOwn(site.media, link.mediaId) ? site.media[link.mediaId] : undefined;
+      if (item?.kind !== "file") broken.push({ on, nodeId: id, mediaId: link.mediaId });
+    } else if (site.pages[link.pageId] === undefined) {
       broken.push({ on, nodeId: id, pageId: link.pageId });
     } else if (link.anchor !== undefined && !anchorsOn(link.pageId).has(link.anchor)) {
       broken.push({ on, nodeId: id, pageId: link.pageId, anchor: link.anchor });
@@ -98,7 +112,7 @@ export function findBrokenLinks(site: SiteDoc): BrokenLink[] {
   for (const item of site.menu.items.flatMap((entry) =>
     entry.kind === "group" ? [entry, ...entry.children] : [entry],
   )) {
-    if (item.kind === "page") checkLink("menu", item.id, { pageId: item.pageId });
+    if (item.kind === "page") checkLink("menu", item.id, { kind: "page", pageId: item.pageId });
     else if (item.kind !== "group")
       walkLinks(item.link, (link) => checkLink("menu", item.id, link));
   }

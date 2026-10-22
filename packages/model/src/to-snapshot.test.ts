@@ -103,6 +103,12 @@ describe("siteToSnapshot", () => {
     ]);
   });
 
+  it("carries the menu, for the Header's navigation (F-ED-17)", () => {
+    const site = bakery();
+
+    expect(siteToSnapshot(site, new Map()).menu).toBe(site.menu);
+  });
+
   it("carries the Site Settings values elements can be bound to", () => {
     const site = bakery();
     site.settings.contact.phone = "+44 1234 567890";

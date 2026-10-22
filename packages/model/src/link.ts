@@ -47,7 +47,13 @@ export const linkValueSchema = z.discriminatedUnion("kind", [
   }),
   z.strictObject({ kind: z.literal("phone"), number: phoneNumberSchema, newTab }),
   z.strictObject({ kind: z.literal("url"), href: webUrlSchema, newTab }),
-  z.strictObject({ kind: z.literal("file"), mediaId: mediaIdSchema, newTab }),
+  z.strictObject({
+    kind: z.literal("file"),
+    mediaId: mediaIdSchema,
+    newTab,
+    /** Saves the file instead of opening it (the link's `download` attribute, 1.28). */
+    download: z.boolean().optional(),
+  }),
 ]);
 
 /** See {@link linkValueSchema}. */

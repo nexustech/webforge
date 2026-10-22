@@ -209,9 +209,13 @@ export function MediaPanel({
               {t("site.media.deleteDialog.title", { name: confirming?.item.fileName ?? "" })}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {confirming?.pages === 1
-                ? t("site.media.deleteDialog.usedOnOne")
-                : t("site.media.deleteDialog.usedOnMany", { count: confirming?.pages ?? 0 })}
+              {confirming?.item.kind === "file"
+                ? confirming.pages === 1
+                  ? t("site.media.deleteDialog.linkedFromOne")
+                  : t("site.media.deleteDialog.linkedFromMany", { count: confirming.pages })
+                : confirming?.pages === 1
+                  ? t("site.media.deleteDialog.usedOnOne")
+                  : t("site.media.deleteDialog.usedOnMany", { count: confirming?.pages ?? 0 })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

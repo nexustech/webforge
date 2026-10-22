@@ -14,7 +14,9 @@ function site(version: string): Map<string, Uint8Array> {
   ]);
 }
 
-describe("writeSiteFolder", () => {
+// Real folders on disk: a busy Windows machine (antivirus, indexer) locks them for a moment, and
+// writeSiteFolder retries a locked rename with growing waits, which can pass the 5 s default.
+describe("writeSiteFolder", { timeout: 15_000 }, () => {
   it("creates the folder with the site's files and the export marker", async () => {
     const destination = join(tempDir(), "my-site");
 

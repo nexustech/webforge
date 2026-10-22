@@ -93,7 +93,11 @@ describe("toPuckConfig", () => {
     const allowed = link === false ? undefined : link?.isAllowedUri;
     const check = (url: string) =>
       allowed?.(url, { defaultValidate: () => true, protocols: [], defaultProtocol: "https" });
-    expect(["https://a.example", "mailto:a@b.c", "tel:+44"].map(check)).toEqual([true, true, true]);
+    expect(
+      ["https://a.example", "mailto:a@b.c", "tel:+44", "webforge:page/p", "webforge:file/m"].map(
+        check,
+      ),
+    ).toEqual([true, true, true, true, true]);
     expect(["javascript:alert(1)", "file:///c:/x", "data:text/html,x"].map(check)).toEqual([
       false,
       false,

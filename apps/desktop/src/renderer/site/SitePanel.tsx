@@ -13,6 +13,7 @@ import {
   renameMenuItem,
   setMenuItemHidden,
 } from "../menu/menu-actions.js";
+import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
 import type { PanelRegistry } from "../shell/panels.js";
 import { PagesPanel, type PagesPanelActions } from "./PagesPanel.js";
 import {
@@ -22,13 +23,20 @@ import {
   duplicatePage,
   movePage,
   moveToFolder,
+  pagesChangedByDeleting,
   renamePage,
   setHiddenFromNavigation,
   setHomePage,
 } from "./page-actions.js";
 
-/** The Pages panel's actions on `session`: each change is one undo step (F-ED-13). */
-export function pagesPanelActions(session: EditorSession): PagesPanelActions {
+/**
+ * The Pages panel's actions on `session`: each change is one undo step (F-ED-13). Deleting a page
+ * asks first through `siteWide`, saying how many pages it changes (D7).
+ */
+export function pagesPanelActions(
+  session: EditorSession,
+  siteWide?: Pick<SiteWideConfirm, "confirmSiteWide">,
+): PagesPanelActions {
   return {
     show: (pageId) => session.showPage(pageId),
     add: (name) => {
@@ -42,7 +50,24 @@ export function pagesPanelActions(session: EditorSession): PagesPanelActions {
     moveToFolder: (pageId, folder) => moveToFolder(session, pageId, folder),
     setHome: (pageId) => setHomePage(session, pageId),
     setHidden: (pageId, hidden) => setHiddenFromNavigation(session, pageId, hidden),
-    remove: (pageId) => deletePage(session, pageId),
+    remove: (pageId) => {
+      const site = session.history.document.getState();
+      const page = site.pages[pageId];
+      if (page === undefined || siteWide === undefined) {
+        deletePage(session, pageId);
+        return;
+      }
+      void siteWide
+        .confirmSiteWide({
+          action: t("pages.deleteDialog.title", { name: page.title }),
+          description: t("pages.deleteDialog.description"),
+          confirm: t("pages.deleteDialog.confirm"),
+          affectedPages: pagesChangedByDeleting(site, pageId),
+        })
+        .then((confirmed) => {
+          if (confirmed) deletePage(session, pageId);
+        });
+    },
     changeSettings: (pageId, change) => changePageSettings(session, pageId, change),
   };
 }
@@ -90,8 +115,12 @@ function samePageList(a: SiteDoc, b: SiteDoc): boolean {
  * Adds the Site panel to the right column, as the tab after Edit (UI1, ADR 0008), in Simple and
  * Advanced mode: Pages, and the navigation Menu under them. Returns a function that removes it.
  */
-export function registerSitePanel(panels: PanelRegistry, session: EditorSession): () => void {
-  const actions = pagesPanelActions(session);
+export function registerSitePanel(
+  panels: PanelRegistry,
+  session: EditorSession,
+  siteWide?: Pick<SiteWideConfirm, "confirmSiteWide">,
+): () => void {
+  const actions = pagesPanelActions(session, siteWide);
   const menuActions = menuPanelActions(session);
   const linkContext = () => {
     const site = session.history.document.getState();

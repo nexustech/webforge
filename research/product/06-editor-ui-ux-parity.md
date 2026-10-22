@@ -109,7 +109,7 @@ Bootstrap Studio's keys, plus a few from Elements, so users of either feel at ho
 | Select parent / child | **Mod + ↑ / Mod + ↓** | BS | ↑/↓ select previous/next |
 | Select previous / next sibling | **Mod + ← / Mod + →** | BS | — |
 | Move element up / down | Mod + Alt + ↑ / ↓ | Elements | — |
-| Edit text / empty and edit | **Enter** / **Backspace** | BS | Double-click |
+| Edit text / empty and edit | **Enter** / **Backspace** | BS | Click (F-ED-3) |
 | In text: link, new line, split, non-breaking space | Mod + K, Shift + Enter, **Alt + Enter**, **Shift + Space** | BS | Link ✅ |
 | Zoom in / out / reset / fit | Mod + = / Mod + − / Mod + 0 / Mod + 9 | BS (+ fit) | Toolbar only |
 | Device view Desktop / Tablet / Mobile | **Mod + 1 / 2 / 3** | Elements | — |
