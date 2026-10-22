@@ -46,6 +46,17 @@ async function editText(): Promise<void> {
   await expect(editor()).toBeFocused();
 }
 
+test("keeps every keystroke typed straight after the first click into rich text (ADR 0004)", async () => {
+  // No waiting for the editor: the first click puts the caret in the real one at once.
+  await canvas().getByText(STARTER_TEXT).click();
+  await page.keyboard.press("End");
+  await page.keyboard.type(" Open daily.", { delay: 5 });
+
+  await expect(editor()).toHaveText(`${STARTER_TEXT} Open daily.`);
+  await leaveText();
+  await expect(steps().first()).toHaveText("Edited Text text");
+});
+
 test("formats rich text from its toolbar, which offers only the site's formatting", async () => {
   await editText();
   const toolbar = canvas().locator("[data-puck-rte-menu]");

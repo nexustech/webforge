@@ -441,7 +441,7 @@ Enable Electron's spellchecker for text editing; context-menu suggestions and ad
 - [ ] Windows follows the site language
 
 **1.23 Inline text editing (Tiptap)**  
-Double-click to edit text on the canvas via Puck richtext fields (Tiptap MIT packages only): bold, italic, link (link dialog), lists, alignment; floating format toolbar; one editing session = one undo step 'Edited ‹name› text'; paste sanitised to allowed marks. Preload the Tiptap chunk or make its placeholder read-only so no keystrokes are lost (ADR 0004).
+Click text to edit it on the canvas via Puck richtext fields (Tiptap MIT packages only); clicking an element's padding or edge selects it without editing. Bold, italic, link (link dialog), lists, alignment; floating format toolbar; one editing session = one undo step 'Edited ‹name› text'; paste sanitised to allowed marks. Preload the Tiptap chunk or make its placeholder read-only so no keystrokes are lost (ADR 0004).
 
 - [ ] One editing session is exactly one history entry
 - [ ] No keystrokes lost on the first click into text
