@@ -1,6 +1,14 @@
 import { z } from "zod";
-import { isNodeDoc, type NodeDoc, nodeDocSchema, withoutUnsafeKeys } from "./documents.js";
+import {
+  anchorsIn,
+  isNodeDoc,
+  type LayoutDoc,
+  type NodeDoc,
+  nodeDocSchema,
+  withoutUnsafeKeys,
+} from "./documents.js";
 import { newId, type SharedSectionId, sharedSectionIdSchema } from "./ids.js";
+import { ANCHOR_ID_MAX } from "./link.js";
 
 /**
  * Shared sections (F-ED-23, C5): a section saved once under a name and placed on any page, more
@@ -41,15 +49,67 @@ export function isSharedCopy(node: NodeDoc): node is NodeDoc & SharedCopyNode {
   );
 }
 
-/** Whether `nodes`, or anything in their slots, include a linked copy. */
-function containsCopy(nodes: readonly NodeDoc[]): boolean {
+/** Whether `nodes`, or anything in their slots, include a linked copy, valid or not. */
+export function containsCopy(nodes: readonly NodeDoc[]): boolean {
   return nodes.some(
     (node) =>
-      isSharedCopy(node) ||
+      node.type === SHARED_COPY_TYPE ||
       Object.values(node.props).some(
         (value) => Array.isArray(value) && containsCopy(value.filter(isNodeDoc)),
       ),
   );
+}
+
+/** A copy node as files and IPC carry it: its suffix goes into HTML ids, so digits only. */
+const sharedCopyNodeSchema = z.strictObject({
+  type: z.literal(SHARED_COPY_TYPE),
+  props: z.strictObject({
+    id: z.string().min(1),
+    sharedSectionId: sharedSectionIdSchema,
+    anchorSuffix: z
+      .string()
+      .regex(/^[1-9][0-9]{0,5}$/)
+      .optional(),
+  }),
+});
+
+/** A problem with the copies on a page, and where it is in the page's content. */
+type CopyIssue = { readonly message: string; readonly path: PropertyKey[] };
+
+/**
+ * The problems with the linked copies in `content`, a page's top level: each copy is a valid copy
+ * node, only at the top level (only that is expanded, F-ED-23), and two copies of one section never
+ * share a suffix, which would give the page two elements with one anchor.
+ */
+export function copyIssues(content: readonly NodeDoc[]): CopyIssue[] {
+  const issues: CopyIssue[] = [];
+  const suffixes = new Set<string>();
+  content.forEach((node, index) => {
+    if (node.type !== SHARED_COPY_TYPE) {
+      if (containsCopy([node])) {
+        issues.push({
+          message: "A copy of a shared section can only be at the top of a page",
+          path: [index],
+        });
+      }
+      return;
+    }
+    const parsed = sharedCopyNodeSchema.safeParse(node);
+    if (!parsed.success) {
+      issues.push({ message: "Not a valid copy of a shared section", path: [index] });
+      return;
+    }
+    const { sharedSectionId, anchorSuffix } = parsed.data.props;
+    const key = `${sharedSectionId} ${anchorSuffix ?? ""}`;
+    if (suffixes.has(key)) {
+      issues.push({
+        message: "Two copies of a shared section have the same anchors",
+        path: [index],
+      });
+    }
+    suffixes.add(key);
+  });
+  return issues;
 }
 
 const sharedSectionSchema = z.strictObject({
@@ -92,9 +152,14 @@ export function copiedNodeId(copyId: string, nodeId: string): string {
   return `${copyId}~${nodeId}`;
 }
 
-/** The anchor a copy with `suffix` gives the shared section's `anchor`. */
+/**
+ * The anchor a copy with `suffix` gives the shared section's `anchor`: `hours-2` for `hours`. A long
+ * anchor is shortened first, so the copy's is never longer than an anchor may be.
+ */
 export function copiedAnchor(anchor: string, suffix: string | undefined): string {
-  return suffix === undefined ? anchor : `${anchor}-${suffix}`;
+  if (suffix === undefined) return anchor;
+  const end = `-${suffix}`;
+  return `${anchor.slice(0, ANCHOR_ID_MAX - end.length).replace(/-+$/, "")}${end}`;
 }
 
 /** `node` and everything in it, as it shows in the copy `copy`: ids and anchors its own. */
@@ -134,22 +199,52 @@ export function expandSharedCopies(
 }
 
 /**
+ * Every anchor in use on a page with `content`: its own sections', its copies' as they show them,
+ * and the Header's and Footer's.
+ */
+export function pageAnchors(
+  content: readonly NodeDoc[],
+  shared: SharedSectionsDoc,
+  layout: LayoutDoc,
+): Set<string> {
+  return anchorsIn([...layout.header, ...expandSharedCopies(content, shared), ...layout.footer]);
+}
+
+/** The copy in `content`, a page's top level, that shows the element the canvas calls `nodeId`. */
+export function copyHolding(
+  content: readonly NodeDoc[],
+  nodeId: string,
+): (NodeDoc & SharedCopyNode) | undefined {
+  return content
+    .filter(isSharedCopy)
+    .find((copy) => nodeId.startsWith(copiedNodeId(copy.props.id, "")));
+}
+
+/**
  * A new linked copy of shared section `id` to place among `content`, a page's top level (the Add
  * panel, a paste). The first copy of a section on a page keeps its anchors; another gets the
- * lowest suffix no copy there has (`2`, `3`…), kept for good, so each copy can be linked to.
+ * lowest suffix no copy there has (`2`, `3`…), kept for good, so each copy can be linked to. A
+ * suffix that would give the copy an anchor the page already has (`hours-2` from the link dialog,
+ * or the Header's) is skipped.
  */
-export function newSharedCopy(content: readonly NodeDoc[], id: SharedSectionId): SharedCopyNode {
-  const copies = content.filter(
-    (node): node is NodeDoc & SharedCopyNode =>
-      isSharedCopy(node) && node.props.sharedSectionId === id,
+export function newSharedCopy(
+  content: readonly NodeDoc[],
+  id: SharedSectionId,
+  shared: SharedSectionsDoc,
+  layout: LayoutDoc,
+): SharedCopyNode {
+  const used = new Set(
+    content
+      .filter((node) => isSharedCopy(node) && node.props.sharedSectionId === id)
+      .map((node) => node.props.anchorSuffix),
   );
-  const taken = new Set(copies.map((node) => node.props.anchorSuffix));
+  const section = Object.hasOwn(shared, id) ? shared[id]?.section : undefined;
+  const anchors = section === undefined ? [] : [...anchorsIn([section])];
+  const taken = pageAnchors(content, shared, layout);
+  const free = (suffix: string | undefined) =>
+    !used.has(suffix) && anchors.every((anchor) => !taken.has(copiedAnchor(anchor, suffix)));
   let suffix: string | undefined;
-  if (taken.has(undefined)) {
-    let next = 2;
-    while (taken.has(String(next))) next++;
-    suffix = String(next);
-  }
+  for (let next = 2; !free(suffix); next++) suffix = String(next);
   return {
     type: SHARED_COPY_TYPE,
     props: {

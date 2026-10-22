@@ -343,12 +343,7 @@ export function EditPanelHost({ session, flush, advanced = false }: EditPanelHos
       labelOf(name, field),
       (draft) => {
         write(draft, name, () => linkChange.link);
-        const { anchor } = linkChange;
-        const anchorPage = anchor === undefined ? undefined : draft.pages[anchor.pageId];
-        const anchorDoc = anchor === undefined ? undefined : site.pages[anchor.pageId]?.doc;
-        if (anchor !== undefined && anchorPage !== undefined && anchorDoc !== undefined) {
-          applyAnchor(anchorPage.doc, anchorDoc, anchor);
-        }
+        if (linkChange.anchor !== undefined) applyAnchor(draft, site, linkChange.anchor);
       },
       { selectionAfter },
     );

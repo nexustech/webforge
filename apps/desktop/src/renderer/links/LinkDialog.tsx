@@ -15,7 +15,7 @@ import { t } from "@webforge/i18n";
 import { type LinkValue, linkValueSchema, type PageId, type SiteDoc } from "@webforge/model";
 import { type ReactNode, useId, useState } from "react";
 import type { LinkFieldChange } from "./link-change.js";
-import { newAnchorFor, type PageTarget } from "./link-targets.js";
+import { type PageTarget, sectionAnchor } from "./link-targets.js";
 
 /** The kinds of link the dialog makes; files join when the export copies them. */
 const KINDS = ["page", "email", "phone", "url"] as const;
@@ -124,13 +124,13 @@ function LinkForm({
       if (target === undefined) {
         return { change: { link: { kind: "page", pageId: page.id, ...tab } } };
       }
-      const anchorId = target.anchorId ?? newAnchorFor(site, page.id, target.label);
+      const { anchor, given } = sectionAnchor(site, page.id, target);
       return {
         change: {
-          link: { kind: "page", pageId: page.id, anchor: anchorId, ...tab },
-          ...(target.anchorId === undefined
-            ? { anchor: { pageId: page.id, nodeId: target.nodeId, anchorId } }
-            : {}),
+          link: { kind: "page", pageId: page.id, anchor, ...tab },
+          ...(given === undefined
+            ? {}
+            : { anchor: { pageId: page.id, nodeId: target.nodeId, anchorId: given } }),
         },
       };
     }
