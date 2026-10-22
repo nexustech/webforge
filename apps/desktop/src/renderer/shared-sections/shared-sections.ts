@@ -1,5 +1,6 @@
 import { t } from "@webforge/i18n";
 import {
+  anchorsIn,
   copiedNodeId,
   copyHolding,
   expandSharedCopies,
@@ -100,34 +101,30 @@ export function reachOf(
 
 /**
  * The anchors a section's element `nodeId` can't take (Advanced mode's anchor field): its
- * section's other elements', and, on every page with a copy, any the copy would show it as.
+ * section's other elements', and, on every page with a copy, any a copy would show as an anchor
+ * already there, another copy's of the same section included (`team-2` in one copy against `team`
+ * in the copy with suffix 2).
  */
 export function anchorsTakenInSection(
   site: SiteDoc,
   id: SharedSectionId,
   nodeId: string,
 ): string[] {
-  const taken = new Set<string>();
   const shared = sharedSection(site, id);
   if (shared === undefined) return [];
-  findNode([shared.section], (node) => {
-    const anchor = node.props.advanced?.anchorId;
-    if (anchor !== undefined && anchor !== "" && node.props.id !== nodeId) taken.add(anchor);
-    return false;
-  });
+  // The section without the element's own anchor: whatever else every copy shows.
+  const section = structuredClone(shared.section);
+  const own = findNode([section], (node) => node.props.id === nodeId);
+  if (own?.props.advanced !== undefined) delete own.props.advanced.anchorId;
+  const without = { ...site.sharedSections, [id]: { ...shared, section } };
+  const taken = anchorsIn([section]);
   for (const { doc } of Object.values(site.pages)) {
-    const isCopy = (node: NodeDoc) => isSharedCopy(node) && node.props.sharedSectionId === id;
     const suffixes = doc.content
       .filter(isSharedCopy)
       .filter((copy) => copy.props.sharedSectionId === id)
       .map((copy) => copy.props.anchorSuffix);
     if (suffixes.length === 0) continue;
-    const others = pageAnchors(
-      doc.content.filter((node) => !isCopy(node)),
-      site.sharedSections,
-      site.layout,
-    );
-    for (const anchor of others) {
+    for (const anchor of pageAnchors(doc.content, without, site.layout)) {
       for (const suffix of suffixes) {
         // The anchor this copy would show as `anchor`, if any (`hours` for `hours-2` in copy 2).
         if (suffix === undefined) taken.add(anchor);

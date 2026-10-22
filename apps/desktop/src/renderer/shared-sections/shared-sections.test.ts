@@ -173,11 +173,21 @@ describe("shared sections in the editor (1.29, F-ED-23)", () => {
     };
 
     const taken = anchorsTakenInSection(withMore, shared.id, "heading-1");
-    // The section's own (`hours`); the page's `team` and `menu-2`, which the first copy would
-    // show as they are; and `menu`, which the second copy would show as `menu-2`.
-    expect(taken.sort()).toEqual(["hours", "menu", "menu-2", "team"]);
+    // The section's own (`hours`); the page's `team` and `menu-2`, and the second copy's
+    // `hours-2`, which the first copy would show as they are; and `menu`, which the second copy
+    // would show as `menu-2`.
+    expect(taken.sort()).toEqual(["hours", "hours-2", "menu", "menu-2", "team"]);
     // Its own anchor isn't taken from it.
     expect(anchorsTakenInSection(withMore, shared.id, "section-1")).not.toContain("hours");
+
+    // Another element of the section anchored `title-2`: the first copy shows it as `title-2`,
+    // which the second copy would show for `title`.
+    const titled = structuredClone(withMore);
+    const text = (
+      titled.sharedSections[shared.id]?.section.props.content as NodeDoc[] | undefined
+    )?.[1];
+    if (text !== undefined) text.props.advanced = { anchorId: "title-2" };
+    expect(anchorsTakenInSection(titled, shared.id, "heading-1")).toContain("title");
   });
 
   it("detaches a copy into a normal section with new ids and the copy's anchors", () => {

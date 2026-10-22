@@ -97,9 +97,8 @@ describe("Editor", () => {
           const page = Object.values(draft.pages).find(
             (entry) => (entry.id === draft.homePageId) === onHome,
           );
-          const layout = draft.layout;
           page?.doc.content.push(
-            newSharedCopy(page.doc.content, shared.id, draft.sharedSections, layout),
+            newSharedCopy(page.doc.content, shared.id, draft.sharedSections, draft.layout),
           );
         }),
       );
