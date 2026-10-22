@@ -100,6 +100,28 @@ describe("foldCopies (F-ED-23)", () => {
     expect(foldCopies(now, own, shared).sections.size).toBe(0);
   });
 
+  it("keeps a copy's own Layers name and hidden state out of its shared section (F-ED-12)", () => {
+    const named: NodeDoc[] = [
+      {
+        ...(own[1] as NodeDoc),
+        props: { ...(own[1] as NodeDoc).props, layerName: "Again", hidden: true },
+      },
+      own[2] as NodeDoc,
+    ];
+    const now = structuredClone(expandSharedCopies(named, shared));
+    expect(now[0]?.props).toMatchObject({ layerName: "Again", hidden: true });
+
+    expect(foldCopies(now, named, shared).sections.size).toBe(0);
+
+    // A change in that copy still goes to the section, without the copy's own name.
+    const inner = ((now[0] as NodeDoc).props.content as NodeDoc[])[0] as NodeDoc;
+    inner.props.text = "Open daily";
+    const section = foldCopies(now, named, shared).sections.get(HOURS)?.section;
+    expect(section?.props.layerName).toBeUndefined();
+    expect(section?.props.hidden).toBeUndefined();
+    expect(JSON.stringify(section)).toContain("Open daily");
+  });
+
   it("folds an anchor the copy shortened back to the section's own", () => {
     const long = `a${"-b".repeat(31)}c`;
     const section = shared[HOURS]?.section as NodeDoc;
