@@ -6,9 +6,9 @@ import { createSite, type PageId } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
 import { launchDesktopApp } from "./launch.js";
 
-// Site-wide confirmations (1.26, D7, F-ED-14): deleting a page says how many pages it changes first,
-// and stays one undo step. (Deleting or cutting an element inside the shared Header or Footer asks
-// the same way, unit-tested: no component the site library has yet holds elements there.)
+// Site-wide confirmations (1.26, D7, F-ED-14): deleting a page, or an element of the shared Footer,
+// says how many pages it changes first, and stays one undo step. Nothing else changes the site
+// while the question is open.
 
 let dir: string;
 let app: ElectronApplication;
@@ -30,6 +30,21 @@ test.beforeEach(async () => {
   site.pages[about] = { ...structuredClone(home), id: about, slug: "about", title: "About" };
   site.pageOrder.splice(1, 0, about);
   site.menu.items.push({ id: "about-item" as never, kind: "page", pageId: about, hidden: false });
+  // A Section in the shared Footer, with two Headings every page shows.
+  const heading = (id: string, text: string) => ({
+    type: "Heading",
+    props: { id, text, size: "medium", color: "default" },
+  });
+  site.layout.footer.push({
+    type: "Section",
+    props: {
+      id: "footer-section",
+      padding: "medium",
+      gap: "medium",
+      fullWidth: false,
+      content: [heading("footer-hours", "Opening hours"), heading("footer-open", "Open daily")],
+    },
+  });
   const store = ProjectStore.create(sitePath, { name: "Bakery" });
   store.saveSite(site);
   store.close();
@@ -46,6 +61,13 @@ test.afterEach(async () => {
 const canvas = () => page.frameLocator(".editor__canvas iframe");
 const confirmation = () => page.getByRole("alertdialog");
 const right = () => page.getByRole("region", { name: "Right panels" });
+const steps = () => page.locator(".undo-history__step");
+/** A quick action of the selected element (a hovered element shows a bar of its own too). */
+const quickAction = (title: string) =>
+  canvas()
+    .locator("[data-puck-overlay]")
+    .filter({ has: canvas().locator('.wf-outline[data-state="selected"]') })
+    .locator(`[title="${title}"]`);
 
 test("deleting a page says how many pages change, and undo brings it back", async () => {
   await right().getByRole("tab", { name: "Site" }).click();
@@ -64,4 +86,68 @@ test("deleting a page says how many pages change, and undo brings it back", asyn
 
   await page.keyboard.press("ControlOrMeta+z");
   await expect(about).toHaveCount(1);
+});
+
+test("deleting an element of the shared Footer asks first; undo waits for the answer", async () => {
+  await page
+    .getByRole("region", { name: "Left panels" })
+    .getByRole("tab", { name: "Undo History" })
+    .click();
+  const hours = canvas().getByRole("heading", { name: "Opening hours" });
+  const open = canvas().getByRole("heading", { name: /^Open daily/ });
+
+  // Typed in the Footer first.
+  const field = open.locator("[contenteditable]");
+  await field.hover();
+  await field.click();
+  await page.keyboard.press("End");
+  await page.keyboard.type(" 8-6", { delay: 20 });
+  await expect(open).toHaveText("Open daily 8-6");
+
+  // Selected by clicking past the end of its text (clicking the text edits it), then deleted.
+  const box = await hours.boundingBox();
+  if (box === null) throw new Error("Heading not visible");
+  await hours.click({ position: { x: box.width * 0.97, y: box.height - 2 } });
+  await quickAction("Delete").click();
+  await expect(confirmation()).toHaveAccessibleName("Delete Heading from the shared Footer?");
+  await expect(confirmation()).toContainText("This changes 3 pages.");
+
+  // Undo, Delete and Duplicate do nothing while it asks: the typing stays, as the step it is.
+  await page.keyboard.press("ControlOrMeta+z");
+  await page.keyboard.press("ControlOrMeta+d");
+  await expect(confirmation()).toBeVisible();
+  await expect(open).toHaveText("Open daily 8-6");
+  await expect(steps().first()).toHaveText("Edited shared Heading text");
+
+  await confirmation().getByRole("button", { name: "Delete" }).click();
+  await expect(hours).toHaveCount(0);
+  await expect(open).toHaveText("Open daily 8-6");
+  await expect(steps()).toHaveText([
+    "Deleted shared Heading",
+    "Edited shared Heading text",
+    "Opened page",
+  ]);
+
+  // Two undo steps, and both redo.
+  await page.locator(".editor__canvas").focus();
+  await page.keyboard.press("ControlOrMeta+z");
+  await expect(hours).toHaveCount(1);
+  await expect(open).toHaveText("Open daily 8-6");
+  await page.keyboard.press("ControlOrMeta+z");
+  await expect(open).toHaveText("Open daily");
+  await page.keyboard.press("ControlOrMeta+Shift+z");
+  await page.keyboard.press("ControlOrMeta+Shift+z");
+  await expect(hours).toHaveCount(0);
+  await expect(open).toHaveText("Open daily 8-6");
+
+  // Esc cancels the question, and the element stays.
+  const openBox = await open.boundingBox();
+  if (openBox === null) throw new Error("Heading not visible");
+  await open.click({ position: { x: openBox.width * 0.97, y: openBox.height - 2 } });
+  await quickAction("Delete").click();
+  await expect(confirmation()).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(confirmation()).toHaveCount(0);
+  await expect(open).toHaveText("Open daily 8-6");
+  await expect(steps().first()).toHaveText("Deleted shared Heading");
 });

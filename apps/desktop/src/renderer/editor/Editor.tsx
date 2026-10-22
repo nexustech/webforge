@@ -56,9 +56,9 @@ export type EditorProps = {
   readonly editorLevel?: Preferences["editorLevel"];
   /**
    * Asks before what changes more than the page shown (D7): deleting or cutting an element of the
-   * shared Header or Footer. Without it, they happen at once.
+   * shared Header or Footer. Undo and Redo wait while it asks. Without it, they happen at once.
    */
-  readonly siteWide?: Pick<SiteWideConfirm, "confirmSiteWide">;
+  readonly siteWide?: Pick<SiteWideConfirm, "confirmSiteWide" | "current">;
 };
 
 const compileWithPreload: CompileCanvasCss = (request) =>
@@ -160,6 +160,9 @@ export function Editor({
     const stopSettings = connectCanvasSettings(engine, session);
     // One handler for the whole window (U4); the engine reports keys pressed inside its iframe.
     const removeKeys = installHistoryKeys(window, (command) => {
+      // Nothing changes while a question about the whole site waits for its answer (D7); Esc
+      // goes to its dialog.
+      if (siteWide !== undefined && siteWide.current() !== null) return false;
       connection.flush();
       return runHistoryCommand(session, command);
     });

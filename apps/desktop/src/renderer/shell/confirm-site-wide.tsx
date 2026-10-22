@@ -10,6 +10,7 @@ import {
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { useRef, useSyncExternalStore } from "react";
+import type { CommandRegistry } from "./commands.js";
 
 /** An action that changes more than the page shown, to confirm first (D7, F-ED-14). */
 export type SiteWideAction = {
@@ -99,6 +100,32 @@ export function createSiteWideConfirm(): SiteWideConfirm {
     answer(confirmed) {
       open?.settle(confirmed);
     },
+  };
+}
+
+/**
+ * Pauses `registry`'s commands (Delete, Duplicate, Paste, Undo…) while `confirm` asks a question,
+ * so nothing changes the site between the question and the answer. Returns a function that stops.
+ */
+export function pauseCommandsWhileAsking(
+  confirm: Pick<SiteWideConfirm, "current" | "subscribe">,
+  registry: Pick<CommandRegistry, "pause">,
+): () => void {
+  let resume: (() => void) | null = null;
+  const follow = () => {
+    const asking = confirm.current() !== null;
+    if (asking && resume === null) {
+      resume = registry.pause();
+    } else if (!asking && resume !== null) {
+      resume();
+      resume = null;
+    }
+  };
+  follow();
+  const stop = confirm.subscribe(follow);
+  return () => {
+    stop();
+    resume?.();
   };
 }
 

@@ -75,15 +75,6 @@ export const PageMenu: Story = {
   },
 };
 
-/** Deleting asks first (D5). */
-export const DeleteConfirmation: Story = {
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole("button", { name: "Actions for Contact" }));
-    await userEvent.click(within(document.body).getByRole("menuitem", { name: "Delete…" }));
-  },
-};
-
 /** Adding a page: its name, and the file it will be. */
 export const AddPage: Story = {
   play: async ({ canvasElement }) => {

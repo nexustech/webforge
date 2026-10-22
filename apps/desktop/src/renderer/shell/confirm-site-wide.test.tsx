@@ -2,7 +2,12 @@
 import { act, cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createSiteWideConfirm, SiteWideConfirmDialog } from "./confirm-site-wide.js";
+import { createCommandRegistry } from "./commands.js";
+import {
+  createSiteWideConfirm,
+  pauseCommandsWhileAsking,
+  SiteWideConfirmDialog,
+} from "./confirm-site-wide.js";
 
 afterEach(cleanup);
 
@@ -67,5 +72,24 @@ describe("confirmSiteWide (D7)", () => {
     const third = confirm.confirmSiteWide(deletePage(1));
     confirm.answer(true);
     await expect(third).resolves.toBe(true);
+  });
+
+  it("pauses the window's commands while it asks, so nothing changes the site meanwhile", () => {
+    const confirm = createSiteWideConfirm();
+    const registry = createCommandRegistry();
+    const undo = vi.fn();
+    registry.register({ id: "edit.undo", label: "Undo", run: undo });
+    const stop = pauseCommandsWhileAsking(confirm, registry);
+
+    void confirm.confirmSiteWide(deletePage(2));
+    expect(registry.run("edit.undo")).toBe(false);
+    void confirm.confirmSiteWide(deletePage(3));
+    confirm.answer(false);
+    expect(registry.run("edit.undo")).toBe(true);
+
+    void confirm.confirmSiteWide(deletePage(2));
+    stop();
+    expect(registry.run("edit.undo")).toBe(true);
+    expect(undo).toHaveBeenCalledTimes(2);
   });
 });

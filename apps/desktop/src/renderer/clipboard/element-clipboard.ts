@@ -1,7 +1,6 @@
 import { t } from "@webforge/i18n";
 import {
   anchorsIn,
-  isNodeDoc,
   MAX_COPIED_NODES,
   type MediaMeta,
   type NodeDoc,
@@ -16,7 +15,7 @@ import type {
 import type { MediaImportResult } from "../../shared/ipc-contract.js";
 import { type AddTarget, addTarget, insertAt } from "../add/add-items.js";
 import { currentPage, type EditorSession } from "../editor/editor-session.js";
-import { findNode } from "../editor/nodes.js";
+import { findNode, removeNode } from "../editor/nodes.js";
 import { type SharedRegion, sharedRegionOf, shownLayout } from "../editor/shared-layout.js";
 import { layerItem } from "../layers/layers.js";
 import { importMessages } from "../media/import-media.js";
@@ -67,27 +66,6 @@ function mediaOf(session: ClipboardSession, nodes: readonly NodeDoc[]): MediaMet
     const item = Object.hasOwn(media, id) ? media[id as keyof typeof media] : undefined;
     return item === undefined ? [] : [item];
   });
-}
-
-/**
- * Removes the node `id` from `nodes` or their slots; whether it was there. Only arrays of nodes are
- * slots: a list field's plain items (an FAQ's questions as data, menu links) are left alone.
- */
-function removeNode(nodes: NodeDoc[], id: string): boolean {
-  const index = nodes.findIndex((node) => node.props.id === id);
-  if (index !== -1) {
-    nodes.splice(index, 1);
-    return true;
-  }
-  return nodes.some((node) =>
-    Object.values(node.props).some(
-      (value) =>
-        Array.isArray(value) &&
-        value.length > 0 &&
-        value.every(isNodeDoc) &&
-        removeNode(value as NodeDoc[], id),
-    ),
-  );
 }
 
 /**

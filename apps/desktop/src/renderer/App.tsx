@@ -27,7 +27,11 @@ import { createCanvasView } from "./shell/canvas-view.js";
 import { CommandRegistryProvider } from "./shell/command-context.js";
 import { COMMAND_IDS } from "./shell/command-ids.js";
 import { createCommandRegistry, installCommandShortcuts } from "./shell/commands.js";
-import { createSiteWideConfirm, SiteWideConfirmDialog } from "./shell/confirm-site-wide.js";
+import {
+  createSiteWideConfirm,
+  pauseCommandsWhileAsking,
+  SiteWideConfirmDialog,
+} from "./shell/confirm-site-wide.js";
 import { ModeToggle } from "./shell/ModeToggle.js";
 import { PanelRegistryProvider } from "./shell/panel-context.js";
 import { createPanelRegistry } from "./shell/panels.js";
@@ -130,6 +134,7 @@ export function App({
   }, [theme]);
 
   useEffect(() => installCommandShortcuts(window, registry), [registry]);
+  useEffect(() => pauseCommandsWhileAsking(siteWide, registry), [siteWide, registry]);
   useEffect(() => registerSitePanel(panels, session, siteWide), [panels, session, siteWide]);
   // Content mode locks the layout in Layers too (M3).
   useEffect(
