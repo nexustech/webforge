@@ -19,13 +19,15 @@ const SANITIZE_OPTIONS: sanitizeHtml.IOptions = {
     "blockquote",
     "code",
   ],
-  allowedAttributes: { a: ["href"] },
+  allowedAttributes: { a: ["href"], p: ["style"] },
+  // A paragraph's alignment (F-ED-3), which the editor writes as a style; no other styles.
+  allowedStyles: { p: { "text-align": [/^(left|center|right|justify)$/] } },
   allowedSchemes: ["http", "https", "mailto", "tel"],
   allowProtocolRelative: false,
   disallowedTagsMode: "discard",
 };
 
-/** Removes everything from rich-text HTML except basic formatting and safe links. */
+/** Removes everything from rich-text HTML except basic formatting, alignment and safe links. */
 export function sanitizeRichText(html: string): string {
   return sanitizeHtml(html, SANITIZE_OPTIONS);
 }
