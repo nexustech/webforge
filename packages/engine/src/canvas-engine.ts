@@ -158,6 +158,11 @@ export interface CanvasEngine {
     setting: RenderContext["setting"],
     emptySetting?: RenderContext["emptySetting"],
   ): void;
+  /**
+   * Shows the site's navigation menu in the Header on the canvas (1.21), as the export draws it.
+   * Called again when the menu, the pages or the page shown change; the page is drawn again.
+   */
+  setNavigation(navigation: RenderContext["navigation"]): void;
   setMode(mode: EditorMode): void;
   /**
    * Does `action` to the selected element. Edits are reported through {@link onUserEdit} as one

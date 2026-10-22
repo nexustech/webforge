@@ -684,6 +684,11 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       redraw();
     },
 
+    setNavigation(navigation) {
+      renderContext = { ...renderContext, navigation };
+      redraw();
+    },
+
     setSettings(setting, emptySetting) {
       const { emptySetting: _previous, ...rest } = renderContext;
       renderContext = { ...rest, setting, ...(emptySetting === undefined ? {} : { emptySetting }) };

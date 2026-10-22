@@ -1,6 +1,18 @@
-import type { MenuLeaf, SitePage, SiteSnapshot } from "@webforge/model";
+import type { MenuDoc, MenuLeaf, SitePage } from "@webforge/model";
 import type { NavItem, NavLink } from "@webforge/site-components";
 import { hrefFor } from "./links.js";
+
+/** What the navigation needs of a page: where it is, its names and whether it is hidden. */
+export type NavigationPage = Pick<
+  SitePage,
+  "id" | "path" | "title" | "navLabel" | "hideFromNavigation"
+>;
+
+/** What the navigation needs of a site: its pages, in order, and its menu. */
+export type NavigationSite = {
+  readonly pages: readonly NavigationPage[];
+  readonly menu?: MenuDoc | undefined;
+};
 
 /**
  * The navigation the Header shows on `page` (F-ED-17), with URLs relative to it (`prefix` is its
@@ -9,16 +21,17 @@ import { hrefFor } from "./links.js";
  * dropdowns hold their items. An item is left out when it is hidden in the menu, or its page is
  * hidden from navigation in Page Settings ("Page not found" always is), as is a dropdown left
  * empty. A link that goes nowhere (its page deleted) is left out too and reported through
- * `broken`. Without a menu, the navigation lists the pages in order.
+ * `broken`. Without a menu, the navigation lists the pages in order. The export and the editor's
+ * canvas both use it, so the canvas shows the navigation the export will have.
  */
 export function navigationFor(
-  site: SiteSnapshot,
-  page: SitePage,
+  site: NavigationSite,
+  page: NavigationPage,
   prefix: string,
   broken: (detail: string) => void,
 ): NavItem[] {
-  const shown = (other: SitePage) => other.hideFromNavigation !== true;
-  const pageLink = (other: SitePage, label?: string): NavLink => ({
+  const shown = (other: NavigationPage) => other.hideFromNavigation !== true;
+  const pageLink = (other: NavigationPage, label?: string): NavLink => ({
     label: label ?? other.navLabel ?? other.title,
     href: `${prefix}${other.path}.html`,
     current: other.path === page.path,
@@ -41,7 +54,9 @@ export function navigationFor(
     }
     const link = item.link;
     const current =
-      link.kind === "page" && link.anchor === undefined && pages.get(link.pageId) === page;
+      link.kind === "page" &&
+      link.anchor === undefined &&
+      pages.get(link.pageId)?.path === page.path;
     return {
       label: item.label,
       href,

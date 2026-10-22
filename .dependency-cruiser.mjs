@@ -115,6 +115,8 @@ export default {
           "^packages/[^/]+/src/index\\.tsx?$",
           // Declared subpath export: @webforge/pipeline/node (the Node-only resource loader).
           "^packages/pipeline/src/node-resources\\.ts$",
+          // Declared subpath export: @webforge/pipeline/navigation (no Node; the canvas uses it).
+          "^packages/pipeline/src/navigation\\.ts$",
         ],
       },
     },
