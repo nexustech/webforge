@@ -287,6 +287,57 @@ describe("deleting inside a linked copy (F-ED-23, D7)", () => {
     expect(inSection(ctx.session)?.map((props) => props.id)).toEqual(["t", "u"]);
   });
 
+  /** The home page's own ids, a copy by its own id. */
+  const pageIds = (session: ReturnType<typeof setUp>["session"]) =>
+    currentPage(session)?.doc.content.map((node) => node.props.id);
+
+  // The quick bar, the Delete key, the Edit menu and Layers all have the engine remove the copy's
+  // section; the engine reports that as a page edit (puck-engine.test.tsx, "deletes a copy as a
+  // whole"). Either way, it goes from this page only, without the site-wide question.
+  it("deletes a whole copy from this page only, without asking, as the engine reports it", async () => {
+    const ctx = setUp(undefined, copiesSite());
+    const page = currentPage(ctx.session)?.doc;
+    if (page === undefined) throw new Error("no page");
+    const shared = ctx.session.history.document.getState().sharedSections[HOURS];
+
+    ctx.engine.edit({
+      kind: "remove",
+      nodeId: copiedNodeId("c1", "s"),
+      componentType: "Section",
+      page: { ...page, content: page.content.filter((node) => node.props.id !== "c1") },
+      selection: null,
+    });
+
+    expect(ctx.confirmSiteWide).not.toHaveBeenCalled();
+    expect(ctx.labels()).toEqual(["Deleted Section"]);
+    expect(pageIds(ctx.session)).not.toContain("c1");
+    expect(ctx.session.history.document.getState().sharedSections[HOURS]).toBe(shared);
+  });
+
+  it("deletes a whole copy from this page only, even reported as a shared-section edit", () => {
+    const ctx = setUp(undefined, copiesSite());
+    const site = ctx.session.history.document.getState();
+    const page = currentPage(ctx.session)?.doc;
+    const shared = site.sharedSections[HOURS];
+    if (page === undefined || shared === undefined) throw new Error("no page");
+
+    ctx.engine.edit({
+      kind: "remove",
+      nodeId: copiedNodeId("c1", "s"),
+      componentType: "Section",
+      page,
+      selection: null,
+      sharedSection: { id: HOURS, section: shared.section },
+    });
+
+    expect(ctx.confirmSiteWide).not.toHaveBeenCalled();
+    expect(ctx.labels()).toEqual(["Deleted Section"]);
+    expect(pageIds(ctx.session)).not.toContain("c1");
+    expect(ctx.session.history.document.getState().sharedSections[HOURS]).toBe(shared);
+    ctx.session.history.undo();
+    expect(pageIds(ctx.session)).toContain("c1");
+  });
+
   it("asks before Cut takes an element from a shared section, saying when it has one copy", async () => {
     const site = copiesSite();
     delete site.pages["page-about" as PageId];

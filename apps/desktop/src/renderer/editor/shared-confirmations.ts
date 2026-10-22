@@ -93,6 +93,20 @@ export function confirmSharedRemovals(
           nodeId !== null && edit.sharedSection !== undefined
             ? copySelection(site, pageId, nodeId)
             : undefined;
+        if (inCopy !== undefined && inCopy.node === inCopy.shared.section) {
+          // The whole copy, as the engine reports it otherwise too: it goes from this page only,
+          // like Cut, and its shared section stays as it is.
+          const { sharedSection: _section, ...rest } = edit;
+          const page = site.pages[pageId]?.doc;
+          if (page !== undefined) {
+            const id = inCopy.copy.props.id;
+            listener({
+              ...rest,
+              page: { ...page, content: page.content.filter((node) => node.props.id !== id) },
+            });
+          }
+          return;
+        }
         const place: SharedPlace | undefined =
           inCopy !== undefined
             ? { sharedSection: inCopy.shared.id }

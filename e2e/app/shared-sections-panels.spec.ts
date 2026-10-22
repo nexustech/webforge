@@ -63,7 +63,7 @@ async function deleteHeading(index: number): Promise<void> {
   await editMenu("Delete");
 }
 
-test("places a copy from the Add panel, asks before deleting inside one, and marks copies in Layers", async () => {
+test("places a copy from the Add panel, asks before deleting inside one, marks copies in Layers, and deletes whole copies without asking", async () => {
   await selectSection();
   await editMenu("Save as shared section…");
   const dialog = page.getByRole("dialog", { name: "Save as shared section" });
@@ -106,9 +106,27 @@ test("places a copy from the Add panel, asks before deleting inside one, and mar
   await page.getByRole("menuitem", { name: "View" }).click();
   await page.getByRole("menuitem", { name: "Use Advanced Mode" }).click();
   await left().getByRole("tab", { name: "Layers" }).click();
-  await expect(
+  const copies = () =>
     left()
       .getByRole("tree", { name: "Layers" })
-      .getByRole("treeitem", { name: /^Linked copy of 'Welcome'/ }),
-  ).toHaveCount(2);
+      .getByRole("treeitem", { name: /^Linked copy of 'Welcome'/ });
+  await expect(copies()).toHaveCount(2);
+
+  // A whole copy goes from this page only, without the question: from Layers' Delete (the same
+  // command as the Delete key and the Edit menu), then from the canvas's quick bar.
+  await copies().first().click();
+  await left()
+    .getByRole("toolbar", { name: "Layer actions" })
+    .getByRole("button", { name: "Delete" })
+    .click();
+  await expect(copies()).toHaveCount(1);
+  await copies().first().click();
+  await canvas()
+    .locator("[data-puck-overlay]")
+    .filter({ has: canvas().locator('.wf-outline[data-state="selected"]') })
+    .locator('[title="Delete"]')
+    .click();
+  await expect(copies()).toHaveCount(0);
+  await expect(confirmation()).toHaveCount(0);
+  await expect(headings()).toHaveCount(0);
 });
