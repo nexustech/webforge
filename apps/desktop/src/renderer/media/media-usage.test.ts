@@ -1,4 +1,13 @@
-import type { MediaId, MenuItemId, NodeDoc, PageEntry, PageId, SiteDoc } from "@webforge/model";
+import {
+  type MediaId,
+  type MenuItemId,
+  type NodeDoc,
+  type PageEntry,
+  type PageId,
+  SHARED_COPY_TYPE,
+  type SharedSectionId,
+  type SiteDoc,
+} from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { describe, expect, it } from "vitest";
 import { starterSite } from "../editor/starter-site.js";
@@ -116,5 +125,27 @@ describe("mediaUsage", () => {
     });
 
     expect(mediaUsage(site, siteLibrary).get("prices")).toBe(2);
+  });
+
+  it("counts a shared section's image and document on each page with a copy of it (F-ED-23)", () => {
+    const copy = (id: string): NodeDoc => ({
+      type: SHARED_COPY_TYPE,
+      props: { id, sharedSectionId: "hours" as SharedSectionId },
+    });
+    const site = siteWith({ about: [copy("c1")], shop: [copy("c2")] });
+    site.sharedSections = {
+      ["hours" as SharedSectionId]: {
+        id: "hours" as SharedSectionId,
+        name: "Opening hours",
+        section: hero("hours-hero", "shop-photo", {
+          buttonLink: { kind: "file", mediaId: "timetable" },
+        }),
+      },
+    };
+
+    const usage = mediaUsage(site, siteLibrary);
+
+    expect(usage.get("shop-photo")).toBe(2);
+    expect(usage.get("timetable")).toBe(2);
   });
 });
