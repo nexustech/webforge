@@ -122,6 +122,25 @@ describe("findBrokenLinks (F-ED-18)", () => {
     ]);
   });
 
+  it("checks the links in rich text too (F-ED-3)", () => {
+    const text: NodeDoc = {
+      type: "Text",
+      props: {
+        id: "t",
+        text:
+          '<p><a href="webforge:page/page-about#opening-times">Hours</a> ' +
+          '<a href="webforge:page/page-gone">Old</a> ' +
+          '<a href="webforge:page/page-about#prices">Prices</a></p>',
+      },
+    };
+    const home = site([text]);
+
+    expect(findBrokenLinks(home)).toEqual([
+      { on: home.homePageId, nodeId: "t", pageId: "page-gone" },
+      { on: home.homePageId, nodeId: "t", pageId: ABOUT, anchor: "prices" },
+    ]);
+  });
+
   it("checks the menu's page and section items, in dropdowns too", () => {
     const withMenu = site([]);
     withMenu.menu = {

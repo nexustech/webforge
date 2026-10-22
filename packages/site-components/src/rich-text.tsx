@@ -19,12 +19,24 @@ const SANITIZE_OPTIONS: sanitizeHtml.IOptions = {
     "blockquote",
     "code",
   ],
-  allowedAttributes: { a: ["href"], p: ["style"] },
+  allowedAttributes: { a: ["href", "target", "rel"], p: ["style"] },
   // A paragraph's alignment (F-ED-3), which the editor writes as a style; no other styles.
   allowedStyles: { p: { "text-align": [/^(left|center|right|justify)$/] } },
   allowedSchemes: ["http", "https", "mailto", "tel"],
   allowProtocolRelative: false,
   disallowedTagsMode: "discard",
+  // A link opens a new tab only as the link dialog makes it (F-ED-18): `target="_blank"` with
+  // `rel="noopener"`; any other target or rel is dropped.
+  transformTags: {
+    a: (tagName, attribs) => {
+      const { target: _target, rel: _rel, ...rest } = attribs;
+      return {
+        tagName,
+        attribs:
+          attribs.target === "_blank" ? { ...rest, target: "_blank", rel: "noopener" } : rest,
+      };
+    },
+  },
 };
 
 /** Removes everything from rich-text HTML except basic formatting, alignment and safe links. */
