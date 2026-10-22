@@ -77,7 +77,10 @@ test("links a button to a section, and the exported link follows a renamed page"
 
   // Rename the page: its file name follows.
   await right().getByRole("tab", { name: "Site" }).click();
-  await right().getByRole("button", { name: "Actions for About" }).click();
+  await right()
+    .getByRole("list", { name: "Pages" })
+    .getByRole("button", { name: "Actions for About" })
+    .click();
   await page.getByRole("menuitem", { name: "Rename…" }).click();
   await page.getByRole("textbox", { name: "Page name" }).fill("Our story");
   await page.getByRole("dialog").getByRole("button", { name: "Rename" }).click();
