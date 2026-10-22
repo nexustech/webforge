@@ -1,6 +1,7 @@
 # Editor Look and Feel
 
 **Status:** Decided 2026-10-20 (decision UI1). Implementation guidance for `packages/editor-ui` and `apps/desktop/src/renderer`
+**Interaction details** (canvas, selection, panels, shortcuts) are proposed in [06-editor-ui-ux-parity.md](06-editor-ui-ux-parity.md).
 **Goal:** Webforge's editor should feel familiar to Bootstrap Studio users: **same overall layout, dark professional colour scheme, dense panels, colour-coded main actions**. It keeps Webforge's own terminology ([01-terminology.md](01-terminology.md)), Simple/Advanced modes (T2) and shadcn/ui components ([stack/02](../stack/02-react-vs-svelte.md)).
 
 **Sources:**
@@ -164,3 +165,5 @@ These must be checked for WCAG AA contrast. Adjust light values where needed. Th
 
 ## Decision
 **UI1:** Webforge's editor adopts a Bootstrap Studio-like **layout, dark default colour scheme with a light alternative, compact density and colour-coded title-bar actions**, implemented with our own tokens on shadcn/ui and Lucide icons, adapted to Webforge's terminology and Simple/Advanced modes.
+
+**Extended 2026-10-22 by UI2–UI4** ([06-editor-ui-ux-parity.md](06-editor-ui-ux-parity.md)): Bootstrap Studio's interaction patterns, Elements' Inspector and Theme Studio ideas in the MVP, and Bootstrap Studio's keyboard shortcuts as the standard. This adds custom device sizes and a Theme Studio window to the layout above.

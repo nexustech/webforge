@@ -120,7 +120,9 @@ describe("MediaPanel", () => {
       { fileName: "prices.pdf", data: new Uint8Array([0x25]) },
     ]);
     expect(media()[prices.id]).toEqual(prices);
-    expect(notify).toHaveBeenCalledWith("logo.gif isn't a JPEG, PNG or PDF, so it wasn't added.");
+    expect(notify).toHaveBeenCalledWith(
+      "logo.gif isn't an image or document Media takes, so it wasn't added.",
+    );
   });
 
   it("edits alt text as one undo step when the field is left", async () => {
@@ -229,6 +231,28 @@ describe("MediaPanel", () => {
     expect(home.pages[home.homePageId]?.doc.content.at(-1)?.props.image).toEqual({
       mediaId: photo.id,
     });
+  });
+
+  it("shows a document's type icon, size and type, never a preview (1.28)", async () => {
+    addMedia(session, [
+      {
+        ...prices,
+        id: "sheet" as MediaId,
+        hash: "c".repeat(64),
+        name: "stock",
+        fileName: "Stock.xlsx",
+        mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        size: 1_468_006,
+      },
+    ]);
+    await render();
+
+    expect(container.querySelector("li")?.textContent).toBe("1.4 MBStock.xlsx");
+    await act(async () => button("Stock.xlsx")?.click());
+    expect(container.querySelector('[aria-label="Stock.xlsx details"]')?.textContent).toContain(
+      "Excel spreadsheet, 1.4 MB",
+    );
+    expect(container.querySelector("img")).toBeNull();
   });
 
   it("shows a file without an image, with Replace and Delete only", async () => {

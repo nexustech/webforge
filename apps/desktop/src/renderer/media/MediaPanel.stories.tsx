@@ -29,6 +29,16 @@ const ITEMS: MediaMeta[] = [
     fileName: "Price list.pdf",
     kind: "file",
     mimeType: "application/pdf",
+    size: 248_000,
+  },
+  {
+    id: "e5" as MediaId,
+    hash: "e5".padEnd(64, "0"),
+    name: "opening-times",
+    fileName: "Opening times.xlsx",
+    kind: "file",
+    mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    size: 1_468_006,
   },
 ];
 

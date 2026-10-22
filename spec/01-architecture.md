@@ -274,5 +274,6 @@ interface Publisher {
 | M1–M5 | MVP CMS scope, Blog v1.1, Content mode toggle, search/i18n later | [product/02](../research/product/02-cms.md) |
 | UI1 | Editor look and feel: Bootstrap Studio-like layout, dark/light tokens, compact density | [product/04](../research/product/04-editor-look-and-feel.md) |
 | GA1–GA4 | Competitor gaps: 15 small MVP additions; AI with the user's own account in v1.1; provider presets deferred; plugin API long-term | [product/05](../research/product/05-feature-gap-analysis.md) |
+| UI2–UI4 | Editor UI/UX parity: Bootstrap Studio interactions and Elements' Inspector/Theme Studio ideas in the MVP; Bootstrap Studio's shortcuts as the standard; v1.1 notes, workspaces, display modes, AI panel | [product/06](../research/product/06-editor-ui-ux-parity.md) |
 | BS9-1–10 | Bootstrap Studio 9.0 review: sticky header and back-to-top in the MVP; v1.1 Blog on a general collections engine; v1.1 extras and AI assistant details | [bootstrap-studio/06](../research/bootstrap-studio/06-bootstrap-studio-9.md) |
 | GA5–GA9 | Elements 3.0 review: connect AI apps (MCP), shared sections, files in Media and `llms.txt` in the MVP; built-in AI assistant and draft pages in v1.1 | [product/05 §3.7](../research/product/05-feature-gap-analysis.md#37-rapidweaver-elements-30-update-2026-10-22) |
