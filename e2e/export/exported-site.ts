@@ -2,8 +2,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-/** Where the setup project exports the fixture site for the browser projects to open. */
-export const EXPORTED_SITE_DIR = join(tmpdir(), "webforge-e2e-exported-site");
+/**
+ * Where the setup project exports the fixture site for the browser projects to open. CI sets
+ * WEBFORGE_EXPORTED_SITE_DIR: the E2E job exports there and uploads it, and the Firefox and WebKit
+ * job runs the browser projects on the downloaded copy, in Playwright's container (no setup).
+ */
+export const EXPORTED_SITE_DIR =
+  process.env.WEBFORGE_EXPORTED_SITE_DIR ?? join(tmpdir(), "webforge-e2e-exported-site");
 
 /** The `file://` URL of a page of the exported fixture site. */
 export function exportedPageUrl(page: string): string {

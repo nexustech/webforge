@@ -9,8 +9,9 @@ name: CI
 #   clash once both are in. "Run workflow" (`gh workflow run ci.yml --ref main`) runs it at once.
 # - The `changes` job looks at the files a PR changes. Storybook runs only when the editor UI or
 #   what its stories render changed. Firefox and WebKit (exported-site tests) run only when the
-#   exported site can have changed; otherwise E2E covers the app and Chromium. E2E is skipped
-#   when a PR changes only unit tests, stories or screenshots.
+#   exported site can have changed, in Playwright's container (`export-browsers`), so their system
+#   packages never come from the runners' slow Ubuntu mirror; E2E covers the app and Chromium.
+#   E2E is skipped when a PR changes only unit tests, stories, screenshots or tooling.
 # - Windows and macOS run nightly, from "Run workflow", or on a PR labelled `full-ci`
 #   (packaging, Fuses, native modules, OS-specific code).
 #
@@ -186,11 +187,14 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     env:
-      # Firefox and WebKit only when the exported site can have changed (see `changes`).
-      BROWSERS: ${{ needs.changes.outputs.all-browsers == 'true' && 'chromium firefox webkit' || 'chromium' }}
+      # Firefox and WebKit only when the exported site can have changed (see `changes`). On Linux
+      # they run in `export-browsers` instead; Windows needs no system packages, so it runs them here.
+      BROWSERS: ${{ matrix.os != 'ubuntu-latest' && needs.changes.outputs.all-browsers == 'true' && 'chromium firefox webkit' || 'chromium' }}
       # Downloads go inside the workspace, so the cache steps use one path on every OS.
       PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.ci-cache/ms-playwright
       electron_config_cache: ${{ github.workspace }}/.ci-cache/electron
+      # Where export.setup.ts exports the fixture site (e2e/export/exported-site.ts).
+      WEBFORGE_EXPORTED_SITE_DIR: ${{ github.workspace }}/.ci-cache/exported-site
     steps:
       - name: Check out
         uses: actions/checkout@v7
@@ -221,7 +225,7 @@ jobs:
           echo "browsers=playwright-${{ runner.os }}-$playwright-${BROWSERS// /-}" >> "$GITHUB_OUTPUT"
           echo "electron=electron-${{ runner.os }}-$electron" >> "$GITHUB_OUTPUT"
           # The system packages change with the runner image, so they're keyed by it.
-          echo "apt=apt-${ImageOS:-unknown}-${ImageVersion:-unknown}-$playwright-${BROWSERS// /-}" >> "$GITHUB_OUTPUT"
+          echo "apt=apt-${ImageOS:-unknown}-${ImageVersion:-unknown}-$playwright" >> "$GITHUB_OUTPUT"
           echo "apt-prefix=apt-${ImageOS:-unknown}-" >> "$GITHUB_OUTPUT"
 
       # Downloads are cached so most runs don't fetch browsers, Electron or system packages again.
@@ -249,11 +253,11 @@ jobs:
           key: ${{ steps.keys.outputs.apt }}
           restore-keys: ${{ steps.keys.outputs.apt-prefix }}
 
-      - name: Install browsers for the exported-site tests
-        # The export projects open the exported site from disk (X1, C8). On Linux, Playwright
-        # installs the browsers' system packages with apt. The runners' Ubuntu mirror sometimes
-        # slows to a crawl, so cached .deb files are put back first, apt retries and times out
-        # per download, and the step gives up after 10 minutes instead of using up the job.
+      - name: Install browsers
+        # On Linux this is Chromium only: Firefox and WebKit run in Playwright's container (the
+        # `export-browsers` job), because their system packages come from the runners' Ubuntu
+        # mirror, which sometimes slows to a crawl. Chromium's few packages are cached, apt retries
+        # and times out per download, and the step gives up after 10 minutes.
         shell: bash
         timeout-minutes: 10
         run: |
@@ -265,15 +269,21 @@ jobs:
             fi
             # shellcheck disable=SC2086 # BROWSERS is a space-separated list
             pnpm --filter @webforge/e2e exec playwright install --with-deps $BROWSERS
-            mkdir -p "$HOME/apt-archives"
-            cp /var/cache/apt/archives/*.deb "$HOME/apt-archives/" 2> /dev/null || true
           else
             # shellcheck disable=SC2086
             pnpm --filter @webforge/e2e exec playwright install $BROWSERS
           fi
 
-      - name: Save system packages (Linux)
-        if: runner.os == 'Linux' && steps.apt.outputs.cache-hit != 'true'
+      - name: Collect system packages (Linux)
+        # Also after a failed or timed-out install, so the next run starts from what was fetched.
+        if: always() && runner.os == 'Linux' && steps.apt.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          mkdir -p "$HOME/apt-archives"
+          cp /var/cache/apt/archives/*.deb "$HOME/apt-archives/" 2> /dev/null || true
+
+      - name: Upload system packages to the cache (Linux)
+        if: always() && runner.os == 'Linux' && steps.apt.outputs.cache-hit != 'true'
         uses: actions/cache/save@v6
         with:
           path: ~/apt-archives
@@ -290,7 +300,8 @@ jobs:
         id: projects
         shell: bash
         run: |
-          # Without Firefox and WebKit, run the app and the Chromium export tests only.
+          # With Chromium only, run the app and the Chromium export tests (Firefox and WebKit run
+          # in `export-browsers` on Linux, or not at all when the exported site can't have changed).
           if [ "$BROWSERS" = chromium ]; then
             echo "args=--project=app --project=export-setup --project=export-chromium" >> "$GITHUB_OUTPUT"
           fi
@@ -311,11 +322,71 @@ jobs:
           path: .ci-cache/electron
           key: ${{ steps.keys.outputs.electron }}
 
+      - name: Upload the exported site
+        # For the `export-browsers` job, which opens it in Firefox and WebKit.
+        if: runner.os == 'Linux' && needs.changes.outputs.all-browsers == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: exported-site
+          path: .ci-cache/exported-site/
+          if-no-files-found: error
+          retention-days: 1
+
       - name: Upload Playwright report
         if: failure()
         uses: actions/upload-artifact@v7
         with:
           name: playwright-report-${{ matrix.os }}
+          path: e2e/playwright-report/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  export-browsers:
+    # Firefox and WebKit open the site the E2E job exported, from disk with the network blocked
+    # (X1, C8). This runs in Playwright's container, which has their system packages, so nothing
+    # comes from the runners' Ubuntu mirror. Only when the exported site can have changed.
+    name: Exported site (Firefox, WebKit)
+    needs: [changes, e2e]
+    if: needs.changes.outputs.all-browsers == 'true'
+    runs-on: ubuntu-latest
+    # Keep in step with @playwright/test in e2e/package.json.
+    container: mcr.microsoft.com/playwright:v1.64.1-noble
+    timeout-minutes: 15
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Download the exported site
+        uses: actions/download-artifact@v8
+        with:
+          name: exported-site
+          path: exported-site
+
+      - name: Firefox and WebKit
+        # The container's paths differ from github.workspace, so the shell's GITHUB_WORKSPACE is used.
+        # --no-deps: the site is already exported, so the setup project (which needs Electron) is skipped.
+        shell: bash
+        run: |
+          export WEBFORGE_EXPORTED_SITE_DIR="$GITHUB_WORKSPACE/exported-site"
+          pnpm --filter @webforge/e2e exec playwright test --project=export-firefox --project=export-webkit --no-deps
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report-export-browsers
           path: e2e/playwright-report/
           if-no-files-found: ignore
           retention-days: 7
