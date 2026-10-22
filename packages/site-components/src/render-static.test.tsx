@@ -118,6 +118,27 @@ describe("renderNodesToHtml", () => {
     );
   });
 
+  it("points rich text's links to the site's pages at their files, new tabs as the dialog makes them", () => {
+    const nodes: NodeDoc[] = [
+      {
+        type: "Text",
+        props: {
+          id: "t",
+          text:
+            '<p><a href="webforge:page/page-about">About</a> ' +
+            '<a target="_blank" rel="noopener noreferrer nofollow" href="https://example.com">Web</a> ' +
+            '<a target="_top" rel="opener" href="https://example.com/x">Top</a></p>',
+        },
+      },
+    ];
+
+    expect(renderNodesToHtml(nodes, siteLibrary, context)).toContain(
+      '<p><a href="page-about.html">About</a> ' +
+        '<a href="https://example.com" target="_blank" rel="noopener">Web</a> ' +
+        '<a href="https://example.com/x">Top</a></p>',
+    );
+  });
+
   it("renders the header with navigation, the current page and the menu toggle", () => {
     const html = renderNodesToHtml(starterLayout("Rosa's Bakery").header, siteLibrary, context);
 

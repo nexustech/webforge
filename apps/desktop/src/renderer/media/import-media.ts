@@ -73,8 +73,15 @@ export async function importDroppedFiles(
   return { status: "imported", items, rejected };
 }
 
+/** What a file that wasn't added says, by why. */
+const REJECTED_MESSAGE = {
+  "too-large": "site.media.rejected.tooLarge",
+  unsupported: "site.media.rejected.unsupported",
+  "not-text": "site.media.rejected.notText",
+} as const;
+
 /** What the user is told about files that weren't added, or about an import that failed. */
-function importMessages(result: MediaImportResult): string[] {
+export function importMessages(result: MediaImportResult): string[] {
   switch (result.status) {
     case "canceled":
       return [];
@@ -86,12 +93,7 @@ function importMessages(result: MediaImportResult): string[] {
       ];
     case "imported":
       return result.rejected.map(({ fileName, reason }) =>
-        t(
-          reason === "too-large"
-            ? "site.media.rejected.tooLarge"
-            : "site.media.rejected.unsupported",
-          { name: fileName },
-        ),
+        t(REJECTED_MESSAGE[reason], { name: fileName }),
       );
   }
 }

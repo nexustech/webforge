@@ -1,7 +1,7 @@
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { t } from "@webforge/i18n";
-import type { SiteSnapshot } from "@webforge/model";
+import { DOCUMENT_EXTENSIONS, type SiteSnapshot } from "@webforge/model";
 import {
   app,
   BrowserWindow,
@@ -35,7 +35,8 @@ import { runExportInWorker } from "./export-worker-client.js";
 import { createFlushOnClose } from "./flush-on-close.js";
 import { createHandOff } from "./hand-off.js";
 import { registerIpcHandler } from "./ipc.js";
-import { type MediaDialogs, registerMediaHandlers } from "./media-ipc.js";
+import { importMediaFiles } from "./media-import.js";
+import { importFilesAt, type MediaDialogs, registerMediaHandlers } from "./media-ipc.js";
 import { createMediaResponder } from "./media-protocol.js";
 import {
   openPreferencesStore,
@@ -296,7 +297,12 @@ const mediaDialogs: MediaDialogs = {
   chooseMediaFiles: async () => {
     const options: OpenDialogOptions = {
       title: t("site.media.chooseTitle"),
-      filters: [{ name: t("site.media.fileType"), extensions: ["jpg", "jpeg", "png", "pdf"] }],
+      filters: [
+        {
+          name: t("site.media.fileType"),
+          extensions: ["jpg", "jpeg", "png", ...Object.values(DOCUMENT_EXTENSIONS)],
+        },
+      ],
       properties: ["openFile", "multiSelections"],
     };
     const parent = BrowserWindow.getFocusedWindow();
@@ -456,6 +462,10 @@ async function start(): Promise<void> {
       systemClipboard({ clipboard, ClipboardItem }),
       join(app.getPath("userData"), "clipboard"),
       projectSession,
+      {
+        files: (paths) => importFilesAt(projectSession, paths),
+        image: (file) => importMediaFiles(projectSession, [file]),
+      },
     ),
   );
   crashReports.registerHandlers(ipcMain, (senderUrl) => isAppUrl(senderUrl, appUrl));

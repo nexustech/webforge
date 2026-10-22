@@ -15,6 +15,7 @@ import {
   registerClipboardCommands,
 } from "../clipboard/register-clipboard-commands.js";
 import { registerLinkField } from "../links/LinkField.js";
+import { RichTextLinkHost } from "../links/RichTextLinkHost.js";
 import { connectCanvasImages } from "../media/canvas-images.js";
 import { registerImageField } from "../media/ImageField.js";
 import { registerMediaPanel } from "../media/register-media-panel.js";
@@ -292,6 +293,7 @@ export function Editor({
   return (
     <div className="editor">
       <SharedRegionBanner session={session} />
+      <RichTextLinkHost session={session} engine={engine} />
       <section className="editor__canvas" aria-label={t("editor.canvas")} ref={canvasRef} />
     </div>
   );

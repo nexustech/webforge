@@ -46,7 +46,14 @@
 | **Element** | Anything inside a section (Heading, Text, Image, Button, Form, Columns…) | Wix, Hostinger, Canva, Adobe | Component, Widget, Node |
 | **Columns** | Layout element that splits a section horizontally | Universal | Grid, Row/Col, Flex |
 | **Header / Footer** | Shared top/bottom of every page (C5) | Universal | Layout regions, Master page |
-| **Shared section** (later: **Saved section**) | A section stored once and reused (post-MVP, C5) | Plain English; Squarespace "Saved Sections" | Linked Component, Symbol, Synced pattern |
+| **Shared section** | A section stored once and placed on several pages; edits apply everywhere (MVP, F-ED-23, GA6). A separate, later feature is a library of **saved sections** reused across sites (C5) | Plain English; Squarespace "Saved Sections" | Linked Component, Symbol, Synced pattern, Global Template |
+| **AI apps** | AI apps on the user's computer (Claude, ChatGPT…) connected to Webforge through MCP (F-AI-1). UI: *Connect AI apps* | Plain English | MCP server, connector, integration |
+| **File** | A non-image item in Media (PDF, Word, Excel…), linked for download with the link dialog's *File* option (F-ED-24). "Document" is avoided in the UI because specs use it for the site's data | Plain English | Resource, asset, attachment, document |
+| **Theme Studio** | The larger window for editing a theme: palettes, text styles, spacing, corners (F-DS-7) | Elements | Design system, tokens |
+| **Favourites** | Sections and elements the user pins at the top of the Add panel (F-ED-26) | Bootstrap Studio | Pinned components |
+| **Select parent** | Select the section or element that contains the current one (F-ED-25) | Bootstrap Studio | Go up the DOM |
+| **Detach** | Turn one copy of a shared section into a normal section | Wix, Squarespace | Unlink, break link |
+| **Pair** (an AI app) | Connect an AI app to Webforge with a one-time code (F-AI-1) | Plain English | Authorise, register client |
 | **Template** | A ready-made starting site chosen at "New Site" | Universal | Starter, Kit |
 | **Theme** | Site-wide colours, fonts, corner style (daisyUI theme) | Google Sites, Adobe Express, Bootstrap Studio | Design tokens, Variables, Style guide |
 | **Add** panel (tabs **Sections** / **Elements**) | Component palette | Wix "Add Elements / Add Section", Squarespace "Add Block/Section" | Components, Library, Insert |
@@ -82,7 +89,7 @@
 | Components panel | Add panel (Sections / Elements) |
 | Options panel | Edit panel (Content · Style · Advanced) |
 | Overview panel | Layers |
-| Linked Components | Header / Footer (MVP), Shared sections (later) |
+| Linked Components | Header / Footer, Shared sections (both MVP) |
 | Library | Saved sections (later) |
 | Themes | Themes |
 | Design Settings | Site Settings |

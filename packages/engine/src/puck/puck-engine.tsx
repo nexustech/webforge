@@ -28,6 +28,8 @@ import type {
   EngineEdit,
   HistoryCommandHandler,
   InsertPoint,
+  LinkPicker,
+  RichTextAt,
   Viewport,
 } from "../canvas-engine.js";
 import { installHistoryKeys } from "../history-keys.js";
@@ -39,6 +41,7 @@ import { puckDictionary } from "./dictionary.js";
 import { createDragSources } from "./drag-sources.js";
 import { editFromAction, selectedNodeId, toPageDoc } from "./edit-from-action.js";
 import { pageActions, type SlotsOf } from "./page-actions.js";
+import { createFormatToolbar } from "./rich-text.js";
 import { performOnSelected } from "./selected-actions.js";
 import {
   composePage,
@@ -522,12 +525,32 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     actionBar: SharedAwareActionBar,
   };
 
+  /** Picks links in rich text for the format toolbar (F-ED-18); none until the app gives one. */
+  let linkPicker: LinkPicker | null = null;
+  /**
+   * The rich-text field being edited: the selected element, and the inline field Puck has focused
+   * (`text::inline`). Read when the toolbar's Link button is clicked, before the dialog takes focus.
+   */
+  const editingRichText = (): RichTextAt | null => {
+    const state = getPuck?.();
+    const nodeId = state?.selectedItem?.props.id;
+    const focus = state?.appState.ui.field.focus;
+    return typeof nodeId === "string" && typeof focus === "string"
+      ? { nodeId, field: focus.replace(/::inline$/, "") }
+      : null;
+  };
+  const formatToolbar = createFormatToolbar(() => {
+    const picker = linkPicker;
+    return picker === null ? null : (current) => picker(current, editingRichText());
+  });
+
   /** The Puck config for `library`, rendering with the current editor revisions and context. */
   const configFor = (forLibrary: ComponentLibrary) =>
     toPuckConfig(
       forLibrary,
       (id) => editorRevisions.get(id) ?? 0,
       () => renderContext,
+      formatToolbar,
     );
 
   /**
@@ -687,6 +710,10 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     setNavigation(navigation) {
       renderContext = { ...renderContext, navigation };
       redraw();
+    },
+
+    setLinkPicker(picker) {
+      linkPicker = picker;
     },
 
     setSettings(setting, emptySetting) {

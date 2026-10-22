@@ -27,11 +27,19 @@ export type { Brand, IdKind, MediaId, MenuItemId, NodeId, PageId } from "./ids.j
 export { mediaIdSchema, menuItemIdSchema, newId, nodeIdSchema, pageIdSchema } from "./ids.js";
 export type { LinkValue } from "./link.js";
 export { anchorIdSchema, linkValueSchema, webUrlSchema } from "./link.js";
-export type { FileMeta, ImageCrop, ImageMeta, ImageValue, MediaMeta } from "./media.js";
+export type {
+  FileMeta,
+  FileMimeType,
+  ImageCrop,
+  ImageMeta,
+  ImageValue,
+  MediaMeta,
+} from "./media.js";
 export {
   altTextFor,
   cropForAspect,
   cropSchema,
+  DOCUMENT_EXTENSIONS,
   FILE_MIME_TYPES,
   focalPointSchema,
   IMAGE_MIME_TYPES,
@@ -53,6 +61,14 @@ export type {
 export { MIGRATIONS, migrateSite, migrateSiteWith, SiteFormatError } from "./migrations.js";
 export type { Breakpoint, Responsive, ResponsiveValue } from "./responsive.js";
 export { isResponsiveValue, resolveResponsive, responsiveSchema } from "./responsive.js";
+export type { RichTextLink } from "./rich-text-links.js";
+export {
+  RICH_TEXT_PAGE_LINK,
+  rewriteRichTextLinks,
+  richTextHref,
+  richTextLinkValue,
+  richTextPageLinks,
+} from "./rich-text-links.js";
 export type { SiteSettings } from "./settings.js";
 export {
   defaultSiteSettings,
