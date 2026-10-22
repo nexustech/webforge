@@ -144,14 +144,14 @@ Coverage is a floor, not a goal. Every bug fix adds a regression test.
 |---|---|---|
 | Install + cache (pnpm, Turborepo) | all | every push/PR |
 | `biome ci` (format + lint), typecheck (`tsc -b`), dependency-cruiser, knip | Linux | every PR |
-| Unit + property + integration tests with coverage gates | Linux (PRs); + Windows, macOS (`main`, `full-ci` PRs) | every PR |
+| Unit + property + integration tests with coverage gates | Linux (PRs); + Windows, macOS (nightly, `full-ci` PRs) | every PR + nightly |
 | Licence check (C1 allow-list) + vulnerability audit (`pnpm audit` / OSV) | Linux | every PR + nightly |
-| Golden output + visual regression + a11y | Linux container | every PR |
-| E2E app + exported-site compatibility | Linux (PRs); + Windows (`main`, `full-ci` PRs) | every PR (smoke) / nightly (full) |
+| Golden output + visual regression + a11y | Linux container | PRs that change the editor UI or what its stories render + nightly |
+| E2E app + exported-site compatibility | Linux (PRs); + Windows (nightly, `full-ci` PRs) | every PR except unit-test-only ones (app + Chromium; Firefox and WebKit when the exported site can change) / nightly (full) |
 | Performance benchmarks | macOS + Windows | nightly; PR when labelled |
 | Release build: sign (Windows code signing, macOS Developer ID + notarisation), publish update feed | Windows + macOS | on release tag |
 
-- **CI cost (GitHub Free, private repository):** Windows minutes count 2× and macOS 10×, so a full run costs about ten times a Linux-only one. **Pull requests run Linux jobs only.** Windows and macOS jobs, including the packaged-app check, run on every push to `main`, from "Run workflow", and on PRs labelled **`full-ci`**. Use the label for packaging, Fuses, native modules and OS-specific code. Docs-only PRs (`docs/`, `spec/`, `research/`, Markdown) and draft PRs skip CI. A Windows- or macOS-only failure can therefore first show on `main`; fix it with a follow-up PR straight away.
+- **CI cost (GitHub Free, private repository):** every job is billed in whole minutes, Windows minutes count 2× and macOS 10×. **Pull requests run Linux jobs only,** and a `changes` job skips what a PR can't affect (see `.github/workflows/ci.yml`). **`main` is checked by a nightly run** (02:30 UTC, only when it changed), not after every merge; "Run workflow" runs it at once. Windows and macOS jobs, including the packaged-app check, run nightly, from "Run workflow", and on PRs labelled **`full-ci`**. Use the label for packaging, Fuses, native modules and OS-specific code. Docs-only PRs (`docs/`, `spec/`, `research/`, Markdown) and draft PRs skip CI: keep a PR in draft until `pnpm check` passes locally and its review is done, so CI runs once per ready version rather than on every push. A failure from two PRs that pass alone but clash, or a Windows- or macOS-only failure, can therefore first show in the nightly run; fix it with a follow-up PR straight away.
 - **Windows/macOS switch:** those jobs run only while the repository variable `FULL_CI_ENABLED` is `true`. **Paused since 2026-10-20** to stay within the billing cycle; resume with `gh variable set FULL_CI_ENABLED --body true`.
 - **Dependency updates:** Renovate or Dependabot, weekly, grouped. **Electron upgraded at least quarterly** (01).
 - **Secrets** (signing certificates, notarisation credentials) only in CI secret storage, never in the repo.
