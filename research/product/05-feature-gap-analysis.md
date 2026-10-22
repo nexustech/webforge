@@ -119,14 +119,14 @@ Before 3.0 it already had Global Templates (reusable linked blocks) and a Resour
 
 | # | Gap | Who has it | Notes | Effort | Recommendation |
 |---|---|---|---|---|---|
-| G33 | **Connect AI apps (MCP server)**: outside AI apps (Claude, ChatGPT, others) read and edit the open site through Webforge's own commands | Elements 3.0 | Needs no API key or server of ours. It runs only on the user's computer and is off until the user turns it on. Every change goes through `HistoryManager`, so it is undoable and labelled. Lays the command layer that the v1.1 built-in assistant reuses | M | **MVP** (GA5) |
+| G33 | **Connect AI apps (MCP server)**: outside AI apps (Claude, ChatGPT, others) read and edit the open site through Webforge's own commands | Elements 3.0 | Needs no API key or server of ours. It runs only on the user's computer and is off until the user turns it on; each app is paired with a code from Webforge. Every change goes through `HistoryManager`, so it is undoable and labelled. Lays the command layer that the v1.1 built-in assistant reuses | M | **MVP** (GA5) |
 | G34 | **Shared sections** ("Global Templates"): a section saved once and placed on several pages; editing one updates all | Elements, Squarespace (saved sections), WordPress (synced patterns) | Builds on the shared Header/Footer (C5). Glossary term: *Shared section* | M | **MVP** (GA6). A library of saved sections across sites stays later |
-| G35 | **Documents in Media** (PDF, Word, Excel, PowerPoint, text, CSV) for download links | Elements (Resources manager), Wix, Squarespace | The link dialog already offers *File* (F-ED-18), but Media took only images, so a café's PDF menu had nowhere to live | S | **MVP** (GA7) |
-| G36 | **AI-readable copies**: `llms.txt` plus a Markdown copy of each page, for AI search tools | Elements 3.0 | Plain static files, no external requests, so it fits C8 | S | **MVP** (GA8) |
+| G35 | **Files in Media** (PDF, Word, Excel, PowerPoint, text, CSV) for download links | Elements (Resources manager), Wix, Squarespace | The link dialog already offers *File* (F-ED-18), but Media took only images, so a café's PDF menu had nowhere to live | S | **MVP** (GA7) |
+| G36 | **AI-readable copies**: `llms.txt` plus a Markdown copy of each page, for AI search tools | Elements 3.0 (on by default for new projects) | Plain static files, no external requests, so it fits C8 | S | **MVP** (GA8) |
 | G37 | **Draft pages** ("Don't publish"): a page kept in the site but left out of export and publish | Elements (Do Not Publish), Wix, Squarespace | For seasonal or work-in-progress pages | S | v1.1 (GA9) |
-| G38 | **Tables from CSV / Google Sheets** | Elements 3.0 | A CSV imported at build time fits C8; a live Google Sheet doesn't | M | Later / on demand, with G16 |
-| G39 | **Online CMS editing** in a browser (multi-user) | Elements (Online CMS Editor, its own servers) | Needs a server (B2). Elements' own docs note one-way sync: republishing from the app can overwrite online edits | L | Out of scope (as T3/M5 remote editing) |
-| G40 | **Design effects**: masks, 3D transforms, text wrapping around shapes, radial/conic gradients, coloured shadows | Elements 3.0 | Designer features rather than DIY small-business needs | M | Not planned |
+| G38 | **Tables from CSV / Google Sheets** | Elements 3.0 | A CSV imported at build time fits C8; a live Google Sheet doesn't | M | **Not adopted** (GA9) |
+| G39 | **Online CMS editing** in a browser (multi-user) | Elements (Online CMS Editor, its own servers) | Needs a server (B2). Elements' own docs note one-way sync: republishing from the app can overwrite online edits | L | Out of scope (as T3/M5 remote editing; recommendation, not raised by the product owner) |
+| G40 | **Design effects**: masks, 3D transforms, text wrapping around shapes, radial/conic gradients, coloured shadows | Elements 3.0 | Designer features rather than DIY small-business needs | M | Not planned (recommendation, not raised by the product owner) |
 
 **Business notes for the post-MVP licensing questions (MVP §8):**
 - **Pricing:** Elements is a yearly subscription (Plus/Pro) for up to 3 Macs per user. When the subscription ends, the app keeps working but updates stop.
@@ -135,7 +135,7 @@ Before 3.0 it already had Global Templates (reusable linked blocks) and a Resour
 
 ## 4. Proposed changes
 
-**Add to MVP (mostly small; about 4–6 weeks of extra work in total):**
+**Add to MVP (mostly small; about 4–6 weeks of extra work in total, plus about 19 days from the Elements 3.0 review):**
 - **Editing basics:**
   - G1 copy & paste, G2 menu editor, G3 link to section
   - G5 spell check, G6 editable 404, G21 dynamic year
@@ -144,7 +144,7 @@ Before 3.0 it already had Global Templates (reusable linked blocks) and a Resour
   - G11 typography and button styles in the theme
 - **Media:** G14 focal point, G15 alt text on media, G27 icon picker.
 - **Small-business tools:** G17 newsletter signup, G18 booking buttons.
-- **Added after the Elements 3.0 review (2026-10-22):** G33 connect AI apps (MCP server), G34 shared sections, G35 documents in Media, G36 `llms.txt` and Markdown copies.
+- **Added after the Elements 3.0 review (2026-10-22):** G33 connect AI apps (MCP server), G34 shared sections, G35 files in Media, G36 `llms.txt` and Markdown copies.
 
 **v1.1 (with Blog):**
 - **Content tools:** G4 find & replace, G7 rename redirects, G20 legal page templates, G22 social preview, G26 stock photos.
@@ -152,9 +152,9 @@ Before 3.0 it already had Global Templates (reusable linked blocks) and a Resour
 - **AI (bring-your-own key):** a built-in assistant on the same commands as G33, starting with G25a rewrite text and G25b meta/alt text, then building and editing pages (GA9).
 - **Publishing control:** G37 draft pages.
 
-**Later / on demand:** G16 tables/timeline/countdown/charts (incl. G38 CSV tables), G24 password pages, G25c AI site generation, G28 marketplace/plugin API, a saved-section library shared across sites.
+**Later / on demand:** G16 tables/timeline/countdown/charts, G24 password pages, G25c AI site generation, G28 marketplace/plugin API, a saved-section library shared across sites.
 
-**Out of scope:** G23 cart/store, G29 cloud sync, G30 collaboration, G32 mobile app, G25d AI images, G39 online CMS editing. **Not planned:** G40 design effects.
+**Out of scope:** G23 cart/store, G29 cloud sync, G30 collaboration, G32 mobile app, G25d AI images, G39 online CMS editing. **Not adopted:** G38 CSV tables. **Not planned:** G40 design effects.
 
 ## 5. Decisions
 | # | Topic | Decision |
@@ -163,17 +163,18 @@ Before 3.0 it already had Global Templates (reusable linked blocks) and a Resour
 | GA2 | **AI** | ✅ **Users bring their own AI account in v1.1**: G25b (meta/social descriptions, alt text) and G25a (rewrite text). Opt-in, keys in the OS keychain, every AI edit undoable via `HistoryManager`. G25c later; G25d out of scope |
 | GA3 | **Booking & newsletter presets** | ⏸ **Deferred.** The features stay in MVP with a generic "any https URL / form action" option. Which providers to preset is an open question (see below) |
 | GA4 | **Marketplace / plugin API** | **Long-term goal, out of scope for MVP.** Keep `site-components` and the component registry designed so a plugin API is possible later |
-| GA5 | **Connect AI apps (MCP)** (2026-10-22) | ✅ **MVP (G33).** Webforge runs a local MCP server so AI apps the user already has can read and edit the open site. Off by default; each AI app is approved once and can be removed; every change is undoable and labelled (e.g. "AI (Claude): Added Hero"). It works only on the user's computer, with no publishing or credential tools. Spec F-AI-1. The built-in assistant follows in v1.1 (GA9) |
-| GA6 | **Shared sections** (2026-10-22) | ✅ **MVP (G34)**, product owner priority. A section is saved once and placed on any page; edits apply everywhere with the shared-section banner; *Detach* turns one copy back into a normal section. Spec F-ED-23. Supersedes "saved sections v1.x" (C5) within a site; a library shared across sites stays later |
-| GA7 | **Documents in Media** (2026-10-22) | ✅ **MVP (G35).** PDF, Word, Excel, PowerPoint, OpenDocument, text and CSV files in Media, linked with the link dialog's *File* option and exported for download. Spec F-ED-24. Audio and video stay deferred |
-| GA8 | **`llms.txt` and Markdown copies** (2026-10-22) | ✅ **MVP (G36).** Optional, on by default for new sites. Spec F-EX-5 |
-| GA9 | **v1.1 additions** (2026-10-22) | ✅ **Built-in AI assistant** with the user's own key (amends GA2): it uses the same commands as F-AI-1, starting with G25a/G25b and growing to building and editing pages, with per-site style notes. **Draft pages** (G37). CSV tables (G38) not adopted; online CMS editing (G39) out of scope |
+| GA5 | **Connect AI apps (MCP)** (2026-10-22) | ✅ **MVP (G33).** Webforge runs a local MCP server so AI apps the user already has can read and edit the open site. Off by default; each AI app is paired with a code from Webforge and can be removed; every change is undoable and labelled (e.g. "AI (Claude): Added Hero"). It works only on the user's computer, with no publishing or credential tools. Spec F-AI-1. The built-in assistant follows in v1.1 (GA9) |
+| GA6 | **Shared sections** (2026-10-22) | ✅ **MVP (G34)**, product owner priority. A section is saved once and placed on any page (more than once if needed); edits apply everywhere with the shared-section banner; *Detach* turns one copy back into a normal section. Spec F-ED-23. Brings C5's shared sections forward from post-MVP; a library of saved sections across sites stays later |
+| GA7 | **Files in Media** (2026-10-22) | ✅ **MVP (G35).** PDF, Word, Excel, PowerPoint, OpenDocument, text and CSV files in Media, linked with the link dialog's *File* option and exported for download. Spec F-ED-24. Audio and video stay deferred |
+| GA8 | **`llms.txt` and Markdown copies** (2026-10-22) | ✅ **MVP (G36)**, as a Site Settings option. Spec F-EX-5. Whether it is on by default for new sites is open question 3 |
+| GA9 | **v1.1 additions** (2026-10-22) | ✅ **Built-in AI assistant** with the user's own key (amends GA2): it uses the same commands as F-AI-1, starting with G25a/G25b and growing to building and editing pages. **Draft pages** (G37). **CSV tables (G38) not adopted.** Per-site AI style notes (as Elements' "AI memory") are a suggestion for the v1.1 design, not decided |
 
 v1.1 and later items stay as listed in §4.
 
 ## Open questions
 1. **Booking and newsletter provider presets** (GA3): which providers to preset? Candidates: Calendly, Square Appointments, Fresha, Acuity, SimplyBook (booking); Mailchimp, Brevo, MailerLite (newsletter). Decide before Phase 3; the generic URL option covers everything meanwhile.
 2. **MCP transport and tool scope** (GA5): a local Streamable HTTP endpoint with a per-app token, or a small bundled stdio bridge? The packaged app disables Electron's `RunAsNode` fuse, so the Electron binary can't double as a stdio server. Decide with an ADR in the MCP work item. Default tool scope: read the site, edit through history commands, run Site Check and preview; no publishing, no credentials, no file-system access.
+3. **`llms.txt` default** (GA8): on by default for new sites (as Elements does) or off until the user turns it on? Proposed: on for new sites, off for existing ones. Decide before Phase 3.
 
 ## Sources
 - RapidWeaver Elements 3.0: [out of beta (15 Sep 2026)](https://forums.realmacsoftware.com/t/big-news-elements-3-0-is-out-of-beta/57609) · [3.0 beta notes (13 Jul 2026)](https://forums.realmacsoftware.com/t/elements-3-0-beta-now-available/56986) · [The Road Ahead (Mar 2026)](https://forums.realmacsoftware.com/t/rapidweaver-elements-the-road-ahead/55124) · [Online CMS Editor](https://docs.realmacsoftware.com/elements-docs/cms/online-cms-editor)

@@ -44,22 +44,22 @@ Still open in Phase 0: publishing spikes (Netlify, FTP/SFTP), signed installers 
 Current code size (approx. lines): desktop 2.7k · engine 1.6k · history 1.6k · pipeline 1.1k · site-components 1.0k · storage 0.6k · model 0.3k. `editor-ui`, `publish` and `themes` are placeholders.
 
 ## 3. Timeline
-**Total: 294 working days** (≈ 55 weeks) including the 4-week beta. Baseline v1.0 (sequential, before the Phase 1 re-plan) at 100% of estimates: **19 Nov 2027**; with +25% contingency: **25 Feb 2028**.
+**Total: 296 working days** (≈ 59 weeks) including the 4-week beta. Baseline v1.0 (sequential, for the original 277 days, before the Phase 1 re-plan) at 100% of estimates: **19 Nov 2027**; with +25% contingency: **25 Feb 2028**.
 
 **Re-plan, 20 Oct 2026:** Phase 1 runs in three concurrent streams (82 days of effort in about 28 working days, see [Phase 1](#phase-1-editor-core)). Phase 2–5 dates and the v1.0 date are re-planned at the Phase 1 exit review.
 
-**Scope change, 22 Oct 2026:** +17 days from the RapidWeaver Elements 3.0 review (GA5–GA8, [gap analysis §3.7](../research/product/05-feature-gap-analysis.md#37-rapidweaver-elements-30-update-2026-10-22)): documents in Media (1.28, 2 days), shared sections (1.29, 6 days), `llms.txt` and Markdown copies (3.5, +1 day), and connecting AI apps over MCP (4.8 and 4.9, 8 days). The effort figures below include them; the baseline dates in this table don't, and are re-planned at the Phase 1 exit.
+**Scope change, 22 Oct 2026:** +19 days from the RapidWeaver Elements 3.0 review (GA5–GA8, [gap analysis §3.7](../research/product/05-feature-gap-analysis.md#37-rapidweaver-elements-30-update-2026-10-22)): files in Media (1.28, 3 days), shared sections (1.29, 7 days), `llms.txt` and Markdown copies (3.5, +1 day), and connecting AI apps over MCP (4.8 and 4.9, 8 days). The effort figures below include them. Phase 1's dates are updated (1.29 extends stream C's chain, so the phase ends about 9 Dec, or 22 Dec with contingency); the Phase 2–5 dates are baseline and are re-planned at the Phase 1 exit.
 
 | Phase | Effort (days) | Starts | Ends (100%) | Ends (+25%) | Exit criteria |
 |---|---|---|---|---|---|
 | [Phase 0: Prototype (finish)](#phase-0-prototype-finish) | 11 | 26 Oct 2026 | 18 Nov 2026 | 24 Nov 2026 | Netlify and SFTP/FTPS publish spikes meet the spike criteria in research/stack/08<br>Signed NSIS and DMG builds install, and auto-update from a test feed on both OSes<br>A large page (200+ elements) stays within the editing performance budget<br>ADRs written; architecture §6 interfaces updated |
-| [Phase 1: Editor core](#phase-1-editor-core) | 90 | 22 Oct 2026 | 30 Nov 2026 | 9 Dec 2026 | Build a 3-page site from blank, close, reopen: everything restored<br>Undo-all property tests green; every edit has a meaningful label<br>Shell matches UI1 in dark and light (Storybook screenshots) |
+| [Phase 1: Editor core](#phase-1-editor-core) | 92 | 22 Oct 2026 | 9 Dec 2026 | 22 Dec 2026 | Build a 3-page site from blank, close, reopen: everything restored<br>Undo-all property tests green; every edit has a meaningful label<br>Shell matches UI1 in dark and light (Storybook screenshots) |
 | [Phase 2: Design & components](#phase-2-design--components) | 93 | 2 Mar 2027 | 14 Jul 2027 | 16 Sep 2027 | Every component has stories × 3 themes × Desktop/Mobile, axe-clean<br>New Site from each of the 8 templates works and looks distinct<br>Theme changes restyle every component; contrast warnings work |
 | [Phase 3: Output](#phase-3-output) | 32 | 15 Jul 2027 | 26 Aug 2027 | 10 Nov 2027 | Exported templates open from disk in Chromium, Firefox, WebKit (+ Edge on Windows) with no external requests<br>Site Check blocks only Must-fix issues on export<br>Preview CSS hot-swap < 100 ms; phone preview via QR works |
-| [Phase 4: Publish & versions](#phase-4-publish--versions) | 30 | 27 Aug 2027 | 28 Sep 2027 | 17 Dec 2027 | Publish + rollback on all targets in E2E tests (mock Netlify, local FTP/SFTP)<br>Version History: save, auto-retention, preview, restore, open as new site, republish |
+| [Phase 4: Publish & versions](#phase-4-publish--versions) | 30 | 27 Aug 2027 | 28 Sep 2027 | 17 Dec 2027 | Publish + rollback on all targets in E2E tests (mock Netlify, local FTP/SFTP)<br>A paired AI app's edits are undoable, and the MCP server can't be reached from another computer<br>Version History: save, auto-retention, preview, restore, open as new site, republish |
 | [Phase 5: Beta hardening](#phase-5-beta-hardening) | 38 | 29 Sep 2027 | 19 Nov 2027 | 25 Feb 2028 | All performance budgets met on Windows and macOS<br>Signed, notarised builds auto-update from the production feed<br>Beta running with 10–20 users; no open Must-fix bugs |
 
-Phase 0's signed-installer item waits on enrolment (lead time), so Phase 1 work starts while it waits. The Gantt chart shows the 100% schedule.
+Phase 0's signed-installer item waits on enrolment (lead time), so Phase 1 work starts while it waits. The Gantt chart shows the 100% schedule. Items added on 22 Oct 2026 (1.28, 1.29, 4.8, 4.9, and 3.5's extra day) are drawn after their predecessors, so some overlap the baseline bars that follow them until the Phase 1 exit re-plan.
 
 ```mermaid
 gantt
@@ -102,8 +102,8 @@ gantt
     1.25 Copy and paste :t1_25, 2026-11-25, 3d
     1.26 Confirmations (D7) and Content mode locking :crit, t1_26, 2026-11-26, 3d
     1.27 Editing performance – targeted patches, atomi… :t1_27, 2026-10-22, 3d
-    1.28 Documents in Media and file downloads :t1_28, after t1_25, 2d
-    1.29 Shared sections :t1_29, after t1_26, 6d
+    1.28 Files in Media and file downloads :t1_28, after t1_25, 3d
+    1.29 Shared sections :crit, t1_29, after t1_26, 7d
     section Phase 2
     2.1 Themes package – theme model → Tailwind/daisyU… :t2_1, 2027-03-02, 4d
     2.2 Fonts – bundled catalogue and on-demand download :t2_2, 2027-03-08, 3d
@@ -235,7 +235,7 @@ Fold spike learnings into architecture §6 (CanvasEngine, HistoryManager, Pipeli
 
 ### Phase 1: Editor core
 **Goal:** A real editor on the UI1 shell: create, open and autosave sites; add, edit, move, copy and undo sections and elements across pages with a shared Header/Footer, Site Settings and media.  
-**Effort:** 90 days · **Scheduled:** 22 Oct 2026 → 30 Nov 2026 (three streams; 1.28 and 1.29 added 22 Oct)
+**Effort:** 92 days · **Scheduled:** 22 Oct 2026 → 9 Dec 2026 (three streams; 1.28 and 1.29 added 22 Oct)
 
 | ID | Item | Issue | Area | Refs | Est | Depends on |
 |---|---|---|---|---|---|---|
@@ -266,8 +266,8 @@ Fold spike learnings into architecture §6 (CanvasEngine, HistoryManager, Pipeli
 | 1.25 | Copy and paste | [#41](https://github.com/nexustech/webforge/issues/41) | engine | F-ED-16, G1 | 3 | 1.12, 1.16 |
 | 1.26 | Confirmations (D7) and Content mode locking | [#42](https://github.com/nexustech/webforge/issues/42) | shell | F-ED-14, D7, F-ED-10, M3 | 3 | 1.9, 1.10, 1.18, 1.20, 1.13, 1.14, 1.23, 1.16 |
 | 1.27 | Editing performance: targeted patches, atomic Puck actions, memoised renders | [#89](https://github.com/nexustech/webforge/issues/89) | engine | [ADR 0007](../docs/adr/0007-large-page-performance.md), architecture §10, U7 | 3 | – |
-| 1.28 | Documents in Media and file downloads | [#168](https://github.com/nexustech/webforge/issues/168) | storage | F-ED-24, G35, GA7, F-ED-18 | 2 | 1.16, 1.19 |
-| 1.29 | Shared sections | [#169](https://github.com/nexustech/webforge/issues/169) | engine | F-ED-23, G34, GA6, C5, D7 | 6 | 1.20, 1.13, 1.25, 1.26 |
+| 1.28 | Files in Media and file downloads | [#168](https://github.com/nexustech/webforge/issues/168) | storage | F-ED-24, G35, GA7, F-ED-18, F-ED-16 | 3 | 1.16, 1.19, 1.25 |
+| 1.29 | Shared sections | [#169](https://github.com/nexustech/webforge/issues/169) | engine | F-ED-23, G34, GA6, C5, D7 | 7 | 1.20, 1.13, 1.24, 1.25, 1.26 |
 
 **Streams (re-plan of 20 Oct 2026).** Phase 1 runs as three concurrent streams, each in its own Claude Code session, with one item in progress per stream. A dependency counts as met when its PR is merged to `main`. Shared files are split up front so that streams add files instead of editing the same ones: per-area i18n catalogues (1.3), per-domain IPC files ([#90](https://github.com/nexustech/webforge/issues/90)), and command and panel registries (1.2).
 
@@ -281,7 +281,7 @@ Fold spike learnings into architecture §6 (CanvasEngine, HistoryManager, Pipeli
 
 1.13 moved from stream B to stream A on 2026-10-21: it is panel work, its dependency (1.12) was merged, and stream A's next item (1.21) waits on 1.20. The engine side of adding (hiding Puck's own component list, drop rules, dragging from the Add panel) stays with stream C.
 
-The longest dependency chain is 1.1 → 1.2 → 1.12 → 1.14 → 1.19 → 1.23 → 1.26 (about 27 days), so the phase takes about 28 working days instead of 82. Three items start before one dependency merges and leave the dependent part until last: 1.12 (the site-CSS PR comes first; the selection chrome waits for 1.2), 1.16 (the image field, which needs 1.14, comes last) and 1.23 (the spell-check criterion, which needs 1.22, is checked last).
+The longest dependency chain is 1.1 → 1.2 → 1.12 → 1.14 → 1.19 → 1.23 → 1.26 → 1.29 (about 34 days, after 1.29 was added on 22 Oct), so the phase takes about 35 working days instead of 92. Three items start before one dependency merges and leave the dependent part until last: 1.12 (the site-CSS PR comes first; the selection chrome waits for 1.2), 1.16 (the image field, which needs 1.14, comes last) and 1.23 (the spell-check criterion, which needs 1.22, is checked last).
 
 <details><summary>Scope and acceptance criteria</summary>
 
@@ -474,22 +474,23 @@ The mitigations from the large-page check (0.4, [ADR 0007](../docs/adr/0007-larg
 - [ ] Keystroke-to-paint within 8 ms of the starter page's
 - [ ] Atomic actions give the same canvas state as `setData` (property test)
 
-**1.28 Documents in Media and file downloads** (added 22 Oct 2026, GA7)  
-Media also takes PDF, Word, Excel, PowerPoint, OpenDocument, plain text and CSV files: checked by extension and sniffed content type, never opened or run in the editor, shown with a file-type icon, name and size. The link dialog's *File* option picks from them (new tab by default, optional *Download*). Export copies linked documents unchanged to `files/`. Deleting a linked document warns first. Sizes are recorded so Site Check (3.6) can tip about files over 10 MB.
+**1.28 Files in Media and file downloads** (added 22 Oct 2026, GA7)  
+Media also takes PDF, Word, Excel, PowerPoint, OpenDocument, plain text and CSV files: checked by extension and sniffed content type, never opened or run in the editor, shown with a file-type icon, name and size. Media metadata gains `kind` and `size` (with a migration). The link dialog's *File* option picks from them (new tab by default, optional *Download*). The export file list maps linked files to `files/<clean-name>` (clashes get `-2`, `-3`…); 3.3 writes and checks them. Copy & paste into another site brings linked files along, as it does images. Deleting a linked file warns first. Sizes are recorded so Site Check (3.6) can tip about files over 10 MB.
 
 - [ ] Only the listed types are accepted (a renamed executable is rejected)
-- [ ] Exported documents are byte-identical, and links to them work from disk (E2E)
-- [ ] Deleting a linked document warns first and is undoable
-- [ ] Only linked documents are exported
+- [ ] The export file list includes only linked files, with unique cleaned-up names (unit test)
+- [ ] Pasting into another site adds the linked files to its Media
+- [ ] Deleting a linked file warns first and is undoable
 
 **1.29 Shared sections** (added 22 Oct 2026, GA6)  
-`sharedSections` in SiteDoc (with a migration) and linked-copy nodes. *Save as shared section* (not Header/Footer); the Add panel lists shared sections; editing a copy edits them all, with the shared-region banner from 1.20; *Detach* makes a normal section; deleting a shared section confirms with its impact (D7) and turns copies into normal sections. No nesting; pasting into another site gives a normal section; Layers marks linked copies; export renders copies inline.
+`sharedSections` in SiteDoc (with a migration) and linked-copy nodes. `CanvasEngine.loadPage` and `renderStatic` take the shared sections (architecture §6, stack/04 C5). *Save as shared section* (not Header/Footer); the Add panel lists shared sections; a page may hold several copies, each with anchor IDs made unique per copy; editing a copy edits them all, with the shared-region banner from 1.20 ("N copies on M pages"); *Detach* makes a normal section; deleting a shared section confirms with its impact (D7) and turns copies into normal sections. No nesting. Pasting within the site places another linked copy; pasting into another site gives a normal section. Content mode allows content edits in copies but not saving, detaching or deleting. Layers marks linked copies. Model, history and engine work stays in stream C; the Add panel and Layers changes are small PRs on stream A's panels, agreed with stream A.
 
-- [ ] Editing one copy updates every page in one undo step
+- [ ] Editing one copy updates every copy in one undo step
 - [ ] Detach and delete keep all content; both undoable
 - [ ] Delete confirms with the number of pages affected (D7)
+- [ ] Two copies on one page keep unique anchor IDs, and links to them work
 - [ ] fast-check undo-all/redo-all covers the shared-section actions
-- [ ] Exported pages contain the section inline; E2E across two pages
+- [ ] `renderStatic` renders copies inline (unit test); export checks in 3.3 and 3.10
 
 </details>
 
@@ -635,9 +636,9 @@ Screenshot baselines for every component × 3 themes × Desktop/Mobile (PR) and 
 |---|---|---|---|---|---|---|
 | 3.1 | Pipeline API: progress events, worker, caches | [#59](https://github.com/nexustech/webforge/issues/59) | pipeline | [stack/07](../research/stack/07-export-pipeline.md), architecture §6, [ADR 0005](../docs/adr/0005-export-pipeline-spike.md) | 4 | 2.5 |
 | 3.2 | Preview server with live reload and phone preview | [#60](https://github.com/nexustech/webforge/issues/60) | pipeline | F-PV-1, [stack/07](../research/stack/07-export-pipeline.md) | 3 | 3.1 |
-| 3.3 | Export to folder/ZIP, report, readable output, developer files | [#61](https://github.com/nexustech/webforge/issues/61) | pipeline | F-EX-1, F-EX-3, F-EX-4, X1, X3, X4, X6, [ADR 0005](../docs/adr/0005-export-pipeline-spike.md) | 4 | 3.1, 1.17 |
+| 3.3 | Export to folder/ZIP, report, readable output, developer files | [#61](https://github.com/nexustech/webforge/issues/61) | pipeline | F-EX-1, F-EX-3, F-EX-4, F-ED-23, F-ED-24, X1, X3, X4, X6, [ADR 0005](../docs/adr/0005-export-pipeline-spike.md) | 4 | 3.1, 1.17 |
 | 3.4 | Images: responsive WebP + fallback, favicons, share image | [#62](https://github.com/nexustech/webforge/issues/62) | pipeline | F-EX-2, X2 | 3 | 3.1, 1.16 |
-| 3.5 | Site files: sitemap, robots, manifest, 404, meta tags, {year}, llms.txt | [#63](https://github.com/nexustech/webforge/issues/63) | pipeline | F-ED-20, F-CM-8, X3, F-EX-5, G36 | 3 | 3.1, 1.18 |
+| 3.5 | Site files: sitemap, robots, manifest, 404, meta tags, {year}, llms.txt | [#63](https://github.com/nexustech/webforge/issues/63) | pipeline | F-ED-20, F-CM-8, X3, F-EX-5, G36 | 3 | 3.1, 1.18, 1.17 |
 | 3.6 | Site Check engine, panel and core rules | [#64](https://github.com/nexustech/webforge/issues/64) | site-check | F-CHK-1, X5, F-CM-8 | 4 | 3.1, 1.19 |
 | 3.7 | Forms: services, spam protection, thank-you page | [#65](https://github.com/nexustech/webforge/issues/65) | components | F-CM-1, F-CM-6, B3, B6, GA3 | 3 | 2.8, 1.17, 3.6 |
 | 3.8 | Google Analytics with consent banner | [#66](https://github.com/nexustech/webforge/issues/66) | pipeline | F-CM-3, B4, B7 | 2 | 1.17, 3.1 |
@@ -660,7 +661,7 @@ Main-process HTTP server answering from the worker's in-memory build, SSE live r
 - [ ] QR preview works on a phone
 
 **3.3 Export to folder/ZIP, report, readable output, developer files**  
-Export dialog (folder or ZIP); writes only to an empty folder or a previous Webforge export (`.webforge-export` marker) and never overwrites or deletes other files (ADR 0005); temp folder + swap; js-beautify formatting with tidy attribute casing (srcset); optional Minify output; optional developer files; export report; Preview from disk; 'Add your web address?' prompt before export (X3).
+Export dialog (folder or ZIP); writes only to an empty folder or a previous Webforge export (`.webforge-export` marker) and never overwrites or deletes other files (ADR 0005); temp folder + swap; js-beautify formatting with tidy attribute casing (srcset); optional Minify output; optional developer files; export report; Preview from disk; 'Add your web address?' prompt before export (X3). Writes linked files to `files/` unchanged (F-ED-24) and shared sections inline on each page (F-ED-23).
 
 - [ ] Output matches the exported-site contract (architecture §8)
 - [ ] Golden-file tests for every template
@@ -673,14 +674,14 @@ Responsive widths, <picture> with WebP + JPEG (PNG if transparent), width/height
 - [ ] Derivatives cached by blob hash
 
 **3.5 Site files: sitemap, robots, manifest, 404, meta tags, {year}, llms.txt**  
-sitemap.xml + canonical + absolute OG URLs when the web address is set, robots.txt, site.webmanifest, 404.html from the editable 404 page with absolute links and asset URLs (based on the web address, or `/`-rooted when none is set), Open Graph/Twitter tags, {year} token. Added 22 Oct 2026 (GA8, +1 day): *Help AI tools read your site* in Site Settings → Search engines (on for new sites) writes `llms.txt` and a Markdown copy of each page, leaving out the 404 page and hidden elements.
+sitemap.xml + canonical + absolute OG URLs when the web address is set, robots.txt, site.webmanifest, 404.html from the editable 404 page with absolute links and asset URLs (based on the web address, or `/`-rooted when none is set), Open Graph/Twitter tags, {year} token. Added 22 Oct 2026 (GA8, +1 day): *Help AI tools read your site* in Site Settings → Search engines (default per MVP §7 item 12) writes `llms.txt` and a Markdown copy of each page, leaving out the 404 page and hidden elements.
 
 - [ ] Missing web address skips sitemap/canonical with a warning
 - [ ] 404.html works at a nested missing URL on a test server
 - [ ] `llms.txt` and the `.md` copies match golden files; turning the setting off removes them
 
 **3.6 Site Check engine, panel and core rules**  
-Rule engine running in the background; Must fix · Should fix · Tips; export vs publish tiers (X5); click to jump, Fix buttons, Ignore per item; core rules: broken links, placeholders, alt text, page titles, contrast, large images, names, home page, missing media, out-of-date {year} on a published site, documents over 10 MB (tip, F-ED-24). Form and external-resource rules are added by their own items.
+Rule engine running in the background; Must fix · Should fix · Tips; export vs publish tiers (X5); click to jump, Fix buttons, Ignore per item; core rules: broken links, placeholders, alt text, page titles, contrast, large images, names, home page, missing media, out-of-date {year} on a published site, files over 10 MB (tip, F-ED-24). Form and external-resource rules are added by their own items.
 
 - [ ] Export blocks only on Must fix
 - [ ] Publish-strict rules turn the listed warnings into errors
@@ -706,7 +707,7 @@ Site custom.css/custom.js and head/body snippets (Advanced), esbuild bundling to
 - [ ] Tailwind classes used only in Custom HTML are compiled
 
 **3.10 Exported-site compatibility E2E**  
-Every template exported and opened from disk in Chromium, Firefox, WebKit (+ Edge on Windows CI) with network blocked; fonts, scripts, links, lightbox, carousel, menu all work.
+Every template exported and opened from disk in Chromium, Firefox, WebKit (+ Edge on Windows CI) with network blocked; fonts, scripts, links, lightbox, carousel, menu all work, plus a fixture site with a linked PDF and a shared section on two pages.
 
 - [ ] Zero external requests for all templates
 - [ ] Runs in CI on PRs touching pipeline/components
@@ -716,7 +717,7 @@ Every template exported and opened from disk in Chromium, Firefox, WebKit (+ Edg
 **Phase exit:** Exported templates open from disk in Chromium, Firefox, WebKit (+ Edge on Windows) with no external requests; Site Check blocks only Must-fix issues on export; Preview CSS hot-swap < 100 ms; phone preview via QR works.
 
 ### Phase 4: Publish & versions
-**Goal:** Publish to Netlify and FTP/FTPS/SFTP with incremental uploads, plus Version History with restore and republish.  
+**Goal:** Publish to Netlify and FTP/FTPS/SFTP with incremental uploads, plus Version History with restore and republish, and connecting AI apps over MCP.  
 **Effort:** 30 days · **Scheduled:** 27 Aug 2027 → 28 Sep 2027 (baseline; 4.8 and 4.9 added 22 Oct 2026)
 
 | ID | Item | Issue | Area | Refs | Est | Depends on |
@@ -728,8 +729,8 @@ Every template exported and opened from disk in Chromium, Firefox, WebKit (+ Edg
 | 4.5 | Publish flow UI | [#73](https://github.com/nexustech/webforge/issues/73) | publish | F-PB-2, X5 | 2 | 4.4, 3.6 |
 | 4.6 | Version History | [#74](https://github.com/nexustech/webforge/issues/74) | storage | F-SITE-4, F-PB-3, P3, P5, D7 | 5 | 1.5, 1.26, 4.5 |
 | 4.7 | Project export/import as ZIP | [#75](https://github.com/nexustech/webforge/issues/75) | storage | F-SITE-5 | 2 | 1.5 |
-| 4.8 | Command API for AI apps | [#170](https://github.com/nexustech/webforge/issues/170) | history | F-AI-1, G33, GA5, GA9 | 3 | 1.26, 2.5 |
-| 4.9 | Local MCP server and AI app approvals | [#171](https://github.com/nexustech/webforge/issues/171) | ai | F-AI-1, G33, GA5, architecture §3, §9 | 5 | 4.8, 3.2, 3.6 |
+| 4.8 | Command API for AI apps | [#170](https://github.com/nexustech/webforge/issues/170) | history | F-AI-1, G33, GA5, GA9 | 3 | 1.17, 1.18, 1.26, 1.29, 2.1, 2.3, 2.5 |
+| 4.9 | Local MCP server and AI app approvals | [#171](https://github.com/nexustech/webforge/issues/171) | ai | F-AI-1, G33, GA5, architecture §3, §9 | 5 | 4.8, 4.4, 3.2, 3.6 |
 
 <details><summary>Scope and acceptance criteria</summary>
 
@@ -778,24 +779,25 @@ File → Export as .zip (JSON + media, documented) and import back to a new .wfo
 - [ ] Round trip is lossless (property test on fixtures)
 
 **4.8 Command API for AI apps** (added 22 Oct 2026, GA5)  
-A typed, framework-free command layer shared by the MCP server and the v1.1 built-in assistant (GA9). Read queries: site outline, page tree, node fields with their catalogue schemas, Site Settings, theme. Commands: add, update, move and remove sections and elements; edit text and fields; add pages; set theme tokens. Inputs validated by zod schemas from the catalogue's field definitions; every command is one `HistoryManager` step labelled "AI (‹app›): …"; Content mode and D7 apply; nothing for publishing, credentials or Custom Code.
+A typed, framework-free command layer in a new `packages/commands` (no React, no Puck; field schemas from `site-components`' React-free catalogue entry point; architecture §4, §6), shared by the MCP server and the v1.1 built-in assistant (GA9). Main forwards tool calls to the renderer over typed IPC. Read queries: site outline, page tree, node fields with their catalogue schemas, Site Settings, theme. Commands: add, update, move and remove sections and elements; edit text and fields; add pages; set theme tokens. Inputs validated by zod schemas from the catalogue's field definitions; every command is one `HistoryManager` step labelled "AI (‹app›): …"; refused with `busy` while the user has a gesture or text session open; site-wide commands show the D7 confirmation and wait for the user (`declined` after 60 s); Content mode applies; nothing for publishing, credentials or Custom Code.
 
 - [ ] Every command is undoable with a meaningful label (property test)
 - [ ] Invalid input is rejected with a readable error and changes nothing
 - [ ] Content mode refuses structural commands
+- [ ] Commands during an open transaction return `busy` and change nothing; a site-wide command waits for D7 and is `declined` after 60 s
 
 **4.9 Local MCP server and AI app approvals** (added 22 Oct 2026, GA5)  
-ADR on the transport (Q9). The MCP server runs in main on the official TypeScript SDK (MIT), maps tools to 4.8 plus *Run Site Check* and *Open Preview*, and runs only while a site is open. Preferences → *AI apps*: off by default; first connection from each app asks for approval and explains that site content is shared with it; apps can be removed; app tokens in the OS keychain. Help page for connecting Claude and ChatGPT desktop apps. PR labelled `full-ci`.
+ADR on the transport (Q9). The MCP server runs in main on the official TypeScript SDK (MIT), maps tools to 4.8 plus *Run Site Check* and *Open Preview*, and runs only while a site is open. Preferences → *AI apps*: off by default; *Add AI app* pairs an app with a one-time code (never trusting the name an app reports about itself) and explains that open sites' content is shared with it; paired apps can be removed; tokens in the OS keychain (4.4's credential store). An HTTP transport checks `Origin` and `Host` on every request. Tool calls are never logged with their content. A status indicator shows when an app is connected. Help page for connecting Claude and ChatGPT desktop apps. Label the PR `full-ci`; while Windows/macOS CI is paused, run `pnpm e2e` locally on Windows and say so in the PR.
 
 - [ ] Off by default; nothing listens until turned on
-- [ ] Unapproved apps are refused; removing an app cuts it off
+- [ ] Unpaired callers and requests with a wrong `Origin`/`Host` are refused; removing an app cuts it off
 - [ ] Not reachable from another computer (test)
 - [ ] AI edits appear in Undo History labelled with the app's name and undo cleanly (E2E with a test MCP client)
 - [ ] ADR written
 
 </details>
 
-**Phase exit:** Publish + rollback on all targets in E2E tests (mock Netlify, local FTP/SFTP); Version History: save, auto-retention, preview, restore, open as new site, republish.
+**Phase exit:** Publish + rollback on all targets in E2E tests (mock Netlify, local FTP/SFTP); Version History: save, auto-retention, preview, restore, open as new site, republish; a paired AI app's edits are undoable, and the MCP server can't be reached from another computer.
 
 ### Phase 5: Beta hardening
 **Goal:** Production-ready signed builds, performance, onboarding and a closed beta with 10–20 small-business users on Windows and macOS.  
@@ -841,7 +843,7 @@ Keyboard-only walkthrough of core flows, focus order, labels, screen-reader spot
 - [ ] Core flows completable with keyboard only
 
 **5.6 Security review**  
-Electron hardening checklist (Fuses, CSP, navigation handlers, sandbox), IPC schema validation audit, untrusted .wforge fuzzing, secrets/logging audit, dependency audit.
+Electron hardening checklist (Fuses, CSP, navigation handlers, sandbox), IPC schema validation audit, untrusted .wforge fuzzing, secrets/logging audit, dependency audit, and the MCP server (pairing, `Origin`/`Host` checks, tool scope, no content in logs; F-AI-1).
 
 - [ ] Checklist signed off; findings fixed or ticketed
 
@@ -896,8 +898,8 @@ Every MVP feature ID maps to at least one work item (checked when this plan was 
 | F-ED-20 | Editable 404 page | 1.18, 3.5 |
 | F-ED-21 | Image focal point | 1.16, 2.9 |
 | F-ED-22 | Icon picker | 2.9 |
-| F-ED-23 | Shared sections | 1.29 |
-| F-ED-24 | Documents in Media | 1.28 |
+| F-ED-23 | Shared sections | 1.29, 3.3 |
+| F-ED-24 | Files in Media | 1.28, 3.3, 3.6 |
 | F-DS-1 | Theme picker | 2.1, 2.13 |
 | F-DS-2 | Brand colours, fonts, roundness | 2.3 |
 | F-DS-3 | Section themes | 2.4 |
