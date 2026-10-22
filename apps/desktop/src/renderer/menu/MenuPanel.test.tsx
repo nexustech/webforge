@@ -1,26 +1,17 @@
 // @vitest-environment happy-dom
-import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it } from "vitest";
 import { createEditorSession } from "../editor/editor-session.js";
 import { starterSite } from "../editor/starter-site.js";
+import { openedDialog } from "../shell/opened-dialog.test-helper.js";
 import { createPanelRegistry } from "../shell/panels.js";
 import { addPage } from "../site/page-actions.js";
 import { registerSitePanel } from "../site/SitePanel.js";
 import { addMenuItem } from "./menu-actions.js";
 
 afterEach(cleanup);
-
-/**
- * The dialog `name` once it takes clicks. A modal dialog turns clicks off around it, and on for
- * itself a render after it shows: a busy full run could click in between.
- */
-async function openedDialog(name: string) {
-  const dialog = await screen.findByRole("dialog", { name });
-  await waitFor(() => expect(dialog.style.pointerEvents).toBe("auto"));
-  return within(dialog);
-}
 
 function setUp() {
   const session = createEditorSession(siteLibrary, starterSite());

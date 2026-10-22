@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { act, cleanup, render, screen, within } from "@testing-library/react";
+import { act, cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { LinkPicker, RichTextAt } from "@webforge/engine";
 import type { RichTextLink } from "@webforge/model";
@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { createEditorSession, currentPage } from "../editor/editor-session.js";
 import { createFakeEngine } from "../editor/fake-engine.test-helper.js";
 import { starterSite } from "../editor/starter-site.js";
+import { openedDialog } from "../shell/opened-dialog.test-helper.js";
 import { RichTextLinkHost } from "./RichTextLinkHost.js";
 
 afterEach(cleanup);
@@ -53,7 +54,8 @@ function setUp() {
     });
     return answer;
   };
-  return { session, engine, ask, user: userEvent.setup() };
+  // No wait between events: the dialog redraws on every one (see LinkField.test.tsx).
+  return { session, engine, ask, user: userEvent.setup({ delay: null }) };
 }
 
 describe("RichTextLinkHost (F-ED-3, F-ED-18)", () => {
@@ -61,9 +63,10 @@ describe("RichTextLinkHost (F-ED-3, F-ED-18)", () => {
     const { ask, user } = setUp();
 
     const answer = ask(null);
-    const dialog = within(await screen.findByRole("dialog", { name: "Link" }));
+    const dialog = await openedDialog("Link");
     await user.click(dialog.getByRole("radio", { name: "Web address" }));
-    await user.type(dialog.getByRole("textbox", { name: "Web address" }), "example.com");
+    await user.click(dialog.getByRole("textbox", { name: "Web address" }));
+    await user.paste("example.com");
     await user.click(dialog.getByRole("checkbox", { name: "Open in a new tab" }));
     await user.click(dialog.getByRole("button", { name: "Save Link" }));
 
@@ -75,7 +78,7 @@ describe("RichTextLinkHost (F-ED-3, F-ED-18)", () => {
     const { ask, user } = setUp();
 
     const answer = ask({ href: "mailto:rosa@example.com", newTab: false });
-    const dialog = within(await screen.findByRole("dialog", { name: "Link" }));
+    const dialog = await openedDialog("Link");
     expect((dialog.getByRole("textbox", { name: "Email address" }) as HTMLInputElement).value).toBe(
       "rosa@example.com",
     );
@@ -88,7 +91,7 @@ describe("RichTextLinkHost (F-ED-3, F-ED-18)", () => {
     const { session, ask, user } = setUp();
 
     const answer = ask(null);
-    const dialog = within(await screen.findByRole("dialog", { name: "Link" }));
+    const dialog = await openedDialog("Link");
     await user.selectOptions(dialog.getByRole("combobox", { name: "Section" }), "Opening times");
     await user.click(dialog.getByRole("button", { name: "Save Link" }));
 
@@ -110,7 +113,7 @@ describe("RichTextLinkHost (F-ED-3, F-ED-18)", () => {
     session.ui.setState({ nodeId: "columns" });
 
     const answer = ask(null, { nodeId: "columns", field: "right" });
-    const dialog = within(await screen.findByRole("dialog", { name: "Link" }));
+    const dialog = await openedDialog("Link");
     await user.selectOptions(dialog.getByRole("combobox", { name: "Section" }), "Opening times");
     await user.click(dialog.getByRole("button", { name: "Save Link" }));
     await answer;
@@ -125,7 +128,7 @@ describe("RichTextLinkHost (F-ED-3, F-ED-18)", () => {
     const { session, ask, user } = setUp();
 
     const answer = ask(null, null);
-    const dialog = within(await screen.findByRole("dialog", { name: "Link" }));
+    const dialog = await openedDialog("Link");
     await user.selectOptions(dialog.getByRole("combobox", { name: "Section" }), "Opening times");
     await user.click(dialog.getByRole("button", { name: "Save Link" }));
     await answer;
