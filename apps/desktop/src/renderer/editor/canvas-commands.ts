@@ -58,14 +58,28 @@ const NEEDS_SELECTION: ReadonlySet<CanvasAction> = new Set([
 /**
  * Registers the canvas's keyboard actions as commands, so the Edit menu, the command box and their
  * shortcuts all reach them: arrows select, Alt+arrows move, Mod+D duplicates, Delete deletes. Each
- * runs on the canvas's selected element as one undo step. Returns a function that removes them and
- * one that enables the ones needing a selection as the selection comes and goes.
+ * runs on the canvas's selected element as one undo step. Returns a function that removes them, one
+ * that enables the ones needing a selection as the selection comes and goes, and one that turns the
+ * ones changing the layout (duplicate, delete, move) off while Content mode locks it (M3).
  */
 export function registerCanvasCommands(
   registry: CommandRegistry,
   engine: CanvasEngine,
   beforeAction: () => void,
-): { readonly remove: () => void; readonly setHasSelection: (selected: boolean) => void } {
+): {
+  readonly remove: () => void;
+  readonly setHasSelection: (selected: boolean) => void;
+  readonly setLayoutLocked: (locked: boolean) => void;
+} {
+  let selected = false;
+  let locked = false;
+  const update = () => {
+    for (const command of CANVAS_COMMANDS) {
+      if (NEEDS_SELECTION.has(command.action)) {
+        registry.update(command.id, { enabled: selected && !locked });
+      }
+    }
+  };
   const removers = CANVAS_COMMANDS.map((command) =>
     registry.register({
       id: command.id,
@@ -83,10 +97,13 @@ export function registerCanvasCommands(
     remove: () => {
       for (const remove of removers) remove();
     },
-    setHasSelection: (selected) => {
-      for (const command of CANVAS_COMMANDS) {
-        if (NEEDS_SELECTION.has(command.action)) registry.update(command.id, { enabled: selected });
-      }
+    setHasSelection: (next) => {
+      selected = next;
+      update();
+    },
+    setLayoutLocked: (next) => {
+      locked = next;
+      update();
     },
   };
 }

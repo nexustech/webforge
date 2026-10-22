@@ -44,8 +44,7 @@ export const panels = {
   "pages.folderDialog.description": "Move '{name}' into a new folder.",
   "pages.folderDialog.confirm": "Move",
   "pages.deleteDialog.title": "Delete page '{name}'?",
-  "pages.deleteDialog.description":
-    "This removes the page and its content. You can undo it afterwards.",
+  "pages.deleteDialog.description": "This removes the page and its content.",
   "pages.deleteDialog.confirm": "Delete Page",
   // Add panel (F-ED-1): sections and elements to add to the page.
   "add.title": "Add",
@@ -80,7 +79,6 @@ export const panels = {
   "link.none": "No link",
   "link.missingPage": "A page that was deleted",
   "link.pageSection": "{page} › {section}",
-  "link.file": "A file",
   "link.add": "Add Link…",
   "link.edit": "Change Link…",
   "link.remove": "Remove Link",
@@ -130,6 +128,8 @@ export const panels = {
   "menu.rowHidden": "{name}, {kind}, hidden",
   "menu.rowInGroup": "{name}, {kind} in '{group}'",
   "menu.rowInGroupHidden": "{name}, {kind} in '{group}', hidden",
+  "menu.rowPageHidden": "{name}, {kind}, hidden in Page Settings",
+  "menu.rowInGroupPageHidden": "{name}, {kind} in '{group}', hidden in Page Settings",
   "menu.actions": "Actions for {name}",
   "menu.rename": "Rename…",
   "menu.usePageName": "Use Page Name",

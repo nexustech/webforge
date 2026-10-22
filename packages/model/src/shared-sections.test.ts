@@ -109,6 +109,23 @@ describe("shared sections (F-ED-23)", () => {
     expect(second?.props.advanced?.anchorId).toBe("opening-hours-2");
   });
 
+  it("shows a copy renamed or hidden in Layers under its name, and hidden (F-ED-12)", () => {
+    const renamed: NodeDoc = {
+      type: SHARED_COPY_TYPE,
+      props: { id: "c1", sharedSectionId: HOURS, layerName: "Hours, again", hidden: true },
+    };
+
+    const [shown] = expandSharedCopies([renamed, copy("c2", "2")], shared);
+    const [, other] = expandSharedCopies([renamed, copy("c2", "2")], shared);
+
+    expect(shown?.props.layerName).toBe("Hours, again");
+    expect(shown?.props.hidden).toBe(true);
+    // Only that copy: the shared section and its other copies are as they were.
+    expect(other?.props.hidden).toBeUndefined();
+    expect(other?.props.layerName).toBeUndefined();
+    expect(shared[HOURS]?.section.props.hidden).toBeUndefined();
+  });
+
   it("shows nothing for a copy of a shared section that isn't there", () => {
     const gone: NodeDoc = { type: SHARED_COPY_TYPE, props: { id: "c", sharedSectionId: "gone" } };
 

@@ -1,5 +1,6 @@
 import {
   cropSchema,
+  FILE_MIME_TYPES,
   focalPointSchema,
   IMAGE_MIME_TYPES,
   mediaNameSchema,
@@ -21,11 +22,23 @@ const exportMediaSchema = z.strictObject({
   crop: cropSchema.optional(),
 });
 
-/** What the renderer sends to export the site: its snapshot, and the Media images it may use. */
+/** A document pages link to (1.28), named by its hash like images; copied to `files/` unchanged. */
+const exportDocumentSchema = z.strictObject({
+  id: z.string().regex(/^[A-Za-z0-9_-]+$/),
+  name: mediaNameSchema,
+  mimeType: z.enum(FILE_MIME_TYPES),
+  hash: z.string().regex(/^[0-9a-f]{64}$/),
+});
+
+/**
+ * What the renderer sends to export the site: its snapshot, and the Media images and documents it
+ * may use.
+ */
 const exportRequestSchema = z.strictObject({
-  /** The site, without image bytes (`media` is filled in by the main process). */
+  /** The site, without image or document bytes (the main process fills them in). */
   snapshot: siteSnapshotSchema,
   media: z.array(exportMediaSchema).max(10_000),
+  documents: z.array(exportDocumentSchema).max(10_000).optional(),
 });
 
 /** What the renderer sends to export the site. */

@@ -69,4 +69,8 @@ export const shell = {
   "shell.mode": "Editing mode",
   "shell.mode.design": "Design",
   "shell.mode.content": "Content",
+  // Site-wide confirmations (D7, F-ED-14): actions that change more than the page shown.
+  "confirm.siteWide.affectsOne": "This changes 1 page. You can undo it afterwards.",
+  "confirm.siteWide.affectsMany": "This changes {count} pages. You can undo it afterwards.",
+  "confirm.siteWide.cancel": "Cancel",
 } as const;

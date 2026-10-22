@@ -181,6 +181,10 @@ export function MenuPanel({ site, linkContext, actions }: MenuPanelProps) {
     const name = itemLabel(site, item);
     const Icon = ICONS[item.kind];
     const kind = t(`menu.kind.${item.kind}`);
+    // A page hidden from navigation in its own Page Settings: shown so, and changed there.
+    const pageHidden =
+      item.kind === "page" && site.pages[item.pageId]?.settings.hideFromNavigation === true;
+    const hidden = item.hidden || pageHidden;
     const indicator =
       drop?.id === item.id
         ? drop.where === "before"
@@ -222,25 +226,31 @@ export function MenuPanel({ site, linkContext, actions }: MenuPanelProps) {
           data-menu-item={item.id}
           aria-label={
             group === undefined
-              ? t(item.hidden ? "menu.rowHidden" : "menu.row", { name, kind })
-              : t(item.hidden ? "menu.rowInGroupHidden" : "menu.rowInGroup", {
+              ? t(pageHidden ? "menu.rowPageHidden" : item.hidden ? "menu.rowHidden" : "menu.row", {
                   name,
                   kind,
-                  ...where,
                 })
+              : t(
+                  pageHidden
+                    ? "menu.rowInGroupPageHidden"
+                    : item.hidden
+                      ? "menu.rowInGroupHidden"
+                      : "menu.rowInGroup",
+                  { name, kind, ...where },
+                )
           }
           className={cn(
             "flex h-6 w-full items-center gap-1.5 rounded-sm px-2 pr-8 text-left text-xs outline-none",
             "hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
             row.group !== null && "pl-6",
-            item.hidden && "text-muted-foreground",
+            hidden && "text-muted-foreground",
           )}
           onClick={() => openDialog({ kind: "edit", id: item.id })}
           onKeyDown={(event) => onKeyDown(event, row)}
         >
           <Icon aria-hidden className="size-3.5 shrink-0" />
           <span className="truncate">{name}</span>
-          {item.hidden && (
+          {hidden && (
             <EyeOffIcon aria-hidden className="ml-auto size-3.5 shrink-0 text-muted-foreground" />
           )}
         </button>

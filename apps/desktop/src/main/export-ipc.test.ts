@@ -17,6 +17,8 @@ const snapshot: SiteSnapshot = {
 };
 const PHOTO = "a".repeat(64);
 const photo = { mime: "image/jpeg", data: new Uint8Array([0xff, 0xd8, 0xff]) };
+const PDF = "d".repeat(64);
+const pdf = { mime: "application/pdf", data: new TextEncoder().encode("%PDF-1.7") };
 const request = {
   snapshot,
   media: [
@@ -48,7 +50,9 @@ function setUp(dialogs: ExportDialogs, outcome: ExportOutcome = exported) {
     },
   } as unknown as Pick<IpcMain, "handle">;
   const runExport = vi.fn(async () => outcome);
-  const readMedia = vi.fn((hash: string) => (hash === PHOTO ? photo : undefined));
+  const readMedia = vi.fn((hash: string) =>
+    hash === PHOTO ? photo : hash === PDF ? pdf : undefined,
+  );
   registerExportHandlers(ipc, (url) => url === APP_URL, dialogs, runExport, readMedia);
   const invoke = (...args: unknown[]) => {
     const handler = handlers.get("site:export");
@@ -75,7 +79,7 @@ describe("registerExportHandlers", () => {
       files: 5,
       warnings: 0,
     });
-    expect(runExport).toHaveBeenCalledWith(snapshot, "/sites/my-site");
+    expect(runExport).toHaveBeenCalledWith({ ...snapshot, documents: [] }, "/sites/my-site");
   });
 
   it("builds with image bytes read from the open site, leaving out images without them", async () => {
@@ -96,7 +100,34 @@ describe("registerExportHandlers", () => {
             data: photo.data,
           },
         ],
+        documents: [],
       },
+      "/sites/my-site",
+    );
+  });
+
+  it("reads linked documents' bytes from the open site, leaving out missing or mislabelled ones (1.28)", async () => {
+    const { invoke, runExport } = setUp({ chooseExportFolder: async () => "/sites/my-site" });
+    const document = { id: "prices", name: "prices", mimeType: "application/pdf" } as const;
+
+    await invoke({
+      snapshot,
+      media: [],
+      documents: [
+        { ...document, hash: PDF },
+        { ...document, id: "gone", name: "gone", hash: "e".repeat(64) },
+        // The photo's bytes named as a spreadsheet: not what they are, so left out.
+        {
+          id: "fake",
+          name: "fake",
+          mimeType: "application/vnd.ms-excel",
+          hash: PHOTO,
+        },
+      ],
+    });
+
+    expect(runExport).toHaveBeenCalledWith(
+      { ...snapshot, media: [], documents: [{ ...document, data: pdf.data }] },
       "/sites/my-site",
     );
   });

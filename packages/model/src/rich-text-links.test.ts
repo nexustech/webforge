@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-import type { PageId } from "./ids.js";
+import type { MediaId, PageId } from "./ids.js";
 import type { LinkValue } from "./link.js";
 import {
   rewriteRichTextLinks,
+  richTextFileLinks,
   richTextHref,
   richTextLinkValue,
   richTextPageLinks,
@@ -30,12 +31,13 @@ describe("rich-text links (F-ED-3, F-ED-18)", () => {
     expect(richTextLinkValue({ href, newTab: true })).toEqual({ ...link, newTab: true });
   });
 
-  it("can't hold a file, and reads no link from an address it doesn't take", () => {
-    expect(richTextHref({ kind: "file", mediaId: "media-1" as never })).toBeUndefined();
+  it("reads no link from an address it doesn't take", () => {
     for (const href of [
       "javascript:alert(1)",
       "webforge:page/",
       "webforge:page/page-about#Not An Anchor",
+      "webforge:file/",
+      "webforge:file/a b",
       "mailto:not an address",
     ]) {
       expect(richTextLinkValue({ href, newTab: false })).toBeUndefined();
@@ -55,12 +57,43 @@ describe("rich-text links (F-ED-3, F-ED-18)", () => {
     const paths: Record<string, string> = { "page-about": "about.html" };
     expect(
       rewriteRichTextLinks(html, (link) => {
+        if (link.kind !== "page") return "#";
         const path = paths[link.pageId];
         return path === undefined ? "#" : `${path}${link.anchor ? `#${link.anchor}` : ""}`;
       }),
     ).toBe(
       '<p><a href="about.html">About</a> and <a target="_blank" href="#">cakes</a>, ' +
         '<a href="https://example.com">web</a>, <a href="#">bad</a></p>',
+    );
+  });
+
+  it("keeps links to documents in Media by id, rewritten to their file, saved if so (1.28)", () => {
+    const pdf = { kind: "file", mediaId: "prices" as MediaId } as const;
+    expect(richTextHref(pdf)).toBe("webforge:file/prices");
+    expect(richTextHref({ ...pdf, download: true })).toBe("webforge:file/prices?download");
+    expect(richTextLinkValue({ href: "webforge:file/prices?download", newTab: true })).toEqual({
+      ...pdf,
+      download: true,
+      newTab: true,
+    });
+    expect(richTextLinkValue({ href: "webforge:file/../x", newTab: false })).toBeUndefined();
+
+    const html =
+      '<p><a href="webforge:file/prices">Menu</a>, <a href="webforge:file/prices?download">' +
+      'save it</a>, <a href="webforge:file/gone?download">old</a></p>';
+    expect(richTextFileLinks(html)).toEqual([
+      { mediaId: "prices" },
+      { mediaId: "prices", download: true },
+      { mediaId: "gone", download: true },
+    ]);
+    expect(
+      rewriteRichTextLinks(html, (link) =>
+        link.kind === "file" && link.mediaId === "prices" ? "../files/price-list.pdf" : "#",
+      ),
+    ).toBe(
+      '<p><a href="../files/price-list.pdf">Menu</a>, ' +
+        // A deleted document's link goes nowhere, and saves nothing.
+        '<a href="../files/price-list.pdf" download="">save it</a>, <a href="#">old</a></p>',
     );
   });
 });

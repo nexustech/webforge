@@ -12,12 +12,14 @@ import { EXPORTED_SITE_DIR } from "./exported-site.js";
 type ExportRequest = {
   snapshot: SiteSnapshot;
   media: { id: string; name: string; mimeType: string; hash: string; alt: string }[];
+  documents: { id: string; name: string; mimeType: string; hash: string }[];
 };
 type ExportingWindow = { webforge: { site: { export(request: ExportRequest): Promise<unknown> } } };
 
-// Exports the two-page fixture site (with its photo) through the real app: preload API, IPC,
-// export utility process. The browser projects then open the result from disk. As in the app, the
-// photo's bytes come from the open site's file; the renderer names it by hash.
+// Exports the two-page fixture site (with its photo and price list) through the real app: preload
+// API, IPC, export utility process. The browser projects then open the result from disk. As in the
+// app, the photo's and the document's bytes come from the open site's file; the renderer names
+// them by hash.
 setup("export the fixture site from the app", async () => {
   rmSync(EXPORTED_SITE_DIR, { recursive: true, force: true });
   const site = sampleSite();
@@ -36,6 +38,17 @@ setup("export the fixture site from the app", async () => {
       originalName: `${item.name}.jpg`,
     }).hash,
   }));
+  const documents = (site.documents ?? []).map((item) => ({
+    id: item.id,
+    name: item.name,
+    mimeType: item.mimeType,
+    hash: store.putAsset({
+      mediaId: item.id,
+      data: item.data,
+      mime: item.mimeType,
+      originalName: `${item.name}.pdf`,
+    }).hash,
+  }));
   store.close();
 
   const app = await launchDesktopApp({ args: [sitePath] });
@@ -46,7 +59,7 @@ setup("export the fixture site from the app", async () => {
 
     const result = await page.evaluate(
       (request) => (window as unknown as ExportingWindow).webforge.site.export(request),
-      { snapshot: { ...site, media: [] }, media },
+      { snapshot: { ...site, media: [], documents: [] }, media, documents },
     );
 
     expect(result).toMatchObject({ status: "exported", pages: 2, warnings: 0 });

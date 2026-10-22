@@ -33,6 +33,22 @@ describe("siteSnapshotSchema", () => {
     expect(siteSnapshotSchema.parse(snapshot)).toEqual(snapshot);
   });
 
+  it("accepts the site's menu, and rejects one the model wouldn't (F-ED-17)", () => {
+    const menu: SiteSnapshot["menu"] = {
+      follows: "custom",
+      items: [{ id: "home" as never, kind: "page", pageId: "home" as never, hidden: false }],
+    };
+
+    expect(siteSnapshotSchema.parse(site({ menu })).menu).toEqual(menu);
+    expect(
+      siteSnapshotSchema.safeParse(
+        site({
+          menu: { follows: "custom", items: [{ id: "x", kind: "group", label: "" }] } as never,
+        }),
+      ).success,
+    ).toBe(false);
+  });
+
   it("requires a home page", () => {
     const result = siteSnapshotSchema.safeParse(
       site({ pages: [{ id: "about", path: "about", title: "About", doc: emptyPage }] }),
@@ -82,6 +98,26 @@ describe("siteSnapshotSchema", () => {
     const result = siteSnapshotSchema.safeParse(site({ media: [photo("a"), photo("b")] }));
 
     expect(result.error?.issues.map((issue) => issue.message)).toContain("Duplicate media names");
+  });
+
+  it("takes documents, but not two with the same name, which would share an exported file", () => {
+    const document = {
+      id: "prices",
+      name: "prices",
+      mimeType: "application/pdf",
+      data: new Uint8Array([1]),
+    } as const;
+    const withDocuments = (documents: unknown[]) => ({ ...site(), documents });
+
+    expect(siteSnapshotSchema.safeParse(withDocuments([document])).success).toBe(true);
+    expect(
+      siteSnapshotSchema.safeParse(withDocuments([document, { ...document, id: "b" }])).success,
+    ).toBe(false);
+    expect(
+      siteSnapshotSchema.safeParse(
+        withDocuments([{ ...document, mimeType: "application/x-msdownload" }]),
+      ).success,
+    ).toBe(false);
   });
 
   it("rejects media that is not raw bytes or has an unsafe name", () => {

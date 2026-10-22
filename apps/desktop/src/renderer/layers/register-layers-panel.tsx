@@ -24,9 +24,14 @@ function useCommandAction(id: string): (() => void) | undefined {
 /**
  * Adds Layers to the left column's bottom, before Undo History (UI1), in Advanced mode only (T2).
  * The tree follows the shown page and the selection; it is rebuilt only when the page's structure
- * or names change, not on every keystroke. Returns a function that removes the panel.
+ * or names change, not on every keystroke. With `layoutLocked` (Content mode, M3) nothing can be
+ * dragged, moved or hidden. Returns a function that removes the panel.
  */
-export function registerLayersPanel(panels: PanelRegistry, session: EditorSession): () => void {
+export function registerLayersPanel(
+  panels: PanelRegistry,
+  session: EditorSession,
+  { layoutLocked = false }: { readonly layoutLocked?: boolean } = {},
+): () => void {
   const { history, ui, library } = session;
   // The tree as last shown, for the page content it was made from: rebuilt only when that content
   // changes, and kept (same object) when the rebuilt tree is the same, e.g. after typing.
@@ -65,6 +70,7 @@ export function registerLayersPanel(panels: PanelRegistry, session: EditorSessio
       <LayersPanel
         layers={layers}
         selectedId={selectedId}
+        layoutLocked={layoutLocked}
         actions={{
           select: (id) => ui.setState({ nodeId: id }),
           rename: (id, name) => renameLayer(session, id, name),

@@ -82,8 +82,16 @@ export function classCandidates(html: string): string[] {
   for (const match of html.matchAll(/\sclass="([^"]*)"/g)) {
     for (const name of (match[1] ?? "").split(/\s+/)) {
       if (name !== "") {
-        // React escapes `&` in attributes; Tailwind needs the raw class name.
-        candidates.add(name.replaceAll("&amp;", "&"));
+        // React escapes `&`, `<`, `>` and quotes in attributes; Tailwind needs the raw class name
+        // (`[&:focus-within>ul]:block`). `&amp;` last, so `&amp;gt;` stays `&gt;`.
+        candidates.add(
+          name
+            .replaceAll("&lt;", "<")
+            .replaceAll("&gt;", ">")
+            .replaceAll("&quot;", '"')
+            .replaceAll("&#x27;", "'")
+            .replaceAll("&amp;", "&"),
+        );
       }
     }
   }

@@ -2,7 +2,7 @@
 import { act, cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { siteLibrary } from "@webforge/site-components";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { createEditorSession } from "../editor/editor-session.js";
 import { starterSite } from "../editor/starter-site.js";
 import { createPanelRegistry } from "../shell/panels.js";
@@ -44,6 +44,31 @@ describe("Site panel", () => {
 
     remove();
     expect(panels.list()).toEqual([]);
+  });
+
+  it("asks before deleting a page, saying how many pages it changes (D7)", async () => {
+    const session = createEditorSession(siteLibrary, starterSite());
+    const answers = [false, true];
+    const confirmSiteWide = vi.fn(async () => answers.shift() ?? false);
+    const actions = pagesPanelActions(session, { confirmSiteWide });
+    actions.add("About");
+    const about = session.ui.getState().pageId;
+    const pages = () => Object.keys(session.history.document.getState().pages);
+
+    actions.remove(about);
+    await vi.waitFor(() => expect(confirmSiteWide).toHaveBeenCalledOnce());
+    expect(pages()).toContain(about);
+    actions.remove(about);
+    await vi.waitFor(() => expect(pages()).not.toContain(about));
+
+    // It is in the menu that every page shows: all 3 pages change.
+    expect(confirmSiteWide).toHaveBeenLastCalledWith({
+      action: "Delete page 'About'?",
+      description: "This removes the page and its content.",
+      confirm: "Delete Page",
+      affectedPages: 3,
+    });
+    expect(session.history.entries().at(-1)?.label).toBe("Deleted page 'About'");
   });
 
   it("binds every action to the session as one undo step", () => {
