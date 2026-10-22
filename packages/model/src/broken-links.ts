@@ -1,6 +1,7 @@
 import { isNodeDoc, type NodeDoc } from "./documents.js";
 import type { PageId } from "./ids.js";
 import { pageLinkSchema } from "./link.js";
+import { richTextPageLinks } from "./rich-text-links.js";
 import type { SiteDoc } from "./site-doc.js";
 
 /** Where a broken link is: the page it is on (or the Header, Footer or menu), and its element. */
@@ -29,11 +30,18 @@ export function anchorsIn(nodes: readonly unknown[], found = new Set<string>()):
   return found;
 }
 
-/** Calls `visit` for every page link in `value`, a field's value, but not in elements inside it. */
+/**
+ * Calls `visit` for every page link in `value`, a field's value, but not in elements inside it:
+ * link values, and links in rich text's HTML.
+ */
 function walkLinks(
   value: unknown,
   visit: (link: { pageId: PageId; anchor?: string | undefined }) => void,
 ): void {
+  if (typeof value === "string") {
+    for (const link of richTextPageLinks(value)) visit(link);
+    return;
+  }
   if (Array.isArray(value)) {
     for (const item of value) walkLinks(item, visit);
     return;

@@ -53,6 +53,14 @@ export type {
 export { MIGRATIONS, migrateSite, migrateSiteWith, SiteFormatError } from "./migrations.js";
 export type { Breakpoint, Responsive, ResponsiveValue } from "./responsive.js";
 export { isResponsiveValue, resolveResponsive, responsiveSchema } from "./responsive.js";
+export type { RichTextLink } from "./rich-text-links.js";
+export {
+  RICH_TEXT_PAGE_LINK,
+  rewriteRichTextLinks,
+  richTextHref,
+  richTextLinkValue,
+  richTextPageLinks,
+} from "./rich-text-links.js";
 export type { SiteSettings } from "./settings.js";
 export {
   defaultSiteSettings,

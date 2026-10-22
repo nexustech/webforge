@@ -1,5 +1,11 @@
-import type { LayoutDoc, PageDoc, Theme } from "@webforge/model";
+import type { LayoutDoc, PageDoc, RichTextLink, Theme } from "@webforge/model";
 import type { ComponentLibrary, RenderContext, ResolvedImage } from "@webforge/site-components";
+
+/**
+ * Asks the app for a link in rich text (F-ED-18), starting from `current`, the link at the caret if
+ * there is one: resolves to the new link, `null` to remove it, or `undefined` to leave it as it is.
+ */
+export type LinkPicker = (current: RichTextLink | null) => Promise<RichTextLink | null | undefined>;
 
 /** Desktop · Tablet · Mobile, or a width in pixels. */
 export type Viewport = "desktop" | "tablet" | "mobile" | number;
@@ -149,6 +155,13 @@ export interface CanvasEngine {
    * into an image to show, or `null`. Called again when Media changes; the page is drawn again.
    */
   setImages(image: (mediaId: string) => ResolvedImage | null): void;
+  /**
+   * Lets the app pick links in rich text (F-ED-3, F-ED-18): the format toolbar's Link button calls
+   * `picker` with the link at the caret, if any, and sets what it resolves to on the selected text
+   * (`null` removes the link, `undefined` leaves it). Without a picker the toolbar has no Link
+   * button.
+   */
+  setLinkPicker(picker: LinkPicker | null): void;
   /**
    * Shows the site's Site Settings values in elements bound to them (1.17): `setting` gives a
    * value, `emptySetting` what an empty one shows instead (a hint). Called again when Site

@@ -10,6 +10,7 @@ export type {
   HistoryCommand,
   HistoryCommandHandler,
   InsertPoint,
+  LinkPicker,
   MountOptions,
   Unsubscribe,
   Viewport,

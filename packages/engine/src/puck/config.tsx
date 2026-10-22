@@ -8,14 +8,17 @@ import {
   withAdvanced,
 } from "@webforge/site-components";
 import { type ComponentType, cloneElement, Fragment, isValidElement, type ReactNode } from "react";
-import { richTextField } from "./rich-text.js";
+import { FormatToolbar, richTextField } from "./rich-text.js";
 
-function toPuckField(field: FieldDef): Field {
+/** The toolbar over rich text being edited, as Puck takes it. */
+type RichTextToolbar = Parameters<typeof richTextField>[2];
+
+function toPuckField(field: FieldDef, toolbar: RichTextToolbar): Field {
   switch (field.kind) {
     case "text":
       return { type: "text", label: field.label, contentEditable: field.inline ?? false };
     case "richtext":
-      return richTextField(field.label, field.inline ?? true);
+      return richTextField(field.label, field.inline ?? true, toolbar);
     case "select":
       return { type: "select", label: field.label, options: [...field.options] };
     case "media":
@@ -43,6 +46,7 @@ function toPuckComponent(
   def: ComponentDef,
   revision: EditorRevision,
   context: () => RenderContext,
+  toolbar: RichTextToolbar,
 ): ComponentConfig {
   const fieldsOfKind = (kind: FieldDef["kind"]) =>
     Object.entries(def.fields)
@@ -51,7 +55,7 @@ function toPuckComponent(
   const slotNames = fieldsOfKind("slot");
   const richTextNames = fieldsOfKind("richtext");
   const fields: Record<string, Field> = Object.fromEntries(
-    Object.entries(def.fields).map(([name, field]) => [name, toPuckField(field)]),
+    Object.entries(def.fields).map(([name, field]) => [name, toPuckField(field, toolbar)]),
   );
   if (Object.values(def.fields).some((field) => field.kind === "text" && field.bindable)) {
     // Puck walks a prop it has no field for with the element's own fields, so it would take
@@ -108,12 +112,13 @@ function markedHidden(output: ReactNode): ReactNode {
  * the right content instead (ADR 0004).
  *
  * `context` is read on every render, so a newer one (the site's Media images) shows when the page
- * is drawn again.
+ * is drawn again. `toolbar` is the format toolbar over rich text being edited.
  */
 export function toPuckConfig(
   library: ComponentLibrary,
   revision: EditorRevision = () => 0,
   context: () => RenderContext = () => EDITOR_RENDER_CONTEXT,
+  toolbar: RichTextToolbar = FormatToolbar,
 ): Config {
   return {
     // No page-level fields yet (Puck's default root has a "title" field).
@@ -121,7 +126,7 @@ export function toPuckConfig(
     components: Object.fromEntries(
       Object.entries(library.components).map(([type, def]) => [
         type,
-        toPuckComponent(def, revision, context),
+        toPuckComponent(def, revision, context, toolbar),
       ]),
     ),
   };

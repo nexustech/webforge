@@ -28,6 +28,7 @@ import type {
   EngineEdit,
   HistoryCommandHandler,
   InsertPoint,
+  LinkPicker,
   Viewport,
 } from "../canvas-engine.js";
 import { installHistoryKeys } from "../history-keys.js";
@@ -39,6 +40,7 @@ import { puckDictionary } from "./dictionary.js";
 import { createDragSources } from "./drag-sources.js";
 import { editFromAction, selectedNodeId, toPageDoc } from "./edit-from-action.js";
 import { pageActions, type SlotsOf } from "./page-actions.js";
+import { createFormatToolbar } from "./rich-text.js";
 import { performOnSelected } from "./selected-actions.js";
 import {
   composePage,
@@ -522,12 +524,17 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     actionBar: SharedAwareActionBar,
   };
 
+  /** Picks links in rich text for the format toolbar (F-ED-18); none until the app gives one. */
+  let linkPicker: LinkPicker | null = null;
+  const formatToolbar = createFormatToolbar(() => linkPicker);
+
   /** The Puck config for `library`, rendering with the current editor revisions and context. */
   const configFor = (forLibrary: ComponentLibrary) =>
     toPuckConfig(
       forLibrary,
       (id) => editorRevisions.get(id) ?? 0,
       () => renderContext,
+      formatToolbar,
     );
 
   /**
@@ -682,6 +689,10 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     setImages(image) {
       renderContext = { ...renderContext, image };
       redraw();
+    },
+
+    setLinkPicker(picker) {
+      linkPicker = picker;
     },
 
     setSettings(setting, emptySetting) {
