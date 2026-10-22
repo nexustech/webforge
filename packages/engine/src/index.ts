@@ -10,7 +10,9 @@ export type {
   HistoryCommand,
   HistoryCommandHandler,
   InsertPoint,
+  LinkPicker,
   MountOptions,
+  RichTextAt,
   Unsubscribe,
   Viewport,
 } from "./canvas-engine.js";

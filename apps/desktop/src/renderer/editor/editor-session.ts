@@ -69,6 +69,14 @@ export type EditorSession = {
   showPage(pageId: PageId): void;
 };
 
+/**
+ * The key that a text-editing session on the canvas (typing in one field of one element) records
+ * its steps under, so they merge into one step when it ends (D1).
+ */
+export function textSessionKey(pageId: PageId, nodeId: string, field: string): string {
+  return `text:${pageId}:${nodeId}:${field}`;
+}
+
 /** The page the editor shows. */
 export function currentPage(session: Pick<EditorSession, "history" | "ui">): PageEntry | undefined {
   return session.history.document.getState().pages[session.ui.getState().pageId];
@@ -226,8 +234,8 @@ export function connectEngine(engine: CanvasEngine, session: EditorSession): Eng
         return;
       }
       const key =
-        edit.kind === "text" && edit.nodeId !== null
-          ? `text:${pageId}:${edit.nodeId}:${edit.field}`
+        edit.kind === "text" && edit.nodeId !== null && edit.field !== null
+          ? textSessionKey(pageId, edit.nodeId, edit.field)
           : null;
       if (key !== textSession) {
         endTextSession();

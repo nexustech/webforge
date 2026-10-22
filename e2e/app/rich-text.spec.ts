@@ -28,6 +28,17 @@ const canvas = () => page.frameLocator(".editor__canvas iframe");
 const editor = () => canvas().locator(".site-text .ProseMirror");
 const steps = () => page.locator(".undo-history__step");
 
+/**
+ * Leaves the text, ending its editing session: a click on the Section's bottom padding, clear of the
+ * format toolbar, which sits over the text and the heading above it.
+ */
+async function leaveText(): Promise<void> {
+  const section = canvas().locator(".site-section");
+  const box = await section.boundingBox();
+  if (box === null) throw new Error("Section not visible");
+  await section.click({ force: true, position: { x: 10, y: box.height - 4 } });
+}
+
 /** Puts the caret in the starter text, in the real Tiptap editor. */
 async function editText(): Promise<void> {
   await canvas().getByText(STARTER_TEXT).click();
@@ -59,7 +70,7 @@ test("formats rich text from its toolbar, which offers only the site's formattin
 
   await expect(editor().locator("strong")).toHaveText(STARTER_TEXT);
   await expect(editor().locator("p")).toHaveCSS("text-align", "center");
-  await canvas().locator("h1").click({ force: true });
+  await leaveText();
   await expect(steps().first()).toHaveText("Edited Text text");
 });
 
@@ -88,4 +99,62 @@ test("keeps only the site's formatting in text pasted from Word or a web page", 
   expect(html).toContain("<em>Friday</em>");
   expect(html).toContain('<a href="https://example.com/menu">menu</a>');
   expect(html).not.toMatch(/<h1|<u>|<table|<img|<span|style=|class="Mso|javascript:|font/);
+});
+
+test("links selected text through the link dialog, as part of the text's one step", async () => {
+  await editText();
+  await page.keyboard.press("Home");
+  await page.keyboard.press("Shift+End");
+  const toolbar = canvas().locator("[data-puck-rte-menu]");
+  await toolbar.getByRole("button", { name: "Link…" }).click();
+
+  const dialog = page.getByRole("dialog", { name: "Link" });
+  await dialog.getByRole("radio", { name: "Web address" }).click();
+  await dialog.getByRole("textbox", { name: "Web address" }).fill("example.com");
+  await dialog.getByRole("checkbox", { name: "Open in a new tab" }).check();
+  await dialog.getByRole("button", { name: "Save Link" }).click();
+
+  const link = editor().locator("a");
+  await expect(link).toHaveText(STARTER_TEXT);
+  await expect(link).toHaveAttribute("href", "https://example.com");
+  await expect(link).toHaveAttribute("target", "_blank");
+  await expect(dialog).toHaveCount(0);
+
+  // Linked to a section of this page: the section gets its anchor in the same step.
+  await toolbar.getByRole("button", { name: "Link…" }).click();
+  await dialog.getByRole("radio", { name: "Page", exact: true }).click();
+  await dialog.getByRole("combobox", { name: "Page" }).selectOption({ label: "My site" });
+  await dialog.getByRole("combobox", { name: "Section" }).selectOption({ index: 1 });
+  await dialog.getByRole("button", { name: "Save Link" }).click();
+  await expect(link).toHaveAttribute("href", /^webforge:page\/[^#]+#[a-z]/);
+  const anchor = (await link.getAttribute("href"))?.split("#")[1] ?? "";
+  await expect(canvas().locator(`#${anchor}`)).toHaveCount(1);
+
+  // The dialog fades out over the canvas: a click before it has gone lands on it.
+  await expect(dialog).toHaveCount(0);
+  await leaveText();
+  await expect(steps()).toHaveText(["Edited Text text", "Opened page"]);
+  await page.locator(".editor__canvas").focus();
+  await page.keyboard.press("ControlOrMeta+z");
+  await expect(editor().locator("a")).toHaveCount(0);
+  await expect(canvas().locator(`#${anchor}`)).toHaveCount(0);
+});
+
+test("removes a link from the toolbar", async () => {
+  await editText();
+  await page.keyboard.press("Home");
+  await page.keyboard.press("Shift+End");
+  const toolbar = canvas().locator("[data-puck-rte-menu]");
+  await toolbar.getByRole("button", { name: "Link…" }).click();
+  const dialog = page.getByRole("dialog", { name: "Link" });
+  await dialog.getByRole("radio", { name: "Email" }).click();
+  await dialog.getByRole("textbox", { name: "Email address" }).fill("rosa@example.com");
+  await dialog.getByRole("button", { name: "Save Link" }).click();
+  await expect(editor().locator("a")).toHaveAttribute("href", "mailto:rosa@example.com");
+
+  // Back in the text, the caret in the link, as a user would put it there.
+  await expect(dialog).toHaveCount(0);
+  await editor().locator("a").click();
+  await toolbar.getByRole("button", { name: "Remove link" }).click();
+  await expect(editor().locator("a")).toHaveCount(0);
 });

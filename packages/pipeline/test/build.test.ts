@@ -241,6 +241,48 @@ describe("buildSite: checks (X5)", () => {
     expect(text(result, "index.html")).toContain('<a class="btn btn-primary" href="#">Go</a>');
   });
 
+  it("points links in rich text at pages by relative path, ../ in a folder, # for a deleted page", async () => {
+    const richText = (id: string) => ({
+      type: "Text",
+      props: {
+        id,
+        text:
+          '<p><a href="webforge:page/home">Home</a> <a href="webforge:page/menu#cakes">Cakes</a> ' +
+          '<a href="webforge:page/gone">Old</a></p>',
+      },
+    });
+    const site = siteWith([richText("t")], {
+      pages: [
+        {
+          id: "home",
+          path: "index",
+          title: "Home",
+          doc: { root: { props: {} }, content: [richText("t")] },
+        },
+        { id: "menu", path: "menu", title: "Menu", doc: { root: { props: {} }, content: [] } },
+        {
+          id: "cakes",
+          path: "services/cakes",
+          title: "Cakes",
+          doc: { root: { props: {} }, content: [richText("c")] },
+        },
+      ],
+    });
+
+    const result = await buildSite(site, siteLibrary, resources);
+
+    expect(text(result, "index.html")).toContain(
+      '<a href="index.html">Home</a> <a href="menu.html#cakes">Cakes</a> <a href="#">Old</a>',
+    );
+    expect(text(result, "services/cakes.html")).toContain(
+      '<a href="../index.html">Home</a> <a href="../menu.html#cakes">Cakes</a> <a href="#">Old</a>',
+    );
+    expect(result.report.warnings).toEqual([
+      { code: "broken-link", page: "index", detail: "gone" },
+      { code: "broken-link", page: "services/cakes", detail: "gone" },
+    ]);
+  });
+
   it("passes external links through unchanged", async () => {
     const site = siteWith([
       {

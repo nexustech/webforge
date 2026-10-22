@@ -10,6 +10,9 @@ export const canvas = {
   "canvas.selectNext": "Select next element",
   // The floating + between sections (1.12).
   "canvas.addSection": "Add a section here",
+  // The rich-text toolbar's links (1.23, F-ED-3).
+  "canvas.richText.link": "Link…",
+  "canvas.richText.removeLink": "Remove link",
   // While an element of the shared Header or Footer is selected (1.20, F-ED-7, D7).
   "canvas.sharedRegion.header": "Header",
   "canvas.sharedRegion.footer": "Footer",
