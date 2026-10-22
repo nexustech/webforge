@@ -1,17 +1,28 @@
-import { imageValueSchema, isNodeDoc, type NodeDoc, type SiteDoc } from "@webforge/model";
+import {
+  imageValueSchema,
+  isNodeDoc,
+  linkValueSchema,
+  type NodeDoc,
+  type SiteDoc,
+} from "@webforge/model";
 import type { ComponentLibrary } from "@webforge/site-components";
 
 /**
- * The Media ids that `nodes` place in `media` fields, at any depth, hidden elements included:
- * they are still placements, which show the image again once they are shown.
+ * The Media ids that `nodes` place in `media` fields or link to in `link` fields (documents, 1.28),
+ * at any depth, hidden elements included: they are still placements, which show the image again
+ * once they are shown.
  */
 function placedIn(nodes: readonly NodeDoc[], library: ComponentLibrary, into: Set<string>): void {
   for (const node of nodes) {
     const fields = library.components[node.type]?.fields ?? {};
     for (const [name, value] of Object.entries(node.props)) {
-      if (fields[name]?.kind === "media") {
+      const kind = fields[name]?.kind;
+      if (kind === "media") {
         const placed = imageValueSchema.safeParse(value);
         if (placed.success) into.add(placed.data.mediaId);
+      } else if (kind === "link") {
+        const link = linkValueSchema.safeParse(value);
+        if (link.success && link.data.kind === "file") into.add(link.data.mediaId);
       } else if (Array.isArray(value)) {
         // Slots, and anything else that holds elements.
         placedIn(value.filter(isNodeDoc), library, into);
@@ -40,7 +51,8 @@ function usedSiteWide(site: SiteDoc): Set<string> {
 }
 
 /**
- * How many pages use each Media item (1.16): in their content, in the Header or Footer they show,
+ * How many pages use each Media item (1.16): in their content (placed, or linked to as a document),
+ * in the Header or Footer they show,
  * as the image shown when they are shared, or site-wide (the site icon, the site's share image, a
  * file the menu links to). Deleting an item that is used warns with this count.
  */

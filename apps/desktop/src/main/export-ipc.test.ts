@@ -75,7 +75,7 @@ describe("registerExportHandlers", () => {
       files: 5,
       warnings: 0,
     });
-    expect(runExport).toHaveBeenCalledWith(snapshot, "/sites/my-site");
+    expect(runExport).toHaveBeenCalledWith({ ...snapshot, documents: [] }, "/sites/my-site");
   });
 
   it("builds with image bytes read from the open site, leaving out images without them", async () => {
@@ -96,7 +96,27 @@ describe("registerExportHandlers", () => {
             data: photo.data,
           },
         ],
+        documents: [],
       },
+      "/sites/my-site",
+    );
+  });
+
+  it("reads the bytes of linked documents from the open site, leaving out those without (1.28)", async () => {
+    const { invoke, runExport } = setUp({ chooseExportFolder: async () => "/sites/my-site" });
+    const document = { id: "prices", name: "prices", mimeType: "application/pdf" } as const;
+
+    await invoke({
+      snapshot,
+      media: [],
+      documents: [
+        { ...document, hash: PHOTO },
+        { ...document, id: "gone", name: "gone", hash: "e".repeat(64) },
+      ],
+    });
+
+    expect(runExport).toHaveBeenCalledWith(
+      { ...snapshot, media: [], documents: [{ ...document, data: photo.data }] },
       "/sites/my-site",
     );
   });

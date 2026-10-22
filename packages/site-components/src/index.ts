@@ -29,6 +29,7 @@ export {
 } from "./library.js";
 export {
   behavioursUsedBy,
+  documentsLinkedBy,
   mediaUsedBy,
   renderNodesToHtml,
   UnknownComponentError,

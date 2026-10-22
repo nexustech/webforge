@@ -101,4 +101,17 @@ describe("mediaUsage", () => {
 
     expect(mediaUsage(site, siteLibrary).get("shop")).toBeUndefined();
   });
+
+  it("counts each page that links to a document in a link field (1.28)", () => {
+    const site = siteWith({
+      about: [
+        { type: "Hero", props: { id: "a", buttonLink: { kind: "file", mediaId: "prices" } } },
+      ],
+      shop: [
+        { type: "Hero", props: { id: "b", buttonLink: { kind: "url", href: "https://a.b" } } },
+      ],
+    });
+
+    expect(mediaUsage(site, siteLibrary).get("prices")).toBe(1);
+  });
 });

@@ -17,8 +17,8 @@ import { type ReactNode, useId, useState } from "react";
 import type { LinkFieldChange } from "./link-change.js";
 import { newAnchorFor, type PageTarget } from "./link-targets.js";
 
-/** The kinds of link the dialog makes; files join when the export copies them. */
-const KINDS = ["page", "email", "phone", "url"] as const;
+/** The kinds of link the dialog makes; a file is a document in Media (1.28). */
+const KINDS = ["page", "email", "phone", "url", "file"] as const;
 type Kind = (typeof KINDS)[number];
 
 /** Props of {@link LinkDialog}. */
@@ -35,6 +35,8 @@ export type LinkDialogProps = {
   readonly label?: string | undefined;
   /** The dialog's title, "Link" by default. */
   readonly title?: string | undefined;
+  /** Whether it offers documents in Media (default); rich text can't link to one. */
+  readonly files?: boolean | undefined;
   /** Called with the link and, when the dialog asks for one, its trimmed label. */
   readonly onSave: (change: LinkFieldChange, label: string) => void;
   readonly onCancel: () => void;
@@ -42,8 +44,9 @@ export type LinkDialogProps = {
 
 /**
  * The link dialog (F-ED-18): a page of the site, or a section on it; an e-mail address; a phone
- * number; or a web address, optionally opened in a new tab. Linking to a section that has no anchor
- * yet gives it one, named after the section.
+ * number; a web address, optionally opened in a new tab; or a document in Media (1.28), in a new
+ * tab by default or saved as a download. Linking to a section that has no anchor yet gives it one,
+ * named after the section.
  */
 export function LinkDialog({ open, onCancel, ...form }: LinkDialogProps) {
   return (
@@ -90,15 +93,26 @@ function LinkForm({
   targets,
   label,
   title,
+  files = true,
   onSave,
   onCancel,
 }: Omit<LinkDialogProps, "open">) {
+  const kinds = files ? KINDS : KINDS.filter((option) => option !== "file");
+  // The documents in Media, by file name; a link to one opens in a new tab unless told otherwise.
+  const documents = Object.values(site.media)
+    .filter((item) => item.kind === "file")
+    .sort((a, b) => a.fileName.localeCompare(b.fileName));
+  const [fileId, setFileId] = useState<string | undefined>(
+    link?.kind === "file" ? link.mediaId : documents[0]?.id,
+  );
+  const [fileNewTab, setFileNewTab] = useState(link?.kind !== "file" || link.newTab === true);
+  const [download, setDownload] = useState(link?.kind === "file" && link.download === true);
   const [labelText, setLabelText] = useState(label ?? "");
   // Said only once the label has been typed in and emptied again, not while it waits to be filled.
   const [labelTouched, setLabelTouched] = useState(false);
   const labelMissing = label !== undefined && labelText.trim() === "";
   const [kind, setKind] = useState<Kind>(
-    link === undefined || link.kind === "file" ? "page" : link.kind,
+    link === undefined || (link.kind === "file" && !files) ? "page" : link.kind,
   );
   const [pageId, setPageId] = useState<PageId | undefined>(
     link?.kind === "page" ? link.pageId : targets[0]?.id,
@@ -134,6 +148,20 @@ function LinkForm({
         },
       };
     }
+    if (kind === "file") {
+      const document = documents.find((item) => item.id === fileId);
+      if (document === undefined) return { error: t("link.error.file") };
+      return {
+        change: {
+          link: {
+            kind: "file",
+            mediaId: document.id,
+            ...(fileNewTab ? { newTab: true } : {}),
+            ...(download ? { download: true } : {}),
+          },
+        },
+      };
+    }
     const candidate: unknown =
       kind === "email"
         ? {
@@ -149,6 +177,7 @@ function LinkForm({
   })();
   const typed =
     kind === "page" ||
+    kind === "file" ||
     (kind === "email" ? address : kind === "phone" ? number : href).trim() !== "";
 
   return (
@@ -190,11 +219,11 @@ function LinkForm({
         aria-label={t("link.kind")}
         className="justify-self-start"
         onValueChange={(value) => {
-          const next = KINDS.find((candidate) => candidate === value);
+          const next = kinds.find((candidate) => candidate === value);
           if (next !== undefined) setKind(next);
         }}
       >
-        {KINDS.map((option) => (
+        {kinds.map((option) => (
           <ToggleGroupItem key={option} value={option}>
             {t(`link.kind.${option}`)}
           </ToggleGroupItem>
@@ -295,6 +324,44 @@ function LinkForm({
             />
           )}
         </Field>
+      )}
+      {kind === "file" && documents.length > 0 && (
+        <>
+          <Field label={t("link.document")}>
+            {(id) => (
+              <select
+                id={id}
+                className={fieldControlClass}
+                value={fileId ?? ""}
+                onChange={(event) => setFileId(event.currentTarget.value)}
+              >
+                {documents.map((document) => (
+                  <option key={document.id} value={document.id}>
+                    {document.fileName}
+                  </option>
+                ))}
+              </select>
+            )}
+          </Field>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              className="size-4 accent-primary"
+              checked={fileNewTab}
+              onChange={(event) => setFileNewTab(event.currentTarget.checked)}
+            />
+            {t("link.newTab")}
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              className="size-4 accent-primary"
+              checked={download}
+              onChange={(event) => setDownload(event.currentTarget.checked)}
+            />
+            {t("link.download")}
+          </label>
+        </>
       )}
       {(kind === "page" || kind === "url") && (
         <label className="flex items-center gap-2 text-sm">

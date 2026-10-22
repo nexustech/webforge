@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { act, cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { NodeDoc, PageDoc } from "@webforge/model";
+import type { MediaId, NodeDoc, PageDoc } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it } from "vitest";
 import { EditPanelHost } from "../editor/EditPanelHost.js";
@@ -143,5 +143,59 @@ describe("LinkField and LinkDialog (F-ED-18)", () => {
     expect(screen.getByText("about")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Change Link…" })).toBeTruthy();
     remove();
+  });
+
+  describe("links to documents in Media (1.28)", () => {
+    const addPrices = (session: ReturnType<typeof setUp>["session"]) =>
+      session.edit("insert", "Added file", (draft) => {
+        draft.media["prices" as MediaId] = {
+          id: "prices" as MediaId,
+          hash: "b".repeat(64),
+          name: "prices",
+          fileName: "Price list.pdf",
+          kind: "file",
+          mimeType: "application/pdf",
+          size: 1200,
+        };
+      });
+
+    it("links to a document, in a new tab by default, or as a download", async () => {
+      const { session, node, user } = setUp();
+      act(() => addPrices(session));
+
+      await user.click(screen.getByRole("button", { name: "Add Link…" }));
+      const dialog = within(screen.getByRole("dialog", { name: "Link" }));
+      await user.click(dialog.getByRole("radio", { name: "File" }));
+      expect(
+        (dialog.getByRole("checkbox", { name: "Open in a new tab" }) as HTMLInputElement).checked,
+      ).toBe(true);
+      await user.click(
+        dialog.getByRole("checkbox", { name: "Download the file instead of opening it" }),
+      );
+      await user.click(dialog.getByRole("button", { name: "Save Link" }));
+
+      expect(node("hero")?.buttonLink).toEqual({
+        kind: "file",
+        mediaId: "prices",
+        newTab: true,
+        download: true,
+      });
+      expect(screen.getByText("Price list.pdf")).toBeTruthy();
+    });
+
+    it("asks for a document in Media first when there is none", async () => {
+      const { user } = setUp();
+
+      await user.click(screen.getByRole("button", { name: "Add Link…" }));
+      const dialog = within(screen.getByRole("dialog", { name: "Link" }));
+      await user.click(dialog.getByRole("radio", { name: "File" }));
+
+      expect(dialog.getByRole("status").textContent).toBe(
+        "Add a document to Media first, then link to it.",
+      );
+      expect(
+        (dialog.getByRole("button", { name: "Save Link" }) as HTMLButtonElement).disabled,
+      ).toBe(true);
+    });
   });
 });

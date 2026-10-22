@@ -4,6 +4,7 @@ import { siteLibrary, starterLayout, starterPage } from "./catalogue.js";
 import { EDITOR_RENDER_CONTEXT, type RenderContext, type ResolvedImage } from "./library.js";
 import {
   behavioursUsedBy,
+  documentsLinkedBy,
   mediaUsedBy,
   renderNodesToHtml,
   UnknownComponentError,
@@ -341,6 +342,17 @@ describe("tree helpers", () => {
     // A page path typed before link fields, and no link at all.
     expect(render("about")).toContain('href="about.html"');
     expect(render(undefined)).toContain('href="#"');
+  });
+
+  it("documentsLinkedBy finds the documents link fields point to (1.28)", () => {
+    const nodes: NodeDoc[] = [
+      { type: "Hero", props: { id: "a", buttonLink: { kind: "file", mediaId: "prices" } } },
+      { type: "Hero", props: { id: "b", buttonLink: { kind: "url", href: "https://a.b" } } },
+      // Not a link field: a document id elsewhere isn't a link.
+      { type: "Hero", props: { id: "c", image: { mediaId: "menu" } } },
+    ];
+
+    expect([...documentsLinkedBy(nodes, siteLibrary)]).toEqual(["prices"]);
   });
 
   it("mediaUsedBy finds media ids in media fields only", () => {

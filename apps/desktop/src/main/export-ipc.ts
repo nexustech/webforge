@@ -1,5 +1,5 @@
 import { basename } from "node:path";
-import type { MediaItem, SiteSnapshot } from "@webforge/model";
+import type { DocumentItem, MediaItem, SiteSnapshot } from "@webforge/model";
 import type { StoredBlob } from "@webforge/storage";
 import type { IpcMain } from "electron";
 import type { ExportOutcome } from "../shared/export-worker-protocol.js";
@@ -33,8 +33,9 @@ export function toExportResult(outcome: ExportOutcome, destination: string): Exp
 }
 
 /**
- * The snapshot to build: the renderer's, with the bytes of its images read from the open site's
- * file. An image whose bytes aren't there is left out; the build fails only if a page uses it.
+ * The snapshot to build: the renderer's, with the bytes of its images and documents read from the
+ * open site's file. One whose bytes aren't there is left out: a page placing that image shows
+ * none, and a link to that document goes nowhere, each with a warning.
  */
 function snapshotWithMedia(
   request: ExportRequest,
@@ -44,7 +45,11 @@ function snapshotWithMedia(
     const blob = readMedia(hash);
     return blob === undefined ? [] : [{ ...image, data: blob.data }];
   });
-  return { ...request.snapshot, media };
+  const documents = (request.documents ?? []).flatMap(({ hash, ...file }): DocumentItem[] => {
+    const blob = readMedia(hash);
+    return blob === undefined ? [] : [{ ...file, data: blob.data }];
+  });
+  return { ...request.snapshot, media, documents };
 }
 
 /**

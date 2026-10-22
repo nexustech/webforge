@@ -54,6 +54,8 @@ describe("exportRequestFor", () => {
 
     const request = exportRequestFor(site, siteLibrary);
 
+    // The PDF is in Media but nothing links to it: not sent.
+    expect(request.documents).toEqual([]);
     expect(request.snapshot.media).toEqual([]);
     expect(request.media).toEqual([
       {
@@ -64,6 +66,36 @@ describe("exportRequestFor", () => {
         alt: "Our shop",
         focal: { x: 0.3, y: 0.5 },
       },
+    ]);
+  });
+
+  it("names the documents pages link to by hash, and only those (1.28)", () => {
+    const site = createSite({
+      name: "Rosa's Bakery",
+      language: "en-GB",
+      homeTitle: "Home",
+      notFoundTitle: "Page not found",
+    });
+    const document = (id: string) => ({
+      id: id as MediaId,
+      hash: id.padEnd(64, "0"),
+      name: id,
+      fileName: `${id}.pdf`,
+      kind: "file" as const,
+      mimeType: "application/pdf" as const,
+    });
+    site.media = { ["a1" as MediaId]: document("a1"), ["b2" as MediaId]: document("b2") };
+    const home = site.pages[site.homePageId];
+    if (home === undefined) throw new Error("no home page");
+    home.doc.content = [
+      {
+        type: "Hero",
+        props: { id: "hero", title: "Prices", buttonLink: { kind: "file", mediaId: "a1" } },
+      },
+    ];
+
+    expect(exportRequestFor(site, siteLibrary).documents).toEqual([
+      { id: "a1", name: "a1", mimeType: "application/pdf", hash: "a1".padEnd(64, "0") },
     ]);
   });
 });
