@@ -117,19 +117,14 @@ describe("PagesPanel (F-ED-13)", () => {
     expect(actions.rename).toHaveBeenCalledWith("page-team", "Our team");
   });
 
-  it("deletes a page only after the confirmation (D5)", async () => {
+  it("asks to delete a page from its menu, the action confirming it (D5, D7)", async () => {
     const { actions } = setUp();
 
     await openMenu("About");
     await userEvent.click(screen.getByRole("menuitem", { name: "Delete…" }));
-    const dialog = screen.getByRole("alertdialog", { name: "Delete page 'About'?" });
-    await userEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
-    expect(actions.remove).not.toHaveBeenCalled();
 
-    await openMenu("About");
-    await userEvent.click(screen.getByRole("menuitem", { name: "Delete…" }));
-    await userEvent.click(screen.getByRole("button", { name: "Delete Page" }));
-    expect(actions.remove).toHaveBeenCalledWith("page-about");
+    // The site-wide confirmation, with the pages it changes, is the action's (SitePanel).
+    await vi.waitFor(() => expect(actions.remove).toHaveBeenCalledWith("page-about"));
   });
 
   it("runs the other actions from a page's menu", async () => {

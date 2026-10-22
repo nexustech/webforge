@@ -16,6 +16,7 @@ import {
   movePage,
   moveToFolder,
   type PageSettingsChange,
+  pagesChangedByDeleting,
   renamedFileName,
   renamePage,
   setHiddenFromNavigation,
@@ -44,6 +45,33 @@ const menuTitles = (site: SiteDoc) =>
   site.menu.items.map((item) =>
     item.kind === "page" ? site.pages[item.pageId]?.title : item.kind,
   );
+
+describe("pagesChangedByDeleting (D7)", () => {
+  it("counts the page and every page left linking to it, all pages for the menu or Footer", () => {
+    const { session, site, add } = setUp();
+    const about = add("About");
+    const team = add("Team");
+    // An edited menu without Team, and a link to Team on the About page only.
+    session.edit("props", "Edited menu", (draft) => {
+      draft.menu = {
+        follows: "custom",
+        items: draft.menu.items.filter((item) => item.kind !== "page" || item.pageId !== team),
+      };
+      draft.pages[about]?.doc.content.push({
+        type: "Hero",
+        props: { id: "hero", buttonLink: { kind: "page", pageId: team } },
+      });
+    });
+
+    expect(pagesChangedByDeleting(site(), team)).toBe(2);
+    // About is in the menu every page shows.
+    expect(pagesChangedByDeleting(site(), about)).toBe(4);
+    session.edit("props", "Edited menu", (draft) => {
+      draft.menu.items = [];
+    });
+    expect(pagesChangedByDeleting(site(), about)).toBe(1);
+  });
+});
 
 describe("page actions (F-ED-13)", () => {
   it("adds a page before 'Page not found', shows it and adds it to the menu", () => {

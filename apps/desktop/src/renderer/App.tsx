@@ -27,6 +27,7 @@ import { createCanvasView } from "./shell/canvas-view.js";
 import { CommandRegistryProvider } from "./shell/command-context.js";
 import { COMMAND_IDS } from "./shell/command-ids.js";
 import { createCommandRegistry, installCommandShortcuts } from "./shell/commands.js";
+import { createSiteWideConfirm, SiteWideConfirmDialog } from "./shell/confirm-site-wide.js";
 import { ModeToggle } from "./shell/ModeToggle.js";
 import { PanelRegistryProvider } from "./shell/panel-context.js";
 import { createPanelRegistry } from "./shell/panels.js";
@@ -85,6 +86,8 @@ export function App({
   const [registry] = useState(createCommandRegistry);
   const [panels] = useState(createPanelRegistry);
   const [canvasView] = useState(createCanvasView);
+  // Actions that change more than the page shown ask first (D7); one dialog for the window.
+  const [siteWide] = useState(createSiteWideConfirm);
   const [preferences, setPreferences] = useState(initialPreferences);
   // Design or Content (M3): remembered with the open site, never an undo step.
   const [mode, setMode] = useState<EditorMode>(uiState?.editorMode ?? "design");
@@ -127,7 +130,7 @@ export function App({
   }, [theme]);
 
   useEffect(() => installCommandShortcuts(window, registry), [registry]);
-  useEffect(() => registerSitePanel(panels, session), [panels, session]);
+  useEffect(() => registerSitePanel(panels, session, siteWide), [panels, session, siteWide]);
   useEffect(() => registerLayersPanel(panels, session), [panels, session]);
   useEffect(() => registerCrashReportsCommand(registry), [registry]);
 
@@ -237,6 +240,7 @@ export function App({
                         {...(createEngine === undefined ? {} : { createEngine })}
                         {...(compileCss === undefined ? {} : { compileCss })}
                         mode={mode}
+                        siteWide={siteWide}
                         canvasView={canvasView}
                         editorLevel={editorLevel}
                       />
@@ -249,6 +253,7 @@ export function App({
           <AboutDialog info={info} />
           <SiteCommands />
           <SiteSettingsHost session={session} />
+          <SiteWideConfirmDialog confirm={siteWide} />
           <Toaster theme={theme} />
         </TooltipProvider>
       </PanelRegistryProvider>

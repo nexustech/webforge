@@ -93,14 +93,15 @@ function removeNode(nodes: NodeDoc[], id: string): boolean {
 /**
  * Copies the selected element, with everything in it, to the clipboard. With `cut`, also removes
  * it as one step ("Cut Heading"), once the copy is on the clipboard: from the page, or from the
- * shared Header or Footer and so every page. The Header and Footer themselves are never copied or
- * cut. Returns whether it copied.
+ * shared Header or Footer and so every page, after `confirmSharedCut` agrees (D7). The Header and
+ * Footer themselves are never copied or cut. Returns whether it copied.
  */
 export async function copySelected(
   session: ClipboardSession,
   clipboard: Pick<ClipboardApi, "write">,
   notify: (message: string) => void,
   cut = false,
+  confirmSharedCut?: (item: string, region: SharedRegion) => Promise<boolean>,
 ): Promise<boolean> {
   const selected = selectedNode(session);
   if (selected === undefined) {
@@ -113,6 +114,10 @@ export async function copySelected(
   if (region !== undefined && layout[region].some((top) => top.props.id === node.props.id)) {
     notify(t("site.clipboard.sharedRegion", { item: itemName(session, node) }));
     return false;
+  }
+  // Cut from the shared Header or Footer changes every page showing it: asked before anything.
+  if (cut && region !== undefined && confirmSharedCut !== undefined) {
+    if (!(await confirmSharedCut(itemName(session, node), region))) return false;
   }
   // The page it is on: the user may have moved on by the time the copy is on the clipboard.
   const ui = session.ui.getState();

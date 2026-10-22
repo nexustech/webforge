@@ -22,6 +22,7 @@ import { type CanvasView, connectCanvasView } from "../shell/canvas-view.js";
 import { useCommandRegistry } from "../shell/command-context.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { installCommandShortcuts } from "../shell/commands.js";
+import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
 import { usePanelRegistry } from "../shell/panel-context.js";
 import { connectCanvasSettings } from "../site-settings/canvas-settings.js";
 import { registerCanvasCommands } from "./canvas-commands.js";
@@ -34,6 +35,7 @@ import {
   runHistoryCommand,
 } from "./editor-session.js";
 import { SharedRegionBanner } from "./SharedRegionBanner.js";
+import { confirmSharedRemovals, sharedCutConfirmation } from "./shared-confirmations.js";
 import { shownLayout } from "./shared-layout.js";
 import { type CompileCanvasCss, connectSiteCss } from "./site-css.js";
 import { UndoHistoryPanel } from "./UndoHistoryPanel.js";
@@ -52,6 +54,11 @@ export type EditorProps = {
   readonly canvasView?: CanvasView;
   /** Simple or Advanced mode (F-ED-11): Advanced adds the Edit panel's Advanced tab. */
   readonly editorLevel?: Preferences["editorLevel"];
+  /**
+   * Asks before what changes more than the page shown (D7): deleting or cutting an element of the
+   * shared Header or Footer. Without it, they happen at once.
+   */
+  readonly siteWide?: Pick<SiteWideConfirm, "confirmSiteWide">;
 };
 
 const compileWithPreload: CompileCanvasCss = (request) =>
@@ -68,6 +75,7 @@ export function Editor({
   mode = "design",
   canvasView,
   editorLevel = "simple",
+  siteWide,
 }: EditorProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [engine, setEngine] = useState<CanvasEngine | null>(null);
@@ -140,7 +148,10 @@ export function Editor({
     if (page !== undefined) {
       engine.loadPage(page.doc, shownLayout(site, page.id));
     }
-    const connection = connectEngine(engine, session);
+    const connection = connectEngine(
+      siteWide === undefined ? engine : confirmSharedRemovals(engine, session, siteWide),
+      session,
+    );
     connectionRef.current = connection;
     setEngine(engine);
     const stopSiteCss = connectSiteCss(engine, session, compileCss, document.baseURI);
@@ -160,6 +171,7 @@ export function Editor({
       preloadClipboard,
       connection.flush,
       (message) => toast(message),
+      siteWide === undefined ? undefined : sharedCutConfirmation(session, siteWide),
     );
     clipboardCommands.setLayoutLocked(modeRef.current !== "design");
     clipboardCommandsRef.current = clipboardCommands;
@@ -196,7 +208,7 @@ export function Editor({
       engine.destroy();
       element.remove();
     };
-  }, [session, history, createEngine, compileCss, registry]);
+  }, [session, history, createEngine, compileCss, registry, siteWide]);
 
   useEffect(() => {
     engine?.setMode(mode);
