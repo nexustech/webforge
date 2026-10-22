@@ -1,16 +1,26 @@
 name: CI
 
-# Cost (GitHub Free, private repository): Windows minutes count twice and macOS ten times, so a
-# full run costs about ten times a Linux-only one. Pull requests therefore run Linux only, and
-# the Windows and macOS jobs run on main, from "Run workflow", or on a PR labelled `full-ci`
-# (packaging, Fuses, native modules, OS-specific code). Docs-only and draft PRs skip CI.
+# Cost (GitHub Free, private repository): every job is billed in whole minutes, Windows minutes
+# count twice and macOS ten times. To keep within the plan:
+# - Pull requests run Linux only. Docs-only and draft PRs skip CI, so open PRs as drafts while
+#   iterating and mark them ready once `pnpm check` passes locally.
+# - `main` is checked once a night (02:30 UTC, only if it changed), not after every merge: each
+#   PR has already passed before it merges, and the nightly run catches PRs that pass alone but
+#   clash once both are in. "Run workflow" (`gh workflow run ci.yml --ref main`) runs it at once.
+# - The `changes` job looks at the files a PR changes. Storybook runs only when the editor UI or
+#   what its stories render changed. Firefox and WebKit (exported-site tests) run only when the
+#   exported site can have changed, in Playwright's container (`export-browsers`), so their system
+#   packages never come from the runners' slow Ubuntu mirror; E2E covers the app and Chromium.
+#   E2E is skipped when a PR changes only unit tests, stories, screenshots or tooling.
+# - Windows and macOS run nightly, from "Run workflow", or on a PR labelled `full-ci`
+#   (packaging, Fuses, native modules, OS-specific code).
 #
 # PAUSED: the Windows and macOS jobs run only while the repository variable FULL_CI_ENABLED is
 # `true`; unset (as now, to stay within the billing cycle), CI is Linux-only everywhere.
 # Resume with `gh variable set FULL_CI_ENABLED --body true`. See spec/03 §7.
 on:
-  push:
-    branches: [main]
+  schedule:
+    - cron: "30 2 * * *"
   pull_request:
     # `labeled`: adding `full-ci` re-runs CI with the Windows and macOS jobs.
     # `ready_for_review`: a draft that becomes ready gets its first run.
@@ -32,18 +42,87 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  check:
-    name: Check (${{ matrix.os }})
+  changes:
+    # Decides which jobs this run needs from the files changed (see the cost notes above).
+    name: Changes
     # Skip drafts, and label events other than `full-ci` (all label events while paused).
     if: >-
       github.event_name != 'pull_request' ||
       (!github.event.pull_request.draft &&
       (github.event.action != 'labeled' ||
       (github.event.label.name == 'full-ci' && vars.FULL_CI_ENABLED == 'true')))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      run: ${{ steps.decide.outputs.run }}
+      e2e: ${{ steps.decide.outputs.e2e }}
+      all-browsers: ${{ steps.decide.outputs.all-browsers }}
+      storybook: ${{ steps.decide.outputs.storybook }}
+    steps:
+      - name: Decide which jobs to run
+        id: decide
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          EVENT: ${{ github.event_name }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          everything() {
+            for output in run e2e all-browsers storybook; do echo "$output=true" >> "$GITHUB_OUTPUT"; done
+            exit 0
+          }
+          case "$EVENT" in
+            pull_request)
+              files=$(gh api "repos/$REPO/pulls/$PR/files" --paginate --jq '.[].filename')
+              # The files API lists at most 3000 files; run everything for anything that large.
+              [ "$(wc -l <<< "$files")" -lt 3000 ] || everything
+              ;;
+            schedule)
+              # Nightly: only when main changed in the last day.
+              since=$(date -u -d '25 hours ago' +%Y-%m-%dT%H:%M:%SZ)
+              count=$(gh api "repos/$REPO/commits?sha=main&since=$since&per_page=1" --jq 'length')
+              if [ "$count" -eq 0 ]; then
+                echo "main hasn't changed since the last nightly run."
+                echo "run=false" >> "$GITHUB_OUTPUT"
+                exit 0
+              fi
+              everything
+              ;;
+            *) everything ;;
+          esac
+          printf '%s\n' "$files"
+          # Here-strings, not pipes: with pipefail, `printf | grep -q` can fail when grep stops early.
+          matches() { grep -Eq "$1" <<< "$files"; }
+          # Shared configuration and dependencies can affect every job.
+          shared='^(package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|tsconfig[^/]*\.json|patches/.*|\.github/workflows/ci\.yml)$'
+          # E2E isn't needed when a PR changes only unit tests, stories, screenshots, the repo's
+          # tooling (tools/) or lint and test configuration.
+          unit_only='(\.test\.tsx?|\.test-helper\.ts|\.stories\.tsx|\.snap|vitest\.config\.ts)$|^packages/[^/]+/test/|^e2e/visual/|^tools/|^(biome\.jsonc?|knip\.jsonc|\.dependency-cruiser\.mjs|lefthook\.yml)$'
+          # What the exported site is made from: Firefox and WebKit open it in the export tests.
+          export_site='^(packages/(site-components|pipeline|model|test-utils)/|e2e/export/|e2e/playwright\.config\.ts$|e2e/package\.json$)'
+          # What the editor UI's stories render (.storybook/main.ts and their imports).
+          storybook='^(packages/(editor-ui|i18n|model|history|engine|site-components)/|apps/desktop/src/renderer/|e2e/visual/|e2e/playwright\.visual\.config\.ts$|e2e/package\.json$)'
+          echo "run=true" >> "$GITHUB_OUTPUT"
+          if matches "$shared" || grep -Evq "$unit_only" <<< "$files"; then e2e=true; else e2e=false; fi
+          # Unit tests don't change what the exported site or the stories look like.
+          files=$(grep -Ev '(\.test\.tsx?|\.test-helper\.ts|\.snap)$|^packages/[^/]+/test/' <<< "$files" || true)
+          if matches "$shared" || matches "$export_site"; then all=true; else all=false; fi
+          if matches "$shared" || matches "$storybook"; then sb=true; else sb=false; fi
+          { echo "e2e=$e2e"; echo "all-browsers=$all"; echo "storybook=$sb"; } | tee -a "$GITHUB_OUTPUT"
+
+  check:
+    name: Check (${{ matrix.os }})
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
     strategy:
       fail-fast: false
       matrix:
-        # Windows only on main, manual runs and `full-ci` PRs, and only while FULL_CI_ENABLED is true.
+        # Windows only nightly, on manual runs and `full-ci` PRs, and only while FULL_CI_ENABLED is true.
         os: ${{ fromJSON(vars.FULL_CI_ENABLED == 'true' && (github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'full-ci')) && '["ubuntu-latest", "windows-latest"]' || '["ubuntu-latest"]') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
@@ -93,22 +172,29 @@ jobs:
           name: coverage
           path: coverage/
           if-no-files-found: ignore
+          # Artifact storage counts against the plan too.
+          retention-days: 7
 
   e2e:
     name: E2E (${{ matrix.os }})
-    # Skip drafts, and label events other than `full-ci` (all label events while paused).
-    if: >-
-      github.event_name != 'pull_request' ||
-      (!github.event.pull_request.draft &&
-      (github.event.action != 'labeled' ||
-      (github.event.label.name == 'full-ci' && vars.FULL_CI_ENABLED == 'true')))
+    needs: changes
+    if: needs.changes.outputs.e2e == 'true'
     strategy:
       fail-fast: false
       matrix:
-        # Windows only on main, manual runs and `full-ci` PRs, and only while FULL_CI_ENABLED is true.
+        # Windows only nightly, on manual runs and `full-ci` PRs, and only while FULL_CI_ENABLED is true.
         os: ${{ fromJSON(vars.FULL_CI_ENABLED == 'true' && (github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'full-ci')) && '["ubuntu-latest", "windows-latest"]' || '["ubuntu-latest"]') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
+    env:
+      # Firefox and WebKit only when the exported site can have changed (see `changes`). On Linux
+      # they run in `export-browsers` instead; Windows needs no system packages, so it runs them here.
+      BROWSERS: ${{ matrix.os != 'ubuntu-latest' && needs.changes.outputs.all-browsers == 'true' && 'chromium firefox webkit' || 'chromium' }}
+      # Downloads go inside the workspace, so the cache steps use one path on every OS.
+      PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.ci-cache/ms-playwright
+      electron_config_cache: ${{ github.workspace }}/.ci-cache/electron
+      # Where export.setup.ts exports the fixture site (e2e/export/exported-site.ts).
+      WEBFORGE_EXPORTED_SITE_DIR: ${{ github.workspace }}/.ci-cache/exported-site
     steps:
       - name: Check out
         uses: actions/checkout@v7
@@ -130,17 +216,121 @@ jobs:
         if: runner.os == 'Linux'
         run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
 
-      - name: Install browsers for the exported-site tests
-        # The export projects open the exported site from disk in all three engines (X1, C8).
-        run: pnpm --filter @webforge/e2e exec playwright install --with-deps chromium firefox webkit
+      - name: Cache keys
+        id: keys
+        shell: bash
+        run: |
+          playwright=$(node -p "require('./e2e/node_modules/@playwright/test/package.json').version")
+          electron=$(node -p "require('./apps/desktop/node_modules/electron/package.json').version")
+          echo "browsers=playwright-${{ runner.os }}-$playwright-${BROWSERS// /-}" >> "$GITHUB_OUTPUT"
+          echo "electron=electron-${{ runner.os }}-$electron" >> "$GITHUB_OUTPUT"
+          # The system packages change with the runner image, so they're keyed by it.
+          echo "apt=apt-${ImageOS:-unknown}-${ImageVersion:-unknown}-$playwright" >> "$GITHUB_OUTPUT"
+          echo "apt-prefix=apt-${ImageOS:-unknown}-" >> "$GITHUB_OUTPUT"
+
+      # Downloads are cached so most runs don't fetch browsers, Electron or system packages again.
+      # Each cache is restored and saved explicitly, so it's kept even when the tests fail.
+      - name: Restore Playwright browsers
+        id: browsers
+        uses: actions/cache/restore@v6
+        with:
+          path: .ci-cache/ms-playwright
+          key: ${{ steps.keys.outputs.browsers }}
+
+      - name: Restore Electron
+        id: electron
+        uses: actions/cache/restore@v6
+        with:
+          path: .ci-cache/electron
+          key: ${{ steps.keys.outputs.electron }}
+
+      - name: Restore system packages (Linux)
+        id: apt
+        if: runner.os == 'Linux'
+        uses: actions/cache/restore@v6
+        with:
+          path: ~/apt-archives
+          key: ${{ steps.keys.outputs.apt }}
+          restore-keys: ${{ steps.keys.outputs.apt-prefix }}
+
+      - name: Install browsers
+        # On Linux this is Chromium only: Firefox and WebKit run in Playwright's container (the
+        # `export-browsers` job), because their system packages come from the runners' Ubuntu
+        # mirror, which sometimes slows to a crawl. Chromium's few packages are cached, apt retries
+        # and times out per download, and the step gives up after 10 minutes.
+        shell: bash
+        timeout-minutes: 10
+        run: |
+          if [ "$RUNNER_OS" = Linux ]; then
+            printf 'Acquire::Retries "3";\nAcquire::http::Timeout "30";\nAcquire::https::Timeout "30";\n' \
+              | sudo tee /etc/apt/apt.conf.d/80-ci-retries > /dev/null
+            if compgen -G "$HOME/apt-archives/*.deb" > /dev/null; then
+              sudo cp "$HOME"/apt-archives/*.deb /var/cache/apt/archives/
+            fi
+            # shellcheck disable=SC2086 # BROWSERS is a space-separated list
+            pnpm --filter @webforge/e2e exec playwright install --with-deps $BROWSERS
+          else
+            # shellcheck disable=SC2086
+            pnpm --filter @webforge/e2e exec playwright install $BROWSERS
+          fi
+
+      - name: Collect system packages (Linux)
+        # Also after a failed or timed-out install, so the next run starts from what was fetched.
+        if: always() && runner.os == 'Linux' && steps.apt.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          mkdir -p "$HOME/apt-archives"
+          cp /var/cache/apt/archives/*.deb "$HOME/apt-archives/" 2> /dev/null || true
+
+      - name: Upload system packages to the cache (Linux)
+        if: always() && runner.os == 'Linux' && steps.apt.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: ~/apt-archives
+          key: ${{ steps.keys.outputs.apt }}
+
+      - name: Save Playwright browsers
+        if: steps.browsers.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: .ci-cache/ms-playwright
+          key: ${{ steps.keys.outputs.browsers }}
+
+      - name: Choose the test projects
+        id: projects
+        shell: bash
+        run: |
+          # With Chromium only, run the app and the Chromium export tests (Firefox and WebKit run
+          # in `export-browsers` on Linux, or not at all when the exported site can't have changed).
+          if [ "$BROWSERS" = chromium ]; then
+            echo "args=--project=app --project=export-setup --project=export-chromium" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Electron E2E tests (Linux, virtual display)
         if: runner.os == 'Linux'
-        run: xvfb-run --auto-servernum pnpm e2e
+        run: xvfb-run --auto-servernum pnpm e2e ${{ steps.projects.outputs.args }}
 
       - name: Electron E2E tests
         if: runner.os != 'Linux'
-        run: pnpm e2e
+        run: pnpm e2e ${{ steps.projects.outputs.args }}
+
+      - name: Save Electron
+        # The first app start downloads Electron's binary, so this runs after the tests.
+        if: always() && steps.electron.outputs.cache-hit != 'true' && hashFiles('.ci-cache/electron/**') != ''
+        uses: actions/cache/save@v6
+        with:
+          path: .ci-cache/electron
+          key: ${{ steps.keys.outputs.electron }}
+
+      - name: Upload the exported site
+        # For the `export-browsers` job, which opens it in Firefox and WebKit.
+        if: runner.os == 'Linux' && needs.changes.outputs.all-browsers == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: exported-site
+          path: .ci-cache/exported-site/
+          if-no-files-found: error
+          retention-days: 1
 
       - name: Upload Playwright report
         if: failure()
@@ -149,14 +339,68 @@ jobs:
           name: playwright-report-${{ matrix.os }}
           path: e2e/playwright-report/
           if-no-files-found: ignore
+          retention-days: 7
+
+  export-browsers:
+    # Firefox and WebKit open the site the E2E job exported, from disk with the network blocked
+    # (X1, C8). This runs in Playwright's container, which has their system packages, so nothing
+    # comes from the runners' Ubuntu mirror. Only when the exported site can have changed.
+    name: Exported site (Firefox, WebKit)
+    needs: [changes, e2e]
+    if: needs.changes.outputs.all-browsers == 'true'
+    runs-on: ubuntu-latest
+    # Keep in step with @playwright/test in e2e/package.json.
+    container: mcr.microsoft.com/playwright:v1.64.1-noble
+    timeout-minutes: 15
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Download the exported site
+        uses: actions/download-artifact@v8
+        with:
+          name: exported-site
+          path: exported-site
+
+      - name: Firefox and WebKit
+        # The container's paths differ from github.workspace, so the shell's GITHUB_WORKSPACE is used.
+        # --no-deps: the site is already exported, so the setup project (which needs Electron) is skipped.
+        shell: bash
+        env:
+          # The container runs as root with GitHub's HOME, which Firefox refuses to use.
+          HOME: /root
+        run: |
+          export WEBFORGE_EXPORTED_SITE_DIR="$GITHUB_WORKSPACE/exported-site"
+          pnpm --filter @webforge/e2e exec playwright test --project=export-firefox --project=export-webkit --no-deps
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report-export-browsers
+          path: e2e/playwright-report/
+          if-no-files-found: ignore
+          retention-days: 7
 
   visual:
     # Editor UI stories (Storybook): axe in both themes, and screenshots compared in a pinned Linux
     # container so fonts and anti-aliasing match the committed images (R8). Linux only, always.
     name: Storybook (axe and screenshots)
-    if: >-
-      github.event_name != 'pull_request' ||
-      (!github.event.pull_request.draft && github.event.action != 'labeled')
+    needs: changes
+    # Not on `full-ci` label events: the stories don't depend on the OS.
+    if: needs.changes.outputs.storybook == 'true' && github.event.action != 'labeled'
     runs-on: ubuntu-latest
     # Keep in step with @playwright/test in e2e/package.json.
     container: mcr.microsoft.com/playwright:v1.64.1-noble
@@ -206,6 +450,7 @@ jobs:
           name: visual-screenshots
           path: e2e/visual/__screenshots__/
           if-no-files-found: ignore
+          retention-days: 7
 
       - name: Upload Playwright report
         if: failure()
@@ -216,19 +461,20 @@ jobs:
             e2e/playwright-report/
             e2e/test-results/
           if-no-files-found: ignore
+          retention-days: 7
 
   package:
     # Packages the app with electron-builder (asar, Fuses, unpacked better-sqlite3 binary) and
     # checks that the packaged app opens a .wforge (ADR 0003). macOS runs here only: Windows
     # machines can't build or run the macOS app.
     name: Packaged app (${{ matrix.os }})
-    # Windows and macOS only, while FULL_CI_ENABLED is true: on main, manual runs and non-draft
+    # Windows and macOS only, while FULL_CI_ENABLED is true: nightly, on manual runs and non-draft
     # `full-ci` PRs.
+    needs: changes
     if: >-
-      vars.FULL_CI_ENABLED == 'true' &&
+      vars.FULL_CI_ENABLED == 'true' && needs.changes.outputs.run == 'true' &&
       (github.event_name != 'pull_request' ||
-      (!github.event.pull_request.draft &&
-      contains(github.event.pull_request.labels.*.name, 'full-ci') &&
+      (contains(github.event.pull_request.labels.*.name, 'full-ci') &&
       (github.event.action != 'labeled' || github.event.label.name == 'full-ci')))
     strategy:
       fail-fast: false
@@ -262,3 +508,4 @@ jobs:
           name: playwright-report-packaged-${{ matrix.os }}
           path: e2e/playwright-report/
           if-no-files-found: ignore
+          retention-days: 7
