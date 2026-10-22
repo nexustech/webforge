@@ -397,7 +397,7 @@ describe("copy and paste (1.25)", () => {
 
       expect(await copySelected(session, clipboard, vi.fn(), true, confirmCut)).toBe(false);
 
-      expect(confirmCut).toHaveBeenCalledWith("Heading", "header");
+      expect(confirmCut).toHaveBeenCalledWith("Heading", { region: "header" });
       expect(clipboard.write).not.toHaveBeenCalled();
       expect(bannerContent(session)).toHaveLength(1);
       // A page's own element is cut without asking.
@@ -520,6 +520,21 @@ describe("copy and paste of shared sections (1.29, F-ED-23)", () => {
     ]);
     expect(labels(session).at(-1)).toBe("Edited shared section 'Hours'");
     expect(session.ui.getState().nodeId).toBeNull();
+  });
+
+  it("asks before cutting from inside a copy, but not before cutting a whole copy (D7)", async () => {
+    const { session, shared, copy } = saved();
+    const confirmCut = vi.fn(async () => false);
+    select(session, copiedNodeId(copy.props.id, "heading-1"));
+
+    expect(await copySelected(session, fakeClipboard(), vi.fn(), true, confirmCut)).toBe(false);
+    expect(confirmCut).toHaveBeenCalledWith("Heading", { sharedSection: shared.id });
+    expect(session.history.document.getState().sharedSections[shared.id]).toBe(shared);
+
+    // The whole copy goes from this page only.
+    select(session, copiedNodeId(copy.props.id, "section-1"));
+    expect(await copySelected(session, fakeClipboard(), vi.fn(), true, confirmCut)).toBe(true);
+    expect(confirmCut).toHaveBeenCalledOnce();
   });
 
   it("cuts a whole copy off the page, leaving the shared section", async () => {

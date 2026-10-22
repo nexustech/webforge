@@ -18,6 +18,7 @@ import type { MediaImportResult } from "../../shared/ipc-contract.js";
 import { type AddTarget, addTarget, insertAt } from "../add/add-items.js";
 import { currentPage, type EditorSession } from "../editor/editor-session.js";
 import { findNode, removeNode } from "../editor/nodes.js";
+import type { SharedPlace } from "../editor/shared-confirmations.js";
 import { type SharedRegion, sharedRegionOf, shownLayout } from "../editor/shared-layout.js";
 import { layerItem } from "../layers/layers.js";
 import { importMessages } from "../media/import-media.js";
@@ -82,15 +83,15 @@ function mediaOf(session: ClipboardSession, nodes: readonly NodeDoc[]): MediaMet
  * shared Header or Footer and so every page, after `confirmSharedCut` agrees (D7). The Header and
  * Footer themselves are never copied or cut. A linked copy of a shared section is copied as its
  * section, with the shared section's id (F-ED-23); cutting it removes the copy from the page.
- * Cutting an element inside a copy removes it from the shared section, so from every copy.
- * Returns whether it copied.
+ * Cutting an element inside a copy removes it from the shared section, so from every copy, after
+ * `confirmSharedCut` agrees too. Returns whether it copied.
  */
 export async function copySelected(
   session: ClipboardSession,
   clipboard: Pick<ClipboardApi, "write">,
   notify: (message: string) => void,
   cut = false,
-  confirmSharedCut?: (item: string, region: SharedRegion) => Promise<boolean>,
+  confirmSharedCut?: (item: string, place: SharedPlace) => Promise<boolean>,
 ): Promise<boolean> {
   const selected = selectedNode(session);
   if (selected === undefined) {
@@ -106,9 +107,16 @@ export async function copySelected(
     notify(t("site.clipboard.sharedRegion", { item: itemName(session, node) }));
     return false;
   }
-  // Cut from the shared Header or Footer changes every page showing it: asked before anything.
-  if (cut && region !== undefined && confirmSharedCut !== undefined) {
-    if (!(await confirmSharedCut(itemName(session, node), region))) return false;
+  // Cut from the shared Header or Footer, or from inside a linked copy's shared section, changes
+  // every page showing it: asked before anything. A whole copy goes from this page only.
+  const place: SharedPlace | undefined =
+    region !== undefined
+      ? { region }
+      : copy !== undefined && !whole
+        ? { sharedSection: copy.shared.id }
+        : undefined;
+  if (cut && place !== undefined && confirmSharedCut !== undefined) {
+    if (!(await confirmSharedCut(itemName(session, node), place))) return false;
   }
   // The page it is on: the user may have moved on by the time the copy is on the clipboard.
   const ui = session.ui.getState();

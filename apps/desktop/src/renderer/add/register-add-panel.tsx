@@ -1,10 +1,20 @@
 import type { InsertPoint } from "@webforge/engine";
 import { t } from "@webforge/i18n";
+import { isSharedCopy, type SharedSectionsDoc } from "@webforge/model";
 import { useSyncExternalStore } from "react";
 import { currentPage } from "../editor/editor-session.js";
 import type { PanelRegistry } from "../shell/panels.js";
 import { AddPanel, type AddPanelProps } from "./AddPanel.js";
-import { type AddSession, type AddTab, addComponent, addItems, addTargetFor } from "./add-items.js";
+import {
+  type AddItem,
+  type AddSession,
+  type AddTab,
+  addComponent,
+  addItems,
+  addSharedCopy,
+  addTargetFor,
+  sharedSectionItems,
+} from "./add-items.js";
 
 /** The Add panel's id in the panel registry. */
 const ADD_PANEL_ID = "add";
@@ -24,6 +34,8 @@ type AddPanelState = { readonly tab: AddTab; readonly point: PointAfter | null }
  */
 type AddView = {
   readonly tab: AddTab;
+  /** The Sections tab: the site's shared sections first, then the library's sections. */
+  readonly sections: readonly AddItem[];
   /** The + button's place, if its section is still on the page. */
   readonly point: InsertPoint | undefined;
   /** The section it follows, named; `null` at the top of the page. */
@@ -79,32 +91,57 @@ export function registerAddPanel(
     const index = content().findIndex((node) => node.props.id === point.after);
     return index === -1 ? undefined : { index: index + 1 };
   };
-  /** The name of the section `id`, as undo labels name it. */
+  /** The name of the section `id`, as undo labels name it; a copy by its shared section's name. */
   const nameOf = (id: string): string | null => {
     const node = content().find((candidate) => candidate.props.id === id);
     if (node === undefined) return null;
-    const name = node.props.layerName?.trim();
+    const shared = history.document.getState().sharedSections;
+    const name =
+      node.props.layerName?.trim() ||
+      (isSharedCopy(node) && Object.hasOwn(shared, node.props.sharedSectionId)
+        ? shared[node.props.sharedSectionId]?.name
+        : undefined);
     return name
       ? t("history.namedItem", { name })
       : (library.components[node.type]?.label ?? node.type);
+  };
+  // The Sections tab's items, rebuilt only when the site's shared sections change.
+  let listed: { shared: SharedSectionsDoc | undefined; items: readonly AddItem[] } = {
+    shared: undefined,
+    items: sections,
+  };
+  const sectionItems = (): readonly AddItem[] => {
+    const shared = history.document.getState().sharedSections;
+    if (shared !== listed.shared) {
+      listed = { shared, items: [...sharedSectionItems(history.document.getState()), ...sections] };
+    }
+    return listed.items;
   };
 
   let view: AddView | undefined;
   const getView = (): AddView => {
     const point = insertPoint(state.point);
     const after = state.point?.after ?? null;
+    const shownSections = sectionItems();
     const next: AddView = {
       tab: state.tab,
+      sections: shownSections,
       point,
       after: after === null ? null : nameOf(after),
-      addable: [...sections, ...elements]
-        .filter((item) => addTargetFor(session, item.type, point) !== undefined)
+      addable: [...shownSections, ...elements]
+        .filter((item) =>
+          // A shared section goes wherever a section does: anywhere on a page.
+          item.sharedSectionId !== undefined
+            ? currentPage(session) !== undefined
+            : addTargetFor(session, item.type, point) !== undefined,
+        )
         .map((item) => item.type)
         .join(","),
     };
     if (
       view === undefined ||
       view.tab !== next.tab ||
+      view.sections !== next.sections ||
       view.point?.index !== next.point?.index ||
       view.after !== next.after ||
       view.addable !== next.addable
@@ -129,13 +166,19 @@ export function registerAddPanel(
     const addable = new Set(shown.addable.split(","));
     return (
       <AddPanel
-        sections={sections}
+        sections={shown.sections}
         elements={elements}
         tab={shown.tab}
         onTabChange={(tab) => setState({ tab })}
         onAdd={(type) => {
           flush();
-          if (addComponent(session, type, insertPoint(state.point))) setState({ point: null });
+          const at = insertPoint(state.point);
+          const shared = shown.sections.find((item) => item.type === type)?.sharedSectionId;
+          const added =
+            shared === undefined
+              ? addComponent(session, type, at)
+              : addSharedCopy(session, shared, at);
+          if (added) setState({ point: null });
         }}
         canAdd={(type) => addable.has(type)}
         point={shown.point === undefined ? null : { after: shown.after }}

@@ -1,5 +1,15 @@
 import type { InsertPoint } from "@webforge/engine";
-import { isNodeDoc, type NodeDoc, newId } from "@webforge/model";
+import { t } from "@webforge/i18n";
+import {
+  copiedNodeId,
+  copyHolding,
+  isNodeDoc,
+  type NodeDoc,
+  newId,
+  newSharedCopy,
+  type SharedSectionId,
+  type SiteDoc,
+} from "@webforge/model";
 import type { ComponentLibrary } from "@webforge/site-components";
 import { currentPage, type EditorSession } from "../editor/editor-session.js";
 import { labelFor } from "../editor/labels.js";
@@ -8,7 +18,8 @@ import { findNode } from "../editor/nodes.js";
 /**
  * The Add panel's catalogue (F-ED-1) and where a click adds to the page: sections between
  * sections, elements inside sections. The Header, Footer and child-only components such as an
- * FAQ's questions are never offered (ADR 0005).
+ * FAQ's questions are never offered (ADR 0005). The site's shared sections are offered too, each
+ * placed as a linked copy (F-ED-23).
  */
 
 /** The Add panel's tabs. */
@@ -16,12 +27,14 @@ export type AddTab = "sections" | "elements";
 
 /** A component the Add panel offers. */
 export type AddItem = {
-  /** Its component type ("Hero"). */
+  /** Its component type ("Hero"); for a shared section, its id. */
   readonly type: string;
   /** Its display name ("Hero"). */
   readonly label: string;
   /** Its group in the panel ("Heroes"); empty when it has none. */
   readonly category: string;
+  /** Set for a shared section, which a click places as a linked copy; it can't be dragged. */
+  readonly sharedSectionId?: SharedSectionId;
 };
 
 /** The components `tab` offers, in library order. */
@@ -30,6 +43,19 @@ export function addItems(library: ComponentLibrary, tab: AddTab): AddItem[] {
   return Object.entries(library.components)
     .filter(([, def]) => (def.place ?? "element") === place)
     .map(([type, def]) => ({ type, label: def.label, category: def.category ?? "" }));
+}
+
+/** The site's shared sections, by name, as the Sections tab offers them first (F-ED-23). */
+export function sharedSectionItems(site: SiteDoc): AddItem[] {
+  const category = t("add.sharedSections");
+  return Object.values(site.sharedSections)
+    .map((shared) => ({
+      type: shared.id,
+      label: shared.name,
+      category,
+      sharedSectionId: shared.id,
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label));
 }
 
 /**
@@ -106,6 +132,28 @@ function pathTo(
   return undefined;
 }
 
+/** The page's own element `selectedId` stands for: a linked copy for any element it shows. */
+const ownId = (content: readonly NodeDoc[], selectedId: string | null) =>
+  selectedId === null ? null : (copyHolding(content, selectedId)?.props.id ?? selectedId);
+
+/** Where a section goes: at the + button's `point`, else after the selection's section, else last. */
+function sectionTarget(
+  content: readonly NodeDoc[],
+  selectedId: string | null,
+  point?: InsertPoint,
+): AddTarget {
+  if (point !== undefined) {
+    return { parentId: null, slot: null, index: Math.min(point.index, content.length) };
+  }
+  const id = ownId(content, selectedId);
+  const top = id === null ? undefined : pathTo(content, id)?.[0]?.node;
+  return {
+    parentId: null,
+    slot: null,
+    index: top === undefined ? content.length : content.indexOf(top) + 1,
+  };
+}
+
 /**
  * Where a click adds a component of `type` to a page with top-level `content`:
  * - a section goes at the + button's `point` if there is one, else after the section that holds
@@ -114,6 +162,8 @@ function pathTo(
  *   else the same for the elements holding it, nearest first. Failing that, it goes at the end of
  *   the nearest section that takes it: before the selection's section first, then after; with
  *   nothing selected, the last one. `undefined` when nothing on the page takes it.
+ * An element shown in a linked copy counts as the copy: nothing goes into a shared section from
+ * here, so adding never changes other pages (F-ED-23).
  */
 export function addTarget(
   library: ComponentLibrary,
@@ -122,18 +172,11 @@ export function addTarget(
   selectedId: string | null,
   point?: InsertPoint,
 ): AddTarget | undefined {
-  const path = selectedId === null ? undefined : pathTo(content, selectedId);
   if ((library.components[type]?.place ?? "element") === "section") {
-    if (point !== undefined) {
-      return { parentId: null, slot: null, index: Math.min(point.index, content.length) };
-    }
-    const top = path?.[0]?.node;
-    return {
-      parentId: null,
-      slot: null,
-      index: top === undefined ? content.length : content.indexOf(top) + 1,
-    };
+    return sectionTarget(content, selectedId, point);
   }
+  const id = ownId(content, selectedId);
+  const path = id === null ? undefined : pathTo(content, id);
   for (const step of [...(path ?? [])].reverse()) {
     const [inside] = slotsFor(library, step.node, type);
     if (inside !== undefined) {
@@ -229,5 +272,39 @@ export function addComponent(session: AddSession, type: string, point?: InsertPo
     { selectionAfter: { pageId, viewport, nodeId: id } },
   );
   session.ui.setState({ nodeId: id });
+  return true;
+}
+
+/**
+ * Places a linked copy of shared section `id` on the shown page where a section would go (F-ED-23),
+ * as one "Added a copy of 'Opening hours'" step that selects it as the canvas shows it. Another
+ * copy on the same page gets anchors of its own. Returns whether it was placed.
+ */
+export function addSharedCopy(
+  session: AddSession,
+  id: SharedSectionId,
+  point?: InsertPoint,
+): boolean {
+  const site = session.history.document.getState();
+  const shared = Object.hasOwn(site.sharedSections, id) ? site.sharedSections[id] : undefined;
+  const page = currentPage(session)?.doc;
+  if (shared === undefined || page === undefined) {
+    return false;
+  }
+  const { pageId, viewport, nodeId: selected } = session.ui.getState();
+  const target = sectionTarget(page.content, selected, point);
+  const copy = newSharedCopy(page.content, id, site.sharedSections, site.layout);
+  // The copy's section, by the copy's id for it, as the canvas selects it.
+  const nodeId = copiedNodeId(copy.props.id, shared.section.props.id);
+  session.edit(
+    "insert",
+    t("history.addedSharedCopy", { name: t("history.namedItem", { name: shared.name }) }),
+    (draft) => {
+      const content = draft.pages[pageId]?.doc.content;
+      if (content !== undefined) insertAt(content, target, [copy]);
+    },
+    { selectionAfter: { pageId, viewport, nodeId } },
+  );
+  session.ui.setState({ nodeId });
   return true;
 }

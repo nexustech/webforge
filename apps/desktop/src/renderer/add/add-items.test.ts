@@ -1,9 +1,22 @@
-import type { NodeDoc } from "@webforge/model";
+import {
+  copiedNodeId,
+  type NodeDoc,
+  SHARED_COPY_TYPE,
+  type SharedSectionId,
+  type SiteDoc,
+} from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { describe, expect, it } from "vitest";
 import { createEditorSession, currentPage } from "../editor/editor-session.js";
 import { starterSite } from "../editor/starter-site.js";
-import { addComponent, addItems, addTarget, groupItems } from "./add-items.js";
+import {
+  addComponent,
+  addItems,
+  addSharedCopy,
+  addTarget,
+  groupItems,
+  sharedSectionItems,
+} from "./add-items.js";
 
 /** A page: a Hero, then a Section holding a Heading and an FAQ with one question. */
 const PAGE: NodeDoc[] = [
@@ -134,5 +147,116 @@ describe("addComponent", () => {
     expect(currentPage(session)?.doc.content[0]?.props.content).toMatchObject([
       { type: "Heading" },
     ]);
+  });
+});
+
+const HOURS = "shared-hours" as SharedSectionId;
+const TEAM = "shared-team" as SharedSectionId;
+
+/**
+ * A site with two shared sections, and a home page with `content`: by default a Hero, a Section
+ * and a linked copy of "Opening hours", whose section holds a Heading and has an anchor.
+ */
+function sharedSite(
+  content: NodeDoc[] = [
+    { type: "Hero", props: { id: "hero" } },
+    { type: "Section", props: { id: "section", content: [] } },
+    { type: SHARED_COPY_TYPE, props: { id: "c1", sharedSectionId: HOURS } },
+  ],
+): SiteDoc {
+  const site = starterSite();
+  const home = site.pages[site.homePageId];
+  if (home === undefined) throw new Error("no home page");
+  home.doc.content = content;
+  return {
+    ...site,
+    sharedSections: {
+      [TEAM]: {
+        id: TEAM,
+        name: "Team",
+        section: { type: "Section", props: { id: "team", content: [] } },
+      },
+      [HOURS]: {
+        id: HOURS,
+        name: "Opening hours",
+        section: {
+          type: "Section",
+          props: {
+            id: "s",
+            advanced: { anchorId: "hours" },
+            content: [{ type: "Heading", props: { id: "t", text: "Hours" } }],
+          },
+        },
+      },
+    },
+  };
+}
+
+describe("shared sections in the Add panel (F-ED-23)", () => {
+  it("lists the site's shared sections by name, under their own group", () => {
+    expect(sharedSectionItems(sharedSite())).toEqual([
+      { type: HOURS, label: "Opening hours", category: "Shared sections", sharedSectionId: HOURS },
+      { type: TEAM, label: "Team", category: "Shared sections", sharedSectionId: TEAM },
+    ]);
+    expect(sharedSectionItems(starterSite())).toEqual([]);
+  });
+
+  it("adds after a copy, never into it, for anything selected inside the copy", () => {
+    const site = sharedSite();
+    const content = site.pages[site.homePageId]?.doc.content ?? [];
+    const inCopy = copiedNodeId("c1", "t");
+
+    // A section goes after the copy; an element into the nearest section of the page's own.
+    expect(addTarget(siteLibrary, content, "Hero", inCopy)).toEqual({
+      parentId: null,
+      slot: null,
+      index: 3,
+    });
+    expect(addTarget(siteLibrary, content, "Heading", inCopy)).toEqual({
+      parentId: "section",
+      slot: "content",
+      index: 0,
+    });
+  });
+
+  it("places a linked copy after the selected section, as one step that selects it", () => {
+    const session = createEditorSession(siteLibrary, sharedSite());
+    const content = () => currentPage(session)?.doc.content ?? [];
+    session.ui.setState({ nodeId: "hero" });
+
+    expect(addSharedCopy(session, HOURS)).toBe(true);
+
+    const added = content()[1];
+    expect(added).toMatchObject({ type: SHARED_COPY_TYPE, props: { sharedSectionId: HOURS } });
+    // The page already shows the section's anchors in copy c1: this copy gets its own.
+    expect(added?.props.anchorSuffix).toBe("2");
+    expect(session.ui.getState().nodeId).toBe(copiedNodeId(added?.props.id ?? "", "s"));
+    expect(session.history.entries().map((entry) => entry.label)).toEqual([
+      "Added a copy of 'Opening hours'",
+    ]);
+    session.history.undo();
+    expect(content().map((node) => node.props.id)).toEqual(["hero", "section", "c1"]);
+  });
+
+  it("places a copy at the canvas's +, after a copy whose element is selected, or last", () => {
+    const session = createEditorSession(siteLibrary, sharedSite());
+    /** The page's top level: each section's type, or the shared section a copy shows. */
+    const shown = () =>
+      currentPage(session)?.doc.content.map((node) => node.props.sharedSectionId ?? node.type);
+
+    addSharedCopy(session, TEAM, { index: 0 });
+    session.ui.setState({ nodeId: copiedNodeId("c1", "t") });
+    addSharedCopy(session, TEAM);
+    session.ui.setState({ nodeId: null });
+    addSharedCopy(session, TEAM);
+
+    expect(shown()).toEqual([TEAM, "Hero", "Section", HOURS, TEAM, TEAM]);
+  });
+
+  it("places nothing for a shared section the site doesn't have", () => {
+    const session = createEditorSession(siteLibrary, sharedSite());
+
+    expect(addSharedCopy(session, "shared-gone" as SharedSectionId)).toBe(false);
+    expect(session.history.entries()).toEqual([]);
   });
 });

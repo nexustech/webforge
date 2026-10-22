@@ -1,6 +1,6 @@
 import { t } from "@webforge/i18n";
 import type { ClipboardApi } from "../../shared/ipc/clipboard.js";
-import type { SharedRegion } from "../editor/shared-layout.js";
+import type { SharedPlace } from "../editor/shared-confirmations.js";
 import type { CommandRegistry } from "../shell/commands.js";
 import { type ClipboardSession, copySelected, pasteElements } from "./element-clipboard.js";
 
@@ -24,7 +24,7 @@ export function registerClipboardCommands(
   beforeAction: () => void,
   notify: (message: string) => void,
   /** Asks before Cut removes an element from the shared Header or Footer (D7). */
-  confirmSharedCut?: (item: string, region: SharedRegion) => Promise<boolean>,
+  confirmSharedCut?: (item: string, place: SharedPlace) => Promise<boolean>,
 ): {
   readonly remove: () => void;
   readonly setHasSelection: (selected: boolean) => void;
