@@ -38,6 +38,7 @@ import { deferredCommands } from "./deferred-commands.js";
 import { puckDictionary } from "./dictionary.js";
 import { createDragSources } from "./drag-sources.js";
 import { editFromAction, selectedNodeId, toPageDoc } from "./edit-from-action.js";
+import { keepElementsEnabled } from "./enabled-elements.js";
 import { pageActions, type SlotsOf } from "./page-actions.js";
 import { performOnSelected } from "./selected-actions.js";
 import {
@@ -185,6 +186,13 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   let reporting = false;
   /** The canvas iframe's document, once Puck has created it. */
   let frameDocument: Document | null = null;
+  /** Stops keeping the canvas's elements enabled; set in Content mode (see `keepElementsEnabled`). */
+  let stopKeepingEnabled: (() => void) | null = null;
+  const followMode = () => {
+    stopKeepingEnabled?.();
+    stopKeepingEnabled =
+      mode === "content" && frameDocument !== null ? keepElementsEnabled(frameDocument) : null;
+  };
   /** The site's CSS, applied to the canvas document whenever there is one. */
   let siteStyles: SiteStyles | null = null;
   /** What the canvas renders with: no navigation or links, and the site's Media images. */
@@ -493,6 +501,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
         applyChromeStyles(document);
         if (siteStyles !== null) applySiteStyles(document, siteStyles);
       }
+      followMode();
       const frameWindow = document?.defaultView;
       if (!frameWindow) {
         return undefined;
@@ -500,6 +509,8 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       frameWindows.emit(frameWindow);
       const removeKeys = installHistoryKeys(frameWindow, runCommand);
       return () => {
+        stopKeepingEnabled?.();
+        stopKeepingEnabled = null;
         removeKeys();
         frameWindows.emit(null);
       };
@@ -741,6 +752,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
 
     setMode(nextMode) {
       mode = nextMode;
+      followMode();
       render();
     },
 

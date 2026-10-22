@@ -186,9 +186,12 @@ test.describe("editor modes", () => {
     await expect(text).toContainText("Warm loaves.");
     await expect(text.locator("strong, b")).toHaveText("Warm");
 
-    // An image swapped, and a link set, on the Hero. (Forced: with dragging off in Content mode,
-    // dnd-kit marks elements aria-disabled, which Playwright won't click; a person's click selects.)
-    await frame.locator("h1").click({ force: true });
+    // Only dragging is off: no element on the canvas says it is disabled, and a click selects one.
+    await expect(frame.locator("[data-puck-component]").first()).toBeVisible();
+    await expect(frame.locator("[aria-disabled='true']")).toHaveCount(0);
+
+    // An image swapped, and a link set, on the Hero.
+    await frame.locator("h1").click();
     await page.getByRole("button", { name: "Image Choose an image…" }).click();
     await page.getByRole("button", { name: "Shop front.jpg" }).click();
     await expect(frame.locator(".site-hero img")).toHaveAttribute("alt", "Our shop front");
@@ -200,7 +203,7 @@ test.describe("editor modes", () => {
     await expect(edit.getByText("https://book.example")).toBeVisible();
 
     // A list item added to the FAQ.
-    await frame.locator(".site-faq h2").click({ force: true });
+    await frame.locator(".site-faq h2").click();
     await edit.getByRole("button", { name: "Add Question" }).click();
     await expect(frame.locator(".site-faq-item")).toHaveCount(2);
   });
