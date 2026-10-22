@@ -1,4 +1,12 @@
-import type { CopiedElements, ImageMeta, MediaId, MediaMeta, NodeDoc } from "@webforge/model";
+import {
+  type CopiedElements,
+  copiedNodeId,
+  type ImageMeta,
+  type MediaId,
+  type MediaMeta,
+  type NodeDoc,
+  SHARED_COPY_TYPE,
+} from "@webforge/model";
 import { type ComponentLibrary, siteLibrary } from "@webforge/site-components";
 import { describe, expect, it, vi } from "vitest";
 import type { ClipboardReadResult } from "../../shared/ipc/clipboard.js";
@@ -9,6 +17,7 @@ type RejectedFile = Extract<ClipboardReadResult, { status: "media" }>["rejected"
 import { createEditorSession, currentPage, type EditorSession } from "../editor/editor-session.js";
 import { starterSite } from "../editor/starter-site.js";
 import { addMedia } from "../media/media-commands.js";
+import { saveAsSharedSection } from "../shared-sections/shared-sections.js";
 import { copySelected, pasteElements, pasteTarget } from "./element-clipboard.js";
 
 const prices: MediaMeta = {
@@ -429,3 +438,109 @@ describe("copy and paste (1.25)", () => {
     });
   });
 });
+
+describe("copy and paste of shared sections (1.29, F-ED-23)", () => {
+  /** The starter site with its section saved as the shared section "Hours", the copy selected. */
+  function saved() {
+    const session = createEditorSession(siteLibrary, starterSite());
+    select(session, "section-1");
+    saveAsSharedSection(session, "Hours");
+    const [shared] = Object.values(session.history.document.getState().sharedSections);
+    const copy = content(session)[0];
+    if (shared === undefined || copy === undefined) throw new Error("not saved");
+    return { session, shared, copy };
+  }
+
+  it("copies a copy as its section with the shared section's id, and pastes another linked copy", async () => {
+    const { session, shared, copy } = saved();
+    const clipboard = fakeClipboard();
+
+    await copySelected(session, clipboard, vi.fn());
+    expect(clipboard.write).toHaveBeenCalledWith(
+      expect.objectContaining({ nodes: [shared.section], sharedSectionId: shared.id }),
+    );
+    expect(await pasteElements(session, clipboard, vi.fn())).toBe(true);
+
+    const [first, second] = content(session);
+    expect(first).toBe(copy);
+    expect(second).toMatchObject({
+      type: SHARED_COPY_TYPE,
+      props: { sharedSectionId: shared.id, anchorSuffix: "2" },
+    });
+    expect(session.ui.getState().nodeId).toBe(copiedNodeId(second?.props.id ?? "", "section-1"));
+    expect(labels(session).at(-1)).toBe("Added a copy of 'Hours'");
+  });
+
+  it("pastes a copy into a site without its shared section as a normal section", async () => {
+    const { session, shared } = saved();
+    const clipboard = fakeClipboard();
+    await copySelected(session, clipboard, vi.fn());
+
+    const other = createEditorSession(siteLibrary, starterSite());
+    select(other, "section-1");
+    expect(await pasteElements(other, clipboard, vi.fn())).toBe(true);
+
+    const [, pasted] = content(other);
+    expect(pasted?.type).toBe("Section");
+    expect(pasted?.props.id).not.toBe(shared.section.props.id);
+    expect(JSON.stringify(pasted)).toContain(JSON.stringify(heading(shared.section).props.text));
+    expect(labels(other)).toEqual(["Pasted Section"]);
+  });
+
+  it("copies an element of a copy as a normal element, and cuts it from every copy", async () => {
+    const { session, shared, copy } = saved();
+    const clipboard = fakeClipboard();
+    select(session, copiedNodeId(copy.props.id, "heading-1"));
+
+    await copySelected(session, clipboard, vi.fn(), true);
+
+    const [elements] = clipboard.write.mock.calls[0] ?? [];
+    expect(elements?.nodes).toEqual([heading(shared.section)]);
+    expect(elements?.sharedSectionId).toBeUndefined();
+    const now = session.history.document.getState().sharedSections[shared.id]?.section;
+    expect((now?.props.content as NodeDoc[] | undefined)?.map((node) => node.props.id)).toEqual([
+      "text-1",
+    ]);
+    expect(labels(session).at(-1)).toBe("Edited shared section 'Hours'");
+    expect(session.ui.getState().nodeId).toBeNull();
+  });
+
+  it("cuts a whole copy off the page, leaving the shared section", async () => {
+    const { session, shared, copy } = saved();
+    select(session, copiedNodeId(copy.props.id, "section-1"));
+
+    await copySelected(session, fakeClipboard(), vi.fn(), true);
+
+    expect(content(session)).toEqual([]);
+    expect(session.history.document.getState().sharedSections[shared.id]).toBe(shared);
+    expect(labels(session).at(-1)).toBe("Cut 'Hours'");
+  });
+
+  it("pastes next to a selected copy, and keeps clear of its anchors", async () => {
+    const start = starterSite();
+    const section = start.pages[start.homePageId]?.doc.content[0];
+    if (section !== undefined) section.props.advanced = { anchorId: "hours" };
+    const session = createEditorSession(siteLibrary, start);
+    const clipboard = fakeClipboard();
+    // Copied before it's shared: a normal section with the anchor `hours`.
+    select(session, "section-1");
+    await copySelected(session, clipboard, vi.fn());
+    saveAsSharedSection(session, "Hours");
+    const copy = content(session)[0];
+
+    select(session, copiedNodeId(copy?.props.id ?? "", "heading-1"));
+    await pasteElements(session, clipboard, vi.fn());
+
+    const [, pasted] = content(session);
+    expect(pasted?.type).toBe("Section");
+    // The copy shows `hours`: the pasted section can't have it too.
+    expect(pasted?.props.advanced).toBeUndefined();
+  });
+});
+
+/** The first element of `section`. */
+function heading(section: NodeDoc): NodeDoc {
+  const [first] = section.props.content as NodeDoc[];
+  if (first === undefined) throw new Error("empty section");
+  return first;
+}

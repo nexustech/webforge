@@ -1,17 +1,14 @@
 import {
   anchorIdSchema,
-  copiedNodeId,
-  copyHolding,
   type LinkValue,
   linkValueSchema,
-  type NodeDoc,
-  type PageDoc,
   type PageId,
   pageIdSchema,
   type SiteDoc,
 } from "@webforge/model";
 import { z } from "zod";
 import { updateField } from "../editor/apply-patch.js";
+import { copySelection, updateSectionField } from "../shared-sections/shared-sections.js";
 
 /**
  * What a link field reports (F-ED-18): its new value, or none to remove the link, and, for a link
@@ -41,16 +38,6 @@ export function asLinkFieldChange(value: unknown): LinkFieldChange | undefined {
   return parsed.success ? (parsed.data as LinkFieldChange) : undefined;
 }
 
-/** Gives `nodeId` in `draft` (a draft of `doc`) `anchorId`, unless it has an anchor already. */
-function giveAnchor(draft: PageDoc, doc: PageDoc, nodeId: string, anchorId: string): void {
-  updateField(draft, doc, nodeId, "advanced", (current) => {
-    const advanced = (current ?? {}) as { anchorId?: string };
-    return advanced.anchorId === undefined || advanced.anchorId === ""
-      ? { ...advanced, anchorId }
-      : advanced;
-  });
-}
-
 /**
  * Gives section `anchor.nodeId` its anchor in `draft` (a draft of `site`), unless it already has
  * one: an anchor someone may link to is never renamed behind their back. A section in a copy of a
@@ -64,17 +51,17 @@ export function applyAnchor(
   const page = site.pages[anchor.pageId];
   const target = draft.pages[anchor.pageId];
   if (page === undefined || target === undefined) return;
-  const copy = copyHolding(page.doc.content, anchor.nodeId);
-  if (copy === undefined) {
-    giveAnchor(target.doc, page.doc, anchor.nodeId, anchor.anchorId);
+  const give = (current: unknown) => {
+    const advanced = (current ?? {}) as { anchorId?: string };
+    return advanced.anchorId === undefined || advanced.anchorId === ""
+      ? { ...advanced, anchorId: anchor.anchorId }
+      : advanced;
+  };
+  const selected = copySelection(site, anchor.pageId, anchor.nodeId);
+  if (selected === undefined) {
+    updateField(target.doc, page.doc, anchor.nodeId, "advanced", give);
     return;
   }
-  const id = copy.props.sharedSectionId;
-  const shared = site.sharedSections[id];
-  const into = draft.sharedSections[id];
-  if (shared === undefined || into === undefined) return;
-  const nodeId = anchor.nodeId.slice(copiedNodeId(copy.props.id, "").length);
-  // updateField walks a page: the section as the only element of one.
-  const asPage = (section: NodeDoc): PageDoc => ({ root: { props: {} }, content: [section] });
-  giveAnchor(asPage(into.section), asPage(shared.section), nodeId, anchor.anchorId);
+  const { shared, node } = selected;
+  updateSectionField(draft, site, shared.id, node.props.id, "advanced", give);
 }

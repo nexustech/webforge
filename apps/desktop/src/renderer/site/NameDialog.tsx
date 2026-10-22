@@ -22,13 +22,18 @@ export type NameDialogProps = {
   /** The confirm button ("Add Page", "Rename"). */
   readonly confirm: string;
   /** A line under the field, updated as the person types: the file name the page will get. */
-  readonly describe: (value: string) => string;
+  readonly describe?: (value: string) => string;
+  /** The longest name the field takes. */
+  readonly maxLength?: number;
   /** Called with the trimmed name; never with an empty one. */
   readonly onSubmit: (value: string) => void;
   readonly onCancel: () => void;
 };
 
-/** Asks for a name: a page's when adding or renaming it, a folder's when moving a page into one. */
+/**
+ * Asks for a name: a page's when adding or renaming it, a folder's when moving a page into one, a
+ * shared section's when saving one.
+ */
 export function NameDialog({ open, onCancel, ...form }: NameDialogProps) {
   return (
     <Dialog
@@ -52,6 +57,7 @@ function NameForm({
   initialValue,
   confirm,
   describe,
+  maxLength = 200,
   onSubmit,
   onCancel,
 }: Omit<NameDialogProps, "open">) {
@@ -80,17 +86,19 @@ function NameForm({
         <input
           id={fieldId}
           value={value}
-          maxLength={200}
+          maxLength={maxLength}
           // biome-ignore lint/a11y/noAutofocus: the dialog exists to type this name.
           autoFocus
           onFocus={(event) => event.currentTarget.select()}
           onChange={(event) => setValue(event.currentTarget.value)}
-          aria-describedby={hintId}
+          aria-describedby={describe === undefined ? undefined : hintId}
           className="h-7 w-full rounded-md border border-border bg-input px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
         />
-        <p id={hintId} className="text-xs text-muted-foreground">
-          {name === "" ? " " : describe(name)}
-        </p>
+        {describe !== undefined && (
+          <p id={hintId} className="text-xs text-muted-foreground">
+            {name === "" ? " " : describe(name)}
+          </p>
+        )}
       </div>
       <DialogFooter>
         <Button type="button" variant="secondary" onClick={onCancel}>

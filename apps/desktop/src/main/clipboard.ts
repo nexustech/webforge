@@ -193,7 +193,8 @@ export function createElementClipboard(
         for (const name of readdirSync(dir)) {
           if (!kept.has(name)) rmSync(join(dir, name), { force: true });
         }
-        await system.writeElements(JSON.stringify({ nodes: elements.nodes, media }));
+        const { nodes, sharedSectionId } = elements;
+        await system.writeElements(JSON.stringify({ nodes, media, sharedSectionId }));
         return { status: "copied" };
       } catch (error) {
         logFailure("copy elements", error);
@@ -239,7 +240,9 @@ export function createElementClipboard(
           if (stored.status === "failed") return stored;
           if (stored.status === "stored") media.push(item);
         }
-        return { status: "elements", elements: { nodes: copied.data.nodes, media } };
+        const { nodes, sharedSectionId } = copied.data;
+        const shared = sharedSectionId === undefined ? {} : { sharedSectionId };
+        return { status: "elements", elements: { nodes, media, ...shared } };
       } catch (error) {
         logFailure("paste elements", error);
         return { status: "failed", reason: "unknown" };

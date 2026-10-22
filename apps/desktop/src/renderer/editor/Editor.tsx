@@ -19,6 +19,10 @@ import { RichTextLinkHost } from "../links/RichTextLinkHost.js";
 import { connectCanvasImages } from "../media/canvas-images.js";
 import { registerImageField } from "../media/ImageField.js";
 import { registerMediaPanel } from "../media/register-media-panel.js";
+import {
+  registerSharedSectionCommands,
+  SaveSharedSectionDialog,
+} from "../shared-sections/SharedSectionCommands.js";
 import { type CanvasView, connectCanvasView } from "../shell/canvas-view.js";
 import { useCommandRegistry } from "../shell/command-context.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
@@ -79,9 +83,12 @@ export function Editor({
   });
   const connectionRef = useRef<EngineConnection | null>(null);
   const clipboardCommandsRef = useRef<ReturnType<typeof registerClipboardCommands> | null>(null);
+  const sharedCommandsRef = useRef<ReturnType<typeof registerSharedSectionCommands> | null>(null);
   const addPanelRef = useRef<AddPanelRegistration | null>(null);
   const { history } = session;
   const registry = useCommandRegistry();
+  // The name the selected section is being saved as a shared section under, while the dialog asks.
+  const [sharedName, setSharedName] = useState<string | null>(null);
   const state = useSyncExternalStore(
     history.state.subscribe,
     history.state.getState,
@@ -166,6 +173,15 @@ export function Editor({
     clipboardCommandsRef.current = clipboardCommands;
     const canvasCommands = registerCanvasCommands(registry, engine, connection.flush);
     canvasCommands.setHasSelection(session.ui.getState().nodeId !== null);
+    // Save as shared section and Detach (1.29), after the canvas's own actions.
+    const sharedCommands = registerSharedSectionCommands(
+      registry,
+      session,
+      connection.flush,
+      setSharedName,
+    );
+    sharedCommands.setLayoutLocked(modeRef.current !== "design");
+    sharedCommandsRef.current = sharedCommands;
     const stopSelectionWatch = session.ui.subscribe((ui) => {
       canvasCommands.setHasSelection(ui.nodeId !== null);
       clipboardCommands.setHasSelection(ui.nodeId !== null);
@@ -186,6 +202,8 @@ export function Editor({
       removeFrameShortcuts?.();
       stopSelectionWatch();
       canvasCommands.remove();
+      sharedCommandsRef.current = null;
+      sharedCommands.remove();
       clipboardCommandsRef.current = null;
       clipboardCommands.remove();
       stopSiteCss();
@@ -202,6 +220,7 @@ export function Editor({
   useEffect(() => {
     engine?.setMode(mode);
     clipboardCommandsRef.current?.setLayoutLocked(mode !== "design");
+    sharedCommandsRef.current?.setLayoutLocked(mode !== "design");
   }, [engine, mode]);
 
   useEffect(
@@ -291,6 +310,11 @@ export function Editor({
     <div className="editor">
       <SharedRegionBanner session={session} />
       <RichTextLinkHost session={session} engine={engine} />
+      <SaveSharedSectionDialog
+        session={session}
+        suggested={sharedName}
+        onClose={() => setSharedName(null)}
+      />
       <section className="editor__canvas" aria-label={t("editor.canvas")} ref={canvasRef} />
     </div>
   );
