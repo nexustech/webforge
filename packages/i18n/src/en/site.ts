@@ -8,8 +8,7 @@ export const site = {
   "site.media.fileType": "Images and documents",
   "site.media.title": "Media",
   "site.media.add": "Add images or files…",
-  "site.media.dropHint":
-    "Drop images (JPEG, PNG) or documents (PDF, Word, Excel, PowerPoint, OpenDocument, text, CSV) here.",
+  "site.media.dropHint": "Drop images or documents here.",
   "site.media.empty": "No images or files yet.",
   "site.media.list": "Images and files",
   "site.media.details": "{name} details",
