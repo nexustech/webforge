@@ -1,9 +1,10 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { below, drag } from "./drag.js";
 import { launchDesktopApp } from "./launch.js";
 
-// Add panel (1.13, F-ED-1): sections and elements added by click, each one "Added …" step; never
-// the Header, Footer or an FAQ's questions; the canvas's + opens it at its place; hidden in Content
-// mode.
+// Add panel (1.13, F-ED-1): sections and elements added by click or drag, each one "Added …"
+// step; never the Header, Footer or an FAQ's questions; the canvas's + opens it at its place;
+// hidden in Content mode.
 
 let app: ElectronApplication;
 let page: Page;
@@ -60,6 +61,24 @@ test("the canvas's + opens Add at its place, even with the left panels hidden", 
   await expect(left()).toBeVisible();
   await expect(canvas().locator(".site-faq")).toHaveCount(1);
   await expect(left().getByRole("status")).toHaveCount(0);
+});
+
+test("drags a section onto the page, as one step; nothing offers the Header, Footer or a question", async () => {
+  // Puck's own component list is hidden: the only drag sources shown are the Add panel's items.
+  await expect(item("Hero")).toBeVisible();
+  await expect(
+    page
+      .locator(
+        '[data-testid="drawer-item:Header"], [data-testid="drawer-item:Footer"], [data-testid="drawer-item:FaqItem"]',
+      )
+      .filter({ visible: true }),
+  ).toHaveCount(0);
+  await expect(item("Hero").locator("[data-puck-drawer-item]").first()).toBeAttached();
+  await drag(page, item("Hero"), await below(canvas().locator(".site-section")));
+
+  await expect(canvas().locator(".site-hero")).toHaveCount(1);
+  await left().getByRole("tab", { name: "Undo History" }).click();
+  await expect(steps()).toHaveText(["Added Hero", "Opened page"]);
 });
 
 test("is hidden in Content mode", async () => {

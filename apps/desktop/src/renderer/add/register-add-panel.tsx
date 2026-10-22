@@ -3,7 +3,7 @@ import { t } from "@webforge/i18n";
 import { useSyncExternalStore } from "react";
 import { currentPage } from "../editor/editor-session.js";
 import type { PanelRegistry } from "../shell/panels.js";
-import { AddPanel } from "./AddPanel.js";
+import { AddPanel, type AddPanelProps } from "./AddPanel.js";
 import { type AddSession, type AddTab, addComponent, addItems, addTargetFor } from "./add-items.js";
 
 /** The Add panel's id in the panel registry. */
@@ -42,12 +42,16 @@ export type AddPanelRegistration = {
 
 /**
  * Adds the Add panel to the left column's top, first (UI1). Register it in Design mode only: it is
- * hidden in Content mode (M3). `flush` records the canvas's pending edits before each add.
+ * hidden in Content mode (M3). `flush` records the canvas's pending edits before each add;
+ * `dragSource` (the canvas engine's `addDragSource`) lets the items be dragged onto the canvas.
  */
 export function registerAddPanel(
   panels: PanelRegistry,
   session: AddSession,
-  flush: () => void = () => undefined,
+  {
+    flush = () => undefined,
+    dragSource,
+  }: { readonly flush?: () => void; readonly dragSource?: AddPanelProps["dragSource"] } = {},
 ): AddPanelRegistration {
   const { history, ui, library } = session;
   const sections = addItems(library, "sections");
@@ -136,6 +140,7 @@ export function registerAddPanel(
         canAdd={(type) => addable.has(type)}
         point={shown.point === undefined ? null : { after: shown.after }}
         onCancelPoint={() => setState({ point: null })}
+        dragSource={dragSource}
       />
     );
   }

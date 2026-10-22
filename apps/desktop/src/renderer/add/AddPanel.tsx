@@ -9,7 +9,7 @@ import {
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { PlusIcon, SearchIcon } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { type AddItem, type AddTab, groupItems } from "./add-items.js";
 
 /** Props of {@link AddPanel}. */
@@ -28,13 +28,56 @@ export type AddPanelProps = {
    */
   readonly point: { readonly after: string | null } | null;
   readonly onCancelPoint: () => void;
+  /**
+   * Makes an item's element drag a new `type` onto the canvas, until the returned call (the canvas
+   * engine's `addDragSource`); left out while there is no canvas.
+   */
+  readonly dragSource?: ((element: HTMLElement, type: string) => () => void) | undefined;
 };
+
+/** One component to add: a click (or Enter) adds it, and it can be dragged onto the canvas. */
+function AddButton({
+  item,
+  disabled,
+  onAdd,
+  dragSource,
+}: {
+  readonly item: AddItem;
+  readonly disabled: boolean;
+  readonly onAdd: (type: string) => void;
+  readonly dragSource: AddPanelProps["dragSource"];
+}) {
+  const ref = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    const element = ref.current;
+    if (element === null || dragSource === undefined || disabled) {
+      return;
+    }
+    return dragSource(element, item.type);
+  }, [dragSource, item.type, disabled]);
+  return (
+    <Button
+      ref={ref}
+      type="button"
+      size="sm"
+      variant="outline"
+      // Relative: the canvas's drag handle covers the button.
+      className="relative w-full justify-start"
+      disabled={disabled}
+      onClick={() => onAdd(item.type)}
+    >
+      <PlusIcon aria-hidden />
+      {item.label}
+    </Button>
+  );
+}
 
 /**
  * The Add panel (F-ED-1, UI1): Sections | Elements, a search box, and each tab's components in
  * categories. A click (or Enter) adds one where it fits: a section after the selected one, or where
- * the canvas's + was clicked; an element into the selected section. Header, Footer and child-only
- * components are never offered (ADR 0005). Hidden in Content mode.
+ * the canvas's + was clicked; an element into the selected section. Or drag one onto the canvas,
+ * where its drop indicators show where it may go. Header, Footer and child-only components are
+ * never offered (ADR 0005). Hidden in Content mode.
  */
 export function AddPanel({
   sections,
@@ -45,6 +88,7 @@ export function AddPanel({
   canAdd,
   point,
   onCancelPoint,
+  dragSource,
 }: AddPanelProps) {
   const [query, setQuery] = useState("");
 
@@ -69,17 +113,12 @@ export function AddPanel({
               >
                 {group.items.map((item) => (
                   <li key={item.type}>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      className="w-full justify-start"
+                    <AddButton
+                      item={item}
                       disabled={!canAdd(item.type)}
-                      onClick={() => onAdd(item.type)}
-                    >
-                      <PlusIcon aria-hidden />
-                      {item.label}
-                    </Button>
+                      onAdd={onAdd}
+                      dragSource={dragSource}
+                    />
                   </li>
                 ))}
               </ul>

@@ -54,8 +54,9 @@ export const panels = {
   "add.elements": "Elements",
   "add.search": "Search sections and elements",
   "add.searchPlaceholder": "Search",
-  "add.sectionsHint": "Click a section to add it after the selected one.",
-  "add.elementsHint": "Click an element to add it to the selected section.",
+  "add.sectionsHint": "Click a section to add it after the selected one, or drag it onto the page.",
+  "add.elementsHint":
+    "Click an element to add it to the selected section, or drag it into a section.",
   "add.noSection": "Add a section first: elements go inside sections.",
   "add.noMatch": "Nothing matches '{query}'.",
   "add.other": "Other",

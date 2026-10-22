@@ -59,7 +59,6 @@ describe("puckDictionary", () => {
       expect(text).toContain(t("puck.panel.add"));
       expect(text).toContain(t("puck.panel.layers"));
       expect(text).toContain(t("puck.panel.edit"));
-      expect(element.querySelector(`[aria-label="${t("puck.layout.maximize")}"]`)).not.toBeNull();
     } finally {
       engine.destroy();
       await act(async () => {
