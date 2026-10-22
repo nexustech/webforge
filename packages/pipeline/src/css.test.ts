@@ -17,6 +17,12 @@ describe("classCandidates", () => {
     expect(classCandidates(html)).toEqual(["[&_a]:underline", "btn", "btn-primary"]);
   });
 
+  it("unescapes every character React escapes, so arbitrary variants reach Tailwind", () => {
+    const html = '<li class="[&amp;:not([data-wf-ready]):focus-within&gt;ul]:block"></li>';
+
+    expect(classCandidates(html)).toEqual(["[&:not([data-wf-ready]):focus-within>ul]:block"]);
+  });
+
   it("ignores attributes that only end in class", () => {
     expect(classCandidates('<div data-class="nope" class="yes"></div>')).toEqual(["yes"]);
   });

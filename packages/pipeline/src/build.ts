@@ -11,7 +11,6 @@ import {
   type ComponentLibrary,
   documentsLinkedBy,
   mediaUsedBy,
-  type NavLink,
   type RenderContext,
   type ResolvedImage,
   renderNodesToHtml,
@@ -21,6 +20,7 @@ import { buildSiteCss, classCandidates } from "./css.js";
 import { BODY_CLASS, pageDocument } from "./html.js";
 import { imageForDepth, processImage } from "./images.js";
 import { hrefFor } from "./links.js";
+import { navigationFor } from "./navigation.js";
 import type { PipelineResources } from "./resources.js";
 
 /** Why a build failed (X5 errors). The app shows a translated message for each code. */
@@ -155,13 +155,9 @@ export async function buildSite(
   const pathById = new Map(site.pages.map((page) => [page.id as string, page.path]));
   const rendered = site.pages.map((page) => {
     const prefix = "../".repeat(depthOf(page.path));
-    const navigation: NavLink[] = site.pages
-      .filter((other) => other.hideFromNavigation !== true)
-      .map((other) => ({
-        label: other.navLabel ?? other.title,
-        href: `${prefix}${other.path}.html`,
-        current: other.path === page.path,
-      }));
+    const navigation = navigationFor(site, page, prefix, (detail) =>
+      warnings.push({ code: "broken-link", page: page.path, detail }),
+    );
     const context: RenderContext = {
       navigation,
       link: (target) => {

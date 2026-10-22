@@ -19,6 +19,7 @@ import { RichTextLinkHost } from "../links/RichTextLinkHost.js";
 import { connectCanvasImages } from "../media/canvas-images.js";
 import { registerImageField } from "../media/ImageField.js";
 import { registerMediaPanel } from "../media/register-media-panel.js";
+import { connectCanvasNavigation } from "../menu/canvas-navigation.js";
 import { type CanvasView, connectCanvasView } from "../shell/canvas-view.js";
 import { useCommandRegistry } from "../shell/command-context.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
@@ -147,6 +148,7 @@ export function Editor({
     const stopSiteCss = connectSiteCss(engine, session, compileCss, document.baseURI);
     const stopImages = connectCanvasImages(engine, session);
     const stopSettings = connectCanvasSettings(engine, session);
+    const stopNavigation = connectCanvasNavigation(engine, session);
     // One handler for the whole window (U4); the engine reports keys pressed inside its iframe.
     const removeKeys = installHistoryKeys(window, (command) => {
       connection.flush();
@@ -191,6 +193,7 @@ export function Editor({
       stopSiteCss();
       stopImages();
       stopSettings();
+      stopNavigation();
       removeKeys();
       connectionRef.current = null;
       connection.disconnect();
