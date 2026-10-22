@@ -10,6 +10,7 @@ import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { isTextField, toPuckConfig } from "./config.js";
+import { FormatToolbar, RICH_TEXT_OPTIONS } from "./rich-text.js";
 
 const library: ComponentLibrary = {
   components: {
@@ -51,7 +52,13 @@ describe("toPuckConfig", () => {
   it("maps every field kind to a Puck field", () => {
     expect(component("Text").fields).toEqual({
       title: { type: "text", label: "Title", contentEditable: false },
-      body: { type: "richtext", label: "Body", contentEditable: true },
+      body: {
+        type: "richtext",
+        label: "Body",
+        contentEditable: true,
+        options: RICH_TEXT_OPTIONS,
+        renderInlineMenu: FormatToolbar,
+      },
       size: { type: "select", label: "Size", options: [{ label: "Large", value: "large" }] },
       any: { type: "slot", label: "Anything" },
     });
@@ -76,6 +83,20 @@ describe("toPuckConfig", () => {
 
     expect(bound.fields?.bindings).toEqual({ type: "object", objectFields: {} });
     expect(component("Text").fields).not.toHaveProperty("bindings");
+  });
+
+  it("allows only the site's rich-text formatting and safe link addresses (F-ED-3)", () => {
+    const { heading, underline, strike, code, codeBlock, blockquote, link } = RICH_TEXT_OPTIONS;
+    expect([heading, underline, strike, code, codeBlock, blockquote]).toEqual(Array(6).fill(false));
+    const allowed = link === false ? undefined : link?.isAllowedUri;
+    const check = (url: string) =>
+      allowed?.(url, { defaultValidate: () => true, protocols: [], defaultProtocol: "https" });
+    expect(["https://a.example", "mailto:a@b.c", "tel:+44"].map(check)).toEqual([true, true, true]);
+    expect(["javascript:alert(1)", "file:///c:/x", "data:text/html,x"].map(check)).toEqual([
+      false,
+      false,
+      false,
+    ]);
   });
 
   it("keeps labels and defaults and hides Puck's default page fields", () => {

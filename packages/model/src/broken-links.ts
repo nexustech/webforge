@@ -15,8 +15,8 @@ export type BrokenLink = {
   readonly anchor?: string;
 };
 
-/** The anchors (`advanced.anchorId`) of `nodes` and everything in them. */
-function anchorsIn(nodes: readonly unknown[], found = new Set<string>()): Set<string> {
+/** The section anchors (`advanced.anchorId`) of `nodes` and everything in them. */
+export function anchorsIn(nodes: readonly unknown[], found = new Set<string>()): Set<string> {
   for (const node of nodes) {
     if (typeof node !== "object" || node === null) continue;
     const props = (node as { props?: Record<string, unknown> }).props ?? {};

@@ -84,6 +84,7 @@ test("shows Site Settings values in bound elements, on the canvas and in the exp
   await panel.getByLabel("Text shows").selectOption("contact.phone");
 
   // Until the phone number is added, the canvas says where to add it.
+  await page.getByRole("tab", { name: "Undo History" }).click();
   await expect(page.locator(".undo-history__step").first()).toHaveText(
     "Heading shows Phone number",
   );

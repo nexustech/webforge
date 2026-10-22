@@ -6,6 +6,7 @@ import {
   type MediaId,
   type MediaMeta,
   mediaNameFor,
+  type SiteDoc,
 } from "@webforge/model";
 import type { EditorSession } from "../editor/editor-session.js";
 
@@ -47,14 +48,20 @@ export function addMedia(session: MediaSession, items: readonly MediaMeta[]): vo
             name: quoted(first.fileName),
           },
         );
-  session.edit("insert", label, (draft) => {
-    const taken = Object.values(draft.media).map((item) => item.name);
-    for (const item of items) {
-      const name = mediaNameFor(item.name, item.kind, taken);
-      taken.push(name);
-      draft.media[item.id] = { ...item, name };
-    }
-  });
+  session.edit("insert", label, (draft) => putInMedia(draft, items));
+}
+
+/**
+ * Puts `items` in a site's Media (in an undo step's draft), each with a name no other item has,
+ * since exported files are named after it.
+ */
+export function putInMedia(site: Pick<SiteDoc, "media">, items: readonly MediaMeta[]): void {
+  const taken = Object.values(site.media).map((item) => item.name);
+  for (const item of items) {
+    const name = mediaNameFor(item.name, item.kind, taken);
+    taken.push(name);
+    site.media[item.id] = { ...item, name };
+  }
 }
 
 /**
