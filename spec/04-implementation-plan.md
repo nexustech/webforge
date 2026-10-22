@@ -44,17 +44,19 @@ Still open in Phase 0: publishing spikes (Netlify, FTP/SFTP), signed installers 
 Current code size (approx. lines): desktop 2.7k · engine 1.6k · history 1.6k · pipeline 1.1k · site-components 1.0k · storage 0.6k · model 0.3k. `editor-ui`, `publish` and `themes` are placeholders.
 
 ## 3. Timeline
-**Total: 296 working days** (≈ 59 weeks) including the 4-week beta. Baseline v1.0 (sequential, for the original 277 days, before the Phase 1 re-plan) at 100% of estimates: **19 Nov 2027**; with +25% contingency: **25 Feb 2028**.
+**Total: 298 working days** (≈ 60 weeks) including the 4-week beta. Baseline v1.0 (sequential, for the original 277 days, before the Phase 1 re-plan) at 100% of estimates: **19 Nov 2027**; with +25% contingency: **25 Feb 2028**.
 
 **Re-plan, 20 Oct 2026:** Phase 1 runs in three concurrent streams (82 days of effort in about 28 working days, see [Phase 1](#phase-1-editor-core)). Phase 2–5 dates and the v1.0 date are re-planned at the Phase 1 exit review.
 
 **Scope change, 22 Oct 2026:** +19 days from the RapidWeaver Elements 3.0 review (GA5–GA8, [gap analysis §3.7](../research/product/05-feature-gap-analysis.md#37-rapidweaver-elements-30-update-2026-10-22)): files in Media (1.28, 3 days), shared sections (1.29, 7 days), `llms.txt` and Markdown copies (3.5, +1 day), and connecting AI apps over MCP (4.8 and 4.9, 8 days). The effort figures below include them. Phase 1's dates are updated (1.29 extends stream C's chain, so the phase ends about 9 Dec, or 22 Dec with contingency); the Phase 2–5 dates are baseline and are re-planned at the Phase 1 exit.
 
+**Scope change, 22 Oct 2026 (Bootstrap Studio 9.0 review):** +2 days for a sticky header with a scroll style (2.6, F-DS-6) and a back-to-top button (2.9, F-CM-9), decisions BS9-1 and BS9-2 ([review](../research/bootstrap-studio/06-bootstrap-studio-9.md)). Phase 2 dates are re-planned at the Phase 1 exit.
+
 | Phase | Effort (days) | Starts | Ends (100%) | Ends (+25%) | Exit criteria |
 |---|---|---|---|---|---|
 | [Phase 0: Prototype (finish)](#phase-0-prototype-finish) | 11 | 26 Oct 2026 | 18 Nov 2026 | 24 Nov 2026 | Netlify and SFTP/FTPS publish spikes meet the spike criteria in research/stack/08<br>Signed NSIS and DMG builds install, and auto-update from a test feed on both OSes<br>A large page (200+ elements) stays within the editing performance budget<br>ADRs written; architecture §6 interfaces updated |
 | [Phase 1: Editor core](#phase-1-editor-core) | 92 | 22 Oct 2026 | 9 Dec 2026 | 22 Dec 2026 | Build a 3-page site from blank, close, reopen: everything restored<br>Undo-all property tests green; every edit has a meaningful label<br>Shell matches UI1 in dark and light (Storybook screenshots) |
-| [Phase 2: Design & components](#phase-2-design--components) | 93 | 2 Mar 2027 | 14 Jul 2027 | 16 Sep 2027 | Every component has stories × 3 themes × Desktop/Mobile, axe-clean<br>New Site from each of the 8 templates works and looks distinct<br>Theme changes restyle every component; contrast warnings work |
+| [Phase 2: Design & components](#phase-2-design--components) | 95 | 2 Mar 2027 | 14 Jul 2027 | 16 Sep 2027 | Every component has stories × 3 themes × Desktop/Mobile, axe-clean<br>New Site from each of the 8 templates works and looks distinct<br>Theme changes restyle every component; contrast warnings work |
 | [Phase 3: Output](#phase-3-output) | 32 | 15 Jul 2027 | 26 Aug 2027 | 10 Nov 2027 | Exported templates open from disk in Chromium, Firefox, WebKit (+ Edge on Windows) with no external requests<br>Site Check blocks only Must-fix issues on export<br>Preview CSS hot-swap < 100 ms; phone preview via QR works |
 | [Phase 4: Publish & versions](#phase-4-publish--versions) | 30 | 27 Aug 2027 | 28 Sep 2027 | 17 Dec 2027 | Publish + rollback on all targets in E2E tests (mock Netlify, local FTP/SFTP)<br>A paired AI app's edits are undoable, and the MCP server can't be reached from another computer<br>Version History: save, auto-retention, preview, restore, open as new site, republish |
 | [Phase 5: Beta hardening](#phase-5-beta-hardening) | 38 | 29 Sep 2027 | 19 Nov 2027 | 25 Feb 2028 | All performance budgets met on Windows and macOS<br>Signed, notarised builds auto-update from the production feed<br>Beta running with 10–20 users; no open Must-fix bugs |
@@ -110,10 +112,10 @@ gantt
     2.3 Theme panel – brand colours, fonts, roundness,… :t2_3, 2027-03-11, 4d
     2.4 Section light/dark variants :t2_4, 2027-03-17, 1d
     2.5 Component framework – tokens, variants, storie… :crit, t2_5, 2027-03-18, 3d
-    2.6 Sections A – Header, Footer, Hero, Text, Text… :crit, t2_6, 2027-03-23, 7d
+    2.6 Sections A – Header, Footer, Hero, Text, Text… :crit, t2_6, 2027-03-23, 8d
     2.7 Sections B – Features, Gallery + lightbox, Tes… :t2_7, 2027-04-05, 8d
     2.8 Sections C – Opening hours & contact, Contact… :t2_8, 2027-04-15, 5d
-    2.9 Elements – basic set and icon picker :t2_9, 2027-04-22, 5d
+    2.9 Elements – basic set and icon picker :t2_9, 2027-04-22, 6d
     2.10 Carousel element :t2_10, 2027-04-29, 6d
     2.11 Elements – tabs, commerce, forms, embeds and c… :t2_11, 2027-05-10, 5d
     2.12 Animations and hover effects :t2_12, 2027-05-17, 2d
@@ -498,7 +500,7 @@ Media also takes PDF, Word, Excel, PowerPoint, OpenDocument, plain text and CSV 
 
 ### Phase 2: Design & components
 **Goal:** The full component catalogue (19 sections with ~45 layout variants, 17 elements), 10–12 curated themes, fonts and the 8 templates, all accessible and visually tested.  
-**Effort:** 93 days · **Scheduled:** 2 Mar 2027 → 14 Jul 2027
+**Effort:** 95 days · **Scheduled:** 2 Mar 2027 → 14 Jul 2027 (baseline; 2.6 and 2.9 each +1 day on 22 Oct 2026)
 
 | ID | Item | Issue | Area | Refs | Est | Depends on |
 |---|---|---|---|---|---|---|
@@ -507,10 +509,10 @@ Media also takes PDF, Word, Excel, PowerPoint, OpenDocument, plain text and CSV 
 | 2.3 | Theme panel: brand colours, fonts, roundness, text and button styles | [#45](https://github.com/nexustech/webforge/issues/45) | themes | F-DS-2, F-DS-4, D7 | 4 | 2.1, 2.2, 1.26 |
 | 2.4 | Section light/dark variants | [#46](https://github.com/nexustech/webforge/issues/46) | themes | F-DS-3 | 1 | 2.1 |
 | 2.5 | Component framework: tokens, variants, stories, behaviours | [#47](https://github.com/nexustech/webforge/issues/47) | components | [stack/05](../research/stack/05-site-components.md), S1, standards §5, [ADR 0005](../docs/adr/0005-export-pipeline-spike.md) | 3 | 1.14 |
-| 2.6 | Sections A: Header, Footer, Hero, Text, Text + Image, Call to action | [#48](https://github.com/nexustech/webforge/issues/48) | components | S1, MVP §3, [ADR 0005](../docs/adr/0005-export-pipeline-spike.md) | 7 | 2.5, 1.21 |
+| 2.6 | Sections A: Header, Footer, Hero, Text, Text + Image, Call to action | [#48](https://github.com/nexustech/webforge/issues/48) | components | S1, MVP §3, F-DS-6, BS9-1, [ADR 0005](../docs/adr/0005-export-pipeline-spike.md) | 8 | 2.5, 1.21 |
 | 2.7 | Sections B: Features, Gallery + lightbox, Testimonials, Team, Pricing, FAQ, Logos, Stats | [#49](https://github.com/nexustech/webforge/issues/49) | components | S1, F-ED-6, G10 | 8 | 2.5 |
 | 2.8 | Sections C: Opening hours & contact, Contact form, Map, Video, Newsletter | [#50](https://github.com/nexustech/webforge/issues/50) | components | S1, F-CM-1, F-CM-4, F-CM-6, GA3 | 5 | 2.5, 1.17 |
-| 2.9 | Elements: basic set and icon picker | [#51](https://github.com/nexustech/webforge/issues/51) | components | S1, F-ED-21, F-ED-22, F-CM-5 | 5 | 2.5, 1.17 |
+| 2.9 | Elements: basic set and icon picker | [#51](https://github.com/nexustech/webforge/issues/51) | components | S1, F-ED-21, F-ED-22, F-CM-5, F-CM-9, BS9-2 | 6 | 2.5, 1.17 |
 | 2.10 | Carousel element | [#52](https://github.com/nexustech/webforge/issues/52) | components | G9, GA1 | 6 | 2.5 |
 | 2.11 | Elements: tabs, commerce, forms, embeds and custom code | [#53](https://github.com/nexustech/webforge/issues/53) | components | F-CM-2, F-CM-7, F-ED-15, F-ED-16 | 5 | 2.5 |
 | 2.12 | Animations and hover effects | [#54](https://github.com/nexustech/webforge/issues/54) | components | F-DS-5, G8 | 2 | 2.5 |
@@ -554,10 +556,11 @@ Conventions for site components: design-token style fields, layout variants, per
 - [ ] Canvas and export render through the same function
 
 **2.6 Sections A: Header, Footer, Hero, Text, Text + Image, Call to action**  
-Header (navbar + accessible mobile menu from the menu editor, with a no-JS fallback per ADR 0005; 2–3 layouts), Footer (2 layouts), Hero with 4 layouts (+ responsive image, focal point), Text, Text + Image (2), CTA (2).
+Header (navbar + accessible mobile menu from the menu editor, with a no-JS fallback per ADR 0005; 2–3 layouts; optional sticky header with a scroll style: shrink, solid background or shadow after a threshold, with an anchor scroll offset, F-DS-6, added 22 Oct 2026), Footer (2 layouts), Hero with 4 layouts (+ responsive image, focal point), Text, Text + Image (2), CTA (2).
 
 - [ ] Each layout: stories, axe-clean, works from disk
 - [ ] Mobile menu keyboard + screen-reader accessible and usable without JavaScript
+- [ ] Sticky header: scroll style applies after the threshold, anchor links aren't hidden under it, and it stays sticky without JavaScript
 
 **2.7 Sections B: Features, Gallery + lightbox, Testimonials, Team, Pricing, FAQ, Logos, Stats**  
 Features/Services grid, Gallery with lightbox (native dialog, keyboard + swipe), Testimonials, Team, Pricing/price list, FAQ (details), Logos, Stats, each with 2–3 layout variants; repeating-list fields.
@@ -573,11 +576,12 @@ Opening hours & contact details (bound to Site Settings), Contact form section, 
 - [ ] No external requests until the visitor clicks an embed
 
 **2.9 Elements: basic set and icon picker**  
-Heading, Text, Image (focal point), Button, Columns, Spacer, Divider, List, Icon with the searchable Lucide icon picker (also the icon field control), Social links bound to Site Settings → Social.
+Heading, Text, Image (focal point), Button, Columns, Spacer, Divider, List, Icon with the searchable Lucide icon picker (also the icon field control), Social links bound to Site Settings → Social. Back-to-top button (F-CM-9, added 22 Oct 2026): a Site Settings option with a per-page switch; appears after scrolling, keyboard accessible, respects reduced motion.
 
 - [ ] Icons inlined as SVG at export
 - [ ] Columns stack responsively
 - [ ] Social links update from Site Settings
+- [ ] Back-to-top button: appears after scrolling, keyboard and screen-reader accessible, no smooth scroll with reduced motion
 
 **2.10 Carousel element**  
 One accessible Carousel element for images, testimonials and logos: slides as a repeating list, autoplay with pause, keyboard and swipe, reduced-motion support, works from disk with webforge.js.
@@ -905,6 +909,7 @@ Every MVP feature ID maps to at least one work item (checked when this plan was 
 | F-DS-3 | Section themes | 2.4 |
 | F-DS-4 | Text and button styles | 2.3 |
 | F-DS-5 | Animations | 2.12 |
+| F-DS-6 | Sticky header | 2.6 |
 | F-SET-1 | Site Settings | 1.17 |
 | F-SET-2 | Page Settings | 1.18 |
 | F-CHK-1 | Site Check | 3.6 |
@@ -925,6 +930,7 @@ Every MVP feature ID maps to at least one work item (checked when this plan was 
 | F-CM-6 | Newsletter signup | 2.8, 3.7 |
 | F-CM-7 | Booking button | 2.11 |
 | F-CM-8 | Dynamic year | 3.5, 3.6 |
+| F-CM-9 | Back-to-top button | 2.9 |
 | F-AI-1 | Connect AI apps | 4.8, 4.9 |
 
 ## 7. Critical path and sequencing

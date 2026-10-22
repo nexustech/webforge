@@ -75,6 +75,7 @@ The result is a fast, accessible, self-contained static website they fully own.
 | F-DS-3 | **Section themes** | A section can use the light/dark variant of the theme (daisyUI nested themes) |
 | F-DS-4 | **Text and button styles** (G11) | Theme defines a type scale (H1–H6, body, small) and button styles (shape, size, filled/outline/ghost), editable in the Theme panel and applied site-wide (D7 confirm) |
 | F-DS-5 | **Animations** (G8) | Per section/element *Entrance animation* (None, Fade, Slide up/left/right, Zoom) with delay; *Hover effect* for buttons/cards (Lift, Grow, Shadow). CSS + a tiny observer in `webforge.js`; disabled automatically for visitors with *prefers-reduced-motion*; works from disk. **Content is visible by default:** elements are only hidden for their entrance once `webforge.js` has marked the page, so nothing stays invisible without JavaScript, in print or for search engines |
+| F-DS-6 | **Sticky header** (BS9-1) | Header option *Stay at the top when scrolling*, with *Change style when scrolling*: Shrink, Solid background, Shadow or None, applied after a scroll threshold. Works from disk with a few lines in `webforge.js`; without JavaScript the header is simply sticky. Keeps the mobile menu usable and never covers anchor targets (scroll offset) |
 
 ### 2.4 Site settings & checks
 | ID | Feature | Acceptance criteria |
@@ -107,6 +108,7 @@ The result is a fast, accessible, self-contained static website they fully own.
 | F-CM-6 | **Newsletter signup** (G17) | Newsletter section: email (+ optional name) form that POSTs to the provider's embedded-form URL, plus our honeypot. Generic "form action URL" option in MVP; provider presets per GA3 (open question) |
 | F-CM-7 | **Booking button** (G18) | "Book now" button/element linking to the user's booking page; generic https URL in MVP; provider presets per GA3 (open question). Plain link, no external JS |
 | F-CM-8 | **Dynamic year** (G21) | `{year}` token for text (e.g. footer copyright) filled in at export, with no script. The year is fixed until the site is next exported or published, so Site Check shows a tip when a published site's year is out of date |
+| F-CM-9 | **Back-to-top button** (BS9-2) | Site Settings → General: *Show a back-to-top button* (off by default), also switchable per page. It appears after the visitor scrolls down, is a real keyboard-focusable button with an accessible name, and moves focus to the top of the page. Smooth scrolling unless *prefers-reduced-motion* is set. Themed; works from disk |
 
 ### 2.7 AI
 | ID | Feature | Acceptance criteria |
@@ -116,7 +118,7 @@ The result is a fast, accessible, self-contained static website they fully own.
 ## 3. MVP component catalogue (decided S1–S5, [starting content](../research/product/03-starting-content.md))
 
 **Sections (19):**
-1. Header (navbar with mobile menu)
+1. Header (navbar with mobile menu; optionally sticky with a scroll style, F-DS-6)
 2. Footer
 3. Hero (4 layouts)
 4. Text
@@ -189,7 +191,8 @@ All components must:
 ## 5. Explicitly out of MVP
 | Item | When |
 |---|---|
-| Blog collection (posts, tags, RSS, latest posts, Markdown/CSV import) | **v1.1** (M2) |
+| Blog collection (posts, tags, RSS, latest posts, Markdown/CSV import), **built on a general collections engine** so Portfolio, Team, Events and Menus follow as presets | **v1.1** (M2, BS9-3) |
+| Markdown paste/import, reading progress bar for posts, scrolling logo strip (with pause), Instagram post embed (click-to-load), share a preview link before publishing (Netlify draft deploy), smooth page transitions | **v1.1** (BS9-4 – BS9-9) |
 | Portfolio/Gallery, Team, Events collections | v1.2+ (M2) |
 | Site search, multilingual | v1.2+ (M4) |
 | A library of saved sections shared across sites (shared sections within a site are MVP, F-ED-23) | v1.x (C5, GA6) |
@@ -199,7 +202,7 @@ All components must:
 | Importing existing websites | Out of scope (C3) |
 | Free positioning, real-time collaboration, remote client editing, members, carts | Out of scope (T3, M5) |
 | Find & replace, page-rename redirects, legal page templates, social share preview, stock photo search (Pexels/Pixabay), site dark mode, video-background hero, announcement bar / popup | **v1.1** (gap analysis G4, G7, G12, G13, G19, G20, G22, G26) |
-| **Built-in AI assistant with the user's own account** (rewrite text; meta/social descriptions; alt text; then building and editing pages through the same commands as F-AI-1) | **v1.1** (GA2, GA9) |
+| **Built-in AI assistant with the user's own account** (rewrite text; meta/social descriptions; alt text; then building and editing pages through the same commands as F-AI-1). Design details from BS9-10: providers include local models (Ollama, llama.cpp) and any OpenAI-compatible server; a *Review changes* mode alongside auto-apply; a context and usage meter; clear privacy wording (keys stay on the computer, calls go straight to the provider) | **v1.1** (GA2, GA9, BS9-10) |
 | **Draft pages** (kept in the site, left out of export and publish) | **v1.1** (G37, GA9) |
 | Online CMS editing in a browser | Out of scope (G39) |
 | AI site generation from a description | Later (G25c) |
@@ -215,7 +218,7 @@ The detailed work breakdown (one GitHub issue per item), schedule, risks and ope
 |---|---|---|---|
 | **Phase 0** | **Prototype spikes** (~2 weeks, combined) | Electron secure shell + electron-builder installers (signed NSIS/DMG) + auto-update; Puck with **our** history (critical); daisyUI components; `.wforge` SQLite via **better-sqlite3** (packaging + rebuild on Windows/macOS, crash safety, OneDrive folder); export pipeline + `file://` checks; Netlify + SFTP publish | Every 🔬 item resolved; go/no-go on Puck (else fallback canvas) |
 | **Phase 1** | **Editor core** | Model, history, storage + autosave, engine adapter, Add/Edit/Pages panels, Header/Footer, Undo History, views, Simple/Advanced and Design/Content modes, Site Settings and Page Settings, editable 404 page, media library with alt text and focal point, **copy & paste, menu editor, link dialog, spell check, shared sections, files in Media** | Build a 3-page site from blank; undo-all property tests green |
-| **Phase 2** | **Design & components** | Themes (incl. **text/button styles**), brand colours/fonts, component catalogue (incl. **carousel, lightbox, animations, newsletter, booking**, Buy button, embeds), templates, **icon picker** | All templates pass axe + visual regression |
+| **Phase 2** | **Design & components** | Themes (incl. **text/button styles**), brand colours/fonts, component catalogue (incl. **carousel, lightbox, animations, newsletter, booking**, Buy button, embeds, **sticky header, back-to-top button**), templates, **icon picker** | All templates pass axe + visual regression |
 | **Phase 3** | **Output** | Preview server, Export, Site Check, forms, GA + consent, custom code bundling, **404 output, dynamic year, `llms.txt` and Markdown copies** | Exported templates open from disk in 4 browsers with zero external requests |
 | **Phase 4** | **Publish & versions** | Destinations, Netlify/FTP/SFTP publish, Version History, republish, **connect AI apps (MCP)** | Publish + rollback on all targets in E2E tests; a paired AI app's edits are undoable and the MCP server can't be reached from another computer |
 | **Phase 5** | **Beta hardening** | Performance budgets, installer/updates, licences screen, onboarding, help | Beta with 10–20 small-business users |
@@ -233,6 +236,7 @@ The detailed work breakdown (one GitHub issue per item), schedule, risks and ope
 10. ~~RapidWeaver Elements 3.0 review~~ → ✅ **Decided (GA5–GA9, 2026-10-22):** connect AI apps (MCP), shared sections, files in Media and `llms.txt` join the MVP (about +19 days). The built-in AI assistant and draft pages are v1.1.
 11. **MCP transport** (F-AI-1): a local HTTP endpoint with a per-app token, or a small bundled bridge program? Decided by an ADR in the MCP work item ([gap analysis, open question 2](../research/product/05-feature-gap-analysis.md#open-questions)).
 12. **`llms.txt` default** (F-EX-5): proposed on for new sites and off for existing ones; decide before Phase 3 ([gap analysis, open question 3](../research/product/05-feature-gap-analysis.md#open-questions)).
+13. ~~Bootstrap Studio 9.0 review~~ → ✅ **Decided (BS9-1 – BS9-10, 2026-10-22):** sticky header (F-DS-6) and back-to-top button (F-CM-9) join the MVP (+2 days). The v1.1 Blog is built on a general collections engine, BS9-4 – BS9-9 are v1.1, and BS9-10 shapes the v1.1 AI assistant. See the [review](../research/bootstrap-studio/06-bootstrap-studio-9.md).
 
 ## 8. Business & licensing model (decided 2026-10-19)
 | Item | Decision |

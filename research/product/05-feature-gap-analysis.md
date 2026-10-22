@@ -169,6 +169,8 @@ Before 3.0 it already had Global Templates (reusable linked blocks) and a Resour
 | GA8 | **`llms.txt` and Markdown copies** (2026-10-22) | ✅ **MVP (G36)**, as a Site Settings option. Spec F-EX-5. Whether it is on by default for new sites is open question 3 |
 | GA9 | **v1.1 additions** (2026-10-22) | ✅ **Built-in AI assistant** with the user's own key (amends GA2): it uses the same commands as F-AI-1, starting with G25a/G25b and growing to building and editing pages. **Draft pages** (G37). **CSV tables (G38) not adopted.** Per-site AI style notes (as Elements' "AI memory") are a suggestion for the v1.1 design, not decided |
 
+The [Bootstrap Studio 9.0 review](../bootstrap-studio/06-bootstrap-studio-9.md) (2026-10-22, BS9-1 – BS9-10) adds two small MVP items (sticky header, back-to-top button), puts the v1.1 Blog on a general collections engine, adds six small v1.1 items, and details the v1.1 AI assistant (BS9-10, extends GA9).
+
 v1.1 and later items stay as listed in §4.
 
 ## Open questions
