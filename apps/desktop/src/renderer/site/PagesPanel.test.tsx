@@ -99,15 +99,17 @@ describe("PagesPanel (F-ED-13)", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
-  it("renames a page from its menu", async () => {
+  it("renames a page from its menu, typing straight into the dialog", async () => {
     const { actions } = setUp();
 
     await openMenu("Team");
     await userEvent.click(screen.getByRole("menuitem", { name: "Rename…" }));
-    const field = screen.getByRole("textbox", { name: "Page name" });
+    // The dialog opens once the menu has closed, with its field focused and its text selected:
+    // typing replaces the name without a click (the closing menu used to take the focus).
+    const field = await screen.findByRole("textbox", { name: "Page name" });
     expect((field as HTMLInputElement).value).toBe("Team");
-    await userEvent.clear(field);
-    await userEvent.type(field, "Our team");
+    expect(document.activeElement).toBe(field);
+    await userEvent.keyboard("Our team");
     expect(screen.getByText("File name: company/our-team.html")).toBeTruthy();
     await userEvent.click(screen.getByRole("button", { name: "Rename" }));
 
