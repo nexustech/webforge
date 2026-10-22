@@ -13,6 +13,7 @@ import {
 import "@puckeditor/core/no-external.css";
 import { t } from "@webforge/i18n";
 import {
+  copiedNodeId,
   expandSharedCopies,
   type LayoutDoc,
   newSharedCopy,
@@ -399,7 +400,10 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       const content = [...page.content];
       content.splice(at + 1, 0, added);
       page = { ...page, content };
-      emitEdit({ ...edit, nodeId: added.props.id, page, selection: added.props.id });
+      // The new copy selected as the canvas shows it: its section, by the copy's id for it.
+      const root = shared[copy.props.sharedSectionId]?.section.props.id;
+      const shown = root === undefined ? null : copiedNodeId(added.props.id, root);
+      emitEdit({ ...edit, nodeId: shown, page, selection: shown });
       putBack(edit.page);
       return;
     }

@@ -870,6 +870,8 @@ describe("createPuckEngine with linked copies of a shared section (F-ED-23)", ()
       SHARED_COPY_TYPE,
     ]);
     expect(content[2]?.props).toMatchObject({ sharedSectionId: HOURS, anchorSuffix: "3" });
+    // Selected as the canvas shows it.
+    expect(edits[0]?.selection).toBe(copiedNodeId(String(content[2]?.props.id), "hours"));
     expect(headings()).toEqual(["First", "Hours", "Hours", "Hours"]);
   });
 
