@@ -378,6 +378,9 @@ jobs:
         # The container's paths differ from github.workspace, so the shell's GITHUB_WORKSPACE is used.
         # --no-deps: the site is already exported, so the setup project (which needs Electron) is skipped.
         shell: bash
+        env:
+          # The container runs as root with GitHub's HOME, which Firefox refuses to use.
+          HOME: /root
         run: |
           export WEBFORGE_EXPORTED_SITE_DIR="$GITHUB_WORKSPACE/exported-site"
           pnpm --filter @webforge/e2e exec playwright test --project=export-firefox --project=export-webkit --no-deps
