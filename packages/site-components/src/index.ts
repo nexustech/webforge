@@ -11,6 +11,8 @@ export type {
   LinkAttributes,
   ListItem,
   ListItemFieldDef,
+  NavGroup,
+  NavItem,
   NavLink,
   RenderContext,
   ResolvedImage,

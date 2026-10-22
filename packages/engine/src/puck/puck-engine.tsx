@@ -707,6 +707,11 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       redraw();
     },
 
+    setNavigation(navigation) {
+      renderContext = { ...renderContext, navigation };
+      redraw();
+    },
+
     setLinkPicker(picker) {
       linkPicker = picker;
     },

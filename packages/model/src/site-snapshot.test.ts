@@ -33,6 +33,22 @@ describe("siteSnapshotSchema", () => {
     expect(siteSnapshotSchema.parse(snapshot)).toEqual(snapshot);
   });
 
+  it("accepts the site's menu, and rejects one the model wouldn't (F-ED-17)", () => {
+    const menu: SiteSnapshot["menu"] = {
+      follows: "custom",
+      items: [{ id: "home" as never, kind: "page", pageId: "home" as never, hidden: false }],
+    };
+
+    expect(siteSnapshotSchema.parse(site({ menu })).menu).toEqual(menu);
+    expect(
+      siteSnapshotSchema.safeParse(
+        site({
+          menu: { follows: "custom", items: [{ id: "x", kind: "group", label: "" }] } as never,
+        }),
+      ).success,
+    ).toBe(false);
+  });
+
   it("requires a home page", () => {
     const result = siteSnapshotSchema.safeParse(
       site({ pages: [{ id: "about", path: "about", title: "About", doc: emptyPage }] }),

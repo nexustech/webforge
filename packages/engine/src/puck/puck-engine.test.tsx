@@ -43,6 +43,18 @@ const library: ComponentLibrary = {
         <p className="t-heading">{boundText(values, "text", context)}</p>
       ),
     },
+    Nav: {
+      label: "Nav",
+      fields: {},
+      defaults: {},
+      render: ({ context }) => (
+        <ul className="t-nav">
+          {context.navigation.map((item) => (
+            <li key={item.label}>{item.label}</li>
+          ))}
+        </ul>
+      ),
+    },
   },
 };
 
@@ -445,6 +457,25 @@ describe("createPuckEngine", () => {
     );
     await settle();
     expect(headings()).toEqual(["0123"]);
+  });
+
+  it("shows the site's navigation, drawing the page again when it changes (1.21)", async () => {
+    const nav = () => [...element.querySelectorAll(".t-nav li")].map((item) => item.textContent);
+    await act(async () =>
+      engine.applyChange({ page: { ...page, content: [{ type: "Nav", props: { id: "n" } }] } }),
+    );
+    await settle();
+    expect(nav()).toEqual([]);
+
+    await act(async () =>
+      engine.setNavigation([
+        { label: "Home", href: "#", current: true },
+        { label: "More", current: false, children: [{ label: "Blog", href: "#", current: false }] },
+      ]),
+    );
+    await settle();
+
+    expect(nav()).toEqual(["Home", "More"]);
   });
 
   it("makes an element outside the canvas a drag source for a new element, until removed (1.13)", async () => {

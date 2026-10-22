@@ -1,4 +1,4 @@
-import type { NodeDoc, SiteSnapshot } from "@webforge/model";
+import type { MenuItemId, NodeDoc, PageId, SiteSnapshot } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { sampleSite } from "@webforge/test-utils";
 import { beforeAll, describe, expect, it } from "vitest";
@@ -54,9 +54,16 @@ describe("buildSite: self-contained output (X1, C8)", () => {
     expect(index).toMatch(/<link rel="stylesheet" href="assets\/css\/site\.[0-9a-f]{10}\.css">/);
     expect(index).toMatch(/<script defer src="assets\/js\/webforge\.[0-9a-f]{10}\.js"><\/script>/);
     expect(index).toContain('<a href="about.html">About us</a>');
-    // The only absolute URLs are the SVG namespace and the user's own outbound link.
-    expect(index.match(/(?:src|href|srcSet)="[a-z]+:/gi)).toEqual(['href="https:']);
+    // The only absolute URLs are the user's own outbound links: in the menu and in the text.
+    expect(index.match(/(?:src|href|srcSet)="[a-z]+:/gi)).toEqual(['href="https:', 'href="https:']);
     expect(index).not.toContain('type="module"');
+  });
+
+  it("styles a dropdown to open on focus without the script (F-ED-17)", () => {
+    const css = text(built, [...built.files.keys()].find((path) => path.endsWith(".css")) ?? "");
+
+    expect(css).toContain("focus-within");
+    expect(css).toMatch(/data-wf-ready/);
   });
 
   it("compiles readable CSS with daisyUI, the site theme, the fonts and only the classes used", () => {
@@ -105,6 +112,14 @@ describe("buildSite: pages in folders", () => {
           doc: { root: { props: {} }, content: base.pages[0]?.doc.content.slice(0, 1) ?? [] },
         },
       ],
+      // Added to the (edited) menu, as the Pages panel adds a new page.
+      menu: {
+        follows: "custom",
+        items: [
+          ...(base.menu?.items ?? []),
+          { id: "cakes" as MenuItemId, kind: "page", pageId: "cakes" as PageId, hidden: false },
+        ],
+      },
     };
 
     const nested = await buildSite(site, siteLibrary, resources);
