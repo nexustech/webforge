@@ -14,6 +14,7 @@ import {
   type RunOptions,
   syncDraft,
 } from "@webforge/history";
+import { t } from "@webforge/i18n";
 import type { PageDoc, PageEntry, PageId, SiteDoc } from "@webforge/model";
 import type { ComponentLibrary } from "@webforge/site-components";
 import { createStore, type StoreApi } from "zustand/vanilla";
@@ -240,11 +241,25 @@ export function connectEngine(engine: CanvasEngine, session: EditorSession): Eng
       if (key !== textSession) {
         endTextSession();
       }
-      const { patch } = edit;
+      const { patch, sharedSection } = edit;
+      const sharedName =
+        sharedSection === undefined
+          ? undefined
+          : history.document.getState().sharedSections[sharedSection.id]?.name;
       session.edit(
         edit.kind,
-        labelFor(edit, library, page),
+        sharedName === undefined
+          ? labelFor(edit, library, page)
+          : t("history.editedSharedSection", {
+              name: t("history.namedItem", { name: sharedName }),
+            }),
         (draft) => {
+          if (sharedSection !== undefined) {
+            // Inside a linked copy (F-ED-23): its shared section, which every copy shows.
+            const entry = draft.sharedSections[sharedSection.id];
+            if (entry !== undefined) syncDraft(entry.section, sharedSection.section);
+            return;
+          }
           if (edit.shared === true && edit.layout !== undefined) {
             // The shared Header or Footer (F-ED-7): the site's layout, which every page shows. Not a
             // region this page hides: the canvas showed none, so the edit can't be to it.
@@ -292,7 +307,11 @@ export function connectEngine(engine: CanvasEngine, session: EditorSession): Eng
       const page = pageDoc(site, ui.getState().pageId);
       if (page !== undefined) {
         // With the shared Header and Footer: undoing an edit of one shows on every page (F-ED-7).
-        engine.applyChange({ page, layout: shownLayout(site, ui.getState().pageId) });
+        engine.applyChange({
+          page,
+          layout: shownLayout(site, ui.getState().pageId),
+          shared: site.sharedSections,
+        });
       }
     }),
     ui.subscribe((state, previous) => {
@@ -303,7 +322,7 @@ export function connectEngine(engine: CanvasEngine, session: EditorSession): Eng
         if (page !== undefined) {
           loading = true;
           try {
-            engine.loadPage(page, shownLayout(site, state.pageId));
+            engine.loadPage(page, shownLayout(site, state.pageId), site.sharedSections);
           } finally {
             loading = false;
           }

@@ -1,4 +1,12 @@
-import type { LayoutDoc, PageDoc, RichTextLink, Theme } from "@webforge/model";
+import type {
+  LayoutDoc,
+  NodeDoc,
+  PageDoc,
+  RichTextLink,
+  SharedSectionId,
+  SharedSectionsDoc,
+  Theme,
+} from "@webforge/model";
 import type { ComponentLibrary, RenderContext, ResolvedImage } from "@webforge/site-components";
 
 /** The rich-text field being edited on the canvas: its element and the field's name. */
@@ -38,6 +46,8 @@ export type DocChange = {
   readonly page: PageDoc;
   /** The shared Header and Footer shown around it (F-ED-7); left as they are if left out. */
   readonly layout?: LayoutDoc;
+  /** The shared sections its linked copies show (F-ED-23); left as they are if left out. */
+  readonly shared?: SharedSectionsDoc;
 };
 
 /** What kind of edit the user made on the canvas; drives the undo label (D2). */
@@ -84,6 +94,11 @@ export type EngineEdit = {
   readonly shared?: boolean;
   /** The shared Header and Footer after a `shared` edit. */
   readonly layout?: LayoutDoc;
+  /**
+   * Set when the edit was inside a linked copy (F-ED-23): it changed that copy's shared section,
+   * and so every copy of it. `section` is the shared section after the edit; `page` is unchanged.
+   */
+  readonly sharedSection?: { readonly id: SharedSectionId; readonly section: NodeDoc };
   /** Set when the edit changed nothing but one field of one element to a plain value. */
   readonly patch?: EnginePatch;
   /** The selection after the edit. */
@@ -130,7 +145,11 @@ export type MountOptions = {
  */
 export interface CanvasEngine {
   mount(el: HTMLElement, opts: MountOptions): void;
-  loadPage(page: PageDoc, layout: LayoutDoc): void;
+  /**
+   * Shows `page` with the shared Header and Footer around it, and its linked copies as the shared
+   * sections in `shared` (F-ED-23; none if left out).
+   */
+  loadPage(page: PageDoc, layout: LayoutDoc, shared?: SharedSectionsDoc): void;
   /** Shows a change made outside the engine, e.g. by undo. Keeps the selection if it still exists. */
   applyChange(change: DocChange): void;
   onUserEdit(cb: (edit: EngineEdit) => void): Unsubscribe;
@@ -202,6 +221,7 @@ export interface CanvasEngine {
    * keyboard shortcuts there too.
    */
   onFrameWindow(cb: (frameWindow: Window | null) => void): Unsubscribe;
-  renderStatic(page: PageDoc, layout: LayoutDoc): string;
+  /** `page`'s HTML, its linked copies shown inline as the shared sections in `shared`. */
+  renderStatic(page: PageDoc, layout: LayoutDoc, shared?: SharedSectionsDoc): string;
   destroy(): void;
 }

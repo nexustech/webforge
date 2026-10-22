@@ -20,6 +20,8 @@ export const history = {
   "history.editedPage": "Edited page",
   // An element of the shared Header or Footer, used as {item} above (F-ED-7).
   "history.sharedItem": "shared {item}",
+  // An edit inside a linked copy of a shared section (1.29, F-ED-23).
+  "history.editedSharedSection": "Edited shared section {name}",
   // An element the user named in Layers, used as {item} above.
   "history.namedItem": "'{name}'",
 } as const;

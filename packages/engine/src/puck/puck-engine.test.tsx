@@ -1,6 +1,12 @@
 // @vitest-environment happy-dom
 
-import type { PageDoc } from "@webforge/model";
+import {
+  copiedNodeId,
+  type PageDoc,
+  SHARED_COPY_TYPE,
+  type SharedSectionId,
+  type SharedSectionsDoc,
+} from "@webforge/model";
 import { boundText, type ComponentLibrary, textValue } from "@webforge/site-components";
 import { act } from "react";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -740,6 +746,155 @@ describe("createPuckEngine with a shared Header and Footer (F-ED-7)", () => {
     // Puck's own Layers list has its own Delete buttons; the quick actions are the action bar's.
     expect(element.querySelector('[class*="ActionBarAction"][title="Delete"]')).toBeNull();
     expect(element.querySelector('[title="Move up"]')).toBeNull();
+  });
+});
+
+describe("createPuckEngine with linked copies of a shared section (F-ED-23)", () => {
+  let element: HTMLDivElement;
+  let engine: CanvasEngine;
+  const HOURS = "shared-hours" as SharedSectionId;
+  const shared: SharedSectionsDoc = {
+    [HOURS]: {
+      id: HOURS,
+      name: "Opening hours",
+      section: { type: "Heading", props: { id: "hours", text: "Hours" } },
+    },
+  };
+  const withCopies: PageDoc = {
+    root: { props: {} },
+    content: [
+      { type: "Heading", props: { id: "a", text: "First" } },
+      { type: SHARED_COPY_TYPE, props: { id: "c1", sharedSectionId: HOURS } },
+      { type: SHARED_COPY_TYPE, props: { id: "c2", sharedSectionId: HOURS, anchorSuffix: "2" } },
+    ],
+  };
+
+  beforeEach(async () => {
+    element = document.createElement("div");
+    document.body.append(element);
+    engine = createPuckEngine({ iframe: false });
+    await act(async () => {
+      engine.mount(element, { library, theme: { name: "test" } });
+      engine.loadPage(withCopies, NO_LAYOUT, shared);
+    });
+    await settle();
+  });
+
+  afterEach(async () => {
+    engine.destroy();
+    await settle();
+    element.remove();
+  });
+
+  const headings = () => [...element.querySelectorAll(".t-heading")].map((h) => h.textContent);
+  const typeInto = async (index: number, text: string) => {
+    const field = element.querySelectorAll<HTMLElement>(".t-heading [data-puck-overlay-portal]")[
+      index
+    ];
+    await act(async () => {
+      if (field === undefined) return;
+      field.innerText = text;
+      field.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await settle();
+  };
+
+  it("shows each copy as its shared section", () => {
+    expect(headings()).toEqual(["First", "Hours", "Hours"]);
+  });
+
+  it("reports an edit in a copy as one to its shared section, and shows it in every copy", async () => {
+    const edits: EngineEdit[] = [];
+    engine.onUserEdit((edit) => edits.push(edit));
+
+    await typeInto(2, "Open daily");
+
+    expect(edits).toHaveLength(1);
+    expect(edits[0]?.sharedSection).toEqual({
+      id: HOURS,
+      section: { type: "Heading", props: { id: "hours", text: "Open daily" } },
+    });
+    // The page itself is as it was: still two copies.
+    expect(edits[0]?.page).toBe(withCopies);
+    expect(edits[0]?.patch).toBeUndefined();
+    expect(headings()).toEqual(["First", "Open daily", "Open daily"]);
+  });
+
+  it("reports an edit outside the copies as the page's own, its copies kept as copies", async () => {
+    const edits: EngineEdit[] = [];
+    engine.onUserEdit((edit) => edits.push(edit));
+
+    await typeInto(0, "Welcome");
+
+    expect(edits[0]?.sharedSection).toBeUndefined();
+    expect(edits[0]?.page.content.map((node) => node.type)).toEqual([
+      "Heading",
+      SHARED_COPY_TYPE,
+      SHARED_COPY_TYPE,
+    ]);
+    expect(edits[0]?.page.content[1]).toBe(withCopies.content[1]);
+  });
+
+  it("deletes a copy as a whole, from the page only", async () => {
+    const edits: EngineEdit[] = [];
+    engine.onUserEdit((edit) => edits.push(edit));
+    await act(async () => engine.select(copiedNodeId("c1", "hours")));
+    await settle();
+
+    await act(async () => {
+      engine.perform("delete");
+    });
+    await settle();
+
+    expect(edits[0]?.kind).toBe("remove");
+    expect(edits[0]?.sharedSection).toBeUndefined();
+    expect(edits[0]?.page.content.map((node) => node.props.id)).toEqual(["a", "c2"]);
+  });
+
+  it("duplicates a copy as another linked copy, with anchors of its own", async () => {
+    const edits: EngineEdit[] = [];
+    engine.onUserEdit((edit) => edits.push(edit));
+    await act(async () => engine.select(copiedNodeId("c1", "hours")));
+    await settle();
+
+    await act(async () => {
+      engine.perform("duplicate");
+    });
+    await settle();
+
+    const content = edits[0]?.page.content ?? [];
+    expect(content.map((node) => node.type)).toEqual([
+      "Heading",
+      SHARED_COPY_TYPE,
+      SHARED_COPY_TYPE,
+      SHARED_COPY_TYPE,
+    ]);
+    expect(content[2]?.props).toMatchObject({ sharedSectionId: HOURS, anchorSuffix: "3" });
+    expect(headings()).toEqual(["First", "Hours", "Hours", "Hours"]);
+  });
+
+  it("shows a change to the shared section from outside, such as an undo, in every copy", async () => {
+    await act(async () =>
+      engine.applyChange({
+        page: withCopies,
+        shared: {
+          [HOURS]: {
+            id: HOURS,
+            name: "Opening hours",
+            section: { type: "Heading", props: { id: "hours", text: "Closed" } },
+          },
+        },
+      }),
+    );
+    await settle();
+
+    expect(headings()).toEqual(["First", "Closed", "Closed"]);
+  });
+
+  it("renders copies inline in static HTML", () => {
+    const html = engine.renderStatic(withCopies, NO_LAYOUT, shared);
+
+    expect(html.match(/Hours/g)).toHaveLength(2);
   });
 });
 
