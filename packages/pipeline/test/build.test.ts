@@ -23,7 +23,8 @@ describe("buildSite: golden output (X4: byte-stable, readable)", () => {
     expect([...built.files.keys()]).toMatchSnapshot();
     expect({ ...built.report, bytes: undefined }).toEqual({
       pages: 2,
-      files: 12,
+      // The price list the About page links to is one of them (files/price-list.pdf, 1.28).
+      files: 13,
       bytes: undefined,
       warnings: [],
     });

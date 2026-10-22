@@ -1,5 +1,8 @@
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import AxeBuilder from "@axe-core/playwright";
 import { type BrowserContext, expect, type Page, test } from "@playwright/test";
+import { priceList } from "@webforge/test-utils";
 import { exportedPageUrl } from "./exported-site.js";
 
 // The exported fixture site, opened from disk (file://) in Chromium, Firefox and WebKit with the
@@ -26,6 +29,17 @@ test.afterEach(() => {
 });
 
 test.describe("exported site from disk", () => {
+  test("links to the price list, copied byte for byte, in a new tab (1.28)", async ({ page }) => {
+    await open(page, "about.html");
+
+    const link = page.getByRole("link", { name: "Price list (PDF)" });
+    await expect(link).toHaveAttribute("target", "_blank");
+    // The browser resolves the link from the page on disk to the exported file.
+    const url = await link.evaluate((anchor: HTMLAnchorElement) => anchor.href);
+    expect(url).toMatch(/^file:.*\/files\/price-list\.pdf$/);
+    expect([...readFileSync(fileURLToPath(url))]).toEqual([...priceList()]);
+  });
+
   test("loads its styles, fonts, image and script from the export folder", async ({ page }) => {
     await open(page, "index.html");
 
