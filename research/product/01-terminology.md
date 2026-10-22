@@ -46,7 +46,9 @@
 | **Element** | Anything inside a section (Heading, Text, Image, Button, Form, Columns…) | Wix, Hostinger, Canva, Adobe | Component, Widget, Node |
 | **Columns** | Layout element that splits a section horizontally | Universal | Grid, Row/Col, Flex |
 | **Header / Footer** | Shared top/bottom of every page (C5) | Universal | Layout regions, Master page |
-| **Shared section** (later: **Saved section**) | A section stored once and reused (post-MVP, C5) | Plain English; Squarespace "Saved Sections" | Linked Component, Symbol, Synced pattern |
+| **Shared section** (later: **Saved section**) | A section stored once and placed on several pages; edits apply everywhere (MVP, F-ED-23, GA6). A library of saved sections across sites comes later (C5) | Plain English; Squarespace "Saved Sections" | Linked Component, Symbol, Synced pattern, Global Template |
+| **AI apps** | AI apps on the user's computer (Claude, ChatGPT…) connected to Webforge through MCP (F-AI-1). UI: *Connect AI apps* | Plain English | MCP server, connector, integration |
+| **Document** | A non-image file in Media (PDF, Word, Excel…), linked for download (F-ED-24) | Plain English | Resource, asset, attachment |
 | **Template** | A ready-made starting site chosen at "New Site" | Universal | Starter, Kit |
 | **Theme** | Site-wide colours, fonts, corner style (daisyUI theme) | Google Sites, Adobe Express, Bootstrap Studio | Design tokens, Variables, Style guide |
 | **Add** panel (tabs **Sections** / **Elements**) | Component palette | Wix "Add Elements / Add Section", Squarespace "Add Block/Section" | Components, Library, Insert |
@@ -82,7 +84,7 @@
 | Components panel | Add panel (Sections / Elements) |
 | Options panel | Edit panel (Content · Style · Advanced) |
 | Overview panel | Layers |
-| Linked Components | Header / Footer (MVP), Shared sections (later) |
+| Linked Components | Header / Footer, Shared sections (both MVP) |
 | Library | Saved sections (later) |
 | Themes | Themes |
 | Design Settings | Site Settings |

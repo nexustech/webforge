@@ -39,6 +39,7 @@ flowchart TB
     PUB[Publishers: Folder/ZIP · FTP/FTPS/SFTP · Netlify]
     KEY[Credentials: safeStorage / OS keychain]
     UPD[Auto-updater]
+    MCP[AI apps: local MCP server, off by default]
   end
   subgraph Worker["utilityProcess: Build worker"]
     PIPE[Pipeline: render → classes → Tailwind/daisyUI → esbuild → images → site files → checks]
@@ -57,11 +58,13 @@ flowchart TB
   Renderer <-- "typed IPC via preload/contextBridge" --> Main
   Main <-- "MessagePort" --> Worker
   PREV -- "HTML/CSS from worker cache" --> Browser[(Browsers / phones on LAN)]
+  AIAPP[(AI apps on this computer)] -- "MCP, local only, approved per app" --> MCP
+  MCP -- "commands via typed IPC" --> DOC
 ```
 
 | Process | Responsibilities | Must never |
 |---|---|---|
-| **Main** | Window/menus, open/save `.wforge`, autosave transactions, versions, preview HTTP/SSE server, publishing, credentials, updates | Render UI; hold editor state of truth |
+| **Main** | Window/menus, open/save `.wforge`, autosave transactions, versions, preview HTTP/SSE server, publishing, credentials, updates, the local MCP server for AI apps (F-AI-1), which forwards commands to the renderer | Render UI; hold editor state of truth |
 | **Preload** | Exposes a **typed, minimal API** via `contextBridge` (`window.webforge.*`) | Expose `ipcRenderer`, Node or Electron objects directly |
 | **Renderer (editor)** | UI, the in-memory document, history, selection, canvas engine | Access Node/fs directly (`nodeIntegration: false`, `sandbox: true`) |
 | **Canvas iframe** | Shows the page being edited with the **site's** CSS only (C8, `syncHostStyles: false`) | Load editor styles; run custom scripts unless the user enables it (05) |
@@ -106,8 +109,9 @@ Site (.wforge)
 │                     search engines, publish destinations (no secrets), allowed external URLs (C8)
 ├── theme             Theme preset + brand colours, fonts, radius, spacing (05), stored as CSS-variable tokens
 ├── layout            Header, Footer (C5): Puck data, stored once, rendered on every page
+├── sharedSections[]  Shared sections (F-ED-23): named section data stored once; pages hold linked copies by ID
 ├── pages[]           Page: slug → about.html (X1), Page Settings, Puck data (sections → elements)
-├── media[]           Originals (images, fonts, files) as content-addressed blobs
+├── media[]           Originals (images, fonts, documents: F-ED-24) as content-addressed blobs
 ├── code              custom.css, custom.js, head/body snippets (C7, Advanced mode)
 ├── versions[]        Named + automatic versions (P3: last 20 automatic, configurable)
 └── history           Optional persisted Undo History (D6)
@@ -202,7 +206,7 @@ interface Publisher {
 
 ## 8. Exported site contract
 - Flat pages (`index.html`, `about.html`, `services/web-design.html`), relative URLs, opens from disk (X1).
-- `assets/css/site.<hash>.css` (readable), `assets/js/webforge.<hash>.js` (classic `defer`, only if needed), `assets/fonts/*.woff2` (Fontsource, OFL), `assets/img/*` (WebP + fallback), favicons, `site.webmanifest`, `sitemap.xml` + canonical links if the URL is set, `robots.txt`, `404.html`.
+- `assets/css/site.<hash>.css` (readable), `assets/js/webforge.<hash>.js` (classic `defer`, only if needed), `assets/fonts/*.woff2` (Fontsource, OFL), `assets/img/*` (WebP + fallback), favicons, `site.webmanifest`, `sitemap.xml` + canonical links if the URL is set, `robots.txt`, `404.html`, `files/*` (linked documents, F-ED-24), `llms.txt` + `*.md` page copies when enabled (F-EX-5).
 - **No external requests** except explicitly allowed ones: GA4 `gtag.js` (B4, behind the consent banner B7) and per-URL user allow-list entries.
 - Forms POST to the configured form service (B3/B6); Buy buttons are plain links (M1).
 
@@ -211,6 +215,12 @@ interface Publisher {
 - **Untrusted projects:** validate the SQLite schema, use SQLite defensive mode, and custom scripts are off in the editor by default.
 - **Canvas iframe sandboxed;** no Node access anywhere in renderer contexts.
 - **Network:** the editor makes no network calls except updates, publishing, Netlify OAuth and user-initiated "Download and bundle" (C8).
+- **AI apps (MCP, F-AI-1):**
+  - Off by default. When on, the server listens only on this computer (loopback or a local pipe; transport chosen by ADR). Each AI app is approved once in Webforge and can be removed; unapproved callers are refused.
+  - Every tool call is validated with zod and becomes a document command through `HistoryManager`; the server holds no document state of its own.
+  - No tools for publishing, credentials, Custom Code or files outside the site.
+  - Site content goes only to the AI app the user approved; Webforge itself sends nothing.
+- **Documents in Media (F-ED-24):** accepted by extension and sniffed content type; stored and exported unchanged; never opened, previewed or run inside the editor.
 - **Crash reports (local only):**
   - Electron `crashReporter.start({ uploadToServer: false })` for native crashes (minidumps in `app.getPath('crashDumps')`).
   - Main, renderer and worker handlers for uncaught errors and unhandled rejections write a JSON report to `<userData>/crash-reports/crash-<YYYYMMDD-HHMMSS>-<process>.json` (UTC; Windows-safe filename).
@@ -251,3 +261,4 @@ interface Publisher {
 | M1–M5 | MVP CMS scope, Blog v1.1, Content mode toggle, search/i18n later | [product/02](../research/product/02-cms.md) |
 | UI1 | Editor look and feel: Bootstrap Studio-like layout, dark/light tokens, compact density | [product/04](../research/product/04-editor-look-and-feel.md) |
 | GA1–GA4 | Competitor gaps: 15 small MVP additions; AI with the user's own account in v1.1; provider presets deferred; plugin API long-term | [product/05](../research/product/05-feature-gap-analysis.md) |
+| GA5–GA9 | Elements 3.0 review: connect AI apps (MCP), shared sections, documents in Media and `llms.txt` in the MVP; built-in AI assistant and draft pages in v1.1 | [product/05 §3.7](../research/product/05-feature-gap-analysis.md#37-rapidweaver-elements-30-update-2026-10-22) |
