@@ -105,6 +105,9 @@ export {
   newSharedCopy,
   pageAnchors,
   SHARED_COPY_TYPE,
+  SHARED_SECTION_NAME_MAX,
+  sameSharedName,
+  sharedSectionNamed,
   sharedSectionsDocSchema,
 } from "./shared-sections.js";
 export type { CreateSiteOptions, PageEntry, PageSettings, SiteDoc } from "./site-doc.js";

@@ -14,8 +14,11 @@ import { starterSite } from "../editor/starter-site.js";
 import {
   anchorsTakenInSection,
   copySelection,
+  deleteSharedSection,
   detachCopy,
+  nameProblem,
   reachOf,
+  renameSharedSection,
   savableSection,
   saveAsSharedSection,
   updateSectionField,
@@ -245,5 +248,90 @@ describe("shared sections in the editor (1.29, F-ED-23)", () => {
     // Only an element of a copy can be detached.
     select(session, null);
     expect(detachCopy(session)).toBe(false);
+  });
+
+  it("refuses a name another shared section has, whatever its capitals or spaces", () => {
+    const session = savedSession();
+    const shared = theShared(session);
+    const before = site(session);
+
+    for (const name of ["Hours", "hours", "  HOURS ", "hOuRs"]) {
+      expect(nameProblem(before, name)).toBe("A shared section called 'Hours' already exists");
+    }
+    expect(nameProblem(before, "Hours later")).toBeUndefined();
+    // Its own name, when renaming it.
+    expect(nameProblem(before, " hours", shared.id)).toBeUndefined();
+
+    // Saving another section under a name in use changes nothing.
+    const other = createEditorSession(siteLibrary, before);
+    const notFound = Object.values(before.pages).find((page) => page.kind === "not-found");
+    other.ui.setState({ pageId: notFound?.id, nodeId: notFound?.doc.content[0]?.props.id ?? null });
+    expect(saveAsSharedSection(other, "HOURS")).toBe(false);
+    expect(other.history.entries()).toEqual([]);
+    expect(saveAsSharedSection(other, "Team")).toBe(true);
+  });
+
+  it("renames a shared section in one step, refusing a name in use", () => {
+    const session = savedSession();
+    const { id } = theShared(session);
+
+    expect(renameSharedSection(session, id, "  Opening hours ")).toBe(true);
+    expect(theShared(session).name).toBe("Opening hours");
+    expect(labels(session).at(-1)).toBe("Renamed 'Hours' to 'Opening hours'");
+    // Its own name again, with other capitals: allowed.
+    expect(renameSharedSection(session, id, "OPENING HOURS")).toBe(true);
+    expect(theShared(session).name).toBe("OPENING HOURS");
+
+    session.edit("props", "Added a shared section", (draft) => {
+      const other = "shared-other" as SharedSectionId;
+      draft.sharedSections[other] = { ...theShared(session), id: other, name: "Team" };
+    });
+    const steps = labels(session).length;
+    expect(renameSharedSection(session, id, " team")).toBe(false);
+    expect(renameSharedSection(session, id, "   ")).toBe(false);
+    expect(renameSharedSection(session, "gone" as SharedSectionId, "New")).toBe(false);
+    expect(labels(session)).toHaveLength(steps);
+
+    session.history.undo();
+    session.history.undo();
+    expect(theShared(session).name).toBe("Opening hours");
+  });
+
+  it("deletes a shared section, its copies on every page becoming normal sections, in one step", () => {
+    const session = savedSession();
+    const shared = theShared(session);
+    const [first] = copiesOn(session);
+    const doc = site(session);
+    const notFound = Object.values(doc.pages).find((page) => page.kind === "not-found");
+    if (first === undefined || notFound === undefined) throw new Error("no copy");
+    // A second copy on the other page, hidden and named in Layers.
+    session.edit("insert", "Added a copy", (draft) => {
+      draft.pages[notFound.id]?.doc.content.push({
+        type: SHARED_COPY_TYPE,
+        props: { id: "c2", sharedSectionId: shared.id, layerName: "Hours again", hidden: true },
+      });
+    });
+    select(session, copiedNodeId(first.props.id, "heading-1"));
+
+    expect(deleteSharedSection(session, shared.id)).toBe(true);
+
+    expect(site(session).sharedSections).toEqual({});
+    const [section] = content(session);
+    expect(section?.type).toBe("Section");
+    expect(section?.props.advanced).toEqual({ anchorId: "hours" });
+    expect(JSON.stringify(section)).toContain("Welcome to our business");
+    expect(JSON.stringify(section)).not.toContain("~");
+    const other = site(session).pages[notFound.id]?.doc.content.at(-1);
+    expect(other?.type).toBe("Section");
+    expect(other?.props).toMatchObject({ layerName: "Hours again", hidden: true });
+    expect(other?.props.id).not.toBe(section?.props.id);
+    // The selection inside the copy moves to the section it became.
+    expect(session.ui.getState().nodeId).toBe(section?.props.id);
+    expect(labels(session).at(-1)).toBe("Deleted shared section 'Hours'");
+
+    session.history.undo();
+    expect(theShared(session)).toEqual(shared);
+    expect(copiesOn(session)).toEqual([first]);
+    expect(deleteSharedSection(session, "gone" as SharedSectionId)).toBe(false);
   });
 });

@@ -1,10 +1,16 @@
 import { t } from "@webforge/i18n";
+import { SHARED_SECTION_NAME_MAX, type SharedSectionId } from "@webforge/model";
 import type { EditorSession } from "../editor/editor-session.js";
 import type { CommandRegistry } from "../shell/commands.js";
+import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
 import { NameDialog } from "../site/NameDialog.js";
 import {
   copySelection,
+  deleteSharedSection,
   detachCopy,
+  nameProblem,
+  reachOf,
+  renameSharedSection,
   savableSection,
   saveAsSharedSection,
 } from "./shared-sections.js";
@@ -12,26 +18,71 @@ import {
 /** The commands' ids, for the Edit menu and the command box. */
 const SHARED_SECTION_COMMANDS = {
   save: "edit.saveSharedSection",
+  rename: "edit.renameSharedSection",
   detach: "edit.detachSharedSection",
+  delete: "edit.deleteSharedSection",
 } as const;
 
-/** The longest name a shared section may have, as the site file allows. */
-const MAX_NAME = 100;
+/**
+ * A name the dialog asks for: the selected section's, to save it as a shared section, or a new
+ * one for shared section `id`. `suggested` is what the field starts with.
+ */
+export type SharedSectionNaming =
+  | { readonly kind: "save"; readonly suggested: string }
+  | { readonly kind: "rename"; readonly id: SharedSectionId; readonly suggested: string };
 
 /**
- * Registers *Save as shared section…* and *Detach from shared section* (1.29, F-ED-23) in the
- * Edit menu and the command box. Save needs a section of the page itself selected, and asks for
- * the new shared section's name (`askName`, with a first suggestion); Detach needs an element of a
- * copy selected. Both change the layout, so Content mode's lock (M3) turns them off. Returns a
- * function that removes them, and one that follows the lock.
+ * Deletes shared section `id` (F-ED-23), first asking, with how many pages have a copy (D7), when
+ * any does: its copies become normal sections there. One undo step.
+ */
+export function removeSharedSection(
+  session: EditorSession,
+  id: SharedSectionId,
+  siteWide?: Pick<SiteWideConfirm, "confirmSiteWide">,
+): void {
+  const site = session.history.document.getState();
+  const shared = Object.hasOwn(site.sharedSections, id) ? site.sharedSections[id] : undefined;
+  if (shared === undefined) return;
+  const { pages } = reachOf(site, id);
+  if (pages === 0 || siteWide === undefined) {
+    deleteSharedSection(session, id);
+    return;
+  }
+  void siteWide
+    .confirmSiteWide({
+      action: t("canvas.deleteSharedSection.title", {
+        name: t("history.namedItem", { name: shared.name }),
+      }),
+      description: t("canvas.deleteSharedSection.description"),
+      confirm: t("canvas.deleteSharedSection.confirm"),
+      affectedPages: pages,
+    })
+    .then((confirmed) => {
+      if (confirmed) deleteSharedSection(session, id);
+    });
+}
+
+/**
+ * Registers the shared-section commands (1.29, F-ED-23) in the Edit menu and the command box:
+ * *Save as shared section…* for a section of the page itself; *Rename shared section…*, *Detach
+ * from shared section* and *Delete shared section…* for an element of a copy. Save and Rename ask
+ * for a name (`askName`); Delete asks first when copies are on pages (D7, `siteWide`). All change
+ * the layout, so Content mode's lock (M3) turns them off. Returns a function that removes them,
+ * and one that follows the lock.
  */
 export function registerSharedSectionCommands(
   registry: CommandRegistry,
   session: EditorSession,
   beforeAction: () => void,
-  askName: (suggested: string) => void,
+  askName: (naming: SharedSectionNaming) => void,
+  siteWide?: Pick<SiteWideConfirm, "confirmSiteWide">,
 ): { readonly remove: () => void; readonly setLayoutLocked: (locked: boolean) => void } {
   let locked = false;
+  /** The element of a copy selected on the page shown, if one is. */
+  const selectedCopy = () => {
+    const { pageId, nodeId } = session.ui.getState();
+    return copySelection(session.history.document.getState(), pageId, nodeId);
+  };
   const removers = [
     registry.register({
       id: SHARED_SECTION_COMMANDS.save,
@@ -46,7 +97,19 @@ export function registerSharedSectionCommands(
         const name =
           section.props.layerName?.trim() ||
           (session.library.components[section.type]?.label ?? section.type);
-        askName(name.slice(0, MAX_NAME));
+        askName({ kind: "save", suggested: name.slice(0, SHARED_SECTION_NAME_MAX) });
+      },
+    }),
+    registry.register({
+      id: SHARED_SECTION_COMMANDS.rename,
+      label: t("canvas.renameSharedSection"),
+      menu: "edit",
+      enabled: false,
+      run: () => {
+        beforeAction();
+        const selected = selectedCopy();
+        if (selected === undefined) return;
+        askName({ kind: "rename", id: selected.shared.id, suggested: selected.shared.name });
       },
     }),
     registry.register({
@@ -59,16 +122,32 @@ export function registerSharedSectionCommands(
         detachCopy(session);
       },
     }),
+    registry.register({
+      id: SHARED_SECTION_COMMANDS.delete,
+      label: t("canvas.deleteSharedSection"),
+      menu: "edit",
+      enabled: false,
+      run: () => {
+        beforeAction();
+        const selected = selectedCopy();
+        if (selected !== undefined) removeSharedSection(session, selected.shared.id, siteWide);
+      },
+    }),
   ];
   const update = () => {
     const site = session.history.document.getState();
     const { pageId, nodeId } = session.ui.getState();
+    const inCopy = !locked && selectedCopy() !== undefined;
     registry.update(SHARED_SECTION_COMMANDS.save, {
       enabled: !locked && savableSection(site, pageId, nodeId) !== undefined,
     });
-    registry.update(SHARED_SECTION_COMMANDS.detach, {
-      enabled: !locked && copySelection(site, pageId, nodeId) !== undefined,
-    });
+    for (const id of [
+      SHARED_SECTION_COMMANDS.rename,
+      SHARED_SECTION_COMMANDS.detach,
+      SHARED_SECTION_COMMANDS.delete,
+    ]) {
+      registry.update(id, { enabled: inCopy });
+    }
   };
   update();
   const stopUi = session.ui.subscribe(update);
@@ -87,31 +166,43 @@ export function registerSharedSectionCommands(
 }
 
 /**
- * Asks for the name of the shared section the selected section is saved as (F-ED-23), and saves
- * it: one step, "Saved 'Opening hours' as a shared section".
+ * Asks for a shared section's name (F-ED-23), refusing one another shared section has: to save the
+ * selected section as one ("Saved 'Opening hours' as a shared section"), or to rename one
+ * ("Renamed 'Hours' to 'Opening hours'"). One step either way.
  */
-export function SaveSharedSectionDialog({
+export function SharedSectionNameDialog({
   session,
-  suggested,
+  naming,
   onClose,
 }: {
   readonly session: EditorSession;
-  /** The name to start from; the dialog is closed while this is null. */
-  readonly suggested: string | null;
+  /** What the name is for; the dialog is closed while this is null. */
+  readonly naming: SharedSectionNaming | null;
   readonly onClose: () => void;
 }) {
+  const rename = naming?.kind === "rename" ? naming : undefined;
   return (
     <NameDialog
-      open={suggested !== null}
-      title={t("canvas.saveSharedSection.title")}
-      description={t("canvas.saveSharedSection.description")}
+      open={naming !== null}
+      title={t(
+        rename === undefined
+          ? "canvas.saveSharedSection.title"
+          : "canvas.renameSharedSection.title",
+      )}
+      {...(rename === undefined ? { description: t("canvas.saveSharedSection.description") } : {})}
       label={t("canvas.saveSharedSection.name")}
-      initialValue={suggested ?? ""}
-      maxLength={MAX_NAME}
-      confirm={t("canvas.saveSharedSection.confirm")}
+      initialValue={naming?.suggested ?? ""}
+      maxLength={SHARED_SECTION_NAME_MAX}
+      confirm={t(
+        rename === undefined
+          ? "canvas.saveSharedSection.confirm"
+          : "canvas.renameSharedSection.confirm",
+      )}
+      problem={(name) => nameProblem(session.history.document.getState(), name, rename?.id)}
       onSubmit={(name) => {
         onClose();
-        saveAsSharedSection(session, name);
+        if (rename === undefined) saveAsSharedSection(session, name);
+        else renameSharedSection(session, rename.id, name);
       }}
       onCancel={onClose}
     />

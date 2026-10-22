@@ -22,7 +22,8 @@ import { registerMediaPanel } from "../media/register-media-panel.js";
 import { connectCanvasNavigation } from "../menu/canvas-navigation.js";
 import {
   registerSharedSectionCommands,
-  SaveSharedSectionDialog,
+  SharedSectionNameDialog,
+  type SharedSectionNaming,
 } from "../shared-sections/SharedSectionCommands.js";
 import { type CanvasView, connectCanvasView } from "../shell/canvas-view.js";
 import { useCommandRegistry } from "../shell/command-context.js";
@@ -97,8 +98,8 @@ export function Editor({
   const addPanelRef = useRef<AddPanelRegistration | null>(null);
   const { history } = session;
   const registry = useCommandRegistry();
-  // The name the selected section is being saved as a shared section under, while the dialog asks.
-  const [sharedName, setSharedName] = useState<string | null>(null);
+  // The shared-section name the dialog asks for (saving or renaming one), while it is open.
+  const [naming, setNaming] = useState<SharedSectionNaming | null>(null);
   const state = useSyncExternalStore(
     history.state.subscribe,
     history.state.getState,
@@ -191,12 +192,13 @@ export function Editor({
     clipboardCommandsRef.current = clipboardCommands;
     const canvasCommands = registerCanvasCommands(registry, engine, connection.flush);
     canvasCommands.setHasSelection(session.ui.getState().nodeId !== null);
-    // Save as shared section and Detach (1.29), after the canvas's own actions.
+    // The shared-section commands (1.29), after the canvas's own actions.
     const sharedCommands = registerSharedSectionCommands(
       registry,
       session,
       connection.flush,
-      setSharedName,
+      setNaming,
+      siteWide,
     );
     sharedCommands.setLayoutLocked(modeRef.current !== "design");
     sharedCommandsRef.current = sharedCommands;
@@ -334,11 +336,7 @@ export function Editor({
     <div className="editor">
       <SharedRegionBanner session={session} />
       <RichTextLinkHost session={session} engine={engine} />
-      <SaveSharedSectionDialog
-        session={session}
-        suggested={sharedName}
-        onClose={() => setSharedName(null)}
-      />
+      <SharedSectionNameDialog session={session} naming={naming} onClose={() => setNaming(null)} />
       <section className="editor__canvas" aria-label={t("editor.canvas")} ref={canvasRef} />
     </div>
   );
