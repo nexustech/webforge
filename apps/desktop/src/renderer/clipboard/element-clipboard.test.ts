@@ -324,7 +324,10 @@ describe("copy and paste (1.25)", () => {
         Banner: {
           label: "Banner",
           place: "layout",
-          fields: { content: { kind: "slot", label: "Content", allow: ["Heading"] } },
+          fields: {
+            content: { kind: "slot", label: "Content", allow: ["Heading"] },
+            image: { kind: "media", label: "Image" },
+          },
           defaults: { content: [] },
           render: () => null,
         },
@@ -375,6 +378,22 @@ describe("copy and paste (1.25)", () => {
       expect(bannerContent(session)).toEqual([
         { type: "Heading", props: { id: "notice", text: "Closed Monday" } },
       ]);
+    });
+
+    it("says a pasted image goes into the shared layout, on every page", async () => {
+      const session = withBanner();
+      select(session, "banner");
+
+      await pasteElements(
+        session,
+        fakeClipboard({ status: "media", items: [photo], rejected: [] }),
+        vi.fn(),
+      );
+
+      expect(session.history.document.getState().layout.header.at(-1)?.props.image).toEqual({
+        mediaId: photo.id,
+      });
+      expect(labels(session).at(-1)).toBe("Pasted image 'shop.jpg' into shared Banner");
     });
 
     it("never takes a Header or Footer the page hides", async () => {

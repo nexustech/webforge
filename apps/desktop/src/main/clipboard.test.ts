@@ -11,6 +11,7 @@ import {
   createElementClipboard,
   filePaths,
   type SystemClipboard,
+  systemClipboard,
 } from "./clipboard.js";
 import type { ImportFile } from "./media-import.js";
 
@@ -232,5 +233,45 @@ describe("filePaths", () => {
         ? ["C:\\Photos\\shop front.jpg", "C:\\c.jpg"]
         : ["/C:/Photos/shop front.jpg", "/C:/c.jpg"],
     );
+  });
+});
+
+describe("systemClipboard", () => {
+  const limits = { elements: 100, files: 50, image: 100 };
+  /** Electron's clipboard holding one item with these types and contents. */
+  const holding = (contents: Record<string, string | Uint8Array>) => {
+    const item = {
+      types: Object.keys(contents),
+      getType: async (type: string) => new Blob([contents[type] ?? ""], { type }),
+    };
+    return systemClipboard({
+      clipboard: { read: async () => [item] },
+      ClipboardItem: class {},
+    } as never);
+  };
+  const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
+  const uri = "file:///C:/shop.jpg";
+
+  it("reads elements first, then copied files, then an image", async () => {
+    const all = {
+      "web application/x-webforge-elements": "{}",
+      "text/uri-list": uri,
+      "image/png": png,
+    };
+    expect(await holding(all).read(limits)).toEqual({ kind: "elements", json: "{}" });
+    expect((await holding({ "text/uri-list": uri, "image/png": png }).read(limits)).kind).toBe(
+      "files",
+    );
+    expect(await holding({ "image/png": png }).read(limits)).toEqual({ kind: "image", png });
+    expect(await holding({ "text/plain": "hello" }).read(limits)).toEqual({ kind: "none" });
+  });
+
+  it("doesn't read a file list or an image over its limit", async () => {
+    const long = `${uri}\n${"#".repeat(60)}`;
+    expect(await holding({ "text/uri-list": long }).read(limits)).toEqual({ kind: "none" });
+    expect(await holding({ "image/png": new Uint8Array(101) }).read(limits)).toEqual({
+      kind: "image",
+      png: undefined,
+    });
   });
 });

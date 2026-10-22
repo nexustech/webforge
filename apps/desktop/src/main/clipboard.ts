@@ -27,6 +27,9 @@ const ELEMENTS_FORMAT = "web application/x-webforge-elements";
 /** The most bytes of copied elements read back, so a huge clipboard can't hold the app up. */
 const MAX_ELEMENTS_BYTES = 10 * 1024 * 1024;
 
+/** The most bytes of a list of copied files read: thousands of paths, far more than are taken. */
+const MAX_FILE_LIST_BYTES = 1024 * 1024;
+
 /** A file the clipboard keeps aside: an image's bytes, named by their SHA-256 hash. */
 const KEPT_FILE = /^[0-9a-f]{64}$/;
 
@@ -44,8 +47,12 @@ export type ClipboardContent =
 export type SystemClipboard = {
   /** Replaces the clipboard's content with copied elements. */
   writeElements(json: string): Promise<void>;
-  /** What the clipboard holds; elements or an image over the limits aren't read. */
-  read(maxBytes: { readonly elements: number; readonly image: number }): Promise<ClipboardContent>;
+  /** What the clipboard holds; elements, a file list or an image over the limits aren't read. */
+  read(maxBytes: {
+    readonly elements: number;
+    readonly files: number;
+    readonly image: number;
+  }): Promise<ClipboardContent>;
 };
 
 /**
@@ -93,7 +100,8 @@ export function systemClipboard(
       }
       // Files copied in Explorer or Finder come as a list of file: URLs.
       const uris = await blobOf("text/uri-list");
-      const paths = uris === undefined ? [] : filePaths(await uris.text());
+      const paths =
+        uris === undefined || uris.size > maxBytes.files ? [] : filePaths(await uris.text());
       if (paths.length > 0) {
         return { kind: "files", paths };
       }
@@ -196,7 +204,11 @@ export function createElementClipboard(
     async read(): Promise<ClipboardReadResult> {
       let content: ClipboardContent;
       try {
-        content = await system.read({ elements: MAX_ELEMENTS_BYTES, image: MAX_MEDIA_BYTES });
+        content = await system.read({
+          elements: MAX_ELEMENTS_BYTES,
+          files: MAX_FILE_LIST_BYTES,
+          image: MAX_MEDIA_BYTES,
+        });
       } catch {
         // Unreadable: nothing Webforge can paste.
         return { status: "empty" };

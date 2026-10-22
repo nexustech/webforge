@@ -258,9 +258,10 @@ export async function pasteElements(
 /**
  * Pastes imported image files or a copied image (F-ED-16): one image goes into the selected
  * element's image field, if it has one ("Pasted image 'shop.png'"), and joins Media in the same
- * step. Anything else is added to Media ("Added image 'shop.png'"), which a message says.
- * Inserting a new element for it comes with Phase 2's Image element. Files Media didn't take are named in a
- * message, as for a drop.
+ * step; in the shared Header or Footer, every page shows it ("… into shared Header"). Anything
+ * else is added to Media ("Added image 'shop.png'"), which a message says. Inserting a new element
+ * for it comes with Phase 2's Image element. Files Media didn't take are named in a message, as
+ * for a drop.
  */
 function pasteMedia(
   session: ClipboardSession,
@@ -298,9 +299,14 @@ function pasteMedia(
   const id = node.props.id;
   session.edit(
     "props",
-    t("site.clipboard.history.pastedImage", {
-      name: t("history.namedItem", { name: item.fileName }),
-    }),
+    region === undefined
+      ? t("site.clipboard.history.pastedImage", {
+          name: t("history.namedItem", { name: item.fileName }),
+        })
+      : t("site.clipboard.history.pastedSharedImage", {
+          name: t("history.namedItem", { name: item.fileName }),
+          item: t("history.sharedItem", { item: itemName(session, node) }),
+        }),
     (draft) => {
       putInMedia(draft, [item]);
       const list =
