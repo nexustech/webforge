@@ -8,7 +8,9 @@ export {
   validBindings,
 } from "./bindings.js";
 export type { BrokenLink } from "./broken-links.js";
-export { findBrokenLinks } from "./broken-links.js";
+export { anchorsIn, findBrokenLinks } from "./broken-links.js";
+export type { CopiedElements } from "./clipboard.js";
+export { copiedElementsSchema, MAX_COPIED_NODES, pastedCopies } from "./clipboard.js";
 export type { LayoutDoc, NodeAdvanced, NodeDoc, PageDoc, SiteCode, Theme } from "./documents.js";
 export {
   attributeNameSchema,
@@ -16,6 +18,7 @@ export {
   isNodeDoc,
   layoutDocSchema,
   nodeAdvancedSchema,
+  nodeDocSchema,
   pageDocSchema,
   siteCodeSchema,
   themeSchema,
@@ -40,6 +43,7 @@ export {
 } from "./media.js";
 export type { MenuDoc, MenuItem, MenuLeaf } from "./menu.js";
 export { menuDocSchema, menuItemSchema } from "./menu.js";
+export { syncMenuWithPages } from "./menu-sync.js";
 export type {
   MigrateOptions,
   RawSite,
