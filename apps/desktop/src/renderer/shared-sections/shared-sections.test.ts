@@ -265,7 +265,8 @@ describe("shared sections in the editor (1.29, F-ED-23)", () => {
     // Saving another section under a name in use changes nothing.
     const other = createEditorSession(siteLibrary, before);
     const notFound = Object.values(before.pages).find((page) => page.kind === "not-found");
-    other.ui.setState({ pageId: notFound?.id, nodeId: notFound?.doc.content[0]?.props.id ?? null });
+    if (notFound === undefined) throw new Error("no 'Page not found' page");
+    other.ui.setState({ pageId: notFound.id, nodeId: notFound.doc.content[0]?.props.id ?? null });
     expect(saveAsSharedSection(other, "HOURS")).toBe(false);
     expect(other.history.entries()).toEqual([]);
     expect(saveAsSharedSection(other, "Team")).toBe(true);

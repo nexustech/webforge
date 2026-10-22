@@ -35,7 +35,7 @@ export type SharedSectionNaming =
  * Deletes shared section `id` (F-ED-23), first asking, with how many pages have a copy (D7), when
  * any does: its copies become normal sections there. One undo step.
  */
-export function removeSharedSection(
+function removeSharedSection(
   session: EditorSession,
   id: SharedSectionId,
   siteWide?: Pick<SiteWideConfirm, "confirmSiteWide">,

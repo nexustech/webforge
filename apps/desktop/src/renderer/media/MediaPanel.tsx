@@ -40,7 +40,7 @@ import {
   replaceMedia,
   setFocalPoint,
 } from "./media-commands.js";
-import { mediaUsage } from "./media-usage.js";
+import { mediaUsage, unplacedSharedUsage } from "./media-usage.js";
 
 /** Props of {@link MediaPanel}. */
 export type MediaPanelProps = {
@@ -63,6 +63,21 @@ const ARROWS: Readonly<Record<string, { readonly x: number; readonly y: number }
   ArrowDown: { x: 0, y: FOCAL_STEP },
 };
 
+/** Why deleting `item` warns when only shared sections no page shows yet use it (F-ED-23). */
+function sharedUsageText(item: MediaMeta, shared: readonly string[]): string {
+  const [first] = shared;
+  const name = t("history.namedItem", { name: first ?? "" });
+  const names = shared.map((each) => t("history.namedItem", { name: each })).join(", ");
+  if (item.kind === "file") {
+    return shared.length === 1
+      ? t("site.media.deleteDialog.linkedFromShared", { name })
+      : t("site.media.deleteDialog.linkedFromSharedMany", { names });
+  }
+  return shared.length === 1
+    ? t("site.media.deleteDialog.usedInShared", { name })
+    : t("site.media.deleteDialog.usedInSharedMany", { names });
+}
+
 /**
  * The Site panel's Media (F-ED-5, G14, G15): the site's images and files, added from a dialog or by
  * dropping them on the panel. Choosing one shows its details: alt text (reused wherever the image
@@ -82,7 +97,13 @@ export function MediaPanel({
   const [selectedId, setSelectedId] = useState<MediaId>();
   const [dragging, setDragging] = useState(false);
   /** An image to delete that pages still use, and how many: the user confirms first. */
-  const [confirming, setConfirming] = useState<{ item: MediaMeta; pages: number }>();
+  // The item to delete once confirmed, with the pages using it, or else the shared sections no
+  // page shows yet that use it (F-ED-23).
+  const [confirming, setConfirming] = useState<{
+    item: MediaMeta;
+    pages: number;
+    shared: readonly string[];
+  }>();
   const api = media ?? window.webforge.media;
   const list = Object.values(items);
   // Undo or another change can take the chosen item away.
@@ -184,14 +205,14 @@ export function MediaPanel({
               })
             }
             onDelete={() => {
-              const pages =
-                mediaUsage(session.history.document.getState(), session.library).get(selected.id) ??
-                0;
-              if (pages === 0) {
+              const site = session.history.document.getState();
+              const pages = mediaUsage(site, session.library).get(selected.id) ?? 0;
+              const shared = unplacedSharedUsage(site, session.library).get(selected.id) ?? [];
+              if (pages === 0 && shared.length === 0) {
                 deleteMedia(session, selected.id);
                 setSelectedId(undefined);
               } else {
-                setConfirming({ item: selected, pages });
+                setConfirming({ item: selected, pages, shared });
               }
             }}
           />
@@ -209,13 +230,15 @@ export function MediaPanel({
               {t("site.media.deleteDialog.title", { name: confirming?.item.fileName ?? "" })}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {confirming?.item.kind === "file"
-                ? confirming.pages === 1
-                  ? t("site.media.deleteDialog.linkedFromOne")
-                  : t("site.media.deleteDialog.linkedFromMany", { count: confirming.pages })
-                : confirming?.pages === 1
-                  ? t("site.media.deleteDialog.usedOnOne")
-                  : t("site.media.deleteDialog.usedOnMany", { count: confirming?.pages ?? 0 })}
+              {confirming !== undefined && confirming.pages === 0
+                ? sharedUsageText(confirming.item, confirming.shared)
+                : confirming?.item.kind === "file"
+                  ? confirming.pages === 1
+                    ? t("site.media.deleteDialog.linkedFromOne")
+                    : t("site.media.deleteDialog.linkedFromMany", { count: confirming.pages })
+                  : confirming?.pages === 1
+                    ? t("site.media.deleteDialog.usedOnOne")
+                    : t("site.media.deleteDialog.usedOnMany", { count: confirming?.pages ?? 0 })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
