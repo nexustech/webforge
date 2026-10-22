@@ -1,5 +1,5 @@
 import { t } from "@webforge/i18n";
-import { boundText, type ComponentDef } from "../library.js";
+import { boundText, type ComponentDef, type NavLink, type RenderContext } from "../library.js";
 
 /** Three-line menu icon, drawn inline so the site needs no icon font (C8). */
 function MenuIcon() {
@@ -20,9 +20,87 @@ function MenuIcon() {
   );
 }
 
+/** A small down arrow for a dropdown's button, drawn inline (C8). */
+function ChevronIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      aria-hidden="true"
+    >
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
+/** One link of the navigation: a button ("Book now") or a plain link, in a new tab if set. */
+function NavLinkItem({ link }: { readonly link: NavLink }) {
+  return (
+    <li>
+      <a
+        href={link.href}
+        aria-current={link.current ? "page" : undefined}
+        className={link.button === true ? "btn btn-primary btn-sm md:ml-2" : undefined}
+        {...(link.newTab === true ? { target: "_blank", rel: "noopener" } : {})}
+      >
+        {link.label}
+      </a>
+    </li>
+  );
+}
+
 /**
- * The shared Header (C5): site name and navigation. On small screens the navigation folds into a
- * menu opened by a button (`webforge.js` "menu" behaviour sets `data-open` and `aria-expanded`).
+ * The navigation's items (F-ED-17): links, buttons and dropdowns. A dropdown's button opens its
+ * list (`webforge.js` "menu" behaviour sets `aria-expanded` and `data-open`); until the script has
+ * run, or without it, the list shows while the dropdown has the focus.
+ */
+function NavItems({ id, context }: { readonly id: string; readonly context: RenderContext }) {
+  return (
+    <>
+      {context.navigation.map((item, index) => {
+        if (!("children" in item)) {
+          return <NavLinkItem key={`${index}:${item.href}`} link={item} />;
+        }
+        const listId = `${id}-${index}`;
+        return (
+          <li
+            key={listId}
+            className="site-submenu relative [&:not([data-wf-ready]):focus-within>ul]:block"
+          >
+            <button
+              type="button"
+              aria-expanded="false"
+              aria-controls={listId}
+              data-wf-submenu-toggle=""
+            >
+              {item.label}
+              <ChevronIcon />
+            </button>
+            <ul
+              id={listId}
+              className="hidden data-open:block md:absolute md:top-full md:z-20 md:mt-1 md:w-48 md:rounded-box md:bg-base-100 md:p-2 md:shadow"
+            >
+              {item.children.map((link) => (
+                <NavLinkItem key={link.href} link={link} />
+              ))}
+            </ul>
+          </li>
+        );
+      })}
+    </>
+  );
+}
+
+/**
+ * The shared Header (C5): site name and navigation, from the site's menu (F-ED-17). On small
+ * screens the navigation folds into a menu opened by a button (`webforge.js` "menu" behaviour sets
+ * `data-open` and `aria-expanded`).
  */
 export const header: ComponentDef = {
   label: t("layout.header"),
@@ -61,13 +139,7 @@ export const header: ComponentDef = {
             id={menuId}
             className="menu absolute inset-x-0 top-full z-10 hidden w-full bg-base-100 p-2 shadow data-open:flex md:static md:flex md:w-auto md:menu-horizontal md:p-0 md:shadow-none"
           >
-            {context.navigation.map((link) => (
-              <li key={link.href}>
-                <a href={link.href} aria-current={link.current ? "page" : undefined}>
-                  {link.label}
-                </a>
-              </li>
-            ))}
+            <NavItems id={menuId} context={context} />
           </ul>
         </nav>
       </header>

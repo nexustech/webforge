@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Rosa's Bakery</title>
   <meta name="description" content="Fresh bread and cakes, baked every morning in Hightown.">
-  <link rel="stylesheet" href="assets/css/site.c8cfb7e5f9.css">
-  <script defer src="assets/js/webforge.d825197fcf.js"></script>
+  <link rel="stylesheet" href="assets/css/site.e581fadeb4.css">
+  <script defer src="assets/js/webforge.535f904237.js"></script>
 </head>
 <body class="flex min-h-screen flex-col bg-base-100 font-sans text-base-content">
   <!-- Header (shared) -->
@@ -18,6 +18,15 @@
       <ul id="header-menu" class="menu absolute inset-x-0 top-full z-10 hidden w-full bg-base-100 p-2 shadow data-open:flex md:static md:flex md:w-auto md:menu-horizontal md:p-0 md:shadow-none">
         <li><a href="index.html" aria-current="page">Home</a></li>
         <li><a href="about.html">About us</a></li>
+        <li class="site-submenu relative [&amp;:not([data-wf-ready]):focus-within&gt;ul]:block"><button type="button" aria-expanded="false" aria-controls="header-menu-2" data-wf-submenu-toggle="">Visit us<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+              <path d="m6 9 6 6 6-6"></path>
+            </svg></button>
+          <ul id="header-menu-2" class="hidden data-open:block md:absolute md:top-full md:z-20 md:mt-1 md:w-48 md:rounded-box md:bg-base-100 md:p-2 md:shadow">
+            <li><a href="index.html#questions">Questions</a></li>
+            <li><a href="https://example.com/map" target="_blank" rel="noopener">Find us</a></li>
+          </ul>
+        </li>
+        <li><a href="about.html" class="btn btn-primary btn-sm md:ml-2">Order a cake</a></li>
       </ul>
     </nav>
   </header>
@@ -41,7 +50,7 @@
           <p>Find us on <a href="https://example.com/map">the map</a>.</p>
         </div>
       </div>
-      <div class="site-faq space-y-4">
+      <div class="site-faq space-y-4" id="questions">
         <h2 class="text-3xl font-bold">Questions</h2>
         <div class="space-y-2">
           <details class="site-faq-item collapse-arrow collapse border border-base-300 bg-base-100">

@@ -130,6 +130,8 @@ export const panels = {
   "menu.rowHidden": "{name}, {kind}, hidden",
   "menu.rowInGroup": "{name}, {kind} in '{group}'",
   "menu.rowInGroupHidden": "{name}, {kind} in '{group}', hidden",
+  "menu.rowPageHidden": "{name}, {kind}, hidden in Page Settings",
+  "menu.rowInGroupPageHidden": "{name}, {kind} in '{group}', hidden in Page Settings",
   "menu.actions": "Actions for {name}",
   "menu.rename": "Rename…",
   "menu.usePageName": "Use Page Name",

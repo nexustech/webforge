@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { SiteSnapshot } from "@webforge/model";
+import type { MenuItemId, PageId, SiteSnapshot } from "@webforge/model";
 
 const FIXTURES = join(import.meta.dirname, "../fixtures");
 
@@ -11,7 +11,8 @@ export function heroPhoto(): Uint8Array {
 
 /**
  * A small two-page site: Header and Footer, a home page with a Hero (with photo), text and an FAQ,
- * and an About page. Used by pipeline tests and the export E2E tests.
+ * and an About page. Its menu has both pages, a "Visit us" dropdown (a link to the FAQ section and
+ * a web address in a new tab) and an "Order a cake" button. Used by pipeline tests and the export E2E tests.
  */
 export function sampleSite(): SiteSnapshot {
   return {
@@ -64,6 +65,7 @@ export function sampleSite(): SiteSnapshot {
                     type: "Faq",
                     props: {
                       id: "faq",
+                      advanced: { anchorId: "questions" },
                       title: "Questions",
                       items: [
                         {
@@ -120,5 +122,43 @@ export function sampleSite(): SiteSnapshot {
       },
     ],
     media: [{ id: "hero-photo", name: "hero", mimeType: "image/jpeg", data: heroPhoto() }],
+    menu: {
+      follows: "custom",
+      items: [
+        { id: menuId("home"), kind: "page", pageId: "home" as PageId, hidden: false },
+        { id: menuId("about"), kind: "page", pageId: "about" as PageId, hidden: false },
+        {
+          id: menuId("visit"),
+          kind: "group",
+          label: "Visit us",
+          hidden: false,
+          children: [
+            {
+              id: menuId("questions"),
+              kind: "section",
+              label: "Questions",
+              link: { kind: "page", pageId: "home" as PageId, anchor: "questions" },
+              hidden: false,
+            },
+            {
+              id: menuId("map"),
+              kind: "link",
+              label: "Find us",
+              link: { kind: "url", href: "https://example.com/map", newTab: true },
+              hidden: false,
+            },
+          ],
+        },
+        {
+          id: menuId("order"),
+          kind: "button",
+          label: "Order a cake",
+          link: { kind: "page", pageId: "about" as PageId },
+          hidden: false,
+        },
+      ],
+    },
   };
 }
+
+const menuId = (name: string) => name as MenuItemId;

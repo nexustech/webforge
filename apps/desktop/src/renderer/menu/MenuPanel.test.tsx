@@ -1,12 +1,12 @@
 // @vitest-environment happy-dom
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it } from "vitest";
 import { createEditorSession } from "../editor/editor-session.js";
 import { starterSite } from "../editor/starter-site.js";
 import { createPanelRegistry } from "../shell/panels.js";
-import { addPage } from "../site/page-actions.js";
+import { addPage, setHiddenFromNavigation } from "../site/page-actions.js";
 import { registerSitePanel } from "../site/SitePanel.js";
 
 afterEach(cleanup);
@@ -101,6 +101,17 @@ describe("MenuPanel (F-ED-17)", () => {
       "Hid menu item 'About'",
       "Deleted menu item 'My site'",
     ]);
+    remove();
+  });
+
+  it("shows a page hidden from navigation in its Page Settings as hidden there", () => {
+    const { session, site, rows, remove } = setUp();
+    const about = site().pageOrder[1];
+    if (about === undefined) throw new Error("no About page");
+
+    act(() => setHiddenFromNavigation(session, about, true));
+
+    expect(rows()).toEqual(["My site, page", "About, page, hidden in Page Settings"]);
     remove();
   });
 
