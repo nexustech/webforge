@@ -6,6 +6,7 @@ import {
   copiedNodeId,
   expandSharedCopies,
   isSharedCopy,
+  newSharedCopy,
   SHARED_COPY_TYPE,
   type SharedSectionsDoc,
   sharedSectionsDocSchema,
@@ -108,5 +109,22 @@ describe("shared sections (F-ED-23)", () => {
     const gone: NodeDoc = { type: SHARED_COPY_TYPE, props: { id: "c", sharedSectionId: "gone" } };
 
     expect(expandSharedCopies([gone], shared)).toEqual([]);
+  });
+
+  it("makes new copies for a page: the first keeps the anchors, others get the lowest free suffix", () => {
+    const first = newSharedCopy([], HOURS);
+    expect(first.props.anchorSuffix).toBeUndefined();
+    expect(isSharedCopy(first)).toBe(true);
+
+    const second = newSharedCopy([first], HOURS);
+    expect(second.props.anchorSuffix).toBe("2");
+    expect(second.props.id).not.toBe(first.props.id);
+
+    // A suffix stays with its copy: deleting copy 2 frees "2" for the next one, not "3".
+    const third = newSharedCopy([first, copy("c3", "3")], HOURS);
+    expect(third.props.anchorSuffix).toBe("2");
+    // Copies of other sections don't count.
+    const OTHER = "shared-other" as SharedSectionId;
+    expect(newSharedCopy([first], OTHER).props.anchorSuffix).toBeUndefined();
   });
 });

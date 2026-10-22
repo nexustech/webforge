@@ -90,6 +90,7 @@ export {
   copiedNodeId,
   expandSharedCopies,
   isSharedCopy,
+  newSharedCopy,
   SHARED_COPY_TYPE,
   sharedSectionsDocSchema,
 } from "./shared-sections.js";

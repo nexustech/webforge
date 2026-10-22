@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { isNodeDoc, type NodeDoc, nodeDocSchema, withoutUnsafeKeys } from "./documents.js";
-import { type SharedSectionId, sharedSectionIdSchema } from "./ids.js";
+import { newId, type SharedSectionId, sharedSectionIdSchema } from "./ids.js";
 
 /**
  * Shared sections (F-ED-23, C5): a section saved once under a name and placed on any page, more
@@ -131,4 +131,31 @@ export function expandSharedCopies(
       : undefined;
     return entry === undefined ? [] : [inCopy(entry.section, node)];
   });
+}
+
+/**
+ * A new linked copy of shared section `id` to place among `content`, a page's top level (the Add
+ * panel, a paste). The first copy of a section on a page keeps its anchors; another gets the
+ * lowest suffix no copy there has (`2`, `3`…), kept for good, so each copy can be linked to.
+ */
+export function newSharedCopy(content: readonly NodeDoc[], id: SharedSectionId): SharedCopyNode {
+  const copies = content.filter(
+    (node): node is NodeDoc & SharedCopyNode =>
+      isSharedCopy(node) && node.props.sharedSectionId === id,
+  );
+  const taken = new Set(copies.map((node) => node.props.anchorSuffix));
+  let suffix: string | undefined;
+  if (taken.has(undefined)) {
+    let next = 2;
+    while (taken.has(String(next))) next++;
+    suffix = String(next);
+  }
+  return {
+    type: SHARED_COPY_TYPE,
+    props: {
+      id: newId("node"),
+      sharedSectionId: id,
+      ...(suffix === undefined ? {} : { anchorSuffix: suffix }),
+    },
+  };
 }
