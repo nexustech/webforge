@@ -68,6 +68,7 @@ export function createFakeEngine(): FakeEngine {
     perform: vi.fn(() => true),
     onAddRequest: adds.add,
     addDragSource: vi.fn(() => () => undefined),
+    setLinkPicker: vi.fn(),
     onFrameWindow: frames.add,
     setMode: vi.fn(),
     renderStatic: vi.fn(() => ""),

@@ -1,4 +1,10 @@
-import { imageValueSchema, isNodeDoc, linkValueSchema, type NodeDoc } from "@webforge/model";
+import {
+  imageValueSchema,
+  isNodeDoc,
+  linkValueSchema,
+  type NodeDoc,
+  rewriteRichTextLinks,
+} from "@webforge/model";
 import type { ComponentType, ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import {
@@ -139,8 +145,9 @@ function renderNode(node: NodeDoc, rendering: Rendering): ReactNode {
   for (const [name, field] of Object.entries(def.fields)) {
     const value = props[name];
     if (field.kind === "richtext" && typeof value === "string") {
-      // On the canvas the engine passes rich text as an editor element; here it is sanitised HTML.
-      values[name] = <RichText html={value} />;
+      // On the canvas the engine passes rich text as an editor element; here it is sanitised HTML,
+      // its links to the site's pages pointing at their exported files (F-ED-18).
+      values[name] = <RichText html={rewriteRichTextLinks(value, context.href)} />;
     } else if (field.kind === "slot") {
       const children = childrenIn(value);
       slots[name] = () => <>{renderNodes(children, rendering)}</>;
