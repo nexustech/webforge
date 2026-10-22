@@ -121,7 +121,8 @@ Build a single-page prototype in the Electron + React + shadcn/ui shell with 6 c
 - **Editing:** click the footer on *any* page to edit it in place. The persistent banner *"Editing shared Footer: changes apply to all 6 pages"* shows while it's selected (D7). Changes appear on every page immediately; one undo reverts it everywhere.
 - **Implementation in Puck:** the page canvas renders `Header` + page content + `Footer`. Header/Footer are fed from the layout store, and edits are routed back to the layout file through the adapter. *Validate in the spike* (fallback: a dedicated "Edit layout" mode that opens the layout in its own Puck instance).
 - **Per-page opt-out (only):** a page setting *"Hide header/footer on this page"* (e.g. a landing page). No per-page variants.
-- **Later (post-MVP):** user-defined reusable sections ("Saved sections", e.g. a newsletter signup used on several pages), same mechanism.
+- **Shared sections in the MVP (GA6, 2026-10-22, [F-ED-23](../../spec/02-mvp-spec.md#22-editing)):** user-defined sections (e.g. an opening-hours strip) stored once in a `sharedSections` document. Unlike Header/Footer they sit **inside** a page: the page holds a linked-copy node that refers to the shared section by ID. The engine receives the shared sections with the page (`loadPage(page, layout, shared)`), renders each copy from the stored section, and routes edits back to it, as for the layout. Each copy's anchor IDs are made unique per copy. Edits apply to every copy as one undo step.
+- **Later:** a library of saved sections reused across sites.
 
 ### Adapter layer (C6)
 A thin `CanvasEngine` interface owned by Webforge; Puck is one implementation. The rest of the app never imports Puck directly.

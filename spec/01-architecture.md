@@ -39,6 +39,7 @@ flowchart TB
     PUB[Publishers: Folder/ZIP · FTP/FTPS/SFTP · Netlify]
     KEY[Credentials: safeStorage / OS keychain]
     UPD[Auto-updater]
+    MCP[AI apps: local MCP server, off by default]
   end
   subgraph Worker["utilityProcess: Build worker"]
     PIPE[Pipeline: render → classes → Tailwind/daisyUI → esbuild → images → site files → checks]
@@ -57,11 +58,13 @@ flowchart TB
   Renderer <-- "typed IPC via preload/contextBridge" --> Main
   Main <-- "MessagePort" --> Worker
   PREV -- "HTML/CSS from worker cache" --> Browser[(Browsers / phones on LAN)]
+  AIAPP[(AI apps on this computer)] -- "MCP, local only, approved per app" --> MCP
+  MCP -- "commands via typed IPC" --> DOC
 ```
 
 | Process | Responsibilities | Must never |
 |---|---|---|
-| **Main** | Window/menus, open/save `.wforge`, autosave transactions, versions, preview HTTP/SSE server, publishing, credentials, updates | Render UI; hold editor state of truth |
+| **Main** | Window/menus, open/save `.wforge`, autosave transactions, versions, preview HTTP/SSE server, publishing, credentials, updates, the local MCP server for AI apps (F-AI-1), which forwards commands to the renderer | Render UI; hold editor state of truth |
 | **Preload** | Exposes a **typed, minimal API** via `contextBridge` (`window.webforge.*`) | Expose `ipcRenderer`, Node or Electron objects directly |
 | **Renderer (editor)** | UI, the in-memory document, history, selection, canvas engine | Access Node/fs directly (`nodeIntegration: false`, `sandbox: true`) |
 | **Canvas iframe** | Shows the page being edited with the **site's** CSS only (C8, `syncHostStyles: false`) | Load editor styles; run custom scripts unless the user enables it (05) |
@@ -80,6 +83,7 @@ wforge/
 │   ├── history/                 History Manager: transactions, coalescing, labels, selection restore
 │   ├── storage/                 .wforge SQLite store: blobs, documents, versions, GC, backup
 │   ├── engine/                  CanvasEngine interface + Puck implementation (only place Puck is imported)
+│   ├── commands/                Typed queries and commands for AI apps (F-AI-1) and the v1.1 assistant, over model + history
 │   ├── site-components/         Section & element components, fields, daisyUI markup, webforge.js behaviours
 │   ├── themes/                  Curated themes, fonts catalogue, theme → Tailwind @theme generation
 │   ├── pipeline/                Render, Tailwind compile, esbuild, images, site files, Site Check rules
@@ -97,6 +101,7 @@ wforge/
 - **Only `engine` imports Puck.** Only `editor-ui` and `apps/desktop/renderer` import shadcn/ui.
 - Renderer code never imports Node built-ins; main-process code never imports React.
 - `site-components` must not import editor code. Its output must render to static HTML.
+- `commands` is framework-free: no React and no Puck. It reads field schemas from a React-free catalogue entry point that `site-components` exports as plain zod data.
 
 ## 5. Core data model
 
@@ -106,8 +111,9 @@ Site (.wforge)
 │                     search engines, publish destinations (no secrets), allowed external URLs (C8)
 ├── theme             Theme preset + brand colours, fonts, radius, spacing (05), stored as CSS-variable tokens
 ├── layout            Header, Footer (C5): Puck data, stored once, rendered on every page
+├── sharedSections[]  Shared sections (F-ED-23): named section data stored once; pages hold linked copies by ID
 ├── pages[]           Page: slug → about.html (X1), Page Settings, Puck data (sections → elements)
-├── media[]           Originals (images, fonts, files) as content-addressed blobs
+├── media[]           Originals (images, fonts, files: F-ED-24) as content-addressed blobs
 ├── code              custom.css, custom.js, head/body snippets (C7, Advanced mode)
 ├── versions[]        Named + automatic versions (P3: last 20 automatic, configurable)
 └── history           Optional persisted Undo History (D6)
@@ -123,7 +129,7 @@ Site (.wforge)
 // packages/engine
 interface CanvasEngine {
   mount(el: HTMLElement, opts: { library: ComponentLibrary; theme: Theme }): void
-  loadPage(page: PageDoc, layout: LayoutDoc): void
+  loadPage(page: PageDoc, layout: LayoutDoc, shared: SharedSectionsDoc): void   // shared: F-ED-23
   applyChange(change: DocChange): void
   onUserEdit(cb: (edit: EngineEdit) => void): Unsubscribe
   select(nodeId: string | null): void
@@ -131,7 +137,7 @@ interface CanvasEngine {
   onHistoryCommand(cb: (command: 'undo' | 'redo') => void): Unsubscribe   // keys pressed inside the canvas iframe (ADR 0004)
   setViewport(v: 'desktop' | 'tablet' | 'mobile' | number): void
   setMode(mode: 'design' | 'content'): void            // M3
-  renderStatic(page: PageDoc, layout: LayoutDoc): string
+  renderStatic(page: PageDoc, layout: LayoutDoc, shared: SharedSectionsDoc): string
   destroy(): void
 }
 
@@ -144,6 +150,14 @@ interface HistoryManager {
   entries(): readonly HistoryEntry[]          // Undo History panel (D3)
   endSession(coalesceKey: string): void       // text session ends: merge its chunks into one step (D1)
   breakCoalescing(): void
+}
+
+// packages/commands (F-AI-1): main forwards tool calls over typed IPC; the renderer runs them
+interface CommandApi {
+  query<Q extends QueryName>(name: Q, input: QueryInput<Q>): QueryResult<Q>      // outline, page tree, fields, settings, theme
+  run<C extends CommandName>(name: C, input: CommandInput<C>, actor: { app: string }): Promise<CommandResult>
+  // zod-validated; one HistoryManager step labelled "AI (‹app›): …"; refused with 'busy' while a transaction
+  // or text session is open; site-wide commands await the D7 confirmation ('declined' after 60 s)
 }
 
 // packages/storage
@@ -202,7 +216,7 @@ interface Publisher {
 
 ## 8. Exported site contract
 - Flat pages (`index.html`, `about.html`, `services/web-design.html`), relative URLs, opens from disk (X1).
-- `assets/css/site.<hash>.css` (readable), `assets/js/webforge.<hash>.js` (classic `defer`, only if needed), `assets/fonts/*.woff2` (Fontsource, OFL), `assets/img/*` (WebP + fallback), favicons, `site.webmanifest`, `sitemap.xml` + canonical links if the URL is set, `robots.txt`, `404.html`.
+- `assets/css/site.<hash>.css` (readable), `assets/js/webforge.<hash>.js` (classic `defer`, only if needed), `assets/fonts/*.woff2` (Fontsource, OFL), `assets/img/*` (WebP + fallback), favicons, `site.webmanifest`, `sitemap.xml` + canonical links if the URL is set, `robots.txt`, `404.html`, `files/*` (linked files, F-ED-24), `llms.txt` + `*.md` page copies when enabled (F-EX-5).
 - **No external requests** except explicitly allowed ones: GA4 `gtag.js` (B4, behind the consent banner B7) and per-URL user allow-list entries.
 - Forms POST to the configured form service (B3/B6); Buy buttons are plain links (M1).
 
@@ -211,6 +225,15 @@ interface Publisher {
 - **Untrusted projects:** validate the SQLite schema, use SQLite defensive mode, and custom scripts are off in the editor by default.
 - **Canvas iframe sandboxed;** no Node access anywhere in renderer contexts.
 - **Network:** the editor makes no network calls except updates, publishing, Netlify OAuth and user-initiated "Download and bundle" (C8).
+- **AI apps (MCP, F-AI-1):**
+  - Off by default. When on, the server listens only on this computer (loopback or a local pipe; transport chosen by ADR).
+  - **Pairing, not self-reported names:** Webforge issues a one-time code per AI app, which the user pastes into that app; the app then holds a token stored in the OS keychain on our side. Requests without a valid token are refused, and removing an app revokes it.
+  - An HTTP transport checks `Origin` and `Host` on every request (DNS-rebinding and browser protection, as the MCP specification requires).
+  - Every tool call is validated with zod and becomes a document command through `HistoryManager`; the server holds no document state of its own.
+  - No tools for publishing, credentials, Custom Code or files outside the site.
+  - Site content goes only to the AI app the user paired; Webforge itself sends nothing.
+  - Tool calls are never logged with their content (same rule as crash reports).
+- **Files in Media (F-ED-24):** accepted by extension and sniffed content type; stored and exported unchanged; never opened, previewed or run inside the editor.
 - **Crash reports (local only):**
   - Electron `crashReporter.start({ uploadToServer: false })` for native crashes (minidumps in `app.getPath('crashDumps')`).
   - Main, renderer and worker handlers for uncaught errors and unhandled rejections write a JSON report to `<userData>/crash-reports/crash-<YYYYMMDD-HHMMSS>-<process>.json` (UTC; Windows-safe filename).
@@ -251,3 +274,5 @@ interface Publisher {
 | M1–M5 | MVP CMS scope, Blog v1.1, Content mode toggle, search/i18n later | [product/02](../research/product/02-cms.md) |
 | UI1 | Editor look and feel: Bootstrap Studio-like layout, dark/light tokens, compact density | [product/04](../research/product/04-editor-look-and-feel.md) |
 | GA1–GA4 | Competitor gaps: 15 small MVP additions; AI with the user's own account in v1.1; provider presets deferred; plugin API long-term | [product/05](../research/product/05-feature-gap-analysis.md) |
+| BS9-1–10 | Bootstrap Studio 9.0 review: sticky header and back-to-top in the MVP; v1.1 Blog on a general collections engine; v1.1 extras and AI assistant details | [bootstrap-studio/06](../research/bootstrap-studio/06-bootstrap-studio-9.md) |
+| GA5–GA9 | Elements 3.0 review: connect AI apps (MCP), shared sections, files in Media and `llms.txt` in the MVP; built-in AI assistant and draft pages in v1.1 | [product/05 §3.7](../research/product/05-feature-gap-analysis.md#37-rapidweaver-elements-30-update-2026-10-22) |

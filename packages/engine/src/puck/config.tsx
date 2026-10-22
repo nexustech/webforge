@@ -1,4 +1,4 @@
-import type { ComponentConfig, Config, Field } from "@puckeditor/core";
+import type { ComponentConfig, Config, Field, PuckContext } from "@puckeditor/core";
 import {
   type ComponentDef,
   type ComponentLibrary,
@@ -9,6 +9,7 @@ import {
 } from "@webforge/site-components";
 import { type ComponentType, cloneElement, Fragment, isValidElement, type ReactNode } from "react";
 import { FormatToolbar, richTextField } from "./rich-text.js";
+import { ROOT_ZONE } from "./tree.js";
 
 /** The toolbar over rich text being edited, as Puck takes it. */
 type RichTextToolbar = Parameters<typeof richTextField>[2];
@@ -120,9 +121,21 @@ export function toPuckConfig(
   context: () => RenderContext = () => EDITOR_RENDER_CONTEXT,
   toolbar: RichTextToolbar = FormatToolbar,
 ): Config {
+  // The page's top level takes sections only (F-ED-1): elements go inside them, and the shared
+  // Header and Footer and an FAQ's questions are never added there. Puck then shows no drop place
+  // for anything else between sections, whether dragged from the Add panel or the canvas.
+  const sections = Object.entries(library.components)
+    .filter(([, def]) => def.place === "section")
+    .map(([type]) => type);
   return {
-    // No page-level fields yet (Puck's default root has a "title" field).
-    root: { fields: {} },
+    root: {
+      // No page-level fields yet (Puck's default root has a "title" field).
+      fields: {},
+      // Puck's own top level when not editing (static HTML).
+      render: ({ puck, children }: { puck: PuckContext; children: ReactNode }) => (
+        <>{puck.isEditing ? puck.renderDropZone({ zone: ROOT_ZONE, allow: sections }) : children}</>
+      ),
+    },
     components: Object.fromEntries(
       Object.entries(library.components).map(([type, def]) => [
         type,

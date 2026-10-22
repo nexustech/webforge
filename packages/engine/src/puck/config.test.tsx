@@ -8,14 +8,16 @@ import {
 } from "@webforge/site-components";
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { isTextField, toPuckConfig } from "./config.js";
 import { FormatToolbar, RICH_TEXT_OPTIONS } from "./rich-text.js";
+import { ROOT_ZONE } from "./tree.js";
 
 const library: ComponentLibrary = {
   components: {
     Section: {
       label: "Section",
+      place: "section",
       fields: { content: { kind: "slot", label: "Content", allow: ["Text"] } },
       defaults: { content: [] },
       render: (props) => {
@@ -102,7 +104,27 @@ describe("toPuckConfig", () => {
   it("keeps labels and defaults and hides Puck's default page fields", () => {
     expect(component("Text").label).toBe("Text");
     expect(component("Text").defaultProps).toEqual({ title: "Title" });
-    expect(config.root).toEqual({ fields: {} });
+    expect(config.root?.fields).toEqual({});
+  });
+
+  it("lets only sections go at the page's top level while editing (F-ED-1)", () => {
+    const renderDropZone = vi.fn(() => null);
+    const render = config.root?.render as unknown as (props: {
+      puck: { isEditing: boolean; renderDropZone: typeof renderDropZone };
+      children: ReactNode;
+    }) => ReactNode;
+
+    renderToStaticMarkup(
+      <>{render({ puck: { isEditing: true, renderDropZone }, children: null })}</>,
+    );
+    expect(renderDropZone).toHaveBeenCalledWith({ zone: ROOT_ZONE, allow: ["Section"] });
+
+    // Static HTML has Puck's own top level.
+    const html = renderToStaticMarkup(
+      <>{render({ puck: { isEditing: false, renderDropZone }, children: <p>page</p> })}</>,
+    );
+    expect(html).toBe("<p>page</p>");
+    expect(renderDropZone).toHaveBeenCalledTimes(1);
   });
 
   it("passes field values, the id and slot components to render", () => {

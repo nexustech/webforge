@@ -75,6 +75,10 @@ export function createMediaImport(
       );
       return undefined;
     },
+    /** Lists a file that isn't one Media can take, such as a folder, without importing it. */
+    skip(fileName: string): void {
+      rejected.push({ fileName, reason: "unsupported" });
+    },
     /** What was imported and what wasn't. */
     result(): MediaImportResult {
       return { status: "imported", items: [...items], rejected: [...rejected] };

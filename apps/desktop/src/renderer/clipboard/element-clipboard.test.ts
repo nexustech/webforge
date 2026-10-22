@@ -1,12 +1,24 @@
-import type { CopiedElements, ImageMeta, MediaId, NodeDoc } from "@webforge/model";
+import type { CopiedElements, ImageMeta, MediaId, MediaMeta, NodeDoc } from "@webforge/model";
 import { type ComponentLibrary, siteLibrary } from "@webforge/site-components";
 import { describe, expect, it, vi } from "vitest";
 import type { ClipboardReadResult } from "../../shared/ipc/clipboard.js";
+
+/** A file a paste didn't add to Media, and why. */
+type RejectedFile = Extract<ClipboardReadResult, { status: "media" }>["rejected"][number];
+
 import { createEditorSession, currentPage, type EditorSession } from "../editor/editor-session.js";
 import { starterSite } from "../editor/starter-site.js";
 import { addMedia } from "../media/media-commands.js";
 import { copySelected, pasteElements, pasteTarget } from "./element-clipboard.js";
 
+const prices: MediaMeta = {
+  id: "prices" as MediaId,
+  hash: "b".repeat(64),
+  name: "prices",
+  fileName: "prices.pdf",
+  kind: "file",
+  mimeType: "application/pdf",
+};
 const photo: ImageMeta = {
   id: "photo" as MediaId,
   hash: "a".repeat(64),
@@ -231,6 +243,79 @@ describe("copy and paste (1.25)", () => {
     expect(sectionContent(session).map((node) => node.props.id)).toEqual(["links", "heading-1"]);
   });
 
+  describe("image files and copied images (F-ED-16)", () => {
+    const media = (items: ImageMeta[] | MediaMeta[], rejected: RejectedFile[] = []) =>
+      fakeClipboard({ status: "media", items, rejected });
+    const withHero = () => {
+      const session = createEditorSession(siteLibrary, starterSite());
+      session.edit("insert", "Added Hero", (draft) => {
+        draft.pages[draft.homePageId]?.doc.content.push({
+          type: "Hero",
+          props: { id: "hero", title: "Fresh bread" },
+        });
+      });
+      return session;
+    };
+    const site = (session: EditorSession) => session.history.document.getState();
+
+    it("puts one image in the selected element's image field, joining Media in the same step", async () => {
+      const session = withHero();
+      select(session, "hero");
+
+      expect(await pasteElements(session, media([photo]), vi.fn())).toBe(true);
+
+      expect(content(session).at(-1)?.props.image).toEqual({ mediaId: photo.id });
+      expect(site(session).media[photo.id]).toMatchObject({ fileName: "shop.jpg" });
+      expect(labels(session).at(-1)).toBe("Pasted image 'shop.jpg'");
+      session.history.undo();
+      expect(content(session).at(-1)?.props).not.toHaveProperty("image");
+      expect(site(session).media).toEqual({});
+    });
+
+    it("adds to Media, and says so, when nothing selected takes an image", async () => {
+      const session = createEditorSession(siteLibrary, starterSite());
+      const notify = vi.fn();
+      select(session, "heading-1");
+
+      await pasteElements(session, media([photo]), notify);
+      await pasteElements(session, media([{ ...photo, id: "two" as MediaId }, prices]), notify);
+
+      expect(Object.keys(site(session).media)).toEqual(["photo", "two", "prices"]);
+      expect(sectionContent(session).map((node) => node.type)).toEqual(["Heading", "Text"]);
+      expect(notify.mock.calls.map(([message]) => message)).toEqual([
+        "Added 'shop.jpg' to Media",
+        "Added 2 images and files to Media",
+      ]);
+    });
+
+    it("keeps a PDF out of an image field, and names the files Media didn't take", async () => {
+      const session = withHero();
+      const notify = vi.fn();
+      select(session, "hero");
+
+      await pasteElements(
+        session,
+        media([prices], [{ fileName: "notes.txt", reason: "unsupported" }]),
+        notify,
+      );
+
+      expect(content(session).at(-1)?.props).not.toHaveProperty("image");
+      expect(site(session).media[prices.id]).toBeDefined();
+      expect(notify.mock.calls.map(([message]) => message)).toEqual([
+        "notes.txt isn't a JPEG, PNG or PDF, so it wasn't added.",
+        "Added 'prices.pdf' to Media",
+      ]);
+      // Nothing Media takes: nothing pasted.
+      expect(
+        await pasteElements(
+          session,
+          media([], [{ fileName: "huge.png", reason: "too-large" }]),
+          notify,
+        ),
+      ).toBe(false);
+    });
+  });
+
   describe("the shared Header and Footer (F-ED-7)", () => {
     /** The site library plus a shared Banner whose slot holds elements, as the Header could. */
     const library: ComponentLibrary = {
@@ -239,7 +324,10 @@ describe("copy and paste (1.25)", () => {
         Banner: {
           label: "Banner",
           place: "layout",
-          fields: { content: { kind: "slot", label: "Content", allow: ["Heading"] } },
+          fields: {
+            content: { kind: "slot", label: "Content", allow: ["Heading"] },
+            image: { kind: "media", label: "Image" },
+          },
           defaults: { content: [] },
           render: () => null,
         },
@@ -290,6 +378,22 @@ describe("copy and paste (1.25)", () => {
       expect(bannerContent(session)).toEqual([
         { type: "Heading", props: { id: "notice", text: "Closed Monday" } },
       ]);
+    });
+
+    it("says a pasted image goes into the shared layout, on every page", async () => {
+      const session = withBanner();
+      select(session, "banner");
+
+      await pasteElements(
+        session,
+        fakeClipboard({ status: "media", items: [photo], rejected: [] }),
+        vi.fn(),
+      );
+
+      expect(session.history.document.getState().layout.header.at(-1)?.props.image).toEqual({
+        mediaId: photo.id,
+      });
+      expect(labels(session).at(-1)).toBe("Pasted image 'shop.jpg' into shared Banner");
     });
 
     it("never takes a Header or Footer the page hides", async () => {

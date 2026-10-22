@@ -29,7 +29,7 @@ const droppedFileSchema = z.strictObject({
 type DroppedFile = z.infer<typeof droppedFileSchema>;
 
 /** Why a file wasn't imported; the others in the same import still are. */
-const rejectedFileSchema = z.strictObject({
+export const rejectedFileSchema = z.strictObject({
   fileName: z.string().min(1).max(255),
   /** Not a JPEG, PNG or PDF (judged by its bytes), or over 50 MB or 50 megapixels. */
   reason: z.enum(["unsupported", "too-large"]),

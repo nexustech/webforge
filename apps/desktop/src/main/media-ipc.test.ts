@@ -1,10 +1,11 @@
-import { truncateSync, writeFileSync } from "node:fs";
+import { mkdirSync, truncateSync, writeFileSync } from "node:fs";
+import { open } from "node:fs/promises";
 import { join } from "node:path";
 import { tempDirFactory } from "@webforge/test-utils";
 import type { IpcMain, IpcMainInvokeEvent } from "electron";
 import { describe, expect, it, vi } from "vitest";
 import { MAX_MEDIA_BYTES } from "../shared/ipc/media.js";
-import { registerMediaHandlers } from "./media-ipc.js";
+import { readAtMost, registerMediaHandlers } from "./media-ipc.js";
 import type { ProjectSession } from "./project-session.js";
 
 type Handler = (event: IpcMainInvokeEvent, ...args: unknown[]) => Promise<unknown>;
@@ -111,15 +112,54 @@ describe("registerMediaHandlers", () => {
     expect(closed.chooseMediaFiles).not.toHaveBeenCalled();
   });
 
-  it("fails without logging the path when a chosen file can't be read", async () => {
+  it("lists a folder or a file that is gone as not taken, importing the rest, logging nothing", async () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
-    const missing = join(tempDir(), "Secret plans.pdf");
+    const dir = tempDir();
+    const prices = join(dir, "Prices.pdf");
+    writeFileSync(prices, pdf);
+    const folder = join(dir, "Photos");
+    mkdirSync(folder);
 
-    await expect(setUp([missing]).invoke("media:choose")).resolves.toEqual({
-      status: "failed",
-      reason: "unknown",
+    await expect(
+      setUp([folder, join(dir, "Secret plans.pdf"), prices]).invoke("media:choose"),
+    ).resolves.toMatchObject({
+      status: "imported",
+      items: [{ fileName: "Prices.pdf" }],
+      rejected: [
+        { fileName: "Photos", reason: "unsupported" },
+        { fileName: "Secret plans.pdf", reason: "unsupported" },
+      ],
     });
-    expect(String(error.mock.calls[0])).not.toContain("Secret");
+    expect(error).not.toHaveBeenCalled();
     error.mockRestore();
+  });
+});
+
+describe("readAtMost", () => {
+  it("reads a file to its end, but never past the limit", async () => {
+    const path = join(tempDir(), "ten.bin");
+    writeFileSync(path, new Uint8Array(10).fill(7));
+    for (const [max, expected] of [
+      [10, 10],
+      [9, undefined],
+    ] as const) {
+      const handle = await open(path, "r");
+      try {
+        expect((await readAtMost(handle, max))?.byteLength).toBe(expected);
+      } finally {
+        await handle.close();
+      }
+    }
+  });
+
+  it("stops reading a file that keeps growing after its size was checked", async () => {
+    // A file that never ends: each read fills the whole chunk.
+    const read = vi.fn(async (buffer: Uint8Array) => ({ bytesRead: buffer.length, buffer }));
+
+    expect(await readAtMost({ read } as never, 3 * 1024 * 1024)).toBeUndefined();
+    // Three 1 MB chunks, then one more byte: never more than the limit plus one.
+    expect(read.mock.calls.reduce((total, [buffer]) => total + buffer.length, 0)).toBe(
+      3 * 1024 * 1024 + 1,
+    );
   });
 });

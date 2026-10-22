@@ -32,6 +32,7 @@ import {
   PlusIcon,
 } from "lucide-react";
 import { useState } from "react";
+import { useMenuDialog } from "../shell/use-menu-dialog.js";
 import { NameDialog } from "./NameDialog.js";
 import { PageSettingsDialog } from "./PageSettingsDialog.js";
 import {
@@ -115,6 +116,8 @@ export function PagesPanel({ site, shownPageId, actions }: PagesPanelProps) {
     setDialog(next);
     setOpen(true);
   };
+  // The page menu's dialogs open once the menu has closed, so their field keeps the focus.
+  const menuDialog = useMenuDialog(openDialog);
   const close = () => setOpen(false);
   const dialogPage =
     dialog !== null && dialog.kind !== "add" ? site.pages[dialog.pageId] : undefined;
@@ -152,10 +155,11 @@ export function PagesPanel({ site, shownPageId, actions }: PagesPanelProps) {
           site={site}
           page={page}
           actions={actions}
-          onSettings={() => openDialog({ kind: "settings", pageId: page.id })}
-          onRename={() => openDialog({ kind: "rename", pageId: page.id })}
-          onNewFolder={() => openDialog({ kind: "folder", pageId: page.id })}
-          onDelete={() => openDialog({ kind: "delete", pageId: page.id })}
+          onSettings={() => menuDialog.choose({ kind: "settings", pageId: page.id })}
+          onRename={() => menuDialog.choose({ kind: "rename", pageId: page.id })}
+          onNewFolder={() => menuDialog.choose({ kind: "folder", pageId: page.id })}
+          onDelete={() => menuDialog.choose({ kind: "delete", pageId: page.id })}
+          onCloseAutoFocus={menuDialog.onCloseAutoFocus}
         />
       </li>
     );
@@ -298,6 +302,8 @@ type PageMenuProps = {
   readonly onRename: () => void;
   readonly onNewFolder: () => void;
   readonly onDelete: () => void;
+  /** Where focus goes as the menu closes: into the dialog it opened, if any. */
+  readonly onCloseAutoFocus: (event: Event) => void;
 };
 
 /** The "…" menu of one page, shown on hover or focus. */
@@ -317,7 +323,7 @@ function PageMenu(props: PageMenuProps) {
           <EllipsisIcon />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start">
+      <DropdownMenuContent align="start" onCloseAutoFocus={props.onCloseAutoFocus}>
         <PageMenuItems {...props} />
       </DropdownMenuContent>
     </DropdownMenu>

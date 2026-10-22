@@ -13,12 +13,14 @@ import type {
   ClipboardReadResult,
   ClipboardWriteResult,
 } from "../../shared/ipc/clipboard.js";
+import type { MediaImportResult } from "../../shared/ipc-contract.js";
 import { type AddTarget, addTarget, insertAt } from "../add/add-items.js";
 import { currentPage, type EditorSession } from "../editor/editor-session.js";
 import { findNode } from "../editor/nodes.js";
 import { type SharedRegion, sharedRegionOf, shownLayout } from "../editor/shared-layout.js";
 import { layerItem } from "../layers/layers.js";
-import { putInMedia } from "../media/media-commands.js";
+import { importMessages } from "../media/import-media.js";
+import { addMedia, putInMedia } from "../media/media-commands.js";
 
 /**
  * Copy, Cut and Paste of sections and elements (1.25, F-ED-16): within a page, between pages and
@@ -175,7 +177,7 @@ export function pasteTarget(
 }
 
 /** What the user is told when the clipboard has nothing to paste or couldn't be read. */
-function readMessage(result: Exclude<ClipboardReadResult, { status: "elements" }>): string {
+function readMessage(result: Extract<ClipboardReadResult, { status: "empty" | "failed" }>): string {
   if (result.status === "empty") return t("site.clipboard.nothing");
   return result.reason === "read-only"
     ? t("site.clipboard.readOnly")
@@ -183,9 +185,10 @@ function readMessage(result: Exclude<ClipboardReadResult, { status: "elements" }
 }
 
 /**
- * Pastes the elements on the clipboard into the shown page, where {@link pasteTarget} puts them,
- * as one step ("Pasted Heading") that selects the first. Their images join the site's Media in the
- * same step, keeping their ids. Returns whether it pasted.
+ * Pastes what the clipboard holds. Elements go into the shown page, where {@link pasteTarget} puts
+ * them, as one step ("Pasted Heading") that selects the first; their images join the site's Media in
+ * the same step, keeping their ids. Image files or a copied image go to Media and the selection
+ * ({@link pasteMedia}). Returns whether it pasted.
  */
 export async function pasteElements(
   session: ClipboardSession,
@@ -197,6 +200,9 @@ export async function pasteElements(
     result = await clipboard.read();
   } catch {
     result = { status: "failed", reason: "unknown" };
+  }
+  if (result.status === "media") {
+    return pasteMedia(session, result.items, result.rejected, notify);
   }
   if (result.status !== "elements") {
     notify(readMessage(result));
@@ -246,5 +252,69 @@ export async function pasteElements(
     { selectionAfter: { ...ui, nodeId: firstId } },
   );
   session.ui.setState({ nodeId: firstId });
+  return true;
+}
+
+/**
+ * Pastes imported image files or a copied image (F-ED-16): one image goes into the selected
+ * element's image field, if it has one ("Pasted image 'shop.png'"), and joins Media in the same
+ * step; in the shared Header or Footer, every page shows it ("… into shared Header"). Anything
+ * else is added to Media ("Added image 'shop.png'"), which a message says. Inserting a new element
+ * for it comes with Phase 2's Image element. Files Media didn't take are named in a message, as
+ * for a drop.
+ */
+function pasteMedia(
+  session: ClipboardSession,
+  items: readonly MediaMeta[],
+  rejected: Extract<MediaImportResult, { status: "imported" }>["rejected"],
+  notify: (message: string) => void,
+): boolean {
+  for (const message of importMessages({ status: "imported", items: [], rejected })) {
+    notify(message);
+  }
+  const [item] = items;
+  if (item === undefined) {
+    return false;
+  }
+  const selected = selectedNode(session);
+  const field =
+    selected === undefined || items.length > 1 || item.kind !== "image"
+      ? undefined
+      : Object.entries(session.library.components[selected.node.type]?.fields ?? {}).find(
+          ([, def]) => def.kind === "media",
+        )?.[0];
+  if (selected === undefined || field === undefined) {
+    addMedia(session, items);
+    notify(
+      items.length === 1
+        ? t("site.clipboard.addedToMedia", {
+            name: t("history.namedItem", { name: item.fileName }),
+          })
+        : t("site.clipboard.addedManyToMedia", { count: items.length }),
+    );
+    return true;
+  }
+  const { node, region } = selected;
+  const ui = session.ui.getState();
+  const id = node.props.id;
+  session.edit(
+    "props",
+    region === undefined
+      ? t("site.clipboard.history.pastedImage", {
+          name: t("history.namedItem", { name: item.fileName }),
+        })
+      : t("site.clipboard.history.pastedSharedImage", {
+          name: t("history.namedItem", { name: item.fileName }),
+          item: t("history.sharedItem", { item: itemName(session, node) }),
+        }),
+    (draft) => {
+      putInMedia(draft, [item]);
+      const list =
+        region === undefined ? draft.pages[ui.pageId]?.doc.content : draft.layout[region];
+      const target = list === undefined ? undefined : findNode(list, (n) => n.props.id === id);
+      if (target !== undefined) target.props[field] = { mediaId: item.id };
+    },
+    { selectionAfter: ui },
+  );
   return true;
 }
