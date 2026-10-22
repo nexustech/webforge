@@ -1,4 +1,4 @@
-import { truncateSync, writeFileSync } from "node:fs";
+import { mkdirSync, truncateSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tempDirFactory } from "@webforge/test-utils";
 import type { IpcMain, IpcMainInvokeEvent } from "electron";
@@ -111,15 +111,25 @@ describe("registerMediaHandlers", () => {
     expect(closed.chooseMediaFiles).not.toHaveBeenCalled();
   });
 
-  it("fails without logging the path when a chosen file can't be read", async () => {
+  it("lists a folder or a file that is gone as not taken, importing the rest, logging nothing", async () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
-    const missing = join(tempDir(), "Secret plans.pdf");
+    const dir = tempDir();
+    const prices = join(dir, "Prices.pdf");
+    writeFileSync(prices, pdf);
+    const folder = join(dir, "Photos");
+    mkdirSync(folder);
 
-    await expect(setUp([missing]).invoke("media:choose")).resolves.toEqual({
-      status: "failed",
-      reason: "unknown",
+    await expect(
+      setUp([folder, join(dir, "Secret plans.pdf"), prices]).invoke("media:choose"),
+    ).resolves.toMatchObject({
+      status: "imported",
+      items: [{ fileName: "Prices.pdf" }],
+      rejected: [
+        { fileName: "Photos", reason: "unsupported" },
+        { fileName: "Secret plans.pdf", reason: "unsupported" },
+      ],
     });
-    expect(String(error.mock.calls[0])).not.toContain("Secret");
+    expect(error).not.toHaveBeenCalled();
     error.mockRestore();
   });
 });

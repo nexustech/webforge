@@ -13,11 +13,17 @@ export type MediaDialogs = {
   chooseMediaFiles(): Promise<readonly string[] | undefined>;
 };
 
-/** Reads a chosen file, unless it is too large to import (then its bytes aren't read at all). */
-async function readChosenFile(path: string): Promise<ImportFile> {
+/**
+ * Reads a chosen file, unless it is too large to import (then its bytes aren't read at all).
+ * `undefined` for a folder, or a file that is gone (a copy pasted after the file moved).
+ */
+async function readChosenFile(path: string): Promise<ImportFile | undefined> {
   const fileName = basename(path).slice(0, 255);
-  const { size } = await stat(path);
-  return { fileName, data: size > MAX_MEDIA_BYTES ? undefined : await readFile(path) };
+  const info = await stat(path).catch(() => undefined);
+  if (info?.isFile() !== true) {
+    return undefined;
+  }
+  return { fileName, data: info.size > MAX_MEDIA_BYTES ? undefined : await readFile(path) };
 }
 
 /**
@@ -48,7 +54,8 @@ export function registerMediaHandlers(
 
 /**
  * Imports the files at `paths` (chosen in the dialog, or copied in the file manager and pasted), at
- * most {@link MAX_MEDIA_FILES}. One file at a time, so only one is ever in memory.
+ * most {@link MAX_MEDIA_FILES}. One file at a time, so only one is ever in memory. A folder or a
+ * missing file is listed as not taken; the others are still imported.
  */
 export async function importFilesAt(
   session: Pick<ProjectSession, "storeAsset">,
@@ -57,7 +64,12 @@ export async function importFilesAt(
   const running = createMediaImport(session);
   try {
     for (const path of paths.slice(0, MAX_MEDIA_FILES)) {
-      const failed = running.add(await readChosenFile(path));
+      const file = await readChosenFile(path);
+      if (file === undefined) {
+        running.skip(basename(path).slice(0, 255));
+        continue;
+      }
+      const failed = running.add(file);
       if (failed !== undefined) {
         return failed;
       }

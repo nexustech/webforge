@@ -48,15 +48,20 @@ export type SystemClipboard = {
   read(maxBytes: { readonly elements: number; readonly image: number }): Promise<ClipboardContent>;
 };
 
-/** The file paths in a `text/uri-list`: its `file:` URLs, without comments. */
+/**
+ * The file paths in a `text/uri-list`: its `file:` URLs on this computer, without comments. A URL
+ * naming another computer (`file://server/share/…`) is left out, so a paste never opens a network
+ * share, which would send the user's credentials to it.
+ */
 export function filePaths(uriList: string): string[] {
   return uriList
     .split(/\r?\n/)
     .map((line) => line.trim())
-    .filter((line) => line.startsWith("file:"))
-    .flatMap((url) => {
+    .flatMap((line) => {
       try {
-        return [fileURLToPath(url)];
+        const url = new URL(line);
+        const local = url.protocol === "file:" && (url.host === "" || url.host === "localhost");
+        return local ? [fileURLToPath(url)] : [];
       } catch {
         return [];
       }

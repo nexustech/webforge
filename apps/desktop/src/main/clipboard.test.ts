@@ -223,9 +223,14 @@ describe("element clipboard (1.25)", () => {
 
 describe("filePaths", () => {
   it("takes the file: URLs of a uri-list, leaving out comments and other URLs", () => {
-    const list = "# copied\r\nfile:///C:/Photos/shop%20front.jpg\r\nhttps://example.com/a.jpg\n";
-    expect(filePaths(list)).toEqual([
-      process.platform === "win32" ? "C:\\Photos\\shop front.jpg" : "/C:/Photos/shop front.jpg",
-    ]);
+    const list =
+      "# copied\r\nfile:///C:/Photos/shop%20front.jpg\r\nhttps://example.com/a.jpg\n" +
+      "file://server.example/share/b.jpg\nfile://localhost/C:/c.jpg\n";
+    // Never another computer's share; localhost is this one.
+    expect(filePaths(list)).toEqual(
+      process.platform === "win32"
+        ? ["C:\\Photos\\shop front.jpg", "C:\\c.jpg"]
+        : ["/C:/Photos/shop front.jpg", "/C:/c.jpg"],
+    );
   });
 });
