@@ -143,6 +143,16 @@ test.describe("exported site from disk", () => {
   test.describe("without JavaScript", () => {
     test.use({ javaScriptEnabled: false });
 
+    test("opens the mobile menu while its button has the focus", async ({ page }) => {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await open(page, "index.html");
+      const home = page.getByRole("navigation").getByRole("link", { name: "Home" });
+
+      await expect(home).toBeHidden();
+      await page.getByRole("button", { name: "Menu" }).focus();
+      await expect(home).toBeVisible();
+    });
+
     test("opens a dropdown while it has the focus", async ({ page }) => {
       await page.setViewportSize({ width: 1280, height: 800 });
       await open(page, "index.html");

@@ -122,7 +122,9 @@ describe("renderNodesToHtml", () => {
     const html = renderNodesToHtml(starterLayout("Rosa's Bakery").header, siteLibrary, context);
 
     expect(html).toContain('<a class="text-xl font-bold" href="index.html">Rosa&#x27;s Bakery</a>');
-    expect(html).toContain('<nav aria-label="Main navigation">');
+    expect(html).toContain(
+      '<nav aria-label="Main navigation" class="[&amp;:not([data-wf-ready]):focus-within&gt;ul]:flex">',
+    );
     expect(html).toContain('aria-controls="header-menu" data-wf-menu-toggle=""');
     expect(html).toContain('<ul id="header-menu"');
     expect(html).toContain('<a href="index.html" aria-current="page">Home</a>');

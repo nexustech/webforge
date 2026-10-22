@@ -32,8 +32,8 @@ function navigation(snapshot: SiteSnapshot, path = "index") {
 describe("navigationFor (F-ED-17)", () => {
   it("lists the pages in order without a menu, leaving hidden ones out", () => {
     expect(navigation(site()).items).toEqual([
-      { label: "Home", href: "index.html", current: true },
-      { label: "About us", href: "about.html", current: false },
+      { id: "home", label: "Home", href: "index.html", current: true },
+      { id: "about", label: "About us", href: "about.html", current: false },
     ]);
   });
 
@@ -41,17 +41,24 @@ describe("navigationFor (F-ED-17)", () => {
     const { items } = navigation(site(sampleSite().menu), "about");
 
     expect(items).toEqual([
-      { label: "Home", href: "index.html", current: false },
-      { label: "About us", href: "about.html", current: true },
+      { id: "home", label: "Home", href: "index.html", current: false },
+      { id: "about", label: "About us", href: "about.html", current: true },
       {
+        id: "visit",
         label: "Visit us",
         current: false,
         children: [
-          { label: "Questions", href: "index.html#questions", current: false },
-          { label: "Find us", href: "https://example.com/map", current: false, newTab: true },
+          { id: "questions", label: "Questions", href: "index.html#questions", current: false },
+          {
+            id: "map",
+            label: "Find us",
+            href: "https://example.com/map",
+            current: false,
+            newTab: true,
+          },
         ],
       },
-      { label: "Order a cake", href: "about.html", current: true, button: true },
+      { id: "order", label: "Order a cake", href: "about.html", current: true, button: true },
     ]);
   });
 
@@ -91,7 +98,7 @@ describe("navigationFor (F-ED-17)", () => {
       "company/team",
     );
 
-    expect(items).toEqual([{ label: "Start", href: "../index.html", current: false }]);
+    expect(items).toEqual([{ id: "home", label: "Start", href: "../index.html", current: false }]);
     expect(broken).toEqual(["deleted"]);
   });
 

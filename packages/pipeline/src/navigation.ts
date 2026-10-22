@@ -31,13 +31,14 @@ export function navigationFor(
   broken: (detail: string) => void,
 ): NavItem[] {
   const shown = (other: NavigationPage) => other.hideFromNavigation !== true;
-  const pageLink = (other: NavigationPage, label?: string): NavLink => ({
+  const pageLink = (other: NavigationPage, id: string, label?: string): NavLink => ({
+    id,
     label: label ?? other.navLabel ?? other.title,
     href: `${prefix}${other.path}.html`,
     current: other.path === page.path,
   });
   if (site.menu === undefined) {
-    return site.pages.filter(shown).map((other) => pageLink(other));
+    return site.pages.filter(shown).map((other) => pageLink(other, other.id));
   }
 
   const pages = new Map(site.pages.map((other) => [other.id as string, other]));
@@ -45,7 +46,9 @@ export function navigationFor(
     if (item.hidden) return undefined;
     if (item.kind === "page") {
       const target = pages.get(item.pageId);
-      return target === undefined || !shown(target) ? undefined : pageLink(target, item.label);
+      return target === undefined || !shown(target)
+        ? undefined
+        : pageLink(target, item.id, item.label);
     }
     const href = hrefFor(item.link, (id) => pages.get(id)?.path, prefix);
     if (href === undefined) {
@@ -58,6 +61,7 @@ export function navigationFor(
       link.anchor === undefined &&
       pages.get(link.pageId)?.path === page.path;
     return {
+      id: item.id,
       label: item.label,
       href,
       current,
@@ -78,6 +82,13 @@ export function navigationFor(
     });
     return children.length === 0
       ? []
-      : [{ label: item.label, children, current: children.some((child) => child.current) }];
+      : [
+          {
+            id: item.id,
+            label: item.label,
+            children,
+            current: children.some((child) => child.current),
+          },
+        ];
   });
 }

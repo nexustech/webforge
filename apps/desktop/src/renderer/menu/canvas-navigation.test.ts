@@ -29,9 +29,9 @@ describe("connectCanvasNavigation (F-ED-17)", () => {
     });
 
     expect(shown()).toEqual([
-      { label: "My site", href: "#", current: true },
-      { label: "About", href: "#", current: false },
-      { label: "Book now", href: "#", current: false, button: true },
+      expect.objectContaining({ label: "My site", href: "#", current: true }),
+      expect.objectContaining({ label: "About", href: "#", current: false }),
+      { id: expect.any(String), label: "Book now", href: "#", current: false, button: true },
     ]);
   });
 

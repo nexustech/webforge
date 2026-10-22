@@ -1,6 +1,7 @@
 /* webforge.js: behaviours for this site's components. Classic script, no modules. */
 
-// Header menu on small screens: the toggle button opens and closes the navigation list.
+// Header menu on small screens: the toggle button opens and closes the navigation list. Without
+// the script, CSS shows the list while the navigation has the focus (data-wf-ready turns that off).
 // Sets aria-expanded on the button and data-open on the list (the CSS shows the list when it is
 // set). Escape closes the menu and returns focus to the button; choosing a link closes it.
 // Dropdowns work the same way inside it: their button opens their list, Escape closes the
@@ -74,6 +75,8 @@
     if (menu === null) {
       continue;
     }
+    // From here on the script opens the menu, not the CSS fallback for focus.
+    toggle.closest("nav")?.setAttribute("data-wf-ready", "");
     const isOpen = () => toggle.getAttribute("aria-expanded") === "true";
     const setOpen = (open) => {
       toggle.setAttribute("aria-expanded", String(open));

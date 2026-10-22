@@ -65,12 +65,12 @@ function NavItems({ id, context }: { readonly id: string; readonly context: Rend
     <>
       {context.navigation.map((item, index) => {
         if (!("children" in item)) {
-          return <NavLinkItem key={`${index}:${item.href}`} link={item} />;
+          return <NavLinkItem key={item.id ?? `${index}:${item.href}`} link={item} />;
         }
         const listId = `${id}-${index}`;
         return (
           <li
-            key={listId}
+            key={item.id ?? listId}
             className="site-submenu relative [&:not([data-wf-ready]):focus-within>ul]:block"
           >
             <button
@@ -86,8 +86,8 @@ function NavItems({ id, context }: { readonly id: string; readonly context: Rend
               id={listId}
               className="hidden data-open:block md:absolute md:top-full md:z-20 md:mt-1 md:w-48 md:rounded-box md:bg-base-100 md:p-2 md:shadow"
             >
-              {item.children.map((link) => (
-                <NavLinkItem key={link.href} link={link} />
+              {item.children.map((link, childIndex) => (
+                <NavLinkItem key={link.id ?? `${childIndex}:${link.href}`} link={link} />
               ))}
             </ul>
           </li>
@@ -124,7 +124,11 @@ export const header: ComponentDef = {
             {boundText(values, "siteName", context)}
           </a>
         </div>
-        <nav aria-label={t("siteText.navigation")}>
+        {/* Until webforge.js has run, or without it, the menu shows while the nav has the focus. */}
+        <nav
+          aria-label={t("siteText.navigation")}
+          className="[&:not([data-wf-ready]):focus-within>ul]:flex"
+        >
           <button
             type="button"
             className="btn btn-square btn-ghost md:hidden"

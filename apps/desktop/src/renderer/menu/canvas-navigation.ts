@@ -1,5 +1,7 @@
 import type { CanvasEngine } from "@webforge/engine";
 import { pagePath, type SiteDoc } from "@webforge/model";
+// The export's own navigation, through a subpath that must stay free of Node imports, as it runs
+// in the renderer (the pipeline-navigation-no-node rule in .dependency-cruiser.mjs checks it).
 import { type NavigationPage, navigationFor } from "@webforge/pipeline/navigation";
 import type { NavItem, NavLink } from "@webforge/site-components";
 import type { EditorSession } from "../editor/editor-session.js";
