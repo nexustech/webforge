@@ -24,7 +24,7 @@ export type SiteWideAction = {
 };
 
 /** Runs before every confirmed site-wide action; Version History (4.6) saves a version here. */
-export type BeforeSiteWideAction = (action: SiteWideAction) => void | Promise<void>;
+type BeforeSiteWideAction = (action: SiteWideAction) => void | Promise<void>;
 
 /**
  * The window's site-wide confirmations: asked by any part of the editor (the App hands it to the
