@@ -59,7 +59,10 @@ const left = () => page.getByRole("region", { name: "Left panels" });
 async function addPanelElement(name: string): Promise<Locator> {
   await left().getByRole("tab", { name: "Add" }).click();
   await left().getByRole("tab", { name: "Elements" }).click();
-  return left().getByRole("button", { name, exact: true });
+  const item = left().getByRole("button", { name, exact: true });
+  // The canvas adds its drag handle to a newly shown item a moment later.
+  await expect(item.locator("[data-puck-drawer-item]")).toHaveCount(1);
+  return item;
 }
 
 /** Brings Undo History, the left column's second tab, back to the front. */
