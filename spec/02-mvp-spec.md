@@ -57,13 +57,15 @@ The result is a fast, accessible, self-contained static website they fully own.
 | F-ED-13 | **Pages panel** | Add, rename, duplicate, reorder (= navigation order), set Home, *Hide from navigation*, folders. **Delete page asks for confirmation** and is undoable (D5/D7) |
 | F-ED-14 | **Confirmation rule** (D7) | Any action affecting more than the current page (theme switch, delete page, delete shared section, global font/colour change) confirms with its impact ("affects 6 pages") and is undoable |
 | F-ED-15 | **Custom Code** (C7, Advanced) | Custom HTML element; site `custom.css`/`custom.js`; head/body snippets. Scripts off in the editor by default |
-| F-ED-16 | **Copy & paste** (G1) | Copy/cut/paste sections and elements within a page, between pages and into another site (Ctrl/Cmd+C/X/V). One site is open at a time (F-SITE-2), so the clipboard keeps the copied items **with their images**: after opening another site, paste adds those images to its Media. Pasting an image file or clipboard image adds it to Media and inserts it. Pasting a YouTube/Vimeo URL creates a video embed. Each paste is one undo step |
+| F-ED-16 | **Copy & paste** (G1) | Copy/cut/paste sections and elements within a page, between pages and into another site (Ctrl/Cmd+C/X/V). One site is open at a time (F-SITE-2), so the clipboard keeps the copied items **with their images** (and linked files, F-ED-24): after opening another site, paste adds them to its Media. Pasting an image file or clipboard image adds it to Media and inserts it. Pasting a YouTube/Vimeo URL creates a video embed. Each paste is one undo step |
 | F-ED-17 | **Navigation menu editor** (G2) | Menu built from pages by default; users can add **external links**, **links to a section**, **"Book now"-style buttons** and **dropdown sub-menus**, reorder freely and hide items. Used by the Header's navbar (desktop + mobile menu) |
 | F-ED-18 | **Link to a section** (G3) | The link dialog offers *Page*, *Section on a page* (anchor picked from a list; IDs created automatically), *Email*, *Phone*, *External URL*, *File* |
 | F-ED-19 | **Spell check** (G5) | Electron spellchecker active while editing text; right-click suggestions; add to dictionary. **Windows:** checks in the site language from Site Settings. **macOS:** uses the system spell checker and its languages (Electron cannot set them there) |
 | F-ED-20 | **Editable 404 page** (G6) | A special *Page not found* page in the Pages panel (not in navigation), designed like any page, exported as `404.html`. Hosts serve it at **any** missing URL, including nested ones (`/services/missing`), so unlike other pages (X1) its links and asset URLs are absolute: based on the site's web address (X3), or `/`-rooted when none is set |
 | F-ED-21 | **Image focal point** (G14) | Set a focal point on any image; crops for Desktop/Tablet/Mobile keep it in view (`object-position`) |
 | F-ED-22 | **Icon picker** (G27) | Searchable Lucide icon picker (ISC) used by Icon, Button and List elements; icons inlined as SVG at export |
+| F-ED-23 | **Shared sections** (G34, GA6) | *Save as shared section* on any section (not Header/Footer) gives it a name; the Add panel lists shared sections and places linked copies on any page, including more than once on a page.<br>Editing a copy shows the banner *"Editing shared section ‹name›: changes apply to N copies on M pages"*, and the change applies everywhere as one undo step.<br>*Detach* turns one copy into a normal section (one undo step).<br>Deleting a shared section confirms with its impact (D7), turns its copies into normal sections so no content is lost, and is undoable.<br>No shared section inside another. Pasting a copy within the same site places another linked copy; pasting into another site creates a normal section.<br>Each copy's anchor IDs are made unique per copy, so links to a section still work.<br>Content mode allows editing a copy's content (with the banner) but not saving, detaching or deleting shared sections. Exported inline on each page |
+| F-ED-24 | **Files in Media** (G35, GA7) | Media also takes **files**: PDF, Word, Excel, PowerPoint, OpenDocument, plain text and CSV, shown with a file-type icon, name and size. They are checked by extension and content type, and never opened or run in the editor.<br>The link dialog's *File* option picks from them; links open in a new tab by default, with an optional *Download* setting.<br>Exported unchanged to `files/` under a cleaned-up file name (a clash gets `-2`, `-3`…); only files that pages link to are exported.<br>Copy & paste into another site brings linked files along, as it does images (F-ED-16).<br>Deleting a linked file warns first, as for images (F-ED-5). Site Check tip for files over 10 MB |
 
 ### 2.3 Design
 | ID | Feature | Acceptance criteria |
@@ -89,6 +91,7 @@ The result is a fast, accessible, self-contained static website they fully own.
 | F-EX-2 | **Image output** (X2) | WebP + JPEG fallback (PNG if transparent) at responsive widths, `width`/`height`, lazy loading; JPEG share image; favicon set |
 | F-EX-3 | **Readable output** (X4) | Indented HTML, readable CSS/JS; optional *Minify output* |
 | F-EX-4 | **Include developer files** (X6) | Optional: Tailwind source + theme tokens + `site.json` + README |
+| F-EX-5 | **AI-readable copies** (G36, GA8) | Site Settings → Search engines: *Help AI tools read your site* (default: §7 item 12).<br>Export adds `llms.txt` (site name, description and a list of pages) and a Markdown copy of each page beside it (`about.md`): headings, text, lists, links and image alt text.<br>Left out: the 404 page and anything not exported (such as elements hidden in Layers). Pages hidden from navigation are included.<br>Links are absolute when the web address is set; otherwise they are relative to the site root, and Site Check suggests adding the web address. No scripts and no external requests |
 | F-PB-1 | **Publish destinations** (08) | Add Netlify (OAuth sign-in, create/pick site), FTP/FTPS/SFTP (presets, Test connection tries FTPS first; plain FTP allowed with warning, B5). Several destinations per site. Secrets in the OS keychain |
 | F-PB-2 | **Publish** | Build (strict checks) → upload changed files only → assets before pages → verify → "Your site is live" with link. Cancel keeps the old site as intact as possible. Creates an automatic version "Published ‹date›" |
 | F-PB-3 | **Republish a version** | From Version History, publish an older version (rollback on any host) |
@@ -104,6 +107,11 @@ The result is a fast, accessible, self-contained static website they fully own.
 | F-CM-6 | **Newsletter signup** (G17) | Newsletter section: email (+ optional name) form that POSTs to the provider's embedded-form URL, plus our honeypot. Generic "form action URL" option in MVP; provider presets per GA3 (open question) |
 | F-CM-7 | **Booking button** (G18) | "Book now" button/element linking to the user's booking page; generic https URL in MVP; provider presets per GA3 (open question). Plain link, no external JS |
 | F-CM-8 | **Dynamic year** (G21) | `{year}` token for text (e.g. footer copyright) filled in at export, with no script. The year is fixed until the site is next exported or published, so Site Check shows a tip when a published site's year is out of date |
+
+### 2.7 AI
+| ID | Feature | Acceptance criteria |
+|---|---|---|
+| F-AI-1 | **Connect AI apps** (MCP, G33, GA5) | Preferences → *AI apps*: off by default. When on, Webforge runs an MCP server **reachable only from this computer**, while a site is open. A status indicator shows when an AI app is connected.<br>**Pairing:** to connect an AI app (for example Claude or ChatGPT desktop), the user chooses *Add AI app*, names it, and copies the connection details with a one-time code into that app. The pairing explains that the content of open sites is shared with that app. Paired apps are listed by the name the user gave and can be removed at any time; requests without a valid pairing are refused.<br>Tools: read pages, sections, Site Settings and theme; add, edit, move and remove sections and elements from the catalogue; edit text and fields; add pages; change theme tokens; run Site Check; open Preview.<br>Every change goes through `HistoryManager` as one undo step labelled with the app's name ("AI (Claude): Added Hero"). While the user is in the middle of a drag, slider or text edit, AI changes are refused with a "busy, try again" answer. Site-wide changes show the D7 confirmation in Webforge and wait for the user (declined after 60 s). Content mode limits AI apps to content edits.<br>No tools for publishing, credentials, files outside the site, or Custom Code. Tool calls are never logged with their content. Webforge needs no API key and sends nothing anywhere itself |
 
 ## 3. MVP component catalogue (decided S1–S5, [starting content](../research/product/03-starting-content.md))
 
@@ -184,14 +192,16 @@ All components must:
 | Blog collection (posts, tags, RSS, latest posts, Markdown/CSV import) | **v1.1** (M2) |
 | Portfolio/Gallery, Team, Events collections | v1.2+ (M2) |
 | Site search, multilingual | v1.2+ (M4) |
-| Saved sections (user-reusable) | v1.x (C5) |
+| A library of saved sections shared across sites (shared sections within a site are MVP, F-ED-23) | v1.x (C5, GA6) |
 | Cloudflare, GitHub Pages, S3 publishing; custom-domain automation | Later (08) |
 | Webforge Hosting / form relay | Deferred business decision (B2) |
 | AVIF, clean URLs, Export as Astro project | Later / on demand (X2, X1, X6) |
 | Importing existing websites | Out of scope (C3) |
 | Free positioning, real-time collaboration, remote client editing, members, carts | Out of scope (T3, M5) |
 | Find & replace, page-rename redirects, legal page templates, social share preview, stock photo search (Pexels/Pixabay), site dark mode, video-background hero, announcement bar / popup | **v1.1** (gap analysis G4, G7, G12, G13, G19, G20, G22, G26) |
-| **AI with the user's own account** (rewrite text; meta/social descriptions; alt text) | **v1.1** (GA2) |
+| **Built-in AI assistant with the user's own account** (rewrite text; meta/social descriptions; alt text; then building and editing pages through the same commands as F-AI-1) | **v1.1** (GA2, GA9) |
+| **Draft pages** (kept in the site, left out of export and publish) | **v1.1** (G37, GA9) |
+| Online CMS editing in a browser | Out of scope (G39) |
 | AI site generation from a description | Later (G25c) |
 | Tables, timeline, countdown, charts; password-protected pages | Later / on demand (G16, G24) |
 | Component/theme marketplace and plugin API | Long-term goal (GA4) |
@@ -204,10 +214,10 @@ The detailed work breakdown (one GitHub issue per item), schedule, risks and ope
 | Phase | Milestone | Content | Exit criteria |
 |---|---|---|---|
 | **Phase 0** | **Prototype spikes** (~2 weeks, combined) | Electron secure shell + electron-builder installers (signed NSIS/DMG) + auto-update; Puck with **our** history (critical); daisyUI components; `.wforge` SQLite via **better-sqlite3** (packaging + rebuild on Windows/macOS, crash safety, OneDrive folder); export pipeline + `file://` checks; Netlify + SFTP publish | Every 🔬 item resolved; go/no-go on Puck (else fallback canvas) |
-| **Phase 1** | **Editor core** | Model, history, storage + autosave, engine adapter, Add/Edit/Pages panels, Header/Footer, Undo History, views, Simple/Advanced and Design/Content modes, Site Settings and Page Settings, editable 404 page, media library with alt text and focal point, **copy & paste, menu editor, link dialog, spell check** | Build a 3-page site from blank; undo-all property tests green |
+| **Phase 1** | **Editor core** | Model, history, storage + autosave, engine adapter, Add/Edit/Pages panels, Header/Footer, Undo History, views, Simple/Advanced and Design/Content modes, Site Settings and Page Settings, editable 404 page, media library with alt text and focal point, **copy & paste, menu editor, link dialog, spell check, shared sections, files in Media** | Build a 3-page site from blank; undo-all property tests green |
 | **Phase 2** | **Design & components** | Themes (incl. **text/button styles**), brand colours/fonts, component catalogue (incl. **carousel, lightbox, animations, newsletter, booking**, Buy button, embeds), templates, **icon picker** | All templates pass axe + visual regression |
-| **Phase 3** | **Output** | Preview server, Export, Site Check, forms, GA + consent, custom code bundling, **404 output, dynamic year** | Exported templates open from disk in 4 browsers with zero external requests |
-| **Phase 4** | **Publish & versions** | Destinations, Netlify/FTP/SFTP publish, Version History, republish | Publish + rollback on all targets in E2E tests |
+| **Phase 3** | **Output** | Preview server, Export, Site Check, forms, GA + consent, custom code bundling, **404 output, dynamic year, `llms.txt` and Markdown copies** | Exported templates open from disk in 4 browsers with zero external requests |
+| **Phase 4** | **Publish & versions** | Destinations, Netlify/FTP/SFTP publish, Version History, republish, **connect AI apps (MCP)** | Publish + rollback on all targets in E2E tests; a paired AI app's edits are undoable and the MCP server can't be reached from another computer |
 | **Phase 5** | **Beta hardening** | Performance budgets, installer/updates, licences screen, onboarding, help | Beta with 10–20 small-business users |
 
 ## 7. Open items to confirm
@@ -220,6 +230,9 @@ The detailed work breakdown (one GitHub issue per item), schedule, risks and ope
 7. ~~Licensing model~~ → ✅ **Decided:** see §8 (implemented after MVP).
 8. **Booking and newsletter provider presets** (GA3, deferred): which providers to preset (e.g. Calendly, Square Appointments, Fresha, Acuity, SimplyBook; Mailchimp, Brevo, MailerLite)? Decide before Phase 3. A generic URL works meanwhile.
 9. ~~Competitor gap analysis~~ → ✅ **Decided (GA1–GA4):** see [gap analysis](../research/product/05-feature-gap-analysis.md). MVP grows by ~4–6 weeks.
+10. ~~RapidWeaver Elements 3.0 review~~ → ✅ **Decided (GA5–GA9, 2026-10-22):** connect AI apps (MCP), shared sections, files in Media and `llms.txt` join the MVP (about +19 days). The built-in AI assistant and draft pages are v1.1.
+11. **MCP transport** (F-AI-1): a local HTTP endpoint with a per-app token, or a small bundled bridge program? Decided by an ADR in the MCP work item ([gap analysis, open question 2](../research/product/05-feature-gap-analysis.md#open-questions)).
+12. **`llms.txt` default** (F-EX-5): proposed on for new sites and off for existing ones; decide before Phase 3 ([gap analysis, open question 3](../research/product/05-feature-gap-analysis.md#open-questions)).
 
 ## 8. Business & licensing model (decided 2026-10-19)
 | Item | Decision |

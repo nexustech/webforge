@@ -1,6 +1,6 @@
 # Competitor Feature Gap Analysis
 
-**Status:** ✅ Decided 2026-10-20 (GA1–GA4, see [§5](#5-decisions))
+**Status:** ✅ Decided 2026-10-20 (GA1–GA4); updated 2026-10-22 after reviewing RapidWeaver Elements 3.0 (GA5–GA9, see [§3.7](#37-rapidweaver-elements-30-update-2026-10-22) and [§5](#5-decisions))
 **Question:** Which features do competitor tools offer that Webforge's plans ([MVP spec](../../spec/02-mvp-spec.md), roadmap and research decisions) don't yet account for?
 
 ## 1. Competitors reviewed
@@ -108,9 +108,34 @@ Bootstrap Studio 8 added an **AI Assistant** (bring-your-own key). Wix, Squaresp
 | G31 | **Custom workspaces** (saved panel layouts) | Elements | Covered enough by resizable panels + Reset Panels (UI1) |
 | G32 | **Mobile app** for edits | Wix, Squarespace | Out of scope |
 
+### 3.7 RapidWeaver Elements 3.0 update (2026-10-22)
+Elements is Mac-only and the closest Tailwind-based desktop rival. Version 3.0 left beta on 15 Sep 2026. Its main additions:
+- **AI:** an AI Assistant with your own OpenAI or Anthropic key that builds layouts, writes content, creates components, does SEO and CMS tasks and can publish. Also an **MCP server** for outside AI apps, and per-project "AI memory".
+- **AI search:** Markdown copies of pages and an `llms.txt` file, on by default for new projects.
+- **Design and content:** new design effects, and tables filled from CSV or Google Sheets.
+- **Online CMS editor:** content editing in a browser.
+
+Before 3.0 it already had Global Templates (reusable linked blocks) and a Resources manager for any file type.
+
+| # | Gap | Who has it | Notes | Effort | Recommendation |
+|---|---|---|---|---|---|
+| G33 | **Connect AI apps (MCP server)**: outside AI apps (Claude, ChatGPT, others) read and edit the open site through Webforge's own commands | Elements 3.0 | Needs no API key or server of ours. It runs only on the user's computer and is off until the user turns it on; each app is paired with a code from Webforge. Every change goes through `HistoryManager`, so it is undoable and labelled. Lays the command layer that the v1.1 built-in assistant reuses | M | **MVP** (GA5) |
+| G34 | **Shared sections** ("Global Templates"): a section saved once and placed on several pages; editing one updates all | Elements, Squarespace (saved sections), WordPress (synced patterns) | Builds on the shared Header/Footer (C5). Glossary term: *Shared section* | M | **MVP** (GA6). A library of saved sections across sites stays later |
+| G35 | **Files in Media** (PDF, Word, Excel, PowerPoint, text, CSV) for download links | Elements (Resources manager), Wix, Squarespace | The link dialog already offers *File* (F-ED-18), but Media took only images, so a café's PDF menu had nowhere to live | S | **MVP** (GA7) |
+| G36 | **AI-readable copies**: `llms.txt` plus a Markdown copy of each page, for AI search tools | Elements 3.0 (on by default for new projects) | Plain static files, no external requests, so it fits C8 | S | **MVP** (GA8) |
+| G37 | **Draft pages** ("Don't publish"): a page kept in the site but left out of export and publish | Elements (Do Not Publish), Wix, Squarespace | For seasonal or work-in-progress pages | S | v1.1 (GA9) |
+| G38 | **Tables from CSV / Google Sheets** | Elements 3.0 | A CSV imported at build time fits C8; a live Google Sheet doesn't | M | **Not adopted** (GA9) |
+| G39 | **Online CMS editing** in a browser (multi-user) | Elements (Online CMS Editor, its own servers) | Needs a server (B2). Elements' own docs note one-way sync: republishing from the app can overwrite online edits | L | Out of scope (as T3/M5 remote editing; recommendation, not raised by the product owner) |
+| G40 | **Design effects**: masks, 3D transforms, text wrapping around shapes, radial/conic gradients, coloured shadows | Elements 3.0 | Designer features rather than DIY small-business needs | M | Not planned (recommendation, not raised by the product owner) |
+
+**Business notes for the post-MVP licensing questions (MVP §8):**
+- **Pricing:** Elements is a yearly subscription (Plus/Pro) for up to 3 Macs per user. When the subscription ends, the app keeps working but updates stop.
+- **Trial:** no publishing or export, and at most 3 pages per project.
+- **Our differences:** Webforge's Windows support and one-off $99 licence.
+
 ## 4. Proposed changes
 
-**Add to MVP (mostly small; about 4–6 weeks of extra work in total):**
+**Add to MVP (mostly small; about 4–6 weeks of extra work in total, plus about 19 days from the Elements 3.0 review):**
 - **Editing basics:**
   - G1 copy & paste, G2 menu editor, G3 link to section
   - G5 spell check, G6 editable 404, G21 dynamic year
@@ -119,15 +144,17 @@ Bootstrap Studio 8 added an **AI Assistant** (bring-your-own key). Wix, Squaresp
   - G11 typography and button styles in the theme
 - **Media:** G14 focal point, G15 alt text on media, G27 icon picker.
 - **Small-business tools:** G17 newsletter signup, G18 booking buttons.
+- **Added after the Elements 3.0 review (2026-10-22):** G33 connect AI apps (MCP server), G34 shared sections, G35 files in Media, G36 `llms.txt` and Markdown copies.
 
 **v1.1 (with Blog):**
 - **Content tools:** G4 find & replace, G7 rename redirects, G20 legal page templates, G22 social preview, G26 stock photos.
 - **Design options:** G12 site dark mode, G13 video hero, G19 announcement bar / popup.
-- **AI (bring-your-own key):** G25a rewrite text, G25b meta/alt text.
+- **AI (bring-your-own key):** a built-in assistant on the same commands as G33, starting with G25a rewrite text and G25b meta/alt text, then building and editing pages (GA9).
+- **Publishing control:** G37 draft pages.
 
-**Later / on demand:** G16 tables/timeline/countdown/charts, G24 password pages, G25c AI site generation, G28 marketplace/plugin API.
+**Later / on demand:** G16 tables/timeline/countdown/charts, G24 password pages, G25c AI site generation, G28 marketplace/plugin API, a saved-section library shared across sites.
 
-**Out of scope:** G23 cart/store, G29 cloud sync, G30 collaboration, G32 mobile app, G25d AI images.
+**Out of scope:** G23 cart/store, G29 cloud sync, G30 collaboration, G32 mobile app, G25d AI images, G39 online CMS editing. **Not adopted:** G38 CSV tables. **Not planned:** G40 design effects.
 
 ## 5. Decisions
 | # | Topic | Decision |
@@ -136,13 +163,21 @@ Bootstrap Studio 8 added an **AI Assistant** (bring-your-own key). Wix, Squaresp
 | GA2 | **AI** | ✅ **Users bring their own AI account in v1.1**: G25b (meta/social descriptions, alt text) and G25a (rewrite text). Opt-in, keys in the OS keychain, every AI edit undoable via `HistoryManager`. G25c later; G25d out of scope |
 | GA3 | **Booking & newsletter presets** | ⏸ **Deferred.** The features stay in MVP with a generic "any https URL / form action" option. Which providers to preset is an open question (see below) |
 | GA4 | **Marketplace / plugin API** | **Long-term goal, out of scope for MVP.** Keep `site-components` and the component registry designed so a plugin API is possible later |
+| GA5 | **Connect AI apps (MCP)** (2026-10-22) | ✅ **MVP (G33).** Webforge runs a local MCP server so AI apps the user already has can read and edit the open site. Off by default; each AI app is paired with a code from Webforge and can be removed; every change is undoable and labelled (e.g. "AI (Claude): Added Hero"). It works only on the user's computer, with no publishing or credential tools. Spec F-AI-1. The built-in assistant follows in v1.1 (GA9) |
+| GA6 | **Shared sections** (2026-10-22) | ✅ **MVP (G34)**, product owner priority. A section is saved once and placed on any page (more than once if needed); edits apply everywhere with the shared-section banner; *Detach* turns one copy back into a normal section. Spec F-ED-23. Brings C5's shared sections forward from post-MVP; a library of saved sections across sites stays later |
+| GA7 | **Files in Media** (2026-10-22) | ✅ **MVP (G35).** PDF, Word, Excel, PowerPoint, OpenDocument, text and CSV files in Media, linked with the link dialog's *File* option and exported for download. Spec F-ED-24. Audio and video stay deferred |
+| GA8 | **`llms.txt` and Markdown copies** (2026-10-22) | ✅ **MVP (G36)**, as a Site Settings option. Spec F-EX-5. Whether it is on by default for new sites is open question 3 |
+| GA9 | **v1.1 additions** (2026-10-22) | ✅ **Built-in AI assistant** with the user's own key (amends GA2): it uses the same commands as F-AI-1, starting with G25a/G25b and growing to building and editing pages. **Draft pages** (G37). **CSV tables (G38) not adopted.** Per-site AI style notes (as Elements' "AI memory") are a suggestion for the v1.1 design, not decided |
 
 v1.1 and later items stay as listed in §4.
 
 ## Open questions
 1. **Booking and newsletter provider presets** (GA3): which providers to preset? Candidates: Calendly, Square Appointments, Fresha, Acuity, SimplyBook (booking); Mailchimp, Brevo, MailerLite (newsletter). Decide before Phase 3; the generic URL option covers everything meanwhile.
+2. **MCP transport and tool scope** (GA5): a local Streamable HTTP endpoint with a per-app token, or a small bundled stdio bridge? The packaged app disables Electron's `RunAsNode` fuse, so the Electron binary can't double as a stdio server. Decide with an ADR in the MCP work item. Default tool scope: read the site, edit through history commands, run Site Check and preview; no publishing, no credentials, no file-system access.
+3. **`llms.txt` default** (GA8): on by default for new sites (as Elements does) or off until the user turns it on? Proposed: on for new sites, off for existing ones. Decide before Phase 3.
 
 ## Sources
+- RapidWeaver Elements 3.0: [out of beta (15 Sep 2026)](https://forums.realmacsoftware.com/t/big-news-elements-3-0-is-out-of-beta/57609) · [3.0 beta notes (13 Jul 2026)](https://forums.realmacsoftware.com/t/elements-3-0-beta-now-available/56986) · [The Road Ahead (Mar 2026)](https://forums.realmacsoftware.com/t/rapidweaver-elements-the-road-ahead/55124) · [Online CMS Editor](https://docs.realmacsoftware.com/elements-docs/cms/online-cms-editor)
 - RapidWeaver Elements: [features](https://realmacsoftware.com/elements/) · [docs](https://docs.realmacsoftware.com/rapidweaver-elements-docs/)
 - Blocs: [6.3 release (AI tools, find & replace, global alt tags)](https://alternativeto.net/news/2025/11/blocs-6-3-for-mac-adds-ai-tools-global-find-and-replace-new-interaction-manager-and-more) · [6.4 release (carousels, form security, paste, QR preview)](https://alternativeto.net/news/2026/3/blocs-6-4-for-mac-enhances-carousels-forms-copy-and-paste-link-icons-and-preview-mode) · [6.2 release](https://alternativeto.net/news/2025/6/blocs-6-2-for-mac-adds-stacked-containers-enhanced-preview-mode-and-ftp-manager-updates)
 - Mobirise: [Toolradar overview](https://toolradar.com/tools/mobirise)
