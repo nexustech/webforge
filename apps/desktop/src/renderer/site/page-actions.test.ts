@@ -71,6 +71,20 @@ describe("pagesChangedByDeleting (D7)", () => {
     });
     expect(pagesChangedByDeleting(site(), about)).toBe(1);
   });
+
+  it("isn't thrown off by a broken link to a document", () => {
+    const { session, site, add } = setUp();
+    const about = add("About");
+    session.edit("props", "Edited menu", (draft) => {
+      draft.menu.items = [];
+      draft.pages[about]?.doc.content.push({
+        type: "Hero",
+        props: { id: "hero", buttonLink: { kind: "file", mediaId: "gone" } },
+      });
+    });
+
+    expect(pagesChangedByDeleting(site(), about)).toBe(1);
+  });
 });
 
 describe("page actions (F-ED-13)", () => {

@@ -164,7 +164,7 @@ describe("RichTextLinkHost (F-ED-3, F-ED-18)", () => {
     );
 
     const answer = ask(null);
-    const dialog = within(await screen.findByRole("dialog", { name: "Link" }));
+    const dialog = await openedDialog("Link");
     await user.click(dialog.getByRole("radio", { name: "File" }));
     await user.click(
       dialog.getByRole("checkbox", { name: "Download the file instead of opening it" }),
