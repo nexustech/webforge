@@ -1,6 +1,6 @@
 # Bootstrap Studio 9.0: Competitor Review
 
-**Status:** 📝 Proposed, awaiting product owner decisions ([§6](#6-decisions-needed))
+**Status:** ✅ Decided 2026-10-22: all proposals adopted ([§6](#6-decisions))
 **Date:** 2026-10-22
 **Question:** What does Bootstrap Studio 9.0 (released 20 Oct 2026) add since 8.0.1, and which of it should Webforge add to the MVP or v1.1?
 
@@ -107,11 +107,16 @@ Bootstrap Studio's CMS shows the shape a collections engine needs. To make BS9-3
 
 No MVP work item changes. This is guidance for reviews of 1.4, 1.17 and 2.5.
 
-## 6. Decisions needed
-1. **BS9-1 and BS9-2 in the MVP?** (about 2 days in total, Phase 2)
-2. **BS9-3:** build the v1.1 Blog on a general collections engine (changes M2's approach, not its timing)?
-3. **v1.1 list:** which of BS9-4 to BS9-9?
-4. **BS9-10:** fold the AI details into the v1.1 assistant design (GA9)?
+## 6. Decisions
+Decided by the product owner on 2026-10-22: every proposal is adopted.
+
+| # | Decision |
+|---|---|
+| BS9-1 | ✅ **MVP:** sticky header with a scroll style. Spec F-DS-6; plan item 2.6 (+1 day) |
+| BS9-2 | ✅ **MVP:** back-to-top button. Spec F-CM-9; plan item 2.9 (+1 day) |
+| BS9-3 | ✅ **v1.1:** the Blog is built on a general collections engine (amends M2). Portfolio, Team, Events and Menus follow as presets on the same engine. MVP model work follows the design note in §5 |
+| BS9-4 – BS9-9 | ✅ **v1.1:** Markdown paste/import, reading progress bar, scrolling logo strip, Instagram post embed (click-to-load), share a preview link (Netlify draft deploy), smooth page transitions |
+| BS9-10 | ✅ **v1.1 AI assistant design (GA9):** local and OpenAI-compatible providers, a *Review changes* mode alongside auto-apply, a context and usage meter, and the privacy wording |
 
 ## Sources
 - [Bootstrap Studio releases](https://bootstrapstudio.io/pages/releases): 9.0.0, 20 Oct 2026
