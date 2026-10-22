@@ -1,6 +1,15 @@
 import type { ListChange } from "@webforge/editor-ui";
 import type { EngineEdit } from "@webforge/engine";
-import type { MenuItemId, NodeDoc, PageDoc, PageId, SiteDoc } from "@webforge/model";
+import {
+  copiedNodeId,
+  type MenuItemId,
+  type NodeDoc,
+  type PageDoc,
+  type PageId,
+  SHARED_COPY_TYPE,
+  type SharedSectionId,
+  type SiteDoc,
+} from "@webforge/model";
 import { siteLibrary, starterPage } from "@webforge/site-components";
 import fc from "fast-check";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -42,6 +51,7 @@ type Ctx = {
 };
 
 const ABOUT = "page-about" as PageId;
+const HOURS = "shared-hours" as SharedSectionId;
 
 function initialSite(): SiteDoc {
   const site = starterSite();
@@ -59,6 +69,11 @@ function initialSite(): SiteDoc {
       ],
     },
   });
+  // A linked copy of a shared section (F-ED-23), which the canvas edits through.
+  home.doc.content.push({
+    type: SHARED_COPY_TYPE,
+    props: { id: "hours-copy", sharedSectionId: HOURS },
+  });
   return {
     ...site,
     pages: {
@@ -66,6 +81,13 @@ function initialSite(): SiteDoc {
       [ABOUT]: { ...home, id: ABOUT, slug: "about", title: "About", doc: starterPage() },
     },
     pageOrder: [...site.pageOrder, ABOUT],
+    sharedSections: {
+      [HOURS]: {
+        id: HOURS,
+        name: "Opening hours",
+        section: { type: "Heading", props: { id: "hours", text: "Hours" } },
+      },
+    },
   };
 }
 
@@ -424,6 +446,31 @@ const commands: fc.Arbitrary<Command>[] = [
         const footer = draft.layout.footer[0];
         if (footer !== undefined) footer.props.text = text;
       }),
+  })),
+  fc.string({ maxLength: 4 }).map((text) => ({
+    name: `type in a copy of a shared section on the canvas "${text}"`,
+    run: (ctx) => {
+      // As the engine reports it (F-ED-23): an edit of the shared section, the page unchanged.
+      const site = ctx.session.history.document.getState();
+      const page = site.pages[ctx.session.ui.getState().pageId]?.doc;
+      const section = site.sharedSections[HOURS]?.section;
+      if (page === undefined || section === undefined) return;
+      ctx.engine.edit({
+        kind: "text",
+        page,
+        nodeId: copiedNodeId("hours-copy", "hours"),
+        componentType: "Heading",
+        field: "text",
+        selection: copiedNodeId("hours-copy", "hours"),
+        sharedSection: {
+          id: HOURS,
+          section: {
+            ...section,
+            props: { ...section.props, text: `${String(section.props.text)}${text}` },
+          },
+        },
+      });
+    },
   })),
   fc.string({ maxLength: 4 }).map((text) => ({
     name: `type in the footer on the canvas "${text}"`,

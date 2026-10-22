@@ -1,15 +1,29 @@
-import type { LayoutDoc, NodeDoc, PageDoc } from "@webforge/model";
+import {
+  expandSharedCopies,
+  type LayoutDoc,
+  type NodeDoc,
+  type PageDoc,
+  type SharedSectionsDoc,
+} from "@webforge/model";
 import { allNodes, findNode } from "./tree.js";
 
 /** A site without a shared Header or Footer. */
 export const EMPTY_LAYOUT: LayoutDoc = { header: [], footer: [] };
 
 /**
- * The page as the canvas shows it (C5, F-ED-7): the shared Header, the page's own content, then the
- * shared Footer, in one list Puck can edit.
+ * The page as the canvas shows it (C5, F-ED-7): the shared Header, the page's own content with its
+ * linked copies shown as their shared sections (F-ED-23), then the shared Footer, in one list Puck
+ * can edit.
  */
-export function composePage(page: PageDoc, layout: LayoutDoc): PageDoc {
-  return { root: page.root, content: [...layout.header, ...page.content, ...layout.footer] };
+export function composePage(
+  page: PageDoc,
+  layout: LayoutDoc,
+  shared: SharedSectionsDoc = {},
+): PageDoc {
+  return {
+    root: page.root,
+    content: [...layout.header, ...expandSharedCopies(page.content, shared), ...layout.footer],
+  };
 }
 
 const idsOf = (nodes: readonly NodeDoc[]) => new Set(nodes.map((node) => node.props.id));

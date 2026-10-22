@@ -199,7 +199,7 @@ describe("Editor", () => {
       theme: site.theme,
     });
     expect(canvas?.querySelector(".editor__canvas-root")).not.toBeNull();
-    expect(engine.loadPage).toHaveBeenCalledWith(starterPage(), site.layout);
+    expect(engine.loadPage).toHaveBeenCalledWith(starterPage(), site.layout, site.sharedSections);
   });
 
   it("mounts the engine already in Content mode when the site opens in it", async () => {

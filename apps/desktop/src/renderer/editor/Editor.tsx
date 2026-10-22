@@ -149,7 +149,7 @@ export function Editor({
     }
     const page = currentPage(session);
     if (page !== undefined) {
-      engine.loadPage(page.doc, shownLayout(site, page.id));
+      engine.loadPage(page.doc, shownLayout(site, page.id), site.sharedSections);
     }
     const connection = connectEngine(
       siteWide === undefined ? engine : confirmSharedRemovals(engine, session, siteWide),

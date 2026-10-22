@@ -1,4 +1,11 @@
-import type { PageDoc, PageId, SiteDoc } from "@webforge/model";
+import {
+  copiedNodeId,
+  type NodeDoc,
+  type PageDoc,
+  type PageId,
+  type SharedSectionId,
+  type SiteDoc,
+} from "@webforge/model";
 import { siteLibrary, starterPage } from "@webforge/site-components";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
@@ -122,10 +129,11 @@ describe("connectEngine", () => {
 
     session.showPage(about);
 
-    expect(engine.loadPage).toHaveBeenLastCalledWith(expect.anything(), {
-      header: [],
-      footer: layout.footer,
-    });
+    expect(engine.loadPage).toHaveBeenLastCalledWith(
+      expect.anything(),
+      { header: [], footer: layout.footer },
+      expect.anything(),
+    );
     // An edit of the Footer there reports the Header the canvas showed: none. It stays as it was.
     engine.edit({
       kind: "text",
@@ -140,6 +148,62 @@ describe("connectEngine", () => {
     const site = session.history.document.getState();
     expect(site.layout.header).toEqual(layout.header);
     expect(site.layout.footer[0]?.props.text).toBe("Bye");
+  });
+
+  it("records an edit in a linked copy in its shared section, for every copy (F-ED-23)", () => {
+    const { session, engine, doc, labels } = setup();
+    const HOURS = "shared-hours" as SharedSectionId;
+    const section: NodeDoc = { type: "Heading", props: { id: "hours", text: "Hours" } };
+    session.edit("props", "Saved", (draft) => {
+      draft.sharedSections[HOURS] = { id: HOURS, name: "Opening hours", section };
+    });
+    const page = doc();
+
+    engine.edit({
+      kind: "text",
+      nodeId: copiedNodeId("c1", "hours"),
+      componentType: "Heading",
+      field: "text",
+      page,
+      selection: copiedNodeId("c1", "hours"),
+      sharedSection: { id: HOURS, section: { ...section, props: { id: "hours", text: "Open" } } },
+    });
+
+    const site = session.history.document.getState();
+    expect(site.sharedSections[HOURS]?.section.props.text).toBe("Open");
+    expect(doc()).toBe(page);
+    expect(labels().at(-1)).toBe("Edited shared section 'Opening hours'");
+    // The canvas gets the shared sections with every change, an undo included.
+    session.history.undo();
+    expect(engine.applyChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ shared: session.history.document.getState().sharedSections }),
+    );
+    expect(session.history.document.getState().sharedSections[HOURS]?.section).toEqual(section);
+  });
+
+  it("labels another copy placed by duplicating one by its shared section (F-ED-23)", () => {
+    const { session, engine, doc, labels } = setup();
+    const HOURS = "shared-hours" as SharedSectionId;
+    session.edit("props", "Saved", (draft) => {
+      draft.sharedSections[HOURS] = {
+        id: HOURS,
+        name: "Opening hours",
+        section: { type: "Heading", props: { id: "hours", text: "Hours" } },
+      };
+    });
+    const copy = { type: "SharedSectionCopy", props: { id: "c2", sharedSectionId: HOURS } };
+
+    engine.edit({
+      kind: "duplicate",
+      nodeId: copiedNodeId("c2", "hours"),
+      componentType: "Heading",
+      page: { ...doc(), content: [...doc().content, copy] },
+      selection: copiedNodeId("c2", "hours"),
+      copyOf: HOURS,
+    });
+
+    expect(labels().at(-1)).toBe("Added a copy of 'Opening hours'");
+    expect(doc().content.at(-1)).toEqual(copy);
   });
 
   it("records canvas edits as labelled steps in the document store", () => {
@@ -349,6 +413,7 @@ describe("pages, selection and device view (U3)", () => {
     expect(engine.loadPage).toHaveBeenLastCalledWith(
       session.history.document.getState().pages[about]?.doc,
       session.history.document.getState().layout,
+      session.history.document.getState().sharedSections,
     );
     expect(session.history.entries()).toEqual([]);
   });
@@ -383,6 +448,7 @@ describe("pages, selection and device view (U3)", () => {
     });
     expect(engine.loadPage).toHaveBeenLastCalledWith(
       session.history.document.getState().pages[about]?.doc,
+      expect.anything(),
       expect.anything(),
     );
     expect(engine.setViewport).toHaveBeenLastCalledWith("mobile");
