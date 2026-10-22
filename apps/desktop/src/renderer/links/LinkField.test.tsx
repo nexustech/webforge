@@ -36,7 +36,16 @@ function setUp(buttonLink?: unknown) {
       (n: NodeDoc) => n.props.id === id,
     )?.props;
   const labels = () => session.history.entries().map((entry) => entry.label);
-  return { session, node, labels, remove, home: site.homePageId, user: userEvent.setup() };
+  return {
+    session,
+    node,
+    labels,
+    remove,
+    home: site.homePageId,
+    // No wait between events, and addresses pasted rather than typed: each typed character waited
+    // a timer tick and redrew the dialog, which took these tests past 5 s under a busy full run.
+    user: userEvent.setup({ delay: null }),
+  };
 }
 
 describe("LinkField and LinkDialog (F-ED-18)", () => {
@@ -71,14 +80,16 @@ describe("LinkField and LinkDialog (F-ED-18)", () => {
     await user.click(screen.getByRole("button", { name: "Add Link…" }));
     const dialog = within(screen.getByRole("dialog"));
     await user.click(dialog.getByRole("radio", { name: "Email" }));
-    await user.type(dialog.getByRole("textbox", { name: "Email address" }), "not an address");
+    await user.click(dialog.getByRole("textbox", { name: "Email address" }));
+    await user.paste("not an address");
     expect(dialog.getByRole("status").textContent).toMatch(/Enter an email address/);
     expect((dialog.getByRole("button", { name: "Save Link" }) as HTMLButtonElement).disabled).toBe(
       true,
     );
 
     await user.click(dialog.getByRole("radio", { name: "Web address" }));
-    await user.type(dialog.getByRole("textbox", { name: "Web address" }), "example.com/menu");
+    await user.click(dialog.getByRole("textbox", { name: "Web address" }));
+    await user.paste("example.com/menu");
     await user.click(dialog.getByRole("button", { name: "Save Link" }));
 
     expect(node("hero")?.buttonLink).toEqual({ kind: "url", href: "https://example.com/menu" });
@@ -116,7 +127,8 @@ describe("LinkField and LinkDialog (F-ED-18)", () => {
     await user.click(screen.getByRole("button", { name: "Add Link…" }));
     const dialog = within(screen.getByRole("dialog"));
     await user.click(dialog.getByRole("radio", { name: "Web address" }));
-    await user.type(dialog.getByRole("textbox", { name: "Web address" }), "example.com");
+    await user.click(dialog.getByRole("textbox", { name: "Web address" }));
+    await user.paste("example.com");
     await user.click(dialog.getByRole("button", { name: "Save Link" }));
 
     const shared = session.history.document.getState().layout.footer.at(-1);
