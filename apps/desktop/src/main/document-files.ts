@@ -136,7 +136,8 @@ function hasFormat(bytes: Uint8Array, type: FileMimeType): boolean {
       !names.some((name) => name.toLowerCase().endsWith("vbaproject.bin"))
     );
   }
-  return isText(bytes);
+  // Plain text and CSV: nothing else falls through to the text check.
+  return (type === "text/plain" || type === "text/csv") && isText(bytes);
 }
 
 /**
