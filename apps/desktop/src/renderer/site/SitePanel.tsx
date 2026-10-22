@@ -2,6 +2,17 @@ import { t } from "@webforge/i18n";
 import type { SiteDoc } from "@webforge/model";
 import { useSyncExternalStore } from "react";
 import type { EditorSession } from "../editor/editor-session.js";
+import { linkTargets } from "../links/link-targets.js";
+import { MenuPanel, type MenuPanelActions } from "../menu/MenuPanel.js";
+import {
+  addMenuItem,
+  editMenuLink,
+  followPages,
+  moveMenuItem,
+  removeMenuItem,
+  renameMenuItem,
+  setMenuItemHidden,
+} from "../menu/menu-actions.js";
 import type { PanelRegistry } from "../shell/panels.js";
 import { PagesPanel, type PagesPanelActions } from "./PagesPanel.js";
 import {
@@ -36,9 +47,27 @@ export function pagesPanelActions(session: EditorSession): PagesPanelActions {
   };
 }
 
-/** Whether two versions of the site list the same pages the same way, whatever their content. */
+/** The menu editor's actions on `session`: each change is one undo step (F-ED-17). */
+function menuPanelActions(session: EditorSession): MenuPanelActions {
+  return {
+    add: (item) => {
+      addMenuItem(session, item);
+    },
+    rename: (id, label) => renameMenuItem(session, id, label),
+    editLink: (id, label, change) => editMenuLink(session, id, label, change),
+    setHidden: (id, hidden) => setMenuItemHidden(session, id, hidden),
+    move: (id, to) => moveMenuItem(session, id, to),
+    remove: (id) => removeMenuItem(session, id),
+    followPages: () => followPages(session),
+  };
+}
+
+/**
+ * Whether two versions of the site list the same pages and menu the same way, whatever their
+ * content.
+ */
 function samePageList(a: SiteDoc, b: SiteDoc): boolean {
-  if (a.pageOrder !== b.pageOrder || a.homePageId !== b.homePageId) {
+  if (a.pageOrder !== b.pageOrder || a.homePageId !== b.homePageId || a.menu !== b.menu) {
     return false;
   }
   return a.pageOrder.every((id) => {
@@ -59,11 +88,15 @@ function samePageList(a: SiteDoc, b: SiteDoc): boolean {
 
 /**
  * Adds the Site panel to the right column, as the tab after Edit (UI1, ADR 0008), in Simple and
- * Advanced mode. It holds Pages for now; Media and Fonts join it later. Returns a function that
- * removes it.
+ * Advanced mode: Pages, and the navigation Menu under them. Returns a function that removes it.
  */
 export function registerSitePanel(panels: PanelRegistry, session: EditorSession): () => void {
   const actions = pagesPanelActions(session);
+  const menuActions = menuPanelActions(session);
+  const linkContext = () => {
+    const site = session.history.document.getState();
+    return { site, targets: linkTargets(site, session.library) };
+  };
   const { document } = session.history;
   // The site as the panel last showed it, kept while only page content changes, so typing on the
   // canvas doesn't re-render the panel.
@@ -82,7 +115,16 @@ export function registerSitePanel(panels: PanelRegistry, session: EditorSession)
       () => session.ui.getState().pageId,
       () => session.ui.getState().pageId,
     );
-    return <PagesPanel site={site} shownPageId={shownPageId} actions={actions} />;
+    return (
+      <div className="flex h-full flex-col">
+        <div className="min-h-0 flex-1">
+          <PagesPanel site={site} shownPageId={shownPageId} actions={actions} />
+        </div>
+        <div className="max-h-[50%] shrink-0 overflow-y-auto border-t border-border">
+          <MenuPanel site={site} linkContext={linkContext} actions={menuActions} />
+        </div>
+      </div>
+    );
   }
   return panels.register({
     id: "site",
