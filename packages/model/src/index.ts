@@ -63,8 +63,10 @@ export type { Breakpoint, Responsive, ResponsiveValue } from "./responsive.js";
 export { isResponsiveValue, resolveResponsive, responsiveSchema } from "./responsive.js";
 export type { RichTextLink } from "./rich-text-links.js";
 export {
+  RICH_TEXT_FILE_LINK,
   RICH_TEXT_PAGE_LINK,
   rewriteRichTextLinks,
+  richTextFileLinks,
   richTextHref,
   richTextLinkValue,
   richTextPageLinks,

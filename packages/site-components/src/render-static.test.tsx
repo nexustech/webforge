@@ -140,6 +140,32 @@ describe("renderNodesToHtml", () => {
     );
   });
 
+  it("points rich text's links to documents at their files, saved when so set (1.28)", () => {
+    const documents: RenderContext = {
+      ...context,
+      href: (link) => (link.kind === "file" ? `files/${link.mediaId}.pdf` : "#"),
+    };
+    const nodes: NodeDoc[] = [
+      {
+        type: "Text",
+        props: {
+          id: "t",
+          text:
+            '<p><a target="_blank" href="webforge:file/menu">Menu</a> ' +
+            '<a href="webforge:file/menu?download">Save</a> ' +
+            '<a href="https://example.com" download="evil.exe">Web</a></p>',
+        },
+      },
+    ];
+
+    expect(renderNodesToHtml(nodes, siteLibrary, documents)).toContain(
+      '<p><a href="files/menu.pdf" target="_blank" rel="noopener">Menu</a> ' +
+        '<a href="files/menu.pdf" download>Save</a> ' +
+        // A file name the page chose is never kept.
+        '<a href="https://example.com" download>Web</a></p>',
+    );
+  });
+
   it("renders the header with navigation, the current page and the menu toggle", () => {
     const html = renderNodesToHtml(starterLayout("Rosa's Bakery").header, siteLibrary, context);
 
@@ -365,15 +391,16 @@ describe("tree helpers", () => {
     expect(render(undefined)).toContain('href="#"');
   });
 
-  it("documentsLinkedBy finds the documents link fields point to (1.28)", () => {
+  it("documentsLinkedBy finds the documents link fields and rich text point to (1.28)", () => {
     const nodes: NodeDoc[] = [
+      { type: "Text", props: { id: "t", text: '<p><a href="webforge:file/menu">Menu</a></p>' } },
       { type: "Hero", props: { id: "a", buttonLink: { kind: "file", mediaId: "prices" } } },
       { type: "Hero", props: { id: "b", buttonLink: { kind: "url", href: "https://a.b" } } },
       // Not a link field: a document id elsewhere isn't a link.
       { type: "Hero", props: { id: "c", image: { mediaId: "menu" } } },
     ];
 
-    expect([...documentsLinkedBy(nodes, siteLibrary)]).toEqual(["prices"]);
+    expect([...documentsLinkedBy(nodes, siteLibrary)]).toEqual(["menu", "prices"]);
   });
 
   it("mediaUsedBy finds media ids in media fields only", () => {

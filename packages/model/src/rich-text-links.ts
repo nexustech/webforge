@@ -1,4 +1,4 @@
-import { type PageId, pageIdSchema } from "./ids.js";
+import { type MediaId, mediaIdSchema, type PageId, pageIdSchema } from "./ids.js";
 import { anchorIdSchema, type LinkValue, linkValueSchema } from "./link.js";
 
 /**
@@ -9,11 +9,20 @@ import { anchorIdSchema, type LinkValue, linkValueSchema } from "./link.js";
  */
 export const RICH_TEXT_PAGE_LINK = "webforge:page/";
 
+/**
+ * A link to a document in Media (1.28) is stored by its Media id, `webforge:file/<id>`, with
+ * `?download` when it is saved rather than opened; the export turns it into the document's path
+ * in `files/`.
+ */
+export const RICH_TEXT_FILE_LINK = "webforge:file/";
+
+const DOWNLOAD = "?download";
+
 /** A link in rich text as the editor holds it: its address, and whether it opens a new tab. */
 export type RichTextLink = { readonly href: string; readonly newTab: boolean };
 
-/** The `href` rich text stores for `link`, or undefined for a link it can't hold (a file). */
-export function richTextHref(link: LinkValue): string | undefined {
+/** The `href` rich text stores for `link`. */
+export function richTextHref(link: LinkValue): string {
   switch (link.kind) {
     case "page":
       return `${RICH_TEXT_PAGE_LINK}${link.pageId}${link.anchor === undefined ? "" : `#${link.anchor}`}`;
@@ -26,8 +35,18 @@ export function richTextHref(link: LinkValue): string | undefined {
     case "url":
       return link.href;
     case "file":
-      return undefined;
+      return `${RICH_TEXT_FILE_LINK}${link.mediaId}${link.download === true ? DOWNLOAD : ""}`;
   }
+}
+
+/** A link to a document from a `webforge:file/…` address, if it is one. */
+function fileLinkOf(href: string): { mediaId: MediaId; download?: true } | undefined {
+  if (!href.startsWith(RICH_TEXT_FILE_LINK)) return undefined;
+  const rest = href.slice(RICH_TEXT_FILE_LINK.length);
+  const download = rest.endsWith(DOWNLOAD);
+  const mediaId = mediaIdSchema.safeParse(download ? rest.slice(0, -DOWNLOAD.length) : rest);
+  if (!mediaId.success) return undefined;
+  return download ? { mediaId: mediaId.data, download: true } : { mediaId: mediaId.data };
 }
 
 /** A link to a page (and section) from a `webforge:page/…` address, if it is one. */
@@ -57,9 +76,12 @@ function subjectOf(query: string): string | undefined {
 export function richTextLinkValue({ href, newTab }: RichTextLink): LinkValue | undefined {
   const tab = newTab ? { newTab: true } : {};
   const page = pageLinkOf(href);
+  const file = fileLinkOf(href);
   let value: unknown;
   if (page !== undefined) {
     value = { kind: "page", ...page, ...tab };
+  } else if (file !== undefined) {
+    value = { kind: "file", ...file, ...tab };
   } else if (href.startsWith("mailto:")) {
     const [address = "", query = ""] = href.slice("mailto:".length).split("?", 2);
     const subject = subjectOf(query);
@@ -76,6 +98,12 @@ export function richTextLinkValue({ href, newTab }: RichTextLink): LinkValue | u
 /** `webforge:page/…` in an `href` attribute, as the editor writes it. */
 const PAGE_HREF = /href="webforge:page\/([^"]*)"/g;
 
+/** `webforge:file/…` in an `href` attribute, as the editor writes it. */
+const FILE_HREF = /href="webforge:file\/([^"]*)"/g;
+
+/** The `webforge:` links of either kind, for rewriting them in one pass. */
+const SITE_HREF = /href="(webforge:(?:page|file)\/[^"]*)"/g;
+
 /** The links to the site's pages in rich-text `html`, for the broken-link check. */
 export function richTextPageLinks(html: string): { pageId: PageId; anchor?: string }[] {
   return [...html.matchAll(PAGE_HREF)].flatMap(([, rest = ""]) => {
@@ -84,17 +112,33 @@ export function richTextPageLinks(html: string): { pageId: PageId; anchor?: stri
   });
 }
 
+/** The links to documents in rich-text `html` (1.28), for the export and its checks. */
+export function richTextFileLinks(html: string): { mediaId: MediaId; download?: true }[] {
+  return [...html.matchAll(FILE_HREF)].flatMap(([, rest = ""]) => {
+    const link = fileLinkOf(`${RICH_TEXT_FILE_LINK}${rest}`);
+    return link === undefined ? [] : [link];
+  });
+}
+
 /**
- * `html` with its links to the site's pages pointing where `hrefOf` says (the export's relative
- * paths). A link to a page that isn't there any more goes to `#`.
+ * `html` with its links to the site's pages and documents pointing where `hrefOf` says (the
+ * export's relative paths), a document to save with `download`. A link that isn't valid any more
+ * goes to `#`.
  */
 export function rewriteRichTextLinks(
   html: string,
-  hrefOf: (link: Extract<LinkValue, { kind: "page" }>) => string,
+  hrefOf: (link: Extract<LinkValue, { kind: "page" | "file" }>) => string,
 ): string {
-  return html.replace(PAGE_HREF, (_match, rest: string) => {
-    const link = pageLinkOf(`${RICH_TEXT_PAGE_LINK}${rest}`);
-    const href = link === undefined ? "#" : hrefOf({ kind: "page", ...link });
-    return `href="${href.replaceAll("&", "&amp;").replaceAll('"', "&quot;")}"`;
+  return html.replace(SITE_HREF, (_match, address: string) => {
+    const page = pageLinkOf(address);
+    const file = fileLinkOf(address);
+    const href =
+      page !== undefined
+        ? hrefOf({ kind: "page", ...page })
+        : file !== undefined
+          ? hrefOf({ kind: "file", ...file })
+          : "#";
+    const escaped = href.replaceAll("&", "&amp;").replaceAll('"', "&quot;");
+    return file?.download === true ? `href="${escaped}" download=""` : `href="${escaped}"`;
   });
 }

@@ -2,7 +2,7 @@
 import { act, cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { LinkPicker, RichTextAt } from "@webforge/engine";
-import type { RichTextLink } from "@webforge/model";
+import type { MediaId, RichTextLink } from "@webforge/model";
 import { type ComponentLibrary, siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createEditorSession, currentPage } from "../editor/editor-session.js";
@@ -143,5 +143,31 @@ describe("RichTextLinkHost (F-ED-3, F-ED-18)", () => {
 
     await expect(answer).resolves.toBeUndefined();
     expect(engine.setLinkPicker).toHaveBeenLastCalledWith(null);
+  });
+
+  it("links to a document in Media, as a download if asked (1.28)", async () => {
+    const { session, ask, user } = setUp();
+    act(() =>
+      session.edit("insert", "Added file", (draft) => {
+        draft.media["prices" as MediaId] = {
+          id: "prices" as MediaId,
+          hash: "b".repeat(64),
+          name: "prices",
+          fileName: "Price list.pdf",
+          kind: "file",
+          mimeType: "application/pdf",
+        };
+      }),
+    );
+
+    const answer = ask(null);
+    const dialog = within(await screen.findByRole("dialog", { name: "Link" }));
+    await user.click(dialog.getByRole("radio", { name: "File" }));
+    await user.click(
+      dialog.getByRole("checkbox", { name: "Download the file instead of opening it" }),
+    );
+    await user.click(dialog.getByRole("button", { name: "Save Link" }));
+
+    await expect(answer).resolves.toEqual({ href: "webforge:file/prices?download", newTab: true });
   });
 });

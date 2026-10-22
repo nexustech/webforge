@@ -102,16 +102,19 @@ describe("mediaUsage", () => {
     expect(mediaUsage(site, siteLibrary).get("shop")).toBeUndefined();
   });
 
-  it("counts each page that links to a document in a link field (1.28)", () => {
+  it("counts each page that links to a document in a link field or rich text (1.28)", () => {
     const site = siteWith({
       about: [
         { type: "Hero", props: { id: "a", buttonLink: { kind: "file", mediaId: "prices" } } },
+      ],
+      menu: [
+        { type: "Text", props: { id: "t", text: '<p><a href="webforge:file/prices">x</a></p>' } },
       ],
       shop: [
         { type: "Hero", props: { id: "b", buttonLink: { kind: "url", href: "https://a.b" } } },
       ],
     });
 
-    expect(mediaUsage(site, siteLibrary).get("prices")).toBe(1);
+    expect(mediaUsage(site, siteLibrary).get("prices")).toBe(2);
   });
 });

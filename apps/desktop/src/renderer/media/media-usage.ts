@@ -3,12 +3,14 @@ import {
   isNodeDoc,
   linkValueSchema,
   type NodeDoc,
+  richTextFileLinks,
   type SiteDoc,
 } from "@webforge/model";
 import type { ComponentLibrary } from "@webforge/site-components";
 
 /**
- * The Media ids that `nodes` place in `media` fields or link to in `link` fields (documents, 1.28),
+ * The Media ids that `nodes` place in `media` fields or link to (documents, 1.28) in `link`
+ * fields or rich text,
  * at any depth, hidden elements included: they are still placements, which show the image again
  * once they are shown.
  */
@@ -23,6 +25,8 @@ function placedIn(nodes: readonly NodeDoc[], library: ComponentLibrary, into: Se
       } else if (kind === "link") {
         const link = linkValueSchema.safeParse(value);
         if (link.success && link.data.kind === "file") into.add(link.data.mediaId);
+      } else if (kind === "richtext" && typeof value === "string") {
+        for (const link of richTextFileLinks(value)) into.add(link.mediaId);
       } else if (Array.isArray(value)) {
         // Slots, and anything else that holds elements.
         placedIn(value.filter(isNodeDoc), library, into);
