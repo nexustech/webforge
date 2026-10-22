@@ -40,7 +40,7 @@ export function createMediaImport(
         rejected.push({ fileName, reason: "too-large" });
         return undefined;
       }
-      const sniffed = sniffMedia(data);
+      const sniffed = sniffMedia(data, fileName);
       if (sniffed === undefined) {
         rejected.push({ fileName, reason: "unsupported" });
         return undefined;
@@ -71,7 +71,9 @@ export function createMediaImport(
         fileName,
       };
       items.push(
-        sniffed.kind === "image" ? { ...base, ...sniffed, alt: "" } : { ...base, ...sniffed },
+        sniffed.kind === "image"
+          ? { ...base, ...sniffed, alt: "" }
+          : { ...base, ...sniffed, size: data.byteLength },
       );
       return undefined;
     },

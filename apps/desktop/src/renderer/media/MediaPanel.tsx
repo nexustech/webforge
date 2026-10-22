@@ -16,8 +16,8 @@ import {
   toast,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
-import type { ImageMeta, MediaId, MediaMeta } from "@webforge/model";
-import { FileTextIcon, ImagePlusIcon } from "lucide-react";
+import type { FileMeta, ImageMeta, MediaId, MediaMeta } from "@webforge/model";
+import { ImagePlusIcon } from "lucide-react";
 import {
   type DragEvent,
   type KeyboardEvent,
@@ -29,6 +29,7 @@ import {
 import { type MediaApi, mediaImageUrl } from "../../shared/ipc/media.js";
 import type { EditorSession } from "../editor/editor-session.js";
 import { useGesture } from "../editor/use-gesture.js";
+import { documentIcon, documentTypeName, fileSizeLabel } from "./document-types.js";
 import { importDroppedFiles, importItems } from "./import-media.js";
 import {
   addMedia,
@@ -162,9 +163,7 @@ export function MediaPanel({
                       style={focalStyle(item)}
                     />
                   ) : (
-                    <span className="flex aspect-[4/3] w-full items-center justify-center">
-                      <FileTextIcon aria-hidden className="size-6 text-muted-foreground" />
-                    </span>
+                    <DocumentTile file={item} />
                   )}
                   <span className="truncate px-1.5 py-1 text-xs">{item.fileName}</span>
                 </button>
@@ -259,7 +258,9 @@ function MediaDetails({ item, session, imageUrl, onReplace, onDelete }: DetailsP
     >
       {item.kind === "image" ? (
         <ImageDetails image={item} session={session} imageUrl={imageUrl} />
-      ) : null}
+      ) : (
+        <p className="m-0 text-xs text-muted-foreground">{documentFacts(item)}</p>
+      )}
       <div className="flex gap-1.5">
         <Button type="button" size="sm" variant="outline" onClick={onReplace}>
           {t("site.media.replace")}
@@ -270,6 +271,27 @@ function MediaDetails({ item, session, imageUrl, onReplace, onDelete }: DetailsP
       </div>
     </section>
   );
+}
+
+/** A document's place in the grid: its type's icon and size; never a preview (1.28). */
+function DocumentTile({ file }: { readonly file: FileMeta }) {
+  const Icon = documentIcon(file.mimeType);
+  return (
+    <span className="flex aspect-[4/3] w-full flex-col items-center justify-center gap-1">
+      <Icon aria-hidden className="size-6 text-muted-foreground" />
+      {file.size === undefined ? null : (
+        <span className="text-[0.6875rem] text-muted-foreground">{fileSizeLabel(file.size)}</span>
+      )}
+    </span>
+  );
+}
+
+/** What a document is, for its details: "Word document, 820 KB". */
+function documentFacts(file: FileMeta): string {
+  const type = documentTypeName(file.mimeType);
+  return file.size === undefined
+    ? type
+    : t("site.media.documentFacts", { type, size: fileSizeLabel(file.size) });
 }
 
 type ImageDetailsProps = {

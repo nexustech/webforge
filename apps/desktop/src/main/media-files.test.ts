@@ -20,7 +20,7 @@ const ascii = (text: string) => new TextEncoder().encode(text);
 
 describe("sniffMedia", () => {
   it("reads a JPEG's size from its frame header", () => {
-    expect(sniffMedia(heroPhoto())).toEqual({
+    expect(sniffMedia(heroPhoto(), "photo.jpg")).toEqual({
       kind: "image",
       mimeType: "image/jpeg",
       width: 1600,
@@ -34,7 +34,7 @@ describe("sniffMedia", () => {
       0x20, 0x00, 0x40, 0x03,
     ]);
 
-    expect(sniffMedia(jpeg)).toEqual({
+    expect(sniffMedia(jpeg, "photo.jpg")).toEqual({
       kind: "image",
       mimeType: "image/jpeg",
       width: 64,
@@ -43,7 +43,7 @@ describe("sniffMedia", () => {
   });
 
   it("reads a PNG's size from its IHDR chunk", () => {
-    expect(sniffMedia(pngHeader(800, 600))).toEqual({
+    expect(sniffMedia(pngHeader(800, 600), "photo.png")).toEqual({
       kind: "image",
       mimeType: "image/png",
       width: 800,
@@ -51,23 +51,31 @@ describe("sniffMedia", () => {
     });
   });
 
-  it("recognises a PDF", () => {
-    expect(sniffMedia(ascii("%PDF-1.7\n…"))).toEqual({ kind: "file", mimeType: "application/pdf" });
+  it("recognises a PDF by its name and its bytes, and takes images whatever their name", () => {
+    expect(sniffMedia(ascii("%PDF-1.7\n…"), "Menu.PDF")).toEqual({
+      kind: "file",
+      mimeType: "application/pdf",
+    });
   });
 
   it("rejects other files, whatever their name, and images without a size", () => {
-    expect(sniffMedia(ascii("GIF89a"))).toBeUndefined();
-    expect(sniffMedia(ascii("<svg xmlns='http://www.w3.org/2000/svg'/>"))).toBeUndefined();
-    expect(sniffMedia(new Uint8Array())).toBeUndefined();
-    expect(sniffMedia(pngHeader(0, 600))).toBeUndefined();
-    expect(sniffMedia(pngHeader(800, 600, "tEXt"))).toBeUndefined();
-    // A JPEG cut off before its frame header, and one whose scan starts without one.
-    expect(sniffMedia(heroPhoto().subarray(0, 20))).toBeUndefined();
+    expect(sniffMedia(ascii("GIF89a"), "logo.png")).toBeUndefined();
     expect(
-      sniffMedia(new Uint8Array([0xff, 0xd8, 0xff, 0xda, 0, 4, 0, 0, 0, 0, 0, 0, 0])),
+      sniffMedia(ascii("<svg xmlns='http://www.w3.org/2000/svg'/>"), "logo.svg"),
+    ).toBeUndefined();
+    expect(sniffMedia(new Uint8Array(), "empty.jpg")).toBeUndefined();
+    expect(sniffMedia(pngHeader(0, 600), "photo.jpg")).toBeUndefined();
+    expect(sniffMedia(pngHeader(800, 600, "tEXt"), "photo.png")).toBeUndefined();
+    // A JPEG cut off before its frame header, and one whose scan starts without one.
+    expect(sniffMedia(heroPhoto().subarray(0, 20), "photo.jpg")).toBeUndefined();
+    expect(
+      sniffMedia(new Uint8Array([0xff, 0xd8, 0xff, 0xda, 0, 4, 0, 0, 0, 0, 0, 0, 0]), "photo.jpg"),
     ).toBeUndefined();
     expect(
-      sniffMedia(new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 4, 0, 0, 0x12, 0, 0, 0, 0, 0])),
+      sniffMedia(
+        new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 4, 0, 0, 0x12, 0, 0, 0, 0, 0]),
+        "photo.jpg",
+      ),
     ).toBeUndefined();
   });
 });

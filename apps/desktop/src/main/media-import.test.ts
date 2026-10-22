@@ -72,6 +72,7 @@ describe("importMediaFiles", () => {
           fileName: "Prices.pdf",
           kind: "file",
           mimeType: "application/pdf",
+          size: pdf.byteLength,
         },
       ],
       rejected: [],

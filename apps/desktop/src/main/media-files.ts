@@ -1,4 +1,5 @@
-import type { FILE_MIME_TYPES, IMAGE_MIME_TYPES } from "@webforge/model";
+import type { FileMimeType, IMAGE_MIME_TYPES } from "@webforge/model";
+import { sniffDocument } from "./document-files.js";
 
 /** What an imported file turned out to be, from its bytes rather than its name. */
 export type SniffedMedia =
@@ -8,10 +9,9 @@ export type SniffedMedia =
       readonly width: number;
       readonly height: number;
     }
-  | { readonly kind: "file"; readonly mimeType: (typeof FILE_MIME_TYPES)[number] };
+  | { readonly kind: "file"; readonly mimeType: FileMimeType };
 
 const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
-const PDF_SIGNATURE = [0x25, 0x50, 0x44, 0x46, 0x2d]; // %PDF-
 
 function startsWith(bytes: Uint8Array, signature: readonly number[]): boolean {
   return signature.every((byte, index) => bytes[index] === byte);
@@ -59,11 +59,12 @@ function jpegSize(bytes: Uint8Array): { width: number; height: number } | undefi
 }
 
 /**
- * Recognises the files Media accepts by their first bytes: JPEG and PNG images, with their size,
- * and PDF documents. Anything else, a truncated header or an image without a size, is
- * `undefined`. The file name's extension is never trusted.
+ * Recognises the files Media accepts: JPEG and PNG images by their first bytes, with their size,
+ * and documents (PDF, Office, OpenDocument, text and CSV) by their extension and their bytes
+ * together ({@link sniffDocument}). Anything else, a truncated header or an image without a size,
+ * is `undefined`.
  */
-export function sniffMedia(bytes: Uint8Array): SniffedMedia | undefined {
+export function sniffMedia(bytes: Uint8Array, fileName: string): SniffedMedia | undefined {
   if (startsWith(bytes, PNG_SIGNATURE)) {
     const size = pngSize(bytes);
     return size !== undefined && size.width > 0 && size.height > 0
@@ -76,8 +77,6 @@ export function sniffMedia(bytes: Uint8Array): SniffedMedia | undefined {
       ? { kind: "image", mimeType: "image/jpeg", ...size }
       : undefined;
   }
-  if (startsWith(bytes, PDF_SIGNATURE)) {
-    return { kind: "file", mimeType: "application/pdf" };
-  }
-  return undefined;
+  const document = sniffDocument(bytes, fileName);
+  return document === undefined ? undefined : { kind: "file", mimeType: document };
 }

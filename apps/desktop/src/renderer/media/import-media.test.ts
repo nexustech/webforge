@@ -108,7 +108,7 @@ describe("importItems", () => {
 
     expect(added).toEqual([prices]);
     expect(notify.mock.calls).toEqual([
-      ["logo.gif isn't a JPEG, PNG or PDF, so it wasn't added."],
+      ["logo.gif isn't an image or document Media takes, so it wasn't added."],
       ["poster.png is too large. Media takes files up to 50 MB and images up to 50 megapixels."],
     ]);
   });

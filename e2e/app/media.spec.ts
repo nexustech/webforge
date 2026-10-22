@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { createSite, type MediaId } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
-import { heroPhoto } from "@webforge/test-utils";
+import { heroPhoto, minimalDocx } from "@webforge/test-utils";
 import { launchDesktopApp } from "./launch.js";
 import { stubFileDialogs } from "./sites.js";
 
@@ -76,7 +76,7 @@ test("imports a dropped photo unmodified and shows its thumbnail and original", 
     (bytes) =>
       (window as unknown as MediaWindow).webforge.media.import([
         { fileName: "Shop front.jpg", data: new Uint8Array(bytes) },
-        { fileName: "notes.txt", data: new TextEncoder().encode("hello") },
+        { fileName: "notes.html", data: new TextEncoder().encode("<p>hello</p>") },
       ]),
     [...photo],
   );
@@ -84,7 +84,7 @@ test("imports a dropped photo unmodified and shows its thumbnail and original", 
   expect(result).toMatchObject({
     status: "imported",
     items: [{ kind: "image", name: "shop-front", width: 1600 }],
-    rejected: [{ fileName: "notes.txt", reason: "unsupported" }],
+    rejected: [{ fileName: "notes.html", reason: "unsupported" }],
   });
   const hash = result.items?.[0]?.hash ?? "";
   // Through the scheme, inside the editor's Content Security Policy.
@@ -391,4 +391,25 @@ test("warns before deleting a placed image, shows a placeholder, undoes it, and 
   expect(index).toContain("Fresh bread");
   expect(index).not.toContain("<img");
   expect(existsSync(join(folder, "assets", "img"))).toBe(false);
+});
+
+test("takes documents by their name and content, and rejects a renamed program (1.28)", async () => {
+  const page = await openSite();
+
+  const result = await page.evaluate(
+    ({ docx }) =>
+      (window as unknown as MediaWindow).webforge.media.import([
+        { fileName: "Price list.docx", data: new Uint8Array(docx) },
+        { fileName: "Opening times.csv", data: new TextEncoder().encode("Day,Opens\nMon,9:00\n") },
+        // A Windows program renamed to look like a PDF.
+        { fileName: "Invoice.pdf", data: new Uint8Array([0x4d, 0x5a, 0x90, 0x00, 0x03, 0x00]) },
+      ]),
+    { docx: [...minimalDocx()] },
+  );
+
+  expect(result.items?.map((item) => [item.kind, item.name])).toEqual([
+    ["file", "price-list"],
+    ["file", "opening-times"],
+  ]);
+  expect(result.rejected).toEqual([{ fileName: "Invoice.pdf", reason: "unsupported" }]);
 });
