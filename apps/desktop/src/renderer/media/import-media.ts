@@ -74,7 +74,7 @@ export async function importDroppedFiles(
 }
 
 /** What the user is told about files that weren't added, or about an import that failed. */
-function importMessages(result: MediaImportResult): string[] {
+export function importMessages(result: MediaImportResult): string[] {
   switch (result.status) {
     case "canceled":
       return [];

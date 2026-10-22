@@ -1,5 +1,6 @@
-import { type CopiedElements, copiedElementsSchema } from "@webforge/model";
+import { type CopiedElements, copiedElementsSchema, mediaMetaSchema } from "@webforge/model";
 import { z } from "zod";
+import { rejectedFileSchema } from "./media.js";
 
 /** Outcome of a copy: the elements are on the system clipboard, with their images kept aside. */
 const writeResultSchema = z.discriminatedUnion("status", [
@@ -17,7 +18,17 @@ export type ClipboardWriteResult = z.infer<typeof writeResultSchema>;
  */
 const readResultSchema = z.discriminatedUnion("status", [
   z.strictObject({ status: z.literal("elements"), elements: copiedElementsSchema }),
-  /** The clipboard holds no Webforge elements (nothing, text, or something from another app). */
+  /**
+   * Image files copied in the file manager, or a copied image (a screenshot), imported into the
+   * open site's file as for a drop: the renderer adds the items to Media and places them, as one
+   * step. Files Media doesn't take are listed in `rejected`.
+   */
+  z.strictObject({
+    status: z.literal("media"),
+    items: z.array(mediaMetaSchema),
+    rejected: z.array(rejectedFileSchema),
+  }),
+  /** The clipboard holds nothing Webforge can paste (nothing, text, or another app's data). */
   z.strictObject({ status: z.literal("empty") }),
   z.strictObject({
     status: z.literal("failed"),
@@ -36,7 +47,10 @@ export const clipboardChannels = {
     request: z.tuple([copiedElementsSchema]),
     response: writeResultSchema,
   },
-  /** The elements on the system clipboard, their images stored in the open site. */
+  /**
+   * What the system clipboard holds for a paste: Webforge's elements, their images stored in the
+   * open site; else image files or an image, imported into it.
+   */
   readClipboard: {
     channel: "clipboard:read",
     request: z.tuple([]),
@@ -48,6 +62,6 @@ export const clipboardChannels = {
 export interface ClipboardApi {
   /** Copies elements (F-ED-16), to paste on any page of this site or another one opened later. */
   write(elements: CopiedElements): Promise<ClipboardWriteResult>;
-  /** Reads copied elements for a paste. */
+  /** Reads copied elements, image files or an image for a paste. */
   read(): Promise<ClipboardReadResult>;
 }

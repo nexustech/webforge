@@ -4,7 +4,15 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { ImageMeta, MediaId, MediaMeta, NodeDoc } from "@webforge/model";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { type ClipboardSite, createElementClipboard, type SystemClipboard } from "./clipboard.js";
+import {
+  type ClipboardContent,
+  type ClipboardMediaImport,
+  type ClipboardSite,
+  createElementClipboard,
+  filePaths,
+  type SystemClipboard,
+} from "./clipboard.js";
+import type { ImportFile } from "./media-import.js";
 
 const bytes = new Uint8Array([0xff, 0xd8, 0xff, 7]);
 const photo: ImageMeta = {
@@ -22,13 +30,34 @@ const hero: NodeDoc = { type: "Hero", props: { id: "hero", image: { mediaId: "ph
 
 let dir: string;
 let held: string | undefined;
+/** What else the clipboard holds, when it holds no elements. */
+let notElements: ClipboardContent = { kind: "none" };
 const system: SystemClipboard = {
   writeElements: async (json) => {
     held = json;
   },
-  readElements: async (maxBytes) =>
-    held !== undefined && held.length <= maxBytes ? held : undefined,
+  read: async (maxBytes) => {
+    if (held === undefined) return notElements;
+    return held.length <= maxBytes.elements ? { kind: "elements", json: held } : { kind: "none" };
+  },
 };
+
+/** Imports as the main process would, recording what it was given. */
+const imported: (readonly string[] | ImportFile)[] = [];
+const importMedia: ClipboardMediaImport = {
+  files: async (paths) => {
+    imported.push(paths);
+    return { status: "imported", items: [photo], rejected: [] };
+  },
+  image: (file) => {
+    imported.push(file);
+    return { status: "imported", items: [photo], rejected: [] };
+  },
+};
+
+/** The element clipboard with the test's system clipboard and import. */
+const elementClipboard = (site: ClipboardSite, clipboard = system, media = importMedia) =>
+  createElementClipboard(clipboard, dir, site, media);
 
 /** An open site that has `photo`'s bytes, and records what a paste stores. */
 function fakeSite(has = true) {
@@ -49,6 +78,8 @@ function fakeSite(has = true) {
 beforeEach(() => {
   dir = join(mkdtempSync(join(tmpdir(), "webforge-clipboard-")), "clipboard");
   held = undefined;
+  notElements = { kind: "none" };
+  imported.length = 0;
   vi.spyOn(console, "error").mockImplementation(() => undefined);
 });
 
@@ -59,13 +90,13 @@ afterEach(() => {
 
 describe("element clipboard (1.25)", () => {
   it("copies elements with their images' bytes, for another site to paste", async () => {
-    const copying = createElementClipboard(system, dir, fakeSite().site);
+    const copying = elementClipboard(fakeSite().site);
     expect(await copying.write({ nodes: [hero], media: [photo] })).toEqual({ status: "copied" });
     expect(readdirSync(dir)).toEqual([photo.hash]);
 
     // Another site, opened later, without the image.
     const other = fakeSite(false);
-    const result = await createElementClipboard(system, dir, other.site).read();
+    const result = await elementClipboard(other.site).read();
 
     expect(result).toEqual({ status: "elements", elements: { nodes: [hero], media: [photo] } });
     expect(other.stored.map(({ item, data }) => [item, [...(data ?? [])]])).toEqual([
@@ -74,7 +105,7 @@ describe("element clipboard (1.25)", () => {
   });
 
   it("keeps only the last copy's images, and leaves out an image whose bytes are gone", async () => {
-    const clipboard = createElementClipboard(system, dir, fakeSite().site);
+    const clipboard = elementClipboard(fakeSite().site);
     writeFileSync(join(dir, "..", "x"), "");
     await clipboard.write({ nodes: [hero], media: [photo] });
     await clipboard.write({ nodes: [hero], media: [] });
@@ -83,19 +114,19 @@ describe("element clipboard (1.25)", () => {
     await clipboard.write({ nodes: [hero], media: [photo] });
     // Changed on disk: not the copied image any more.
     writeFileSync(join(dir, photo.hash), "changed");
-    const read = await createElementClipboard(system, dir, fakeSite(false).site).read();
+    const read = await elementClipboard(fakeSite(false).site).read();
     expect(read).toEqual({ status: "elements", elements: { nodes: [hero], media: [] } });
   });
 
   it("copies an element without the image the site no longer has", async () => {
-    const clipboard = createElementClipboard(system, dir, fakeSite(false).site);
+    const clipboard = elementClipboard(fakeSite(false).site);
     await clipboard.write({ nodes: [hero], media: [photo] });
     expect(existsSync(join(dir, photo.hash))).toBe(false);
     expect(JSON.parse(held ?? "")).toEqual({ nodes: [hero], media: [] });
   });
 
   it("finds nothing to paste in other content, or in content that isn't valid elements", async () => {
-    const clipboard = createElementClipboard(system, dir, fakeSite().site);
+    const clipboard = elementClipboard(fakeSite().site);
     expect(await clipboard.read()).toEqual({ status: "empty" });
     for (const content of [
       "not json",
@@ -111,15 +142,15 @@ describe("element clipboard (1.25)", () => {
 
   it("needs an open site, and reports a site that can't take the images", async () => {
     const { site } = fakeSite();
-    const closed = createElementClipboard(system, dir, { ...site, current: () => null });
+    const closed = elementClipboard({ ...site, current: () => null });
     expect(await closed.write({ nodes: [hero], media: [] })).toEqual({
       status: "failed",
       reason: "no-site",
     });
-    await createElementClipboard(system, dir, site).write({ nodes: [hero], media: [photo] });
+    await elementClipboard(site).write({ nodes: [hero], media: [photo] });
     expect(await closed.read()).toEqual({ status: "failed", reason: "no-site" });
 
-    const readOnly = createElementClipboard(system, dir, {
+    const readOnly = elementClipboard({
       ...site,
       storeCopiedMedia: () => ({ status: "failed", reason: "read-only" }),
     });
@@ -127,14 +158,74 @@ describe("element clipboard (1.25)", () => {
   });
 
   it("reports a copy it couldn't write", async () => {
-    const broken = createElementClipboard(
-      { ...system, writeElements: () => Promise.reject(new Error("busy")) },
-      dir,
-      fakeSite().site,
-    );
+    const broken = elementClipboard(fakeSite().site, {
+      ...system,
+      writeElements: () => Promise.reject(new Error("busy")),
+    });
     expect(await broken.write({ nodes: [hero], media: [] })).toEqual({
       status: "failed",
       reason: "unknown",
     });
+  });
+
+  describe("without elements (image files, a copied image)", () => {
+    it("imports files copied in the file manager", async () => {
+      notElements = { kind: "files", paths: ["C:\\Photos\\shop.jpg"] };
+
+      expect(await elementClipboard(fakeSite().site).read()).toEqual({
+        status: "media",
+        items: [photo],
+        rejected: [],
+      });
+      expect(imported).toEqual([["C:\\Photos\\shop.jpg"]]);
+    });
+
+    it("imports a copied image as a PNG, or rejects one over the size limit", async () => {
+      const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
+      notElements = { kind: "image", png };
+      await elementClipboard(fakeSite().site).read();
+      notElements = { kind: "image", png: undefined };
+      await elementClipboard(fakeSite().site).read();
+
+      expect(imported).toEqual([
+        { fileName: "Pasted image.png", data: png },
+        { fileName: "Pasted image.png", data: undefined },
+      ]);
+    });
+
+    it("prefers copied elements, needs an open site, and passes on a failed import", async () => {
+      notElements = { kind: "files", paths: ["a.jpg"] };
+      held = JSON.stringify({ nodes: [hero], media: [] });
+      expect((await elementClipboard(fakeSite().site).read()).status).toBe("elements");
+      held = undefined;
+
+      const { site } = fakeSite();
+      expect(await elementClipboard({ ...site, current: () => null }).read()).toEqual({
+        status: "failed",
+        reason: "no-site",
+      });
+      const readOnly: ClipboardMediaImport = {
+        ...importMedia,
+        files: async () => ({ status: "failed", reason: "read-only" }),
+      };
+      expect(await elementClipboard(site, system, readOnly).read()).toEqual({
+        status: "failed",
+        reason: "read-only",
+      });
+    });
+
+    it("finds nothing when the system clipboard can't be read", async () => {
+      const broken: SystemClipboard = { ...system, read: () => Promise.reject(new Error("busy")) };
+      expect(await elementClipboard(fakeSite().site, broken).read()).toEqual({ status: "empty" });
+    });
+  });
+});
+
+describe("filePaths", () => {
+  it("takes the file: URLs of a uri-list, leaving out comments and other URLs", () => {
+    const list = "# copied\r\nfile:///C:/Photos/shop%20front.jpg\r\nhttps://example.com/a.jpg\n";
+    expect(filePaths(list)).toEqual([
+      process.platform === "win32" ? "C:\\Photos\\shop front.jpg" : "/C:/Photos/shop front.jpg",
+    ]);
   });
 });

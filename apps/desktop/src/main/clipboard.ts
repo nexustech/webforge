@@ -9,8 +9,13 @@ import {
   writeFileSync,
 } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { t } from "@webforge/i18n";
 import { type CopiedElements, copiedElementsSchema, type MediaMeta } from "@webforge/model";
 import type { ClipboardReadResult, ClipboardWriteResult } from "../shared/ipc/clipboard.js";
+import { MAX_MEDIA_BYTES } from "../shared/ipc/media.js";
+import type { MediaImportResult } from "../shared/ipc-contract.js";
+import type { ImportFile } from "./media-import.js";
 import type { ProjectSession } from "./project-session.js";
 
 /**
@@ -25,13 +30,38 @@ const MAX_ELEMENTS_BYTES = 10 * 1024 * 1024;
 /** A file the clipboard keeps aside: an image's bytes, named by their SHA-256 hash. */
 const KEPT_FILE = /^[0-9a-f]{64}$/;
 
-/** The system clipboard, as the element clipboard uses it: copied elements in Webforge's format. */
+/** What the system clipboard holds that Webforge can paste, most specific first. */
+export type ClipboardContent =
+  /** Webforge's copied elements, as JSON. */
+  | { readonly kind: "elements"; readonly json: string }
+  /** Files copied in the file manager, as paths. */
+  | { readonly kind: "files"; readonly paths: readonly string[] }
+  /** A copied image (a screenshot) as PNG bytes; none when it is over the size limit. */
+  | { readonly kind: "image"; readonly png: Uint8Array | undefined }
+  | { readonly kind: "none" };
+
+/** The system clipboard, as the element clipboard uses it. */
 export type SystemClipboard = {
   /** Replaces the clipboard's content with copied elements. */
   writeElements(json: string): Promise<void>;
-  /** The copied elements on the clipboard, or `undefined` if it holds none (or too many bytes). */
-  readElements(maxBytes: number): Promise<string | undefined>;
+  /** What the clipboard holds; elements or an image over the limits aren't read. */
+  read(maxBytes: { readonly elements: number; readonly image: number }): Promise<ClipboardContent>;
 };
+
+/** The file paths in a `text/uri-list`: its `file:` URLs, without comments. */
+export function filePaths(uriList: string): string[] {
+  return uriList
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.startsWith("file:"))
+    .flatMap((url) => {
+      try {
+        return [fileURLToPath(url)];
+      } catch {
+        return [];
+      }
+    });
+}
 
 /** Electron's clipboard as a {@link SystemClipboard}. */
 export function systemClipboard(
@@ -43,17 +73,42 @@ export function systemClipboard(
       clipboard.write([
         new ClipboardItem({ [ELEMENTS_FORMAT]: new Blob([json], { type: ELEMENTS_FORMAT }) }),
       ]),
-    async readElements(maxBytes) {
-      for (const item of await clipboard.read()) {
-        if (!item.types.includes(ELEMENTS_FORMAT)) continue;
-        const blob = await item.getType(ELEMENTS_FORMAT);
-        if (!(blob instanceof Blob) || blob.size > maxBytes) return undefined;
-        return blob.text();
+    async read(maxBytes) {
+      const items = await clipboard.read();
+      const blobOf = async (type: string): Promise<Blob | undefined> => {
+        const item = items.find((candidate) => candidate.types.includes(type));
+        const blob = item === undefined ? undefined : await item.getType(type);
+        return blob instanceof Blob ? blob : undefined;
+      };
+      const elements = await blobOf(ELEMENTS_FORMAT);
+      if (elements !== undefined) {
+        return elements.size > maxBytes.elements
+          ? { kind: "none" }
+          : { kind: "elements", json: await elements.text() };
       }
-      return undefined;
+      // Files copied in Explorer or Finder come as a list of file: URLs.
+      const uris = await blobOf("text/uri-list");
+      const paths = uris === undefined ? [] : filePaths(await uris.text());
+      if (paths.length > 0) {
+        return { kind: "files", paths };
+      }
+      const image = await blobOf("image/png");
+      if (image !== undefined) {
+        return {
+          kind: "image",
+          png: image.size > maxBytes.image ? undefined : new Uint8Array(await image.arrayBuffer()),
+        };
+      }
+      return { kind: "none" };
     },
   };
 }
+
+/** Imports what the clipboard holds that isn't elements: copied files, or a copied image. */
+export type ClipboardMediaImport = {
+  files(paths: readonly string[]): Promise<MediaImportResult>;
+  image(file: ImportFile): MediaImportResult;
+};
 
 /** The open site, as the clipboard reads and fills its Media. */
 export type ClipboardSite = Pick<ProjectSession, "current" | "readMedia" | "storeCopiedMedia">;
@@ -69,15 +124,37 @@ function logFailure(action: string, error: unknown): void {
  * Copies and pastes elements (1.25, F-ED-16). The elements go on the system clipboard in Webforge's
  * own format, so copying anything else replaces them. Only one site is open at a time, so the bytes
  * of the images they show are kept in `dir` until the next copy: a site opened later can paste
- * them with their images. Nothing but those bytes is written there.
+ * them with their images. Nothing but those bytes is written there. Without elements, a paste
+ * imports copied image files or a copied image (a screenshot) into Media.
  */
-export function createElementClipboard(system: SystemClipboard, dir: string, site: ClipboardSite) {
+export function createElementClipboard(
+  system: SystemClipboard,
+  dir: string,
+  site: ClipboardSite,
+  importMedia: ClipboardMediaImport,
+) {
   /** The kept bytes of `item`, if they are still there and unchanged. */
   const readKept = (item: MediaMeta): Uint8Array | undefined => {
     const path = join(dir, item.hash);
     if (!KEPT_FILE.test(item.hash) || !existsSync(path)) return undefined;
     const data = readFileSync(path);
     return sha256(data) === item.hash ? data : undefined;
+  };
+
+  /** Imports copied files or a copied image into the open site, for the renderer to place. */
+  const pasteMedia = async (
+    content: Extract<ClipboardContent, { kind: "files" | "image" }>,
+  ): Promise<ClipboardReadResult> => {
+    if (site.current() === null) {
+      return { status: "failed", reason: "no-site" };
+    }
+    const result =
+      content.kind === "files"
+        ? await importMedia.files(content.paths)
+        : importMedia.image({ fileName: `${t("site.media.pastedImage")}.png`, data: content.png });
+    if (result.status === "failed") return result;
+    if (result.status === "canceled") return { status: "empty" };
+    return { status: "media", items: result.items, rejected: result.rejected };
   };
 
   return {
@@ -112,13 +189,23 @@ export function createElementClipboard(system: SystemClipboard, dir: string, sit
     },
 
     async read(): Promise<ClipboardReadResult> {
+      let content: ClipboardContent;
+      try {
+        content = await system.read({ elements: MAX_ELEMENTS_BYTES, image: MAX_MEDIA_BYTES });
+      } catch {
+        // Unreadable: nothing Webforge can paste.
+        return { status: "empty" };
+      }
+      if (content.kind === "none") {
+        return { status: "empty" };
+      }
+      if (content.kind !== "elements") {
+        return pasteMedia(content);
+      }
       let parsed: unknown;
       try {
-        const json = await system.readElements(MAX_ELEMENTS_BYTES);
-        if (json === undefined) return { status: "empty" };
-        parsed = JSON.parse(json);
+        parsed = JSON.parse(content.json);
       } catch {
-        // Unreadable or not JSON: not Webforge's elements.
         return { status: "empty" };
       }
       const copied = copiedElementsSchema.safeParse(parsed);

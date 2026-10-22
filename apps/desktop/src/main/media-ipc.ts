@@ -2,6 +2,7 @@ import { readFile, stat } from "node:fs/promises";
 import { basename } from "node:path";
 import type { IpcMain } from "electron";
 import { MAX_MEDIA_BYTES, MAX_MEDIA_FILES } from "../shared/ipc/media.js";
+import type { MediaImportResult } from "../shared/ipc-contract.js";
 import { registerIpcHandler } from "./ipc.js";
 import { createMediaImport, type ImportFile, importMediaFiles } from "./media-import.js";
 import type { ProjectSession } from "./project-session.js";
@@ -41,20 +42,30 @@ export function registerMediaHandlers(
     if (paths === undefined || paths.length === 0) {
       return { status: "canceled" };
     }
-    // One file at a time, so only one is ever in memory.
-    const running = createMediaImport(session);
-    try {
-      for (const path of paths.slice(0, MAX_MEDIA_FILES)) {
-        const failed = running.add(await readChosenFile(path));
-        if (failed !== undefined) {
-          return failed;
-        }
-      }
-      return running.result();
-    } catch (error) {
-      const code = error instanceof Error && "code" in error ? String(error.code) : "no code";
-      console.error(`Webforge could not read a chosen file (${code})`);
-      return { status: "failed", reason: "unknown" };
-    }
+    return importFilesAt(session, paths);
   });
+}
+
+/**
+ * Imports the files at `paths` (chosen in the dialog, or copied in the file manager and pasted), at
+ * most {@link MAX_MEDIA_FILES}. One file at a time, so only one is ever in memory.
+ */
+export async function importFilesAt(
+  session: Pick<ProjectSession, "storeAsset">,
+  paths: readonly string[],
+): Promise<MediaImportResult> {
+  const running = createMediaImport(session);
+  try {
+    for (const path of paths.slice(0, MAX_MEDIA_FILES)) {
+      const failed = running.add(await readChosenFile(path));
+      if (failed !== undefined) {
+        return failed;
+      }
+    }
+    return running.result();
+  } catch (error) {
+    const code = error instanceof Error && "code" in error ? String(error.code) : "no code";
+    console.error(`Webforge could not read a chosen file (${code})`);
+    return { status: "failed", reason: "unknown" };
+  }
 }
