@@ -20,6 +20,11 @@ const workspaces = [
 export default defineConfig({
   test: {
     projects: workspaces.map((ws) => ws.path),
+    // Half the CPU threads, not all but one. The DOM-heavy desktop tests are CPU-bound, and with a
+    // worker on almost every thread they timed out whenever anything else ran beside them (another
+    // session's checks or E2E). Three runs at once: 5 timeouts before, none after, at the same
+    // wall time; and a run on its own is no slower.
+    maxWorkers: "50%",
     coverage: {
       provider: "v8",
       include: workspaces.map((ws) => `${ws.path}/src/**/*.{ts,tsx}`),

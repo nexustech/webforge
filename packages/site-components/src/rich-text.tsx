@@ -1,4 +1,5 @@
 import sanitizeHtml from "sanitize-html";
+import { isDocumentPath } from "./document-path.js";
 
 // Rich text is HTML from the editor (Tiptap). Anything outside this list is dropped before it
 // reaches an exported page, so a crafted .wforge file cannot inject scripts or styles.
@@ -19,21 +20,32 @@ const SANITIZE_OPTIONS: sanitizeHtml.IOptions = {
     "blockquote",
     "code",
   ],
-  allowedAttributes: { a: ["href", "target", "rel"], p: ["style"] },
+  allowedAttributes: { a: ["href", "target", "rel", "download"], p: ["style"] },
+  // `download` has no value: kept as a boolean attribute, not dropped as an empty one.
+  nonBooleanAttributes: sanitizeHtml.defaults.nonBooleanAttributes.filter(
+    (name) => name !== "download",
+  ),
   // A paragraph's alignment (F-ED-3), which the editor writes as a style; no other styles.
   allowedStyles: { p: { "text-align": [/^(left|center|right|justify)$/] } },
   allowedSchemes: ["http", "https", "mailto", "tel"],
   allowProtocolRelative: false,
   disallowedTagsMode: "discard",
   // A link opens a new tab only as the link dialog makes it (F-ED-18): `target="_blank"` with
-  // `rel="noopener"`; any other target or rel is dropped.
+  // `rel="noopener"`; any other target or rel is dropped. Only a link to an exported document
+  // (`files/…`) may say `download`; on any other, it would save the page itself.
   transformTags: {
     a: (tagName, attribs) => {
-      const { target: _target, rel: _rel, ...rest } = attribs;
+      const { target: _target, rel: _rel, download: _download, ...rest } = attribs;
       return {
         tagName,
-        attribs:
-          attribs.target === "_blank" ? { ...rest, target: "_blank", rel: "noopener" } : rest,
+        attribs: {
+          ...rest,
+          ...(attribs.target === "_blank" ? { target: "_blank", rel: "noopener" } : {}),
+          // A document saved rather than opened (1.28); never a file name of the page's choosing.
+          ...(attribs.download !== undefined && isDocumentPath(attribs.href ?? "")
+            ? { download: "" }
+            : {}),
+        },
       };
     },
   },

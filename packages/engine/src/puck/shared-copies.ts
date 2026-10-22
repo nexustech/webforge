@@ -59,6 +59,24 @@ function fromCopy(node: NodeDoc, copy: Copy, anchors: ReadonlyMap<string, string
   return { type: node.type, props: props as NodeDoc["props"] };
 }
 
+/**
+ * `root`, a copy's section as `fromCopy` gives it back, with what the copy itself gives its section
+ * (its Layers name, hidden, F-ED-12) as the shared section has them: those are the copy's own.
+ */
+function withoutCopyProps(root: NodeDoc, section: NodeDoc, copy: Copy): NodeDoc {
+  const props: Record<string, unknown> = { ...root.props };
+  const own = {
+    layerName: copy.props.layerName !== undefined,
+    hidden: copy.props.hidden === true,
+  };
+  for (const key of ["layerName", "hidden"] as const) {
+    if (!own[key]) continue;
+    if (section.props[key] === undefined) delete props[key];
+    else props[key] = section.props[key];
+  }
+  return { type: root.type, props: props as NodeDoc["props"] };
+}
+
 /** Whether two JSON values are the same, whatever the order of their objects' keys. */
 function sameValue(a: unknown, b: unknown): boolean {
   if (a === b) return true;
@@ -123,7 +141,7 @@ export function foldCopies(
     content.push(copy);
     const section = sectionOf(shared, copy);
     if (section === undefined) continue;
-    const now = fromCopy(node, copy, anchorsById(section));
+    const now = withoutCopyProps(fromCopy(node, copy, anchorsById(section)), section, copy);
     if (!sameValue(now, section)) {
       changedCopies++;
       sections.set(copy.props.sharedSectionId, { section: now, copyId: copy.props.id });

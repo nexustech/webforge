@@ -1,7 +1,6 @@
 import { t } from "@webforge/i18n";
 import {
   copiedNodeId,
-  isNodeDoc,
   MAX_COPIED_NODES,
   type MediaMeta,
   type NodeDoc,
@@ -18,7 +17,7 @@ import type {
 import type { MediaImportResult } from "../../shared/ipc-contract.js";
 import { type AddTarget, addTarget, insertAt } from "../add/add-items.js";
 import { currentPage, type EditorSession } from "../editor/editor-session.js";
-import { findNode } from "../editor/nodes.js";
+import { findNode, removeNode } from "../editor/nodes.js";
 import { type SharedRegion, sharedRegionOf, shownLayout } from "../editor/shared-layout.js";
 import { layerItem } from "../layers/layers.js";
 import { importMessages } from "../media/import-media.js";
@@ -78,39 +77,20 @@ function mediaOf(session: ClipboardSession, nodes: readonly NodeDoc[]): MediaMet
 }
 
 /**
- * Removes the node `id` from `nodes` or their slots; whether it was there. Only arrays of nodes are
- * slots: a list field's plain items (an FAQ's questions as data, menu links) are left alone.
- */
-function removeNode(nodes: NodeDoc[], id: string): boolean {
-  const index = nodes.findIndex((node) => node.props.id === id);
-  if (index !== -1) {
-    nodes.splice(index, 1);
-    return true;
-  }
-  return nodes.some((node) =>
-    Object.values(node.props).some(
-      (value) =>
-        Array.isArray(value) &&
-        value.length > 0 &&
-        value.every(isNodeDoc) &&
-        removeNode(value as NodeDoc[], id),
-    ),
-  );
-}
-
-/**
  * Copies the selected element, with everything in it, to the clipboard. With `cut`, also removes
  * it as one step ("Cut Heading"), once the copy is on the clipboard: from the page, or from the
- * shared Header or Footer and so every page. The Header and Footer themselves are never copied or
- * cut. A linked copy of a shared section is copied as its section, with the shared section's id
- * (F-ED-23); cutting it removes the copy from the page. Cutting an element inside a copy removes it
- * from the shared section, so from every copy. Returns whether it copied.
+ * shared Header or Footer and so every page, after `confirmSharedCut` agrees (D7). The Header and
+ * Footer themselves are never copied or cut. A linked copy of a shared section is copied as its
+ * section, with the shared section's id (F-ED-23); cutting it removes the copy from the page.
+ * Cutting an element inside a copy removes it from the shared section, so from every copy.
+ * Returns whether it copied.
  */
 export async function copySelected(
   session: ClipboardSession,
   clipboard: Pick<ClipboardApi, "write">,
   notify: (message: string) => void,
   cut = false,
+  confirmSharedCut?: (item: string, region: SharedRegion) => Promise<boolean>,
 ): Promise<boolean> {
   const selected = selectedNode(session);
   if (selected === undefined) {
@@ -125,6 +105,10 @@ export async function copySelected(
   if (region !== undefined && layout[region].some((top) => top.props.id === node.props.id)) {
     notify(t("site.clipboard.sharedRegion", { item: itemName(session, node) }));
     return false;
+  }
+  // Cut from the shared Header or Footer changes every page showing it: asked before anything.
+  if (cut && region !== undefined && confirmSharedCut !== undefined) {
+    if (!(await confirmSharedCut(itemName(session, node), region))) return false;
   }
   // The page it is on: the user may have moved on by the time the copy is on the clipboard.
   const ui = session.ui.getState();

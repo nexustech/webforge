@@ -3,7 +3,9 @@ import {
   anchorsIn,
   isNodeDoc,
   type LayoutDoc,
+  type NodeAdvanced,
   type NodeDoc,
+  nodeAdvancedSchema,
   nodeDocSchema,
   withoutUnsafeKeys,
 } from "./documents.js";
@@ -38,6 +40,12 @@ export type SharedCopyNode = {
      * reordering copies never changes where a link goes.
      */
     readonly anchorSuffix?: string;
+    /** Its name in Layers, shown for its section there (F-ED-12). */
+    readonly layerName?: string | undefined;
+    /** Hidden in Layers: this copy dimmed on the canvas and left out of the export (F-ED-12). */
+    readonly hidden?: boolean | undefined;
+    /** Kept as any node may have it; the copy shows its shared section's own. */
+    readonly advanced?: NodeAdvanced | undefined;
   };
 };
 
@@ -70,6 +78,10 @@ const sharedCopyNodeSchema = z.strictObject({
       .string()
       .regex(/^[1-9][0-9]{0,5}$/)
       .optional(),
+    // What Layers sets on any node: renaming or hiding a copy (F-ED-12).
+    layerName: z.string().max(100).optional(),
+    hidden: z.boolean().optional(),
+    advanced: nodeAdvancedSchema.optional(),
   }),
 });
 
@@ -182,6 +194,19 @@ function inCopy(node: NodeDoc, copy: SharedCopyNode): NodeDoc {
 }
 
 /**
+ * The section copy `copy` shows: its shared section's `section`, ids and anchors its own, under
+ * the copy's Layers name and hidden when the copy is (F-ED-12), so the canvas dims it and the
+ * export leaves it out.
+ */
+function shownBy(section: NodeDoc, copy: SharedCopyNode): NodeDoc {
+  const shown = inCopy(section, copy);
+  const { layerName, hidden } = copy.props;
+  if (layerName !== undefined) shown.props.layerName = layerName;
+  if (hidden === true) shown.props.hidden = true;
+  return shown;
+}
+
+/**
  * `nodes` with every linked copy shown as its shared section (F-ED-23): what the page shows, on
  * the canvas and in the export. A copy of a shared section that isn't there shows nothing.
  */
@@ -194,7 +219,7 @@ export function expandSharedCopies(
     const entry = Object.hasOwn(shared, node.props.sharedSectionId)
       ? shared[node.props.sharedSectionId]
       : undefined;
-    return entry === undefined ? [] : [inCopy(entry.section, node)];
+    return entry === undefined ? [] : [shownBy(entry.section, node)];
   });
 }
 

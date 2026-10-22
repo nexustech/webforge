@@ -137,6 +137,36 @@ describe("siteDocSchema", () => {
     );
   });
 
+  it("keeps a copy renamed or hidden in Layers through a save and a reopen (F-ED-12)", () => {
+    const content: NodeDoc[] = [
+      {
+        type: SHARED_COPY_TYPE,
+        props: {
+          id: "c",
+          sharedSectionId: "shared-hours",
+          layerName: "Hours, again",
+          hidden: true,
+          advanced: { className: "mt-4" },
+        },
+      },
+    ];
+    const doc = withPage(site, { id: "page-about", doc: { root: { props: {} }, content } });
+
+    expect(issuesOf(doc)).toEqual([]);
+    expect(siteDocSchema.parse(JSON.parse(JSON.stringify(doc)))).toEqual(doc);
+    const [renamed] = content;
+    const long = withPage(site, {
+      id: "page-about",
+      doc: {
+        root: { props: {} },
+        content: [
+          { ...renamed, props: { ...renamed?.props, layerName: "x".repeat(101) } } as NodeDoc,
+        ],
+      },
+    });
+    expect(issuesOf(long)).toContain("Not a valid copy of a shared section");
+  });
+
   it("rejects a copy of a shared section in the Header or Footer", () => {
     const copy: NodeDoc = {
       type: SHARED_COPY_TYPE,

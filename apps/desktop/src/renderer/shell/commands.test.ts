@@ -72,6 +72,23 @@ describe("createCommandRegistry", () => {
     expect(registry.get("a")?.label).toBe("Second");
   });
 
+  it("runs nothing while paused, until every pause is resumed", () => {
+    const registry = createCommandRegistry();
+    const run = vi.fn();
+    registry.register({ id: "a", label: "A", run });
+
+    const resumeFirst = registry.pause();
+    const resumeSecond = registry.pause();
+    expect(registry.run("a")).toBe(false);
+    resumeFirst();
+    resumeFirst();
+    expect(registry.run("a")).toBe(false);
+    resumeSecond();
+
+    expect(registry.run("a")).toBe(true);
+    expect(run).toHaveBeenCalledTimes(1);
+  });
+
   it("reports a failed asynchronous command without throwing", async () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
     const registry = createCommandRegistry();

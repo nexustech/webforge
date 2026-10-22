@@ -10,6 +10,7 @@ import {
   resolveResponsive,
 } from "@webforge/model";
 import { type ComponentType, cloneElement, isValidElement, type ReactNode } from "react";
+import { isDocumentPath } from "./document-path.js";
 
 /** A choice offered by a field: its translated label and the stored value. */
 export type FieldOption = { readonly label: string; readonly value: string };
@@ -100,11 +101,32 @@ export type ListItem = { readonly id: string } & Readonly<Record<string, unknown
 
 /** A link in the site's navigation. */
 export type NavLink = {
+  /** The menu item (or page) it comes from: two items can go to the same address. */
+  readonly id?: string;
   readonly label: string;
   /** Relative URL from the page being rendered, e.g. `about.html` or `../index.html`. */
   readonly href: string;
   readonly current: boolean;
+  /** Shown as a button, e.g. "Book now" (F-ED-17). */
+  readonly button?: boolean;
+  /** Opens in a new tab. */
+  readonly newTab?: boolean;
+  /** A document saved rather than opened (1.28). */
+  readonly download?: boolean;
 };
+
+/** A dropdown in the site's navigation (F-ED-17): its links, one level deep. */
+export type NavGroup = {
+  /** The menu item it comes from. */
+  readonly id?: string;
+  readonly label: string;
+  readonly children: readonly NavLink[];
+  /** Whether one of its links is the page being rendered. */
+  readonly current: boolean;
+};
+
+/** An item of the site's navigation: a link, or a dropdown of links. */
+export type NavItem = NavLink | NavGroup;
 
 /** One image source set of a {@link ResolvedImage}. */
 export type ImageSource = {
@@ -135,7 +157,7 @@ export type ResolvedImage = {
 /** What a component may need from outside its own props while rendering. */
 export type RenderContext = {
   /** The site's pages, for navigation. Empty on the canvas. */
-  readonly navigation: readonly NavLink[];
+  readonly navigation: readonly NavItem[];
   /** The relative URL of a page path (`about`) or the link itself if it is external. */
   readonly link: (target: string) => string;
   /**
@@ -235,17 +257,27 @@ export type LinkAttributes = {
   readonly href: string;
   readonly target?: "_blank";
   readonly rel?: "noopener";
+  /** A document saved rather than opened (1.28). */
+  readonly download?: "";
 };
 
 /**
- * The `href` (and `target`/`rel` for a new tab) of a link field's value: a `LinkValue`, or a page
- * path or web address typed as text before link fields (older sites). No value links to `#`.
+ * The `href` (and `target`/`rel` for a new tab, `download` for a document to save) of a link
+ * field's value: a `LinkValue`, or a page path or web address typed as text before link fields
+ * (older sites). No value links to `#`.
  */
 export function linkAttributes(value: unknown, context: RenderContext): LinkAttributes {
   const link = linkValueSchema.safeParse(value);
   if (link.success) {
     const href = context.href(link.data);
-    return link.data.newTab === true ? { href, target: "_blank", rel: "noopener" } : { href };
+    return {
+      href,
+      ...(link.data.newTab === true ? { target: "_blank", rel: "noopener" } : {}),
+      // Only on the document's own file: a deleted one links to `#`, which mustn't be saved.
+      ...(link.data.kind === "file" && link.data.download === true && isDocumentPath(href)
+        ? { download: "" }
+        : {}),
+    };
   }
   const text = stringValue(value);
   return { href: text === "" ? "#" : context.link(text) };

@@ -11,6 +11,8 @@ export type {
   LinkAttributes,
   ListItem,
   ListItemFieldDef,
+  NavGroup,
+  NavItem,
   NavLink,
   RenderContext,
   ResolvedImage,
@@ -29,6 +31,7 @@ export {
 } from "./library.js";
 export {
   behavioursUsedBy,
+  documentsLinkedBy,
   mediaUsedBy,
   renderNodesToHtml,
   UnknownComponentError,

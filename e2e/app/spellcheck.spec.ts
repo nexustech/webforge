@@ -63,3 +63,45 @@ test("offers spelling suggestions for a misspelt word in a text field", async ()
   expect(menu).toContain("bakery");
   expect(menu.slice(-5)).toEqual(["Cut", "Copy", "Paste", "—", "Select All"]);
 });
+
+test("offers spelling suggestions inside rich text on the canvas (1.23)", async () => {
+  const canvas = page.frameLocator(".editor__canvas iframe");
+  const editor = canvas.locator(".site-text .ProseMirror");
+  await canvas.getByText("Tell visitors what you do and why they will love it.").click();
+  await editor.click();
+  await expect(editor).toBeFocused();
+  await page.keyboard.press("End");
+  await page.keyboard.type(" Fresh bakkery ", { delay: 20 });
+  // Electron's checker only looks at an editable that doesn't turn it off.
+  await expect(editor).not.toHaveAttribute("spellcheck", "false");
+
+  await expect
+    .poll(
+      async () => {
+        // Right-click the misspelt word itself: its place on the page, from a range over it.
+        const at = await editor.evaluate((element) => {
+          const walker = element.ownerDocument.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+          for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
+            const index = node.textContent?.indexOf("bakkery") ?? -1;
+            if (index === -1) continue;
+            const range = element.ownerDocument.createRange();
+            range.setStart(node, index + 2);
+            range.setEnd(node, index + 3);
+            const box = range.getBoundingClientRect();
+            const frame = element.ownerDocument.defaultView?.frameElement?.getBoundingClientRect();
+            return {
+              x: (frame?.x ?? 0) + box.x + box.width / 2,
+              y: (frame?.y ?? 0) + box.y + box.height / 2,
+            };
+          }
+          return null;
+        });
+        if (at === null) return [];
+        await page.mouse.click(at.x, at.y, { button: "right" });
+        return (await shownMenus()).at(-1) ?? [];
+      },
+      { timeout: 15_000 },
+    )
+    .toContain("Add to Dictionary");
+  expect((await shownMenus()).at(-1) ?? []).toContain("bakery");
+});

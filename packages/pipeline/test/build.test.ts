@@ -1,4 +1,4 @@
-import type { NodeDoc, SiteSnapshot } from "@webforge/model";
+import type { MediaId, MenuItemId, NodeDoc, PageId, SiteSnapshot } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { sampleSite } from "@webforge/test-utils";
 import { beforeAll, describe, expect, it } from "vitest";
@@ -23,7 +23,8 @@ describe("buildSite: golden output (X4: byte-stable, readable)", () => {
     expect([...built.files.keys()]).toMatchSnapshot();
     expect({ ...built.report, bytes: undefined }).toEqual({
       pages: 2,
-      files: 12,
+      // The price list the About page links to is one of them (files/price-list.pdf, 1.28).
+      files: 13,
       bytes: undefined,
       warnings: [],
     });
@@ -54,9 +55,16 @@ describe("buildSite: self-contained output (X1, C8)", () => {
     expect(index).toMatch(/<link rel="stylesheet" href="assets\/css\/site\.[0-9a-f]{10}\.css">/);
     expect(index).toMatch(/<script defer src="assets\/js\/webforge\.[0-9a-f]{10}\.js"><\/script>/);
     expect(index).toContain('<a href="about.html">About us</a>');
-    // The only absolute URLs are the SVG namespace and the user's own outbound link.
-    expect(index.match(/(?:src|href|srcSet)="[a-z]+:/gi)).toEqual(['href="https:']);
+    // The only absolute URLs are the user's own outbound links: in the menu and in the text.
+    expect(index.match(/(?:src|href|srcSet)="[a-z]+:/gi)).toEqual(['href="https:', 'href="https:']);
     expect(index).not.toContain('type="module"');
+  });
+
+  it("styles a dropdown to open on focus without the script (F-ED-17)", () => {
+    const css = text(built, [...built.files.keys()].find((path) => path.endsWith(".css")) ?? "");
+
+    expect(css).toContain("focus-within");
+    expect(css).toMatch(/data-wf-ready/);
   });
 
   it("compiles readable CSS with daisyUI, the site theme, the fonts and only the classes used", () => {
@@ -105,6 +113,14 @@ describe("buildSite: pages in folders", () => {
           doc: { root: { props: {} }, content: base.pages[0]?.doc.content.slice(0, 1) ?? [] },
         },
       ],
+      // Added to the (edited) menu, as the Pages panel adds a new page.
+      menu: {
+        follows: "custom",
+        items: [
+          ...(base.menu?.items ?? []),
+          { id: "cakes" as MenuItemId, kind: "page", pageId: "cakes" as PageId, hidden: false },
+        ],
+      },
     };
 
     const nested = await buildSite(site, siteLibrary, resources);
@@ -336,5 +352,139 @@ describe("buildSite: checks (X5)", () => {
     expect(index).toContain("Fresh bread");
     expect(index).not.toContain("<img");
     expect([...built.files.keys()].some((path) => path.startsWith("assets/img/"))).toBe(false);
+  });
+});
+
+describe("buildSite: documents (1.28)", () => {
+  const pdf = new TextEncoder().encode("%PDF-1.7\nprice list");
+  const sheet = new Uint8Array([0x50, 0x4b, 0x03, 0x04, 1, 2, 3]);
+  const documents = [
+    { id: "prices", name: "price-list", mimeType: "application/pdf" as const, data: pdf },
+    {
+      id: "stock",
+      name: "stock",
+      mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" as const,
+      data: sheet,
+    },
+  ];
+  const heroLinkingTo = (mediaId: string, extra: Record<string, boolean> = {}): NodeDoc => ({
+    type: "Hero",
+    props: {
+      id: "h",
+      title: "Our prices",
+      buttonLabel: "Price list",
+      buttonLink: { kind: "file", mediaId, ...extra },
+    },
+  });
+
+  it("copies linked documents unchanged to files/, and only those, with relative links", async () => {
+    const site = siteWith([heroLinkingTo("prices", { newTab: true })], {
+      documents,
+      pages: [
+        {
+          id: "home",
+          path: "index",
+          title: "Home",
+          doc: { root: { props: {} }, content: [heroLinkingTo("prices", { newTab: true })] },
+        },
+        {
+          id: "menu",
+          path: "shop/menu",
+          title: "Menu",
+          doc: { root: { props: {} }, content: [heroLinkingTo("prices", { download: true })] },
+        },
+      ],
+    });
+
+    const output = await buildSite(site, siteLibrary, resources);
+
+    expect([...(output.files.get("files/price-list.pdf") ?? [])]).toEqual([...pdf]);
+    // The spreadsheet is in Media but nothing links to it.
+    expect([...output.files.keys()].filter((path) => path.startsWith("files/"))).toEqual([
+      "files/price-list.pdf",
+    ]);
+    expect(text(output, "index.html")).toContain(
+      'href="files/price-list.pdf" target="_blank" rel="noopener"',
+    );
+    expect(text(output, "shop/menu.html")).toContain('href="../files/price-list.pdf" download=""');
+    expect(output.report.warnings).toEqual([]);
+  });
+
+  it("warns about a link to a document deleted from Media, and keeps building", async () => {
+    const output = await buildSite(
+      siteWith([heroLinkingTo("gone", { download: true })], { documents }),
+      siteLibrary,
+      resources,
+    );
+
+    expect(output.report.warnings).toEqual([
+      { code: "broken-link", page: "index", detail: "gone" },
+    ]);
+    // Not `download`: that would save this page instead.
+    expect(text(output, "index.html")).toContain('<a class="btn btn-primary" href="#">');
+    expect([...output.files.keys()].some((path) => path.startsWith("files/"))).toBe(false);
+  });
+
+  it("points rich text's document links at files/ from a page in a folder", async () => {
+    const text_: NodeDoc = {
+      type: "Text",
+      props: {
+        id: "t",
+        text:
+          '<p>See <a href="webforge:file/prices?download">our prices</a> or ' +
+          '<a target="_blank" href="webforge:file/prices">open them</a>.</p>',
+      },
+    };
+    const site = siteWith([], {
+      documents,
+      pages: [
+        { id: "home", path: "index", title: "Home", doc: { root: { props: {} }, content: [] } },
+        {
+          id: "cakes",
+          path: "shop/cakes",
+          title: "Cakes",
+          doc: { root: { props: {} }, content: [text_] },
+        },
+      ],
+    });
+
+    const output = await buildSite(site, siteLibrary, resources);
+
+    expect(text(output, "shop/cakes.html")).toContain(
+      '<a href="../files/price-list.pdf" download>our prices</a> or ' +
+        '<a href="../files/price-list.pdf" target="_blank" rel="noopener">open them</a>',
+    );
+    expect([...(output.files.get("files/price-list.pdf") ?? [])]).toEqual([...pdf]);
+    expect(output.report.warnings).toEqual([]);
+  });
+
+  it("copies a document the navigation menu links to, and links to it from the Header", async () => {
+    const site = siteWith([], {
+      documents,
+      layout: {
+        header: [{ type: "Header", props: { id: "header", siteName: "Test" } }],
+        footer: [],
+      },
+      menu: {
+        follows: "custom",
+        items: [
+          {
+            id: "m" as MenuItemId,
+            kind: "link",
+            label: "Stock list",
+            link: { kind: "file", mediaId: "stock" as MediaId, download: true },
+            hidden: false,
+          },
+        ],
+      },
+    });
+
+    const output = await buildSite(site, siteLibrary, resources);
+
+    expect([...(output.files.get("files/stock.xlsx") ?? [])]).toEqual([...sheet]);
+    expect(text(output, "index.html")).toContain(
+      '<a href="files/stock.xlsx" download="">Stock list</a>',
+    );
+    expect(output.report.warnings).toEqual([]);
   });
 });
