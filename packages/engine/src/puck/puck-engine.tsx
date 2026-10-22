@@ -835,7 +835,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       render();
     },
 
-    renderStatic(staticPage, staticLayout, staticShared = {}) {
+    renderStatic(staticPage, _staticLayout, staticShared = {}) {
       if (config === null) {
         throw new Error("Mount the canvas engine before rendering pages");
       }
