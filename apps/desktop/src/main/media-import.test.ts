@@ -113,6 +113,8 @@ describe("importMediaFiles", () => {
       { fileName: "poster.png", data: undefined },
       { fileName: "huge.png", data: pngClaiming(100_000, 100_000) },
       { fileName: "prices.pdf", data: pdf },
+      // A program renamed as text: refused as not being text.
+      { fileName: "notes.txt", data: new Uint8Array([0x4d, 0x5a, 0x90, 0x00]) },
     ]);
 
     expect(result).toMatchObject({
@@ -123,6 +125,7 @@ describe("importMediaFiles", () => {
         { fileName: "photo.jpg", reason: "unsupported" },
         { fileName: "poster.png", reason: "too-large" },
         { fileName: "huge.png", reason: "too-large" },
+        { fileName: "notes.txt", reason: "not-text" },
       ],
     });
   });

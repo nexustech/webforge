@@ -60,6 +60,8 @@ export const site = {
   "site.media.history.cropped": "Cropped image",
   "site.media.history.focal": "Changed focal point",
   "site.media.history.alt": "Edited alt text",
+  "site.media.rejected.notText":
+    "{name} isn't plain text, so it wasn't added. It may be another kind of file renamed.",
   "site.media.rejected.unsupported":
     "{name} isn't an image or document Media takes, so it wasn't added.",
   "site.media.rejected.tooLarge":

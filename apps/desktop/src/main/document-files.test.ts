@@ -37,6 +37,19 @@ describe("sniffDocument (1.28)", () => {
     expect(sniffDocument(ascii("#!/bin/sh\0"), "run.txt")).toBeUndefined();
   });
 
+  it("takes UTF-16 text with a byte-order mark, as Notepad saves it, but not with control bytes", () => {
+    const utf16le = (text: string) =>
+      new Uint8Array([0xff, 0xfe, ...[...text].flatMap((char) => [char.charCodeAt(0), 0])]);
+    const utf16be = (text: string) =>
+      new Uint8Array([0xfe, 0xff, ...[...text].flatMap((char) => [0, char.charCodeAt(0)])]);
+
+    expect(sniffDocument(utf16le("Day,Opens\r\nMon,9:00\r\n"), "hours.csv")).toBe("text/csv");
+    expect(sniffDocument(utf16be("Café"), "menu.txt")).toBe("text/plain");
+    expect(sniffDocument(utf16le("bell\u0007"), "menu.txt")).toBeUndefined();
+    // Cut off in the middle of a character.
+    expect(sniffDocument(utf16le("ok").subarray(0, 5), "menu.txt")).toBeUndefined();
+  });
+
   it("rejects types that aren't listed, macro-enabled Office files and installers", () => {
     expect(sniffDocument(ascii("%PDF-1.7"), "menu")).toBeUndefined();
     expect(sniffDocument(ascii("hello"), "page.html")).toBeUndefined();
@@ -49,6 +62,13 @@ describe("sniffDocument (1.28)", () => {
     expect(sniffDocument(docm, "letter.docx")).toBeUndefined();
     const msi = [0x84, 0x10, 0x0c, 0, 0, 0, 0, 0, 0xc0, 0, 0, 0, 0, 0, 0, 0x46];
     expect(sniffDocument(oleFile(msi), "setup.doc")).toBeUndefined();
+    // A legacy Office file with macros: its directory names a `_VBA_PROJECT` stream (UTF-16LE).
+    const withMacros = oleFile();
+    withMacros.set(
+      [..."_VBA_PROJECT"].flatMap((char) => [char.charCodeAt(0), 0]),
+      640,
+    );
+    expect(sniffDocument(withMacros, "budget.xls")).toBeUndefined();
   });
 });
 

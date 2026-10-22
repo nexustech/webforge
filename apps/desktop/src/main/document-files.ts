@@ -46,7 +46,24 @@ const startsWith = (bytes: Uint8Array, signature: readonly number[], at = 0) =>
 const u16le = (bytes: Uint8Array, at: number) => (bytes[at] ?? 0) | ((bytes[at + 1] ?? 0) << 8);
 const u32le = (bytes: Uint8Array, at: number) => u16le(bytes, at) + u16le(bytes, at + 2) * 0x10000;
 
-const latin1 = (bytes: Uint8Array) => String.fromCharCode(...bytes);
+/** File names inside ZIP archives are single-byte text; decoded without spreading the bytes. */
+const LATIN1 = new TextDecoder("latin1");
+const latin1 = (bytes: Uint8Array) => LATIN1.decode(bytes);
+
+/** `text` in UTF-16LE, as Compound Files store their stream names. */
+const utf16le = (text: string) => [...text].flatMap((char) => [char.charCodeAt(0), 0]);
+
+/** The name of the stream holding a legacy Office file's macros (VBA). */
+const VBA_PROJECT = utf16le("_VBA_PROJECT");
+
+/** Whether `pattern` occurs anywhere in `bytes`. */
+function contains(bytes: Uint8Array, pattern: readonly number[]): boolean {
+  const [first] = pattern;
+  for (let at = bytes.indexOf(first ?? 0); at !== -1; at = bytes.indexOf(first ?? 0, at + 1)) {
+    if (startsWith(bytes, pattern, at)) return true;
+  }
+  return false;
+}
 
 /** The document type the file name's extension names, if it is one Media takes. */
 function typeForName(fileName: string): FileMimeType | undefined {
@@ -71,6 +88,10 @@ function isInstaller(bytes: Uint8Array): boolean {
 /**
  * The names of the files in a ZIP archive, from its central directory, or `undefined` if it isn't
  * a well-formed one. The end-of-directory record is in the last 64 KB plus its own 22 bytes.
+ *
+ * ZIP64 archives (over 65,535 entries or 4 GB) are not read: their end record holds placeholders
+ * (`0xFFFF`, `0xFFFFFFFF`) that point nowhere here, so they come out as not well-formed. Office and
+ * OpenDocument files never need ZIP64 at Media's 50 MB limit, so one is not a document Media takes.
  */
 export function zipEntryNames(bytes: Uint8Array): string[] | undefined {
   if (!startsWith(bytes, ZIP_LOCAL_HEADER)) return undefined;
@@ -110,21 +131,45 @@ function odfType(bytes: Uint8Array): string | undefined {
   return latin1(bytes.subarray(start, start + size));
 }
 
-/** Whether `bytes` are text: no NUL and no control characters but tab, line and page breaks. */
+/** Whether `code` is a control character text doesn't hold: all but tab, line and page breaks. */
+const isControl = (code: number) =>
+  (code < 0x20 && code !== 0x09 && code !== 0x0a && code !== 0x0c && code !== 0x0d) ||
+  code === 0x7f;
+
+/**
+ * Whether `bytes` are text: in UTF-16 with a byte-order mark (as Windows Notepad can save it), or
+ * else in a single-byte or UTF-8 encoding; either way with no NUL and no control characters but
+ * tab, line and page breaks.
+ */
 function isText(bytes: Uint8Array): boolean {
-  for (const byte of bytes) {
-    if (byte < 0x20 && byte !== 0x09 && byte !== 0x0a && byte !== 0x0c && byte !== 0x0d) {
+  const utf16 =
+    bytes[0] === 0xff && bytes[1] === 0xfe
+      ? "utf-16le"
+      : bytes[0] === 0xfe && bytes[1] === 0xff
+        ? "utf-16be"
+        : undefined;
+  if (utf16 !== undefined) {
+    let text: string;
+    try {
+      text = new TextDecoder(utf16, { fatal: true }).decode(bytes.subarray(2));
+    } catch {
       return false;
     }
-    if (byte === 0x7f) return false;
+    for (let index = 0; index < text.length; index++) {
+      if (isControl(text.charCodeAt(index))) return false;
+    }
+    return true;
   }
-  return true;
+  return !bytes.some(isControl);
 }
 
 /** Whether `bytes` are in the format of document type `type`. */
 function hasFormat(bytes: Uint8Array, type: FileMimeType): boolean {
   if (type === "application/pdf") return startsWith(bytes, PDF_SIGNATURE);
-  if (OLE_TYPES.has(type)) return startsWith(bytes, OLE_SIGNATURE) && !isInstaller(bytes);
+  if (OLE_TYPES.has(type)) {
+    // Macros live in a `_VBA_PROJECT` stream; an installer has Windows Installer's class id.
+    return startsWith(bytes, OLE_SIGNATURE) && !isInstaller(bytes) && !contains(bytes, VBA_PROJECT);
+  }
   if (ODF_TYPES.has(type)) return odfType(bytes) === type;
   const part = OOXML_PARTS[type];
   if (part !== undefined) {
@@ -138,6 +183,12 @@ function hasFormat(bytes: Uint8Array, type: FileMimeType): boolean {
   }
   // Plain text and CSV: nothing else falls through to the text check.
   return (type === "text/plain" || type === "text/csv") && isText(bytes);
+}
+
+/** Whether `fileName` names plain text or CSV, which a refusal explains on its own. */
+export function isTextName(fileName: string): boolean {
+  const type = typeForName(fileName);
+  return type === "text/plain" || type === "text/csv";
 }
 
 /**

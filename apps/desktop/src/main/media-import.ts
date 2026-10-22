@@ -1,6 +1,7 @@
 import { type MediaId, type MediaMeta, mediaNameFor, newId } from "@webforge/model";
 import { MAX_MEDIA_BYTES } from "../shared/ipc/media.js";
 import type { MediaImportResult } from "../shared/ipc-contract.js";
+import { isTextName } from "./document-files.js";
 import { sniffMedia } from "./media-files.js";
 import type { ProjectSession, StoreAssetResult } from "./project-session.js";
 
@@ -32,7 +33,7 @@ export function createMediaImport(
   createId: () => MediaId = () => newId("media"),
 ) {
   const items: MediaMeta[] = [];
-  const rejected: { fileName: string; reason: "unsupported" | "too-large" }[] = [];
+  const rejected: { fileName: string; reason: "unsupported" | "too-large" | "not-text" }[] = [];
   return {
     /** Imports one file; returns why the import has to stop, if it does. */
     add({ fileName, data }: ImportFile): ImportFailure | undefined {
@@ -42,7 +43,7 @@ export function createMediaImport(
       }
       const sniffed = sniffMedia(data, fileName);
       if (sniffed === undefined) {
-        rejected.push({ fileName, reason: "unsupported" });
+        rejected.push({ fileName, reason: isTextName(fileName) ? "not-text" : "unsupported" });
         return undefined;
       }
       if (sniffed.kind === "image" && sniffed.width * sniffed.height > MAX_IMAGE_PIXELS) {
