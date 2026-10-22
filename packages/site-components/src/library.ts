@@ -10,6 +10,7 @@ import {
   resolveResponsive,
 } from "@webforge/model";
 import { type ComponentType, cloneElement, isValidElement, type ReactNode } from "react";
+import { isDocumentPath } from "./document-path.js";
 
 /** A choice offered by a field: its translated label and the stored value. */
 export type FieldOption = { readonly label: string; readonly value: string };
@@ -251,7 +252,10 @@ export function linkAttributes(value: unknown, context: RenderContext): LinkAttr
     return {
       href,
       ...(link.data.newTab === true ? { target: "_blank", rel: "noopener" } : {}),
-      ...(link.data.kind === "file" && link.data.download === true ? { download: "" } : {}),
+      // Only on the document's own file: a deleted one links to `#`, which mustn't be saved.
+      ...(link.data.kind === "file" && link.data.download === true && isDocumentPath(href)
+        ? { download: "" }
+        : {}),
     };
   }
   const text = stringValue(value);

@@ -139,6 +139,9 @@ export function rewriteRichTextLinks(
           ? hrefOf({ kind: "file", ...file })
           : "#";
     const escaped = href.replaceAll("&", "&amp;").replaceAll('"', "&quot;");
-    return file?.download === true ? `href="${escaped}" download=""` : `href="${escaped}"`;
+    // A deleted document's link goes to `#`: saving that would save the page itself.
+    return file?.download === true && href !== "#"
+      ? `href="${escaped}" download=""`
+      : `href="${escaped}"`;
   });
 }

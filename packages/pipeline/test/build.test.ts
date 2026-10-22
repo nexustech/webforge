@@ -397,7 +397,7 @@ describe("buildSite: documents (1.28)", () => {
 
   it("warns about a link to a document deleted from Media, and keeps building", async () => {
     const output = await buildSite(
-      siteWith([heroLinkingTo("gone")], { documents }),
+      siteWith([heroLinkingTo("gone", { download: true })], { documents }),
       siteLibrary,
       resources,
     );
@@ -405,7 +405,41 @@ describe("buildSite: documents (1.28)", () => {
     expect(output.report.warnings).toEqual([
       { code: "broken-link", page: "index", detail: "gone" },
     ]);
-    expect(text(output, "index.html")).toContain('href="#"');
+    // Not `download`: that would save this page instead.
+    expect(text(output, "index.html")).toContain('<a class="btn btn-primary" href="#">');
     expect([...output.files.keys()].some((path) => path.startsWith("files/"))).toBe(false);
+  });
+
+  it("points rich text's document links at files/ from a page in a folder", async () => {
+    const text_: NodeDoc = {
+      type: "Text",
+      props: {
+        id: "t",
+        text:
+          '<p>See <a href="webforge:file/prices?download">our prices</a> or ' +
+          '<a target="_blank" href="webforge:file/prices">open them</a>.</p>',
+      },
+    };
+    const site = siteWith([], {
+      documents,
+      pages: [
+        { id: "home", path: "index", title: "Home", doc: { root: { props: {} }, content: [] } },
+        {
+          id: "cakes",
+          path: "shop/cakes",
+          title: "Cakes",
+          doc: { root: { props: {} }, content: [text_] },
+        },
+      ],
+    });
+
+    const output = await buildSite(site, siteLibrary, resources);
+
+    expect(text(output, "shop/cakes.html")).toContain(
+      '<a href="../files/price-list.pdf" download>our prices</a> or ' +
+        '<a href="../files/price-list.pdf" target="_blank" rel="noopener">open them</a>',
+    );
+    expect([...(output.files.get("files/price-list.pdf") ?? [])]).toEqual([...pdf]);
+    expect(output.report.warnings).toEqual([]);
   });
 });

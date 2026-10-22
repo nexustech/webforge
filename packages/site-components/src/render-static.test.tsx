@@ -143,7 +143,8 @@ describe("renderNodesToHtml", () => {
   it("points rich text's links to documents at their files, saved when so set (1.28)", () => {
     const documents: RenderContext = {
       ...context,
-      href: (link) => (link.kind === "file" ? `files/${link.mediaId}.pdf` : "#"),
+      href: (link) =>
+        link.kind === "file" && link.mediaId === "menu" ? `files/${link.mediaId}.pdf` : "#",
     };
     const nodes: NodeDoc[] = [
       {
@@ -153,7 +154,9 @@ describe("renderNodesToHtml", () => {
           text:
             '<p><a target="_blank" href="webforge:file/menu">Menu</a> ' +
             '<a href="webforge:file/menu?download">Save</a> ' +
-            '<a href="https://example.com" download="evil.exe">Web</a></p>',
+            '<a href="webforge:file/gone?download">Gone</a> ' +
+            '<a href="https://example.com" download="evil.exe">Web</a> ' +
+            '<a href="about.html" download>Page</a></p>',
         },
       },
     ];
@@ -161,8 +164,11 @@ describe("renderNodesToHtml", () => {
     expect(renderNodesToHtml(nodes, siteLibrary, documents)).toContain(
       '<p><a href="files/menu.pdf" target="_blank" rel="noopener">Menu</a> ' +
         '<a href="files/menu.pdf" download>Save</a> ' +
-        // A file name the page chose is never kept.
-        '<a href="https://example.com" download>Web</a></p>',
+        // `download` only on a document's file: never on `#` (a deleted document), a web address
+        // or a page, where it would save that page instead.
+        '<a href="#">Gone</a> ' +
+        '<a href="https://example.com">Web</a> ' +
+        '<a href="about.html">Page</a></p>',
     );
   });
 

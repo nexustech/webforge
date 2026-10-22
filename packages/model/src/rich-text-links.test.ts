@@ -80,11 +80,11 @@ describe("rich-text links (F-ED-3, F-ED-18)", () => {
 
     const html =
       '<p><a href="webforge:file/prices">Menu</a>, <a href="webforge:file/prices?download">' +
-      'save it</a>, <a href="webforge:file/gone">old</a></p>';
+      'save it</a>, <a href="webforge:file/gone?download">old</a></p>';
     expect(richTextFileLinks(html)).toEqual([
       { mediaId: "prices" },
       { mediaId: "prices", download: true },
-      { mediaId: "gone" },
+      { mediaId: "gone", download: true },
     ]);
     expect(
       rewriteRichTextLinks(html, (link) =>
@@ -92,6 +92,7 @@ describe("rich-text links (F-ED-3, F-ED-18)", () => {
       ),
     ).toBe(
       '<p><a href="../files/price-list.pdf">Menu</a>, ' +
+        // A deleted document's link goes nowhere, and saves nothing.
         '<a href="../files/price-list.pdf" download="">save it</a>, <a href="#">old</a></p>',
     );
   });
