@@ -339,6 +339,16 @@ describe("createPuckEngine", () => {
       expect(engine.perform("duplicate")).toBe(false);
       expect(engine.perform("delete")).toBe(false);
     });
+
+    it("unlocks the layout again back in Design mode (1.26)", async () => {
+      await act(async () => engine.setMode("content"));
+      await act(async () => engine.setMode("design"));
+      await settle();
+      await selectA();
+
+      expect(action("Duplicate")).not.toBeNull();
+      expect(engine.perform("moveDown")).toBe(true);
+    });
   });
 
   it("clears the selection when another page is loaded", async () => {

@@ -67,6 +67,45 @@ test.describe("editor modes", () => {
     await expect(modeButton(page, "Content")).toHaveAttribute("data-state", "on");
   });
 
+  test("keeps text editable in Content mode and locks styles and layout, then unlocks (1.26)", async () => {
+    const page = await openSite();
+    const edit = page.getByRole("region", { name: "Right panels" });
+    const tabs = () => edit.getByRole("tablist", { name: "Edit panel" }).getByRole("tab");
+    await selectHeading(page);
+    await expect(tabs()).toHaveText(["Content", "Style"]);
+
+    await modeButton(page, "Content").click();
+    // Styles are locked: the Edit panel keeps its Content tab only.
+    await expect(tabs()).toHaveText(["Content"]);
+    // Text stays editable.
+    const text = edit.getByRole("textbox", { name: "Text" });
+    await text.fill("Fresh bread daily");
+    await text.blur();
+    await expect(canvas(page).locator("h1")).toHaveText("Fresh bread daily");
+    // Pasting text works too; only pasting elements is locked.
+    await app?.evaluate(({ clipboard }) => clipboard.writeText("Cakes to order"));
+    await text.focus();
+    await page.keyboard.press("ControlOrMeta+a");
+    await page.keyboard.press("ControlOrMeta+v");
+    await text.blur();
+    await expect(canvas(page).locator("h1")).toHaveText("Cakes to order");
+    // The layout is locked: Delete and Duplicate do nothing, and the Add panel is gone.
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+    await page.keyboard.press("Delete");
+    await page.keyboard.press("ControlOrMeta+d");
+    await expect(canvas(page).locator("h1")).toHaveCount(1);
+    await expect(
+      page.getByRole("region", { name: "Left panels" }).getByRole("tab", { name: "Add" }),
+    ).toHaveCount(0);
+
+    await modeButton(page, "Design").click();
+    await selectHeading(page);
+    await expect(tabs()).toHaveText(["Content", "Style"]);
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+    await page.keyboard.press("ControlOrMeta+d");
+    await expect(canvas(page).locator("h1")).toHaveCount(2);
+  });
+
   test("turns Advanced mode on from the View menu", async () => {
     const page = await openSite();
 

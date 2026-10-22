@@ -86,6 +86,7 @@ export function Editor({
   });
   const connectionRef = useRef<EngineConnection | null>(null);
   const clipboardCommandsRef = useRef<ReturnType<typeof registerClipboardCommands> | null>(null);
+  const canvasCommandsRef = useRef<ReturnType<typeof registerCanvasCommands> | null>(null);
   const addPanelRef = useRef<AddPanelRegistration | null>(null);
   const { history } = session;
   const registry = useCommandRegistry();
@@ -177,6 +178,8 @@ export function Editor({
     clipboardCommandsRef.current = clipboardCommands;
     const canvasCommands = registerCanvasCommands(registry, engine, connection.flush);
     canvasCommands.setHasSelection(session.ui.getState().nodeId !== null);
+    canvasCommands.setLayoutLocked(modeRef.current !== "design");
+    canvasCommandsRef.current = canvasCommands;
     const stopSelectionWatch = session.ui.subscribe((ui) => {
       canvasCommands.setHasSelection(ui.nodeId !== null);
       clipboardCommands.setHasSelection(ui.nodeId !== null);
@@ -196,6 +199,7 @@ export function Editor({
       stopFrameWindow();
       removeFrameShortcuts?.();
       stopSelectionWatch();
+      canvasCommandsRef.current = null;
       canvasCommands.remove();
       clipboardCommandsRef.current = null;
       clipboardCommands.remove();
@@ -213,6 +217,7 @@ export function Editor({
   useEffect(() => {
     engine?.setMode(mode);
     clipboardCommandsRef.current?.setLayoutLocked(mode !== "design");
+    canvasCommandsRef.current?.setLayoutLocked(mode !== "design");
   }, [engine, mode]);
 
   useEffect(
@@ -258,7 +263,7 @@ export function Editor({
   }, [panels, history]);
 
   // The Edit panel replaces Puck's own fields (1.14). Registered on its own, so that changing the
-  // editor level redraws it without registering Undo History again.
+  // editor level or mode (Content shows its Content tab only) redraws it alone.
   useEffect(() => {
     function Edit() {
       return (
@@ -266,6 +271,7 @@ export function Editor({
           session={session}
           flush={() => connectionRef.current?.flush()}
           advanced={editorLevel === "advanced"}
+          contentOnly={mode !== "design"}
         />
       );
     }
@@ -275,7 +281,7 @@ export function Editor({
       title: t("editPanel.title"),
       component: Edit,
     });
-  }, [panels, session, editorLevel]);
+  }, [panels, session, editorLevel, mode]);
 
   // The Add panel (1.13), hidden in Content mode (M3).
   useEffect(() => {

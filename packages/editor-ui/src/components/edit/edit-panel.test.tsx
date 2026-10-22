@@ -55,6 +55,29 @@ describe("EditPanel", () => {
     expect(screen.getByLabelText("Size")).toBeDefined();
   });
 
+  it("shows the Content tab only in Content mode, without Style or Advanced (M3)", () => {
+    render(
+      <EditPanel
+        heading="Heading"
+        fields={[
+          ...fields,
+          { name: "classes", kind: "text", label: "Classes", group: "advanced", value: "" },
+        ]}
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+        advanced
+        contentOnly
+      />,
+    );
+
+    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
+      t("editPanel.content"),
+    ]);
+    expect(screen.getByLabelText("Text")).toBeDefined();
+    expect(screen.queryByLabelText("Size")).toBeNull();
+    expect(screen.queryByLabelText("Classes")).toBeNull();
+  });
+
   it("reports every keystroke and the end of a text field visit", async () => {
     const { onChange, onCommit, user } = setup();
     const field = screen.getByLabelText("Text");

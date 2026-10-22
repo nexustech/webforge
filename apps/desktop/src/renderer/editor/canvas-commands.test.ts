@@ -34,6 +34,22 @@ describe("registerCanvasCommands", () => {
     expect(engine.perform).toHaveBeenCalledWith("delete");
   });
 
+  it("turns duplicate, delete and moves off while Content mode locks the layout (M3)", () => {
+    const registry = createCommandRegistry();
+    const engine = createFakeEngine();
+    const commands = registerCanvasCommands(registry, engine, () => undefined);
+    commands.setHasSelection(true);
+
+    commands.setLayoutLocked(true);
+    const enabled = ["edit.duplicate", "edit.delete", "edit.moveUp", "edit.moveDown"].map(
+      (id) => registry.get(id)?.enabled,
+    );
+    expect(enabled).toEqual([false, false, false, false]);
+    expect(registry.run("edit.selectNext")).toBe(true);
+    commands.setLayoutLocked(false);
+    expect(registry.get("edit.delete")?.enabled).toBe(true);
+  });
+
   it("enables the edits only while something is selected; selecting always works", () => {
     const registry = createCommandRegistry();
     const engine = createFakeEngine();

@@ -58,6 +58,23 @@ function setup(nodeId: string | null = "heading-1") {
   return { session, flush, labels, heading, section, questions, user: userEvent.setup() };
 }
 
+describe("EditPanelHost in Content mode (M3)", () => {
+  it("keeps texts, links and list items, and leaves styles out", async () => {
+    const session = createEditorSession(siteLibrary, siteWithHero());
+    session.ui.setState({ nodeId: "hero" });
+    const view = render(<EditPanelHost session={session} flush={vi.fn()} contentOnly />);
+
+    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["Content"]);
+    expect(screen.getByRole("textbox", { name: "Title" })).toBeTruthy();
+    expect(screen.getByRole("textbox", { name: "Button text" })).toBeTruthy();
+    expect(screen.queryByText("Alignment")).toBeNull();
+    // A list's items stay editable.
+    act(() => session.ui.setState({ nodeId: "faq" }));
+    view.rerender(<EditPanelHost session={session} flush={vi.fn()} contentOnly />);
+    expect(screen.getByRole("button", { name: /Add Question/ })).toBeTruthy();
+  });
+});
+
 describe("EditPanelHost", () => {
   it("asks for a selection when nothing is selected", () => {
     setup(null);

@@ -131,7 +131,11 @@ export function App({
 
   useEffect(() => installCommandShortcuts(window, registry), [registry]);
   useEffect(() => registerSitePanel(panels, session, siteWide), [panels, session, siteWide]);
-  useEffect(() => registerLayersPanel(panels, session), [panels, session]);
+  // Content mode locks the layout in Layers too (M3).
+  useEffect(
+    () => registerLayersPanel(panels, session, { layoutLocked: mode !== "design" }),
+    [panels, session, mode],
+  );
   useEffect(() => registerCrashReportsCommand(registry), [registry]);
 
   useEffect(

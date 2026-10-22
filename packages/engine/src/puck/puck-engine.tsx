@@ -113,6 +113,11 @@ const puckViewports = () => [
 
 /** Content mode: text stays editable, the layout is locked (M3). */
 const CONTENT_MODE_PERMISSIONS = { drag: false, duplicate: false, delete: false, insert: false };
+/**
+ * Design mode: everything. Always passed, never left out: Puck merges the permissions it is given
+ * into those it has, so leaving them out after Content mode would keep the layout locked.
+ */
+const DESIGN_MODE_PERMISSIONS = { drag: true, duplicate: true, delete: true, insert: true };
 
 type GetPuck = ReturnType<typeof useGetPuck>;
 
@@ -570,7 +575,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
         }}
         viewports={viewportOptions}
         height="100%"
-        {...(mode === "content" ? { permissions: CONTENT_MODE_PERMISSIONS } : {})}
+        permissions={mode === "content" ? CONTENT_MODE_PERMISSIONS : DESIGN_MODE_PERMISSIONS}
       />,
     );
   };
