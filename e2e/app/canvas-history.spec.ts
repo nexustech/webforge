@@ -79,13 +79,21 @@ async function drag(from: Locator, to: { x: number; y: number }, grabAt = 0.5): 
   await page.mouse.down();
   await page.mouse.move(x + 10, y + 10, { steps: 5 });
   await page.mouse.move(to.x, to.y, { steps: 25 });
-  await page.mouse.move(to.x, to.y + 1, { steps: 2 });
+  // A hand settles on the target before letting go: Puck takes the zone under the pointer a move
+  // after entering it, and the page's top level, crossed on the way, takes sections only.
+  for (const dx of [6, -6, 0]) await page.mouse.move(to.x + dx, to.y + 1, { steps: 3 });
   await page.mouse.up();
 }
 
 async function below(target: Locator, offset = 3): Promise<{ x: number; y: number }> {
   const box = await boxOf(target, "Drop target");
   return { x: box.x + box.width / 2, y: box.y + box.height + offset };
+}
+
+/** A point on `target`'s lower half, where a drop goes after it. */
+async function inLowerHalf(target: Locator): Promise<{ x: number; y: number }> {
+  const box = await boxOf(target, "Drop target");
+  return { x: box.x + box.width / 2, y: box.y + box.height * 0.75 };
 }
 
 /** Waits until the history's coalescing window (1 s) has passed, as a pause in typing would. */
@@ -111,7 +119,9 @@ test.describe("Puck canvas with Webforge history", () => {
   test("adding an element by drag is one step; Ctrl+Z and Ctrl+Shift+Z undo and redo it", async () => {
     await drag(
       page.getByText("Heading", { exact: true }).first(),
-      await below(canvas().getByText(STARTER_TEXT)),
+      // On the text's lower half, so after it in the Section: the Section's padding below it is
+      // the page's top level, which takes sections only (F-ED-1).
+      await inLowerHalf(canvas().getByText(STARTER_TEXT)),
     );
 
     await expectSteps(["Added Heading"], "Added Heading");
@@ -257,12 +267,14 @@ test.describe("Puck canvas with Webforge history", () => {
   test("clicking a step in Undo History jumps there", async () => {
     await drag(
       page.getByText("Heading", { exact: true }).first(),
-      await below(canvas().getByText(STARTER_TEXT)),
+      // On the text's lower half, so after it in the Section: the Section's padding below it is
+      // the page's top level, which takes sections only (F-ED-1).
+      await inLowerHalf(canvas().getByText(STARTER_TEXT)),
     );
     await expect(canvas().locator("h2")).toHaveCount(1);
     await drag(
       page.getByText("Text", { exact: true }).first(),
-      await below(canvas().locator("h2")),
+      await inLowerHalf(canvas().locator("h2")),
     );
     await expectSteps(["Added Text", "Added Heading"], "Added Text");
 
