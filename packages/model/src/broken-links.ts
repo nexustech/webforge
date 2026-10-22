@@ -1,4 +1,4 @@
-import { isNodeDoc, type NodeDoc } from "./documents.js";
+import { anchorsIn, isNodeDoc, type NodeDoc } from "./documents.js";
 import type { PageId, SharedSectionId } from "./ids.js";
 import { pageLinkSchema } from "./link.js";
 import { richTextPageLinks } from "./rich-text-links.js";
@@ -19,20 +19,6 @@ export type BrokenLink = {
   /** The section it points at, when that is what is missing. */
   readonly anchor?: string;
 };
-
-/** The section anchors (`advanced.anchorId`) of `nodes` and everything in them. */
-export function anchorsIn(nodes: readonly unknown[], found = new Set<string>()): Set<string> {
-  for (const node of nodes) {
-    if (typeof node !== "object" || node === null) continue;
-    const props = (node as { props?: Record<string, unknown> }).props ?? {};
-    const anchor = (props.advanced as { anchorId?: unknown } | undefined)?.anchorId;
-    if (typeof anchor === "string" && anchor !== "") found.add(anchor);
-    for (const value of Object.values(props)) {
-      if (Array.isArray(value)) anchorsIn(value, found);
-    }
-  }
-  return found;
-}
 
 /**
  * Calls `visit` for every page link in `value`, a field's value, but not in elements inside it:

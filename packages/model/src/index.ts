@@ -8,11 +8,12 @@ export {
   validBindings,
 } from "./bindings.js";
 export type { BrokenLink } from "./broken-links.js";
-export { anchorsIn, findBrokenLinks } from "./broken-links.js";
+export { findBrokenLinks } from "./broken-links.js";
 export type { CopiedElements } from "./clipboard.js";
 export { copiedElementsSchema, MAX_COPIED_NODES, pastedCopies } from "./clipboard.js";
 export type { LayoutDoc, NodeAdvanced, NodeDoc, PageDoc, SiteCode, Theme } from "./documents.js";
 export {
+  anchorsIn,
   attributeNameSchema,
   classNamesSchema,
   isNodeDoc,
@@ -96,9 +97,11 @@ export type { SharedCopyNode, SharedSection, SharedSectionsDoc } from "./shared-
 export {
   copiedAnchor,
   copiedNodeId,
+  copyHolding,
   expandSharedCopies,
   isSharedCopy,
   newSharedCopy,
+  pageAnchors,
   SHARED_COPY_TYPE,
   sharedSectionsDocSchema,
 } from "./shared-sections.js";

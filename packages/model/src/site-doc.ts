@@ -12,7 +12,7 @@ import { mediaIdSchema, newId, type PageId, pageIdSchema } from "./ids.js";
 import { mediaMetaSchema } from "./media.js";
 import { type MenuItem, menuDocSchema } from "./menu.js";
 import { defaultSiteSettings, siteSettingsSchema } from "./settings.js";
-import { sharedSectionsDocSchema } from "./shared-sections.js";
+import { containsCopy, copyIssues, sharedSectionsDocSchema } from "./shared-sections.js";
 
 /** The format of {@link SiteDoc} this build writes. Bumped with a migration and a fixture. */
 export const SITE_FORMAT_VERSION = 3;
@@ -139,6 +139,16 @@ const siteDocObjectSchema = z
           key,
           "folder",
         ]);
+      }
+      for (const { message, path } of copyIssues(page.doc.content)) {
+        issue(message, ["pages", key, "doc", "content", ...path]);
+      }
+    }
+
+    // Copies of shared sections go on pages, never in the Header or Footer (F-ED-23).
+    for (const region of ["header", "footer"] as const) {
+      if (containsCopy(site.layout[region])) {
+        issue("The Header and Footer can't hold a copy of a shared section", ["layout", region]);
       }
     }
 

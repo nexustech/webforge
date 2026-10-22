@@ -81,12 +81,7 @@ function editItem(
 
 /** Gives a section linked to for the first time its anchor, in the same step as the link. */
 function applyLinkAnchor(draft: SiteDoc, site: SiteDoc, change: LinkFieldChange): void {
-  const anchor = change.anchor;
-  const page = anchor === undefined ? undefined : site.pages[anchor.pageId];
-  const target = anchor === undefined ? undefined : draft.pages[anchor.pageId];
-  if (anchor !== undefined && page !== undefined && target !== undefined) {
-    applyAnchor(target.doc, page.doc, anchor);
-  }
+  if (change.anchor !== undefined) applyAnchor(draft, site, change.anchor);
 }
 
 /** A link item for `link`: a section item when it goes to a section of a page (G3). */

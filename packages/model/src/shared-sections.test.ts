@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
-import type { NodeDoc } from "./documents.js";
+import type { LayoutDoc, NodeDoc } from "./documents.js";
 import type { SharedSectionId } from "./ids.js";
 import {
   copiedAnchor,
   copiedNodeId,
+  copyHolding,
   expandSharedCopies,
   isSharedCopy,
   newSharedCopy,
+  pageAnchors,
   SHARED_COPY_TYPE,
   type SharedSectionsDoc,
   sharedSectionsDocSchema,
@@ -35,6 +37,8 @@ const hours: NodeDoc = {
 };
 
 const shared: SharedSectionsDoc = { [HOURS]: { id: HOURS, name: "Opening hours", section: hours } };
+
+const layout: LayoutDoc = { header: [], footer: [] };
 
 const copy = (id: string, anchorSuffix?: string): NodeDoc => ({
   type: SHARED_COPY_TYPE,
@@ -112,19 +116,56 @@ describe("shared sections (F-ED-23)", () => {
   });
 
   it("makes new copies for a page: the first keeps the anchors, others get the lowest free suffix", () => {
-    const first = newSharedCopy([], HOURS);
+    const first = newSharedCopy([], HOURS, shared, layout);
     expect(first.props.anchorSuffix).toBeUndefined();
     expect(isSharedCopy(first)).toBe(true);
 
-    const second = newSharedCopy([first], HOURS);
+    const second = newSharedCopy([first], HOURS, shared, layout);
     expect(second.props.anchorSuffix).toBe("2");
     expect(second.props.id).not.toBe(first.props.id);
 
     // A suffix stays with its copy: deleting copy 2 frees "2" for the next one, not "3".
-    const third = newSharedCopy([first, copy("c3", "3")], HOURS);
+    const third = newSharedCopy([first, copy("c3", "3")], HOURS, shared, layout);
     expect(third.props.anchorSuffix).toBe("2");
     // Copies of other sections don't count.
     const OTHER = "shared-other" as SharedSectionId;
-    expect(newSharedCopy([first], OTHER).props.anchorSuffix).toBeUndefined();
+    expect(newSharedCopy([first], OTHER, shared, layout).props.anchorSuffix).toBeUndefined();
+  });
+
+  it("gives a new copy no anchor the page, its Header or its Footer already has", () => {
+    const anchored = (id: string, anchorId: string): NodeDoc => ({
+      type: "Section",
+      props: { id, advanced: { anchorId }, content: [] },
+    });
+    // The link dialog numbers anchors the same way: a section already has `opening-hours-2`.
+    const page = [copy("c1"), anchored("other", "opening-hours-2")];
+    expect(newSharedCopy(page, HOURS, shared, layout).props.anchorSuffix).toBe("3");
+
+    // The first copy too, when a section of the page has the shared section's anchor.
+    const footer = { header: [], footer: [anchored("f", "opening-hours")] };
+    expect(newSharedCopy([], HOURS, shared, footer).props.anchorSuffix).toBe("2");
+  });
+
+  it("keeps a copy's anchors no longer than an anchor may be", () => {
+    const long = `a${"-b".repeat(31)}c`;
+    expect(long.length).toBe(64);
+
+    expect(copiedAnchor(long, "12")).toHaveLength(64);
+    expect(copiedAnchor(long, "12")).toMatch(/^a(-b)+-12$/);
+    // Shortened where a hyphen would end it: no `--`.
+    expect(copiedAnchor(long, "2")).toHaveLength(63);
+    expect(copiedAnchor(long, "2")).toMatch(/^a(-b)+-2$/);
+    expect(copiedAnchor(long, undefined)).toBe(long);
+  });
+
+  it("finds the anchors on a page, and the copy holding an element the canvas shows", () => {
+    const page = [copy("c1"), copy("c2", "2")];
+
+    expect([...pageAnchors(page, shared, layout)].sort()).toEqual([
+      "opening-hours",
+      "opening-hours-2",
+    ]);
+    expect(copyHolding(page, copiedNodeId("c2", "faq"))?.props.id).toBe("c2");
+    expect(copyHolding(page, "faq")).toBeUndefined();
   });
 });
