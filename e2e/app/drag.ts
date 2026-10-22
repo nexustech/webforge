@@ -20,10 +20,16 @@ export async function boxOf(target: Locator, name: string): Promise<Box> {
   return box as unknown as Box;
 }
 
+/** Puck marks the canvas while something is being dragged over it. */
+const DRAGGING = "[data-puck-entry][data-puck-dragging]";
+/** Where the drop would land: Puck's placeholder in the list, or its line between items. */
+const DROP_PREVIEW = "[data-dnd-placeholder], [data-puck-line-placeholder]";
+
 /**
- * Drags with real mouse events, in small steps, as a user would. `grabAt` is where to press, as a
- * fraction of the source's width: pressing on an inline-editable element's text selects text
- * instead of dragging the element.
+ * Drags with real mouse events, as a user would, waiting for each stage instead of for time: the
+ * drag to start (Puck marks the canvas), then the drop preview at `to`, nudging the pointer a pixel
+ * until each shows, and only then lets go. `grabAt` is where to press, as a fraction of the
+ * source's width: pressing on an inline-editable element's text selects text instead of dragging.
  */
 export async function drag(
   page: Page,
@@ -31,15 +37,36 @@ export async function drag(
   to: { x: number; y: number },
   grabAt = 0.5,
 ): Promise<void> {
+  const canvas = page.frameLocator(".editor__canvas iframe");
   const box = await boxOf(from, "Drag source");
   const x = box.x + box.width * grabAt;
   const y = box.y + box.height / 2;
   await page.mouse.move(x, y);
   await page.mouse.down();
-  await page.mouse.move(x + 10, y + 10, { steps: 5 });
+  let nudge = 0;
+  await expect
+    .poll(
+      async () => {
+        nudge += 1;
+        await page.mouse.move(x + 10 + (nudge % 3), y + 10, { steps: 5 });
+        return canvas.locator(DRAGGING).count();
+      },
+      { message: "The drag didn't start" },
+    )
+    .toBeGreaterThan(0);
   await page.mouse.move(to.x, to.y, { steps: 25 });
-  await page.mouse.move(to.x, to.y + 1, { steps: 2 });
+  await expect
+    .poll(
+      async () => {
+        nudge += 1;
+        await page.mouse.move(to.x, to.y + (nudge % 2), { steps: 2 });
+        return canvas.locator(DROP_PREVIEW).count();
+      },
+      { message: "No drop preview where the drag ends" },
+    )
+    .toBeGreaterThan(0);
   await page.mouse.up();
+  await expect(canvas.locator(DRAGGING)).toHaveCount(0);
 }
 
 /** A point just below `target`'s bottom edge (or above it, for a negative `offset`), centred. */
