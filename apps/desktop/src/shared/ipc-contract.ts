@@ -1,6 +1,7 @@
 import type { z } from "zod";
 import { appChannels } from "./ipc/app.js";
 import { canvasChannels } from "./ipc/canvas.js";
+import { clipboardChannels } from "./ipc/clipboard.js";
 import { mediaChannels } from "./ipc/media.js";
 import { prefsChannels } from "./ipc/prefs.js";
 import { projectChannels } from "./ipc/project.js";
@@ -33,6 +34,7 @@ export type { ExportResult } from "./ipc/site.js";
 export const ipcContract = {
   ...appChannels,
   ...canvasChannels,
+  ...clipboardChannels,
   ...mediaChannels,
   ...prefsChannels,
   ...projectChannels,
@@ -43,6 +45,7 @@ export const ipcContract = {
 export const ipcDomains = {
   app: appChannels,
   canvas: canvasChannels,
+  clipboard: clipboardChannels,
   media: mediaChannels,
   prefs: prefsChannels,
   project: projectChannels,

@@ -8,6 +8,7 @@ import {
   withAdvanced,
 } from "@webforge/site-components";
 import { type ComponentType, cloneElement, Fragment, isValidElement, type ReactNode } from "react";
+import { richTextField } from "./rich-text.js";
 import { ROOT_ZONE } from "./tree.js";
 
 function toPuckField(field: FieldDef): Field {
@@ -15,7 +16,7 @@ function toPuckField(field: FieldDef): Field {
     case "text":
       return { type: "text", label: field.label, contentEditable: field.inline ?? false };
     case "richtext":
-      return { type: "richtext", label: field.label, contentEditable: field.inline ?? true };
+      return richTextField(field.label, field.inline ?? true);
     case "select":
       return { type: "select", label: field.label, options: [...field.options] };
     case "media":

@@ -107,7 +107,8 @@ describe("processImage with alt text, focal point and crop", () => {
       // 0.3 of the original is (0.3 - 0.1875) / 0.625 = 18% of the cut image.
       objectPosition: "18% 50%",
     });
-  });
+    // Encoding the photo takes seconds on a busy machine, as in the tests above.
+  }, 60_000);
 
   it("has empty alt text and no position without them", async () => {
     const result = await processImage(
@@ -117,7 +118,7 @@ describe("processImage with alt text, focal point and crop", () => {
 
     expect(result.image.alt).toBe("");
     expect(result.image).not.toHaveProperty("objectPosition");
-  });
+  }, 60_000);
 });
 
 describe("imageForDepth", () => {

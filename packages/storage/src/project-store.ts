@@ -572,6 +572,11 @@ export class ProjectStore {
     return this.#db.transaction(() => this.#insertBlob(data, mime))();
   }
 
+  /** Whether a blob is stored under `hash`, without reading it. */
+  hasBlob(hash: string): boolean {
+    return this.#prepare("SELECT 1 FROM blobs WHERE hash = ?").get(hash) !== undefined;
+  }
+
   /** The blob stored under `hash`, or `undefined` if there is none. */
   readBlob(hash: string): StoredBlob | undefined {
     const row = this.#prepare("SELECT mime, data FROM blobs WHERE hash = ?").get(hash);
