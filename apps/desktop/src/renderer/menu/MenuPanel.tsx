@@ -19,7 +19,7 @@ import {
   MousePointerClickIcon,
   PlusIcon,
 } from "lucide-react";
-import { type DragEvent, type KeyboardEvent, useRef, useState } from "react";
+import { type DragEvent, type KeyboardEvent, useMemo, useRef, useState } from "react";
 import { LinkDialog } from "../links/LinkDialog.js";
 import type { LinkFieldChange } from "../links/link-change.js";
 import type { PageTarget } from "../links/link-targets.js";
@@ -127,7 +127,11 @@ export function MenuPanel({ site, linkContext, actions }: MenuPanelProps) {
     (dialog?.kind === "addLink" ||
       dialog?.kind === "addButton" ||
       (editing !== undefined && editing.kind !== "page" && editing.kind !== "group"));
-  const links = linkOpen ? linkContext() : { site, targets: [] };
+  // Read once per opening, not on every keystroke in the dialog.
+  const links = useMemo(
+    () => (linkOpen && dialog !== null ? linkContext() : { site, targets: [] }),
+    [linkOpen, dialog, linkContext, site],
+  );
 
   const focusRow = (id: MenuItemId) =>
     listRef.current?.querySelector<HTMLElement>(`[data-menu-item="${CSS.escape(id)}"]`)?.focus();

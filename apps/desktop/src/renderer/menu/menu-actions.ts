@@ -170,7 +170,16 @@ export function editMenuLink(
   const link = change.link;
   const next = cleanLabel(label);
   const site = session.history.document.getState();
-  if (link === undefined || next === "") return;
+  const kind = menuItem(site, id)?.kind;
+  if (
+    link === undefined ||
+    next === "" ||
+    kind === undefined ||
+    kind === "page" ||
+    kind === "group"
+  ) {
+    return;
+  }
   editItem(
     session,
     id,
