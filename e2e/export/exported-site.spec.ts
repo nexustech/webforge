@@ -132,14 +132,11 @@ test.describe("exported site from disk", () => {
     await expect(dropdown).toHaveAttribute("aria-expanded", "false");
     await expect(navigation.getByRole("link", { name: "Find us" })).toBeHidden();
 
-    // So does tabbing on past its links.
+    // So does focus moving on past it (by focus(): WebKit doesn't tab to links by default).
     await dropdown.focus();
     await page.keyboard.press("Enter");
     await expect(dropdown).toHaveAttribute("aria-expanded", "true");
-    await page.keyboard.press("Tab");
-    await page.keyboard.press("Tab");
-    await page.keyboard.press("Tab");
-    await expect(navigation.getByRole("link", { name: "Order a cake" })).toBeFocused();
+    await navigation.getByRole("link", { name: "Order a cake" }).focus();
     await expect(dropdown).toHaveAttribute("aria-expanded", "false");
   });
 
