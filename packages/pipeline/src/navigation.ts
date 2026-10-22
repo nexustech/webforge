@@ -20,15 +20,18 @@ export type NavigationSite = {
  * or title unless it has a name of its own; links, sections and buttons go where their link goes;
  * dropdowns hold their items. An item is left out when it is hidden in the menu, or its page is
  * hidden from navigation in Page Settings ("Page not found" always is), as is a dropdown left
- * empty. A link that goes nowhere (its page deleted) is left out too and reported through
- * `broken`. Without a menu, the navigation lists the pages in order. The export and the editor's
- * canvas both use it, so the canvas shows the navigation the export will have.
+ * empty. A link that goes nowhere (its page deleted, or its document deleted from Media) is left
+ * out too and reported through `broken`. A link to a document goes to its exported file, as
+ * `pathOfFile` gives it (1.28). Without a menu, the navigation lists the pages in order. The
+ * export and the editor's canvas both use it, so the canvas shows the navigation the export will
+ * have.
  */
 export function navigationFor(
   site: NavigationSite,
   page: NavigationPage,
   prefix: string,
   broken: (detail: string) => void,
+  pathOfFile?: (mediaId: string) => string | undefined,
 ): NavItem[] {
   const shown = (other: NavigationPage) => other.hideFromNavigation !== true;
   const pageLink = (other: NavigationPage, id: string, label?: string): NavLink => ({
@@ -50,9 +53,10 @@ export function navigationFor(
         ? undefined
         : pageLink(target, item.id, item.label);
     }
-    const href = hrefFor(item.link, (id) => pages.get(id)?.path, prefix);
+    const href = hrefFor(item.link, (id) => pages.get(id)?.path, prefix, pathOfFile);
     if (href === undefined) {
-      broken(item.link.kind === "page" ? item.link.pageId : item.link.kind);
+      const { link } = item;
+      broken(link.kind === "page" ? link.pageId : link.kind === "file" ? link.mediaId : link.kind);
       return undefined;
     }
     const link = item.link;
@@ -67,6 +71,7 @@ export function navigationFor(
       current,
       ...(item.kind === "button" ? { button: true } : {}),
       ...(link.newTab === true ? { newTab: true } : {}),
+      ...(link.kind === "file" && link.download === true ? { download: true } : {}),
     };
   };
 

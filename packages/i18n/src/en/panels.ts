@@ -80,7 +80,6 @@ export const panels = {
   "link.none": "No link",
   "link.missingPage": "A page that was deleted",
   "link.pageSection": "{page} › {section}",
-  "link.file": "A file",
   "link.add": "Add Link…",
   "link.edit": "Change Link…",
   "link.remove": "Remove Link",

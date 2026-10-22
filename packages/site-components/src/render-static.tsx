@@ -1,4 +1,11 @@
-import { imageValueSchema, isNodeDoc, type NodeDoc, rewriteRichTextLinks } from "@webforge/model";
+import {
+  imageValueSchema,
+  isNodeDoc,
+  linkValueSchema,
+  type NodeDoc,
+  rewriteRichTextLinks,
+  richTextFileLinks,
+} from "@webforge/model";
 import type { ComponentType, ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import {
@@ -85,6 +92,30 @@ export function mediaUsedBy(nodes: readonly NodeDoc[], library: ComponentLibrary
       const placed = field.kind === "media" ? imageValueSchema.safeParse(node.props[name]) : null;
       if (placed?.success === true) {
         ids.add(placed.data.mediaId);
+      }
+    }
+  });
+  return ids;
+}
+
+/**
+ * The Media ids of the documents that `nodes` link to in `link` fields and in rich text (1.28):
+ * the export copies these, and only these, to `files/`.
+ */
+export function documentsLinkedBy(
+  nodes: readonly NodeDoc[],
+  library: ComponentLibrary,
+): Set<string> {
+  const ids = new Set<string>();
+  walkNodes(nodes, library, (node, def) => {
+    for (const [name, field] of Object.entries(def.fields)) {
+      const value = node.props[name];
+      if (field.kind === "richtext" && typeof value === "string") {
+        for (const link of richTextFileLinks(value)) ids.add(link.mediaId);
+      }
+      const link = field.kind === "link" ? linkValueSchema.safeParse(value) : null;
+      if (link?.success === true && link.data.kind === "file") {
+        ids.add(link.data.mediaId);
       }
     }
   });

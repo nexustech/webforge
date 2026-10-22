@@ -76,8 +76,15 @@ export function newAnchorFor(site: SiteDoc, pageId: PageId, label: string): stri
   return anchor;
 }
 
-/** A link in a few words, for its field: "About us", "About us › Opening times", "info@…". */
-export function describeLink(link: LinkValue | undefined, targets: readonly PageTarget[]): string {
+/**
+ * A link in a few words, for its field: "About us", "About us › Opening times", "info@…", or a
+ * document's file name ("Price list.pdf") from `media`.
+ */
+export function describeLink(
+  link: LinkValue | undefined,
+  targets: readonly PageTarget[],
+  media: SiteDoc["media"] = {},
+): string {
   if (link === undefined) {
     return t("link.none");
   }
@@ -96,7 +103,9 @@ export function describeLink(link: LinkValue | undefined, targets: readonly Page
       return link.number;
     case "url":
       return link.href;
-    case "file":
-      return t("link.file");
+    case "file": {
+      const document = Object.hasOwn(media, link.mediaId) ? media[link.mediaId] : undefined;
+      return document === undefined ? t("link.missingFile") : document.fileName;
+    }
   }
 }

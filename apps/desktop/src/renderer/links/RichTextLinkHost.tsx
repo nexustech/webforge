@@ -130,13 +130,12 @@ export function RichTextLinkHost({
       targets={request === null ? [] : linkTargets(site, session.library)}
       onSave={(change) => {
         if (request === null) return;
-        const href = change.link === undefined ? undefined : richTextHref(change.link);
-        if (change.link === undefined || href === undefined) {
-          request.answer(change.link === undefined ? null : undefined);
+        if (change.link === undefined) {
+          request.answer(null);
           return;
         }
         giveAnchor(session, site, change, request.at);
-        request.answer({ href, newTab: change.link.newTab === true });
+        request.answer({ href: richTextHref(change.link), newTab: change.link.newTab === true });
       }}
       onCancel={() => request?.answer(undefined)}
     />

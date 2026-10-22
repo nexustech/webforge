@@ -4,6 +4,7 @@ import { siteLibrary, starterLayout, starterPage } from "./catalogue.js";
 import { EDITOR_RENDER_CONTEXT, type RenderContext, type ResolvedImage } from "./library.js";
 import {
   behavioursUsedBy,
+  documentsLinkedBy,
   mediaUsedBy,
   renderNodesToHtml,
   UnknownComponentError,
@@ -136,6 +137,38 @@ describe("renderNodesToHtml", () => {
       '<p><a href="page-about.html">About</a> ' +
         '<a href="https://example.com" target="_blank" rel="noopener">Web</a> ' +
         '<a href="https://example.com/x">Top</a></p>',
+    );
+  });
+
+  it("points rich text's links to documents at their files, saved when so set (1.28)", () => {
+    const documents: RenderContext = {
+      ...context,
+      href: (link) =>
+        link.kind === "file" && link.mediaId === "menu" ? `files/${link.mediaId}.pdf` : "#",
+    };
+    const nodes: NodeDoc[] = [
+      {
+        type: "Text",
+        props: {
+          id: "t",
+          text:
+            '<p><a target="_blank" href="webforge:file/menu">Menu</a> ' +
+            '<a href="webforge:file/menu?download">Save</a> ' +
+            '<a href="webforge:file/gone?download">Gone</a> ' +
+            '<a href="https://example.com" download="evil.exe">Web</a> ' +
+            '<a href="about.html" download>Page</a></p>',
+        },
+      },
+    ];
+
+    expect(renderNodesToHtml(nodes, siteLibrary, documents)).toContain(
+      '<p><a href="files/menu.pdf" target="_blank" rel="noopener">Menu</a> ' +
+        '<a href="files/menu.pdf" download>Save</a> ' +
+        // `download` only on a document's file: never on `#` (a deleted document), a web address
+        // or a page, where it would save that page instead.
+        '<a href="#">Gone</a> ' +
+        '<a href="https://example.com">Web</a> ' +
+        '<a href="about.html">Page</a></p>',
     );
   });
 
@@ -394,6 +427,18 @@ describe("tree helpers", () => {
     // A page path typed before link fields, and no link at all.
     expect(render("about")).toContain('href="about.html"');
     expect(render(undefined)).toContain('href="#"');
+  });
+
+  it("documentsLinkedBy finds the documents link fields and rich text point to (1.28)", () => {
+    const nodes: NodeDoc[] = [
+      { type: "Text", props: { id: "t", text: '<p><a href="webforge:file/menu">Menu</a></p>' } },
+      { type: "Hero", props: { id: "a", buttonLink: { kind: "file", mediaId: "prices" } } },
+      { type: "Hero", props: { id: "b", buttonLink: { kind: "url", href: "https://a.b" } } },
+      // Not a link field: a document id elsewhere isn't a link.
+      { type: "Hero", props: { id: "c", image: { mediaId: "menu" } } },
+    ];
+
+    expect([...documentsLinkedBy(nodes, siteLibrary)]).toEqual(["menu", "prices"]);
   });
 
   it("mediaUsedBy finds media ids in media fields only", () => {

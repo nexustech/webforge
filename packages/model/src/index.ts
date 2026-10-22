@@ -63,8 +63,10 @@ export type { Breakpoint, Responsive, ResponsiveValue } from "./responsive.js";
 export { isResponsiveValue, resolveResponsive, responsiveSchema } from "./responsive.js";
 export type { RichTextLink } from "./rich-text-links.js";
 export {
+  RICH_TEXT_FILE_LINK,
   RICH_TEXT_PAGE_LINK,
   rewriteRichTextLinks,
+  richTextFileLinks,
   richTextHref,
   richTextLinkValue,
   richTextPageLinks,
@@ -96,7 +98,7 @@ export {
   siteDocuments,
   siteFromDocuments,
 } from "./site-documents.js";
-export type { MediaItem, SitePage, SiteSnapshot } from "./site-snapshot.js";
+export type { DocumentItem, MediaItem, SitePage, SiteSnapshot } from "./site-snapshot.js";
 export { siteSnapshotSchema } from "./site-snapshot.js";
 export { slugify, uniqueSlug } from "./slugs.js";
 export { siteToSnapshot } from "./to-snapshot.js";

@@ -1,4 +1,5 @@
 import { t } from "@webforge/i18n";
+import { isDocumentPath } from "../document-path.js";
 import { boundText, type ComponentDef, type NavLink, type RenderContext } from "../library.js";
 
 /** Three-line menu icon, drawn inline so the site needs no icon font (C8). */
@@ -48,6 +49,7 @@ function NavLinkItem({ link }: { readonly link: NavLink }) {
         aria-current={link.current ? "page" : undefined}
         className={link.button === true ? "btn btn-primary btn-sm md:ml-2" : undefined}
         {...(link.newTab === true ? { target: "_blank", rel: "noopener" } : {})}
+        {...(link.download === true && isDocumentPath(link.href) ? { download: "" } : {})}
       >
         {link.label}
       </a>
