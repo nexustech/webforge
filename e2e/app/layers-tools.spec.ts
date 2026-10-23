@@ -67,6 +67,8 @@ test("opens the same menu on the canvas and in Layers, acting on what was right-
     "Rename",
     "Duplicate",
     "Save as shared section…",
+    "Copy Style",
+    "Paste Style",
     "Delete",
   ]);
 
@@ -134,6 +136,8 @@ test("in Content mode, leaves the canvas's right-clicks alone and Layers' menu t
     ["Rename", true],
     ["Duplicate", false],
     ["Save as shared section…", false],
+    ["Copy Style", false],
+    ["Paste Style", false],
     ["Delete", false],
   ]);
 });
