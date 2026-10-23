@@ -796,8 +796,15 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
 
   /** The fields of component `type`, from the library. */
   const fieldsOf = (type: string) => Object.values(library?.components[type]?.fields ?? {});
-  /** *Edit* and *Hide* on the selected element's bar (F-ED-25). */
-  const elementActions: ElementActions = {
+  /**
+   * *Edit* and *Hide* on the selected element's bar (F-ED-25), for the page as it was shown: the
+   * bar asks them while drawing, so they answer for that page only (R2).
+   */
+  const elementActionsFor = (
+    shownPage: PageDoc,
+    shownLayout: LayoutDoc,
+    shownShared: SharedSectionsDoc,
+  ): ElementActions => ({
     canEdit: (type) =>
       fieldsOf(type).some(
         (field) =>
@@ -812,25 +819,54 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       }
     },
     canHide: (id) => {
-      if (findNode(page, id) !== undefined) return true;
+      if (findNode(shownPage, id) !== undefined) return true;
       // A linked copy is one of the page's own, shown by its section's id.
-      const shown = findNode(composePage(page, layout, shared), id);
+      const shown = findNode(composePage(shownPage, shownLayout, shownShared), id);
       return (
-        shown !== undefined && copyShownBy(shown, copiesOn(page.content), shared) !== undefined
+        shown !== undefined &&
+        copyShownBy(shown, copiesOn(shownPage.content), shownShared) !== undefined
       );
     },
     toggleHidden: (id) => elementRequests.emit({ kind: "toggleHidden", nodeId: id }),
+  });
+
+  /**
+   * What the bars ask while drawing, made once per change of the page: a new page gives them new
+   * functions, so they ask again (R2). The lock is on the shared Header or Footer itself (F-ED-7).
+   */
+  let barProps: {
+    readonly page: PageDoc;
+    readonly layout: LayoutDoc;
+    readonly shared: SharedSectionsDoc;
+    readonly isLocked: (id: string) => boolean;
+    readonly elementActions: ElementActions;
+  } | null = null;
+  const currentBarProps = () => {
+    if (barProps?.page !== page || barProps.layout !== layout || barProps.shared !== shared) {
+      const shownLayout = layout;
+      barProps = {
+        page,
+        layout,
+        shared,
+        isLocked: (id) => isSharedRegion(shownLayout, id),
+        elementActions: elementActionsFor(page, layout, shared),
+      };
+    }
+    return barProps;
   };
 
-  /** The quick actions, locked on the shared Header or Footer itself (F-ED-7). */
+  /** The quick actions, for the page as it is now. */
   function SharedAwareActionBar(props: ComponentProps<typeof QuickActionBar>) {
+    // Through Puck's store, which changes with every page Puck shows: never a value kept from an
+    // earlier drawing.
+    const { isLocked, elementActions } = usePuck(currentBarProps);
     // While several elements are selected, the bar names the one shown: what it would do to one,
     // the Edit menu does to all (1.31).
     const several = useSyncExternalStore(alsoSelectedChanged.add, () => alsoSelected.length > 0);
     return (
       <QuickActionBar
         {...props}
-        isLocked={(id) => isSharedRegion(layout, id) || several}
+        isLocked={(id) => several || isLocked(id)}
         elementActions={elementActions}
       />
     );

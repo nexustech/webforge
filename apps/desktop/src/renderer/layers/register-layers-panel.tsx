@@ -86,7 +86,7 @@ export function registerLayersPanel(
         selectedId={selectedId}
         alsoSelected={alsoSelected}
         layoutLocked={layoutLocked}
-        menu={(menu) => <ElementMenu {...menu} />}
+        menu={ElementMenu}
         actions={{
           select: (id) => ui.setState({ nodeId: id }),
           toggle: (id) => toggleSelected(ui, id),
