@@ -215,6 +215,13 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
+      - name: Screen size (Windows)
+        # Windows runners start at 1024 × 768, smaller than the app's 1280 × 800 window, so the
+        # window shrank and clicks near its edges missed.
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Set-DisplayResolution -Width 1920 -Height 1080 -Force
+
       - name: Allow the Chromium sandbox (Linux)
         # Ubuntu 24.04 restricts unprivileged user namespaces, which Electron's sandbox needs.
         if: runner.os == 'Linux'
@@ -497,6 +504,12 @@ jobs:
 
       - name: Install
         run: pnpm install --frozen-lockfile
+
+      - name: Screen size (Windows)
+        # Windows runners start at 1024 × 768, smaller than the app's 1280 × 800 window.
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Set-DisplayResolution -Width 1920 -Height 1080 -Force
 
       - name: Package (electron-builder --dir) and test the packaged app
         run: pnpm e2e:packaged
