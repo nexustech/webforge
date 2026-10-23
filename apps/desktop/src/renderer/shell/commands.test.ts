@@ -195,6 +195,9 @@ describe("shortcuts", () => {
     expect(formatShortcut("Escape", false)).toBe("Esc");
     expect(formatShortcut("Enter", true)).toBe("↩");
     expect(formatShortcut("?", false)).toBe("?");
+    expect(formatShortcut("Shift+Space", false)).toBe("Shift+Space");
+    expect(formatShortcut("Shift+Space", true)).toBe("⇧Space");
+    expect(matchesShortcut(key({ key: " ", shiftKey: true }), "Shift+Space", false)).toBe(true);
   });
 
   it("knows a Mac keyboard has no Delete key", () => {

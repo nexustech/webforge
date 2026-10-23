@@ -9,7 +9,7 @@ import { COMMAND_IDS } from "./command-ids.js";
  * (Preview, Publish, Save version, Paste as linked copy) are kept for them here.
  *
  * A key is `Mod+Alt+Shift+Name`, the name being `KeyboardEvent.key` (`ArrowUp`, `Backspace`, `/`)
- * or `Plus` for `+`. Symbols match whichever Shift their keyboard layout needs (`?`, `Mod+0` on
+ * or `Plus` for `+` and `Space` for a space. Symbols match whichever Shift their keyboard layout needs (`?`, `Mod+0` on
  * AZERTY).
  */
 
@@ -110,6 +110,9 @@ export const OTHER_SHORTCUTS: readonly OtherShortcut[] = [
   { label: "shortcuts.bold", group: "text", keys: ["Mod+B"] },
   { label: "shortcuts.italic", group: "text", keys: ["Mod+I"] },
   { label: "shortcuts.newLine", group: "text", keys: ["Shift+Enter"] },
+  { label: "shortcuts.link", group: "text", keys: ["Mod+K"] },
+  { label: "shortcuts.splitText", group: "text", keys: ["Alt+Enter"] },
+  { label: "shortcuts.nonBreakingSpace", group: "text", keys: ["Shift+Space"] },
   { label: "shortcuts.layersFocus", group: "layers", keys: ["ArrowUp", "ArrowDown"] },
   { label: "shortcuts.layersOpen", group: "layers", keys: ["ArrowRight", "ArrowLeft"] },
   { label: "shortcuts.layersParent", group: "layers", keys: ["Mod+ArrowUp"] },

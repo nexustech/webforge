@@ -106,7 +106,7 @@ test("leaves keys to a text field being typed in, except the app's own Mod keys"
   await expect(palette()).toBeVisible();
 });
 
-test("leaves ? and Mod+K to rich text edited on the canvas", async () => {
+test("leaves ? to rich text edited on the canvas, where Mod+K links", async () => {
   const text = canvas().getByText("Tell visitors what you do and why they will love it.");
   const editor = canvas().locator(".site-text .ProseMirror");
   // Clicking the text edits it (F-ED-3).
@@ -120,4 +120,41 @@ test("leaves ? and Mod+K to rich text edited on the canvas", async () => {
   await expect(editor).toContainText("love it.?");
   await expect(sheet()).toBeHidden();
   await expect(palette()).toBeHidden();
+});
+
+test("in rich text: Mod+K links, Shift+Space types a non-breaking space, Alt+Enter splits the element", async () => {
+  const text = canvas().getByText("Tell visitors what you do and why they will love it.");
+  const editor = canvas().locator(".site-text .ProseMirror");
+  await text.click();
+  await editor.click();
+
+  // Mod+K with a word selected asks for the link, as the toolbar's Link… does.
+  await page.keyboard.press("End");
+  await page.keyboard.press("Shift+ControlOrMeta+ArrowLeft");
+  // Once the editor has the selection: the toolbar's Link… turns on with it.
+  await expect(
+    canvas().locator("[data-puck-rte-menu]").getByRole("button", { name: "Link…" }),
+  ).toBeEnabled();
+  await page.keyboard.press("ControlOrMeta+k");
+  const link = page.getByRole("dialog", { name: "Link" });
+  await expect(link).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(link).toHaveCount(0);
+
+  await editor.click();
+  await page.keyboard.press("Home");
+  await page.keyboard.type("Open", { delay: 20 });
+  await page.keyboard.press("Shift+Space");
+  await expect(editor).toContainText("Open Tell visitors");
+
+  // Split just before "Tell": one step, the second half in an element of its own.
+  await page.keyboard.press("Alt+Enter");
+  await expect(canvas().locator(".site-text")).toHaveCount(2);
+  await expect(canvas().locator(".site-text").first()).toHaveText("Open ");
+  await expect(canvas().locator(".site-text").nth(1)).toHaveText(
+    "Tell visitors what you do and why they will love it.",
+  );
+  await page.keyboard.press("Escape");
+  await page.keyboard.press("ControlOrMeta+z");
+  await expect(canvas().locator(".site-text")).toHaveCount(1);
 });

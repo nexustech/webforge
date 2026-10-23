@@ -31,6 +31,11 @@ const F_ED_27: readonly (readonly [string, string])[] = [
   ["Mod+2", COMMAND_IDS.tabletView],
   ["Mod+3", COMMAND_IDS.mobileView],
   ["?", COMMAND_IDS.shortcuts],
+  // In text: the rich-text editor's own (part 2).
+  ["Mod+K", "shortcuts.link"],
+  ["Shift+Enter", "shortcuts.newLine"],
+  ["Alt+Enter", "shortcuts.splitText"],
+  ["Shift+Space", "shortcuts.nonBreakingSpace"],
 ];
 
 describe("the shortcut standard (F-ED-27)", () => {

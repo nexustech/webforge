@@ -81,6 +81,7 @@ export const shell = {
   "keys.delete": "Delete",
   "keys.enter": "Enter",
   "keys.escape": "Esc",
+  "keys.space": "Space",
   "keys.or": "or",
 
   // The Keyboard shortcuts sheet (F-ED-27): Help menu and `?`.
@@ -97,6 +98,9 @@ export const shell = {
   "shortcuts.bold": "Bold",
   "shortcuts.italic": "Italic",
   "shortcuts.newLine": "New line",
+  "shortcuts.link": "Link",
+  "shortcuts.splitText": "Split into two elements",
+  "shortcuts.nonBreakingSpace": "Non-breaking space",
   "shortcuts.layersFocus": "Previous or next layer",
   "shortcuts.layersOpen": "Open or close a layer",
   "shortcuts.layersParent": "Select the parent",

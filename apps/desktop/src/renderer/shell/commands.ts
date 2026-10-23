@@ -211,8 +211,8 @@ type ParsedShortcut = {
 function parseShortcut(shortcut: string): ParsedShortcut {
   const parts = shortcut.split("+");
   const name = parts.pop() ?? "";
-  // `+` can't be written after a `+`.
-  const key = (name === "Plus" ? "+" : name).toLowerCase();
+  // `+` can't be written after a `+`, nor a space read.
+  const key = (name === "Plus" ? "+" : name === "Space" ? " " : name).toLowerCase();
   const modifiers = new Set(parts.map((part) => part.toLowerCase()));
   return {
     key,
@@ -275,6 +275,7 @@ const OTHER_KEYS: Readonly<Record<string, () => string>> = {
   delete: () => t("keys.delete"),
   enter: () => t("keys.enter"),
   escape: () => t("keys.escape"),
+  " ": () => t("keys.space"),
   "-": () => "−",
 };
 
@@ -283,7 +284,8 @@ export function formatShortcut(shortcut: string, mac = isMac()): string {
   const { key, mod, shift, alt } = parseShortcut(shortcut);
   const plain = key.length === 1 ? key.toUpperCase() : key[0]?.toUpperCase() + key.slice(1);
   if (mac) {
-    return `${alt ? "⌥" : ""}${shift ? "⇧" : ""}${mod ? "⌘" : ""}${MAC_KEYS[key] ?? plain}`;
+    const name = key === " " ? t("keys.space") : (MAC_KEYS[key] ?? plain);
+    return `${alt ? "⌥" : ""}${shift ? "⇧" : ""}${mod ? "⌘" : ""}${name}`;
   }
   const name = OTHER_KEYS[key]?.() ?? plain;
   return [mod && t("keys.ctrl"), alt && t("keys.alt"), shift && t("keys.shift"), name]

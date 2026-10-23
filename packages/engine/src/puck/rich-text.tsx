@@ -1,13 +1,10 @@
 import { type Field, RichTextMenu } from "@puckeditor/core";
+import type { Extensions } from "@tiptap/core";
 import { t } from "@webforge/i18n";
-import type { RichTextLink } from "@webforge/model";
 import { RICH_TEXT_FILE_LINK, RICH_TEXT_PAGE_LINK } from "@webforge/model";
 import { LinkIcon, UnlinkIcon } from "lucide-react";
 import { useEffect, useState } from "react";
-import type { LinkPicker } from "../canvas-engine.js";
-
-/** Asks for a link for the rich text being edited; see {@link LinkPicker}. */
-type PickLink = (current: RichTextLink | null) => ReturnType<LinkPicker>;
+import { type PickLink, pickLinkInto } from "./text-keys.js";
 
 /** Puck's rich-text field, with the options and menus it takes. */
 type RichtextField = Extract<Field, { type: "richtext" }>;
@@ -79,18 +76,7 @@ function LinkControl({ editor, pick }: { editor: ToolbarProps["editor"]; pick: P
       disabled={editor === null || (editor.state.selection.empty && !isLink)}
       onClick={async (event) => {
         event.stopPropagation();
-        if (editor === null) return;
-        const { href, target } = editor.getAttributes("link");
-        const current = typeof href === "string" ? { href, newTab: target === "_blank" } : null;
-        const next = await pick(current);
-        const chain = editor.chain().focus().extendMarkRange("link");
-        if (next === null) {
-          chain.unsetLink().run();
-        } else if (next !== undefined) {
-          chain.setLink({ href: next.href, target: next.newTab ? "_blank" : null }).run();
-        } else {
-          chain.run();
-        }
+        if (editor !== null) await pickLinkInto(editor, pick);
       }}
     />
   );
@@ -143,11 +129,15 @@ export function createFormatToolbar(picker: () => PickLink | null) {
 /** The format toolbar without links, for an editor no app picks links for. */
 export const FormatToolbar = createFormatToolbar(() => null);
 
-/** Puck's field for rich text, edited on the canvas when `inline`, with `toolbar` over it. */
+/**
+ * Puck's field for rich text, edited on the canvas when `inline`, with `toolbar` over it and
+ * `extensions` in its editor (the text keys).
+ */
 export function richTextField(
   label: string,
   inline: boolean,
   toolbar: RichtextField["renderInlineMenu"] = FormatToolbar,
+  extensions: Extensions = [],
 ): RichtextField {
   return {
     type: "richtext",
@@ -155,5 +145,6 @@ export function richTextField(
     contentEditable: inline,
     options: RICH_TEXT_OPTIONS,
     renderInlineMenu: toolbar,
+    ...(extensions.length === 0 ? {} : { tiptap: { extensions } }),
   };
 }
