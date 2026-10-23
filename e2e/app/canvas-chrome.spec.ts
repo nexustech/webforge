@@ -216,6 +216,30 @@ test.describe("keyboard and floating add", () => {
     await expect(canvas().locator("h1")).toHaveText(`${STARTER_HEADING}!`);
   });
 
+  test("Ctrl/Cmd-click selects several elements; a plain click one again (1.31)", async () => {
+    const panel = page.getByRole("region", { name: "Right panels" });
+    await selectHeading();
+    await canvas()
+      .getByText(STARTER_TEXT)
+      .click({ modifiers: ["ControlOrMeta"] });
+
+    await expect(panel.getByText("2 elements selected")).toBeVisible();
+    // The other selected element is outlined too (a stylesheet, which has no text on screen).
+    const alsoSelected = () =>
+      canvas()
+        .locator("style[data-webforge-also-selected]")
+        .evaluate((style) => style.textContent ?? "");
+    await expect.poll(alsoSelected).toContain('[data-puck-component="heading-1"]');
+    // Delete acts on one element until it acts on all (part 2): nothing goes.
+    await page.keyboard.press("Delete");
+    await expect(canvas().locator("h1")).toHaveCount(1);
+    await expect(steps()).toHaveText(["Opened page"]);
+
+    await selectHeading();
+    await expect(panel.getByRole("heading", { name: "Heading", exact: true })).toBeVisible();
+    await expect.poll(alsoSelected).toBe("");
+  });
+
   test("adds a section with the floating + below a section, chosen in the Add panel", async () => {
     const section = canvas().locator(".site-section");
     const box = await section.boundingBox();

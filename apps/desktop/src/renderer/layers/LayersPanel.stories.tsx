@@ -15,6 +15,8 @@ const layer = (id: string, kind: string, extra: Partial<Layer> = {}): Layer => (
 const noop = () => undefined;
 const actions: LayersPanelActions = {
   select: noop,
+  toggle: noop,
+  selectMany: noop,
   rename: noop,
   setHidden: noop,
   move: noop,

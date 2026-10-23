@@ -23,8 +23,12 @@ export function registerElementCommands(
 } {
   let locked = false;
   /** Whether element `id` can be hidden or shown now. */
+  // Not yet for several selected elements (1.31 part 2 hides them all as one step).
   const canHide = (id: string | null) =>
-    !locked && id !== null && shownLayer(session, id) !== undefined;
+    !locked &&
+    id !== null &&
+    (session.ui.getState().others ?? []).length === 0 &&
+    shownLayer(session, id) !== undefined;
   const hide = (id: string) => {
     if (!canHide(id)) return;
     beforeAction();

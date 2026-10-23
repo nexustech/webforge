@@ -29,6 +29,10 @@ import { type Layer, layerItem } from "./layers.js";
 /** What the Layers panel can do; the host binds them to the editor session and its commands. */
 export type LayersPanelActions = {
   select(id: string): void;
+  /** Ctrl/Cmd-click (1.31): adds the layer to the selection, or takes it out. */
+  toggle(id: string): void;
+  /** Shift-click (1.31): selects these layers, the first the one shown. */
+  selectMany(ids: readonly string[]): void;
   rename(id: string, name: string): void;
   setHidden(id: string, hidden: boolean): void;
   /** Moves a layer to `index` among its siblings. */
@@ -44,6 +48,8 @@ export type LayersPanelActions = {
 export type LayersPanelProps = {
   readonly layers: readonly Layer[];
   readonly selectedId: string | null;
+  /** The other selected layers, while several are (1.31). */
+  readonly alsoSelected?: readonly string[];
   readonly actions: LayersPanelActions;
   /**
    * Content mode locks the layout (M3): no dragging, moving or hiding. Selecting and naming layers
@@ -151,6 +157,7 @@ const DRAG_TYPE = "application/x-webforge-layer";
 export function LayersPanel({
   layers,
   selectedId,
+  alsoSelected = [],
   actions,
   layoutLocked = false,
   menu,
@@ -301,7 +308,13 @@ export function LayersPanel({
         {rows.length === 0 ? (
           <p className="p-4 text-center text-xs text-muted-foreground">{t("layers.noMatches")}</p>
         ) : null}
-        <div ref={treeRef} role="tree" aria-label={t("layers.title")} className="p-1">
+        <div
+          ref={treeRef}
+          role="tree"
+          aria-label={t("layers.title")}
+          aria-multiselectable
+          className="p-1"
+        >
           {rows.map((row) => {
             const { layer } = row;
             const linked =
@@ -310,7 +323,7 @@ export function LayersPanel({
                 : t("layers.linkedCopy", {
                     name: t("history.namedItem", { name: layer.sharedSection }),
                   });
-            const isSelected = layer.id === selectedId;
+            const isSelected = layer.id === selectedId || alsoSelected.includes(layer.id);
             const focusable = isSelected || (selectedRow === undefined && row === rows[0]);
             // While a layer is dragged, the rows it can't go next to (outside its own list).
             const notAllowed =
@@ -343,7 +356,22 @@ export function LayersPanel({
                         : "shadow-[inset_0_2px_0_var(--ring)]"),
                 )}
                 style={{ paddingLeft: `${(row.depth - 1) * 12 + 4}px` }}
-                onClick={() => actions.select(layer.id)}
+                onClick={(event) => {
+                  if (event.ctrlKey || event.metaKey) {
+                    actions.toggle(layer.id);
+                  } else if (event.shiftKey && selectedRow !== undefined) {
+                    // The rows from the one shown to this one, as they are listed (1.31).
+                    const from = rows.indexOf(selectedRow);
+                    const to = rows.indexOf(row);
+                    const range = rows.slice(Math.min(from, to), Math.max(from, to) + 1);
+                    actions.selectMany([
+                      layer.id,
+                      ...range.map((each) => each.layer.id).filter((id) => id !== layer.id),
+                    ]);
+                  } else {
+                    actions.select(layer.id);
+                  }
+                }}
                 onDoubleClick={() => setRenaming(layer.id)}
                 onContextMenu={(event) => {
                   if (menu === undefined) return;

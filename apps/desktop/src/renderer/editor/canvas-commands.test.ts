@@ -83,6 +83,24 @@ describe("registerCanvasCommands", () => {
     expect(engine.perform).toHaveBeenCalledWith("delete");
   });
 
+  it("turns the edits of one element off while several are selected (1.31)", () => {
+    const registry = createCommandRegistry();
+    const commands = registerCanvasCommands(registry, createFakeEngine(), () => undefined);
+    commands.setHasSelection(true);
+
+    commands.setSeveral(true);
+    const enabled = (id: string) => registry.get(id)?.enabled;
+    expect(
+      ["edit.duplicate", "edit.delete", "edit.moveUp", "edit.editText", "edit.clearText"].map(
+        enabled,
+      ),
+    ).toEqual([false, false, false, false, false]);
+    // Walking the page's tree selects from the one shown, ending the multi-selection.
+    expect(enabled("edit.selectParent")).toBe(true);
+    commands.setSeveral(false);
+    expect(enabled("edit.delete")).toBe(true);
+  });
+
   it("turns duplicate, delete and moves off while Content mode locks the layout (M3)", () => {
     const registry = createCommandRegistry();
     const engine = createFakeEngine();

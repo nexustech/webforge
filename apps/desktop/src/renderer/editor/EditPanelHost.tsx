@@ -183,7 +183,7 @@ export function EditPanelHost({
 }: EditPanelHostProps) {
   const { history, ui, library } = session;
   const site = useSyncExternalStore(history.document.subscribe, history.document.getState);
-  const { pageId, nodeId, viewport } = useSyncExternalStore(ui.subscribe, ui.getState);
+  const { pageId, nodeId, viewport, others = [] } = useSyncExternalStore(ui.subscribe, ui.getState);
   const target = fieldTarget(site, library, pageId, nodeId);
   const selectedId = target?.id;
   const breakpoint = breakpointOf(viewport);
@@ -215,6 +215,17 @@ export function EditPanelHost({
     run?.end();
   };
 
+  if (others.length > 0) {
+    // Several selected elements (1.31): editing their fields together comes later.
+    return (
+      <p
+        role="status"
+        className="flex h-full items-center justify-center p-4 text-center text-xs text-muted-foreground"
+      >
+        {t("editPanel.several", { count: others.length + 1 })}
+      </p>
+    );
+  }
   if (target === undefined) {
     return <EditPanel fields={[]} onChange={() => undefined} onCommit={() => undefined} />;
   }

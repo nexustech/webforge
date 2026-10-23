@@ -72,6 +72,8 @@ export const canvas = {
   "editPanel.content": "Content",
   "editPanel.style": "Style",
   "editPanel.empty": "Select an element to edit it",
+  // While several elements are selected (1.31).
+  "editPanel.several": "{count} elements selected",
   "editPanel.noFields": "Nothing to change here",
   // A value set for one device only (F-ED-4).
   "editPanel.override": "{device} only",

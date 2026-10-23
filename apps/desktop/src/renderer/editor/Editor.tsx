@@ -300,8 +300,11 @@ export function Editor({
     elementCommands.setLayoutLocked(modeRef.current !== "design");
     elementCommandsRef.current = elementCommands;
     const stopSelectionWatch = session.ui.subscribe((ui) => {
+      // Several selected elements (1.31): the edits that act on one are off until they act on all.
+      const several = (ui.others ?? []).length > 0;
       canvasCommands.setHasSelection(ui.nodeId !== null);
-      clipboardCommands.setHasSelection(ui.nodeId !== null);
+      canvasCommands.setSeveral(several);
+      clipboardCommands.setHasSelection(ui.nodeId !== null && !several);
     });
     let removeFrameShortcuts: (() => void) | undefined;
     const stopFrameWindow = engine.onFrameWindow((frameWindow) => {

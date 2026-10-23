@@ -29,10 +29,17 @@ const LAYERS: Layer[] = [
   layer("s2", { kind: "Section" }),
 ];
 
-function setUp(selectedId: string | null = "a", toolbar = true, layoutLocked = false) {
+function setUp(
+  selectedId: string | null = "a",
+  toolbar = true,
+  layoutLocked = false,
+  alsoSelected: readonly string[] = [],
+) {
   const command = () => (toolbar ? vi.fn() : undefined);
   const actions = {
     select: vi.fn(),
+    toggle: vi.fn(),
+    selectMany: vi.fn(),
     rename: vi.fn(),
     setHidden: vi.fn(),
     move: vi.fn(),
@@ -46,6 +53,7 @@ function setUp(selectedId: string | null = "a", toolbar = true, layoutLocked = f
     <LayersPanel
       layers={LAYERS}
       selectedId={selectedId}
+      alsoSelected={alsoSelected}
       actions={actions}
       layoutLocked={layoutLocked}
       menu={menu}
@@ -113,6 +121,28 @@ describe("LayersPanel (F-ED-12)", () => {
       ["a", 1],
       ["b", 0],
     ]);
+  });
+
+  it("selects several: Ctrl/Cmd-click adds or takes away, Shift-click a range (1.31)", async () => {
+    const { actions } = setUp("a", true, false, ["s2"]);
+    const rows = screen.getAllByRole("treeitem");
+
+    expect(screen.getByRole("tree").getAttribute("aria-multiselectable")).toBe("true");
+    expect(rows.map((row) => row.getAttribute("aria-selected"))).toEqual([
+      "false",
+      "true",
+      "false",
+      "false",
+      "true",
+    ]);
+    fireEvent.click(rows[2] as HTMLElement, { ctrlKey: true });
+    fireEvent.click(rows[2] as HTMLElement, { metaKey: true });
+    // From the one shown (a) to c, as listed: the clicked one shown.
+    fireEvent.click(rows[3] as HTMLElement, { shiftKey: true });
+
+    expect(actions.toggle.mock.calls).toEqual([["b"], ["b"]]);
+    expect(actions.selectMany.mock.calls).toEqual([[["c", "a", "b"]]]);
+    expect(actions.select).not.toHaveBeenCalled();
   });
 
   it("renames with F2 or a double-click; Enter keeps the name, Escape cancels", async () => {
@@ -209,6 +239,8 @@ describe("LayersPanel (F-ED-12)", () => {
         selectedId={null}
         actions={{
           select: vi.fn(),
+          toggle: vi.fn(),
+          selectMany: vi.fn(),
           rename: vi.fn(),
           setHidden: vi.fn(),
           move: vi.fn(),
@@ -260,6 +292,8 @@ describe("LayersPanel (F-ED-12)", () => {
         layers: LAYERS,
         actions: {
           select: vi.fn(),
+          toggle: vi.fn(),
+          selectMany: vi.fn(),
           rename: vi.fn(),
           setHidden: vi.fn(),
           move: vi.fn(),
@@ -378,6 +412,8 @@ describe("LayersPanel (F-ED-12)", () => {
           selectedId={null}
           actions={{
             select: vi.fn(),
+            toggle: vi.fn(),
+            selectMany: vi.fn(),
             rename: vi.fn(),
             setHidden: vi.fn(),
             move: vi.fn(),

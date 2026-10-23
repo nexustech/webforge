@@ -122,6 +122,19 @@ const NEEDS_SELECTION: ReadonlySet<CanvasAction> = new Set([
   "selectNextSibling",
 ]);
 
+/**
+ * Actions on the one element the canvas shows, off while several are selected (1.31): what changes
+ * the layout acts on all of them (part 2), and text is one element's.
+ */
+const ONE_ELEMENT: ReadonlySet<CanvasAction> = new Set([
+  "duplicate",
+  "delete",
+  "moveUp",
+  "moveDown",
+  "editText",
+  "clearText",
+]);
+
 /** Actions that change the layout, which Content mode locks (M3); editing text doesn't. */
 const CHANGES_LAYOUT: ReadonlySet<CanvasAction> = new Set([
   "duplicate",
@@ -147,14 +160,20 @@ export function registerCanvasCommands(
   readonly remove: () => void;
   readonly setHasSelection: (selected: boolean) => void;
   readonly setLayoutLocked: (locked: boolean) => void;
+  /** Whether several elements are selected (1.31). */
+  readonly setSeveral: (several: boolean) => void;
 } {
   let selected = false;
   let locked = false;
+  let several = false;
   const update = () => {
     for (const command of CANVAS_COMMANDS) {
       if (NEEDS_SELECTION.has(command.action)) {
         const layout = CHANGES_LAYOUT.has(command.action);
-        registry.update(command.id, { enabled: selected && !(layout && locked) });
+        const one = ONE_ELEMENT.has(command.action);
+        registry.update(command.id, {
+          enabled: selected && !(layout && locked) && !(one && several),
+        });
       }
     }
   };
@@ -187,6 +206,10 @@ export function registerCanvasCommands(
     },
     setLayoutLocked: (next) => {
       locked = next;
+      update();
+    },
+    setSeveral: (next) => {
+      several = next;
       update();
     },
   };

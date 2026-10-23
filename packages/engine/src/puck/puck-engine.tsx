@@ -25,7 +25,7 @@ import {
   type RenderContext,
   renderPage,
 } from "@webforge/site-components";
-import { type ComponentProps, type ReactNode, useEffect } from "react";
+import { type ComponentProps, type ReactNode, useEffect, useSyncExternalStore } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import type {
   CanvasContextMenu,
@@ -61,6 +61,7 @@ import { keepElementsEnabled } from "./enabled-elements.js";
 import { pageActions, type SlotsOf } from "./page-actions.js";
 import { createFormatToolbar } from "./rich-text.js";
 import { performOnSelected } from "./selected-actions.js";
+import { showAlsoSelected, watchAddingClicks } from "./selection-clicks.js";
 import { copiesOn, copyShownBy, foldCopies, shownInCopy } from "./shared-copies.js";
 import {
   composePage,
@@ -224,6 +225,8 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   let stopKeepingEnabled: (() => void) | null = null;
   /** Stops hiding Delete and Backspace from Puck in the editor window (see `delete-keys.ts`). */
   let stopHidingHostKeys: (() => void) | null = null;
+  /** Stops watching clicks that add to the selection in the editor window (iframe-less canvas). */
+  let stopHostClicks: (() => void) | null = null;
   const followMode = () => {
     stopKeepingEnabled?.();
     stopKeepingEnabled =
@@ -280,7 +283,24 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     (componentType) => library?.components[componentType]?.label ?? componentType,
   );
   const frameWindows = emitter<Window | null>();
-  const selections = emitter<string | null>();
+  /** Selection changes: `adding` for a Ctrl/Cmd/Shift-click that adds or takes away (1.31). */
+  const selections = emitter<{ readonly id: string | null; readonly adding: boolean }>();
+  /** The element a Ctrl/Cmd/Shift-click is on, which Puck is about to select (1.31). */
+  let addingClick: string | null = null;
+  /** The other selected elements while several are, outlined too (1.31). */
+  let alsoSelected: readonly string[] = [];
+  const alsoSelectedChanged = emitter<void>();
+  /** Watches clicks that add to the selection in `target` (see `selection-clicks.ts`). */
+  const watchClicks = (target: Window) =>
+    watchAddingClicks(target, (id) => {
+      // On the element selected already, Puck selects nothing new: it is reported here.
+      if (id !== null && id === selection) {
+        addingClick = null;
+        selections.emit({ id, adding: true });
+      } else {
+        addingClick = id;
+      }
+    });
   const canvasSizes = emitter<CanvasSize>();
   const viewports = emitter<Viewport>();
   const commandHandlers = new Set<HistoryCommandHandler>();
@@ -560,7 +580,9 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   const reportSelection = (id: string | null) => {
     if (id !== selection) {
       selection = id;
-      selections.emit(id);
+      const adding = id !== null && id === addingClick;
+      addingClick = null;
+      selections.emit({ id, adding });
     }
   };
 
@@ -649,10 +671,13 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
 
   /** The quick actions, locked on the shared Header or Footer itself (F-ED-7). */
   function SharedAwareActionBar(props: ComponentProps<typeof QuickActionBar>) {
+    // While several elements are selected, the bar names the one shown: what it would do to one,
+    // the Edit menu does to all (1.31).
+    const several = useSyncExternalStore(alsoSelectedChanged.add, () => alsoSelected.length > 0);
     return (
       <QuickActionBar
         {...props}
-        isLocked={(id) => isSharedRegion(layout, id)}
+        isLocked={(id) => isSharedRegion(layout, id) || several}
         elementActions={elementActions}
       />
     );
@@ -664,6 +689,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       if (document !== undefined) {
         applyChromeStyles(document);
         if (siteStyles !== null) applySiteStyles(document, siteStyles);
+        showAlsoSelected(document, alsoSelected);
       }
       followMode();
       followViewOptions();
@@ -675,6 +701,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       const removeKeys = installHistoryKeys(frameWindow, runCommand);
       const showDeleteKeys = hidePuckDeleteKeys(frameWindow);
       // The element menu, but not in Content mode, where right-clicks get the browser's own.
+      const stopClicks = watchClicks(frameWindow);
       const removeMenu = installContextMenu(frameWindow.document, contextMenus.emit, {
         enabled: () => mode === "design",
         selected: () => selection,
@@ -682,6 +709,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       return () => {
         showDeleteKeys();
         removeMenu();
+        stopClicks();
         stopKeepingEnabled?.();
         stopKeepingEnabled = null;
         stopViewOptions?.();
@@ -810,6 +838,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       config = configFor(opts.library);
       const hostWindow = el.ownerDocument.defaultView;
       stopHidingHostKeys = hostWindow === null ? null : hidePuckDeleteKeys(hostWindow);
+      stopHostClicks = hostWindow === null ? null : watchClicks(hostWindow);
       root = createRoot(el);
       render();
       // Puck starts with the current page.
@@ -871,13 +900,20 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       // Puck selects by position; keep the same element selected, or none if it is gone.
       if (selection !== null && findNode(after, selection) === undefined) {
         selection = null;
-        selections.emit(null);
+        selections.emit({ id: null, adding: false });
       }
       dispatch({ type: "setUi", ui: { itemSelector: selectorFor(selection) } });
     },
 
     onUserEdit: edits.add,
-    onSelectionChange: selections.add,
+    onSelectionChange: (cb) => selections.add(({ id, adding }) => cb(id, adding)),
+
+    showSelected(others) {
+      alsoSelected = others;
+      const doc = frameDocument ?? host?.ownerDocument;
+      if (doc !== undefined) showAlsoSelected(doc, others);
+      alsoSelectedChanged.emit();
+    },
     onHistoryCommand(handler) {
       commandHandlers.add(handler);
       return () => {
@@ -1017,6 +1053,8 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       getPuck = null;
       stopHidingHostKeys?.();
       stopHidingHostKeys = null;
+      stopHostClicks?.();
+      stopHostClicks = null;
       frameDocument = null;
       // Unmount after the current render: the app destroys the engine from an effect cleanup.
       queueMicrotask(() => {

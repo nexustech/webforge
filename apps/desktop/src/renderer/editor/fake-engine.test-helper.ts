@@ -16,7 +16,8 @@ import { vi } from "vitest";
 /** A {@link CanvasEngine} driven by the test: it records calls and emits what the test says. */
 export type FakeEngine = CanvasEngine & {
   edit(edit: Partial<EngineEdit> & Pick<EngineEdit, "kind" | "page">): void;
-  selectFromCanvas(nodeId: string | null): void;
+  /** A click on the canvas; `adding` for a Ctrl/Cmd- or Shift-click (1.31). */
+  selectFromCanvas(nodeId: string | null, adding?: boolean): void;
   /** Presses a history key in the canvas; true if the app did something with it. */
   command(command: HistoryCommand): boolean;
   /** Clicks the floating + asking for a section at `at`. */
@@ -49,7 +50,7 @@ function listeners<T>() {
 
 export function createFakeEngine(): FakeEngine {
   const edits = listeners<EngineEdit>();
-  const selections = listeners<string | null>();
+  const selections = listeners<{ id: string | null; adding: boolean }>();
   const commands = new Set<HistoryCommandHandler>();
   const adds = listeners<InsertPoint>();
   const frames = listeners<Window | null>();
@@ -65,7 +66,8 @@ export function createFakeEngine(): FakeEngine {
     applyChange: vi.fn(({ page }) => applied.push(page)),
     onUserEdit: edits.add,
     select: vi.fn(),
-    onSelectionChange: selections.add,
+    onSelectionChange: (cb) => selections.add(({ id, adding }) => cb(id, adding)),
+    showSelected: vi.fn(),
     onHistoryCommand: (handler) => {
       commands.add(handler);
       return () => commands.delete(handler);
@@ -92,7 +94,7 @@ export function createFakeEngine(): FakeEngine {
     destroy: vi.fn(),
     edit: (edit) =>
       edits.emit({ nodeId: null, componentType: null, field: null, selection: null, ...edit }),
-    selectFromCanvas: selections.emit,
+    selectFromCanvas: (id, adding = false) => selections.emit({ id, adding }),
     command: (command) => [...commands].some((handler) => handler(command) === true),
     requestAdd: adds.emit,
     showFrame: frames.emit,
