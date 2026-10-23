@@ -116,7 +116,7 @@ Every component has stories for its main variants, next to it in `src/catalogue/
 
 - **Rendering:** stories render with `SiteNodes` (`src/stories/site-nodes.tsx`), the export's own renderer, so a story is what a site shows. Its context has a navigation, the image `photo` and the site name.
 - **Running them:** `pnpm --filter @webforge/site-components storybook` opens them, with toolbars for the theme and the device width.
-- **Visual checks:** `pnpm visual` runs axe on every story in each theme on Desktop and Mobile. CI's Linux container also compares screenshots; a new story's screenshots come back as the `visual-screenshots` artifact to commit.
+- **Visual checks:** `pnpm visual` runs axe on every story in each theme on Desktop and Mobile. CI's Linux container also compares screenshots; make a new story's screenshots before CI with `pnpm visual:docker` (the same container, in Docker) and commit them with the PR.
 
 ```tsx
 import type { Meta, StoryObj } from "@storybook/react-vite";

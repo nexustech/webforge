@@ -24,6 +24,7 @@ export {
   BOX_CLASS_SAFELIST,
   boundText,
   boxTokenPixels,
+  colorClass,
   EDITOR_RENDER_CONTEXT,
   linkAttributes,
   linkValue,
@@ -31,6 +32,7 @@ export {
   responsiveClasses,
   slotComponent,
   stringValue,
+  textStylesOf,
   textValue,
   withAdvanced,
 } from "./library.js";

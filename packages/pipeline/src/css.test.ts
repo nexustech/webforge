@@ -57,6 +57,22 @@ describe("buildSiteCss", () => {
     expect(css).not.toContain(".py-24");
   });
 
+  it("compiles the colour fields' classes: a theme shade at an opacity, and a hex colour (ADR 0009)", async () => {
+    const css = await buildSiteCss(resources, {
+      theme: DEFAULT_THEME,
+      candidates: classCandidates(
+        '<h2 class="site-heading text-primary-300/80"></h2><h3 class="text-[#1f6feb]/50"></h3>',
+      ),
+      fontsUrl: "../fonts/",
+    });
+
+    // As CSS escapes the class names.
+    expect(css).toContain(String.raw`.text-primary-300\/80`);
+    expect(css).toContain("--wf-color-primary-300");
+    expect(css).toContain(String.raw`.text-\[\#1f6feb\]\/50`);
+    expect(css).toContain("#1f6feb");
+  });
+
   it("fails when a Tailwind stylesheet is missing from the resources", async () => {
     const options = { theme: DEFAULT_THEME, candidates: [], fontsUrl: "" };
 

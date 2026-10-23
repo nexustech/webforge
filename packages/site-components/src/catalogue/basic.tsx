@@ -4,6 +4,7 @@ import {
   boundText,
   boxClasses,
   type ComponentDef,
+  colorClass,
   type FieldDef,
   optionValue,
   responsiveClasses,
@@ -58,13 +59,8 @@ const GAP_CLASS = {
 };
 
 /** Text colours from the site's theme; `default` adds no class. */
+/** The theme colours a Heading offers first; its field takes any colour ref (1.37, ADR 0009). */
 const COLOURS = ["default", "primary", "secondary", "accent"] as const;
-const COLOUR_CLASS = {
-  default: "",
-  primary: "text-primary",
-  secondary: "text-secondary",
-  accent: "text-accent",
-} as const;
 
 /** A page band holding elements. Keeps the `site-section` hook for tests and developers. */
 const section = defineComponent({
@@ -134,10 +130,12 @@ const heading = defineComponent({
     margin: MARGIN_FIELD,
   },
   defaults: { text: t("element.heading"), size: "medium", color: "default" },
+  // Its level, which its size sets.
+  textStyle: (values) => HEADING_TAG[optionValue(values.size, SIZES)],
   render: ({ values, context }) => {
     const size = optionValue(values.size, SIZES);
     const Tag = HEADING_TAG[size];
-    const colour = COLOUR_CLASS[optionValue(values.color, COLOURS)];
+    const colour = colorClass("text", values.color);
     const content = boundText(values, "text", context);
     // Bound to an empty Site Settings value in the export: no empty heading.
     if (content === null) return null;
@@ -160,6 +158,7 @@ const text = defineComponent({
     margin: MARGIN_FIELD,
   },
   defaults: { text: `<p>${t("element.text")}</p>` },
+  textStyle: () => "body",
   render: ({ values }) => (
     <div
       className={`site-text text-lg leading-relaxed [&_a]:underline [&_p+p]:mt-4${marginClasses(values.margin)}`}
