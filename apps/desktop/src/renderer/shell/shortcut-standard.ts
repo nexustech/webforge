@@ -14,7 +14,7 @@ import { COMMAND_IDS } from "./command-ids.js";
  */
 
 /** Where the sheet lists a shortcut. */
-export type ShortcutGroup = "site" | "edit" | "select" | "view" | "text" | "layers";
+export type ShortcutGroup = "site" | "edit" | "select" | "view" | "text" | "layers" | "editPanel";
 
 /** The groups in the order the sheet shows them. */
 export const SHORTCUT_GROUPS: readonly ShortcutGroup[] = [
@@ -24,6 +24,7 @@ export const SHORTCUT_GROUPS: readonly ShortcutGroup[] = [
   "view",
   "text",
   "layers",
+  "editPanel",
 ];
 
 /** A command's shortcut in the standard. */
@@ -91,9 +92,6 @@ export const COMMAND_SHORTCUTS: Readonly<Record<string, StandardShortcut>> = {
   [COMMAND_IDS.toggleLeftPanels]: { group: "view", keys: ["Mod+Alt+B"] },
   [COMMAND_IDS.toggleDrawer]: { group: "view", keys: ["Mod+J"] },
   [COMMAND_IDS.shortcuts]: { group: "view", keys: ["?"] },
-  // Kept for the Edit panel's groups (1.36): open or close them all, and reset an option.
-  [COMMAND_IDS.toggleGroups]: { group: "edit", keys: ["Mod+Enter"] },
-  [COMMAND_IDS.resetOption]: { group: "edit", keys: ["Mod+Escape"] },
 };
 
 /** A shortcut that isn't a command's: something else handles its keys, so only the sheet lists it. */
@@ -105,7 +103,8 @@ export type OtherShortcut = {
 
 /**
  * Keys handled outside the command registry: the main process saves on Mod+S (P2), the rich-text
- * editor takes the text keys, and the Layers tree its own (WAI-ARIA's tree pattern).
+ * editor takes the text keys, the Layers tree its own (WAI-ARIA's tree pattern), and the Edit panel
+ * its option groups' (on the group or field that has the focus).
  */
 export const OTHER_SHORTCUTS: readonly OtherShortcut[] = [
   { label: "shortcuts.saveNow", group: "site", keys: ["Mod+S"] },
@@ -119,6 +118,9 @@ export const OTHER_SHORTCUTS: readonly OtherShortcut[] = [
   { label: "shortcuts.layersFocus", group: "layers", keys: ["ArrowUp", "ArrowDown"] },
   { label: "shortcuts.layersOpen", group: "layers", keys: ["ArrowRight", "ArrowLeft"] },
   { label: "shortcuts.layersParent", group: "layers", keys: ["Mod+ArrowUp"] },
+  // The Edit panel's option groups (1.36, UX-13): its own keys, on a group's title or in a field.
+  { label: "shortcuts.toggleGroups", group: "editPanel", keys: ["Mod+Enter"] },
+  { label: "shortcuts.resetOption", group: "editPanel", keys: ["Mod+Escape"] },
   { label: "shortcuts.layersChild", group: "layers", keys: ["Mod+ArrowDown"] },
   { label: "shortcuts.layersSibling", group: "layers", keys: ["Mod+ArrowLeft", "Mod+ArrowRight"] },
   {
