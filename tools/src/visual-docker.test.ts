@@ -1,9 +1,11 @@
 import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   CACHE_VOLUME,
   containerScript,
   dockerArgs,
+  gitFileList,
   parseArgs,
   playwrightImage,
 } from "./visual-docker.js";
@@ -71,12 +73,13 @@ describe("containerScript", () => {
     );
   });
 
-  // Regression: copying the whole folder also took .claude/worktrees, whose files changed
-  // mid-copy, so tar failed before any test ran.
-  it("copies only what git sees, and copies the screenshots back", () => {
+  // Regressions: copying the whole folder also took .claude/worktrees, whose files changed
+  // mid-copy, so tar failed before any test ran; and git inside the container couldn't read a
+  // worktree, whose .git file points at a host path ("fatal: not a git repository").
+  it("copies only the files listed on the host, and copies the screenshots back", () => {
     const script = containerScript({ update: false, playwrightArgs: [] });
-    expect(script).toContain("git -C /src ls-files -z --cached --others --exclude-standard");
-    expect(script).toContain("--ignore-failed-read");
+    expect(script).toContain("tar -C /src --null --ignore-failed-read -T /files.list -cf -");
+    expect(script).not.toContain("git -C /src");
     expect(script).toContain(
       "cp -r /work/e2e/visual/__screenshots__/. /src/e2e/visual/__screenshots__/",
     );
@@ -89,10 +92,10 @@ describe("containerScript", () => {
 });
 
 describe("dockerArgs", () => {
-  it("mounts the repository and the cache volume and runs the script with bash", () => {
+  it("mounts the repository, its file list and the cache volume and runs the script with bash", () => {
     const options = { update: false, playwrightArgs: [] };
-    const args = dockerArgs("C:/repo", "image:tag", options);
-    expect(args.slice(0, 9)).toEqual([
+    const args = dockerArgs("C:/repo", "C:/tmp/files.list", "image:tag", options);
+    expect(args.slice(0, 11)).toEqual([
       "run",
       "--rm",
       "--init",
@@ -100,10 +103,23 @@ describe("dockerArgs", () => {
       "-v",
       "C:/repo:/src",
       "-v",
+      "C:/tmp/files.list:/files.list:ro",
+      "-v",
       `${CACHE_VOLUME}:/cache`,
       "image:tag",
     ]);
-    expect(args.slice(9)).toEqual(["bash", "-c", containerScript(options)]);
+    expect(args.slice(11)).toEqual(["bash", "-c", containerScript(options)]);
+  });
+});
+
+describe("gitFileList", () => {
+  it("lists this repository's files NUL-separated, from a worktree too", () => {
+    const files = gitFileList(join(import.meta.dirname, "../.."))
+      .toString()
+      .split("\0");
+    expect(files).toContain("package.json");
+    expect(files).toContain("tools/src/visual-docker.ts");
+    expect(files.some((file) => file.includes("node_modules"))).toBe(false);
   });
 });
 
