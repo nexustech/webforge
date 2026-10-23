@@ -49,6 +49,79 @@ function renderLayout({
 }
 
 describe("ShellLayout", () => {
+  it("shows a panel that throws as a fallback in its tab; the rest keeps working (R3)", async () => {
+    // React reports the caught error on the console; in the app, the root reports it instead.
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    let broken = true;
+    const { panels } = renderLayout();
+    act(() => {
+      panels.register({
+        id: "layers",
+        slot: "left.top",
+        title: "Layers",
+        component: () => {
+          if (broken) throw new Error("Rosa's Bakery");
+          return <p>Layers</p>;
+        },
+      });
+    });
+    const left = within(screen.getByRole("region", { name: "Left panels" }));
+    await userEvent.setup().click(left.getByRole("tab", { name: "Layers" }));
+
+    expect(left.getByRole("alert").textContent).toBe(
+      "Something went wrong in this panel. Your work is saved.Reload panel",
+    );
+    expect(screen.getByText("Canvas")).toBeTruthy();
+    expect(
+      within(screen.getByRole("region", { name: "Right panels" })).getByText("Edit", {
+        selector: "p",
+      }),
+    ).toBeTruthy();
+    broken = false;
+    await userEvent.setup().click(left.getByRole("button", { name: "Reload panel" }));
+    expect(left.getByText("Layers", { selector: "p" })).toBeTruthy();
+    // Its neighbour in the column was never touched.
+    await userEvent.setup().click(left.getByRole("tab", { name: "Add" }));
+    expect(left.getByText("Add", { selector: "p" })).toBeTruthy();
+    log.mockRestore();
+  });
+
+  it("shows the canvas's fallback when it throws, and keeps the panels (R3)", () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    function BrokenCanvas(): never {
+      throw new Error("Rosa's Bakery");
+    }
+    render(
+      <CommandRegistryProvider registry={createCommandRegistry()}>
+        <PanelRegistryProvider
+          registry={(() => {
+            const panels = createPanelRegistry();
+            fillColumns(panels);
+            return panels;
+          })()}
+        >
+          <ShellLayout
+            center={<BrokenCanvas />}
+            layout={{}}
+            onLayoutChange={vi.fn()}
+            editorLevel="simple"
+          />
+        </PanelRegistryProvider>
+      </CommandRegistryProvider>,
+    );
+
+    expect(screen.getByRole("alert").textContent).toContain(
+      "Something went wrong showing this page",
+    );
+    expect(screen.getByRole("button", { name: "Reload page" })).toBeTruthy();
+    expect(
+      within(screen.getByRole("region", { name: "Left panels" })).getByText("Add", {
+        selector: "p",
+      }),
+    ).toBeTruthy();
+    log.mockRestore();
+  });
+
   it("puts the canvas in the middle, panels around it and an empty state in the drawer", () => {
     renderLayout();
 

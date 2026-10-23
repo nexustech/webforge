@@ -33,6 +33,7 @@ import {
 } from "../clipboard/register-clipboard-commands.js";
 import { registerStyleCommands } from "../clipboard/style-clipboard.js";
 import { CanvasElementMenu } from "../element-menu/CanvasElementMenu.js";
+import { createErrorReporter, type ReportError } from "../error-reporting.js";
 import type { Layer } from "../layers/layers.js";
 import { registerLinkField } from "../links/LinkField.js";
 import { RichTextLinkHost } from "../links/RichTextLinkHost.js";
@@ -54,6 +55,7 @@ import { useCommandRegistry } from "../shell/command-context.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { installCommandShortcuts } from "../shell/commands.js";
 import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
+import { CanvasErrorBoundary } from "../shell/error-boundaries.js";
 import { usePanelRegistry } from "../shell/panel-context.js";
 import { connectCanvasSettings } from "../site-settings/canvas-settings.js";
 import { CanvasBreadcrumbs } from "./CanvasBreadcrumbs.js";
@@ -85,6 +87,8 @@ export type EditorProps = {
   readonly createEngine?: () => CanvasEngine;
   /** Compiles the site CSS for the canvas; injectable for tests. Defaults to the preload API. */
   readonly compileCss?: CompileCanvasCss;
+  /** Reports an error in the canvas as a local crash report (R3); injectable for tests. */
+  readonly reportError?: ReportError;
   /** Design or Content mode (M3, 1.10): passed to the engine, which locks the layout in Content. */
   readonly mode?: EditorMode;
   /** The canvas toolbar's zoom and size readout (1.15), kept in step with the engine. */
@@ -113,6 +117,9 @@ export type EditorProps = {
 
 const compileWithPreload: CompileCanvasCss = (request) =>
   window.webforge.canvas.compileCss(request);
+const reportWithPreload = createErrorReporter((kind, error) =>
+  window.webforge.app.reportError(kind, error),
+);
 
 /**
  * The canvas frame's edge handles on `session`'s device view and `view`'s zoom: a width dragged or
@@ -150,6 +157,7 @@ export function Editor({
   session,
   createEngine = createPuckEngine,
   compileCss = compileWithPreload,
+  reportError = reportWithPreload,
   mode = "design",
   canvasView,
   editorLevel = "simple",
@@ -239,7 +247,13 @@ export function Editor({
 
     const engine = createEngine();
     const site = history.document.getState();
-    engine.mount(element, { library: session.library, theme: site.theme });
+    engine.mount(element, {
+      library: session.library,
+      theme: site.theme,
+      // An error in the canvas stays there, and becomes a local crash report (R3).
+      errorBoundary: CanvasErrorBoundary,
+      onError: (error, caught) => reportError(caught ? "render-error" : "uncaught-error", error),
+    });
     if (modeRef.current !== "design") {
       engine.setMode(modeRef.current);
     }
@@ -352,7 +366,7 @@ export function Editor({
       engine.destroy();
       element.remove();
     };
-  }, [session, history, createEngine, compileCss, registry, siteWide]);
+  }, [session, history, createEngine, compileCss, reportError, registry, siteWide]);
 
   // The View menu's options (F-ED-25): view state, never an undo step (U6).
   useEffect(() => {
