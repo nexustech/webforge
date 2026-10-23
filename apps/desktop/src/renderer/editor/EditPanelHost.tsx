@@ -30,7 +30,7 @@ import {
 import type { EditorSession } from "./editor-session.js";
 import { fieldGroupOf } from "./field-group.js";
 import { fieldTarget } from "./field-target.js";
-import { changedLabel, labelFor } from "./labels.js";
+import { changedLabel, labelFor, resetLabel } from "./labels.js";
 import {
   applyListChange,
   type EditableList,
@@ -41,6 +41,7 @@ import {
 import { findNode } from "./nodes.js";
 import {
   breakpointOf,
+  differsFromDefault,
   isOverridden,
   valueAt,
   withoutOverride,
@@ -257,6 +258,10 @@ export function EditPanelHost({
         label: field.label,
         group: fieldGroupOf(field),
         value: responsive ? valueAt(stored, breakpoint) : stored,
+        ...(responsive && breakpoint !== "desktop" ? { responsive: true } : {}),
+        ...(differsFromDefault(stored, storedOr(name, undefined), responsive, breakpoint)
+          ? { changed: true }
+          : {}),
         ...(responsive && isOverridden(stored, breakpoint) ? { overridden: true } : {}),
         ...choicesOf(field),
       },
@@ -481,6 +486,49 @@ export function EditPanelHost({
     );
   };
 
+  /**
+   * Resets fields `names` to the component's defaults as one step (UX-13, UX-18): "Reset Heading
+   * size", or `what` for several ("Reset Section spacing"). A field set per device gets its default
+   * for the device shown: on Desktop its own value, elsewhere the Desktop value again.
+   */
+  const resetToDefault = (names: readonly string[], what?: string) => {
+    const known = names.filter((name) => component.fields[name] !== undefined);
+    const [first] = known;
+    const firstField = first === undefined ? undefined : component.fields[first];
+    if (first === undefined || firstField === undefined) {
+      return;
+    }
+    endRun();
+    flush();
+    const label =
+      copyLabel ??
+      (known.length === 1 && firstField.responsive === true && breakpoint !== "desktop"
+        ? labelOf(first, firstField, true)
+        : resetLabel(
+            editOf("props", first),
+            library,
+            what ?? firstField.label.toLocaleLowerCase(),
+          ));
+    session.edit(
+      "props",
+      label,
+      (draft) => {
+        for (const name of known) {
+          const responsive = component.fields[name]?.responsive === true;
+          const initial = component.defaults[name];
+          write(draft, name, (stored) =>
+            !responsive
+              ? initial
+              : breakpoint === "desktop"
+                ? withValueAt(stored, "desktop", valueAt(initial, "desktop"))
+                : withoutOverride(stored, breakpoint),
+          );
+        }
+      },
+      { selectionAfter },
+    );
+  };
+
   return (
     <EditPanel
       heading={component.label}
@@ -491,6 +539,7 @@ export function EditPanelHost({
         if (openRun.current?.name === name) endRun();
       }}
       onReset={reset}
+      onResetToDefault={resetToDefault}
       advanced={advanced}
       contentOnly={contentOnly}
       itemKey={id}

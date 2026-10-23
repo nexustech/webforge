@@ -42,6 +42,14 @@ export function changedLabel(edit: EngineEdit, library: ComponentLibrary, field:
   return t("history.changed", { item: itemName(edit, library, [edit.page]), field });
 }
 
+/**
+ * The undo label for resetting fields to their defaults (UX-13): "Reset Heading size", or for a
+ * group of them "Reset Section spacing". `what` is already translated, in lower case.
+ */
+export function resetLabel(edit: EngineEdit, library: ComponentLibrary, what: string): string {
+  return t("history.reset", { item: itemName(edit, library, [edit.page]), field: what });
+}
+
 /** The definition of the field an edit changed, if any. */
 function fieldOf(edit: EngineEdit, library: ComponentLibrary): FieldDef | undefined {
   const component =

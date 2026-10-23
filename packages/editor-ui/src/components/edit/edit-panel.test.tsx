@@ -183,6 +183,7 @@ describe("style field renderers (1.14 part 2)", () => {
     const onChange = vi.fn();
     const onCommit = vi.fn();
     const onReset = vi.fn();
+    const onResetToDefault = vi.fn();
     render(
       <EditPanel
         heading="Section"
@@ -193,9 +194,10 @@ describe("style field renderers (1.14 part 2)", () => {
         onChange={onChange}
         onCommit={onCommit}
         onReset={onReset}
+        onResetToDefault={onResetToDefault}
       />,
     );
-    return { onChange, onCommit, onReset, user: userEvent.setup() };
+    return { onChange, onCommit, onReset, onResetToDefault, user: userEvent.setup() };
   }
 
   it("makes one change and commits it for a choice, keeping the chosen one when clicked again", async () => {
@@ -225,6 +227,31 @@ describe("style field renderers (1.14 part 2)", () => {
     expect(onCommit.mock.calls).toEqual([["gap"]]);
   });
 
+  it("scrubs a slider by dragging its step's name, finer with Shift, as one change (UX-20)", () => {
+    const { onChange, onCommit } = renderStyle();
+    const output = screen.getByText("Small", { selector: "output" });
+    const move = (movementX: number, shiftKey = false) =>
+      output.dispatchEvent(new PointerEvent("pointermove", { movementX, shiftKey }));
+
+    fireEvent.pointerDown(output, { button: 0, pointerId: 1 });
+    // 12 pixels a step: Medium, then Large.
+    move(8);
+    move(8);
+    move(12);
+    // With Shift, 36 pixels a step: 30 isn't enough, back past Large's start is.
+    move(-30, true);
+    expect(onCommit).not.toHaveBeenCalled();
+    move(-10, true);
+    output.dispatchEvent(new PointerEvent("pointerup"));
+
+    expect(onChange.mock.calls).toEqual([
+      ["gap", "medium"],
+      ["gap", "large"],
+      ["gap", "medium"],
+    ]);
+    expect(onCommit.mock.calls).toEqual([["gap"]]);
+  });
+
   it("switches a toggle", async () => {
     const { onChange, onCommit, user } = renderStyle();
 
@@ -234,14 +261,71 @@ describe("style field renderers (1.14 part 2)", () => {
     expect(onCommit.mock.calls).toEqual([["fullWidth"]]);
   });
 
-  it("marks a value set for this device only, and offers the Desktop value back", async () => {
-    const { onReset, user } = renderStyle({ overridden: true });
+  it("resets a changed field from its right-click menu or with Ctrl/Cmd+Esc (UX-13)", async () => {
+    const { onResetToDefault, user } = renderStyle({ changed: true });
 
-    expect(screen.getByText("Mobile only")).toBeDefined();
-    await user.click(screen.getByRole("button", { name: t("editPanel.useDesktop") }));
+    fireEvent.contextMenu(screen.getByRole("radiogroup", { name: "Padding" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Reset to Default" }));
+    expect(onResetToDefault).toHaveBeenLastCalledWith(["padding"]);
+
+    screen.getByRole("radio", { name: "Small" }).focus();
+    await user.keyboard("{Control>}{Escape}{/Control}");
+    expect(onResetToDefault).toHaveBeenCalledTimes(2);
+  });
+
+  it("offers no reset for a field that is as it was by default", async () => {
+    const { onResetToDefault, user } = renderStyle();
+
+    fireEvent.contextMenu(screen.getByLabelText("Gap"));
+    const reset = await screen.findByRole("menuitem", { name: "Reset to Default" });
+    expect(reset.getAttribute("aria-disabled")).toBe("true");
+    await user.keyboard("{Escape}");
+    screen.getByLabelText("Gap").focus();
+    await user.keyboard("{Control>}{Escape}{/Control}");
+    expect(onResetToDefault).not.toHaveBeenCalled();
+  });
+
+  it("shows only the fields whose name has the searched text, and Esc clears it (UX-13)", async () => {
+    const { user } = renderStyle();
+    const search = screen.getByRole("searchbox", { name: "Search options" });
+
+    await user.type(search, "GA");
+    expect(screen.queryByRole("radiogroup", { name: "Padding" })).toBeNull();
+    expect(screen.getByLabelText("Gap")).toBeDefined();
+
+    await user.clear(search);
+    await user.type(search, "nothing like it");
+    expect(screen.getByText("No options match your search.")).toBeDefined();
+
+    await user.keyboard("{Escape}");
+    expect((search as HTMLInputElement).value).toBe("");
+    expect(screen.getByRole("radiogroup", { name: "Padding" })).toBeDefined();
+  });
+
+  it("shows a grey dot while a field uses Desktop's value on this device (UX-19)", () => {
+    renderStyle({ responsive: true });
+
+    expect(screen.getByRole("img", { name: "Padding: same as Desktop on Mobile" })).toBeDefined();
+    expect(document.querySelectorAll("[data-device-dot]")).toHaveLength(1);
+    expect(screen.queryByRole("button", { name: /Use the Desktop value/ })).toBeNull();
+  });
+
+  it("shows a value set for this device with an accent dot, which clears it (UX-19)", async () => {
+    const { onReset, user } = renderStyle({ responsive: true, overridden: true });
+
+    const dot = screen.getByRole("button", {
+      name: "Padding: set for Mobile only. Use the Desktop value instead",
+    });
+    expect(dot.getAttribute("data-device-dot")).toBe("set");
+    await user.click(dot);
 
     expect(onReset).toHaveBeenCalledWith("padding");
-    expect(document.querySelectorAll("[data-override]")).toHaveLength(1);
+  });
+
+  it("shows no dot for a field that is the same on every device", () => {
+    renderStyle();
+
+    expect(document.querySelectorAll("[data-device-dot]")).toHaveLength(0);
   });
 });
 

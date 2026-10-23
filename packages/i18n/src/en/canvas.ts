@@ -85,9 +85,17 @@ export const canvas = {
   "bulk.first": "{item} is already first: nothing moved.",
   "bulk.last": "{item} is already last: nothing moved.",
   "editPanel.noFields": "Nothing to change here",
+  // The Edit panel's search field (UX-13): the fields whose name has the text are shown.
+  "editPanel.search": "Search options",
+  "editPanel.searchPlaceholder": "Search options",
+  "editPanel.noMatches": "No options match your search.",
+  // Back to the element's defaults (UX-13, UX-18): a field's right-click menu, and Ctrl/Cmd + Esc.
+  "editPanel.resetField": "Reset to Default",
   // A value set for one device only (F-ED-4).
-  "editPanel.override": "{device} only",
-  "editPanel.useDesktop": "Use Desktop value",
+  // A field's per-device dot (UX-19): grey inherits Desktop's value, the accent colour has its own.
+  "editPanel.dot.inherits": "{field}: same as Desktop on {device}",
+  "editPanel.dot.set": "{field}: set for {device} only",
+  "editPanel.dot.clear": "{field}: set for {device} only. Use the Desktop value instead",
   "editPanel.box.default": "Default",
   "editPanel.box.same": "Same on every side",
   // The Advanced tab (Advanced mode, F-ED-11): technical words are fine here, clearly labelled.

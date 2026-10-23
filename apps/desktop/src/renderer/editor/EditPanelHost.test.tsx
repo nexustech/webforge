@@ -121,6 +121,27 @@ describe("EditPanelHost", () => {
     expect(session.history.entries()[0]?.selectionAfter.nodeId).toBe("heading-1");
   });
 
+  it("resets a changed field to its default as one step, and then offers no reset (UX-13)", async () => {
+    const { session, labels, heading, user } = setup();
+    await user.click(screen.getByRole("tab", { name: "Style" }));
+    const size = screen.getByLabelText("Size");
+    await user.selectOptions(size, "small");
+
+    fireEvent.contextMenu(size);
+    await user.click(await screen.findByRole("menuitem", { name: "Reset to Default" }));
+
+    expect(labels()).toEqual(["Changed Heading size", "Reset Heading size"]);
+    // The Heading's own default, not the starter site's value.
+    expect(heading()?.size).toBe(siteLibrary.components.Heading?.defaults.size);
+    expect(session.history.entries()[1]?.selectionAfter.nodeId).toBe("heading-1");
+    fireEvent.contextMenu(screen.getByLabelText("Size"));
+    expect(
+      (await screen.findByRole("menuitem", { name: "Reset to Default" })).getAttribute(
+        "aria-disabled",
+      ),
+    ).toBe("true");
+  });
+
   it("makes one step of a visit to a text field, however much is typed", async () => {
     const { session, labels, heading, user } = setup();
     const input = screen.getByLabelText("Text");
@@ -254,21 +275,26 @@ describe("EditPanelHost", () => {
       expect(section()?.padding).toEqual({
         $responsive: { desktop: { top: "m", bottom: "m" }, mobile: { top: "s", bottom: "m" } },
       });
-      expect(screen.getByText("Mobile only")).toBeDefined();
+      // Its dot is the accent colour on Mobile; Desktop shows no dots (UX-19).
+      expect(screen.getByRole("button", { name: /^Padding: set for Mobile only/ })).toBeDefined();
       act(() => session.ui.setState({ viewport: "desktop" }));
-      expect(screen.queryByText("Mobile only")).toBeNull();
+      expect(document.querySelectorAll("[data-device-dot]")).toHaveLength(0);
       expect(
         side("Padding Top").getByRole("radio", { name: "M" }).getAttribute("aria-checked"),
       ).toBe("true");
 
       act(() => session.ui.setState({ viewport: "mobile" }));
-      await user.click(screen.getByRole("button", { name: "Use Desktop value" }));
+      await user.click(screen.getByRole("button", { name: /^Padding: set for Mobile only/ }));
 
       expect(section()?.padding).toEqual({ top: "m", bottom: "m" });
       expect(labels()).toEqual([
         "Changed Section padding on Mobile",
         "Reset Section padding on Mobile",
       ]);
+      // Back to Desktop's value: the dot is grey again.
+      expect(
+        screen.getByRole("img", { name: /^Padding: same as Desktop on Mobile/ }),
+      ).toBeDefined();
     });
 
     it("sets Desktop's value as the plain value, keeping other devices' own", async () => {
