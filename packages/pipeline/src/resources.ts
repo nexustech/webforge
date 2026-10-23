@@ -1,4 +1,4 @@
-import type { FontFace } from "@webforge/themes";
+import type { CatalogueFont, FontFace } from "@webforge/themes";
 
 /**
  * Everything file-based the pipeline needs, passed in by whoever runs it. The pipeline itself never
@@ -18,6 +18,11 @@ export type PipelineResources = {
    * `undefined` if there are none. The pipeline checks them against the catalogue's SHA-256.
    */
   readonly readFont: (face: FontFace) => Promise<Uint8Array<ArrayBuffer> | undefined>;
+  /**
+   * The font families there are files for: the catalogue's when left out. The app adds the ones
+   * downloaded on this computer (2.2), so a site set in one gets its files.
+   */
+  readonly fonts?: readonly CatalogueFont[];
   /** WebAssembly modules of the image codecs (jSquash). */
   readonly codecs: CodecModules;
 };

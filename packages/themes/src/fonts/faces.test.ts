@@ -1,5 +1,6 @@
 import { DEFAULT_THEME, type ThemeTokens } from "@webforge/model";
 import { describe, expect, it } from "vitest";
+import type { CatalogueFont } from "./catalogue.js";
 import { fontFacesFor } from "./faces.js";
 
 const withFonts = (heading: string, body: string): ThemeTokens => ({
@@ -64,5 +65,35 @@ describe("fontFacesFor (2.2)", () => {
 
   it("gives no file for a family the catalogue doesn't have", () => {
     expect(fontFacesFor(withFonts("Comic Neue", "Comic Neue"))).toEqual([]);
+  });
+
+  it("gives the files of a downloaded family it is given, besides the catalogue's", () => {
+    const comic: CatalogueFont = {
+      id: "comic-neue",
+      family: "Comic Neue",
+      category: "handwriting",
+      fallback: "sans-serif",
+      licence: "OFL-1.1",
+      variable: false,
+      weights: [300, 400, 700],
+      styles: ["normal", "italic"],
+      package: "@fontsource/comic-neue",
+      version: "5.2.5",
+      files: [400, 700].map((weight) => ({
+        file: `comic-neue-latin-${weight}-normal.woff2`,
+        subset: "latin" as const,
+        style: "normal" as const,
+        weight,
+        unicodeRange: "U+0000-00FF",
+        bytes: 10,
+        sha256: "0".repeat(64),
+      })),
+    };
+    const theme = withFonts("Comic Neue", "Inter");
+
+    expect(fontFacesFor(theme, [comic]).map((face) => face.file)).toEqual([
+      "comic-neue-latin-700-normal.woff2",
+    ]);
+    expect(files(theme)).not.toContain("comic-neue-latin-700-normal.woff2");
   });
 });

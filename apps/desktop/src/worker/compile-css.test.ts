@@ -1,5 +1,6 @@
 import { DEFAULT_THEME } from "@webforge/model";
 import { loadNodeResources } from "@webforge/pipeline/node";
+import type { CatalogueFont } from "@webforge/themes";
 import { describe, expect, it } from "vitest";
 import { compileCss } from "./compile-css.js";
 
@@ -11,6 +12,7 @@ describe("compileCss", () => {
         id: 7,
         theme: { ...DEFAULT_THEME, preset: "light" },
         candidates: ["btn", "text-4xl"],
+        families: [],
       },
       loadNodeResources,
     );
@@ -28,9 +30,55 @@ describe("compileCss", () => {
     expect(outcome.css).not.toContain(".text-9xl");
   }, 60_000);
 
+  it("declares a downloaded family the job names, as the export would (2.2)", async () => {
+    const comic: CatalogueFont = {
+      id: "comic-neue",
+      family: "Comic Neue",
+      category: "handwriting",
+      fallback: "serif",
+      licence: "OFL-1.1",
+      variable: false,
+      weights: [400],
+      styles: ["normal"],
+      package: "@fontsource/comic-neue",
+      version: "5.3.0",
+      files: [
+        {
+          file: "comic-neue-latin-400-normal.woff2",
+          subset: "latin",
+          style: "normal",
+          weight: 400,
+          unicodeRange: "U+0000-00FF",
+          bytes: 4,
+          sha256: "0".repeat(64),
+        },
+      ],
+    };
+    const theme = {
+      ...DEFAULT_THEME,
+      preset: "light",
+      fonts: { ...DEFAULT_THEME.fonts, heading: { family: "Comic Neue", fallback: "serif" } },
+    } as const;
+
+    const outcome = await compileCss(
+      { type: "compile-css", id: 8, theme, candidates: [], families: [comic] },
+      loadNodeResources,
+    );
+
+    expect(outcome.type === "css" ? outcome.css : "").toContain(
+      'url("webforge-font://fonts/comic-neue-latin-400-normal.woff2")',
+    );
+  }, 60_000);
+
   it("reports a failure without details", async () => {
     const outcome = await compileCss(
-      { type: "compile-css", id: 3, theme: { ...DEFAULT_THEME, preset: "light" }, candidates: [] },
+      {
+        type: "compile-css",
+        id: 3,
+        theme: { ...DEFAULT_THEME, preset: "light" },
+        candidates: [],
+        families: [],
+      },
       () => Promise.reject(new Error("no resources")),
     );
 
