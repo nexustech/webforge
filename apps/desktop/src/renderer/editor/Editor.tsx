@@ -8,6 +8,7 @@ import {
   type ViewOptions,
 } from "@webforge/engine";
 import { t } from "@webforge/i18n";
+import { textStylesOf } from "@webforge/site-components";
 import {
   type RefObject,
   useCallback,
@@ -57,6 +58,7 @@ import { usePanelRegistry } from "../shell/panel-context.js";
 import { connectCanvasSettings } from "../site-settings/canvas-settings.js";
 import { CanvasBreadcrumbs } from "./CanvasBreadcrumbs.js";
 import { CanvasResizeHandles } from "./CanvasResizeHandles.js";
+import { registerColourField } from "./ColourField.js";
 import { registerCanvasCommands } from "./canvas-commands.js";
 import { EditPanelHost } from "./EditPanelHost.js";
 import {
@@ -68,6 +70,7 @@ import {
 } from "./editor-session.js";
 import { registerElementCommands } from "./element-commands.js";
 import { connectFieldDrags } from "./field-drag.js";
+import { fieldTarget } from "./field-target.js";
 import { SharedRegionBanner } from "./SharedRegionBanner.js";
 import { confirmSharedRemovals, sharedCutConfirmation } from "./shared-confirmations.js";
 import { shownLayout } from "./shared-layout.js";
@@ -503,6 +506,27 @@ export function Editor({
   }, [panels, session, mode, engine, siteWide, addStore, registry, previews]);
   useEffect(() => registerMediaPanel(panels, session), [panels, session]);
   useEffect(() => registerImageField({ session, picks: imagePicks }), [session, imagePicks]);
+  // Colour fields show the theme's own colours and warn about low contrast (1.37, UX-25).
+  useEffect(
+    () =>
+      registerColourField({
+        session,
+        advanced: editorLevel === "advanced",
+        // The selected element's text styles, wherever it is (the page, the shared Header or
+        // Footer, a linked copy), as the Edit panel finds it.
+        textStyles: () => {
+          const { pageId, nodeId } = session.ui.getState();
+          const target = fieldTarget(
+            session.history.document.getState(),
+            session.library,
+            pageId,
+            nodeId,
+          );
+          return target === undefined ? [] : textStylesOf(target.node, session.library);
+        },
+      }),
+    [session, editorLevel],
+  );
   useEffect(() => registerLinkField({ session }), [session]);
 
   return (

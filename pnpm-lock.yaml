@@ -332,6 +332,9 @@ importers:
       '@webforge/test-utils':
         specifier: workspace:*
         version: link:../../packages/test-utils
+      '@webforge/themes':
+        specifier: workspace:*
+        version: link:../../packages/themes
       daisyui:
         specifier: 'catalog:'
         version: 5.7.50
