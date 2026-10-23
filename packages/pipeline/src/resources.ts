@@ -9,6 +9,8 @@ export type PipelineResources = {
   readonly stylesheets: Readonly<Record<string, string>>;
   /** The daisyUI Tailwind plugin (the default export of `daisyui`). */
   readonly daisyui: unknown;
+  /** daisyUI's custom-theme plugin (the default export of `daisyui/theme`), for the site's theme. */
+  readonly daisyuiTheme: unknown;
   /** Font files to copy into `assets/fonts/`, with the `@font-face` rules that use them. */
   readonly fonts: readonly FontFile[];
   /** WebAssembly modules of the image codecs (jSquash). */
