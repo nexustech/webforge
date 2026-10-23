@@ -49,6 +49,7 @@ function setUp() {
   const beforeAction = vi.fn();
   const pickImage = vi.fn();
   const rename = vi.fn();
+  const notify = vi.fn();
   const commands = registerElementCommands(
     registry,
     session,
@@ -56,6 +57,7 @@ function setUp() {
     beforeAction,
     pickImage,
     rename,
+    notify,
   );
   const hidden = () =>
     (currentPage(session)?.doc.content[0]?.props.content as NodeDoc[] | undefined)?.[0]?.props
@@ -69,6 +71,7 @@ function setUp() {
     beforeAction,
     pickImage,
     rename,
+    notify,
     commands,
     hidden,
     enabled,
@@ -140,14 +143,24 @@ describe("registerElementCommands (1.30, F-ED-25, F-ED-27)", () => {
     expect(pickImage).toHaveBeenCalledOnce();
   });
 
-  it("hides nothing while several elements are selected, until it hides them all (1.31)", () => {
-    const { session, engine, enabled, hidden } = setUp();
+  it("hides several selected elements together as one step, or says why not (1.31)", () => {
+    const { session, registry, engine, notify, hidden, labels } = setUp();
+    const copy = () => currentPage(session)?.doc.content[1]?.props.hidden;
 
     session.ui.setState({ nodeId: "a", others: [copiedNodeId("c1", "s")] });
-    expect(enabled()).toBe(false);
-    engine.requestFromElement({ kind: "toggleHidden", nodeId: "a" });
+    expect(registry.get("edit.toggleHidden")?.enabled).toBe(true);
+    registry.run("edit.toggleHidden");
+    expect([hidden(), copy()]).toEqual([true, true]);
+    // The chip names one element while several are selected: its request hides that one only.
+    engine.requestFromElement({ kind: "toggleHidden", nodeId: copiedNodeId("c1", "t") });
 
-    expect(hidden()).toBeUndefined();
+    // With an element of a linked copy among them: nothing, and the reason.
+    session.ui.setState({ nodeId: "a", others: [copiedNodeId("c1", "t")] });
+    registry.run("edit.toggleHidden");
+    expect(notify).toHaveBeenCalledExactlyOnceWith(
+      "Elements of the shared Header or Footer, or of a shared section, are changed one at a time.",
+    );
+    expect(labels()).toEqual(["Hid 2 elements"]);
   });
 
   it("asks for a layer's name with F2, in Content mode too; nothing else has one (1.30)", () => {

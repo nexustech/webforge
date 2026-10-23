@@ -101,6 +101,24 @@ describe("registerCanvasCommands", () => {
     expect(enabled("edit.delete")).toBe(true);
   });
 
+  it("gives duplicate, delete and the moves to `bulk` while several are selected (1.31)", () => {
+    const registry = createCommandRegistry();
+    const engine = createFakeEngine();
+    const bulk = vi.fn();
+    const commands = registerCanvasCommands(registry, engine, () => undefined, bulk);
+    commands.setHasSelection(true);
+
+    commands.setSeveral(true);
+    for (const id of ["edit.duplicate", "edit.delete", "edit.moveUp", "edit.moveDown"]) {
+      expect(registry.run(id)).toBe(true);
+    }
+    // Text is one element's.
+    expect(registry.get("edit.editText")?.enabled).toBe(false);
+
+    expect(bulk.mock.calls).toEqual([["duplicate"], ["delete"], ["moveUp"], ["moveDown"]]);
+    expect(engine.perform).not.toHaveBeenCalled();
+  });
+
   it("turns duplicate, delete and moves off while Content mode locks the layout (M3)", () => {
     const registry = createCommandRegistry();
     const engine = createFakeEngine();

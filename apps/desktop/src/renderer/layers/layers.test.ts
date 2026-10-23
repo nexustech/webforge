@@ -80,6 +80,18 @@ describe("layersOf (F-ED-12)", () => {
 });
 
 describe("Layers changes, one undo step each", () => {
+  it("selects a moved layer alone, never listing it twice, and undo selects them all again (#262)", () => {
+    const { session, labels } = setUp();
+    session.ui.setState({ nodeId: "a", others: ["b"] });
+
+    moveLayer(session, "b", 0);
+
+    expect(labels()).toEqual(["Moved 'Hours'"]);
+    expect(session.ui.getState()).toMatchObject({ nodeId: "b", others: [] });
+    session.history.undo();
+    expect(session.ui.getState()).toMatchObject({ nodeId: "a", others: ["b"] });
+  });
+
   it("moves a layer among its siblings and keeps it selected", () => {
     const { session, first, ids, labels } = setUp();
 

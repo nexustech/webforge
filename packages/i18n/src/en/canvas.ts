@@ -79,6 +79,11 @@ export const canvas = {
   "editPanel.empty": "Select an element to edit it",
   // While several elements are selected (1.31).
   "editPanel.several": "{count} elements selected",
+  // Why several selected elements can't be changed at once (1.31).
+  "bulk.shared":
+    "Elements of the shared Header or Footer, or of a shared section, are changed one at a time.",
+  "bulk.first": "{item} is already first: nothing moved.",
+  "bulk.last": "{item} is already last: nothing moved.",
   "editPanel.noFields": "Nothing to change here",
   // A value set for one device only (F-ED-4).
   "editPanel.override": "{device} only",
