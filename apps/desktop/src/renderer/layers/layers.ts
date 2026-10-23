@@ -229,6 +229,28 @@ export function setLayerHidden(session: LayersSession, id: string, hidden: boole
   });
 }
 
+/** The layer `id` in `layers` or among their children. */
+function findLayer(layers: readonly Layer[], id: string): Layer | undefined {
+  for (const layer of layers) {
+    if (layer.id === id) return layer;
+    const inside = findLayer(layer.children, id);
+    if (inside !== undefined) return inside;
+  }
+  return undefined;
+}
+
+/**
+ * Element `id`'s layer on the shown page, if it is one: not an element of the shared Header or
+ * Footer, nor one inside a linked copy (the copy is one layer).
+ */
+export function shownLayer(session: LayersSession, id: string): Layer | undefined {
+  const site = session.history.document.getState();
+  const content = site.pages[session.ui.getState().pageId]?.doc.content;
+  return content === undefined
+    ? undefined
+    : findLayer(layersOf(content, session.library, site.sharedSections), id);
+}
+
 /** Hides a layer, or shows it again if it is hidden (F-ED-27: Mod + /, and the chip's *Hide*). */
 export function toggleLayerHidden(session: LayersSession, id: string): void {
   const found = target(session, id);

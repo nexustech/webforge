@@ -2,30 +2,17 @@ import type { CanvasEngine } from "@webforge/engine";
 import { t } from "@webforge/i18n";
 import { useEffect, useRef, useState } from "react";
 import type { EditorSession } from "../editor/editor-session.js";
-import { type Layer, layerItem, layersOf, renameLayer } from "../layers/layers.js";
+import { type Layer, layerItem, renameLayer, shownLayer } from "../layers/layers.js";
 import { NameDialog } from "../site/NameDialog.js";
 import { ElementMenu, type MenuPoint } from "./ElementMenu.js";
 
 /** The longest layer name; as Layers' own name field. */
 const MAX_NAME_LENGTH = 100;
 
-/** The layer `id` in `layers` or among their children. */
-function findLayer(layers: readonly Layer[], id: string): Layer | undefined {
-  for (const layer of layers) {
-    if (layer.id === id) return layer;
-    const inside = findLayer(layer.children, id);
-    if (inside !== undefined) return inside;
-  }
-  return undefined;
-}
-
 /** The selected element's layer on the shown page, if it is one (not the Header or Footer). */
 function selectedLayer(session: EditorSession): Layer | undefined {
-  const site = session.history.document.getState();
-  const { pageId, nodeId } = session.ui.getState();
-  const content = site.pages[pageId]?.doc.content;
-  if (content === undefined || nodeId === null) return undefined;
-  return findLayer(layersOf(content, session.library, site.sharedSections), nodeId);
+  const { nodeId } = session.ui.getState();
+  return nodeId === null ? undefined : shownLayer(session, nodeId);
 }
 
 /** Props of {@link CanvasElementMenu}. */

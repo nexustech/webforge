@@ -177,6 +177,11 @@ export type ElementActions = {
   readonly canEdit: (componentType: string) => boolean;
   /** Starts editing element `id`'s text, or picking its image. */
   readonly edit: (id: string, componentType: string) => void;
+  /**
+   * Whether element `id` can be hidden: one of the page's own (a layer), not one of the shared
+   * Header or Footer, nor one inside a linked copy.
+   */
+  readonly canHide: (id: string) => boolean;
   /** Hides element `id`, or shows it again. */
   readonly toggleHidden: (id: string) => void;
 };
@@ -274,7 +279,8 @@ function ElementActionButtons({ actions }: { readonly actions: ElementActions })
   const hidden = usePuck(
     (state) => bar.id !== null && state.getItemById(bar.id)?.props.hidden === true,
   );
-  const canHide = usePuck((state) => state.getPermissions().insert === true);
+  // Not in Content mode, which locks the layout (M3).
+  const layoutOpen = usePuck((state) => state.getPermissions().insert === true);
   const marked = <span ref={marker} hidden />;
   const { id } = bar;
   if (!bar.selected || id === null || type === undefined) {
@@ -288,7 +294,7 @@ function ElementActionButtons({ actions }: { readonly actions: ElementActions })
           <PencilIcon size={16} />
         </ActionBar.Action>
       ) : null}
-      {canHide ? (
+      {layoutOpen && actions.canHide(id) ? (
         <ActionBar.Action
           label={t(hidden ? "canvas.show" : "canvas.hide")}
           onClick={() => actions.toggleHidden(id)}

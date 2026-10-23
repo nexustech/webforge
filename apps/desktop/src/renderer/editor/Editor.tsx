@@ -277,12 +277,10 @@ export function Editor({
       connection.flush,
       (nodeId) => pickImageRef.current(nodeId),
     );
-    elementCommands.setHasSelection(session.ui.getState().nodeId !== null);
     elementCommands.setLayoutLocked(modeRef.current !== "design");
     elementCommandsRef.current = elementCommands;
     const stopSelectionWatch = session.ui.subscribe((ui) => {
       canvasCommands.setHasSelection(ui.nodeId !== null);
-      elementCommands.setHasSelection(ui.nodeId !== null);
       clipboardCommands.setHasSelection(ui.nodeId !== null);
     });
     let removeFrameShortcuts: (() => void) | undefined;

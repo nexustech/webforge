@@ -25,13 +25,15 @@ describe("registerCanvasCommands", () => {
       ["edit.selectPrevious", "ArrowUp", null],
       ["edit.selectNext", "ArrowDown", null],
     ]);
-    // Text's own keys there (caret moves): left to the text while it is edited.
+    // Text's own keys there (caret moves, Mod+Backspace deletes a word): left to the text while it
+    // is edited.
     expect(
       registry
         .list()
         .filter((command) => command.textShortcut === true)
         .map((command) => command.id),
     ).toEqual([
+      "edit.delete",
       "edit.moveUp",
       "edit.moveDown",
       "edit.selectParent",
@@ -40,6 +42,32 @@ describe("registerCanvasCommands", () => {
       "edit.selectNextSibling",
     ]);
     expect(registry.get("edit.delete")?.label).toBe("Delete");
+    // Cmd+Delete on a Mac, whose delete key is Backspace (decision of 23 Oct 2026).
+    expect(registry.get("edit.delete")?.extraShortcuts).toEqual(["Mod+Backspace"]);
+  });
+
+  it("deletes with Backspace an element that has no text of its own, unless the layout is locked", () => {
+    const registry = createCommandRegistry();
+    const engine = createFakeEngine();
+    const commands = registerCanvasCommands(registry, engine, () => undefined);
+    commands.setHasSelection(true);
+
+    // A Heading: its text is emptied and edited.
+    vi.mocked(engine.perform).mockReturnValue(true);
+    registry.run("edit.clearText");
+    expect(vi.mocked(engine.perform).mock.calls).toEqual([["clearText"]]);
+    // A Section: no text of its own, so it goes, as Delete does it.
+    vi.mocked(engine.perform)
+      .mockClear()
+      .mockImplementation((action) => action !== "clearText");
+    registry.run("edit.clearText");
+    expect(vi.mocked(engine.perform).mock.calls).toEqual([["clearText"], ["delete"]]);
+    // Content mode keeps the layout (M3).
+    vi.mocked(engine.perform).mockClear();
+    commands.setLayoutLocked(true);
+    registry.run("edit.clearText");
+
+    expect(vi.mocked(engine.perform).mock.calls).toEqual([["clearText"]]);
   });
 
   it("runs the action on the engine after ending a text session", () => {

@@ -156,6 +156,24 @@ test.describe("keyboard and floating add", () => {
     await expect(steps().first()).toHaveText("Edited Heading text");
   });
 
+  test("Backspace deletes an element with no text of its own; Mod+Backspace deletes any (1.30)", async () => {
+    await selectHeading();
+    await page.keyboard.press("ControlOrMeta+ArrowUp");
+    await expect(selectedBar()).toContainText("Section");
+
+    // A Mac's delete key is Backspace: a Section has no text to empty, so it goes.
+    await page.keyboard.press("Backspace");
+    await expect(steps().first()).toHaveText("Deleted Section");
+    await expect(canvas().locator("h1")).toHaveCount(0);
+    await page.getByRole("banner").getByRole("button", { name: "Undo", exact: true }).click();
+    await expect(canvas().locator("h1")).toHaveCount(1);
+
+    await selectHeading();
+    await page.keyboard.press("ControlOrMeta+Backspace");
+    await expect(steps().first()).toHaveText("Deleted Heading");
+    await expect(canvas().locator("h1")).toHaveCount(0);
+  });
+
   test("Mod+/ and the chip hide and show the selected element; Edit edits its text (1.30)", async () => {
     await selectHeading();
 

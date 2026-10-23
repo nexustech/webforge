@@ -6,7 +6,9 @@ import type { CommandRegistry, MenuId } from "../shell/commands.js";
 /**
  * The canvas's keyboard actions (1.12, 1.30), in the order the Edit menu and command box list
  * them, with Bootstrap Studio's keys (F-ED-27). `text`: the shortcut is text's too (Mod+arrows move
- * the caret, Enter and Backspace type), so it doesn't run while text is being edited.
+ * the caret, Mod+Backspace deletes a word), so it doesn't run while text is being edited. `extra`:
+ * more keys, not shown: Mod+Backspace deletes, as Cmd+Delete does on a Mac (decision of 23 Oct
+ * 2026).
  */
 const CANVAS_COMMANDS: readonly {
   readonly id: string;
@@ -15,6 +17,7 @@ const CANVAS_COMMANDS: readonly {
   readonly shortcut: string;
   readonly menu?: MenuId;
   readonly text?: boolean;
+  readonly extra?: readonly string[];
 }[] = [
   {
     id: "edit.duplicate",
@@ -23,7 +26,15 @@ const CANVAS_COMMANDS: readonly {
     shortcut: "Mod+D",
     menu: "edit",
   },
-  { id: "edit.delete", action: "delete", label: "canvas.delete", shortcut: "Delete", menu: "edit" },
+  {
+    id: "edit.delete",
+    action: "delete",
+    label: "canvas.delete",
+    shortcut: "Delete",
+    menu: "edit",
+    text: true,
+    extra: ["Mod+Backspace"],
+  },
   {
     id: "edit.moveUp",
     action: "moveUp",
@@ -122,8 +133,8 @@ const CHANGES_LAYOUT: ReadonlySet<CanvasAction> = new Set([
 /**
  * Registers the canvas's keyboard actions as commands, so the Edit menu, the command box and their
  * shortcuts all reach them: arrows select, Mod+arrows walk the page's tree (parent, child,
- * siblings), Mod+Alt+arrows move, Enter edits text and Backspace empties it, Mod+D duplicates,
- * Delete deletes. Each runs on the canvas's selected element as one undo step. Returns a function
+ * siblings), Mod+Alt+arrows move, Enter edits text and Backspace empties it (or deletes an element
+ * with no text), Mod+D duplicates, Delete and Mod+Backspace delete. Each runs on the canvas's selected element as one undo step. Returns a function
  * that removes them, one that enables the ones needing a selection as the selection comes and goes,
  * and one that turns the ones changing the layout (duplicate, delete, move) off while Content mode
  * locks it (M3).
@@ -154,10 +165,15 @@ export function registerCanvasCommands(
       shortcut: command.shortcut,
       ...(command.menu === undefined ? {} : { menu: command.menu }),
       ...(command.text === true ? { textShortcut: true } : {}),
+      ...(command.extra === undefined ? {} : { extraShortcuts: command.extra }),
       enabled: !NEEDS_SELECTION.has(command.action),
       run: () => {
         beforeAction();
-        engine.perform(command.action);
+        // Backspace on an element with no text of its own (a Section, an image) deletes it, as
+        // Delete does: a Mac's delete key is Backspace (decision of 23 Oct 2026).
+        if (!engine.perform(command.action) && command.action === "clearText" && !locked) {
+          engine.perform("delete");
+        }
       },
     }),
   );

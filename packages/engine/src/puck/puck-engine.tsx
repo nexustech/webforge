@@ -630,6 +630,14 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
         elementRequests.emit({ kind: "pickImage", nodeId: id });
       }
     },
+    canHide: (id) => {
+      if (findNode(page, id) !== undefined) return true;
+      // A linked copy is one of the page's own, shown by its section's id.
+      const shown = findNode(composePage(page, layout, shared), id);
+      return (
+        shown !== undefined && copyShownBy(shown, copiesOn(page.content), shared) !== undefined
+      );
+    },
     toggleHidden: (id) => elementRequests.emit({ kind: "toggleHidden", nodeId: id }),
   };
 

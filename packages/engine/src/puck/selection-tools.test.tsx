@@ -1,5 +1,10 @@
 // @vitest-environment happy-dom
-import type { PageDoc } from "@webforge/model";
+import {
+  copiedNodeId,
+  type PageDoc,
+  SHARED_COPY_TYPE,
+  type SharedSectionId,
+} from "@webforge/model";
 import { type ComponentLibrary, slotComponent, textValue } from "@webforge/site-components";
 import { act } from "react";
 import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -170,6 +175,33 @@ describe("selection tools (1.30, F-ED-25, F-ED-27)", () => {
       { kind: "toggleHidden", nodeId: "first" },
       { kind: "pickImage", nodeId: "picture" },
     ]);
+  });
+
+  it("offers Hide only on the page's own elements: a linked copy whole, not inside it or the Header", async () => {
+    const HOURS = "shared-hours" as SharedSectionId;
+    const box = (id: string, inside: string) => ({
+      type: "Box",
+      props: { id, content: [{ type: "Heading", props: { id: inside, text: "Hours" } }] },
+    });
+    await act(async () =>
+      engine.loadPage(
+        {
+          root: { props: {} },
+          content: [{ type: SHARED_COPY_TYPE, props: { id: "c1", sharedSectionId: HOURS } }],
+        },
+        { header: [box("top", "logo")], footer: [] },
+        { [HOURS]: { id: HOURS, name: "Opening hours", section: box("hours", "times") } },
+      ),
+    );
+    await settle();
+
+    await select(copiedNodeId("c1", "hours"));
+    expect(button("Hide")).not.toBeNull();
+    for (const id of [copiedNodeId("c1", "times"), "logo"]) {
+      await select(id);
+      expect(button("Edit")).not.toBeNull();
+      expect(button("Hide")).toBeNull();
+    }
   });
 
   it("says Show for a hidden element, and offers no Hide in Content mode (M3)", async () => {
