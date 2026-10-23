@@ -96,6 +96,27 @@ describe("ElementMenu (1.35)", () => {
 
     expect(screen.queryByRole("menu")).toBeNull();
   });
+
+  it("offers Copy Style and Paste Style once they are registered (1.37)", () => {
+    const { commands } = registry({ save: true, detach: false });
+    commands.register({ id: "edit.copyStyle", label: "Copy Style", run: vi.fn() });
+    commands.register({
+      id: "edit.pasteStyle",
+      label: "Paste Style (onto a Heading)",
+      enabled: false,
+      run: vi.fn(),
+    });
+    render(
+      <CommandRegistryProvider registry={commands}>
+        <ElementMenu at={{ x: 0, y: 0 }} onClose={vi.fn()} onRename={vi.fn()} />
+      </CommandRegistryProvider>,
+    );
+
+    expect(items().slice(3, 5)).toEqual([
+      ["Copy Style", false],
+      ["Paste Style (onto a Heading)", true],
+    ]);
+  });
 });
 
 describe("CanvasElementMenu (1.35)", () => {
