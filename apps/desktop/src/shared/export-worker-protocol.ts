@@ -110,7 +110,7 @@ export const thumbnailOutcomeSchema = z.discriminatedUnion("type", [
 export type ThumbnailOutcome = z.infer<typeof thumbnailOutcomeSchema>;
 
 /** The worker's answer to a {@link CompileCssJob}. */
-export const compileCssOutcomeSchema = z.discriminatedUnion("type", [
+const compileCssOutcomeSchema = z.discriminatedUnion("type", [
   z.strictObject({
     type: z.literal("css"),
     id: z.int().nonnegative(),
@@ -124,7 +124,7 @@ export const compileCssOutcomeSchema = z.discriminatedUnion("type", [
 export type CompileCssOutcome = z.infer<typeof compileCssOutcomeSchema>;
 
 /** The worker's answer to a {@link ClassCatalogueJob} or a {@link ClassCssJob}. */
-export const classesOutcomeSchema = z.discriminatedUnion("type", [
+const classesOutcomeSchema = z.discriminatedUnion("type", [
   z.strictObject({
     type: z.literal("class-catalogue"),
     id: z.int().nonnegative(),
