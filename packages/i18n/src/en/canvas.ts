@@ -27,6 +27,11 @@ export const canvas = {
   "canvas.richText.link": "Link…",
   "canvas.richText.removeLink": "Remove link",
   // While an element of the shared Header or Footer is selected (1.20, F-ED-7, D7).
+  // The breadcrumb bar under the canvas toolbar (1.30): the selected element's place on the page.
+  "canvas.breadcrumbs": "Where the selection is",
+  "canvas.breadcrumbs.page": "Page",
+  // F2 on the canvas (1.30): asks for the selected element's name, as the element menu does.
+  "canvas.rename": "Rename…",
   "canvas.sharedRegion.header": "Header",
   "canvas.sharedRegion.footer": "Footer",
   // Asked before an element of the shared Header or Footer goes from every page (D7).

@@ -84,6 +84,7 @@ export function createFakeEngine(): FakeEngine {
     onFieldDrag: drags.add,
     onElementRequest: elementRequests.add,
     onContextMenu: menus.add,
+    outline: vi.fn(),
     addDragSource: vi.fn(() => () => undefined),
     setLinkPicker: vi.fn(),
     onFrameWindow: frames.add,
