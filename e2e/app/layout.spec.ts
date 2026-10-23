@@ -81,7 +81,7 @@ test.describe("window layout", () => {
     await start();
 
     await expect.poll(share).toBeCloseTo(resized, 2);
-    await page.getByRole("menuitem", { name: "View" }).click();
+    await page.getByRole("menuitem", { name: "View", exact: true }).click();
     await page.getByRole("menuitem", { name: "Reset Panels" }).click();
     await expect.poll(share).toBeCloseTo(0.4, 2);
   });
@@ -95,7 +95,7 @@ test.describe("window layout", () => {
   });
 
   test("switches to the light theme and remembers it", async () => {
-    await page.getByRole("menuitem", { name: "View" }).click();
+    await page.getByRole("menuitem", { name: "View", exact: true }).click();
     await page.getByRole("menuitem", { name: "Use Light Theme" }).click();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
     await expect.poll(() => savedPreferences().theme).toBe("light");

@@ -43,8 +43,11 @@ describe("registerCanvasCommands", () => {
       "edit.selectNextSibling",
     ]);
     expect(registry.get("edit.delete")?.label).toBe("Delete");
-    // Cmd+Delete on a Mac, whose delete key is Backspace (decision of 23 Oct 2026).
-    expect(registry.get("edit.delete")?.extraShortcuts).toEqual(["Mod+Backspace"]);
+    // Cmd+Delete on a Mac, whose delete key is Backspace (decision of 23 Oct 2026): there it is the
+    // shortcut shown, and Delete the extra one.
+    expect(registry.get("edit.delete")?.extraShortcuts).toEqual([
+      isMac() ? "Delete" : "Mod+Backspace",
+    ]);
   });
 
   it("deletes with Backspace an element that has no text of its own, unless the layout is locked", () => {
