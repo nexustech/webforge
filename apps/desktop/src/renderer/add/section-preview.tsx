@@ -179,7 +179,7 @@ export function createSectionPreviews(source: PreviewSource): (item: AddItem) =>
         .split(/\s+/)
         .filter((name) => name !== "" && !WHOLE_PAGE_CLASSES.has(name))
         .join(" "),
-      theme: theme.name,
+      theme: theme.preset,
     };
   };
   const drawerFor = (item: AddItem) => {
