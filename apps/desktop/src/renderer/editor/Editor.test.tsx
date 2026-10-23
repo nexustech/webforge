@@ -8,6 +8,7 @@ import { saveAsSharedSection } from "../shared-sections/shared-sections.js";
 import { CommandRegistryProvider } from "../shell/command-context.js";
 import { type CommandRegistry, createCommandRegistry } from "../shell/commands.js";
 import { createSiteWideConfirm } from "../shell/confirm-site-wide.js";
+import { CanvasErrorBoundary } from "../shell/error-boundaries.js";
 import { PanelRegistryProvider, usePanels } from "../shell/panel-context.js";
 import { createPanelRegistry, type PanelRegistry } from "../shell/panels.js";
 import { Editor } from "./Editor.js";
@@ -450,6 +451,9 @@ describe("Editor", () => {
     expect(engine.mount).toHaveBeenCalledWith(expect.anything(), {
       library: siteLibrary,
       theme: site.theme,
+      // An error in the canvas stays there, and becomes a local crash report (R3).
+      errorBoundary: CanvasErrorBoundary,
+      onError: expect.any(Function),
     });
     expect(canvas?.querySelector(".editor__canvas-root")).not.toBeNull();
     expect(engine.loadPage).toHaveBeenCalledWith(starterPage(), site.layout, site.sharedSections);

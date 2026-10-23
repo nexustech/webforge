@@ -8,6 +8,7 @@ import type {
   Theme,
 } from "@webforge/model";
 import type { ComponentLibrary, RenderContext, ResolvedImage } from "@webforge/site-components";
+import type { ComponentType, ReactNode } from "react";
 
 /** The rich-text field being edited on the canvas: its element and the field's name. */
 export type RichTextAt = { readonly nodeId: string; readonly field: string };
@@ -208,6 +209,14 @@ export type InsertPoint = { readonly index: number };
 export type MountOptions = {
   readonly library: ComponentLibrary;
   readonly theme: Theme;
+  /**
+   * Keeps an error inside the canvas (R3): it wraps everything the canvas draws, and shows its own
+   * fallback instead after an error, so the rest of the editor keeps working. Without one, an
+   * error takes the canvas down. When the boundary tries again, the canvas shows the current page.
+   */
+  readonly errorBoundary?: ComponentType<{ readonly children: ReactNode }>;
+  /** Told about each error in the canvas: caught by `errorBoundary` (`caught`), or not. */
+  readonly onError?: (error: unknown, caught: boolean) => void;
 };
 
 /**

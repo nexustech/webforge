@@ -10,6 +10,7 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
+import { type ErrorDetails, isStackFrame, MAX_FRAMES } from "../shared/error-details.js";
 
 /** Which process a report is about. */
 export type CrashProcess = "main" | "renderer" | "gpu" | "utility" | "other";
@@ -22,8 +23,17 @@ export type CrashProcess = "main" | "renderer" | "gpu" | "utility" | "other";
 export type CrashReport = {
   readonly time: string;
   readonly process: CrashProcess;
-  /** `uncaught-exception`, `unhandled-rejection`, or Electron's reason a process went away. */
+  /**
+   * `uncaught-exception`, `unhandled-rejection`, or Electron's reason a process went away; from the
+   * renderer, `render-error`, `uncaught-error` or `unhandled-rejection` (R3).
+   */
   readonly kind: string;
+  /**
+   * Whether Webforge or a window went away. An error the editor survived (a panel showing its
+   * fallback, a failed export worker) is reported too, but the next launch doesn't say Webforge
+   * closed unexpectedly.
+   */
+  readonly fatal: boolean;
   readonly app: { readonly version: string };
   readonly versions: { readonly electron: string; readonly chrome: string; readonly node: string };
   readonly os: { readonly platform: string; readonly arch: string; readonly release: string };
@@ -44,8 +54,6 @@ export type CrashContext = {
   readonly now?: () => Date;
 };
 
-const MAX_FRAMES = 30;
-
 function escapeRegExp(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -63,9 +71,12 @@ function pathPattern(path: string, whole: boolean): RegExp {
   return new RegExp(String.raw`(?:file:/{2,3})?/?` + parts.join(String.raw`[\\/]+`) + rest, "gi");
 }
 
-/** Any other absolute path: `C:\…`, `\\server\…`, `/Users/…`, `/home/…` and the like. */
+/**
+ * Any other absolute path: `C:\…`, `\\server\…`, `/Users/…`, `/home/…` and the like. A drive
+ * letter starts a word, so a URL's scheme (`http://`, `app://`) isn't taken for one.
+ */
 const OTHER_PATHS =
-  /(?:file:\/{2,3})?(?:[A-Za-z]:[\\/]|\\\\|\/(?:Users|home|var|tmp|private|Volumes|mnt)\/)[^\s)'"]*/g;
+  /(?:file:\/{2,3})?(?:(?<![A-Za-z])[A-Za-z]:[\\/]|\\\\|\/(?:Users|home|var|tmp|private|Volumes|mnt)\/)[^\s)'"]*/g;
 
 /**
  * Replaces paths in one stack frame: the app's own folder becomes `<app>`, so frames still say
@@ -83,42 +94,90 @@ export function redactPaths(
   return result.replace(OTHER_PATHS, "<path>");
 }
 
+/** A frame: `at <where> (<location>)`, or `at <location>`. */
+const FRAME_PARTS = /^at (.+ \()?(.+?)(\)?)$/;
+
+/** A location that is a file: an absolute path or a `file:` URL. */
+const FILE_LOCATION = /^(?:file:|[A-Za-z]:[\\/]|\\\\|\/)/i;
+
 /**
- * The stack frames of `error` without its message: V8 starts a stack with `Name: message`, and
- * the message may quote what the code was working on. Only `at …` lines are kept.
+ * Removes paths from one stack frame (see {@link redactPaths}). The location is taken whole, up to
+ * its closing parenthesis, so a folder whose name has spaces or an apostrophe ("Rosa's Bakery")
+ * goes with the rest of the path: a file in the app's own folder keeps its place in the app
+ * (`<app>/out/main/index.js:1:2`), any other file is just `<path>`.
  */
-function framesOf(error: Error, context: CrashContext): string[] {
-  return (error.stack ?? "")
-    .split("\n")
-    .map((line) => line.trim())
-    .filter((line) => line.startsWith("at "))
-    .slice(0, MAX_FRAMES)
-    .map((line) => redactPaths(line, context.appPath, context.privatePaths));
+function redactFrame(line: string, appPath: string, privatePaths: readonly string[]): string {
+  const parts = FRAME_PARTS.exec(line);
+  if (parts === null) {
+    return redactPaths(line, appPath, privatePaths);
+  }
+  const [, where = "", location = "", close = ""] = parts;
+  const inApp = new RegExp(`^${pathPattern(appPath, false).source}`, "i");
+  const redacted = inApp.test(location)
+    ? location.replace(inApp, "<app>")
+    : FILE_LOCATION.test(location)
+      ? "<path>"
+      : redactPaths(location, appPath, privatePaths);
+  return `at ${redactPaths(where, appPath, privatePaths)}${redacted}${close}`;
 }
 
-/** Builds a report; `error` is whatever was thrown (which need not be an `Error`). */
+/**
+ * Stack frames as a report keeps them: frames only (V8 starts a stack with `Name: message`, and the
+ * message may quote what the code was working on), at most {@link MAX_FRAMES}, without paths.
+ */
+function framesOf(lines: readonly string[], context: CrashContext): string[] {
+  return lines
+    .map((line) => line.trim())
+    .filter(isStackFrame)
+    .slice(0, MAX_FRAMES)
+    .map((line) => redactFrame(line, context.appPath, context.privatePaths));
+}
+
+/** What a report says about an error: one this process caught, or one another reported. */
+function errorOf(
+  details: { readonly error?: unknown; readonly reported?: ErrorDetails },
+  context: CrashContext,
+): CrashReport["error"] {
+  if (details.reported !== undefined) {
+    // From another process: its frames are checked, and their paths removed, here again.
+    return { name: details.reported.name, stack: framesOf(details.reported.frames, context) };
+  }
+  if (details.error === undefined) {
+    return undefined;
+  }
+  return details.error instanceof Error
+    ? {
+        name: details.error.name,
+        stack: framesOf((details.error.stack ?? "").split("\n"), context),
+      }
+    : // A thrown string or object: its type only, never its value.
+      { name: typeof details.error, stack: [] };
+}
+
+/**
+ * Builds a report. `error` is whatever this process caught (which need not be an `Error`);
+ * `reported` is what another process said about one (R3).
+ */
 export function buildCrashReport(
   context: CrashContext,
   details: {
     readonly process: CrashProcess;
     readonly kind: string;
     readonly error?: unknown;
+    readonly reported?: ErrorDetails;
     readonly exitCode?: number;
+    /** False for an error the editor survived; see {@link CrashReport.fatal}. */
+    readonly fatal?: boolean;
   },
 ): CrashReport {
   const memory = context.memory();
   const mb = (bytes: number) => Math.round((bytes / 1_048_576) * 10) / 10;
-  const error =
-    details.error === undefined
-      ? undefined
-      : details.error instanceof Error
-        ? { name: details.error.name, stack: framesOf(details.error, context) }
-        : // A thrown string or object: its type only, never its value.
-          { name: typeof details.error, stack: [] };
+  const error = errorOf(details, context);
   return {
     time: (context.now?.() ?? new Date()).toISOString(),
     process: details.process,
     kind: details.kind,
+    fatal: details.fatal ?? true,
     app: { version: context.appVersion },
     versions: context.versions,
     os: context.os,
@@ -161,16 +220,21 @@ const reportSchema = z.object({
   time: z.iso.datetime(),
   process: z.enum(["main", "renderer", "gpu", "utility", "other"]),
   kind: z.string(),
+  // Reports from before R3 have no `fatal`: every one was.
+  fatal: z.boolean().optional(),
 });
 
-/** Whether the file at `path` holds a whole, readable report. */
-function isReport(path: string): boolean {
+/** The whole, readable report in the file at `path`, if it holds one. */
+function readReport(path: string): z.infer<typeof reportSchema> | undefined {
   try {
-    return reportSchema.safeParse(JSON.parse(readFileSync(path, "utf8"))).success;
+    return reportSchema.safeParse(JSON.parse(readFileSync(path, "utf8"))).data;
   } catch {
-    return false;
+    return undefined;
   }
 }
+
+/** Whether the file at `path` holds a whole, readable report. */
+const isReport = (path: string) => readReport(path) !== undefined;
 
 function fileStamp(time: string): string {
   return time.slice(0, 19).replace(/[-:]/g, "").replace("T", "-");
@@ -278,7 +342,10 @@ export function createCrashReports(options: {
       prune();
       return written;
     },
-    /** Whether reports were written since the user was last told (next-launch notice). */
+    /**
+     * Whether Webforge or a window went away since the user was last told (next-launch notice):
+     * reports of errors it survived don't count.
+     */
     hasUnseen(): boolean {
       let seen = 0;
       try {
@@ -288,7 +355,11 @@ export function createCrashReports(options: {
       } catch {
         // Never told: every report is new.
       }
-      return reports().some((report) => report.mtime > seen && isReport(report.path));
+      return reports().some((report) => {
+        if (report.mtime <= seen) return false;
+        const read = readReport(report.path);
+        return read !== undefined && read.fatal !== false;
+      });
     },
     /** Remembers that the user has been told about every report so far. */
     markSeen(): void {
