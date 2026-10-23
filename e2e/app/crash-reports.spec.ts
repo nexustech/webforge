@@ -39,6 +39,16 @@ async function openSecretSite(): Promise<ElectronApplication> {
   return launched;
 }
 
+/** Whether `text` is a whole report: JSON that parses (a file can be read while being written). */
+function parses(text: string): boolean {
+  try {
+    JSON.parse(text);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** The single report that appears, checked to hold none of the site's text or paths. */
 async function onlyReport(): Promise<{ name: string; report: Record<string, unknown> }> {
   const reportsDir = join(userData, "crash-reports");
@@ -46,7 +56,10 @@ async function onlyReport(): Promise<{ name: string; report: Record<string, unkn
     existsSync(reportsDir) ? readdirSync(reportsDir).filter((name) => name.endsWith(".json")) : [];
   await expect.poll(reports, { timeout: 20_000 }).toHaveLength(1);
   const [name = ""] = reports();
-  const text = readFileSync(join(reportsDir, name), "utf8");
+  // The finished report, not just its file.
+  const read = () => readFileSync(join(reportsDir, name), "utf8");
+  await expect.poll(() => parses(read()), { timeout: 20_000 }).toBe(true);
+  const text = read();
   expect(text).not.toContain("4711");
   expect(text).not.toContain("Secret");
   expect(text).not.toContain(dir);
