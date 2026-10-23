@@ -100,13 +100,10 @@ export function registerLayersPanel(
           selectMany: (ids) => selectElements(ui, ids),
           rename: (id, name) => renameLayer(session, id, name),
           setHidden: (id, hidden) => setLayerHidden(session, id, hidden),
-          // One layer moves; several move together with the Edit menu's moves (1.31 part 2).
-          move: (id, index) => {
-            if ((ui.getState().others ?? []).length === 0) moveLayer(session, id, index);
-          },
-          copy: (id, index, linked) => {
-            if ((ui.getState().others ?? []).length === 0) copyLayer(session, id, index, linked);
-          },
+          // A dragged layer moves or is copied alone, and is selected alone after: the panel
+          // never drags a row of several selected (those move with the Edit menu's moves, 1.31).
+          move: (id, index) => moveLayer(session, id, index),
+          copy: (id, index, linked) => copyLayer(session, id, index, linked),
           moveUp: useCommandAction(TOOLBAR_COMMANDS.moveUp),
           moveDown: useCommandAction(TOOLBAR_COMMANDS.moveDown),
           duplicate: useCommandAction(TOOLBAR_COMMANDS.duplicate),

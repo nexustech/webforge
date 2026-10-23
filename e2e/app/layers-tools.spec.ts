@@ -140,7 +140,8 @@ test("Select similar selects every element of the kind on the page, from the men
     .click();
   await expect(canvas().locator("h1")).toHaveCount(2);
 
-  await canvas().locator("h1").first().click({ button: "right" });
+  // The copy is selected; its quick actions sit over the first heading, so the copy is clicked.
+  await canvas().locator("h1").last().click({ button: "right" });
   await menu().getByRole("menuitem", { name: "Select similar" }).click();
 
   await expect(page.getByRole("status").filter({ hasText: "2 elements selected" })).toBeVisible();

@@ -1,5 +1,14 @@
 // @vitest-environment happy-dom
-import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  createEvent,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
   copiedNodeId,
@@ -86,6 +95,44 @@ describe("registerLayersPanel", () => {
     expect(order()).toEqual(before);
     expect(session.history.entries()).toHaveLength(0);
     expect(selectedIds(session.ui.getState())).toEqual(["heading-1", "text-1"]);
+  });
+
+  it("moves or copies a row dragged while others are selected, alone, and selects it (#269 review)", () => {
+    const { session } = setUp();
+    const order = () =>
+      ((currentPage(session)?.doc.content[0]?.props.content ?? []) as NodeDoc[]).map(
+        (node) => node.props.id,
+      );
+    const drag = (from: number, to: number, copy = false) => {
+      const rows = screen.getAllByRole("treeitem");
+      const dataTransfer = { setData: vi.fn(), effectAllowed: "" };
+      const target = rows[to] as HTMLElement;
+      // happy-dom's drag events don't take the keys from their init: they are set on the event.
+      const withKeys = (event: Event) => {
+        for (const key of ["ctrlKey", "metaKey"])
+          Object.defineProperty(event, key, { value: copy });
+        return event;
+      };
+      fireEvent.dragStart(rows[from] as HTMLElement, { dataTransfer });
+      fireEvent(target, withKeys(createEvent.dragOver(target, { dataTransfer })));
+      fireEvent(target, withKeys(createEvent.drop(target, { dataTransfer })));
+      fireEvent.dragEnd(rows[from] as HTMLElement, { dataTransfer });
+    };
+    act(() => selectElements(session.ui, ["section-1", "heading-1"]));
+
+    // The Text, not selected, dragged before the Heading.
+    drag(2, 1);
+    expect(order()).toEqual(["text-1", "heading-1"]);
+    expect(selectedIds(session.ui.getState())).toEqual(["text-1"]);
+
+    act(() => selectElements(session.ui, ["section-1", "text-1"]));
+    drag(2, 1, true);
+    expect(order()).toHaveLength(3);
+    expect(selectedIds(session.ui.getState())).toHaveLength(1);
+    expect(session.history.entries().map((entry) => entry.label)).toEqual([
+      "Moved Text",
+      "Duplicated Heading",
+    ]);
   });
 
   it("follows changes to the page, and runs the canvas's commands from its toolbar", async () => {
