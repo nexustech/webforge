@@ -1,4 +1,5 @@
 import { t } from "@webforge/i18n";
+import { defineComponent } from "../define.js";
 import { isDocumentPath } from "../document-path.js";
 import { boundText, type ComponentDef, type NavLink, type RenderContext } from "../library.js";
 
@@ -104,7 +105,7 @@ function NavItems({ id, context }: { readonly id: string; readonly context: Rend
  * screens the navigation folds into a menu opened by a button (`webforge.js` "menu" behaviour sets
  * `data-open` and `aria-expanded`).
  */
-export const header: ComponentDef = {
+const header = defineComponent({
   label: t("layout.header"),
   place: "layout",
   fields: {
@@ -151,10 +152,10 @@ export const header: ComponentDef = {
       </header>
     );
   },
-};
+});
 
 /** The shared Footer (C5). */
-export const footer: ComponentDef = {
+const footer = defineComponent({
   label: t("layout.footer"),
   place: "layout",
   fields: {
@@ -180,4 +181,10 @@ export const footer: ComponentDef = {
       </footer>
     );
   },
+});
+
+/** The shared Header and Footer (C5), on every page and never added to one. */
+export const layoutComponents: Readonly<Record<string, ComponentDef>> = {
+  Header: header,
+  Footer: footer,
 };

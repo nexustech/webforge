@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { BEHAVIOUR_SCRIPTS } from "./behaviours.js";
-import { siteLibrary, starterLayout, starterNotFoundPage, starterPage } from "./catalogue.js";
+import { BEHAVIOUR_SCRIPTS } from "../behaviours.js";
+import { siteLibrary, starterLayout, starterNotFoundPage, starterPage } from "./index.js";
 
 describe("siteLibrary", () => {
   it("names components with glossary terms", () => {

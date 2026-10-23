@@ -5,7 +5,7 @@ import {
   type SharedSectionId,
 } from "@webforge/model";
 import { describe, expect, it } from "vitest";
-import { siteLibrary, starterLayout, starterPage } from "./catalogue.js";
+import { siteLibrary, starterLayout, starterPage } from "./catalogue/index.js";
 import { EDITOR_RENDER_CONTEXT, type RenderContext, type ResolvedImage } from "./library.js";
 import {
   behavioursUsedBy,

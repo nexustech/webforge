@@ -1,4 +1,5 @@
 import { t } from "@webforge/i18n";
+import { defineComponent } from "../define.js";
 import {
   boundText,
   boxClasses,
@@ -66,7 +67,7 @@ const COLOUR_CLASS = {
 } as const;
 
 /** A page band holding elements. Keeps the `site-section` hook for tests and developers. */
-export const section: ComponentDef = {
+const section = defineComponent({
   label: t("section.section"),
   place: "section",
   category: t("category.basic"),
@@ -80,11 +81,8 @@ export const section: ComponentDef = {
       steps: GAPS.map((value) => ({ label: t(`field.gap.${value}`), value })),
     },
     fullWidth: { kind: "toggle", label: t("field.fullWidth"), group: "style" },
-    content: {
-      kind: "slot",
-      label: t("field.content"),
-      allow: ["Heading", "Text", "Faq"],
-    },
+    // Every element, those of families added later too (createLibrary lists them).
+    content: { kind: "slot", label: t("field.content"), accepts: "element" },
   },
   defaults: { gap: "medium", fullWidth: false, content: [] },
   render: (props) => {
@@ -103,10 +101,10 @@ export const section: ComponentDef = {
       </section>
     );
   },
-};
+});
 
 /** A heading; its size also sets the heading level. */
-export const heading: ComponentDef = {
+const heading = defineComponent({
   label: t("element.heading"),
   category: t("category.text"),
   fields: {
@@ -151,10 +149,10 @@ export const heading: ComponentDef = {
       </Tag>
     );
   },
-};
+});
 
 /** Formatted text (paragraphs, bold, links, lists). */
-export const text: ComponentDef = {
+const text = defineComponent({
   label: t("element.text"),
   category: t("category.text"),
   fields: {
@@ -169,4 +167,11 @@ export const text: ComponentDef = {
       {textValue(values.text)}
     </div>
   ),
+});
+
+/** The basic components: a Section, and the Heading and Text that go in it. */
+export const basicComponents: Readonly<Record<string, ComponentDef>> = {
+  Section: section,
+  Heading: heading,
+  Text: text,
 };

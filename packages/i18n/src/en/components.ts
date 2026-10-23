@@ -21,6 +21,8 @@ export const components = {
   "field.size.small": "Small",
   "field.padding": "Padding",
   "field.margin": "Margin",
+  // A component's layout variants (2.5): "Image on the left", "Three columns".
+  "field.variant": "Layout",
   "field.side.top": "Top",
   "field.side.right": "Right",
   "field.side.bottom": "Bottom",

@@ -1,0 +1,15 @@
+/* Site components styled as the export styles them: Tailwind with daisyUI's themes. */
+@import "tailwindcss";
+@plugin "daisyui" {
+  themes:
+    light --default,
+    dark,
+    cupcake;
+}
+@source "../src";
+/*
+ * The spacing classes boxClasses builds from tokens (pt-32, max-md:mt-24…), which no source file
+ * writes out: the export compiles the classes its pages use, this compiles them all. A test
+ * (src/storybook-css.test.ts) checks every class boxClasses can give is here.
+ */
+@source inline("{,md:,lg:,max-md:,md:max-lg:,max-lg:}{p,m}{x,y,t,r,b,l}-{0,4,8,16,24,32}");

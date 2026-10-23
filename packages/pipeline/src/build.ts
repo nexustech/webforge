@@ -152,7 +152,8 @@ export async function buildSite(
       ? undefined
       : [
           "/* webforge.js: behaviours for this site's components. Classic script, no modules. */",
-          ...behaviours.map((name) => BEHAVIOUR_SCRIPTS[name].trim()),
+          // defineComponent checks every behaviour a component names is in behaviours/.
+          ...behaviours.flatMap((name) => BEHAVIOUR_SCRIPTS[name]?.trim() ?? []),
           "",
         ].join("\n\n");
   const scriptPath =
