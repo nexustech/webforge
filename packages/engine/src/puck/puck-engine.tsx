@@ -37,6 +37,7 @@ import type {
   InsertPoint,
   LinkPicker,
   RichTextAt,
+  ViewOptions,
   Viewport,
 } from "../canvas-engine.js";
 import { installHistoryKeys } from "../history-keys.js";
@@ -64,6 +65,7 @@ import {
 import { applySiteStyles, type SiteStyles } from "./site-styles.js";
 import { focusedRichTextId, staleRichText } from "./stale-rich-text.js";
 import { allNodes, findNode, nodeAt } from "./tree.js";
+import { applyViewOptions } from "./view-options.js";
 
 /** Options of {@link createPuckEngine}. */
 export type PuckEngineOptions = {
@@ -132,6 +134,14 @@ const CONTENT_MODE_PERMISSIONS = { drag: false, duplicate: false, delete: false,
 const DESIGN_MODE_PERMISSIONS = { drag: true, duplicate: true, delete: true, insert: true };
 
 type GetPuck = ReturnType<typeof useGetPuck>;
+
+/** The View options before the app sets any: nothing shown besides the page. */
+const NO_VIEW_OPTIONS: ViewOptions = {
+  outlines: false,
+  spacingOnHover: false,
+  elementNames: false,
+  extraBottomSpace: false,
+};
 
 const usePuck = createUsePuck();
 
@@ -205,6 +215,35 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     stopKeepingEnabled?.();
     stopKeepingEnabled =
       mode === "content" && frameDocument !== null ? keepElementsEnabled(frameDocument) : null;
+  };
+  /** The names the View menu's labels show, by id, for the page shown: made once per change. */
+  let names: {
+    readonly page: PageDoc;
+    readonly layout: LayoutDoc;
+    readonly shared: SharedSectionsDoc;
+    readonly byId: ReadonlyMap<string, string>;
+  } | null = null;
+  /** An element's name for the labels: its Layers name, else its component's. */
+  const nameOf = (id: string): string | undefined => {
+    if (names?.page !== page || names.layout !== layout || names.shared !== shared) {
+      const nodes = allNodes(composePage(page, layout, shared));
+      const byId = new Map(
+        nodes.map((node) => [
+          node.props.id,
+          node.props.layerName?.trim() || (library?.components[node.type]?.label ?? node.type),
+        ]),
+      );
+      names = { page, layout, shared, byId };
+    }
+    return names.byId.get(id);
+  };
+  /** The View menu's options (F-ED-25), shown in the canvas document while there is one. */
+  let viewOptions: ViewOptions = NO_VIEW_OPTIONS;
+  let stopViewOptions: (() => void) | null = null;
+  const followViewOptions = () => {
+    stopViewOptions?.();
+    stopViewOptions =
+      frameDocument === null ? null : applyViewOptions(frameDocument, viewOptions, nameOf);
   };
   /** The site's CSS, applied to the canvas document whenever there is one. */
   let siteStyles: SiteStyles | null = null;
@@ -571,6 +610,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
         if (siteStyles !== null) applySiteStyles(document, siteStyles);
       }
       followMode();
+      followViewOptions();
       const frameWindow = document?.defaultView;
       if (!frameWindow) {
         return undefined;
@@ -580,6 +620,8 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       return () => {
         stopKeepingEnabled?.();
         stopKeepingEnabled = null;
+        stopViewOptions?.();
+        stopViewOptions = null;
         removeKeys();
         frameWindows.emit(null);
       };
@@ -855,6 +897,11 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       mode = nextMode;
       followMode();
       render();
+    },
+
+    setViewOptions(options) {
+      viewOptions = options;
+      followViewOptions();
     },
 
     renderStatic(staticPage, _staticLayout, staticShared = {}) {

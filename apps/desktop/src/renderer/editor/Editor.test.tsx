@@ -343,6 +343,34 @@ describe("Editor", () => {
     expect(engine.mount).toHaveBeenCalledOnce();
   });
 
+  it("passes the View menu's options to the engine, without remounting it (F-ED-25)", async () => {
+    expect(engine.setViewOptions).not.toHaveBeenCalled();
+    const options = {
+      outlines: true,
+      spacingOnHover: false,
+      elementNames: true,
+      extraBottomSpace: false,
+    };
+
+    await act(async () =>
+      root.render(
+        <CommandRegistryProvider registry={registry}>
+          <PanelRegistryProvider registry={panels}>
+            <Editor
+              session={session}
+              createEngine={createEngine}
+              compileCss={compileCss}
+              viewOptions={options}
+            />
+          </PanelRegistryProvider>
+        </CommandRegistryProvider>,
+      ),
+    );
+
+    expect(engine.setViewOptions).toHaveBeenLastCalledWith(options);
+    expect(engine.mount).toHaveBeenCalledOnce();
+  });
+
   it("styles the canvas with the site's compiled CSS", () => {
     expect(compileCss).toHaveBeenCalledWith(
       expect.objectContaining({ theme: session.history.document.getState().theme }),

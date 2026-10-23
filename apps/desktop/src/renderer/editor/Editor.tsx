@@ -5,6 +5,7 @@ import {
   type EditorMode,
   type HistoryCommand,
   installHistoryKeys,
+  type ViewOptions,
 } from "@webforge/engine";
 import { t } from "@webforge/i18n";
 import { type RefObject, useEffect, useRef, useState, useSyncExternalStore } from "react";
@@ -70,6 +71,8 @@ export type EditorProps = {
   readonly siteWide?: Pick<SiteWideConfirm, "confirmSiteWide" | "current">;
   /** The person's own devices, which dragging the canvas's edges snaps to (F-ED-25). */
   readonly devices?: readonly CustomDevice[];
+  /** What the canvas shows besides the page: the View menu's options (F-ED-25). */
+  readonly viewOptions?: ViewOptions;
 };
 
 const compileWithPreload: CompileCanvasCss = (request) =>
@@ -116,6 +119,7 @@ export function Editor({
   editorLevel = "simple",
   siteWide,
   devices = [],
+  viewOptions,
 }: EditorProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [engine, setEngine] = useState<CanvasEngine | null>(null);
@@ -272,6 +276,11 @@ export function Editor({
       element.remove();
     };
   }, [session, history, createEngine, compileCss, registry, siteWide]);
+
+  // The View menu's options (F-ED-25): view state, never an undo step (U6).
+  useEffect(() => {
+    if (viewOptions !== undefined) engine?.setViewOptions(viewOptions);
+  }, [engine, viewOptions]);
 
   useEffect(() => {
     engine?.setMode(mode);

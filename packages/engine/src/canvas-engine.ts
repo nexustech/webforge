@@ -38,6 +38,18 @@ export type CanvasSize = {
 /** Design mode edits everything; Content mode only text and images (M3). */
 export type EditorMode = "design" | "content";
 
+/**
+ * What the canvas shows besides the page (F-ED-25, the View menu): outlines around every element,
+ * an element's margins and padding on hover, element names, and room below the page. They change
+ * only what the canvas shows: never the page, its export or its history.
+ */
+export type ViewOptions = {
+  readonly outlines: boolean;
+  readonly spacingOnHover: boolean;
+  readonly elementNames: boolean;
+  readonly extraBottomSpace: boolean;
+};
+
 /** Stops a subscription. */
 export type Unsubscribe = () => void;
 
@@ -205,6 +217,8 @@ export interface CanvasEngine {
    */
   setNavigation(navigation: RenderContext["navigation"]): void;
   setMode(mode: EditorMode): void;
+  /** Shows the View menu's options on the canvas (F-ED-25); none until called. */
+  setViewOptions(options: ViewOptions): void;
   /**
    * Does `action` to the selected element. Edits are reported through {@link onUserEdit} as one
    * step each, like the same action done with the mouse. Returns false if there is nothing to do:

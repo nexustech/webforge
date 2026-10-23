@@ -3,7 +3,7 @@ import type { EditorMode } from "@webforge/engine";
 import { t } from "@webforge/i18n";
 import { siteLibrary } from "@webforge/site-components";
 import { PanelBottomIcon, PanelLeftIcon, PanelRightIcon } from "lucide-react";
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { applyPreferencesChange } from "../shared/ipc/prefs.js";
 import type { ExportRequest } from "../shared/ipc/site.js";
 import type {
@@ -129,6 +129,12 @@ export function App({
   };
 
   const { theme, editorLevel } = preferences;
+  // The View menu's options as the canvas takes them; the same object until one changes.
+  const { showOutlines, spacingOnHover, elementNames, extraBottomSpace } = preferences.canvas;
+  const viewOptions = useMemo(
+    () => ({ outlines: showOutlines, spacingOnHover, elementNames, extraBottomSpace }),
+    [showOutlines, spacingOnHover, elementNames, extraBottomSpace],
+  );
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
@@ -258,6 +264,7 @@ export function App({
                         canvasView={canvasView}
                         editorLevel={editorLevel}
                         devices={preferences.canvas.devices}
+                        viewOptions={viewOptions}
                       />
                     </div>
                   </div>

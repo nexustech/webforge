@@ -14,6 +14,7 @@ export type {
   MountOptions,
   RichTextAt,
   Unsubscribe,
+  ViewOptions,
   Viewport,
 } from "./canvas-engine.js";
 export { historyCommandFor, installHistoryKeys } from "./history-keys.js";
