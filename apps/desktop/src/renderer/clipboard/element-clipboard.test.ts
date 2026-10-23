@@ -522,6 +522,41 @@ describe("copy and paste of shared sections (1.29, F-ED-23)", () => {
     expect(session.ui.getState().nodeId).toBeNull();
   });
 
+  it("pastes an image into an element inside a copy, as an edit of the shared section (#234)", async () => {
+    const session = createEditorSession(siteLibrary, starterSite());
+    session.edit("insert", "Added Hero", (draft) => {
+      const section = draft.pages[draft.homePageId]?.doc.content[0];
+      (section?.props.content as NodeDoc[] | undefined)?.push({
+        type: "Hero",
+        props: { id: "hero", title: "Fresh bread" },
+      });
+    });
+    select(session, "section-1");
+    saveAsSharedSection(session, "Hours");
+    const [shared] = Object.values(session.history.document.getState().sharedSections);
+    const copy = content(session)[0];
+    if (shared === undefined || copy === undefined) throw new Error("not saved");
+    const heroOf = () => {
+      const section = session.history.document.getState().sharedSections[shared.id]?.section;
+      return (section?.props.content as NodeDoc[] | undefined)?.find(
+        (node) => node.props.id === "hero",
+      );
+    };
+    select(session, copiedNodeId(copy.props.id, "hero"));
+
+    const pasted = fakeClipboard({ status: "media", items: [photo], rejected: [] });
+    expect(await pasteElements(session, pasted, vi.fn())).toBe(true);
+
+    // The shared section holds it, so every copy shows it; the page keeps just its copy.
+    expect(heroOf()?.props.image).toEqual({ mediaId: photo.id });
+    expect(content(session)).toEqual([copy]);
+    expect(session.history.document.getState().media[photo.id]).toMatchObject(photo);
+    expect(labels(session).at(-1)).toBe("Edited shared section 'Hours'");
+    session.history.undo();
+    expect(heroOf()?.props).not.toHaveProperty("image");
+    expect(session.history.document.getState().media).toEqual({});
+  });
+
   it("asks before cutting from inside a copy, but not before cutting a whole copy (D7)", async () => {
     const { session, shared, copy } = saved();
     const confirmCut = vi.fn(async () => false);
