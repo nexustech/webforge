@@ -199,7 +199,8 @@ describe("ImageField", () => {
     // Closed, focus goes back to the field's button, which opened it.
     await act(async () => button("Cancel")?.click());
     expect(picker()).toBeNull();
-    expect(document.activeElement?.id).toBe("field-image");
+    // The dialog gives the focus back once it has closed, a moment later.
+    await vi.waitFor(() => expect(document.activeElement?.id).toBe("field-image"));
     // Another element's image is its own field's.
     await act(async () => picks.request("other"));
     expect(picker()).toBeNull();
