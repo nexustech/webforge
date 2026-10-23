@@ -8,6 +8,7 @@ import resize from "@jsquash/resize/lib/resize/pkg/squoosh_resize_bg.wasm?base64
 import webpEncode from "@jsquash/webp/codec/enc/webp_enc_simd.wasm?base64";
 import { compileCodecs, type PipelineResources, type StyleResources } from "@webforge/pipeline";
 import daisyui from "daisyui";
+import daisyuiTheme from "daisyui/theme";
 import preflight from "tailwindcss/preflight.css?raw";
 import theme from "tailwindcss/theme.css?raw";
 import utilities from "tailwindcss/utilities.css?raw";
@@ -32,6 +33,7 @@ export function loadStyleResources(): StyleResources {
       "tailwindcss/utilities.css": utilities,
     },
     daisyui,
+    daisyuiTheme,
     fonts: [
       {
         family: "Inter",
