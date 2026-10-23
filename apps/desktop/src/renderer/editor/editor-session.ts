@@ -20,21 +20,10 @@ import type { ComponentLibrary } from "@webforge/site-components";
 import type { StoreApi } from "zustand/vanilla";
 import { applyPatch } from "./apply-patch.js";
 import { labelFor } from "./labels.js";
-import { createSelectionStore, toggleSelected } from "./selection.js";
+import { createSelectionStore, type EditorSelection, toggleSelected } from "./selection.js";
 import { shownLayout } from "./shared-layout.js";
 
-/**
- * What undo shows again (U3): the page, the selected elements and the device view. It is also the
- * UI state (U6): changing it is never an undo step.
- */
-export type EditorSelection = {
-  readonly pageId: PageId;
-  /** The selected element the canvas and the Edit panel show, if any. */
-  readonly nodeId: string | null;
-  /** The other selected elements, while several are (1.31); none when left out. */
-  readonly others?: readonly string[];
-  readonly viewport: Viewport;
-};
+export type { EditorSelection } from "./selection.js";
 
 /** What kind of change an entry records; 1.11's Undo toasts pick the ones they announce. */
 export type EditKind = EngineEditKind;

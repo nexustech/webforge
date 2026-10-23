@@ -1,5 +1,19 @@
+import type { Viewport } from "@webforge/engine";
+import type { PageId } from "@webforge/model";
 import { createStore, type StoreApi } from "zustand/vanilla";
-import type { EditorSelection } from "./editor-session.js";
+
+/**
+ * What undo shows again (U3): the page, the selected elements and the device view. It is also the
+ * UI state (U6): changing it is never an undo step.
+ */
+export type EditorSelection = {
+  readonly pageId: PageId;
+  /** The selected element the canvas and the Edit panel show, if any. */
+  readonly nodeId: string | null;
+  /** The other selected elements, while several are (1.31); none when left out. */
+  readonly others?: readonly string[];
+  readonly viewport: Viewport;
+};
 
 /** No other selected elements: one, or none. */
 const NONE: readonly string[] = [];
