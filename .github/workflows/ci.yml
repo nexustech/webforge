@@ -188,6 +188,9 @@ jobs:
         # Windows and macOS while FULL_CI_ENABLED is true (see the notes above).
         os: ${{ fromJSON(vars.FULL_CI_ENABLED == 'true' && '["ubuntu-latest", "windows-latest", "macos-latest"]' || '["ubuntu-latest"]') }}
     runs-on: ${{ matrix.os }}
+    # Temporary: macOS E2E reports on every PR but doesn't fail "CI passed" until its first-run
+    # failures are fixed (#287, product owner's decision of 23 Oct 2026). Remove this line then.
+    continue-on-error: ${{ matrix.os == 'macos-latest' }}
     # macOS runners take about 15 minutes for the tests alone, plus setup.
     timeout-minutes: 30
     env:

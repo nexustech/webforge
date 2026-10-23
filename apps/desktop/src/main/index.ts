@@ -321,11 +321,15 @@ async function downloadedFamiliesOf(theme: ThemeTokens): Promise<CatalogueFont[]
 }
 
 // Each export runs in its own utility process, so building never blocks the window (07). The
-// worker resolves nothing itself: it gets the site's font files, read and checked here.
+// worker resolves nothing itself: it gets the site's font files, read and checked here. Every
+// worker's crash becomes a local report (R3).
 const runExport = async (snapshot: SiteSnapshot, destination: string) => {
   const families = await downloadedFamiliesOf(snapshot.theme);
   return runExportInWorker(
-    () => utilityProcess.fork(exportWorkerScript, [], { serviceName: "Webforge export" }),
+    () =>
+      crashReports.watchWorker(
+        utilityProcess.fork(exportWorkerScript, [], { serviceName: "Webforge export" }),
+      ),
     {
       type: "export",
       snapshot,
@@ -341,7 +345,10 @@ const runExport = async (snapshot: SiteSnapshot, destination: string) => {
 
 // Media thumbnails are made in a long-lived worker too, started when first needed (1.16).
 const requestThumbnail = createWorkerRequests(
-  () => utilityProcess.fork(exportWorkerScript, [], { serviceName: "Webforge thumbnails" }),
+  () =>
+    crashReports.watchWorker(
+      utilityProcess.fork(exportWorkerScript, [], { serviceName: "Webforge thumbnails" }),
+    ),
   thumbnailOutcomeSchema,
   60_000,
 );
@@ -375,7 +382,10 @@ const mediaDialogs: MediaDialogs = {
 
 // The canvas compiles its site CSS in one long-lived worker, started when first needed (1.12).
 const compileCanvasCss = createCanvasCssCompiler(
-  () => utilityProcess.fork(exportWorkerScript, [], { serviceName: "Webforge canvas styles" }),
+  () =>
+    crashReports.watchWorker(
+      utilityProcess.fork(exportWorkerScript, [], { serviceName: "Webforge canvas styles" }),
+    ),
   undefined,
   downloadedFamiliesOf,
 );
