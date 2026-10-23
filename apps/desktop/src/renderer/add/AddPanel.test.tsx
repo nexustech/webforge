@@ -314,6 +314,34 @@ describe("registerAddPanel", () => {
     expect(preferences.getState().favourites).toEqual(["Faq"]);
   });
 
+  it("shows a section's preview while the pointer rests on it, through the canvas's drag handle", () => {
+    vi.useFakeTimers();
+    try {
+      const session = createEditorSession(siteLibrary, starterSite());
+      const panels = createPanelRegistry();
+      registerAddPanel(panels, session, { preview: () => <span>Preview of it</span> });
+      render(<Host panels={panels} />);
+      const hero = within(screen.getByRole("list", { name: "Heroes" })).getByRole("button", {
+        name: "Hero",
+      });
+      // Only the pointer's own events: React reports none for a button under Puck's handle.
+      const pointer = (type: string) =>
+        act(() => {
+          hero.dispatchEvent(new PointerEvent(type, { pointerType: "mouse" }));
+        });
+
+      pointer("pointerenter");
+      expect(screen.queryByText("Preview of it")).toBeNull();
+      act(() => vi.advanceTimersByTime(400));
+      expect(screen.getByText("Preview of it")).toBeTruthy();
+      pointer("pointerdown");
+      act(() => vi.advanceTimersByTime(0));
+      expect(screen.queryByText("Preview of it")).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("remembers what the person adds as recently used, newest first", async () => {
     const session = createEditorSession(siteLibrary, starterSite());
     const panels = createPanelRegistry();

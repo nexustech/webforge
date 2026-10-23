@@ -24,7 +24,11 @@ const HOURS_SECTION: NodeDoc = {
 function setUp(status: "compiled" | "failed" = "compiled") {
   const compileCss = vi.fn(async () =>
     status === "compiled"
-      ? { status, css: ".wf-hero{color:red}", bodyClass: "bg-base-100" }
+      ? {
+          status,
+          css: '@font-face {\n  font-family: "Inter";\n  src: url("webforge-font:inter-latin-400-normal.woff2");\n}\n.wf-hero{color:red}',
+          bodyClass: "flex min-h-screen flex-col bg-base-100 font-sans text-base-content",
+        }
       : { status },
   );
   const previews = createSectionPreviews({
@@ -51,7 +55,14 @@ describe("createSectionPreviews (UX-10)", () => {
     const root = await shown(previews({ type: "Hero", label: "Hero", category: "Heroes" }));
 
     expect(root?.querySelector("style")?.textContent).toContain(".wf-hero{color:red}");
-    expect(root?.querySelector(".wf-preview")?.className).toBe("wf-preview bg-base-100");
+    // In the site's theme, with the page's colours and font but not its whole-page layout.
+    const page = root?.querySelector<HTMLElement>(".wf-preview");
+    expect(page?.dataset.theme).toBe(theme.name);
+    expect(page?.className).toBe("wf-preview bg-base-100 font-sans text-base-content");
+    // Font faces are declared for the editor window: a shadow root's own are ignored.
+    expect(root?.querySelector("style")?.textContent).not.toContain("@font-face");
+    const fonts = document.head.querySelector("style[data-webforge-preview-fonts]");
+    expect(fonts?.textContent).toMatch(/^@font-face \{ font-family: "Inter";.*\}$/);
     expect(root?.querySelector(".wf-preview")?.innerHTML).not.toBe("");
     expect(compileCss).toHaveBeenCalledWith(
       expect.objectContaining({ theme, candidates: expect.any(Array) }),

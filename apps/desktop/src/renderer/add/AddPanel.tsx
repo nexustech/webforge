@@ -105,6 +105,32 @@ function AddButton({
     }
     return dragSource(element, item.type);
   }, [dragSource, item.type, item.sharedSectionId, disabled]);
+  const card = preview?.(item);
+  const hasCard = card !== undefined && card !== null;
+  // The preview card opens on hover from the pointer's own events: the canvas's drag handle
+  // covers the button, and React doesn't report entering a button through it (the handle is
+  // Puck's). Focus opens it as usual; pressing (to add or drag) closes it.
+  const [cardOpen, setCardOpen] = useState(false);
+  useEffect(() => {
+    const element = ref.current;
+    if (element === null || !hasCard) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const later = (open: boolean, delay: number) => (event: PointerEvent) => {
+      if (event.pointerType === "touch") return;
+      clearTimeout(timer);
+      timer = setTimeout(() => setCardOpen(open), delay);
+    };
+    const listeners = [
+      ["pointerenter", later(true, HOVER_CARD_OPEN_DELAY)],
+      ["pointerleave", later(false, HOVER_CARD_CLOSE_DELAY)],
+      ["pointerdown", later(false, 0)],
+    ] as const;
+    for (const [type, listener] of listeners) element.addEventListener(type, listener);
+    return () => {
+      clearTimeout(timer);
+      for (const [type, listener] of listeners) element.removeEventListener(type, listener);
+    };
+  }, [hasCard]);
   // The triggers nest around the button itself: a menu or card's root renders nothing to pass
   // a trigger's handlers to.
   let trigger: ReactNode = (
@@ -125,10 +151,14 @@ function AddButton({
   if (favourites !== undefined) {
     trigger = <ContextMenuTrigger asChild>{trigger}</ContextMenuTrigger>;
   }
-  const card = preview?.(item);
-  if (card !== undefined && card !== null) {
+  if (hasCard) {
     trigger = (
-      <HoverCard>
+      <HoverCard
+        open={cardOpen}
+        onOpenChange={setCardOpen}
+        openDelay={HOVER_CARD_OPEN_DELAY}
+        closeDelay={HOVER_CARD_CLOSE_DELAY}
+      >
         <HoverCardTrigger asChild>{trigger}</HoverCardTrigger>
         <HoverCardContent>{card}</HoverCardContent>
       </HoverCard>
@@ -148,6 +178,10 @@ function AddButton({
     </ContextMenu>
   );
 }
+
+/** How long the pointer rests on an item before its preview shows, and leaves before it goes. */
+const HOVER_CARD_OPEN_DELAY = 400;
+const HOVER_CARD_CLOSE_DELAY = 100;
 
 /**
  * The "…" menu of a shared section in the list (1.29), shown on hover or focus, as the Pages panel

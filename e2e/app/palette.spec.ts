@@ -54,6 +54,53 @@ test.describe("command palette", () => {
   });
 });
 
+test.describe("section previews", () => {
+  test.beforeEach(() => launch());
+  test.afterEach(() => app.close());
+
+  test("show a section in the site's theme colours and font (UX-10)", async () => {
+    await left().getByRole("button", { name: "Hero", exact: true }).hover();
+    const preview = page.locator('[data-slot="hover-card-content"] > div');
+    await expect(preview).toBeVisible();
+    // The canvas shows the page in the site's theme: the preview has the same colours.
+    const pageColours = await canvas()
+      .locator("body")
+      .evaluate((body) => {
+        const style = getComputedStyle(body);
+        return [style.backgroundColor, style.color];
+      });
+    expect(pageColours[0]).not.toBe("rgba(0, 0, 0, 0)");
+    await expect
+      .poll(() =>
+        preview.evaluate((host) => {
+          const shown = host.shadowRoot?.querySelector(".wf-preview");
+          if (shown == null) return [];
+          const style = getComputedStyle(shown);
+          return [style.backgroundColor, style.color];
+        }),
+      )
+      .toEqual(pageColours);
+    // Scaled to a quarter, with no space left below the section.
+    const heights = await preview.evaluate((host) => [
+      host.getBoundingClientRect().height,
+      (host.shadowRoot?.querySelector(".wf-preview")?.getBoundingClientRect().height ??
+        0) as number,
+    ]);
+    expect(Math.abs((heights[0] ?? 0) - Math.min(heights[1] ?? 0, 200))).toBeLessThan(1);
+    // The site's font: the editor's own is the system's, so only the preview loads Inter.
+    await expect
+      .poll(() =>
+        page.evaluate(async () => {
+          await document.fonts.ready;
+          return [...document.fonts].some(
+            (face) => face.family.replaceAll('"', "") === "Inter" && face.status === "loaded",
+          );
+        }),
+      )
+      .toBe(true);
+  });
+});
+
 test("keeps the person's favourite sections first, after a restart", async () => {
   const userData = newUserDataDir();
   try {
