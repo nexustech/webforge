@@ -29,6 +29,7 @@ function toPuckField(field: FieldDef, toolbar: RichTextToolbar): Field {
     case "slider":
     case "color":
     case "spacing":
+    case "box":
     case "list":
       return { type: "text", label: field.label };
     case "slot":

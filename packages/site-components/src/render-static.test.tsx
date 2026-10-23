@@ -385,6 +385,85 @@ describe("renderNodesToHtml", () => {
     );
   });
 
+  it("renders a page saved before 1.32 exactly as before, and its box form the same (1.32)", () => {
+    const page = (first: unknown, second: unknown): NodeDoc[] => [
+      {
+        type: "Hero",
+        props: { id: "h", title: "Rosa's Bakery", text: "Fresh bread", buttonLabel: "" },
+      },
+      {
+        type: "Section",
+        props: {
+          id: "a",
+          padding: first,
+          content: [{ type: "Heading", props: { id: "t", text: "Hi", size: "small" } }],
+        },
+      },
+      { type: "Section", props: { id: "b", padding: second } },
+      { type: "Section", props: { id: "c" } },
+    ];
+    const legacy = page("medium", { $responsive: { desktop: "large", mobile: "small" } });
+    const html = renderNodesToHtml(legacy, siteLibrary, context);
+
+    expect(html).toContain('<section class="site-hero hero bg-base-200 px-4 py-16">');
+    expect(html).toContain(
+      '<section class="site-section mx-auto max-w-4xl space-y-6 px-4 py-16"><h3 class="site-heading text-xl font-semibold">Hi</h3></section>',
+    );
+    expect(html).toContain(
+      '<section class="site-section mx-auto max-w-4xl space-y-6 px-4 py-8 md:py-24"></section>',
+    );
+    expect(html).toContain(
+      '<section class="site-section mx-auto max-w-4xl space-y-6 px-4 py-16"></section>',
+    );
+
+    const box = page(
+      { top: "m", bottom: "m" },
+      { $responsive: { desktop: { top: "l", bottom: "l" }, mobile: { top: "s", bottom: "s" } } },
+    );
+    expect(renderNodesToHtml(box, siteLibrary, context)).toBe(html);
+  });
+
+  it("renders the padding and margin set per side (1.32)", () => {
+    const margin = { $responsive: { desktop: { top: "s" }, mobile: { top: "xl" } } };
+    const html = renderNodesToHtml(
+      [
+        {
+          type: "Hero",
+          props: { id: "h", title: "T", padding: { left: "none", top: "xl" }, margin },
+        },
+        {
+          type: "Section",
+          props: {
+            id: "s",
+            padding: { top: "none", right: "s", bottom: "none", left: "s" },
+            margin: { bottom: "l" },
+            content: [
+              { type: "Heading", props: { id: "t", text: "Hi", size: "small", margin } },
+              { type: "Text", props: { id: "x", text: "<p>a</p>", margin: { bottom: "m" } } },
+              { type: "Faq", props: { id: "f", title: "Q", margin: { top: "s", bottom: "s" } } },
+            ],
+          },
+        },
+      ],
+      siteLibrary,
+      context,
+    );
+
+    expect(html).toContain(
+      '<section class="site-hero hero bg-base-200 pl-0 pr-4 pt-32 pb-16 max-md:mt-24 md:mt-4">',
+    );
+    expect(html).toContain(
+      '<section class="site-section mx-auto max-w-4xl space-y-6 px-8 py-0 mb-16">',
+    );
+    expect(html).toContain(
+      '<h3 class="site-heading text-xl font-semibold max-md:mt-24 md:mt-4">Hi</h3>',
+    );
+    expect(html).toContain(
+      '<div class="site-text text-lg leading-relaxed [&amp;_a]:underline [&amp;_p+p]:mt-4 mb-8">',
+    );
+    expect(html).toContain('<div class="site-faq space-y-4 my-4">');
+  });
+
   it("throws for an unknown component type, even inside a slot", () => {
     const nodes: NodeDoc[] = [
       {

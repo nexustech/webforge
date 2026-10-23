@@ -1,6 +1,7 @@
 import { t } from "@webforge/i18n";
 import { useId } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs.js";
+import { BoxField } from "./box-field.js";
 import { type FieldRenderer, type FieldSpec, fieldRenderer } from "./field-registry.js";
 import { ListField } from "./list-field.js";
 import { PLAIN_RENDERERS } from "./plain-renderers.js";
@@ -45,7 +46,11 @@ export type EditPanelProps = {
 };
 
 /** The renderers every Edit panel has; `registerFieldRenderer` adds kinds or replaces these. */
-const BUILT_IN: Readonly<Record<string, FieldRenderer>> = { ...PLAIN_RENDERERS, list: ListField };
+const BUILT_IN: Readonly<Record<string, FieldRenderer>> = {
+  ...PLAIN_RENDERERS,
+  list: ListField,
+  box: BoxField,
+};
 
 const rendererFor = (kind: string) => fieldRenderer(kind) ?? BUILT_IN[kind];
 

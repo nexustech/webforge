@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import {
+  boxClasses,
   EDITOR_RENDER_CONTEXT,
   optionValue,
   responsiveClasses,
@@ -60,6 +61,72 @@ describe("library helpers", () => {
     expect(
       responsiveClasses<string>({ $responsive: { desktop: "small", tablet: "large" } }, classes),
     ).toBe("py-24 lg:py-8");
+  });
+
+  const SECTION = { top: 16, right: 4, bottom: 16, left: 4 };
+
+  it("boxClasses gives the default sides, left and right first, in pairs where equal", () => {
+    expect(boxClasses(undefined, "padding", SECTION)).toBe("px-4 py-16");
+    expect(boxClasses({ top: "s" }, "padding", SECTION)).toBe("px-4 pt-8 pb-16");
+    expect(boxClasses({ left: "none", right: "xl", bottom: "l" }, "padding", SECTION)).toBe(
+      "pl-0 pr-32 pt-16 pb-24",
+    );
+    expect(boxClasses({ top: "xl", right: "xl", bottom: "xl", left: "xl" }, "padding")).toBe(
+      "px-32 py-32",
+    );
+  });
+
+  it("boxClasses reads a padding saved before 1.32 as before", () => {
+    expect(boxClasses("large", "padding", SECTION)).toBe("px-4 py-24");
+    expect(
+      boxClasses({ $responsive: { desktop: "large", mobile: "small" } }, "padding", SECTION),
+    ).toBe("px-4 py-8 md:py-24");
+  });
+
+  it("boxClasses gives a margin its own scale, and no class for sides never set", () => {
+    expect(boxClasses(undefined, "margin")).toBe("");
+    expect(boxClasses({}, "margin")).toBe("");
+    expect(boxClasses({ top: "s", bottom: "xl" }, "margin")).toBe("mt-4 mb-24");
+    expect(boxClasses({ top: "m", bottom: "m" }, "margin")).toBe("my-8");
+    // Not `mb-0`, which would take away the section's space between elements below it.
+    expect(boxClasses({ top: "s" }, "margin")).toBe("mt-4");
+  });
+
+  it("boxClasses reads only the sides asked for", () => {
+    expect(boxClasses({ left: "l", top: "l" }, "margin", {}, ["top", "bottom"])).toBe("mt-16");
+    expect(boxClasses({ left: "l" }, "margin", {}, ["top", "bottom"])).toBe("");
+  });
+
+  it("boxClasses sets a side per device, for that device only where another leaves it unset", () => {
+    // Mobile falls back to Tablet, then Desktop, as a whole box.
+    expect(
+      boxClasses({ $responsive: { desktop: { top: "l" }, mobile: { top: "s" } } }, "margin", {}, [
+        "top",
+        "bottom",
+      ]),
+    ).toBe("max-md:mt-4 md:mt-16");
+    expect(boxClasses({ $responsive: { desktop: {}, mobile: { bottom: "m" } } }, "margin")).toBe(
+      "max-md:mb-8",
+    );
+    expect(
+      boxClasses({ $responsive: { desktop: { top: "s" }, tablet: { top: "m" } } }, "margin"),
+    ).toBe("max-lg:mt-8 lg:mt-4");
+    expect(
+      boxClasses(
+        { $responsive: { desktop: { top: "s" }, tablet: { top: "m" }, mobile: { top: "s" } } },
+        "margin",
+      ),
+    ).toBe("max-md:mt-4 md:max-lg:mt-8 lg:mt-4");
+    // Every device sets both sides: mobile first.
+    expect(
+      boxClasses(
+        { $responsive: { desktop: { top: "s", bottom: "s" }, mobile: { top: "m", bottom: "s" } } },
+        "margin",
+      ),
+    ).toBe("mt-8 mb-4 md:my-4");
+    expect(
+      boxClasses({ $responsive: { desktop: { left: "s" }, tablet: {} } }, "padding", SECTION),
+    ).toBe("px-4 lg:pl-8 lg:pr-4 py-16");
   });
 });
 

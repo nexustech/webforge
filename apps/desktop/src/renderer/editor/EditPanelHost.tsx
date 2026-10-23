@@ -2,11 +2,15 @@ import { EditPanel, type EditPanelField, type ListChange } from "@webforge/edito
 import type { EngineEdit } from "@webforge/engine";
 import { t } from "@webforge/i18n";
 import {
+  BOX_SIDES,
   type Breakpoint,
+  boxValueSchema,
   imageValueSchema,
   type NodeAdvanced,
   type NodeDoc,
+  responsiveBoxOf,
   type SiteDoc,
+  SPACING_TOKENS,
 } from "@webforge/model";
 import type { FieldDef } from "@webforge/site-components";
 import { useEffect, useRef, useSyncExternalStore } from "react";
@@ -58,6 +62,7 @@ function rendererKind(field: FieldDef): string | undefined {
     case "slider":
     case "color":
     case "spacing":
+    case "box":
     case "list":
       return field.kind;
     // A Media image, with alt text for this placement (1.16): see ImageField.
@@ -83,7 +88,7 @@ function groupOf(field: FieldDef): "content" | "style" {
 }
 
 /** The choices or steps a field offers, for its renderer. */
-function choicesOf(field: FieldDef): Pick<EditPanelField, "options" | "steps"> {
+function choicesOf(field: FieldDef): Pick<EditPanelField, "options" | "steps" | "sides"> {
   switch (field.kind) {
     case "select":
     case "color":
@@ -91,6 +96,15 @@ function choicesOf(field: FieldDef): Pick<EditPanelField, "options" | "steps"> {
       return { options: field.options };
     case "slider":
       return { steps: field.steps };
+    // Padding or margin per side (1.32): a spacing token for each side.
+    case "box":
+      return {
+        options: SPACING_TOKENS.map((value) => ({ label: t(`field.spacing.${value}`), value })),
+        sides: (field.sides ?? BOX_SIDES).map((value) => ({
+          label: t(`field.side.${value}`),
+          value,
+        })),
+      };
     default:
       return {};
   }
@@ -130,6 +144,8 @@ function accepts(field: FieldDef, value: unknown): boolean {
     // A link, or none, and maybe the anchor a section needs for it (LinkFieldChange).
     case "link":
       return asLinkFieldChange(value) !== undefined;
+    case "box":
+      return boxValueSchema.safeParse(value).success;
     default:
       return typeof value === "string";
   }
@@ -234,8 +250,14 @@ export function EditPanelHost({
     return <EditPanel fields={[]} onChange={() => undefined} onCommit={() => undefined} />;
   }
   const id = selectedId ?? node.props.id;
-  /** A field's stored value; one never set (older sites, new fields) has the component's default. */
-  const storedOr = (name: string, stored: unknown) => stored ?? component.defaults[name];
+  /**
+   * A field's stored value; one never set (older sites, new fields) has the component's default.
+   * A box is read in its current form, so a change writes it so (1.32).
+   */
+  const storedOr = (name: string, stored: unknown) => {
+    const value = stored ?? component.defaults[name];
+    return component.fields[name]?.kind === "box" ? responsiveBoxOf(value) : value;
+  };
 
   const fields = Object.entries(component.fields).flatMap(([name, field]): EditPanelField[] => {
     const list = editableList(field, library);

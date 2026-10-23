@@ -31,7 +31,7 @@ export function starterPage(): PageDoc {
         type: "Section",
         props: {
           id: "section-1",
-          padding: "medium",
+          padding: { top: "m", bottom: "m" },
           content: [
             {
               type: "Heading",
@@ -57,7 +57,7 @@ export function starterNotFoundPage(): PageDoc {
         type: "Section",
         props: {
           id: "section-1",
-          padding: "large",
+          padding: { top: "l", bottom: "l" },
           content: [
             {
               type: "Heading",

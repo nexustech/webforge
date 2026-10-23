@@ -119,17 +119,19 @@ test("sets a padding for the Mobile view only, marked in the panel (F-ED-4)", as
   await deviceView("Mobile").click();
   await selectSection();
 
-  await panel().getByRole("radio", { name: "Small" }).click();
+  // A new site's Section has Medium padding above and below, so each side has its own row (1.32).
+  const top = panel().getByRole("radiogroup", { name: "Padding Top" });
+  await top.getByRole("radio", { name: "S", exact: true }).click();
 
   await expect(steps().first()).toHaveText("Changed Section padding on Mobile");
   await expect(panel().getByText("Mobile only")).toBeVisible();
-  await expect(section).toHaveClass(/(^| )py-8 md:py-16( |$)/);
+  await expect(section).toHaveClass(/(^| )px-4 pt-8 pb-16 md:py-16( |$)/);
 
   // The canvas toolbar keeps the selection when the view changes (U3): the panel shows Desktop's.
   await deviceView("Desktop").click();
   await expect(panel().getByRole("heading", { name: "Section", exact: true })).toBeVisible();
   await expect(panel().getByText("Mobile only")).toHaveCount(0);
-  await expect(panel().getByRole("radio", { name: "Medium" })).toHaveAttribute(
+  await expect(top.getByRole("radio", { name: "M", exact: true })).toHaveAttribute(
     "aria-checked",
     "true",
   );

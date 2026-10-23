@@ -27,6 +27,7 @@ import {
   SharedSectionNameDialog,
   type SharedSectionNaming,
 } from "../shared-sections/SharedSectionCommands.js";
+import { sharedSection } from "../shared-sections/shared-sections.js";
 import { widthOf } from "../shell/canvas-size.js";
 import { type CanvasView, connectCanvasView } from "../shell/canvas-view.js";
 import { useCommandRegistry } from "../shell/command-context.js";
@@ -359,7 +360,7 @@ export function Editor({
       // Rename and Delete for shared sections, those on no page included (1.29).
       sharedActions: {
         rename: (id) => {
-          const shared = session.history.document.getState().sharedSections[id];
+          const shared = sharedSection(session.history.document.getState(), id);
           if (shared !== undefined) setNaming({ kind: "rename", id, suggested: shared.name });
         },
         remove: (id) => removeSharedSection(session, id, siteWide),
