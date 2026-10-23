@@ -218,6 +218,42 @@ describe("shortcuts", () => {
       }
     });
 
+    it("leaves Delete and Mod+Backspace to text being edited, rich text too (1.30)", () => {
+      const registry = createCommandRegistry();
+      const run = vi.fn();
+      registry.register({
+        id: "delete",
+        label: "Delete",
+        shortcut: "Delete",
+        extraShortcuts: ["Mod+Backspace"],
+        textShortcut: true,
+        run,
+      });
+      remove = installCommandShortcuts(window, registry);
+      const ctrl = !isMac();
+      const modBackspace = () =>
+        key({ key: "Backspace", ctrlKey: ctrl, metaKey: !ctrl, bubbles: true });
+      // The rich-text editor's element, and the element selected on the canvas.
+      const text = document.createElement("div");
+      text.setAttribute("contenteditable", "true");
+      const selected = document.createElement("div");
+      document.body.append(text, selected);
+      try {
+        text.dispatchEvent(key({ key: "Delete", bubbles: true }));
+        text.dispatchEvent(key({ key: "Backspace", bubbles: true }));
+        // Deletes a word there.
+        text.dispatchEvent(modBackspace());
+        expect(run).not.toHaveBeenCalled();
+
+        selected.dispatchEvent(modBackspace());
+        selected.dispatchEvent(key({ key: "Delete", bubbles: true }));
+        expect(run).toHaveBeenCalledTimes(2);
+      } finally {
+        text.remove();
+        selected.remove();
+      }
+    });
+
     it("leaves plain-key shortcuts to a focused field, list or editable text", () => {
       const registry = createCommandRegistry();
       const remove_ = vi.fn();

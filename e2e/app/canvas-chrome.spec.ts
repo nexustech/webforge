@@ -34,6 +34,12 @@ const quickAction = (title: string) =>
     .filter({ has: canvas().locator('.wf-outline[data-state="selected"]') })
     .locator(`[title="${title}"]`);
 
+/** The selected element's quick-action bar, which names it. */
+const selectedBar = () =>
+  canvas()
+    .locator("[data-puck-overlay]")
+    .filter({ has: canvas().locator('.wf-outline[data-state="selected"]') });
+
 /**
  * Selects the heading by clicking past the end of its text (clicking the text edits it), at its
  * bottom edge: once it is selected, its quick actions sit over its top edge, below the Header.
@@ -91,7 +97,7 @@ test.describe("keyboard and floating add", () => {
     await page.keyboard.press("ArrowDown");
     // The Text is selected now: its bar shows its label.
     await expect(quickAction("Move up")).toBeVisible();
-    await page.keyboard.press("Alt+ArrowUp");
+    await page.keyboard.press("ControlOrMeta+Alt+ArrowUp");
     await expect(steps().first()).toHaveText("Moved Text");
     await expect(canvas().locator(".site-section")).toContainText(
       `${STARTER_TEXT}${STARTER_HEADING}`,
@@ -119,6 +125,95 @@ test.describe("keyboard and floating add", () => {
 
     await expect(canvas().locator("h1")).toHaveText("Welcome to our busine");
     await expect(steps().first()).toHaveText("Edited Heading text");
+  });
+
+  test("Mod+arrows walk the page's tree: siblings, parent and first child (1.30)", async () => {
+    await selectHeading();
+
+    await page.keyboard.press("ControlOrMeta+ArrowRight");
+    await expect(selectedBar()).toContainText("Text");
+    await page.keyboard.press("ControlOrMeta+ArrowLeft");
+    await expect(selectedBar()).toContainText("Heading");
+    await page.keyboard.press("ControlOrMeta+ArrowUp");
+    await expect(selectedBar()).toContainText("Section");
+    await page.keyboard.press("ControlOrMeta+ArrowDown");
+    await expect(selectedBar()).toContainText("Heading");
+    // Walking selects only: no undo steps.
+    await expect(steps()).toHaveText(["Opened page"]);
+  });
+
+  test("Enter edits the selected element's text; Backspace empties it first (1.30)", async () => {
+    await selectHeading();
+    await page.keyboard.press("Enter");
+    await page.keyboard.type(" today");
+    await expect(canvas().locator("h1")).toHaveText(`${STARTER_HEADING} today`);
+
+    await selectHeading();
+    await page.keyboard.press("Backspace");
+    await page.keyboard.type("Fresh bread");
+
+    await expect(canvas().locator("h1")).toHaveText("Fresh bread");
+    await expect(steps().first()).toHaveText("Edited Heading text");
+  });
+
+  test("Backspace deletes an element with no text of its own; Mod+Backspace deletes any (1.30)", async () => {
+    await selectHeading();
+    await page.keyboard.press("ControlOrMeta+ArrowUp");
+    await expect(selectedBar()).toContainText("Section");
+
+    // A Mac's delete key is Backspace: a Section has no text to empty, so it goes.
+    await page.keyboard.press("Backspace");
+    await expect(steps().first()).toHaveText("Deleted Section");
+    await expect(canvas().locator("h1")).toHaveCount(0);
+    await page.getByRole("banner").getByRole("button", { name: "Undo", exact: true }).click();
+    await expect(canvas().locator("h1")).toHaveCount(1);
+
+    await selectHeading();
+    await page.keyboard.press("ControlOrMeta+Backspace");
+    await expect(steps().first()).toHaveText("Deleted Heading");
+    await expect(canvas().locator("h1")).toHaveCount(0);
+  });
+
+  test("never deletes the element whose rich text is being edited (1.30)", async () => {
+    const text = canvas().locator(".site-text");
+    const editor = text.locator(".ProseMirror");
+    await canvas().getByText(STARTER_TEXT).click();
+    await editor.click();
+    await expect(editor).toBeFocused();
+    await page.keyboard.press("End");
+
+    // Backspace deletes a letter, Mod+Backspace a word (on macOS, to the line's start), Delete
+    // nothing at the end: all of them the text's.
+    await page.keyboard.press("Backspace");
+    await expect(text).toHaveText("Tell visitors what you do and why they will love it");
+    await page.keyboard.press("ControlOrMeta+Backspace");
+    await page.keyboard.press("Delete");
+
+    await expect(text).toHaveCount(1);
+    await expect(text).not.toHaveText(/love it$/);
+    await expect(steps().first()).toHaveText("Edited Text text");
+    await expect(steps()).not.toContainText(["Deleted Text"]);
+  });
+
+  test("Mod+/ and the chip hide and show the selected element; Edit edits its text (1.30)", async () => {
+    await selectHeading();
+
+    await page.keyboard.press("ControlOrMeta+/");
+    await expect(steps().first()).toHaveText("Hid Heading");
+    await expect(canvas().locator("h1[data-webforge-hidden]")).toHaveCount(1);
+    await quickAction("Show").click();
+    await expect(steps().first()).toHaveText("Showed Heading");
+    await quickAction("Hide").click();
+    await expect(steps()).toHaveText([
+      "Hid Heading",
+      "Showed Heading",
+      "Hid Heading",
+      "Opened page",
+    ]);
+
+    await quickAction("Edit").click();
+    await page.keyboard.type("!");
+    await expect(canvas().locator("h1")).toHaveText(`${STARTER_HEADING}!`);
   });
 
   test("adds a section with the floating + below a section, chosen in the Add panel", async () => {
