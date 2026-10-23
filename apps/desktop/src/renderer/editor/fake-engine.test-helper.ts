@@ -66,6 +66,7 @@ export function createFakeEngine(): FakeEngine {
     setImages: vi.fn(),
     setSettings: vi.fn(),
     setNavigation: vi.fn(),
+    setViewOptions: vi.fn(),
     perform: vi.fn(() => true),
     onAddRequest: adds.add,
     addDragSource: vi.fn(() => () => undefined),

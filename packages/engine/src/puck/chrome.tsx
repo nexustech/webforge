@@ -71,7 +71,7 @@ export function applyChromeStyles(document: Document): void {
 }
 
 /** How much smaller than its real size Puck shows the canvas iframe (1 when not zoomed). */
-function canvasZoom(element: HTMLElement): number {
+export function canvasZoom(element: HTMLElement): number {
   // The iframe element belongs to the editor window, so `instanceof` against this realm fails.
   const frame = element.ownerDocument.defaultView?.frameElement as HTMLElement | null | undefined;
   const width = frame?.offsetWidth ?? 0;
