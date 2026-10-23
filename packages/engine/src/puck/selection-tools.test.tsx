@@ -78,7 +78,9 @@ async function settle(): Promise<void> {
   });
 }
 
-describe("selection tools (1.30, F-ED-25, F-ED-27)", () => {
+// Each test mounts Puck and clicks through it: a second or two alone, but slower beside the whole
+// suite's other tests (coverage, parallel workers), so the 5 s default isn't always enough.
+describe("selection tools (1.30, F-ED-25, F-ED-27)", { timeout: 15_000 }, () => {
   let element: HTMLDivElement;
   let engine: CanvasEngine;
   let selected: string | null;
