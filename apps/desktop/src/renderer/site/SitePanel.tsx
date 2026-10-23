@@ -1,5 +1,6 @@
 import { t } from "@webforge/i18n";
 import type { SiteDoc } from "@webforge/model";
+import { FilesIcon } from "lucide-react";
 import { useSyncExternalStore } from "react";
 import type { EditorSession } from "../editor/editor-session.js";
 import { linkTargets } from "../links/link-targets.js";
@@ -159,6 +160,7 @@ export function registerSitePanel(
     id: "site",
     slot: "right.bottom",
     title: t("panels.site"),
+    icon: FilesIcon,
     component: SitePanel,
   });
 }

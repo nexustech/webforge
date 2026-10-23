@@ -28,6 +28,9 @@ export const PANEL_GROUPS = {
  * 360 px and the canvas keeps at least 40% of the width, so it is never squeezed to an unusable
  * zoom (ADR 0008).
  */
+/** How wide a collapsed side column stays: a strip of its panels' icons (UX-13). */
+const STRIP_PX = 36;
+
 const DEFAULTS = {
   sideWidth: "240px",
   sideMin: "200px",
@@ -109,6 +112,46 @@ function PanelTabs({
   );
 }
 
+/**
+ * What a collapsed side column leaves (UX-13): a strip with a button for each of its panels, which
+ * opens the column at that panel.
+ */
+function PanelStrip({
+  slots,
+  editorLevel,
+  label,
+}: {
+  readonly slots: readonly PanelSlot[];
+  readonly editorLevel: Preferences["editorLevel"];
+  readonly label: string;
+}) {
+  const registry = usePanelRegistry();
+  const registered = usePanels();
+  const panels = slots.flatMap((slot) => panelsInSlot(registered, slot, editorLevel));
+  return (
+    <nav aria-label={label} className="flex h-full flex-col items-center gap-1 bg-panel py-2">
+      {panels.map((panel) => (
+        <button
+          key={panel.id}
+          type="button"
+          aria-label={panel.title}
+          title={panel.title}
+          className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-hover hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+          onClick={() => registry.show(panel.id)}
+        >
+          {panel.icon === undefined ? (
+            <span aria-hidden className="text-xs font-semibold">
+              {panel.title.slice(0, 1)}
+            </span>
+          ) : (
+            <panel.icon className="size-4" />
+          )}
+        </button>
+      ))}
+    </nav>
+  );
+}
+
 /** Shows a collapsed panel at its last size (or `size`), hides an open one. */
 function toggle(panel: ResizablePanelHandle | null, size: string): void {
   if (panel === null) {
@@ -150,6 +193,12 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
     panelsInSlot(panels, `${side}.bottom`, editorLevel).length > 0;
   const showLeft = hasPanels("left");
   const showRight = hasPanels("right");
+  // Which side columns are collapsed to their strip, from the sizes the library reports.
+  const [collapsed, setCollapsed] = useState({ left: false, right: false });
+  const followCollapsed = (side: "left" | "right") => (size: { readonly inPixels: number }) => {
+    const next = size.inPixels <= STRIP_PX + 1;
+    setCollapsed((current) => (current[side] === next ? current : { ...current, [side]: next }));
+  };
 
   useEffect(() => {
     const byCommand =
@@ -280,11 +329,21 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
             minSize={DEFAULTS.sideMin}
             maxSize={DEFAULTS.sideMax}
             collapsible
+            collapsedSize={`${STRIP_PX}px`}
+            onResize={followCollapsed("left")}
             groupResizeBehavior="preserve-pixel-size"
           >
-            <section aria-label={t("panels.left")} className="h-full">
+            {/* Kept while collapsed, so the panel chosen and the panels asked for are kept too. */}
+            <section aria-label={t("panels.left")} className="h-full" hidden={collapsed.left}>
               <PanelTabs slots={SLOTS.left} editorLevel={editorLevel} />
             </section>
+            {collapsed.left ? (
+              <PanelStrip
+                slots={SLOTS.left}
+                editorLevel={editorLevel}
+                label={t("panels.leftCollapsed")}
+              />
+            ) : null}
           </ResizablePanel>
           <ResizableHandle aria-label={t("panels.resizeLeft")} />
         </>
@@ -319,11 +378,21 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
             minSize={DEFAULTS.sideMin}
             maxSize={DEFAULTS.sideMax}
             collapsible
+            collapsedSize={`${STRIP_PX}px`}
+            onResize={followCollapsed("right")}
             groupResizeBehavior="preserve-pixel-size"
           >
-            <section aria-label={t("panels.right")} className="h-full">
+            {/* Kept while collapsed, so the panel chosen and the panels asked for are kept too. */}
+            <section aria-label={t("panels.right")} className="h-full" hidden={collapsed.right}>
               <PanelTabs slots={SLOTS.right} editorLevel={editorLevel} />
             </section>
+            {collapsed.right ? (
+              <PanelStrip
+                slots={SLOTS.right}
+                editorLevel={editorLevel}
+                label={t("panels.rightCollapsed")}
+              />
+            ) : null}
           </ResizablePanel>
         </>
       )}

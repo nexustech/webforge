@@ -9,6 +9,7 @@ import {
 } from "@webforge/engine";
 import { t } from "@webforge/i18n";
 import { textStylesOf } from "@webforge/site-components";
+import { HistoryIcon, SlidersHorizontalIcon } from "lucide-react";
 import {
   type RefObject,
   useCallback,
@@ -433,6 +434,7 @@ export function Editor({
       id: "undoHistory",
       slot: "left.bottom",
       title: t("editor.undoHistory"),
+      icon: HistoryIcon,
       component: UndoHistory,
     });
   }, [panels, history]);
@@ -454,6 +456,7 @@ export function Editor({
       id: "edit",
       slot: "right.top",
       title: t("editPanel.title"),
+      icon: SlidersHorizontalIcon,
       component: Edit,
     });
   }, [panels, session, editorLevel, mode]);

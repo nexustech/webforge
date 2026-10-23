@@ -14,6 +14,8 @@ export type Panel = {
   readonly id: string;
   readonly slot: PanelSlot;
   readonly title: string;
+  /** Its icon, in the strip a collapsed column leaves (UX-13); its title's first letter if none. */
+  readonly icon?: ComponentType<{ readonly className?: string }>;
   /** Shown only in Advanced mode (T2): Layers, Custom Code. */
   readonly advancedOnly?: boolean;
   /** Tab order within the slot, lowest first; ties keep registration order. */

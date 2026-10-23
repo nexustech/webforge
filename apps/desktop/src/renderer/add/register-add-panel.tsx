@@ -1,6 +1,7 @@
 import type { InsertPoint } from "@webforge/engine";
 import { t } from "@webforge/i18n";
 import { isSharedCopy, type SharedSectionsDoc } from "@webforge/model";
+import { SquarePlusIcon } from "lucide-react";
 import { type ReactNode, useSyncExternalStore } from "react";
 import type { StoreApi } from "zustand/vanilla";
 import { type AddPreferences, MAX_FAVOURITES, MAX_RECENT } from "../../shared/ipc/prefs.js";
@@ -267,6 +268,7 @@ export function registerAddPanel(
     id: ADD_PANEL_ID,
     slot: "left.top",
     title: t("add.title"),
+    icon: SquarePlusIcon,
     order: -1,
     component: Add,
   });

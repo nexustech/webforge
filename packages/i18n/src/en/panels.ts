@@ -6,6 +6,9 @@ export const panels = {
   // The window layout (UI1).
   "panels.left": "Left panels",
   "panels.right": "Right panels",
+  // A collapsed side column's strip of panel icons (UX-13).
+  "panels.leftCollapsed": "Left panels, collapsed",
+  "panels.rightCollapsed": "Right panels, collapsed",
   "panels.drawer": "Bottom panel",
   "panels.empty": "Nothing here yet",
   "panels.resizeLeft": "Resize the left panels",

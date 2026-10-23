@@ -1,4 +1,5 @@
 import { t } from "@webforge/i18n";
+import { LayersIcon } from "lucide-react";
 import { useSyncExternalStore } from "react";
 import type { EditorSession } from "../editor/editor-session.js";
 import { selectElements, toggleSelected } from "../editor/selection.js";
@@ -110,6 +111,7 @@ export function registerLayersPanel(
     id: "layers",
     slot: "left.bottom",
     title: t("layers.title"),
+    icon: LayersIcon,
     advancedOnly: true,
     order: -1,
     component: Layers,
