@@ -71,6 +71,9 @@ export const shell = {
   "edit.cut": "Cut",
   "edit.copy": "Copy",
   "edit.paste": "Paste",
+  "edit.copyStyle": "Copy Style",
+  "edit.pasteStyle": "Paste Style",
+  "edit.pasteStyleOnto": "Paste Style (onto a {item})",
   "edit.selectAll": "Select All",
 
   // The canvas toolbar (F-ED-8): the page shown, the device view and the canvas width.

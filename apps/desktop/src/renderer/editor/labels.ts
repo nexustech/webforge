@@ -32,6 +32,11 @@ function ownName(edit: EngineEdit, library: ComponentLibrary, pages: readonly Pa
   return component?.label ?? edit.componentType ?? "";
 }
 
+/** The undo label for Paste Style (1.37): "Pasted style on Heading", or on a named element. */
+export function pastedStyleLabel(edit: EngineEdit, library: ComponentLibrary): string {
+  return t("history.pastedStyle", { item: itemName(edit, library, [edit.page]) });
+}
+
 /** "Changed {item} {field}" for a field the component doesn't define, such as the Advanced tab's. */
 export function changedLabel(edit: EngineEdit, library: ComponentLibrary, field: string): string {
   return t("history.changed", { item: itemName(edit, library, [edit.page]), field });
