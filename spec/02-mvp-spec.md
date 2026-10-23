@@ -190,7 +190,7 @@ All components must:
 | Security | Electron hardening per [01 §3](01-architecture.md#3-process-model); secrets in OS keychain; signed builds |
 | Licensing | Permissive dependencies only (C1); in-app "Open-source licences" screen; licence check in CI |
 | Localisation | English UI for MVP; all strings externalised in `packages/i18n` using glossary terms ([terminology](../research/product/01-terminology.md)) |
-| Offline | Everything except publishing, updates and "Download and bundle" works offline |
+| Offline | Everything except publishing, updates, "Download and bundle" and downloading a font from "Browse all fonts" works offline (downloaded fonts then work offline) |
 
 ## 5. Explicitly out of MVP
 | Item | When |

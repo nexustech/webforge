@@ -296,15 +296,17 @@ Fold spike learnings into architecture §6 (CanvasEngine, HistoryManager, Pipeli
 
 | Stream | Owns | Items, in order |
 |---|---|---|
-| A: Shell & panels | editor-ui, shell layout, registries, title bar, preferences | 1.3 → 1.1 → 1.2 → 1.10 → 1.11 → 1.18 → 1.15 → 1.24 → 1.22 → 1.19 → 1.13 → 1.21 → 1.26 → 1.33 → 1.34 → 1.36 → 1.37 |
+| A: Shell & panels | editor-ui, shell layout, registries, title bar, preferences | 1.3 → 1.1 → 1.2 → 1.10 → 1.11 → 1.18 → 1.15 → 1.24 → 1.22 → 1.19 → 1.13 → 1.21 → 1.26 → 1.33 → 1.34 → 1.37 |
 | B: Data & site | model, storage, project/media/clipboard IPC, app lifecycle | 1.4 → 1.5 → 1.6 → 1.7 → 1.8 → 1.16 → 1.17 → 1.25 → 1.28 → 1.32 → 1.35 → 1.38 |
-| C: History & canvas | history, engine, editor session | 1.27 → 1.9 → 1.12 → 1.14 → 1.20 → 1.23 → 1.29 → 1.30 → 1.31 |
+| C: History & canvas | history, engine, editor session | 1.27 → 1.9 → 1.12 → 1.14 → 1.20 → 1.23 → 1.29 → 2.5 → 1.30 → 1.31 → 1.36 |
 
 1.19 moved from stream C to stream A on 2026-10-21: it is dialog, field and panel work, its dependencies were merged, and stream C held the longest chain. Engine changes it needs stay with stream C.
 
 1.13 moved from stream B to stream A on 2026-10-21: it is panel work, its dependency (1.12) was merged, and stream A's next item (1.21) waits on 1.20. The engine side of adding (hiding Puck's own component list, drop rules, dragging from the Add panel) stays with stream C.
 
 1.26 moved from stream C to stream A on 2026-10-22 (product owner approved), after 1.21, to shorten stream C's queue: its confirmations and Content mode locks are mostly shell and panel work. Its site-wide confirmation is reused by stream C's shared sections (1.29).
+
+1.36 moved from stream A to stream C on 2026-10-23 (product owner approved, with the Phase 2 plan): stream C built the Edit panel (1.14), and the move evens out the remaining Phase 1 queues. Stream C also takes 2.5 (Phase 2's component framework) straight after 1.29, because every component item (2.6–2.12) depends on it.
 
 The longest dependency chain is 1.1 → 1.2 → 1.12 → 1.14 → 1.19 → 1.23 → 1.26 → 1.29 → 1.30 → 1.31 (about 40 days, after the 22 Oct additions), so the phase takes about 41 working days instead of 122. Three items start before one dependency merges and leave the dependent part until last: 1.12 (the site-CSS PR comes first; the selection chrome waits for 1.2), 1.16 (the image field, which needs 1.14, comes last) and 1.23 (the spell-check criterion, which needs 1.22, is checked last).
 
@@ -589,45 +591,64 @@ One shortcut registry implementing the F-ED-27 map on Windows and macOS (Mod + P
 
 ### Phase 2: Design & components
 **Goal:** The full component catalogue (19 sections with ~45 layout variants, 17 elements), 10–12 curated themes, fonts and the 8 templates, all accessible and visually tested.  
-**Effort:** 102 days · **Scheduled:** 2 Mar 2027 → 14 Jul 2027 (baseline; 22 Oct 2026: 2.6 and 2.9 +1 day each, 2.3 +2, 2.14 +1, 2.17 added)
+**Effort:** 102 days · **Scheduled:** 2 Mar 2027 → 14 Jul 2027 (baseline; 22 Oct 2026: 2.6 and 2.9 +1 day each, 2.3 +2, 2.14 +1, 2.17 added)  
+**Re-plan, 23 Oct 2026:** three streams, each starting once it finishes its Phase 1 items. Phase 1's actuals run at 0.39 of the estimates; this plan uses 0.5 for engineering items and 0.7 for content (2.13, 2.15; risk R4). Code-complete about **1 Dec 2026** (9 Dec with +25%); Phase 1's exit review about 9 Nov 2026.
 
 | ID | Item | Issue | Area | Refs | Est | Depends on |
 |---|---|---|---|---|---|---|
 | 2.1 | Themes package: theme model → Tailwind/daisyUI CSS | [#43](https://github.com/nexustech/webforge/issues/43) | themes | F-DS-1, S3, [stack/05](../research/stack/05-site-components.md) | 4 | 1.12 |
 | 2.2 | Fonts: bundled catalogue and on-demand download | [#44](https://github.com/nexustech/webforge/issues/44) | themes | S4, C8 | 3 | – |
-| 2.3 | Theme panel: brand colours, fonts, roundness, text and button styles | [#45](https://github.com/nexustech/webforge/issues/45) | themes | F-DS-2, F-DS-4, F-DS-7, D7, UX-21 | 6 | 2.1, 2.2, 1.26 |
+| 2.3 | Theme panel: brand colours, fonts, roundness, text and button styles | [#45](https://github.com/nexustech/webforge/issues/45) | themes | F-DS-2, F-DS-4, F-DS-7, D7, UX-21 | 6 | 2.1, 2.2, 1.26, 1.37 |
 | 2.4 | Section light/dark variants | [#46](https://github.com/nexustech/webforge/issues/46) | themes | F-DS-3 | 1 | 2.1 |
 | 2.5 | Component framework: tokens, variants, stories, behaviours | [#47](https://github.com/nexustech/webforge/issues/47) | components | [stack/05](../research/stack/05-site-components.md), S1, standards §5, [ADR 0005](../docs/adr/0005-export-pipeline-spike.md) | 3 | 1.14 |
 | 2.6 | Sections A: Header, Footer, Hero, Text, Text + Image, Call to action | [#48](https://github.com/nexustech/webforge/issues/48) | components | S1, MVP §3, F-DS-6, BS9-1, [ADR 0005](../docs/adr/0005-export-pipeline-spike.md) | 8 | 2.5, 1.21 |
 | 2.7 | Sections B: Features, Gallery + lightbox, Testimonials, Team, Pricing, FAQ, Logos, Stats | [#49](https://github.com/nexustech/webforge/issues/49) | components | S1, F-ED-6, G10 | 8 | 2.5 |
 | 2.8 | Sections C: Opening hours & contact, Contact form, Map, Video, Newsletter | [#50](https://github.com/nexustech/webforge/issues/50) | components | S1, F-CM-1, F-CM-4, F-CM-6, GA3 | 5 | 2.5, 1.17 |
-| 2.9 | Elements: basic set and icon picker | [#51](https://github.com/nexustech/webforge/issues/51) | components | S1, F-ED-21, F-ED-22, F-CM-5, F-CM-9, BS9-2 | 6 | 2.5, 1.17 |
+| 2.9 | Elements: basic set and icon picker | [#51](https://github.com/nexustech/webforge/issues/51) | components | S1, F-ED-21, F-ED-22, F-CM-5, F-CM-9, BS9-2 | 6 | 2.5, 1.17, 1.37 |
 | 2.10 | Carousel element | [#52](https://github.com/nexustech/webforge/issues/52) | components | G9, GA1 | 6 | 2.5 |
 | 2.11 | Elements: tabs, commerce, forms, embeds and custom code | [#53](https://github.com/nexustech/webforge/issues/53) | components | F-CM-2, F-CM-7, F-ED-15, F-ED-16 | 5 | 2.5 |
 | 2.12 | Animations and hover effects | [#54](https://github.com/nexustech/webforge/issues/54) | components | F-DS-5, G8 | 2 | 2.5 |
 | 2.13 | Design 10–12 curated themes | [#55](https://github.com/nexustech/webforge/issues/55) | themes | S3, F-DS-1 | 14 | 2.3, 2.6, 2.7, 2.8, 2.9 |
 | 2.14 | Template format and New Site flow | [#56](https://github.com/nexustech/webforge/issues/56) | content | F-SITE-1, S2, S5, UX-29 | 4 | 1.8, 2.13 |
 | 2.15 | Templates: 8 starter sites | [#57](https://github.com/nexustech/webforge/issues/57) | content | F-SITE-1, S2, S5 | 20 | 2.14, 2.10, 2.11, 2.12 |
-| 2.16 | Component accessibility and visual regression sweep | [#58](https://github.com/nexustech/webforge/issues/58) | components | standards §5, MVP §4 | 3 | 2.6, 2.7, 2.8, 2.9, 2.10, 2.11, 2.12 |
+| 2.16 | Component accessibility and visual regression sweep | [#58](https://github.com/nexustech/webforge/issues/58) | components | standards §5, MVP §4 | 3 | 2.6, 2.7, 2.8, 2.9, 2.10, 2.11, 2.12, 2.13 |
 | 2.17 | Columns toolbar, image resize handles and edit-only previews | [#187](https://github.com/nexustech/webforge/issues/187) | components | F-ED-25, UI2, UX-6, UX-26 | 4 | 2.9, 2.6, 1.32 |
+
+**Streams (plan of 23 Oct 2026, product owner approved).** The Phase 1 stream rules carry over. PRs open as drafts and are marked ready only once `pnpm check` (and `pnpm e2e` or `pnpm visual` where needed) and the code review pass, so CI runs once per ready version. Items over 5 days are split into sub-issues on GitHub.
+
+| Stream | Items, in order (after its Phase 1 items) |
+|---|---|
+| A: Shell & panels | 2.3 → 2.9 → 2.11 → 2.12 → 2.13 (themes 1–4) → 2.15 (Café/Restaurant, Salon/Beauty, Trades) |
+| B: Data & site | 2.1 → 2.2 → 2.4 → 2.8 → 2.7 → 2.14 → 2.13 (themes 5–8) → 2.15 (Consultant, Photographer/Portfolio, Shop) |
+| C: History & canvas | 2.5 (before 1.30) → 2.6 → 2.10 → 2.17 → 2.16 → 2.13 (themes 9–12) → 2.15 (Personal/CV, Blank) |
+
+Shared files are split in 2.5 so that streams add files instead of editing the same ones: the site-components catalogue becomes one module per component family assembled by an index, the behaviour registry is per file, and a section slot's allowed elements come from each element's `place` rather than a hand-written list.
+
+**Decisions (23 Oct 2026):**
+- Theme Studio is a large in-app dialog, not a separate window.
+- The theme model keeps daisyUI's colour roles; the UI names them Brand (primary), Accent (secondary, accent), Surface (base) and Text (base-content).
+- The type scale is H1–H6, body and small, plus link styles; the theme model also has a shadow scale.
+- Social icons use Simple Icons (CC0-1.0); every other icon uses Lucide (`lucide-static`, ISC).
+- One `embed` behaviour (click-to-load, privacy mode) is built in 2.8 and reused by 2.11.
+- The Booking button is a Button preset (a plain link), so the element count stays 17. There is no product card in the MVP.
 
 <details><summary>Scope and acceptance criteria</summary>
 
 **2.1 Themes package: theme model → Tailwind/daisyUI CSS**  
-Theme model (colours, fonts, radius, spacing, type scale, button styles, light/dark variants) → Tailwind @theme + daisyUI theme CSS; live recompile on change; contrast calculation; 2–3 starter themes for development.
+Theme model (colours, fonts, radius, spacing, type scale, button styles, light/dark variants) → Tailwind @theme + daisyUI theme CSS; live recompile on change; contrast calculation; 2–3 starter themes for development. The model's `theme` changes from a daisyUI theme name to these tokens, with a site-format migration and fixture (added 23 Oct 2026), and includes a shadow scale (F-DS-7).
 
 - [ ] Switching theme restyles all components instantly
 - [ ] Contrast checker reports AA failures
 
 **2.2 Fonts: bundled catalogue and on-demand download**  
-Bundle ~50 Fontsource families (OFL/Apache/UFL only) with 12–15 pairings; 'Browse all fonts' downloads from Fontsource once into a local cache; export includes only used families/weights/subsets.
+Bundle ~50 Fontsource families (OFL/Apache/UFL only) with 12–15 pairings; 'Browse all fonts' downloads from Fontsource once into a local cache; export includes only used families/weights/subsets. The font picker itself is part of 2.3's Theme panel, built on 1.37's shared picker (UX-15).
 
 - [ ] Installer font budget ~10–15 MB
 - [ ] Fonts work offline after download
 - [ ] Licence filter enforced in the catalogue build
 
 **2.3 Theme panel: brand colours, fonts, roundness, text and button styles**  
-Theme tab: preset picker, brand colours, font pairing/fonts, roundness, spacing scale, type scale (H1–H6, body), button styles; contrast warnings; site-wide changes confirm (D7) and are undoable. **Theme Studio** (F-DS-7, added 22 Oct 2026, +2 days): *Open Theme Studio* opens a larger window with theme cards and live mini previews, palette rows with generated shades and roles (Brand, Accent, Surface, Text), text styles per tag, spacing/corner/shadow scales, and light and dark values side by side.
+Theme tab: preset picker, brand colours, font pairing/fonts, roundness, spacing scale, type scale (H1–H6, body), button styles; contrast warnings; site-wide changes confirm (D7) and are undoable. **Theme Studio** (F-DS-7, added 22 Oct 2026, +2 days): *Open Theme Studio* opens a large in-app dialog with theme cards and live mini previews, palette rows with generated shades and roles (Brand, Accent, Surface, Text), text styles per tag, spacing/corner/shadow scales, and light and dark values side by side.
 
 - [ ] Theme switch confirms with impact and is one undo step
 - [ ] All theme edits undoable with labels
@@ -660,18 +681,18 @@ Features/Services grid, Gallery with lightbox (native dialog, keyboard + swipe),
 - [ ] All variants have stories
 
 **2.8 Sections C: Opening hours & contact, Contact form, Map, Video, Newsletter**  
-Opening hours & contact details (bound to Site Settings), Contact form section, Map and Video sections (click-to-load placeholders), Newsletter signup section (generic form action; provider presets if Q4 is decided), layout variants.
+Opening hours & contact details (bound to Site Settings), Contact form section, Map and Video sections (click-to-load placeholders, using the shared `embed` behaviour that 2.11 reuses), Newsletter signup section (generic form action; no provider presets, Q4 decided 23 Oct 2026), layout variants.
 
 - [ ] Bound values update from Site Settings
 - [ ] No external requests until the visitor clicks an embed
 
 **2.9 Elements: basic set and icon picker**  
-Heading, Text, Image (focal point), Button, Columns, Spacer, Divider, List, Icon with the searchable Lucide icon picker (also the icon field control), Social links bound to Site Settings → Social. Back-to-top button (F-CM-9, added 22 Oct 2026): a Site Settings option with a per-page switch; appears after scrolling, keyboard accessible, respects reduced motion.
+Heading, Text, Image (focal point), Button, Columns, Spacer, Divider, List, Icon with the searchable Lucide icon picker (also the icon field control), Social links bound to Site Settings → Social, with Simple Icons (CC0-1.0) for the brand icons. Back-to-top button (F-CM-9, added 22 Oct 2026): a Site Settings option with a per-page switch; appears after scrolling, keyboard accessible, respects reduced motion.
 
 - [ ] Icons inlined as SVG at export
 - [ ] Columns stack responsively
 - [ ] Social links update from Site Settings
-- [ ] Back-to-top button: appears after scrolling, keyboard and screen-reader accessible, no smooth scroll with reduced motion
+- [ ] Back-to-top button: appears after scrolling, keyboard and screen-reader accessible, moves focus to the top (F-CM-9), no smooth scroll with reduced motion
 
 **2.10 Carousel element**  
 One accessible Carousel element for images, testimonials and logos: slides as a repeating list, autoplay with pause, keyboard and swipe, reduced-motion support, works from disk with webforge.js.
@@ -680,7 +701,7 @@ One accessible Carousel element for images, testimonials and logos: slides as a 
 - [ ] Works from file:// with no external requests
 
 **2.11 Elements: tabs, commerce, forms, embeds and custom code**  
-Tabs (ARIA), Buy button (payment link), Booking button (generic URL; presets if Q4 is decided), Form fields, Embed video and Embed map (click-to-load), Custom Code element (Advanced, scripts off in the editor). Pasting a YouTube/Vimeo URL inserts an Embed video (F-ED-16).
+Tabs (ARIA), Buy button (payment link), Booking button (a Button preset with a generic URL; no presets, Q4 decided 23 Oct 2026), Form fields, Embed video and Embed map (click-to-load, reusing 2.8's `embed` behaviour), Custom Code element (Advanced, scripts off in the editor). Pasting a YouTube/Vimeo URL inserts an Embed video (F-ED-16).
 
 - [ ] Tabs meet WCAG 2.1 AA
 - [ ] Buy/Booking buttons are plain links
@@ -691,6 +712,7 @@ Tabs (ARIA), Buy button (payment link), Booking button (generic URL; presets if 
 Entrance animation presets (fade, slide, zoom; delay) and hover effects (lift, grow, shadow) via CSS + a tiny observer in webforge.js; disabled for prefers-reduced-motion; works from disk.
 
 - [ ] No animation when reduced motion is set
+- [ ] Content is visible without JavaScript (F-DS-5)
 - [ ] Works when opened via file://
 
 **2.13 Design 10–12 curated themes**  
@@ -704,9 +726,10 @@ Template package format (pages, theme, sample content, images with an image-lice
 
 - [ ] Template thumbnails generated in CI
 - [ ] Image manifest validated (source + licence per image)
+- [ ] A new site from a template opens the editor in < 3 s (F-SITE-1)
 
 **2.15 Templates: 8 starter sites**  
-Café/Restaurant, Salon/Beauty, Trades, Consultant, Photographer/Portfolio, Shop, Personal/CV, Blank: 3–5 pages each with realistic copy and CC0/free stock images recorded in the manifest. About 2–4 days each for design, copy, images and QA (product/03); copy and photo sourcing per Q6.
+Café/Restaurant, Salon/Beauty, Trades, Consultant, Photographer/Portfolio, Shop, Personal/CV, Blank: 3–5 pages each with realistic copy and CC0/public-domain images recorded in the manifest (no bundled Unsplash or Pexels photos; Q6 decided 23 Oct 2026). About 2–4 days each for design, copy, images and QA (product/03); copy and photo sourcing per Q6.
 
 - [ ] Each template opens in < 3 s and is axe-clean in the canvas and Storybook
 - [ ] Templates look distinct
@@ -727,7 +750,7 @@ Columns toolbar on a selected Columns element: add/remove a column, layout prese
 
 </details>
 
-**Phase exit:** Every component has stories × 3 themes × Desktop/Mobile, axe-clean; New Site from each of the 8 templates works and looks distinct; Theme changes restyle every component; contrast warnings work.
+**Phase exit:** Every component has stories × 3 themes × Desktop/Mobile, axe-clean; New Site from each of the 8 templates works and looks distinct; Theme changes restyle every component; contrast warnings work; all templates pass axe and visual regression (MVP §6).
 
 ### Phase 3: Output
 **Goal:** Preview, export and Site Check: every template exports to a self-contained site that opens from disk in all browsers with zero external requests.  
@@ -1072,9 +1095,9 @@ Sequencing rules:
 | Q1 | Update-feed host: GitHub Releases on the private repo needs a token in the app. A public releases-only repo or object storage (Cloudflare R2/S3) avoids that | 0.5 (13 Nov 2026) | Cloudflare R2 bucket with electron-updater's generic provider |
 | Q2 | Apple enrolment as an individual or as the company (company name shown to users; needs D-U-N-S) | 0.1 (26 Oct 2026) | Company, if a legal entity exists |
 | Q3 | Windows signing route (depends on Q2): Azure Artifact Signing is open to UK organisations but not UK individuals; the alternative is an OV certificate on a cloud HSM | 0.1 (26 Oct 2026) | Artifact Signing if enrolling as a UK company; otherwise an OV certificate |
-| Q4 | Booking and newsletter provider presets (GA3, MVP §7 item 8) | 2.8 (15 Apr 2027) | Generic URL / form action only |
+| Q4 | Booking and newsletter provider presets (GA3, MVP §7 item 8) | 2.8 | **Decided 23 Oct 2026:** generic URL / form action only, no presets in the MVP |
 | Q5 | Open already-published sites in Content mode by default (MVP §7 item 5) | 4.5 (16 Sep 2027) | No: remember the last mode per site |
-| Q6 | Who writes template copy and picks photos; final image licence review (S5) | 2.15 (14 Jun 2027) | Developer + Claude draft copy; CC0 images with manifest |
+| Q6 | Who writes template copy and picks photos; final image licence review (S5) | 2.15 | **Decided 23 Oct 2026:** Claude drafts the copy and the product owner reviews it; CC0 or public-domain photos only (no bundled Unsplash or Pexels photos), recorded in each template's image manifest; the product owner does the final licence review |
 | Q7 | Where beta testers come from and how feedback is collected | 5.7 (20 Oct 2027) | Waiting-list page + email; GitHub issues via a form |
 | Q8 | Licensing details: updates included, computers per licence, trial-end behaviour (MVP §8) | After MVP | Not in this plan |
 | Q9 | MCP transport: a loopback HTTP endpoint with a per-app token, or a small bundled stdio bridge? (`RunAsNode` is disabled, so the Electron binary can't be the bridge) | 4.9 | Loopback Streamable HTTP with per-app tokens, if the main AI desktop apps can connect to it |
