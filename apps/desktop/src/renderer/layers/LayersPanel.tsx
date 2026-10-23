@@ -248,7 +248,14 @@ export function LayersPanel({
       event.preventDefault();
       const step = event.key === "ArrowUp" ? -1 : 1;
       if (event.altKey) {
-        if (!layoutLocked) actions.move(row.layer.id, row.index + step);
+        if (layoutLocked) {
+          // Content mode keeps the layout (M3).
+        } else if (alsoSelected.length > 0) {
+          // Several selected: they all move, as the Edit menu's Move up and down do (1.31).
+          (step < 0 ? actions.moveUp : actions.moveDown)?.();
+        } else {
+          actions.move(row.layer.id, row.index + step);
+        }
       } else {
         const next = rows[at + step];
         if (next !== undefined) focusRow(next.layer.id);
@@ -348,7 +355,11 @@ export function LayersPanel({
                 aria-posinset={row.index + 1}
                 aria-expanded={hasChildren ? row.expanded : undefined}
                 tabIndex={focusable ? 0 : -1}
-                draggable={!layoutLocked && renaming !== layer.id}
+                // One drag moving several selected layers is for later (1.31): until then a
+                // selected row can't be dragged while others are selected too.
+                draggable={
+                  !layoutLocked && renaming !== layer.id && !(isSelected && alsoSelected.length > 0)
+                }
                 className={cn(
                   "group relative flex h-6 items-center gap-1 rounded-sm pr-1 text-xs outline-none",
                   "hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",

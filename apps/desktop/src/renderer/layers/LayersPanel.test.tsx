@@ -146,6 +146,18 @@ describe("LayersPanel (F-ED-12)", () => {
     expect(actions.select).not.toHaveBeenCalled();
   });
 
+  it("moves all selected layers with Alt+arrows, as the Edit menu does (1.31)", () => {
+    const { actions } = setUp("a", true, false, ["b"]);
+    const rows = screen.getAllByRole("treeitem");
+
+    fireEvent.keyDown(rows[1] as HTMLElement, { key: "ArrowDown", altKey: true });
+    fireEvent.keyDown(rows[1] as HTMLElement, { key: "ArrowUp", altKey: true });
+
+    expect(actions.moveDown).toHaveBeenCalledOnce();
+    expect(actions.moveUp).toHaveBeenCalledOnce();
+    expect(actions.move).not.toHaveBeenCalled();
+  });
+
   it("keeps a Shift-click range's start on the last row clicked without Shift (#259 review)", () => {
     const { actions } = setUp("s2");
     const rows = screen.getAllByRole("treeitem");
@@ -210,6 +222,21 @@ describe("LayersPanel (F-ED-12)", () => {
     expect(actions.move.mock.calls).toEqual([
       ["a", 1],
       ["c", 0],
+    ]);
+  });
+
+  it("doesn't drag a selected layer while others are selected too, but drags one that isn't (#262)", () => {
+    setUp("a", true, false, ["b"]);
+    const draggable = screen
+      .getAllByRole("treeitem")
+      .map((row) => [row.getAttribute("data-layer"), row.getAttribute("draggable")]);
+
+    expect(draggable).toEqual([
+      ["s1", "true"],
+      ["a", "false"],
+      ["b", "false"],
+      ["c", "true"],
+      ["s2", "true"],
     ]);
   });
 

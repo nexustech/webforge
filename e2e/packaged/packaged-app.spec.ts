@@ -1,10 +1,12 @@
 import { type ChildProcess, spawn } from "node:child_process";
+import { createHash } from "node:crypto";
 import { once } from "node:events";
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type Browser, chromium, expect, type Page, test } from "@playwright/test";
 import { ProjectStore } from "@webforge/storage";
+import { FONT_BUDGET_BYTES, FONT_CATALOGUE } from "@webforge/themes";
 import { desktopVersion } from "../app/launch.js";
 
 // Checks the packaged app (`pnpm e2e:packaged`): electron-builder output with asar, Fuses and the
@@ -31,6 +33,18 @@ function packagedExecutable(): string | undefined {
       );
     default:
       // Linux is not a release target.
+      return undefined;
+  }
+}
+
+/** The packaged app's resources folder, beside app.asar. */
+function resourcesDir(): string | undefined {
+  switch (process.platform) {
+    case "win32":
+      return join(releaseDir, "win-unpacked", "resources");
+    case "darwin":
+      return join(releaseDir, `mac-${process.arch}`, "Webforge.app", "Contents", "Resources");
+    default:
       return undefined;
   }
 }
@@ -109,6 +123,19 @@ test.afterAll(async () => {
     await exited;
   }
   rmSync(siteDir, { recursive: true, force: true });
+});
+
+test("ships every catalogue font beside app.asar, byte for byte, within the font budget (2.2)", () => {
+  const dir = resourcesDir();
+  test.skip(dir === undefined, "Linux is not a release target");
+  if (dir === undefined) return;
+  let total = 0;
+  for (const file of FONT_CATALOGUE.flatMap((font) => font.files)) {
+    const data = readFileSync(join(dir, "fonts", file.file));
+    expect(createHash("sha256").update(data).digest("hex"), file.file).toBe(file.sha256);
+    total += data.byteLength;
+  }
+  expect(total).toBeLessThanOrEqual(FONT_BUDGET_BYTES);
 });
 
 test("the packaged app opens a .wforge passed on the command line", async () => {

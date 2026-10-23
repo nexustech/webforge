@@ -21,7 +21,6 @@
   },
   "devDependencies": {
     "@babel/core": "catalog:",
-    "@fontsource/inter": "catalog:",
     "@jsquash/jpeg": "catalog:",
     "@jsquash/png": "catalog:",
     "@jsquash/resize": "catalog:",

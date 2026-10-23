@@ -22,8 +22,8 @@ describe("compileCss", () => {
     // The body classes of exported pages, so the canvas looks like the export.
     expect(outcome.bodyClass).toContain("bg-base-100");
     expect(outcome.css).toContain(".bg-base-100");
-    // Fonts point at the placeholder the renderer replaces with its own font files.
-    expect(outcome.css).toContain('url("webforge-font:inter-latin-400-normal.woff2")');
+    // Fonts load through the main process's font scheme (2.2).
+    expect(outcome.css).toContain('url("webforge-font://fonts/inter-latin-wght-normal.woff2")');
     // Classes the site doesn't use aren't compiled.
     expect(outcome.css).not.toContain(".text-9xl");
   }, 60_000);

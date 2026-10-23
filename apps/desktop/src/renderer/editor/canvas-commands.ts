@@ -122,18 +122,14 @@ const NEEDS_SELECTION: ReadonlySet<CanvasAction> = new Set([
   "selectNextSibling",
 ]);
 
-/**
- * Actions on the one element the canvas shows, off while several are selected (1.31): what changes
- * the layout acts on all of them (part 2), and text is one element's.
- */
-const ONE_ELEMENT: ReadonlySet<CanvasAction> = new Set([
-  "duplicate",
-  "delete",
-  "moveUp",
-  "moveDown",
-  "editText",
-  "clearText",
-]);
+/** The edits that act on every selected element while several are (1.31). */
+export type BulkCanvasAction = "duplicate" | "delete" | "moveUp" | "moveDown";
+
+const BULK: ReadonlySet<CanvasAction> = new Set(["duplicate", "delete", "moveUp", "moveDown"]);
+const isBulk = (action: CanvasAction): action is BulkCanvasAction => BULK.has(action);
+
+/** Text is one element's: off while several are selected (1.31). */
+const ONE_ELEMENT: ReadonlySet<CanvasAction> = new Set(["editText", "clearText"]);
 
 /** Actions that change the layout, which Content mode locks (M3); editing text doesn't. */
 const CHANGES_LAYOUT: ReadonlySet<CanvasAction> = new Set([
@@ -147,15 +143,18 @@ const CHANGES_LAYOUT: ReadonlySet<CanvasAction> = new Set([
  * Registers the canvas's keyboard actions as commands, so the Edit menu, the command box and their
  * shortcuts all reach them: arrows select, Mod+arrows walk the page's tree (parent, child,
  * siblings), Mod+Alt+arrows move, Enter edits text and Backspace empties it (or deletes an element
- * with no text), Mod+D duplicates, Delete and Mod+Backspace delete. Each runs on the canvas's selected element as one undo step. Returns a function
- * that removes them, one that enables the ones needing a selection as the selection comes and goes,
- * and one that turns the ones changing the layout (duplicate, delete, move) off while Content mode
+ * with no text), Mod+D duplicates, Delete and Mod+Backspace delete. Each runs on the canvas's
+ * selected element as one undo step; while several are selected, duplicate, delete and the moves go
+ * to `bulk`, which acts on all of them (1.31), and editing text is off. Returns a function that
+ * removes them, one that enables the ones needing a selection as the selection comes and goes, and
+ * one that turns the ones changing the layout (duplicate, delete, move) off while Content mode
  * locks it (M3).
  */
 export function registerCanvasCommands(
   registry: CommandRegistry,
   engine: CanvasEngine,
   beforeAction: () => void,
+  bulk?: (action: BulkCanvasAction) => void,
 ): {
   readonly remove: () => void;
   readonly setHasSelection: (selected: boolean) => void;
@@ -170,7 +169,8 @@ export function registerCanvasCommands(
     for (const command of CANVAS_COMMANDS) {
       if (NEEDS_SELECTION.has(command.action)) {
         const layout = CHANGES_LAYOUT.has(command.action);
-        const one = ONE_ELEMENT.has(command.action);
+        const one =
+          ONE_ELEMENT.has(command.action) || (isBulk(command.action) && bulk === undefined);
         registry.update(command.id, {
           enabled: selected && !(layout && locked) && !(one && several),
         });
@@ -188,6 +188,10 @@ export function registerCanvasCommands(
       enabled: !NEEDS_SELECTION.has(command.action),
       run: () => {
         beforeAction();
+        if (several && bulk !== undefined && isBulk(command.action)) {
+          bulk(command.action);
+          return;
+        }
         // Backspace on an element with no text of its own (a Section, an image) deletes it, as
         // Delete does: a Mac's delete key is Backspace (decision of 23 Oct 2026).
         if (!engine.perform(command.action) && command.action === "clearText" && !locked) {

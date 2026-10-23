@@ -8,7 +8,6 @@ packages:
 catalog:
   # React Compiler (ADR 0010) through Babel. The compiler is built against Babel 7.
   "@babel/core": 7.29.7
-  "@fontsource/inter": 5.3.0
   "@jsquash/jpeg": 1.6.0
   "@jsquash/png": 3.1.1
   "@jsquash/resize": 2.1.1

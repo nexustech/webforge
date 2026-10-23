@@ -2,6 +2,7 @@ import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { t } from "@webforge/i18n";
 import { DOCUMENT_EXTENSIONS, type SiteSnapshot } from "@webforge/model";
+import { fontFacesFor } from "@webforge/themes";
 import {
   app,
   BrowserWindow,
@@ -33,6 +34,7 @@ import type { E2eDialog } from "./e2e-dialogs.js";
 import { type ExportDialogs, registerExportHandlers } from "./export-ipc.js";
 import { runExportInWorker } from "./export-worker-client.js";
 import { createFlushOnClose } from "./flush-on-close.js";
+import { createFontReader, createFontResponder, FONT_SCHEME } from "./fonts.js";
 import { createHandOff } from "./hand-off.js";
 import { registerIpcHandler } from "./ipc.js";
 import { importMediaFiles } from "./media-import.js";
@@ -92,9 +94,11 @@ const crashReports = startCrashReports(primaryInstance);
 // Sandbox every renderer, including any created later by dependencies.
 app.enableSandbox();
 
-// Media images reach the editor through their own scheme (1.16); it must be known before "ready".
+// Media images (1.16) and the site's fonts (2.2) reach the editor through schemes of their own,
+// which must be known before "ready". Fonts load in CORS mode.
 protocol.registerSchemesAsPrivileged([
   { scheme: MEDIA_SCHEME, privileges: { standard: true, secure: true } },
+  { scheme: FONT_SCHEME, privileges: { standard: true, secure: true, corsEnabled: true } },
 ]);
 
 app.on("web-contents-created", (_event, contents) => {
@@ -272,11 +276,27 @@ const exportDialogs: ExportDialogs = {
   },
 };
 
-// Each export runs in its own utility process, so building never blocks the window (07).
+// The installer's fonts, outside app.asar (2.2): in the packaged app's resources, or where the
+// build copied them while developing.
+const fonts = createFontReader(
+  app.isPackaged ? join(process.resourcesPath, "fonts") : join(app.getAppPath(), "out", "fonts"),
+);
+const respondWithFont = createFontResponder(fonts);
+
+// Each export runs in its own utility process, so building never blocks the window (07). The
+// worker resolves nothing itself: it gets the site's font files, read and checked here.
 const runExport = (snapshot: SiteSnapshot, destination: string) =>
   runExportInWorker(
     () => utilityProcess.fork(exportWorkerScript, [], { serviceName: "Webforge export" }),
-    { type: "export", snapshot, destination },
+    {
+      type: "export",
+      snapshot,
+      destination,
+      fonts: fontFacesFor(snapshot.theme).flatMap((face) => {
+        const data = fonts.read(face);
+        return data === undefined ? [] : [{ file: face.file, data }];
+      }),
+    },
   );
 
 // Media thumbnails are made in a long-lived worker too, started when first needed (1.16).
@@ -403,6 +423,7 @@ async function start(): Promise<void> {
   await app.whenReady();
   hardenSession(session.defaultSession);
   session.defaultSession.protocol.handle(MEDIA_SCHEME, (request) => respondWithMedia(request.url));
+  session.defaultSession.protocol.handle(FONT_SCHEME, (request) => respondWithFont(request.url));
   const preferences = await openPreferencesStore(join(app.getPath("userData"), "preferences.json"));
   preferencesStore = preferences;
   let windowTheme = preferences.get().theme;
