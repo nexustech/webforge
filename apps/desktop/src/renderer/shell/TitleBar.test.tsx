@@ -50,7 +50,7 @@ describe("TitleBar", () => {
       label: "Export Site…",
       run: exportSite,
     });
-    registry.register({ id: COMMAND_IDS.undo, label: "Undo", shortcut: "Mod+Z", run: undo });
+    registry.register({ id: COMMAND_IDS.undo, label: "Undo", run: undo });
     renderTitleBar(registry);
 
     await userEvent.click(screen.getByRole("button", { name: "Export" }));
@@ -77,7 +77,6 @@ describe("TitleBar", () => {
       id: COMMAND_IDS.exportSite,
       label: "Export Site…",
       menu: "file",
-      shortcut: "Mod+E",
       run: exportSite,
     });
     registry.register({

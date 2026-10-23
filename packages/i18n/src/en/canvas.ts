@@ -26,6 +26,10 @@ export const canvas = {
   // The rich-text toolbar's links (1.23, F-ED-3).
   "canvas.richText.link": "Link…",
   "canvas.richText.removeLink": "Remove link",
+  // Alt + Enter in rich text (F-ED-27): the element splits in two at the caret.
+  "canvas.splitText.notHere":
+    "Only the page's own text can be split. The shared Header and Footer, and shared sections, are shown on other pages too.",
+  "canvas.splitText.locked": "Splitting text adds an element. Switch to Design mode to split it.",
   // While an element of the shared Header or Footer is selected (1.20, F-ED-7, D7).
   // The breadcrumb bar under the canvas toolbar (1.30): the selected element's place on the page.
   "canvas.breadcrumbs": "Where the selection is",

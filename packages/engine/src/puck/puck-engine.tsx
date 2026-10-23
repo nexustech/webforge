@@ -44,6 +44,7 @@ import type {
   InsertPoint,
   LinkPicker,
   RichTextAt,
+  TextSplit,
   ViewOptions,
   Viewport,
 } from "../canvas-engine.js";
@@ -90,6 +91,7 @@ import { applySiteStyles, type SiteStyles } from "./site-styles.js";
 import { boxHandleFields } from "./spacing-handles.js";
 import { focusedRichTextId, richTextArrived, staleRichText } from "./stale-rich-text.js";
 import { startTextEditing } from "./text-editing.js";
+import { createTextKeys, type PickLink } from "./text-keys.js";
 import { allNodes, findNode, nodeAt, ROOT_ZONE } from "./tree.js";
 import { applyViewOptions } from "./view-options.js";
 
@@ -294,6 +296,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   const addRequests = emitter<InsertPoint>();
   const fieldDrags = emitter<FieldDrag>();
   const elementRequests = emitter<ElementRequest>();
+  const textSplits = emitter<TextSplit>();
   const contextMenus = emitter<CanvasContextMenu>();
   const dragSources = createDragSources(
     (componentType) => library?.components[componentType]?.label ?? componentType,
@@ -938,10 +941,25 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       ? { nodeId, field: focus.replace(/::inline$/, "") }
       : null;
   };
-  const formatToolbar = createFormatToolbar(() => {
+  const pickLink = (): PickLink | null => {
     const picker = linkPicker;
     return picker === null ? null : (current) => picker(current, editingRichText());
-  });
+  };
+  const richTextTools = {
+    toolbar: createFormatToolbar(pickLink),
+    // Mod + K, Alt + Enter and Shift + Space in rich text (F-ED-27).
+    extensions: [
+      createTextKeys({
+        pickLink,
+        split: (halves) => {
+          const at = editingRichText();
+          // After the last keystrokes Puck still holds back, so the step before the split has them
+          // and undoing the split gives back all that was typed.
+          if (at !== null) commands.whenSent(() => textSplits.emit({ ...at, ...halves }));
+        },
+      }),
+    ],
+  };
 
   /** The Puck config for `library`, rendering with the current editor revisions and context. */
   const configFor = (forLibrary: ComponentLibrary) =>
@@ -949,7 +967,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       forLibrary,
       (id) => editorRevisions.get(id) ?? 0,
       () => renderContext,
-      formatToolbar,
+      richTextTools,
     );
 
   /**
@@ -1193,6 +1211,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     onAddRequest: addRequests.add,
 
     onElementRequest: elementRequests.add,
+    onTextSplit: textSplits.add,
 
     onFieldDrag: fieldDrags.add,
 

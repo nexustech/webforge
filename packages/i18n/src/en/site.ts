@@ -102,6 +102,7 @@ export const site = {
   "site.clipboard.addedToMedia": "Added {name} to Media",
   "site.clipboard.addedManyToMedia": "Added {count} images and files to Media",
   "site.clipboard.nothing": "There's nothing to paste. Copy a section or element first.",
+  "site.clipboard.onlySharedLinked": "Only a shared section can be pasted as a linked copy.",
   "site.clipboard.cantPaste":
     "That {item} can't go here. Select a place that takes it, then paste.",
   "site.clipboard.sharedRegion":

@@ -110,6 +110,42 @@ test("saves a shared section, edits every copy at once, undoes it, and detaches 
   await expect(steps().first()).toHaveText("Edited Heading text");
 });
 
+test("Ctrl/Cmd+V pastes a copied linked copy as the page's own; Ctrl/Cmd+Shift+V places another linked copy (F-ED-23)", async () => {
+  await selectSection();
+  await editMenu("Save as shared section…");
+  const dialog = page.getByRole("dialog", { name: "Save as shared section" });
+  await dialog.getByRole("textbox", { name: "Name" }).fill("Welcome");
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(banner()).toHaveText(
+    "Editing shared section 'Welcome': changes apply to 1 copy on 1 page",
+  );
+  await settled(canvas().locator(".site-section").first());
+  await selectSection();
+  await page.keyboard.press("ControlOrMeta+c");
+
+  await page.keyboard.press("ControlOrMeta+v");
+  await expect(steps().first()).toHaveText("Pasted Section");
+  await expect(headings()).toHaveCount(2);
+  // The pasted section is the page's own: no banner for it.
+  await expect(banner()).toHaveCount(0);
+
+  await page.keyboard.press("ControlOrMeta+Shift+v");
+  await expect(steps().first()).toHaveText("Added a copy of 'Welcome'");
+  await expect(headings()).toHaveCount(3);
+  await expect(banner()).toHaveText(
+    "Editing shared section 'Welcome': changes apply to 2 copies on 1 page",
+  );
+
+  // An element isn't a shared section: nothing is pasted, and the reason is shown.
+  await selectHeading(1);
+  await page.keyboard.press("ControlOrMeta+c");
+  await page.keyboard.press("ControlOrMeta+Shift+v");
+  await expect(
+    page.getByText("Only a shared section can be pasted as a linked copy."),
+  ).toBeVisible();
+  await expect(headings()).toHaveCount(3);
+});
+
 test("renames a shared section, then deletes it after asking, its copies staying", async () => {
   await selectSection();
   await editMenu("Save as shared section…");

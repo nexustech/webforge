@@ -16,6 +16,7 @@ export type {
   LinkPicker,
   MountOptions,
   RichTextAt,
+  TextSplit,
   Unsubscribe,
   ViewOptions,
   Viewport,

@@ -1,4 +1,4 @@
-import { expect, type Locator, type Page } from "@playwright/test";
+import { expect, type FrameLocator, type Locator, type Page } from "@playwright/test";
 
 export type Box = { x: number; y: number; width: number; height: number };
 
@@ -25,11 +25,37 @@ const DRAGGING = "[data-puck-entry][data-puck-dragging]";
 /** Where the drop would land: Puck's placeholder in the list, or its line between items. */
 const DROP_PREVIEW = "[data-dnd-placeholder], [data-puck-line-placeholder]";
 
+/** How many times {@link drag} presses before it gives up on the drag starting. */
+const PRESSES = 3;
+
+/**
+ * Whether Puck can start a drag from `from` now: no drag is still ending (dnd-kit ignores a press
+ * until its last one is idle), and the element it is in may be dragged (Puck marks one that may
+ * not, as while it is drawn again, with `data-puck-disabled`).
+ */
+async function dragReady(canvas: FrameLocator, from: Locator): Promise<void> {
+  await expect(canvas.locator(DRAGGING)).toHaveCount(0);
+  await expect
+    .poll(
+      () =>
+        from.evaluate(
+          (element) =>
+            // A source outside the canvas (the Add panel's items) has no element of Puck's.
+            element.closest("[data-puck-component]")?.hasAttribute("data-puck-disabled") ?? false,
+        ),
+      { message: "The drag source can't be dragged" },
+    )
+    .toBe(false);
+}
+
 /**
  * Drags with real mouse events, as a user would, waiting for each stage instead of for time: the
- * drag to start (Puck marks the canvas), then the drop preview at `to`, nudging the pointer a pixel
- * until each shows, and only then lets go. `grabAt` is where to press, as a fraction of the
- * source's width: pressing on an inline-editable element's text selects text instead of dragging.
+ * source to be ready, the drag to start (Puck marks the canvas), then the drop preview at `to`,
+ * nudging the pointer a pixel until each shows, and only then lets go. A press Puck didn't take
+ * (it can miss one while it draws the canvas again) is let go outside the canvas, over the left
+ * panels, so it isn't a click that adds to the selection, and made again, as a person would. `grabAt` is where to press,
+ * as a fraction of the source's width: pressing on an inline-editable element's text selects text
+ * instead of dragging.
  */
 export async function drag(
   page: Page,
@@ -38,22 +64,34 @@ export async function drag(
   grabAt = 0.5,
 ): Promise<void> {
   const canvas = page.frameLocator(".editor__canvas iframe");
-  const box = await boxOf(from, "Drag source");
-  const x = box.x + box.width * grabAt;
-  const y = box.y + box.height / 2;
-  await page.mouse.move(x, y);
-  await page.mouse.down();
   let nudge = 0;
-  await expect
-    .poll(
-      async () => {
-        nudge += 1;
-        await page.mouse.move(x + 10 + (nudge % 3), y + 10, { steps: 5 });
-        return canvas.locator(DRAGGING).count();
-      },
-      { message: "The drag didn't start" },
-    )
-    .toBeGreaterThan(0);
+  for (let press = 1; ; press++) {
+    await dragReady(canvas, from);
+    const box = await boxOf(from, "Drag source");
+    const x = box.x + box.width * grabAt;
+    const y = box.y + box.height / 2;
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    try {
+      await expect
+        .poll(
+          async () => {
+            nudge += 1;
+            await page.mouse.move(x + 10 + (nudge % 3), y + 10, { steps: 5 });
+            return canvas.locator(DRAGGING).count();
+          },
+          { message: "The drag didn't start", timeout: 2_000 },
+        )
+        .toBeGreaterThan(0);
+      break;
+    } catch (error) {
+      // Let go outside the canvas, over the left panels: not the title bar, which moves the window.
+      const away = await boxOf(page.getByRole("region", { name: "Left panels" }), "Left panels");
+      await page.mouse.move(away.x + away.width / 2, away.y + away.height - 8, { steps: 5 });
+      await page.mouse.up();
+      if (press === PRESSES) throw error;
+    }
+  }
   await page.mouse.move(to.x, to.y, { steps: 25 });
   await expect
     .poll(

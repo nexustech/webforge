@@ -34,14 +34,12 @@ export function SiteCommands({ project, restart }: SiteCommandsProps) {
       id: COMMAND_IDS.newSite,
       label: t("command.newSite"),
       menu: "file",
-      shortcut: "Mod+N",
       run: run((api) => api.create()),
     });
     const removeOpen = registry.register({
       id: COMMAND_IDS.openSite,
       label: t("command.openSite"),
       menu: "file",
-      shortcut: "Mod+O",
       run: run((api) => api.open()),
     });
     return () => {

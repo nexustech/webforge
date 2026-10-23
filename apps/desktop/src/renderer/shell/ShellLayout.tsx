@@ -212,7 +212,6 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
         id: COMMAND_IDS.toggleLeftPanels,
         label: t("command.toggleLeftPanels"),
         menu: "view",
-        shortcut: "Mod+Alt+B",
         run: byCommand(() => toggle(left.current, DEFAULTS.sideWidth)),
       }),
       registry.register({
@@ -225,7 +224,6 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
         id: COMMAND_IDS.toggleDrawer,
         label: t("command.toggleDrawer"),
         menu: "view",
-        shortcut: "Mod+J",
         run: byCommand(() => toggle(drawer.current, DEFAULTS.drawer)),
       }),
       registry.register({
