@@ -133,7 +133,7 @@ describe("createFlushOnClose", () => {
     userCloses();
 
     await answer(2);
-    await expect(answer(1, "https://example.com/")).rejects.toThrow(/untrusted/);
+    await expect(answer(1, "https://example.com/")).rejects.toThrow("ipc-failed");
     await expect(answer("1")).rejects.toThrow();
     await vi.advanceTimersByTimeAsync(0);
 

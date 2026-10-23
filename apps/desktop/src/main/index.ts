@@ -37,8 +37,7 @@ import { createFlushOnClose } from "./flush-on-close.js";
 import { createFontReader, createFontResponder, FONT_SCHEME } from "./fonts.js";
 import { createHandOff } from "./hand-off.js";
 import { registerIpcHandler } from "./ipc.js";
-import { importMediaFiles } from "./media-import.js";
-import { importFilesAt, type MediaDialogs, registerMediaHandlers } from "./media-ipc.js";
+import { type MediaDialogs, registerMediaHandlers } from "./media-ipc.js";
 import { createMediaResponder } from "./media-protocol.js";
 import {
   openPreferencesStore,
@@ -482,12 +481,8 @@ async function start(): Promise<void> {
     createElementClipboard(
       systemClipboard({ clipboard, ClipboardItem }),
       join(app.getPath("userData"), "clipboard"),
-      projectSession,
-      {
-        files: (paths) => importFilesAt(projectSession, paths),
-        image: (file) => importMediaFiles(projectSession, [file]),
-      },
     ),
+    projectSession,
   );
   crashReports.registerHandlers(ipcMain, (senderUrl) => isAppUrl(senderUrl, appUrl));
   flushOnClose = createFlushOnClose(ipcMain, (senderUrl) => isAppUrl(senderUrl, appUrl), {

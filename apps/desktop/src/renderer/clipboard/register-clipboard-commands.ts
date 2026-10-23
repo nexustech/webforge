@@ -6,8 +6,8 @@ import { type ClipboardSession, copySelected, pasteElements } from "./element-cl
 
 /** The clipboard through the preload API, looked up only when used. */
 export const preloadClipboard: Pick<ClipboardApi, "write" | "read"> = {
-  write: (elements) => window.webforge.clipboard.write(elements),
-  read: () => window.webforge.clipboard.read(),
+  write: (sessionId, elements) => window.webforge.clipboard.write(sessionId, elements),
+  read: (sessionId) => window.webforge.clipboard.read(sessionId),
 };
 
 /**

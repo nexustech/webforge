@@ -36,14 +36,14 @@ describe("importDroppedFiles", () => {
       file("d.pdf", 10),
     ];
     const media = {
-      import: vi.fn(async (sent: readonly { fileName: string }[]) =>
+      import: vi.fn(async (_session: string, sent: readonly { fileName: string }[]) =>
         imported(sent.map((one) => ({ ...prices, id: one.fileName as MediaId }))),
       ),
     };
 
     const result = await importDroppedFiles(files, media);
 
-    expect(media.import.mock.calls.map(([sent]) => sent.map((one) => one.fileName))).toEqual([
+    expect(media.import.mock.calls.map(([, sent]) => sent.map((one) => one.fileName))).toEqual([
       ["a.jpg", "b.jpg"],
       ["c.jpg", "d.pdf"],
     ]);
@@ -82,7 +82,7 @@ describe("importDroppedFiles, unreadable entries", () => {
       items: [prices],
       rejected: [{ fileName: "Photos", reason: "unsupported" }],
     });
-    expect(media.import).toHaveBeenCalledWith([
+    expect(media.import).toHaveBeenCalledWith(expect.any(String), [
       { fileName: "prices.pdf", data: new Uint8Array([1, 2, 3]) },
     ]);
     await expect(importDroppedFiles([folder], media)).resolves.toMatchObject({ items: [] });

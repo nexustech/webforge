@@ -193,6 +193,21 @@ describe("createAutosave", () => {
     expect(status()).toBe("saved");
   });
 
+  it("drops what it was saving, and saves nothing more, once another site has replaced this one (R6)", async () => {
+    start();
+    commit.mockResolvedValueOnce({ status: "failed", reason: "stale-session" });
+
+    edit("Rosa's");
+    await vi.advanceTimersByTimeAsync(2_000);
+    expect(commit).toHaveBeenCalledOnce();
+    // Neither later edits, nor a flush, nor the 30 s timer send anything to the new site.
+    edit("Rosa's Bakery");
+    await autosave.flush();
+    await vi.advanceTimersByTimeAsync(30_000);
+
+    expect(commit).toHaveBeenCalledOnce();
+  });
+
   it("stops saving once disposed", async () => {
     start();
     edit("One");
