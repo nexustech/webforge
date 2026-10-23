@@ -19,6 +19,8 @@ export type MenuPoint = { readonly x: number; readonly y: number };
  */
 export const ELEMENT_MENU_COMMANDS = {
   duplicate: "edit.duplicate",
+  copyStyle: "edit.copyStyle",
+  pasteStyle: "edit.pasteStyle",
   saveShared: "edit.saveSharedSection",
   detachShared: "edit.detachSharedSection",
   remove: "edit.delete",
@@ -40,7 +42,8 @@ export type ElementMenuProps = {
 
 /**
  * The selected element's right-click menu (1.35, UX-24): the same on the canvas and in Layers.
- * Rename, Duplicate, Save as shared section (or Detach, for a linked copy) and Delete. The element
+ * Rename, Duplicate, Save as shared section (or Detach, for a linked copy), Copy Style and Paste
+ * Style (1.37), and Delete. The element
  * is selected before it opens, so each item acts on it.
  */
 export function ElementMenu({ at, onClose, onRename, onCloseFocus }: ElementMenuProps) {
@@ -49,6 +52,8 @@ export function ElementMenu({ at, onClose, onRename, onCloseFocus }: ElementMenu
   const save = useCommand(ELEMENT_MENU_COMMANDS.saveShared);
   const detach = useCommand(ELEMENT_MENU_COMMANDS.detachShared);
   const remove = useCommand(ELEMENT_MENU_COMMANDS.remove);
+  const copyStyle = useCommand(ELEMENT_MENU_COMMANDS.copyStyle);
+  const pasteStyle = useCommand(ELEMENT_MENU_COMMANDS.pasteStyle);
   // A linked copy can be detached; anything else can be saved, if it is a section.
   const shared = detach !== undefined && detach.enabled !== false ? detach : save;
 
@@ -96,6 +101,9 @@ export function ElementMenu({ at, onClose, onRename, onCloseFocus }: ElementMenu
         </DropdownMenuItem>
         {item(duplicate)}
         {item(shared)}
+        {copyStyle === undefined && pasteStyle === undefined ? null : <DropdownMenuSeparator />}
+        {item(copyStyle)}
+        {item(pasteStyle)}
         <DropdownMenuSeparator />
         {item(remove, true)}
       </DropdownMenuContent>

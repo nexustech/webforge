@@ -4,24 +4,11 @@ import type { FieldDef } from "@webforge/site-components";
 import type { EditorSession, Gesture } from "./editor-session.js";
 import { fieldTarget } from "./field-target.js";
 import { breakpointOf, withValueAt } from "./responsive-value.js";
+import { sameValue } from "./same-value.js";
 
 /** Whether a drag may set `field` to `value`. */
 function accepts(field: FieldDef, value: unknown): boolean {
   return field.kind === "box" ? boxValueSchema.safeParse(value).success : value !== undefined;
-}
-
-/** Whether two plain values are the same, whatever the order of their keys. */
-function sameValue(a: unknown, b: unknown): boolean {
-  if (a === b) return true;
-  if (typeof a !== "object" || typeof b !== "object" || a === null || b === null) return false;
-  if (Array.isArray(a) !== Array.isArray(b)) return false;
-  const left = a as Readonly<Record<string, unknown>>;
-  const right = b as Readonly<Record<string, unknown>>;
-  const keys = Object.keys(left);
-  return (
-    keys.length === Object.keys(right).length &&
-    keys.every((key) => Object.hasOwn(right, key) && sameValue(left[key], right[key]))
-  );
 }
 
 /**
