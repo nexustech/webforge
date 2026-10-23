@@ -1,8 +1,13 @@
 // @vitest-environment happy-dom
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { dropIndex, LayersPanel, type LayersPanelActions } from "./LayersPanel.js";
+import {
+  dropIndex,
+  LayersPanel,
+  type LayersPanelActions,
+  type LayersPanelProps,
+} from "./LayersPanel.js";
 import type { Layer } from "./layers.js";
 
 afterEach(cleanup);
@@ -36,17 +41,24 @@ function setUp(selectedId: string | null = "a", toolbar = true, layoutLocked = f
     duplicate: command(),
     remove: command(),
   } satisfies LayersPanelActions;
+  const menu = vi.fn((_: Parameters<NonNullable<LayersPanelProps["menu"]>>[0]) => null);
   render(
     <LayersPanel
       layers={LAYERS}
       selectedId={selectedId}
       actions={actions}
       layoutLocked={layoutLocked}
+      menu={menu}
     />,
   );
   const item = (name: RegExp) => screen.getByRole("treeitem", { name });
-  return { actions, item };
+  /** What the menu was last drawn with. */
+  const lastMenu = () => menu.mock.calls.at(-1)?.[0];
+  return { actions, item, lastMenu };
 }
+
+/** The rows shown, as their text. */
+const shown = () => screen.queryAllByRole("treeitem").map((row) => row.textContent);
 
 describe("LayersPanel (F-ED-12)", () => {
   it("shows the tree with levels, names, the selection and hidden layers", () => {
@@ -208,5 +220,182 @@ describe("LayersPanel (F-ED-12)", () => {
       />,
     );
     expect(screen.getByText(/no sections yet/)).toBeTruthy();
+  });
+
+  describe("tools (1.35)", () => {
+    it("collapses and expands a layer with its arrow, ←/→, and the whole tree at once", async () => {
+      setUp(null);
+      const first = () => screen.getAllByRole("treeitem")[0];
+      expect(first()?.getAttribute("aria-expanded")).toBe("true");
+      expect(screen.getAllByRole("treeitem")[4]?.getAttribute("aria-expanded")).toBeNull();
+
+      await userEvent.click(screen.getAllByTitle("Collapse Section")[0] as HTMLElement);
+      expect(shown()).toEqual(["Section", "Section"]);
+      expect(first()?.getAttribute("aria-expanded")).toBe("false");
+      expect(screen.getByRole("treeitem", { name: "Section", expanded: false })).toBeTruthy();
+
+      fireEvent.keyDown(screen.getAllByRole("treeitem")[0] as HTMLElement, { key: "ArrowRight" });
+      expect(shown()).toHaveLength(5);
+      fireEvent.keyDown(screen.getAllByRole("treeitem")[0] as HTMLElement, { key: "ArrowLeft" });
+      expect(shown()).toHaveLength(2);
+
+      await userEvent.click(screen.getByRole("button", { name: "Expand all" }));
+      expect(shown()).toHaveLength(5);
+      await userEvent.click(screen.getByRole("button", { name: "Collapse all" }));
+      expect(shown()).toEqual(["Section", "Section"]);
+    });
+
+    it("goes to a layer's first child with →, its parent with ←", () => {
+      const { actions } = setUp("a");
+      const [section, first] = screen.getAllByRole("treeitem");
+
+      fireEvent.keyDown(section as HTMLElement, { key: "ArrowRight" });
+      fireEvent.keyDown(first as HTMLElement, { key: "ArrowLeft" });
+
+      expect(actions.select.mock.calls).toEqual([["a"], ["s1"]]);
+    });
+
+    it("collapses the selected layer's parent, and opens it for a layer selected elsewhere", async () => {
+      const props = {
+        layers: LAYERS,
+        actions: {
+          select: vi.fn(),
+          rename: vi.fn(),
+          setHidden: vi.fn(),
+          move: vi.fn(),
+          moveUp: undefined,
+          moveDown: undefined,
+          duplicate: undefined,
+          remove: undefined,
+        },
+      };
+      const view = render(<LayersPanel {...props} selectedId="a" />);
+
+      // Collapsing the selected layer's parent hides it (#223 review).
+      await userEvent.click(screen.getAllByTitle("Collapse Section")[0] as HTMLElement);
+      expect(shown()).toEqual(["Section", "Section"]);
+
+      // Selected elsewhere (the canvas): the layers it is in open, once.
+      view.rerender(<LayersPanel {...props} selectedId="b" />);
+      expect(shown()).toEqual(["Section", "Heading", "Hours Heading", "Heading", "Section"]);
+      await userEvent.click(screen.getByRole("button", { name: "Collapse all" }));
+      expect(shown()).toEqual(["Section", "Section"]);
+    });
+
+    it("filters by name or kind, keeping the layers a match is in; Esc clears it", async () => {
+      setUp(null);
+      const filter = screen.getByRole("searchbox", { name: "Filter layers" });
+
+      await userEvent.type(filter, "hours");
+      expect(shown()).toEqual(["Section", "Hours Heading"]);
+      await userEvent.clear(filter);
+      await userEvent.type(filter, "SECTION");
+      expect(shown()).toEqual(["Section", "Section"]);
+      await userEvent.type(filter, "x");
+      expect(shown()).toEqual([]);
+      expect(screen.getByText("No layers match")).toBeTruthy();
+
+      await userEvent.type(filter, "{Escape}");
+      expect((filter as HTMLInputElement).value).toBe("");
+      expect(shown()).toHaveLength(5);
+    });
+
+    it("marks the rows a dragged layer can't go to, before anything is dropped", () => {
+      const { actions } = setUp();
+      const rows = screen.getAllByRole("treeitem");
+      const dataTransfer = { setData: vi.fn(), effectAllowed: "" };
+
+      fireEvent.dragStart(rows[1] as HTMLElement, { dataTransfer });
+
+      expect(screen.getAllByRole("treeitem").map((row) => row.getAttribute("data-drop"))).toEqual([
+        "not-allowed",
+        null,
+        null,
+        null,
+        "not-allowed",
+      ]);
+      // Over one of them, it isn't a drop target (the event isn't taken), and the row and the
+      // panel say so: browsers show no tooltips in a drag.
+      const over = fireEvent.dragOver(rows[4] as HTMLElement, { dataTransfer });
+      expect(over).toBe(true);
+      expect(screen.getAllByRole("treeitem")[4]?.className).toContain("var(--destructive)");
+      expect(screen.getByRole("status").textContent).toBe(
+        "Heading can only move among its own section's elements",
+      );
+      fireEvent.drop(rows[4] as HTMLElement, { dataTransfer });
+      fireEvent.dragEnd(rows[1] as HTMLElement, { dataTransfer });
+
+      expect(actions.move).not.toHaveBeenCalled();
+      expect(screen.getAllByRole("treeitem").some((row) => row.hasAttribute("data-drop"))).toBe(
+        false,
+      );
+    });
+
+    it("opens the element menu on a right-click or Shift+F10, selecting the layer first", async () => {
+      const { actions, lastMenu } = setUp("a");
+      expect(lastMenu()?.at).toBeNull();
+
+      fireEvent.contextMenu(screen.getAllByRole("treeitem")[2] as HTMLElement, {
+        button: 2,
+        clientX: 20,
+        clientY: 30,
+      });
+      expect(actions.select).toHaveBeenCalledWith("b");
+      expect(lastMenu()?.at).toEqual({ x: 20, y: 30 });
+
+      act(() => lastMenu()?.onClose());
+      expect(lastMenu()?.at).toBeNull();
+      // Shift+F10 or the Menu key: the browser's contextmenu, with no pointer, opens it by the row.
+      fireEvent.contextMenu(screen.getAllByRole("treeitem")[1] as HTMLElement);
+      expect(lastMenu()?.at).toEqual({ x: 16, y: 0 });
+
+      // Closed, it gives the focus back to the selected layer's row (#223 review).
+      act(() => lastMenu()?.onCloseFocus());
+      await waitFor(() =>
+        expect(document.activeElement?.getAttribute("data-layer")).toBe(
+          screen.getAllByRole("treeitem")[1]?.getAttribute("data-layer"),
+        ),
+      );
+
+      // Its Rename renames the selected layer in place, and the name field keeps the focus.
+      act(() => {
+        lastMenu()?.onRename();
+        lastMenu()?.onCloseFocus();
+      });
+      const field = screen.getByRole("textbox", { name: "Name for this Heading" });
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      expect(document.activeElement).toBe(field);
+    });
+
+    it("marks locked and animated layers, as it marks linked and hidden ones", () => {
+      render(
+        <LayersPanel
+          layers={[
+            layer("h", { kind: "Header", locked: true }),
+            layer("t", { kind: "Text", animated: true }),
+            layer("c", { kind: "Section", sharedSection: "Hours" }),
+          ]}
+          selectedId={null}
+          actions={{
+            select: vi.fn(),
+            rename: vi.fn(),
+            setHidden: vi.fn(),
+            move: vi.fn(),
+            moveUp: undefined,
+            moveDown: undefined,
+            duplicate: undefined,
+            remove: undefined,
+          }}
+        />,
+      );
+
+      expect(shown()).toEqual([
+        "Locked: it can't be moved or deleted Header",
+        "Animated Text",
+        "Linked copy of 'Hours' Section",
+      ]);
+      expect(screen.getByTitle("Locked: it can't be moved or deleted")).toBeTruthy();
+      expect(screen.getByTitle("Animated")).toBeTruthy();
+    });
   });
 });

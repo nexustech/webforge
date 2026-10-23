@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { act, cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
   copiedNodeId,
@@ -9,8 +9,12 @@ import {
 } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { createStore } from "zustand/vanilla";
+import type { AddPreferences } from "../../shared/ipc/prefs.js";
 import { createEditorSession, currentPage } from "../editor/editor-session.js";
 import { starterSite } from "../editor/starter-site.js";
+import { saveAsSharedSection } from "../shared-sections/shared-sections.js";
+import { createCommandRegistry } from "../shell/commands.js";
 import { PanelRegistryProvider, usePanels } from "../shell/panel-context.js";
 import { createPanelRegistry, type PanelRegistry } from "../shell/panels.js";
 import { AddPanel } from "./AddPanel.js";
@@ -277,5 +281,128 @@ describe("registerAddPanel", () => {
     expect(sharedActions.remove).toHaveBeenCalledWith(HOURS);
     // The library's sections have no such menu.
     expect(screen.queryByRole("button", { name: "Actions for Hero" })).toBeNull();
+  });
+
+  const preferencesWith = (favourites: string[] = [], recent: string[] = []) =>
+    createStore<AddPreferences>()(() => ({ favourites, recent }));
+  const groups = () =>
+    screen.getAllByRole("list").map((list) => list.getAttribute("aria-label") ?? "");
+
+  it("leads with the person's favourites, added and removed from an item's context menu", async () => {
+    const session = createEditorSession(siteLibrary, starterSite());
+    const panels = createPanelRegistry();
+    const preferences = preferencesWith(["Faq"]);
+    // With previews, as in the app: the menu and the card share the item.
+    registerAddPanel(panels, session, { preferences, preview: () => <span>Preview</span> });
+    render(<Host panels={panels} />);
+    expect(groups()[0]).toBe("Favourites");
+
+    const hero = within(screen.getByRole("list", { name: "Heroes" })).getByRole("button", {
+      name: "Hero",
+    });
+    fireEvent.contextMenu(hero);
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Add to Favourites" }));
+    expect(preferences.getState().favourites).toEqual(["Faq", "Hero"]);
+    expect(
+      within(screen.getByRole("list", { name: "Favourites" }))
+        .getAllByRole("button")
+        .map((button) => button.textContent),
+    ).toEqual(["FAQ", "Hero"]);
+
+    fireEvent.contextMenu(hero);
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Remove from Favourites" }));
+    expect(preferences.getState().favourites).toEqual(["Faq"]);
+  });
+
+  it("shows a section's preview while the pointer rests on it, through the canvas's drag handle", () => {
+    vi.useFakeTimers();
+    try {
+      const session = createEditorSession(siteLibrary, starterSite());
+      const panels = createPanelRegistry();
+      registerAddPanel(panels, session, { preview: () => <span>Preview of it</span> });
+      render(<Host panels={panels} />);
+      const hero = within(screen.getByRole("list", { name: "Heroes" })).getByRole("button", {
+        name: "Hero",
+      });
+      // Only the pointer's own events: React reports none for a button under Puck's handle.
+      const pointer = (type: string) =>
+        act(() => {
+          hero.dispatchEvent(new PointerEvent(type, { pointerType: "mouse" }));
+        });
+
+      pointer("pointerenter");
+      expect(screen.queryByText("Preview of it")).toBeNull();
+      act(() => vi.advanceTimersByTime(400));
+      expect(screen.getByText("Preview of it")).toBeTruthy();
+      pointer("pointerdown");
+      act(() => vi.advanceTimersByTime(0));
+      expect(screen.queryByText("Preview of it")).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("remembers what the person adds as recently used, newest first", async () => {
+    const session = createEditorSession(siteLibrary, starterSite());
+    const panels = createPanelRegistry();
+    const preferences = preferencesWith();
+    registerAddPanel(panels, session, { preferences });
+    render(<Host panels={panels} />);
+
+    await userEvent.click(button("FAQ"));
+    await userEvent.click(
+      within(screen.getByRole("list", { name: "Heroes" })).getByRole("button", { name: "Hero" }),
+    );
+
+    expect(preferences.getState().recent).toEqual(["Hero", "Faq"]);
+    expect(groups().slice(0, 1)).toEqual(["Recently used"]);
+  });
+
+  it("offers every item in the palette's Add group, adding where a click would, as one step", () => {
+    const session = createEditorSession(siteLibrary, starterSite());
+    const panels = createPanelRegistry();
+    const registry = createCommandRegistry();
+    const preferences = preferencesWith();
+    const addPanel = registerAddPanel(panels, session, { commands: registry, preferences });
+    const added = registry.list().filter((command) => command.palette === "add");
+    expect(added.map((command) => command.label)).toContain("Add Hero");
+    expect(added.map((command) => command.label)).toContain("Add Heading");
+
+    expect(registry.run("add.item.Hero")).toBe(true);
+
+    expect(currentPage(session)?.doc.content.map((node) => node.type)).toContain("Hero");
+    expect(session.history.entries().map((entry) => entry.label)).toEqual(["Added Hero"]);
+    expect(preferences.getState().recent).toEqual(["Hero"]);
+    addPanel.remove();
+    expect(registry.list().filter((command) => command.palette === "add")).toEqual([]);
+  });
+
+  it("names a shared section's Add in the palette by its name now", () => {
+    const session = createEditorSession(siteLibrary, starterSite());
+    const registry = createCommandRegistry();
+    registerAddPanel(createPanelRegistry(), session, { commands: registry });
+    session.ui.setState({ nodeId: "section-1" });
+    saveAsSharedSection(session, "Welcome");
+    const [id] = Object.keys(session.history.document.getState().sharedSections);
+
+    expect(registry.get(`add.item.${id}`)?.label).toBe("Add a copy of 'Welcome'");
+    session.edit("props", "Renamed", (draft) => {
+      for (const shared of Object.values(draft.sharedSections)) shared.name = "Hello";
+    });
+    expect(registry.get(`add.item.${id}`)?.label).toBe("Add a copy of 'Hello'");
+  });
+
+  it("turns an Add off in the palette while nothing on the page takes it", () => {
+    const site = starterSite();
+    const home = site.pages[site.homePageId];
+    if (home === undefined) throw new Error("no home page");
+    home.doc.content = [];
+    const session = createEditorSession(siteLibrary, site);
+    const registry = createCommandRegistry();
+    registerAddPanel(createPanelRegistry(), session, { commands: registry });
+
+    expect(registry.get("add.item.Heading")?.enabled).toBe(false);
+    act(() => void addComponent(session, "Section"));
+    expect(registry.get("add.item.Heading")?.enabled).toBe(true);
   });
 });

@@ -136,7 +136,7 @@ describe("CommandBox", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
-  it("opens from its own command (Ctrl/Cmd+K) and says when nothing matches", async () => {
+  it("opens from its own command (Ctrl/Cmd+P, and Ctrl/Cmd+K) and says when nothing matches", async () => {
     const registry = renderTitleBar();
 
     act(() => {
@@ -145,6 +145,64 @@ describe("CommandBox", () => {
     await userEvent.type(await screen.findByRole("combobox"), "zzz");
 
     expect(screen.getByText("No matching commands")).toBeTruthy();
-    expect(registry.get("view.commandBox")?.shortcut).toBe("Mod+K");
+    expect(registry.get("view.commandBox")?.shortcut).toBe("Mod+P");
+    expect(registry.get("view.commandBox")?.extraShortcuts).toEqual(["Mod+K"]);
+  });
+
+  it("groups commands, pages to go to and things to add, an Add with nowhere to go shown off", async () => {
+    const registry = createCommandRegistry();
+    const showAbout = vi.fn();
+    const addHero = vi.fn();
+    registry.register({
+      id: "help.openCrashReports",
+      label: "Open Crash Reports Folder",
+      run: vi.fn(),
+    });
+    registry.register({
+      id: "page.goto.about",
+      label: "About",
+      palette: "pages",
+      keywords: ["about-us"],
+      run: showAbout,
+    });
+    registry.register({ id: "add.item.Hero", label: "Add Hero", palette: "add", run: addHero });
+    registry.register({
+      id: "add.item.Text",
+      label: "Add Text",
+      palette: "add",
+      enabled: false,
+      run: vi.fn(),
+    });
+    renderTitleBar(registry);
+
+    act(() => {
+      registry.run("view.commandBox");
+    });
+    // Each group is named by its heading.
+    const groups = (await screen.findAllByRole("group")).map((group) => [
+      document.getElementById(group.getAttribute("aria-labelledby") ?? "")?.textContent,
+      within(group)
+        .getAllByRole("option")
+        .map((option) => option.textContent),
+    ]);
+    expect(groups).toEqual([
+      ["Commands", ["Open Crash Reports Folder", "About Webforge"]],
+      ["Go to page", ["About"]],
+      ["Add", ["Add Hero", "Add Text"]],
+    ]);
+    expect(screen.getByRole("option", { name: "Add Text" }).getAttribute("aria-disabled")).toBe(
+      "true",
+    );
+
+    // Found by name, never by id: "add hero" is spread through "…Folder help.openCrashReports".
+    await userEvent.type(screen.getByRole("combobox"), "add hero");
+    expect(screen.getAllByRole("option").map((option) => option.textContent)).toEqual(["Add Hero"]);
+    await userEvent.clear(screen.getByRole("combobox"));
+
+    // A page is found by its file name too.
+    await userEvent.type(screen.getByRole("combobox"), "about-us");
+    await userEvent.keyboard("{Enter}");
+    expect(showAbout).toHaveBeenCalledOnce();
+    expect(addHero).not.toHaveBeenCalled();
   });
 });

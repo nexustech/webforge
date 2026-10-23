@@ -8,14 +8,21 @@ import {
   type ViewOptions,
 } from "@webforge/engine";
 import { t } from "@webforge/i18n";
-import { type RefObject, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import type { CustomDevice } from "../../shared/ipc/prefs.js";
+import { type RefObject, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { createStore } from "zustand/vanilla";
+import {
+  type AddPreferences,
+  type CustomDevice,
+  DEFAULT_PREFERENCES,
+} from "../../shared/ipc/prefs.js";
 import type { Preferences } from "../../shared/ipc-contract.js";
 import { type AddPanelRegistration, registerAddPanel } from "../add/register-add-panel.js";
+import { createSectionPreviews } from "../add/section-preview.js";
 import {
   preloadClipboard,
   registerClipboardCommands,
 } from "../clipboard/register-clipboard-commands.js";
+import { CanvasElementMenu } from "../element-menu/CanvasElementMenu.js";
 import { registerLinkField } from "../links/LinkField.js";
 import { RichTextLinkHost } from "../links/RichTextLinkHost.js";
 import { connectCanvasImages } from "../media/canvas-images.js";
@@ -79,6 +86,10 @@ export type EditorProps = {
   readonly devices?: readonly CustomDevice[];
   /** What the canvas shows besides the page: the View menu's options (F-ED-25). */
   readonly viewOptions?: ViewOptions;
+  /** The Add panel's favourites and recently used items (F-ED-26), from the person's preferences. */
+  readonly addPreferences?: AddPreferences;
+  /** Saves them when the person changes their favourites or adds something. */
+  readonly onAddPreferencesChange?: (next: AddPreferences) => void;
 };
 
 const compileWithPreload: CompileCanvasCss = (request) =>
@@ -126,6 +137,8 @@ export function Editor({
   siteWide,
   devices = [],
   viewOptions,
+  addPreferences = DEFAULT_PREFERENCES.add,
+  onAddPreferencesChange,
 }: EditorProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [engine, setEngine] = useState<CanvasEngine | null>(null);
@@ -385,7 +398,40 @@ export function Editor({
     });
   }, [panels, session, editorLevel, mode]);
 
-  // The Add panel (1.13), hidden in Content mode (M3).
+  // The Add panel's favourites and recents (1.34): one store the panel follows, in step with the
+  // preferences both ways, so a change never re-registers the panel (its tab and + place stay).
+  const [addStore] = useState(() => createStore<AddPreferences>()(() => addPreferences));
+  const givenAddPreferences = useRef(addPreferences);
+  useEffect(() => {
+    givenAddPreferences.current = addPreferences;
+    if (addStore.getState() !== addPreferences) addStore.setState(addPreferences, true);
+  }, [addStore, addPreferences]);
+  const saveAddPreferences = useRef(onAddPreferencesChange);
+  useEffect(() => {
+    saveAddPreferences.current = onAddPreferencesChange;
+  });
+  useEffect(
+    () =>
+      // Saves the panel's changes, not the preferences it was given back again.
+      addStore.subscribe((next) => {
+        if (next !== givenAddPreferences.current) saveAddPreferences.current?.(next);
+      }),
+    [addStore],
+  );
+  // The sections' larger previews in the Add panel (UX-10), drawn with the site's theme.
+  const previews = useMemo(
+    () =>
+      createSectionPreviews({
+        library: session.library,
+        theme: () => session.history.document.getState().theme,
+        sharedSection: (id) => sharedSection(session.history.document.getState(), id)?.section,
+        compileCss,
+        baseUrl: document.baseURI,
+      }),
+    [session, compileCss],
+  );
+
+  // The Add panel (1.13), hidden in Content mode (M3), and the palette's Add commands with it.
   useEffect(() => {
     if (mode !== "design") {
       return;
@@ -403,13 +449,16 @@ export function Editor({
         },
         remove: (id) => removeSharedSection(session, id, siteWide),
       },
+      preferences: addStore,
+      commands: registry,
+      preview: previews,
     });
     addPanelRef.current = addPanel;
     return () => {
       addPanelRef.current = null;
       addPanel.remove();
     };
-  }, [panels, session, mode, engine, siteWide]);
+  }, [panels, session, mode, engine, siteWide, addStore, registry, previews]);
   useEffect(() => registerMediaPanel(panels, session), [panels, session]);
   useEffect(() => registerImageField({ session, picks: imagePicks }), [session, imagePicks]);
   useEffect(() => registerLinkField({ session }), [session]);
@@ -419,6 +468,7 @@ export function Editor({
       <SharedRegionBanner session={session} />
       <RichTextLinkHost session={session} engine={engine} />
       <SharedSectionNameDialog session={session} naming={naming} onClose={() => setNaming(null)} />
+      <CanvasElementMenu engine={engine} session={session} />
       <div className="editor__stage">
         <section className="editor__canvas" aria-label={t("editor.canvas")} ref={canvasRef} />
         {canvasView !== undefined && (

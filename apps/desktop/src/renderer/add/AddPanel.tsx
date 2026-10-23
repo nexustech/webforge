@@ -1,11 +1,18 @@
 import {
   Button,
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
   fieldControlClass,
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
   ScrollArea,
   Tabs,
   TabsContent,
@@ -15,7 +22,7 @@ import {
 import { t } from "@webforge/i18n";
 import type { SharedSectionId } from "@webforge/model";
 import { EllipsisIcon, PlusIcon, SearchIcon } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useMenuDialog } from "../shell/use-menu-dialog.js";
 import { type AddItem, type AddTab, groupItems } from "./add-items.js";
 
@@ -25,6 +32,12 @@ export type SharedSectionActions = {
   readonly rename: (id: SharedSectionId) => void;
   /** Deletes shared section `id`, asking first when pages have copies of it (D7). */
   readonly remove: (id: SharedSectionId) => void;
+};
+
+/** The person's favourites (1.34): which items are, and switching one on or off. */
+type AddFavourites = {
+  readonly has: (type: string) => boolean;
+  readonly toggle: (type: string) => void;
 };
 
 /** Props of {@link AddPanel}. */
@@ -50,6 +63,10 @@ export type AddPanelProps = {
   readonly dragSource?: ((element: HTMLElement, type: string) => () => void) | undefined;
   /** Rename and Delete for the shared sections listed (1.29); no menu when left out. */
   readonly sharedActions?: SharedSectionActions | undefined;
+  /** Add to Favourites and Remove from Favourites on each item (1.34); no menu when left out. */
+  readonly favourites?: AddFavourites | undefined;
+  /** A larger preview of an item, shown on hover or focus (UX-10); none when it gives none. */
+  readonly preview?: ((item: AddItem) => ReactNode) | undefined;
 };
 
 /**
@@ -62,6 +79,8 @@ function AddButton({
   onAdd,
   dragSource,
   withMenu,
+  favourites,
+  preview,
 }: {
   readonly item: AddItem;
   readonly disabled: boolean;
@@ -69,6 +88,8 @@ function AddButton({
   readonly dragSource: AddPanelProps["dragSource"];
   /** Leaves room for the item's "…" menu. */
   readonly withMenu: boolean;
+  readonly favourites: AddPanelProps["favourites"];
+  readonly preview: AddPanelProps["preview"];
 }) {
   const ref = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -84,7 +105,35 @@ function AddButton({
     }
     return dragSource(element, item.type);
   }, [dragSource, item.type, item.sharedSectionId, disabled]);
-  return (
+  const card = preview?.(item);
+  const hasCard = card !== undefined && card !== null;
+  // The preview card opens on hover from the pointer's own events: the canvas's drag handle
+  // covers the button, and React doesn't report entering a button through it (the handle is
+  // Puck's). Focus opens it as usual; pressing (to add or drag) closes it.
+  const [cardOpen, setCardOpen] = useState(false);
+  useEffect(() => {
+    const element = ref.current;
+    if (element === null || !hasCard) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const later = (open: boolean, delay: number) => (event: PointerEvent) => {
+      if (event.pointerType === "touch") return;
+      clearTimeout(timer);
+      timer = setTimeout(() => setCardOpen(open), delay);
+    };
+    const listeners = [
+      ["pointerenter", later(true, HOVER_CARD_OPEN_DELAY)],
+      ["pointerleave", later(false, HOVER_CARD_CLOSE_DELAY)],
+      ["pointerdown", later(false, 0)],
+    ] as const;
+    for (const [type, listener] of listeners) element.addEventListener(type, listener);
+    return () => {
+      clearTimeout(timer);
+      for (const [type, listener] of listeners) element.removeEventListener(type, listener);
+    };
+  }, [hasCard]);
+  // The triggers nest around the button itself: a menu or card's root renders nothing to pass
+  // a trigger's handlers to.
+  let trigger: ReactNode = (
     <Button
       ref={ref}
       type="button"
@@ -99,7 +148,40 @@ function AddButton({
       {item.label}
     </Button>
   );
+  if (favourites !== undefined) {
+    trigger = <ContextMenuTrigger asChild>{trigger}</ContextMenuTrigger>;
+  }
+  if (hasCard) {
+    trigger = (
+      <HoverCard
+        open={cardOpen}
+        onOpenChange={setCardOpen}
+        openDelay={HOVER_CARD_OPEN_DELAY}
+        closeDelay={HOVER_CARD_CLOSE_DELAY}
+      >
+        <HoverCardTrigger asChild>{trigger}</HoverCardTrigger>
+        <HoverCardContent>{card}</HoverCardContent>
+      </HoverCard>
+    );
+  }
+  if (favourites === undefined) return trigger;
+  const favourite = favourites.has(item.type);
+  // Right-click, or the keyboard's context-menu key (Shift+F10) on the focused item.
+  return (
+    <ContextMenu modal={false}>
+      {trigger}
+      <ContextMenuContent>
+        <ContextMenuItem onSelect={() => favourites.toggle(item.type)}>
+          {t(favourite ? "add.favourite.remove" : "add.favourite.add")}
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
+  );
 }
+
+/** How long the pointer rests on an item before its preview shows, and leaves before it goes. */
+const HOVER_CARD_OPEN_DELAY = 400;
+const HOVER_CARD_CLOSE_DELAY = 100;
 
 /**
  * The "…" menu of a shared section in the list (1.29), shown on hover or focus, as the Pages panel
@@ -159,6 +241,8 @@ export function AddPanel({
   onCancelPoint,
   dragSource,
   sharedActions,
+  favourites,
+  preview,
 }: AddPanelProps) {
   const [query, setQuery] = useState("");
   // A shared section's dialog opens once its menu has closed, so focus stays in the dialog.
@@ -196,6 +280,8 @@ export function AddPanel({
                         onAdd={onAdd}
                         dragSource={dragSource}
                         withMenu={shared !== undefined}
+                        favourites={favourites}
+                        preview={preview}
                       />
                       {shared !== undefined && (
                         <SharedSectionMenu

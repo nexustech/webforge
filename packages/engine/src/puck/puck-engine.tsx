@@ -28,6 +28,7 @@ import {
 import { type ComponentProps, type ReactNode, useEffect } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import type {
+  CanvasContextMenu,
   CanvasEngine,
   CanvasSize,
   EditorMode,
@@ -50,6 +51,7 @@ import {
   QuickActionBar,
 } from "./chrome.js";
 import { toPuckConfig } from "./config.js";
+import { installContextMenu } from "./context-menu.js";
 import { deferredCommands } from "./deferred-commands.js";
 import { hidePuckDeleteKeys } from "./delete-keys.js";
 import { puckDictionary } from "./dictionary.js";
@@ -273,6 +275,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   const addRequests = emitter<InsertPoint>();
   const fieldDrags = emitter<FieldDrag>();
   const elementRequests = emitter<ElementRequest>();
+  const contextMenus = emitter<CanvasContextMenu>();
   const dragSources = createDragSources(
     (componentType) => library?.components[componentType]?.label ?? componentType,
   );
@@ -657,8 +660,14 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       frameWindows.emit(frameWindow);
       const removeKeys = installHistoryKeys(frameWindow, runCommand);
       const showDeleteKeys = hidePuckDeleteKeys(frameWindow);
+      // The element menu, but not in Content mode, where right-clicks get the browser's own.
+      const removeMenu = installContextMenu(frameWindow.document, contextMenus.emit, {
+        enabled: () => mode === "design",
+        selected: () => selection,
+      });
       return () => {
         showDeleteKeys();
+        removeMenu();
         stopKeepingEnabled?.();
         stopKeepingEnabled = null;
         stopViewOptions?.();
@@ -946,6 +955,8 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     onElementRequest: elementRequests.add,
 
     onFieldDrag: fieldDrags.add,
+
+    onContextMenu: contextMenus.add,
 
     addDragSource: dragSources.add,
 

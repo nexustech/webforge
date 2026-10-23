@@ -1,6 +1,7 @@
 import {
   Command,
   CommandEmpty,
+  CommandGroup,
   CommandInput,
   CommandItem,
   CommandList,
@@ -9,16 +10,25 @@ import {
   DialogContent,
   DialogDescription,
   DialogTitle,
+  filterByKeywords,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { SearchIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useCommandRegistry, useCommands } from "./command-context.js";
 import { COMMAND_IDS } from "./command-ids.js";
-import { formatShortcut } from "./commands.js";
+import { type Command as AppCommand, formatShortcut, type PaletteGroup } from "./commands.js";
 
-/** Opens the box. */
-const COMMAND_BOX_SHORTCUT = "Mod+K";
+/** Opens the palette: Bootstrap Studio's key (UX-11), and the box's first one. */
+const COMMAND_BOX_SHORTCUT = "Mod+P";
+const OLD_COMMAND_BOX_SHORTCUT = "Mod+K";
+
+/** The palette's groups, in order: the app's commands, pages to go to, things to add. */
+const GROUPS = [
+  { id: "commands", heading: "shell.commandBox.commands" },
+  { id: "pages", heading: "shell.commandBox.pages" },
+  { id: "add", heading: "shell.commandBox.add" },
+] as const satisfies readonly { id: PaletteGroup | "commands"; heading: string }[];
 
 /** Props of {@link CommandBox}. */
 export type CommandBoxProps = {
@@ -27,8 +37,10 @@ export type CommandBoxProps = {
 };
 
 /**
- * The title bar's central box: shows the site's name and opens a searchable list of every
- * enabled command (Ctrl/Cmd+K). Choosing one closes the box and runs it.
+ * The title bar's central box: shows the site's name and opens the command palette (Ctrl/Cmd+P,
+ * F-ED-26, UX-11): every enabled command with its shortcut, the pages to go to, and the sections
+ * and elements to add (those with nowhere to go shown off), found by fuzzy search. Choosing one
+ * closes the palette and runs it.
  */
 export function CommandBox({ siteName }: CommandBoxProps) {
   const registry = useCommandRegistry();
@@ -42,13 +54,36 @@ export function CommandBox({ siteName }: CommandBoxProps) {
         label: t("command.commandBox"),
         menu: "view",
         shortcut: COMMAND_BOX_SHORTCUT,
+        extraShortcuts: [OLD_COMMAND_BOX_SHORTCUT],
         run: () => setOpen(true),
       }),
     [registry],
   );
 
-  const runnable = commands.filter(
-    (command) => command.id !== COMMAND_IDS.commandBox && command.enabled !== false,
+  // The app's own commands only when they can run; an Add with nowhere to go is shown, off.
+  const shown = commands.filter(
+    (command) =>
+      command.id !== COMMAND_IDS.commandBox &&
+      (command.palette === "add" || command.enabled !== false),
+  );
+  const inGroup = (group: PaletteGroup | "commands") =>
+    shown.filter((command) => (command.palette ?? "commands") === group);
+  const item = (command: AppCommand) => (
+    <CommandItem
+      key={command.id}
+      value={command.id}
+      keywords={[command.label, ...(command.keywords ?? [])]}
+      disabled={command.enabled === false}
+      onSelect={() => {
+        setOpen(false);
+        registry.run(command.id);
+      }}
+    >
+      {command.label}
+      {command.shortcut !== undefined && (
+        <CommandShortcut>{formatShortcut(command.shortcut)}</CommandShortcut>
+      )}
+    </CommandItem>
   );
 
   return (
@@ -73,25 +108,18 @@ export function CommandBox({ siteName }: CommandBoxProps) {
           <DialogDescription className="sr-only">
             {t("shell.commandBox.description")}
           </DialogDescription>
-          <Command label={t("shell.commandBox.title")}>
+          <Command label={t("shell.commandBox.title")} filter={filterByKeywords}>
             <CommandInput placeholder={t("shell.commandBox.placeholder")} />
             <CommandList>
               <CommandEmpty>{t("shell.commandBox.empty")}</CommandEmpty>
-              {runnable.map((command) => (
-                <CommandItem
-                  key={command.id}
-                  value={`${command.label} ${command.id}`}
-                  onSelect={() => {
-                    setOpen(false);
-                    registry.run(command.id);
-                  }}
-                >
-                  {command.label}
-                  {command.shortcut !== undefined && (
-                    <CommandShortcut>{formatShortcut(command.shortcut)}</CommandShortcut>
-                  )}
-                </CommandItem>
-              ))}
+              {GROUPS.map(({ id, heading }) => {
+                const items = inGroup(id);
+                return items.length === 0 ? null : (
+                  <CommandGroup key={id} heading={t(heading)}>
+                    {items.map(item)}
+                  </CommandGroup>
+                );
+              })}
             </CommandList>
           </Command>
         </DialogContent>

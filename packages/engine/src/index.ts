@@ -1,5 +1,6 @@
 export type {
   CanvasAction,
+  CanvasContextMenu,
   CanvasEngine,
   CanvasSize,
   DocChange,
