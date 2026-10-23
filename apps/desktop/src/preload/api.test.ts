@@ -1,5 +1,6 @@
 import { changedDocuments, createSite } from "@webforge/model";
 import { describe, expect, it, vi } from "vitest";
+import { DEFAULT_PREFERENCES } from "../shared/ipc/prefs.js";
 import { createWebforgeApi, type Invoke, type Subscribe } from "./api.js";
 
 const noEvents: Subscribe = () => () => undefined;
@@ -118,7 +119,7 @@ describe("createWebforgeApi site export", () => {
   });
 
   it("gets and changes the preferences through the prefs channels", async () => {
-    const preferences = { theme: "light", editorLevel: "simple", panelLayout: {}, window: null };
+    const preferences = { ...DEFAULT_PREFERENCES, theme: "light" };
     const invoke = vi.fn(async () => preferences);
     const api = apiWith(invoke);
 

@@ -14,36 +14,34 @@ import {
 import type { CanvasSize, Viewport } from "@webforge/engine";
 import { t } from "@webforge/i18n";
 import type { PageId } from "@webforge/model";
-import { ChevronDownIcon, MonitorIcon, SmartphoneIcon, TabletIcon } from "lucide-react";
+import {
+  ChevronDownIcon,
+  MonitorIcon,
+  RotateCwIcon,
+  SmartphoneIcon,
+  TabletIcon,
+} from "lucide-react";
 import { useId, useState } from "react";
-import type { CanvasPreferences } from "../../shared/ipc/prefs.js";
+import { type CanvasPreferences, DEVICE_SIZE } from "../../shared/ipc/prefs.js";
+import {
+  DEVICE_WIDTHS,
+  type DeviceView,
+  rotatedWidth,
+  viewportFor,
+  widthOf,
+} from "./canvas-size.js";
 import { type CanvasZoom, ZOOM_LEVELS } from "./canvas-view.js";
 import { DeviceDialog, type NewDevice } from "./DeviceDialog.js";
 import { useMenuDialog } from "./use-menu-dialog.js";
 
-/** The device views' canvas widths, as the canvas engine shows them. */
-const DEVICE_WIDTHS = { desktop: 1280, tablet: 768, mobile: 375 } as const;
-
 /** The narrowest and widest custom canvas width. */
-const CUSTOM_WIDTH = { min: 320, max: 2560 } as const;
-
-type Device = keyof typeof DEVICE_WIDTHS;
+const CUSTOM_WIDTH = DEVICE_SIZE;
 
 const DEVICES = [
   { id: "desktop", icon: MonitorIcon },
   { id: "tablet", icon: TabletIcon },
   { id: "mobile", icon: SmartphoneIcon },
-] as const satisfies readonly { id: Device; icon: unknown }[];
-
-/** A viewport's width in CSS pixels. */
-export const widthOf = (viewport: Viewport): number =>
-  typeof viewport === "number" ? viewport : DEVICE_WIDTHS[viewport];
-
-/** A width as a viewport: a device view when it is one's width, a custom width otherwise. */
-export function viewportFor(width: number): Viewport {
-  const device = DEVICES.find(({ id }) => DEVICE_WIDTHS[id] === width);
-  return device?.id ?? width;
-}
+] as const satisfies readonly { id: DeviceView; icon: unknown }[];
 
 /** Props of {@link CanvasToolbar}. */
 export type CanvasToolbarProps = {
@@ -141,6 +139,11 @@ export function CanvasToolbar({
 
       {/* Keyed by the width, so it shows a width chosen elsewhere (a device, undo). */}
       <CustomWidth key={widthOf(viewport)} width={widthOf(viewport)} onChange={onViewportChange} />
+      <RotateButton
+        width={widthOf(viewport)}
+        devices={canvas.devices}
+        onViewportChange={onViewportChange}
+      />
 
       <label htmlFor={zoomId} className="sr-only">
         {t("canvasToolbar.zoom")}
@@ -175,6 +178,37 @@ export function CanvasToolbar({
         onViewportChange={onViewportChange}
       />
     </div>
+  );
+}
+
+/**
+ * Rotate (F-ED-25, UX-8): a device's height as the canvas's width, and back. Off for a width that
+ * is no device's.
+ */
+function RotateButton({
+  width,
+  devices,
+  onViewportChange,
+}: {
+  readonly width: number;
+  readonly devices: CanvasPreferences["devices"];
+  readonly onViewportChange: (viewport: Viewport) => void;
+}) {
+  const rotated = rotatedWidth(width, devices);
+  return (
+    <Button
+      type="button"
+      size="icon"
+      variant="ghost"
+      aria-label={t("canvasToolbar.rotate")}
+      title={t("canvasToolbar.rotate")}
+      disabled={rotated === undefined}
+      onClick={() => {
+        if (rotated !== undefined) onViewportChange(viewportFor(rotated));
+      }}
+    >
+      <RotateCwIcon />
+    </Button>
   );
 }
 

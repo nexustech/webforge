@@ -71,6 +71,12 @@ export const shell = {
   "canvasToolbar.view.names": "Show element names",
   "canvasToolbar.view.extraSpace": "Extra space at the bottom",
   "canvasToolbar.devices": "Devices",
+  "canvasToolbar.rotate": "Rotate",
+  // The canvas frame's edges, dragged to set its width (1.33, F-ED-25).
+  "canvasResize.left": "Canvas width, left edge",
+  "canvasResize.right": "Canvas width, right edge",
+  "canvasResize.readout": "{width} px",
+  "canvasResize.readoutDevice": "{width} px · {device}",
   "canvasToolbar.sizeButton": "Page size {size}: choose a device",
   "canvasToolbar.deviceSize": "{name} ({width} × {height})",
   "canvasToolbar.deviceWidth": "{name} ({width})",

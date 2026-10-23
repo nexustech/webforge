@@ -257,6 +257,7 @@ export function App({
                         siteWide={siteWide}
                         canvasView={canvasView}
                         editorLevel={editorLevel}
+                        devices={preferences.canvas.devices}
                       />
                     </div>
                   </div>

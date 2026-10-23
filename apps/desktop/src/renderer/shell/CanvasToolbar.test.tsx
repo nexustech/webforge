@@ -8,8 +8,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { type CanvasPreferences, DEFAULT_PREFERENCES } from "../../shared/ipc/prefs.js";
 import { createEditorSession } from "../editor/editor-session.js";
 import { starterSite } from "../editor/starter-site.js";
-import { CanvasToolbar, viewportFor, widthOf } from "./CanvasToolbar.js";
+import { CanvasToolbar } from "./CanvasToolbar.js";
 import { CanvasToolbarHost } from "./CanvasToolbarHost.js";
+import { viewportFor, widthOf } from "./canvas-size.js";
 import { type CanvasZoom, connectCanvasView, createCanvasView } from "./canvas-view.js";
 
 afterEach(cleanup);
@@ -242,6 +243,18 @@ describe("View menu and devices (F-ED-25)", () => {
     await user().click(screen.getByRole("menuitem", { name: "Mobile (375)" }));
 
     expect(onViewportChange.mock.calls).toEqual([[1024], ["mobile"]]);
+  });
+
+  it("rotates a device, and is off for a width that is no device's", async () => {
+    const { onViewportChange } = setUp(375);
+    await user().click(screen.getByRole("button", { name: "Rotate" }));
+    expect(onViewportChange).toHaveBeenCalledExactlyOnceWith(812);
+    cleanup();
+
+    setUp(900);
+    expect((screen.getByRole("button", { name: "Rotate" }) as HTMLButtonElement).disabled).toBe(
+      true,
+    );
   });
 
   it("adds a device of the person's own, and shows the page at its width", async () => {
