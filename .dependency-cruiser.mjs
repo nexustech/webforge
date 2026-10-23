@@ -152,7 +152,14 @@ export default {
       comment: "A module nothing imports is probably dead code (knip checks this too).",
       from: {
         orphan: true,
-        pathNot: ["\\.d\\.ts$", "(^|/)[^/]+\\.config\\.ts$", "\\.test\\.tsx?$"],
+        // webforge.js behaviours are loaded by import.meta.glob (behaviours.ts), which the cruiser
+        // doesn't see as an import.
+        pathNot: [
+          "\\.d\\.ts$",
+          "(^|/)[^/]+\\.config\\.ts$",
+          "\\.test\\.tsx?$",
+          "^packages/site-components/src/behaviours/[^/]+\\.js$",
+        ],
       },
       to: {},
     },

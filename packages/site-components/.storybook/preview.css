@@ -1,0 +1,9 @@
+/* Site components styled as the export styles them: Tailwind with daisyUI's themes. */
+@import "tailwindcss";
+@plugin "daisyui" {
+  themes:
+    light --default,
+    dark,
+    cupcake;
+}
+@source "../src";

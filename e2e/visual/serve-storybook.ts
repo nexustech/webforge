@@ -1,14 +1,16 @@
-// Serves the static Storybook build (packages/editor-ui/storybook-static) on 127.0.0.1 for the
-// visual tests. Storybook loads ES modules, which browsers refuse from file://, hence a server.
+// Serves a package's static Storybook build (packages/<package>/storybook-static) on 127.0.0.1 for
+// the visual tests: the editor UI's and the site components'. Storybook loads ES modules, which
+// browsers refuse from file://, hence a server.
 //
-// Usage: node visual/serve-storybook.ts [port]   (run from e2e/; playwright.visual.config.ts does)
+// Usage: node visual/serve-storybook.ts <package> [port]   (run from e2e/; playwright.visual.config.ts does)
 
 import { createReadStream, existsSync, statSync } from "node:fs";
 import { createServer } from "node:http";
 import { extname, join, normalize, resolve, sep } from "node:path";
 
-const ROOT = resolve(import.meta.dirname, "../../packages/editor-ui/storybook-static");
-const PORT = Number(process.argv[2] ?? 6107);
+const PACKAGE = process.argv[2] ?? "editor-ui";
+const ROOT = resolve(import.meta.dirname, `../../packages/${PACKAGE}/storybook-static`);
+const PORT = Number(process.argv[3] ?? 6107);
 
 const TYPES: Readonly<Record<string, string>> = {
   ".html": "text/html; charset=utf-8",
@@ -23,7 +25,7 @@ const TYPES: Readonly<Record<string, string>> = {
 
 if (!existsSync(join(ROOT, "index.json"))) {
   console.error(
-    `No Storybook build in ${ROOT}. Run: pnpm --filter @webforge/editor-ui build-storybook`,
+    `No Storybook build in ${ROOT}. Run: pnpm --filter @webforge/${PACKAGE} build-storybook`,
   );
   process.exit(1);
 }

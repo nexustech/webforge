@@ -105,7 +105,8 @@ jobs:
           unit_only='(\.test\.tsx?|\.test-helper\.ts|\.stories\.tsx|\.snap|vitest\.config\.ts)$|^packages/[^/]+/test/|^e2e/visual/|^tools/|^(biome\.jsonc?|knip\.jsonc|\.dependency-cruiser\.mjs|lefthook\.yml)$'
           # What the exported site is made from: Firefox and WebKit open it in the export tests.
           export_site='^(packages/(site-components|pipeline|model|test-utils)/|e2e/export/|e2e/playwright\.config\.ts$|e2e/package\.json$)'
-          # What the editor UI's stories render (.storybook/main.ts and their imports).
+          # What the editor UI's and the site components' stories render (.storybook/main.ts and
+          # their imports).
           storybook='^(packages/(editor-ui|i18n|model|history|engine|site-components)/|apps/desktop/src/renderer/|e2e/visual/|e2e/playwright\.visual\.config\.ts$|e2e/package\.json$)'
           echo "run=true" >> "$GITHUB_OUTPUT"
           if matches "$shared" || grep -Evq "$unit_only" <<< "$files"; then e2e=true; else e2e=false; fi
@@ -395,8 +396,9 @@ jobs:
           retention-days: 7
 
   visual:
-    # Editor UI stories (Storybook): axe in both themes, and screenshots compared in a pinned Linux
-    # container so fonts and anti-aliasing match the committed images (R8). Linux only, always.
+    # Editor UI and site component stories (Storybook): axe in each theme (and, for site
+    # components, on Desktop and Mobile), and screenshots compared in a pinned Linux container so
+    # fonts and anti-aliasing match the committed images (R8). Linux only, always.
     name: Storybook (axe and screenshots)
     needs: changes
     # Not on `full-ci` label events: the stories don't depend on the OS.
@@ -422,7 +424,8 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build Storybook
-        run: pnpm --filter @webforge/editor-ui build-storybook
+        # The editor UI's stories and the site components' (2.5).
+        run: pnpm --filter @webforge/editor-ui --filter @webforge/site-components build-storybook
         env:
           STORYBOOK_DISABLE_TELEMETRY: "1"
 
