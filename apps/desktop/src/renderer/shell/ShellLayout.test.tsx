@@ -204,6 +204,68 @@ describe("ShellLayout", () => {
     expect(within(left).getByText("Add", { selector: "p" })).toBeTruthy();
   });
 
+  describe("the left column's lower pane (ADR 0011)", () => {
+    /** Add and Undo History as tabs, and Layers under them. */
+    function leftColumn(panels: PanelRegistry) {
+      act(() => {
+        panels.register({
+          id: "history",
+          slot: "left.bottom",
+          title: "Undo History",
+          component: () => <p>Steps</p>,
+        });
+        panels.register({
+          id: "layers",
+          slot: "left.lower",
+          title: "Layers",
+          component: () => <p>Tree</p>,
+        });
+      });
+      return within(screen.getByRole("region", { name: "Left panels" }));
+    }
+    const flexOf = (id: string) =>
+      document.querySelector<HTMLElement>(`[data-panel][id="${id}"]`)?.style.flexGrow;
+
+    it("shows Layers under the tabs, at the same time, in Simple mode, 60/40 at first", async () => {
+      const { panels } = renderLayout();
+      const left = leftColumn(panels);
+
+      expect(left.getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
+        "Add",
+        "Undo History",
+        "Layers",
+      ]);
+      expect(left.getByText("Add", { selector: "p" })).toBeTruthy();
+      expect(left.getByText("Tree")).toBeTruthy();
+      await userEvent.setup().click(left.getByRole("tab", { name: "Undo History" }));
+      expect(left.getByText("Steps")).toBeTruthy();
+      expect(left.getByText("Tree")).toBeTruthy();
+      expect(screen.getByRole("separator", { name: "Resize Layers" })).toBeTruthy();
+      await act(async () => new Promise<number>((resolve) => requestAnimationFrame(resolve)));
+      expect(flexOf("lower")).toBe("40");
+    });
+
+    // Reset Panels' 60/40 needs real sizes to apply: e2e/app/layers-always.spec.ts checks it.
+    it("starts from the remembered split, without saving it again", async () => {
+      const onLayoutChange = vi.fn();
+      const { panels } = renderLayout({
+        layout: { [PANEL_GROUPS.left]: { tabs: 75, lower: 25 } },
+        onLayoutChange,
+      });
+      leftColumn(panels);
+      await act(async () => new Promise<number>((resolve) => requestAnimationFrame(resolve)));
+      expect(flexOf("lower")).toBe("25");
+      expect(onLayoutChange).not.toHaveBeenCalledWith(PANEL_GROUPS.left, expect.anything());
+    });
+
+    it("keeps the left column one tab set while nothing is in the lower pane", () => {
+      renderLayout();
+
+      expect(document.querySelector('[data-panel][id="lower"]')).toBeNull();
+      expect(screen.queryByRole("separator", { name: "Resize Layers" })).toBeNull();
+    });
+  });
+
   it("labels its splitters so they can be found and moved with the keyboard", () => {
     renderLayout();
 

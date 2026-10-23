@@ -34,10 +34,8 @@ const menuItems = async () =>
     ]),
   );
 
+/** Layers is always shown, under Add and Undo History (ADR 0011). */
 async function showLayers(): Promise<void> {
-  await page.getByRole("menuitem", { name: "View" }).click();
-  await page.getByRole("menuitem", { name: "Use Advanced Mode" }).click();
-  await left().getByRole("tab", { name: "Layers" }).click();
   await expect(row("Section")).toBeVisible();
 }
 

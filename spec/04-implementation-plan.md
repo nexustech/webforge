@@ -104,7 +104,7 @@ gantt
     1.21 Navigation menu editor :crit, t1_21, 2026-11-23, 6d
     1.22 Spell check :t1_22, 2026-11-20, 1d
     1.23 Inline text editing (Tiptap) :crit, t1_23, 2026-11-20, 4d
-    1.24 Layers panel (Advanced) :t1_24, 2026-11-16, 3d
+    1.24 Layers panel :t1_24, 2026-11-16, 3d
     1.25 Copy and paste :t1_25, 2026-11-25, 3d
     1.26 Confirmations (D7) and Content mode locking :crit, t1_26, 2026-11-26, 3d
     1.27 Editing performance – targeted patches, atomi… :t1_27, 2026-10-22, 3d
@@ -278,7 +278,7 @@ Fold spike learnings into architecture §6 (CanvasEngine, HistoryManager, Pipeli
 | 1.21 | Navigation menu editor | [#37](https://github.com/nexustech/webforge/issues/37) | engine | F-ED-17, G2 | 6 | 1.18, 1.19, 1.20 |
 | 1.22 | Spell check | [#38](https://github.com/nexustech/webforge/issues/38) | shell | F-ED-19, G5 | 1 | 1.17 |
 | 1.23 | Inline text editing (Tiptap) | [#39](https://github.com/nexustech/webforge/issues/39) | engine | F-ED-3, D1, C1, [ADR 0004](../docs/adr/0004-puck-with-webforge-history.md) | 4 | 1.12, 1.9, 1.19, 1.22 |
-| 1.24 | Layers panel (Advanced) | [#40](https://github.com/nexustech/webforge/issues/40) | engine | F-ED-12, UI1 | 3 | 1.12, 1.10 |
+| 1.24 | Layers panel | [#40](https://github.com/nexustech/webforge/issues/40) | engine | F-ED-12, UI1 | 3 | 1.12, 1.10 |
 | 1.25 | Copy and paste | [#41](https://github.com/nexustech/webforge/issues/41) | engine | F-ED-16, G1 | 3 | 1.12, 1.16 |
 | 1.26 | Confirmations (D7) and Content mode locking | [#42](https://github.com/nexustech/webforge/issues/42) | shell | F-ED-14, D7, F-ED-10, M3 | 3 | 1.9, 1.10, 1.18, 1.20, 1.13, 1.14, 1.23, 1.16 |
 | 1.27 | Editing performance: targeted patches, atomic Puck actions, memoised renders | [#89](https://github.com/nexustech/webforge/issues/89) | engine | [ADR 0007](../docs/adr/0007-large-page-performance.md), architecture §10, U7 | 3 | – |
@@ -380,7 +380,7 @@ Productionise the spike: label builder from glossary (D2), transactions for drag
 - [ ] Coverage ≥ 90/85
 
 **1.10 Modes: Simple/Advanced and Design/Content (plumbing)**  
-Per-user Simple/Advanced preference (hides Layers, Advanced tab, Custom Code, Code drawer); Design/Content toggle stored per site and passed to CanvasEngine.setMode. The Content-mode locking rules are finished once the panels exist (see the confirmation and Content mode item).
+Per-user Simple/Advanced preference (hides the Advanced tab, Custom Code and the Code drawer; Layers is always shown, [ADR 0011](../docs/adr/0011-layers-always-visible.md)); Design/Content toggle stored per site and passed to CanvasEngine.setMode. The Content-mode locking rules are finished once the panels exist (see the confirmation and Content mode item).
 
 - [ ] Mode changes take effect without reload
 - [ ] Simple mode hides the Advanced-only panels
@@ -475,12 +475,12 @@ Click text to edit it on the canvas via Puck richtext fields (Tiptap MIT package
 - [ ] Pasted content from Word/web is cleaned to allowed formatting
 - [ ] Spell check works inside the editor
 
-**1.24 Layers panel (Advanced)**  
+**1.24 Layers panel**  
 Tree of sections/elements (type + label), drag to reorder, hide, rename label, toolbar (move, duplicate, hide, delete), sync with canvas selection.
 
 - [ ] Selection syncs both ways
 - [ ] Reorders are single undo steps
-- [ ] Only visible in Advanced mode
+- [ ] Always visible, under Add and Undo History, in Simple and Advanced mode; read-only in Content mode (23 Oct 2026, [ADR 0011](../docs/adr/0011-layers-always-visible.md), #275)
 
 **1.25 Copy and paste**  
 Copy/cut/paste sections and elements within a page, between pages and into another site opened later (one site is open at a time, so the clipboard keeps the copied items with their images; IDs regenerated). Paste image files/clipboard images into Media and the canvas. Pasting a video URL as an embed comes with the Embed video element in Phase 2.

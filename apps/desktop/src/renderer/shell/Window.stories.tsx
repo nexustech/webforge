@@ -59,6 +59,13 @@ const PANELS: readonly Panel[] = [
     component: () => <List items={["Edited Heading text", "Added Hero", "Opened page"]} />,
   },
   {
+    // Always shown under Add and Undo History (ADR 0011).
+    id: "layers",
+    slot: "left.lower",
+    title: "Layers",
+    component: () => <List items={["Header", "Hero", "Heading", "Text", "Footer"]} />,
+  },
+  {
     id: "edit",
     slot: "right.top",
     title: "Edit",
