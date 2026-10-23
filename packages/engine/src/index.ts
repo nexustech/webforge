@@ -5,6 +5,7 @@ export type {
   CanvasSize,
   DocChange,
   EditorMode,
+  ElementRequest,
   EngineEdit,
   EngineEditKind,
   EnginePatch,

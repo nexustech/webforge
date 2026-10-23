@@ -193,9 +193,16 @@ test("links text and removes links in Content mode, which keeps text and links e
 
   // The caret into the link, from the keyboard: in Content mode dnd-kit marks each element
   // `aria-disabled`, so a test's click inside one waits for it to be enabled (1.26 removes that).
+  // The dialog hands the focus back and Tiptap restores the selection a frame later; keys pressed
+  // before that can lose the caret's move. Move it again until the toolbar shows it in the link.
   await expect(editor()).toBeFocused();
-  await page.keyboard.press("Home");
-  await page.keyboard.press("ArrowRight");
+  await expect(async () => {
+    await page.keyboard.press("Home");
+    await page.keyboard.press("ArrowRight");
+    await expect(toolbar.getByRole("button", { name: "Remove link" })).toBeVisible({
+      timeout: 1_000,
+    });
+  }).toPass();
   await toolbar.getByRole("button", { name: "Remove link" }).click();
   await expect(editor().locator("a")).toHaveCount(0);
   await leaveText();

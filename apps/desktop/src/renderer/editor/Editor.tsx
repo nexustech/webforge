@@ -28,6 +28,7 @@ import { registerLinkField } from "../links/LinkField.js";
 import { RichTextLinkHost } from "../links/RichTextLinkHost.js";
 import { connectCanvasImages } from "../media/canvas-images.js";
 import { registerImageField } from "../media/ImageField.js";
+import { createImagePickRequests } from "../media/image-picks.js";
 import { registerMediaPanel } from "../media/register-media-panel.js";
 import { connectCanvasNavigation } from "../menu/canvas-navigation.js";
 import {
@@ -55,6 +56,7 @@ import {
   type EngineConnection,
   runHistoryCommand,
 } from "./editor-session.js";
+import { registerElementCommands } from "./element-commands.js";
 import { connectFieldDrags } from "./field-drag.js";
 import { SharedRegionBanner } from "./SharedRegionBanner.js";
 import { confirmSharedRemovals, sharedCutConfirmation } from "./shared-confirmations.js";
@@ -151,6 +153,15 @@ export function Editor({
   const styleCommandsRef = useRef<ReturnType<typeof registerStyleCommands> | null>(null);
   const sharedCommandsRef = useRef<ReturnType<typeof registerSharedSectionCommands> | null>(null);
   const canvasCommandsRef = useRef<ReturnType<typeof registerCanvasCommands> | null>(null);
+  const elementCommandsRef = useRef<ReturnType<typeof registerElementCommands> | null>(null);
+  const panels = usePanelRegistry();
+  // *Edit* on an image (F-ED-25) opens the Edit panel's image picker: the panel shows, and the
+  // field opens it once it is drawn.
+  const [imagePicks] = useState(createImagePickRequests);
+  const pickImageRef = useRef((nodeId: string) => {
+    panels.show("edit");
+    imagePicks.request(nodeId);
+  });
   const addPanelRef = useRef<AddPanelRegistration | null>(null);
   const { history } = session;
   const registry = useCommandRegistry();
@@ -264,6 +275,16 @@ export function Editor({
     sharedCommandsRef.current = sharedCommands;
     canvasCommands.setLayoutLocked(modeRef.current !== "design");
     canvasCommandsRef.current = canvasCommands;
+    // Hide or show (Mod + /), and the chip's Hide and Edit on an image (1.30).
+    const elementCommands = registerElementCommands(
+      registry,
+      session,
+      engine,
+      connection.flush,
+      (nodeId) => pickImageRef.current(nodeId),
+    );
+    elementCommands.setLayoutLocked(modeRef.current !== "design");
+    elementCommandsRef.current = elementCommands;
     const stopSelectionWatch = session.ui.subscribe((ui) => {
       canvasCommands.setHasSelection(ui.nodeId !== null);
       clipboardCommands.setHasSelection(ui.nodeId !== null);
@@ -288,6 +309,8 @@ export function Editor({
       stopSelectionWatch();
       canvasCommandsRef.current = null;
       canvasCommands.remove();
+      elementCommandsRef.current = null;
+      elementCommands.remove();
       sharedCommandsRef.current = null;
       sharedCommands.remove();
       clipboardCommandsRef.current = null;
@@ -317,6 +340,7 @@ export function Editor({
     styleCommandsRef.current?.setLayoutLocked(mode !== "design");
     sharedCommandsRef.current?.setLayoutLocked(mode !== "design");
     canvasCommandsRef.current?.setLayoutLocked(mode !== "design");
+    elementCommandsRef.current?.setLayoutLocked(mode !== "design");
   }, [engine, mode]);
 
   useEffect(
@@ -339,7 +363,6 @@ export function Editor({
   );
 
   // Undo History goes in the left column's bottom (UI1).
-  const panels = usePanelRegistry();
   useEffect(() => {
     const jumpTo = (entryId: string | null) => {
       connectionRef.current?.flush();
@@ -444,7 +467,7 @@ export function Editor({
     };
   }, [panels, session, mode, engine, siteWide, addStore, registry, previews]);
   useEffect(() => registerMediaPanel(panels, session), [panels, session]);
-  useEffect(() => registerImageField({ session }), [session]);
+  useEffect(() => registerImageField({ session, picks: imagePicks }), [session, imagePicks]);
   useEffect(() => registerLinkField({ session }), [session]);
 
   return (
