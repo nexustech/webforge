@@ -20,7 +20,7 @@ export function startCrashReports(primary: boolean) {
   const reports = createCrashReports({ dir: join(app.getPath("userData"), "crash-reports") });
   // Old reports go, and any a crash left as `.tmp` are named or removed.
   if (primary) reports.prune();
-  installCrashHandlers(
+  const handlers = installCrashHandlers(
     { process, app, crashReporter },
     reports,
     {
@@ -45,13 +45,22 @@ export function startCrashReports(primary: boolean) {
   };
 
   return {
-    /** Registers Help → Open Crash Reports Folder's IPC call. */
+    /**
+     * Registers Help → Open Crash Reports Folder's IPC call, and the renderer's reports of its
+     * errors (R3): the window went on, so they don't count as Webforge closing.
+     */
     registerHandlers(ipc: Pick<IpcMain, "handle">, isTrustedSender: (url: string) => boolean) {
       registerIpcHandler(ipc, "openCrashReports", isTrustedSender, async () => {
         await openFolder();
         return null;
       });
+      registerIpcHandler(ipc, "reportError", isTrustedSender, (kind, error) => {
+        handlers.report({ process: "renderer", kind, error, fatal: false });
+        return null;
+      });
     },
+    /** See `CrashReporting.watchWorker`: a worker's crash becomes a local report (R3). */
+    watchWorker: handlers.watchWorker,
     /** Shows the next-launch notice if Webforge crashed since the user was last told. */
     noticeAfterLaunch(): Promise<void> {
       return noticeAfterCrash(

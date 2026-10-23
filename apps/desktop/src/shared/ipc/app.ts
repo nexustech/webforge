@@ -1,5 +1,11 @@
 import { languageTagSchema } from "@webforge/model";
 import { z } from "zod";
+import {
+  type ErrorDetails,
+  errorDetailsSchema,
+  type RendererErrorKind,
+  rendererErrorKindSchema,
+} from "../error-details.js";
 
 /** Information about the running app. */
 const appInfoSchema = z.object({
@@ -21,6 +27,15 @@ export const appChannels = {
   openCrashReports: {
     channel: "app:open-crash-reports",
     request: z.tuple([]),
+    response: z.null(),
+  },
+  /**
+   * Writes a local crash report of an error in the renderer (R3, F-SITE-7): how it surfaced, the
+   * error's name and its stack frames, never its message.
+   */
+  reportError: {
+    channel: "app:report-error",
+    request: z.tuple([rendererErrorKindSchema, errorDetailsSchema]),
     response: z.null(),
   },
   /** Spell checks text in the site's language (F-ED-19); Windows only, macOS chooses itself. */
@@ -49,6 +64,8 @@ export interface AppApi {
   getInfo(): Promise<AppInfo>;
   /** Shows the local crash-reports folder. */
   openCrashReports(): Promise<null>;
+  /** Writes a local crash report of a renderer error: its name and frames only. */
+  reportError(kind: RendererErrorKind, error: ErrorDetails): Promise<null>;
   /** Spell checks text in `language`, the site's (a language tag such as `en-GB`). */
   setSpellCheckLanguage(language: string): Promise<null>;
   /**
