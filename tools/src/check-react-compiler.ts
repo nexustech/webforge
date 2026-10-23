@@ -22,20 +22,13 @@ export type CompilerProblem = {
   readonly reason: string;
 };
 
-/** The line of a problem: where the compiler points, else the function it is in. */
+/** The line a compiler event is about: where it points, else the function it is in. */
 function lineOf(event: LoggerEvent): number {
-  switch (event.kind) {
-    case "CompileError": {
-      const at = event.detail.primaryLocation();
-      return (typeof at === "object" && at !== null ? at.start.line : event.fnLoc?.start.line) ?? 0;
-    }
-    case "CompileDiagnostic":
-    case "CompileSkip":
-    case "PipelineError":
-      return event.fnLoc?.start.line ?? 0;
-    default:
-      return 0;
+  if (event.kind === "CompileError") {
+    const at = event.detail.primaryLocation();
+    if (typeof at === "object" && at !== null) return at.start.line;
   }
+  return "fnLoc" in event ? (event.fnLoc?.start.line ?? 0) : 0;
 }
 
 /** What went wrong, in a line, for an event that is a problem; undefined for any other. */
@@ -59,6 +52,12 @@ function reasonOf(event: LoggerEvent): string | undefined {
   }
 }
 
+/** The problem a compiler event in `file` reports, if it is one (not a success or a timing). */
+export function problemOf(file: string, event: LoggerEvent): CompilerProblem | undefined {
+  const reason = reasonOf(event);
+  return reason === undefined ? undefined : { file, line: lineOf(event), reason };
+}
+
 /** Compiles one source file and returns what the compiler reported. `file` is for reporting. */
 export function findCompilerProblems(source: string, file: string): CompilerProblem[] {
   const problems: CompilerProblem[] = [];
@@ -76,8 +75,8 @@ export function findCompilerProblems(source: string, file: string): CompilerProb
           panicThreshold: "none",
           logger: {
             logEvent: (_filename: string | null, event: LoggerEvent) => {
-              const reason = reasonOf(event);
-              if (reason !== undefined) problems.push({ file, line: lineOf(event), reason });
+              const problem = problemOf(file, event);
+              if (problem !== undefined) problems.push(problem);
             },
           },
         },
@@ -118,22 +117,21 @@ export function formatCompilerProblems(problems: readonly CompilerProblem[]): st
   ].join("\n");
 }
 
-function main(): void {
-  const folders = process.argv.slice(2);
+/** Checks `folders` (relative to `root`), telling the terminal; returns the exit code. */
+export function runCheck(folders: readonly string[], root: string): number {
   if (folders.length === 0) {
     console.error("Usage: node tools/src/check-react-compiler.ts <folder>...");
-    process.exitCode = 2;
-    return;
+    return 2;
   }
-  const problems = checkFolders(folders, process.cwd());
+  const problems = checkFolders(folders, root);
   if (problems.length > 0) {
     console.error(formatCompilerProblems(problems));
-    process.exitCode = 1;
-    return;
+    return 1;
   }
   console.log(`The React Compiler compiles everything in ${folders.join(", ")}.`);
+  return 0;
 }
 
 if (import.meta.main) {
-  main();
+  process.exitCode = runCheck(process.argv.slice(2), process.cwd());
 }

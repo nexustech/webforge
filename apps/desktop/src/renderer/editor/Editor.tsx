@@ -68,6 +68,9 @@ import { UndoHistoryPanel, type UndoHistoryPanelProps } from "./UndoHistoryPanel
 import { installUndoToasts, undoEntry } from "./undo-toasts.js";
 
 /** Props of {@link Editor}. */
+/** How the title bar's list of steps undoes back to one (UX-16): false if the step is gone. */
+export type UndoTo = { readonly run: (entryId: string) => boolean };
+
 export type EditorProps = {
   readonly session: EditorSession;
   /** Creates the canvas engine; injectable for tests. */
@@ -95,9 +98,9 @@ export type EditorProps = {
   readonly onAddPreferencesChange?: (next: AddPreferences) => void;
   /**
    * Hands over how to undo back to a step (UX-16, the title bar's list of steps), and `null` once
-   * this editor is gone.
+   * this editor is gone. Called again only when the session changes, so a state setter will do.
    */
-  readonly onUndoTo?: (undoTo: ((entryId: string) => boolean) | null) => void;
+  readonly onUndoTo?: (undoTo: UndoTo | null) => void;
 };
 
 const compileWithPreload: CompileCanvasCss = (request) =>
@@ -392,10 +395,12 @@ export function Editor({
   // toasts make, after the canvas's pending edit; a gesture in progress is dropped first, as
   // Ctrl/Cmd+Z drops it, so the jump lands where it was asked to.
   useEffect(() => {
-    onUndoTo?.((entryId) => {
-      connectionRef.current?.flush();
-      session.cancelGesture();
-      return undoEntry(history, entryId);
+    onUndoTo?.({
+      run: (entryId) => {
+        connectionRef.current?.flush();
+        session.cancelGesture();
+        return undoEntry(history, entryId);
+      },
     });
     return () => onUndoTo?.(null);
   }, [onUndoTo, session, history]);
@@ -456,15 +461,6 @@ export function Editor({
       }),
     [addStore],
   );
-  // The sections' larger previews in the Add panel (UX-10), drawn with the site's theme.
-  const previews = createSectionPreviews({
-    library: session.library,
-    theme: () => session.history.document.getState().theme,
-    sharedSection: (id) => sharedSection(session.history.document.getState(), id)?.section,
-    compileCss,
-    baseUrl: document.baseURI,
-  });
-
   // The Add panel (1.13), hidden in Content mode (M3), and the palette's Add commands with it.
   useEffect(() => {
     if (mode !== "design") {
@@ -485,14 +481,21 @@ export function Editor({
       },
       preferences: addStore,
       commands: registry,
-      preview: previews,
+      // The sections' larger previews (UX-10), drawn with the site's theme.
+      preview: createSectionPreviews({
+        library: session.library,
+        theme: () => session.history.document.getState().theme,
+        sharedSection: (id) => sharedSection(session.history.document.getState(), id)?.section,
+        compileCss,
+        baseUrl: document.baseURI,
+      }),
     });
     addPanelRef.current = addPanel;
     return () => {
       addPanelRef.current = null;
       addPanel.remove();
     };
-  }, [panels, session, mode, engine, siteWide, addStore, registry, previews]);
+  }, [panels, session, mode, engine, siteWide, addStore, registry, compileCss]);
   useEffect(() => registerMediaPanel(panels, session), [panels, session]);
   useEffect(() => registerImageField({ session, picks: imagePicks }), [session, imagePicks]);
   useEffect(() => registerLinkField({ session }), [session]);

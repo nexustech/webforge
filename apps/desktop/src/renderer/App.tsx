@@ -14,7 +14,7 @@ import type {
   SiteUiState,
   UiStateResult,
 } from "../shared/ipc-contract.js";
-import { Editor, type EditorProps } from "./editor/Editor.js";
+import { Editor, type EditorProps, type UndoTo } from "./editor/Editor.js";
 import { createEditorSession, type EditorSession } from "./editor/editor-session.js";
 import { starterSite } from "./editor/starter-site.js";
 import { registerExportCommand } from "./export/export-command.js";
@@ -103,11 +103,7 @@ export function App({
   // Design or Content (M3): remembered with the open site, never an undo step.
   const [mode, setMode] = useState<EditorMode>(uiState?.editorMode ?? "design");
   // How the title bar's list of steps undoes back to one, which the editor hands over (UX-16).
-  const [undoTo, setUndoTo] = useState<((entryId: string) => boolean) | undefined>(undefined);
-  // A function as state: set through an updater, so React keeps it as is. Stable, so the editor
-  // hands it over once, not on every render.
-  const handUndoTo = (next: ((entryId: string) => boolean) | null) =>
-    setUndoTo(() => next ?? undefined);
+  const [undoTo, setUndoTo] = useState<UndoTo | null>(null);
   // The latest preferences, for changes made before React re-renders (several groups at once).
   const latest = useRef(preferences);
   const siteName = useSyncExternalStore(
@@ -228,7 +224,7 @@ export function App({
             <TitleBar
               siteName={siteName}
               saveStatus={<AutosaveStatus session={session} loaded={loaded} />}
-              undoSteps={<UndoStepsMenu state={session.history.state} undoTo={undoTo} />}
+              undoSteps={<UndoStepsMenu state={session.history.state} undoTo={undoTo?.run} />}
               tools={
                 <>
                   <ModeToggle mode={mode} onModeChange={changeMode} />
@@ -278,7 +274,7 @@ export function App({
                         viewOptions={viewOptions}
                         addPreferences={preferences.add}
                         onAddPreferencesChange={(add) => change({ add })}
-                        onUndoTo={handUndoTo}
+                        onUndoTo={setUndoTo}
                       />
                     </div>
                   </div>
