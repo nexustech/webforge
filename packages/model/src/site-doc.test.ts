@@ -12,6 +12,7 @@ import {
   type SiteDoc,
   siteDocSchema,
 } from "./site-doc.js";
+import { DEFAULT_THEME } from "./theme.js";
 
 const options = {
   name: "Rosa's Bakery",
@@ -66,11 +67,16 @@ describe("createSite", () => {
     };
     const layout = { header: [{ type: "Header", props: { id: "header" } }], footer: [] };
 
-    const site = createSite({ ...options, homeDoc, layout, theme: "cupcake" });
+    const site = createSite({
+      ...options,
+      homeDoc,
+      layout,
+      theme: { ...DEFAULT_THEME, preset: "cupcake" },
+    });
 
     expect(site.pages[site.homePageId]?.doc).toBe(homeDoc);
     expect(site.layout).toBe(layout);
-    expect(site.theme).toEqual({ name: "cupcake" });
+    expect(site.theme.preset).toBe("cupcake");
   });
 
   it("gives every new site its own ids", () => {

@@ -1,4 +1,5 @@
 import type { SiteSnapshot } from "@webforge/model";
+import { DEFAULT_THEME } from "@webforge/model";
 import type { IpcMain, IpcMainInvokeEvent } from "electron";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ExportOutcome } from "../shared/export-worker-protocol.js";
@@ -10,7 +11,7 @@ const APP_URL = "file:///app/index.html";
 const snapshot: SiteSnapshot = {
   name: "Bakery",
   language: "en",
-  theme: { name: "light" },
+  theme: { ...DEFAULT_THEME, preset: "light" },
   layout: { header: [], footer: [] },
   pages: [{ id: "home", path: "index", title: "Home", doc: { root: { props: {} }, content: [] } }],
   media: [],

@@ -1,4 +1,5 @@
 import type { SiteDoc } from "@webforge/model";
+import { DEFAULT_THEME } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CanvasCssRequest, CanvasCssResult } from "../../shared/ipc/canvas.js";
@@ -66,6 +67,20 @@ describe("siteClasses", () => {
     expect(classes).toEqual(expect.arrayContaining(["pt-32", "md:max-lg:mb-24", "lg:pl-0"]));
   });
 
+  it("collects a colour field's own hex colours, which no safelist has (2.1)", () => {
+    const session = createEditorSession(siteLibrary, starterSite());
+    session.history.run("Changed Heading colour", (draft) => {
+      const heading = firstHeading(draft);
+      if (heading !== undefined) {
+        heading.advanced = { className: "bg-[#1f6feb] text-[#abcdef]/50" };
+      }
+    });
+
+    const classes = siteClasses(session.history.document.getState(), session);
+
+    expect(classes).toEqual(expect.arrayContaining(["bg-[#1f6feb]", "text-[#abcdef]/50"]));
+  });
+
   it("keeps the classes of elements hidden in Layers, which the canvas still shows (#142)", () => {
     const site = starterSite();
     const home = site.pages[site.homePageId];
@@ -128,17 +143,19 @@ describe("connectSiteCss", () => {
     expect(compile).toHaveBeenCalledTimes(2);
 
     edit("Changed theme", (draft) => {
-      draft.theme = { name: "dark" };
+      draft.theme = { ...DEFAULT_THEME, preset: "dark" };
     });
     expect(compile).toHaveBeenCalledTimes(3);
-    expect(compile).toHaveBeenLastCalledWith(expect.objectContaining({ theme: { name: "dark" } }));
+    expect(compile).toHaveBeenLastCalledWith(
+      expect.objectContaining({ theme: expect.objectContaining({ preset: "dark" }) }),
+    );
   });
 
   it("waits for the document to be still before collecting classes", () => {
     const { session, compile } = setup();
 
     session.history.run("Changed theme", (draft) => {
-      draft.theme = { name: "dark" };
+      draft.theme = { ...DEFAULT_THEME, preset: "dark" };
     });
     vi.advanceTimersByTime(SITE_CSS_DEBOUNCE_MS - 1);
 
@@ -148,7 +165,7 @@ describe("connectSiteCss", () => {
   it("drops an answer a newer request has overtaken", async () => {
     const { engine, edit, reply } = setup();
     edit("Changed theme", (draft) => {
-      draft.theme = { name: "dark" };
+      draft.theme = { ...DEFAULT_THEME, preset: "dark" };
     });
 
     await reply(0);
@@ -188,7 +205,7 @@ describe("connectSiteCss", () => {
   it("stops listening and ignores late answers once stopped", async () => {
     const { session, engine, compile, stop, reply } = setup();
     session.history.run("Changed theme", (draft) => {
-      draft.theme = { name: "dark" };
+      draft.theme = { ...DEFAULT_THEME, preset: "dark" };
     });
 
     stop();

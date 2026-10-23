@@ -6,6 +6,7 @@ import type { MediaMeta } from "./media.js";
 import { copiedNodeId, SHARED_COPY_TYPE } from "./shared-sections.js";
 import { createSite, type SiteDoc } from "./site-doc.js";
 import { siteSnapshotSchema } from "./site-snapshot.js";
+import { DEFAULT_THEME } from "./theme.js";
 import { siteToSnapshot } from "./to-snapshot.js";
 
 const HASH = "c".repeat(64);
@@ -16,7 +17,7 @@ function bakery(): SiteDoc {
     language: "en-GB",
     homeTitle: "Home",
     notFoundTitle: "Page not found",
-    theme: "cupcake",
+    theme: { ...DEFAULT_THEME, preset: "cupcake" },
   });
   site.settings.general.description = "Fresh bread in Hightown";
   const cakes = "cakes" as PageId;
@@ -72,7 +73,7 @@ describe("siteToSnapshot", () => {
     expect(snapshot).toMatchObject({
       name: "Rosa's Bakery",
       language: "en-GB",
-      theme: { name: "cupcake" },
+      theme: { ...DEFAULT_THEME, preset: "cupcake" },
       layout: site.layout,
     });
   });

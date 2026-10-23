@@ -221,7 +221,7 @@ export async function buildSite(
 
   const markup = rendered.flatMap((entry) => [entry.header, entry.main, entry.footer]);
   const css = await buildSiteCss(resources, {
-    theme: site.theme.name,
+    theme: site.theme.preset,
     candidates: classCandidates([`<body class="${BODY_CLASS}">`, ...markup].join("\n")),
     fontsUrl: "../fonts/",
   });
@@ -230,7 +230,7 @@ export async function buildSite(
   for (const entry of rendered) {
     const html = pageDocument({
       language: site.language,
-      theme: site.theme.name,
+      theme: site.theme.preset,
       title: entry.page.path === "index" ? site.name : `${entry.page.title} | ${site.name}`,
       description: entry.page.description,
       stylesheet: `${entry.prefix}${cssPath}`,

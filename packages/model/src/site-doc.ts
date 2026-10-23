@@ -13,9 +13,10 @@ import { mediaMetaSchema } from "./media.js";
 import { type MenuItem, menuDocSchema } from "./menu.js";
 import { defaultSiteSettings, siteSettingsSchema } from "./settings.js";
 import { containsCopy, copyIssues, sharedSectionsDocSchema } from "./shared-sections.js";
+import { copyTheme, DEFAULT_THEME, type ThemeTokens } from "./theme.js";
 
 /** The format of {@link SiteDoc} this build writes. Bumped with a migration and a fixture. */
-export const SITE_FORMAT_VERSION = 4;
+export const SITE_FORMAT_VERSION = 5;
 
 const SEGMENT = "[a-z0-9]+(?:-[a-z0-9]+)*";
 
@@ -207,7 +208,8 @@ export type CreateSiteOptions = {
   readonly homeDoc?: PageDoc;
   readonly notFoundDoc?: PageDoc;
   readonly layout?: LayoutDoc;
-  readonly theme?: string;
+  /** The theme to start from; the default theme if left out. */
+  readonly theme?: ThemeTokens;
 };
 
 const emptyPage = (): PageDoc => ({ root: { props: {} }, content: [] });
@@ -225,7 +227,7 @@ export function createSite(options: CreateSiteOptions): SiteDoc {
   return {
     formatVersion: SITE_FORMAT_VERSION,
     settings: defaultSiteSettings(options.name, options.language),
-    theme: { name: options.theme ?? "light" },
+    theme: copyTheme(options.theme ?? DEFAULT_THEME),
     layout: options.layout ?? { header: [], footer: [] },
     pages: {
       [homeId]: {

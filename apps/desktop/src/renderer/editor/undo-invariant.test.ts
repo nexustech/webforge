@@ -2,6 +2,7 @@ import type { ListChange } from "@webforge/editor-ui";
 import type { EngineEdit } from "@webforge/engine";
 import {
   type BoxValue,
+  COLOR_ROLES,
   copiedNodeId,
   isSharedCopy,
   type MenuItemId,
@@ -11,6 +12,8 @@ import {
   SHARED_COPY_TYPE,
   type SharedSectionId,
   type SiteDoc,
+  TEXT_SIZES,
+  TEXT_STYLES,
 } from "@webforge/model";
 import { siteLibrary, starterPage } from "@webforge/site-components";
 import fc from "fast-check";
@@ -284,8 +287,45 @@ const menuCommands: fc.Arbitrary<Command>[] = [
   fc.constant<Command>({ name: "follow the page order", run: (ctx) => followPages(ctx.session) }),
 ];
 
+/**
+ * Theme edits (2.1): a colour role, the type scale or the shadow changed site-wide, each one step,
+ * as the Theme panel (2.3) will make them.
+ */
+const themeCommands: fc.Arbitrary<Command>[] = [
+  fc
+    .record({
+      role: fc.constantFrom(...COLOR_ROLES),
+      l: fc.double({ min: 0, max: 1, noNaN: true }),
+      h: fc.double({ min: 0, max: 360, noNaN: true }),
+    })
+    .map(({ role, l, h }) => ({
+      name: `theme colour ${role} ${l} ${h}`,
+      run: (ctx) =>
+        ctx.session.edit("root", "Changed theme colours", (draft) => {
+          draft.theme.colors[role] = { l, c: 0.1, h };
+        }),
+    })),
+  fc
+    .record({ style: fc.constantFrom(...TEXT_STYLES), size: fc.constantFrom(...TEXT_SIZES) })
+    .map(({ style, size }) => ({
+      name: `theme text ${style} ${size}`,
+      run: (ctx) =>
+        ctx.session.edit("root", "Changed theme text styles", (draft) => {
+          draft.theme.typeScale[style].size = size;
+        }),
+    })),
+  fc.constantFrom("none", "soft", "strong").map((shadow) => ({
+    name: `theme shadow ${shadow}`,
+    run: (ctx) =>
+      ctx.session.edit("root", "Changed theme shadows", (draft) => {
+        draft.theme = { ...draft.theme, shadow };
+      }),
+  })),
+];
+
 const commands: fc.Arbitrary<Command>[] = [
   ...menuCommands,
+  ...themeCommands,
   fc.record({ at: n, to: n }).map(({ at, to }) => ({
     name: `insert ${at} ${to}`,
     run: (ctx) =>

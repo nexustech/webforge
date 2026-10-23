@@ -1,4 +1,4 @@
-import { changedDocuments, createSite } from "@webforge/model";
+import { changedDocuments, createSite, DEFAULT_THEME } from "@webforge/model";
 import { describe, expect, it, vi } from "vitest";
 import { DEFAULT_PREFERENCES } from "../shared/ipc/prefs.js";
 import { createWebforgeApi, type Invoke, type Subscribe } from "./api.js";
@@ -72,7 +72,7 @@ describe("createWebforgeApi site export", () => {
   const snapshot = {
     name: "Bakery",
     language: "en",
-    theme: { name: "light" },
+    theme: { ...DEFAULT_THEME, preset: "light" },
     layout: { header: [], footer: [] },
     pages: [
       { id: "home", path: "index", title: "Home", doc: { root: { props: {} }, content: [] } },

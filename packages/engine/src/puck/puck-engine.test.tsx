@@ -2,6 +2,7 @@
 
 import {
   copiedNodeId,
+  DEFAULT_THEME,
   type PageDoc,
   SHARED_COPY_TYPE,
   type SharedSectionId,
@@ -89,7 +90,7 @@ describe("createPuckEngine", () => {
     document.body.append(element);
     engine = createPuckEngine({ iframe: false });
     await act(async () => {
-      engine.mount(element, { library, theme: { name: "test" } });
+      engine.mount(element, { library, theme: { ...DEFAULT_THEME, preset: "test" } });
       engine.loadPage(page, NO_LAYOUT);
     });
     await settle();
@@ -108,7 +109,9 @@ describe("createPuckEngine", () => {
   });
 
   it("refuses to mount twice", () => {
-    expect(() => engine.mount(element, { library, theme: { name: "test" } })).toThrow(/already/);
+    expect(() =>
+      engine.mount(element, { library, theme: { ...DEFAULT_THEME, preset: "test" } }),
+    ).toThrow(/already/);
   });
 
   it("shows changes made outside the engine, without reporting them as edits", async () => {
@@ -179,7 +182,7 @@ describe("createPuckEngine", () => {
     };
 
     await act(async () => {
-      late.mount(host, { library, theme: { name: "test" } });
+      late.mount(host, { library, theme: { ...DEFAULT_THEME, preset: "test" } });
       late.applyChange({ page: other });
     });
     await settle();
@@ -412,7 +415,9 @@ describe("createPuckEngine", () => {
     const framed = createPuckEngine();
     const host = document.createElement("div");
     document.body.append(host);
-    await act(async () => framed.mount(host, { library, theme: { name: "test" } }));
+    await act(async () =>
+      framed.mount(host, { library, theme: { ...DEFAULT_THEME, preset: "test" } }),
+    );
     await settle();
     const views: unknown[] = [];
     framed.onViewportChange((viewport) => views.push(viewport));
@@ -576,7 +581,9 @@ describe("createPuckEngine canvas size and zoom (1.15)", () => {
     framed = createPuckEngine();
     host = document.createElement("div");
     document.body.append(host);
-    await act(async () => framed.mount(host, { library, theme: { name: "test" } }));
+    await act(async () =>
+      framed.mount(host, { library, theme: { ...DEFAULT_THEME, preset: "test" } }),
+    );
     await settle();
   });
 
@@ -665,7 +672,7 @@ describe("createPuckEngine with a shared Header and Footer (F-ED-7)", () => {
     document.body.append(element);
     engine = createPuckEngine({ iframe: false });
     await act(async () => {
-      engine.mount(element, { library, theme: { name: "test" } });
+      engine.mount(element, { library, theme: { ...DEFAULT_THEME, preset: "test" } });
       engine.loadPage(page, layout);
     });
     await settle();
@@ -815,7 +822,7 @@ describe("createPuckEngine with linked copies of a shared section (F-ED-23)", ()
     document.body.append(element);
     engine = createPuckEngine({ iframe: false });
     await act(async () => {
-      engine.mount(element, { library, theme: { name: "test" } });
+      engine.mount(element, { library, theme: { ...DEFAULT_THEME, preset: "test" } });
       engine.loadPage(withCopies, NO_LAYOUT, shared);
     });
     await settle();

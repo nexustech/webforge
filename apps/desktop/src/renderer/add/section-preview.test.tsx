@@ -57,7 +57,7 @@ describe("createSectionPreviews (UX-10)", () => {
     expect(root?.querySelector("style")?.textContent).toContain(".wf-hero{color:red}");
     // In the site's theme, with the page's colours and font but not its whole-page layout.
     const page = root?.querySelector<HTMLElement>(".wf-preview");
-    expect(page?.dataset.theme).toBe(theme.name);
+    expect(page?.dataset.theme).toBe(theme.preset);
     expect(page?.className).toBe("wf-preview bg-base-100 font-sans text-base-content");
     // Font faces are declared for the editor window: a shadow root's own are ignored.
     expect(root?.querySelector("style")?.textContent).not.toContain("@font-face");

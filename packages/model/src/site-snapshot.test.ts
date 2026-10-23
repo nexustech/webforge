@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { type SiteSnapshot, siteSnapshotSchema } from "./site-snapshot.js";
+import { DEFAULT_THEME } from "./theme.js";
 
 const emptyPage = { root: { props: {} }, content: [] };
 
@@ -7,7 +8,7 @@ function site(overrides: Partial<SiteSnapshot> = {}): SiteSnapshot {
   return {
     name: "Rosa's Bakery",
     language: "en-GB",
-    theme: { name: "cupcake" },
+    theme: { ...DEFAULT_THEME, preset: "cupcake" },
     layout: { header: [], footer: [] },
     pages: [
       { id: "home", path: "index", title: "Home", doc: emptyPage },

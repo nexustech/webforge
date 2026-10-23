@@ -86,7 +86,8 @@ export function connectSiteCss(
       // A component the library lacks; the canvas reports it on its own.
       return;
     }
-    const key = `${site.theme.name}\n${candidates.join(" ")}`;
+    // Any change to the theme's tokens compiles again (2.1), as a change to the classes does.
+    const key = `${JSON.stringify(site.theme)}\n${candidates.join(" ")}`;
     if (key === requested) {
       return;
     }

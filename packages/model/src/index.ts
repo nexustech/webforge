@@ -19,6 +19,8 @@ export type { BrokenLink } from "./broken-links.js";
 export { findBrokenLinks } from "./broken-links.js";
 export type { CopiedElements } from "./clipboard.js";
 export { copiedElementsSchema, MAX_COPIED_NODES, pastedCopies } from "./clipboard.js";
+export type { ColorRef } from "./color-ref.js";
+export { colorRefSchema, formatColorRef, parseColorRef } from "./color-ref.js";
 export type { LayoutDoc, NodeAdvanced, NodeDoc, PageDoc, SiteCode, Theme } from "./documents.js";
 export {
   anchorsIn,
@@ -145,4 +147,25 @@ export {
 export type { DocumentItem, MediaItem, SitePage, SiteSnapshot } from "./site-snapshot.js";
 export { siteSnapshotSchema } from "./site-snapshot.js";
 export { slugify, uniqueSlug } from "./slugs.js";
+export type {
+  ColorRole,
+  FontRef,
+  Oklch,
+  ShadeStep,
+  TextStyle,
+  ThemeTokens,
+} from "./theme.js";
+export {
+  COLOR_ROLES,
+  DEFAULT_THEME,
+  fontRefSchema,
+  OPACITY_STEPS,
+  oklchSchema,
+  RADIUS_TOKENS,
+  SHADE_STEPS,
+  SHADED_ROLES,
+  TEXT_SIZES,
+  TEXT_STYLES,
+  themeTokensSchema,
+} from "./theme.js";
 export { siteToSnapshot } from "./to-snapshot.js";

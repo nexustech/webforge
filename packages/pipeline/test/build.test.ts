@@ -1,4 +1,5 @@
 import type { MediaId, MenuItemId, NodeDoc, PageId, SiteSnapshot } from "@webforge/model";
+import { DEFAULT_THEME } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { sampleSite } from "@webforge/test-utils";
 import { beforeAll, describe, expect, it } from "vitest";
@@ -174,7 +175,7 @@ function siteWith(content: NodeDoc[], overrides: Partial<SiteSnapshot> = {}): Si
   return {
     name: "Test",
     language: "en",
-    theme: { name: "light" },
+    theme: { ...DEFAULT_THEME, preset: "light" },
     layout: { header: [], footer: [] },
     pages: [{ id: "home", path: "index", title: "Home", doc: { root: { props: {} }, content } }],
     media: [],
@@ -425,6 +426,23 @@ describe("buildSite: documents (1.28)", () => {
     expect(text(output, "index.html")).toContain("max-md:mt-4 md:mt-16");
     expect(css).toMatch(/@media \(width < 48rem\) \{\s*\.max-md\\:mt-4 \{/);
     expect(css).toMatch(/@media \(width >= 48rem\) \{\s*\.md\\:mt-16 \{/);
+  });
+
+  it("styles an element's own hex colours, as Tailwind arbitrary classes (2.1)", async () => {
+    const heading: NodeDoc = {
+      type: "Heading",
+      props: {
+        id: "h",
+        text: "Prices",
+        advanced: { className: "bg-[#1f6feb] text-[#abcdef]/50" },
+      },
+    };
+    const output = await buildSite(siteWith([heading]), siteLibrary, resources);
+    const css = text(output, fileNamed(output, /^assets\/css\//));
+
+    expect(text(output, "index.html")).toContain("bg-[#1f6feb] text-[#abcdef]/50");
+    expect(css).toMatch(/\.bg-\\\[\\#1f6feb\\\] \{\s*background-color: #1f6feb;/);
+    expect(css).toMatch(/\.text-\\\[\\#abcdef\\\]\\\/50 \{[^}]*#abcdef/);
   });
 
   it("warns about a link to a document deleted from Media, and keeps building", async () => {

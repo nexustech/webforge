@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 
 import { t } from "@webforge/i18n";
+import { DEFAULT_THEME } from "@webforge/model";
 import type { ComponentLibrary } from "@webforge/site-components";
 import { act } from "react";
 import { describe, expect, it } from "vitest";
@@ -48,7 +49,7 @@ describe("puckDictionary", () => {
     document.body.append(element);
     const engine = createPuckEngine({ iframe: false });
     await act(async () => {
-      engine.mount(element, { library, theme: { name: "test" } });
+      engine.mount(element, { library, theme: { ...DEFAULT_THEME, preset: "test" } });
       engine.loadPage({ root: { props: {} }, content: [] }, { header: [], footer: [] });
       await new Promise((resolve) => setTimeout(resolve, 20));
     });

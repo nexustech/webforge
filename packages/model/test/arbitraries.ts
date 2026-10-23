@@ -5,6 +5,7 @@ import type { MediaMeta } from "../src/media.js";
 import type { MenuItem } from "../src/menu.js";
 import type { SiteSettings } from "../src/settings.js";
 import { type PageEntry, SITE_FORMAT_VERSION, type SiteDoc } from "../src/site-doc.js";
+import { DEFAULT_THEME } from "../src/theme.js";
 
 const segment = fc.stringMatching(/^[a-z0-9]{1,8}(?:-[a-z0-9]{1,8})?$/);
 const slug = segment.filter((value) => !["index", "404", "assets"].includes(value));
@@ -188,7 +189,7 @@ export const siteDocArbitrary: fc.Arbitrary<SiteDoc> = fc
         }): SiteDoc => ({
           formatVersion: SITE_FORMAT_VERSION,
           settings: siteSettings,
-          theme: { name: "cupcake" },
+          theme: { ...DEFAULT_THEME, preset: "cupcake" },
           layout: { header: [], footer: [{ type: "Footer", props: { id: "footer", text: "©" } }] },
           pages: Object.fromEntries(entries.map((entry) => [entry.id, entry])),
           pageOrder: order as PageId[],

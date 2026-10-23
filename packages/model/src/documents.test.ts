@@ -6,6 +6,7 @@ import {
   siteCodeSchema,
   themeSchema,
 } from "./documents.js";
+import { DEFAULT_THEME } from "./theme.js";
 
 const heading = { type: "Heading", props: { id: "heading-1", text: "Hello", size: "large" } };
 
@@ -88,12 +89,9 @@ describe("unsafe keys (#138)", () => {
 });
 
 describe("themeSchema", () => {
-  it.each(["light", "cupcake", "corporate-2"])("accepts the theme name %s", (name) => {
-    expect(themeSchema.parse({ name })).toEqual({ name });
-  });
-
-  it.each(["", "Light", "dark mode", "../x", "-x"])("rejects the theme name %j", (name) => {
-    expect(() => themeSchema.parse({ name })).toThrow();
+  it("is the theme's tokens: a format 4 theme's name no longer passes (2.1)", () => {
+    expect(themeSchema.parse(DEFAULT_THEME)).toEqual(DEFAULT_THEME);
+    expect(themeSchema.safeParse({ name: "light" }).success).toBe(false);
   });
 });
 
