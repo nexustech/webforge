@@ -8,7 +8,15 @@ import {
   type ViewOptions,
 } from "@webforge/engine";
 import { t } from "@webforge/i18n";
-import { type RefObject, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import {
+  type RefObject,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { createStore } from "zustand/vanilla";
 import {
   type AddPreferences,
@@ -63,7 +71,7 @@ import { confirmSharedRemovals, sharedCutConfirmation } from "./shared-confirmat
 import { shownLayout } from "./shared-layout.js";
 import { type CompileCanvasCss, connectSiteCss } from "./site-css.js";
 import { UndoHistoryPanel } from "./UndoHistoryPanel.js";
-import { installUndoToasts } from "./undo-toasts.js";
+import { installUndoToasts, undoEntry } from "./undo-toasts.js";
 
 /** Props of {@link Editor}. */
 export type EditorProps = {
@@ -91,6 +99,11 @@ export type EditorProps = {
   readonly addPreferences?: AddPreferences;
   /** Saves them when the person changes their favourites or adds something. */
   readonly onAddPreferencesChange?: (next: AddPreferences) => void;
+  /**
+   * Hands over how to undo back to a step (UX-16, the title bar's list of steps), and `null` once
+   * this editor is gone.
+   */
+  readonly onUndoTo?: (undoTo: ((entryId: string) => boolean) | null) => void;
 };
 
 const compileWithPreload: CompileCanvasCss = (request) =>
@@ -140,6 +153,7 @@ export function Editor({
   viewOptions,
   addPreferences = DEFAULT_PREFERENCES.add,
   onAddPreferencesChange,
+  onUndoTo,
 }: EditorProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [engine, setEngine] = useState<CanvasEngine | null>(null);
@@ -361,6 +375,22 @@ export function Editor({
       ),
     [session],
   );
+
+  // Undoing back to a step from the title bar (UX-16): one jump, as Undo History and the Undo
+  // toasts make, after the canvas's pending edit; a gesture in progress is dropped first, as
+  // Ctrl/Cmd+Z drops it, so the jump lands where it was asked to.
+  const undoTo = useCallback(
+    (entryId: string) => {
+      connectionRef.current?.flush();
+      session.cancelGesture();
+      return undoEntry(history, entryId);
+    },
+    [session, history],
+  );
+  useEffect(() => {
+    onUndoTo?.(undoTo);
+    return () => onUndoTo?.(null);
+  }, [onUndoTo, undoTo]);
 
   // Undo History goes in the left column's bottom (UI1).
   useEffect(() => {

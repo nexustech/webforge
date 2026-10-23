@@ -73,4 +73,27 @@ test.describe("Undo History and Undo toasts", () => {
     await expect(canvas().locator("h1")).toHaveCount(0);
     await expect(step("Deleted Heading")).toHaveAttribute("aria-current", "step");
   });
+
+  test("the arrow beside Undo undoes back to a recent step, which Redo brings back (UX-16)", async () => {
+    await deleteHeading();
+    await canvas().getByText(STARTER_TEXT).click();
+    await expect(selected()).toHaveText("Text");
+    await canvas().locator('[class*="ActionBarAction"][title="Delete"]').click();
+    await expect(canvas().getByText(STARTER_TEXT)).toHaveCount(0);
+
+    await page.getByRole("button", { name: "Undo several steps" }).click();
+    const menu = page.getByRole("menu");
+    await expect(menu.getByRole("menuitem")).toHaveText([
+      "Deleted Text, Undoes this step",
+      "Deleted Heading, Undoes 2 steps",
+    ]);
+    await menu.getByRole("menuitem", { name: /^Deleted Heading/ }).click();
+
+    await expect(canvas().locator("h1")).toHaveText(STARTER_HEADING);
+    await expect(canvas().getByText(STARTER_TEXT)).toHaveCount(1);
+    await expect(step("Opened page")).toHaveAttribute("aria-current", "step");
+    await page.keyboard.press("ControlOrMeta+Shift+z");
+    await expect(canvas().locator("h1")).toHaveCount(0);
+    await expect(step("Deleted Heading")).toHaveAttribute("aria-current", "step");
+  });
 });
