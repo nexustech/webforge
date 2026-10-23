@@ -103,9 +103,9 @@ Small additions that fit the open items. Effort: **S** ≤ 1 day.
 | SP-2 | **Size in the hover label** when *Show spacing on hover* is on: `Image · 256 × 256` | 18 | 1.39 (moved from 1.35) | S |
 | SP-3 | **Margin and padding colours.** The spacing-on-hover overlay and the spacing handles use the devtools convention: margin a warm tint, padding a green tint, so people learn one meaning | 18, 27 | 1.39 (moved from 1.35) | S |
 | SP-4 | **Contextual toolbars in the canvas toolbar's centre,** not floating on the canvas: the Columns toolbar (2.17) and, with the elements, *Heading level* (H1–H3 as *Title / Heading / Subheading*) and *Add item* for lists and menus. The centre is empty today | 05, 22, 60, 70 | 2.17 (Columns), 2.9 (Heading, List) | S each |
-| SP-5 | **Per-device rows.** Expanding a field with a per-device value shows one row per device (Desktop, Tablet, Mobile); a row with its own value has an accent label; the device in effect carries the dot. This sharpens UX-19: the dot beside the label stays the quick cue | 62, 62a | 1.36 | S |
-| SP-6 | **Search highlights.** The Edit panel's search opens the groups that match and highlights the matching labels | 67, 68 | 1.36 | S |
-| SP-7 | **Group header icons on hover:** copy, paste and reset for the group, so *Copy style* also works per group | 11, 12 | 1.36 (reset) + 1.37 (copy/paste) | S |
+| SP-5 | **Per-device rows.** Expanding a field with a per-device value shows one row per device (Desktop, Tablet, Mobile); a row with its own value has an accent label; the device in effect carries the dot. This sharpens UX-19: the dot beside the label stays the quick cue | 62, 62a | 1.39 (moved from 1.36) | S |
+| SP-6 | **Search highlights.** The Edit panel's search opens the groups that match and highlights the matching labels | 67, 68 | 1.39 (moved from 1.36) | S |
+| SP-7 | **Group header icons on hover:** copy, paste and reset for the group, so *Copy style* also works per group | 11, 12 | 1.39 (moved from 1.36) | S |
 | SP-8 | **Drop indicator:** a 1 px accent line between Layers rows while dragging, mirrored on the canvas with the dragged element's chip at the drop point | 25 | 1.39 (moved from 1.35) | S |
 | SP-9 | **Select parent** in the right-click menu, on the canvas and in Layers (it's on the chip and Mod + ↑ already) | 21, 23 | 1.39 (moved from 1.35) | S |
 | SP-10 | **Hovering a Layers row outlines the element** on the canvas with its chip, as breadcrumbs do | 03 | 1.39 (moved from 1.35) | S |
@@ -128,7 +128,7 @@ Decided by the product owner on 2026-10-23:
 
 | # | Decision |
 |---|---|
-| **UI5** | ✅ **SP-1…SP-13 are adopted as written.** They join the plan items they fit: 1.39 takes SP-1, SP-2, SP-3, SP-8, SP-9 and SP-10 (+1 day; they were recorded on 1.35 first, which had already closed, and moved the same day); 1.36 takes SP-5, SP-6, SP-7 and SP-11 (+1 day); 2.17 takes SP-4's Columns toolbar placement; 2.9 takes SP-4's Heading and List toolbars and SP-12 (+1 day); 3.6 takes SP-13. About +3 days in all. Spec F-ED-25 and F-ED-26 are extended |
+| **UI5** | ✅ **SP-1…SP-13 are adopted as written.** They join the plan items they fit: 1.39 takes SP-1, SP-2, SP-3, SP-8, SP-9 and SP-10 (+1 day; they were recorded on 1.35 first, which had already closed, and moved the same day); 1.39 also takes SP-5, SP-6 and SP-7 (+1 day; moved from 1.36 on 23 Oct, whose PR predated them); 1.36 keeps SP-11, which its PR builds; 2.17 takes SP-4's Columns toolbar placement; 2.9 takes SP-4's Heading and List toolbars and SP-12 (+1 day); 3.6 takes SP-13. About +3 days in all. Spec F-ED-25 and F-ED-26 are extended |
 
 ## 6. Screenshot index
 All in [`screenshots/`](screenshots/).
