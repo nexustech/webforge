@@ -297,6 +297,22 @@ describe("EditPanelHost", () => {
       ).toBeDefined();
     });
 
+    it("resets a changed group to its defaults as one step, named by the group (UX-13)", async () => {
+      const { labels, section, user } = setup("section-1");
+      await user.click(side("Padding Top").getByRole("radio", { name: "S" }));
+      const spacing = screen.getByRole("button", { name: "Spacing" });
+      expect(spacing.hasAttribute("data-changed")).toBe(true);
+
+      fireEvent.contextMenu(spacing);
+      await user.click(await screen.findByRole("menuitem", { name: "Reset Group to Defaults" }));
+
+      expect(labels()).toEqual(["Changed Section padding", "Reset Section spacing"]);
+      expect(section()?.padding).toEqual(siteLibrary.components.Section?.defaults.padding);
+      expect(screen.getByRole("button", { name: "Spacing" }).hasAttribute("data-changed")).toBe(
+        false,
+      );
+    });
+
     it("sets Desktop's value as the plain value, keeping other devices' own", async () => {
       const { session, labels, section, user } = setup("section-1");
       act(() => session.ui.setState({ viewport: "tablet" }));

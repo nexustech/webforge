@@ -285,6 +285,49 @@ describe("style field renderers (1.14 part 2)", () => {
     expect(onResetToDefault).not.toHaveBeenCalled();
   });
 
+  it("groups the fields by what they set, each group closing and opening (UX-13)", async () => {
+    const { user } = renderStyle();
+    const group = (name: string) => screen.getByRole("button", { name });
+
+    expect(
+      screen.getAllByRole("button", { expanded: true }).map((button) => button.textContent),
+    ).toEqual(["Spacing", "Appearance"]);
+    await user.click(group("Appearance"));
+
+    expect(group("Appearance").getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByLabelText("Gap")).toBeNull();
+    expect(screen.getByRole("radiogroup", { name: "Padding" })).toBeDefined();
+    await user.click(group("Appearance"));
+    expect(screen.getByLabelText("Gap")).toBeDefined();
+  });
+
+  it("closes every group with Ctrl/Cmd+Enter on a group's title, and opens them again (UX-13)", async () => {
+    const { user } = renderStyle();
+    screen.getByRole("button", { name: "Spacing" }).focus();
+
+    await user.keyboard("{Control>}{Enter}{/Control}");
+    expect(screen.queryAllByRole("button", { expanded: true })).toHaveLength(0);
+    await user.keyboard("{Control>}{Enter}{/Control}");
+    expect(screen.getAllByRole("button", { expanded: true })).toHaveLength(2);
+  });
+
+  it("shows a changed group's title in the accent colour, and resets the group as one change (UX-18)", async () => {
+    const { onResetToDefault, user } = renderStyle({ changed: true });
+    const spacing = screen.getByRole("button", { name: "Spacing" });
+
+    expect(spacing.hasAttribute("data-changed")).toBe(true);
+    expect(screen.getByRole("button", { name: "Appearance" }).hasAttribute("data-changed")).toBe(
+      false,
+    );
+    fireEvent.contextMenu(spacing);
+    await user.click(await screen.findByRole("menuitem", { name: "Reset Group to Defaults" }));
+    expect(onResetToDefault).toHaveBeenLastCalledWith(["padding"], "spacing");
+
+    spacing.focus();
+    await user.keyboard("{Control>}{Escape}{/Control}");
+    expect(onResetToDefault).toHaveBeenCalledTimes(2);
+  });
+
   it("shows only the fields whose name has the searched text, and Esc clears it (UX-13)", async () => {
     const { user } = renderStyle();
     const search = screen.getByRole("searchbox", { name: "Search options" });

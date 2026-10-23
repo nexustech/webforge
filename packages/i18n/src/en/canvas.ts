@@ -91,6 +91,18 @@ export const canvas = {
   "editPanel.noMatches": "No options match your search.",
   // Back to the element's defaults (UX-13, UX-18): a field's right-click menu, and Ctrl/Cmd + Esc.
   "editPanel.resetField": "Reset to Default",
+  "editPanel.resetGroup": "Reset Group to Defaults",
+  // The Edit panel's groups (UX-13): Ctrl/Cmd + Enter on a group's title opens or closes them all.
+  "editPanel.expandAll": "Expand All",
+  "editPanel.collapseAll": "Collapse All",
+  "editPanel.section.text": "Text",
+  "editPanel.section.image": "Image",
+  "editPanel.section.link": "Link",
+  "editPanel.section.items": "Items",
+  "editPanel.section.spacing": "Spacing",
+  "editPanel.section.colours": "Colours",
+  "editPanel.section.appearance": "Appearance",
+  "editPanel.section.advanced": "Advanced",
   // A value set for one device only (F-ED-4).
   // A field's per-device dot (UX-19): grey inherits Desktop's value, the accent colour has its own.
   "editPanel.dot.inherits": "{field}: same as Desktop on {device}",

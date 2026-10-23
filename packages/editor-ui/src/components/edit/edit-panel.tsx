@@ -1,4 +1,5 @@
-import { t } from "@webforge/i18n";
+import { type MessageKey, t } from "@webforge/i18n";
+import { ChevronRightIcon } from "lucide-react";
 import { type KeyboardEvent, useId, useState } from "react";
 import { cn } from "../../lib/cn.js";
 import {
@@ -35,6 +36,8 @@ export type EditPanelField = FieldSpec & {
   readonly overridden?: boolean;
   /** The value differs from the element's default, so it can be reset (UX-18). */
   readonly changed?: boolean;
+  /** The group it is shown in (UX-13); by its kind if not given. */
+  readonly section?: FieldSection;
 };
 
 /** Props of {@link EditPanel}. */
@@ -127,6 +130,74 @@ const BUILT_IN: Readonly<Record<string, FieldRenderer>> = {
 
 const rendererFor = (kind: string) => fieldRenderer(kind) ?? BUILT_IN[kind];
 
+/** The groups fields are in, by what they set (UX-13); a field may name its own. */
+export type FieldSection =
+  | "text"
+  | "image"
+  | "link"
+  | "items"
+  | "spacing"
+  | "colours"
+  | "appearance"
+  | "advanced";
+
+const SECTION_TITLES: Readonly<Record<FieldSection, MessageKey>> = {
+  text: "editPanel.section.text",
+  image: "editPanel.section.image",
+  link: "editPanel.section.link",
+  items: "editPanel.section.items",
+  spacing: "editPanel.section.spacing",
+  colours: "editPanel.section.colours",
+  appearance: "editPanel.section.appearance",
+  advanced: "editPanel.section.advanced",
+};
+
+/** The group field `field` is in: its own, else by its kind. */
+function sectionOf(field: EditPanelField): FieldSection {
+  if (field.section !== undefined) return field.section;
+  if (field.group === "advanced") return "advanced";
+  switch (field.kind) {
+    case "image":
+      return "image";
+    case "link":
+      return "link";
+    case "list":
+      return "items";
+    case "box":
+    case "spacing":
+      return "spacing";
+    case "color":
+      return "colours";
+    case "select":
+    case "slider":
+    case "toggle":
+      return field.group === "content" ? "text" : "appearance";
+    default:
+      return "text";
+  }
+}
+
+/** `fields` by group, in the order each group's first field comes. */
+function sectionsOf(fields: readonly EditPanelField[]) {
+  const sections = new Map<FieldSection, EditPanelField[]>();
+  for (const field of fields) {
+    const section = sectionOf(field);
+    sections.set(section, [...(sections.get(section) ?? []), field]);
+  }
+  return [...sections].map(([section, inIt]) => ({ section, fields: inIt }));
+}
+
+type FieldListProps = Omit<EditPanelProps, "heading" | "fields"> & {
+  readonly idPrefix: string;
+  readonly fields: readonly EditPanelField[];
+  readonly query?: string;
+  /** The groups shown closed. */
+  readonly closed: ReadonlySet<FieldSection>;
+  onToggle(section: FieldSection): void;
+  /** Opens every group, or closes them all if all are open (Ctrl/Cmd + Enter). */
+  onToggleAll(sections: readonly FieldSection[]): void;
+};
+
 function FieldList({
   idPrefix,
   fields,
@@ -136,7 +207,10 @@ function FieldList({
   onReset,
   onResetToDefault,
   query = "",
-}: Omit<EditPanelProps, "heading"> & { readonly idPrefix: string; readonly query?: string }) {
+  closed,
+  onToggle,
+  onToggleAll,
+}: FieldListProps) {
   if (fields.length === 0) {
     return (
       <p className="p-3 text-xs text-muted-foreground">
@@ -144,52 +218,152 @@ function FieldList({
       </p>
     );
   }
+  const sections = sectionsOf(fields);
+  const all = sections.map(({ section }) => section);
   return (
-    <div className="flex flex-col gap-3 p-3">
-      {fields.map((field) => {
-        const Renderer = rendererFor(field.kind) as FieldRenderer;
-        const id = `${idPrefix}-${field.name}`;
-        const labelId = `${id}-label`;
-        const resetField =
-          field.changed === true && onResetToDefault !== undefined
-            ? () => onResetToDefault([field.name])
+    <div className="flex flex-col pb-2">
+      {sections.map(({ section, fields: inSection }) => {
+        // Searching shows every group with a match open.
+        const open = query !== "" || !closed.has(section);
+        const changed = inSection.filter((field) => field.changed === true);
+        const resetGroup =
+          changed.length > 0 && onResetToDefault !== undefined
+            ? () =>
+                onResetToDefault(
+                  changed.map((field) => field.name),
+                  t(SECTION_TITLES[section]).toLocaleLowerCase(),
+                )
             : undefined;
+        const bodyId = `${idPrefix}-section-${section}`;
         return (
-          <ContextMenu key={field.name}>
-            <ContextMenuTrigger asChild>
-              <div className="flex flex-col gap-1" data-field={field.name}>
-                <div className="flex items-center gap-1.5">
-                  <label id={labelId} htmlFor={id} className="text-xs text-muted-foreground">
-                    {field.label}
-                  </label>
-                  {field.responsive === true || field.overridden === true ? (
-                    <DeviceDot
-                      label={field.label}
-                      device={device ?? ""}
-                      overridden={field.overridden === true}
-                      onClear={onReset === undefined ? undefined : () => onReset(field.name)}
-                    />
-                  ) : null}
-                </div>
-                <Renderer
-                  id={id}
-                  labelId={labelId}
-                  field={field}
-                  value={field.value}
-                  onChange={(value) => onChange(field.name, value)}
-                  onCommit={() => onCommit(field.name)}
-                />
+          <div key={section} className="border-b border-border">
+            <ContextMenu>
+              <ContextMenuTrigger asChild>
+                <button
+                  id={`${bodyId}-title`}
+                  type="button"
+                  aria-expanded={open}
+                  aria-controls={open ? bodyId : undefined}
+                  className={cn(
+                    "flex h-7 w-full items-center gap-1 px-2 text-left text-xs font-semibold",
+                    "hover:bg-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
+                    changed.length > 0 ? "text-ring" : "text-foreground",
+                  )}
+                  data-changed={changed.length > 0 ? "" : undefined}
+                  onClick={() => onToggle(section)}
+                  onKeyDown={(event) => {
+                    if (!(event.ctrlKey || event.metaKey)) return;
+                    // Ctrl/Cmd + Enter opens or closes every group, Ctrl/Cmd + Esc resets this one
+                    // (F-ED-27, UX-13).
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      onToggleAll(all);
+                    } else if (event.key === "Escape" && resetGroup !== undefined) {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      resetGroup();
+                    }
+                  }}
+                >
+                  <ChevronRightIcon
+                    aria-hidden
+                    className={cn("size-3.5 shrink-0 transition-transform", open && "rotate-90")}
+                  />
+                  {t(SECTION_TITLES[section])}
+                </button>
+              </ContextMenuTrigger>
+              <ContextMenuContent>
+                <ContextMenuItem disabled={resetGroup === undefined} onSelect={resetGroup}>
+                  {t("editPanel.resetGroup")}
+                </ContextMenuItem>
+                <ContextMenuItem onSelect={() => onToggleAll(all)}>
+                  {all.every((each) => !closed.has(each))
+                    ? t("editPanel.collapseAll")
+                    : t("editPanel.expandAll")}
+                </ContextMenuItem>
+              </ContextMenuContent>
+            </ContextMenu>
+            {open ? (
+              <div id={bodyId} className="flex flex-col gap-3 px-3 pt-1 pb-3">
+                {inSection.map((field) => (
+                  <FieldRow
+                    key={field.name}
+                    idPrefix={idPrefix}
+                    field={field}
+                    onChange={onChange}
+                    onCommit={onCommit}
+                    device={device}
+                    onReset={onReset}
+                    onResetToDefault={onResetToDefault}
+                  />
+                ))}
               </div>
-            </ContextMenuTrigger>
-            <ContextMenuContent>
-              <ContextMenuItem disabled={resetField === undefined} onSelect={resetField}>
-                {t("editPanel.resetField")}
-              </ContextMenuItem>
-            </ContextMenuContent>
-          </ContextMenu>
+            ) : null}
+          </div>
         );
       })}
     </div>
+  );
+}
+
+/** One field: its label, its per-device dot, and its renderer, with a menu to reset it. */
+function FieldRow({
+  idPrefix,
+  field,
+  onChange,
+  onCommit,
+  device,
+  onReset,
+  onResetToDefault,
+}: {
+  readonly idPrefix: string;
+  readonly field: EditPanelField;
+  readonly onChange: EditPanelProps["onChange"];
+  readonly onCommit: EditPanelProps["onCommit"];
+  readonly device: string | undefined;
+  readonly onReset: EditPanelProps["onReset"] | undefined;
+  readonly onResetToDefault: EditPanelProps["onResetToDefault"] | undefined;
+}) {
+  const Renderer = rendererFor(field.kind) as FieldRenderer;
+  const id = `${idPrefix}-${field.name}`;
+  const labelId = `${id}-label`;
+  const resetField =
+    field.changed === true && onResetToDefault !== undefined
+      ? () => onResetToDefault([field.name])
+      : undefined;
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        <div className="flex flex-col gap-1" data-field={field.name}>
+          <div className="flex items-center gap-1.5">
+            <label id={labelId} htmlFor={id} className="text-xs text-muted-foreground">
+              {field.label}
+            </label>
+            {field.responsive === true || field.overridden === true ? (
+              <DeviceDot
+                label={field.label}
+                device={device ?? ""}
+                overridden={field.overridden === true}
+                onClear={onReset === undefined ? undefined : () => onReset(field.name)}
+              />
+            ) : null}
+          </div>
+          <Renderer
+            id={id}
+            labelId={labelId}
+            field={field}
+            value={field.value}
+            onChange={(value) => onChange(field.name, value)}
+            onCommit={() => onCommit(field.name)}
+          />
+        </div>
+      </ContextMenuTrigger>
+      <ContextMenuContent>
+        <ContextMenuItem disabled={resetField === undefined} onSelect={resetField}>
+          {t("editPanel.resetField")}
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
   );
 }
 
@@ -212,6 +386,20 @@ export function EditPanel({
   const idPrefix = useId();
   // The search field's text (UX-13): the fields whose name has it are shown.
   const [query, setQuery] = useState("");
+  // The groups the person closed (UX-13); all open at first, and kept from element to element.
+  const [closed, setClosed] = useState<ReadonlySet<FieldSection>>(() => new Set());
+  const toggle = (section: FieldSection) =>
+    setClosed((current) => {
+      const next = new Set(current);
+      if (!next.delete(section)) next.add(section);
+      return next;
+    });
+  const toggleAll = (sections: readonly FieldSection[]) =>
+    setClosed((current) =>
+      sections.every((section) => !current.has(section))
+        ? new Set([...current, ...sections])
+        : new Set([...current].filter((section) => !sections.includes(section))),
+    );
   if (heading === undefined) {
     return (
       <p className="flex h-full items-center justify-center p-4 text-center text-xs text-muted-foreground">
@@ -261,6 +449,9 @@ export function EditPanel({
         onCommit={onCommit}
         device={device}
         query={wanted}
+        closed={closed}
+        onToggle={toggle}
+        onToggleAll={toggleAll}
         {...(onResetToDefault === undefined ? {} : { onResetToDefault })}
         {...(onReset === undefined ? {} : { onReset })}
       />
