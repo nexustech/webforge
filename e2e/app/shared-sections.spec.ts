@@ -1,4 +1,4 @@
-import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { type ElectronApplication, expect, type Locator, type Page, test } from "@playwright/test";
 import { type Box, below, boxOf, drag } from "./drag.js";
 import { launchDesktopApp } from "./launch.js";
 
@@ -36,21 +36,26 @@ async function editMenu(name: string | RegExp): Promise<void> {
   await page.getByRole("menuitem", { name }).click();
 }
 
+/** Waits until `target` stays where it is: Puck animates the canvas, and redraws a saved section. */
+async function settled(target: Locator): Promise<void> {
+  let last = "";
+  await expect
+    .poll(async () => {
+      const box = JSON.stringify(await target.boundingBox());
+      const still = box === last;
+      last = box;
+      return still;
+    })
+    .toBe(true);
+}
+
 /**
  * Selects the first Section by clicking its bottom padding, once the canvas has finished resizing
  * to the device view (Puck animates it).
  */
 async function selectSection(): Promise<void> {
   const section = canvas().locator(".site-section").first();
-  let last = "";
-  await expect
-    .poll(async () => {
-      const box = JSON.stringify(await section.boundingBox());
-      const settled = box === last;
-      last = box;
-      return settled;
-    })
-    .toBe(true);
+  await settled(section);
   const box = await section.boundingBox();
   if (box === null) throw new Error("Section not visible");
   await section.click({ force: true, position: { x: 10, y: box.height - 16 } });
@@ -197,6 +202,11 @@ test("Ctrl/Cmd+Shift-drag of a copy places another linked copy; Ctrl/Cmd-drag a 
   await expect(steps().first()).toHaveText("Saved 'Welcome' as a shared section");
   const sections = canvas().locator(".site-section");
   const first = sections.first();
+  // The section is shown again as a linked copy: grabbed only once it is drawn and still.
+  await expect(banner()).toHaveText(
+    "Editing shared section 'Welcome': changes apply to 1 copy on 1 page",
+  );
+  await settled(first);
 
   // Dragged with Ctrl/Cmd+Shift onto its own lower edge: another linked copy, after it.
   await page.keyboard.down("ControlOrMeta");
