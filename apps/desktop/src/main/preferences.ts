@@ -57,6 +57,7 @@ export function parsePreferences(raw: unknown): Preferences {
     panelLayout: field("panelLayout"),
     window: field("window"),
     canvas: field("canvas"),
+    add: field("add"),
   };
 }
 
