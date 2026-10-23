@@ -283,8 +283,15 @@ test("places a Media image on the Hero from the Edit panel, shows it on the canv
   await expect(canvas.locator("style[data-webforge-site-css]")).toHaveCount(1, { timeout: 30_000 });
   await canvas.locator("h1").click();
 
-  await page.getByRole("button", { name: "Image Choose an image…" }).click();
-  await page.getByRole("button", { name: "Shop front.jpg" }).click();
+  // The picker dialog (UX-15): found by its alt text, chosen with Enter, focus back on the field.
+  const field = page.getByRole("button", { name: "Image Choose an image…" });
+  await field.click();
+  const picker = page.getByRole("dialog", { name: "Choose an image" });
+  await page.keyboard.type("shop front");
+  await expect(picker.getByRole("option")).toHaveText(["Shop front.jpg"]);
+  await page.keyboard.press("Enter");
+  await expect(picker).toBeHidden();
+  await expect(page.getByRole("button", { name: "Image Change image…" })).toBeFocused();
   // The canvas shows the photo through the webforge-media: scheme, with its alt text.
   const shown = canvas.locator("img");
   await expect(shown).toHaveAttribute("alt", "Our shop front");

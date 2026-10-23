@@ -683,7 +683,7 @@ describe("EditPanelHost", () => {
         // The image is content, like the Hero's texts.
         await user.click(screen.getByRole("tab", { name: "Content" }));
         await user.click(screen.getByRole("button", { name: "Image Choose an image…" }));
-        await user.click(screen.getByRole("button", { name: "shop.jpg" }));
+        await user.dblClick(screen.getByRole("option", { name: "shop.jpg" }));
         const alt = screen.getByLabelText("Alt text here");
         await user.type(alt, "Fresh");
         fireEvent.blur(alt);
