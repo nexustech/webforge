@@ -1,5 +1,6 @@
 import { t } from "@webforge/i18n";
 import { imageValueSchema } from "@webforge/model";
+import { defineComponent } from "../define.js";
 import {
   boxClasses,
   type ComponentDef,
@@ -14,7 +15,7 @@ import { MARGIN_FIELD, marginClasses, PADDING_FIELD, SECTION_PADDING } from "./b
 const ALIGNMENTS = ["centre", "left"] as const;
 
 /** The large opening section of a page: title, short text, a button and an optional image. */
-export const hero: ComponentDef = {
+const hero = defineComponent({
   label: t("section.hero"),
   place: "section",
   category: t("category.heroes"),
@@ -73,10 +74,10 @@ export const hero: ComponentDef = {
       </section>
     );
   },
-};
+});
 
 /** Questions and answers. Each item is a native `<details>`, so it works without JavaScript. */
-export const faq: ComponentDef = {
+const faq = defineComponent({
   label: t("section.faq"),
   place: "section",
   category: t("category.questions"),
@@ -97,10 +98,10 @@ export const faq: ComponentDef = {
       </div>
     );
   },
-};
+});
 
 /** One question of an FAQ. */
-export const faqItem: ComponentDef = {
+const faqItem = defineComponent({
   label: t("element.faqItem"),
   place: "child",
   fields: {
@@ -114,4 +115,11 @@ export const faqItem: ComponentDef = {
       <div className="collapse-content [&_p+p]:mt-2">{textValue(values.answer)}</div>
     </details>
   ),
+});
+
+/** Ready-made sections: a Hero, and an FAQ with its questions. */
+export const sectionsComponents: Readonly<Record<string, ComponentDef>> = {
+  Hero: hero,
+  Faq: faq,
+  FaqItem: faqItem,
 };

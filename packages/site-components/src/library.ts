@@ -71,6 +71,11 @@ export type FieldDef = {
       readonly label: string;
       /** Component types that may be dropped into the slot; all if omitted. */
       readonly allow?: readonly string[];
+      /**
+       * The place whose components the slot holds (a Section's: `element`); `createLibrary` lists
+       * them in `allow`, so a new element goes into sections without each slot naming it.
+       */
+      readonly accepts?: ComponentPlace;
     }
   /**
    * An image from the site's Media, stored as an `ImageValue`: `{ mediaId, alt? }`, where `alt`
@@ -206,8 +211,11 @@ export type ComponentRenderProps = {
   readonly context: RenderContext;
 };
 
-/** Names of the scripts in `webforge.js` that components can need on the exported site. */
-export type BehaviourName = "menu";
+/**
+ * The name of a script in `webforge.js` that components can need on the exported site: a file of
+ * `behaviours/` without `.js` ("menu"). `defineComponent` checks that it exists.
+ */
+export type BehaviourName = string;
 
 /**
  * Where a component goes (F-ED-1, ADR 0005): a `section` is a band of the page, at its top level;
@@ -215,7 +223,7 @@ export type BehaviourName = "menu";
  * added to a page; a `child` exists only inside its own parent (an FAQ's questions). Only sections
  * and elements are offered in the Add panel.
  */
-type ComponentPlace = "section" | "element" | "layout" | "child";
+export type ComponentPlace = "section" | "element" | "layout" | "child";
 
 /** A section or element users can add to a page. */
 export type ComponentDef = {

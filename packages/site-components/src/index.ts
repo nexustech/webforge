@@ -1,9 +1,12 @@
 export { BEHAVIOUR_SCRIPTS } from "./behaviours.js";
-export { siteLibrary, starterLayout, starterNotFoundPage, starterPage } from "./catalogue.js";
+export { siteLibrary, starterLayout, starterNotFoundPage, starterPage } from "./catalogue/index.js";
+export type { ComponentSpec } from "./define.js";
+export { createLibrary, defineComponent } from "./define.js";
 export type {
   BehaviourName,
   ComponentDef,
   ComponentLibrary,
+  ComponentPlace,
   ComponentRenderProps,
   FieldDef,
   FieldOption,

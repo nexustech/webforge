@@ -1,26 +1,22 @@
 import { t } from "@webforge/i18n";
 import type { LayoutDoc, PageDoc } from "@webforge/model";
-import { heading, section, text } from "./components/basic.js";
-import { footer, header } from "./components/layout.js";
-import { faq, faqItem, hero } from "./components/sections.js";
-import type { ComponentLibrary } from "./library.js";
+import { createLibrary } from "../define.js";
+import type { ComponentLibrary } from "../library.js";
+import { basicComponents } from "./basic.js";
+import { layoutComponents } from "./layout.js";
+import { sectionsComponents } from "./sections.js";
 
 /**
- * Webforge's site components (daisyUI 5 markup). The MVP catalogue (spec/02 §3) grows from here.
- * Header and Footer live in the shared layout (C5); the rest go on pages.
+ * Webforge's site components (daisyUI 5 markup), one module per family: the MVP catalogue
+ * (spec/02 §3) grows by adding a module here, which keeps streams adding components from
+ * touching one file. Header and Footer live in the shared layout (C5); the rest go on pages.
+ * `docs/components.md` describes how to write one.
  */
-export const siteLibrary: ComponentLibrary = {
-  components: {
-    Header: header,
-    Footer: footer,
-    Section: section,
-    Hero: hero,
-    Faq: faq,
-    FaqItem: faqItem,
-    Heading: heading,
-    Text: text,
-  },
-};
+export const siteLibrary: ComponentLibrary = createLibrary(
+  layoutComponents,
+  basicComponents,
+  sectionsComponents,
+);
 
 /** The page a new site starts with. */
 export function starterPage(): PageDoc {
