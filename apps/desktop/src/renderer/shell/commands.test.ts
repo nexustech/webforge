@@ -164,6 +164,31 @@ describe("shortcuts", () => {
     ).toBe(true);
   });
 
+  it("matches a letter with Option on a Mac by the key's place, as Option changes the character", () => {
+    // ⌘⌥B types ∫ on a Mac keyboard.
+    expect(
+      matchesShortcut(
+        key({ key: "∫", code: "KeyB", metaKey: true, altKey: true }),
+        "Mod+Alt+B",
+        true,
+      ),
+    ).toBe(true);
+    expect(
+      matchesShortcut(
+        key({ key: "∫", code: "KeyB", metaKey: true, altKey: true }),
+        "Mod+Alt+C",
+        true,
+      ),
+    ).toBe(false);
+    // Without Alt the character decides, so other layouts keep their letters.
+    expect(matchesShortcut(key({ key: "z", code: "KeyY", ctrlKey: true }), "Mod+Z", false)).toBe(
+      true,
+    );
+    expect(matchesShortcut(key({ key: "z", code: "KeyY", ctrlKey: true }), "Mod+Y", false)).toBe(
+      false,
+    );
+  });
+
   it("matches symbols and digits with whatever Shift the keyboard layout needs", () => {
     // `?` is Shift+/ on a US keyboard; Ctrl+Shift+= or the keypad's + make `+`.
     expect(matchesShortcut(key({ key: "?", shiftKey: true }), "?", false)).toBe(true);
@@ -338,6 +363,29 @@ describe("shortcuts", () => {
         expect(run).toHaveBeenCalledOnce();
       } finally {
         text.remove();
+      }
+    });
+
+    it("runs no command, Mod keys included, from inside an open dialog", () => {
+      const registry = withKeys({ duplicate: { keys: ["Mod+D"] } });
+      const run = vi.fn();
+      registry.register({ id: "duplicate", label: "Duplicate", run });
+      remove = installCommandShortcuts(window, registry);
+      const ctrl = !isMac();
+      const dialog = document.createElement("div");
+      dialog.setAttribute("role", "dialog");
+      const inDialog = document.createElement("p");
+      dialog.append(inDialog);
+      document.body.append(dialog);
+      try {
+        inDialog.dispatchEvent(key({ key: "d", ctrlKey: ctrl, metaKey: !ctrl, bubbles: true }));
+        expect(run).not.toHaveBeenCalled();
+        document.body.dispatchEvent(
+          key({ key: "d", ctrlKey: ctrl, metaKey: !ctrl, bubbles: true }),
+        );
+        expect(run).toHaveBeenCalledOnce();
+      } finally {
+        dialog.remove();
       }
     });
 

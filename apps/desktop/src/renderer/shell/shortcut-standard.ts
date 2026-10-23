@@ -91,6 +91,9 @@ export const COMMAND_SHORTCUTS: Readonly<Record<string, StandardShortcut>> = {
   [COMMAND_IDS.toggleLeftPanels]: { group: "view", keys: ["Mod+Alt+B"] },
   [COMMAND_IDS.toggleDrawer]: { group: "view", keys: ["Mod+J"] },
   [COMMAND_IDS.shortcuts]: { group: "view", keys: ["?"] },
+  // Kept for the Edit panel's groups (1.36): open or close them all, and reset an option.
+  [COMMAND_IDS.toggleGroups]: { group: "edit", keys: ["Mod+Enter"] },
+  [COMMAND_IDS.resetOption]: { group: "edit", keys: ["Mod+Escape"] },
 };
 
 /** A shortcut that isn't a command's: something else handles its keys, so only the sheet lists it. */
@@ -117,6 +120,7 @@ export const OTHER_SHORTCUTS: readonly OtherShortcut[] = [
   { label: "shortcuts.layersOpen", group: "layers", keys: ["ArrowRight", "ArrowLeft"] },
   { label: "shortcuts.layersParent", group: "layers", keys: ["Mod+ArrowUp"] },
   { label: "shortcuts.layersChild", group: "layers", keys: ["Mod+ArrowDown"] },
+  { label: "shortcuts.layersSibling", group: "layers", keys: ["Mod+ArrowLeft", "Mod+ArrowRight"] },
   {
     label: "shortcuts.layersMove",
     group: "layers",

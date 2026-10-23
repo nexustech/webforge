@@ -105,6 +105,7 @@ export const shell = {
   "shortcuts.layersOpen": "Open or close a layer",
   "shortcuts.layersParent": "Select the parent",
   "shortcuts.layersChild": "Select the first child",
+  "shortcuts.layersSibling": "Select the previous or next sibling",
   "shortcuts.layersMove": "Move up or down",
   "shortcuts.layersRename": "Rename",
   "shortcuts.layersDelete": "Delete",

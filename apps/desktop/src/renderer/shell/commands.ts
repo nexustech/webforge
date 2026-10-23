@@ -222,7 +222,20 @@ function parseShortcut(shortcut: string): ParsedShortcut {
   };
 }
 
-type KeyInfo = Pick<KeyboardEvent, "key" | "ctrlKey" | "metaKey" | "altKey" | "shiftKey">;
+type KeyInfo = Pick<KeyboardEvent, "key" | "ctrlKey" | "metaKey" | "altKey" | "shiftKey"> &
+  Partial<Pick<KeyboardEvent, "code">>;
+
+/**
+ * The letter a key press with Alt is for. On a Mac, Option changes the character (⌥B types `∫`),
+ * so a letter shortcut with Alt matches the key's place (`KeyB`) when the character isn't a letter.
+ */
+function letterOf(event: KeyInfo): string {
+  const key = event.key.toLowerCase();
+  if (event.altKey && !/^[a-z]$/.test(key) && /^Key[A-Z]$/.test(event.code ?? "")) {
+    return (event.code ?? "").slice(3).toLowerCase();
+  }
+  return key;
+}
 
 /**
  * Whether `key` is a symbol or a digit: which Shift it needs depends on the keyboard layout (`?` is
@@ -236,7 +249,7 @@ export function matchesShortcut(event: KeyInfo, shortcut: string, mac = isMac())
   const mod = mac ? event.metaKey : event.ctrlKey;
   const otherMod = mac ? event.ctrlKey : event.metaKey;
   return (
-    event.key.toLowerCase() === parsed.key &&
+    (event.key.toLowerCase() === parsed.key || letterOf(event) === parsed.key) &&
     mod === parsed.mod &&
     !otherMod &&
     (event.shiftKey === parsed.shift || (isSymbol(parsed.key) && !parsed.shift)) &&
@@ -322,6 +335,12 @@ const CONTROL_ROLES: ReadonlySet<string> = new Set([
   "treeitem",
 ]);
 
+/** Whether `target` is inside an open dialog. Duck-typed, as in {@link isFocusedControl}. */
+function isInDialog(target: EventTarget | null): boolean {
+  const element = target as { closest?: (selector: string) => unknown } | null;
+  return element?.closest?.('[role="dialog"], [role="alertdialog"]') != null;
+}
+
 /**
  * Whether a key press goes to a control that uses plain keys itself: a field, editable text, a
  * button, a list, a menu or a slider. A focused element that is only selectable (such as the
@@ -378,7 +397,9 @@ function isForText(target: Window, event: KeyboardEvent): boolean {
  */
 export function installCommandShortcuts(target: Window, registry: CommandRegistry): () => void {
   const onKeyDown = (event: KeyboardEvent) => {
-    if (event.defaultPrevented || event.repeat) {
+    // In a dialog (the sheet, Link, Rename) no command runs: the page behind it must not change,
+    // and Mod keys such as Mod+D would change it.
+    if (event.defaultPrevented || event.repeat || isInDialog(event.target)) {
       return;
     }
     const inControl = isFocusedControl(event.target);

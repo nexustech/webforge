@@ -203,6 +203,33 @@ describe("registerElementCommands (1.30, F-ED-25, F-ED-27)", () => {
     expect(session.ui.getState().nodeId).toBe("a");
   });
 
+  it("gives the second half its component's default for its other texts (a new FAQ question)", () => {
+    const { session, engine } = setUp();
+    session.history.run("Set up", (draft) => {
+      const content = draft.pages[draft.homePageId]?.doc.content[0]?.props.content as NodeDoc[];
+      content.push({
+        type: "FaqItem",
+        props: { id: "q1", question: "When are you open?", answer: "<p>Daily. Not Sundays.</p>" },
+      });
+    });
+    session.ui.setState({ nodeId: "q1" });
+
+    engine.splitText({
+      nodeId: "q1",
+      field: "answer",
+      before: "<p>Daily.</p>",
+      after: "<p>Not Sundays.</p>",
+    });
+
+    const items = ((currentPage(session)?.doc.content[0]?.props.content ?? []) as NodeDoc[]).slice(
+      1,
+    );
+    expect(items.map((item) => [item.props.question, item.props.answer])).toEqual([
+      ["When are you open?", "<p>Daily.</p>"],
+      [siteLibrary.components.FaqItem?.defaults.question, "<p>Not Sundays.</p>"],
+    ]);
+  });
+
   it("splits only the page's own text, and nothing in Content mode, saying why (F-ED-27)", () => {
     const { session, engine, commands, notify, labels } = setUp();
 

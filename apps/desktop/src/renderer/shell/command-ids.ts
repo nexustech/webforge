@@ -14,6 +14,8 @@ export const COMMAND_IDS = {
   publish: "site.publish",
   saveVersion: "site.saveVersion",
   pasteLinked: "edit.pasteLinked",
+  toggleGroups: "edit.toggleGroups",
+  resetOption: "edit.resetOption",
   commandBox: "view.commandBox",
   zoomIn: "view.zoomIn",
   zoomOut: "view.zoomOut",

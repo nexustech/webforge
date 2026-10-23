@@ -155,6 +155,16 @@ test("in rich text: Mod+K links, Shift+Space types a non-breaking space, Alt+Ent
     "Tell visitors what you do and why they will love it.",
   );
   await page.keyboard.press("Escape");
+  // The first editor, left, keeps its half: it doesn't write its old text back.
+  await expect(canvas().locator(".site-text").first()).toHaveText("Open\u00a0");
+  const left = page.getByRole("region", { name: "Left panels" });
+  await left.getByRole("tab", { name: "Undo History" }).click();
+  await expect(page.locator(".undo-history__step").first()).toHaveText("Split Text");
+
+  // One step: undo joins it again, with what was typed.
   await page.keyboard.press("ControlOrMeta+z");
   await expect(canvas().locator(".site-text")).toHaveCount(1);
+  await expect(canvas().locator(".site-text")).toHaveText(
+    "Open\u00a0Tell visitors what you do and why they will love it.",
+  );
 });

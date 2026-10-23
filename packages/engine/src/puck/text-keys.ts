@@ -56,7 +56,7 @@ export function createTextKeys(handlers: TextKeyHandlers) {
     name: "webforgeTextKeys",
     addKeyboardShortcuts() {
       return {
-        "Shift-Space": ({ editor }) => editor.commands.insertContent(" "),
+        "Shift-Space": ({ editor }) => editor.commands.insertContent("\u00a0"),
         "Mod-k": ({ editor }) => {
           const pick = handlers.pickLink();
           // Without text selected or a link to change, there's nothing to link: the key is still

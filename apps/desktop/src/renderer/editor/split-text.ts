@@ -7,7 +7,9 @@ import { shownLayout } from "./shared-layout.js";
 /**
  * Splits rich text in two at the caret (Alt + Enter, F-ED-27), as one step ("Split Text"): the
  * element keeps what came before the caret, and a copy of it, with ids and anchors of its own,
- * takes what came after, just after it. The copy is selected. Only the page's own elements split:
+ * takes what came after, just after it. The copy's other texts start as the component's defaults
+ * (a FAQ question split in its answer gets a new question, not the same one again). The copy is
+ * selected. Only the page's own elements split:
  * one in the shared Header or Footer, or inside a linked copy, is shown on other pages too, so
  * `notify` says why not. Returns the copy's id, or undefined if nothing was split.
  */
@@ -30,7 +32,17 @@ export function splitText(
   if (copy === undefined) {
     return undefined;
   }
-  const after = { ...copy, props: { ...copy.props, [split.field]: split.after } };
+  const fields = session.library.components[node.type]?.fields ?? {};
+  const defaults = session.library.components[node.type]?.defaults ?? {};
+  const otherTexts = Object.entries(fields)
+    .filter(
+      ([name, def]) => name !== split.field && (def.kind === "text" || def.kind === "richtext"),
+    )
+    .map(([name]) => [name, defaults[name]] as const);
+  const after = {
+    ...copy,
+    props: { ...copy.props, ...Object.fromEntries(otherTexts), [split.field]: split.after },
+  };
   const kind = session.library.components[node.type]?.label ?? node.type;
   const name = node.props.layerName;
   const item = layerItem({ kind, name: typeof name === "string" ? name : undefined });

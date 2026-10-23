@@ -71,7 +71,7 @@ describe("text keys (F-ED-27)", () => {
 
     editor.commands.keyboardShortcut("Shift-Space");
 
-    expect(editor.getText()).toBe("10 am");
+    expect(editor.getText()).toBe("10\u00a0am");
   });
 
   it("asks for a link on Mod+K with text selected, and keeps the key from the palette either way", () => {
