@@ -124,7 +124,8 @@ test.afterAll(async () => {
     child.kill();
     await exited;
   }
-  rmSync(siteDir, { recursive: true, force: true });
+  // On Windows the app's helper processes can hold the folder for a moment after it exits.
+  rmSync(siteDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
 });
 
 test("ships every catalogue font beside app.asar, byte for byte, within the font budget (2.2)", () => {
