@@ -82,6 +82,20 @@ export const panels = {
   "layers.history.unnamed": "Removed the name of {item}",
   "layers.history.hid": "Hid {item}",
   "layers.history.showed": "Showed {item}",
+  // Layers tools (1.35): the tree, its filter and what a drag may drop where.
+  "layers.expand": "Expand {item}",
+  "layers.collapse": "Collapse {item}",
+  "layers.expandAll": "Expand all",
+  "layers.collapseAll": "Collapse all",
+  "layers.filter": "Filter layers",
+  "layers.filterPlaceholder": "Filter by name or kind",
+  "layers.noMatches": "No layers match",
+  "layers.dropNotAllowed": "{item} can only move among its own section's elements",
+  "layers.locked": "Locked: it can't be moved or deleted",
+  "layers.animated": "Animated",
+  // The element's right-click menu, on the canvas and in Layers (1.35).
+  "elementMenu.label": "Element actions",
+  "elementMenu.renameTitle": "Rename {item}",
 
   // Links (F-ED-18): the link field and dialog.
   "link.none": "No link",
