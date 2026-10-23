@@ -58,6 +58,7 @@ describe("createFontResponder (2.2)", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toBe("font/woff2");
     expect(response.headers.get("access-control-allow-origin")).toBe("*");
+    expect(response.headers.get("x-content-type-options")).toBe("nosniff");
     expect(new Uint8Array(await response.arrayBuffer())).toEqual(bytes);
     expect(reader.read).toHaveBeenCalledWith(expect.objectContaining({ sha256: inter?.sha256 }));
   });
@@ -66,6 +67,12 @@ describe("createFontResponder (2.2)", () => {
     for (const url of [
       "webforge-font://fonts/notes.txt",
       "webforge-font://fonts/../site.wforge",
+      "webforge-font://../../etc",
+      "webforge-font://fonts/../../etc/passwd",
+      "webforge-font://fonts/%2e%2e%2fsite.wforge",
+      "webforge-font://fonts/sub/inter-latin-wght-normal.woff2",
+      `webforge-font://fonts/${inter?.file}?x=1`,
+      "webforge-font://fonts/unknown-latin-400-normal.woff2",
       "webforge-font://other/inter-latin-wght-normal.woff2",
       // A catalogue file the reader can't vouch for.
       "webforge-font://fonts/lato-latin-400-normal.woff2",

@@ -50,13 +50,22 @@ export function createFontReader(dir: string): FontReader {
 }
 
 /**
- * Answers `webforge-font://fonts/<file>` for the canvas (2.2) with a catalogue font's bytes. Fonts
- * load in CORS mode, so the answer allows any origin; nothing but the catalogue's files is served.
+ * The only URLs the scheme answers: a catalogue file's name, as the catalogue's schema allows it.
+ * The raw URL is matched, never a parsed one: parsing would resolve `..` before any check saw it.
+ */
+const FONT_URL = /^webforge-font:\/\/fonts\/([a-z0-9-]+\.woff2)$/;
+
+/**
+ * Answers `webforge-font://fonts/<file>` for the canvas (2.2), as `webforge-media:` answers Media
+ * images: never by path, only a file the catalogue lists by name, and only bytes the reader has
+ * checked against it. Fonts load in CORS mode, so the answer allows any origin: the canvas's page
+ * is a `file:` one, whose origin is `null`, and the fonts are the installer's own, which every site
+ * may use.
  */
 export function createFontResponder(reader: FontReader): (url: string) => Response {
   return (url) => {
-    const { host, pathname } = new URL(url);
-    const expected = host === "fonts" ? CATALOGUE_FILES.get(pathname.slice(1)) : undefined;
+    const name = FONT_URL.exec(url)?.[1];
+    const expected = name === undefined ? undefined : CATALOGUE_FILES.get(name);
     const data = expected === undefined ? undefined : reader.read(expected);
     if (data === undefined) {
       return new Response(null, { status: 404 });
@@ -65,7 +74,8 @@ export function createFontResponder(reader: FontReader): (url: string) => Respon
       headers: {
         "content-type": "font/woff2",
         "access-control-allow-origin": "*",
-        "cache-control": "max-age=31536000, immutable",
+        "cache-control": "private, max-age=31536000, immutable",
+        "x-content-type-options": "nosniff",
       },
     });
   };
