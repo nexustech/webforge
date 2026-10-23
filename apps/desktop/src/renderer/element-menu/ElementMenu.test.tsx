@@ -2,13 +2,15 @@
 import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { siteLibrary } from "@webforge/site-components";
+import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createEditorSession, currentPage } from "../editor/editor-session.js";
 import { createFakeEngine } from "../editor/fake-engine.test-helper.js";
 import { starterSite } from "../editor/starter-site.js";
+import type { Layer } from "../layers/layers.js";
 import { CommandRegistryProvider } from "../shell/command-context.js";
 import { createCommandRegistry } from "../shell/commands.js";
-import { CanvasElementMenu } from "./CanvasElementMenu.js";
+import { CanvasElementMenu, type CanvasElementMenuProps } from "./CanvasElementMenu.js";
 import { ELEMENT_MENU_COMMANDS, ElementMenu } from "./ElementMenu.js";
 
 afterEach(cleanup);
@@ -119,6 +121,12 @@ describe("ElementMenu (1.35)", () => {
   });
 });
 
+/** The menu with its rename dialog's state, as the editor keeps it. */
+function RenamingMenu(props: Omit<CanvasElementMenuProps, "renaming" | "onRenamingChange">) {
+  const [renaming, setRenaming] = useState<Layer | null>(null);
+  return <CanvasElementMenu {...props} renaming={renaming} onRenamingChange={setRenaming} />;
+}
+
 describe("CanvasElementMenu (1.35)", () => {
   function setUp() {
     const session = createEditorSession(siteLibrary, starterSite());
@@ -126,7 +134,7 @@ describe("CanvasElementMenu (1.35)", () => {
     const { commands } = registry({ save: true, detach: false });
     render(
       <CommandRegistryProvider registry={commands}>
-        <CanvasElementMenu engine={engine} session={session} />
+        <RenamingMenu engine={engine} session={session} />
       </CommandRegistryProvider>,
     );
     return { session, engine };

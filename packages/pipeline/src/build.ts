@@ -221,7 +221,7 @@ export async function buildSite(
 
   const markup = rendered.flatMap((entry) => [entry.header, entry.main, entry.footer]);
   const css = await buildSiteCss(resources, {
-    theme: site.theme.preset,
+    theme: site.theme,
     candidates: classCandidates([`<body class="${BODY_CLASS}">`, ...markup].join("\n")),
     fontsUrl: "../fonts/",
   });

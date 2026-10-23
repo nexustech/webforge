@@ -137,12 +137,26 @@ describe("LayersPanel (F-ED-12)", () => {
     ]);
     fireEvent.click(rows[2] as HTMLElement, { ctrlKey: true });
     fireEvent.click(rows[2] as HTMLElement, { metaKey: true });
-    // From the one shown (a) to c, as listed: the clicked one shown.
+    // From the last row clicked without Shift (b) to c, as listed: the clicked one shown.
     fireEvent.click(rows[3] as HTMLElement, { shiftKey: true });
 
     expect(actions.toggle.mock.calls).toEqual([["b"], ["b"]]);
-    expect(actions.selectMany.mock.calls).toEqual([[["c", "a", "b"]]]);
+    expect(actions.selectMany.mock.calls).toEqual([[["c", "b"]]]);
     expect(actions.select).not.toHaveBeenCalled();
+  });
+
+  it("keeps a Shift-click range's start on the last row clicked without Shift (#259 review)", () => {
+    const { actions } = setUp("s2");
+    const rows = screen.getAllByRole("treeitem");
+
+    fireEvent.click(rows[1] as HTMLElement);
+    fireEvent.click(rows[3] as HTMLElement, { shiftKey: true });
+    // From a again, not from c: the start stays where it was.
+    fireEvent.click(rows[2] as HTMLElement, { shiftKey: true });
+    fireEvent.click(rows[4] as HTMLElement, { ctrlKey: true });
+    fireEvent.click(rows[3] as HTMLElement, { shiftKey: true });
+
+    expect(actions.selectMany.mock.calls).toEqual([[["c", "a", "b"]], [["b", "a"]], [["c", "s2"]]]);
   });
 
   it("renames with F2 or a double-click; Enter keeps the name, Escape cancels", async () => {

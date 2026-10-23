@@ -182,6 +182,8 @@ export function LayersPanel({
   // Set when the menu's Rename was chosen: renaming starts once the menu has closed, so the name
   // field gets the focus and keeps it.
   const renamedFromMenu = useRef(false);
+  // Where a Shift-click range starts: the last row clicked without Shift, as in file managers.
+  const anchor = useRef<string | null>(null);
   const [menuAt, setMenuAt] = useState<MenuPoint | null>(null);
   const [drop, setDrop] = useState<{ id: string; after: boolean; allowed: boolean } | null>(null);
   // The row being dragged, in state too, so the rows it can't go to are marked while it moves.
@@ -357,11 +359,14 @@ export function LayersPanel({
                 )}
                 style={{ paddingLeft: `${(row.depth - 1) * 12 + 4}px` }}
                 onClick={(event) => {
+                  const start =
+                    rows.find((each) => each.layer.id === anchor.current) ?? selectedRow;
                   if (event.ctrlKey || event.metaKey) {
+                    anchor.current = layer.id;
                     actions.toggle(layer.id);
-                  } else if (event.shiftKey && selectedRow !== undefined) {
-                    // The rows from the one shown to this one, as they are listed (1.31).
-                    const from = rows.indexOf(selectedRow);
+                  } else if (event.shiftKey && start !== undefined) {
+                    // The rows from the anchor to this one, as they are listed (1.31).
+                    const from = rows.indexOf(start);
                     const to = rows.indexOf(row);
                     const range = rows.slice(Math.min(from, to), Math.max(from, to) + 1);
                     actions.selectMany([
@@ -369,6 +374,7 @@ export function LayersPanel({
                       ...range.map((each) => each.layer.id).filter((id) => id !== layer.id),
                     ]);
                   } else {
+                    anchor.current = layer.id;
                     actions.select(layer.id);
                   }
                 }}

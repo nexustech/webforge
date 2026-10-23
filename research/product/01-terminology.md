@@ -73,7 +73,7 @@
 | **Undo History** | Undo/redo step list (03 D3) | Photoshop "History"; prefix avoids a clash with Version History | History (alone) |
 | **Site Check** (**Must fix · Should fix · Tips**) | Issues panel (X5: errors / warnings / suggestions) | Friendly, non-alarming | Issues, Lint, Validation, Errors |
 | **Contact form** / **Form** | Form element + submission service (B3) | Universal | Form endpoint, Backend |
-| **Brand colours** | Primary/secondary/accent in the theme | Canva "Brand Kit" familiarity | Palette tokens. Colour roles in the UI (23 Oct 2026): **Brand** (daisyUI primary), **Accent** (secondary and accent), **Surface** (base-100/200/300), **Text** (base-content); the theme model keeps daisyUI's role names |
+| **Brand colours** | Primary/secondary/accent in the theme | Canva "Brand Kit" familiarity | Palette tokens. Colour roles in the UI (23 Oct 2026): **Brand** (daisyUI primary), **Accent** (secondary) and **Second accent** (accent), **Surface** (base-100/200/300), **Text** (base-content); the theme model keeps daisyUI's role names |
 
 ### Naming rules for UI text
 1. **Plain verbs:** Add, Edit, Move, Duplicate, Delete, Hide, Publish, Restore.

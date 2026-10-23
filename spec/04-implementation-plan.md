@@ -522,7 +522,7 @@ Media also takes PDF, Word, Excel, PowerPoint, OpenDocument, plain text and CSV 
 - [ ] `renderStatic` renders copies inline (unit test); export checks in 3.3 and 3.10
 
 **1.30 Selection tools, breadcrumbs and keyboard navigation** (added 22 Oct 2026, UI2/UI3)  
-Selection chip gains *Select parent*, *Edit* (text editing, or the image/icon picker) and *Hide*. Breadcrumb bar under the canvas toolbar (Page › Section › … › Element): click selects, hover outlines. Keyboard per F-ED-27: Mod + ↑/↓ parent/child, Mod + ←/→ siblings, Mod + Alt + ↑/↓ move, Enter edits text, Backspace empties and edits, F2 rename, Mod + / hide. Ctrl/Cmd-drag copies; Ctrl/Cmd + Shift-drag places another linked copy of a shared section (after 1.29).
+Selection chip gains *Select parent*, *Edit* (text editing, or the image/icon picker) and *Hide*. Breadcrumb bar under the canvas toolbar (Page › Section › … › Element): click selects, hover outlines. Keyboard per F-ED-27: Mod + ↑/↓ parent/child, Mod + ←/→ siblings, Mod + Alt + ↑/↓ move, Enter edits text, Backspace empties and edits, F2 rename, Mod + / hide. On an element with no text of its own, Backspace deletes it (the Mac's delete key sends Backspace), and Mod + Backspace deletes any selected element (decided 23 Oct 2026). Hide is offered only for elements that are layers. Ctrl/Cmd-drag copies; Ctrl/Cmd + Shift-drag places another linked copy of a shared section (after 1.29).
 
 - [ ] Every action works from the chip, the keyboard and Layers, and is one labelled undo step
 - [ ] Breadcrumbs follow the selection and select on click
@@ -559,10 +559,10 @@ Add panel: *Favourites* group (right-click *Add to Favourites*/*Remove*), *Recen
 - [ ] Palette is fully keyboard operable and axe-clean
 
 **1.35 Layers tools and the right-click menu** (added 22 Oct 2026, UI2/UI3)  
-Layers: valid/invalid drop feedback while dragging; indicators for shared (linked), hidden, animated and locked items; *Expand/Collapse all*; a filter field. The same right-click menu on Layers and the canvas: Rename, Duplicate, *Save as shared section* / *Detach*, *Select similar*, *Help for this element* (opens the help page), Delete.
+Layers: valid/invalid drop feedback while dragging; indicators for shared (linked), hidden, animated and locked items; *Expand/Collapse all*; a filter field. The same right-click menu on Layers and the canvas: Rename, Duplicate, *Save as shared section* / *Detach*, *Select similar*, Delete. *Help for this element* moved to 5.4 on 23 Oct 2026, with the help pages it opens. In Content mode the canvas doesn't open this menu (the browser's own menu, spelling included, appears instead) and Layers offers Rename only.
 
 - [ ] Invalid drop targets are shown before dropping
-- [ ] The menu is identical on the canvas and in Layers
+- [ ] The menu is identical on the canvas and in Layers in Design mode
 - [ ] Select similar selects all items of the same type on the page
 
 **1.36 Edit panel tools: reset, search, changed cue, per-device dots, scrubbing** (added 22 Oct 2026, UI2/UI3)  
@@ -574,7 +574,7 @@ Reset per field and per group (right-click, Mod + Esc); *Expand/Collapse all* (M
 - [ ] All controls keyboard operable
 
 **1.37 Colour picker, image picker, copy style and the undo list** (added 22 Oct 2026, UI2/UI3)  
-Colour field: theme colours with shades and opacity first (shades arrive with 2.1), custom colours only in Advanced or Theme Studio, inline contrast warning. Image picker dialog (site media grid, search, double-click to choose; stock photos tab in v1.1) as the shared picker pattern reused by the icon (2.9) and font (2.2) pickers. *Copy style* / *Paste style* between items of the same type (one undo step). A dropdown on the title-bar Undo button listing recent steps (jump).
+Colour field: theme colours with shades and opacity first (shades arrive with 2.1), a custom hex colour only in Advanced mode, stored on the field and marked off-theme (Theme Studio edits the theme's own colours), inline contrast warning by text size ([ADR 0009](../docs/adr/0009-colour-refs.md)). Image picker dialog (site media grid, search, double-click to choose; stock photos tab in v1.1) as the shared picker pattern reused by the icon (2.9) and font (2.2) pickers. *Copy style* / *Paste style* between items of the same type (one undo step). A dropdown on the title-bar Undo button listing recent steps (jump).
 
 - [ ] Colour choices stay on theme tokens unless Advanced
 - [ ] Picker dialogs share one component and keyboard behaviour
@@ -644,7 +644,7 @@ Shared files are split in 2.5 so that streams add files instead of editing the s
 <details><summary>Scope and acceptance criteria</summary>
 
 **2.1 Themes package: theme model → Tailwind/daisyUI CSS**  
-Theme model (colours, fonts, radius, spacing, type scale, button styles, light/dark variants) → Tailwind @theme + daisyUI theme CSS; live recompile on change; contrast calculation; 2–3 starter themes for development. The model's `theme` changes from a daisyUI theme name to these tokens, with a site-format migration and fixture (added 23 Oct 2026), and includes a shadow scale (F-DS-7).
+Theme model (colours, fonts, radius, spacing, type scale, button styles, and inverse colours for light or dark sections) → Tailwind @theme + daisyUI theme CSS; live recompile on change; contrast calculation; 2–3 starter themes for development. The model's `theme` changes from a daisyUI theme name to these tokens, with a site-format migration and fixture (added 23 Oct 2026), and includes a shadow scale (F-DS-7).
 
 - [ ] Switching theme restyles all components instantly
 - [ ] Contrast checker reports AA failures
@@ -966,7 +966,7 @@ Generate THIRD_PARTY_NOTICES at build; in-app 'Open-source licences' screen; inc
 - [ ] Every bundled dependency and font listed
 
 **5.4 Onboarding, help and keyboard shortcuts**  
-First-run welcome and short guided tour (pick template → edit text → change theme → preview → publish), contextual help links, keyboard shortcuts sheet, help content in glossary language.
+First-run welcome and short guided tour (pick template → edit text → change theme → preview → publish), contextual help links, keyboard shortcuts sheet, help content in glossary language. The Layers and canvas right-click menu's *Help for this element* (UX-24) lands here, opening each element type's help page (moved from 1.35 on 23 Oct 2026).
 
 - [ ] A new user can publish a template-based site in one session (usability test)
 

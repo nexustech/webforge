@@ -50,6 +50,17 @@ describe("the selection (1.31, UX-3)", () => {
     expect(selectedIds(ui.getState())).toEqual(["a", "b"]);
   });
 
+  it("lists each selected element once, whatever it is given (#259 review)", () => {
+    const ui = store();
+
+    ui.setState({ nodeId: "a", others: ["b", "a", "b", "c"] });
+    expect(selectedIds(ui.getState())).toEqual(["a", "b", "c"]);
+    ui.setState({ pageId: HOME, nodeId: "b", others: ["b", "c", "c"], viewport: "desktop" }, true);
+    expect(selectedIds(ui.getState())).toEqual(["b", "c"]);
+    ui.setState({ nodeId: null, others: ["c"] });
+    expect(ui.getState().others).toEqual([]);
+  });
+
   it("puts a selection back whole, as undo does", () => {
     const ui = store();
     ui.setState({ nodeId: "a" });

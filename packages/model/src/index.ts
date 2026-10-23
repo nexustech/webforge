@@ -157,6 +157,7 @@ export type {
 } from "./theme.js";
 export {
   COLOR_ROLES,
+  copyTheme,
   DEFAULT_THEME,
   fontRefSchema,
   OPACITY_STEPS,
