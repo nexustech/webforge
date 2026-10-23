@@ -58,16 +58,25 @@ describe("containerScript", () => {
     expect(script).toContain("e2e:visual --update-snapshots=missing");
   });
 
+  it("checks a downloaded Node against its published checksum before unpacking it", () => {
+    const script = containerScript({ update: false, playwrightArgs: [] });
+    const check = script.indexOf("sha256sum -c");
+    expect(check).toBeGreaterThan(script.indexOf("SHASUMS256.txt"));
+    expect(check).toBeLessThan(script.indexOf("tar -xz"));
+  });
+
   it("rewrites changed screenshots with --update", () => {
     expect(containerScript({ update: true, playwrightArgs: [] })).toContain(
       "--update-snapshots=changed",
     );
   });
 
-  it("copies the tree without node_modules or git, and copies the screenshots back", () => {
+  // Regression: copying the whole folder also took .claude/worktrees, whose files changed
+  // mid-copy, so tar failed before any test ran.
+  it("copies only what git sees, and copies the screenshots back", () => {
     const script = containerScript({ update: false, playwrightArgs: [] });
-    expect(script).toContain("--exclude=node_modules");
-    expect(script).toContain("--exclude=./.git");
+    expect(script).toContain("git -C /src ls-files -z --cached --others --exclude-standard");
+    expect(script).toContain("--ignore-failed-read");
     expect(script).toContain(
       "cp -r /work/e2e/visual/__screenshots__/. /src/e2e/visual/__screenshots__/",
     );

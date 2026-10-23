@@ -7,8 +7,8 @@
 //   pnpm visual:docker --update        also rewrite screenshots that changed; review them with git diff
 //   pnpm visual:docker -- --grep Picker   pass anything after -- to Playwright
 //
-// The working tree, uncommitted changes included, is copied into the container without
-// node_modules, installed there and built as CI's Storybook job does. Only the screenshots, and the
+// The working tree as git sees it (tracked files and new unignored ones, uncommitted changes
+// included) is copied into the container, installed there and built as CI's Storybook job does. Only the screenshots, and the
 // Playwright report when something fails, are copied back. Downloads (Node, pnpm and the pnpm store)
 // are cached in the Docker volume "webforge-visual-cache".
 //
@@ -72,17 +72,26 @@ export function containerScript(options: VisualDockerOptions): string {
     "  node_dir=/cache/node-$want",
     '  if [ ! -x "$node_dir/bin/node" ]; then',
     '    echo "Downloading Node $want"',
+    '    base="https://nodejs.org/dist/latest-v$want.x"',
+    '    sums=$(curl -fsSL "$base/SHASUMS256.txt")',
+    // .tar.gz, as the image has no xz; checked against Node's published checksum before unpacking.
+    '    line=$(grep -E "  node-v[0-9.]+-linux-x64\\.tar\\.gz$" <<< "$sums" | head -1)',
+    "    sum=$(awk '{print $1}' <<< \"$line\") file=$(awk '{print $2}' <<< \"$line\")",
+    '    curl -fsSL -o /tmp/node.tar.gz "$base/$file"',
+    '    sha256sum -c <<< "$sum  /tmp/node.tar.gz"',
     '    mkdir -p "$node_dir"',
-    '    tarball=$(curl -fsSL "https://nodejs.org/dist/latest-v$want.x/SHASUMS256.txt" | grep -o "node-v[0-9.]*-linux-x64.tar.xz" | head -1)',
-    '    curl -fsSL "https://nodejs.org/dist/latest-v$want.x/$tarball" | tar -xJ -C "$node_dir" --strip-components=1',
+    '    tar -xz -C "$node_dir" --strip-components=1 -f /tmp/node.tar.gz',
     "  fi",
     '  export PATH="$node_dir/bin:$PATH"',
     "fi",
     "corepack enable pnpm",
-    // A fresh copy, so files deleted in the working tree don't linger between runs.
+    // A fresh copy of what git sees: tracked files and new ones that aren't ignored, so build
+    // output, node_modules and the streams' worktrees (.claude/worktrees) stay out. Files deleted
+    // in the working tree are still in the index; --ignore-failed-read skips them.
     "rm -rf /work && mkdir /work",
-    "tar -C /src --exclude=./.git --exclude=node_modules --exclude=storybook-static --exclude=.turbo " +
-      "--exclude=./e2e/test-results --exclude=./e2e/playwright-report -cf - . | tar -C /work -xf -",
+    "git config --global --add safe.directory /src",
+    "git -C /src ls-files -z --cached --others --exclude-standard |" +
+      " tar -C /src --null --ignore-failed-read -T - -cf - | tar -C /work -xf -",
     "cd /work",
     // lefthook's install script expects a git repository.
     "git init -q",
