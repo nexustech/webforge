@@ -23,7 +23,7 @@
     "knip": "knip",
     "licence-check": "pnpm licenses list -r --json | node tools/src/check-licences.ts",
     "ui-strings": "node tools/src/check-ui-strings.ts apps/desktop/src/renderer packages/editor-ui/src packages/engine/src packages/site-components/src",
-    "react-compiler": "node tools/src/check-react-compiler.ts apps/desktop/src/renderer packages/editor-ui/src packages/engine/src packages/site-components/src",
+    "react-compiler": "node tools/src/check-react-compiler.ts apps/desktop/src/renderer packages/editor-ui/src packages/engine/src",
     "check": "pnpm lint && pnpm typecheck && pnpm deps && pnpm knip && pnpm licence-check && pnpm ui-strings && pnpm react-compiler && pnpm test"
   },
   "commitlint": {

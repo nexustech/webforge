@@ -56,7 +56,7 @@ Versions checked on npm on 2026-10-19.
   - `noRestrictedImports` / `useImportRestrictions` (nursery; enable and pin the Biome version)
 - **Known gaps vs ESLint, and mitigations:**
   - ~~No floating-promise detection.~~ Biome 2.5 has nursery `noFloatingPromises` and `noMisusedPromises`; both are enabled as errors (Biome version pinned). Keep the convention "every promise is awaited, returned or passed to `void track()`"; Oxlint's type-aware rule remains a fallback if the nursery rules prove unreliable.
-  - **No React Compiler-specific lint rules.** Mitigation: `pnpm react-compiler` (part of `pnpm check` and CI) runs the compiler over the renderer, editor UI, engine and site components and fails on anything it can't compile or that turns it off ([ADR 0010](../docs/adr/0010-react-compiler.md)).
+  - **No React Compiler-specific lint rules.** Mitigation: `pnpm react-compiler` (part of `pnpm check` and CI) runs the compiler over the renderer, editor UI and engine (the code it compiles) and fails on anything it can't compile or that turns it off ([ADR 0010](../docs/adr/0010-react-compiler.md)).
   - **Package boundaries** are enforced by **dependency-cruiser** (§3), not the linter.
 
 ## 3. Architecture & boundaries
