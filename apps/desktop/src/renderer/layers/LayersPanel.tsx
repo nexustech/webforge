@@ -263,10 +263,14 @@ export function LayersPanel({
       } else if (mod && step < 0) {
         if (row.parent !== "") focusRow(row.parent);
       } else if (mod) {
-        const child = row.layer.children[0];
-        if (child !== undefined) {
+        // The first child as listed: a filter may leave it out, and then there's none to go to.
+        const next = rows[at + 1];
+        const first = row.layer.children[0];
+        if (row.expanded && next?.parent === row.layer.id) {
+          focusRow(next.layer.id);
+        } else if (!row.expanded && query === "" && first !== undefined) {
           setExpanded(row.layer.id, true);
-          focusRow(child.id);
+          focusRow(first.id);
         }
       } else {
         const next = rows[at + step];

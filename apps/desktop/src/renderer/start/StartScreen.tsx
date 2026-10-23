@@ -167,7 +167,7 @@ export function StartScreen({ info, project, app, restart, locale }: StartScreen
         </div>
         <SiteCommands project={api} {...(restart === undefined ? {} : { restart })} />
         <AboutDialog info={info} />
-        <ShortcutSheet />
+        <ShortcutSheet editor={false} />
         <Toaster theme="dark" />
       </TooltipProvider>
     </CommandRegistryProvider>

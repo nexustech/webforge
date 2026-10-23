@@ -37,6 +37,12 @@ describe("shortcutSheet", () => {
     ]);
   });
 
+  it("lists only the commands' keys without the editor (the start screen)", () => {
+    const sheet = shortcutSheet(registryWith(false).list(), false, []);
+
+    expect(sheet.map(({ group }) => group)).toEqual(["edit", "view"]);
+  });
+
   it("shows a Mac's keys, without the Delete key it doesn't have", () => {
     const edit = shortcutSheet(registryWith(true).list(), true).find(
       ({ group }) => group === "edit",

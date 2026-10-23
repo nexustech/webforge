@@ -7,10 +7,15 @@ describe("applicationMenu (F-ED-27)", () => {
     expect(applicationMenu("linux", false)).toBeNull();
   });
 
-  it("keeps a Mac's app, Edit and Window menus, without the View menu's zoom keys", () => {
+  it("keeps a Mac's app, Edit and Window menus and full screen, without the zoom keys", () => {
     const menu = applicationMenu("darwin", false);
 
-    expect(menu).toEqual([{ role: "appMenu" }, { role: "editMenu" }, { role: "windowMenu" }]);
+    expect(menu).toEqual([
+      { role: "appMenu" },
+      { role: "editMenu" },
+      { label: "View", submenu: [{ role: "togglefullscreen" }] },
+      { role: "windowMenu" },
+    ]);
     expect(JSON.stringify(menu)).not.toMatch(/zoom|reload|viewMenu/i);
   });
 
@@ -21,6 +26,7 @@ describe("applicationMenu (F-ED-27)", () => {
     expect(applicationMenu("darwin", true)?.map((item) => item.role ?? item.label)).toEqual([
       "appMenu",
       "editMenu",
+      "View",
       "Developer",
       "windowMenu",
     ]);

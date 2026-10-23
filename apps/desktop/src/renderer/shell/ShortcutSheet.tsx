@@ -13,6 +13,7 @@ import { type Command, formatShortcut, isMac, onKeyboard } from "./commands.js";
 import {
   COMMAND_SHORTCUTS,
   OTHER_SHORTCUTS,
+  type OtherShortcut,
   SHORTCUT_GROUPS,
   type ShortcutGroup,
 } from "./shortcut-standard.js";
@@ -37,6 +38,7 @@ export type SheetRow = { readonly label: string; readonly keys: readonly string[
 export function shortcutSheet(
   commands: readonly Command[],
   mac: boolean,
+  others: readonly OtherShortcut[] = OTHER_SHORTCUTS,
 ): readonly { readonly group: ShortcutGroup; readonly rows: readonly SheetRow[] }[] {
   const shown = (keys: readonly string[]) =>
     keys.filter((key) => onKeyboard(key, mac)).map((key) => formatShortcut(key, mac));
@@ -52,10 +54,12 @@ export function shortcutSheet(
           label: command.label,
           keys: shown([command.shortcut ?? "", ...(command.extraShortcuts ?? [])]),
         })),
-      ...OTHER_SHORTCUTS.filter((entry) => entry.group === group).map((entry) => ({
-        label: t(entry.label),
-        keys: shown(entry.keys),
-      })),
+      ...others
+        .filter((entry) => entry.group === group)
+        .map((entry) => ({
+          label: t(entry.label),
+          keys: shown(entry.keys),
+        })),
     ],
   })).filter(({ rows }) => rows.length > 0);
 }
@@ -63,9 +67,10 @@ export function shortcutSheet(
 /**
  * Help → Keyboard Shortcuts, and `?` (F-ED-27): every shortcut, by what it is for, generated from
  * the command registry and the shortcut standard so it can't disagree with the menus. Registers its
- * own command.
+ * own command. Without the editor (the start screen), only the commands' keys: saving, text and
+ * Layers aren't there.
  */
-export function ShortcutSheet() {
+export function ShortcutSheet({ editor = true }: { readonly editor?: boolean }) {
   const registry = useCommandRegistry();
   const commands = useCommands();
   const [open, setOpen] = useState(false);
@@ -89,7 +94,9 @@ export function ShortcutSheet() {
           <DialogTitle>{t("shortcuts.title")}</DialogTitle>
           <DialogDescription>{t("shortcuts.description")}</DialogDescription>
         </DialogHeader>
-        {open && <SheetGroups commands={commands} idPrefix={id} />}
+        {open && (
+          <SheetGroups commands={commands} idPrefix={id} others={editor ? OTHER_SHORTCUTS : []} />
+        )}
       </DialogContent>
     </Dialog>
   );
@@ -100,14 +107,16 @@ export function SheetGroups({
   commands,
   idPrefix,
   mac = isMac(),
+  others = OTHER_SHORTCUTS,
 }: {
   readonly commands: readonly Command[];
   readonly idPrefix: string;
   readonly mac?: boolean;
+  readonly others?: readonly OtherShortcut[];
 }) {
   return (
     <div className="columns-1 gap-8 sm:columns-2">
-      {shortcutSheet(commands, mac).map(({ group, rows }) => (
+      {shortcutSheet(commands, mac, others).map(({ group, rows }) => (
         <section
           key={group}
           aria-labelledby={`${idPrefix}-${group}`}

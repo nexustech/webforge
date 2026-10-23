@@ -269,7 +269,12 @@ export async function pasteElements(
     linked && sharedSectionId !== undefined && Object.hasOwn(site.sharedSections, sharedSectionId)
       ? site.sharedSections[sharedSectionId]
       : undefined;
-  if (shared !== undefined && target.parentId === null) {
+  if (shared !== undefined && target.parentId !== null) {
+    // A linked copy goes on the page itself only: pasting it unlinked here isn't what was asked.
+    notify(t("site.clipboard.cantPaste", { item: t("history.namedItem", { name: shared.name }) }));
+    return false;
+  }
+  if (shared !== undefined) {
     // A copy of a shared section this site has: another linked copy (F-ED-23).
     const copy = newSharedCopy(page.doc.content, shared.id, site.sharedSections, layout);
     const selected = copiedNodeId(copy.props.id, shared.section.props.id);
