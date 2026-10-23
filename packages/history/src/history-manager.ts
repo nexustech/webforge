@@ -169,6 +169,39 @@ export class HistoryError extends Error {
 const NO_SELECTION: SelectionAdapter<null> = { get: () => null, restore: () => undefined };
 
 /**
+ * A store that tells every listener about each change, even when one throws. Zustand's `setState`
+ * stops at the first listener that throws, so the ones after it (autosave, the canvas) would miss
+ * a change that did happen; `set` rethrows the first error once all have been told.
+ */
+function createTellingStore<T>(initial: T) {
+  const inner = createStore<T>()(() => initial);
+  /** What the listeners threw while being told about the change being set. */
+  const errors: unknown[] = [];
+  const store: ReadonlyStore<T> = {
+    getState: inner.getState,
+    getInitialState: inner.getInitialState,
+    subscribe: (listener) =>
+      inner.subscribe((state, previous) => {
+        try {
+          listener(state, previous);
+        } catch (error) {
+          errors.push(error);
+        }
+      }),
+  };
+  return {
+    store,
+    getState: inner.getState,
+    set(next: T): void {
+      errors.length = 0;
+      inner.setState(next, true);
+      const thrown = errors.splice(0);
+      if (thrown.length > 0) throw thrown[0];
+    },
+  };
+}
+
+/**
  * Creates the history manager and the document store it owns. Document edits are Immer recipes;
  * each entry keeps the forward and inverse patches (approach B in research/stack/03-undo-redo.md).
  */
@@ -188,14 +221,14 @@ export function createHistoryManager<D extends Objectish, S>(
   const defaultWindow = options.coalesceWindowMs ?? 1000;
   const now = options.now ?? Date.now;
 
-  const documentStore = createStore<D>()(() => freeze(options.initial, true));
-  const stateStore = createStore<HistoryState<S>>()(() => ({
+  const documentStore = createTellingStore<D>(freeze(options.initial, true));
+  const stateStore = createTellingStore<HistoryState<S>>({
     entries: [],
     cursor: 0,
     canUndo: false,
     canRedo: false,
     transaction: null,
-  }));
+  });
 
   let entries: HistoryEntry<S>[] = [];
   /** The JSON size of each entry's patches, measured once per entry version. */
@@ -229,20 +262,17 @@ export function createHistoryManager<D extends Objectish, S>(
 
   const publish = () => {
     enforceBudget();
-    stateStore.setState(
-      {
-        entries,
-        cursor,
-        canUndo: cursor > 0,
-        canRedo: cursor < entries.length,
-        transaction: transaction?.label ?? null,
-      },
-      true,
-    );
+    stateStore.set({
+      entries,
+      cursor,
+      canUndo: cursor > 0,
+      canRedo: cursor < entries.length,
+      transaction: transaction?.label ?? null,
+    });
   };
 
   const setDocument = (next: D) => {
-    documentStore.setState(next, true);
+    documentStore.set(next);
   };
 
   /**
@@ -543,8 +573,8 @@ export function createHistoryManager<D extends Objectish, S>(
   };
 
   return {
-    document: documentStore,
-    state: stateStore,
+    document: documentStore.store,
+    state: stateStore.store,
     run,
     begin,
     undo,

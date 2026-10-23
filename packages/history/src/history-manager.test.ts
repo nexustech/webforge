@@ -784,6 +784,57 @@ describe("createHistoryManager", () => {
       expect(doc().title).toBe("Home");
     });
 
+    it("still tells the other subscribers about a change when one changed the history from inside", () => {
+      const { history, doc } = setup();
+      const later = vi.fn();
+      const laterState = vi.fn();
+      const stopNesting = history.document.subscribe(() => {
+        history.run("Inner", (draft) => {
+          draft.title = "Inner";
+        });
+      });
+      const stopLater = history.document.subscribe((document) => later(document.title));
+      const stopState = history.state.subscribe((state) => laterState(state.entries.length));
+
+      expect(() =>
+        history.run("Outer", (draft) => {
+          draft.title = "Outer";
+        }),
+      ).toThrow(reentrant);
+      stopNesting();
+      stopLater();
+      stopState();
+
+      // The subscriber after the one that threw saw the new document, and the step was published.
+      expect(later).toHaveBeenCalledExactlyOnceWith("Outer");
+      expect(laterState).toHaveBeenCalledExactlyOnceWith(1);
+      expect(doc().title).toBe("Outer");
+    });
+
+    it("tells every state subscriber, then rethrows the first one's error", () => {
+      const { history } = setup();
+      const second = vi.fn();
+      const stopFirst = history.state.subscribe(() => {
+        throw new Error("first");
+      });
+      const stopSecond = history.state.subscribe(() => {
+        second();
+        throw new Error("second");
+      });
+
+      expect(() =>
+        history.run("Edit", (draft) => {
+          draft.title = "Edited";
+        }),
+      ).toThrow("first");
+      stopFirst();
+      stopSecond();
+
+      expect(second).toHaveBeenCalledOnce();
+      expect(history.entries().map((entry) => entry.label)).toEqual(["Edit"]);
+      expect(history.isChanging()).toBe(false);
+    });
+
     it("refuses a gesture's update from inside a run, and a run from inside its update", () => {
       const { history } = setup();
       const gesture = history.begin("Drag");
