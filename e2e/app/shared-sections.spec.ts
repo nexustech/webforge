@@ -1,4 +1,5 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { type Box, boxOf, drag } from "./drag.js";
 import { launchDesktopApp } from "./launch.js";
 
 // Shared sections (1.29, F-ED-23): a section saved once and placed as linked copies; editing any
@@ -179,4 +180,42 @@ test("renames and deletes a shared section on no page from the Add panel, and un
     "Deleted shared section 'Opening hours'",
     "Renamed 'Welcome' to 'Opening hours'",
   ]);
+});
+
+/** A point in a section's left padding, near its bottom: on the section, not on what it holds. */
+const padding = (box: Box, fromBottom = 6) => ({
+  x: box.x + 6,
+  y: box.y + box.height - fromBottom,
+});
+
+test("Ctrl/Cmd+Shift-drag of a copy places another linked copy; Ctrl/Cmd-drag a section of the page's own (1.30)", async () => {
+  await selectSection();
+  await editMenu("Save as shared section…");
+  const dialog = page.getByRole("dialog", { name: "Save as shared section" });
+  await dialog.getByRole("textbox", { name: "Name" }).fill("Welcome");
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(steps().first()).toHaveText("Saved 'Welcome' as a shared section");
+  const sections = canvas().locator(".site-section");
+  const first = sections.first();
+
+  // Dragged with Ctrl/Cmd+Shift onto its own lower edge: another linked copy, after it.
+  await page.keyboard.down("ControlOrMeta");
+  await page.keyboard.down("Shift");
+  await drag(page, first, padding(await boxOf(first, "Section")), 0.01);
+  await page.keyboard.up("Shift");
+  await page.keyboard.up("ControlOrMeta");
+  await expect(steps().first()).toHaveText("Added a copy of 'Welcome'");
+  await expect(headings()).toHaveCount(2);
+  await expect(banner()).toHaveText(
+    "Editing shared section 'Welcome': changes apply to 2 copies on 1 page",
+  );
+
+  // With Ctrl/Cmd alone: a section of the page's own, linked to nothing.
+  const last = sections.last();
+  await page.keyboard.down("ControlOrMeta");
+  await drag(page, first, padding(await boxOf(last, "Section")), 0.01);
+  await page.keyboard.up("ControlOrMeta");
+  await expect(steps().first()).toHaveText("Duplicated Section");
+  await expect(headings()).toHaveCount(3);
+  await expect(banner()).toHaveCount(0);
 });
