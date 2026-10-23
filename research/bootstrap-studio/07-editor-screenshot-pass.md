@@ -1,6 +1,6 @@
 # Bootstrap Studio 9.0.1: Editor Screenshot Pass
 
-**Status:** Proposed 2026-10-23 (SP-1…SP-13 below await the product owner)
+**Status:** ✅ Decided 2026-10-23 (UI5: SP-1…SP-13 adopted, see [§5](#5-decisions))
 **Date:** 2026-10-23
 **Question:** The editor UI/UX parity note ([product/06](../product/06-editor-ui-ux-parity.md)) was written from docs and UI strings, and left one item open: a screenshot pass of the running app, to check the visual details the docs don't describe (hover outlines, drop indicators, toolbar icons) against what Webforge built for items 1.30–1.34, 1.37 and 1.38, and to feed the open items 1.35, 1.36 and 2.17.
 
@@ -124,7 +124,11 @@ Small additions that fit the open items. Effort: **S** ≤ 1 day.
 | Comments (*Add Comment*, *Show Comments*) | Stays v1.1 (UX-17, UI4) |
 
 ## 5. Decisions
-Awaiting the product owner. Suggested: adopt SP-1…SP-13 as written; none changes a plan estimate by more than a day, and SP-4's Heading and List parts ride on 2.9.
+Decided by the product owner on 2026-10-23:
+
+| # | Decision |
+|---|---|
+| **UI5** | ✅ **SP-1…SP-13 are adopted as written.** They join the plan items they fit: 1.35 takes SP-1, SP-2, SP-3, SP-8, SP-9 and SP-10 (+1 day); 1.36 takes SP-5, SP-6, SP-7 and SP-11 (+1 day); 2.17 takes SP-4's Columns toolbar placement; 2.9 takes SP-4's Heading and List toolbars and SP-12 (+1 day); 3.6 takes SP-13. About +3 days in all. Spec F-ED-25 and F-ED-26 are extended |
 
 ## 6. Screenshot index
 All in [`screenshots/`](screenshots/).
