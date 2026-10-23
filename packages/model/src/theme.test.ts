@@ -151,19 +151,4 @@ describe("theme tokens (2.1)", () => {
       false,
     ]);
   });
-
-  it("keeps named custom colours, each id once", () => {
-    const custom = (colors: unknown) =>
-      themeTokensSchema.safeParse({ ...DEFAULT_THEME, custom: colors }).success;
-    const sky = { id: "sky", name: "Sky", value: { l: 0.8, c: 0.1, h: 230 } };
-
-    expect(DEFAULT_THEME.custom).toEqual([]);
-    expect(custom([sky, { ...sky, id: "sky-2", name: "Deep sky" }])).toBe(true);
-    expect(custom([sky, { ...sky, name: "Again" }])).toBe(false);
-    expect(custom([{ ...sky, id: "Sky" }])).toBe(false);
-    expect(custom([{ ...sky, id: "-sky" }])).toBe(false);
-    expect(custom([{ ...sky, name: "  " }])).toBe(false);
-    expect(custom([{ ...sky, value: { l: 2, c: 0, h: 0 } }])).toBe(false);
-    expect(custom(undefined)).toBe(false);
-  });
 });

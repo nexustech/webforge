@@ -292,42 +292,6 @@ const menuCommands: fc.Arbitrary<Command>[] = [
  * as the Theme panel (2.3) will make them.
  */
 const themeCommands: fc.Arbitrary<Command>[] = [
-  // Custom colours (UX-25): added, renamed and removed, each one step.
-  fc
-    .record({
-      id: fc.constantFrom("sky", "sand", "moss"),
-      l: fc.double({ min: 0, max: 1, noNaN: true }),
-    })
-    .map(({ id, l }) => ({
-      name: `add custom colour ${id} ${l}`,
-      run: (ctx) =>
-        ctx.session.edit("root", "Added a custom colour", (draft) => {
-          if (draft.theme.custom.some((color) => color.id === id)) return;
-          draft.theme.custom.push({ id, name: id, value: { l, c: 0.1, h: 200 } });
-        }),
-    })),
-  fc
-    .record({
-      at: n,
-      name: fc.string({ minLength: 1, maxLength: 8 }).filter((text) => text.trim() !== ""),
-    })
-    .map(({ at, name }) => ({
-      name: `rename custom colour ${at} "${name}"`,
-      run: (ctx) =>
-        ctx.session.edit("root", "Renamed a custom colour", (draft) => {
-          const { custom } = draft.theme;
-          const color = custom[at % Math.max(custom.length, 1)];
-          if (color !== undefined) color.name = name;
-        }),
-    })),
-  n.map((at) => ({
-    name: `remove custom colour ${at}`,
-    run: (ctx) =>
-      ctx.session.edit("root", "Removed a custom colour", (draft) => {
-        const { custom } = draft.theme;
-        if (custom.length > 0) custom.splice(at % custom.length, 1);
-      }),
-  })),
   fc
     .record({
       role: fc.constantFrom(...COLOR_ROLES),

@@ -171,14 +171,14 @@ const FORMAT_5_DEFAULTS = {
  * Format 4 → 5 (2.1): the theme is the site's design tokens instead of a daisyUI theme's name. A
  * site whose theme was one of daisyUI's built-in themes gets that theme's colours, corners, border,
  * depth and noise (`FORMAT_5_DAISYUI_THEMES`), with its name as their preset, so it looks as
- * before; any other name, which named no theme, becomes the light one. It has no custom colours
- * and no colours for inverse sections.
+ * before; any other name, which named no theme, becomes the light one. It has no colours for inverse
+ * sections.
  */
 function themeTokens(site: RawSite): RawSite {
   const name = isRecord(site.theme) ? site.theme.name : undefined;
   const preset =
     typeof name === "string" && Object.hasOwn(FORMAT_5_DAISYUI_THEMES, name) ? name : "light";
-  const theme = { preset, ...FORMAT_5_DAISYUI_THEMES[preset], ...FORMAT_5_DEFAULTS, custom: [] };
+  const theme = { preset, ...FORMAT_5_DAISYUI_THEMES[preset], ...FORMAT_5_DEFAULTS };
   return { ...site, theme: JSON.parse(JSON.stringify(theme)), formatVersion: 5 };
 }
 

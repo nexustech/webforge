@@ -20,7 +20,7 @@ export { findBrokenLinks } from "./broken-links.js";
 export type { CopiedElements } from "./clipboard.js";
 export { copiedElementsSchema, MAX_COPIED_NODES, pastedCopies } from "./clipboard.js";
 export type { ColorRef } from "./color-ref.js";
-export { colorRefSchema, parseColorRef } from "./color-ref.js";
+export { colorRefSchema, formatColorRef, parseColorRef } from "./color-ref.js";
 export type { LayoutDoc, NodeAdvanced, NodeDoc, PageDoc, SiteCode, Theme } from "./documents.js";
 export {
   anchorsIn,
@@ -149,7 +149,6 @@ export { siteSnapshotSchema } from "./site-snapshot.js";
 export { slugify, uniqueSlug } from "./slugs.js";
 export type {
   ColorRole,
-  CustomColor,
   FontRef,
   Oklch,
   ShadeStep,
@@ -158,7 +157,6 @@ export type {
 } from "./theme.js";
 export {
   COLOR_ROLES,
-  customColorSchema,
   DEFAULT_THEME,
   fontRefSchema,
   OPACITY_STEPS,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { colorRefSchema, parseColorRef } from "./color-ref.js";
+import { colorRefSchema, formatColorRef, parseColorRef } from "./color-ref.js";
 
 describe("colour refs (2.1)", () => {
   it("read a role, with a shade and an opacity as Tailwind's classes do", () => {
@@ -19,14 +19,18 @@ describe("colour refs (2.1)", () => {
     expect(parseColorRef("primary-content")).toEqual({ base: { role: "primary-content" } });
   });
 
-  it("read a custom colour, its id hyphens and all, with a shade and an opacity", () => {
-    expect(parseColorRef("custom-sky")).toEqual({ base: { custom: "sky" } });
-    expect(parseColorRef("custom-deep-sky-700/50")).toEqual({
-      base: { custom: "deep-sky" },
-      shade: 700,
-      opacity: 50,
-    });
-    expect(parseColorRef("custom-2024")).toEqual({ base: { custom: "2024" } });
+  it("read a field's own hex colour, with an opacity, in lower case", () => {
+    expect(parseColorRef("[#1f6feb]")).toEqual({ base: { hex: "#1f6feb" } });
+    expect(parseColorRef("[#1F6FEB]/50")).toEqual({ base: { hex: "#1f6feb" }, opacity: 50 });
+  });
+
+  it("store a ref as written, with its hex in lower case", () => {
+    expect(colorRefSchema.parse("primary-300/80")).toBe("primary-300/80");
+    expect(colorRefSchema.parse("[#ABCDEF]/90")).toBe("[#abcdef]/90");
+    for (const ref of ["base-content", "error-950/5", "[#000000]"]) {
+      const parsed = parseColorRef(ref);
+      expect(parsed && formatColorRef(parsed)).toBe(ref);
+    }
   });
 
   it.each([
@@ -36,11 +40,24 @@ describe("colour refs (2.1)", () => {
     "base-100-300",
     "base-content-500",
     "primary-content-300",
-    "custom-",
-    "custom-Sky",
     "primary/80/80",
     "bg-primary",
     "",
+    // Hex: six digits only, in brackets, no shades, nothing else inside.
+    "#1f6feb",
+    "[1f6feb]",
+    "[#fff]",
+    "[#1f6feb80]",
+    "[#1f6fe]",
+    "[#1f6feg]",
+    "[#1f6feb]-300",
+    "[#1f6feb]/85",
+    "[ #1f6feb]",
+    "[#fff;}body{]",
+    "[#1f6feb];color:red",
+    "[var(--x)]",
+    "[rgb(0,0,0)]",
+    "custom-sky",
   ])("refuse %j", (ref) => {
     expect(parseColorRef(ref)).toBeUndefined();
     expect(colorRefSchema.safeParse(ref).success).toBe(false);

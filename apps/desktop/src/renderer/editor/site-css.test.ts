@@ -67,6 +67,20 @@ describe("siteClasses", () => {
     expect(classes).toEqual(expect.arrayContaining(["pt-32", "md:max-lg:mb-24", "lg:pl-0"]));
   });
 
+  it("collects a colour field's own hex colours, which no safelist has (2.1)", () => {
+    const session = createEditorSession(siteLibrary, starterSite());
+    session.history.run("Changed Heading colour", (draft) => {
+      const heading = firstHeading(draft);
+      if (heading !== undefined) {
+        heading.advanced = { className: "bg-[#1f6feb] text-[#abcdef]/50" };
+      }
+    });
+
+    const classes = siteClasses(session.history.document.getState(), session);
+
+    expect(classes).toEqual(expect.arrayContaining(["bg-[#1f6feb]", "text-[#abcdef]/50"]));
+  });
+
   it("keeps the classes of elements hidden in Layers, which the canvas still shows (#142)", () => {
     const site = starterSite();
     const home = site.pages[site.homePageId];

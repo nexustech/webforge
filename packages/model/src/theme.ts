@@ -117,25 +117,6 @@ export const SHADED_ROLES = [
   "error",
 ] as const satisfies readonly ColorRole[];
 
-/** A custom colour's id: part of a class name (`bg-custom-sky`), so lower case and hyphens. */
-const customColorIdSchema = z
-  .string()
-  .max(32)
-  .regex(/^[a-z0-9][a-z0-9-]*$/);
-
-/**
- * A named colour of the theme's own beside the roles (decision of 23 Oct 2026, UX-25), which only
- * Advanced mode and Theme Studio add or change. Style fields use it by id, as they use a role.
- */
-export const customColorSchema = z.strictObject({
-  id: customColorIdSchema,
-  name: z.string().trim().min(1).max(40),
-  value: oklchSchema,
-});
-
-/** See {@link customColorSchema}. */
-export type CustomColor = z.infer<typeof customColorSchema>;
-
 /** See {@link themeTokensSchema}. */
 export const themeTokensSchema = z.strictObject({
   /** The preset the theme started from ("light"): the name it is listed under. */
@@ -153,13 +134,6 @@ export const themeTokensSchema = z.strictObject({
    * as the surface and `neutral-content` as the text, its other colours as they are.
    */
   inverse: z.record(colorRoleSchema, oklchSchema).optional(),
-  /** The theme's own named colours, each id once; none by default. */
-  custom: z
-    .array(customColorSchema)
-    .max(50)
-    .refine((colors) => new Set(colors.map((color) => color.id)).size === colors.length, {
-      message: "Each custom colour needs an id of its own",
-    }),
   fonts: z.strictObject({ heading: fontRefSchema, body: fontRefSchema }),
   /** Corners: of boxes (cards), fields (inputs, buttons) and selectors (checkboxes, badges). */
   radius: z.strictObject({ box: radiusSchema, field: radiusSchema, selector: radiusSchema }),
@@ -274,5 +248,4 @@ export const DEFAULT_THEME: ThemeTokens = frozen({
   links: { underline: "always" },
   buttons: { shape: "rounded", size: "m", style: "filled" },
   shadow: "soft",
-  custom: [],
 });

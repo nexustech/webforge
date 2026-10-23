@@ -428,6 +428,23 @@ describe("buildSite: documents (1.28)", () => {
     expect(css).toMatch(/@media \(width >= 48rem\) \{\s*\.md\\:mt-16 \{/);
   });
 
+  it("styles an element's own hex colours, as Tailwind arbitrary classes (2.1)", async () => {
+    const heading: NodeDoc = {
+      type: "Heading",
+      props: {
+        id: "h",
+        text: "Prices",
+        advanced: { className: "bg-[#1f6feb] text-[#abcdef]/50" },
+      },
+    };
+    const output = await buildSite(siteWith([heading]), siteLibrary, resources);
+    const css = text(output, fileNamed(output, /^assets\/css\//));
+
+    expect(text(output, "index.html")).toContain("bg-[#1f6feb] text-[#abcdef]/50");
+    expect(css).toMatch(/\.bg-\\\[\\#1f6feb\\\] \{\s*background-color: #1f6feb;/);
+    expect(css).toMatch(/\.text-\\\[\\#abcdef\\\]\\\/50 \{[^}]*#abcdef/);
+  });
+
   it("warns about a link to a document deleted from Media, and keeps building", async () => {
     const output = await buildSite(
       siteWith([heroLinkingTo("gone", { download: true })], { documents }),
