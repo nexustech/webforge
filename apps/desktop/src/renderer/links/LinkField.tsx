@@ -34,7 +34,9 @@ function LinkField({
   media,
   currentSite,
 }: FieldRendererProps & LinkFieldContext) {
-  const [open, setOpen] = useState(false);
+  // The dialog, and the site as it was when it opened: it reads the site then, not as it draws.
+  const [dialog, setDialog] = useState(() => ({ open: false, site: currentSite() }));
+  const close = () => setDialog((shown) => ({ ...shown, open: false }));
   const link = linkValue(value);
   // A page path or address typed as text before link fields: shown as it is, until replaced.
   const text = typeof value === "string" ? value.trim() : "";
@@ -53,7 +55,11 @@ function LinkField({
         </span>
       </div>
       <div className="flex gap-1">
-        <Button size="sm" variant="secondary" onClick={() => setOpen(true)}>
+        <Button
+          size="sm"
+          variant="secondary"
+          onClick={() => setDialog({ open: true, site: currentSite() })}
+        >
           {link === undefined && text === "" ? t("link.add") : t("link.edit")}
         </Button>
         {(link !== undefined || text !== "") && (
@@ -63,15 +69,15 @@ function LinkField({
         )}
       </div>
       <LinkDialog
-        open={open}
+        open={dialog.open}
         link={link}
-        site={currentSite()}
+        site={dialog.site}
         targets={targets}
         onSave={(change) => {
-          setOpen(false);
+          close();
           report(change);
         }}
-        onCancel={() => setOpen(false)}
+        onCancel={close}
       />
     </div>
   );

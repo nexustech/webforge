@@ -1,4 +1,4 @@
-import type { ComponentType } from "react";
+import { type ComponentType, useSyncExternalStore } from "react";
 
 /** What a field renderer needs to know about its field; the app maps its own definitions to this. */
 export type FieldSpec = {
@@ -69,25 +69,34 @@ export type FieldRendererProps = {
 /** A field renderer: draws one field's control. */
 export type FieldRenderer = ComponentType<FieldRendererProps>;
 
-const renderers = new Map<string, FieldRenderer>();
-/** Bumped by every change to {@link renderers}, so an Edit panel drawn before it redraws. */
-let version = 0;
+/**
+ * The registered renderers: a new map on every change, so an Edit panel drawn before a renderer
+ * was registered draws with it ({@link useFieldRenderers}), memoized or not.
+ */
+let renderers: ReadonlyMap<string, FieldRenderer> = new Map();
 const listeners = new Set<() => void>();
-const changed = () => {
-  version += 1;
+const change = (kind: string, renderer: FieldRenderer | undefined) => {
+  const next = new Map(renderers);
+  if (renderer === undefined) next.delete(kind);
+  else next.set(kind, renderer);
+  renderers = next;
   for (const listener of listeners) listener();
 };
 
 /** Calls `listener` when a renderer is registered or removed; returns a function that stops. */
-export function subscribeFieldRenderers(listener: () => void): () => void {
+function subscribe(listener: () => void): () => void {
   listeners.add(listener);
   return () => {
     listeners.delete(listener);
   };
 }
 
-/** A number that changes whenever the registered renderers do. */
-export const fieldRenderersVersion = () => version;
+const current = () => renderers;
+
+/** The registered renderers, by kind; a component using it redraws when they change. */
+export function useFieldRenderers(): ReadonlyMap<string, FieldRenderer> {
+  return useSyncExternalStore(subscribe, current, current);
+}
 
 /**
  * Makes `renderer` draw every field of `kind` in the Edit panel (1.14). Later registrations of a
@@ -95,18 +104,9 @@ export const fieldRenderersVersion = () => version;
  */
 export function registerFieldRenderer(kind: string, renderer: FieldRenderer): () => void {
   const previous = renderers.get(kind);
-  renderers.set(kind, renderer);
-  changed();
+  change(kind, renderer);
   return () => {
-    if (renderers.get(kind) !== renderer) {
-      return;
-    }
-    if (previous === undefined) {
-      renderers.delete(kind);
-    } else {
-      renderers.set(kind, previous);
-    }
-    changed();
+    if (renderers.get(kind) === renderer) change(kind, previous);
   };
 }
 

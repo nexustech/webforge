@@ -82,8 +82,8 @@ export function RichTextLinkHost({
 }) {
   const { document } = session.history;
   const [request, setRequest] = useState<Request | null>(null);
-  // The site as it is when the dialog opens (a request redraws this) and when it saves (R9).
-  const site = document.getState();
+  // The site as it was when the dialog opened (R9): read then, not as this draws.
+  const [site, setSite] = useState(() => document.getState());
   const open = useRef<Request | null>(null);
 
   useEffect(() => {
@@ -107,6 +107,7 @@ export function RichTextLinkHost({
             },
           };
           open.current = next;
+          setSite(document.getState());
           setRequest(next);
         }),
     );
@@ -114,7 +115,7 @@ export function RichTextLinkHost({
       engine.setLinkPicker(null);
       open.current?.answer(undefined);
     };
-  }, [engine]);
+  }, [engine, document]);
 
   return (
     <LinkDialog

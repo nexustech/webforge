@@ -17,9 +17,11 @@ export type SiteSettingsHostProps = {
  */
 export function SiteSettingsHost({ session }: SiteSettingsHostProps) {
   const registry = useCommandRegistry();
-  const [open, setOpen] = useState(false);
-  // The site as it is when the dialog opens: opening redraws this (R9).
-  const site = session.history.document.getState();
+  // The dialog, and the site as it was when it opened (R9): read then, not as this draws.
+  const [dialog, setDialog] = useState(() => ({
+    open: false,
+    site: session.history.document.getState(),
+  }));
 
   useEffect(
     () =>
@@ -27,20 +29,20 @@ export function SiteSettingsHost({ session }: SiteSettingsHostProps) {
         id: COMMAND_IDS.siteSettings,
         label: t("site.settings.command"),
         menu: "file",
-        run: () => setOpen(true),
+        run: () => setDialog({ open: true, site: session.history.document.getState() }),
       }),
-    [registry],
+    [registry, session],
   );
 
   return (
     <SiteSettingsDialog
-      open={open}
-      site={site}
+      open={dialog.open}
+      site={dialog.site}
       onSave={(settings) => {
         saveSiteSettings(session, settings);
-        setOpen(false);
+        setDialog((shown) => ({ ...shown, open: false }));
       }}
-      onCancel={() => setOpen(false)}
+      onCancel={() => setDialog((shown) => ({ ...shown, open: false }))}
     />
   );
 }

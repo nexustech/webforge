@@ -1,14 +1,8 @@
 import { t } from "@webforge/i18n";
-import { useId, useSyncExternalStore } from "react";
+import { useId } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs.js";
 import { BoxField } from "./box-field.js";
-import {
-  type FieldRenderer,
-  type FieldSpec,
-  fieldRenderer,
-  fieldRenderersVersion,
-  subscribeFieldRenderers,
-} from "./field-registry.js";
+import { type FieldRenderer, type FieldSpec, useFieldRenderers } from "./field-registry.js";
 import { ListField } from "./list-field.js";
 import { PLAIN_RENDERERS } from "./plain-renderers.js";
 
@@ -58,7 +52,8 @@ const BUILT_IN: Readonly<Record<string, FieldRenderer>> = {
   box: BoxField,
 };
 
-const rendererFor = (kind: string) => fieldRenderer(kind) ?? BUILT_IN[kind];
+const rendererFor = (registered: ReadonlyMap<string, FieldRenderer>, kind: string) =>
+  registered.get(kind) ?? BUILT_IN[kind];
 
 function FieldList({
   idPrefix,
@@ -68,13 +63,14 @@ function FieldList({
   device,
   onReset,
 }: Omit<EditPanelProps, "heading"> & { readonly idPrefix: string }) {
+  const registered = useFieldRenderers();
   if (fields.length === 0) {
     return <p className="p-3 text-xs text-muted-foreground">{t("editPanel.noFields")}</p>;
   }
   return (
     <div className="flex flex-col gap-3 p-3">
       {fields.map((field) => {
-        const Renderer = rendererFor(field.kind) as FieldRenderer;
+        const Renderer = rendererFor(registered, field.kind) as FieldRenderer;
         const id = `${idPrefix}-${field.name}`;
         const labelId = `${id}-label`;
         return (
@@ -137,7 +133,7 @@ export function EditPanel({
   const idPrefix = useId();
   // A renderer registered after the panel was drawn (the app's image, link and colour fields)
   // redraws it, whatever else changes or doesn't.
-  useSyncExternalStore(subscribeFieldRenderers, fieldRenderersVersion, fieldRenderersVersion);
+  const registered = useFieldRenderers();
   if (heading === undefined) {
     return (
       <p className="flex h-full items-center justify-center p-4 text-center text-xs text-muted-foreground">
@@ -145,7 +141,7 @@ export function EditPanel({
       </p>
     );
   }
-  const shown = fields.filter((field) => rendererFor(field.kind) !== undefined);
+  const shown = fields.filter((field) => rendererFor(registered, field.kind) !== undefined);
   const content = shown.filter((field) => field.group === "content");
   const style = shown.filter((field) => field.group === "style");
   const advancedFields = shown.filter((field) => field.group === "advanced");
