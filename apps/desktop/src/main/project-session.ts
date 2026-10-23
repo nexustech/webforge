@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { basename, extname, resolve } from "node:path";
 import { t } from "@webforge/i18n";
 import {
@@ -71,9 +72,10 @@ export function samePath(a: string, b: string): boolean {
   return normalise(a) === normalise(b);
 }
 
-function summarise(store: ProjectStore, path: string): ProjectSummary {
+function summarise(store: ProjectStore, path: string, sessionId: string): ProjectSummary {
   const { name, formatVersion } = store.info;
   return {
+    sessionId,
     name,
     fileName: basename(path),
     formatVersion,
@@ -111,6 +113,8 @@ export class ProjectSession {
   #path: string | undefined;
   /** The open site as last read or saved; commits are checked against it. */
   #site: SiteDoc | undefined;
+  /** This opening of the open site (R6): new each time a site is opened or created. */
+  #sessionId: string | undefined;
   readonly #events: ProjectSessionEvents;
 
   constructor(events: ProjectSessionEvents = {}) {
@@ -124,9 +128,19 @@ export class ProjectSession {
   }
 
   current(): ProjectSummary | null {
-    return this.#store === undefined || this.#path === undefined
+    return this.#store === undefined || this.#path === undefined || this.#sessionId === undefined
       ? null
-      : summarise(this.#store, this.#path);
+      : summarise(this.#store, this.#path, this.#sessionId);
+  }
+
+  /**
+   * Why a call from a renderer loaded for opening `sessionId` can't change the open site: none is
+   * open, or another one has opened since (`stale-session`, R6), as when a hand-off replaced the
+   * site while a save was on its way. `undefined`: it is the open site's.
+   */
+  staleReason(sessionId: string): "no-site" | "stale-session" | undefined {
+    if (this.#store === undefined) return "no-site";
+    return sessionId === this.#sessionId ? undefined : "stale-session";
   }
 
   /**
@@ -135,12 +149,21 @@ export class ProjectSession {
    */
   create(path: string): ProjectResult {
     const target = withProjectExtension(path);
-    // The current site's file can't be replaced while it is open.
-    if (this.#path !== undefined && samePath(this.#path, target)) {
+    // The current site's file can't be replaced while it is open: it is closed first, and opened
+    // again, as the same opening, if the new site can't be made.
+    const replaced =
+      this.#path !== undefined && samePath(this.#path, target)
+        ? { path: this.#path, sessionId: this.#sessionId }
+        : undefined;
+    if (replaced !== undefined) {
       this.close();
     }
     const name = basename(target, extname(target)).trim() || t("site.untitledName");
-    return this.#replaceWith(target, () => ProjectStore.create(target, { name }));
+    const result = this.#replaceWith(target, () => ProjectStore.create(target, { name }));
+    if (result.status === "failed" && replaced !== undefined) {
+      this.#replaceWith(replaced.path, () => ProjectStore.open(replaced.path), replaced.sessionId);
+    }
+    return result;
   }
 
   /** Opens the site at `path`. */
@@ -332,9 +355,15 @@ export class ProjectSession {
     this.#store = undefined;
     this.#path = undefined;
     this.#site = undefined;
+    this.#sessionId = undefined;
   }
 
-  #replaceWith(path: string, openStore: () => ProjectStore): ProjectResult {
+  /** Opens the store `openStore` makes in place of the open one, as opening `sessionId`. */
+  #replaceWith(
+    path: string,
+    openStore: () => ProjectStore,
+    sessionId: string = randomUUID(),
+  ): ProjectResult {
     let store: ProjectStore;
     try {
       store = openStore();
@@ -344,7 +373,8 @@ export class ProjectSession {
     this.close();
     this.#store = store;
     this.#path = path;
+    this.#sessionId = sessionId;
     this.#events.opened?.(store, path);
-    return { status: "opened", project: summarise(store, path) };
+    return { status: "opened", project: summarise(store, path, sessionId) };
   }
 }

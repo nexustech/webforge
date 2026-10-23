@@ -3,6 +3,8 @@ import { describe, expect, it, vi } from "vitest";
 import { DEFAULT_PREFERENCES } from "../shared/ipc/prefs.js";
 import { createWebforgeApi, type Invoke, type Subscribe } from "./api.js";
 
+const SESSION = "9b2f6c1e-4d3a-4f7b-8e21-5c6d7a8b9c0d";
+
 const noEvents: Subscribe = () => () => undefined;
 
 /** The API without main-process events, for the request/response tests. */
@@ -25,6 +27,7 @@ describe("createWebforgeApi", () => {
 
   it("calls the site channels and returns their parsed results", async () => {
     const project = {
+      sessionId: SESSION,
       name: "Bakery",
       fileName: "Bakery.wforge",
       formatVersion: 1,
@@ -51,8 +54,8 @@ describe("createWebforgeApi", () => {
     await expect(api.project.getCurrent()).resolves.toBeNull();
     await expect(api.project.readSite()).resolves.toEqual({ status: "ok", site });
     const changes = changedDocuments(undefined, site);
-    await expect(api.project.commit(changes)).resolves.toEqual({ status: "saved" });
-    expect(invoke).toHaveBeenLastCalledWith("project:commit", changes);
+    await expect(api.project.commit(SESSION, changes)).resolves.toEqual({ status: "saved" });
+    expect(invoke).toHaveBeenLastCalledWith("project:commit", SESSION, changes);
   });
 
   it("rejects a site result that does not match the contract", async () => {
@@ -109,10 +112,12 @@ describe("createWebforgeApi site export", () => {
     const api = apiWith(invoke);
 
     await expect(api.project.getUiState()).resolves.toEqual({ editorMode: "content" });
-    await expect(api.project.setUiState({ editorMode: "design" })).resolves.toEqual({
+    await expect(api.project.setUiState(SESSION, { editorMode: "design" })).resolves.toEqual({
       status: "saved",
     });
-    expect(invoke).toHaveBeenLastCalledWith("project:set-ui-state", { editorMode: "design" });
+    expect(invoke).toHaveBeenLastCalledWith("project:set-ui-state", SESSION, {
+      editorMode: "design",
+    });
     await expect(
       apiWith(async () => ({ editorMode: "zoom" })).project.getUiState(),
     ).rejects.toThrow();
@@ -146,9 +151,9 @@ describe("createWebforgeApi site export", () => {
     const api = apiWith(invoke);
     const files = [{ fileName: "shop.jpg", data: new Uint8Array([0xff, 0xd8]) }];
 
-    await expect(api.media.import(files)).resolves.toEqual(result);
+    await expect(api.media.import(SESSION, files)).resolves.toEqual(result);
     await expect(api.media.choose()).resolves.toEqual(result);
-    expect(invoke).toHaveBeenNthCalledWith(1, "media:import", files);
+    expect(invoke).toHaveBeenNthCalledWith(1, "media:import", SESSION, files);
     expect(invoke).toHaveBeenNthCalledWith(2, "media:choose");
     await expect(
       apiWith(async () => ({ ...result, items: [{ ...item, hash: "x" }] })).media.choose(),

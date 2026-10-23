@@ -218,7 +218,7 @@ test.describe("desktop shell", () => {
         const { project } = (window as unknown as RendererWindow).webforge;
         await project.create();
         const empty = await project.readSite();
-        const saved = await project.commit(changes);
+        const saved = await project.commit((await project.getCurrent())?.sessionId ?? "", changes);
         await project.open();
         return { empty, saved, read: await project.readSite() };
       },

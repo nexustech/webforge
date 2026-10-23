@@ -11,6 +11,7 @@ import type { ProjectSession } from "./project-session.js";
 type Handler = (event: IpcMainInvokeEvent, ...args: unknown[]) => Promise<unknown>;
 
 const APP_URL = "file:///app/index.html";
+const SESSION = "9b2f6c1e-4d3a-4f7b-8e21-5c6d7a8b9c0d";
 const tempDir = tempDirFactory("webforge-media-ipc-");
 const pdf = new TextEncoder().encode("%PDF-1.7\nprice list");
 
@@ -21,8 +22,11 @@ function setUp(chosen: readonly string[] | undefined, open = true) {
   } as unknown as Pick<IpcMain, "handle">;
   const session = {
     current: vi.fn(() => (open ? { name: "Bakery" } : null)),
+    staleReason: vi.fn((sessionId: string) =>
+      !open ? "no-site" : sessionId === SESSION ? undefined : "stale-session",
+    ),
     storeAsset: vi.fn(() => ({ status: "stored", hash: "a".repeat(64) })),
-  } as unknown as Pick<ProjectSession, "storeAsset" | "current">;
+  } as unknown as Pick<ProjectSession, "storeAsset" | "current" | "staleReason">;
   const chooseMediaFiles = vi.fn(async () => chosen);
   registerMediaHandlers(ipc, (url) => url === APP_URL, session, { chooseMediaFiles });
   const invoke = (channel: string, ...args: unknown[]) =>
@@ -34,7 +38,7 @@ describe("registerMediaHandlers", () => {
   it("imports dropped files from their bytes", async () => {
     const { invoke, session } = setUp(undefined);
 
-    const result = await invoke("media:import", [{ fileName: "prices.pdf", data: pdf }]);
+    const result = await invoke("media:import", SESSION, [{ fileName: "prices.pdf", data: pdf }]);
 
     expect(result).toMatchObject({ status: "imported", items: [{ fileName: "prices.pdf" }] });
     expect(session.storeAsset).toHaveBeenCalledWith(
@@ -42,14 +46,27 @@ describe("registerMediaHandlers", () => {
     );
   });
 
+  it("imports nothing for a renderer loaded for a site another one has replaced (R6)", async () => {
+    const { invoke, session } = setUp(undefined);
+
+    await expect(
+      invoke("media:import", "3c1d2e4f-5a6b-4c7d-8e9f-0a1b2c3d4e5f", [
+        { fileName: "prices.pdf", data: pdf },
+      ]),
+    ).resolves.toEqual({ status: "failed", reason: "stale-session" });
+    expect(session.storeAsset).not.toHaveBeenCalled();
+  });
+
   it("refuses a drop with a path for a name or more than 50 MB of bytes", async () => {
     const { invoke } = setUp(undefined);
 
     await expect(
-      invoke("media:import", [{ fileName: "../prices.pdf", data: pdf }]),
+      invoke("media:import", SESSION, [{ fileName: "../prices.pdf", data: pdf }]),
     ).rejects.toThrow();
     await expect(
-      invoke("media:import", [{ fileName: "big.pdf", data: new Uint8Array(MAX_MEDIA_BYTES + 1) }]),
+      invoke("media:import", SESSION, [
+        { fileName: "big.pdf", data: new Uint8Array(MAX_MEDIA_BYTES + 1) },
+      ]),
     ).rejects.toThrow();
   });
 
@@ -58,7 +75,7 @@ describe("registerMediaHandlers", () => {
     const full = new Uint8Array(MAX_MEDIA_BYTES);
 
     await expect(
-      invoke("media:import", [
+      invoke("media:import", SESSION, [
         { fileName: "a.pdf", data: full },
         { fileName: "b.pdf", data: full },
         { fileName: "c.pdf", data: pdf },

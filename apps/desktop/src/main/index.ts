@@ -467,6 +467,7 @@ async function start(): Promise<void> {
         image: (file) => importMediaFiles(projectSession, [file]),
       },
     ),
+    projectSession,
   );
   crashReports.registerHandlers(ipcMain, (senderUrl) => isAppUrl(senderUrl, appUrl));
   flushOnClose = createFlushOnClose(ipcMain, (senderUrl) => isAppUrl(senderUrl, appUrl), {

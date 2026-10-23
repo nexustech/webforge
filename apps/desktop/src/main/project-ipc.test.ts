@@ -12,6 +12,7 @@ const project = {
   fileName: "Bakery.wforge",
   formatVersion: 1,
   syncService: null,
+  sessionId: "9b2f6c1e-4d3a-4f7b-8e21-5c6d7a8b9c0d",
 };
 const opened: ProjectResult = { status: "opened", project };
 
@@ -33,6 +34,9 @@ function setUp(
     commit: vi.fn(() => ({ status: "saved" })),
     uiState: vi.fn(() => ({ editorMode: "content" })),
     setUiState: vi.fn(() => ({ status: "saved" })),
+    staleReason: vi.fn((sessionId: string) =>
+      sessionId === project.sessionId ? undefined : "stale-session",
+    ),
   };
   registerProjectHandlers(
     ipc,
@@ -93,8 +97,30 @@ describe("registerProjectHandlers", () => {
     const changes = [{ type: "delete", id: "page:about" }];
 
     await expect(invoke("project:read-site")).resolves.toEqual({ status: "empty" });
-    await expect(invoke("project:commit", APP_URL, changes)).resolves.toEqual({ status: "saved" });
+    await expect(invoke("project:commit", APP_URL, project.sessionId, changes)).resolves.toEqual({
+      status: "saved",
+    });
     expect(session.commit).toHaveBeenCalledWith(changes);
+  });
+
+  it("refuses changes and the editor mode from a renderer loaded for another site (R6)", async () => {
+    const { invoke, session } = setUp();
+    const late = "3c1d2e4f-5a6b-4c7d-8e9f-0a1b2c3d4e5f";
+
+    await expect(
+      invoke("project:commit", APP_URL, late, [{ type: "delete", id: "page:about" }]),
+    ).resolves.toEqual({ status: "failed", reason: "stale-session" });
+    await expect(
+      invoke("project:set-ui-state", APP_URL, late, { editorMode: "design" }),
+    ).resolves.toEqual({ status: "failed", reason: "stale-session" });
+    expect(session.commit).not.toHaveBeenCalled();
+    expect(session.setUiState).not.toHaveBeenCalled();
+    // A renderer with no site (one in memory) sends the nil UUID: refused the same way.
+    await expect(
+      invoke("project:commit", APP_URL, "00000000-0000-0000-0000-000000000000", []),
+    ).resolves.toEqual({ status: "failed", reason: "stale-session" });
+    // Not a session id at all: refused by the contract.
+    await expect(invoke("project:commit", APP_URL, "x", [])).rejects.toThrow();
   });
 
   it("rejects change lists that don't match the contract", async () => {
@@ -109,7 +135,7 @@ describe("registerProjectHandlers", () => {
     ];
 
     for (const changes of bad) {
-      await expect(invoke("project:commit", APP_URL, changes)).rejects.toThrow();
+      await expect(invoke("project:commit", APP_URL, project.sessionId, changes)).rejects.toThrow();
     }
     expect(session.commit).not.toHaveBeenCalled();
   });
@@ -209,9 +235,11 @@ describe("registerProjectHandlers", () => {
 
     await expect(invoke("project:get-ui-state")).resolves.toEqual({ editorMode: "content" });
     await expect(
-      invoke("project:set-ui-state", APP_URL, { editorMode: "design" }),
+      invoke("project:set-ui-state", APP_URL, project.sessionId, { editorMode: "design" }),
     ).resolves.toEqual({ status: "saved" });
     expect(session.setUiState).toHaveBeenCalledWith({ editorMode: "design" });
-    await expect(invoke("project:set-ui-state", APP_URL, { editorMode: "zoom" })).rejects.toThrow();
+    await expect(
+      invoke("project:set-ui-state", APP_URL, project.sessionId, { editorMode: "zoom" }),
+    ).rejects.toThrow();
   });
 });

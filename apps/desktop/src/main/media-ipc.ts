@@ -69,12 +69,14 @@ async function readChosenFile(path: string): Promise<ImportFile | undefined> {
 export function registerMediaHandlers(
   ipc: Pick<IpcMain, "handle">,
   isTrustedSender: (senderUrl: string) => boolean,
-  session: Pick<ProjectSession, "storeAsset" | "current">,
+  session: Pick<ProjectSession, "storeAsset" | "current" | "staleReason">,
   dialogs: MediaDialogs,
 ): void {
-  registerIpcHandler(ipc, "importMedia", isTrustedSender, (files) =>
-    importMediaFiles(session, files),
-  );
+  // Into the site the renderer was loaded for only (R6).
+  registerIpcHandler(ipc, "importMedia", isTrustedSender, (sessionId, files) => {
+    const reason = session.staleReason(sessionId);
+    return reason === undefined ? importMediaFiles(session, files) : { status: "failed", reason };
+  });
   registerIpcHandler(ipc, "chooseMedia", isTrustedSender, async () => {
     // No dialog without a site to import into.
     if (session.current() === null) {

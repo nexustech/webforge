@@ -64,7 +64,13 @@ const elementClipboard = (site: ClipboardSite, clipboard = system, media = impor
 function fakeSite(has = true) {
   const stored: { item: MediaMeta; data: Uint8Array | undefined }[] = [];
   const site: ClipboardSite = {
-    current: () => ({ name: "Site", fileName: "Site.wforge", formatVersion: 1, syncService: null }),
+    current: () => ({
+      sessionId: "9b2f6c1e-4d3a-4f7b-8e21-5c6d7a8b9c0d",
+      name: "Site",
+      fileName: "Site.wforge",
+      formatVersion: 1,
+      syncService: null,
+    }),
     readMedia: (hash) =>
       has && hash === photo.hash ? { mime: "image/jpeg", data: bytes } : undefined,
     storeCopiedMedia: (item, read) => {

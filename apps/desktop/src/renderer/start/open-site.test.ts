@@ -1,7 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 import { openSiteWith } from "./open-site.js";
 
-const project = { name: "Bakery", fileName: "Bakery.wforge", formatVersion: 1, syncService: null };
+const project = {
+  sessionId: "9b2f6c1e-4d3a-4f7b-8e21-5c6d7a8b9c0d",
+  name: "Bakery",
+  fileName: "Bakery.wforge",
+  formatVersion: 1,
+  syncService: null,
+};
 
 describe("openSiteWith", () => {
   it("restarts the window with the site once it is open", async () => {

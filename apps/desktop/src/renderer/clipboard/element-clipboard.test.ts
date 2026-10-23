@@ -44,12 +44,12 @@ const photo: ImageMeta = {
 function fakeClipboard(held?: ClipboardReadResult) {
   let copied: CopiedElements | undefined;
   return {
-    write: vi.fn(async (elements: CopiedElements) => {
+    write: vi.fn(async (_session: string, elements: CopiedElements) => {
       copied = structuredClone(elements);
       return { status: "copied" } as const;
     }),
     read: vi.fn(
-      async (): Promise<ClipboardReadResult> =>
+      async (_session: string): Promise<ClipboardReadResult> =>
         held ??
         (copied === undefined ? { status: "empty" } : { status: "elements", elements: copied }),
     ),
@@ -115,6 +115,7 @@ describe("copy and paste (1.25)", () => {
     select(first, "hero");
     await copySelected(first, clipboard, vi.fn());
     expect(clipboard.write).toHaveBeenCalledWith(
+      expect.any(String),
       expect.objectContaining({ media: [expect.objectContaining({ id: "photo" })] }),
     );
 
@@ -474,6 +475,7 @@ describe("copy and paste of shared sections (1.29, F-ED-23)", () => {
 
     await copySelected(session, clipboard, vi.fn());
     expect(clipboard.write).toHaveBeenCalledWith(
+      expect.any(String),
       expect.objectContaining({ nodes: [shared.section], sharedSectionId: shared.id }),
     );
     expect(await pasteElements(session, clipboard, vi.fn())).toBe(true);
@@ -511,7 +513,7 @@ describe("copy and paste of shared sections (1.29, F-ED-23)", () => {
 
     await copySelected(session, clipboard, vi.fn(), true);
 
-    const [elements] = clipboard.write.mock.calls[0] ?? [];
+    const [, elements] = clipboard.write.mock.calls[0] ?? [];
     expect(elements?.nodes).toEqual([heading(shared.section)]);
     expect(elements?.sharedSectionId).toBeUndefined();
     const now = session.history.document.getState().sharedSections[shared.id]?.section;

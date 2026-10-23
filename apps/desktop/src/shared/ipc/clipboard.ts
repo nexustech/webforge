@@ -1,11 +1,16 @@
 import { type CopiedElements, copiedElementsSchema, mediaMetaSchema } from "@webforge/model";
 import { z } from "zod";
 import { rejectedFileSchema } from "./media.js";
+import { sessionIdSchema } from "./project.js";
 
 /** Outcome of a copy: the elements are on the system clipboard, with their images kept aside. */
 const writeResultSchema = z.discriminatedUnion("status", [
   z.strictObject({ status: z.literal("copied") }),
-  z.strictObject({ status: z.literal("failed"), reason: z.enum(["no-site", "unknown"]) }),
+  z.strictObject({
+    status: z.literal("failed"),
+    /** `stale-session`: another site opened since the renderer loaded (R6). */
+    reason: z.enum(["no-site", "stale-session", "unknown"]),
+  }),
 ]);
 
 /** Outcome of a copy. */
@@ -32,7 +37,7 @@ const readResultSchema = z.discriminatedUnion("status", [
   z.strictObject({ status: z.literal("empty") }),
   z.strictObject({
     status: z.literal("failed"),
-    reason: z.enum(["no-site", "read-only", "unknown"]),
+    reason: z.enum(["no-site", "stale-session", "read-only", "unknown"]),
   }),
 ]);
 
@@ -44,7 +49,7 @@ export const clipboardChannels = {
   /** Puts copied elements on the system clipboard, keeping their images for a later paste. */
   writeClipboard: {
     channel: "clipboard:write",
-    request: z.tuple([copiedElementsSchema]),
+    request: z.tuple([sessionIdSchema, copiedElementsSchema]),
     response: writeResultSchema,
   },
   /**
@@ -53,7 +58,7 @@ export const clipboardChannels = {
    */
   readClipboard: {
     channel: "clipboard:read",
-    request: z.tuple([]),
+    request: z.tuple([sessionIdSchema]),
     response: readResultSchema,
   },
 } as const;
@@ -61,7 +66,10 @@ export const clipboardChannels = {
 /** `window.webforge.clipboard`. */
 export interface ClipboardApi {
   /** Copies elements (F-ED-16), to paste on any page of this site or another one opened later. */
-  write(elements: CopiedElements): Promise<ClipboardWriteResult>;
-  /** Reads copied elements, image files or an image for a paste. */
-  read(): Promise<ClipboardReadResult>;
+  write(sessionId: string, elements: CopiedElements): Promise<ClipboardWriteResult>;
+  /**
+   * Reads copied elements, image files or an image for a paste; images it imports go into the open
+   * site only if it is still the opening `sessionId` names.
+   */
+  read(sessionId: string): Promise<ClipboardReadResult>;
 }
