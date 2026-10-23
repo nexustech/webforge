@@ -335,10 +335,20 @@ const CONTROL_ROLES: ReadonlySet<string> = new Set([
   "treeitem",
 ]);
 
-/** Whether `target` is inside an open dialog. Duck-typed, as in {@link isFocusedControl}. */
-function isInDialog(target: EventTarget | null): boolean {
+/** Open modal dialogs and menus, which own the keys while they're open. */
+const MODAL = '[role="dialog"][aria-modal="true"], [role="alertdialog"], [role="menu"]';
+
+/**
+ * Whether a dialog or a menu has the keys: `target` is inside one, or the editor window `doc` has
+ * a modal dialog or a menu open (a key pressed in the canvas while one is open counts too).
+ * Duck-typed, as in {@link isFocusedControl}.
+ */
+function isInDialog(target: EventTarget | null, doc: Pick<Document, "querySelector">): boolean {
   const element = target as { closest?: (selector: string) => unknown } | null;
-  return element?.closest?.('[role="dialog"], [role="alertdialog"]') != null;
+  return (
+    element?.closest?.('[role="dialog"], [role="alertdialog"], [role="menu"]') != null ||
+    doc.querySelector(MODAL) !== null
+  );
 }
 
 /**
@@ -397,9 +407,9 @@ function isForText(target: Window, event: KeyboardEvent): boolean {
  */
 export function installCommandShortcuts(target: Window, registry: CommandRegistry): () => void {
   const onKeyDown = (event: KeyboardEvent) => {
-    // In a dialog (the sheet, Link, Rename) no command runs: the page behind it must not change,
-    // and Mod keys such as Mod+D would change it.
-    if (event.defaultPrevented || event.repeat || isInDialog(event.target)) {
+    // While a dialog (the sheet, Link, Rename) or a menu is open, no command runs: the page behind
+    // it must not change, and Mod keys such as Mod+D would change it.
+    if (event.defaultPrevented || event.repeat || isInDialog(event.target, document)) {
       return;
     }
     const inControl = isFocusedControl(event.target);

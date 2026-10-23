@@ -165,7 +165,14 @@ describe("shortcuts", () => {
   });
 
   it("matches a letter with Option on a Mac by the key's place, as Option changes the character", () => {
-    // ⌘⌥B types ∫ on a Mac keyboard.
+    // ⌘⌥S types ß on a Mac keyboard, ⌘⌥B ∫.
+    expect(
+      matchesShortcut(
+        key({ key: "ß", code: "KeyS", metaKey: true, altKey: true }),
+        "Mod+Alt+S",
+        true,
+      ),
+    ).toBe(true);
     expect(
       matchesShortcut(
         key({ key: "∫", code: "KeyB", metaKey: true, altKey: true }),
@@ -366,7 +373,7 @@ describe("shortcuts", () => {
       }
     });
 
-    it("runs no command, Mod keys included, from inside an open dialog", () => {
+    it("runs no command, Mod keys included, while a dialog or a menu has the keys", () => {
       const registry = withKeys({ duplicate: { keys: ["Mod+D"] } });
       const run = vi.fn();
       registry.register({ id: "duplicate", label: "Duplicate", run });
@@ -377,12 +384,19 @@ describe("shortcuts", () => {
       const inDialog = document.createElement("p");
       dialog.append(inDialog);
       document.body.append(dialog);
+      const press = (on: EventTarget) =>
+        on.dispatchEvent(key({ key: "d", ctrlKey: ctrl, metaKey: !ctrl, bubbles: true }));
       try {
-        inDialog.dispatchEvent(key({ key: "d", ctrlKey: ctrl, metaKey: !ctrl, bubbles: true }));
+        press(inDialog);
         expect(run).not.toHaveBeenCalled();
-        document.body.dispatchEvent(
-          key({ key: "d", ctrlKey: ctrl, metaKey: !ctrl, bubbles: true }),
-        );
+        press(document.body);
+        expect(run).toHaveBeenCalledOnce();
+        // A modal dialog open, or a menu, with the key pressed elsewhere: still nothing.
+        dialog.setAttribute("aria-modal", "true");
+        press(document.body);
+        dialog.setAttribute("role", "menu");
+        dialog.removeAttribute("aria-modal");
+        press(document.body);
         expect(run).toHaveBeenCalledOnce();
       } finally {
         dialog.remove();
