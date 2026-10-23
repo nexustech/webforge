@@ -127,14 +127,14 @@ describe("EditPanelHost", () => {
     const size = screen.getByLabelText("Size");
     await user.selectOptions(size, "small");
 
-    fireEvent.contextMenu(size);
+    fireEvent.contextMenu(screen.getByText("Size", { selector: "label" }));
     await user.click(await screen.findByRole("menuitem", { name: "Reset to Default" }));
 
     expect(labels()).toEqual(["Changed Heading size", "Reset Heading size"]);
     // The Heading's own default, not the starter site's value.
     expect(heading()?.size).toBe(siteLibrary.components.Heading?.defaults.size);
     expect(session.history.entries()[1]?.selectionAfter.nodeId).toBe("heading-1");
-    fireEvent.contextMenu(screen.getByLabelText("Size"));
+    fireEvent.contextMenu(screen.getByText("Size", { selector: "label" }));
     expect(
       (await screen.findByRole("menuitem", { name: "Reset to Default" })).getAttribute(
         "aria-disabled",

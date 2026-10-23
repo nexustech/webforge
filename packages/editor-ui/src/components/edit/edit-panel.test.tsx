@@ -264,7 +264,8 @@ describe("style field renderers (1.14 part 2)", () => {
   it("resets a changed field from its right-click menu or with Ctrl/Cmd+Esc (UX-13)", async () => {
     const { onResetToDefault, user } = renderStyle({ changed: true });
 
-    fireEvent.contextMenu(screen.getByRole("radiogroup", { name: "Padding" }));
+    // A right-click on the field's label (a text field keeps its own menu, with spelling).
+    fireEvent.contextMenu(screen.getByText("Padding", { selector: "label" }));
     await user.click(await screen.findByRole("menuitem", { name: "Reset to Default" }));
     expect(onResetToDefault).toHaveBeenLastCalledWith(["padding"]);
 
@@ -273,10 +274,18 @@ describe("style field renderers (1.14 part 2)", () => {
     expect(onResetToDefault).toHaveBeenCalledTimes(2);
   });
 
+  it("leaves a right-click in a field to the field (its own menu: spelling, cut, copy, paste)", () => {
+    renderStyle({ changed: true });
+
+    fireEvent.contextMenu(screen.getByRole("radio", { name: "Small" }));
+
+    expect(screen.queryByRole("menuitem", { name: "Reset to Default" })).toBeNull();
+  });
+
   it("offers no reset for a field that is as it was by default", async () => {
     const { onResetToDefault, user } = renderStyle();
 
-    fireEvent.contextMenu(screen.getByLabelText("Gap"));
+    fireEvent.contextMenu(screen.getByText("Gap", { selector: "label" }));
     const reset = await screen.findByRole("menuitem", { name: "Reset to Default" });
     expect(reset.getAttribute("aria-disabled")).toBe("true");
     await user.keyboard("{Escape}");

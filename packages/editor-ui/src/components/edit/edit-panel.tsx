@@ -295,7 +295,7 @@ function FieldList({
   );
 }
 
-/** One field: its label, its per-device dot, and its renderer, with a menu to reset it. */
+/** One field: its label, its per-device dot, and its renderer; the label's menu resets it. */
 function FieldRow({
   idPrefix,
   field,
@@ -321,9 +321,10 @@ function FieldRow({
       ? () => onResetToDefault([field.name])
       : undefined;
   return (
-    <ContextMenu>
-      <ContextMenuTrigger asChild>
-        <div className="flex flex-col gap-1" data-field={field.name}>
+    <div className="flex flex-col gap-1" data-field={field.name}>
+      {/* The menu is the label's: a right-click in a text field keeps its own (spelling, F-ED-19). */}
+      <ContextMenu>
+        <ContextMenuTrigger asChild>
           <div className="flex items-center gap-1.5">
             <label id={labelId} htmlFor={id} className="text-xs text-muted-foreground">
               {field.label}
@@ -337,22 +338,22 @@ function FieldRow({
               />
             ) : null}
           </div>
-          <Renderer
-            id={id}
-            labelId={labelId}
-            field={field}
-            value={field.value}
-            onChange={(value) => onChange(field.name, value)}
-            onCommit={() => onCommit(field.name)}
-          />
-        </div>
-      </ContextMenuTrigger>
-      <ContextMenuContent>
-        <ContextMenuItem disabled={resetField === undefined} onSelect={resetField}>
-          {t("editPanel.resetField")}
-        </ContextMenuItem>
-      </ContextMenuContent>
-    </ContextMenu>
+        </ContextMenuTrigger>
+        <ContextMenuContent>
+          <ContextMenuItem disabled={resetField === undefined} onSelect={resetField}>
+            {t("editPanel.resetField")}
+          </ContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenu>
+      <Renderer
+        id={id}
+        labelId={labelId}
+        field={field}
+        value={field.value}
+        onChange={(value) => onChange(field.name, value)}
+        onCommit={() => onCommit(field.name)}
+      />
+    </div>
   );
 }
 
