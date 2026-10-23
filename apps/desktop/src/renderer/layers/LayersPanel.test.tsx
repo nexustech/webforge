@@ -1,5 +1,13 @@
 // @vitest-environment happy-dom
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  createEvent,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ComponentProps } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -48,6 +56,7 @@ function setUp(
     rename: vi.fn(),
     setHidden: vi.fn(),
     move: vi.fn(),
+    copy: vi.fn(),
     moveUp: command(),
     moveDown: command(),
     duplicate: command(),
@@ -245,6 +254,43 @@ describe("LayersPanel (F-ED-12)", () => {
       ["a", 1],
       ["c", 0],
     ]);
+  });
+
+  it("copies a layer dragged with Ctrl or Cmd, with Shift for a linked copy (1.35, UX-4)", () => {
+    const { actions } = setUp();
+    const rows = screen.getAllByRole("treeitem");
+    const drag = (
+      from: number,
+      to: number,
+      keys: { ctrlKey?: boolean; metaKey?: boolean; shiftKey?: boolean },
+    ) => {
+      const dataTransfer = { setData: vi.fn(), effectAllowed: "" };
+      const target = rows[to] as HTMLElement;
+      // happy-dom's drag events don't take the keys from their init: they are set on the event.
+      const withKeys = (event: Event) => {
+        for (const [key, value] of Object.entries(keys))
+          Object.defineProperty(event, key, { value });
+        return event;
+      };
+      fireEvent.dragStart(rows[from] as HTMLElement, { dataTransfer });
+      fireEvent(target, withKeys(createEvent.dragOver(target, { dataTransfer })));
+      fireEvent(target, withKeys(createEvent.drop(target, { dataTransfer })));
+      fireEvent.dragEnd(rows[from] as HTMLElement, { dataTransfer });
+    };
+
+    // happy-dom lays nothing out: each drop lands before its row, counted with the original there.
+    drag(1, 3, { ctrlKey: true });
+    drag(3, 1, { metaKey: true, shiftKey: true });
+    // Onto itself, a copy goes next to it; another Section's sibling still isn't a target.
+    drag(2, 2, { ctrlKey: true });
+    drag(1, 4, { ctrlKey: true });
+
+    expect(actions.copy.mock.calls).toEqual([
+      ["a", 2, false],
+      ["c", 0, true],
+      ["b", 1, false],
+    ]);
+    expect(actions.move).not.toHaveBeenCalled();
   });
 
   it("doesn't drag a selected layer while others are selected too, but drags one that isn't (#262)", () => {

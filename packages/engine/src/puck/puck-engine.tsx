@@ -79,6 +79,7 @@ import {
 import { createDragSources } from "./drag-sources.js";
 import { editFromAction, selectedNodeId, toPageDoc } from "./edit-from-action.js";
 import { keepElementsEnabled } from "./enabled-elements.js";
+import { hidePuckLayout } from "./layout-styles.js";
 import { pageActions, type SlotsOf } from "./page-actions.js";
 import { createFormatToolbar } from "./rich-text.js";
 import { performOnSelected } from "./selected-actions.js";
@@ -1010,7 +1011,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
           overrides={overrides}
           iframe={iframe}
           // The editor's own Edit panel shows the fields (1.14), not Puck's right sidebar; its Add
-          // panel (1.13) and Layers (1.24) replace Puck's left one.
+          // panel (1.13) and Layers (1.24) replace Puck's left one, and its rail is hidden (#274).
           ui={{
             leftSideBarVisible: false,
             rightSideBarVisible: false,
@@ -1036,6 +1037,8 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
         throw new Error("The canvas engine is already mounted");
       }
       host = el;
+      // Only Puck's canvas shows: the editor has its own Add, Layers and Edit panels (#274).
+      hidePuckLayout(el);
       library = opts.library;
       const slots = new Map(
         Object.entries(opts.library.components).map(([type, def]) => [

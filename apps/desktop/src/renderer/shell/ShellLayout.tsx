@@ -3,6 +3,7 @@ import {
   type ResizableLayout,
   ResizablePanel,
   ResizablePanelGroup,
+  type ResizablePanelGroupHandle,
   type ResizablePanelHandle,
   Tabs,
   TabsContent,
@@ -22,6 +23,8 @@ import { type PanelSlot, panelsInSlot } from "./panels.js";
 export const PANEL_GROUPS = {
   columns: "shell.columns",
   center: "shell.center",
+  /** The left column's tabs over its lower pane (ADR 0011). */
+  left: "shell.left",
 } as const;
 
 /**
@@ -35,13 +38,28 @@ const DEFAULTS = {
   sideMax: "360px",
   centerMin: "40%",
   drawer: "25%",
+  // The left column's lower pane (Layers) keeps between 15% and 85% of its height (ADR 0011).
+  lowerMin: "15%",
+  lowerMax: "85%",
 } as const;
 
-/** The slots each part of the window shows, top slot first. */
+/** The left column's tabs over its lower pane (Layers): UI1's 60/40 (ADR 0011). */
+const LEFT_SPLIT = { tabs: 60, lower: 40 } as const;
+
+/** The slots each part of the window shows as tabs, top slot first. */
 const SLOTS = {
   left: ["left.top", "left.bottom"],
+  /** Under the left column's tabs, shown at the same time (ADR 0011). */
+  leftLower: ["left.lower"],
   right: ["right.top", "right.bottom"],
   drawer: ["drawer"],
+} as const satisfies Record<string, readonly PanelSlot[]>;
+
+/** The slots in each collapsible part of the window. */
+const AREAS = {
+  left: [...SLOTS.left, ...SLOTS.leftLower],
+  right: SLOTS.right,
+  drawer: SLOTS.drawer,
 } as const satisfies Record<string, readonly PanelSlot[]>;
 
 /** Props of {@link ShellLayout}. */
@@ -140,6 +158,7 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
   const left = useRef<ResizablePanelHandle | null>(null);
   const right = useRef<ResizablePanelHandle | null>(null);
   const drawer = useRef<ResizablePanelHandle | null>(null);
+  const leftSplit = useRef<ResizablePanelGroupHandle | null>(null);
   /**
    * When the person last asked for a layout change through a command (toggle, Reset Panels).
    * Only their own changes are saved: the library also reports automatic ones, such as the first
@@ -148,11 +167,12 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
   const commandAt = useRef(Number.NEGATIVE_INFINITY);
   const panelRegistry = usePanelRegistry();
   const panels = usePanels();
-  const hasPanels = (side: "left" | "right") =>
-    panelsInSlot(panels, `${side}.top`, editorLevel).length > 0 ||
-    panelsInSlot(panels, `${side}.bottom`, editorLevel).length > 0;
-  const showLeft = hasPanels("left");
-  const showRight = hasPanels("right");
+  const hasPanels = (slots: readonly PanelSlot[]) =>
+    slots.some((slot) => panelsInSlot(panels, slot, editorLevel).length > 0);
+  const showLeft = hasPanels(AREAS.left);
+  const showRight = hasPanels(AREAS.right);
+  // Layers, under the left column's tabs (ADR 0011).
+  const showLower = hasPanels(SLOTS.leftLower);
 
   useEffect(() => {
     const byCommand =
@@ -190,6 +210,7 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
             column?.resize(DEFAULTS.sideWidth);
           }
           drawer.current?.collapse();
+          leftSplit.current?.setLayout(LEFT_SPLIT);
         }),
       }),
     ];
@@ -207,7 +228,7 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
           ["right", right.current],
           ["drawer", drawer.current],
         ] as const) {
-          const holds = SLOTS[side].some((slot) =>
+          const holds = AREAS[side].some((slot) =>
             panelsInSlot(panelRegistry.list(), slot, editorLevel).some((panel) => panel.id === id),
           );
           if (holds && column?.isCollapsed() === true) {
@@ -284,7 +305,30 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
             groupResizeBehavior="preserve-pixel-size"
           >
             <section aria-label={t("panels.left")} className="h-full">
-              <PanelTabs slots={SLOTS.left} editorLevel={editorLevel} />
+              {showLower ? (
+                // The tabs over the lower pane, both shown at once (ADR 0011).
+                <ResizablePanelGroup
+                  id={PANEL_GROUPS.left}
+                  groupRef={leftSplit}
+                  orientation="vertical"
+                  defaultLayout={layout[PANEL_GROUPS.left] ?? LEFT_SPLIT}
+                  onLayoutChanged={remember(PANEL_GROUPS.left)}
+                >
+                  <ResizablePanel id="tabs" minSize={DEFAULTS.lowerMin}>
+                    <PanelTabs slots={SLOTS.left} editorLevel={editorLevel} />
+                  </ResizablePanel>
+                  <ResizableHandle aria-label={t("panels.resizeLower")} />
+                  <ResizablePanel
+                    id="lower"
+                    minSize={DEFAULTS.lowerMin}
+                    maxSize={DEFAULTS.lowerMax}
+                  >
+                    <PanelTabs slots={SLOTS.leftLower} editorLevel={editorLevel} />
+                  </ResizablePanel>
+                </ResizablePanelGroup>
+              ) : (
+                <PanelTabs slots={SLOTS.left} editorLevel={editorLevel} />
+              )}
             </section>
           </ResizablePanel>
           <ResizableHandle aria-label={t("panels.resizeLeft")} />

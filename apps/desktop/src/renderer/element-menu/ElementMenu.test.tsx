@@ -37,6 +37,11 @@ function registry(shared: { save: boolean; detach: boolean }) {
     run: () => run("detach"),
   });
   commands.register({
+    id: ELEMENT_MENU_COMMANDS.selectSimilar,
+    label: "Select similar",
+    run: () => run("similar"),
+  });
+  commands.register({
     id: ELEMENT_MENU_COMMANDS.remove,
     label: "Delete",
     enabled: false,
@@ -65,6 +70,7 @@ describe("ElementMenu (1.35)", () => {
       ["Rename", false],
       ["DuplicateCtrl+D", false],
       ["Save as shared section…", false],
+      ["Select similar", false],
       ["DeleteDelete", true],
     ]);
     await userEvent.click(menu().getByRole("menuitem", { name: /Duplicate/ }));
@@ -83,6 +89,7 @@ describe("ElementMenu (1.35)", () => {
       ["Rename", true],
       ["DuplicateCtrl+D", false],
       ["Detach from shared section", false],
+      ["Select similar", false],
       ["DeleteDelete", true],
     ]);
   });
@@ -115,7 +122,7 @@ describe("ElementMenu (1.35)", () => {
       </CommandRegistryProvider>,
     );
 
-    expect(items().slice(3, 7)).toEqual([
+    expect(items().slice(4, 8)).toEqual([
       ["CutCtrl+X", false],
       ["CopyCtrl+C", false],
       ["PasteCtrl+V", false],
@@ -140,7 +147,7 @@ describe("ElementMenu (1.35)", () => {
       </CommandRegistryProvider>,
     );
 
-    expect(items().slice(3, 5)).toEqual([
+    expect(items().slice(4, 6)).toEqual([
       ["Copy StyleCtrl+Alt+C", false],
       ["Paste Style (onto a Heading)Ctrl+Alt+V", true],
     ]);

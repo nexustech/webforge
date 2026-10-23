@@ -52,8 +52,8 @@ The result is a fast, accessible, self-contained static website they fully own.
 | F-ED-8 | **Desktop · Tablet · Mobile** views | Switch instantly; canvas width changes; per-device overrides are visibly marked |
 | F-ED-9 | **Undo / Redo + Undo History panel** (03, Simple mode) | Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z/Ctrl+Y everywhere. Panel lists labelled steps; click to jump. Undo restores selection, page and view. Drags and slider scrubs are single steps |
 | F-ED-10 | **Content mode** (M3) | Toolbar toggle **Design / Content**. Content mode locks layout and styles; text, images, links and list items stay editable |
-| F-ED-11 | **Simple / Advanced mode** (T2) | Advanced adds Layers, the Advanced tab (CSS classes, attributes, anchor ID) and Custom Code. Per-user preference |
-| F-ED-12 | **Layers** (Advanced) | Tree of sections/elements with drag-to-reorder, hide, rename label |
+| F-ED-11 | **Simple / Advanced mode** (T2) | Advanced adds the Advanced tab (CSS classes, attributes, anchor ID) and Custom Code. Layers is in both modes ([ADR 0011](../docs/adr/0011-layers-always-visible.md)). Per-user preference |
+| F-ED-12 | **Layers** | Tree of sections/elements with drag-to-reorder, hide, rename label. Always shown under Add and Undo History, in Simple and Advanced mode; read-only in Content mode ([ADR 0011](../docs/adr/0011-layers-always-visible.md)) |
 | F-ED-13 | **Pages panel** | Add, rename, duplicate, reorder (= navigation order), set Home, *Hide from navigation*, folders. **Delete page asks for confirmation** and is undoable (D5/D7) |
 | F-ED-14 | **Confirmation rule** (D7) | Any action affecting more than the current page (theme switch, delete page, delete shared section, global font/colour change) confirms with its impact ("affects 6 pages") and is undoable |
 | F-ED-15 | **Custom Code** (C7, Advanced) | Custom HTML element; site `custom.css`/`custom.js`; head/body snippets. Scripts off in the editor by default |

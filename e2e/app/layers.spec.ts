@@ -5,8 +5,9 @@ import { type ElectronApplication, expect, type Page, test } from "@playwright/t
 import { launchDesktopApp } from "./launch.js";
 import { stubFileDialogs } from "./sites.js";
 
-// Layers (1.24, F-ED-12): Advanced mode only; selection in step with the canvas both ways; a move
-// or a hide is one undo step.
+// Layers (1.24, F-ED-12): always shown under Add and Undo History, in Simple and Advanced mode
+// (ADR 0011), read-only in Content mode; selection in step with the canvas both ways; a move or a
+// hide is one undo step.
 
 const STARTER_HEADING = "Welcome to our business";
 const STARTER_TEXT = "Tell visitors what you do and why they will love it.";
@@ -32,15 +33,22 @@ const row = (name: string) => tree().getByRole("treeitem", { name: new RegExp(`^
 const selected = () => canvas().locator('[class*="ActionBar-label"]');
 const steps = () => page.locator(".undo-history__step");
 
-async function switchToAdvancedMode(): Promise<void> {
-  await page.getByRole("menuitem", { name: "View" }).click();
-  await page.getByRole("menuitem", { name: "Use Advanced Mode" }).click();
+/** Runs a View menu command, once a menu an earlier one closed has gone. */
+async function viewMenu(name: string): Promise<void> {
+  await expect(page.getByRole("menu")).toHaveCount(0);
+  await page.getByRole("menuitem", { name: "View", exact: true }).click();
+  await page.getByRole("menuitem", { name }).click();
 }
 
-test("Layers shows in Advanced mode only, and selects in step with the canvas", async () => {
-  await expect(left().getByRole("tab", { name: "Layers" })).toHaveCount(0);
-  await switchToAdvancedMode();
-  await left().getByRole("tab", { name: "Layers" }).click();
+test("Layers shows with Add in Simple mode, and selects in step with the canvas", async () => {
+  // A new window, in Simple mode: Layers and the Add panel at the same time (ADR 0011).
+  await expect(row("Section")).toBeVisible();
+  await expect(left().getByRole("tab", { name: "Add" })).toHaveAttribute("aria-selected", "true");
+  await expect(left().getByRole("tabpanel", { name: "Add" })).toBeVisible();
+  // Through Advanced mode and back, it stays.
+  await viewMenu("Use Advanced Mode");
+  await expect(row("Section")).toBeVisible();
+  await viewMenu("Use Simple Mode");
   await expect(row("Section")).toBeVisible();
 
   // Canvas → Layers, first: with nothing selected yet, no action bar covers the text.
@@ -55,8 +63,7 @@ test("Layers shows in Advanced mode only, and selects in step with the canvas", 
 });
 
 test("moves a layer with Ctrl/Cmd+Alt+↓ and hides one, each as one undo step", async () => {
-  await switchToAdvancedMode();
-  await left().getByRole("tab", { name: "Layers" }).click();
+  await expect(row("Section")).toBeVisible();
 
   await row("Heading").click();
   await row("Heading").press("ControlOrMeta+Alt+ArrowDown");
@@ -79,8 +86,7 @@ test("moves a layer with Ctrl/Cmd+Alt+↓ and hides one, each as one undo step",
 test("leaves a hidden layer out of the exported site (F-ED-12)", async () => {
   const parent = mkdtempSync(join(tmpdir(), "webforge-e2e-layers-"));
   try {
-    await switchToAdvancedMode();
-    await left().getByRole("tab", { name: "Layers" }).click();
+    await expect(row("Section")).toBeVisible();
     await row("Heading").hover();
     await tree().getByRole("button", { name: "Hide Heading" }).click();
 
@@ -95,4 +101,16 @@ test("leaves a hidden layer out of the exported site (F-ED-12)", async () => {
   } finally {
     rmSync(parent, { recursive: true, force: true });
   }
+});
+
+test("shows Layers in Content mode too, where nothing can be moved or hidden", async () => {
+  await page.getByRole("radio", { name: "Content" }).click();
+
+  await expect(row("Heading")).toBeVisible();
+  await row("Heading").hover();
+  await expect(tree().getByRole("button", { name: "Hide Heading" })).toBeDisabled();
+  const order = await tree().getByRole("treeitem").allInnerTexts();
+  await row("Heading").click();
+  await page.keyboard.press("Alt+ArrowDown");
+  await expect(tree().getByRole("treeitem")).toHaveText(order);
 });
