@@ -80,6 +80,21 @@ describe("defineComponent (2.5)", () => {
       `'Card' has a default for "colour"`,
     ],
     [
+      "an option group without a name (UX-13)",
+      { fields: { ...base.fields, title: { kind: "text", label: "Title", optionGroup: " " } } },
+      `'Card' puts "title" in an option group without a short name`,
+    ],
+    [
+      "an option group with a name too long to show",
+      {
+        fields: {
+          ...base.fields,
+          title: { kind: "text", label: "Title", optionGroup: "x".repeat(41) },
+        },
+      },
+      `'Card' puts "title" in an option group without a short name`,
+    ],
+    [
       "a behaviour that isn't in behaviours/",
       { behaviours: ["carousel"] },
       `'Card' needs the behaviour "carousel"`,

@@ -1,4 +1,4 @@
-import { type MessageKey, t } from "@webforge/i18n";
+import { t } from "@webforge/i18n";
 import { ChevronRightIcon } from "lucide-react";
 import { type KeyboardEvent, useId, useState } from "react";
 import { cn } from "../../lib/cn.js";
@@ -36,8 +36,11 @@ export type EditPanelField = FieldSpec & {
   readonly overridden?: boolean;
   /** The value differs from the element's default, so it can be reset (UX-18). */
   readonly changed?: boolean;
-  /** The group it is shown in (UX-13); by its kind if not given. */
-  readonly section?: FieldSection;
+  /**
+   * The option group it is shown in (UX-13), already translated; by its kind if not given. Not
+   * "section": that is a part of a page (glossary).
+   */
+  readonly optionGroup?: string;
 };
 
 /** Props of {@link EditPanel}. */
@@ -54,9 +57,15 @@ export type EditPanelProps = {
   onReset?(name: string): void;
   /**
    * Resets fields to the element's defaults, as one step (UX-13): one from its right-click menu or
-   * Ctrl/Cmd + Esc. `what` names several ("spacing"), in lower case.
+   * Ctrl/Cmd + Esc, or an option group's changed fields, `group` naming it ("Spacing").
    */
-  onResetToDefault?(names: readonly string[], what?: string): void;
+  onResetToDefault?(names: readonly string[], group?: string): void;
+  /**
+   * The option groups shown closed, by name, and how to change them: the app remembers them per
+   * person (UX-13). Without them the panel keeps its own, all open at first.
+   */
+  readonly closedGroups?: readonly string[] | undefined;
+  onClosedGroupsChange?(closed: readonly string[]): void;
   /** Shows the Advanced tab and its fields (Advanced mode, F-ED-11). */
   readonly advanced?: boolean | undefined;
   /** Shows the Content tab only, without Style and Advanced (Content mode, M3). */
@@ -130,72 +139,52 @@ const BUILT_IN: Readonly<Record<string, FieldRenderer>> = {
 
 const rendererFor = (kind: string) => fieldRenderer(kind) ?? BUILT_IN[kind];
 
-/** The groups fields are in, by what they set (UX-13); a field may name its own. */
-export type FieldSection =
-  | "text"
-  | "image"
-  | "link"
-  | "items"
-  | "spacing"
-  | "colours"
-  | "appearance"
-  | "advanced";
-
-const SECTION_TITLES: Readonly<Record<FieldSection, MessageKey>> = {
-  text: "editPanel.section.text",
-  image: "editPanel.section.image",
-  link: "editPanel.section.link",
-  items: "editPanel.section.items",
-  spacing: "editPanel.section.spacing",
-  colours: "editPanel.section.colours",
-  appearance: "editPanel.section.appearance",
-  advanced: "editPanel.section.advanced",
-};
-
-/** The group field `field` is in: its own, else by its kind. */
-function sectionOf(field: EditPanelField): FieldSection {
-  if (field.section !== undefined) return field.section;
-  if (field.group === "advanced") return "advanced";
+/** The option group a field is in when it names none, by its kind (UX-13). */
+function optionGroupOf(field: EditPanelField): string {
+  if (field.optionGroup !== undefined) return field.optionGroup;
+  if (field.group === "advanced") return t("editPanel.optionGroup.advanced");
   switch (field.kind) {
     case "image":
-      return "image";
+      return t("editPanel.optionGroup.image");
     case "link":
-      return "link";
+      return t("editPanel.optionGroup.link");
     case "list":
-      return "items";
+      return t("editPanel.optionGroup.items");
     case "box":
     case "spacing":
-      return "spacing";
+      return t("editPanel.optionGroup.spacing");
     case "color":
-      return "colours";
+      return t("editPanel.optionGroup.colours");
     case "select":
     case "slider":
     case "toggle":
-      return field.group === "content" ? "text" : "appearance";
+      return field.group === "content"
+        ? t("editPanel.optionGroup.text")
+        : t("editPanel.optionGroup.appearance");
     default:
-      return "text";
+      return t("editPanel.optionGroup.text");
   }
 }
 
-/** `fields` by group, in the order each group's first field comes. */
-function sectionsOf(fields: readonly EditPanelField[]) {
-  const sections = new Map<FieldSection, EditPanelField[]>();
+/** `fields` by option group, in the order each group's first field comes. */
+function optionGroupsOf(fields: readonly EditPanelField[]) {
+  const groups = new Map<string, EditPanelField[]>();
   for (const field of fields) {
-    const section = sectionOf(field);
-    sections.set(section, [...(sections.get(section) ?? []), field]);
+    const name = optionGroupOf(field);
+    groups.set(name, [...(groups.get(name) ?? []), field]);
   }
-  return [...sections].map(([section, inIt]) => ({ section, fields: inIt }));
+  return [...groups].map(([name, inIt]) => ({ name, fields: inIt }));
 }
 
 type FieldListProps = Omit<EditPanelProps, "heading" | "fields"> & {
   readonly idPrefix: string;
   readonly fields: readonly EditPanelField[];
   readonly query?: string;
-  /** The groups shown closed. */
-  readonly closed: ReadonlySet<FieldSection>;
-  onToggle(section: FieldSection): void;
+  /** The option groups shown closed, by name. */
+  readonly closed: readonly string[];
+  onToggle(name: string): void;
   /** Opens every group, or closes them all if all are open (Ctrl/Cmd + Enter). */
-  onToggleAll(sections: readonly FieldSection[]): void;
+  onToggleAll(names: readonly string[]): void;
 };
 
 function FieldList({
@@ -218,25 +207,25 @@ function FieldList({
       </p>
     );
   }
-  const sections = sectionsOf(fields);
-  const all = sections.map(({ section }) => section);
+  const groups = optionGroupsOf(fields);
+  const all = groups.map(({ name }) => name);
   return (
     <div className="flex flex-col pb-2">
-      {sections.map(({ section, fields: inSection }) => {
+      {groups.map(({ name, fields: inGroup }, index) => {
         // Searching shows every group with a match open.
-        const open = query !== "" || !closed.has(section);
-        const changed = inSection.filter((field) => field.changed === true);
+        const open = query !== "" || !closed.includes(name);
+        const changed = inGroup.filter((field) => field.changed === true);
         const resetGroup =
           changed.length > 0 && onResetToDefault !== undefined
             ? () =>
                 onResetToDefault(
                   changed.map((field) => field.name),
-                  t(SECTION_TITLES[section]).toLocaleLowerCase(),
+                  name,
                 )
             : undefined;
-        const bodyId = `${idPrefix}-section-${section}`;
+        const bodyId = `${idPrefix}-group-${index}`;
         return (
-          <div key={section} className="border-b border-border">
+          <div key={name} className="border-b border-border">
             <ContextMenu>
               <ContextMenuTrigger asChild>
                 <button
@@ -250,7 +239,7 @@ function FieldList({
                     changed.length > 0 ? "text-ring" : "text-foreground",
                   )}
                   data-changed={changed.length > 0 ? "" : undefined}
-                  onClick={() => onToggle(section)}
+                  onClick={() => onToggle(name)}
                   onKeyDown={(event) => {
                     if (!(event.ctrlKey || event.metaKey)) return;
                     // Ctrl/Cmd + Enter opens or closes every group, Ctrl/Cmd + Esc resets this one
@@ -269,7 +258,7 @@ function FieldList({
                     aria-hidden
                     className={cn("size-3.5 shrink-0 transition-transform", open && "rotate-90")}
                   />
-                  {t(SECTION_TITLES[section])}
+                  {name}
                 </button>
               </ContextMenuTrigger>
               <ContextMenuContent>
@@ -277,7 +266,7 @@ function FieldList({
                   {t("editPanel.resetGroup")}
                 </ContextMenuItem>
                 <ContextMenuItem onSelect={() => onToggleAll(all)}>
-                  {all.every((each) => !closed.has(each))
+                  {all.every((each) => !closed.includes(each))
                     ? t("editPanel.collapseAll")
                     : t("editPanel.expandAll")}
                 </ContextMenuItem>
@@ -285,7 +274,7 @@ function FieldList({
             </ContextMenu>
             {open ? (
               <div id={bodyId} className="flex flex-col gap-3 px-3 pt-1 pb-3">
-                {inSection.map((field) => (
+                {inGroup.map((field) => (
                   <FieldRow
                     key={field.name}
                     idPrefix={idPrefix}
@@ -379,6 +368,8 @@ export function EditPanel({
   device,
   onReset,
   onResetToDefault,
+  closedGroups,
+  onClosedGroupsChange,
   advanced = false,
   contentOnly = false,
   itemKey,
@@ -386,19 +377,20 @@ export function EditPanel({
   const idPrefix = useId();
   // The search field's text (UX-13): the fields whose name has it are shown.
   const [query, setQuery] = useState("");
-  // The groups the person closed (UX-13); all open at first, and kept from element to element.
-  const [closed, setClosed] = useState<ReadonlySet<FieldSection>>(() => new Set());
-  const toggle = (section: FieldSection) =>
-    setClosed((current) => {
-      const next = new Set(current);
-      if (!next.delete(section)) next.add(section);
-      return next;
-    });
-  const toggleAll = (sections: readonly FieldSection[]) =>
-    setClosed((current) =>
-      sections.every((section) => !current.has(section))
-        ? new Set([...current, ...sections])
-        : new Set([...current].filter((section) => !sections.includes(section))),
+  // The option groups the person closed (UX-13): the app's, else the panel's own.
+  const [ownClosed, setOwnClosed] = useState<readonly string[]>([]);
+  const closed = closedGroups ?? ownClosed;
+  const setClosed = (next: readonly string[]) => {
+    if (onClosedGroupsChange === undefined) setOwnClosed(next);
+    else onClosedGroupsChange(next);
+  };
+  const toggle = (name: string) =>
+    setClosed(closed.includes(name) ? closed.filter((each) => each !== name) : [...closed, name]);
+  const toggleAll = (names: readonly string[]) =>
+    setClosed(
+      names.every((name) => !closed.includes(name))
+        ? [...closed, ...names]
+        : closed.filter((name) => !names.includes(name)),
     );
   if (heading === undefined) {
     return (

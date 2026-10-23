@@ -321,7 +321,7 @@ describe("style field renderers (1.14 part 2)", () => {
     );
     fireEvent.contextMenu(spacing);
     await user.click(await screen.findByRole("menuitem", { name: "Reset Group to Defaults" }));
-    expect(onResetToDefault).toHaveBeenLastCalledWith(["padding"], "spacing");
+    expect(onResetToDefault).toHaveBeenLastCalledWith(["padding"], "Spacing");
 
     spacing.focus();
     await user.keyboard("{Control>}{Escape}{/Control}");

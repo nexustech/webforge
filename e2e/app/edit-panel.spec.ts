@@ -1,5 +1,5 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
-import { launchDesktopApp } from "./launch.js";
+import { launchDesktopApp, newUserDataDir } from "./launch.js";
 
 // The Edit panel (1.14): the selected element's fields, each change one labelled undo step.
 
@@ -209,4 +209,28 @@ test("sets a padding for the Mobile view only, shown and cleared with its dot (F
       .first(),
   ).toBeVisible();
   await expect(section).toHaveCSS("padding-top", "64px");
+});
+
+test("remembers the option groups closed for a kind of element, after a restart (UX-13)", async () => {
+  const userDataDir = newUserDataDir();
+  const reopen = async () => {
+    await app.close();
+    app = await launchDesktopApp({ userDataDir });
+    page = await app.firstWindow();
+    await expect(canvas().locator("style[data-webforge-site-css]")).toHaveCount(1);
+  };
+  await reopen();
+  await selectHeading();
+  await panel().getByRole("tab", { name: "Style" }).click();
+  const appearance = panel().getByRole("button", { name: "Appearance" });
+  await appearance.click();
+  await expect(appearance).toHaveAttribute("aria-expanded", "false");
+
+  await reopen();
+  await selectHeading();
+  await panel().getByRole("tab", { name: "Style" }).click();
+  await expect(panel().getByRole("button", { name: "Appearance" })).toHaveAttribute(
+    "aria-expanded",
+    "false",
+  );
 });

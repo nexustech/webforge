@@ -30,7 +30,7 @@ import {
 import type { EditorSession } from "./editor-session.js";
 import { fieldGroupOf } from "./field-group.js";
 import { fieldTarget } from "./field-target.js";
-import { changedLabel, labelFor, resetLabel } from "./labels.js";
+import { changedLabel, labelFor, resetGroupLabel, resetLabel } from "./labels.js";
 import {
   applyListChange,
   type EditableList,
@@ -169,6 +169,12 @@ export type EditPanelHostProps = {
   readonly advanced?: boolean;
   /** Shows the Content tab only: Content mode locks styles and the Advanced settings (M3). */
   readonly contentOnly?: boolean;
+  /**
+   * The option groups the person closed, by component type (UX-13), and how to change them: UI
+   * state, kept in the preferences, never in the document.
+   */
+  readonly closedGroups?: Readonly<Record<string, readonly string[]>>;
+  readonly onClosedGroupsChange?: (type: string, closed: readonly string[]) => void;
 };
 
 /**
@@ -185,6 +191,8 @@ export function EditPanelHost({
   flush,
   advanced = false,
   contentOnly = false,
+  closedGroups,
+  onClosedGroupsChange,
 }: EditPanelHostProps) {
   const { history, ui, library } = session;
   const site = useSyncExternalStore(history.document.subscribe, history.document.getState);
@@ -258,6 +266,7 @@ export function EditPanelHost({
         label: field.label,
         group: fieldGroupOf(field),
         value: responsive ? valueAt(stored, breakpoint) : stored,
+        ...(field.optionGroup === undefined ? {} : { optionGroup: field.optionGroup }),
         ...(responsive && breakpoint !== "desktop" ? { responsive: true } : {}),
         ...(differsFromDefault(stored, storedOr(name, undefined), responsive, breakpoint)
           ? { changed: true }
@@ -488,10 +497,10 @@ export function EditPanelHost({
 
   /**
    * Resets fields `names` to the component's defaults as one step (UX-13, UX-18): "Reset Heading
-   * size", or `what` for several ("Reset Section spacing"). A field set per device gets its default
-   * for the device shown: on Desktop its own value, elsewhere the Desktop value again.
+   * size", or for option group `group` "Reset Spacing on Heading". A field set per device gets its
+   * default for the device shown: on Desktop its own value, elsewhere the Desktop value again.
    */
-  const resetToDefault = (names: readonly string[], what?: string) => {
+  const resetToDefault = (names: readonly string[], group?: string) => {
     const known = names.filter((name) => component.fields[name] !== undefined);
     const [first] = known;
     const firstField = first === undefined ? undefined : component.fields[first];
@@ -502,13 +511,11 @@ export function EditPanelHost({
     flush();
     const label =
       copyLabel ??
-      (known.length === 1 && firstField.responsive === true && breakpoint !== "desktop"
-        ? labelOf(first, firstField, true)
-        : resetLabel(
-            editOf("props", first),
-            library,
-            what ?? firstField.label.toLocaleLowerCase(),
-          ));
+      (group !== undefined
+        ? resetGroupLabel(editOf("props", first), library, group)
+        : firstField.responsive === true && breakpoint !== "desktop"
+          ? labelOf(first, firstField, true)
+          : resetLabel(editOf("props", first), library, firstField.label.toLocaleLowerCase()));
     session.edit(
       "props",
       label,
@@ -540,6 +547,13 @@ export function EditPanelHost({
       }}
       onReset={reset}
       onResetToDefault={resetToDefault}
+      {...(closedGroups === undefined
+        ? {}
+        : {
+            closedGroups: closedGroups[node.type] ?? [],
+            onClosedGroupsChange: (closed: readonly string[]) =>
+              onClosedGroupsChange?.(node.type, closed),
+          })}
       advanced={advanced}
       contentOnly={contentOnly}
       itemKey={id}

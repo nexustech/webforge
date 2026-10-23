@@ -95,14 +95,14 @@ export const canvas = {
   // The Edit panel's groups (UX-13): Ctrl/Cmd + Enter on a group's title opens or closes them all.
   "editPanel.expandAll": "Expand All",
   "editPanel.collapseAll": "Collapse All",
-  "editPanel.section.text": "Text",
-  "editPanel.section.image": "Image",
-  "editPanel.section.link": "Link",
-  "editPanel.section.items": "Items",
-  "editPanel.section.spacing": "Spacing",
-  "editPanel.section.colours": "Colours",
-  "editPanel.section.appearance": "Appearance",
-  "editPanel.section.advanced": "Advanced",
+  "editPanel.optionGroup.text": "Text",
+  "editPanel.optionGroup.image": "Image",
+  "editPanel.optionGroup.link": "Link",
+  "editPanel.optionGroup.items": "Items",
+  "editPanel.optionGroup.spacing": "Spacing",
+  "editPanel.optionGroup.colours": "Colours",
+  "editPanel.optionGroup.appearance": "Appearance",
+  "editPanel.optionGroup.advanced": "Advanced",
   // A value set for one device only (F-ED-4).
   // A field's per-device dot (UX-19): grey inherits Desktop's value, the accent colour has its own.
   "editPanel.dot.inherits": "{field}: same as Desktop on {device}",

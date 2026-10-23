@@ -37,6 +37,11 @@ export type FieldOption = { readonly label: string; readonly value: string };
 export type FieldDef = {
   readonly group?: "content" | "style";
   readonly responsive?: boolean;
+  /**
+   * The option group the Edit panel shows it in (UX-13), already translated ("Spacing"); by its
+   * kind if not given. Fields of one group are reset and opened together.
+   */
+  readonly optionGroup?: string;
 } & (
   | {
       readonly kind: "text";

@@ -24,6 +24,7 @@ import {
   type AddPreferences,
   type CustomDevice,
   DEFAULT_PREFERENCES,
+  type EditPanelPreferences,
 } from "../../shared/ipc/prefs.js";
 import type { Preferences } from "../../shared/ipc-contract.js";
 import { type AddPanelRegistration, registerAddPanel } from "../add/register-add-panel.js";
@@ -106,6 +107,10 @@ export type EditorProps = {
   readonly addPreferences?: AddPreferences;
   /** Saves them when the person changes their favourites or adds something. */
   readonly onAddPreferencesChange?: (next: AddPreferences) => void;
+  /** The Edit panel's closed option groups, remembered per person (UX-13). */
+  readonly editPanelPreferences?: EditPanelPreferences;
+  /** Saves the Edit panel's closed option groups. */
+  readonly onEditPanelPreferencesChange?: (next: EditPanelPreferences) => void;
   /**
    * Hands over how to undo back to a step (UX-16, the title bar's list of steps), and `null` once
    * this editor is gone.
@@ -160,6 +165,8 @@ export function Editor({
   viewOptions,
   addPreferences = DEFAULT_PREFERENCES.add,
   onAddPreferencesChange,
+  editPanelPreferences = DEFAULT_PREFERENCES.editPanel,
+  onEditPanelPreferencesChange,
   onUndoTo,
 }: EditorProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -439,16 +446,52 @@ export function Editor({
     });
   }, [panels, history]);
 
+  // The Edit panel's closed option groups (UX-13): one store the panel follows, in step with the
+  // preferences both ways, so a change never re-registers the panel (its tab stays).
+  const [editPanelStore] = useState(() =>
+    createStore<EditPanelPreferences>()(() => editPanelPreferences),
+  );
+  const givenEditPanelPreferences = useRef(editPanelPreferences);
+  useEffect(() => {
+    givenEditPanelPreferences.current = editPanelPreferences;
+    if (editPanelStore.getState() !== editPanelPreferences) {
+      editPanelStore.setState(editPanelPreferences, true);
+    }
+  }, [editPanelStore, editPanelPreferences]);
+  const saveEditPanelPreferences = useRef(onEditPanelPreferencesChange);
+  useEffect(() => {
+    saveEditPanelPreferences.current = onEditPanelPreferencesChange;
+  });
+  useEffect(
+    () =>
+      // Saves the panel's changes, not the preferences it was given back again.
+      editPanelStore.subscribe((next) => {
+        if (next !== givenEditPanelPreferences.current) saveEditPanelPreferences.current?.(next);
+      }),
+    [editPanelStore],
+  );
+
   // The Edit panel replaces Puck's own fields (1.14). Registered on its own, so that changing the
   // editor level or mode (Content shows its Content tab only) redraws it alone.
   useEffect(() => {
     function Edit() {
+      const { closedGroups } = useSyncExternalStore(
+        editPanelStore.subscribe,
+        editPanelStore.getState,
+      );
       return (
         <EditPanelHost
           session={session}
           flush={() => connectionRef.current?.flush()}
           advanced={editorLevel === "advanced"}
           contentOnly={mode !== "design"}
+          closedGroups={closedGroups}
+          onClosedGroupsChange={(type, closed) => {
+            const { [type]: _was, ...others } = editPanelStore.getState().closedGroups;
+            editPanelStore.setState({
+              closedGroups: closed.length === 0 ? others : { ...others, [type]: [...closed] },
+            });
+          }}
         />
       );
     }
@@ -459,7 +502,7 @@ export function Editor({
       icon: SlidersHorizontalIcon,
       component: Edit,
     });
-  }, [panels, session, editorLevel, mode]);
+  }, [panels, session, editorLevel, mode, editPanelStore]);
 
   // The Add panel's favourites and recents (1.34): one store the panel follows, in step with the
   // preferences both ways, so a change never re-registers the panel (its tab and + place stay).

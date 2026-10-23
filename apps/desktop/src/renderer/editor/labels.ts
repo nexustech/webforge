@@ -50,6 +50,15 @@ export function resetLabel(edit: EngineEdit, library: ComponentLibrary, what: st
   return t("history.reset", { item: itemName(edit, library, [edit.page]), field: what });
 }
 
+/** The undo label for resetting an option group (UX-13): "Reset Spacing on Heading". */
+export function resetGroupLabel(
+  edit: EngineEdit,
+  library: ComponentLibrary,
+  group: string,
+): string {
+  return t("history.resetGroup", { group, item: itemName(edit, library, [edit.page]) });
+}
+
 /** The definition of the field an edit changed, if any. */
 function fieldOf(edit: EngineEdit, library: ComponentLibrary): FieldDef | undefined {
   const component =

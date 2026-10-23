@@ -2,7 +2,7 @@
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { copiedNodeId, type MediaId, type PageDoc, type PageId } from "@webforge/model";
-import { type ComponentLibrary, siteLibrary } from "@webforge/site-components";
+import { type ComponentLibrary, type FieldDef, siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { registerImageField } from "../media/ImageField.js";
 import { addMedia } from "../media/media-commands.js";
@@ -306,11 +306,65 @@ describe("EditPanelHost", () => {
       fireEvent.contextMenu(spacing);
       await user.click(await screen.findByRole("menuitem", { name: "Reset Group to Defaults" }));
 
-      expect(labels()).toEqual(["Changed Section padding", "Reset Section spacing"]);
+      expect(labels()).toEqual(["Changed Section padding", "Reset Spacing on Section"]);
       expect(section()?.padding).toEqual(siteLibrary.components.Section?.defaults.padding);
       expect(screen.getByRole("button", { name: "Spacing" }).hasAttribute("data-changed")).toBe(
         false,
       );
+    });
+
+    it("shows the groups closed for the element's type, and reports closing another (UX-13)", async () => {
+      const session = createEditorSession(siteLibrary, siteWithHero());
+      session.ui.setState({ nodeId: "section-1" });
+      const onClosedGroupsChange = vi.fn();
+      render(
+        <EditPanelHost
+          session={session}
+          flush={vi.fn()}
+          closedGroups={{ Section: ["Spacing"], Heading: ["Appearance"] }}
+          onClosedGroupsChange={onClosedGroupsChange}
+        />,
+      );
+      const user = userEvent.setup({ delay: null });
+      await user.click(screen.getByRole("tab", { name: "Style" }));
+
+      expect(screen.getByRole("button", { name: "Spacing" }).getAttribute("aria-expanded")).toBe(
+        "false",
+      );
+      expect(screen.getByRole("button", { name: "Appearance" }).getAttribute("aria-expanded")).toBe(
+        "true",
+      );
+      await user.click(screen.getByRole("button", { name: "Appearance" }));
+
+      expect(onClosedGroupsChange).toHaveBeenCalledWith("Section", ["Spacing", "Appearance"]);
+      // Nothing in the document: no undo step.
+      expect(session.history.entries()).toEqual([]);
+    });
+
+    it("shows a field in the option group its definition names (UX-13)", async () => {
+      const library: ComponentLibrary = {
+        components: {
+          ...siteLibrary.components,
+          Heading: {
+            ...(siteLibrary.components.Heading as NonNullable<
+              (typeof siteLibrary.components)["Heading"]
+            >),
+            fields: {
+              ...siteLibrary.components.Heading?.fields,
+              size: {
+                ...(siteLibrary.components.Heading?.fields.size as FieldDef),
+                optionGroup: "Typography",
+              } as FieldDef,
+            },
+          },
+        },
+      };
+      const session = createEditorSession(library, siteWithHero());
+      session.ui.setState({ nodeId: "heading-1" });
+      render(<EditPanelHost session={session} flush={vi.fn()} />);
+      await userEvent.setup({ delay: null }).click(screen.getByRole("tab", { name: "Style" }));
+
+      expect(screen.getByRole("button", { name: "Typography" })).toBeDefined();
     });
 
     it("sets Desktop's value as the plain value, keeping other devices' own", async () => {

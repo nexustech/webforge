@@ -23,6 +23,9 @@ const TOKEN_KINDS: ReadonlySet<FieldDef["kind"]> = new Set([
   "box",
 ]);
 
+/** The longest name an option group may have (UX-13), in characters. */
+const MAX_OPTION_GROUP = 40;
+
 /** The field a component's layout variants are stored in. */
 const VARIANT_FIELD = "variant";
 
@@ -56,6 +59,7 @@ function choicesOf(field: FieldDef): readonly FieldOption[] | undefined {
  * - style fields, and fields that may differ per device (F-ED-4), are design tokens only (C4);
  * - every choice field offers choices, each once, and its default is one of them;
  * - every default is for a field;
+ * - an option group's name, if given, is a short name (1 to 40 characters);
  * - the `webforge.js` behaviours it needs exist (see `behaviours/`).
  *
  * `variants` add the layout choice described at {@link ComponentSpec}.
@@ -93,6 +97,12 @@ export function defineComponent(spec: ComponentSpec): ComponentDef {
     }
     if (field.responsive === true && !TOKEN_KINDS.has(field.kind)) {
       fail(`sets "${fieldName}", a ${field.kind} field, per device: only design tokens can be`);
+    }
+    if (field.optionGroup !== undefined) {
+      const length = field.optionGroup.trim().length;
+      if (length === 0 || length > MAX_OPTION_GROUP) {
+        fail(`puts "${fieldName}" in an option group without a short name`);
+      }
     }
     const choices = choicesOf(field);
     if (choices !== undefined) {

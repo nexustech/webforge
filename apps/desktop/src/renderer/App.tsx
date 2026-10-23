@@ -282,6 +282,8 @@ export function App({
                         viewOptions={viewOptions}
                         addPreferences={preferences.add}
                         onAddPreferencesChange={(add) => change({ add })}
+                        editPanelPreferences={preferences.editPanel}
+                        onEditPanelPreferencesChange={(editPanel) => change({ editPanel })}
                         onUndoTo={handUndoTo}
                       />
                     </div>
