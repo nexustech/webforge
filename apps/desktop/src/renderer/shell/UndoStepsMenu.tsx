@@ -19,7 +19,7 @@ import { useCommand, useCommandRegistry } from "./command-context.js";
 import { COMMAND_IDS } from "./command-ids.js";
 
 /** How many of the latest steps the menu lists; the Undo History panel lists them all. */
-export const UNDO_STEPS_SHOWN = 10;
+const UNDO_STEPS_SHOWN = 10;
 
 /** Props of {@link UndoStepsMenu}. */
 export type UndoStepsMenuProps = {
@@ -49,6 +49,7 @@ export function UndoStepsMenu({ state: store }: UndoStepsMenuProps) {
 
   return (
     <DropdownMenu
+      modal={false}
       onOpenChange={(open) => {
         if (!open) setFocused(null);
       }}
