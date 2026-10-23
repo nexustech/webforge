@@ -29,11 +29,13 @@ export {
   textValue,
   withAdvanced,
 } from "./library.js";
+export type { RenderedPage } from "./render-static.js";
 export {
   behavioursUsedBy,
   documentsLinkedBy,
   mediaUsedBy,
   renderNodesToHtml,
+  renderPage,
   UnknownComponentError,
   walkNodes,
 } from "./render-static.js";

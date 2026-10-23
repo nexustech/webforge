@@ -228,7 +228,17 @@ export interface CanvasEngine {
    * keyboard shortcuts there too.
    */
   onFrameWindow(cb: (frameWindow: Window | null) => void): Unsubscribe;
-  /** `page`'s HTML, its linked copies shown inline as the shared sections in `shared`. */
-  renderStatic(page: PageDoc, layout: LayoutDoc, shared?: SharedSectionsDoc): string;
+  /**
+   * `page`'s static HTML, as the export renders it (ADR 0005): the Header and Footer of `layout`
+   * (as the page shows them), then its content, its linked copies shown inline as the shared
+   * sections in `shared`, without hidden elements. `context` resolves links, images and settings;
+   * the editor's, where everything goes nowhere, if left out.
+   */
+  renderStatic(
+    page: PageDoc,
+    layout: LayoutDoc,
+    shared?: SharedSectionsDoc,
+    context?: RenderContext,
+  ): string;
   destroy(): void;
 }
