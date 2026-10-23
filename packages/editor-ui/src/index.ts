@@ -85,6 +85,12 @@ export {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "./components/ui/dropdown-menu.js";
+export {
+  ErrorBoundary,
+  type ErrorBoundaryProps,
+  ErrorFallback,
+  type ErrorFallbackProps,
+} from "./components/ui/error-boundary.js";
 export { HoverCard, HoverCardContent, HoverCardTrigger } from "./components/ui/hover-card.js";
 export {
   Menubar,

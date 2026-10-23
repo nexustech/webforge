@@ -1,6 +1,9 @@
 /** The page canvas (stream C). */
 export const canvas = {
   "editor.canvas": "Page",
+  // The canvas ran into an error (R3): it shows this instead, and the panels keep working.
+  "canvas.error.message": "Something went wrong showing this page. Your work is saved.",
+  "canvas.error.reload": "Reload page",
   // Quick actions on the selected element (1.12).
   "canvas.moveUp": "Move up",
   "canvas.moveDown": "Move down",

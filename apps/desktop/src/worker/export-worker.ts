@@ -2,6 +2,7 @@ import { workerJobSchema } from "../shared/export-worker-protocol.js";
 import { loadBundledResources, loadStyleResources } from "./bundled-resources.js";
 import { createClassCatalogues } from "./class-catalogue.js";
 import { compileCss } from "./compile-css.js";
+import { installWorkerCrashHandlers } from "./crash-handlers.js";
 import { thumbnailFor } from "./make-thumbnail.js";
 import { runExport } from "./run-export.js";
 
@@ -9,6 +10,13 @@ import { runExport } from "./run-export.js";
 // process of its own; the canvas keeps one process for compiling its CSS (1.12), and Media one
 // for its thumbnails (1.16). Wiring only; run-export.ts, compile-css.ts and make-thumbnail.ts hold
 // the logic and E2E tests cover this file.
+
+// An error nothing caught ends the worker, with a crash report of its frames (R3).
+installWorkerCrashHandlers(
+  process,
+  (crash) => process.parentPort.postMessage(crash),
+  () => process.exit(1),
+);
 
 // The canvas styles worker's class catalogue (#276), kept per theme for the next jobs.
 const classes = createClassCatalogues(loadStyleResources);

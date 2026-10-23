@@ -30,7 +30,13 @@ import {
   type RenderContext,
   renderPage,
 } from "@webforge/site-components";
-import { type ComponentProps, type ReactNode, useEffect, useSyncExternalStore } from "react";
+import {
+  type ComponentProps,
+  type ComponentType,
+  type ReactNode,
+  useEffect,
+  useSyncExternalStore,
+} from "react";
 import { createRoot, type Root } from "react-dom/client";
 import type {
   CanvasContextMenu,
@@ -208,8 +214,15 @@ function emitter<T>(): Emitter<T> {
  * - Puck's header (with its Undo/Redo buttons) is replaced, and its Ctrl/Cmd+Z hotkeys never fire
  *   because {@link installHistoryKeys} takes those keys first, in the host and in the iframe.
  */
+/** The canvas without an error boundary: see `MountOptions.errorBoundary`. */
+function NoBoundary({ children }: { readonly children: ReactNode }) {
+  return children;
+}
+
 export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine {
   let root: Root | null = null;
+  /** What wraps the canvas (`MountOptions.errorBoundary`); nothing until one is given. */
+  let ErrorBoundary: ComponentType<{ readonly children: ReactNode }> = NoBoundary;
   let host: HTMLElement | null = null;
   let library: ComponentLibrary | null = null;
   let config: Config | null = null;
@@ -989,30 +1002,32 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       return;
     }
     root.render(
-      <Puck
-        config={config}
-        data={toPuckData(composePage(page, layout, shared))}
-        onAction={handleAction}
-        dictionary={dictionary}
-        overrides={overrides}
-        iframe={iframe}
-        // The editor's own Edit panel shows the fields (1.14), not Puck's right sidebar; its Add
-        // panel (1.13) and Layers (1.24) replace Puck's left one, and its rail is hidden (#274).
-        ui={{
-          leftSideBarVisible: false,
-          rightSideBarVisible: false,
-          // Puck starts with the app's width; without one it picks the view nearest the window's.
-          viewports: {
-            current: { width: viewportWidth, height: "auto" },
-            options: [],
-            // The canvas toolbar chooses the view and zoom (1.15), not Puck's own controls.
-            controlsVisible: false,
-          },
-        }}
-        viewports={viewportOptions}
-        height="100%"
-        permissions={mode === "content" ? CONTENT_MODE_PERMISSIONS : DESIGN_MODE_PERMISSIONS}
-      />,
+      <ErrorBoundary>
+        <Puck
+          config={config}
+          data={toPuckData(composePage(page, layout, shared))}
+          onAction={handleAction}
+          dictionary={dictionary}
+          overrides={overrides}
+          iframe={iframe}
+          // The editor's own Edit panel shows the fields (1.14), not Puck's right sidebar; its Add
+          // panel (1.13) and Layers (1.24) replace Puck's left one, and its rail is hidden (#274).
+          ui={{
+            leftSideBarVisible: false,
+            rightSideBarVisible: false,
+            // Puck starts with the app's width; without one it picks the view nearest the window's.
+            viewports: {
+              current: { width: viewportWidth, height: "auto" },
+              options: [],
+              // The canvas toolbar chooses the view and zoom (1.15), not Puck's own controls.
+              controlsVisible: false,
+            },
+          }}
+          viewports={viewportOptions}
+          height="100%"
+          permissions={mode === "content" ? CONTENT_MODE_PERMISSIONS : DESIGN_MODE_PERMISSIONS}
+        />
+      </ErrorBoundary>,
     );
   };
 
@@ -1039,7 +1054,18 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       stopHidingHostKeys = hostWindow === null ? null : hidePuckDeleteKeys(hostWindow);
       stopTrackingHostKeys = hostWindow === null ? null : trackDragKeys(hostWindow, dragKeys);
       stopHostClicks = hostWindow === null ? null : watchClicks(hostWindow);
-      root = createRoot(el);
+      ErrorBoundary = opts.errorBoundary ?? NoBoundary;
+      const { onError } = opts;
+      // Each error in the canvas's own React root goes to `onError`; React's defaults otherwise.
+      root = createRoot(
+        el,
+        onError === undefined
+          ? {}
+          : {
+              onCaughtError: (error) => onError(error, true),
+              onUncaughtError: (error) => onError(error, false),
+            },
+      );
       render();
       // Puck starts with the current page.
       shownRevision = revision;
