@@ -23,7 +23,9 @@ import { registerMediaPanel } from "../media/register-media-panel.js";
 import { connectCanvasNavigation } from "../menu/canvas-navigation.js";
 import {
   registerSharedSectionCommands,
-  SaveSharedSectionDialog,
+  removeSharedSection,
+  SharedSectionNameDialog,
+  type SharedSectionNaming,
 } from "../shared-sections/SharedSectionCommands.js";
 import { widthOf } from "../shell/canvas-size.js";
 import { type CanvasView, connectCanvasView } from "../shell/canvas-view.js";
@@ -131,8 +133,8 @@ export function Editor({
   const addPanelRef = useRef<AddPanelRegistration | null>(null);
   const { history } = session;
   const registry = useCommandRegistry();
-  // The name the selected section is being saved as a shared section under, while the dialog asks.
-  const [sharedName, setSharedName] = useState<string | null>(null);
+  // The shared-section name the dialog asks for (saving or renaming one), while it is open.
+  const [naming, setNaming] = useState<SharedSectionNaming | null>(null);
   const state = useSyncExternalStore(
     history.state.subscribe,
     history.state.getState,
@@ -225,12 +227,13 @@ export function Editor({
     clipboardCommandsRef.current = clipboardCommands;
     const canvasCommands = registerCanvasCommands(registry, engine, connection.flush);
     canvasCommands.setHasSelection(session.ui.getState().nodeId !== null);
-    // Save as shared section and Detach (1.29), after the canvas's own actions.
+    // The shared-section commands (1.29), after the canvas's own actions.
     const sharedCommands = registerSharedSectionCommands(
       registry,
       session,
       connection.flush,
-      setSharedName,
+      setNaming,
+      siteWide,
     );
     sharedCommands.setLayoutLocked(modeRef.current !== "design");
     sharedCommandsRef.current = sharedCommands;
@@ -353,13 +356,21 @@ export function Editor({
       flush: () => connectionRef.current?.flush(),
       dragSource:
         engine === null ? undefined : (element, type) => engine.addDragSource(element, type),
+      // Rename and Delete for shared sections, those on no page included (1.29).
+      sharedActions: {
+        rename: (id) => {
+          const shared = session.history.document.getState().sharedSections[id];
+          if (shared !== undefined) setNaming({ kind: "rename", id, suggested: shared.name });
+        },
+        remove: (id) => removeSharedSection(session, id, siteWide),
+      },
     });
     addPanelRef.current = addPanel;
     return () => {
       addPanelRef.current = null;
       addPanel.remove();
     };
-  }, [panels, session, mode, engine]);
+  }, [panels, session, mode, engine, siteWide]);
   useEffect(() => registerMediaPanel(panels, session), [panels, session]);
   useEffect(() => registerImageField({ session }), [session]);
   useEffect(() => registerLinkField({ session }), [session]);
@@ -368,11 +379,7 @@ export function Editor({
     <div className="editor">
       <SharedRegionBanner session={session} />
       <RichTextLinkHost session={session} engine={engine} />
-      <SaveSharedSectionDialog
-        session={session}
-        suggested={sharedName}
-        onClose={() => setSharedName(null)}
-      />
+      <SharedSectionNameDialog session={session} naming={naming} onClose={() => setNaming(null)} />
       <div className="editor__stage">
         <section className="editor__canvas" aria-label={t("editor.canvas")} ref={canvasRef} />
         {canvasView !== undefined && (

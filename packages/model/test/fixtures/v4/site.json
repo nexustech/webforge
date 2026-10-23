@@ -1,0 +1,376 @@
+{
+  "formatVersion": 4,
+  "settings": {
+    "general": {
+      "name": "Rosa's Bakery",
+      "description": "Fresh bread and cakes, baked every morning in Hightown.",
+      "language": "en-GB",
+      "icon": "logo0000000000aa"
+    },
+    "address": {
+      "url": "https://www.rosas-bakery.example"
+    },
+    "social": {
+      "profiles": [
+        {
+          "network": "instagram",
+          "url": "https://instagram.com/rosasbakery"
+        },
+        {
+          "network": "custom",
+          "url": "https://reviews.example.com/rosas"
+        }
+      ],
+      "shareImage": "hero000000000000",
+      "xHandle": "@rosasbakery"
+    },
+    "contact": {
+      "businessName": "Rosa's Bakery Ltd",
+      "email": "hello@rosas-bakery.example",
+      "phone": "(01234) 567890",
+      "address": "1 High Street\nHightown\nHT1 2AB",
+      "openingHours": [
+        {
+          "days": ["tue", "wed", "thu", "fri"],
+          "opens": "07:00",
+          "closes": "15:00"
+        },
+        {
+          "days": ["sat", "sun"],
+          "opens": "08:00",
+          "closes": "13:00"
+        }
+      ],
+      "openingHoursNote": "Closed on bank holidays"
+    },
+    "search": {
+      "allowIndexing": true,
+      "includeSitemap": true
+    },
+    "analytics": {
+      "measurementId": "G-ROSA12345",
+      "consentBanner": true
+    },
+    "forms": {
+      "service": {
+        "kind": "formsubmit",
+        "email": "orders@rosas-bakery.example"
+      }
+    },
+    "publish": {
+      "destinations": [
+        {
+          "kind": "ftp",
+          "id": "6f1c1b6e-8a3e-4c1e-9d55-2f5c1e0a7b10",
+          "name": "My host",
+          "protocol": "sftp",
+          "host": "203.0.113.10",
+          "port": 22,
+          "username": "rosa",
+          "remotePath": "/public_html"
+        },
+        {
+          "kind": "netlify",
+          "id": "0b9a8f6e-3c2d-4e1f-8a7b-6c5d4e3f2a10",
+          "name": "Netlify",
+          "siteId": "4f9a2c1e-7b3d-4a5e-9c8f-1d2e3f4a5b6c"
+        }
+      ]
+    },
+    "allowedExternalUrls": ["https://booking.example.com"]
+  },
+  "theme": {
+    "name": "cupcake"
+  },
+  "layout": {
+    "header": [
+      {
+        "type": "Header",
+        "props": {
+          "id": "header",
+          "siteName": "Rosa's Bakery"
+        }
+      }
+    ],
+    "footer": [
+      {
+        "type": "Footer",
+        "props": {
+          "id": "footer",
+          "text": "© Rosa's Bakery, Hightown",
+          "layerName": "Site footer"
+        }
+      }
+    ]
+  },
+  "pages": {
+    "home000000000000": {
+      "id": "home000000000000",
+      "kind": "page",
+      "slug": "home",
+      "title": "Rosa's Bakery: fresh bread in Hightown",
+      "navLabel": "Home",
+      "settings": {
+        "hideHeader": false,
+        "hideFooter": false,
+        "hideFromNavigation": false
+      },
+      "doc": {
+        "root": {
+          "props": {}
+        },
+        "content": [
+          {
+            "type": "Hero",
+            "props": {
+              "id": "hero",
+              "title": "Baked fresh every morning",
+              "text": "Sourdough, cakes and pastries from our oven to your table.",
+              "buttonLabel": "Our cakes",
+              "buttonLink": {
+                "kind": "page",
+                "pageId": "cakes00000000000"
+              },
+              "image": {
+                "mediaId": "hero000000000000"
+              },
+              "alignment": {
+                "$responsive": {
+                  "desktop": "left",
+                  "mobile": "center"
+                }
+              }
+            }
+          },
+          {
+            "type": "Section",
+            "props": {
+              "id": "hours",
+              "padding": "medium",
+              "advanced": {
+                "className": "scroll-mt-16",
+                "attributes": {
+                  "data-section": "hours"
+                },
+                "anchorId": "opening-times"
+              },
+              "content": [
+                {
+                  "type": "Heading",
+                  "props": {
+                    "id": "hours-heading",
+                    "text": "Opening times",
+                    "size": "medium"
+                  }
+                },
+                {
+                  "type": "Text",
+                  "props": {
+                    "id": "hours-text",
+                    "text": "<p>Tuesday to Sunday.</p>",
+                    "hidden": true
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "type": "SharedSectionCopy",
+            "props": {
+              "id": "hours-copy",
+              "sharedSectionId": "shared-hours"
+            }
+          }
+        ]
+      }
+    },
+    "cakes00000000000": {
+      "id": "cakes00000000000",
+      "kind": "page",
+      "slug": "cakes",
+      "folder": "menu",
+      "title": "Birthday and wedding cakes",
+      "navLabel": "Cakes",
+      "settings": {
+        "description": "Cakes for every occasion, made to order.",
+        "shareImage": "hero000000000000",
+        "hideHeader": false,
+        "hideFooter": false,
+        "hideFromNavigation": false
+      },
+      "doc": {
+        "root": {
+          "props": {}
+        },
+        "content": []
+      }
+    },
+    "landing000000000": {
+      "id": "landing000000000",
+      "kind": "page",
+      "slug": "christmas-orders",
+      "title": "Christmas orders",
+      "settings": {
+        "hideHeader": true,
+        "hideFooter": true,
+        "hideFromNavigation": true
+      },
+      "doc": {
+        "root": {
+          "props": {}
+        },
+        "content": []
+      }
+    },
+    "notfound00000000": {
+      "id": "notfound00000000",
+      "kind": "not-found",
+      "slug": "page-not-found",
+      "title": "Page not found",
+      "settings": {
+        "hideHeader": false,
+        "hideFooter": false,
+        "hideFromNavigation": true
+      },
+      "doc": {
+        "root": {
+          "props": {}
+        },
+        "content": []
+      }
+    }
+  },
+  "pageOrder": ["home000000000000", "cakes00000000000", "landing000000000", "notfound00000000"],
+  "homePageId": "home000000000000",
+  "media": {
+    "hero000000000000": {
+      "id": "hero000000000000",
+      "kind": "image",
+      "hash": "3b5d5c3712955042212316173ccf37be800c3c8a4a0ee2a0a3a4c3a4c1a8b8e1",
+      "name": "hero",
+      "fileName": "IMG_2041.jpg",
+      "mimeType": "image/jpeg",
+      "width": 1600,
+      "height": 1000,
+      "alt": "Fresh loaves on the counter",
+      "focal": {
+        "x": 0.4,
+        "y": 0.6
+      },
+      "crop": {
+        "x": 0,
+        "y": 0.1,
+        "width": 1,
+        "height": 0.8
+      }
+    },
+    "logo0000000000aa": {
+      "id": "logo0000000000aa",
+      "kind": "image",
+      "hash": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "name": "logo",
+      "fileName": "logo.png",
+      "mimeType": "image/png",
+      "width": 512,
+      "height": 512,
+      "alt": ""
+    },
+    "pricelist0000000": {
+      "id": "pricelist0000000",
+      "kind": "file",
+      "hash": "60303ae22b998861bce3b28f33eec1be758a213c86c93c076dbe9f558c11c752",
+      "name": "price-list",
+      "fileName": "Price list 2026.pdf",
+      "mimeType": "application/pdf"
+    }
+  },
+  "code": {
+    "css": ".site-footer { letter-spacing: 0.02em; }\n",
+    "js": "",
+    "head": "<meta name=\"author\" content=\"Rosa\">",
+    "bodyEnd": ""
+  },
+  "menu": {
+    "follows": "custom",
+    "items": [
+      {
+        "id": "menu-home",
+        "kind": "page",
+        "pageId": "home000000000000",
+        "hidden": false
+      },
+      {
+        "id": "menu-more",
+        "kind": "group",
+        "label": "More",
+        "hidden": false,
+        "children": [
+          {
+            "id": "menu-cakes",
+            "kind": "page",
+            "pageId": "cakes00000000000",
+            "label": "Our cakes",
+            "hidden": false
+          },
+          {
+            "id": "menu-hours",
+            "kind": "section",
+            "label": "Opening times",
+            "link": {
+              "kind": "page",
+              "pageId": "home000000000000",
+              "anchor": "opening-times"
+            },
+            "hidden": false
+          },
+          {
+            "id": "menu-prices",
+            "kind": "link",
+            "label": "Price list",
+            "link": {
+              "kind": "file",
+              "mediaId": "pricelist0000000",
+              "newTab": true
+            },
+            "hidden": true
+          }
+        ]
+      },
+      {
+        "id": "menu-book",
+        "kind": "button",
+        "label": "Order a cake",
+        "link": {
+          "kind": "email",
+          "address": "orders@rosas-bakery.example",
+          "subject": "Cake order"
+        },
+        "hidden": false
+      }
+    ]
+  },
+  "sharedSections": {
+    "shared-hours": {
+      "id": "shared-hours",
+      "name": "Opening hours",
+      "section": {
+        "type": "Section",
+        "props": {
+          "id": "hours",
+          "advanced": {
+            "anchorId": "opening-hours"
+          },
+          "content": [
+            {
+              "type": "Heading",
+              "props": {
+                "id": "hours-heading",
+                "text": "Opening hours"
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

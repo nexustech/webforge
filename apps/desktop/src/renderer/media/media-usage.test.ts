@@ -11,7 +11,7 @@ import {
 import { siteLibrary } from "@webforge/site-components";
 import { describe, expect, it } from "vitest";
 import { starterSite } from "../editor/starter-site.js";
-import { mediaUsage } from "./media-usage.js";
+import { mediaUsage, unplacedSharedUsage } from "./media-usage.js";
 
 const hero = (id: string, mediaId: string, more: Record<string, unknown> = {}): NodeDoc => ({
   type: "Hero",
@@ -147,5 +147,28 @@ describe("mediaUsage", () => {
 
     expect(usage.get("shop-photo")).toBe(2);
     expect(usage.get("timetable")).toBe(2);
+  });
+
+  it("names the shared sections no page has a copy of that use an item (F-ED-23)", () => {
+    const shared = (id: string, name: string, mediaId: string) => ({
+      [id]: { id: id as SharedSectionId, name, section: hero(`${id}-hero`, mediaId) },
+    });
+    const site = siteWith({
+      about: [
+        // Hidden in Layers, but still on the page: counted there, not as unplaced.
+        { type: SHARED_COPY_TYPE, props: { id: "c1", sharedSectionId: "hours", hidden: true } },
+      ],
+    });
+    site.sharedSections = {
+      ...shared("hours", "Opening hours", "shop-photo"),
+      ...shared("team", "Team", "team-photo"),
+      ...shared("offer", "Weekly offer", "team-photo"),
+    };
+
+    const unplaced = unplacedSharedUsage(site, siteLibrary);
+
+    expect(unplaced.get("team-photo")).toEqual(["Team", "Weekly offer"]);
+    expect(unplaced.has("shop-photo")).toBe(false);
+    expect(mediaUsage(site, siteLibrary).get("shop-photo")).toBe(1);
   });
 });

@@ -2,6 +2,7 @@ import {
   expandSharedCopies,
   imageValueSchema,
   isNodeDoc,
+  isSharedCopy,
   linkValueSchema,
   type NodeDoc,
   richTextFileLinks,
@@ -80,4 +81,27 @@ export function mediaUsage(site: SiteDoc, library: ComponentLibrary): ReadonlyMa
     for (const mediaId of used) counts.set(mediaId, (counts.get(mediaId) ?? 0) + 1);
   }
   return counts;
+}
+
+/**
+ * The shared sections no page has a copy of that use each Media item, by name (F-ED-23): no page
+ * counts them, but placing the section later shows the item, so deleting it still warns.
+ */
+export function unplacedSharedUsage(
+  site: SiteDoc,
+  library: ComponentLibrary,
+): ReadonlyMap<string, readonly string[]> {
+  const placed = new Set(
+    Object.values(site.pages).flatMap((page) =>
+      page.doc.content.filter(isSharedCopy).map((copy) => copy.props.sharedSectionId),
+    ),
+  );
+  const names = new Map<string, string[]>();
+  for (const shared of Object.values(site.sharedSections)) {
+    if (placed.has(shared.id)) continue;
+    const used = new Set<string>();
+    placedIn([shared.section], library, used);
+    for (const mediaId of used) names.set(mediaId, [...(names.get(mediaId) ?? []), shared.name]);
+  }
+  return names;
 }

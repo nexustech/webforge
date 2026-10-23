@@ -26,8 +26,11 @@ const steps = () => page.locator(".undo-history__step");
 const headings = () => canvas().locator(".site-heading");
 const confirmation = () => page.getByRole("alertdialog");
 
+/** The Edit menu's Delete, not "Delete shared section…". */
+const DELETE = /^Delete(?! shared)/;
+
 /** Runs an Edit menu command. */
-async function editMenu(name: string): Promise<void> {
+async function editMenu(name: string | RegExp): Promise<void> {
   await page.getByRole("menuitem", { name: "Edit" }).click();
   await page.getByRole("menuitem", { name }).click();
 }
@@ -60,7 +63,7 @@ async function selectSection(): Promise<void> {
 async function deleteHeading(index: number): Promise<void> {
   await headings().nth(index).click();
   await expect(panel().getByRole("heading", { name: "Heading", exact: true })).toBeVisible();
-  await editMenu("Delete");
+  await editMenu(DELETE);
 }
 
 test("places a copy from the Add panel, asks before deleting inside one, marks copies in Layers, and deletes whole copies without asking", async () => {
@@ -75,7 +78,7 @@ test("places a copy from the Add panel, asks before deleting inside one, marks c
   await left().getByRole("tab", { name: "Add" }).click();
   await left()
     .getByRole("list", { name: "Shared sections" })
-    .getByRole("button", { name: "Welcome" })
+    .getByRole("button", { name: "Welcome", exact: true })
     .click();
   await expect(headings()).toHaveCount(2);
   await left().getByRole("tab", { name: "Undo History" }).click();

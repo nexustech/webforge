@@ -38,6 +38,7 @@ export type SiteMigration = (site: RawSite) => RawSite;
 export const MIGRATIONS: Readonly<Record<number, SiteMigration>> = {
   1: heroImageValues,
   2: sharedSections,
+  3: uniqueSharedSectionNames,
 };
 
 type RawNode = { type: string; props: Record<string, unknown> };
@@ -111,6 +112,32 @@ function sharedSections(site: RawSite): RawSite {
     sharedSections: isRecord(site.sharedSections) ? site.sharedSections : {},
     formatVersion: 3,
   };
+}
+
+/** The longest shared section name (`SHARED_SECTION_NAME_MAX`, kept here as it was in format 4). */
+const SHARED_NAME_MAX = 100;
+
+/**
+ * Format 3 → 4 (1.29): no two shared sections share a name, ignoring capitals and spaces around it
+ * (F-ED-23). A later one with a name already taken gets the lowest free number after it ("Opening
+ * hours 2"), shortened to fit if needed; the first, in the file's order, keeps its name.
+ */
+function uniqueSharedSectionNames(site: RawSite): RawSite {
+  if (isRecord(site.sharedSections)) {
+    const taken = new Set<string>();
+    for (const entry of Object.values(site.sharedSections)) {
+      if (!isRecord(entry) || typeof entry.name !== "string") continue;
+      const base = entry.name.trim();
+      let name = base;
+      for (let number = 2; taken.has(name.toLowerCase()); number++) {
+        const end = ` ${number}`;
+        name = `${base.slice(0, SHARED_NAME_MAX - end.length).trimEnd()}${end}`;
+      }
+      if (name !== base) entry.name = name;
+      taken.add(name.toLowerCase());
+    }
+  }
+  return { ...site, formatVersion: 4 };
 }
 
 /** Options of {@link migrateSiteWith}; the defaults are this build's chain and version. */

@@ -4,7 +4,7 @@ import { isSharedCopy, type SharedSectionsDoc } from "@webforge/model";
 import { useSyncExternalStore } from "react";
 import { currentPage } from "../editor/editor-session.js";
 import type { PanelRegistry } from "../shell/panels.js";
-import { AddPanel, type AddPanelProps } from "./AddPanel.js";
+import { AddPanel, type AddPanelProps, type SharedSectionActions } from "./AddPanel.js";
 import {
   type AddItem,
   type AddSession,
@@ -55,7 +55,8 @@ export type AddPanelRegistration = {
 /**
  * Adds the Add panel to the left column's top, first (UI1). Register it in Design mode only: it is
  * hidden in Content mode (M3). `flush` records the canvas's pending edits before each add;
- * `dragSource` (the canvas engine's `addDragSource`) lets the items be dragged onto the canvas.
+ * `dragSource` (the canvas engine's `addDragSource`) lets the items be dragged onto the canvas;
+ * `sharedActions` give the shared sections listed their Rename and Delete (1.29).
  */
 export function registerAddPanel(
   panels: PanelRegistry,
@@ -63,7 +64,12 @@ export function registerAddPanel(
   {
     flush = () => undefined,
     dragSource,
-  }: { readonly flush?: () => void; readonly dragSource?: AddPanelProps["dragSource"] } = {},
+    sharedActions,
+  }: {
+    readonly flush?: () => void;
+    readonly dragSource?: AddPanelProps["dragSource"];
+    readonly sharedActions?: SharedSectionActions;
+  } = {},
 ): AddPanelRegistration {
   const { history, ui, library } = session;
   const sections = addItems(library, "sections");
@@ -184,6 +190,7 @@ export function registerAddPanel(
         point={shown.point === undefined ? null : { after: shown.after }}
         onCancelPoint={() => setState({ point: null })}
         dragSource={dragSource}
+        sharedActions={sharedActions}
       />
     );
   }

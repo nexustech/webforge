@@ -25,6 +25,8 @@ export const history = {
   "history.addedSharedCopy": "Added a copy of {name}",
   "history.savedSharedSection": "Saved {name} as a shared section",
   "history.detachedSharedSection": "Detached {name}",
+  "history.renamedSharedSection": "Renamed {name} to {newName}",
+  "history.deletedSharedSection": "Deleted shared section {name}",
   // An element the user named in Layers, used as {item} above.
   "history.namedItem": "'{name}'",
 } as const;
