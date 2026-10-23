@@ -22,6 +22,7 @@ import { registerMediaPanel } from "../media/register-media-panel.js";
 import { connectCanvasNavigation } from "../menu/canvas-navigation.js";
 import {
   registerSharedSectionCommands,
+  removeSharedSection,
   SharedSectionNameDialog,
   type SharedSectionNaming,
 } from "../shared-sections/SharedSectionCommands.js";
@@ -321,13 +322,21 @@ export function Editor({
       flush: () => connectionRef.current?.flush(),
       dragSource:
         engine === null ? undefined : (element, type) => engine.addDragSource(element, type),
+      // Rename and Delete for shared sections, those on no page included (1.29).
+      sharedActions: {
+        rename: (id) => {
+          const shared = session.history.document.getState().sharedSections[id];
+          if (shared !== undefined) setNaming({ kind: "rename", id, suggested: shared.name });
+        },
+        remove: (id) => removeSharedSection(session, id, siteWide),
+      },
     });
     addPanelRef.current = addPanel;
     return () => {
       addPanelRef.current = null;
       addPanel.remove();
     };
-  }, [panels, session, mode, engine]);
+  }, [panels, session, mode, engine, siteWide]);
   useEffect(() => registerMediaPanel(panels, session), [panels, session]);
   useEffect(() => registerImageField({ session }), [session]);
   useEffect(() => registerLinkField({ session }), [session]);
