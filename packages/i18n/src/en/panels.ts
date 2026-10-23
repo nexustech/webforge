@@ -61,6 +61,14 @@ export const panels = {
   "add.other": "Other",
   // The site's shared sections, listed first under Sections (1.29, F-ED-23).
   "add.sharedSections": "Shared sections",
+  // The person's favourites and recently added items, first in each tab (1.34, F-ED-26).
+  "add.favourites": "Favourites",
+  "add.recent": "Recently used",
+  "add.favourite.add": "Add to Favourites",
+  "add.favourite.remove": "Remove from Favourites",
+  // The command palette's Add group (1.34, F-ED-26).
+  "add.palette.add": "Add {item}",
+  "add.palette.addCopy": "Add a copy of {name}",
   // A shared section's "…" menu in the Add panel (1.29).
   "add.sharedActions": "Actions for {name}",
   "add.sharedRename": "Rename…",
@@ -82,6 +90,20 @@ export const panels = {
   "layers.history.unnamed": "Removed the name of {item}",
   "layers.history.hid": "Hid {item}",
   "layers.history.showed": "Showed {item}",
+  // Layers tools (1.35): the tree, its filter and what a drag may drop where.
+  "layers.expand": "Expand {item}",
+  "layers.collapse": "Collapse {item}",
+  "layers.expandAll": "Expand all",
+  "layers.collapseAll": "Collapse all",
+  "layers.filter": "Filter layers",
+  "layers.filterPlaceholder": "Filter by name or kind",
+  "layers.noMatches": "No layers match",
+  "layers.dropNotAllowed": "{item} can only move among its own section's elements",
+  "layers.locked": "Locked: it can't be moved or deleted",
+  "layers.animated": "Animated",
+  // The element's right-click menu, on the canvas and in Layers (1.35).
+  "elementMenu.label": "Element actions",
+  "elementMenu.renameTitle": "Rename {item}",
 
   // Links (F-ED-18): the link field and dialog.
   "link.none": "No link",

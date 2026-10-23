@@ -9,6 +9,13 @@ export const shell = {
   "shell.undoSteps.one": "Undo this step",
   "shell.undoSteps.many": "Undoes {count} steps",
   "ui.close": "Close",
+  // The picker dialog for images, icons and fonts (UX-15).
+  "ui.picker.search": "Search",
+  "ui.picker.categories": "Categories",
+  "ui.picker.all": "All",
+  "ui.picker.noMatch": "Nothing matches '{query}'.",
+  "ui.picker.choose": "Choose",
+  "ui.picker.cancel": "Cancel",
 
   // App menu (title bar).
   "shell.menu": "App menu",
@@ -27,10 +34,15 @@ export const shell = {
 
   // Command box.
   "shell.commandBox.open": "Search commands",
-  "shell.commandBox.placeholder": "Type a command",
+  "shell.commandBox.placeholder": "Type a command, a page or something to add",
   "shell.commandBox.empty": "No matching commands",
   "shell.commandBox.title": "Commands",
-  "shell.commandBox.description": "Search for a command and press Enter to run it.",
+  "shell.commandBox.description":
+    "Search for a command, a page to go to or something to add, and press Enter.",
+  // The palette's groups (1.34, F-ED-26).
+  "shell.commandBox.commands": "Commands",
+  "shell.commandBox.pages": "Go to page",
+  "shell.commandBox.add": "Add",
 
   // Commands (menus and the command box).
   "command.newSite": "New Site…",

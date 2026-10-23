@@ -35,6 +35,8 @@ export type AddItem = {
   readonly category: string;
   /** Set for a shared section, which a click places as a linked copy; it can't be dragged. */
   readonly sharedSectionId?: SharedSectionId;
+  /** Set for an item listed again, among the favourites or recently used. */
+  readonly repeat?: true;
 };
 
 /** The components `tab` offers, in library order. */
@@ -59,18 +61,46 @@ export function sharedSectionItems(site: SiteDoc): AddItem[] {
 }
 
 /**
+ * `items` led by the person's `favourites`, then the ones they `recent`ly added (F-ED-26, UX-10),
+ * each in a group of its own as well as in its own category. Keys of items `items` doesn't have
+ * (a shared section deleted since, an element on the other tab) are left out.
+ */
+export function withFavourites(
+  items: readonly AddItem[],
+  favourites: readonly string[],
+  recent: readonly string[],
+): AddItem[] {
+  const byType = new Map(items.map((item) => [item.type, item]));
+  const group = (keys: readonly string[], category: string) =>
+    keys.flatMap((key) => {
+      const item = byType.get(key);
+      return item === undefined ? [] : [{ ...item, category, repeat: true as const }];
+    });
+  return [...group(favourites, t("add.favourites")), ...group(recent, t("add.recent")), ...items];
+}
+
+/**
  * `items` matching what the person typed (in the name or the group, ignoring case), grouped by
- * category in order of first appearance.
+ * category in order of first appearance. While searching, an item is found once, in its own
+ * group: not again among the favourites or recently used, unless only that group matches.
  */
 export function groupItems(
   items: readonly AddItem[],
   query: string,
 ): { category: string; items: AddItem[] }[] {
   const words = query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
+  const matches = (item: AddItem) => {
+    const text = `${item.label} ${item.category}`.toLocaleLowerCase();
+    return words.every((word) => text.includes(word));
+  };
+  const foundInOwnGroup = new Set(
+    words.length === 0
+      ? []
+      : items.filter((item) => !item.repeat && matches(item)).map((item) => item.type),
+  );
   const groups = new Map<string, AddItem[]>();
   for (const item of items) {
-    const text = `${item.label} ${item.category}`.toLocaleLowerCase();
-    if (words.every((word) => text.includes(word))) {
+    if (matches(item) && !(item.repeat && foundInOwnGroup.has(item.type))) {
       groups.set(item.category, [...(groups.get(item.category) ?? []), item]);
     }
   }

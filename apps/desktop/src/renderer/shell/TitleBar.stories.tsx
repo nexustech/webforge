@@ -127,3 +127,21 @@ export const UndoSteps: Story = {
     );
   },
 };
+
+/** The palette open (Ctrl/Cmd+P): commands, pages to go to and things to add (UX-11). */
+export const Palette: Story = {
+  render: () => (
+    <WithCommands
+      commands={[
+        ...COMMANDS,
+        { id: "page.goto.home", label: "Home", palette: "pages", keywords: ["index"], run: noop },
+        { id: "page.goto.about", label: "About", palette: "pages", keywords: ["about"], run: noop },
+        { id: "add.item.Hero", label: "Add Hero", palette: "add", run: noop },
+        { id: "add.item.Text", label: "Add Text", palette: "add", enabled: false, run: noop },
+      ]}
+    />
+  ),
+  play: async ({ canvasElement }) => {
+    await userEvent.click(within(canvasElement).getByRole("button", { name: /^Search commands/ }));
+  },
+};

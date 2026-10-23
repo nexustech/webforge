@@ -4,7 +4,7 @@ import type { SharedSectionId } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { userEvent, within } from "storybook/test";
 import { AddPanel } from "./AddPanel.js";
-import { addItems } from "./add-items.js";
+import { addItems, withFavourites } from "./add-items.js";
 
 const noop = () => undefined;
 const anywhere = (_type: string): boolean => true;
@@ -64,5 +64,15 @@ export const NoSection: Story = { args: { tab: "elements", canAdd: () => false }
 export const NoMatch: Story = {
   play: async ({ canvasElement }) => {
     await userEvent.type(within(canvasElement).getByRole("searchbox"), "pricing");
+  },
+};
+
+const FAVOURITES = new Set(["Faq"]);
+
+/** The person's favourites first, then what they added lately (F-ED-26, UX-10). */
+export const Favourites: Story = {
+  args: {
+    sections: withFavourites(addItems(siteLibrary, "sections"), ["Faq"], ["Hero", "Faq"]),
+    favourites: { has: (type) => FAVOURITES.has(type), toggle: noop },
   },
 };
