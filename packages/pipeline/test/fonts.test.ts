@@ -108,5 +108,6 @@ describe("the bundled font packages", () => {
         expect(createHash("sha256").update(data).digest("hex"), file.file).toBe(file.sha256);
       }
     }
-  });
+    // Reads and hashes all 206 files.
+  }, 30_000);
 });
