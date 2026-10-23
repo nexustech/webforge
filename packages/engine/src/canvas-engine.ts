@@ -159,6 +159,14 @@ export type FieldDrag = {
   readonly value: unknown;
 };
 
+/** A right-click on an element of the canvas (1.35), at its point in the editor window. */
+export type CanvasContextMenu = {
+  /** The element, as the canvas shows it. */
+  readonly nodeId: string;
+  readonly x: number;
+  readonly y: number;
+};
+
 /** Where the floating + asks to add a section: a position in the page's top-level list. */
 export type InsertPoint = { readonly index: number };
 
@@ -246,6 +254,13 @@ export interface CanvasEngine {
    * step, and the canvas shows each value as the document changes.
    */
   onFieldDrag(cb: (drag: FieldDrag) => void): Unsubscribe;
+  /**
+   * The element menu was asked for on the canvas (1.35): a right-click on an element, or Shift+F10
+   * or the menu key for the selected one. The app selects it and shows its menu there. Not in
+   * Content mode, nor in text being edited, where the browser's own menu opens (its spelling
+   * suggestions among it).
+   */
+  onContextMenu(cb: (menu: CanvasContextMenu) => void): Unsubscribe;
   /** The floating + between sections was clicked; the app decides what to add there. */
   onAddRequest(cb: (at: InsertPoint) => void): Unsubscribe;
   /**

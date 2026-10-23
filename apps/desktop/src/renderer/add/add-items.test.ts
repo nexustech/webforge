@@ -16,6 +16,7 @@ import {
   addTarget,
   groupItems,
   sharedSectionItems,
+  withFavourites,
 } from "./add-items.js";
 
 /** A page: a Hero, then a Section holding a Heading and an FAQ with one question. */
@@ -258,5 +259,36 @@ describe("shared sections in the Add panel (F-ED-23)", () => {
 
     expect(addSharedCopy(session, "shared-gone" as SharedSectionId)).toBe(false);
     expect(session.history.entries()).toEqual([]);
+  });
+});
+
+describe("withFavourites (F-ED-26, UX-10)", () => {
+  it("leads with favourites, then recently used, each kept in its own category too", () => {
+    const items = addItems(siteLibrary, "sections");
+    const ordered = withFavourites(items, ["Faq", "gone"], ["Hero", "Faq"]);
+
+    expect(ordered.slice(0, 3).map((item) => [item.category, item.type])).toEqual([
+      ["Favourites", "Faq"],
+      ["Recently used", "Hero"],
+      ["Recently used", "Faq"],
+    ]);
+    expect(ordered.slice(0, 3).every((item) => item.repeat)).toBe(true);
+    // A key no item has (a shared section deleted, an element) is left out.
+    expect(ordered.slice(3)).toEqual(items);
+    expect(withFavourites(items, [], [])).toEqual(items);
+  });
+
+  it("finds each item once while searching, in its own group", () => {
+    const ordered = withFavourites(addItems(siteLibrary, "sections"), ["Hero"], ["Faq"]);
+
+    expect(groupItems(ordered, "hero").map((group) => group.category)).toEqual(["Heroes"]);
+    expect(groupItems(ordered, "favourites").map((group) => group.category)).toEqual([
+      "Favourites",
+    ]);
+    expect(
+      groupItems(ordered, "")
+        .map((group) => group.category)
+        .slice(0, 2),
+    ).toEqual(["Favourites", "Recently used"]);
   });
 });

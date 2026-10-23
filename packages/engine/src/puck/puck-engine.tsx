@@ -28,6 +28,7 @@ import {
 import { type ComponentProps, type ReactNode, useEffect } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import type {
+  CanvasContextMenu,
   CanvasEngine,
   CanvasSize,
   EditorMode,
@@ -44,6 +45,7 @@ import { installHistoryKeys } from "../history-keys.js";
 import { preserveCaret, refocusRichText } from "./caret.js";
 import { applyChromeStyles, createSelectionOutline, QuickActionBar } from "./chrome.js";
 import { toPuckConfig } from "./config.js";
+import { installContextMenu } from "./context-menu.js";
 import { deferredCommands } from "./deferred-commands.js";
 import { puckDictionary } from "./dictionary.js";
 import { createDragSources } from "./drag-sources.js";
@@ -64,7 +66,7 @@ import {
 } from "./shared-layout.js";
 import { applySiteStyles, type SiteStyles } from "./site-styles.js";
 import { boxHandleFields } from "./spacing-handles.js";
-import { focusedRichTextId, staleRichText } from "./stale-rich-text.js";
+import { focusedRichTextId, richTextArrived, staleRichText } from "./stale-rich-text.js";
 import { allNodes, findNode, nodeAt } from "./tree.js";
 import { applyViewOptions } from "./view-options.js";
 
@@ -262,6 +264,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   const edits = emitter<EngineEdit>();
   const addRequests = emitter<InsertPoint>();
   const fieldDrags = emitter<FieldDrag>();
+  const contextMenus = emitter<CanvasContextMenu>();
   const dragSources = createDragSources(
     (componentType) => library?.components[componentType]?.label ?? componentType,
   );
@@ -280,6 +283,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   const commands = deferredCommands(
     runHandlers,
     () => getPuck !== null && flushRichText(getPuck()),
+    () => richTextArrived(frameDocument, composePage(page, layout, shared)),
     RICH_TEXT_FLUSH_TIMEOUT_MS,
   );
   const runCommand = commands.run;
@@ -619,7 +623,13 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       }
       frameWindows.emit(frameWindow);
       const removeKeys = installHistoryKeys(frameWindow, runCommand);
+      // The element menu, but not in Content mode, where right-clicks get the browser's own.
+      const removeMenu = installContextMenu(frameWindow.document, contextMenus.emit, {
+        enabled: () => mode === "design",
+        selected: () => selection,
+      });
       return () => {
+        removeMenu();
         stopKeepingEnabled?.();
         stopKeepingEnabled = null;
         stopViewOptions?.();
@@ -891,6 +901,8 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     onAddRequest: addRequests.add,
 
     onFieldDrag: fieldDrags.add,
+
+    onContextMenu: contextMenus.add,
 
     addDragSource: dragSources.add,
 

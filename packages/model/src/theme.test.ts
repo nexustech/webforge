@@ -24,11 +24,11 @@ describe("theme tokens (2.1)", () => {
     expect(Object.keys(DEFAULT_THEME.typeScale).sort()).toEqual([...TEXT_STYLES].sort());
   });
 
-  it("accepts a theme without dark colours, but not with only some of them", () => {
-    const { dark: _dark, ...light } = DEFAULT_THEME;
+  it("accepts a theme without inverse colours, but not with only some of them", () => {
+    const { inverse: _inverse, ...light } = DEFAULT_THEME;
     expect(themeTokensSchema.safeParse(light).success).toBe(true);
     expect(
-      themeTokensSchema.safeParse({ ...light, dark: { primary: { l: 0.6, c: 0.2, h: 30 } } })
+      themeTokensSchema.safeParse({ ...light, inverse: { primary: { l: 0.6, c: 0.2, h: 30 } } })
         .success,
     ).toBe(false);
   });
@@ -57,8 +57,9 @@ describe("theme tokens (2.1)", () => {
         Object.assign(t.colors as object, { primary: "oklch(55% 0.2 30)" }),
     ],
     [
-      "an unknown dark role",
-      (t: Record<string, unknown>) => Object.assign(t, { dark: { brand: { l: 0.5, c: 0, h: 0 } } }),
+      "an unknown inverse role",
+      (t: Record<string, unknown>) =>
+        Object.assign(t, { inverse: { brand: { l: 0.5, c: 0, h: 0 } } }),
     ],
     [
       "a font family with quotes",
@@ -122,5 +123,32 @@ describe("theme tokens (2.1)", () => {
     expect(copy).toEqual(DEFAULT_THEME);
     expect(copy.colors).not.toBe(DEFAULT_THEME.colors);
     expect(copy.typeScale.h1).not.toBe(DEFAULT_THEME.typeScale.h1);
+  });
+
+  it("takes any family a font catalogue can hold, but nothing that could leave a CSS string", () => {
+    const family = (name: string) =>
+      themeTokensSchema.safeParse({
+        ...DEFAULT_THEME,
+        fonts: { ...DEFAULT_THEME.fonts, body: { family: name, fallback: "serif" } },
+      }).success;
+
+    expect(
+      [
+        "Noto Sans JP",
+        "M PLUS 1p",
+        "Mrs. Saint-Delafield",
+        "Hind Siliguri",
+        "Ç Font",
+        "Zilla Slab",
+      ].map(family),
+    ).toEqual([true, true, true, true, true, true]);
+    expect(['Inter", x', "a\\b", "a;b", "", " Lead", "x".repeat(65)].map(family)).toEqual([
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+    ]);
   });
 });

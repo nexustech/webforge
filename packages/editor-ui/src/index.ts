@@ -44,6 +44,7 @@ export {
   CommandList,
   CommandSeparator,
   CommandShortcut,
+  filterByKeywords,
 } from "./components/ui/command.js";
 export {
   ContextMenu,
@@ -84,6 +85,7 @@ export {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "./components/ui/dropdown-menu.js";
+export { HoverCard, HoverCardContent, HoverCardTrigger } from "./components/ui/hover-card.js";
 export {
   Menubar,
   MenubarCheckboxItem,
@@ -97,6 +99,7 @@ export {
   MenubarSubTrigger,
   MenubarTrigger,
 } from "./components/ui/menubar.js";
+export { Picker, type PickerItem, type PickerProps } from "./components/ui/picker.js";
 export {
   ResizableHandle,
   type ResizableLayout,

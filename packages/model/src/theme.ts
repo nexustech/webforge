@@ -50,11 +50,14 @@ const colorRoleSchema = z.enum(COLOR_ROLES);
 
 /** A font the theme uses, by family name, and the kind of font to fall back on. */
 export const fontRefSchema = z.strictObject({
+  // Any family 2.2's catalogue can hold ("Noto Sans JP", "M PLUS 1p", "Mrs. Saint-Delafield"):
+  // letters and digits of any script, spaces and . ' & + -. Never a quote, backslash or
+  // semicolon, so the name is always safe inside a CSS string.
   family: z
     .string()
     .min(1)
     .max(64)
-    .regex(/^[A-Za-z0-9][A-Za-z0-9 -]*$/),
+    .regex(/^[\p{L}\p{N}][\p{L}\p{N} .'&+-]*$/u),
   fallback: z.enum(["sans-serif", "serif", "monospace"]),
 });
 
@@ -93,6 +96,27 @@ const textStepSchema = z.strictObject({
   leading: z.enum(["tight", "normal", "relaxed"]),
 });
 
+/** Shades of a colour (2.1), lightest first, as Tailwind names them: `primary-300`. */
+export const SHADE_STEPS = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950] as const;
+
+/** One of {@link SHADE_STEPS}. */
+export type ShadeStep = (typeof SHADE_STEPS)[number];
+
+/** Opacities a colour can be used at (2.1), in percent, as Tailwind's `/80`; none is 100. */
+export const OPACITY_STEPS = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90] as const;
+
+/** The roles that have shades: the colours, not the surfaces or text. */
+export const SHADED_ROLES = [
+  "primary",
+  "secondary",
+  "accent",
+  "neutral",
+  "info",
+  "success",
+  "warning",
+  "error",
+] as const satisfies readonly ColorRole[];
+
 /** See {@link themeTokensSchema}. */
 export const themeTokensSchema = z.strictObject({
   /** The preset the theme started from ("light"): the name it is listed under. */
@@ -104,8 +128,12 @@ export const themeTokensSchema = z.strictObject({
   scheme: z.enum(["light", "dark"]),
   /** Every colour role, for the page. */
   colors: z.record(colorRoleSchema, oklchSchema),
-  /** Every colour role again, for dark sections (2.4), if the theme has them. */
-  dark: z.record(colorRoleSchema, oklchSchema).optional(),
+  /**
+   * Every colour role again, for sections that invert the page (2.4): dark ones on a light theme,
+   * light ones on a dark theme. A theme without them (every migrated site) inverts with `neutral`
+   * as the surface and `neutral-content` as the text, its other colours as they are.
+   */
+  inverse: z.record(colorRoleSchema, oklchSchema).optional(),
   fonts: z.strictObject({ heading: fontRefSchema, body: fontRefSchema }),
   /** Corners: of boxes (cards), fields (inputs, buttons) and selectors (checkboxes, badges). */
   radius: z.strictObject({ box: radiusSchema, field: radiusSchema, selector: radiusSchema }),
@@ -145,6 +173,9 @@ function frozen<T>(value: T): T {
 }
 
 /**
+ * Format 5's migration keeps its own copy of what it gives every site (`FORMAT_5_DEFAULTS` in
+ * migrations.ts): this default may change from now on, that copy never.
+ *
  * The tokens a new site starts with: the "light" preset, whose colours are daisyUI's light
  * theme's, so a site looks as it did when its theme was daisyUI's own. Frozen: copy it to change
  * it ({@link copyTheme}).
@@ -174,7 +205,7 @@ export const DEFAULT_THEME: ThemeTokens = frozen({
     error: { l: 0.71, c: 0.194, h: 13.428 },
     "error-content": { l: 0.27, c: 0.105, h: 12.094 },
   },
-  dark: {
+  inverse: {
     "base-100": { l: 0.2533, c: 0.016, h: 252.42 },
     "base-200": { l: 0.2326, c: 0.014, h: 253.1 },
     "base-300": { l: 0.2115, c: 0.012, h: 254.09 },

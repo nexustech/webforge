@@ -79,7 +79,7 @@ The result is a fast, accessible, self-contained static website they fully own.
 | F-DS-4 | **Text and button styles** (G11) | Theme defines a type scale (H1–H6, body, small) and button styles (shape, size, filled/outline/ghost), editable in the Theme panel and applied site-wide (D7 confirm) |
 | F-DS-5 | **Animations** (G8) | Per section/element *Entrance animation* (None, Fade, Slide up/left/right, Zoom) with delay; *Hover effect* for buttons/cards (Lift, Grow, Shadow). CSS + a tiny observer in `webforge.js`; disabled automatically for visitors with *prefers-reduced-motion*; works from disk. **Content is visible by default:** elements are only hidden for their entrance once `webforge.js` has marked the page, so nothing stays invisible without JavaScript, in print or for search engines |
 | F-DS-6 | **Sticky header** (BS9-1) | Header option *Stay at the top when scrolling*, with *Change style when scrolling*: Shrink, Solid background, Shadow or None, applied after a scroll threshold. Works from disk with a few lines in `webforge.js`; without JavaScript the header is simply sticky. Keeps the mobile menu usable and never covers anchor targets (scroll offset) |
-| F-DS-7 | **Theme Studio** (UI2) | The Theme panel keeps quick controls (preset, brand colours, fonts, roundness). *Open Theme Studio* opens a larger window with:<br>• theme cards with live mini previews;<br>• colour palettes with generated shades and roles (Brand, Accent, Surface, Text);<br>• text styles per tag (H1–H6, paragraph, links with hover);<br>• spacing, corner and shadow scales;<br>• light and dark values side by side.<br>Site-wide changes confirm (D7) and are undoable |
+| F-DS-7 | **Theme Studio** (UI2) | The Theme panel keeps quick controls (preset, brand colours, fonts, roundness). *Open Theme Studio* opens a large in-app dialog (not a separate window; decided 2026-10-23) with:<br>• theme cards with live mini previews;<br>• colour palettes with generated shades and roles (Brand, Accent, Surface, Text);<br>• text styles per tag (H1–H6, paragraph, links with hover);<br>• spacing, corner and shadow scales;<br>• light and dark values side by side.<br>Site-wide changes confirm (D7) and are undoable |
 
 ### 2.4 Site settings & checks
 | ID | Feature | Acceptance criteria |
@@ -109,8 +109,8 @@ The result is a fast, accessible, self-contained static website they fully own.
 | F-CM-3 | **Analytics + consent** (B4/B7) | GA4 ID in Site Settings; built-in consent banner (on by default with GA); Consent Mode v2 default denied; GA off in preview and when opened from disk |
 | F-CM-4 | **Embeds** | YouTube, Vimeo, Google Maps/OpenStreetMap as dedicated elements with privacy mode and click-to-load placeholders (C8, B7) |
 | F-CM-5 | **Social links** | Social icons element bound to Site Settings → Social (Lucide/brand SVG icons inlined) |
-| F-CM-6 | **Newsletter signup** (G17) | Newsletter section: email (+ optional name) form that POSTs to the provider's embedded-form URL, plus our honeypot. Generic "form action URL" option in MVP; provider presets per GA3 (open question) |
-| F-CM-7 | **Booking button** (G18) | "Book now" button/element linking to the user's booking page; generic https URL in MVP; provider presets per GA3 (open question). Plain link, no external JS |
+| F-CM-6 | **Newsletter signup** (G17) | Newsletter section: email (+ optional name) form that POSTs to the provider's embedded-form URL, plus our honeypot. Generic "form action URL" in MVP; **no provider presets** (GA3, Q4 decided 2026-10-23) |
+| F-CM-7 | **Booking button** (G18) | "Book now" button linking to the user's booking page: a preset of the Button element with a generic https URL; **no provider presets** (GA3, Q4 decided 2026-10-23). Plain link, no external JS |
 | F-CM-8 | **Dynamic year** (G21) | `{year}` token for text (e.g. footer copyright) filled in at export, with no script. The year is fixed until the site is next exported or published, so Site Check shows a tip when a published site's year is out of date |
 | F-CM-9 | **Back-to-top button** (BS9-2) | Site Settings → General: *Show a back-to-top button* (off by default), also switchable per page. It appears after the visitor scrolls down, is a real keyboard-focusable button with an accessible name, and moves focus to the top of the page. Smooth scrolling unless *prefers-reduced-motion* is set. Themed; works from disk |
 
@@ -171,7 +171,7 @@ The result is a fast, accessible, self-contained static website they fully own.
 7. Personal / CV
 8. Blank
 
-**Template images (S5):** public-domain (CC0) and free stock photos, with source and licence recorded per image in a manifest; licence review deferred.
+**Template images (S5):** public-domain (CC0) photos only, no bundled Unsplash or Pexels photos (Q6, decided 2026-10-23), with source and licence recorded per image in a manifest; the product owner does the final licence review.
 
 All components must:
 - render to static HTML with daisyUI/Tailwind classes;
@@ -236,7 +236,7 @@ The detailed work breakdown (one GitHub issue per item), schedule, risks and ope
 5. Default to Content mode for already-published sites (suggested in product/02).
 6. ~~Telemetry/crash reporting~~ → **Decided:** crash reports collected **locally only**, never uploaded (F-SITE-7).
 7. ~~Licensing model~~ → ✅ **Decided:** see §8 (implemented after MVP).
-8. **Booking and newsletter provider presets** (GA3, deferred): which providers to preset (e.g. Calendly, Square Appointments, Fresha, Acuity, SimplyBook; Mailchimp, Brevo, MailerLite)? Decide before Phase 3. A generic URL works meanwhile.
+8. ~~Booking and newsletter provider presets~~ → ✅ **Decided (Q4, 2026-10-23):** no provider presets in the MVP; the Booking button is a Button preset with a generic URL and the Newsletter section posts to a generic form action. Presets (e.g. Calendly, Fresha; Mailchimp, Brevo) can follow in a later release.
 9. ~~Competitor gap analysis~~ → ✅ **Decided (GA1–GA4):** see [gap analysis](../research/product/05-feature-gap-analysis.md). MVP grows by ~4–6 weeks.
 10. ~~RapidWeaver Elements 3.0 review~~ → ✅ **Decided (GA5–GA9, 2026-10-22):** connect AI apps (MCP), shared sections, files in Media and `llms.txt` join the MVP (about +19 days). The built-in AI assistant and draft pages are v1.1.
 11. **MCP transport** (F-AI-1): a local HTTP endpoint with a per-app token, or a small bundled bridge program? Decided by an ADR in the MCP work item ([gap analysis, open question 2](../research/product/05-feature-gap-analysis.md#open-questions)).

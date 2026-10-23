@@ -129,6 +129,33 @@ describe("connectFieldDrags (1.32)", () => {
     expect(labels().at(-1)).toBe("Edited shared section 'Welcome'");
   });
 
+  it("leaves no step for a drag let go where it started, keys in any order (#222)", () => {
+    const { engine, labels, section } = setup();
+    const before = section()?.padding;
+    engine.dragField({
+      phase: "start",
+      nodeId: "section-1",
+      field: "padding",
+      value: { top: "m", bottom: "m" },
+    });
+    engine.dragField({
+      phase: "update",
+      nodeId: "section-1",
+      field: "padding",
+      value: { top: "l" },
+    });
+
+    engine.dragField({
+      phase: "commit",
+      nodeId: "section-1",
+      field: "padding",
+      value: { bottom: "m", top: "m" },
+    });
+
+    expect(section()?.padding).toEqual(before);
+    expect(labels()).toEqual([]);
+  });
+
   it("drops a drag that never ended when the next one starts", () => {
     const { engine, labels, section, drag } = setup();
     const before = section()?.padding;
