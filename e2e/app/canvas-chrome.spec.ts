@@ -230,6 +230,19 @@ test.describe("keyboard and floating add", () => {
     await expect(steps()).toHaveText(["Opened page"]);
   });
 
+  test("a breadcrumb's outline goes when its step does, the pointer still on it (#253 review)", async () => {
+    const crumbs = page.getByRole("navigation", { name: "Where the selection is" });
+    await selectHeading();
+    await crumbs.getByRole("button", { name: "Heading" }).hover();
+    await expect(canvas().locator("[data-wf-outlined]")).toHaveCount(1);
+
+    // Delete while the pointer is on the Heading's step: the step goes, and so does the outline.
+    await canvas().locator("body").press("Delete");
+
+    await expect(steps().first()).toHaveText("Deleted Heading");
+    await expect(canvas().locator("[data-wf-outlined]")).toHaveCount(0);
+  });
+
   test("F2 renames the selected element in a dialog, one step (1.30)", async () => {
     await selectHeading();
     await page.keyboard.press("F2");

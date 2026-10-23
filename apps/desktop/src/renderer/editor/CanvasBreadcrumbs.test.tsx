@@ -9,7 +9,7 @@ import {
   type SiteDoc,
 } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { selectionPath } from "./breadcrumbs.js";
 import { CanvasBreadcrumbs } from "./CanvasBreadcrumbs.js";
 import { createEditorSession } from "./editor-session.js";
@@ -130,5 +130,24 @@ describe("CanvasBreadcrumbs", () => {
     // The page: nothing selected.
     await userEvent.click(screen.getByRole("button", { name: "Home" }));
     expect(session.ui.getState().nodeId).toBeNull();
+  });
+
+  it("takes the outline away when the step under the pointer goes, or the bar (#253 review)", async () => {
+    const session = createEditorSession(siteLibrary, site());
+    const engine = createFakeEngine();
+    session.ui.setState({ nodeId: "a" });
+    const { unmount } = render(<CanvasBreadcrumbs session={session} engine={engine} />);
+
+    await userEvent.hover(screen.getByRole("button", { name: "Intro" }));
+    expect(engine.outline).toHaveBeenLastCalledWith("a");
+    // Esc or Delete while the pointer is on it: the step goes, and the pointer never leaves it.
+    act(() => session.ui.setState({ nodeId: null }));
+    expect(engine.outline).toHaveBeenLastCalledWith(null);
+
+    act(() => session.ui.setState({ nodeId: "a" }));
+    await userEvent.hover(screen.getByRole("button", { name: "Section" }));
+    vi.mocked(engine.outline).mockClear();
+    unmount();
+    expect(engine.outline).toHaveBeenCalledWith(null);
   });
 });

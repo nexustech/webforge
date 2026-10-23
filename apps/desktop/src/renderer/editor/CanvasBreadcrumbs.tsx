@@ -2,7 +2,7 @@ import { cn } from "@webforge/editor-ui";
 import type { CanvasEngine } from "@webforge/engine";
 import { t } from "@webforge/i18n";
 import { ChevronRightIcon } from "lucide-react";
-import { useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { selectionPath } from "./breadcrumbs.js";
 import type { EditorSession } from "./editor-session.js";
 
@@ -23,6 +23,10 @@ export function CanvasBreadcrumbs({ session, engine }: CanvasBreadcrumbsProps) {
   const { pageId, nodeId } = useSyncExternalStore(ui.subscribe, ui.getState);
   const crumbs = selectionPath(site, pageId, nodeId, library);
   const outline = (id: string | null) => engine?.outline(id);
+  // A step under the pointer can go without the pointer leaving it (Esc, Delete or Undo while it
+  // is there): its outline goes with the selection or page it belonged to, or with the bar.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a new selection or page runs the cleanup.
+  useEffect(() => () => engine?.outline(null), [engine, pageId, nodeId]);
 
   return (
     <nav
