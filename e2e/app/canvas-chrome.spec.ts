@@ -216,7 +216,7 @@ test.describe("keyboard and floating add", () => {
     await expect(canvas().locator("h1")).toHaveText(`${STARTER_HEADING}!`);
   });
 
-  test("Ctrl/Cmd-click selects several elements; a plain click one again (1.31)", async () => {
+  test("Ctrl/Cmd-click selects several elements, deleted together; a plain click one again (1.31)", async () => {
     const panel = page.getByRole("region", { name: "Right panels" });
     await selectHeading();
     await canvas()
@@ -230,14 +230,39 @@ test.describe("keyboard and floating add", () => {
         .locator("style[data-webforge-also-selected]")
         .evaluate((style) => style.textContent ?? "");
     await expect.poll(alsoSelected).toContain('[data-puck-component="heading-1"]');
-    // Delete acts on one element until it acts on all (part 2): nothing goes.
+    // Delete takes both, as one step; undo brings them back, both selected again (1.31).
     await page.keyboard.press("Delete");
+    await expect(steps().first()).toHaveText("Deleted 2 elements");
+    await expect(canvas().locator("h1")).toHaveCount(0);
+    await expect(canvas().getByText(STARTER_TEXT)).toHaveCount(0);
+    await page.getByRole("banner").getByRole("button", { name: "Undo", exact: true }).click();
     await expect(canvas().locator("h1")).toHaveCount(1);
-    await expect(steps()).toHaveText(["Opened page"]);
+    await expect(panel.getByText("2 elements selected")).toBeVisible();
 
     await selectHeading();
     await expect(panel.getByRole("heading", { name: "Heading", exact: true })).toBeVisible();
     await expect.poll(alsoSelected).toBe("");
+  });
+
+  test("refuses to delete a selection with the shared Header in it, saying why (1.31)", async () => {
+    await selectHeading();
+    const header = canvas().locator("header").first();
+    const box = await header.boundingBox();
+    if (box === null) throw new Error("Header not visible");
+    await header.click({ modifiers: ["ControlOrMeta"], position: { x: 4, y: box.height - 4 } });
+    await expect(
+      page.getByRole("region", { name: "Right panels" }).getByText("2 elements selected"),
+    ).toBeVisible();
+
+    await page.keyboard.press("Delete");
+
+    await expect(
+      page.getByText(
+        "Elements of the shared Header or Footer, or of a shared section, are changed one at a time.",
+      ),
+    ).toBeVisible();
+    await expect(canvas().locator("h1")).toHaveCount(1);
+    await expect(steps()).toHaveText(["Opened page"]);
   });
 
   test("adds a section with the floating + below a section, chosen in the Add panel", async () => {

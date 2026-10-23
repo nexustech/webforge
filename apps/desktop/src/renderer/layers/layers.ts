@@ -103,7 +103,7 @@ export const layerItem = (layer: Pick<Layer, "kind" | "name">) =>
   layer.name === undefined ? layer.kind : t("history.namedItem", { name: layer.name });
 
 /** The node list holding the node `id`, and its index there, searching slots too. */
-function placeOf(
+export function placeOf(
   nodes: NodeDoc[],
   id: string,
   library: ComponentLibrary,
@@ -129,7 +129,7 @@ function placeOf(
 export type LayersSession = Pick<EditorSession, "history" | "ui" | "edit" | "library">;
 
 /** The page's own node for layer `id`: a linked copy for the id the canvas shows its section by. */
-function ownId(content: readonly NodeDoc[], shared: SharedSectionsDoc, id: string): string {
+export function ownId(content: readonly NodeDoc[], shared: SharedSectionsDoc, id: string): string {
   const copy = content.filter(isSharedCopy).find((node) => {
     const section = sectionOf(shared, node)?.section;
     return section !== undefined && copiedNodeId(node.props.id, section.props.id) === id;

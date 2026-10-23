@@ -1,5 +1,6 @@
 import type { CanvasEngine } from "@webforge/engine";
 import { t } from "@webforge/i18n";
+import { toggleSelectedHidden } from "../layers/bulk-layers.js";
 import { type LayersSession, shownLayer, toggleLayerHidden } from "../layers/layers.js";
 import type { CommandRegistry } from "../shell/commands.js";
 
@@ -9,7 +10,9 @@ import type { CommandRegistry } from "../shell/commands.js";
  * and the image picker for *Edit* on an image (`pickImage`). Hiding is Layers' own step ("Hid
  * Heading"), so it reads the same wherever it is done, and only a layer can be hidden: not an
  * element of the shared Header or Footer, nor one inside a linked copy. Content mode's lock (M3)
- * turns it off. Returns a function that removes them, and one that follows the lock.
+ * turns it off. While several elements are selected, Mod + / hides or shows them all as one step,
+ * or `notify` says why it can't (1.31). Returns a function that removes them, and one that follows
+ * the lock.
  */
 export function registerElementCommands(
   registry: CommandRegistry,
@@ -17,20 +20,20 @@ export function registerElementCommands(
   engine: CanvasEngine,
   beforeAction: () => void,
   pickImage: (nodeId: string) => void,
+  notify: (message: string) => void = () => undefined,
 ): {
   readonly remove: () => void;
   readonly setLayoutLocked: (locked: boolean) => void;
 } {
   let locked = false;
   /** Whether element `id` can be hidden or shown now. */
-  // Not yet for several selected elements (1.31 part 2 hides them all as one step).
-  const canHide = (id: string | null) =>
-    !locked &&
-    id !== null &&
-    (session.ui.getState().others ?? []).length === 0 &&
-    shownLayer(session, id) !== undefined;
+  const several = () => (session.ui.getState().others ?? []).length > 0;
+  /** Whether element `id` alone can be hidden or shown: a layer, while the layout isn't locked. */
+  const canHideOne = (id: string) => !locked && shownLayer(session, id) !== undefined;
+  // Several are tried together, and the reason given if they can't be (1.31).
+  const canHide = (id: string | null) => id !== null && (several() ? !locked : canHideOne(id));
   const hide = (id: string) => {
-    if (!canHide(id)) return;
+    if (!canHideOne(id)) return;
     beforeAction();
     toggleLayerHidden(session, id);
   };
@@ -43,7 +46,14 @@ export function registerElementCommands(
     enabled: false,
     run: () => {
       const { nodeId } = session.ui.getState();
-      if (nodeId !== null) hide(nodeId);
+      if (nodeId === null || locked) return;
+      if (several()) {
+        beforeAction();
+        const { refused } = toggleSelectedHidden(session);
+        if (refused !== undefined) notify(refused);
+      } else {
+        hide(nodeId);
+      }
     },
   });
   const stopRequests = engine.onElementRequest((request) => {
