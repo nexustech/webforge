@@ -14,14 +14,34 @@ export {
   bundledFontBytes,
   catalogueFamily,
   catalogueFont,
+  catalogueFontSchema,
   FONT_BUDGET_BYTES,
   FONT_CATALOGUE,
-  FONT_CATEGORIES,
-  FONT_LICENCES,
   FONT_PAIRINGS,
   fontRefOf,
 } from "./fonts/catalogue.js";
 export type { FontFace } from "./fonts/faces.js";
 export { fontFacesFor } from "./fonts/faces.js";
+export type {
+  FontCategory,
+  FontFallback,
+  FontLicence,
+  FontMetadata,
+  PlannedFamily,
+} from "./fonts/plan.js";
+export {
+  allowedLicence,
+  FONT_CATEGORIES,
+  FONT_LICENCES,
+  FONTSOURCE_API,
+  fontAxesSchema,
+  fontCategory,
+  fontIdSchema,
+  fontMetadataSchema,
+  fontPackage,
+  PACKAGE_FILES,
+  PACKAGE_LISTINGS,
+  planFamily,
+} from "./fonts/plan.js";
 export { THEME_PRESETS, themePreset } from "./presets.js";
 export { inverseThemeName, oklchCss, themeCss } from "./theme-css.js";

@@ -19,7 +19,7 @@ async function job(snapshot: SiteSnapshot, destination: string): Promise<ExportJ
       data: (await readFont(face)) ?? new Uint8Array(),
     })),
   );
-  return { type: "export", snapshot, destination, fonts };
+  return { type: "export", snapshot, destination, fonts, families: [] };
 }
 
 describe("runExport", () => {

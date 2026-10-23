@@ -29,6 +29,22 @@ describe("createFontReader (2.2)", () => {
     expect(reader.read(face)).toEqual(bytes);
   });
 
+  it("reads a file again when it is asked for with another hash, as after a newer download", () => {
+    const dir = tempDir();
+    writeFileSync(join(dir, face.file), bytes);
+    const reader = createFontReader(dir);
+    expect(reader.read(face)).toEqual(bytes);
+
+    const newer = new Uint8Array([0x77, 0x4f, 0x46, 0x32, 4, 5]);
+    writeFileSync(join(dir, face.file), newer);
+    const newerFace = {
+      file: face.file,
+      bytes: newer.byteLength,
+      sha256: createHash("sha256").update(newer).digest("hex"),
+    };
+    expect(reader.read(newerFace)).toEqual(newer);
+  });
+
   it("refuses a missing, damaged or swapped file, logging only its name", () => {
     const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
     const dir = tempDir();
@@ -79,5 +95,22 @@ describe("createFontResponder (2.2)", () => {
     ]) {
       expect(respond(url).status, url).toBe(404);
     }
+  });
+
+  it("serves a downloaded file its lookup knows, and only that one", async () => {
+    const downloaded = {
+      file: "comic-neue-latin-400-normal.woff2",
+      bytes: 7,
+      sha256: "a".repeat(64),
+    };
+    const served = createFontResponder(
+      { read: (asked) => (asked.sha256 === downloaded.sha256 ? bytes : undefined) },
+      (name) => (name === downloaded.file ? downloaded : undefined),
+    );
+
+    const response = served(`webforge-font://fonts/${downloaded.file}`);
+    expect(response.status).toBe(200);
+    expect(new Uint8Array(await response.arrayBuffer())).toEqual(bytes);
+    expect(served("webforge-font://fonts/comic-neue-latin-700-normal.woff2").status).toBe(404);
   });
 });

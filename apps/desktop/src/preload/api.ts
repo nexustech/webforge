@@ -3,6 +3,7 @@ import { appApi } from "./api/app.js";
 import { createCall, type Invoke, type Subscribe } from "./api/call.js";
 import { canvasApi } from "./api/canvas.js";
 import { clipboardApi } from "./api/clipboard.js";
+import { fontsApi } from "./api/fonts.js";
 import { mediaApi } from "./api/media.js";
 import { prefsApi } from "./api/prefs.js";
 import { projectApi } from "./api/project.js";
@@ -20,6 +21,7 @@ export function createWebforgeApi(invoke: Invoke, subscribe: Subscribe): Webforg
     app: appApi(call, subscribe),
     canvas: canvasApi(call),
     clipboard: clipboardApi(call),
+    fonts: fontsApi(call),
     media: mediaApi(call),
     prefs: prefsApi(call),
     project: projectApi(call),

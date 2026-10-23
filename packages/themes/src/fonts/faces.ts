@@ -1,5 +1,5 @@
 import type { ThemeTokens } from "@webforge/model";
-import { type CatalogueFont, catalogueFamily } from "./catalogue.js";
+import { type CatalogueFont, FONT_CATALOGUE } from "./catalogue.js";
 
 /**
  * One font file a site uses, as its stylesheet declares it (`@font-face`) and its export copies it
@@ -55,13 +55,17 @@ function nearest(font: CatalogueFont, style: "normal" | "italic", weight: number
 /**
  * The font files a site with `theme` uses (2.2): for its heading and body fonts, each subset of
  * the styles and weights {@link wanted} (a variable font's one file covers every weight; a static
- * font's nearest weight stands in for one it doesn't have), each file once. A font that isn't in
- * the catalogue has none: the site shows its fallback.
+ * font's nearest weight stands in for one it doesn't have), each file once. `families` are the
+ * fonts there are files for: the catalogue's, and those this computer downloaded. A font that
+ * isn't among them has none: the site shows its fallback.
  */
-export function fontFacesFor(theme: ThemeTokens): FontFace[] {
+export function fontFacesFor(
+  theme: ThemeTokens,
+  families: readonly CatalogueFont[] = FONT_CATALOGUE,
+): FontFace[] {
   const faces = new Map<string, FontFace>();
   for (const role of ["heading", "body"] as const) {
-    const font = catalogueFamily(theme.fonts[role].family);
+    const font = families.find((each) => each.family === theme.fonts[role].family);
     if (font === undefined) continue;
     const { weights, styles } = wanted(theme, role);
     for (const style of styles) {

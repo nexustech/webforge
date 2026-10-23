@@ -894,6 +894,9 @@ importers:
 
   tools:
     dependencies:
+      '@webforge/themes':
+        specifier: workspace:*
+        version: link:../packages/themes
       zod:
         specifier: 'catalog:'
         version: 4.6.7
