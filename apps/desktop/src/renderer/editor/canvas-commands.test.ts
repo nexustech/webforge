@@ -13,10 +13,31 @@ describe("registerCanvasCommands", () => {
     ).toEqual([
       ["edit.duplicate", "Mod+D", "edit"],
       ["edit.delete", "Delete", "edit"],
-      ["edit.moveUp", "Alt+ArrowUp", "edit"],
-      ["edit.moveDown", "Alt+ArrowDown", "edit"],
+      // F-ED-27's keys: Mod+Alt+arrows move, Mod+arrows walk the page's tree.
+      ["edit.moveUp", "Mod+Alt+ArrowUp", "edit"],
+      ["edit.moveDown", "Mod+Alt+ArrowDown", "edit"],
+      ["edit.editText", "Enter", "edit"],
+      ["edit.clearText", "Backspace", null],
+      ["edit.selectParent", "Mod+ArrowUp", "edit"],
+      ["edit.selectChild", "Mod+ArrowDown", "edit"],
+      ["edit.selectPreviousSibling", "Mod+ArrowLeft", null],
+      ["edit.selectNextSibling", "Mod+ArrowRight", null],
       ["edit.selectPrevious", "ArrowUp", null],
       ["edit.selectNext", "ArrowDown", null],
+    ]);
+    // Text's own keys there (caret moves): left to the text while it is edited.
+    expect(
+      registry
+        .list()
+        .filter((command) => command.textShortcut === true)
+        .map((command) => command.id),
+    ).toEqual([
+      "edit.moveUp",
+      "edit.moveDown",
+      "edit.selectParent",
+      "edit.selectChild",
+      "edit.selectPreviousSibling",
+      "edit.selectNextSibling",
     ]);
     expect(registry.get("edit.delete")?.label).toBe("Delete");
   });
@@ -46,6 +67,10 @@ describe("registerCanvasCommands", () => {
     );
     expect(enabled).toEqual([false, false, false, false]);
     expect(registry.run("edit.selectNext")).toBe(true);
+    // Moving the selection and editing text are no layout changes.
+    expect(registry.run("edit.selectParent")).toBe(true);
+    expect(registry.run("edit.editText")).toBe(true);
+    expect(engine.perform).toHaveBeenCalledWith("editText");
     commands.setLayoutLocked(false);
     expect(registry.get("edit.delete")?.enabled).toBe(true);
   });

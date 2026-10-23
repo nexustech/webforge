@@ -138,6 +138,17 @@ export type HistoryCommandHandler = (command: HistoryCommand) => boolean | undef
 export type CanvasAction =
   | "selectPrevious"
   | "selectNext"
+  /** The element around the selected one (F-ED-27: Mod + ↑); never past the page's sections. */
+  | "selectParent"
+  /** The selected element's first element inside (Mod + ↓). */
+  | "selectChild"
+  /** The selected element's neighbours in its own list (Mod + ← / →), stopping at its ends. */
+  | "selectPreviousSibling"
+  | "selectNextSibling"
+  /** Starts editing the selected element's text, the caret at its end (Enter). */
+  | "editText"
+  /** Empties the selected element's text and starts editing it (Backspace): one text step. */
+  | "clearText"
   | "moveUp"
   | "moveDown"
   | "duplicate"
@@ -157,6 +168,16 @@ export type FieldDrag = {
    * `cancel` the value from before, at `update` and `commit` the value the drag sets.
    */
   readonly value: unknown;
+};
+
+/**
+ * What the selected element's quick actions ask the app to do (F-ED-25), since the app owns it:
+ * hide or show the element (as Layers does), or open the image picker for its image (*Edit* on an
+ * element with an image and no text).
+ */
+export type ElementRequest = {
+  readonly kind: "toggleHidden" | "pickImage";
+  readonly nodeId: string;
 };
 
 /** Where the floating + asks to add a section: a position in the page's top-level list. */
@@ -246,6 +267,8 @@ export interface CanvasEngine {
    * step, and the canvas shows each value as the document changes.
    */
   onFieldDrag(cb: (drag: FieldDrag) => void): Unsubscribe;
+  /** The selected element's quick actions ask for something only the app can do (F-ED-25). */
+  onElementRequest(cb: (request: ElementRequest) => void): Unsubscribe;
   /** The floating + between sections was clicked; the app decides what to add there. */
   onAddRequest(cb: (at: InsertPoint) => void): Unsubscribe;
   /**

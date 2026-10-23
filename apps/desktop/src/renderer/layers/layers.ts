@@ -222,6 +222,12 @@ export function setLayerHidden(session: LayersSession, id: string, hidden: boole
   });
 }
 
+/** Hides a layer, or shows it again if it is hidden (F-ED-27: Mod + /, and the chip's *Hide*). */
+export function toggleLayerHidden(session: LayersSession, id: string): void {
+  const found = target(session, id);
+  if (found !== undefined) setLayerHidden(session, id, !found.layer.hidden);
+}
+
 /**
  * Moves a layer to `index` among its siblings (by drag or Alt+arrow), as one step. An index past
  * either end, or the layer's own place, changes nothing.

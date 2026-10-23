@@ -3,13 +3,18 @@ import type { MessageKey } from "@webforge/i18n";
 import { t } from "@webforge/i18n";
 import type { CommandRegistry, MenuId } from "../shell/commands.js";
 
-/** The canvas's keyboard actions (1.12), in the order the Edit menu and command box list them. */
+/**
+ * The canvas's keyboard actions (1.12, 1.30), in the order the Edit menu and command box list
+ * them, with Bootstrap Studio's keys (F-ED-27). `text`: the shortcut is text's too (Mod+arrows move
+ * the caret, Enter and Backspace type), so it doesn't run while text is being edited.
+ */
 const CANVAS_COMMANDS: readonly {
   readonly id: string;
   readonly action: CanvasAction;
   readonly label: MessageKey;
   readonly shortcut: string;
   readonly menu?: MenuId;
+  readonly text?: boolean;
 }[] = [
   {
     id: "edit.duplicate",
@@ -23,15 +28,60 @@ const CANVAS_COMMANDS: readonly {
     id: "edit.moveUp",
     action: "moveUp",
     label: "canvas.moveUp",
-    shortcut: "Alt+ArrowUp",
+    shortcut: "Mod+Alt+ArrowUp",
     menu: "edit",
+    text: true,
   },
   {
     id: "edit.moveDown",
     action: "moveDown",
     label: "canvas.moveDown",
-    shortcut: "Alt+ArrowDown",
+    shortcut: "Mod+Alt+ArrowDown",
     menu: "edit",
+    text: true,
+  },
+  {
+    id: "edit.editText",
+    action: "editText",
+    label: "canvas.editText",
+    shortcut: "Enter",
+    menu: "edit",
+  },
+  {
+    id: "edit.clearText",
+    action: "clearText",
+    label: "canvas.clearText",
+    shortcut: "Backspace",
+  },
+  {
+    id: "edit.selectParent",
+    action: "selectParent",
+    label: "canvas.selectParent",
+    shortcut: "Mod+ArrowUp",
+    menu: "edit",
+    text: true,
+  },
+  {
+    id: "edit.selectChild",
+    action: "selectChild",
+    label: "canvas.selectChild",
+    shortcut: "Mod+ArrowDown",
+    menu: "edit",
+    text: true,
+  },
+  {
+    id: "edit.selectPreviousSibling",
+    action: "selectPreviousSibling",
+    label: "canvas.selectPreviousSibling",
+    shortcut: "Mod+ArrowLeft",
+    text: true,
+  },
+  {
+    id: "edit.selectNextSibling",
+    action: "selectNextSibling",
+    label: "canvas.selectNextSibling",
+    shortcut: "Mod+ArrowRight",
+    text: true,
   },
   {
     id: "edit.selectPrevious",
@@ -47,8 +97,22 @@ const CANVAS_COMMANDS: readonly {
   },
 ];
 
-/** Actions that need a selected element; the select actions also start from none. */
+/** Actions that need a selected element; the select-previous/next actions also start from none. */
 const NEEDS_SELECTION: ReadonlySet<CanvasAction> = new Set([
+  "duplicate",
+  "delete",
+  "moveUp",
+  "moveDown",
+  "editText",
+  "clearText",
+  "selectParent",
+  "selectChild",
+  "selectPreviousSibling",
+  "selectNextSibling",
+]);
+
+/** Actions that change the layout, which Content mode locks (M3); editing text doesn't. */
+const CHANGES_LAYOUT: ReadonlySet<CanvasAction> = new Set([
   "duplicate",
   "delete",
   "moveUp",
@@ -57,10 +121,12 @@ const NEEDS_SELECTION: ReadonlySet<CanvasAction> = new Set([
 
 /**
  * Registers the canvas's keyboard actions as commands, so the Edit menu, the command box and their
- * shortcuts all reach them: arrows select, Alt+arrows move, Mod+D duplicates, Delete deletes. Each
- * runs on the canvas's selected element as one undo step. Returns a function that removes them, one
- * that enables the ones needing a selection as the selection comes and goes, and one that turns the
- * ones changing the layout (duplicate, delete, move) off while Content mode locks it (M3).
+ * shortcuts all reach them: arrows select, Mod+arrows walk the page's tree (parent, child,
+ * siblings), Mod+Alt+arrows move, Enter edits text and Backspace empties it, Mod+D duplicates,
+ * Delete deletes. Each runs on the canvas's selected element as one undo step. Returns a function
+ * that removes them, one that enables the ones needing a selection as the selection comes and goes,
+ * and one that turns the ones changing the layout (duplicate, delete, move) off while Content mode
+ * locks it (M3).
  */
 export function registerCanvasCommands(
   registry: CommandRegistry,
@@ -76,7 +142,8 @@ export function registerCanvasCommands(
   const update = () => {
     for (const command of CANVAS_COMMANDS) {
       if (NEEDS_SELECTION.has(command.action)) {
-        registry.update(command.id, { enabled: selected && !locked });
+        const layout = CHANGES_LAYOUT.has(command.action);
+        registry.update(command.id, { enabled: selected && !(layout && locked) });
       }
     }
   };
@@ -86,6 +153,7 @@ export function registerCanvasCommands(
       label: t(command.label),
       shortcut: command.shortcut,
       ...(command.menu === undefined ? {} : { menu: command.menu }),
+      ...(command.text === true ? { textShortcut: true } : {}),
       enabled: !NEEDS_SELECTION.has(command.action),
       run: () => {
         beforeAction();

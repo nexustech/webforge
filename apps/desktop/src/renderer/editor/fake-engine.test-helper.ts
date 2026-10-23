@@ -1,5 +1,6 @@
 import type {
   CanvasEngine,
+  ElementRequest,
   EngineEdit,
   FieldDrag,
   HistoryCommand,
@@ -23,6 +24,8 @@ export type FakeEngine = CanvasEngine & {
   showFrame(frameWindow: Window | null): void;
   /** Drags a field's value with a handle on the canvas (1.32). */
   dragField(drag: FieldDrag): void;
+  /** A request from the selected element's quick actions (F-ED-25). */
+  requestFromElement(request: ElementRequest): void;
   /** Switches the device view with the canvas's own controls. */
   switchView(viewport: Viewport): void;
   readonly applied: PageDoc[];
@@ -49,6 +52,7 @@ export function createFakeEngine(): FakeEngine {
   const frames = listeners<Window | null>();
   const views = listeners<Viewport>();
   const drags = listeners<FieldDrag>();
+  const elementRequests = listeners<ElementRequest>();
   const applied: PageDoc[] = [];
   return {
     applied,
@@ -74,6 +78,7 @@ export function createFakeEngine(): FakeEngine {
     perform: vi.fn(() => true),
     onAddRequest: adds.add,
     onFieldDrag: drags.add,
+    onElementRequest: elementRequests.add,
     addDragSource: vi.fn(() => () => undefined),
     setLinkPicker: vi.fn(),
     onFrameWindow: frames.add,
@@ -88,5 +93,6 @@ export function createFakeEngine(): FakeEngine {
     showFrame: frames.emit,
     switchView: views.emit,
     dragField: drags.emit,
+    requestFromElement: elementRequests.emit,
   };
 }

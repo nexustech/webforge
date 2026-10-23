@@ -8,6 +8,7 @@ import type { MediaImportResult } from "../../shared/ipc-contract.js";
 import { createEditorSession, type EditorSession } from "../editor/editor-session.js";
 import { starterSite } from "../editor/starter-site.js";
 import { ImageField } from "./ImageField.js";
+import { createImagePickRequests, type ImagePickRequests } from "./image-picks.js";
 import { addMedia } from "./media-commands.js";
 
 declare global {
@@ -49,6 +50,7 @@ afterEach(async () => {
 async function render(
   value: unknown,
   choose = vi.fn(async (): Promise<MediaImportResult> => ({ status: "canceled" })),
+  picks?: ImagePickRequests,
 ) {
   const onChange = vi.fn();
   const onCommit = vi.fn();
@@ -65,6 +67,7 @@ async function render(
         media={{ choose }}
         notify={() => undefined}
         imageUrl={(item) => `test://${item.name}`}
+        {...(picks === undefined ? {} : { picks })}
       />,
     ),
   );
@@ -157,5 +160,24 @@ describe("ImageField", () => {
     expect(container.querySelector('input[type="text"]')?.getAttribute("placeholder")).toBe(
       "The image has no alt text in Media yet",
     );
+  });
+
+  it("opens its picker when the canvas asks to edit the selected element's image (F-ED-25)", async () => {
+    const picks = createImagePickRequests();
+    session.ui.setState({ nodeId: "img" });
+    // Asked before the Edit panel showed the field: it opens once it is drawn.
+    picks.request("img");
+    await render(undefined, undefined, picks);
+    const picker = () => container.querySelector('[aria-label="Images in Media"]');
+    expect(picker()).not.toBeNull();
+    expect(document.activeElement?.id).toBe("field-image");
+
+    await act(async () => button("Choose an image")?.click());
+    expect(picker()).toBeNull();
+    // Another element's image is its own field's.
+    await act(async () => picks.request("other"));
+    expect(picker()).toBeNull();
+    await act(async () => picks.request("img"));
+    expect(picker()).not.toBeNull();
   });
 });

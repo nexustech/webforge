@@ -9,9 +9,10 @@ import {
 import { t } from "@webforge/i18n";
 import { type ImageMeta, type ImageValue, imageValueSchema, isImageMeta } from "@webforge/model";
 import { ImagePlusIcon } from "lucide-react";
-import { useId, useState, useSyncExternalStore } from "react";
+import { useEffect, useId, useState, useSyncExternalStore } from "react";
 import { type MediaApi, mediaImageUrl } from "../../shared/ipc/media.js";
 import type { EditorSession } from "../editor/editor-session.js";
+import type { ImagePickRequests } from "./image-picks.js";
 import { importItems } from "./import-media.js";
 import { addMedia } from "./media-commands.js";
 
@@ -22,6 +23,8 @@ export type ImageFieldContext = {
   readonly media?: Pick<MediaApi, "choose">;
   readonly notify?: (message: string) => void;
   readonly imageUrl?: (item: ImageMeta, size: "thumbnail") => string;
+  /** Requests to open the picker from the canvas (*Edit* on an image, F-ED-25). */
+  readonly picks?: ImagePickRequests;
 };
 
 /**
@@ -39,12 +42,24 @@ export function ImageField({
   media,
   notify = (message) => toast(message),
   imageUrl = mediaImageUrl,
+  picks,
 }: FieldRendererProps & ImageFieldContext) {
   const items = useSyncExternalStore(
     session.history.document.subscribe,
     () => session.history.document.getState().media,
   );
   const [picking, setPicking] = useState(false);
+  // *Edit* on the selected element's image (F-ED-25): its picker opens, focus on its button.
+  useEffect(() => {
+    if (picks === undefined) return undefined;
+    const open = () => {
+      if (!picks.take(session.ui.getState().nodeId)) return;
+      setPicking(true);
+      document.getElementById(id)?.focus();
+    };
+    open();
+    return picks.subscribe(open);
+  }, [picks, session, id]);
   const altId = useId();
   const actionId = useId();
   const altHintId = useId();
