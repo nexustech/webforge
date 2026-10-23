@@ -16,6 +16,7 @@ import {
   renderPage,
   UnknownComponentError,
 } from "@webforge/site-components";
+import { fontFacesFor } from "@webforge/themes";
 import { buildSiteCss, classCandidates } from "./css.js";
 import { BODY_CLASS, pageDocument } from "./html.js";
 import { imageForDepth, processImage } from "./images.js";
@@ -24,7 +25,8 @@ import { navigationFor } from "./navigation.js";
 import type { PipelineResources } from "./resources.js";
 
 /** Why a build failed (X5 errors). The app shows a translated message for each code. */
-export type BuildErrorCode = "invalid-site" | "unknown-component";
+/** `missing-font`: a font the theme uses isn't installed as the catalogue lists it (2.2). */
+export type BuildErrorCode = "invalid-site" | "unknown-component" | "missing-font";
 
 /** A build that cannot produce a working site. */
 export class BuildError extends Error {
@@ -62,8 +64,10 @@ export type BuiltSite = {
 
 const EXTERNAL_LINK = /^(?:https?:|mailto:|tel:)/i;
 
+const sha256 = (data: string | Uint8Array) => createHash("sha256").update(data).digest("hex");
+
 function contentHash(data: string | Uint8Array): string {
-  return createHash("sha256").update(data).digest("hex").slice(0, 10);
+  return sha256(data).slice(0, 10);
 }
 
 function depthOf(pagePath: string): number {
@@ -224,6 +228,7 @@ export async function buildSite(
     theme: site.theme,
     candidates: classCandidates([`<body class="${BODY_CLASS}">`, ...markup].join("\n")),
     fontsUrl: "../fonts/",
+    ...(resources.fonts === undefined ? {} : { fonts: resources.fonts }),
   });
   const cssPath = `assets/css/site.${contentHash(css)}.css`;
   files.set(cssPath, text.encode(css));
@@ -244,8 +249,13 @@ export async function buildSite(
   if (script !== undefined && scriptPath !== undefined) {
     files.set(scriptPath, text.encode(script));
   }
-  for (const font of resources.fonts) {
-    files.set(`assets/fonts/${font.fileName}`, font.data);
+  // Only the fonts the theme uses (2.2), each exactly the file the catalogue (or the download) lists.
+  for (const face of fontFacesFor(site.theme, resources.fonts)) {
+    const data = await resources.readFont(face);
+    if (data === undefined || data.byteLength !== face.bytes || sha256(data) !== face.sha256) {
+      throw new BuildError("missing-font", `The font file ${face.file} is missing or damaged`);
+    }
+    files.set(`assets/fonts/${face.file}`, data);
   }
 
   const sorted = new Map([...files].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));

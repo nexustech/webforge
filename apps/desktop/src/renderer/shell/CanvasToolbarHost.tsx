@@ -1,6 +1,6 @@
 import type { Viewport } from "@webforge/engine";
 import type { SiteDoc } from "@webforge/model";
-import { useMemo, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 import type { CanvasPreferences } from "../../shared/ipc/prefs.js";
 import type { EditorSession } from "../editor/editor-session.js";
 import { pageListOf, useDocument } from "../editor/use-document.js";

@@ -33,6 +33,17 @@ test.describe("site CSS on the canvas", () => {
     await expect(heading).toHaveCSS("font-size", "48px");
     await expect(heading).toHaveCSS("font-weight", "700");
     await expect(heading).toHaveCSS("font-family", /Inter/);
+    // The font itself loaded, through the main process's webforge-font: scheme (2.2).
+    await expect
+      .poll(() =>
+        canvasFrame().evaluate(async () => {
+          await document.fonts.ready;
+          return [...document.fonts].some(
+            (font) => font.family.replaceAll('"', "") === "Inter" && font.status === "loaded",
+          );
+        }),
+      )
+      .toBe(true);
     // The exported <body> classes: daisyUI's base colours.
     await expect(canvas().locator("body")).toHaveClass(/bg-base-100/);
   });

@@ -8,6 +8,7 @@ import { saveAsSharedSection } from "../shared-sections/shared-sections.js";
 import { CommandRegistryProvider } from "../shell/command-context.js";
 import { type CommandRegistry, createCommandRegistry } from "../shell/commands.js";
 import { createSiteWideConfirm } from "../shell/confirm-site-wide.js";
+import { CanvasErrorBoundary } from "../shell/error-boundaries.js";
 import { PanelRegistryProvider, usePanels } from "../shell/panel-context.js";
 import { createPanelRegistry, type PanelRegistry } from "../shell/panels.js";
 import { Editor } from "./Editor.js";
@@ -361,7 +362,7 @@ describe("Editor", () => {
   });
 
   it("undoes back to a step from the title bar in one jump, a gesture in progress dropped first (UX-16)", async () => {
-    let undoTo: ((entryId: string) => boolean) | null = null;
+    let undoTo: ((entryId: string) => boolean) | undefined;
     await act(async () =>
       root.render(
         <CommandRegistryProvider registry={registry}>
@@ -371,7 +372,7 @@ describe("Editor", () => {
               createEngine={createEngine}
               compileCss={compileCss}
               onUndoTo={(next) => {
-                undoTo = next;
+                undoTo = next?.run;
               }}
             />
           </PanelRegistryProvider>
@@ -416,7 +417,7 @@ describe("Editor", () => {
     expect(session.history.state.getState().cursor).toBe(1);
 
     await act(async () => root.render(<></>));
-    expect(undoTo).toBeNull();
+    expect(undoTo).toBeUndefined();
     root = createRoot(container);
   });
 
@@ -452,6 +453,9 @@ describe("Editor", () => {
     expect(engine.mount).toHaveBeenCalledWith(expect.anything(), {
       library: siteLibrary,
       theme: site.theme,
+      // An error in the canvas stays there, and becomes a local crash report (R3).
+      errorBoundary: CanvasErrorBoundary,
+      onError: expect.any(Function),
     });
     expect(canvas?.querySelector(".editor__canvas-root")).not.toBeNull();
     expect(engine.loadPage).toHaveBeenCalledWith(starterPage(), site.layout, site.sharedSections);

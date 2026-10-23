@@ -11,7 +11,9 @@ import {
   pageDocumentId,
 } from "@webforge/model";
 import { ProjectStore, ReadOnlyProjectError } from "@webforge/storage";
+import type { IpcMain } from "electron";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { registerProjectHandlers } from "./project-ipc.js";
 import { findProjectArgument, ProjectSession, withProjectExtension } from "./project-session.js";
 
 let dir: string;
@@ -39,6 +41,7 @@ describe("ProjectSession", () => {
     const result = session.create(join(dir, "Rosa's Bakery.wforge"));
 
     const project = {
+      sessionId: expect.stringMatching(/^[0-9a-f-]{36}$/),
       name: "Rosa's Bakery",
       fileName: "Rosa's Bakery.wforge",
       formatVersion: 1,
@@ -115,6 +118,80 @@ describe("ProjectSession", () => {
     for (const [message] of vi.mocked(console.error).mock.calls) {
       expect(String(message)).not.toContain(dir);
     }
+  });
+});
+
+describe("ProjectSession sessions (R6, #239)", () => {
+  const site = createSite({
+    name: "Rosa's Bakery",
+    language: "en",
+    homeTitle: "Home",
+    notFoundTitle: "Page not found",
+  });
+  const idOf = (result: ReturnType<ProjectSession["open"]>) =>
+    result.status === "opened" ? result.project.sessionId : "";
+
+  it("gives each opening its own session, and calls one stale once another site opens", () => {
+    expect(session.staleReason(idOf(session.create(join(dir, "none.wforge"))))).toBeUndefined();
+    session.close();
+    expect(session.staleReason("anything")).toBe("no-site");
+
+    const first = idOf(session.create(join(dir, "a.wforge")));
+    expect(session.current()?.sessionId).toBe(first);
+    const second = idOf(session.create(join(dir, "b.wforge")));
+
+    expect(second).not.toBe(first);
+    expect(session.staleReason(first)).toBe("stale-session");
+    expect(session.staleReason(second)).toBeUndefined();
+    // Opening the first site again is another opening too.
+    expect(idOf(session.open(join(dir, "a.wforge")))).not.toBe(first);
+  });
+
+  it("refuses a late save from a renderer loaded for the site a hand-off replaced", async () => {
+    const handlers = new Map<string, (event: unknown, ...args: unknown[]) => Promise<unknown>>();
+    const ipc = {
+      handle: (
+        channel: string,
+        handler: (event: unknown, ...args: unknown[]) => Promise<unknown>,
+      ) => handlers.set(channel, handler),
+    } as unknown as Pick<IpcMain, "handle">;
+    registerProjectHandlers(ipc, () => true, session, {
+      chooseNewProjectPath: async () => undefined,
+      chooseProjectToOpen: async () => undefined,
+    });
+    const commit = (sessionId: string, changes: unknown) =>
+      handlers.get("project:commit")?.({ senderFrame: { url: "app" } }, sessionId, changes);
+    const a = join(dir, "a.wforge");
+    const fromA = idOf(session.create(a));
+    expect(await commit(fromA, changedDocuments(undefined, site))).toEqual({ status: "saved" });
+
+    // Site B replaces A in the window, and A's last edit arrives only then.
+    const b = join(dir, "b.wforge");
+    session.create(b);
+    const page = site.pages[site.homePageId];
+    if (page === undefined) throw new Error("no home page");
+    const late = [{ type: "put", id: pageDocumentId(page.id), kind: "page", content: page }];
+
+    expect(await commit(fromA, late)).toEqual({ status: "failed", reason: "stale-session" });
+    expect(session.readSite()).toEqual({ status: "empty" });
+    session.close();
+    session.open(a);
+    expect(session.readSite()).toEqual({ status: "ok", site });
+  });
+
+  it("keeps the open site, as the same opening, when a site can't be created over its file", () => {
+    const path = join(dir, "site.wforge");
+    const opened = idOf(session.create(path));
+    expect(session.commit(changedDocuments(undefined, site))).toEqual({ status: "saved" });
+    vi.spyOn(ProjectStore, "create").mockImplementationOnce(() => {
+      throw Object.assign(new Error("EBUSY"), { code: "EBUSY" });
+    });
+
+    expect(session.create(path)).toEqual({ status: "failed", reason: "unknown" });
+
+    expect(session.current()).toMatchObject({ fileName: "site.wforge", sessionId: opened });
+    expect(session.staleReason(opened)).toBeUndefined();
+    expect(session.readSite()).toEqual({ status: "ok", site });
   });
 });
 

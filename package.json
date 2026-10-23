@@ -11,18 +11,22 @@
     "dev": "turbo run dev --filter=@webforge/desktop",
     "build": "turbo run build",
     "test": "vitest run --coverage",
+    "test:compiled": "vitest run --config vitest.compiled.config.ts --maxWorkers=50%",
     "e2e": "turbo run build --filter=@webforge/desktop && pnpm --filter @webforge/e2e e2e",
     "e2e:packaged": "pnpm --filter @webforge/desktop package:e2e && pnpm --filter @webforge/e2e e2e:packaged",
     "e2e:perf": "pnpm --filter @webforge/desktop build:perf && pnpm --filter @webforge/e2e e2e:perf",
     "visual": "pnpm --filter @webforge/editor-ui --filter @webforge/site-components build-storybook && pnpm --filter @webforge/e2e e2e:visual",
+    "visual:docker": "node tools/src/visual-docker.ts",
     "lint": "biome ci .",
     "format": "biome check --write .",
     "typecheck": "tsc -b",
     "deps": "depcruise apps packages e2e tools",
     "knip": "knip",
     "licence-check": "pnpm licenses list -r --json | node tools/src/check-licences.ts",
+    "font-catalogue": "node tools/src/build-font-catalogue.ts && biome format --write packages/themes/src/fonts/catalogue.json",
     "ui-strings": "node tools/src/check-ui-strings.ts apps/desktop/src/renderer packages/editor-ui/src packages/engine/src packages/site-components/src",
-    "check": "pnpm lint && pnpm typecheck && pnpm deps && pnpm knip && pnpm licence-check && pnpm ui-strings && pnpm test"
+    "react-compiler": "node tools/src/check-react-compiler.ts apps/desktop/src/renderer packages/editor-ui/src packages/engine/src",
+    "check": "pnpm lint && pnpm typecheck && pnpm deps && pnpm knip && pnpm licence-check && pnpm ui-strings && pnpm react-compiler && pnpm test && pnpm test:compiled"
   },
   "commitlint": {
     "extends": [
@@ -30,12 +34,16 @@
     ]
   },
   "devDependencies": {
+    "@babel/core": "catalog:",
     "@biomejs/biome": "2.5.15",
     "@commitlint/cli": "21.2.4",
     "@commitlint/config-conventional": "21.2.4",
+    "@rolldown/plugin-babel": "catalog:",
     "@swc/core": "1.16.18",
     "@types/node": "catalog:",
+    "@vitejs/plugin-react": "6.1.2",
     "@vitest/coverage-v8": "5.0.5",
+    "babel-plugin-react-compiler": "catalog:",
     "dependency-cruiser": "18.6.0",
     "knip": "6.41.0",
     "lefthook": "2.2.2",

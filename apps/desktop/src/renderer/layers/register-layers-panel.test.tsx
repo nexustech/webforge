@@ -1,18 +1,29 @@
 // @vitest-environment happy-dom
-import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  createEvent,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
   copiedNodeId,
+  type NodeDoc,
   SHARED_COPY_TYPE,
   type SharedSectionId,
   type SiteDoc,
 } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createEditorSession } from "../editor/editor-session.js";
+import { createEditorSession, currentPage } from "../editor/editor-session.js";
+import { selectElements, selectedIds } from "../editor/selection.js";
 import { starterSite } from "../editor/starter-site.js";
 import { CommandRegistryProvider } from "../shell/command-context.js";
-import { createCommandRegistry } from "../shell/commands.js";
+import { createCommandRegistry, isMac } from "../shell/commands.js";
 import { createPanelRegistry, panelsInSlot } from "../shell/panels.js";
 import { registerLayersPanel } from "./register-layers-panel.js";
 
@@ -35,7 +46,7 @@ function setUp(site: SiteDoc = starterSite()) {
 }
 
 describe("registerLayersPanel", () => {
-  it("adds Layers before Undo History, in Advanced mode only (T2)", () => {
+  it("adds Layers under the left column's tabs, in Simple and Advanced mode (ADR 0011)", () => {
     const { panels, remove } = setUp();
     panels.register({
       id: "undoHistory",
@@ -44,13 +55,13 @@ describe("registerLayersPanel", () => {
       component: () => null,
     });
 
+    // Not a tab beside Undo History: a pane of its own, shown with it.
     expect(panelsInSlot(panels.list(), "left.bottom", "simple").map((p) => p.id)).toEqual([
       "undoHistory",
     ]);
-    expect(panelsInSlot(panels.list(), "left.bottom", "advanced").map((p) => p.id)).toEqual([
-      "layers",
-      "undoHistory",
-    ]);
+    for (const level of ["simple", "advanced"] as const) {
+      expect(panelsInSlot(panels.list(), "left.lower", level).map((p) => p.id)).toEqual(["layers"]);
+    }
     remove();
     expect(panels.list().map((p) => p.id)).toEqual(["undoHistory"]);
   });
@@ -64,6 +75,65 @@ describe("registerLayersPanel", () => {
 
     act(() => session.select("text-1"));
     expect(rows()[2]?.getAttribute("aria-selected")).toBe("true");
+  });
+
+  it("never moves one layer alone while several are selected (#259 review)", () => {
+    // Alt+arrows hand several to the Edit menu's moves, which this panel alone doesn't have.
+    const { session } = setUp();
+    const order = () =>
+      ((currentPage(session)?.doc.content[0]?.props.content ?? []) as NodeDoc[]).map(
+        (node) => node.props.id,
+      );
+    const before = order();
+    act(() => session.selectElements(["heading-1", "text-1"]));
+
+    fireEvent.keyDown(screen.getAllByRole("treeitem")[1] as HTMLElement, {
+      key: "ArrowDown",
+      altKey: true,
+      ...(isMac() ? { metaKey: true } : { ctrlKey: true }),
+    });
+
+    expect(order()).toEqual(before);
+    expect(session.history.entries()).toHaveLength(0);
+    expect(selectedIds(session.ui.getState())).toEqual(["heading-1", "text-1"]);
+  });
+
+  it("moves or copies a row dragged while others are selected, alone, and selects it (#269 review)", () => {
+    const { session } = setUp();
+    const order = () =>
+      ((currentPage(session)?.doc.content[0]?.props.content ?? []) as NodeDoc[]).map(
+        (node) => node.props.id,
+      );
+    const drag = (from: number, to: number, copy = false) => {
+      const rows = screen.getAllByRole("treeitem");
+      const dataTransfer = { setData: vi.fn(), effectAllowed: "" };
+      const target = rows[to] as HTMLElement;
+      // happy-dom's drag events don't take the keys from their init: they are set on the event.
+      const withKeys = (event: Event) => {
+        for (const key of ["ctrlKey", "metaKey"])
+          Object.defineProperty(event, key, { value: copy });
+        return event;
+      };
+      fireEvent.dragStart(rows[from] as HTMLElement, { dataTransfer });
+      fireEvent(target, withKeys(createEvent.dragOver(target, { dataTransfer })));
+      fireEvent(target, withKeys(createEvent.drop(target, { dataTransfer })));
+      fireEvent.dragEnd(rows[from] as HTMLElement, { dataTransfer });
+    };
+    act(() => session.selectElements(["section-1", "heading-1"]));
+
+    // The Text, not selected, dragged before the Heading.
+    drag(2, 1);
+    expect(order()).toEqual(["text-1", "heading-1"]);
+    expect(selectedIds(session.ui.getState())).toEqual(["text-1"]);
+
+    act(() => session.selectElements(["section-1", "text-1"]));
+    drag(2, 1, true);
+    expect(order()).toHaveLength(3);
+    expect(selectedIds(session.ui.getState())).toHaveLength(1);
+    expect(session.history.entries().map((entry) => entry.label)).toEqual([
+      "Moved Text",
+      "Duplicated Heading",
+    ]);
   });
 
   it("follows changes to the page, and runs the canvas's commands from its toolbar", async () => {

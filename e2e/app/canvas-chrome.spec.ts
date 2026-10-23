@@ -52,6 +52,20 @@ async function selectHeading(): Promise<void> {
   await expect(quickAction("Move down")).toBeVisible();
 }
 
+test("shows Puck's canvas only: no Puck rail or panel, in Design or Content mode (#274)", async () => {
+  const editor = page.locator(".editor__canvas");
+  for (const mode of ["Design", "Content"] as const) {
+    await page.getByRole("radio", { name: mode, exact: true }).click();
+    await expect(canvas().locator("h1")).toHaveText(STARTER_HEADING);
+    await expect(editor.locator('[class*="_PuckLayout-nav_"]')).toBeHidden();
+    await expect(editor.locator('[class*="_Sidebar--left_"]')).toBeHidden();
+    await expect(editor.locator('[class*="_Sidebar--right_"]')).toBeHidden();
+    // Webforge's Layers is the only one: Puck's rail had a "Layers" button too.
+    await expect(editor.getByRole("button", { name: "Layers" })).toHaveCount(0);
+    await expect(editor.getByRole("button", { name: "Add" })).toHaveCount(0);
+  }
+});
+
 test.describe("selection chrome", () => {
   test("outlines the selected element in magenta", async () => {
     await selectHeading();
@@ -214,6 +228,94 @@ test.describe("keyboard and floating add", () => {
     await quickAction("Edit").click();
     await page.keyboard.type("!");
     await expect(canvas().locator("h1")).toHaveText(`${STARTER_HEADING}!`);
+  });
+
+  test("Ctrl/Cmd-click selects several elements, deleted together; a plain click one again (1.31)", async () => {
+    const panel = page.getByRole("region", { name: "Right panels" });
+    await selectHeading();
+    await canvas()
+      .getByText(STARTER_TEXT)
+      .click({ modifiers: ["ControlOrMeta"] });
+
+    await expect(panel.getByText("2 elements selected")).toBeVisible();
+    // The other selected element is outlined too (a stylesheet, which has no text on screen).
+    const alsoSelected = () =>
+      canvas()
+        .locator("style[data-webforge-also-selected]")
+        .evaluate((style) => style.textContent ?? "");
+    await expect.poll(alsoSelected).toContain('[data-puck-component="heading-1"]');
+    // Delete takes both, as one step; undo brings them back, both selected again (1.31).
+    await page.keyboard.press("Delete");
+    await expect(steps().first()).toHaveText("Deleted 2 elements");
+    await expect(canvas().locator("h1")).toHaveCount(0);
+    await expect(canvas().getByText(STARTER_TEXT)).toHaveCount(0);
+    await page.getByRole("banner").getByRole("button", { name: "Undo", exact: true }).click();
+    await expect(canvas().locator("h1")).toHaveCount(1);
+    await expect(panel.getByText("2 elements selected")).toBeVisible();
+
+    await selectHeading();
+    await expect(panel.getByRole("heading", { name: "Heading", exact: true })).toBeVisible();
+    await expect.poll(alsoSelected).toBe("");
+  });
+
+  test("refuses to delete a selection with the shared Header in it, saying why (1.31)", async () => {
+    await selectHeading();
+    const header = canvas().locator("header").first();
+    const box = await header.boundingBox();
+    if (box === null) throw new Error("Header not visible");
+    await header.click({ modifiers: ["ControlOrMeta"], position: { x: 4, y: box.height - 4 } });
+    await expect(
+      page.getByRole("region", { name: "Right panels" }).getByText("2 elements selected"),
+    ).toBeVisible();
+
+    await page.keyboard.press("Delete");
+
+    await expect(
+      page.getByText(
+        "Elements of the shared Header or Footer, or of a shared section, are changed one at a time.",
+      ),
+    ).toBeVisible();
+    await expect(canvas().locator("h1")).toHaveCount(1);
+    await expect(steps()).toHaveText(["Opened page"]);
+  });
+
+  test("breadcrumbs follow the selection, select on click and outline on hover (1.30)", async () => {
+    const crumbs = page.getByRole("navigation", { name: "Where the selection is" });
+    await selectHeading();
+    await expect(crumbs.getByRole("button")).toHaveText([/.+/, "Section", "Heading"]);
+
+    await crumbs.getByRole("button", { name: "Heading" }).hover();
+    await expect(canvas().locator("h1[data-wf-outlined], [data-wf-outlined] h1")).toHaveCount(1);
+    await crumbs.getByRole("button", { name: "Section" }).click();
+    await expect(selectedBar()).toContainText("Section");
+    await expect(crumbs.getByRole("button")).toHaveText([/.+/, "Section"]);
+    // Selecting moves nothing: no undo step.
+    await expect(steps()).toHaveText(["Opened page"]);
+  });
+
+  test("a breadcrumb's outline goes when its step does, the pointer still on it (#253 review)", async () => {
+    const crumbs = page.getByRole("navigation", { name: "Where the selection is" });
+    await selectHeading();
+    await crumbs.getByRole("button", { name: "Heading" }).hover();
+    await expect(canvas().locator("[data-wf-outlined]")).toHaveCount(1);
+
+    // Delete while the pointer is on the Heading's step: the step goes, and so does the outline.
+    await canvas().locator("body").press("Delete");
+
+    await expect(steps().first()).toHaveText("Deleted Heading");
+    await expect(canvas().locator("[data-wf-outlined]")).toHaveCount(0);
+  });
+
+  test("F2 renames the selected element in a dialog, one step (1.30)", async () => {
+    await selectHeading();
+    await page.keyboard.press("F2");
+    const dialog = page.getByRole("dialog", { name: "Rename Heading" });
+    await dialog.getByRole("textbox").fill("Welcome");
+    await dialog.getByRole("button", { name: "Rename" }).click();
+
+    await expect(steps().first()).toHaveText("Renamed Heading to 'Welcome'");
+    const crumbs = page.getByRole("navigation", { name: "Where the selection is" });
+    await expect(crumbs.getByRole("button").last()).toHaveText("Welcome");
   });
 
   test("adds a section with the floating + below a section, chosen in the Add panel", async () => {

@@ -4,6 +4,7 @@ import {
   BOX_SIDES,
   type Breakpoint,
   boxValueSchema,
+  colorRefSchema,
   imageValueSchema,
   type NodeAdvanced,
   type SiteDoc,
@@ -134,6 +135,9 @@ function accepts(field: FieldDef, value: unknown): boolean {
       return asLinkFieldChange(value) !== undefined;
     case "box":
       return boxValueSchema.safeParse(value).success;
+    // A colour ref (ADR 0009), or the element's own colour.
+    case "color":
+      return value === "default" || colorRefSchema.safeParse(value).success;
     default:
       return typeof value === "string";
   }
@@ -231,7 +235,7 @@ export function EditPanelHost({
   contentOnly = false,
 }: EditPanelHostProps) {
   const { history, library } = session;
-  const { pageId, nodeId, viewport } = useUi(session, (ui) => ui);
+  const { pageId, nodeId, viewport, others = [] } = useUi(session, (ui) => ui);
   const { target, anchors } = useDocument(
     session,
     (site): PanelSlice => {
@@ -270,6 +274,17 @@ export function EditPanelHost({
     run?.end();
   };
 
+  if (others.length > 0) {
+    // Several selected elements (1.31): editing their fields together comes later.
+    return (
+      <p
+        role="status"
+        className="flex h-full items-center justify-center p-4 text-center text-xs text-muted-foreground"
+      >
+        {t("editPanel.several", { count: others.length + 1 })}
+      </p>
+    );
+  }
   if (target === undefined) {
     return <EditPanel fields={[]} onChange={() => undefined} onCommit={() => undefined} />;
   }

@@ -100,6 +100,14 @@ export function createAutosave(options: AutosaveOptions): Autosave {
     if (disposed) {
       return;
     }
+    if (result.status === "failed" && result.reason === "stale-session") {
+      // Another site has replaced this one in the window (a hand-off, R6): what was still to save
+      // belongs to a site no longer open, so it is dropped, and the window reloads with the new one.
+      disposed = true;
+      clearTimers();
+      unsubscribe();
+      return;
+    }
     if (result.status === "saved") {
       saved = next;
     }

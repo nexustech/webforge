@@ -8,6 +8,7 @@ import type {
   Theme,
 } from "@webforge/model";
 import type { ComponentLibrary, RenderContext, ResolvedImage } from "@webforge/site-components";
+import type { ComponentType, ReactNode } from "react";
 
 /** The rich-text field being edited on the canvas: its element and the field's name. */
 export type RichTextAt = { readonly nodeId: string; readonly field: string };
@@ -180,6 +181,19 @@ export type ElementRequest = {
   readonly nodeId: string;
 };
 
+/**
+ * Alt + Enter in rich text being edited (F-ED-27): the element splits in two at the caret, as one
+ * step the app records. `before` stays in field `field` of element `nodeId`; `after` goes into a
+ * copy of it placed just after it. Both are rich-text HTML.
+ */
+export type TextSplit = {
+  /** The element, as the canvas shows it. */
+  readonly nodeId: string;
+  readonly field: string;
+  readonly before: string;
+  readonly after: string;
+};
+
 /** A right-click on an element of the canvas (1.35), at its point in the editor window. */
 export type CanvasContextMenu = {
   /** The element, as the canvas shows it. */
@@ -195,6 +209,14 @@ export type InsertPoint = { readonly index: number };
 export type MountOptions = {
   readonly library: ComponentLibrary;
   readonly theme: Theme;
+  /**
+   * Keeps an error inside the canvas (R3): it wraps everything the canvas draws, and shows its own
+   * fallback instead after an error, so the rest of the editor keeps working. Without one, an
+   * error takes the canvas down. When the boundary tries again, the canvas shows the current page.
+   */
+  readonly errorBoundary?: ComponentType<{ readonly children: ReactNode }>;
+  /** Told about each error in the canvas: caught by `errorBoundary` (`caught`), or not. */
+  readonly onError?: (error: unknown, caught: boolean) => void;
 };
 
 /**
@@ -213,7 +235,21 @@ export interface CanvasEngine {
   applyChange(change: DocChange): void;
   onUserEdit(cb: (edit: EngineEdit) => void): Unsubscribe;
   select(nodeId: string | null): void;
-  onSelectionChange(cb: (nodeId: string | null) => void): Unsubscribe;
+  /**
+   * Outlines element `nodeId` on the canvas as a hovered element is, or none (`null`): for a
+   * pointer over something outside the canvas that names it, such as a breadcrumb (1.30).
+   */
+  outline(nodeId: string | null): void;
+  /**
+   * The selection changed on the canvas. `adding` for a Ctrl/Cmd- or Shift-click (1.31): it adds
+   * `nodeId` to the selection, or takes it out if it is in it already; the app keeps the set.
+   */
+  onSelectionChange(cb: (nodeId: string | null, adding: boolean) => void): Unsubscribe;
+  /**
+   * The other selected elements, while several are (1.31): outlined as the selected one is, and
+   * the selected one's quick actions give way to the Edit menu's, which act on all. None: `[]`.
+   */
+  showSelected(others: readonly string[]): void;
   /** Undo/redo shortcuts and Esc pressed inside the canvas (U4). */
   onHistoryCommand(cb: HistoryCommandHandler): Unsubscribe;
   setViewport(v: Viewport): void;
@@ -277,6 +313,8 @@ export interface CanvasEngine {
   onFieldDrag(cb: (drag: FieldDrag) => void): Unsubscribe;
   /** The selected element's quick actions ask for something only the app can do (F-ED-25). */
   onElementRequest(cb: (request: ElementRequest) => void): Unsubscribe;
+  /** Rich text being edited is split in two at the caret (Alt + Enter, F-ED-27). */
+  onTextSplit(cb: (split: TextSplit) => void): Unsubscribe;
   /**
    * The element menu was asked for on the canvas (1.35): a right-click on an element, or Shift+F10
    * or the menu key for the selected one. The app selects it and shows its menu there. Not in

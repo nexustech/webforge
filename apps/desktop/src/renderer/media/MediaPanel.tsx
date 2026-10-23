@@ -30,6 +30,7 @@ import { type MediaApi, mediaImageUrl } from "../../shared/ipc/media.js";
 import type { EditorSession } from "../editor/editor-session.js";
 import { useDocument } from "../editor/use-document.js";
 import { useGesture } from "../editor/use-gesture.js";
+import { siteSession } from "../storage/site-session.js";
 import { documentIcon, documentTypeName, fileSizeLabel } from "./document-types.js";
 import { importDroppedFiles, importItems } from "./import-media.js";
 import {
@@ -88,7 +89,7 @@ function sharedUsageText(item: MediaMeta, shared: readonly string[]): string {
 export function MediaPanel({
   session,
   media,
-  notify = (message) => toast(message),
+  notify = toast,
   imageUrl = mediaImageUrl,
 }: MediaPanelProps) {
   const items = useDocument(session, (site) => site.media);
@@ -147,7 +148,7 @@ export function MediaPanel({
           type="button"
           size="sm"
           variant="outline"
-          onClick={() => void importWith(() => api.choose())}
+          onClick={() => void importWith(() => api.choose(siteSession()))}
         >
           <ImagePlusIcon />
           {t("site.media.add")}
@@ -198,7 +199,7 @@ export function MediaPanel({
             imageUrl={imageUrl}
             onReplace={() =>
               // The first chosen file takes the item's place; it isn't added as an item of its own.
-              void importItems(() => api.choose(), notify).then(([replacement]) => {
+              void importItems(() => api.choose(siteSession()), notify).then(([replacement]) => {
                 if (replacement !== undefined) replaceMedia(session, selected.id, replacement);
               })
             }

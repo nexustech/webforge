@@ -6,6 +6,7 @@ import { runExportInWorker, type WorkerProcess } from "./export-worker-client.js
 const job: ExportJob = {
   type: "export",
   destination: "/sites/my-site",
+  families: [],
   snapshot: {
     name: "Bakery",
     language: "en",
@@ -16,6 +17,7 @@ const job: ExportJob = {
     ],
     media: [],
   },
+  fonts: [],
 };
 
 /** A worker the test drives: it records the job and answers when told to. */

@@ -1,6 +1,9 @@
 /** The page canvas (stream C). */
 export const canvas = {
   "editor.canvas": "Page",
+  // The canvas ran into an error (R3): it shows this instead, and the panels keep working.
+  "canvas.error.message": "Something went wrong showing this page. Your work is saved.",
+  "canvas.error.reload": "Reload page",
   // Quick actions on the selected element (1.12).
   "canvas.moveUp": "Move up",
   "canvas.moveDown": "Move down",
@@ -26,7 +29,18 @@ export const canvas = {
   // The rich-text toolbar's links (1.23, F-ED-3).
   "canvas.richText.link": "Link…",
   "canvas.richText.removeLink": "Remove link",
+  // Alt + Enter in rich text (F-ED-27): the element splits in two at the caret.
+  "canvas.splitText.notHere":
+    "Only the page's own text can be split. The shared Header and Footer, and shared sections, are shown on other pages too.",
+  "canvas.splitText.locked": "Splitting text adds an element. Switch to Design mode to split it.",
   // While an element of the shared Header or Footer is selected (1.20, F-ED-7, D7).
+  // The breadcrumb bar under the canvas toolbar (1.30): the selected element's place on the page.
+  "canvas.breadcrumbs": "Where the selection is",
+  "canvas.breadcrumbs.page": "Page",
+  // F2 on the canvas (1.30): asks for the selected element's name, as the element menu does.
+  "canvas.rename": "Rename…",
+  // Selects every element of the page like the selected one (1.35, the element menu).
+  "canvas.selectSimilar": "Select similar",
   "canvas.sharedRegion.header": "Header",
   "canvas.sharedRegion.footer": "Footer",
   // Asked before an element of the shared Header or Footer goes from every page (D7).
@@ -72,6 +86,13 @@ export const canvas = {
   "editPanel.content": "Content",
   "editPanel.style": "Style",
   "editPanel.empty": "Select an element to edit it",
+  // While several elements are selected (1.31).
+  "editPanel.several": "{count} elements selected",
+  // Why several selected elements can't be changed at once (1.31).
+  "bulk.shared":
+    "Elements of the shared Header or Footer, or of a shared section, are changed one at a time.",
+  "bulk.first": "{item} is already first: nothing moved.",
+  "bulk.last": "{item} is already last: nothing moved.",
   "editPanel.noFields": "Nothing to change here",
   // A value set for one device only (F-ED-4).
   "editPanel.override": "{device} only",

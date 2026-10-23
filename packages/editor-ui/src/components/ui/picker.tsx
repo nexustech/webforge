@@ -1,14 +1,6 @@
 import { t } from "@webforge/i18n";
 import { SearchIcon } from "lucide-react";
-import {
-  type KeyboardEvent,
-  type ReactNode,
-  useEffect,
-  useId,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { type KeyboardEvent, type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { cn } from "../../lib/cn.js";
 import { fieldControlClass } from "../edit/text-field.js";
 import { Button } from "./button.js";
@@ -127,12 +119,10 @@ export function Picker<Item extends PickerItem>({
     setActiveId(next.trim() === "" ? (value ?? null) : null);
   };
 
-  const shown = useMemo(() => {
-    const words = query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
-    return items.filter(
-      (item) => (category === null || item.category === category) && matches(item, words),
-    );
-  }, [items, query, category]);
+  const words = query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
+  const shown = items.filter(
+    (item) => (category === null || item.category === category) && matches(item, words),
+  );
   const active = shown.find((item) => item.id === activeId) ?? shown[0];
   const step = layout === "grid" ? columns : 1;
 

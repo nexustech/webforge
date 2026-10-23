@@ -6,7 +6,6 @@ import {
   renderNodesToHtml,
 } from "@webforge/site-components";
 import type { CanvasCssRequest, CanvasCssResult } from "../../shared/ipc/canvas.js";
-import { withCanvasFonts } from "./canvas-fonts.js";
 import type { EditorSession } from "./editor-session.js";
 
 /** Compiles canvas CSS; in the app, `window.webforge.canvas.compileCss`. */
@@ -70,7 +69,6 @@ export function connectSiteCss(
   engine: CanvasEngine,
   session: EditorSession,
   compile: CompileCanvasCss,
-  baseUrl: string,
 ): Unsubscribe {
   /** What was last sent to compile: the theme (any token change makes a new one) and the classes. */
   let requested: { readonly theme: unknown; readonly classes: string } | null = null;
@@ -102,7 +100,7 @@ export function connectSiteCss(
       if (result.status === "failed") {
         failed();
       } else if (!stopped && key === requested) {
-        engine.setSiteCss(withCanvasFonts(result.css, baseUrl), result.bodyClass);
+        engine.setSiteCss(result.css, result.bodyClass);
       }
     }, failed);
   };

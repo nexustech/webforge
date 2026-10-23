@@ -100,7 +100,7 @@
 | # | Topic | Decision | Consequence |
 |---|---|---|---|
 | T1 | **Primary user** | **DIY small-business owners** | Consumer vocabulary throughout (Wix/Squarespace style); no developer or designer jargon in the default UI, help or error messages |
-| T2 | **Simple / Advanced mode** | ✅ **Simple by default**, Advanced one toggle away (View menu + Settings) | **Simple:** Add panel, Edit panel (Content · Style), Pages, Theme, Media, **Undo History panel**, Preview, Publish, Version History, Site Check. **Advanced adds:** Layers, the Edit panel's *Advanced* tab (CSS classes, HTML attributes, anchor IDs), Custom Code, developer export files (X6). The mode is a per-user preference, not saved in the site |
+| T2 | **Simple / Advanced mode** | ✅ **Simple by default**, Advanced one toggle away (View menu + Settings) | **Simple:** Add panel, **Layers** (always shown under Add and Undo History; [ADR 0011](../../docs/adr/0011-layers-always-visible.md), 23 Oct 2026), Edit panel (Content · Style), Pages, Theme, Media, **Undo History panel**, Preview, Publish, Version History, Site Check. **Advanced adds:** the Edit panel's *Advanced* tab (CSS classes, HTML attributes, anchor IDs), Custom Code, developer export files (X6). The mode is a per-user preference, not saved in the site |
 | T3 | **Layout model** | ✅ **Structured, responsive flow/grid** (sections stacked; elements in columns/stacks). **No free positioning** | Matches Puck's model; sites always adapt to phones. Wording uses "Move up / Move down / Drag to reorder" and "Columns", never x/y coordinates |
 | T4 | **Item name** | ✅ **Element** | Hierarchy: **Site → Page → Section → Element**. "Block" is not used anywhere in the UI |
 

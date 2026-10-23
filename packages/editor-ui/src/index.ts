@@ -16,6 +16,11 @@ export { fieldRenderer, registerFieldRenderer } from "./components/edit/field-re
 export { ListField } from "./components/edit/list-field.js";
 export { SelectField } from "./components/edit/select-field.js";
 export { SliderField } from "./components/edit/slider-field.js";
+export {
+  SwatchField,
+  type SwatchFieldProps,
+  type SwatchOption,
+} from "./components/edit/swatch-field.js";
 export { fieldControlClass, TextField } from "./components/edit/text-field.js";
 export { ToggleField } from "./components/edit/toggle-field.js";
 export {
@@ -80,6 +85,12 @@ export {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "./components/ui/dropdown-menu.js";
+export {
+  ErrorBoundary,
+  type ErrorBoundaryProps,
+  ErrorFallback,
+  type ErrorFallbackProps,
+} from "./components/ui/error-boundary.js";
 export { HoverCard, HoverCardContent, HoverCardTrigger } from "./components/ui/hover-card.js";
 export {
   Menubar,

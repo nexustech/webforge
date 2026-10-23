@@ -140,12 +140,7 @@ function logFailure(action: string, error: unknown): void {
  * them with their images. Nothing but those bytes is written there. Without elements, a paste
  * imports copied image files or a copied image (a screenshot) into Media.
  */
-export function createElementClipboard(
-  system: SystemClipboard,
-  dir: string,
-  site: ClipboardSite,
-  importMedia: ClipboardMediaImport,
-) {
+export function createElementClipboard(system: SystemClipboard, dir: string) {
   /** The kept bytes of `item`, if they are still there and unchanged. */
   const readKept = (item: MediaMeta): Uint8Array | undefined => {
     const path = join(dir, item.hash);
@@ -156,6 +151,8 @@ export function createElementClipboard(
 
   /** Imports copied files or a copied image into the open site, for the renderer to place. */
   const pasteMedia = async (
+    site: ClipboardSite,
+    importMedia: ClipboardMediaImport,
     content: Extract<ClipboardContent, { kind: "files" | "image" }>,
   ): Promise<ClipboardReadResult> => {
     if (site.current() === null) {
@@ -171,7 +168,8 @@ export function createElementClipboard(
   };
 
   return {
-    async write(elements: CopiedElements): Promise<ClipboardWriteResult> {
+    /** Copies `elements` from `site`, the open site as the caller's session sees it. */
+    async write(site: ClipboardSite, elements: CopiedElements): Promise<ClipboardWriteResult> {
       if (site.current() === null) {
         return { status: "failed", reason: "no-site" };
       }
@@ -202,7 +200,14 @@ export function createElementClipboard(
       }
     },
 
-    async read(): Promise<ClipboardReadResult> {
+    /**
+     * Reads what the clipboard holds for a paste into `site`, the open site as the caller's
+     * session sees it (R6): what it stores, it stores through `site` and `importMedia`.
+     */
+    async read(
+      site: ClipboardSite,
+      importMedia: ClipboardMediaImport,
+    ): Promise<ClipboardReadResult> {
       let content: ClipboardContent;
       try {
         content = await system.read({
@@ -218,7 +223,7 @@ export function createElementClipboard(
         return { status: "empty" };
       }
       if (content.kind !== "elements") {
-        return pasteMedia(content);
+        return pasteMedia(site, importMedia, content);
       }
       let parsed: unknown;
       try {

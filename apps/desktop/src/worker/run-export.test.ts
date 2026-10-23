@@ -1,22 +1,34 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import type { SiteSnapshot } from "@webforge/model";
 import { loadNodeResources } from "@webforge/pipeline/node";
 import { sampleSite, tempDirFactory } from "@webforge/test-utils";
+import { fontFacesFor } from "@webforge/themes";
 import { describe, expect, it } from "vitest";
+import type { ExportJob } from "../shared/export-worker-protocol.js";
 import { runExport } from "./run-export.js";
 
 const tempDir = tempDirFactory("webforge-run-export-");
+
+/** An export of `snapshot`, with the site's font files as the main process sends them (2.2). */
+async function job(snapshot: SiteSnapshot, destination: string): Promise<ExportJob> {
+  const { readFont } = await loadNodeResources();
+  const fonts = await Promise.all(
+    fontFacesFor(snapshot.theme).map(async (face) => ({
+      file: face.file,
+      data: (await readFont(face)) ?? new Uint8Array(),
+    })),
+  );
+  return { type: "export", snapshot, destination, fonts, families: [] };
+}
 
 describe("runExport", () => {
   it("builds the site and writes it to the destination", async () => {
     const destination = join(tempDir(), "site");
 
-    const outcome = await runExport(
-      { type: "export", snapshot: sampleSite(), destination },
-      loadNodeResources,
-    );
+    const outcome = await runExport(await job(sampleSite(), destination), loadNodeResources);
 
-    expect(outcome).toMatchObject({ type: "exported", pages: 2, files: 13, warnings: 0 });
+    expect(outcome).toMatchObject({ type: "exported", pages: 2, files: 15, warnings: 0 });
     expect(readFileSync(join(destination, "about.html"), "utf8")).toContain(
       "A family bakery since 1998.",
     );
@@ -32,10 +44,7 @@ describe("runExport", () => {
       layout: { header: [{ type: "Carousel", props: { id: "c" } }], footer: [] },
     };
 
-    const outcome = await runExport(
-      { type: "export", snapshot: broken, destination },
-      loadNodeResources,
-    );
+    const outcome = await runExport(await job(broken, destination), loadNodeResources);
 
     expect(outcome).toEqual({ type: "failed", code: "build-failed", detail: "unknown-component" });
     expect(existsSync(destination)).toBe(false);
@@ -45,10 +54,7 @@ describe("runExport", () => {
     const destination = tempDir();
     writeFileSync(join(destination, "notes.txt"), "mine");
 
-    const outcome = await runExport(
-      { type: "export", snapshot: sampleSite(), destination },
-      loadNodeResources,
-    );
+    const outcome = await runExport(await job(sampleSite(), destination), loadNodeResources);
 
     expect(outcome).toEqual({
       type: "failed",
@@ -57,13 +63,22 @@ describe("runExport", () => {
     });
   }, 60_000);
 
-  it("reports anything unexpected as a failed build", async () => {
+  it("fails the build when the site's fonts didn't come with the job (2.2)", async () => {
+    const destination = join(tempDir(), "site");
+
     const outcome = await runExport(
-      { type: "export", snapshot: sampleSite(), destination: tempDir() },
-      async () => {
-        throw new Error("resources missing");
-      },
+      { ...(await job(sampleSite(), destination)), fonts: [] },
+      loadNodeResources,
     );
+
+    expect(outcome).toEqual({ type: "failed", code: "build-failed", detail: "missing-font" });
+    expect(existsSync(destination)).toBe(false);
+  }, 60_000);
+
+  it("reports anything unexpected as a failed build", async () => {
+    const outcome = await runExport(await job(sampleSite(), tempDir()), async () => {
+      throw new Error("resources missing");
+    });
 
     expect(outcome).toEqual({ type: "failed", code: "build-failed", detail: "unexpected" });
   });

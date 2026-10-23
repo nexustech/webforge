@@ -44,7 +44,7 @@ Still open in Phase 0: publishing spikes (Netlify, FTP/SFTP), signed installers 
 Current code size (approx. lines): desktop 2.7k · engine 1.6k · history 1.6k · pipeline 1.1k · site-components 1.0k · storage 0.6k · model 0.3k. `editor-ui`, `publish` and `themes` are placeholders.
 
 ## 3. Timeline
-**Total: 335 working days** (≈ 67 weeks of effort) including the 4-week beta. Baseline v1.0 (sequential, for the original 277 days, before the Phase 1 re-plan) at 100% of estimates: **19 Nov 2027**; with +25% contingency: **25 Feb 2028**.
+**Total: 347 working days** (≈ 69 weeks of effort; 335 before the 22–23 Oct additions) including the 4-week beta. Baseline v1.0 (sequential, for the original 277 days, before the Phase 1 re-plan) at 100% of estimates: **19 Nov 2027**; with +25% contingency: **25 Feb 2028**.
 
 **Re-plan, 20 Oct 2026:** Phase 1 runs in three concurrent streams (82 days of effort in about 28 working days, see [Phase 1](#phase-1-editor-core)). Phase 2–5 dates and the v1.0 date are re-planned at the Phase 1 exit review.
 
@@ -54,13 +54,19 @@ Current code size (approx. lines): desktop 2.7k · engine 1.6k · history 1.6k �
 
 **Scope change, 22 Oct 2026 (editor UI/UX parity, UI2–UI3):** +37 days for Bootstrap Studio-style canvas, selection and panel tools, the keyboard shortcut standard (items 1.30–1.38, 30 days), the Columns toolbar (2.17, 4 days), Theme Studio (2.3, +2 days) and template filters (2.14, +1 day) ([product/06](../research/product/06-editor-ui-ux-parity.md)). Phase 1 now ends about 17 Dec 2026 at estimates (5 Jan 2027 with contingency); the actual pace so far suggests earlier.
 
-**Re-plan, 23 Oct 2026 (Phase 2):** Phase 2 was planned ahead of the Phase 1 exit so each stream can continue straight into it: three streams, items over 5 days split into sub-issues, Phase 1's actual pace (0.39 of estimates) applied as 0.5 for engineering and 0.7 for content. Code-complete about **1 Dec 2026** (9 Dec with +25%); milestone due 11 Dec 2026. See [Phase 2](#phase-2-design--components). The table below and the Gantt chart still show the baseline dates for Phases 2–5.
+**Scope change, 23 Oct 2026 (Bootstrap Studio screenshot pass, UI5):** +3 days from [bootstrap-studio/07](../research/bootstrap-studio/07-editor-screenshot-pass.md), SP-1…SP-13: hover name chip, size in the hover label, margin/padding colours, drop indicator, *Select parent* and Layers hover outlines (1.39, +1 day; recorded on 1.35 first, which had already closed); per-device rows, search highlights, group header copy/paste/reset (1.39, +1 day; moved from 1.36, whose PR predated them); contextual toolbars in the canvas toolbar's centre for Columns (2.17), Heading and List (2.9), and a *Suggested* group in the Add panel (2.9, +1 day); traffic-light dots in Site Check (3.6).
+
+**Scope change, 23 Oct 2026 (look and feel, UI6):** +6 days to copy Bootstrap Studio 9.0.1's look as far as the IP rule allows ([product/07](../research/product/07-look-and-feel-pass.md), LF-1…LF-13): a new item 1.39 (6 days, stream A after 2.9, including the nine UI5 items moved from 1.35 and 1.36) for blue selection, the flat canvas, the quick-actions bar, toolbar order, tab strips, two-column fields, one Settings dialog and the icon-only title bar; the card-grid start screen and the New Site dialog layout on 2.14 (+2 days).
+
+**Re-plan, 23 Oct 2026 (Phase 2):** Phase 2 was planned ahead of the Phase 1 exit so each stream can continue straight into it: three streams, items over 5 days split into sub-issues, Phase 1's actual pace (0.39 of estimates) applied as 0.5 for engineering and 0.7 for content. Code-complete about **26 Nov 2026** (4 Dec with +25%) after the plan review's levelling below (1 Dec and 9 Dec before it); milestone due 11 Dec 2026. See [Phase 2](#phase-2-design--components). The table below and the Gantt chart still show the baseline dates for Phases 2–5.
+
+**Re-plan, 23 Oct 2026 (plan review, C1–C7):** the [plan review](../docs/reviews/2026-10-23-plan-review.md) corrected the effort totals, sequenced the architecture review's R7–R14 in the Phase 2 queues, levelled the streams (2.11 to B, 2.7a and 2.12 to C, 2.14 earlier in B, stream A starting with 2.9 and taking 1.39 before 2.3), moved the start screen's card grid (LF-10) from 1.39 to 2.14, added 2.18 for the CSS class browser (#276) and recomputed the critical path.
 
 | Phase | Effort (days) | Starts | Ends (100%) | Ends (+25%) | Exit criteria |
 |---|---|---|---|---|---|
 | [Phase 0: Prototype (finish)](#phase-0-prototype-finish) | 11 | 26 Oct 2026 | 18 Nov 2026 | 24 Nov 2026 | Netlify and SFTP/FTPS publish spikes meet the spike criteria in research/stack/08<br>Signed NSIS and DMG builds install, and auto-update from a test feed on both OSes<br>A large page (200+ elements) stays within the editing performance budget<br>ADRs written; architecture §6 interfaces updated |
-| [Phase 1: Editor core](#phase-1-editor-core) | 122 | 22 Oct 2026 | 17 Dec 2026 | 5 Jan 2027 | Build a 3-page site from blank, close, reopen: everything restored<br>Undo-all property tests green; every edit has a meaningful label<br>Shell matches UI1 in dark and light (Storybook screenshots) |
-| [Phase 2: Design & components](#phase-2-design--components) | 102 | 2 Mar 2027 | 14 Jul 2027 | 16 Sep 2027 | Every component has stories × 3 themes × Desktop/Mobile, axe-clean<br>New Site from each of the 8 templates works and looks distinct<br>Theme changes restyle every component; contrast warnings work |
+| [Phase 1: Editor core](#phase-1-editor-core) | 128 | 22 Oct 2026 | 17 Dec 2026 | 5 Jan 2027 | Build a 3-page site from blank, close, reopen: everything restored<br>Undo-all property tests green; every edit has a meaningful label<br>Shell matches UI1 as amended by UI6 in dark and light (Storybook screenshots) |
+| [Phase 2: Design & components](#phase-2-design--components) | 108 | 2 Mar 2027 | 14 Jul 2027 | 16 Sep 2027 | Every component has stories × 3 themes × Desktop/Mobile, axe-clean<br>New Site from each of the 8 templates works and looks distinct<br>Theme changes restyle every component; contrast warnings work |
 | [Phase 3: Output](#phase-3-output) | 32 | 15 Jul 2027 | 26 Aug 2027 | 10 Nov 2027 | Exported templates open from disk in Chromium, Firefox, WebKit (+ Edge on Windows) with no external requests<br>Site Check blocks only Must-fix issues on export<br>Preview CSS hot-swap < 100 ms; phone preview via QR works |
 | [Phase 4: Publish & versions](#phase-4-publish--versions) | 30 | 27 Aug 2027 | 28 Sep 2027 | 17 Dec 2027 | Publish + rollback on all targets in E2E tests (mock Netlify, local FTP/SFTP)<br>A paired AI app's edits are undoable, and the MCP server can't be reached from another computer<br>Version History: save, auto-retention, preview, restore, open as new site, republish |
 | [Phase 5: Beta hardening](#phase-5-beta-hardening) | 38 | 29 Sep 2027 | 19 Nov 2027 | 25 Feb 2028 | All performance budgets met on Windows and macOS<br>Signed, notarised builds auto-update from the production feed<br>Beta running with 10–20 users; no open Must-fix bugs |
@@ -104,7 +110,7 @@ gantt
     1.21 Navigation menu editor :crit, t1_21, 2026-11-23, 6d
     1.22 Spell check :t1_22, 2026-11-20, 1d
     1.23 Inline text editing (Tiptap) :crit, t1_23, 2026-11-20, 4d
-    1.24 Layers panel (Advanced) :t1_24, 2026-11-16, 3d
+    1.24 Layers panel :t1_24, 2026-11-16, 3d
     1.25 Copy and paste :t1_25, 2026-11-25, 3d
     1.26 Confirmations (D7) and Content mode locking :crit, t1_26, 2026-11-26, 3d
     1.27 Editing performance – targeted patches, atomi… :t1_27, 2026-10-22, 3d
@@ -119,6 +125,7 @@ gantt
     1.36 Edit panel tools :t1_36, after t1_34, 4d
     1.37 Colour, image pickers, copy style, undo list :t1_37, after t1_36, 5d
     1.38 Keyboard shortcut standard and sheet :t1_38, after t1_35, 2d
+    1.39 Look-and-feel pass :t1_39, after t1_37, 6d
     section Phase 2
     2.1 Themes package – theme model → Tailwind/daisyU… :t2_1, 2027-03-02, 4d
     2.2 Fonts – bundled catalogue and on-demand download :t2_2, 2027-03-08, 3d
@@ -128,15 +135,16 @@ gantt
     2.6 Sections A – Header, Footer, Hero, Text, Text… :crit, t2_6, 2027-03-23, 8d
     2.7 Sections B – Features, Gallery + lightbox, Tes… :t2_7, 2027-04-05, 8d
     2.8 Sections C – Opening hours & contact, Contact… :t2_8, 2027-04-15, 5d
-    2.9 Elements – basic set and icon picker :t2_9, 2027-04-22, 6d
+    2.9 Elements – basic set and icon picker :t2_9, 2027-04-22, 7d
     2.10 Carousel element :t2_10, 2027-04-29, 6d
     2.11 Elements – tabs, commerce, forms, embeds and c… :t2_11, 2027-05-10, 5d
     2.12 Animations and hover effects :t2_12, 2027-05-17, 2d
     2.13 Design 10–12 curated themes :crit, t2_13, 2027-05-19, 14d
-    2.14 Template format and New Site flow :crit, t2_14, 2027-06-09, 4d
+    2.14 Template format and New Site flow :crit, t2_14, 2027-06-09, 6d
     2.15 Templates – 8 starter sites :crit, t2_15, 2027-06-14, 20d
     2.16 Component accessibility and visual regression… :t2_16, 2027-07-12, 3d
     2.17 Columns toolbar and edit-only previews :t2_17, after t2_16, 4d
+    2.18 CSS class autocomplete and browser :t2_18, after t2_3, 3d
     section Phase 3
     3.1 Pipeline API – progress events, worker, caches :crit, t3_1, 2027-07-15, 4d
     3.2 Preview server with live reload and phone prev… :t3_2, 2027-07-21, 3d
@@ -251,7 +259,7 @@ Fold spike learnings into architecture §6 (CanvasEngine, HistoryManager, Pipeli
 
 ### Phase 1: Editor core
 **Goal:** A real editor on the UI1 shell: create, open and autosave sites; add, edit, move, copy and undo sections and elements across pages with a shared Header/Footer, Site Settings and media.  
-**Effort:** 122 days · **Scheduled:** 22 Oct 2026 → 17 Dec 2026 (three streams; 1.28–1.38 added 22 Oct)
+**Effort:** 128 days · **Scheduled:** 22 Oct 2026 → 17 Dec 2026 (three streams; 1.28–1.38 added 22 Oct, 1.39 on 23 Oct)
 
 | ID | Item | Issue | Area | Refs | Est | Depends on |
 |---|---|---|---|---|---|---|
@@ -278,7 +286,7 @@ Fold spike learnings into architecture §6 (CanvasEngine, HistoryManager, Pipeli
 | 1.21 | Navigation menu editor | [#37](https://github.com/nexustech/webforge/issues/37) | engine | F-ED-17, G2 | 6 | 1.18, 1.19, 1.20 |
 | 1.22 | Spell check | [#38](https://github.com/nexustech/webforge/issues/38) | shell | F-ED-19, G5 | 1 | 1.17 |
 | 1.23 | Inline text editing (Tiptap) | [#39](https://github.com/nexustech/webforge/issues/39) | engine | F-ED-3, D1, C1, [ADR 0004](../docs/adr/0004-puck-with-webforge-history.md) | 4 | 1.12, 1.9, 1.19, 1.22 |
-| 1.24 | Layers panel (Advanced) | [#40](https://github.com/nexustech/webforge/issues/40) | engine | F-ED-12, UI1 | 3 | 1.12, 1.10 |
+| 1.24 | Layers panel | [#40](https://github.com/nexustech/webforge/issues/40) | engine | F-ED-12, UI1 | 3 | 1.12, 1.10 |
 | 1.25 | Copy and paste | [#41](https://github.com/nexustech/webforge/issues/41) | engine | F-ED-16, G1 | 3 | 1.12, 1.16 |
 | 1.26 | Confirmations (D7) and Content mode locking | [#42](https://github.com/nexustech/webforge/issues/42) | shell | F-ED-14, D7, F-ED-10, M3 | 3 | 1.9, 1.10, 1.18, 1.20, 1.13, 1.14, 1.23, 1.16 |
 | 1.27 | Editing performance: targeted patches, atomic Puck actions, memoised renders | [#89](https://github.com/nexustech/webforge/issues/89) | engine | [ADR 0007](../docs/adr/0007-large-page-performance.md), architecture §10, U7 | 3 | – |
@@ -290,15 +298,16 @@ Fold spike learnings into architecture §6 (CanvasEngine, HistoryManager, Pipeli
 | 1.33 | Canvas view options and sizing | [#181](https://github.com/nexustech/webforge/issues/181) | shell | F-ED-25, UI2, UX-7, UX-8 | 3 | 1.15 |
 | 1.34 | Add panel favourites and the command palette | [#182](https://github.com/nexustech/webforge/issues/182) | shell | F-ED-26, UI2, UX-10, UX-11 | 4 | 1.13 |
 | 1.35 | Layers tools and the right-click menu | [#183](https://github.com/nexustech/webforge/issues/183) | engine | F-ED-26, UI2, UX-12, UX-24 | 3 | 1.24, 1.29 |
-| 1.36 | Edit panel tools: reset, search, changed cue, per-device dots, scrubbing | [#184](https://github.com/nexustech/webforge/issues/184) | shell | F-ED-26, UI2, UX-13, UX-18, UX-19, UX-20 | 4 | 1.14 |
+| 1.36 | Edit panel tools: reset, search, changed cue, per-device dots, scrubbing | [#184](https://github.com/nexustech/webforge/issues/184) | shell | F-ED-26, UI2, UI5, UX-13, UX-18, UX-19, UX-20 | 4 | 1.14 |
 | 1.37 | Colour picker, image picker, copy style and the undo list | [#185](https://github.com/nexustech/webforge/issues/185) | shell | F-ED-26, UI2, UX-25, UX-15, UX-14, UX-16 | 5 | 1.14, 1.16, 1.11 |
 | 1.38 | Keyboard shortcut standard and shortcut sheet | [#186](https://github.com/nexustech/webforge/issues/186) | shell | F-ED-27, UI3 | 2 | 1.30, 1.33, 1.34 |
+| 1.39 | Look-and-feel pass: selection colours, chrome, tab strips, two-column fields, Settings | [#278](https://github.com/nexustech/webforge/issues/278) | shell | F-ED-25, F-ED-26, UI1, UI5, UI6, LF-1…9, LF-12, LF-13, SP-1…3, SP-5…10 | 6 | 1.37, 1.36, 1.33, 1.34 |
 
 **Streams (re-plan of 20 Oct 2026).** Phase 1 runs as three concurrent streams, each in its own Claude Code session, with one item in progress per stream. A dependency counts as met when its PR is merged to `main`. Shared files are split up front so that streams add files instead of editing the same ones: per-area i18n catalogues (1.3), per-domain IPC files ([#90](https://github.com/nexustech/webforge/issues/90)), and command and panel registries (1.2).
 
 | Stream | Owns | Items, in order |
 |---|---|---|
-| A: Shell & panels | editor-ui, shell layout, registries, title bar, preferences | 1.3 → 1.1 → 1.2 → 1.10 → 1.11 → 1.18 → 1.15 → 1.24 → 1.22 → 1.19 → 1.13 → 1.21 → 1.26 → 1.33 → 1.34 → 1.37 |
+| A: Shell & panels | editor-ui, shell layout, registries, title bar, preferences | 1.3 → 1.1 → 1.2 → 1.10 → 1.11 → 1.18 → 1.15 → 1.24 → 1.22 → 1.19 → 1.13 → 1.21 → 1.26 → 1.33 → 1.34 → 1.37 → 1.39 |
 | B: Data & site | model, storage, project/media/clipboard IPC, app lifecycle | 1.4 → 1.5 → 1.6 → 1.7 → 1.8 → 1.16 → 1.17 → 1.25 → 1.28 → 1.32 → 1.35 → 1.38 |
 | C: History & canvas | history, engine, editor session | 1.27 → 1.9 → 1.12 → 1.14 → 1.20 → 1.23 → 1.29 → 2.5 → 1.30 → 1.31 → 1.36 |
 
@@ -310,7 +319,7 @@ Fold spike learnings into architecture §6 (CanvasEngine, HistoryManager, Pipeli
 
 1.36 moved from stream A to stream C on 2026-10-23 (product owner approved, with the Phase 2 plan): stream C built the Edit panel (1.14), and the move evens out the remaining Phase 1 queues. Stream C also takes 2.5 (Phase 2's component framework) straight after 1.29, because every component item (2.6–2.12) depends on it.
 
-The longest dependency chain is 1.1 → 1.2 → 1.12 → 1.14 → 1.19 → 1.23 → 1.26 → 1.29 → 1.30 → 1.31 (about 40 days, after the 22 Oct additions), so the phase takes about 41 working days instead of 122. Three items start before one dependency merges and leave the dependent part until last: 1.12 (the site-CSS PR comes first; the selection chrome waits for 1.2), 1.16 (the image field, which needs 1.14, comes last) and 1.23 (the spell-check criterion, which needs 1.22, is checked last).
+The longest dependency chain is 1.1 → 1.2 → 1.12 → 1.14 → 1.19 → 1.23 → 1.26 → 1.29 → 1.30 → 1.31 (about 40 days, after the 22 Oct additions), so the phase takes about 41 working days instead of 128. Three items start before one dependency merges and leave the dependent part until last: 1.12 (the site-CSS PR comes first; the selection chrome waits for 1.2), 1.16 (the image field, which needs 1.14, comes last) and 1.23 (the spell-check criterion, which needs 1.22, is checked last).
 
 <details><summary>Scope and acceptance criteria</summary>
 
@@ -380,7 +389,7 @@ Productionise the spike: label builder from glossary (D2), transactions for drag
 - [ ] Coverage ≥ 90/85
 
 **1.10 Modes: Simple/Advanced and Design/Content (plumbing)**  
-Per-user Simple/Advanced preference (hides Layers, Advanced tab, Custom Code, Code drawer); Design/Content toggle stored per site and passed to CanvasEngine.setMode. The Content-mode locking rules are finished once the panels exist (see the confirmation and Content mode item).
+Per-user Simple/Advanced preference (hides the Advanced tab, Custom Code and the Code drawer; Layers is always shown, [ADR 0011](../docs/adr/0011-layers-always-visible.md)); Design/Content toggle stored per site and passed to CanvasEngine.setMode. The Content-mode locking rules are finished once the panels exist (see the confirmation and Content mode item).
 
 - [ ] Mode changes take effect without reload
 - [ ] Simple mode hides the Advanced-only panels
@@ -475,12 +484,12 @@ Click text to edit it on the canvas via Puck richtext fields (Tiptap MIT package
 - [ ] Pasted content from Word/web is cleaned to allowed formatting
 - [ ] Spell check works inside the editor
 
-**1.24 Layers panel (Advanced)**  
+**1.24 Layers panel**  
 Tree of sections/elements (type + label), drag to reorder, hide, rename label, toolbar (move, duplicate, hide, delete), sync with canvas selection.
 
 - [ ] Selection syncs both ways
 - [ ] Reorders are single undo steps
-- [ ] Only visible in Advanced mode
+- [ ] Always visible, under Add and Undo History, in Simple and Advanced mode; read-only in Content mode (23 Oct 2026, [ADR 0011](../docs/adr/0011-layers-always-visible.md), #275)
 
 **1.25 Copy and paste**  
 Copy/cut/paste sections and elements within a page, between pages and into another site opened later (one site is open at a time, so the clipboard keeps the copied items with their images; IDs regenerated). Paste image files/clipboard images into Media and the canvas. Pasting a video URL as an embed comes with the Embed video element in Phase 2.
@@ -559,14 +568,14 @@ Add panel: *Favourites* group (right-click *Add to Favourites*/*Remove*), *Recen
 - [ ] Palette is fully keyboard operable and axe-clean
 
 **1.35 Layers tools and the right-click menu** (added 22 Oct 2026, UI2/UI3)  
-Layers: valid/invalid drop feedback while dragging; indicators for shared (linked), hidden, animated and locked items; *Expand/Collapse all*; a filter field. The same right-click menu on Layers and the canvas: Rename, Duplicate, *Save as shared section* / *Detach*, *Select similar*, Delete. *Help for this element* moved to 5.4 on 23 Oct 2026, with the help pages it opens. In Content mode the canvas doesn't open this menu (the browser's own menu, spelling included, appears instead) and Layers offers Rename only.
+Layers: valid/invalid drop feedback while dragging; indicators for shared (linked), hidden, animated and locked items; *Expand/Collapse all*; a filter field. The same right-click menu on Layers and the canvas: Rename, Duplicate, *Save as shared section* / *Detach*, *Select similar*, Delete. *Help for this element* moved to 5.4 on 23 Oct 2026, with the help pages it opens. In Content mode the canvas doesn't open this menu (the browser's own menu, spelling included, appears instead) and Layers offers Rename only. *The UI5 additions SP-1, SP-2, SP-3, SP-8, SP-9 and SP-10 were recorded here on 23 Oct 2026 after the item had closed; they moved to 1.39 the same day.*
 
 - [ ] Invalid drop targets are shown before dropping
 - [ ] The menu is identical on the canvas and in Layers in Design mode
 - [ ] Select similar selects all items of the same type on the page
 
 **1.36 Edit panel tools: reset, search, changed cue, per-device dots, scrubbing** (added 22 Oct 2026, UI2/UI3)  
-Reset per field and per group (right-click, Mod + Esc); *Expand/Collapse all* (Mod + Enter on a group); a search field that filters fields; the changed-group cue (group title in the accent colour when anything inside differs from the default); per-device dots replacing the '‹device› only' text (grey = inherits, accent = set here, click to clear); drag on numeric fields to change them (Shift = fine). Collapsing a side column leaves a strip of panel icons.
+Reset per field and per group (right-click, Mod + Esc); *Expand/Collapse all* (Mod + Enter on a group); a search field that filters fields; the changed-group cue (group title in the accent colour when anything inside differs from the default); per-device dots replacing the '‹device› only' text (grey = inherits, accent = set here, click to clear); drag on numeric fields to change them (Shift = fine). Collapsing a side column leaves a strip of panel icons; clicking an icon re-opens the column on that panel (SP-11). *SP-5, SP-6 and SP-7 (UI5) were added here on 23 Oct 2026 after this item's PR was open; they moved to 1.39 the same day.*
 
 - [ ] Reset is one undo step per field or group
 - [ ] Dots show and clear per-device overrides correctly (unit + E2E)
@@ -587,14 +596,24 @@ One shortcut registry implementing the F-ED-27 map on Windows and macOS (Mod + P
 - [ ] No shortcut fires while typing in a text field unless intended
 - [ ] The sheet is generated from the registry, so it can't drift
 
+**1.39 Look-and-feel pass: selection colours, chrome, tab strips, two-column fields, Settings** (added 23 Oct 2026, UI6; the start screen's card grid moved to 2.14 the same day)  
+Close the visible gap to Bootstrap Studio 9.0.1 within the IP rule ([product/07](../research/product/07-look-and-feel-pass.md)): hover and selection in the accent blue, with `--selection-outline` renamed `--grid-outline` for *Show outlines* (LF-1); a flat backdrop with the stage flush at the top (LF-2); our own quick-actions bar and hover chip in a solid accent bar with white icons (LF-3); the stage toolbar reordered (zoom, Rotate, Fit, View and width on the left, contextual toolbars in the centre, page and devices on the right, LF-4); sentence-case tab strips with the active tab lifted and a magnifier (LF-5); plain collapsible rows in the Add panel (LF-6); two-column field rows in the Edit panel and Site Settings (LF-7); one Settings dialog with *App* and *This site* nav groups (LF-12); icon-only title-bar buttons with split-button carets, menus in the native menu bar on macOS (LF-13). LF-8 (a size-and-spacing diagram) only if cheap. **Also the six UI5 items moved from 1.35 (+1 day):** the hover name chip, always on (SP-1), with the element's size when *Show spacing on hover* is on (SP-2); the spacing overlay and handles tinting margin warm and padding green (SP-3); a 1 px accent drop line between Layers rows, mirrored on the canvas with the dragged element's chip (SP-8); *Select parent* in the right-click menu (SP-9); a Layers row outlining its element on hover (SP-10). **And the three moved from 1.36 (+1 day):** expanding a field with a per-device value shows one row per device, a row with its own value has an accent label and the device in effect carries the dot (SP-5); the search opens the groups that match and highlights the matching labels (SP-6); group headers show copy, paste and reset icons on hover (SP-7). Runs after 1.37 and 1.36.
+
+- [ ] Selection, hover, chip and bar share `--primary`; *Show outlines* uses `--grid-outline`
+- [ ] Stories for the parity window, title bar, canvas toolbar, Add, Edit and Layers panels and Settings updated in dark and light, axe-clean, contrast kept
+- [ ] Every title-bar button has an accessible name and a tooltip with its shortcut
+- [ ] Two-column rows stay keyboard operable at 240 px
+- [ ] The hover chip shows the element's name and, with spacing on hover, its size; the drop line shows in Layers and on the canvas
+- [ ] Per-device rows show which device set a value and which is in effect
+
 </details>
 
 **Phase exit:** Build a 3-page site from blank, close, reopen: everything restored; Undo-all property tests green; every edit has a meaningful label; Shell matches UI1 in dark and light (Storybook screenshots).
 
 ### Phase 2: Design & components
 **Goal:** The full component catalogue (19 sections with ~45 layout variants, 17 elements), 10–12 curated themes, fonts and the 8 templates, all accessible and visually tested.  
-**Effort:** 102 days · **Scheduled:** 2 Mar 2027 → 14 Jul 2027 (baseline; 22 Oct 2026: 2.6 and 2.9 +1 day each, 2.3 +2, 2.14 +1, 2.17 added)  
-**Re-plan, 23 Oct 2026:** three streams, each starting once it finishes its Phase 1 items. Phase 1's actuals run at 0.39 of the estimates; this plan uses 0.5 for engineering items and 0.7 for content (2.13, 2.15; risk R4). Code-complete about **1 Dec 2026** (9 Dec with +25%); Phase 1's exit review about 9 Nov 2026.
+**Effort:** 108 days · **Scheduled:** 2 Mar 2027 → 14 Jul 2027 (baseline; 22 Oct 2026: 2.6 and 2.9 +1 day each, 2.3 +2, 2.14 +1, 2.17 added; 23 Oct: 2.9 +1, 2.14 +2, 2.18 added)  
+**Re-plan, 23 Oct 2026:** three streams, each starting as soon as its queue allows, Phase 1 items included (stream A takes 2.9 before 1.39). Phase 1's actuals run at 0.39 of the estimates; this plan uses 0.5 for engineering items and 0.7 for content (2.13, 2.15; risk R4). Code-complete about **26 Nov 2026** (4 Dec with +25%) after the plan review's levelling; Phase 1's exit review about 9 Nov 2026.
 
 | ID | Item | Issue | Area | Refs | Est | Depends on |
 |---|---|---|---|---|---|---|
@@ -606,23 +625,26 @@ One shortcut registry implementing the F-ED-27 map on Windows and macOS (Mod + P
 | 2.6 | Sections A: Header, Footer, Hero, Text, Text + Image, Call to action | [#48](https://github.com/nexustech/webforge/issues/48) | components | S1, MVP §3, F-DS-6, BS9-1, [ADR 0005](../docs/adr/0005-export-pipeline-spike.md) | 8 | 2.5, 1.21 |
 | 2.7 | Sections B: Features, Gallery + lightbox, Testimonials, Team, Pricing, FAQ, Logos, Stats | [#49](https://github.com/nexustech/webforge/issues/49) | components | S1, F-ED-6, G10 | 8 | 2.5 |
 | 2.8 | Sections C: Opening hours & contact, Contact form, Map, Video, Newsletter | [#50](https://github.com/nexustech/webforge/issues/50) | components | S1, F-CM-1, F-CM-4, F-CM-6, GA3 | 5 | 2.5, 1.17 |
-| 2.9 | Elements: basic set and icon picker | [#51](https://github.com/nexustech/webforge/issues/51) | components | S1, F-ED-21, F-ED-22, F-CM-5, F-CM-9, BS9-2 | 6 | 2.5, 1.17, 1.37 |
+| 2.9 | Elements: basic set and icon picker | [#51](https://github.com/nexustech/webforge/issues/51) | components | S1, F-ED-21, F-ED-22, F-CM-5, F-CM-9, BS9-2, UI5 | 7 | 2.5, 1.17, 1.37 |
 | 2.10 | Carousel element | [#52](https://github.com/nexustech/webforge/issues/52) | components | G9, GA1 | 6 | 2.5 |
 | 2.11 | Elements: tabs, commerce, forms, embeds and custom code | [#53](https://github.com/nexustech/webforge/issues/53) | components | F-CM-2, F-CM-7, F-ED-15, F-ED-16 | 5 | 2.5, 2.8 |
 | 2.12 | Animations and hover effects | [#54](https://github.com/nexustech/webforge/issues/54) | components | F-DS-5, G8 | 2 | 2.5 |
 | 2.13 | Design 10–12 curated themes | [#55](https://github.com/nexustech/webforge/issues/55) | themes | S3, F-DS-1 | 14 | 2.3, 2.6, 2.7, 2.8, 2.9 |
-| 2.14 | Template format and New Site flow | [#56](https://github.com/nexustech/webforge/issues/56) | content | F-SITE-1, S2, S5, UX-29 | 4 | 1.8, 2.1 |
+| 2.14 | Template format and New Site flow | [#56](https://github.com/nexustech/webforge/issues/56) | content | F-SITE-1, S2, S5, UX-29, LF-10, LF-11 | 6 | 1.8, 2.1 |
 | 2.15 | Templates: 8 starter sites | [#57](https://github.com/nexustech/webforge/issues/57) | content | F-SITE-1, S2, S5 | 20 | 2.14, 2.10, 2.11, 2.12, the theme each template uses (2.13) |
 | 2.16 | Component accessibility and visual regression sweep | [#58](https://github.com/nexustech/webforge/issues/58) | components | standards §5, MVP §4 | 3 | 2.6, 2.7, 2.8, 2.9, 2.10, 2.11, 2.12, 2.13 |
-| 2.17 | Columns toolbar, image resize handles and edit-only previews | [#187](https://github.com/nexustech/webforge/issues/187) | components | F-ED-25, UI2, UX-6, UX-26 | 4 | 2.9, 2.6, 1.32 |
+| 2.17 | Columns toolbar, image resize handles and edit-only previews | [#187](https://github.com/nexustech/webforge/issues/187) | components | F-ED-25, UI2, UI5, UX-6, UX-26 | 4 | 2.9, 2.6, 1.32 |
+| 2.18 | Advanced mode: CSS class autocomplete and browser | [#276](https://github.com/nexustech/webforge/issues/276) | shell | F-ED-11, UX-15 | 3 | 1.37 |
 
 **Streams (plan of 23 Oct 2026, product owner approved).** The Phase 1 stream rules carry over. PRs open as drafts and are marked ready only once `pnpm check` (and `pnpm e2e` or `pnpm visual` where needed) and the code review pass, so CI runs once per ready version. Items over 5 days are split into sub-issues on GitHub.
 
 | Stream | Items, in order (after its Phase 1 items) |
 |---|---|
-| A: Shell & panels | 2.9 → 2.3 → 2.11 → 2.12 → 2.13 (themes 1–4) → 2.15 (Café/Restaurant, Salon/Beauty, Trades) |
-| B: Data & site | 2.1 → 2.2 → 2.4 → 2.8 → 2.7 → 2.14 → 2.13 (themes 5–8) → 2.15 (Consultant, Photographer/Portfolio, Shop) |
-| C: History & canvas | 2.5 (before 1.30) → 2.6 → 2.10 → 2.17 → 2.13 (themes 9–12) → 2.16 → 2.15 (Personal/CV, Blank) |
+| A: Shell & panels | R9 → R10 → 2.9 → 1.39 → 2.3 (with R11) → 2.18 → 2.13a (themes 1–4) → 2.15a (Café/Restaurant, Salon/Beauty, Trades) |
+| B: Data & site | ~~2.1 → 2.2~~ → R12 → R14 → 2.4 → 2.8 → 2.7b → 2.11 → R13 → 2.14 → 2.13b (themes 5–8) → 2.15b (Consultant, Photographer/Portfolio, Shop) |
+| C: History & canvas | ~~2.5 (before 1.30)~~ → R7 → R8 → 2.6 → 2.10 → 2.7a → 2.17 → 2.12 → 2.13c (themes 9–12) → 2.16 → 2.15c (Personal/CV, Blank) |
+
+**Re-plan, 23 Oct 2026 (plan review C2, C7).** The architecture review's Phase 2 items R7–R14 ([#240](https://github.com/nexustech/webforge/issues/240)–[#247](https://github.com/nexustech/webforge/issues/247), 14 days, from contingency per §10.6) are sequenced where their *blocks* links say: R7 and R8 before 2.6, R9 and R10 before 2.9, R11 with 2.3. 2.11 moved to B (it extends 2.8's form-field module and `embed` behaviour), 2.7a (Gallery and lightbox) and 2.12 to C, 2.14 earlier in B so the templates' sync point comes sooner, and stream A starts with 2.9 (its dependencies are met) and takes 1.39 before 2.3, so the Theme panel is built on the two-column field rows. The queues are then 39–40 raw days each: at the plan's pace (0.5 engineering, 0.7 content) about 22–23 working days, so code-complete about **26 Nov 2026**, about **4 Dec** with +25%, against the milestone's 11 Dec. The lever if the first component batch runs slower than 0.5 is §11's template and theme cuts.
 
 Review of 23 Oct 2026 (product owner decisions): stream A starts with 2.9, whose dependencies are met, instead of waiting for stream B's 2.1 and 2.2; stream C does 2.16 after its theme batch, because 2.16 depends on all themes; 2.14 depends on the theme model (2.1), not on the curated themes; each template waits only for the theme it uses (its own stream's batch unless it picks another); and themes 5–12 are drafted in parallel with themes 1–4, the product owner's review of the first four feeding corrections into all three batches rather than gating them.
 
@@ -696,9 +718,10 @@ Opening hours & contact details (bound to Site Settings), Contact form section, 
 - [ ] No external requests until the visitor clicks an embed
 
 **2.9 Elements: basic set and icon picker**  
-Heading, Text, Image (focal point), Button, Columns, Spacer, Divider, List, Icon with the searchable Lucide icon picker (also the icon field control, used by Icon, Button and List per F-ED-22), Social links bound to Site Settings → Social, with Simple Icons (CC0-1.0) for the brand icons. Back-to-top button (F-CM-9, added 22 Oct 2026): a Site Settings option with a per-page switch; appears after scrolling, keyboard accessible, respects reduced motion.
+Heading, Text, Image (focal point), Button, Columns, Spacer, Divider, List, Icon with the searchable Lucide icon picker (also the icon field control, used by Icon, Button and List per F-ED-22), Social links bound to Site Settings → Social, with Simple Icons (CC0-1.0) for the brand icons. Back-to-top button (F-CM-9, added 22 Oct 2026): a Site Settings option with a per-page switch; appears after scrolling, keyboard accessible, respects reduced motion. **Added 23 Oct 2026 (UI5, +1 day):** contextual toolbars in the canvas toolbar's centre for a selected Heading (level: Title, Heading, Subheading) and List (add an item before, after or at the end) (SP-4); a *Suggested* group at the top of the Add panel with the elements that fit inside the selected section or element (SP-12).
 
 - [ ] Icons inlined as SVG at export
+- [ ] The Heading and List toolbars sit in the canvas toolbar's centre and are one undo step per change
 - [ ] Columns stack responsively
 - [ ] Social links update from Site Settings
 - [ ] Back-to-top button: appears after scrolling, keyboard and screen-reader accessible, moves focus to the top (F-CM-9), no smooth scroll with reduced motion
@@ -731,7 +754,7 @@ Entrance animation presets (fade, slide, zoom; delay) and hover effects (lift, g
 - [ ] Themes reviewed side by side in Storybook and look distinct
 
 **2.14 Template format and New Site flow**  
-Template package format (pages, theme, sample content, images with an image-licence manifest), start-screen template gallery with thumbnails, New Site asks name + theme, creating a site copies the template into a new .wforge. The gallery can be filtered and sorted (UX-29, added 22 Oct 2026, +1 day). The theme choice offers the presets that exist (2.1's development presets first); the curated themes join it as their PRs land.
+Template package format (pages, theme, sample content, images with an image-licence manifest), start-screen template gallery with thumbnails, New Site asks name + theme, creating a site copies the template into a new .wforge. The gallery can be filtered and sorted (UX-29, added 22 Oct 2026, +1 day). The dialog follows Bootstrap Studio's New Design layout (LF-11, added 23 Oct 2026, +1 day): name and theme on the left, a *Blank* starter row, the template grid with category chips and sort, and a *Details* link per card that opens a preview. The start screen itself follows Bootstrap Studio's (LF-10, moved from 1.39 on 23 Oct 2026, +1 day): two columns, a card grid for recent sites (thumbnail, name, folder, last edited, pin, remove), a *Help* tab and search. The theme choice offers the presets that exist (2.1's development presets first); the curated themes join it as their PRs land.
 
 - [ ] Template thumbnails generated in CI
 - [ ] Image manifest validated (source + licence per image)
@@ -751,11 +774,18 @@ Screenshot baselines for every component × 3 themes × Desktop/Mobile (PR; the 
 - [ ] Nightly full-theme run configured
 
 **2.17 Columns toolbar, image resize handles and edit-only previews** (added 22 Oct 2026, UI2)  
-Columns toolbar on a selected Columns element: add/remove a column, layout presets (½·½, ⅓·⅔, ⅓·⅓·⅓…), per-device stacking. Image width handles snap to size tokens. Edit-only previews: column outlines on Columns, and *Show mobile menu* on the Header while the Mobile view is active.
+Columns toolbar on a selected Columns element, in the canvas toolbar's centre rather than floating on the canvas (SP-4, 23 Oct 2026): add/remove a column, layout presets (½·½, ⅓·⅔, ⅓·⅓·⅓…), per-device stacking. Image width handles snap to size tokens. Edit-only previews: column outlines on Columns, and *Show mobile menu* on the Header while the Mobile view is active.
 
 - [ ] Column changes are one undo step and per device
 - [ ] Edit-only previews never reach the export
 - [ ] Stories cover the toolbar states
+
+**2.18 Advanced mode: CSS class autocomplete and browser** (added 23 Oct 2026 from #276, plan review C5)  
+The Advanced tab's CSS classes field suggests from the site's own class catalogue (Tailwind 4 + daisyUI + the theme, loaded in the canvas CSS worker and sent over IPC): autocomplete on the word under the caret with variant prefixes, a *Browse classes* picker (1.37's dialog) by category with a CSS preview per entry, and an inline warning for a class that produces no CSS, with a suggestion. One undo step per edit. Part 1 (the catalogue, `loadClassCatalogue`) is PR #285 and needs nothing; part 2 needs only 1.37's picker, and is queued after 2.3 so the field builds on the two-column rows.
+
+- [ ] Autocomplete offers only classes the site's CSS can produce; Enter or Tab inserts, Esc closes
+- [ ] An unknown class shows a warning, never an error, and still saves
+- [ ] Picking several suggestions is one undo step
 
 </details>
 
@@ -772,7 +802,7 @@ Columns toolbar on a selected Columns element: add/remove a column, layout prese
 | 3.3 | Export to folder/ZIP, report, readable output, developer files | [#61](https://github.com/nexustech/webforge/issues/61) | pipeline | F-EX-1, F-EX-3, F-EX-4, F-ED-23, F-ED-24, X1, X3, X4, X6, [ADR 0005](../docs/adr/0005-export-pipeline-spike.md) | 4 | 3.1, 1.17 |
 | 3.4 | Images: responsive WebP + fallback, favicons, share image | [#62](https://github.com/nexustech/webforge/issues/62) | pipeline | F-EX-2, X2 | 3 | 3.1, 1.16 |
 | 3.5 | Site files: sitemap, robots, manifest, 404, meta tags, {year}, llms.txt | [#63](https://github.com/nexustech/webforge/issues/63) | pipeline | F-ED-20, F-CM-8, X3, F-EX-5, G36 | 3 | 3.1, 1.18, 1.17 |
-| 3.6 | Site Check engine, panel and core rules | [#64](https://github.com/nexustech/webforge/issues/64) | site-check | F-CHK-1, X5, F-CM-8 | 4 | 3.1, 1.19 |
+| 3.6 | Site Check engine, panel and core rules | [#64](https://github.com/nexustech/webforge/issues/64) | site-check | F-CHK-1, X5, F-CM-8, UI5 | 4 | 3.1, 1.19 |
 | 3.7 | Forms: services, spam protection, thank-you page | [#65](https://github.com/nexustech/webforge/issues/65) | components | F-CM-1, F-CM-6, B3, B6, GA3 | 3 | 2.8, 1.17, 3.6 |
 | 3.8 | Google Analytics with consent banner | [#66](https://github.com/nexustech/webforge/issues/66) | pipeline | F-CM-3, B4, B7 | 2 | 1.17, 3.1 |
 | 3.9 | Custom code bundling and external-resource check | [#67](https://github.com/nexustech/webforge/issues/67) | pipeline | F-ED-15, C7, C8, [ADR 0005](../docs/adr/0005-export-pipeline-spike.md) | 4 | 3.1, 2.11, 3.6 |
@@ -814,7 +844,7 @@ sitemap.xml + canonical + absolute OG URLs when the web address is set, robots.t
 - [ ] `llms.txt` and the `.md` copies match golden files; turning the setting off removes them
 
 **3.6 Site Check engine, panel and core rules**  
-Rule engine running in the background; Must fix · Should fix · Tips; export vs publish tiers (X5); click to jump, Fix buttons, Ignore per item; core rules: broken links, placeholders, alt text, page titles, contrast, large images, names, home page, missing media, out-of-date {year} on a published site, files over 10 MB (tip, F-ED-24). Form and external-resource rules are added by their own items.
+Rule engine running in the background; Must fix · Should fix · Tips; export vs publish tiers (X5); click to jump, Fix buttons, Ignore per item; core rules: broken links, placeholders, alt text, page titles, contrast, large images, names, home page, missing media, out-of-date {year} on a published site, files over 10 MB (tip, F-ED-24). Form and external-resource rules are added by their own items. Each rule shows a green, amber or red dot with a one-line verdict and inline *Fix* (SP-13, 23 Oct 2026).
 
 - [ ] Export blocks only on Must fix
 - [ ] Publish-strict rules turn the listed warnings into errors
@@ -1071,7 +1101,7 @@ Up to Phase 0 the schedule was simply the sum of effort. From Phase 1, up to thr
 
 | Chain | Items | Length (days) |
 |---|---|---|
-| Editor → components → templates → exported-site checks | 1.1 → 1.2 → 1.12 → 1.14 → 1.19 → 1.21 → 2.6 → 2.13 → 2.14 → 2.15 → 3.10 | 70 |
+| Editor → components → templates → exported-site checks | 1.1 → 1.2 → 1.12 → 1.14 → 1.19 → 1.21 → 2.6 → 2.13 → 2.14 → 2.15 → 3.10 | 74 (70 before the 22–23 Oct additions to 2.6 and 2.14) |
 | Editor → pipeline → publishing → versions | 1.1 → 1.2 → 1.12 → 1.14 → 2.5 → 3.1 → 3.3 → 4.1 → 4.2 → 4.4 → 4.5 → 4.6 | 44 |
 | Signing → release workflow → beta (incl. enrolment wait) | 0.1 → 0.5 → 5.2 → 5.7 → 5.8 | 40 |
 

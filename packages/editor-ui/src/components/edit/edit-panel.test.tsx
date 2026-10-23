@@ -374,6 +374,34 @@ describe("box renderer (1.32)", () => {
     ).toBe("true");
   });
 
+  it("starts afresh when Undo brings back the sizes before a change", async () => {
+    const field = (value: unknown): EditPanelField => ({
+      name: "padding",
+      kind: "box",
+      label: "Padding",
+      group: "style",
+      value,
+      options: tokens,
+      sides,
+    });
+    const panel = (value: unknown) => (
+      <EditPanel heading="Section" fields={[field(value)]} onChange={vi.fn()} onCommit={vi.fn()} />
+    );
+    const view = render(panel({ top: "m", bottom: "m" }));
+    const user = userEvent.setup();
+
+    // Every side at once, then a size for them all.
+    await user.click(screen.getByRole("switch", { name: "Padding Same on every side" }));
+    await user.click(choices("Padding").getByRole("radio", { name: "S" }));
+    view.rerender(panel({ top: "s", right: "s", bottom: "s", left: "s" }));
+    expect(choices("Padding")).toBeDefined();
+
+    // Undo: the mixed sizes again, so a row per side.
+    view.rerender(panel({ top: "m", bottom: "m" }));
+    expect(screen.queryByRole("radiogroup", { name: "Padding" })).toBeNull();
+    expect(choices("Padding Top")).toBeDefined();
+  });
+
   it("shows only the sides the field sets", () => {
     renderBox(
       { top: "s" },

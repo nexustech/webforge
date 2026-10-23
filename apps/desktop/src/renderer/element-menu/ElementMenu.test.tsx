@@ -2,13 +2,15 @@
 import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { siteLibrary } from "@webforge/site-components";
+import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createEditorSession, currentPage } from "../editor/editor-session.js";
 import { createFakeEngine } from "../editor/fake-engine.test-helper.js";
 import { starterSite } from "../editor/starter-site.js";
+import type { Layer } from "../layers/layers.js";
 import { CommandRegistryProvider } from "../shell/command-context.js";
 import { createCommandRegistry } from "../shell/commands.js";
-import { CanvasElementMenu } from "./CanvasElementMenu.js";
+import { CanvasElementMenu, type CanvasElementMenuProps } from "./CanvasElementMenu.js";
 import { ELEMENT_MENU_COMMANDS, ElementMenu } from "./ElementMenu.js";
 
 afterEach(cleanup);
@@ -20,7 +22,6 @@ function registry(shared: { save: boolean; detach: boolean }) {
   commands.register({
     id: ELEMENT_MENU_COMMANDS.duplicate,
     label: "Duplicate",
-    shortcut: "Mod+D",
     run: () => run("duplicate"),
   });
   commands.register({
@@ -34,6 +35,11 @@ function registry(shared: { save: boolean; detach: boolean }) {
     label: "Detach from shared section",
     enabled: shared.detach,
     run: () => run("detach"),
+  });
+  commands.register({
+    id: ELEMENT_MENU_COMMANDS.selectSimilar,
+    label: "Select similar",
+    run: () => run("similar"),
   });
   commands.register({
     id: ELEMENT_MENU_COMMANDS.remove,
@@ -64,7 +70,8 @@ describe("ElementMenu (1.35)", () => {
       ["Rename", false],
       ["DuplicateCtrl+D", false],
       ["Save as shared section…", false],
-      ["Delete", true],
+      ["Select similar", false],
+      ["DeleteDelete", true],
     ]);
     await userEvent.click(menu().getByRole("menuitem", { name: /Duplicate/ }));
     expect(run).toHaveBeenCalledWith("duplicate");
@@ -82,7 +89,8 @@ describe("ElementMenu (1.35)", () => {
       ["Rename", true],
       ["DuplicateCtrl+D", false],
       ["Detach from shared section", false],
-      ["Delete", true],
+      ["Select similar", false],
+      ["DeleteDelete", true],
     ]);
   });
 
@@ -95,6 +103,33 @@ describe("ElementMenu (1.35)", () => {
     );
 
     expect(screen.queryByRole("menu")).toBeNull();
+  });
+
+  it("offers Cut, Copy, Paste and Paste as Linked Copy with their keys (F-ED-23, F-ED-27)", async () => {
+    const { commands } = registry({ save: true, detach: false });
+    const pasteLinked = vi.fn();
+    commands.register({ id: ELEMENT_MENU_COMMANDS.cut, label: "Cut", run: vi.fn() });
+    commands.register({ id: ELEMENT_MENU_COMMANDS.copy, label: "Copy", run: vi.fn() });
+    commands.register({ id: ELEMENT_MENU_COMMANDS.paste, label: "Paste", run: vi.fn() });
+    commands.register({
+      id: ELEMENT_MENU_COMMANDS.pasteLinked,
+      label: "Paste as Linked Copy",
+      run: pasteLinked,
+    });
+    render(
+      <CommandRegistryProvider registry={commands}>
+        <ElementMenu at={{ x: 0, y: 0 }} onClose={vi.fn()} onRename={vi.fn()} />
+      </CommandRegistryProvider>,
+    );
+
+    expect(items().slice(4, 8)).toEqual([
+      ["CutCtrl+X", false],
+      ["CopyCtrl+C", false],
+      ["PasteCtrl+V", false],
+      ["Paste as Linked CopyCtrl+Shift+V", false],
+    ]);
+    await userEvent.click(menu().getByRole("menuitem", { name: /Paste as Linked Copy/ }));
+    expect(pasteLinked).toHaveBeenCalledOnce();
   });
 
   it("offers Copy Style and Paste Style once they are registered (1.37)", () => {
@@ -112,12 +147,18 @@ describe("ElementMenu (1.35)", () => {
       </CommandRegistryProvider>,
     );
 
-    expect(items().slice(3, 5)).toEqual([
-      ["Copy Style", false],
-      ["Paste Style (onto a Heading)", true],
+    expect(items().slice(4, 6)).toEqual([
+      ["Copy StyleCtrl+Alt+C", false],
+      ["Paste Style (onto a Heading)Ctrl+Alt+V", true],
     ]);
   });
 });
+
+/** The menu with its rename dialog's state, as the editor keeps it. */
+function RenamingMenu(props: Omit<CanvasElementMenuProps, "renaming" | "onRenamingChange">) {
+  const [renaming, setRenaming] = useState<Layer | null>(null);
+  return <CanvasElementMenu {...props} renaming={renaming} onRenamingChange={setRenaming} />;
+}
 
 describe("CanvasElementMenu (1.35)", () => {
   function setUp() {
@@ -126,7 +167,7 @@ describe("CanvasElementMenu (1.35)", () => {
     const { commands } = registry({ save: true, detach: false });
     render(
       <CommandRegistryProvider registry={commands}>
-        <CanvasElementMenu engine={engine} session={session} />
+        <RenamingMenu engine={engine} session={session} />
       </CommandRegistryProvider>,
     );
     return { session, engine };

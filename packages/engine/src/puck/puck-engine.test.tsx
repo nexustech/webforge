@@ -9,7 +9,7 @@ import {
   type SharedSectionsDoc,
 } from "@webforge/model";
 import { boundText, type ComponentLibrary, textValue } from "@webforge/site-components";
-import { act } from "react";
+import { act, Component, type ReactNode } from "react";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CanvasEngine, CanvasSize, EngineEdit, Unsubscribe } from "../canvas-engine.js";
 import { pageActions } from "./page-actions.js";
@@ -220,7 +220,7 @@ describe("createPuckEngine", () => {
     );
     await settle();
 
-    expect(selections).toHaveBeenCalledWith(null);
+    expect(selections).toHaveBeenCalledWith(null, false);
   });
 
   it("reports inline text edits as text edits", async () => {
@@ -287,6 +287,18 @@ describe("createPuckEngine", () => {
       expect(edits).toHaveLength(1);
       expect(edits[0]).toMatchObject({ kind: "move", nodeId: "a", selection: "a" });
       expect(headings()).toEqual(["Second", "First"]);
+      expect(action("Move down")?.disabled).toBe(true);
+    });
+
+    it("moves the actions to the bar of the element selected next", async () => {
+      await selectA();
+      await act(async () => engine.select("b"));
+      await settle();
+
+      // The second of two: it can move up, not down. A bar that kept what it found for the first
+      // selection would still say otherwise (R2).
+      expect(element.querySelectorAll('[title="Move up"]')).toHaveLength(1);
+      expect(action("Move up")?.disabled).toBe(false);
       expect(action("Move down")?.disabled).toBe(true);
     });
 
@@ -380,7 +392,7 @@ describe("createPuckEngine", () => {
 
     await act(async () => engine.loadPage(page, NO_LAYOUT));
 
-    expect(selections).toHaveBeenCalledWith(null);
+    expect(selections).toHaveBeenCalledWith(null, false);
   });
 
   it("forwards history commands only from the canvas iframe", () => {
@@ -966,5 +978,70 @@ describe("createPuckEngine before mount", () => {
       expect(engine.perform("delete")).toBe(false);
       engine.destroy();
     }).not.toThrow();
+  });
+});
+
+describe("createPuckEngine's error boundary (R3)", () => {
+  it("shows the boundary's fallback when an element throws, tells onError, and recovers", async () => {
+    let broken = true;
+    let tryAgain = () => undefined as void;
+    class Boundary extends Component<{ readonly children: ReactNode }, { failed: boolean }> {
+      override state = { failed: false };
+      static getDerivedStateFromError() {
+        return { failed: true };
+      }
+      override render(): ReactNode {
+        if (!this.state.failed) return this.props.children;
+        tryAgain = () => this.setState({ failed: false });
+        return <p className="t-fallback">Something went wrong</p>;
+      }
+    }
+    const throwing: ComponentLibrary = {
+      components: {
+        ...library.components,
+        Broken: {
+          label: "Broken",
+          fields: {},
+          defaults: {},
+          render: () => {
+            if (broken) throw new Error("Rosa's Bakery");
+            return <p className="t-heading">Mended</p>;
+          },
+        },
+      },
+    };
+    const onError = vi.fn();
+    const element = document.createElement("div");
+    document.body.append(element);
+    const engine = createPuckEngine({ iframe: false });
+    await act(async () => {
+      engine.mount(element, {
+        library: throwing,
+        theme: { ...DEFAULT_THEME, preset: "test" },
+        errorBoundary: Boundary,
+        onError,
+      });
+      engine.loadPage(
+        { ...page, content: [...page.content, { type: "Broken", props: { id: "x" } }] },
+        NO_LAYOUT,
+      );
+    });
+    await settle();
+
+    expect(element.querySelector(".t-fallback")?.textContent).toBe("Something went wrong");
+    expect(onError).toHaveBeenCalledWith(expect.any(Error), true);
+
+    broken = false;
+    await act(async () => tryAgain());
+    await settle();
+    expect([...element.querySelectorAll(".t-heading")].map((h) => h.textContent)).toEqual([
+      "First",
+      "Second",
+      "Mended",
+    ]);
+
+    engine.destroy();
+    await settle();
+    element.remove();
   });
 });

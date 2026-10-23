@@ -23,7 +23,12 @@ import { type SharedRegion, sharedRegionOf, shownLayout } from "../editor/shared
 import { layerItem } from "../layers/layers.js";
 import { importMessages } from "../media/import-media.js";
 import { addMedia, putInMedia } from "../media/media-commands.js";
-import { type CopySelection, copySelection } from "../shared-sections/shared-sections.js";
+import {
+  type CopySelection,
+  copySelection,
+  updateSectionField,
+} from "../shared-sections/shared-sections.js";
+import { siteSession } from "../storage/site-session.js";
 
 /**
  * Copy, Cut and Paste of sections and elements (1.25, F-ED-16): within a page, between pages and
@@ -125,7 +130,7 @@ export async function copySelected(
   const ui = session.ui.getState();
   let result: ClipboardWriteResult;
   try {
-    result = await clipboard.write({
+    result = await clipboard.write(siteSession(), {
       nodes: [node],
       media: mediaOf(session, [node]),
       ...(whole ? { sharedSectionId: copy.shared.id } : {}),
@@ -211,19 +216,29 @@ function readMessage(result: Extract<ClipboardReadResult, { status: "empty" | "f
 /**
  * Pastes what the clipboard holds. Elements go into the shown page, where {@link pasteTarget} puts
  * them, as one step ("Pasted Heading") that selects the first; their images join the site's Media in
- * the same step, keeping their ids. Image files or a copied image go to Media and the selection
- * ({@link pasteMedia}). Returns whether it pasted.
+ * the same step, keeping their ids. A copied linked copy pastes as a section of the page's own, as
+ * Ctrl/Cmd-drag copies one; `linked` (Paste as Linked Copy, Mod + Shift + V, F-ED-23) places
+ * another linked copy instead, and pastes nothing but says so for anything else. In a site without
+ * the shared section, both paste a section of its own. Image files or a copied image go to Media
+ * and the selection ({@link pasteMedia}). Returns whether it pasted.
  */
 export async function pasteElements(
   session: ClipboardSession,
   clipboard: Pick<ClipboardApi, "read">,
   notify: (message: string) => void,
+  linked = false,
 ): Promise<boolean> {
   let result: ClipboardReadResult;
   try {
-    result = await clipboard.read();
+    result = await clipboard.read(siteSession());
   } catch {
     result = { status: "failed", reason: "unknown" };
+  }
+  if (result.status === "elements" || result.status === "media") {
+    if (linked && (result.status === "media" || result.elements.sharedSectionId === undefined)) {
+      notify(t("site.clipboard.onlySharedLinked"));
+      return false;
+    }
   }
   if (result.status === "media") {
     return pasteMedia(session, result.items, result.rejected, notify);
@@ -255,10 +270,15 @@ export async function pasteElements(
     return false;
   }
   const shared =
-    sharedSectionId !== undefined && Object.hasOwn(site.sharedSections, sharedSectionId)
+    linked && sharedSectionId !== undefined && Object.hasOwn(site.sharedSections, sharedSectionId)
       ? site.sharedSections[sharedSectionId]
       : undefined;
-  if (shared !== undefined && target.parentId === null) {
+  if (shared !== undefined && target.parentId !== null) {
+    // A linked copy goes on the page itself only: pasting it unlinked here isn't what was asked.
+    notify(t("site.clipboard.cantPaste", { item: t("history.namedItem", { name: shared.name }) }));
+    return false;
+  }
+  if (shared !== undefined) {
     // A copy of a shared section this site has: another linked copy (F-ED-23).
     const copy = newSharedCopy(page.doc.content, shared.id, site.sharedSections, layout);
     const selected = copiedNodeId(copy.props.id, shared.section.props.id);
@@ -301,7 +321,9 @@ export async function pasteElements(
 /**
  * Pastes imported image files or a copied image (F-ED-16): one image goes into the selected
  * element's image field, if it has one ("Pasted image 'shop.png'"), and joins Media in the same
- * step; in the shared Header or Footer, every page shows it ("… into shared Header"). Anything
+ * step; in the shared Header or Footer, every page shows it ("… into shared Header"), and in a
+ * linked copy, the shared section holds it, so every copy does ("Edited shared section …", as the
+ * canvas names any edit there, F-ED-23). Anything
  * else is added to Media ("Added image 'shop.png'"), which a message says. Inserting a new element
  * for it comes with Phase 2's Image element. Files Media didn't take are named in a message, as
  * for a drop.
@@ -337,21 +359,33 @@ function pasteMedia(
     );
     return true;
   }
-  const { node, region } = selected;
+  const { node, region, copy } = selected;
   const ui = session.ui.getState();
   const id = node.props.id;
+  const site = session.history.document.getState();
+  const label =
+    copy !== undefined
+      ? t("history.editedSharedSection", {
+          name: t("history.namedItem", { name: copy.shared.name }),
+        })
+      : region === undefined
+        ? t("site.clipboard.history.pastedImage", {
+            name: t("history.namedItem", { name: item.fileName }),
+          })
+        : t("site.clipboard.history.pastedSharedImage", {
+            name: t("history.namedItem", { name: item.fileName }),
+            item: t("history.sharedItem", { item: itemName(session, node) }),
+          });
   session.edit(
     "props",
-    region === undefined
-      ? t("site.clipboard.history.pastedImage", {
-          name: t("history.namedItem", { name: item.fileName }),
-        })
-      : t("site.clipboard.history.pastedSharedImage", {
-          name: t("history.namedItem", { name: item.fileName }),
-          item: t("history.sharedItem", { item: itemName(session, node) }),
-        }),
+    label,
     (draft) => {
       putInMedia(draft, [item]);
+      if (copy !== undefined) {
+        // Inside a linked copy: the element is the shared section's, which every copy shows.
+        updateSectionField(draft, site, copy.shared.id, id, field, () => ({ mediaId: item.id }));
+        return;
+      }
       const list =
         region === undefined ? draft.pages[ui.pageId]?.doc.content : draft.layout[region];
       const target = list === undefined ? undefined : findNode(list, (n) => n.props.id === id);

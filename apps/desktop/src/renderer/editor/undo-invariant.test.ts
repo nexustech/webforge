@@ -19,6 +19,14 @@ import { siteLibrary, starterPage } from "@webforge/site-components";
 import fc from "fast-check";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  deleteSelected,
+  duplicateSelected,
+  moveSelected,
+  similarTo,
+  toggleSelectedHidden,
+} from "../layers/bulk-layers.js";
+import { copyLayer } from "../layers/layers.js";
+import {
   addMenuItem,
   editMenuLink,
   followPages,
@@ -45,6 +53,7 @@ import {
 import { createFakeEngine, type FakeEngine } from "./fake-engine.test-helper.js";
 import { applyListChange, editableList, listItems } from "./list-edit.js";
 import { withoutOverride, withValueAt } from "./responsive-value.js";
+import { selectElements } from "./selection.js";
 import { starterSite } from "./starter-site.js";
 
 // Undo invariant (U8) over the editor as wired: canvas edits of every kind on any page, page
@@ -648,6 +657,54 @@ const commands: fc.Arbitrary<Command>[] = [
       const page = ctx.shown();
       const node = page === undefined ? undefined : nodesOf(page)[at];
       ctx.engine.selectFromCanvas(node?.props.id ?? null);
+    },
+  })),
+  // Several selected elements (1.31): any of the page's, some not layers (refused, with a reason),
+  // then the bulk actions on them.
+  fc.array(fc.nat({ max: 20 }), { minLength: 1, maxLength: 4 }).map((ats) => ({
+    name: `select several ${ats.join(" ")}`,
+    run: (ctx) => {
+      const page = ctx.shown();
+      const nodes = page === undefined ? [] : nodesOf(page);
+      const ids = ats.flatMap((at) => {
+        const node = nodes[at % Math.max(nodes.length, 1)];
+        if (node === undefined) return [];
+        // A linked copy is selected by the id the canvas shows its section by.
+        return [isSharedCopy(node) ? copiedNodeId(node.props.id, "hours") : node.props.id];
+      });
+      ctx.session.selectElements(ids);
+    },
+  })),
+  fc
+    .constantFrom(
+      ["delete", deleteSelected] as const,
+      ["duplicate", duplicateSelected] as const,
+      ["hide or show", toggleSelectedHidden] as const,
+      ["move up", (session: EditorSession) => moveSelected(session, "up")] as const,
+      ["move down", (session: EditorSession) => moveSelected(session, "down")] as const,
+    )
+    .map(([name, act]) => ({
+      name: `${name} the selected elements`,
+      run: (ctx) => {
+        ctx.connection.flush();
+        act(ctx.session);
+      },
+    })),
+  // Select similar, then a Ctrl/Cmd-drag copy in Layers, with Shift or not (1.35).
+  fc.constant<Command>({
+    name: "select similar",
+    run: (ctx) => {
+      const { nodeId } = ctx.session.ui.getState();
+      const ids = nodeId === null ? undefined : similarTo(ctx.session, nodeId);
+      if (ids !== undefined) ctx.session.selectElements(ids);
+    },
+  }),
+  fc.record({ at: fc.nat({ max: 6 }), linked: fc.boolean() }).map(({ at, linked }) => ({
+    name: `copy the selected layer to ${at}${linked ? " linked" : ""}`,
+    run: (ctx) => {
+      ctx.connection.flush();
+      const { nodeId } = ctx.session.ui.getState();
+      if (nodeId !== null) copyLayer(ctx.session, nodeId, at, linked);
     },
   })),
   fc.constant<Command>({

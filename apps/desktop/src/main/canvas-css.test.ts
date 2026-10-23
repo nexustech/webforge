@@ -62,6 +62,20 @@ describe("createCanvasCssCompiler", () => {
     expect(await second).toEqual({ status: "compiled", css: ".card{}", bodyClass: "x" });
   });
 
+  it("sends the downloaded families the theme uses, which the renderer never names (2.2)", async () => {
+    const fake = fakeWorker();
+    const families = vi.fn(async () => []);
+    const compile = createCanvasCssCompiler(() => fake.worker, 1_000, families);
+
+    const result = compile(request(["btn"]));
+    await vi.waitFor(() => expect(fake.jobs).toHaveLength(1));
+    fake.answer({ type: "css", id: fake.jobs[0]?.id, css: ".btn{}", bodyClass: "x" });
+
+    expect(await result).toMatchObject({ status: "compiled" });
+    expect(families).toHaveBeenCalledWith(request(["btn"]).theme);
+    expect(fake.jobs[0]).toMatchObject({ families: [] });
+  });
+
   it("fails a request the worker couldn't compile", async () => {
     const fake = fakeWorker();
     const compile = createCanvasCssCompiler(() => fake.worker);
@@ -140,7 +154,9 @@ describe("registerCanvasHandlers", () => {
     await expect(handler?.(from("file:///app"), request(["btn"]))).resolves.toEqual({
       status: "failed",
     });
-    await expect(handler?.(from("https://evil.example"), request([]))).rejects.toThrow(/untrusted/);
+    await expect(handler?.(from("https://evil.example"), request([]))).rejects.toThrow(
+      "ipc-failed",
+    );
     await expect(
       handler?.(from("file:///app"), { theme: { name: "Bad Theme" } }),
     ).rejects.toThrow();

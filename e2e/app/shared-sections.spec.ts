@@ -1,4 +1,5 @@
-import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { type ElectronApplication, expect, type Locator, type Page, test } from "@playwright/test";
+import { type Box, below, boxOf, drag } from "./drag.js";
 import { launchDesktopApp } from "./launch.js";
 
 // Shared sections (1.29, F-ED-23): a section saved once and placed as linked copies; editing any
@@ -35,21 +36,26 @@ async function editMenu(name: string | RegExp): Promise<void> {
   await page.getByRole("menuitem", { name }).click();
 }
 
+/** Waits until `target` stays where it is: Puck animates the canvas, and redraws a saved section. */
+async function settled(target: Locator): Promise<void> {
+  let last = "";
+  await expect
+    .poll(async () => {
+      const box = JSON.stringify(await target.boundingBox());
+      const still = box === last;
+      last = box;
+      return still;
+    })
+    .toBe(true);
+}
+
 /**
  * Selects the first Section by clicking its bottom padding, once the canvas has finished resizing
  * to the device view (Puck animates it).
  */
 async function selectSection(): Promise<void> {
   const section = canvas().locator(".site-section").first();
-  let last = "";
-  await expect
-    .poll(async () => {
-      const box = JSON.stringify(await section.boundingBox());
-      const settled = box === last;
-      last = box;
-      return settled;
-    })
-    .toBe(true);
+  await settled(section);
   const box = await section.boundingBox();
   if (box === null) throw new Error("Section not visible");
   await section.click({ force: true, position: { x: 10, y: box.height - 16 } });
@@ -102,6 +108,42 @@ test("saves a shared section, edits every copy at once, undoes it, and detaches 
   await panel().getByLabel("Text", { exact: true }).fill("Only here");
   await expect(headings()).toHaveText(["Welcome to our business", "Only here"]);
   await expect(steps().first()).toHaveText("Edited Heading text");
+});
+
+test("Ctrl/Cmd+V pastes a copied linked copy as the page's own; Ctrl/Cmd+Shift+V places another linked copy (F-ED-23)", async () => {
+  await selectSection();
+  await editMenu("Save as shared section…");
+  const dialog = page.getByRole("dialog", { name: "Save as shared section" });
+  await dialog.getByRole("textbox", { name: "Name" }).fill("Welcome");
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(banner()).toHaveText(
+    "Editing shared section 'Welcome': changes apply to 1 copy on 1 page",
+  );
+  await settled(canvas().locator(".site-section").first());
+  await selectSection();
+  await page.keyboard.press("ControlOrMeta+c");
+
+  await page.keyboard.press("ControlOrMeta+v");
+  await expect(steps().first()).toHaveText("Pasted Section");
+  await expect(headings()).toHaveCount(2);
+  // The pasted section is the page's own: no banner for it.
+  await expect(banner()).toHaveCount(0);
+
+  await page.keyboard.press("ControlOrMeta+Shift+v");
+  await expect(steps().first()).toHaveText("Added a copy of 'Welcome'");
+  await expect(headings()).toHaveCount(3);
+  await expect(banner()).toHaveText(
+    "Editing shared section 'Welcome': changes apply to 2 copies on 1 page",
+  );
+
+  // An element isn't a shared section: nothing is pasted, and the reason is shown.
+  await selectHeading(1);
+  await page.keyboard.press("ControlOrMeta+c");
+  await page.keyboard.press("ControlOrMeta+Shift+v");
+  await expect(
+    page.getByText("Only a shared section can be pasted as a linked copy."),
+  ).toBeVisible();
+  await expect(headings()).toHaveCount(3);
 });
 
 test("renames a shared section, then deletes it after asking, its copies staying", async () => {
@@ -179,4 +221,61 @@ test("renames and deletes a shared section on no page from the Add panel, and un
     "Deleted shared section 'Opening hours'",
     "Renamed 'Welcome' to 'Opening hours'",
   ]);
+});
+
+/** A point in a section's left padding, near its bottom: on the section, not on what it holds. */
+const padding = (box: Box, fromBottom = 6) => ({
+  x: box.x + 6,
+  y: box.y + box.height - fromBottom,
+});
+
+test("Ctrl/Cmd+Shift-drag of a copy places another linked copy; Ctrl/Cmd-drag a section of the page's own (1.30)", async () => {
+  await selectSection();
+  await editMenu("Save as shared section…");
+  const dialog = page.getByRole("dialog", { name: "Save as shared section" });
+  await dialog.getByRole("textbox", { name: "Name" }).fill("Welcome");
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(steps().first()).toHaveText("Saved 'Welcome' as a shared section");
+  const sections = canvas().locator(".site-section");
+  const first = sections.first();
+  // The section is shown again as a linked copy: grabbed only once it is drawn and still.
+  await expect(banner()).toHaveText(
+    "Editing shared section 'Welcome': changes apply to 1 copy on 1 page",
+  );
+  await settled(first);
+
+  // Dragged with Ctrl/Cmd+Shift onto its own lower edge: another linked copy, after it.
+  await page.keyboard.down("ControlOrMeta");
+  await page.keyboard.down("Shift");
+  await drag(page, first, padding(await boxOf(first, "Section")), 0.01);
+  await page.keyboard.up("Shift");
+  await page.keyboard.up("ControlOrMeta");
+  await expect(steps().first()).toHaveText("Added a copy of 'Welcome'");
+  await expect(headings()).toHaveCount(2);
+  await expect(banner()).toHaveText(
+    "Editing shared section 'Welcome': changes apply to 2 copies on 1 page",
+  );
+
+  // An element inside a copy can't be a linked copy: with Shift, its drag changes nothing.
+  await page.keyboard.down("ControlOrMeta");
+  await page.keyboard.down("Shift");
+  await drag(
+    page,
+    headings().first(),
+    await below(canvas().locator(".site-text").first(), -3),
+    0.97,
+  );
+  await page.keyboard.up("Shift");
+  await page.keyboard.up("ControlOrMeta");
+  await expect(headings()).toHaveCount(2);
+  await expect(steps().first()).toHaveText("Added a copy of 'Welcome'");
+
+  // With Ctrl/Cmd alone: a section of the page's own, linked to nothing.
+  const last = sections.last();
+  await page.keyboard.down("ControlOrMeta");
+  await drag(page, first, padding(await boxOf(last, "Section")), 0.01);
+  await page.keyboard.up("ControlOrMeta");
+  await expect(steps().first()).toHaveText("Duplicated Section");
+  await expect(headings()).toHaveCount(3);
+  await expect(banner()).toHaveCount(0);
 });

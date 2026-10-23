@@ -8,15 +8,8 @@ import {
   type ViewOptions,
 } from "@webforge/engine";
 import { t } from "@webforge/i18n";
-import {
-  type RefObject,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from "react";
+import { textStylesOf } from "@webforge/site-components";
+import { type RefObject, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createStore } from "zustand/vanilla";
 import {
   type AddPreferences,
@@ -32,6 +25,9 @@ import {
 } from "../clipboard/register-clipboard-commands.js";
 import { registerStyleCommands } from "../clipboard/style-clipboard.js";
 import { CanvasElementMenu } from "../element-menu/CanvasElementMenu.js";
+import { createErrorReporter, type ReportError } from "../error-reporting.js";
+import { deleteSelected, duplicateSelected, moveSelected } from "../layers/bulk-layers.js";
+import type { Layer } from "../layers/layers.js";
 import { registerLinkField } from "../links/LinkField.js";
 import { RichTextLinkHost } from "../links/RichTextLinkHost.js";
 import { connectCanvasImages } from "../media/canvas-images.js";
@@ -52,10 +48,13 @@ import { useCommandRegistry } from "../shell/command-context.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { installCommandShortcuts } from "../shell/commands.js";
 import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
+import { CanvasErrorBoundary } from "../shell/error-boundaries.js";
 import { usePanelRegistry } from "../shell/panel-context.js";
 import { connectCanvasSettings } from "../site-settings/canvas-settings.js";
+import { CanvasBreadcrumbs } from "./CanvasBreadcrumbs.js";
 import { CanvasResizeHandles } from "./CanvasResizeHandles.js";
-import { registerCanvasCommands } from "./canvas-commands.js";
+import { registerColourField } from "./ColourField.js";
+import { type BulkCanvasAction, registerCanvasCommands } from "./canvas-commands.js";
 import { EditPanelHost } from "./EditPanelHost.js";
 import {
   connectEngine,
@@ -66,12 +65,16 @@ import {
 } from "./editor-session.js";
 import { registerElementCommands } from "./element-commands.js";
 import { connectFieldDrags } from "./field-drag.js";
+import { fieldTarget } from "./field-target.js";
 import { SharedRegionBanner } from "./SharedRegionBanner.js";
 import { confirmSharedRemovals, sharedCutConfirmation } from "./shared-confirmations.js";
 import { shownLayout } from "./shared-layout.js";
 import { type CompileCanvasCss, connectSiteCss } from "./site-css.js";
-import { UndoHistoryPanel } from "./UndoHistoryPanel.js";
+import { UndoHistoryPanel, type UndoHistoryPanelProps } from "./UndoHistoryPanel.js";
 import { installUndoToasts, undoEntry } from "./undo-toasts.js";
+
+/** How the title bar's list of steps undoes back to one (UX-16): false if the step is gone. */
+export type UndoTo = { readonly run: (entryId: string) => boolean };
 
 /** Props of {@link Editor}. */
 export type EditorProps = {
@@ -80,6 +83,8 @@ export type EditorProps = {
   readonly createEngine?: () => CanvasEngine;
   /** Compiles the site CSS for the canvas; injectable for tests. Defaults to the preload API. */
   readonly compileCss?: CompileCanvasCss;
+  /** Reports an error in the canvas as a local crash report (R3); injectable for tests. */
+  readonly reportError?: ReportError;
   /** Design or Content mode (M3, 1.10): passed to the engine, which locks the layout in Content. */
   readonly mode?: EditorMode;
   /** The canvas toolbar's zoom and size readout (1.15), kept in step with the engine. */
@@ -101,13 +106,31 @@ export type EditorProps = {
   readonly onAddPreferencesChange?: (next: AddPreferences) => void;
   /**
    * Hands over how to undo back to a step (UX-16, the title bar's list of steps), and `null` once
-   * this editor is gone.
+   * this editor is gone. Called again only when the session changes, so a state setter will do.
    */
-  readonly onUndoTo?: (undoTo: ((entryId: string) => boolean) | null) => void;
+  readonly onUndoTo?: (undoTo: UndoTo | null) => void;
 };
 
 const compileWithPreload: CompileCanvasCss = (request) =>
   window.webforge.canvas.compileCss(request);
+const reportWithPreload = createErrorReporter((kind, error) =>
+  window.webforge.app.reportError(kind, error),
+);
+
+/** The Undo History panel for `history`, jumping to a step with `jumpTo`. */
+function undoHistoryPanel(
+  history: EditorSession["history"],
+  jumpTo: UndoHistoryPanelProps["history"]["jumpTo"],
+) {
+  return function UndoHistory() {
+    const state = useSyncExternalStore(
+      history.state.subscribe,
+      history.state.getState,
+      history.state.getState,
+    );
+    return <UndoHistoryPanel history={{ jumpTo }} state={state} />;
+  };
+}
 
 /**
  * The canvas frame's edge handles on `session`'s device view and `view`'s zoom: a width dragged or
@@ -145,6 +168,7 @@ export function Editor({
   session,
   createEngine = createPuckEngine,
   compileCss = compileWithPreload,
+  reportError = reportWithPreload,
   mode = "design",
   canvasView,
   editorLevel = "simple",
@@ -172,6 +196,8 @@ export function Editor({
   // *Edit* on an image (F-ED-25) opens the Edit panel's image picker: the panel shows, and the
   // field opens it once it is drawn.
   const [imagePicks] = useState(createImagePickRequests);
+  // The layer whose name the rename dialog asks for (F2, or the element menu's Rename).
+  const [renaming, setRenaming] = useState<Layer | null>(null);
   const pickImageRef = useRef((nodeId: string) => {
     panels.show("edit");
     imagePicks.request(nodeId);
@@ -198,7 +224,6 @@ export function Editor({
       id: COMMAND_IDS.undo,
       label: t("editor.undo"),
       menu: "edit",
-      shortcut: "Mod+Z",
       enabled: history.state.getState().canUndo,
       run: () => runCommand("undo"),
     });
@@ -206,7 +231,6 @@ export function Editor({
       id: COMMAND_IDS.redo,
       label: t("editor.redo"),
       menu: "edit",
-      shortcut: "Mod+Shift+Z",
       enabled: history.state.getState().canRedo,
       run: () => runCommand("redo"),
     });
@@ -232,7 +256,13 @@ export function Editor({
 
     const engine = createEngine();
     const site = history.document.getState();
-    engine.mount(element, { library: session.library, theme: site.theme });
+    engine.mount(element, {
+      library: session.library,
+      theme: site.theme,
+      // An error in the canvas stays there, and becomes a local crash report (R3).
+      errorBoundary: CanvasErrorBoundary,
+      onError: (error, caught) => reportError(caught ? "render-error" : "uncaught-error", error),
+    });
     if (modeRef.current !== "design") {
       engine.setMode(modeRef.current);
     }
@@ -246,7 +276,7 @@ export function Editor({
     );
     connectionRef.current = connection;
     setEngine(engine);
-    const stopSiteCss = connectSiteCss(engine, session, compileCss, document.baseURI);
+    const stopSiteCss = connectSiteCss(engine, session, compileCss);
     const stopImages = connectCanvasImages(engine, session);
     const stopSettings = connectCanvasSettings(engine, session);
     const stopNavigation = connectCanvasNavigation(engine, session);
@@ -275,7 +305,17 @@ export function Editor({
     const styleCommands = registerStyleCommands(registry, session, connection.flush);
     styleCommands.setLayoutLocked(modeRef.current !== "design");
     styleCommandsRef.current = styleCommands;
-    const canvasCommands = registerCanvasCommands(registry, engine, connection.flush);
+    // While several elements are selected, the canvas's edits act on all of them (1.31).
+    const bulk = (action: BulkCanvasAction) => {
+      const { refused } =
+        action === "delete"
+          ? deleteSelected(session)
+          : action === "duplicate"
+            ? duplicateSelected(session)
+            : moveSelected(session, action === "moveUp" ? "up" : "down");
+      if (refused !== undefined) toast(refused);
+    };
+    const canvasCommands = registerCanvasCommands(registry, engine, connection.flush, bulk);
     canvasCommands.setHasSelection(session.ui.getState().nodeId !== null);
     // The shared-section commands (1.29), after the canvas's own actions.
     const sharedCommands = registerSharedSectionCommands(
@@ -296,12 +336,17 @@ export function Editor({
       engine,
       connection.flush,
       (nodeId) => pickImageRef.current(nodeId),
+      setRenaming,
+      (message) => toast(message),
     );
     elementCommands.setLayoutLocked(modeRef.current !== "design");
     elementCommandsRef.current = elementCommands;
     const stopSelectionWatch = session.ui.subscribe((ui) => {
+      // Several selected elements (1.31): the edits that act on one are off until they act on all.
+      const several = (ui.others ?? []).length > 0;
       canvasCommands.setHasSelection(ui.nodeId !== null);
-      clipboardCommands.setHasSelection(ui.nodeId !== null);
+      canvasCommands.setSeveral(several);
+      clipboardCommands.setHasSelection(ui.nodeId !== null && !several);
     });
     let removeFrameShortcuts: (() => void) | undefined;
     const stopFrameWindow = engine.onFrameWindow((frameWindow) => {
@@ -341,7 +386,7 @@ export function Editor({
       engine.destroy();
       element.remove();
     };
-  }, [session, history, createEngine, compileCss, registry, siteWide]);
+  }, [session, history, createEngine, compileCss, reportError, registry, siteWide]);
 
   // The View menu's options (F-ED-25): view state, never an undo step (U6).
   useEffect(() => {
@@ -379,40 +424,31 @@ export function Editor({
   // Undoing back to a step from the title bar (UX-16): one jump, as Undo History and the Undo
   // toasts make, after the canvas's pending edit; a gesture in progress is dropped first, as
   // Ctrl/Cmd+Z drops it, so the jump lands where it was asked to.
-  const undoTo = useCallback(
-    (entryId: string) => {
-      connectionRef.current?.flush();
-      session.cancelGesture();
-      return undoEntry(history, entryId);
-    },
-    [session, history],
-  );
   useEffect(() => {
-    onUndoTo?.(undoTo);
+    onUndoTo?.({
+      run: (entryId) => {
+        connectionRef.current?.flush();
+        session.cancelGesture();
+        return undoEntry(history, entryId);
+      },
+    });
     return () => onUndoTo?.(null);
-  }, [onUndoTo, undoTo]);
+  }, [onUndoTo, session, history]);
 
   // Undo History goes in the left column's bottom (UI1).
-  useEffect(() => {
-    const jumpTo = (entryId: string | null) => {
-      connectionRef.current?.flush();
-      return history.jumpTo(entryId);
-    };
-    function UndoHistory() {
-      const historyState = useSyncExternalStore(
-        history.state.subscribe,
-        history.state.getState,
-        history.state.getState,
-      );
-      return <UndoHistoryPanel history={{ jumpTo }} state={historyState} />;
-    }
-    return panels.register({
-      id: "undoHistory",
-      slot: "left.bottom",
-      title: t("editor.undoHistory"),
-      component: UndoHistory,
-    });
-  }, [panels, history]);
+  useEffect(
+    () =>
+      panels.register({
+        id: "undoHistory",
+        slot: "left.bottom",
+        title: t("editor.undoHistory"),
+        component: undoHistoryPanel(history, (entryId) => {
+          connectionRef.current?.flush();
+          return history.jumpTo(entryId);
+        }),
+      }),
+    [panels, history],
+  );
 
   // The Edit panel replaces Puck's own fields (1.14). Registered on its own, so that changing the
   // editor level or mode (Content shows its Content tab only) redraws it alone.
@@ -455,17 +491,15 @@ export function Editor({
       }),
     [addStore],
   );
-  // The sections' larger previews in the Add panel (UX-10), drawn with the site's theme.
-  const previews = useMemo(
-    () =>
-      createSectionPreviews({
-        library: session.library,
-        theme: () => session.history.document.getState().theme,
-        sharedSection: (id) => sharedSection(session.history.document.getState(), id)?.section,
-        compileCss,
-        baseUrl: document.baseURI,
-      }),
-    [session, compileCss],
+  // The sections' larger previews in the Add panel (UX-10), drawn with the site's theme. Made once
+  // for the editor's session, so the drawings they keep outlive switches of mode.
+  const [previews] = useState(() =>
+    createSectionPreviews({
+      library: session.library,
+      theme: () => session.history.document.getState().theme,
+      sharedSection: (id) => sharedSection(session.history.document.getState(), id)?.section,
+      compileCss,
+    }),
   );
 
   // The Add panel (1.13), hidden in Content mode (M3), and the palette's Add commands with it.
@@ -498,14 +532,41 @@ export function Editor({
   }, [panels, session, mode, engine, siteWide, addStore, registry, previews]);
   useEffect(() => registerMediaPanel(panels, session), [panels, session]);
   useEffect(() => registerImageField({ session, picks: imagePicks }), [session, imagePicks]);
+  // Colour fields show the theme's own colours and warn about low contrast (1.37, UX-25).
+  useEffect(
+    () =>
+      registerColourField({
+        session,
+        advanced: editorLevel === "advanced",
+        // The selected element's text styles, wherever it is (the page, the shared Header or
+        // Footer, a linked copy), as the Edit panel finds it.
+        textStyles: () => {
+          const { pageId, nodeId } = session.ui.getState();
+          const target = fieldTarget(
+            session.history.document.getState(),
+            session.library,
+            pageId,
+            nodeId,
+          );
+          return target === undefined ? [] : textStylesOf(target.node, session.library);
+        },
+      }),
+    [session, editorLevel],
+  );
   useEffect(() => registerLinkField({ session }), [session]);
 
   return (
     <div className="editor">
+      <CanvasBreadcrumbs session={session} engine={engine} />
       <SharedRegionBanner session={session} />
       <RichTextLinkHost session={session} engine={engine} />
       <SharedSectionNameDialog session={session} naming={naming} onClose={() => setNaming(null)} />
-      <CanvasElementMenu engine={engine} session={session} />
+      <CanvasElementMenu
+        engine={engine}
+        session={session}
+        renaming={renaming}
+        onRenamingChange={setRenaming}
+      />
       <div className="editor__stage">
         <section className="editor__canvas" aria-label={t("editor.canvas")} ref={canvasRef} />
         {canvasView !== undefined && (

@@ -1,5 +1,6 @@
 import type { SiteDoc } from "@webforge/model";
 import type { ProjectApi } from "../../shared/ipc/project.js";
+import { setSiteSession } from "./site-session.js";
 
 /** The site the editor starts with, and whether it is saved to a `.wforge` file. */
 export type LoadedSite =
@@ -12,12 +13,15 @@ export type LoadedSite =
  * Reads the site that is open in the main process. A new, empty site file gets `newSite()` (the
  * starter site) as its first content, which autosave then writes. Without an open site the editor
  * still starts, with `newSite()` in memory, until the start screen (1.8) opens or creates one.
+ * The open site's session is remembered for the calls that change it (`siteSession`, R6).
  */
 export async function loadSite(
   project: Pick<ProjectApi, "getCurrent" | "readSite">,
   newSite: () => SiteDoc,
 ): Promise<LoadedSite> {
-  if ((await project.getCurrent()) === null) {
+  const current = await project.getCurrent();
+  setSiteSession(current?.sessionId);
+  if (current === null) {
     return { kind: "memory", site: newSite() };
   }
   const result = await project.readSite();

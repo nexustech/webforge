@@ -503,6 +503,41 @@ describe("pages, selection and device view (U3)", () => {
   });
 });
 
+describe("several selected elements (1.31, UX-3)", () => {
+  it("adds and takes away with Ctrl/Cmd- or Shift-clicks, and outlines the others", () => {
+    const { session, engine } = setup();
+
+    engine.selectFromCanvas("heading-1");
+    engine.selectFromCanvas("text-1", true);
+    expect(session.ui.getState()).toMatchObject({ nodeId: "text-1", others: ["heading-1"] });
+    expect(engine.showSelected).toHaveBeenLastCalledWith(["heading-1"]);
+    expect(engine.select).toHaveBeenLastCalledWith("text-1");
+
+    // The one shown, clicked again: out, the other shown instead.
+    engine.selectFromCanvas("text-1", true);
+    expect(session.ui.getState()).toMatchObject({ nodeId: "heading-1", others: [] });
+    expect(engine.showSelected).toHaveBeenLastCalledWith([]);
+    expect(engine.select).toHaveBeenLastCalledWith("heading-1");
+
+    // A plain click ends it.
+    engine.selectFromCanvas("text-1", true);
+    engine.selectFromCanvas("heading-1");
+    expect(session.ui.getState()).toMatchObject({ nodeId: "heading-1", others: [] });
+  });
+
+  it("restores a whole multi-selection on undo", () => {
+    const { session, engine, typeHeading } = setup();
+    engine.selectFromCanvas("heading-1");
+    engine.selectFromCanvas("text-1", true);
+
+    typeHeading("Welcome!", "text-1");
+    engine.selectFromCanvas("heading-1");
+    session.history.undo();
+
+    expect(session.ui.getState()).toMatchObject({ nodeId: "text-1", others: ["heading-1"] });
+  });
+});
+
 describe("onEntryAdded", () => {
   it("reports each new entry with its kind, but not edits merged into the current one", () => {
     const { session, engine, typeHeading } = setup();

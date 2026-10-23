@@ -4,13 +4,16 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./font-plan": "./src/fonts/plan.ts"
   },
   "devDependencies": {
+    "@webforge/i18n": "workspace:*",
     "fast-check": "4.10.2",
     "vitest": "catalog:"
   },
   "dependencies": {
-    "@webforge/model": "workspace:*"
+    "@webforge/model": "workspace:*",
+    "zod": "catalog:"
   }
 }

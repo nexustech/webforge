@@ -18,20 +18,17 @@ import {
 import { t } from "@webforge/i18n";
 import type { PageDoc, PageEntry, PageId, SiteDoc } from "@webforge/model";
 import type { ComponentLibrary } from "@webforge/site-components";
-import { createStore } from "zustand/vanilla";
 import { applyPatch } from "./apply-patch.js";
 import { labelFor } from "./labels.js";
+import {
+  createSelectionStore,
+  type EditorSelection,
+  selectElements,
+  toggleSelected,
+} from "./selection.js";
 import { shownLayout } from "./shared-layout.js";
 
-/**
- * What undo shows again (U3): the page, the selected element and the device view. It is also the
- * UI state (U6): changing it is never an undo step.
- */
-export type EditorSelection = {
-  readonly pageId: PageId;
-  readonly nodeId: string | null;
-  readonly viewport: Viewport;
-};
+export type { EditorSelection } from "./selection.js";
 
 /** What kind of change an entry records; 1.11's Undo toasts pick the ones they announce. */
 export type EditKind = EngineEditKind;
@@ -54,7 +51,7 @@ export type Gesture = {
  * Options of {@link EditorSession.edit}: the history's, and `apply` to show `selectionAfter` now
  * (the element the change made or moved), as undo and redo will show it again.
  */
-export type EditOptions = RunOptions<EditorSelection> & { readonly apply?: boolean };
+type EditOptions = RunOptions<EditorSelection> & { readonly apply?: boolean };
 
 /**
  * Everything one open site needs: its history (which owns the document) and the UI store. The UI
@@ -76,8 +73,17 @@ export type EditorSession = {
   onEntryAdded(listener: EntryListener): Unsubscribe;
   /** Shows another page, with nothing selected; not an undo step (U6). */
   showPage(pageId: PageId): void;
-  /** Selects `nodeId` (or nothing) on the page shown; not an undo step (U6). */
+  /** Selects `nodeId` (or nothing) alone, on the page shown; not an undo step (U6). */
   select(nodeId: string | null): void;
+  /** Selects the elements `ids`, the first the one shown, as *Select similar* does (1.31, 1.35). */
+  selectElements(ids: readonly string[]): void;
+  /** Adds element `id` to the selection, or takes it out (Ctrl/Cmd- or Shift-click, 1.31). */
+  toggleSelected(id: string): void;
+  /**
+   * Shows a whole selection again (the page, the elements, the view), if its page is still there,
+   * as what an action leaves selected; not an undo step (U6).
+   */
+  restoreSelection(selection: EditorSelection): void;
   /** Shows the canvas as `viewport` would (F-ED-4); not an undo step (U6). */
   setViewport(viewport: Viewport): void;
 };
@@ -104,7 +110,7 @@ export function createEditorSession(
   site: SiteDoc,
   pageId: PageId = site.homePageId,
 ): EditorSession {
-  const ui = createStore<EditorSelection>()(() => ({ pageId, nodeId: null, viewport: "desktop" }));
+  const ui = createSelectionStore({ pageId, nodeId: null, viewport: "desktop" });
   const history = createHistoryManager<SiteDoc, EditorSelection>({
     initial: site,
     selection: { get: () => ui.getState(), restore: (selection) => ui.setState(selection, true) },
@@ -123,12 +129,15 @@ export function createEditorSession(
       for (const listener of listeners) listener(entry, kind);
     }
   };
-  /** Shows `next`, if its page is one the site has: the one way the UI store changes. */
+  /**
+   * Shows `next`, if its page is one the site has: the one way the UI store changes.
+   */
   const setSelection = (next: EditorSelection) => {
-    if (history.document.getState().pages[next.pageId] !== undefined) {
-      ui.setState(next, true);
-    }
+    if (history.document.getState().pages[next.pageId] !== undefined) ui.setState(next, true);
   };
+  /** `selection` with no other selected elements (1.31), left as it is when it has none. */
+  const alone = (selection: EditorSelection): EditorSelection =>
+    (selection.others ?? []).length > 0 ? { ...selection, others: [] } : selection;
   let gesture: Gesture | null = null;
   /** A canvas edit or another gesture can't wait for a gesture to end: it ends it as it is. */
   const commitGesture = () => {
@@ -177,10 +186,21 @@ export function createEditorSession(
     },
     showPage(next) {
       if (next !== ui.getState().pageId)
-        setSelection({ ...ui.getState(), pageId: next, nodeId: null });
+        setSelection({ ...alone(ui.getState()), pageId: next, nodeId: null });
     },
     select(nodeId) {
-      if (nodeId !== ui.getState().nodeId) setSelection({ ...ui.getState(), nodeId });
+      // Selecting one element alone also ends a multi-selection (1.31).
+      const { nodeId: shown, others = [] } = ui.getState();
+      if (nodeId !== shown || others.length > 0) setSelection({ ...alone(ui.getState()), nodeId });
+    },
+    selectElements(ids) {
+      selectElements(ui, ids);
+    },
+    toggleSelected(id) {
+      toggleSelected(ui, id);
+    },
+    restoreSelection(selection) {
+      setSelection(selection);
     },
     setViewport(viewport) {
       if (viewport !== ui.getState().viewport) setSelection({ ...ui.getState(), viewport });
@@ -316,14 +336,16 @@ export function connectEngine(engine: CanvasEngine, session: EditorSession): Eng
       );
       textSession = key;
     }),
-    engine.onSelectionChange((nodeId) => {
+    engine.onSelectionChange((nodeId, adding) => {
       if (loading) {
         return;
       }
       if (textSession !== null && pendingEnd === null) {
         pendingEnd = setTimeout(endTextSession, TEXT_SESSION_GRACE_MS);
       }
-      session.select(nodeId);
+      // Ctrl/Cmd- or Shift-click: one more selected element, or one fewer (1.31).
+      if (adding && nodeId !== null) session.toggleSelected(nodeId);
+      else session.select(nodeId);
     }),
     // A device view chosen on the canvas; not a history step (U6).
     engine.onViewportChange((viewport) => session.setViewport(viewport)),
@@ -346,7 +368,16 @@ export function connectEngine(engine: CanvasEngine, session: EditorSession): Eng
     }),
     ui.subscribe((state, previous) => {
       if (state.pageId !== previous.pageId) {
-        endTextSession();
+        // Leaving the page ends its text session; when undo shows another page, just after the
+        // history has finished changing, which can't be changed again from inside it (#238).
+        const leaving = textSession;
+        if (!history.isChanging()) {
+          endTextSession();
+        } else if (leaving !== null) {
+          queueMicrotask(() => {
+            if (textSession === leaving) endTextSession();
+          });
+        }
         const site = history.document.getState();
         const page = pageDoc(site, state.pageId);
         if (page !== undefined) {
@@ -362,6 +393,7 @@ export function connectEngine(engine: CanvasEngine, session: EditorSession): Eng
         engine.setViewport(state.viewport);
       }
       engine.select(state.nodeId);
+      if (state.others !== previous.others) engine.showSelected(state.others ?? []);
     }),
   ];
 

@@ -136,6 +136,9 @@ export default {
           "^packages/pipeline/src/node-resources\\.ts$",
           // Declared subpath export: @webforge/pipeline/navigation (no Node; the canvas uses it).
           "^packages/pipeline/src/navigation\\.ts$",
+          // Declared subpath export: @webforge/themes/font-plan (zod only: no font catalogue, so
+          // the preload and the catalogue build under plain Node can take it).
+          "^packages/themes/src/fonts/plan\\.ts$",
         ],
       },
     },

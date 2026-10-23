@@ -38,12 +38,18 @@ function errorFromSite(): Error {
   );
   error.stack = [
     `TypeError: Cannot read "${SITE_TEXT}" from ${HOME}\\Documents\\Rosa's Bakery.wforge`,
+    // A message can span lines, and a line of it can start like a frame (R3): it isn't one.
+    "    at the bakery on Mill Road, open from 7",
     `    at readPage (${APP}\\out\\main\\index.js:120:7)`,
     `    at file:///${APP.replaceAll("\\", "/")}/out/main/index.js:88:3`,
     `    at open (${HOME}\\Documents\\plugin.js:1:1)`,
+    // Regression (R3): a folder with an apostrophe or a space left the rest of its path behind.
+    "    at load (D:\\Sites\\Rosa's Bakery\\site.js:4:2)",
     "    at /Users/rosa/Sites/x.js:2:2",
     "    at \\\\fileserver\\share\\y.js:3:3",
     "    at node:internal/process/task_queues:95:5",
+    // Regression (R3): a URL's scheme was taken for a drive letter ("htt<path>").
+    "    at render (http://localhost:5173/src/renderer/App.tsx:12:3)",
   ].join("\n");
   return error;
 }
@@ -68,9 +74,11 @@ describe("buildCrashReport", () => {
         "at readPage (<app>\\out\\main\\index.js:120:7)",
         "at <app>/out/main/index.js:88:3",
         "at open (<path>)",
+        "at load (<path>)",
         "at <path>",
         "at <path>",
         "at node:internal/process/task_queues:95:5",
+        "at render (http://localhost:5173/src/renderer/App.tsx:12:3)",
       ],
     });
   });
@@ -85,9 +93,33 @@ describe("buildCrashReport", () => {
       app: { version: "1.2.0" },
       versions: context.versions,
       os: context.os,
+      fatal: true,
       exitCode: 3,
       memory: { rssMb: 150, heapUsedMb: 42.3 },
     });
+  });
+
+  it("checks what another process reported, and removes its paths again (R3)", () => {
+    const report = buildCrashReport(context, {
+      process: "renderer",
+      kind: "render-error",
+      reported: {
+        name: "TypeError",
+        frames: [
+          `at LayersPanel (file:///${APP.replaceAll("\\", "/")}/out/renderer/assets/index.js:9:2)`,
+          `at open (${HOME}\\Documents\\Rosa's Bakery\\x.js:1:1)`,
+          "at the bakery on Mill Road",
+        ],
+      },
+      fatal: false,
+    });
+
+    expect(report).toMatchObject({ process: "renderer", kind: "render-error", fatal: false });
+    expect(report.error).toEqual({
+      name: "TypeError",
+      stack: ["at LayersPanel (<app>/out/renderer/assets/index.js:9:2)", "at open (<path>)"],
+    });
+    expect(JSON.stringify(report)).not.toMatch(/Rosa|bakery|Documents/);
   });
 
   it("records only the type of something thrown that isn't an Error", () => {
@@ -160,6 +192,16 @@ describe("createCrashReports", () => {
     reports.prune();
 
     expect(readdirSync(dir)).toEqual([]);
+  });
+
+  it("doesn't count an error the editor survived as Webforge closing (R3)", () => {
+    const survived = buildCrashReport(
+      { ...context, now: () => clock },
+      { process: "renderer", kind: "render-error", fatal: false },
+    );
+    utimesSync(reports.write(survived), clock, clock);
+
+    expect(reports.hasUnseen()).toBe(false);
   });
 
   it("knows which reports the user hasn't been told about", () => {

@@ -30,7 +30,7 @@ describe("registerCanvasCommands", () => {
     expect(
       registry
         .list()
-        .filter((command) => command.textShortcut === true)
+        .filter((command) => command.textKeys !== undefined)
         .map((command) => command.id),
     ).toEqual([
       "edit.delete",
@@ -81,6 +81,42 @@ describe("registerCanvasCommands", () => {
 
     expect(beforeAction).toHaveBeenCalledOnce();
     expect(engine.perform).toHaveBeenCalledWith("delete");
+  });
+
+  it("turns the edits of one element off while several are selected (1.31)", () => {
+    const registry = createCommandRegistry();
+    const commands = registerCanvasCommands(registry, createFakeEngine(), () => undefined);
+    commands.setHasSelection(true);
+
+    commands.setSeveral(true);
+    const enabled = (id: string) => registry.get(id)?.enabled;
+    expect(
+      ["edit.duplicate", "edit.delete", "edit.moveUp", "edit.editText", "edit.clearText"].map(
+        enabled,
+      ),
+    ).toEqual([false, false, false, false, false]);
+    // Walking the page's tree selects from the one shown, ending the multi-selection.
+    expect(enabled("edit.selectParent")).toBe(true);
+    commands.setSeveral(false);
+    expect(enabled("edit.delete")).toBe(true);
+  });
+
+  it("gives duplicate, delete and the moves to `bulk` while several are selected (1.31)", () => {
+    const registry = createCommandRegistry();
+    const engine = createFakeEngine();
+    const bulk = vi.fn();
+    const commands = registerCanvasCommands(registry, engine, () => undefined, bulk);
+    commands.setHasSelection(true);
+
+    commands.setSeveral(true);
+    for (const id of ["edit.duplicate", "edit.delete", "edit.moveUp", "edit.moveDown"]) {
+      expect(registry.run(id)).toBe(true);
+    }
+    // Text is one element's.
+    expect(registry.get("edit.editText")?.enabled).toBe(false);
+
+    expect(bulk.mock.calls).toEqual([["duplicate"], ["delete"], ["moveUp"], ["moveDown"]]);
+    expect(engine.perform).not.toHaveBeenCalled();
   });
 
   it("turns duplicate, delete and moves off while Content mode locks the layout (M3)", () => {

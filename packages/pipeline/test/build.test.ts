@@ -25,7 +25,7 @@ describe("buildSite: golden output (X4: byte-stable, readable)", () => {
     expect({ ...built.report, bytes: undefined }).toEqual({
       pages: 2,
       // The price list the About page links to is one of them (files/price-list.pdf, 1.28).
-      files: 13,
+      files: 15,
       bytes: undefined,
       warnings: [],
     });
@@ -73,7 +73,7 @@ describe("buildSite: self-contained output (X1, C8)", () => {
 
     expect(css).toContain("/*! tailwindcss v4");
     expect(css).toContain('[data-theme="cupcake"]');
-    expect(css).toContain('src: url("../fonts/inter-latin-400-normal.woff2") format("woff2");');
+    expect(css).toContain('src: url("../fonts/inter-latin-wght-normal.woff2") format("woff2");');
     expect(css).toContain(".md\\:menu-horizontal");
     expect(css).toContain(".data-open\\:flex");
     expect(css).toContain(".collapse-arrow");

@@ -1,5 +1,12 @@
 import { IMAGE_MIME_TYPES, siteSnapshotSchema, themeSchema } from "@webforge/model";
+import { catalogueFontSchema } from "@webforge/themes";
 import { z } from "zod";
+
+/**
+ * The downloaded families a site's theme uses (2.2), as the main process keeps them: its heading
+ * and body fonts at most. The worker knows the catalogue's itself.
+ */
+const downloadedFamiliesSchema = z.array(catalogueFontSchema).max(2);
 
 /** What the main process asks the export worker to do. */
 const exportJobSchema = z.strictObject({
@@ -7,6 +14,16 @@ const exportJobSchema = z.strictObject({
   snapshot: siteSnapshotSchema,
   /** Absolute path of the folder to write; chosen by the user in a native dialog. */
   destination: z.string().min(1),
+  /** The site's font files (2.2), read and checked by the main process: the worker reads none. */
+  fonts: z
+    .array(
+      z.strictObject({
+        file: z.string().regex(/^[a-z0-9-]+\.woff2$/),
+        data: z.instanceof(Uint8Array),
+      }),
+    )
+    .max(64),
+  families: downloadedFamiliesSchema,
 });
 
 /** What the main process asks the export worker to do. */
@@ -19,6 +36,7 @@ const compileCssJobSchema = z.strictObject({
   id: z.int().nonnegative(),
   theme: themeSchema,
   candidates: z.array(z.string()),
+  families: downloadedFamiliesSchema,
 });
 
 /** Compiles the site CSS for the canvas. */

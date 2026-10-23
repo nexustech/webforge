@@ -14,13 +14,17 @@ import { stubFileDialogs } from "./sites.js";
 type ImportedItem = { kind: string; hash: string; name: string; width?: number };
 type MediaWindow = {
   webforge: {
+    project: { getCurrent(): Promise<{ sessionId: string } | null> };
     media: {
-      import(files: { fileName: string; data: Uint8Array }[]): Promise<{
+      import(
+        sessionId: string,
+        files: { fileName: string; data: Uint8Array }[],
+      ): Promise<{
         status: string;
         items?: ImportedItem[];
         rejected?: { fileName: string; reason: string }[];
       }>;
-      choose(): Promise<{ status: string; items?: ImportedItem[] }>;
+      choose(sessionId: string): Promise<{ status: string; items?: ImportedItem[] }>;
     };
   };
 };
@@ -73,11 +77,13 @@ test("imports a dropped photo unmodified and shows its thumbnail and original", 
   const photo = heroPhoto();
 
   const result = await page.evaluate(
-    (bytes) =>
-      (window as unknown as MediaWindow).webforge.media.import([
+    async (bytes) => {
+      const { project, media } = (window as unknown as MediaWindow).webforge;
+      return media.import((await project.getCurrent())?.sessionId ?? "", [
         { fileName: "Shop front.jpg", data: new Uint8Array(bytes) },
         { fileName: "notes.html", data: new TextEncoder().encode("<p>hello</p>") },
-      ]),
+      ]);
+    },
     [...photo],
   );
 
@@ -114,9 +120,10 @@ test("imports files chosen in the dialog", async () => {
   writeFileSync(prices, "%PDF-1.7\nprices");
   await stubFileDialogs(running(), prices);
 
-  const result = await page.evaluate(() =>
-    (window as unknown as MediaWindow).webforge.media.choose(),
-  );
+  const result = await page.evaluate(async () => {
+    const { project, media } = (window as unknown as MediaWindow).webforge;
+    return media.choose((await project.getCurrent())?.sessionId ?? "");
+  });
 
   expect(result).toMatchObject({ status: "imported", items: [{ kind: "file", name: "prices" }] });
 });
@@ -406,13 +413,15 @@ test("takes documents by their name and content, and rejects a renamed program (
   const page = await openSite();
 
   const result = await page.evaluate(
-    ({ docx }) =>
-      (window as unknown as MediaWindow).webforge.media.import([
+    async ({ docx }) => {
+      const { project, media } = (window as unknown as MediaWindow).webforge;
+      return media.import((await project.getCurrent())?.sessionId ?? "", [
         { fileName: "Price list.docx", data: new Uint8Array(docx) },
         { fileName: "Opening times.csv", data: new TextEncoder().encode("Day,Opens\nMon,9:00\n") },
         // A Windows program renamed to look like a PDF.
         { fileName: "Invoice.pdf", data: new Uint8Array([0x4d, 0x5a, 0x90, 0x00, 0x03, 0x00]) },
-      ]),
+      ]);
+    },
     { docx: [...minimalDocx()] },
   );
 

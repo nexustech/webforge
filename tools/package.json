@@ -5,11 +5,15 @@
   "description": "Repository scripts: licence check, UI-string guard (later: release, fixture generation)",
   "type": "module",
   "dependencies": {
+    "@webforge/themes": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@babel/core": "catalog:",
     "@swc/core": "1.16.18",
+    "@types/babel__core": "7.20.5",
     "@types/node": "catalog:",
+    "babel-plugin-react-compiler": "catalog:",
     "vitest": "catalog:"
   }
 }

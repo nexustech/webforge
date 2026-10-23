@@ -6,6 +6,7 @@ import {
   writeSiteFolder,
 } from "@webforge/pipeline";
 import { siteLibrary } from "@webforge/site-components";
+import { FONT_CATALOGUE } from "@webforge/themes";
 import type { ExportJob, ExportOutcome } from "../shared/export-worker-protocol.js";
 
 /** Builds the site of `job` and writes it to its destination; never throws. */
@@ -15,7 +16,15 @@ export async function runExport(
 ): Promise<ExportOutcome> {
   const started = performance.now();
   try {
-    const built = await buildSite(job.snapshot, siteLibrary, await loadResources());
+    // The site's fonts come with the job, the downloaded families it uses too: the main process
+    // read and checked them (2.2).
+    const fonts = new Map(job.fonts.map((font) => [font.file, font.data]));
+    const resources = {
+      ...(await loadResources()),
+      readFont: async (face: { readonly file: string }) => fonts.get(face.file),
+      fonts: [...FONT_CATALOGUE, ...job.families],
+    };
+    const built = await buildSite(job.snapshot, siteLibrary, resources);
     await writeSiteFolder(built.files, job.destination);
     return {
       type: "exported",

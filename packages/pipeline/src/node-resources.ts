@@ -1,15 +1,8 @@
 import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
-import {
-  compileCodecs,
-  type FontFile,
-  type PipelineResources,
-  TAILWIND_STYLESHEETS,
-} from "./resources.js";
+import { compileCodecs, type PipelineResources, TAILWIND_STYLESHEETS } from "./resources.js";
 
 const require = createRequire(import.meta.url);
-
-const FONT_WEIGHTS = [400, 700] as const;
 
 async function bytes(specifier: string): Promise<Uint8Array<ArrayBuffer>> {
   return new Uint8Array(await readFile(require.resolve(specifier)));
@@ -25,13 +18,6 @@ export async function loadNodeResources(): Promise<PipelineResources> {
       TAILWIND_STYLESHEETS.map(async (id) => [id, await readFile(require.resolve(id), "utf8")]),
     ),
   );
-  const fonts: FontFile[] = await Promise.all(
-    FONT_WEIGHTS.map(async (weight) => {
-      const fileName = `inter-latin-${weight}-normal.woff2`;
-      const data = await readFile(require.resolve(`@fontsource/inter/files/${fileName}`));
-      return { family: "Inter", weight, fileName, data: new Uint8Array(data) };
-    }),
-  );
   const codecs = await compileCodecs({
     jpegDecode: await bytes("@jsquash/jpeg/codec/dec/mozjpeg_dec.wasm"),
     jpegEncode: await bytes("@jsquash/jpeg/codec/enc/mozjpeg_enc.wasm"),
@@ -41,5 +27,13 @@ export async function loadNodeResources(): Promise<PipelineResources> {
   });
   const daisyui: unknown = (await import("daisyui")).default;
   const daisyuiTheme: unknown = (await import("daisyui/theme")).default;
-  return { stylesheets, daisyui, daisyuiTheme, fonts, codecs };
+  // The catalogue's font files, from the packages this package depends on, at their versions.
+  const readFont: PipelineResources["readFont"] = async (face) => {
+    try {
+      return new Uint8Array(await readFile(require.resolve(`${face.package}/files/${face.file}`)));
+    } catch {
+      return undefined;
+    }
+  };
+  return { stylesheets, daisyui, daisyuiTheme, readFont, codecs };
 }

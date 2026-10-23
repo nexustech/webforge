@@ -2,6 +2,7 @@ import { app } from "./en/app.js";
 import { canvas } from "./en/canvas.js";
 import { components } from "./en/components.js";
 import { exportSite } from "./en/export.js";
+import { fonts } from "./en/fonts.js";
 import { history } from "./en/history.js";
 import { panels } from "./en/panels.js";
 import { puck } from "./en/puck.js";
@@ -24,6 +25,7 @@ export const areas = {
   history,
   components,
   export: exportSite,
+  fonts,
   puck,
 } as const;
 
@@ -41,5 +43,6 @@ export const en = {
   ...history,
   ...components,
   ...exportSite,
+  ...fonts,
   ...puck,
 } as const;

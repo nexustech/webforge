@@ -1,15 +1,12 @@
 import type { ReadonlyStore } from "@webforge/history";
 import type { PageEntry, PageId, SiteDoc } from "@webforge/model";
-import { shallow } from "zustand/shallow";
 import { useStoreWithEqualityFn } from "zustand/traditional";
 import type { EditorSelection, EditorSession } from "./editor-session.js";
 
-export { shallow };
-
 /**
  * The part of the open site's document a component draws (R9): it redraws only when `selector`'s
- * result changes, as `equals` sees it (by reference unless given; {@link shallow} for a list or
- * record of references). A canvas keystroke changes the document, but rarely a panel's part of it.
+ * result changes, as `equals` sees it (by reference unless given; zustand's `shallow` for a list
+ * or record of references). A canvas keystroke changes the document, but rarely a panel's part of it.
  */
 export function useDocument<T>(
   session: Pick<EditorSession, "history">,

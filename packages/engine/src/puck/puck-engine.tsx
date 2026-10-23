@@ -15,8 +15,13 @@ import {
   copiedNodeId,
   expandSharedCopies,
   type LayoutDoc,
+  type NodeDoc,
   newSharedCopy,
   type PageDoc,
+  pageAnchors,
+  pastedCopies,
+  SHARED_COPY_TYPE,
+  type SharedCopyNode,
   type SharedSectionsDoc,
 } from "@webforge/model";
 import {
@@ -25,7 +30,13 @@ import {
   type RenderContext,
   renderPage,
 } from "@webforge/site-components";
-import { type ComponentProps, type ReactNode, useEffect } from "react";
+import {
+  type ComponentProps,
+  type ComponentType,
+  type ReactNode,
+  useEffect,
+  useSyncExternalStore,
+} from "react";
 import { createRoot, type Root } from "react-dom/client";
 import type {
   CanvasContextMenu,
@@ -39,6 +50,7 @@ import type {
   InsertPoint,
   LinkPicker,
   RichTextAt,
+  TextSplit,
   ViewOptions,
   Viewport,
 } from "../canvas-engine.js";
@@ -48,6 +60,7 @@ import {
   applyChromeStyles,
   createSelectionOutline,
   type ElementActions,
+  OUTLINED_ATTRIBUTE,
   QuickActionBar,
 } from "./chrome.js";
 import { toPuckConfig } from "./config.js";
@@ -55,12 +68,22 @@ import { installContextMenu } from "./context-menu.js";
 import { deferredCommands } from "./deferred-commands.js";
 import { hidePuckDeleteKeys } from "./delete-keys.js";
 import { puckDictionary } from "./dictionary.js";
+import {
+  copyIndex,
+  type DragKeys,
+  type Drop,
+  insertedAt,
+  takeDragKeys,
+  trackDragKeys,
+} from "./drag-copies.js";
 import { createDragSources } from "./drag-sources.js";
 import { editFromAction, selectedNodeId, toPageDoc } from "./edit-from-action.js";
 import { keepElementsEnabled } from "./enabled-elements.js";
+import { hidePuckLayout } from "./layout-styles.js";
 import { pageActions, type SlotsOf } from "./page-actions.js";
 import { createFormatToolbar } from "./rich-text.js";
 import { performOnSelected } from "./selected-actions.js";
+import { showAlsoSelected, watchAddingClicks } from "./selection-clicks.js";
 import { copiesOn, copyShownBy, foldCopies, shownInCopy } from "./shared-copies.js";
 import {
   composePage,
@@ -75,7 +98,8 @@ import { applySiteStyles, type SiteStyles } from "./site-styles.js";
 import { boxHandleFields } from "./spacing-handles.js";
 import { focusedRichTextId, richTextArrived, staleRichText } from "./stale-rich-text.js";
 import { startTextEditing } from "./text-editing.js";
-import { allNodes, findNode, nodeAt } from "./tree.js";
+import { createTextKeys, type PickLink } from "./text-keys.js";
+import { allNodes, findNode, nodeAt, ROOT_ZONE } from "./tree.js";
 import { applyViewOptions } from "./view-options.js";
 
 /** Options of {@link createPuckEngine}. */
@@ -190,8 +214,15 @@ function emitter<T>(): Emitter<T> {
  * - Puck's header (with its Undo/Redo buttons) is replaced, and its Ctrl/Cmd+Z hotkeys never fire
  *   because {@link installHistoryKeys} takes those keys first, in the host and in the iframe.
  */
+/** The canvas without an error boundary: see `MountOptions.errorBoundary`. */
+function NoBoundary({ children }: { readonly children: ReactNode }) {
+  return children;
+}
+
 export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine {
   let root: Root | null = null;
+  /** What wraps the canvas (`MountOptions.errorBoundary`); nothing until one is given. */
+  let ErrorBoundary: ComponentType<{ readonly children: ReactNode }> = NoBoundary;
   let host: HTMLElement | null = null;
   let library: ComponentLibrary | null = null;
   let config: Config | null = null;
@@ -224,6 +255,10 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   let stopKeepingEnabled: (() => void) | null = null;
   /** Stops hiding Delete and Backspace from Puck in the editor window (see `delete-keys.ts`). */
   let stopHidingHostKeys: (() => void) | null = null;
+  /** Stops following the keys held in the editor window during a drag (see `drag-copies.ts`). */
+  let stopTrackingHostKeys: (() => void) | null = null;
+  /** Stops watching clicks that add to the selection in the editor window (iframe-less canvas). */
+  let stopHostClicks: (() => void) | null = null;
   const followMode = () => {
     stopKeepingEnabled?.();
     stopKeepingEnabled =
@@ -275,12 +310,30 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   const addRequests = emitter<InsertPoint>();
   const fieldDrags = emitter<FieldDrag>();
   const elementRequests = emitter<ElementRequest>();
+  const textSplits = emitter<TextSplit>();
   const contextMenus = emitter<CanvasContextMenu>();
   const dragSources = createDragSources(
     (componentType) => library?.components[componentType]?.label ?? componentType,
   );
   const frameWindows = emitter<Window | null>();
-  const selections = emitter<string | null>();
+  /** Selection changes: `adding` for a Ctrl/Cmd/Shift-click that adds or takes away (1.31). */
+  const selections = emitter<{ readonly id: string | null; readonly adding: boolean }>();
+  /** The element a Ctrl/Cmd/Shift-click is on, which Puck is about to select (1.31). */
+  let addingClick: string | null = null;
+  /** The other selected elements while several are, outlined too (1.31). */
+  let alsoSelected: readonly string[] = [];
+  const alsoSelectedChanged = emitter<void>();
+  /** Watches clicks that add to the selection in `target` (see `selection-clicks.ts`). */
+  const watchClicks = (target: Window) =>
+    watchAddingClicks(target, (id) => {
+      // On the element selected already, Puck selects nothing new: it is reported here.
+      if (id !== null && id === selection) {
+        addingClick = null;
+        selections.emit({ id, adding: true });
+      } else {
+        addingClick = id;
+      }
+    });
   const canvasSizes = emitter<CanvasSize>();
   const viewports = emitter<Viewport>();
   const commandHandlers = new Set<HistoryCommandHandler>();
@@ -536,10 +589,134 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     putBack(edit.page, true);
   };
 
+  /** The keys held while dragging on the canvas: Ctrl or Cmd copies (see `drag-copies.ts`). */
+  const dragKeys: DragKeys = { copy: false, linked: false, pressed: false };
+
+  /**
+   * A drag Puck made a move that Ctrl or Cmd asked to be a copy instead, if `action` is one, and
+   * whether Shift asked for a linked copy: only a drop (Puck is still dragging), never a move from
+   * the keyboard, which holds Ctrl too. Every drop takes the keys held for it.
+   */
+  const copyDrop = (
+    action: PuckAction,
+    prev: AppState,
+  ): { readonly drop: Drop; readonly linked: boolean } | null => {
+    if (prev.ui.isDragging !== true) return null;
+    if (action.type !== "move" && action.type !== "reorder" && action.type !== "insert") {
+      return null;
+    }
+    const held = takeDragKeys(dragKeys);
+    if (!held.copy || action.type === "insert") return null;
+    const drop =
+      action.type === "move" ? action : { ...action, sourceZone: action.destinationZone };
+    return { drop, linked: held.linked };
+  };
+
+  /**
+   * A drag with Ctrl or Cmd held (1.30, UX-4): what was dragged stays, and a copy goes where it was
+   * dropped, as one step ("Duplicated Heading"), its ids and anchors its own as a pasted one's are.
+   * With Shift too, a linked copy of a shared section places another linked copy there (F-ED-23);
+   * without, the copy is of its section, the page's own. An element inside a linked copy is copied
+   * within the shared section, as Duplicate does there; with Shift, nothing happens. Puck has moved
+   * the element by now (`next`), so its view is put right: the original back, the copy shown.
+   */
+  const copyOnDrop = (
+    action: PuckAction,
+    drop: Drop,
+    next: AppState,
+    prev: AppState,
+    linked: boolean,
+  ) => {
+    if (getPuck === null || library === null) return;
+    const before = toPageDoc(prev.data);
+    const shown = toPageDoc(next.data);
+    const node = nodeAt(before, drop.sourceZone, drop.sourceIndex);
+    // The Header and Footer themselves stay where they are, once each (F-ED-7).
+    if (node === undefined || isSharedRegion(layout, node.props.id)) {
+      putBack(shown);
+      return;
+    }
+    const copy = linked ? copyShownBy(node, copiesOn(page.content), shared) : undefined;
+    // Shift asks for a linked copy, which only a whole copy makes. An element inside one is
+    // neither the page's own nor the Header's or Footer's: copying it there instead would change
+    // every copy of the section, so nothing happens (#255 review).
+    const ownOrShared =
+      findNode(page, node.props.id) !== undefined || isShared(layout, node.props.id);
+    if (linked && copy === undefined && !ownOrShared) {
+      putBack(shown);
+      return;
+    }
+    if (copy !== undefined) {
+      placeLinkedCopy(copy, drop, shown);
+    } else {
+      const [clone] = pastedCopies([node], pageAnchors(page.content, shared, layout));
+      if (clone === undefined) return;
+      const after = insertedAt(before, drop.destinationZone, copyIndex(drop), clone);
+      const actions = pageActions(shown, after, slotsOf);
+      if (actions === null) {
+        dispatch({ type: "setData", data: () => toPuckData(after), recordHistory: false });
+      } else {
+        for (const action of actions) dispatch({ ...action, recordHistory: false });
+      }
+      const id = clone.props.id;
+      const edit: EngineEdit = {
+        kind: "duplicate",
+        nodeId: id,
+        componentType: clone.type,
+        field: null,
+        page: after,
+        selection: id,
+      };
+      reportEdit(edit, action, prev);
+    }
+    commands.edited();
+  };
+
+  /**
+   * Another linked copy of `copy`'s shared section, where a Ctrl/Cmd+Shift drag of `copy` dropped
+   * (F-ED-23): among the page's sections, between the Header and the Footer. `shown` is what Puck
+   * shows now.
+   */
+  const placeLinkedCopy = (copy: NodeDoc & SharedCopyNode, drop: Drop, shown: PageDoc) => {
+    const header = layout.header.length;
+    const at = page.content.indexOf(copy);
+    // Puck counts the drop without the copy that was dragged; the page still has it.
+    const among = drop.destinationZone === ROOT_ZONE ? drop.destinationIndex - header : Number.NaN;
+    if (Number.isNaN(among)) {
+      putBack(shown);
+      return;
+    }
+    const others = Math.min(Math.max(among, 0), page.content.length - 1);
+    const index = others >= at ? others + 1 : others;
+    const added = newSharedCopy(page.content, copy.props.sharedSectionId, shared, layout);
+    const content = [...page.content];
+    content.splice(index, 0, added);
+    page = { ...page, content };
+    const root = shared[copy.props.sharedSectionId]?.section.props.id;
+    const id = root === undefined ? null : copiedNodeId(added.props.id, root);
+    emitEdit({
+      kind: "duplicate",
+      nodeId: id,
+      componentType: SHARED_COPY_TYPE,
+      field: null,
+      page,
+      selection: id,
+      copyOf: copy.props.sharedSectionId,
+    });
+    putBack(shown);
+  };
+
   const handleAction = (action: PuckAction, next: AppState, prev: AppState) => {
     inAction = true;
     try {
       if (applying) {
+        return;
+      }
+      const copying = library === null ? null : copyDrop(action, prev);
+      if (copying !== null) {
+        // Made once Puck has finished its own update, where a dispatch would be lost.
+        const { drop, linked } = copying;
+        queueMicrotask(() => copyOnDrop(action, drop, next, prev, linked));
         return;
       }
       if (library !== null) {
@@ -560,7 +737,9 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   const reportSelection = (id: string | null) => {
     if (id !== selection) {
       selection = id;
-      selections.emit(id);
+      const adding = id !== null && id === addingClick;
+      addingClick = null;
+      selections.emit({ id, adding });
     }
   };
 
@@ -621,8 +800,15 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
 
   /** The fields of component `type`, from the library. */
   const fieldsOf = (type: string) => Object.values(library?.components[type]?.fields ?? {});
-  /** *Edit* and *Hide* on the selected element's bar (F-ED-25). */
-  const elementActions: ElementActions = {
+  /**
+   * *Edit* and *Hide* on the selected element's bar (F-ED-25), for the page as it was shown: the
+   * bar asks them while drawing, so they answer for that page only (R2).
+   */
+  const elementActionsFor = (
+    shownPage: PageDoc,
+    shownLayout: LayoutDoc,
+    shownShared: SharedSectionsDoc,
+  ): ElementActions => ({
     canEdit: (type) =>
       fieldsOf(type).some(
         (field) =>
@@ -637,22 +823,54 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       }
     },
     canHide: (id) => {
-      if (findNode(page, id) !== undefined) return true;
+      if (findNode(shownPage, id) !== undefined) return true;
       // A linked copy is one of the page's own, shown by its section's id.
-      const shown = findNode(composePage(page, layout, shared), id);
+      const shown = findNode(composePage(shownPage, shownLayout, shownShared), id);
       return (
-        shown !== undefined && copyShownBy(shown, copiesOn(page.content), shared) !== undefined
+        shown !== undefined &&
+        copyShownBy(shown, copiesOn(shownPage.content), shownShared) !== undefined
       );
     },
     toggleHidden: (id) => elementRequests.emit({ kind: "toggleHidden", nodeId: id }),
+  });
+
+  /**
+   * What the bars ask while drawing, made once per change of the page: a new page gives them new
+   * functions, so they ask again (R2). The lock is on the shared Header or Footer itself (F-ED-7).
+   */
+  let barProps: {
+    readonly page: PageDoc;
+    readonly layout: LayoutDoc;
+    readonly shared: SharedSectionsDoc;
+    readonly isLocked: (id: string) => boolean;
+    readonly elementActions: ElementActions;
+  } | null = null;
+  const currentBarProps = () => {
+    if (barProps?.page !== page || barProps.layout !== layout || barProps.shared !== shared) {
+      const shownLayout = layout;
+      barProps = {
+        page,
+        layout,
+        shared,
+        isLocked: (id) => isSharedRegion(shownLayout, id),
+        elementActions: elementActionsFor(page, layout, shared),
+      };
+    }
+    return barProps;
   };
 
-  /** The quick actions, locked on the shared Header or Footer itself (F-ED-7). */
+  /** The quick actions, for the page as it is now. */
   function SharedAwareActionBar(props: ComponentProps<typeof QuickActionBar>) {
+    // Through Puck's store, which changes with every page Puck shows: never a value kept from an
+    // earlier drawing.
+    const { isLocked, elementActions } = usePuck(currentBarProps);
+    // While several elements are selected, the bar names the one shown: what it would do to one,
+    // the Edit menu does to all (1.31).
+    const several = useSyncExternalStore(alsoSelectedChanged.add, () => alsoSelected.length > 0);
     return (
       <QuickActionBar
         {...props}
-        isLocked={(id) => isSharedRegion(layout, id)}
+        isLocked={(id) => several || isLocked(id)}
         elementActions={elementActions}
       />
     );
@@ -664,6 +882,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       if (document !== undefined) {
         applyChromeStyles(document);
         if (siteStyles !== null) applySiteStyles(document, siteStyles);
+        showAlsoSelected(document, alsoSelected);
       }
       followMode();
       followViewOptions();
@@ -674,14 +893,18 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       frameWindows.emit(frameWindow);
       const removeKeys = installHistoryKeys(frameWindow, runCommand);
       const showDeleteKeys = hidePuckDeleteKeys(frameWindow);
+      const stopDragKeys = trackDragKeys(frameWindow, dragKeys);
       // The element menu, but not in Content mode, where right-clicks get the browser's own.
+      const stopClicks = watchClicks(frameWindow);
       const removeMenu = installContextMenu(frameWindow.document, contextMenus.emit, {
         enabled: () => mode === "design",
         selected: () => selection,
       });
       return () => {
         showDeleteKeys();
+        stopDragKeys();
         removeMenu();
+        stopClicks();
         stopKeepingEnabled?.();
         stopKeepingEnabled = null;
         stopViewOptions?.();
@@ -732,10 +955,25 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       ? { nodeId, field: focus.replace(/::inline$/, "") }
       : null;
   };
-  const formatToolbar = createFormatToolbar(() => {
+  const pickLink = (): PickLink | null => {
     const picker = linkPicker;
     return picker === null ? null : (current) => picker(current, editingRichText());
-  });
+  };
+  const richTextTools = {
+    toolbar: createFormatToolbar(pickLink),
+    // Mod + K, Alt + Enter and Shift + Space in rich text (F-ED-27).
+    extensions: [
+      createTextKeys({
+        pickLink,
+        split: (halves) => {
+          const at = editingRichText();
+          // After the last keystrokes Puck still holds back, so the step before the split has them
+          // and undoing the split gives back all that was typed.
+          if (at !== null) commands.whenSent(() => textSplits.emit({ ...at, ...halves }));
+        },
+      }),
+    ],
+  };
 
   /** The Puck config for `library`, rendering with the current editor revisions and context. */
   const configFor = (forLibrary: ComponentLibrary) =>
@@ -743,7 +981,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       forLibrary,
       (id) => editorRevisions.get(id) ?? 0,
       () => renderContext,
-      formatToolbar,
+      richTextTools,
     );
 
   /**
@@ -764,30 +1002,32 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       return;
     }
     root.render(
-      <Puck
-        config={config}
-        data={toPuckData(composePage(page, layout, shared))}
-        onAction={handleAction}
-        dictionary={dictionary}
-        overrides={overrides}
-        iframe={iframe}
-        // The editor's own Edit panel shows the fields (1.14), not Puck's right sidebar; its Add
-        // panel (1.13) and Layers (1.24) replace Puck's left one.
-        ui={{
-          leftSideBarVisible: false,
-          rightSideBarVisible: false,
-          // Puck starts with the app's width; without one it picks the view nearest the window's.
-          viewports: {
-            current: { width: viewportWidth, height: "auto" },
-            options: [],
-            // The canvas toolbar chooses the view and zoom (1.15), not Puck's own controls.
-            controlsVisible: false,
-          },
-        }}
-        viewports={viewportOptions}
-        height="100%"
-        permissions={mode === "content" ? CONTENT_MODE_PERMISSIONS : DESIGN_MODE_PERMISSIONS}
-      />,
+      <ErrorBoundary>
+        <Puck
+          config={config}
+          data={toPuckData(composePage(page, layout, shared))}
+          onAction={handleAction}
+          dictionary={dictionary}
+          overrides={overrides}
+          iframe={iframe}
+          // The editor's own Edit panel shows the fields (1.14), not Puck's right sidebar; its Add
+          // panel (1.13) and Layers (1.24) replace Puck's left one, and its rail is hidden (#274).
+          ui={{
+            leftSideBarVisible: false,
+            rightSideBarVisible: false,
+            // Puck starts with the app's width; without one it picks the view nearest the window's.
+            viewports: {
+              current: { width: viewportWidth, height: "auto" },
+              options: [],
+              // The canvas toolbar chooses the view and zoom (1.15), not Puck's own controls.
+              controlsVisible: false,
+            },
+          }}
+          viewports={viewportOptions}
+          height="100%"
+          permissions={mode === "content" ? CONTENT_MODE_PERMISSIONS : DESIGN_MODE_PERMISSIONS}
+        />
+      </ErrorBoundary>,
     );
   };
 
@@ -797,6 +1037,8 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
         throw new Error("The canvas engine is already mounted");
       }
       host = el;
+      // Only Puck's canvas shows: the editor has its own Add, Layers and Edit panels (#274).
+      hidePuckLayout(el);
       library = opts.library;
       const slots = new Map(
         Object.entries(opts.library.components).map(([type, def]) => [
@@ -810,7 +1052,20 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       config = configFor(opts.library);
       const hostWindow = el.ownerDocument.defaultView;
       stopHidingHostKeys = hostWindow === null ? null : hidePuckDeleteKeys(hostWindow);
-      root = createRoot(el);
+      stopTrackingHostKeys = hostWindow === null ? null : trackDragKeys(hostWindow, dragKeys);
+      stopHostClicks = hostWindow === null ? null : watchClicks(hostWindow);
+      ErrorBoundary = opts.errorBoundary ?? NoBoundary;
+      const { onError } = opts;
+      // Each error in the canvas's own React root goes to `onError`; React's defaults otherwise.
+      root = createRoot(
+        el,
+        onError === undefined
+          ? {}
+          : {
+              onCaughtError: (error) => onError(error, true),
+              onUncaughtError: (error) => onError(error, false),
+            },
+      );
       render();
       // Puck starts with the current page.
       shownRevision = revision;
@@ -871,18 +1126,36 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       // Puck selects by position; keep the same element selected, or none if it is gone.
       if (selection !== null && findNode(after, selection) === undefined) {
         selection = null;
-        selections.emit(null);
+        selections.emit({ id: null, adding: false });
       }
       dispatch({ type: "setUi", ui: { itemSelector: selectorFor(selection) } });
     },
 
     onUserEdit: edits.add,
-    onSelectionChange: selections.add,
+    onSelectionChange: (cb) => selections.add(({ id, adding }) => cb(id, adding)),
+
+    showSelected(others) {
+      alsoSelected = others;
+      const doc = frameDocument ?? host?.ownerDocument;
+      if (doc !== undefined) showAlsoSelected(doc, others);
+      alsoSelectedChanged.emit();
+    },
     onHistoryCommand(handler) {
       commandHandlers.add(handler);
       return () => {
         commandHandlers.delete(handler);
       };
+    },
+
+    outline(nodeId) {
+      const doc = frameDocument ?? host?.ownerDocument;
+      for (const element of doc?.querySelectorAll(`[${OUTLINED_ATTRIBUTE}]`) ?? []) {
+        element.removeAttribute(OUTLINED_ATTRIBUTE);
+      }
+      if (nodeId === null) return;
+      doc
+        ?.querySelector(`[data-puck-component="${CSS.escape(nodeId)}"]`)
+        ?.setAttribute(OUTLINED_ATTRIBUTE, "");
     },
 
     select(nodeId) {
@@ -967,6 +1240,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     onAddRequest: addRequests.add,
 
     onElementRequest: elementRequests.add,
+    onTextSplit: textSplits.add,
 
     onFieldDrag: fieldDrags.add,
 
@@ -1017,6 +1291,10 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       getPuck = null;
       stopHidingHostKeys?.();
       stopHidingHostKeys = null;
+      stopTrackingHostKeys?.();
+      stopTrackingHostKeys = null;
+      stopHostClicks?.();
+      stopHostClicks = null;
       frameDocument = null;
       // Unmount after the current render: the app destroys the engine from an effect cleanup.
       queueMicrotask(() => {

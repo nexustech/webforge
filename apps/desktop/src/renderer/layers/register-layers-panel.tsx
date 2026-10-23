@@ -6,7 +6,17 @@ import { ElementMenu } from "../element-menu/ElementMenu.js";
 import { useCommand, useCommandRegistry } from "../shell/command-context.js";
 import type { PanelRegistry } from "../shell/panels.js";
 import { LayersPanel } from "./LayersPanel.js";
-import { type Layer, layersOf, moveLayer, renameLayer, setLayerHidden } from "./layers.js";
+import {
+  copyLayer,
+  type Layer,
+  layersOf,
+  moveLayer,
+  renameLayer,
+  setLayerHidden,
+} from "./layers.js";
+
+/** No other selected layers. */
+const NO_OTHERS: readonly string[] = [];
 
 /** The canvas commands the Layers toolbar runs on the selected element (1.12). */
 const TOOLBAR_COMMANDS = {
@@ -67,6 +77,8 @@ export function registerLayersPanel(
     };
   };
 
+  const othersOf = () => ui.getState().others ?? NO_OTHERS;
+
   function Layers() {
     const layers = useSyncExternalStore(subscribe, currentLayers, currentLayers);
     const selectedId = useSyncExternalStore(
@@ -74,17 +86,24 @@ export function registerLayersPanel(
       () => ui.getState().nodeId,
       () => ui.getState().nodeId,
     );
+    const alsoSelected = useSyncExternalStore(ui.subscribe, othersOf, othersOf);
     return (
       <LayersPanel
         layers={layers}
         selectedId={selectedId}
+        alsoSelected={alsoSelected}
         layoutLocked={layoutLocked}
-        menu={(menu) => <ElementMenu {...menu} />}
+        menu={ElementMenu}
         actions={{
           select: (id) => session.select(id),
+          toggle: (id) => session.toggleSelected(id),
+          selectMany: (ids) => session.selectElements(ids),
           rename: (id, name) => renameLayer(session, id, name),
           setHidden: (id, hidden) => setLayerHidden(session, id, hidden),
+          // A dragged layer moves or is copied alone, and is selected alone after: the panel
+          // never drags a row of several selected (those move with the Edit menu's moves, 1.31).
           move: (id, index) => moveLayer(session, id, index),
+          copy: (id, index, linked) => copyLayer(session, id, index, linked),
           moveUp: useCommandAction(TOOLBAR_COMMANDS.moveUp),
           moveDown: useCommandAction(TOOLBAR_COMMANDS.moveDown),
           duplicate: useCommandAction(TOOLBAR_COMMANDS.duplicate),
@@ -96,10 +115,9 @@ export function registerLayersPanel(
 
   return panels.register({
     id: "layers",
-    slot: "left.bottom",
+    // Always shown, under Add and Undo History, in Simple and Advanced mode (ADR 0011).
+    slot: "left.lower",
     title: t("layers.title"),
-    advancedOnly: true,
-    order: -1,
     component: Layers,
   });
 }

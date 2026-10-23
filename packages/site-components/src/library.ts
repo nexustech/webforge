@@ -4,14 +4,18 @@ import {
   type BoxSide,
   type Breakpoint,
   bindingOf,
+  formatColorRef,
   isResponsiveValue,
   type LinkValue,
   linkValueSchema,
+  type NodeDoc,
   nodeAdvancedSchema,
+  parseColorRef,
   type Responsive,
   resolveResponsive,
   responsiveBoxOf,
   type SpacingToken,
+  type TextStyle,
 } from "@webforge/model";
 import { type ComponentType, cloneElement, isValidElement, type ReactNode } from "react";
 import { isDocumentPath } from "./document-path.js";
@@ -240,7 +244,44 @@ export type ComponentDef = {
   readonly render: (props: ComponentRenderProps) => ReactNode;
   /** Scripts the exported site must include when this component is used. */
   readonly behaviours?: readonly BehaviourName[];
+  /**
+   * The theme's text style its text is set in (h1–h6, body, small), from its values with their
+   * defaults; none for a component without text of its own. Sets how much contrast a colour on it
+   * needs (WCAG AA's large text, 1.37).
+   */
+  readonly textStyle?: (values: Readonly<Record<string, unknown>>) => TextStyle | undefined;
 };
+
+/**
+ * The class that gives an element the colour a colour field stores (1.37, ADR 0009): `prefix` and
+ * the colour ref, `text-primary-300/80` or `bg-[#1f6feb]/50`. None for `default` (the element's
+ * own colour) or anything that isn't a colour ref, so nothing else can reach a class.
+ */
+export function colorClass(prefix: "text" | "bg" | "border", value: unknown): string {
+  if (typeof value !== "string" || value === "default") return "";
+  const parsed = parseColorRef(value);
+  return parsed === undefined ? "" : `${prefix}-${formatColorRef(parsed)}`;
+}
+
+/**
+ * The text styles `node`'s text is set in, one for each device its values differ on (a size set per
+ * device, F-ED-4), else just one; none for a component that declares none.
+ */
+export function textStylesOf(node: NodeDoc, library: ComponentLibrary): TextStyle[] {
+  const def = library.components[node.type];
+  if (def?.textStyle === undefined) return [];
+  const values: Readonly<Record<string, unknown>> = { ...def.defaults, ...node.props };
+  const responsive = Object.values(values).some((value) => isResponsiveValue(value));
+  const devices: readonly Breakpoint[] = responsive ? ["desktop", "tablet", "mobile"] : ["desktop"];
+  const styles = devices.map((device) =>
+    def.textStyle?.(
+      Object.fromEntries(
+        Object.entries(values).map(([name, value]) => [name, resolveResponsive(value, device)]),
+      ),
+    ),
+  );
+  return [...new Set(styles.filter((style) => style !== undefined))];
+}
 
 /** The components available on the canvas and in exported sites, by component type. */
 export type ComponentLibrary = {

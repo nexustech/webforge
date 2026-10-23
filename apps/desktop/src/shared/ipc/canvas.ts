@@ -15,7 +15,7 @@ export type CanvasCssRequest = z.infer<typeof canvasCssRequestSchema>;
 const canvasCssResultSchema = z.discriminatedUnion("status", [
   z.strictObject({
     status: z.literal("compiled"),
-    /** Fonts are referenced as `url("webforge-font:<file name>")`; see {@link CANVAS_FONT_URL}. */
+    /** Fonts are referenced as `url("webforge-font://fonts/<file>")`; see {@link CANVAS_FONT_URL}. */
     css: z.string(),
     /** Classes the exported pages put on `<body>`, for the canvas document's body. */
     bodyClass: z.string(),
@@ -27,10 +27,10 @@ const canvasCssResultSchema = z.discriminatedUnion("status", [
 export type CanvasCssResult = z.infer<typeof canvasCssResultSchema>;
 
 /**
- * Where compiled canvas CSS points for its fonts. The worker can't know the renderer's own font
- * URLs, so the renderer replaces this prefix with them.
+ * Where compiled canvas CSS points for its fonts (2.2): the main process serves the installer's
+ * font files through this scheme, as it serves Media images through `webforge-media:`.
  */
-export const CANVAS_FONT_URL = "webforge-font:";
+export const CANVAS_FONT_URL = "webforge-font://fonts/";
 
 /** IPC channels of the `canvas` domain (`canvas:*`). */
 export const canvasChannels = {

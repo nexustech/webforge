@@ -7,6 +7,7 @@ import type {
   HistoryCommand,
   HistoryCommandHandler,
   InsertPoint,
+  TextSplit,
   Unsubscribe,
   Viewport,
 } from "@webforge/engine";
@@ -16,7 +17,8 @@ import { vi } from "vitest";
 /** A {@link CanvasEngine} driven by the test: it records calls and emits what the test says. */
 export type FakeEngine = CanvasEngine & {
   edit(edit: Partial<EngineEdit> & Pick<EngineEdit, "kind" | "page">): void;
-  selectFromCanvas(nodeId: string | null): void;
+  /** A click on the canvas; `adding` for a Ctrl/Cmd- or Shift-click (1.31). */
+  selectFromCanvas(nodeId: string | null, adding?: boolean): void;
   /** Presses a history key in the canvas; true if the app did something with it. */
   command(command: HistoryCommand): boolean;
   /** Clicks the floating + asking for a section at `at`. */
@@ -29,6 +31,8 @@ export type FakeEngine = CanvasEngine & {
   dragField(drag: FieldDrag): void;
   /** A request from the selected element's quick actions (F-ED-25). */
   requestFromElement(request: ElementRequest): void;
+  /** Alt + Enter in rich text on the canvas: split it. */
+  splitText(split: TextSplit): void;
   /** Switches the device view with the canvas's own controls. */
   switchView(viewport: Viewport): void;
   readonly applied: PageDoc[];
@@ -49,13 +53,14 @@ function listeners<T>() {
 
 export function createFakeEngine(): FakeEngine {
   const edits = listeners<EngineEdit>();
-  const selections = listeners<string | null>();
+  const selections = listeners<{ id: string | null; adding: boolean }>();
   const commands = new Set<HistoryCommandHandler>();
   const adds = listeners<InsertPoint>();
   const frames = listeners<Window | null>();
   const views = listeners<Viewport>();
   const drags = listeners<FieldDrag>();
   const elementRequests = listeners<ElementRequest>();
+  const textSplits = listeners<TextSplit>();
   const menus = listeners<CanvasContextMenu>();
   const applied: PageDoc[] = [];
   return {
@@ -65,7 +70,8 @@ export function createFakeEngine(): FakeEngine {
     applyChange: vi.fn(({ page }) => applied.push(page)),
     onUserEdit: edits.add,
     select: vi.fn(),
-    onSelectionChange: selections.add,
+    onSelectionChange: (cb) => selections.add(({ id, adding }) => cb(id, adding)),
+    showSelected: vi.fn(),
     onHistoryCommand: (handler) => {
       commands.add(handler);
       return () => commands.delete(handler);
@@ -83,7 +89,9 @@ export function createFakeEngine(): FakeEngine {
     onAddRequest: adds.add,
     onFieldDrag: drags.add,
     onElementRequest: elementRequests.add,
+    onTextSplit: textSplits.add,
     onContextMenu: menus.add,
+    outline: vi.fn(),
     addDragSource: vi.fn(() => () => undefined),
     setLinkPicker: vi.fn(),
     onFrameWindow: frames.add,
@@ -92,13 +100,14 @@ export function createFakeEngine(): FakeEngine {
     destroy: vi.fn(),
     edit: (edit) =>
       edits.emit({ nodeId: null, componentType: null, field: null, selection: null, ...edit }),
-    selectFromCanvas: selections.emit,
+    selectFromCanvas: (id, adding = false) => selections.emit({ id, adding }),
     command: (command) => [...commands].some((handler) => handler(command) === true),
     requestAdd: adds.emit,
     showFrame: frames.emit,
     switchView: views.emit,
     dragField: drags.emit,
     requestFromElement: elementRequests.emit,
+    splitText: textSplits.emit,
     rightClick: menus.emit,
   };
 }

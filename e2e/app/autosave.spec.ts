@@ -171,10 +171,11 @@ test.describe("autosave", () => {
     const durations = await page.evaluate(
       async ({ changes }) => {
         const { project } = (window as unknown as RendererWindow).webforge;
+        const sessionId = (await project.getCurrent())?.sessionId ?? "";
         const times: number[] = [];
         for (const list of changes) {
           const start = performance.now();
-          const result = await project.commit(list);
+          const result = await project.commit(sessionId, list);
           times.push(performance.now() - start);
           if ((result as { status: string }).status !== "saved") throw new Error("not saved");
         }

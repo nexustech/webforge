@@ -1,7 +1,17 @@
 // @vitest-environment happy-dom
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  createEvent,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { ComponentProps } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { isMac } from "../shell/commands.js";
 import {
   dropIndex,
   LayersPanel,
@@ -9,6 +19,9 @@ import {
   type LayersPanelProps,
 } from "./LayersPanel.js";
 import type { Layer } from "./layers.js";
+
+/** The platform's Mod key: Ctrl, or Cmd on a Mac. */
+const MOD = isMac() ? { metaKey: true } : { ctrlKey: true };
 
 afterEach(cleanup);
 
@@ -29,23 +42,32 @@ const LAYERS: Layer[] = [
   layer("s2", { kind: "Section" }),
 ];
 
-function setUp(selectedId: string | null = "a", toolbar = true, layoutLocked = false) {
+function setUp(
+  selectedId: string | null = "a",
+  toolbar = true,
+  layoutLocked = false,
+  alsoSelected: readonly string[] = [],
+) {
   const command = () => (toolbar ? vi.fn() : undefined);
   const actions = {
     select: vi.fn(),
+    toggle: vi.fn(),
+    selectMany: vi.fn(),
     rename: vi.fn(),
     setHidden: vi.fn(),
     move: vi.fn(),
+    copy: vi.fn(),
     moveUp: command(),
     moveDown: command(),
     duplicate: command(),
     remove: command(),
   } satisfies LayersPanelActions;
-  const menu = vi.fn((_: Parameters<NonNullable<LayersPanelProps["menu"]>>[0]) => null);
+  const menu = vi.fn((_: ComponentProps<NonNullable<LayersPanelProps["menu"]>>) => null);
   render(
     <LayersPanel
       layers={LAYERS}
       selectedId={selectedId}
+      alsoSelected={alsoSelected}
       actions={actions}
       layoutLocked={layoutLocked}
       menu={menu}
@@ -84,7 +106,7 @@ describe("LayersPanel (F-ED-12)", () => {
     const rows = screen.getAllByRole("treeitem");
 
     expect(rows.every((row) => row.getAttribute("draggable") === "false")).toBe(true);
-    fireEvent.keyDown(rows[1] as HTMLElement, { key: "ArrowDown", altKey: true });
+    fireEvent.keyDown(rows[1] as HTMLElement, { key: "ArrowDown", altKey: true, ...MOD });
     for (const hide of screen.getAllByRole("button", { name: /^Hide/, hidden: true })) {
       fireEvent.click(hide);
     }
@@ -95,7 +117,7 @@ describe("LayersPanel (F-ED-12)", () => {
     expect(actions.select).toHaveBeenCalled();
   });
 
-  it("selects on click and with the arrow keys; Alt+arrows move among siblings", async () => {
+  it("selects on click and with the arrow keys; Mod+Alt+arrows move among siblings", async () => {
     const { actions } = setUp();
     const rows = screen.getAllByRole("treeitem");
 
@@ -103,16 +125,82 @@ describe("LayersPanel (F-ED-12)", () => {
     fireEvent.keyDown(rows[1] as HTMLElement, { key: "ArrowDown" });
     fireEvent.keyDown(rows[1] as HTMLElement, { key: "ArrowUp" });
     fireEvent.keyDown(rows[0] as HTMLElement, { key: "ArrowUp" });
-    fireEvent.keyDown(rows[1] as HTMLElement, { key: "ArrowDown", altKey: true });
-    fireEvent.keyDown(rows[2] as HTMLElement, { key: "ArrowUp", altKey: true });
+    fireEvent.keyDown(rows[1] as HTMLElement, { key: "ArrowDown", altKey: true, ...MOD });
+    fireEvent.keyDown(rows[2] as HTMLElement, { key: "ArrowUp", altKey: true, ...MOD });
     fireEvent.keyDown(rows[1] as HTMLElement, { key: "Delete" });
     expect(actions.remove).toHaveBeenCalledOnce();
 
     expect(actions.select.mock.calls).toEqual([["s2"], ["b"], ["s1"]]);
+    // Alt alone moves too, as Layers did first.
+    fireEvent.keyDown(rows[3] as HTMLElement, { key: "ArrowUp", altKey: true });
     expect(actions.move.mock.calls).toEqual([
       ["a", 1],
       ["b", 0],
+      ["c", 1],
     ]);
+  });
+
+  it("walks the tree with Mod+arrows, as on the canvas (F-ED-27)", () => {
+    const { actions } = setUp("b");
+    const rows = screen.getAllByRole("treeitem");
+
+    // Parent, first child, next sibling; nothing before the first.
+    fireEvent.keyDown(rows[2] as HTMLElement, { key: "ArrowUp", ...MOD });
+    fireEvent.keyDown(rows[0] as HTMLElement, { key: "ArrowDown", ...MOD });
+    fireEvent.keyDown(rows[1] as HTMLElement, { key: "ArrowRight", ...MOD });
+    fireEvent.keyDown(rows[1] as HTMLElement, { key: "ArrowLeft", ...MOD });
+    fireEvent.keyDown(rows[0] as HTMLElement, { key: "ArrowRight", ...MOD });
+
+    expect(actions.select.mock.calls).toEqual([["s1"], ["a"], ["b"], ["s2"]]);
+    expect(actions.move).not.toHaveBeenCalled();
+  });
+
+  it("selects several: Ctrl/Cmd-click adds or takes away, Shift-click a range (1.31)", async () => {
+    const { actions } = setUp("a", true, false, ["s2"]);
+    const rows = screen.getAllByRole("treeitem");
+
+    expect(screen.getByRole("tree").getAttribute("aria-multiselectable")).toBe("true");
+    expect(rows.map((row) => row.getAttribute("aria-selected"))).toEqual([
+      "false",
+      "true",
+      "false",
+      "false",
+      "true",
+    ]);
+    fireEvent.click(rows[2] as HTMLElement, { ctrlKey: true });
+    fireEvent.click(rows[2] as HTMLElement, { metaKey: true });
+    // From the last row clicked without Shift (b) to c, as listed: the clicked one shown.
+    fireEvent.click(rows[3] as HTMLElement, { shiftKey: true });
+
+    expect(actions.toggle.mock.calls).toEqual([["b"], ["b"]]);
+    expect(actions.selectMany.mock.calls).toEqual([[["c", "b"]]]);
+    expect(actions.select).not.toHaveBeenCalled();
+  });
+
+  it("moves all selected layers with Mod+Alt+arrows, as the Edit menu does (1.31)", () => {
+    const { actions } = setUp("a", true, false, ["b"]);
+    const rows = screen.getAllByRole("treeitem");
+
+    fireEvent.keyDown(rows[1] as HTMLElement, { key: "ArrowDown", altKey: true, ...MOD });
+    fireEvent.keyDown(rows[1] as HTMLElement, { key: "ArrowUp", altKey: true, ...MOD });
+
+    expect(actions.moveDown).toHaveBeenCalledOnce();
+    expect(actions.moveUp).toHaveBeenCalledOnce();
+    expect(actions.move).not.toHaveBeenCalled();
+  });
+
+  it("keeps a Shift-click range's start on the last row clicked without Shift (#259 review)", () => {
+    const { actions } = setUp("s2");
+    const rows = screen.getAllByRole("treeitem");
+
+    fireEvent.click(rows[1] as HTMLElement);
+    fireEvent.click(rows[3] as HTMLElement, { shiftKey: true });
+    // From a again, not from c: the start stays where it was.
+    fireEvent.click(rows[2] as HTMLElement, { shiftKey: true });
+    fireEvent.click(rows[4] as HTMLElement, { ctrlKey: true });
+    fireEvent.click(rows[3] as HTMLElement, { shiftKey: true });
+
+    expect(actions.selectMany.mock.calls).toEqual([[["c", "a", "b"]], [["b", "a"]], [["c", "s2"]]]);
   });
 
   it("renames with F2 or a double-click; Enter keeps the name, Escape cancels", async () => {
@@ -168,6 +256,58 @@ describe("LayersPanel (F-ED-12)", () => {
     ]);
   });
 
+  it("copies a layer dragged with Ctrl or Cmd, with Shift for a linked copy (1.35, UX-4)", () => {
+    const { actions } = setUp();
+    const rows = screen.getAllByRole("treeitem");
+    const drag = (
+      from: number,
+      to: number,
+      keys: { ctrlKey?: boolean; metaKey?: boolean; shiftKey?: boolean },
+    ) => {
+      const dataTransfer = { setData: vi.fn(), effectAllowed: "" };
+      const target = rows[to] as HTMLElement;
+      // happy-dom's drag events don't take the keys from their init: they are set on the event.
+      const withKeys = (event: Event) => {
+        for (const [key, value] of Object.entries(keys))
+          Object.defineProperty(event, key, { value });
+        return event;
+      };
+      fireEvent.dragStart(rows[from] as HTMLElement, { dataTransfer });
+      fireEvent(target, withKeys(createEvent.dragOver(target, { dataTransfer })));
+      fireEvent(target, withKeys(createEvent.drop(target, { dataTransfer })));
+      fireEvent.dragEnd(rows[from] as HTMLElement, { dataTransfer });
+    };
+
+    // happy-dom lays nothing out: each drop lands before its row, counted with the original there.
+    drag(1, 3, { ctrlKey: true });
+    drag(3, 1, { metaKey: true, shiftKey: true });
+    // Onto itself, a copy goes next to it; another Section's sibling still isn't a target.
+    drag(2, 2, { ctrlKey: true });
+    drag(1, 4, { ctrlKey: true });
+
+    expect(actions.copy.mock.calls).toEqual([
+      ["a", 2, false],
+      ["c", 0, true],
+      ["b", 1, false],
+    ]);
+    expect(actions.move).not.toHaveBeenCalled();
+  });
+
+  it("doesn't drag a selected layer while others are selected too, but drags one that isn't (#262)", () => {
+    setUp("a", true, false, ["b"]);
+    const draggable = screen
+      .getAllByRole("treeitem")
+      .map((row) => [row.getAttribute("data-layer"), row.getAttribute("draggable")]);
+
+    expect(draggable).toEqual([
+      ["s1", "true"],
+      ["a", "false"],
+      ["b", "false"],
+      ["c", "true"],
+      ["s2", "true"],
+    ]);
+  });
+
   it("works out where a dropped layer lands", () => {
     expect(dropIndex(0, 2, true)).toBe(2);
     expect(dropIndex(0, 2, false)).toBe(1);
@@ -209,6 +349,8 @@ describe("LayersPanel (F-ED-12)", () => {
         selectedId={null}
         actions={{
           select: vi.fn(),
+          toggle: vi.fn(),
+          selectMany: vi.fn(),
           rename: vi.fn(),
           setHidden: vi.fn(),
           move: vi.fn(),
@@ -260,6 +402,8 @@ describe("LayersPanel (F-ED-12)", () => {
         layers: LAYERS,
         actions: {
           select: vi.fn(),
+          toggle: vi.fn(),
+          selectMany: vi.fn(),
           rename: vi.fn(),
           setHidden: vi.fn(),
           move: vi.fn(),
@@ -378,6 +522,8 @@ describe("LayersPanel (F-ED-12)", () => {
           selectedId={null}
           actions={{
             select: vi.fn(),
+            toggle: vi.fn(),
+            selectMany: vi.fn(),
             rename: vi.fn(),
             setHidden: vi.fn(),
             move: vi.fn(),

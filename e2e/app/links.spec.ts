@@ -60,11 +60,8 @@ const canvas = () => page.frameLocator(".editor__canvas iframe");
 const right = () => page.getByRole("region", { name: "Right panels" });
 
 test("links a button to a section, and the exported link follows a renamed page", async () => {
-  // Select the Hero in Layers (Advanced mode): no canvas geometry, whatever the zoom.
-  await page.getByRole("menuitem", { name: "View" }).click();
-  await page.getByRole("menuitem", { name: "Use Advanced Mode" }).click();
+  // Select the Hero in Layers: no canvas geometry, whatever the zoom.
   const left = page.getByRole("region", { name: "Left panels" });
-  await left.getByRole("tab", { name: "Layers" }).click();
   await left.getByRole("treeitem", { name: /^Hero/ }).click();
   await expect(right().getByRole("heading", { name: "Hero", exact: true })).toBeVisible();
 

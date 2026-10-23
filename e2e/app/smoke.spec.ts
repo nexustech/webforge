@@ -91,7 +91,7 @@ test.describe("desktop shell", () => {
     expect(globals).toEqual({
       require: "undefined",
       process: "undefined",
-      webforgeKeys: ["app", "canvas", "clipboard", "media", "prefs", "project", "site"],
+      webforgeKeys: ["app", "canvas", "clipboard", "fonts", "media", "prefs", "project", "site"],
     });
   });
 
@@ -166,6 +166,8 @@ test.describe("desktop shell", () => {
     const path = join(siteDir, "Rosa's Bakery.wforge");
     await stubFileDialogs(app, path);
     const project = {
+      // A new one for each opening of the site (R6).
+      sessionId: expect.stringMatching(/^[0-9a-f-]{36}$/),
       name: "Rosa's Bakery",
       fileName: "Rosa's Bakery.wforge",
       formatVersion: 1,
@@ -218,7 +220,7 @@ test.describe("desktop shell", () => {
         const { project } = (window as unknown as RendererWindow).webforge;
         await project.create();
         const empty = await project.readSite();
-        const saved = await project.commit(changes);
+        const saved = await project.commit((await project.getCurrent())?.sessionId ?? "", changes);
         await project.open();
         return { empty, saved, read: await project.readSite() };
       },
