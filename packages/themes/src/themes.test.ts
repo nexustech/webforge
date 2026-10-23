@@ -191,19 +191,20 @@ describe("contrastIssues (2.1)", () => {
     expect(issues[0]?.ratio).toBe(Math.floor(contrastRatio(grey, WHITE) * 100) / 100);
   });
 
-  it("checks brand colours on the page as large text", () => {
+  it("checks brand colours as large text on every surface", () => {
     const theme = themeTokensSchema.parse({
       ...DEFAULT_THEME,
       colors: { ...DEFAULT_THEME.colors, primary: { l: 0.95, c: 0.02, h: 90 } },
     });
 
-    expect(contrastIssues(theme)).toContainEqual(
-      expect.objectContaining({
-        background: "base-100",
-        foreground: "primary",
-        required: AA_LARGE,
-      }),
+    const brand = contrastIssues(theme).filter(
+      (issue) => issue.palette === "colors" && issue.foreground === "primary",
     );
+    expect(brand.map((issue) => [issue.background, issue.required])).toEqual([
+      ["base-100", AA_LARGE],
+      ["base-200", AA_LARGE],
+      ["base-300", AA_LARGE],
+    ]);
   });
 });
 

@@ -32,6 +32,7 @@ import type {
   CanvasEngine,
   CanvasSize,
   EditorMode,
+  ElementRequest,
   EngineEdit,
   FieldDrag,
   HistoryCommandHandler,
@@ -43,10 +44,16 @@ import type {
 } from "../canvas-engine.js";
 import { installHistoryKeys } from "../history-keys.js";
 import { preserveCaret, refocusRichText } from "./caret.js";
-import { applyChromeStyles, createSelectionOutline, QuickActionBar } from "./chrome.js";
+import {
+  applyChromeStyles,
+  createSelectionOutline,
+  type ElementActions,
+  QuickActionBar,
+} from "./chrome.js";
 import { toPuckConfig } from "./config.js";
 import { installContextMenu } from "./context-menu.js";
 import { deferredCommands } from "./deferred-commands.js";
+import { hidePuckDeleteKeys } from "./delete-keys.js";
 import { puckDictionary } from "./dictionary.js";
 import { createDragSources } from "./drag-sources.js";
 import { editFromAction, selectedNodeId, toPageDoc } from "./edit-from-action.js";
@@ -67,6 +74,7 @@ import {
 import { applySiteStyles, type SiteStyles } from "./site-styles.js";
 import { boxHandleFields } from "./spacing-handles.js";
 import { focusedRichTextId, richTextArrived, staleRichText } from "./stale-rich-text.js";
+import { startTextEditing } from "./text-editing.js";
 import { allNodes, findNode, nodeAt } from "./tree.js";
 import { applyViewOptions } from "./view-options.js";
 
@@ -214,6 +222,8 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   let frameDocument: Document | null = null;
   /** Stops keeping the canvas's elements enabled; set in Content mode (see `keepElementsEnabled`). */
   let stopKeepingEnabled: (() => void) | null = null;
+  /** Stops hiding Delete and Backspace from Puck in the editor window (see `delete-keys.ts`). */
+  let stopHidingHostKeys: (() => void) | null = null;
   const followMode = () => {
     stopKeepingEnabled?.();
     stopKeepingEnabled =
@@ -264,6 +274,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   const edits = emitter<EngineEdit>();
   const addRequests = emitter<InsertPoint>();
   const fieldDrags = emitter<FieldDrag>();
+  const elementRequests = emitter<ElementRequest>();
   const contextMenus = emitter<CanvasContextMenu>();
   const dragSources = createDragSources(
     (componentType) => library?.components[componentType]?.label ?? componentType,
@@ -283,7 +294,12 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   const commands = deferredCommands(
     runHandlers,
     () => getPuck !== null && flushRichText(getPuck()),
-    () => richTextArrived(frameDocument, composePage(page, layout, shared)),
+    () =>
+      richTextArrived(
+        frameDocument,
+        composePage(page, layout, shared),
+        getPuck?.().appState.ui.field.focus,
+      ),
     RICH_TEXT_FLUSH_TIMEOUT_MS,
   );
   const runCommand = commands.run;
@@ -603,9 +619,43 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     );
   }
 
+  /** The fields of component `type`, from the library. */
+  const fieldsOf = (type: string) => Object.values(library?.components[type]?.fields ?? {});
+  /** *Edit* and *Hide* on the selected element's bar (F-ED-25). */
+  const elementActions: ElementActions = {
+    canEdit: (type) =>
+      fieldsOf(type).some(
+        (field) =>
+          field.kind === "media" ||
+          ((field.kind === "text" || field.kind === "richtext") && field.inline === true),
+      ),
+    edit: (id, type) => {
+      const doc = frameDocument ?? host?.ownerDocument;
+      if (doc !== undefined && startTextEditing(doc, id, false)) return;
+      if (fieldsOf(type).some((field) => field.kind === "media")) {
+        elementRequests.emit({ kind: "pickImage", nodeId: id });
+      }
+    },
+    canHide: (id) => {
+      if (findNode(page, id) !== undefined) return true;
+      // A linked copy is one of the page's own, shown by its section's id.
+      const shown = findNode(composePage(page, layout, shared), id);
+      return (
+        shown !== undefined && copyShownBy(shown, copiesOn(page.content), shared) !== undefined
+      );
+    },
+    toggleHidden: (id) => elementRequests.emit({ kind: "toggleHidden", nodeId: id }),
+  };
+
   /** The quick actions, locked on the shared Header or Footer itself (F-ED-7). */
   function SharedAwareActionBar(props: ComponentProps<typeof QuickActionBar>) {
-    return <QuickActionBar {...props} isLocked={(id) => isSharedRegion(layout, id)} />;
+    return (
+      <QuickActionBar
+        {...props}
+        isLocked={(id) => isSharedRegion(layout, id)}
+        elementActions={elementActions}
+      />
+    );
   }
 
   function CanvasFrame({ children, document }: { children: ReactNode; document?: Document }) {
@@ -623,12 +673,14 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       }
       frameWindows.emit(frameWindow);
       const removeKeys = installHistoryKeys(frameWindow, runCommand);
+      const showDeleteKeys = hidePuckDeleteKeys(frameWindow);
       // The element menu, but not in Content mode, where right-clicks get the browser's own.
       const removeMenu = installContextMenu(frameWindow.document, contextMenus.emit, {
         enabled: () => mode === "design",
         selected: () => selection,
       });
       return () => {
+        showDeleteKeys();
         removeMenu();
         stopKeepingEnabled?.();
         stopKeepingEnabled = null;
@@ -756,6 +808,8 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       );
       slotsOf = (type) => slots.get(type);
       config = configFor(opts.library);
+      const hostWindow = el.ownerDocument.defaultView;
+      stopHidingHostKeys = hostWindow === null ? null : hidePuckDeleteKeys(hostWindow);
       root = createRoot(el);
       render();
       // Puck starts with the current page.
@@ -884,13 +938,25 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
 
     perform(action) {
       const puck = getPuck;
-      if (puck === null || inAction || !performOnSelected(puck(), action)) {
+      const doc = frameDocument ?? host?.ownerDocument;
+      if (puck === null || inAction) {
         return false;
       }
-      if (action === "selectPrevious" || action === "selectNext") {
-        // Walking through a long page with the arrows keeps the selection in view.
+      if (action === "editText" || action === "clearText") {
+        // The text of the element selected now, on the canvas (F-ED-27).
         const id = puck().selectedItem?.props.id;
-        const doc = frameDocument ?? host?.ownerDocument;
+        return (
+          typeof id === "string" &&
+          doc !== undefined &&
+          startTextEditing(doc, id, action === "clearText")
+        );
+      }
+      if (!performOnSelected(puck(), action)) {
+        return false;
+      }
+      if (action.startsWith("select")) {
+        // Walking through a long page from the keyboard keeps the selection in view.
+        const id = puck().selectedItem?.props.id;
         const element =
           id === undefined ? null : doc?.querySelector(`[data-puck-component="${id}"]`);
         element?.scrollIntoView?.({ block: "nearest" });
@@ -899,6 +965,8 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     },
 
     onAddRequest: addRequests.add,
+
+    onElementRequest: elementRequests.add,
 
     onFieldDrag: fieldDrags.add,
 
@@ -947,6 +1015,8 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       root = null;
       host = null;
       getPuck = null;
+      stopHidingHostKeys?.();
+      stopHidingHostKeys = null;
       frameDocument = null;
       // Unmount after the current render: the app destroys the engine from an effect cleanup.
       queueMicrotask(() => {

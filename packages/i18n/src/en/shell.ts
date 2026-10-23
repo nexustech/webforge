@@ -2,12 +2,20 @@
 export const shell = {
   "editor.undo": "Undo",
   "editor.redo": "Redo",
+  // The arrow beside Undo (UX-16).
+  "shell.undoSteps": "Undo several steps",
+  "shell.undoSteps.title": "Undo back to…",
+  "shell.undoSteps.hint": "Undoes the step you choose and every later one.",
+  "shell.undoSteps.one": "Undoes this step",
+  "shell.undoSteps.many": "Undoes {count} steps",
   "ui.close": "Close",
   // The picker dialog for images, icons and fonts (UX-15).
   "ui.picker.search": "Search",
   "ui.picker.categories": "Categories",
   "ui.picker.all": "All",
   "ui.picker.noMatch": "Nothing matches '{query}'.",
+  "ui.picker.matchOne": "1 match",
+  "ui.picker.matchMany": "{count} matches",
   "ui.picker.choose": "Choose",
   "ui.picker.cancel": "Cancel",
 

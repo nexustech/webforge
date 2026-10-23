@@ -8,6 +8,17 @@ export const canvas = {
   "canvas.delete": "Delete",
   "canvas.selectPrevious": "Select previous element",
   "canvas.selectNext": "Select next element",
+  // Keyboard navigation and the selection chip (1.30, F-ED-25, F-ED-27).
+  "canvas.selectParent": "Select parent",
+  "canvas.selectChild": "Select first element inside",
+  "canvas.selectPreviousSibling": "Select previous sibling",
+  "canvas.selectNextSibling": "Select next sibling",
+  "canvas.editText": "Edit text",
+  "canvas.clearText": "Clear text and edit",
+  "canvas.edit": "Edit",
+  "canvas.hide": "Hide",
+  "canvas.show": "Show",
+  "canvas.toggleHidden": "Hide or show",
   // The floating + between sections (1.12).
   "canvas.addSection": "Add a section here",
   "canvas.spacing.handle": "Drag to change the {field} ({side})",

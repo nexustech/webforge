@@ -104,7 +104,7 @@ Bootstrap Studio's keys, plus a few from Elements, so users of either feel at ho
 | Preview / Export / Publish | **Mod + I** / Mod + E / **Mod + U** | BS | Mod + E only |
 | Undo / Redo | Mod + Z / Mod + Shift + Z (Ctrl + Y on Windows) | All | ✅ |
 | Copy / Cut / Paste / Paste as shared copy | Mod + C / X / V / **Mod + Shift + V** | BS | Copy/cut/paste ✅ |
-| Duplicate / Delete / Rename | Mod + D / Delete / F2 | BS | ✅ |
+| Duplicate / Delete / Rename | Mod + D / Delete (also Mod + Backspace, and Backspace on an element with no text of its own) / F2 | BS | ✅ |
 | Hide element | **Mod + /** | BS | — |
 | Select parent / child | **Mod + ↑ / Mod + ↓** | BS | ↑/↓ select previous/next |
 | Select previous / next sibling | **Mod + ← / Mod + →** | BS | — |

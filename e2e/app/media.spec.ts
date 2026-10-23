@@ -152,7 +152,8 @@ test("adds a photo in the Media panel, describes and crops it, and keeps it in t
   // Delete offers Undo; the image comes back with its alt text.
   await panel.getByRole("button", { name: "Delete" }).click();
   await expect(item).toHaveCount(0);
-  await page.getByRole("button", { name: "Undo" }).last().click();
+  // The toast's Undo: the title bar has an Undo, and an arrow for several steps, too.
+  await page.locator("[data-sonner-toast]").getByRole("button", { name: "Undo" }).click();
   await expect(item).toBeVisible();
   await item.click();
   await expect(alt).toHaveValue("Our shop front on a sunny morning");
@@ -382,7 +383,8 @@ test("warns before deleting a placed image, shows a placeholder, undoes it, and 
   await expect(shown).toHaveAttribute("src", /^data:image\/svg\+xml,/);
 
   // One Undo brings the image back for the Hero.
-  await page.getByRole("button", { name: "Undo" }).last().click();
+  // The toast's Undo: the title bar has an Undo, and an arrow for several steps, too.
+  await page.locator("[data-sonner-toast]").getByRole("button", { name: "Undo" }).click();
   await expect(shown).toHaveAttribute("alt", "Our shop front");
   await expect(panel.getByRole("button", { name: "Shop front.jpg" })).toBeVisible();
 

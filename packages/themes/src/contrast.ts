@@ -7,7 +7,7 @@ export const AA_LARGE = 3;
 
 /**
  * The colour pairs the components put together (2.1): each role's text on it, text on every
- * surface, and the brand colours on the page as large text (headings in the theme's colour).
+ * surface, and the brand colours as large text (headings in the theme's colour) on every surface.
  */
 const PAIRS: readonly (readonly [ColorRole, ColorRole, number])[] = [
   ["base-100", "base-content", AA_TEXT],
@@ -24,6 +24,12 @@ const PAIRS: readonly (readonly [ColorRole, ColorRole, number])[] = [
   ["base-100", "primary", AA_LARGE],
   ["base-100", "secondary", AA_LARGE],
   ["base-100", "accent", AA_LARGE],
+  ["base-200", "primary", AA_LARGE],
+  ["base-200", "secondary", AA_LARGE],
+  ["base-200", "accent", AA_LARGE],
+  ["base-300", "primary", AA_LARGE],
+  ["base-300", "secondary", AA_LARGE],
+  ["base-300", "accent", AA_LARGE],
 ];
 
 /** A pair of a theme's colours below WCAG AA. */
