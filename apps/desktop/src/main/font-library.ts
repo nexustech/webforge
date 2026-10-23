@@ -421,7 +421,7 @@ export function createFontLibrary({
         return { status: "downloaded", font: installed(bundled, "bundled") };
       const known = (await loaded()).get(id);
       // Downloaded before, with every file still as it was: nothing to fetch.
-      if (known !== undefined && known.files.every((file) => reader.read(file) !== undefined)) {
+      if (known?.files.every((file) => reader.read(file) !== undefined)) {
         return { status: "downloaded", font: installed(known, "downloaded") };
       }
       const running = downloading.get(id);
