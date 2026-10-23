@@ -1,5 +1,7 @@
+import babel from "@rolldown/plugin-babel";
 import type { StorybookConfig } from "@storybook/react-vite";
 import tailwindcss from "@tailwindcss/vite";
+import { reactCompilerPreset } from "@vitejs/plugin-react";
 
 /**
  * Storybook for the editor UI: every component in dark and light (theme toolbar), with the a11y
@@ -17,7 +19,16 @@ const config: StorybookConfig = {
   },
   viteFinal: (viteConfig) => ({
     ...viteConfig,
-    plugins: [...(viteConfig.plugins ?? []), tailwindcss()],
+    // Compiled as the app compiles them (ADR 0010), so the stories show what the app draws: the
+    // same files as apps/desktop/electron.vite.config.ts, not node_modules or the site components.
+    plugins: [
+      ...(viteConfig.plugins ?? []),
+      babel({
+        presets: [reactCompilerPreset()],
+        exclude: [/[\\/]node_modules[\\/]/, /[\\/]packages[\\/]site-components[\\/]/],
+      }),
+      tailwindcss(),
+    ],
   }),
 };
 

@@ -20,10 +20,12 @@
     "better-sqlite3": "catalog:"
   },
   "devDependencies": {
+    "@babel/core": "catalog:",
     "@jsquash/jpeg": "catalog:",
     "@jsquash/png": "catalog:",
     "@jsquash/resize": "catalog:",
     "@jsquash/webp": "catalog:",
+    "@rolldown/plugin-babel": "catalog:",
     "@storybook/react-vite": "10.6.2",
     "@tailwindcss/vite": "4.3.3",
     "@testing-library/react": "16.3.3",
@@ -43,6 +45,7 @@
     "@webforge/storage": "workspace:*",
     "@webforge/test-utils": "workspace:*",
     "@webforge/themes": "workspace:*",
+    "babel-plugin-react-compiler": "catalog:",
     "daisyui": "catalog:",
     "electron": "44.9.0",
     "electron-builder": "26.15.3",
