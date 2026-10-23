@@ -174,6 +174,27 @@ test.describe("keyboard and floating add", () => {
     await expect(canvas().locator("h1")).toHaveCount(0);
   });
 
+  test("never deletes the element whose rich text is being edited (1.30)", async () => {
+    const text = canvas().locator(".site-text");
+    const editor = text.locator(".ProseMirror");
+    await canvas().getByText(STARTER_TEXT).click();
+    await editor.click();
+    await expect(editor).toBeFocused();
+    await page.keyboard.press("End");
+
+    // Backspace deletes a letter, Mod+Backspace a word (on macOS, to the line's start), Delete
+    // nothing at the end: all of them the text's.
+    await page.keyboard.press("Backspace");
+    await expect(text).toHaveText("Tell visitors what you do and why they will love it");
+    await page.keyboard.press("ControlOrMeta+Backspace");
+    await page.keyboard.press("Delete");
+
+    await expect(text).toHaveCount(1);
+    await expect(text).not.toHaveText(/love it$/);
+    await expect(steps().first()).toHaveText("Edited Text text");
+    await expect(steps()).not.toContainText(["Deleted Text"]);
+  });
+
   test("Mod+/ and the chip hide and show the selected element; Edit edits its text (1.30)", async () => {
     await selectHeading();
 

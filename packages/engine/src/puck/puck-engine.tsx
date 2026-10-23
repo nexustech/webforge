@@ -294,7 +294,12 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   const commands = deferredCommands(
     runHandlers,
     () => getPuck !== null && flushRichText(getPuck()),
-    () => richTextArrived(frameDocument, composePage(page, layout, shared)),
+    () =>
+      richTextArrived(
+        frameDocument,
+        composePage(page, layout, shared),
+        getPuck?.().appState.ui.field.focus,
+      ),
     RICH_TEXT_FLUSH_TIMEOUT_MS,
   );
   const runCommand = commands.run;
