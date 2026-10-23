@@ -20,8 +20,8 @@
   - selection chip with move, duplicate and delete;
   - shared-region banner, Site Settings and link dialog.
 - **Limits:**
-  - No screenshots of either app were taken: computer use was off on the linked laptop.
-  - Visual details not described in the docs (exact hover outlines, drop indicators, toolbar icons) should be checked against screenshots before implementation.
+  - No screenshots of either app were taken when this note was written: computer use was off on the linked laptop. The screenshot pass of Bootstrap Studio 9.0.1 followed on 2026-10-23 ([bootstrap-studio/07](../bootstrap-studio/07-editor-screenshot-pass.md)); Elements is still unseen.
+  - Visual details not described in the docs (exact hover outlines, drop indicators, toolbar icons) are now in that pass.
   - Docs were read through summaries, so some control names may be paraphrased.
 - **IP rule (unchanged from UI1):**
   - We copy **interaction patterns, layout and conventions**, including keyboard shortcuts, which are functional.
@@ -128,7 +128,7 @@ Decided by the product owner on 2026-10-22:
 | **UI3** | ✅ **Bootstrap Studio's keyboard shortcuts are the standard** (§5), including **Mod + P** for the command palette, with Mod + K kept as an alias outside text editing |
 | **UI4** | ✅ **v1.1:** notes on elements (UX-17), movable panels and saved layouts (UX-22), hide-while-editing / don't-publish modes (UX-23), and the AI assistant panel design (UX-28) |
 
-Still open: a screenshot pass of Bootstrap Studio once computer use is switched on, to check visual details (hover outlines, drop indicators, toolbar icons) before items 1.30–1.33 start. UX-27 (hover-state editor) stays not proposed.
+~~Still open: a screenshot pass of Bootstrap Studio once computer use is switched on, to check visual details (hover outlines, drop indicators, toolbar icons) before items 1.30–1.33 start.~~ **Done 2026-10-23:** [bootstrap-studio/07](../bootstrap-studio/07-editor-screenshot-pass.md) checks the merged items against the running app (all match) and proposes SP-1…SP-13, small additions to 1.35, 1.36, 2.17, 2.9 and 3.6. UX-27 (hover-state editor) stays not proposed.
 
 ## Sources
 - **Bootstrap Studio docs:**
