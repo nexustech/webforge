@@ -30,7 +30,8 @@ function errorKind(error: unknown): string {
 /**
  * Registers the main-process implementation of one IPC contract entry.
  * Requests from frames other than the app's own page are rejected, and both the request arguments
- * and the response are validated against the contract's zod schemas. When the implementation
+ * and the response are validated against the contract's zod schemas; a refused request rejects
+ * with {@link IPC_FAILED} too, its reason only logged. When the implementation
  * throws, or answers outside the contract, only the error's kind is logged, and the renderer gets
  * the contract's failed answer where it has one (`{ status: "failed", reason: "unknown" }`), else
  * a rejection with {@link IPC_FAILED}.
@@ -43,12 +44,19 @@ export function registerIpcHandler<N extends IpcName>(
 ): void {
   const entry = ipcContract[name];
   ipc.handle(entry.channel, async (event: IpcMainInvokeEvent, ...rawArgs: unknown[]) => {
+    // A call from another frame, or one outside the contract, is refused with the same fixed
+    // message as any failure: the reason is logged here, never passed on.
     const senderUrl = event.senderFrame?.url ?? "";
     if (!isTrustedSender(senderUrl)) {
-      throw new Error(`Rejected IPC call "${entry.channel}" from an untrusted frame`);
+      console.error(`Webforge refused IPC call "${entry.channel}" (untrusted frame)`);
+      throw new Error(IPC_FAILED);
     }
-    // The renderer's own request: its validation errors name only what the renderer sent.
-    const args = entry.request.parse(rawArgs) as IpcRequest<N>;
+    const request = entry.request.safeParse(rawArgs);
+    if (!request.success) {
+      console.error(`Webforge refused IPC call "${entry.channel}" (invalid request)`);
+      throw new Error(IPC_FAILED);
+    }
+    const args = request.data as IpcRequest<N>;
     try {
       return entry.response.parse(await impl(...args));
     } catch (error) {

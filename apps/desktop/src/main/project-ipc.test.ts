@@ -226,7 +226,7 @@ describe("registerProjectHandlers", () => {
     const chooseNewProjectPath = vi.fn(async () => "/x.wforge");
     const { invoke } = setUp({ chooseNewProjectPath });
 
-    await expect(invoke("project:create", "https://example.com/")).rejects.toThrow(/untrusted/);
+    await expect(invoke("project:create", "https://example.com/")).rejects.toThrow("ipc-failed");
     expect(chooseNewProjectPath).not.toHaveBeenCalled();
   });
 

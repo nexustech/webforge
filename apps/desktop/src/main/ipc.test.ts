@@ -39,7 +39,10 @@ describe("registerIpcHandler", () => {
     const impl = vi.fn(() => appInfo);
     registerIpcHandler(ipc, "getAppInfo", isTrusted, impl);
 
-    await expect(invoke("app:get-info", "https://example.com/")).rejects.toThrow(/untrusted frame/);
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    await expect(invoke("app:get-info", "https://example.com/")).rejects.toThrow(IPC_FAILED);
+    expect(log).toHaveBeenCalledWith('Webforge refused IPC call "app:get-info" (untrusted frame)');
+    log.mockRestore();
     expect(impl).not.toHaveBeenCalled();
   });
 
@@ -47,7 +50,15 @@ describe("registerIpcHandler", () => {
     const { ipc, invoke } = fakeIpcMain();
     registerIpcHandler(ipc, "getAppInfo", isTrusted, () => appInfo);
 
-    await expect(invoke("app:get-info", "http://localhost:5173/", "unexpected")).rejects.toThrow();
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    // Zod's message would describe what was sent: only the fixed message crosses (R4).
+    const failure = await invoke("app:get-info", "http://localhost:5173/", "/home/rosa/x").catch(
+      (error: unknown) => error,
+    );
+    expect((failure as Error).message).toBe(IPC_FAILED);
+    expect(log).toHaveBeenCalledWith('Webforge refused IPC call "app:get-info" (invalid request)');
+    expect(JSON.stringify(log.mock.calls)).not.toContain("/home/rosa");
+    log.mockRestore();
   });
 
   it("rejects responses that do not match the contract", async () => {
@@ -97,7 +108,9 @@ describe("registerIpcHandler's failures (R4, #237)", () => {
     registerIpcHandler(ipc, "readClipboard", isTrusted, fail);
     registerIpcHandler(ipc, "compileCanvasCss", isTrusted, fail);
 
-    await expect(invoke("clipboard:read", "http://localhost:5173/")).resolves.toEqual({
+    await expect(
+      invoke("clipboard:read", "http://localhost:5173/", "9b2f6c1e-4d3a-4f7b-8e21-5c6d7a8b9c0d"),
+    ).resolves.toEqual({
       status: "failed",
       reason: "unknown",
     });

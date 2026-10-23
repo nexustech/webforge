@@ -461,11 +461,6 @@ async function start(): Promise<void> {
     createElementClipboard(
       systemClipboard({ clipboard, ClipboardItem }),
       join(app.getPath("userData"), "clipboard"),
-      projectSession,
-      {
-        files: (paths) => importFilesAt(projectSession, paths),
-        image: (file) => importMediaFiles(projectSession, [file]),
-      },
     ),
     projectSession,
   );

@@ -36,7 +36,20 @@ const MEDIA_MIME_TYPES: ReadonlySet<string> = new Set([...IMAGE_MIME_TYPES, ...F
 /** Outcome of storing an imported file in the open site. */
 export type StoreAssetResult =
   | { readonly status: "stored"; readonly hash: string }
-  | { readonly status: "failed"; readonly reason: "no-site" | "read-only" | "unknown" };
+  | {
+      readonly status: "failed";
+      readonly reason: "no-site" | "stale-session" | "read-only" | "unknown";
+    };
+
+/**
+ * The open site as one renderer's call may change it (R6): {@link ProjectSession.forSession}. Each
+ * method checks the session again, so a call that waited (for a dialog, or the clipboard) while a
+ * hand-off replaced the site changes nothing in the new one.
+ */
+export type SessionSite = Pick<
+  ProjectSession,
+  "current" | "readMedia" | "storeAsset" | "storeCopiedMedia"
+>;
 
 /** File extension of a Webforge site (P1). */
 export const PROJECT_EXTENSION = ".wforge";
@@ -141,6 +154,29 @@ export class ProjectSession {
   staleReason(sessionId: string): "no-site" | "stale-session" | undefined {
     if (this.#store === undefined) return "no-site";
     return sessionId === this.#sessionId ? undefined : "stale-session";
+  }
+
+  /**
+   * The open site for a call from a renderer loaded for opening `sessionId` (R6): it reads no Media
+   * bytes and stores nothing once another site has opened, however long the call waited before it
+   * did, and says why (`stale-session`).
+   */
+  forSession(sessionId: string): SessionSite {
+    const stale = () => this.staleReason(sessionId);
+    return {
+      current: () => this.current(),
+      readMedia: (hash) => (stale() === undefined ? this.readMedia(hash) : undefined),
+      storeAsset: (asset) => {
+        const reason = stale();
+        return reason === undefined ? this.storeAsset(asset) : { status: "failed", reason };
+      },
+      storeCopiedMedia: (item, read) => {
+        const reason = stale();
+        return reason === undefined
+          ? this.storeCopiedMedia(item, read)
+          : { status: "failed", reason };
+      },
+    };
   }
 
   /**

@@ -69,24 +69,28 @@ async function readChosenFile(path: string): Promise<ImportFile | undefined> {
 export function registerMediaHandlers(
   ipc: Pick<IpcMain, "handle">,
   isTrustedSender: (senderUrl: string) => boolean,
-  session: Pick<ProjectSession, "storeAsset" | "current" | "staleReason">,
+  session: Pick<ProjectSession, "staleReason" | "forSession">,
   dialogs: MediaDialogs,
 ): void {
-  // Into the site the renderer was loaded for only (R6).
+  // Into the site the renderer was loaded for only (R6), checked again as each file is stored.
   registerIpcHandler(ipc, "importMedia", isTrustedSender, (sessionId, files) => {
     const reason = session.staleReason(sessionId);
-    return reason === undefined ? importMediaFiles(session, files) : { status: "failed", reason };
+    return reason === undefined
+      ? importMediaFiles(session.forSession(sessionId), files)
+      : { status: "failed", reason };
   });
-  registerIpcHandler(ipc, "chooseMedia", isTrustedSender, async () => {
-    // No dialog without a site to import into.
-    if (session.current() === null) {
-      return { status: "failed", reason: "no-site" };
+  registerIpcHandler(ipc, "chooseMedia", isTrustedSender, async (sessionId) => {
+    // No dialog without the site to import into.
+    const reason = session.staleReason(sessionId);
+    if (reason !== undefined) {
+      return { status: "failed", reason };
     }
     const paths = await dialogs.chooseMediaFiles();
     if (paths === undefined || paths.length === 0) {
       return { status: "canceled" };
     }
-    return importFilesAt(session, paths);
+    // The dialog may have stayed open while a hand-off opened another site: stored only if not.
+    return importFilesAt(session.forSession(sessionId), paths);
   });
 }
 

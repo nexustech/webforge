@@ -152,11 +152,11 @@ describe("createWebforgeApi site export", () => {
     const files = [{ fileName: "shop.jpg", data: new Uint8Array([0xff, 0xd8]) }];
 
     await expect(api.media.import(SESSION, files)).resolves.toEqual(result);
-    await expect(api.media.choose()).resolves.toEqual(result);
+    await expect(api.media.choose(SESSION)).resolves.toEqual(result);
     expect(invoke).toHaveBeenNthCalledWith(1, "media:import", SESSION, files);
-    expect(invoke).toHaveBeenNthCalledWith(2, "media:choose");
+    expect(invoke).toHaveBeenNthCalledWith(2, "media:choose", SESSION);
     await expect(
-      apiWith(async () => ({ ...result, items: [{ ...item, hash: "x" }] })).media.choose(),
+      apiWith(async () => ({ ...result, items: [{ ...item, hash: "x" }] })).media.choose(SESSION),
     ).rejects.toThrow();
   });
 });

@@ -89,10 +89,10 @@ export const mediaChannels = {
     ]),
     response: importResultSchema,
   },
-  /** Asks for images or PDFs with a native dialog, then imports them. */
+  /** Asks for images or PDFs with a native dialog, then imports them, as `importMedia` does. */
   chooseMedia: {
     channel: "media:choose",
-    request: z.tuple([]),
+    request: z.tuple([sessionIdSchema]),
     response: importResultSchema,
   },
 } as const;
@@ -101,6 +101,6 @@ export const mediaChannels = {
 export interface MediaApi {
   /** Imports dropped files into the open site's file, if it is still the opening `sessionId` names. */
   import(sessionId: string, files: readonly DroppedFile[]): Promise<MediaImportResult>;
-  /** Lets the user pick files to import. */
-  choose(): Promise<MediaImportResult>;
+  /** Lets the user pick files to import into the open site, if it is still the opening `sessionId` names. */
+  choose(sessionId: string): Promise<MediaImportResult>;
 }

@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { ImageMeta, MediaId, MediaMeta, NodeDoc } from "@webforge/model";
+import type { CopiedElements, ImageMeta, MediaId, MediaMeta, NodeDoc } from "@webforge/model";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   type ClipboardContent,
@@ -56,9 +56,14 @@ const importMedia: ClipboardMediaImport = {
   },
 };
 
-/** The element clipboard with the test's system clipboard and import. */
-const elementClipboard = (site: ClipboardSite, clipboard = system, media = importMedia) =>
-  createElementClipboard(clipboard, dir, site, media);
+/** The element clipboard with the test's system clipboard and import, for `site`. */
+const elementClipboard = (site: ClipboardSite, clipboard = system, media = importMedia) => {
+  const made = createElementClipboard(clipboard, dir);
+  return {
+    write: (elements: CopiedElements) => made.write(site, elements),
+    read: () => made.read(site, media),
+  };
+};
 
 /** An open site that has `photo`'s bytes, and records what a paste stores. */
 function fakeSite(has = true) {
