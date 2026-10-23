@@ -8,6 +8,7 @@ export const history = {
   // For components with several text fields: "Edited Hero button text".
   "history.editedField": "Edited {item} {field}",
   "history.changed": "Changed {item} {field}",
+  "history.pastedStyle": "Pasted style on {item}",
   // A value set for one device only (F-ED-4): "Changed Section padding on Mobile".
   "history.changedOn": "Changed {item} {field} on {device}",
   // The device's own value dropped, so it uses Desktop's again.

@@ -27,6 +27,7 @@ import {
   withAdvancedChange,
 } from "./advanced-fields.js";
 import type { EditorSession } from "./editor-session.js";
+import { fieldGroupOf } from "./field-group.js";
 import { fieldTarget } from "./field-target.js";
 import { changedLabel, labelFor } from "./labels.js";
 import {
@@ -70,14 +71,6 @@ function rendererKind(field: FieldDef): string | undefined {
     case "slot":
       return undefined;
   }
-}
-
-/** The tab a field goes on: its own `group`, else Content for text and images, else Style. */
-function groupOf(field: FieldDef): "content" | "style" {
-  return (
-    field.group ??
-    (field.kind === "text" || field.kind === "media" || field.kind === "link" ? "content" : "style")
-  );
 }
 
 /** The choices or steps a field offers, for its renderer. */
@@ -247,7 +240,7 @@ export function EditPanelHost({
         name,
         kind,
         label: field.label,
-        group: groupOf(field),
+        group: fieldGroupOf(field),
         value: responsive ? valueAt(stored, breakpoint) : stored,
         ...(responsive && isOverridden(stored, breakpoint) ? { overridden: true } : {}),
         ...choicesOf(field),

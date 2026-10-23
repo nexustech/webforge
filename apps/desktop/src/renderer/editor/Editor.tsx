@@ -22,6 +22,7 @@ import {
   preloadClipboard,
   registerClipboardCommands,
 } from "../clipboard/register-clipboard-commands.js";
+import { registerStyleCommands } from "../clipboard/style-clipboard.js";
 import { CanvasElementMenu } from "../element-menu/CanvasElementMenu.js";
 import { registerLinkField } from "../links/LinkField.js";
 import { RichTextLinkHost } from "../links/RichTextLinkHost.js";
@@ -147,6 +148,7 @@ export function Editor({
   });
   const connectionRef = useRef<EngineConnection | null>(null);
   const clipboardCommandsRef = useRef<ReturnType<typeof registerClipboardCommands> | null>(null);
+  const styleCommandsRef = useRef<ReturnType<typeof registerStyleCommands> | null>(null);
   const sharedCommandsRef = useRef<ReturnType<typeof registerSharedSectionCommands> | null>(null);
   const canvasCommandsRef = useRef<ReturnType<typeof registerCanvasCommands> | null>(null);
   const addPanelRef = useRef<AddPanelRegistration | null>(null);
@@ -244,6 +246,10 @@ export function Editor({
     );
     clipboardCommands.setLayoutLocked(modeRef.current !== "design");
     clipboardCommandsRef.current = clipboardCommands;
+    // Copy Style and Paste Style (1.37), after them.
+    const styleCommands = registerStyleCommands(registry, session, connection.flush);
+    styleCommands.setLayoutLocked(modeRef.current !== "design");
+    styleCommandsRef.current = styleCommands;
     const canvasCommands = registerCanvasCommands(registry, engine, connection.flush);
     canvasCommands.setHasSelection(session.ui.getState().nodeId !== null);
     // The shared-section commands (1.29), after the canvas's own actions.
@@ -286,6 +292,8 @@ export function Editor({
       sharedCommands.remove();
       clipboardCommandsRef.current = null;
       clipboardCommands.remove();
+      styleCommandsRef.current = null;
+      styleCommands.remove();
       stopSiteCss();
       stopImages();
       stopSettings();
@@ -306,6 +314,7 @@ export function Editor({
   useEffect(() => {
     engine?.setMode(mode);
     clipboardCommandsRef.current?.setLayoutLocked(mode !== "design");
+    styleCommandsRef.current?.setLayoutLocked(mode !== "design");
     sharedCommandsRef.current?.setLayoutLocked(mode !== "design");
     canvasCommandsRef.current?.setLayoutLocked(mode !== "design");
   }, [engine, mode]);
