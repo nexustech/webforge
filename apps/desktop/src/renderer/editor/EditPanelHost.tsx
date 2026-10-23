@@ -498,7 +498,8 @@ export function EditPanelHost({
   /**
    * Resets fields `names` to the component's defaults as one step (UX-13, UX-18): "Reset Heading
    * size", or for option group `group` "Reset Spacing on Heading". A field set per device gets its
-   * default for the device shown: on Desktop its own value, elsewhere the Desktop value again.
+   * default for the device shown: on Desktop its own value, elsewhere the Desktop value again, and
+   * the label then names the device ("Reset Heading spacing on Mobile").
    */
   const resetToDefault = (names: readonly string[], group?: string) => {
     const known = names.filter((name) => component.fields[name] !== undefined);
@@ -509,10 +510,12 @@ export function EditPanelHost({
     }
     endRun();
     flush();
+    const forDevice =
+      breakpoint !== "desktop" && known.some((name) => component.fields[name]?.responsive === true);
     const label =
       copyLabel ??
       (group !== undefined
-        ? resetGroupLabel(editOf("props", first), library, group)
+        ? resetGroupLabel(editOf("props", first), library, group, forDevice ? device : undefined)
         : firstField.responsive === true && breakpoint !== "desktop"
           ? labelOf(first, firstField, true)
           : resetLabel(editOf("props", first), library, firstField.label.toLocaleLowerCase()));

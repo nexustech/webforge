@@ -55,7 +55,7 @@ describe("parsePreferences", () => {
   });
 
   it("keeps the Edit panel's closed option groups by component type, or none if invalid (UX-13)", () => {
-    const editPanel = { closedGroups: { Heading: ["Spacing", "Appearance"] } };
+    const editPanel = { closedGroups: { Heading: ["style:spacing", "style:appearance"] } };
     expect(parsePreferences({ editPanel }).editPanel).toEqual(editPanel);
     expect(parsePreferences({ editPanel: { closedGroups: { Heading: [""] } } }).editPanel).toEqual(
       DEFAULT_PREFERENCES.editPanel,

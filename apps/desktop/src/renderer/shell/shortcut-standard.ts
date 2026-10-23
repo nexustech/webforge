@@ -118,9 +118,6 @@ export const OTHER_SHORTCUTS: readonly OtherShortcut[] = [
   { label: "shortcuts.layersFocus", group: "layers", keys: ["ArrowUp", "ArrowDown"] },
   { label: "shortcuts.layersOpen", group: "layers", keys: ["ArrowRight", "ArrowLeft"] },
   { label: "shortcuts.layersParent", group: "layers", keys: ["Mod+ArrowUp"] },
-  // The Edit panel's option groups (1.36, UX-13): its own keys, on a group's title or in a field.
-  { label: "shortcuts.toggleGroups", group: "editPanel", keys: ["Mod+Enter"] },
-  { label: "shortcuts.resetOption", group: "editPanel", keys: ["Mod+Escape"] },
   { label: "shortcuts.layersChild", group: "layers", keys: ["Mod+ArrowDown"] },
   { label: "shortcuts.layersSibling", group: "layers", keys: ["Mod+ArrowLeft", "Mod+ArrowRight"] },
   {
@@ -133,4 +130,7 @@ export const OTHER_SHORTCUTS: readonly OtherShortcut[] = [
   { label: "shortcuts.layersLinkedCopy", group: "layers", keys: ["Mod+Shift"] },
   { label: "shortcuts.layersRename", group: "layers", keys: ["F2"] },
   { label: "shortcuts.layersDelete", group: "layers", keys: ["Delete", "Backspace"] },
+  // The Edit panel's option groups (1.36, UX-13): its own keys, on a group's title or in a field.
+  { label: "shortcuts.toggleGroups", group: "editPanel", keys: ["Mod+Enter"] },
+  { label: "shortcuts.resetOption", group: "editPanel", keys: ["Mod+Escape"] },
 ];

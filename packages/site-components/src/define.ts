@@ -26,6 +26,9 @@ const TOKEN_KINDS: ReadonlySet<FieldDef["kind"]> = new Set([
 /** The longest name an option group may have (UX-13), in characters. */
 const MAX_OPTION_GROUP = 40;
 
+/** An option group's id: lower camel case, at most 40 characters ("typography", "textStyle"). */
+const OPTION_GROUP_ID = /^[a-z][a-zA-Z0-9]{0,39}$/;
+
 /** The field a component's layout variants are stored in. */
 const VARIANT_FIELD = "variant";
 
@@ -99,9 +102,12 @@ export function defineComponent(spec: ComponentSpec): ComponentDef {
       fail(`sets "${fieldName}", a ${field.kind} field, per device: only design tokens can be`);
     }
     if (field.optionGroup !== undefined) {
-      const length = field.optionGroup.trim().length;
+      const length = field.optionGroup.label.trim().length;
       if (length === 0 || length > MAX_OPTION_GROUP) {
         fail(`puts "${fieldName}" in an option group without a short name`);
+      }
+      if (!OPTION_GROUP_ID.test(field.optionGroup.id)) {
+        fail(`puts "${fieldName}" in an option group without an id such as "typography"`);
       }
     }
     const choices = choicesOf(field);

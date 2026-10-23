@@ -81,7 +81,12 @@ describe("defineComponent (2.5)", () => {
     ],
     [
       "an option group without a name (UX-13)",
-      { fields: { ...base.fields, title: { kind: "text", label: "Title", optionGroup: " " } } },
+      {
+        fields: {
+          ...base.fields,
+          title: { kind: "text", label: "Title", optionGroup: { id: "title", label: " " } },
+        },
+      },
       `'Card' puts "title" in an option group without a short name`,
     ],
     [
@@ -89,10 +94,20 @@ describe("defineComponent (2.5)", () => {
       {
         fields: {
           ...base.fields,
-          title: { kind: "text", label: "Title", optionGroup: "x".repeat(41) },
+          title: { kind: "text", label: "Title", optionGroup: { id: "x", label: "x".repeat(41) } },
         },
       },
       `'Card' puts "title" in an option group without a short name`,
+    ],
+    [
+      "an option group without a stable id, which closed groups are remembered by",
+      {
+        fields: {
+          ...base.fields,
+          title: { kind: "text", label: "Title", optionGroup: { id: "Text style", label: "Text" } },
+        },
+      },
+      `'Card' puts "title" in an option group without an id such as "typography"`,
     ],
     [
       "a behaviour that isn't in behaviours/",

@@ -354,6 +354,57 @@ describe("style field renderers (1.14 part 2)", () => {
     expect(screen.getByRole("radiogroup", { name: "Padding" })).toBeDefined();
   });
 
+  it("starts with every field shown for another element: the search was the last one's", async () => {
+    const props = {
+      heading: "Section",
+      fields: styleFields,
+      onChange: vi.fn(),
+      onCommit: vi.fn(),
+    };
+    const { rerender } = render(<EditPanel {...props} itemKey="section-1" />);
+    await userEvent.type(screen.getByRole("searchbox", { name: "Search options" }), "gap");
+    expect(screen.queryByRole("radiogroup", { name: "Padding" })).toBeNull();
+
+    rerender(<EditPanel {...props} itemKey="section-2" />);
+
+    expect(
+      (screen.getByRole("searchbox", { name: "Search options" }) as HTMLInputElement).value,
+    ).toBe("");
+    expect(screen.getByRole("radiogroup", { name: "Padding" })).toBeDefined();
+  });
+
+  it("keeps each tab's groups apart, remembered by id in any language (UX-13)", async () => {
+    const onClosedGroupsChange = vi.fn();
+    const text = { id: "text", label: "Text" };
+    render(
+      <EditPanel
+        heading="Heading"
+        fields={[
+          { name: "title", kind: "text", label: "Title", group: "content", value: "Hi" },
+          {
+            name: "bold",
+            kind: "toggle",
+            label: "Bold",
+            group: "style",
+            value: false,
+            optionGroup: text,
+          },
+        ]}
+        closedGroups={[]}
+        onClosedGroupsChange={onClosedGroupsChange}
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+      />,
+    );
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("tab", { name: "Style" }));
+
+    await user.click(screen.getByRole("button", { name: "Text" }));
+
+    // The Style tab's Text group, not the Content tab's of the same name.
+    expect(onClosedGroupsChange).toHaveBeenLastCalledWith(["style:text"]);
+  });
+
   it("shows a grey dot while a field uses Desktop's value on this device (UX-19)", () => {
     renderStyle({ responsive: true });
 

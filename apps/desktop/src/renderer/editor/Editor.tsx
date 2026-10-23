@@ -11,7 +11,7 @@ import { t } from "@webforge/i18n";
 import { textStylesOf } from "@webforge/site-components";
 import { HistoryIcon, SlidersHorizontalIcon } from "lucide-react";
 import { type RefObject, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { createStore, type StoreApi } from "zustand/vanilla";
+import type { StoreApi } from "zustand/vanilla";
 import {
   type AddPreferences,
   type CustomDevice,
@@ -72,6 +72,7 @@ import { shownLayout } from "./shared-layout.js";
 import { type CompileCanvasCss, connectSiteCss } from "./site-css.js";
 import { UndoHistoryPanel, type UndoHistoryPanelProps } from "./UndoHistoryPanel.js";
 import { installUndoToasts, undoEntry } from "./undo-toasts.js";
+import { usePreferenceStore } from "./use-preference-store.js";
 
 /** How the title bar's list of steps undoes back to one (UX-16): false if the step is gone. */
 export type UndoTo = { readonly run: (entryId: string) => boolean };
@@ -489,30 +490,8 @@ export function Editor({
     [panels, history],
   );
 
-  // The Edit panel's closed option groups (UX-13): one store the panel follows, in step with the
-  // preferences both ways, so a change never re-registers the panel (its tab stays).
-  const [editPanelStore] = useState(() =>
-    createStore<EditPanelPreferences>()(() => editPanelPreferences),
-  );
-  const givenEditPanelPreferences = useRef(editPanelPreferences);
-  useEffect(() => {
-    givenEditPanelPreferences.current = editPanelPreferences;
-    if (editPanelStore.getState() !== editPanelPreferences) {
-      editPanelStore.setState(editPanelPreferences, true);
-    }
-  }, [editPanelStore, editPanelPreferences]);
-  const saveEditPanelPreferences = useRef(onEditPanelPreferencesChange);
-  useEffect(() => {
-    saveEditPanelPreferences.current = onEditPanelPreferencesChange;
-  });
-  useEffect(
-    () =>
-      // Saves the panel's changes, not the preferences it was given back again.
-      editPanelStore.subscribe((next) => {
-        if (next !== givenEditPanelPreferences.current) saveEditPanelPreferences.current?.(next);
-      }),
-    [editPanelStore],
-  );
+  // The Edit panel's closed option groups (UX-13), in step with the preferences.
+  const editPanelStore = usePreferenceStore(editPanelPreferences, onEditPanelPreferencesChange);
 
   // The Edit panel replaces Puck's own fields (1.14). Registered on its own, so that changing the
   // editor level or mode (Content shows its Content tab only) redraws it alone.
@@ -534,26 +513,8 @@ export function Editor({
     [panels, session, editorLevel, mode, editPanelStore],
   );
 
-  // The Add panel's favourites and recents (1.34): one store the panel follows, in step with the
-  // preferences both ways, so a change never re-registers the panel (its tab and + place stay).
-  const [addStore] = useState(() => createStore<AddPreferences>()(() => addPreferences));
-  const givenAddPreferences = useRef(addPreferences);
-  useEffect(() => {
-    givenAddPreferences.current = addPreferences;
-    if (addStore.getState() !== addPreferences) addStore.setState(addPreferences, true);
-  }, [addStore, addPreferences]);
-  const saveAddPreferences = useRef(onAddPreferencesChange);
-  useEffect(() => {
-    saveAddPreferences.current = onAddPreferencesChange;
-  });
-  useEffect(
-    () =>
-      // Saves the panel's changes, not the preferences it was given back again.
-      addStore.subscribe((next) => {
-        if (next !== givenAddPreferences.current) saveAddPreferences.current?.(next);
-      }),
-    [addStore],
-  );
+  // The Add panel's favourites and recents (1.34), in step with the preferences; its + place stays.
+  const addStore = usePreferenceStore(addPreferences, onAddPreferencesChange);
   // The sections' larger previews in the Add panel (UX-10), drawn with the site's theme. Made once
   // for the editor's session, so the drawings they keep outlive switches of mode.
   const [previews] = useState(() =>

@@ -82,12 +82,13 @@ export type AddPreferences = z.infer<typeof addPreferencesSchema>;
 const MAX_CLOSED_GROUP_TYPES = 200;
 
 /**
- * The Edit panel's option groups the person closed (UX-13), by component type: UI state, never in
- * the document nor an undo step. Every group is open until closed.
+ * The Edit panel's option groups the person closed (UX-13), by component type, each as `tab:id`
+ * ("style:spacing"), so they're kept in any language: UI state, never in the document nor an undo
+ * step. Every group is open until closed.
  */
 const editPanelPreferencesSchema = z.strictObject({
   closedGroups: z
-    .record(z.string().min(1).max(64), z.array(z.string().min(1).max(40)).max(20))
+    .record(z.string().min(1).max(64), z.array(z.string().min(1).max(64)).max(20))
     .refine((byType) => Object.keys(byType).length <= MAX_CLOSED_GROUP_TYPES),
 });
 

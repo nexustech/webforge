@@ -313,6 +313,21 @@ describe("EditPanelHost", () => {
       );
     });
 
+    it("on Mobile, resets only the group's Mobile values, and says so (F-ED-4)", async () => {
+      const { session, labels, section, user } = setup("section-1");
+      act(() => session.ui.setState({ viewport: "mobile" }));
+      await user.click(side("Padding Top").getByRole("radio", { name: "S" }));
+
+      fireEvent.contextMenu(screen.getByRole("button", { name: "Spacing" }));
+      await user.click(await screen.findByRole("menuitem", { name: "Reset Group to Defaults" }));
+
+      expect(labels()).toEqual([
+        "Changed Section padding on Mobile",
+        "Reset Section spacing on Mobile",
+      ]);
+      expect(section()?.padding).toEqual({ top: "m", bottom: "m" });
+    });
+
     it("shows the groups closed for the element's type, and reports closing another (UX-13)", async () => {
       const session = createEditorSession(siteLibrary, siteWithHero());
       session.ui.setState({ nodeId: "section-1" });
@@ -321,7 +336,7 @@ describe("EditPanelHost", () => {
         <EditPanelHost
           session={session}
           flush={vi.fn()}
-          closedGroups={{ Section: ["Spacing"], Heading: ["Appearance"] }}
+          closedGroups={{ Section: ["style:spacing"], Heading: ["style:appearance"] }}
           onClosedGroupsChange={onClosedGroupsChange}
         />,
       );
@@ -336,7 +351,10 @@ describe("EditPanelHost", () => {
       );
       await user.click(screen.getByRole("button", { name: "Appearance" }));
 
-      expect(onClosedGroupsChange).toHaveBeenCalledWith("Section", ["Spacing", "Appearance"]);
+      expect(onClosedGroupsChange).toHaveBeenCalledWith("Section", [
+        "style:spacing",
+        "style:appearance",
+      ]);
       // Nothing in the document: no undo step.
       expect(session.history.entries()).toEqual([]);
     });
@@ -353,7 +371,7 @@ describe("EditPanelHost", () => {
               ...siteLibrary.components.Heading?.fields,
               size: {
                 ...(siteLibrary.components.Heading?.fields.size as FieldDef),
-                optionGroup: "Typography",
+                optionGroup: { id: "typography", label: "Typography" },
               } as FieldDef,
             },
           },

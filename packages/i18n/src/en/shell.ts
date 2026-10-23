@@ -112,9 +112,9 @@ export const shell = {
   "shortcuts.layersLinkedCopy":
     "Place a linked copy of a shared section: hold while dragging, adding Shift once it moves",
   "shortcuts.layersRename": "Rename",
+  "shortcuts.layersDelete": "Delete",
   "shortcuts.toggleGroups": "Open or close all option groups",
   "shortcuts.resetOption": "Reset an option or group to its default",
-  "shortcuts.layersDelete": "Delete",
 
   // The text context menu: spelling (F-ED-19) and editing.
   "spellcheck.noSuggestions": "No Suggestions",

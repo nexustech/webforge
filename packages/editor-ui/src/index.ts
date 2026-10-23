@@ -2,7 +2,12 @@
 // imported separately as "@webforge/editor-ui/theme.css".
 
 export { ChoiceField } from "./components/edit/choice-field.js";
-export type { EditPanelField, EditPanelProps, FieldGroup } from "./components/edit/edit-panel.js";
+export type {
+  EditPanelField,
+  EditPanelProps,
+  FieldGroup,
+  OptionGroup,
+} from "./components/edit/edit-panel.js";
 export { EditPanel } from "./components/edit/edit-panel.js";
 export type {
   FieldRenderer,

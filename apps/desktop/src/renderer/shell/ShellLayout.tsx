@@ -30,6 +30,17 @@ export const PANEL_GROUPS = {
 const STRIP_PX = 36;
 
 /**
+ * A remembered side column narrower than this was left collapsed: halfway between the strip and
+ * the narrowest an open column can be (`DEFAULTS.sideMin`).
+ */
+const COLLAPSED_BELOW_PX = (STRIP_PX + 200) / 2;
+
+/** Whether a side column's remembered size (a percentage of the window's width) is its strip. */
+function savedCollapsed(size: number | undefined): boolean {
+  return size !== undefined && (size / 100) * window.innerWidth < COLLAPSED_BELOW_PX;
+}
+
+/**
  * The default layout: 240 px side columns, the drawer closed. Side columns stay between 200 and
  * 360 px and the canvas keeps at least 40% of the width, so it is never squeezed to an unusable
  * zoom (ADR 0008).
@@ -213,8 +224,12 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
   const showRight = hasPanels(AREAS.right);
   // Layers, under the left column's tabs (ADR 0011).
   const showLower = hasPanels(SLOTS.leftLower);
-  // Which side columns are collapsed to their strip, from the sizes the library reports.
-  const [collapsed, setCollapsed] = useState({ left: false, right: false });
+  // Which side columns are collapsed to their strip, from the sizes the library reports: at first
+  // the remembered ones, so a column left collapsed starts as its strip.
+  const [collapsed, setCollapsed] = useState(() => ({
+    left: savedCollapsed(layout[PANEL_GROUPS.columns]?.left),
+    right: savedCollapsed(layout[PANEL_GROUPS.columns]?.right),
+  }));
   const followCollapsed = (side: "left" | "right") => (size: { readonly inPixels: number }) => {
     const next = size.inPixels <= STRIP_PX + 1;
     setCollapsed((current) => (current[side] === next ? current : { ...current, [side]: next }));
