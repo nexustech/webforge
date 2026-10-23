@@ -37,19 +37,35 @@ function focusedEditor(frameDocument: Document | null): { getHTML(): string } | 
   return typeof editor?.getHTML === "function" ? (editor as { getHTML(): string }) : null;
 }
 
+/** Rich text as compared: an emptied editor's `<p></p>` is no text, as the page may store it. */
+const comparable = (value: unknown) =>
+  typeof value === "string" ? (value === "<p></p>" ? "" : value) : value;
+
 /**
  * Whether what the focused rich-text editor in `frameDocument` shows has all reached `page` (#146):
- * its text is its element's value there. True when no rich text has the focus.
+ * its text is the value of its field (`field`, Puck's name for the focused one) there, or, if that
+ * isn't one of the element's own props, of any of them. True when no rich text has the focus.
  */
-export function richTextArrived(frameDocument: Document | null, page: PageDoc): boolean {
+export function richTextArrived(
+  frameDocument: Document | null,
+  page: PageDoc,
+  field: string | null | undefined,
+): boolean {
   const editor = focusedEditor(frameDocument);
   const id = focusedRichTextId(frameDocument);
   if (editor === null || id === null) {
     return true;
   }
-  const html = editor.getHTML();
+  const html = comparable(editor.getHTML());
   const node = allNodes(page).find((each) => each.props.id === id);
-  return node !== undefined && Object.values(node.props).includes(html);
+  if (node === undefined) {
+    return false;
+  }
+  const values =
+    typeof field === "string" && Object.hasOwn(node.props, field)
+      ? [node.props[field]]
+      : Object.values(node.props);
+  return values.some((value) => comparable(value) === html);
 }
 
 /** The id of the node whose rich-text editor has the focus in `frameDocument`, if any. */

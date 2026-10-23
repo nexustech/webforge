@@ -358,6 +358,66 @@ describe("Editor", () => {
     expect(save).toHaveBeenCalledOnce();
   });
 
+  it("undoes back to a step from the title bar in one jump, a gesture in progress dropped first (UX-16)", async () => {
+    let undoTo: ((entryId: string) => boolean) | null = null;
+    await act(async () =>
+      root.render(
+        <CommandRegistryProvider registry={registry}>
+          <PanelRegistryProvider registry={panels}>
+            <Editor
+              session={session}
+              createEngine={createEngine}
+              compileCss={compileCss}
+              onUndoTo={(next) => {
+                undoTo = next;
+              }}
+            />
+          </PanelRegistryProvider>
+        </CommandRegistryProvider>,
+      ),
+    );
+    const name = () => session.history.document.getState().settings.general.name;
+    for (const step of [1, 2, 3, 4, 5, 6]) {
+      await act(async () =>
+        session.edit("props", `Step ${step}`, (draft) => {
+          draft.settings.general.name = `Name ${step}`;
+        }),
+      );
+    }
+    const [, second, , , fifth] = session.history.entries();
+
+    // Steps 5 and 6 at once: one jump, so the canvas is brought up to date once, not per step.
+    const updates = engine.applied.length;
+    await act(async () => {
+      expect(undoTo?.(fifth?.id ?? "")).toBe(true);
+    });
+    expect(name()).toBe("Name 4");
+    expect(engine.applied.length - updates).toBe(1);
+
+    // Steps 2 to 4, with a drag still going on: it is dropped first (as Ctrl/Cmd+Z drops it), and
+    // the jump still lands where asked, not one step short.
+    const gesture = session.begin("props", "Changed Section padding");
+    gesture.update((draft) => {
+      draft.settings.general.name = "Dragging";
+    });
+    await act(async () => {
+      expect(undoTo?.(second?.id ?? "")).toBe(true);
+    });
+    expect(gesture.active).toBe(false);
+    expect(name()).toBe("Name 1");
+    expect(session.history.state.getState().cursor).toBe(1);
+
+    // A step already undone can't be undone back to: nothing moves forward.
+    await act(async () => {
+      expect(undoTo?.(fifth?.id ?? "")).toBe(false);
+    });
+    expect(session.history.state.getState().cursor).toBe(1);
+
+    await act(async () => root.render(<></>));
+    expect(undoTo).toBeNull();
+    root = createRoot(container);
+  });
+
   it("lets the Add panel's items be dragged onto the canvas", () => {
     expect(engine.addDragSource).toHaveBeenCalledWith(expect.any(HTMLButtonElement), "Hero");
   });

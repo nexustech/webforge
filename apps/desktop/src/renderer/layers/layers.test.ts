@@ -9,7 +9,14 @@ import { siteLibrary } from "@webforge/site-components";
 import { describe, expect, it } from "vitest";
 import { createEditorSession, currentPage } from "../editor/editor-session.js";
 import { starterSite } from "../editor/starter-site.js";
-import { layerItem, layersOf, moveLayer, renameLayer, setLayerHidden } from "./layers.js";
+import {
+  layerItem,
+  layersOf,
+  moveLayer,
+  renameLayer,
+  setLayerHidden,
+  toggleLayerHidden,
+} from "./layers.js";
 
 const heading = (id: string, extra: Record<string, unknown> = {}): NodeDoc => ({
   type: "Heading",
@@ -121,6 +128,19 @@ describe("Layers changes, one undo step each", () => {
     expect(session.ui.getState().nodeId).toBe("a");
     session.history.undo();
     expect(session.ui.getState().nodeId).toBe("a");
+  });
+
+  it("toggles a layer between hidden and shown (Mod + /, the chip's Hide)", () => {
+    const { session, first, labels } = setUp();
+
+    toggleLayerHidden(session, "a");
+    expect(first()?.[0]?.props.hidden).toBe(true);
+    toggleLayerHidden(session, "a");
+    toggleLayerHidden(session, "s2");
+    toggleLayerHidden(session, "gone");
+
+    expect(first()?.[0]?.props).not.toHaveProperty("hidden");
+    expect(labels()).toEqual(["Hid Heading", "Showed Heading", "Showed Section"]);
   });
 });
 

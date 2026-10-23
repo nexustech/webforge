@@ -1,17 +1,79 @@
-import type { PuckApi } from "@puckeditor/core";
+import type { ComponentData, PuckApi } from "@puckeditor/core";
 import type { CanvasAction } from "../canvas-engine.js";
 import { toPageDoc } from "./edit-from-action.js";
 import { allNodes, ROOT_ZONE } from "./tree.js";
+
+/** Actions that only move the selection through the page's tree (F-ED-27). */
+type TreeAction = Extract<
+  CanvasAction,
+  "selectParent" | "selectChild" | "selectPreviousSibling" | "selectNextSibling"
+>;
+
+/** Text actions, which the engine does on the canvas document (see `text-editing.ts`). */
+type TextAction = Extract<CanvasAction, "editText" | "clearText">;
+
+const isTreeAction = (action: CanvasAction): action is TreeAction =>
+  action === "selectParent" ||
+  action === "selectChild" ||
+  action === "selectPreviousSibling" ||
+  action === "selectNextSibling";
+
+/** Whether `value` is an element in a slot (Puck's component data). */
+const isComponent = (value: unknown): value is ComponentData =>
+  typeof value === "object" &&
+  value !== null &&
+  typeof (value as { type?: unknown }).type === "string" &&
+  typeof (value as { props?: { id?: unknown } }).props?.id === "string";
+
+/**
+ * Where `action` takes the selection from the selected element, or none: its parent (never the
+ * page itself), its first element inside (in the first of its slots that has one), or its previous
+ * or next element in its own list. Stays inside the page's tree, the shared Header and Footer
+ * included, which the canvas shows with their banner when selected (F-ED-7).
+ */
+function treeTarget(puck: PuckApi, action: TreeAction): ReturnType<PuckApi["getSelectorForId"]> {
+  const selector = puck.appState.ui.itemSelector;
+  const item = puck.selectedItem;
+  if (selector === null || item === null) return undefined;
+  const id = item.props.id as string;
+  switch (action) {
+    case "selectParent": {
+      // An element in one of the page's own lists (its sections) has only the page above it.
+      if ((selector.zone ?? ROOT_ZONE).startsWith("root:")) return undefined;
+      const parent = puck.getParentById(id);
+      const parentId = parent?.props.id;
+      return typeof parentId === "string" ? puck.getSelectorForId(parentId) : undefined;
+    }
+    case "selectChild": {
+      for (const value of Object.values(item.props)) {
+        const first = Array.isArray(value) ? value.find(isComponent) : undefined;
+        if (first !== undefined) return puck.getSelectorForId(first.props.id as string);
+      }
+      return undefined;
+    }
+    case "selectPreviousSibling":
+    case "selectNextSibling": {
+      const zone = selector.zone ?? ROOT_ZONE;
+      const index = selector.index + (action === "selectNextSibling" ? 1 : -1);
+      return index >= 0 && puck.getItemBySelector({ zone, index }) !== undefined
+        ? { zone, index }
+        : undefined;
+    }
+  }
+}
 
 /**
  * Whether `action` can be done to the selected element now: something is selected, it isn't at the
  * end of its list, and Puck's permissions (locked in Content mode) allow it.
  */
-export function canPerform(puck: PuckApi, action: CanvasAction): boolean {
+export function canPerform(puck: PuckApi, action: Exclude<CanvasAction, TextAction>): boolean {
   const selector = puck.appState.ui.itemSelector;
   const item = puck.selectedItem;
   if (action === "selectPrevious" || action === "selectNext") {
     return allNodes(toPageDoc(puck.appState.data)).length > 0;
+  }
+  if (isTreeAction(action)) {
+    return treeTarget(puck, action) !== undefined;
   }
   if (selector === null || item === null) {
     return false;
@@ -38,11 +100,20 @@ export function canPerform(puck: PuckApi, action: CanvasAction): boolean {
  * history through `onAction` as one step, just like the same action done with the mouse. Returns
  * false if {@link canPerform} says no.
  */
-export function performOnSelected(puck: PuckApi, action: CanvasAction): boolean {
+export function performOnSelected(
+  puck: PuckApi,
+  action: Exclude<CanvasAction, TextAction>,
+): boolean {
   if (!canPerform(puck, action)) {
     return false;
   }
   const { dispatch } = puck;
+  if (isTreeAction(action)) {
+    const target = treeTarget(puck, action);
+    if (target === undefined) return false;
+    dispatch({ type: "setUi", ui: { itemSelector: target } });
+    return true;
+  }
   const selector = puck.appState.ui.itemSelector;
   if (action === "selectPrevious" || action === "selectNext") {
     const ids = allNodes(toPageDoc(puck.appState.data)).map((node) => node.props.id);

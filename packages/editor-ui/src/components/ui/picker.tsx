@@ -106,14 +106,26 @@ export function Picker<Item extends PickerItem>({
   const opener = useRef<HTMLElement | null>(null);
   const listId = useId();
 
-  // Each time it opens: no search, every category, on the current choice.
+  // Each time it opens: no search, every category, on the current choice, scrolled into view.
   useEffect(() => {
-    if (open) {
-      setQuery("");
-      setCategory(null);
-      setActiveId(value ?? null);
-    }
+    if (!open) return;
+    setQuery("");
+    setCategory(null);
+    setActiveId(value ?? null);
+    if (value == null) return;
+    // Once the dialog has drawn its items.
+    const frame = requestAnimationFrame(() => {
+      list.current
+        ?.querySelector(`[data-picker-item="${CSS.escape(value)}"]`)
+        ?.scrollIntoView?.({ block: "nearest" });
+    });
+    return () => cancelAnimationFrame(frame);
   }, [open, value]);
+  /** A new search starts on its first match, which Enter chooses; an empty one on the choice. */
+  const searchFor = (next: string) => {
+    setQuery(next);
+    setActiveId(next.trim() === "" ? (value ?? null) : null);
+  };
 
   const shown = useMemo(() => {
     const words = query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
@@ -183,7 +195,7 @@ export function Picker<Item extends PickerItem>({
           // Esc clears the search first, then closes.
           if (query !== "") {
             event.preventDefault();
-            setQuery("");
+            searchFor("");
             search.current?.focus();
           }
         }}
@@ -205,7 +217,7 @@ export function Picker<Item extends PickerItem>({
             placeholder={t("ui.picker.search")}
             className={cn(fieldControlClass, "h-8 w-full pl-8")}
             value={query}
-            onChange={(event) => setQuery(event.currentTarget.value)}
+            onChange={(event) => searchFor(event.currentTarget.value)}
             onKeyDown={(event) => {
               if (event.key === "ArrowDown") {
                 event.preventDefault();
@@ -236,6 +248,16 @@ export function Picker<Item extends PickerItem>({
           </div>
         )}
         <div className="flex min-h-0 flex-1 gap-3">
+          {/* How many match, read out as the person types; the list itself isn't. */}
+          <p role="status" className="sr-only">
+            {query.trim() === ""
+              ? ""
+              : shown.length === 0
+                ? t("ui.picker.noMatch", { query: query.trim() })
+                : shown.length === 1
+                  ? t("ui.picker.matchOne")
+                  : t("ui.picker.matchMany", { count: shown.length })}
+          </p>
           <ScrollArea className="min-h-0 flex-1 rounded-md border border-border">
             {items.length === 0 || shown.length === 0 ? (
               <p className="m-0 p-4 text-center text-sm text-muted-foreground">
