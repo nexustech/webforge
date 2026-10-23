@@ -111,6 +111,7 @@ export const shell = {
   "edit.cut": "Cut",
   "edit.copy": "Copy",
   "edit.paste": "Paste",
+  "edit.pasteLinked": "Paste as Linked Copy",
   "edit.copyStyle": "Copy Style",
   "edit.pasteStyle": "Paste Style",
   "edit.pasteStyleOnto": "Paste Style (onto a {item})",

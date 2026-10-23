@@ -121,13 +121,16 @@ describe("LayersPanel (F-ED-12)", () => {
     expect(actions.remove).toHaveBeenCalledOnce();
 
     expect(actions.select.mock.calls).toEqual([["s2"], ["b"], ["s1"]]);
+    // Alt alone moves too, as Layers did first.
+    fireEvent.keyDown(rows[3] as HTMLElement, { key: "ArrowUp", altKey: true });
     expect(actions.move.mock.calls).toEqual([
       ["a", 1],
       ["b", 0],
+      ["c", 1],
     ]);
   });
 
-  it("walks the tree with Mod+arrows, as on the canvas, and moves only with Mod+Alt (F-ED-27)", () => {
+  it("walks the tree with Mod+arrows, as on the canvas (F-ED-27)", () => {
     const { actions } = setUp("b");
     const rows = screen.getAllByRole("treeitem");
 
@@ -137,8 +140,6 @@ describe("LayersPanel (F-ED-12)", () => {
     fireEvent.keyDown(rows[1] as HTMLElement, { key: "ArrowRight", ...MOD });
     fireEvent.keyDown(rows[1] as HTMLElement, { key: "ArrowLeft", ...MOD });
     fireEvent.keyDown(rows[0] as HTMLElement, { key: "ArrowRight", ...MOD });
-    // Alt alone no longer moves.
-    fireEvent.keyDown(rows[1] as HTMLElement, { key: "ArrowDown", altKey: true });
 
     expect(actions.select.mock.calls).toEqual([["s1"], ["a"], ["b"], ["s2"]]);
     expect(actions.move).not.toHaveBeenCalled();

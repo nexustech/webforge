@@ -98,6 +98,33 @@ describe("ElementMenu (1.35)", () => {
     expect(screen.queryByRole("menu")).toBeNull();
   });
 
+  it("offers Cut, Copy, Paste and Paste as Linked Copy with their keys (F-ED-23, F-ED-27)", async () => {
+    const { commands } = registry({ save: true, detach: false });
+    const pasteLinked = vi.fn();
+    commands.register({ id: ELEMENT_MENU_COMMANDS.cut, label: "Cut", run: vi.fn() });
+    commands.register({ id: ELEMENT_MENU_COMMANDS.copy, label: "Copy", run: vi.fn() });
+    commands.register({ id: ELEMENT_MENU_COMMANDS.paste, label: "Paste", run: vi.fn() });
+    commands.register({
+      id: ELEMENT_MENU_COMMANDS.pasteLinked,
+      label: "Paste as Linked Copy",
+      run: pasteLinked,
+    });
+    render(
+      <CommandRegistryProvider registry={commands}>
+        <ElementMenu at={{ x: 0, y: 0 }} onClose={vi.fn()} onRename={vi.fn()} />
+      </CommandRegistryProvider>,
+    );
+
+    expect(items().slice(3, 7)).toEqual([
+      ["CutCtrl+X", false],
+      ["CopyCtrl+C", false],
+      ["PasteCtrl+V", false],
+      ["Paste as Linked CopyCtrl+Shift+V", false],
+    ]);
+    await userEvent.click(menu().getByRole("menuitem", { name: /Paste as Linked Copy/ }));
+    expect(pasteLinked).toHaveBeenCalledOnce();
+  });
+
   it("offers Copy Style and Paste Style once they are registered (1.37)", () => {
     const { commands } = registry({ save: true, detach: false });
     commands.register({ id: "edit.copyStyle", label: "Copy Style", run: vi.fn() });

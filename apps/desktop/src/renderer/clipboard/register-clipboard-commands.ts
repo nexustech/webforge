@@ -1,6 +1,7 @@
 import { t } from "@webforge/i18n";
 import type { ClipboardApi } from "../../shared/ipc/clipboard.js";
 import type { SharedPlace } from "../editor/shared-confirmations.js";
+import { COMMAND_IDS } from "../shell/command-ids.js";
 import type { CommandRegistry } from "../shell/commands.js";
 import { type ClipboardSession, copySelected, pasteElements } from "./element-clipboard.js";
 
@@ -11,8 +12,8 @@ export const preloadClipboard: Pick<ClipboardApi, "write" | "read"> = {
 };
 
 /**
- * Registers Cut, Copy and Paste for sections and elements (1.25) in the Edit menu and the command
- * box, with their usual shortcuts. In a text field or editable text, or with text selected, the
+ * Registers Cut, Copy, Paste and Paste as Linked Copy (F-ED-23) for sections and elements (1.25)
+ * in the Edit menu and the command box, with their usual shortcuts. In a text field or editable text, or with text selected, the
  * shortcuts stay the text's. Cut and Copy need a selected element; Cut and Paste change the
  * layout, so Content mode's lock (M3) turns them off. Returns a function that removes them, and
  * ones that follow the selection and the lock.
@@ -62,11 +63,21 @@ export function registerClipboardCommands(
         await pasteElements(session, clipboard, notify);
       },
     }),
+    registry.register({
+      id: COMMAND_IDS.pasteLinked,
+      label: t("edit.pasteLinked"),
+      menu: "edit",
+      run: async () => {
+        beforeAction();
+        await pasteElements(session, clipboard, notify, true);
+      },
+    }),
   ];
   const update = () => {
     registry.update("edit.cut", { enabled: selected && !locked });
     registry.update("edit.copy", { enabled: selected });
     registry.update("edit.paste", { enabled: !locked });
+    registry.update(COMMAND_IDS.pasteLinked, { enabled: !locked });
   };
   return {
     remove: () => {

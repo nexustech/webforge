@@ -147,7 +147,7 @@ const DRAG_TYPE = "application/x-webforge-layer";
 
 /**
  * Layers (F-ED-12, UI1; Advanced mode): the page's sections and elements as a tree, selected in
- * step with the canvas. Drag a layer, or press Alt+↑/↓, to move it among its siblings; while
+ * step with the canvas. Drag a layer, or press Mod+Alt+↑/↓, to move it among its siblings; while
  * dragging, the rows it can't go to are marked (1.35). F2 or double-click renames it; the eye
  * hides it (dimmed on the canvas, left out of the export). ←/→ and the arrows beside the names
  * collapse and expand the tree, the toolbar all of it at once; the filter shows the layers whose
@@ -229,8 +229,8 @@ export function LayersPanel({
       return;
     }
     const at = rows.indexOf(row);
-    // The canvas's keys (F-ED-27): Mod + arrows walk the tree, Mod + Alt + ↑/↓ move. Plain arrows
-    // move the focus, as in any tree (WAI-ARIA).
+    // The canvas's keys (F-ED-27): Mod + arrows walk the tree, Mod + Alt + ↑/↓ move (Alt + ↑/↓
+    // too, Layers' first keys). Plain arrows move the focus, as in any tree (WAI-ARIA).
     const mod = isMac() ? event.metaKey : event.ctrlKey;
     if ((event.key === "ArrowRight" || event.key === "ArrowLeft") && mod) {
       event.preventDefault();
@@ -251,7 +251,7 @@ export function LayersPanel({
     } else if (event.key === "ArrowUp" || event.key === "ArrowDown") {
       event.preventDefault();
       const step = event.key === "ArrowUp" ? -1 : 1;
-      if (mod && event.altKey) {
+      if (event.altKey) {
         if (layoutLocked) {
           // Content mode keeps the layout (M3).
         } else if (alsoSelected.length > 0) {
@@ -268,7 +268,7 @@ export function LayersPanel({
           setExpanded(row.layer.id, true);
           focusRow(child.id);
         }
-      } else if (!event.altKey) {
+      } else {
         const next = rows[at + step];
         if (next !== undefined) focusRow(next.layer.id);
       }
