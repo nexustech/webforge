@@ -290,6 +290,18 @@ describe("createPuckEngine", () => {
       expect(action("Move down")?.disabled).toBe(true);
     });
 
+    it("moves the actions to the bar of the element selected next", async () => {
+      await selectA();
+      await act(async () => engine.select("b"));
+      await settle();
+
+      // The second of two: it can move up, not down. A bar that kept what it found for the first
+      // selection would still say otherwise (R2).
+      expect(element.querySelectorAll('[title="Move up"]')).toHaveLength(1);
+      expect(action("Move up")?.disabled).toBe(false);
+      expect(action("Move down")?.disabled).toBe(true);
+    });
+
     it("duplicates and deletes with Puck's own actions, one edit each", async () => {
       const kinds: string[] = [];
       engine.onUserEdit((edit) => kinds.push(edit.kind));

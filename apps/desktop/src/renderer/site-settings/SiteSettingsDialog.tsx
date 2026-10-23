@@ -81,11 +81,15 @@ export function SiteSettingsDialog(props: SiteSettingsDialogProps) {
   );
 }
 
+/** Media thumbnails, by default. */
+const thumbnailUrl: NonNullable<SiteSettingsDialogProps["imageUrl"]> = (item) =>
+  mediaImageUrl(item, "thumbnail");
+
 function SiteSettingsForm({
   site,
   onSave,
   onCancel,
-  imageUrl = (item) => mediaImageUrl(item, "thumbnail"),
+  imageUrl = thumbnailUrl,
   initialSection = "general",
 }: SiteSettingsDialogProps) {
   const [form, setForm] = useState<SettingsForm>(() => toSettingsForm(site.settings));

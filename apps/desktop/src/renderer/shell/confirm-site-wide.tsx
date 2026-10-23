@@ -9,7 +9,7 @@ import {
   AlertDialogTitle,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
-import { useRef, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 import type { CommandRegistry } from "./commands.js";
 
 /** An action that changes more than the page shown, to confirm first (D7, F-ED-14). */
@@ -43,6 +43,8 @@ export type SiteWideConfirm = {
   setBeforeSiteWideAction(hook: BeforeSiteWideAction): () => void;
   /** The question shown, if any; for the dialog. */
   current(): SiteWideAction | null;
+  /** The last question asked, kept once answered; the dialog shows it while it fades out. */
+  last(): SiteWideAction | null;
   subscribe(listener: () => void): () => void;
   /** The person's answer; for the dialog. */
   answer(confirmed: boolean): void;
@@ -53,6 +55,7 @@ const nothingBefore: BeforeSiteWideAction = () => undefined;
 /** Creates the window's site-wide confirmations; show them with {@link SiteWideConfirmDialog}. */
 export function createSiteWideConfirm(): SiteWideConfirm {
   let open: { action: SiteWideAction; settle: (confirmed: boolean) => void } | null = null;
+  let last: SiteWideAction | null = null;
   let before = nothingBefore;
   const listeners = new Set<() => void>();
   const changed = () => {
@@ -81,6 +84,7 @@ export function createSiteWideConfirm(): SiteWideConfirm {
           },
         };
         open = asked;
+        last = action;
         changed();
       });
     },
@@ -91,6 +95,7 @@ export function createSiteWideConfirm(): SiteWideConfirm {
       };
     },
     current: () => open?.action ?? null,
+    last: () => last,
     subscribe(listener) {
       listeners.add(listener);
       return () => {
@@ -133,9 +138,7 @@ export function pauseCommandsWhileAsking(
 export function SiteWideConfirmDialog({ confirm }: { readonly confirm: SiteWideConfirm }) {
   const asked = useSyncExternalStore(confirm.subscribe, confirm.current, confirm.current);
   // The last question stays shown while the dialog fades out.
-  const last = useRef<SiteWideAction | null>(null);
-  if (asked !== null) last.current = asked;
-  const action = asked ?? last.current;
+  const action = useSyncExternalStore(confirm.subscribe, confirm.last, confirm.last);
   return (
     <AlertDialog
       open={asked !== null}

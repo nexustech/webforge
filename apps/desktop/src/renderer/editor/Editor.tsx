@@ -10,16 +10,8 @@ import {
 import { t } from "@webforge/i18n";
 import { textStylesOf } from "@webforge/site-components";
 import { HistoryIcon, SlidersHorizontalIcon } from "lucide-react";
-import {
-  type RefObject,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from "react";
-import { createStore } from "zustand/vanilla";
+import { type RefObject, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { createStore, type StoreApi } from "zustand/vanilla";
 import {
   type AddPreferences,
   type CustomDevice,
@@ -63,7 +55,7 @@ import { CanvasBreadcrumbs } from "./CanvasBreadcrumbs.js";
 import { CanvasResizeHandles } from "./CanvasResizeHandles.js";
 import { registerColourField } from "./ColourField.js";
 import { type BulkCanvasAction, registerCanvasCommands } from "./canvas-commands.js";
-import { EditPanelHost } from "./EditPanelHost.js";
+import { EditPanelHost, type EditPanelHostProps } from "./EditPanelHost.js";
 import {
   connectEngine,
   currentPage,
@@ -78,8 +70,25 @@ import { SharedRegionBanner } from "./SharedRegionBanner.js";
 import { confirmSharedRemovals, sharedCutConfirmation } from "./shared-confirmations.js";
 import { shownLayout } from "./shared-layout.js";
 import { type CompileCanvasCss, connectSiteCss } from "./site-css.js";
-import { UndoHistoryPanel } from "./UndoHistoryPanel.js";
+import { UndoHistoryPanel, type UndoHistoryPanelProps } from "./UndoHistoryPanel.js";
 import { installUndoToasts, undoEntry } from "./undo-toasts.js";
+
+/** How the title bar's list of steps undoes back to one (UX-16): false if the step is gone. */
+export type UndoTo = { readonly run: (entryId: string) => boolean };
+
+/** `preferences` with `closed` as the option groups closed for component `type` (UX-13). */
+function withClosedGroups(
+  preferences: EditPanelPreferences,
+  type: string,
+  closed: readonly string[],
+): EditPanelPreferences {
+  const others = Object.entries(preferences.closedGroups).filter(([each]) => each !== type);
+  return {
+    closedGroups: Object.fromEntries(
+      closed.length === 0 ? others : [...others, [type, [...closed]]],
+    ),
+  };
+}
 
 /** Props of {@link Editor}. */
 export type EditorProps = {
@@ -113,13 +122,58 @@ export type EditorProps = {
   readonly onEditPanelPreferencesChange?: (next: EditPanelPreferences) => void;
   /**
    * Hands over how to undo back to a step (UX-16, the title bar's list of steps), and `null` once
-   * this editor is gone.
+   * this editor is gone. Called again only when the session changes, so a state setter will do.
    */
-  readonly onUndoTo?: (undoTo: ((entryId: string) => boolean) | null) => void;
+  readonly onUndoTo?: (undoTo: UndoTo | null) => void;
 };
 
 const compileWithPreload: CompileCanvasCss = (request) =>
   window.webforge.canvas.compileCss(request);
+
+/** The Undo History panel for `history`, jumping to a step with `jumpTo`. */
+function undoHistoryPanel(
+  history: EditorSession["history"],
+  jumpTo: UndoHistoryPanelProps["history"]["jumpTo"],
+) {
+  return function UndoHistory() {
+    const state = useSyncExternalStore(
+      history.state.subscribe,
+      history.state.getState,
+      history.state.getState,
+    );
+    return <UndoHistoryPanel history={{ jumpTo }} state={state} />;
+  };
+}
+
+/**
+ * The Edit panel as a panel component (1.14): the selected element's fields, with the option
+ * groups the person closed from `store`, which keeps them in the preferences (UX-13).
+ */
+function editPanel({
+  session,
+  flush,
+  advanced,
+  contentOnly,
+  store,
+}: Pick<EditPanelHostProps, "session" | "flush" | "advanced" | "contentOnly"> & {
+  readonly store: StoreApi<EditPanelPreferences>;
+}) {
+  return function Edit() {
+    const { closedGroups } = useSyncExternalStore(store.subscribe, store.getState);
+    return (
+      <EditPanelHost
+        session={session}
+        flush={flush}
+        {...(advanced === undefined ? {} : { advanced })}
+        {...(contentOnly === undefined ? {} : { contentOnly })}
+        closedGroups={closedGroups}
+        onClosedGroupsChange={(type, closed) =>
+          store.setState(withClosedGroups(store.getState(), type, closed))
+        }
+      />
+    );
+  };
+}
 
 /**
  * The canvas frame's edge handles on `session`'s device view and `view`'s zoom: a width dragged or
@@ -410,41 +464,32 @@ export function Editor({
   // Undoing back to a step from the title bar (UX-16): one jump, as Undo History and the Undo
   // toasts make, after the canvas's pending edit; a gesture in progress is dropped first, as
   // Ctrl/Cmd+Z drops it, so the jump lands where it was asked to.
-  const undoTo = useCallback(
-    (entryId: string) => {
-      connectionRef.current?.flush();
-      session.cancelGesture();
-      return undoEntry(history, entryId);
-    },
-    [session, history],
-  );
   useEffect(() => {
-    onUndoTo?.(undoTo);
+    onUndoTo?.({
+      run: (entryId) => {
+        connectionRef.current?.flush();
+        session.cancelGesture();
+        return undoEntry(history, entryId);
+      },
+    });
     return () => onUndoTo?.(null);
-  }, [onUndoTo, undoTo]);
+  }, [onUndoTo, session, history]);
 
   // Undo History goes in the left column's bottom (UI1).
-  useEffect(() => {
-    const jumpTo = (entryId: string | null) => {
-      connectionRef.current?.flush();
-      return history.jumpTo(entryId);
-    };
-    function UndoHistory() {
-      const historyState = useSyncExternalStore(
-        history.state.subscribe,
-        history.state.getState,
-        history.state.getState,
-      );
-      return <UndoHistoryPanel history={{ jumpTo }} state={historyState} />;
-    }
-    return panels.register({
-      id: "undoHistory",
-      slot: "left.bottom",
-      title: t("editor.undoHistory"),
-      icon: HistoryIcon,
-      component: UndoHistory,
-    });
-  }, [panels, history]);
+  useEffect(
+    () =>
+      panels.register({
+        id: "undoHistory",
+        slot: "left.bottom",
+        title: t("editor.undoHistory"),
+        icon: HistoryIcon,
+        component: undoHistoryPanel(history, (entryId) => {
+          connectionRef.current?.flush();
+          return history.jumpTo(entryId);
+        }),
+      }),
+    [panels, history],
+  );
 
   // The Edit panel's closed option groups (UX-13): one store the panel follows, in step with the
   // preferences both ways, so a change never re-registers the panel (its tab stays).
@@ -473,36 +518,23 @@ export function Editor({
 
   // The Edit panel replaces Puck's own fields (1.14). Registered on its own, so that changing the
   // editor level or mode (Content shows its Content tab only) redraws it alone.
-  useEffect(() => {
-    function Edit() {
-      const { closedGroups } = useSyncExternalStore(
-        editPanelStore.subscribe,
-        editPanelStore.getState,
-      );
-      return (
-        <EditPanelHost
-          session={session}
-          flush={() => connectionRef.current?.flush()}
-          advanced={editorLevel === "advanced"}
-          contentOnly={mode !== "design"}
-          closedGroups={closedGroups}
-          onClosedGroupsChange={(type, closed) => {
-            const { [type]: _was, ...others } = editPanelStore.getState().closedGroups;
-            editPanelStore.setState({
-              closedGroups: closed.length === 0 ? others : { ...others, [type]: [...closed] },
-            });
-          }}
-        />
-      );
-    }
-    return panels.register({
-      id: "edit",
-      slot: "right.top",
-      title: t("editPanel.title"),
-      icon: SlidersHorizontalIcon,
-      component: Edit,
-    });
-  }, [panels, session, editorLevel, mode, editPanelStore]);
+  useEffect(
+    () =>
+      panels.register({
+        id: "edit",
+        slot: "right.top",
+        title: t("editPanel.title"),
+        icon: SlidersHorizontalIcon,
+        component: editPanel({
+          session,
+          flush: () => connectionRef.current?.flush(),
+          advanced: editorLevel === "advanced",
+          contentOnly: mode !== "design",
+          store: editPanelStore,
+        }),
+      }),
+    [panels, session, editorLevel, mode, editPanelStore],
+  );
 
   // The Add panel's favourites and recents (1.34): one store the panel follows, in step with the
   // preferences both ways, so a change never re-registers the panel (its tab and + place stay).
@@ -524,16 +556,15 @@ export function Editor({
       }),
     [addStore],
   );
-  // The sections' larger previews in the Add panel (UX-10), drawn with the site's theme.
-  const previews = useMemo(
-    () =>
-      createSectionPreviews({
-        library: session.library,
-        theme: () => session.history.document.getState().theme,
-        sharedSection: (id) => sharedSection(session.history.document.getState(), id)?.section,
-        compileCss,
-      }),
-    [session, compileCss],
+  // The sections' larger previews in the Add panel (UX-10), drawn with the site's theme. Made once
+  // for the editor's session, so the drawings they keep outlive switches of mode.
+  const [previews] = useState(() =>
+    createSectionPreviews({
+      library: session.library,
+      theme: () => session.history.document.getState().theme,
+      sharedSection: (id) => sharedSection(session.history.document.getState(), id)?.section,
+      compileCss,
+    }),
   );
 
   // The Add panel (1.13), hidden in Content mode (M3), and the palette's Add commands with it.

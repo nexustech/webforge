@@ -154,6 +154,11 @@ test.beforeAll(async () => {
   await page.waitForFunction(() => (window as PerfWindow).__webforgePerf !== undefined, null, {
     timeout: 10_000,
   });
+  // The drag and history steps read the Undo History panel, a tab of the left panels (1.25).
+  await page
+    .getByRole("region", { name: "Left panels" })
+    .getByRole("tab", { name: "Undo History" })
+    .click();
 });
 
 test.afterAll(async () => {
@@ -179,7 +184,8 @@ async function typeInto(heading: Locator, text: string) {
   await page.keyboard.type(text, { delay: 60 });
   await expect(heading).toContainText(text.trim());
   const observed = await takeObserved();
-  await page.locator(".app__title").click();
+  // Leave the text, as clicking elsewhere would (the title bar is a drag region since #110).
+  await heading.blur();
   // Keydowns faster than 16 ms are not reported by Event Timing; they count as within budget.
   const orZero = (values: number[]) => (values.length > 0 ? values : [0]);
   return {
@@ -270,8 +276,9 @@ test("a page with 200+ elements against the editing budgets", async () => {
     );
     await expect(page.locator(".undo-history__step")).toHaveCount(before + HISTORY_STEPS);
 
-    const undo = await timeClicks(".editor__toolbar button:nth-of-type(1)", 10);
-    const redo = await timeClicks(".editor__toolbar button:nth-of-type(2)", 10);
+    // The title bar's Undo and Redo (#110).
+    const undo = await timeClicks('[data-slot="title-bar"] button[aria-label="Undo"]', 10);
+    const redo = await timeClicks('[data-slot="title-bar"] button[aria-label="Redo"]', 10);
     const jumpToStart = await timeClicks("li:last-child > .undo-history__step", 1);
     const jumpToEnd = await timeClicks("li:first-child > .undo-history__step", 1);
 

@@ -359,7 +359,7 @@ describe("Editor", () => {
   });
 
   it("undoes back to a step from the title bar in one jump, a gesture in progress dropped first (UX-16)", async () => {
-    let undoTo: ((entryId: string) => boolean) | null = null;
+    let undoTo: ((entryId: string) => boolean) | undefined;
     await act(async () =>
       root.render(
         <CommandRegistryProvider registry={registry}>
@@ -369,7 +369,7 @@ describe("Editor", () => {
               createEngine={createEngine}
               compileCss={compileCss}
               onUndoTo={(next) => {
-                undoTo = next;
+                undoTo = next?.run;
               }}
             />
           </PanelRegistryProvider>
@@ -414,7 +414,7 @@ describe("Editor", () => {
     expect(session.history.state.getState().cursor).toBe(1);
 
     await act(async () => root.render(<></>));
-    expect(undoTo).toBeNull();
+    expect(undoTo).toBeUndefined();
     root = createRoot(container);
   });
 
