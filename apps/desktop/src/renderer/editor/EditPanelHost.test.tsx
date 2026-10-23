@@ -93,6 +93,13 @@ describe("EditPanelHost", () => {
     expect(screen.getByText("Select an element to edit it")).toBeDefined();
   });
 
+  it("says how many elements are selected while several are (1.31)", () => {
+    const { session } = setup();
+    act(() => session.ui.setState({ nodeId: "heading-1", others: ["text-1", "hero-1"] }));
+
+    expect(screen.getByRole("status").textContent).toBe("3 elements selected");
+  });
+
   it("shows the selected element's fields", () => {
     setup();
 

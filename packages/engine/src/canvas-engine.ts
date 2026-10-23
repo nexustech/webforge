@@ -218,7 +218,16 @@ export interface CanvasEngine {
    * pointer over something outside the canvas that names it, such as a breadcrumb (1.30).
    */
   outline(nodeId: string | null): void;
-  onSelectionChange(cb: (nodeId: string | null) => void): Unsubscribe;
+  /**
+   * The selection changed on the canvas. `adding` for a Ctrl/Cmd- or Shift-click (1.31): it adds
+   * `nodeId` to the selection, or takes it out if it is in it already; the app keeps the set.
+   */
+  onSelectionChange(cb: (nodeId: string | null, adding: boolean) => void): Unsubscribe;
+  /**
+   * The other selected elements, while several are (1.31): outlined as the selected one is, and
+   * the selected one's quick actions give way to the Edit menu's, which act on all. None: `[]`.
+   */
+  showSelected(others: readonly string[]): void;
   /** Undo/redo shortcuts and Esc pressed inside the canvas (U4). */
   onHistoryCommand(cb: HistoryCommandHandler): Unsubscribe;
   setViewport(v: Viewport): void;
