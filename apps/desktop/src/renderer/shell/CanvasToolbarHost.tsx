@@ -1,6 +1,7 @@
 import type { Viewport } from "@webforge/engine";
 import type { SiteDoc } from "@webforge/model";
 import { useMemo, useSyncExternalStore } from "react";
+import type { CanvasPreferences } from "../../shared/ipc/prefs.js";
 import type { EditorSession } from "../editor/editor-session.js";
 import { CanvasToolbar } from "./CanvasToolbar.js";
 import type { CanvasView } from "./canvas-view.js";
@@ -29,10 +30,15 @@ function usePageList(session: EditorSession) {
 export function CanvasToolbarHost({
   session,
   view,
+  canvas,
+  onCanvasChange,
 }: {
   readonly session: EditorSession;
   /** The canvas's zoom and size, which the editor keeps in step with the canvas engine. */
   readonly view: CanvasView;
+  /** The View menu's options and the person's own devices, from their preferences. */
+  readonly canvas: CanvasPreferences;
+  readonly onCanvasChange: (canvas: CanvasPreferences) => void;
 }) {
   const { ui } = session;
   const zoom = useSyncExternalStore(view.subscribe, () => view.getState().zoom);
@@ -49,6 +55,8 @@ export function CanvasToolbarHost({
       zoom={zoom}
       onZoomChange={(next) => view.setState({ zoom: next })}
       size={size}
+      canvas={canvas}
+      onCanvasChange={onCanvasChange}
     />
   );
 }

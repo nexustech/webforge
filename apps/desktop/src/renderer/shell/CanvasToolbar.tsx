@@ -1,10 +1,25 @@
-import { cn, fieldControlClass, ToggleGroup, ToggleGroupItem } from "@webforge/editor-ui";
+import {
+  Button,
+  cn,
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  fieldControlClass,
+  ToggleGroup,
+  ToggleGroupItem,
+} from "@webforge/editor-ui";
 import type { CanvasSize, Viewport } from "@webforge/engine";
 import { t } from "@webforge/i18n";
 import type { PageId } from "@webforge/model";
-import { MonitorIcon, SmartphoneIcon, TabletIcon } from "lucide-react";
+import { ChevronDownIcon, MonitorIcon, SmartphoneIcon, TabletIcon } from "lucide-react";
 import { useId, useState } from "react";
+import type { CanvasPreferences } from "../../shared/ipc/prefs.js";
 import { type CanvasZoom, ZOOM_LEVELS } from "./canvas-view.js";
+import { DeviceDialog, type NewDevice } from "./DeviceDialog.js";
+import { useMenuDialog } from "./use-menu-dialog.js";
 
 /** The device views' canvas widths, as the canvas engine shows them. */
 const DEVICE_WIDTHS = { desktop: 1280, tablet: 768, mobile: 375 } as const;
@@ -42,15 +57,27 @@ export type CanvasToolbarProps = {
   readonly onZoomChange: (zoom: CanvasZoom) => void;
   /** The page's size and scale as the canvas shows it; null until known. */
   readonly size: CanvasSize | null;
+  /** The View menu's options and the person's own devices (F-ED-25). */
+  readonly canvas: CanvasPreferences;
+  readonly onCanvasChange: (canvas: CanvasPreferences) => void;
 };
+
+/** The View menu's options, in menu order. */
+const VIEW_OPTIONS = [
+  { key: "showOutlines", label: "canvasToolbar.view.outlines" },
+  { key: "spacingOnHover", label: "canvasToolbar.view.spacing" },
+  { key: "elementNames", label: "canvasToolbar.view.names" },
+  { key: "extraBottomSpace", label: "canvasToolbar.view.extraSpace" },
+] as const satisfies readonly { key: keyof CanvasPreferences; label: string }[];
 
 /** A scale as a whole percentage: 0.64 → 64. */
 const percent = (zoom: number) => Math.round(zoom * 100);
 
 /**
  * The canvas toolbar (F-ED-8, UI1): which page the canvas shows, Desktop · Tablet · Mobile or a
- * custom width, the zoom, and the page's size and scale ("1280 × 879 @ 64%"). Changing them is
- * never an undo step (U6).
+ * custom width, the zoom, the View menu (F-ED-25), and the page's size and scale ("1280 × 879 @
+ * 64%"), which opens the device list, the person's own devices and *Add device…* included.
+ * Changing any of them is never an undo step (U6).
  */
 export function CanvasToolbar({
   pages,
@@ -61,6 +88,8 @@ export function CanvasToolbar({
   zoom,
   onZoomChange,
   size,
+  canvas,
+  onCanvasChange,
 }: CanvasToolbarProps) {
   const pageId = useId();
   const zoomId = useId();
@@ -137,17 +166,121 @@ export function CanvasToolbar({
         ))}
       </select>
 
-      {size !== null && (
-        // Not an <output>: a live region would read out every size change while panels resize.
-        <span className="ml-auto text-xs whitespace-nowrap tabular-nums">
-          {t("canvasToolbar.size", {
-            width: Math.round(size.width),
-            height: Math.round(size.height),
-            zoom: percent(size.zoom),
-          })}
-        </span>
-      )}
+      <ViewMenu canvas={canvas} onCanvasChange={onCanvasChange} />
+
+      <DeviceMenu
+        size={size}
+        canvas={canvas}
+        onCanvasChange={onCanvasChange}
+        onViewportChange={onViewportChange}
+      />
     </div>
+  );
+}
+
+/** The View menu (F-ED-25, UX-7): what the canvas shows besides the page. */
+function ViewMenu({
+  canvas,
+  onCanvasChange,
+}: Pick<CanvasToolbarProps, "canvas" | "onCanvasChange">) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button type="button" size="sm" variant="ghost">
+          {t("canvasToolbar.view")}
+          <ChevronDownIcon aria-hidden />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start">
+        {VIEW_OPTIONS.map(({ key, label }) => (
+          <DropdownMenuCheckboxItem
+            key={key}
+            checked={canvas[key]}
+            // Kept open, so several can be turned on in one go.
+            onSelect={(event) => event.preventDefault()}
+            onCheckedChange={(checked) => onCanvasChange({ ...canvas, [key]: checked === true })}
+          >
+            {t(label)}
+          </DropdownMenuCheckboxItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+/**
+ * The page's size and scale; a click lists the devices to show the page at (F-ED-25, UX-8):
+ * Desktop, Tablet and Mobile, the person's own, and *Add device…*.
+ */
+function DeviceMenu({
+  size,
+  canvas,
+  onCanvasChange,
+  onViewportChange,
+}: Pick<CanvasToolbarProps, "size" | "canvas" | "onCanvasChange" | "onViewportChange">) {
+  const [adding, setAdding] = useState(false);
+  const dialog = useMenuDialog<"add">(() => setAdding(true));
+  const readout =
+    size === null
+      ? undefined
+      : t("canvasToolbar.size", {
+          width: Math.round(size.width),
+          height: Math.round(size.height),
+          zoom: percent(size.zoom),
+        });
+  const add = (device: NewDevice) => {
+    setAdding(false);
+    onCanvasChange({
+      ...canvas,
+      devices: [...canvas.devices, { id: crypto.randomUUID(), ...device }],
+    });
+    onViewportChange(viewportFor(device.width));
+  };
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            className="ml-auto text-xs whitespace-nowrap tabular-nums"
+            aria-label={
+              readout === undefined
+                ? t("canvasToolbar.devices")
+                : t("canvasToolbar.sizeButton", { size: readout })
+            }
+          >
+            {/* Not an <output>: a live region would read out every size change while panels resize. */}
+            {readout ?? t("canvasToolbar.devices")}
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" onCloseAutoFocus={dialog.onCloseAutoFocus}>
+          {DEVICES.map(({ id, icon: Icon }) => (
+            <DropdownMenuItem key={id} onSelect={() => onViewportChange(id)}>
+              <Icon aria-hidden />
+              {t("canvasToolbar.deviceWidth", {
+                name: t(`device.${id}`),
+                width: DEVICE_WIDTHS[id],
+              })}
+            </DropdownMenuItem>
+          ))}
+          {canvas.devices.map((device) => (
+            <DropdownMenuItem
+              key={device.id}
+              onSelect={() => onViewportChange(viewportFor(device.width))}
+            >
+              {t("canvasToolbar.deviceSize", device)}
+            </DropdownMenuItem>
+          ))}
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onSelect={() => dialog.choose("add")}>
+            {t("canvasToolbar.addDevice")}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <DeviceDialog open={adding} onAdd={add} onCancel={() => setAdding(false)} />
+    </>
   );
 }
 

@@ -242,7 +242,12 @@ export function App({
                 editorLevel={editorLevel}
                 center={
                   <div className="flex h-full flex-col">
-                    <CanvasToolbarHost session={session} view={canvasView} />
+                    <CanvasToolbarHost
+                      session={session}
+                      view={canvasView}
+                      canvas={preferences.canvas}
+                      onCanvasChange={(canvas) => change({ canvas })}
+                    />
                     <div className="min-h-0 flex-1">
                       <Editor
                         session={session}

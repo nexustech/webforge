@@ -64,6 +64,26 @@ export const shell = {
   "canvasToolbar.zoomFitAt": "Fit ({zoom}%)",
   "canvasToolbar.zoomLevel": "{zoom}%",
   "canvasToolbar.size": "{width} × {height} @ {zoom}%",
+  // The canvas's View menu and devices (1.33, F-ED-25): view state, never an undo step.
+  "canvasToolbar.view": "View",
+  "canvasToolbar.view.outlines": "Show outlines",
+  "canvasToolbar.view.spacing": "Show spacing on hover",
+  "canvasToolbar.view.names": "Show element names",
+  "canvasToolbar.view.extraSpace": "Extra space at the bottom",
+  "canvasToolbar.devices": "Devices",
+  "canvasToolbar.sizeButton": "Page size {size}: choose a device",
+  "canvasToolbar.deviceSize": "{name} ({width} × {height})",
+  "canvasToolbar.deviceWidth": "{name} ({width})",
+  "canvasToolbar.addDevice": "Add device…",
+  "canvasToolbar.addDevice.title": "Add a device",
+  "canvasToolbar.addDevice.description":
+    "Its width and height show in the device list, for you only, on every site.",
+  "canvasToolbar.addDevice.name": "Name",
+  "canvasToolbar.addDevice.width": "Width in pixels",
+  "canvasToolbar.addDevice.height": "Height in pixels",
+  "canvasToolbar.addDevice.range": "Between {min} and {max} pixels.",
+  "canvasToolbar.addDevice.confirm": "Add Device",
+  "canvasToolbar.addDevice.cancel": "Cancel",
 
   // Design | Content (M3): Design changes the layout, Content edits text and images only.
   "shell.mode": "Editing mode",

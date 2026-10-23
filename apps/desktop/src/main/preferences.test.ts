@@ -29,8 +29,14 @@ describe("parsePreferences", () => {
       editorLevel: "simple",
       panelLayout: { "shell.columns": { left: 20, center: 60, right: 20 } },
       window: null,
+      canvas: DEFAULT_PREFERENCES.canvas,
     });
     expect(parsePreferences({ panelLayout: { group: { panel: 250 } } }).panelLayout).toEqual({});
+    // A device too narrow for the canvas makes the canvas preferences the defaults.
+    const device = { id: "phone", name: "Old phone", width: 240, height: 320 };
+    expect(
+      parsePreferences({ canvas: { ...DEFAULT_PREFERENCES.canvas, devices: [device] } }).canvas,
+    ).toEqual(DEFAULT_PREFERENCES.canvas);
     const tooMany = Object.fromEntries(Array.from({ length: 33 }, (_, i) => [`g${i}`, {}]));
     expect(parsePreferences({ panelLayout: tooMany }).panelLayout).toEqual({});
   });
