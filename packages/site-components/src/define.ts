@@ -1,4 +1,5 @@
 import { t } from "@webforge/i18n";
+import { isResponsiveValue, type Responsive } from "@webforge/model";
 import { BEHAVIOUR_SCRIPTS } from "./behaviours.js";
 import type {
   ComponentDef,
@@ -98,9 +99,13 @@ export function defineComponent(spec: ComponentSpec): ComponentDef {
       const values = choices.map((choice) => choice.value);
       if (values.length === 0) fail(`offers no choices for "${fieldName}"`);
       if (new Set(values).size !== values.length) fail(`offers a choice twice for "${fieldName}"`);
-      const value = defaults[fieldName];
-      if (value !== undefined && !values.includes(String(value))) {
-        fail(`defaults "${fieldName}" to "${String(value)}", which isn't one of its choices`);
+      // A default set per device (F-ED-4) has a value for each device it sets.
+      const value = defaults[fieldName] as Responsive<unknown>;
+      const each = isResponsiveValue(value) ? Object.values(value.$responsive) : [value];
+      for (const one of each) {
+        if (one !== undefined && !values.includes(String(one))) {
+          fail(`defaults "${fieldName}" to "${String(one)}", which isn't one of its choices`);
+        }
       }
     }
   }

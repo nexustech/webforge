@@ -18,7 +18,8 @@ Wrap the definition in `defineComponent`. It checks the conventions as the modul
 ```tsx
 import { t } from "@webforge/i18n";
 import { defineComponent } from "../define.js";
-import { optionValue, slotComponent, textValue } from "../library.js";
+import { boxClasses, optionValue, slotComponent, textValue } from "../library.js";
+import { MARGIN_FIELD, marginClasses, PADDING_FIELD, SECTION_PADDING } from "./basic.js";
 
 const COLUMNS = ["two", "three"] as const;
 
@@ -42,13 +43,21 @@ const cards = defineComponent({
     },
     // Every element of the library, those added later too.
     items: { kind: "slot", label: t("field.content"), accepts: "element" },
+    // Padding and margin per side and device (1.32): the Edit panel's fields, and the canvas's
+    // spacing handles on the selected section. Elements take `margin: MARGIN_FIELD` only.
+    padding: PADDING_FIELD,
+    margin: MARGIN_FIELD,
   },
   defaults: { title: t("starter.cardsTitle"), gap: "medium", items: [] },
   render: (props) => {
     const Items = slotComponent(props, "items");
     const columns = optionValue(props.values.variant, COLUMNS);
+    // Each side its token, or a section's own spacing (`px-4 py-16`) where it isn't set.
+    const padding = boxClasses(props.values.padding, "padding", SECTION_PADDING);
     return (
-      <section className="site-cards mx-auto max-w-6xl px-4 py-16">
+      <section
+        className={`site-cards mx-auto max-w-6xl ${padding}${marginClasses(props.values.margin)}`}
+      >
         <h2 className="text-3xl font-bold">{textValue(props.values.title)}</h2>
         <div className={columns === "two" ? "grid gap-6 md:grid-cols-2" : "grid gap-6 md:grid-cols-3"}>
           <Items />
@@ -77,12 +86,25 @@ const cards = defineComponent({
 - **Media and links:** `media` (an image from Media, rendered with `Picture`) and `link` (rendered with `linkAttributes`).
 - **Repeating content:** `list`, for repeating plain values.
 - **Containers:** `slot`, for elements inside. Give a slot `accepts: "element"` to take every element, or `allow` for a fixed set (an FAQ's questions).
-- **Spacing:** padding and margin per side use `box`, with `PADDING_FIELD` and `MARGIN_FIELD` from `basic.tsx`, rendered by `boxClasses`.
+- **Spacing:** padding and margin per side use `box`, with `PADDING_FIELD` and `MARGIN_FIELD` from `basic.tsx`, rendered by `boxClasses` and `marginClasses`.
+  - Every section takes both.
+  - Every element takes `margin: MARGIN_FIELD`, since its sides are its section's.
+
+### Repeating items: a `list` or child elements
+
+- **Child elements:** use these when an item has an image, a link, its own spacing, or text people should edit on the canvas. Examples are a testimonial with a photo, a gallery image, or an FAQ question.
+  - The items are components of their own with `place: "child"`.
+  - The parent holds them in a slot that `allow`s just that type.
+  - The Edit panel still edits them as a list, and each one gets a row in Layers.
+- **A `list` field:** use this for short plain values, such as opening hours or a price list's lines.
+  - Its items can only hold `text`, `select`, `toggle`, `slider`, `color` and `spacing` values (`ListItemFieldDef`), edited in the Edit panel's rows, not on the canvas.
 
 ### Rendering
 
 - **Markup:** daisyUI 5 component classes and Tailwind utilities only, chosen from the field's token, never built from what the person typed.
-- **Class names in full:** write each class out (`"md:grid-cols-3"`) so the export's CSS build finds it. Never assemble one (`` `md:grid-cols-${n}` ``).
+- **Class names in full:** write each class out (`"md:grid-cols-3"`), never assembled (`` `md:grid-cols-${n}` ``), so the Storybook's Tailwind scan finds it, and so the code reads as the HTML it gives.
+  - The export and the canvas compile the classes in the rendered HTML, so they don't need it.
+  - `boxClasses` is the one exception: its classes are listed for the Storybook (`@source inline` in `.storybook/preview.css`, which a test keeps complete).
 - **Static HTML that works without JavaScript:** an FAQ is a `<details>`, and a menu shows on focus until its script runs.
 - **Behaviours:** a component that needs a script names it in `behaviours`. Each is a plain, readable classic script in `src/behaviours/<name>.js`, a self-contained IIFE (decisions X1, X4). The export's `webforge.js` includes only the behaviours its pages use.
 - **No external requests (C8):** icons are inline SVG, and fonts and images come with the site.

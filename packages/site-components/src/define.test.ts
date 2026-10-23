@@ -91,6 +91,20 @@ describe("defineComponent (2.5)", () => {
     },
   );
 
+  it("accepts a default set per device, each device's value one of the choices", () => {
+    const perDevice = { $responsive: { desktop: "large", mobile: "small" } };
+
+    expect(
+      defineComponent({ ...base, defaults: { ...base.defaults, size: perDevice } }).defaults.size,
+    ).toBe(perDevice);
+    expect(() =>
+      defineComponent({
+        ...base,
+        defaults: { ...base.defaults, size: { $responsive: { desktop: "large", mobile: "huge" } } },
+      }),
+    ).toThrow(`'Card' defaults "size" to "huge"`);
+  });
+
   it("adds layout variants as a Style choice that defaults to the first", () => {
     const def = defineComponent({
       ...base,

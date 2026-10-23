@@ -663,6 +663,9 @@ importers:
       daisyui:
         specifier: 'catalog:'
         version: 5.7.50
+      fast-check:
+        specifier: 4.10.2
+        version: 4.10.2
       storybook:
         specifier: 10.6.2
         version: 10.6.2(@types/react@19.3.0)(react@19.3.1)
