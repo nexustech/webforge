@@ -61,16 +61,25 @@ export async function buildSiteCss(
   resources: StyleResources,
   options: SiteCssOptions,
 ): Promise<string> {
-  const compiler = await compile(siteStylesheetSource(options), {
+  const compiler = await compile(siteStylesheetSource(options), tailwindLoaders(resources));
+  return compiler.build([...options.candidates]);
+}
+
+/**
+ * How Tailwind gets the stylesheets and plugins the site's stylesheet names: from `resources`,
+ * never from disk or the network. Shared with the class catalogue (class-catalogue.ts).
+ */
+export function tailwindLoaders(resources: StyleResources) {
+  return {
     base: "/",
-    loadStylesheet: async (id, base) => {
+    loadStylesheet: async (id: string, base: string) => {
       const content = resources.stylesheets[id];
       if (content === undefined) {
         throw new Error(`Unknown stylesheet "${id}"`);
       }
       return { path: id, base, content };
     },
-    loadModule: async (id, base) => {
+    loadModule: async (id: string, base: string) => {
       // daisyUI, and its custom-theme plugin for the site's own theme (2.1).
       const module =
         id === "daisyui"
@@ -83,8 +92,7 @@ export async function buildSiteCss(
       }
       return { path: id, base, module: module as never };
     },
-  });
-  return compiler.build([...options.candidates]);
+  };
 }
 
 /** The classes used in `html`: every word of every `class` attribute, without duplicates. */

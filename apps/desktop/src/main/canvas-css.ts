@@ -1,33 +1,61 @@
+import type { Theme } from "@webforge/model";
 import type { IpcMain } from "electron";
-import { compileCssOutcomeSchema } from "../shared/export-worker-protocol.js";
-import type { CanvasCssRequest, CanvasCssResult } from "../shared/ipc/canvas.js";
+import { canvasStylesOutcomeSchema } from "../shared/export-worker-protocol.js";
+import type {
+  CanvasCssRequest,
+  CanvasCssResult,
+  ClassCatalogueResult,
+  ClassCssResult,
+} from "../shared/ipc/canvas.js";
 import { registerIpcHandler } from "./ipc.js";
 import { createWorkerRequests, type WorkerProcess } from "./worker-requests.js";
 
-/** The parts of an Electron `UtilityProcess` the compiler uses; injectable for tests. */
+/** The parts of an Electron `UtilityProcess` the canvas styles use; injectable for tests. */
 export type CssWorkerProcess = WorkerProcess;
 
-/** Compiles canvas CSS; see {@link createCanvasCssCompiler}. */
-export type CanvasCssCompiler = (request: CanvasCssRequest) => Promise<CanvasCssResult>;
+/** What the canvas styles worker answers; see {@link createCanvasStyles}. */
+export type CanvasStyles = {
+  /** The site CSS the canvas shows the page with (1.12). */
+  readonly compileCss: (request: CanvasCssRequest) => Promise<CanvasCssResult>;
+  /** Every class a site with `theme` supports, for the CSS classes field (#276). */
+  readonly classCatalogue: (theme: Theme) => Promise<ClassCatalogueResult>;
+  /** The CSS each of `classes` produces with `theme`. */
+  readonly classCss: (theme: Theme, classes: readonly string[]) => Promise<ClassCssResult>;
+};
 
-/** How long one compile may take before it counts as failed (a cold start loads the pipeline). */
+/** How long one job may take before it counts as failed (a cold start loads the pipeline). */
 const COMPILE_TIMEOUT_MS = 60_000;
 
 /**
- * Compiles the canvas's site CSS in one long-lived utility process (see
- * {@link createWorkerRequests}), so a recompile costs no process start. Anything unexpected, a
- * timeout or an exit fails the request instead of trusting it.
+ * The canvas's styles, from one long-lived utility process (see {@link createWorkerRequests}), so
+ * a recompile costs no process start: the site CSS (1.12) and the class catalogue (#276), which
+ * loads Tailwind the same way. Anything unexpected, a timeout or an exit fails the request instead
+ * of trusting it.
  */
-export function createCanvasCssCompiler(
+export function createCanvasStyles(
   startWorker: () => CssWorkerProcess,
   timeoutMs = COMPILE_TIMEOUT_MS,
-): CanvasCssCompiler {
-  const request = createWorkerRequests(startWorker, compileCssOutcomeSchema, timeoutMs);
-  return async (css) => {
-    const outcome = await request({ type: "compile-css", ...css });
-    return outcome?.type === "css"
-      ? { status: "compiled", css: outcome.css, bodyClass: outcome.bodyClass }
-      : { status: "failed" };
+): CanvasStyles {
+  const request = createWorkerRequests(startWorker, canvasStylesOutcomeSchema, timeoutMs);
+  return {
+    compileCss: async (css) => {
+      const outcome = await request({ type: "compile-css", ...css });
+      return outcome?.type === "css"
+        ? { status: "compiled", css: outcome.css, bodyClass: outcome.bodyClass }
+        : { status: "failed" };
+    },
+    classCatalogue: async (theme) => {
+      const outcome = await request({ type: "class-catalogue", theme });
+      return outcome?.type === "class-catalogue"
+        ? { status: "loaded", classes: outcome.classes, variants: outcome.variants }
+        : { status: "failed" };
+    },
+    classCss: async (theme, classes) => {
+      const outcome = await request({ type: "class-css", theme, classes: [...classes] });
+      return outcome?.type === "class-css" && outcome.css.length === classes.length
+        ? { status: "css", css: outcome.css }
+        : { status: "failed" };
+    },
   };
 }
 
@@ -35,7 +63,9 @@ export function createCanvasCssCompiler(
 export function registerCanvasHandlers(
   ipc: Pick<IpcMain, "handle">,
   isTrustedSender: (senderUrl: string) => boolean,
-  compile: CanvasCssCompiler,
+  styles: CanvasStyles,
 ): void {
-  registerIpcHandler(ipc, "compileCanvasCss", isTrustedSender, compile);
+  registerIpcHandler(ipc, "compileCanvasCss", isTrustedSender, styles.compileCss);
+  registerIpcHandler(ipc, "classCatalogue", isTrustedSender, styles.classCatalogue);
+  registerIpcHandler(ipc, "classCss", isTrustedSender, styles.classCss);
 }

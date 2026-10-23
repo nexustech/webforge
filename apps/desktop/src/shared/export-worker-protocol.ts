@@ -33,6 +33,36 @@ const compileCssJobSchema = z.strictObject({
 /** Compiles the site CSS for the canvas. */
 export type CompileCssJob = z.infer<typeof compileCssJobSchema>;
 
+/**
+ * Lists every class the site's styles support, for the Edit panel's CSS classes field (#276). The
+ * canvas styles worker answers it, from the same Tailwind setup as the site's CSS.
+ */
+const classCatalogueJobSchema = z.strictObject({
+  type: z.literal("class-catalogue"),
+  id: z.int().nonnegative(),
+  theme: themeSchema,
+});
+
+/** Lists every class the site's styles support. */
+export type ClassCatalogueJob = z.infer<typeof classCatalogueJobSchema>;
+
+/** At most this many classes in one {@link ClassCssJob}: what one view of the list shows. */
+export const MAX_CLASS_CSS = 200;
+
+/** A class name as the CSS classes field holds one: no spaces, nothing longer than this. */
+export const classNameSchema = z.string().min(1).max(128).regex(/^\S+$/);
+
+/** The CSS each class produces, for the class browser's previews and the unknown-class warning. */
+const classCssJobSchema = z.strictObject({
+  type: z.literal("class-css"),
+  id: z.int().nonnegative(),
+  theme: themeSchema,
+  classes: z.array(classNameSchema).max(MAX_CLASS_CSS),
+});
+
+/** The CSS each class produces. */
+export type ClassCssJob = z.infer<typeof classCssJobSchema>;
+
 /** Bytes of any buffer kind (a Node `Buffer` too), which `z.instanceof` would narrow. */
 const bytesSchema = z.custom<Uint8Array>((value) => value instanceof Uint8Array);
 
@@ -52,6 +82,8 @@ export type ThumbnailJob = z.infer<typeof thumbnailJobSchema>;
 export const workerJobSchema = z.discriminatedUnion("type", [
   exportJobSchema,
   compileCssJobSchema,
+  classCatalogueJobSchema,
+  classCssJobSchema,
   thumbnailJobSchema,
 ]);
 
@@ -81,6 +113,28 @@ export const compileCssOutcomeSchema = z.discriminatedUnion("type", [
 
 /** The worker's answer to a {@link CompileCssJob}. */
 export type CompileCssOutcome = z.infer<typeof compileCssOutcomeSchema>;
+
+/** The worker's answer to a {@link ClassCatalogueJob} or a {@link ClassCssJob}. */
+export const classesOutcomeSchema = z.discriminatedUnion("type", [
+  z.strictObject({
+    type: z.literal("class-catalogue"),
+    id: z.int().nonnegative(),
+    classes: z.array(classNameSchema).max(100_000),
+    variants: z.array(classNameSchema).max(1_000),
+  }),
+  z.strictObject({
+    type: z.literal("class-css"),
+    id: z.int().nonnegative(),
+    css: z.array(z.string().max(100_000).nullable()).max(MAX_CLASS_CSS),
+  }),
+  z.strictObject({ type: z.literal("classes-failed"), id: z.int().nonnegative() }),
+]);
+
+/** The worker's answer to a {@link ClassCatalogueJob} or a {@link ClassCssJob}. */
+export type ClassesOutcome = z.infer<typeof classesOutcomeSchema>;
+
+/** Everything the canvas styles worker answers: CSS for the canvas, and the class catalogue. */
+export const canvasStylesOutcomeSchema = z.union([compileCssOutcomeSchema, classesOutcomeSchema]);
 
 /**
  * What the export worker reports back. Failures carry only a code: no paths, no site content

@@ -1,11 +1,7 @@
 import { DEFAULT_THEME } from "@webforge/model";
 import type { IpcMain, IpcMainInvokeEvent } from "electron";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  type CssWorkerProcess,
-  createCanvasCssCompiler,
-  registerCanvasHandlers,
-} from "./canvas-css.js";
+import { type CssWorkerProcess, createCanvasStyles, registerCanvasHandlers } from "./canvas-css.js";
 
 type Listener = (value: unknown) => void;
 
@@ -36,7 +32,7 @@ const request = (candidates: string[]) => ({
   candidates,
 });
 
-describe("createCanvasCssCompiler", () => {
+describe("createCanvasStyles' compileCss", () => {
   beforeEach(() => {
     vi.useFakeTimers();
   });
@@ -48,7 +44,7 @@ describe("createCanvasCssCompiler", () => {
   it("keeps one worker and matches each answer to its request", async () => {
     const fake = fakeWorker();
     const start = vi.fn(() => fake.worker);
-    const compile = createCanvasCssCompiler(start);
+    const compile = createCanvasStyles(start).compileCss;
 
     const first = compile(request(["btn"]));
     const second = compile(request(["card"]));
@@ -64,7 +60,7 @@ describe("createCanvasCssCompiler", () => {
 
   it("fails a request the worker couldn't compile", async () => {
     const fake = fakeWorker();
-    const compile = createCanvasCssCompiler(() => fake.worker);
+    const compile = createCanvasStyles(() => fake.worker).compileCss;
 
     const result = compile(request([]));
     fake.answer({ type: "css-failed", id: fake.jobs[0]?.id });
@@ -74,7 +70,7 @@ describe("createCanvasCssCompiler", () => {
 
   it("ignores unexpected messages and fails the request when it times out", async () => {
     const fake = fakeWorker();
-    const compile = createCanvasCssCompiler(() => fake.worker, 1_000);
+    const compile = createCanvasStyles(() => fake.worker, 1_000).compileCss;
 
     const result = compile(request([]));
     fake.answer({ type: "css", id: "not a number", css: 1 });
@@ -89,7 +85,7 @@ describe("createCanvasCssCompiler", () => {
     const start = vi.fn(
       () => (workers[start.mock.calls.length - 1] ?? workers[1])?.worker as CssWorkerProcess,
     );
-    const compile = createCanvasCssCompiler(start);
+    const compile = createCanvasStyles(start).compileCss;
 
     const lost = compile(request([]));
     workers[0]?.exit();
@@ -102,13 +98,13 @@ describe("createCanvasCssCompiler", () => {
   });
 });
 
-describe("createCanvasCssCompiler after a timeout", () => {
+describe("createCanvasStyles' compileCss after a timeout", () => {
   it("doesn't let the stopped worker's exit fail the new worker's requests", async () => {
     vi.useFakeTimers();
     const old = fakeWorker();
     const fresh = fakeWorker();
     const start = vi.fn().mockReturnValueOnce(old.worker).mockReturnValueOnce(fresh.worker);
-    const compile = createCanvasCssCompiler(start, 1_000);
+    const compile = createCanvasStyles(start, 1_000).compileCss;
 
     const stuck = compile(request([]));
     vi.advanceTimersByTime(1_000);
@@ -125,6 +121,42 @@ describe("createCanvasCssCompiler after a timeout", () => {
   });
 });
 
+describe("createCanvasStyles' class catalogue (#276)", () => {
+  it("asks the same worker for the catalogue and for classes' CSS", async () => {
+    const fake = fakeWorker();
+    const start = vi.fn(() => fake.worker);
+    const styles = createCanvasStyles(start);
+
+    const catalogue = styles.classCatalogue(DEFAULT_THEME);
+    const css = styles.classCss(DEFAULT_THEME, ["p-4", "pading-4"]);
+    const [a, b] = fake.jobs;
+    fake.answer({ type: "class-catalogue", id: a?.id, classes: ["p-4"], variants: ["md"] });
+    fake.answer({ type: "class-css", id: b?.id, css: [".p-4 {}", null] });
+
+    expect(start).toHaveBeenCalledOnce();
+    expect(fake.jobs.map((job) => (job as unknown as { type: string }).type)).toEqual([
+      "class-catalogue",
+      "class-css",
+    ]);
+    expect(await catalogue).toEqual({ status: "loaded", classes: ["p-4"], variants: ["md"] });
+    expect(await css).toEqual({ status: "css", css: [".p-4 {}", null] });
+  });
+
+  it("fails a failed job, and an answer for a different number of classes", async () => {
+    const fake = fakeWorker();
+    const styles = createCanvasStyles(() => fake.worker);
+
+    const catalogue = styles.classCatalogue(DEFAULT_THEME);
+    const css = styles.classCss(DEFAULT_THEME, ["p-4", "m-2"]);
+    const [a, b] = fake.jobs;
+    fake.answer({ type: "classes-failed", id: a?.id });
+    fake.answer({ type: "class-css", id: b?.id, css: [".p-4 {}"] });
+
+    expect(await catalogue).toEqual({ status: "failed" });
+    expect(await css).toEqual({ status: "failed" });
+  });
+});
+
 describe("registerCanvasHandlers", () => {
   it("compiles for the app's own page only", async () => {
     type Handler = (event: IpcMainInvokeEvent, ...args: unknown[]) => Promise<unknown>;
@@ -133,7 +165,11 @@ describe("registerCanvasHandlers", () => {
       handle: (channel: string, handler: Handler) => handlers.set(channel, handler),
     } as unknown as Pick<IpcMain, "handle">;
     const compile = vi.fn(async () => ({ status: "failed" }) as const);
-    registerCanvasHandlers(ipc, (url) => url === "file:///app", compile);
+    registerCanvasHandlers(ipc, (url) => url === "file:///app", {
+      compileCss: compile,
+      classCatalogue: vi.fn(),
+      classCss: vi.fn(),
+    });
     const handler = handlers.get("canvas:compile-css");
     const from = (url: string) => ({ senderFrame: { url } }) as unknown as IpcMainInvokeEvent;
 

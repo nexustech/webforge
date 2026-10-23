@@ -1,5 +1,6 @@
 import { workerJobSchema } from "../shared/export-worker-protocol.js";
 import { loadBundledResources, loadStyleResources } from "./bundled-resources.js";
+import { createClassCatalogues } from "./class-catalogue.js";
 import { compileCss } from "./compile-css.js";
 import { thumbnailFor } from "./make-thumbnail.js";
 import { runExport } from "./run-export.js";
@@ -9,6 +10,9 @@ import { runExport } from "./run-export.js";
 // for its thumbnails (1.16). Wiring only; run-export.ts, compile-css.ts and make-thumbnail.ts hold
 // the logic and E2E tests cover this file.
 
+// The canvas styles worker's class catalogue (#276), kept per theme for the next jobs.
+const classes = createClassCatalogues(loadStyleResources);
+
 process.parentPort.on("message", (event) => {
   const job = workerJobSchema.safeParse(event.data);
   const outcome = !job.success
@@ -17,7 +21,9 @@ process.parentPort.on("message", (event) => {
       ? runExport(job.data, loadBundledResources)
       : job.data.type === "thumbnail"
         ? thumbnailFor(job.data, loadBundledResources)
-        : compileCss(job.data, loadStyleResources);
+        : job.data.type === "class-catalogue" || job.data.type === "class-css"
+          ? classes(job.data)
+          : compileCss(job.data, loadStyleResources);
   outcome
     .then((result) => {
       process.parentPort.postMessage(result);
