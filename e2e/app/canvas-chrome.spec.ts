@@ -52,6 +52,20 @@ async function selectHeading(): Promise<void> {
   await expect(quickAction("Move down")).toBeVisible();
 }
 
+test("shows Puck's canvas only: no Puck rail or panel, in Design or Content mode (#274)", async () => {
+  const editor = page.locator(".editor__canvas");
+  for (const mode of ["Design", "Content"] as const) {
+    await page.getByRole("radio", { name: mode, exact: true }).click();
+    await expect(canvas().locator("h1")).toHaveText(STARTER_HEADING);
+    await expect(editor.locator('[class*="_PuckLayout-nav_"]')).toBeHidden();
+    await expect(editor.locator('[class*="_Sidebar--left_"]')).toBeHidden();
+    await expect(editor.locator('[class*="_Sidebar--right_"]')).toBeHidden();
+    // Webforge's Layers is the only one: Puck's rail had a "Layers" button too.
+    await expect(editor.getByRole("button", { name: "Layers" })).toHaveCount(0);
+    await expect(editor.getByRole("button", { name: "Add" })).toHaveCount(0);
+  }
+});
+
 test.describe("selection chrome", () => {
   test("outlines the selected element in magenta", async () => {
     await selectHeading();
