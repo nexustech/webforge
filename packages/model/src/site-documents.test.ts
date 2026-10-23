@@ -17,6 +17,7 @@ import {
   siteDocuments,
   siteFromDocuments,
 } from "./site-documents.js";
+import { DEFAULT_THEME } from "./theme.js";
 
 const site = createSite({
   name: "Rosa's Bakery",
@@ -107,12 +108,12 @@ describe("changedDocuments", () => {
     const home = site.pages[site.homePageId] as PageEntry;
     const next: SiteDoc = {
       ...site,
-      theme: { name: "cupcake" },
+      theme: { ...DEFAULT_THEME, preset: "cupcake" },
       pages: { ...site.pages, [home.id]: { ...home, title: "Welcome" } },
     };
 
     expect(changedDocuments(site, next)).toEqual([
-      { type: "put", id: "theme", kind: "theme", content: { name: "cupcake" } },
+      { type: "put", id: "theme", kind: "theme", content: { ...DEFAULT_THEME, preset: "cupcake" } },
       { type: "put", id: pageDocumentId(home.id), kind: "page", content: next.pages[home.id] },
     ]);
   });
@@ -144,7 +145,7 @@ describe("applySiteChanges", () => {
     const home = site.pages[site.homePageId] as PageEntry;
     const next: SiteDoc = {
       ...site,
-      theme: { name: "cupcake" },
+      theme: { ...DEFAULT_THEME, preset: "cupcake" },
       pages: { ...site.pages, [home.id]: { ...home, title: "Welcome" } },
     };
 

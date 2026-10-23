@@ -12,7 +12,7 @@ export async function compileCss(
 ): Promise<CompileCssOutcome> {
   try {
     const css = await buildSiteCss(await loadResources(), {
-      theme: job.theme.name,
+      theme: job.theme.preset,
       candidates: [...BODY_CLASS.split(" "), ...job.candidates],
       fontsUrl: CANVAS_FONT_URL,
     });

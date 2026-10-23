@@ -3,6 +3,7 @@ import v1Site from "../test/fixtures/v1/site.json" with { type: "json" };
 import v2Site from "../test/fixtures/v2/site.json" with { type: "json" };
 import v3Site from "../test/fixtures/v3/site.json" with { type: "json" };
 import v4Site from "../test/fixtures/v4/site.json" with { type: "json" };
+import v5Site from "../test/fixtures/v5/site.json" with { type: "json" };
 import {
   MIGRATIONS,
   migrateSite,
@@ -23,16 +24,44 @@ function formatError(run: () => unknown): SiteFormatError {
   throw new Error("expected a SiteFormatError");
 }
 
-describe("migrateSite", () => {
-  it("opens the format 4 fixture unchanged", () => {
-    const site = migrateSite(v4Site);
+/** Format 5's theme for a site whose theme was daisyUI's `cupcake`, as the fixtures' is. */
+const cupcakeTokens = v5Site.theme;
 
-    expect(site).toEqual(v4Site);
+describe("migrateSite", () => {
+  it("opens the format 5 fixture unchanged", () => {
+    const site = migrateSite(v5Site);
+
+    expect(site).toEqual(v5Site);
     expect(site.formatVersion).toBe(SITE_FORMAT_VERSION);
   });
 
-  it("opens the format 3 fixture as format 4, with its shared section and linked copy", () => {
-    expect(migrateSite(v3Site)).toEqual({ ...v3Site, formatVersion: 4 });
+  it("opens the format 4 fixture as format 5, its theme as tokens named after it (2.1)", () => {
+    const site = migrateSite(v4Site);
+
+    expect(site).toEqual({ ...v4Site, formatVersion: 5, theme: cupcakeTokens });
+    expect(site.theme.preset).toBe("cupcake");
+    // daisyUI's own cupcake colours and corners (FORMAT_5_DAISYUI_THEMES; the pipeline's tests
+    // compare every built-in theme with daisyUI's).
+    expect(site.theme.colors.primary).toEqual({ l: 0.85, c: 0.138, h: 181.071 });
+    expect(site.theme.radius).toEqual({ box: "l", field: "xl", selector: "l" });
+    expect(site.theme.border).toBe("thick");
+  });
+
+  it("gives a format 4 theme naming none of daisyUI's themes the light one (2.1)", () => {
+    const named = (name: unknown) => migrateSite({ ...v4Site, theme: { name } }).theme.preset;
+
+    expect([
+      named("dracula"),
+      named("corporate-2"),
+      named("Not A Name"),
+      named(3),
+      named("constructor"),
+    ]).toEqual(["dracula", "light", "light", "light", "light"]);
+    expect(migrateSite({ ...v4Site, theme: undefined }).theme.preset).toBe("light");
+  });
+
+  it("opens the format 3 fixture as format 5, with its shared section and linked copy", () => {
+    expect(migrateSite(v3Site)).toEqual({ ...v3Site, formatVersion: 5, theme: cupcakeTokens });
   });
 
   it("gives format 3 shared sections that share a name names of their own (1.29)", () => {
@@ -62,14 +91,24 @@ describe("migrateSite", () => {
     ]);
   });
 
-  it("opens the format 2 fixture as format 4, with no shared sections yet", () => {
-    expect(migrateSite(v2Site)).toEqual({ ...v2Site, formatVersion: 4, sharedSections: {} });
+  it("opens the format 2 fixture as format 5, with no shared sections yet", () => {
+    expect(migrateSite(v2Site)).toEqual({
+      ...v2Site,
+      formatVersion: 5,
+      sharedSections: {},
+      theme: cupcakeTokens,
+    });
   });
 
-  it("opens the format 1 fixture as format 4", () => {
+  it("opens the format 1 fixture as format 5", () => {
     // Fixtures of released formats are never deleted: every old site must keep opening. This one
     // already has its Hero image in the format 2 shape.
-    expect(migrateSite(v1Site)).toEqual({ ...v1Site, formatVersion: 4, sharedSections: {} });
+    expect(migrateSite(v1Site)).toEqual({
+      ...v1Site,
+      formatVersion: 5,
+      sharedSections: {},
+      theme: cupcakeTokens,
+    });
   });
 
   it("opens a new site after a JSON round trip", () => {

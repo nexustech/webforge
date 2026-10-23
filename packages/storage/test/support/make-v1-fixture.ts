@@ -1,5 +1,5 @@
 import { readFileSync, rmSync } from "node:fs";
-import { createSite, type MediaId, type PageId } from "@webforge/model";
+import { createSite, DEFAULT_THEME, type MediaId, type PageId } from "@webforge/model";
 import { ProjectStore } from "../../src/index.js";
 
 // Writes packages/test-utils/fixtures/wforge/v1.wforge, the format 1 fixture. Run once when the
@@ -29,7 +29,8 @@ const site = createSite({
   language: "en-GB",
   homeTitle: "Home",
   notFoundTitle: "Page not found",
-  theme: "cupcake",
+  // Format 1 wrote the theme's name; the script now takes tokens, named as that theme was.
+  theme: { ...DEFAULT_THEME, preset: "cupcake" },
   homeDoc: {
     root: { props: {} },
     content: [

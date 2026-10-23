@@ -1,3 +1,4 @@
+import { DEFAULT_THEME } from "@webforge/model";
 import { describe, expect, it, vi } from "vitest";
 import type { ExportJob } from "../shared/export-worker-protocol.js";
 import { runExportInWorker, type WorkerProcess } from "./export-worker-client.js";
@@ -8,7 +9,7 @@ const job: ExportJob = {
   snapshot: {
     name: "Bakery",
     language: "en",
-    theme: { name: "light" },
+    theme: { ...DEFAULT_THEME, preset: "light" },
     layout: { header: [], footer: [] },
     pages: [
       { id: "home", path: "index", title: "Home", doc: { root: { props: {} }, content: [] } },

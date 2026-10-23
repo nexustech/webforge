@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 import {
+  DEFAULT_THEME,
   expandSharedCopies,
   type LayoutDoc,
   type NodeDoc,
@@ -119,7 +120,7 @@ describe("renderStatic (ADR 0005)", () => {
     document.body.append(element);
     engine = createPuckEngine({ iframe: false });
     await act(async () =>
-      engine.mount(element, { library: siteLibrary, theme: { name: "light" } }),
+      engine.mount(element, { library: siteLibrary, theme: { ...DEFAULT_THEME, preset: "light" } }),
     );
   });
 

@@ -1,3 +1,4 @@
+import { DEFAULT_THEME } from "@webforge/model";
 import { loadNodeResources } from "@webforge/pipeline/node";
 import { describe, expect, it } from "vitest";
 import { compileCss } from "./compile-css.js";
@@ -5,7 +6,12 @@ import { compileCss } from "./compile-css.js";
 describe("compileCss", () => {
   it("compiles the classes the site uses, the body's classes and the theme", async () => {
     const outcome = await compileCss(
-      { type: "compile-css", id: 7, theme: { name: "light" }, candidates: ["btn", "text-4xl"] },
+      {
+        type: "compile-css",
+        id: 7,
+        theme: { ...DEFAULT_THEME, preset: "light" },
+        candidates: ["btn", "text-4xl"],
+      },
       loadNodeResources,
     );
 
@@ -24,7 +30,7 @@ describe("compileCss", () => {
 
   it("reports a failure without details", async () => {
     const outcome = await compileCss(
-      { type: "compile-css", id: 3, theme: { name: "light" }, candidates: [] },
+      { type: "compile-css", id: 3, theme: { ...DEFAULT_THEME, preset: "light" }, candidates: [] },
       () => Promise.reject(new Error("no resources")),
     );
 

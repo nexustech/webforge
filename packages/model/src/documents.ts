@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { anchorIdSchema } from "./link.js";
+import { type ThemeTokens, themeTokensSchema } from "./theme.js";
 
 /**
  * Advanced-mode options of a node (F-ED-11): extra CSS classes, HTML attributes and the anchor that
@@ -44,10 +45,8 @@ export type LayoutDoc = {
   footer: NodeDoc[];
 };
 
-/** The site's theme: a daisyUI theme name until `@webforge/themes` defines curated themes. */
-export type Theme = {
-  readonly name: string;
-};
+/** The site's theme: its design tokens (2.1). */
+export type Theme = ThemeTokens;
 
 /**
  * Attribute names Advanced mode accepts: `data-*`, `aria-*` and a few harmless global attributes.
@@ -145,10 +144,8 @@ export const layoutDocSchema: z.ZodType<LayoutDoc> = withoutUnsafeKeys(
   }),
 );
 
-/** Validates a {@link Theme}: a daisyUI-style theme name (lowercase letters, digits, hyphens). */
-export const themeSchema: z.ZodType<Theme> = z.object({
-  name: z.string().regex(/^[a-z][a-z0-9-]*$/),
-});
+/** Validates a {@link Theme}: the site's design tokens (2.1). */
+export const themeSchema: z.ZodType<Theme> = themeTokensSchema;
 
 /** Whether `value` looks like a {@link NodeDoc}; used to find slot arrays inside props. */
 export function isNodeDoc(value: unknown): value is NodeDoc {

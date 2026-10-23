@@ -145,4 +145,15 @@ export {
 export type { DocumentItem, MediaItem, SitePage, SiteSnapshot } from "./site-snapshot.js";
 export { siteSnapshotSchema } from "./site-snapshot.js";
 export { slugify, uniqueSlug } from "./slugs.js";
+export type { ColorRole, FontRef, Oklch, TextStyle, ThemeTokens } from "./theme.js";
+export {
+  COLOR_ROLES,
+  DEFAULT_THEME,
+  fontRefSchema,
+  oklchSchema,
+  RADIUS_TOKENS,
+  TEXT_SIZES,
+  TEXT_STYLES,
+  themeTokensSchema,
+} from "./theme.js";
 export { siteToSnapshot } from "./to-snapshot.js";

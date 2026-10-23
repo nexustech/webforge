@@ -1,3 +1,4 @@
+import { DEFAULT_THEME } from "@webforge/model";
 import type { IpcMain, IpcMainInvokeEvent } from "electron";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
@@ -30,7 +31,10 @@ function fakeWorker() {
   };
 }
 
-const request = (candidates: string[]) => ({ theme: { name: "light" }, candidates });
+const request = (candidates: string[]) => ({
+  theme: { ...DEFAULT_THEME, preset: "light" },
+  candidates,
+});
 
 describe("createCanvasCssCompiler", () => {
   beforeEach(() => {

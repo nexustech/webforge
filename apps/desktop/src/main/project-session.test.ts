@@ -5,6 +5,7 @@ import { join } from "node:path";
 import {
   changedDocuments,
   createSite,
+  DEFAULT_THEME,
   type ImageMeta,
   type MediaId,
   pageDocumentId,
@@ -64,7 +65,10 @@ describe("ProjectSession", () => {
     session.create(path);
     session.close();
 
-    expect(session.open(path)).toMatchObject({ status: "opened", project: { name: "site" } });
+    expect(session.open(path)).toMatchObject({
+      status: "opened",
+      project: { name: "site" },
+    });
   });
 
   it("replaces the current site when it creates one over the same file", () => {
@@ -163,7 +167,7 @@ describe("ProjectSession site documents", () => {
     session.close();
     session.open(path);
 
-    const next = { ...site, theme: { name: "cupcake" } };
+    const next = { ...site, theme: { ...DEFAULT_THEME, preset: "cupcake" } };
     expect(session.commit(changedDocuments(site, next))).toEqual({ status: "saved" });
     expect(session.readSite()).toEqual({ status: "ok", site: next });
   });

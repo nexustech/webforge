@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { MenuItemId, PageId, SiteSnapshot } from "@webforge/model";
+import { DEFAULT_THEME } from "@webforge/model";
 
 const FIXTURES = join(import.meta.dirname, "../fixtures");
 
@@ -28,7 +29,7 @@ export function sampleSite(): SiteSnapshot {
   return {
     name: "Rosa's Bakery",
     language: "en-GB",
-    theme: { name: "cupcake" },
+    theme: { ...DEFAULT_THEME, preset: "cupcake" },
     layout: {
       header: [{ type: "Header", props: { id: "header", siteName: "Rosa's Bakery" } }],
       footer: [{ type: "Footer", props: { id: "footer", text: "© Rosa's Bakery, Hightown" } }],

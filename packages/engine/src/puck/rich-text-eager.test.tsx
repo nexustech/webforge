@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 
 import type { PageDoc } from "@webforge/model";
+import { DEFAULT_THEME } from "@webforge/model";
 import type { ComponentLibrary } from "@webforge/site-components";
 import { act } from "react";
 import { afterEach, expect, it } from "vitest";
@@ -50,7 +51,10 @@ it("draws rich text with the real editor from the start, never Puck's fallback (
 
   engine = createPuckEngine({ iframe: false });
   await act(async () => {
-    engine?.mount(element as HTMLDivElement, { library, theme: { name: "test" } });
+    engine?.mount(element as HTMLDivElement, {
+      library,
+      theme: { ...DEFAULT_THEME, preset: "test" },
+    });
     engine?.loadPage(page, { header: [], footer: [] });
   });
   await act(async () => {

@@ -1,3 +1,4 @@
+import { FORMAT_5_DAISYUI_THEMES } from "./format-5-themes.js";
 import { SITE_FORMAT_VERSION, type SiteDoc, siteDocSchema } from "./site-doc.js";
 
 /**
@@ -39,6 +40,7 @@ export const MIGRATIONS: Readonly<Record<number, SiteMigration>> = {
   1: heroImageValues,
   2: sharedSections,
   3: uniqueSharedSectionNames,
+  4: themeTokens,
 };
 
 type RawNode = { type: string; props: Record<string, unknown> };
@@ -138,6 +140,45 @@ function uniqueSharedSectionNames(site: RawSite): RawSite {
     }
   }
   return { ...site, formatVersion: 4 };
+}
+
+/**
+ * The tokens format 5 gives every migrated site besides its daisyUI theme's own (fonts, spacing,
+ * the type scale, links, buttons, shadows): the "light" preset's as they were in format 5.
+ */
+const FORMAT_5_DEFAULTS = {
+  fonts: {
+    heading: { family: "Inter", fallback: "sans-serif" },
+    body: { family: "Inter", fallback: "sans-serif" },
+  },
+  spacing: "normal",
+  typeScale: {
+    h1: { size: "5xl", weight: 700, leading: "tight" },
+    h2: { size: "3xl", weight: 700, leading: "tight" },
+    h3: { size: "xl", weight: 600, leading: "tight" },
+    h4: { size: "lg", weight: 600, leading: "normal" },
+    h5: { size: "base", weight: 600, leading: "normal" },
+    h6: { size: "sm", weight: 600, leading: "normal" },
+    body: { size: "lg", weight: 400, leading: "relaxed" },
+    small: { size: "sm", weight: 400, leading: "normal" },
+  },
+  links: { underline: "always" },
+  buttons: { shape: "rounded", size: "m", style: "filled" },
+  shadow: "soft",
+};
+
+/**
+ * Format 4 → 5 (2.1): the theme is the site's design tokens instead of a daisyUI theme's name. A
+ * site whose theme was one of daisyUI's built-in themes gets that theme's colours, corners, border,
+ * depth and noise (`FORMAT_5_DAISYUI_THEMES`), with its name as their preset, so it looks as
+ * before; any other name, which named no theme, becomes the light one.
+ */
+function themeTokens(site: RawSite): RawSite {
+  const name = isRecord(site.theme) ? site.theme.name : undefined;
+  const preset =
+    typeof name === "string" && Object.hasOwn(FORMAT_5_DAISYUI_THEMES, name) ? name : "light";
+  const theme = { preset, ...FORMAT_5_DAISYUI_THEMES[preset], ...FORMAT_5_DEFAULTS };
+  return { ...site, theme: JSON.parse(JSON.stringify(theme)), formatVersion: 5 };
 }
 
 /** Options of {@link migrateSiteWith}; the defaults are this build's chain and version. */

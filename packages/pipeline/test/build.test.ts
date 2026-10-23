@@ -1,4 +1,5 @@
 import type { MediaId, MenuItemId, NodeDoc, PageId, SiteSnapshot } from "@webforge/model";
+import { DEFAULT_THEME } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { sampleSite } from "@webforge/test-utils";
 import { beforeAll, describe, expect, it } from "vitest";
@@ -174,7 +175,7 @@ function siteWith(content: NodeDoc[], overrides: Partial<SiteSnapshot> = {}): Si
   return {
     name: "Test",
     language: "en",
-    theme: { name: "light" },
+    theme: { ...DEFAULT_THEME, preset: "light" },
     layout: { header: [], footer: [] },
     pages: [{ id: "home", path: "index", title: "Home", doc: { root: { props: {} }, content } }],
     media: [],

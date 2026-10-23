@@ -1,6 +1,12 @@
 import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { createSite, type PageId, SiteFormatError, siteDocuments } from "@webforge/model";
+import {
+  createSite,
+  DEFAULT_THEME,
+  type PageId,
+  SiteFormatError,
+  siteDocuments,
+} from "@webforge/model";
 import { copyWforgeFixture, heroPhoto, tempDirFactory } from "@webforge/test-utils";
 import { describe, expect, it } from "vitest";
 import { detectSyncFolder, ProjectStore, ReadOnlyProjectError } from "../src/index.js";
@@ -128,11 +134,13 @@ describe("ProjectStore.backupTo", () => {
 
     await store.backupTo(backup);
     // The working copy keeps working while and after a backup.
-    store.commit([{ type: "put", id: "theme", kind: "theme", content: { name: "cupcake" } }]);
+    store.commit([
+      { type: "put", id: "theme", kind: "theme", content: { ...DEFAULT_THEME, preset: "cupcake" } },
+    ]);
 
     const copy = ProjectStore.open(backup);
     expect(copy.info.projectId).toBe(store.info.projectId);
-    expect(copy.readSite().theme).toEqual({ name: "light" });
+    expect(copy.readSite().theme).toEqual(DEFAULT_THEME);
     copy.close();
     store.close();
     expect(readFileSync(backup).subarray(0, 15).toString()).toBe("SQLite format 3");
