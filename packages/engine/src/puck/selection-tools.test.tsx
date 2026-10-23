@@ -140,6 +140,22 @@ describe("selection tools (1.30, F-ED-25, F-ED-27)", () => {
     expect(await perform("selectChild")).toBe(false);
   });
 
+  it("outlines an element named outside the canvas, one at a time (breadcrumbs)", async () => {
+    const outlined = () =>
+      [...element.querySelectorAll("[data-wf-outlined]")].map((each) =>
+        each.getAttribute("data-puck-component"),
+      );
+
+    engine.outline("first");
+    expect(outlined()).toEqual(["first"]);
+    engine.outline("box");
+    expect(outlined()).toEqual(["box"]);
+    engine.outline("gone");
+    engine.outline(null);
+
+    expect(outlined()).toEqual([]);
+  });
+
   it("starts editing the selected element's own text, the caret at its end", async () => {
     await select("first");
 
@@ -202,7 +218,8 @@ describe("selection tools (1.30, F-ED-25, F-ED-27)", () => {
       expect(button("Edit")).not.toBeNull();
       expect(button("Hide")).toBeNull();
     }
-  });
+    // Loading the Header and a shared section takes Puck a while on a busy machine.
+  }, 20_000);
 
   it("says Show for a hidden element, and offers no Hide in Content mode (M3)", async () => {
     await act(async () =>

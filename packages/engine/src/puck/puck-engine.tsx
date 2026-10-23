@@ -48,6 +48,7 @@ import {
   applyChromeStyles,
   createSelectionOutline,
   type ElementActions,
+  OUTLINED_ATTRIBUTE,
   QuickActionBar,
 } from "./chrome.js";
 import { toPuckConfig } from "./config.js";
@@ -883,6 +884,17 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       return () => {
         commandHandlers.delete(handler);
       };
+    },
+
+    outline(nodeId) {
+      const doc = frameDocument ?? host?.ownerDocument;
+      for (const element of doc?.querySelectorAll(`[${OUTLINED_ATTRIBUTE}]`) ?? []) {
+        element.removeAttribute(OUTLINED_ATTRIBUTE);
+      }
+      if (nodeId === null) return;
+      doc
+        ?.querySelector(`[data-puck-component="${CSS.escape(nodeId)}"]`)
+        ?.setAttribute(OUTLINED_ATTRIBUTE, "");
     },
 
     select(nodeId) {

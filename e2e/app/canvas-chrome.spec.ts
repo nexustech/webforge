@@ -216,6 +216,32 @@ test.describe("keyboard and floating add", () => {
     await expect(canvas().locator("h1")).toHaveText(`${STARTER_HEADING}!`);
   });
 
+  test("breadcrumbs follow the selection, select on click and outline on hover (1.30)", async () => {
+    const crumbs = page.getByRole("navigation", { name: "Where the selection is" });
+    await selectHeading();
+    await expect(crumbs.getByRole("button")).toHaveText([/.+/, "Section", "Heading"]);
+
+    await crumbs.getByRole("button", { name: "Heading" }).hover();
+    await expect(canvas().locator("h1[data-wf-outlined], [data-wf-outlined] h1")).toHaveCount(1);
+    await crumbs.getByRole("button", { name: "Section" }).click();
+    await expect(selectedBar()).toContainText("Section");
+    await expect(crumbs.getByRole("button")).toHaveText([/.+/, "Section"]);
+    // Selecting moves nothing: no undo step.
+    await expect(steps()).toHaveText(["Opened page"]);
+  });
+
+  test("F2 renames the selected element in a dialog, one step (1.30)", async () => {
+    await selectHeading();
+    await page.keyboard.press("F2");
+    const dialog = page.getByRole("dialog", { name: "Rename Heading" });
+    await dialog.getByRole("textbox").fill("Welcome");
+    await dialog.getByRole("button", { name: "Rename" }).click();
+
+    await expect(steps().first()).toHaveText("Renamed Heading to 'Welcome'");
+    const crumbs = page.getByRole("navigation", { name: "Where the selection is" });
+    await expect(crumbs.getByRole("button").last()).toHaveText("Welcome");
+  });
+
   test("adds a section with the floating + below a section, chosen in the Add panel", async () => {
     const section = canvas().locator(".site-section");
     const box = await section.boundingBox();
