@@ -50,7 +50,7 @@ export const components = {
   "colour.role.surface": "Surface",
   "colour.role.text": "Text",
   "field.color.lowContrast":
-    "Hard to read on the page: contrast {ratio}:1, less than the 4.5:1 text needs.",
+    "Hard to read on the page: contrast {ratio}:1, less than the {needed}:1 this text needs.",
   "field.alignment": "Alignment",
   "field.alignment.left": "Left",
   "field.alignment.centre": "Centre",

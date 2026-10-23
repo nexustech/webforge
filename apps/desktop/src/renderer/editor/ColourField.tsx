@@ -5,12 +5,40 @@ import {
   type SwatchOption,
 } from "@webforge/editor-ui";
 import { type MessageKey, t } from "@webforge/i18n";
-import { COLOR_ROLES, type ColorRole, type Oklch, type ThemeTokens } from "@webforge/model";
+import {
+  COLOR_ROLES,
+  type ColorRole,
+  type Oklch,
+  type TextStyle,
+  type ThemeTokens,
+} from "@webforge/model";
 import { useSyncExternalStore } from "react";
 import type { EditorSession } from "./editor-session.js";
 
-/** WCAG AA's least contrast for normal text (F-DS-2); large text needs 3:1. */
-const AA_TEXT_CONTRAST = 4.5;
+/** Tailwind's text sizes in CSS pixels, as the type scale names them. */
+const TEXT_PX: Readonly<Record<ThemeTokens["typeScale"][TextStyle]["size"], number>> = {
+  xs: 12,
+  sm: 14,
+  base: 16,
+  lg: 18,
+  xl: 20,
+  "2xl": 24,
+  "3xl": 30,
+  "4xl": 36,
+  "5xl": 48,
+  "6xl": 60,
+};
+
+/**
+ * The least contrast WCAG AA asks of text in `style` (F-DS-2): 3:1 for large text (at least 24 px,
+ * or 18.66 px when bold), 4.5:1 for any other, and for text whose style isn't known.
+ */
+export function contrastNeeded(theme: ThemeTokens, style: TextStyle | undefined): number {
+  if (style === undefined) return 4.5;
+  const { size, weight } = theme.typeScale[style];
+  const px = TEXT_PX[size];
+  return px >= 24 || (px >= 18.66 && weight >= 700) ? 3 : 4.5;
+}
 
 /**
  * WCAG's contrast ratio of two theme colours, 1–21. The themes package's (2.1) is passed in; until
@@ -22,6 +50,11 @@ export type ContrastRatio = (a: Oklch, b: Oklch) => number;
 export type ColourFieldContext = {
   readonly session: Pick<EditorSession, "history">;
   readonly contrastRatio?: ContrastRatio | undefined;
+  /**
+   * The text style of the element being edited (a Heading's h2, a Text's body), which sets how much
+   * contrast it needs; the stricter 4.5:1 while it isn't known.
+   */
+  readonly textStyle?: (() => TextStyle | undefined) | undefined;
 };
 
 /** A theme colour as CSS, as daisyUI writes them. */
@@ -68,8 +101,8 @@ function coloursOf(field: FieldRendererProps["field"], theme: ThemeTokens): Swat
 
 /**
  * The Edit panel's colour field (1.37, UX-25): the theme's colours as swatches, as this site shows
- * them, and a warning when the one chosen is hard to read on the page (below WCAG AA's 4.5:1;
- * sections all have the page's background so far).
+ * them, and a warning when the one chosen is hard to read on the page (below what WCAG AA asks of
+ * text of its size: {@link contrastNeeded}; sections all have the page's background so far).
  */
 export function ColourField({
   id,
@@ -80,6 +113,7 @@ export function ColourField({
   onCommit,
   session,
   contrastRatio,
+  textStyle,
 }: FieldRendererProps & ColourFieldContext) {
   const theme = useSyncExternalStore(
     session.history.document.subscribe,
@@ -102,9 +136,12 @@ export function ColourField({
         onCommit();
       }}
       warning={
-        ratio === undefined || ratio >= AA_TEXT_CONTRAST
+        ratio === undefined || ratio >= contrastNeeded(theme, textStyle?.())
           ? undefined
-          : t("field.color.lowContrast", { ratio: ratio.toFixed(1) })
+          : t("field.color.lowContrast", {
+              ratio: ratio.toFixed(1),
+              needed: contrastNeeded(theme, textStyle?.()),
+            })
       }
     />
   );
