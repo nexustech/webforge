@@ -188,7 +188,8 @@ jobs:
         # Windows and macOS while FULL_CI_ENABLED is true (see the notes above).
         os: ${{ fromJSON(vars.FULL_CI_ENABLED == 'true' && '["ubuntu-latest", "windows-latest", "macos-latest"]' || '["ubuntu-latest"]') }}
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 20
+    # macOS runners take about 15 minutes for the tests alone, plus setup.
+    timeout-minutes: 30
     env:
       # Firefox and WebKit only when the exported site can have changed (see `changes`). On Linux
       # they run in `export-browsers` instead; Windows and macOS need no system packages, so they
