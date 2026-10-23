@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { copiedNodeId, type MediaId, type PageDoc, type PageId } from "@webforge/model";
 import { type ComponentLibrary, siteLibrary } from "@webforge/site-components";
@@ -235,24 +235,29 @@ describe("EditPanelHost", () => {
   });
 
   describe("style fields (1.14 part 2)", () => {
+    /** The choices for one side of a box field: "Padding Top". */
+    const side = (name: string) => within(screen.getByRole("radiogroup", { name }));
+
     it("sets a value for the device being viewed, marks it and drops it again", async () => {
       const { session, labels, section, user } = setup("section-1");
       act(() => session.ui.setState({ viewport: "mobile" }));
 
-      await user.click(screen.getByRole("radio", { name: "Small" }));
+      await user.click(side("Padding Top").getByRole("radio", { name: "S" }));
 
-      expect(section()?.padding).toEqual({ $responsive: { desktop: "medium", mobile: "small" } });
+      expect(section()?.padding).toEqual({
+        $responsive: { desktop: { top: "m", bottom: "m" }, mobile: { top: "s", bottom: "m" } },
+      });
       expect(screen.getByText("Mobile only")).toBeDefined();
       act(() => session.ui.setState({ viewport: "desktop" }));
       expect(screen.queryByText("Mobile only")).toBeNull();
-      expect(screen.getByRole("radio", { name: "Medium" }).getAttribute("aria-checked")).toBe(
-        "true",
-      );
+      expect(
+        side("Padding Top").getByRole("radio", { name: "M" }).getAttribute("aria-checked"),
+      ).toBe("true");
 
       act(() => session.ui.setState({ viewport: "mobile" }));
       await user.click(screen.getByRole("button", { name: "Use Desktop value" }));
 
-      expect(section()?.padding).toBe("medium");
+      expect(section()?.padding).toEqual({ top: "m", bottom: "m" });
       expect(labels()).toEqual([
         "Changed Section padding on Mobile",
         "Reset Section padding on Mobile",
@@ -262,13 +267,94 @@ describe("EditPanelHost", () => {
     it("sets Desktop's value as the plain value, keeping other devices' own", async () => {
       const { session, labels, section, user } = setup("section-1");
       act(() => session.ui.setState({ viewport: "tablet" }));
-      await user.click(screen.getByRole("radio", { name: "Large" }));
+      await user.click(side("Padding Bottom").getByRole("radio", { name: "L" }));
       act(() => session.ui.setState({ viewport: "desktop" }));
 
-      await user.click(screen.getByRole("radio", { name: "Small" }));
+      await user.click(side("Padding Left").getByRole("radio", { name: "None" }));
 
-      expect(section()?.padding).toEqual({ $responsive: { desktop: "small", tablet: "large" } });
+      expect(section()?.padding).toEqual({
+        $responsive: {
+          desktop: { top: "m", bottom: "m", left: "none" },
+          tablet: { top: "m", bottom: "l" },
+        },
+      });
       expect(labels()).toEqual(["Changed Section padding on Tablet", "Changed Section padding"]);
+    });
+
+    it("writes a padding saved before 1.32 in the new form, every side at once (1.32)", async () => {
+      const { session, labels, section, user } = setup("section-1");
+      act(() =>
+        session.edit("props", "Old padding", (draft) => {
+          const old = draft.pages[draft.homePageId]?.doc.content[0];
+          if (old !== undefined) {
+            old.props.padding = { $responsive: { desktop: "large", mobile: "small" } };
+          }
+        }),
+      );
+      // Top and bottom are Large, left and right the section's own: not the same on every side.
+      expect(
+        side("Padding Top").getByRole("radio", { name: "L" }).getAttribute("aria-checked"),
+      ).toBe("true");
+
+      await user.click(screen.getByRole("switch", { name: "Padding Same on every side" }));
+      await user.click(side("Padding").getByRole("radio", { name: "XL" }));
+
+      expect(section()?.padding).toEqual({
+        $responsive: {
+          desktop: { top: "xl", right: "xl", bottom: "xl", left: "xl" },
+          mobile: { top: "s", bottom: "s" },
+        },
+      });
+      expect(labels().at(-1)).toBe("Changed Section padding");
+
+      await user.click(side("Padding").getByRole("radio", { name: "Default" }));
+      expect(section()?.padding).toEqual({
+        $responsive: { desktop: {}, mobile: { top: "s", bottom: "s" } },
+      });
+    });
+
+    it("shows each Section's and device's sides as they are, not the last one's (1.32)", async () => {
+      const { session, user } = setup("section-1");
+      act(() =>
+        session.edit("props", "Two sections", (draft) => {
+          const content = draft.pages[draft.homePageId]?.doc.content;
+          const first = content?.[0];
+          if (content === undefined || first === undefined) return;
+          first.props.padding = { $responsive: { desktop: { top: "m" }, mobile: {} } };
+          content.push({ type: "Section", props: { id: "section-2", padding: {} } });
+        }),
+      );
+      expect(
+        side("Padding Top").getByRole("radio", { name: "M" }).getAttribute("aria-checked"),
+      ).toBe("true");
+
+      // Every side the same on Mobile: one row for all of them.
+      act(() => session.ui.setState({ viewport: "mobile" }));
+      expect(screen.queryByRole("radiogroup", { name: "Padding Top" })).toBeNull();
+      act(() => session.ui.setState({ viewport: "desktop" }));
+      expect(side("Padding Top")).toBeDefined();
+
+      act(() => session.ui.setState({ nodeId: "section-2" }));
+      expect(screen.queryByRole("radiogroup", { name: "Padding Top" })).toBeNull();
+      await user.click(screen.getByRole("switch", { name: "Padding Same on every side" }));
+      act(() => session.ui.setState({ nodeId: "section-1" }));
+      expect(side("Padding Top")).toBeDefined();
+      act(() => session.ui.setState({ nodeId: "section-2" }));
+      expect(
+        side("Padding").getByRole("radio", { name: "Default" }).getAttribute("aria-checked"),
+      ).toBe("true");
+    });
+
+    it("sets an element's margin above and below only (1.32)", async () => {
+      const { labels, heading, user } = setup("heading-1");
+      await user.click(screen.getByRole("tab", { name: "Style" }));
+
+      expect(screen.queryByRole("radiogroup", { name: "Margin Left" })).toBeNull();
+      await user.click(screen.getByRole("switch", { name: "Margin Same on every side" }));
+      await user.click(side("Margin Bottom").getByRole("radio", { name: "L" }));
+
+      expect(heading()?.margin).toEqual({ bottom: "l" });
+      expect(labels()).toEqual(["Changed Heading margin"]);
     });
 
     it("makes one step of a slider drag, from the default of a value never set", () => {

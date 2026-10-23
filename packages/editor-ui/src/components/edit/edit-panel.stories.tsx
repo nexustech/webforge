@@ -107,6 +107,56 @@ export const StyleFields: Story = {
   },
 };
 
+const tokens = ["None", "S", "M", "L", "XL"].map((label) => ({
+  label,
+  value: label.toLowerCase(),
+}));
+const sides = ["Top", "Right", "Bottom", "Left"].map((label) => ({
+  label,
+  value: label.toLowerCase(),
+}));
+
+/**
+ * A Section's padding and margin per side (1.32): padding set on two sides, so a row per side;
+ * the margin above and below the same, so one row for both.
+ */
+export const BoxSpacing: Story = {
+  render: () => {
+    const [fields, setFields] = useState<EditPanelField[]>([
+      {
+        name: "padding",
+        kind: "box",
+        label: "Padding",
+        group: "style",
+        value: { top: "l", bottom: "l" },
+        options: tokens,
+        sides,
+      },
+      {
+        name: "margin",
+        kind: "box",
+        label: "Margin",
+        group: "style",
+        value: {},
+        options: tokens,
+        sides: sides.filter((side) => side.value === "top" || side.value === "bottom"),
+      },
+    ]);
+    return (
+      <EditPanel
+        heading="Section"
+        fields={fields}
+        onChange={(name, value) =>
+          setFields((current) =>
+            current.map((field) => (field.name === name ? { ...field, value } : field)),
+          )
+        }
+        onCommit={() => undefined}
+      />
+    );
+  },
+};
+
 /** A repeating list: a row per testimonial, the open one's fields below it (F-ED-6). */
 export const RepeatingList: Story = {
   render: () => {

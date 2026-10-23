@@ -1,6 +1,7 @@
 import { t } from "@webforge/i18n";
 import { imageValueSchema } from "@webforge/model";
 import {
+  boxClasses,
   type ComponentDef,
   linkAttributes,
   optionValue,
@@ -8,6 +9,7 @@ import {
   textValue,
 } from "../library.js";
 import { Picture } from "../picture.js";
+import { MARGIN_FIELD, marginClasses, PADDING_FIELD, SECTION_PADDING } from "./basic.js";
 
 const ALIGNMENTS = ["centre", "left"] as const;
 
@@ -27,6 +29,8 @@ export const hero: ComponentDef = {
       options: ALIGNMENTS.map((value) => ({ label: t(`field.alignment.${value}`), value })),
     },
     image: { kind: "media", label: t("field.image") },
+    padding: PADDING_FIELD,
+    margin: MARGIN_FIELD,
   },
   defaults: {
     title: t("starter.heroTitle"),
@@ -41,7 +45,9 @@ export const hero: ComponentDef = {
     const buttonLabel = textValue(values.buttonLabel);
     const buttonLink = linkAttributes(values.buttonLink, context);
     return (
-      <section className="site-hero hero bg-base-200 px-4 py-16">
+      <section
+        className={`site-hero hero bg-base-200 ${boxClasses(values.padding, "padding", SECTION_PADDING)}${marginClasses(values.margin)}`}
+      >
         <div
           className={`hero-content max-w-6xl flex-col gap-10 lg:flex-row-reverse ${centred ? "text-center" : "text-left"}`}
         >
@@ -77,12 +83,13 @@ export const faq: ComponentDef = {
   fields: {
     title: { kind: "text", label: t("field.title"), inline: true },
     items: { kind: "slot", label: t("field.questions"), allow: ["FaqItem"] },
+    margin: MARGIN_FIELD,
   },
   defaults: { title: t("starter.faqTitle"), items: [] },
   render: (props) => {
     const Items = slotComponent(props, "items");
     return (
-      <div className="site-faq space-y-4">
+      <div className={`site-faq space-y-4${marginClasses(props.values.margin)}`}>
         <h2 className="text-3xl font-bold">{textValue(props.values.title)}</h2>
         <div className="space-y-2">
           <Items />

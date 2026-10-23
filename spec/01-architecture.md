@@ -137,7 +137,7 @@ interface CanvasEngine {
   onHistoryCommand(cb: (command: 'undo' | 'redo') => void): Unsubscribe   // keys pressed inside the canvas iframe (ADR 0004)
   setViewport(v: 'desktop' | 'tablet' | 'mobile' | number): void
   setMode(mode: 'design' | 'content'): void            // M3
-  renderStatic(page: PageDoc, layout: LayoutDoc, shared: SharedSectionsDoc): string
+  renderStatic(page: PageDoc, layout: LayoutDoc, shared?: SharedSectionsDoc, context?: RenderContext): string   // the export's renderPage (ADR 0005)
   destroy(): void
 }
 

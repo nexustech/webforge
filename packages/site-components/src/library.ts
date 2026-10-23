@@ -1,5 +1,7 @@
 import {
   type BindableSetting,
+  BOX_SIDES,
+  type BoxSide,
   type Breakpoint,
   bindingOf,
   isResponsiveValue,
@@ -8,6 +10,8 @@ import {
   nodeAdvancedSchema,
   type Responsive,
   resolveResponsive,
+  responsiveBoxOf,
+  type SpacingToken,
 } from "@webforge/model";
 import { type ComponentType, cloneElement, isValidElement, type ReactNode } from "react";
 import { isDocumentPath } from "./document-path.js";
@@ -18,8 +22,8 @@ export type FieldOption = { readonly label: string; readonly value: string };
 /**
  * One editable property of a component, described independently of the canvas engine.
  * - `group` picks the Edit panel tab (1.14): Content for what it says, Style for how it looks. When
- *   it is left out, the style kinds (`select`, `toggle`, `slider`, `color`, `spacing`) are Style
- *   and the rest Content.
+ *   it is left out, the style kinds (`select`, `toggle`, `slider`, `color`, `spacing`, `box`) are
+ *   Style and the rest Content.
  * - `responsive` lets the value differ per device (F-ED-4): the field then holds a
  *   {@link Responsive} value, set in the Edit panel for the device being viewed.
  *
@@ -52,6 +56,16 @@ export type FieldDef = {
   | { readonly kind: "color"; readonly label: string; readonly options: readonly FieldOption[] }
   /** A spacing token such as Small · Medium · Large (C4). */
   | { readonly kind: "spacing"; readonly label: string; readonly options: readonly FieldOption[] }
+  /**
+   * Padding or margin per side (1.32), stored as a `BoxValue`: a spacing token for each side set.
+   * Render it with {@link boxClasses}.
+   */
+  | {
+      readonly kind: "box";
+      readonly label: string;
+      /** The sides that can be set; all four if omitted. */
+      readonly sides?: readonly BoxSide[];
+    }
   | {
       readonly kind: "slot";
       readonly label: string;
@@ -328,6 +342,91 @@ export function responsiveClasses<T>(
       );
     }
     previous = classes;
+  }
+  return parts.join(" ");
+}
+
+/** Tailwind spacing units of each token (C4): padding and margin have scales of their own. */
+const BOX_UNITS: Readonly<Record<"p" | "m", Readonly<Record<SpacingToken, number>>>> = {
+  p: { none: 0, s: 8, m: 16, l: 24, xl: 32 },
+  m: { none: 0, s: 4, m: 8, l: 16, xl: 24 },
+};
+
+/** A box's sides in pairs, with their class names: left and right (`px-`), then top and bottom. */
+const BOX_AXES = [
+  ["x", ["left", "l"], ["right", "r"]],
+  ["y", ["top", "t"], ["bottom", "b"]],
+] as const;
+
+/** The variant for a run of devices, smallest first: `max-md:` for Mobile alone, and so on. */
+const DEVICE_RANGE: Readonly<Record<string, string>> = {
+  mobile: "max-md:",
+  tablet: "md:max-lg:",
+  desktop: "lg:",
+  "mobile tablet": "max-lg:",
+  "tablet desktop": "md:",
+  "mobile tablet desktop": "",
+};
+
+/**
+ * The classes for a `box` field (1.32): `pl-`, `pr-`, `pt-` and `pb-` (or `m…` for margin), as
+ * `px-` or `py-` where the two sides are the same.
+ * - `defaults` gives a side left unset its Tailwind units, e.g. `{ top: 16, bottom: 16 }` for
+ *   `py-16`. A side with no default gets no class, so it keeps the spacing around it: an
+ *   element's margin is otherwise its section's space between elements.
+ * - `sides` limits the sides read, e.g. top and bottom for a margin whose sides are `auto`.
+ *
+ * The classes of a value set per device are mobile first, like {@link responsiveClasses}, while
+ * every device gives each side a class. Otherwise each device's classes apply on that device only
+ * (`max-md:`, `md:max-lg:`, `lg:`), so a side unset on one device needs no class there.
+ */
+export function boxClasses(
+  value: unknown,
+  property: "padding" | "margin",
+  defaults: Partial<Record<BoxSide, number>> = {},
+  sides: readonly BoxSide[] = BOX_SIDES,
+): string {
+  const kind = property === "padding" ? "p" : "m";
+  const units = BOX_UNITS[kind];
+  const stored = responsiveBoxOf(value);
+  const parts: string[] = [];
+  for (const [axis, ...pair] of BOX_AXES) {
+    const read = pair.filter(([side]) => sides.includes(side));
+    let complete = true;
+    const perDevice = BREAKPOINT_PREFIX.map(([breakpoint, prefix]) => {
+      const box = resolveResponsive(stored, breakpoint);
+      const sizes = read.map(([side, short]) => {
+        const token = box[side];
+        const size = token === undefined ? defaults[side] : units[token];
+        if (size === undefined) complete = false;
+        return [short, size] as const;
+      });
+      const [first, second] = sizes;
+      const classes =
+        sizes.length === 2 && first?.[1] !== undefined && first[1] === second?.[1]
+          ? [`${kind}${axis}-${first[1]}`]
+          : sizes.flatMap(([short, size]) =>
+              size === undefined ? [] : [`${kind}${short}-${size}`],
+            );
+      return { breakpoint, prefix, classes, joined: classes.join(" ") };
+    });
+    if (complete) {
+      let previous: string | undefined;
+      for (const { prefix, classes, joined } of perDevice) {
+        if (joined !== previous) parts.push(...classes.map((name) => `${prefix}${name}`));
+        previous = joined;
+      }
+      continue;
+    }
+    // Each run of devices with the same classes gets them for those devices only.
+    let start = 0;
+    for (const [index, device] of perDevice.entries()) {
+      if (perDevice[index + 1]?.joined === device.joined) continue;
+      const run = perDevice.slice(start, index + 1).map(({ breakpoint }) => breakpoint);
+      const range = DEVICE_RANGE[run.join(" ")] ?? "";
+      parts.push(...device.classes.map((name) => `${range}${name}`));
+      start = index + 1;
+    }
   }
   return parts.join(" ");
 }
