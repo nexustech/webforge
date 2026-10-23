@@ -10,6 +10,8 @@ export const canvas = {
   "canvas.selectNext": "Select next element",
   // The floating + between sections (1.12).
   "canvas.addSection": "Add a section here",
+  "canvas.spacing.handle": "Drag to change the {field} ({side})",
+  "canvas.spacing.readout": "{field} {side}: {size}",
   // The rich-text toolbar's links (1.23, F-ED-3).
   "canvas.richText.link": "Link…",
   "canvas.richText.removeLink": "Remove link",

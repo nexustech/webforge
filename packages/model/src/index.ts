@@ -84,7 +84,12 @@ export type {
 } from "./migrations.js";
 export { MIGRATIONS, migrateSite, migrateSiteWith, SiteFormatError } from "./migrations.js";
 export type { Breakpoint, Responsive, ResponsiveValue } from "./responsive.js";
-export { isResponsiveValue, resolveResponsive, responsiveSchema } from "./responsive.js";
+export {
+  breakpointForWidth,
+  isResponsiveValue,
+  resolveResponsive,
+  responsiveSchema,
+} from "./responsive.js";
 export type { RichTextLink } from "./rich-text-links.js";
 export {
   RICH_TEXT_FILE_LINK,

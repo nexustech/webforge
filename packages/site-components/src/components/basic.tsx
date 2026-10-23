@@ -25,6 +25,7 @@ export const SECTION_PADDING = { top: 16, right: 4, bottom: 16, left: 4 } as con
 export const PADDING_FIELD: FieldDef = {
   kind: "box",
   label: t("field.padding"),
+  property: "padding",
   responsive: true,
 };
 
@@ -35,6 +36,7 @@ export const PADDING_FIELD: FieldDef = {
 export const MARGIN_FIELD: FieldDef = {
   kind: "box",
   label: t("field.margin"),
+  property: "margin",
   responsive: true,
   sides: ["top", "bottom"],
 };

@@ -42,6 +42,7 @@ import {
   type EngineConnection,
   runHistoryCommand,
 } from "./editor-session.js";
+import { connectFieldDrags } from "./field-drag.js";
 import { SharedRegionBanner } from "./SharedRegionBanner.js";
 import { confirmSharedRemovals, sharedCutConfirmation } from "./shared-confirmations.js";
 import { shownLayout } from "./shared-layout.js";
@@ -217,9 +218,12 @@ export function Editor({
     });
     // The floating + opens the Add panel's Sections, ready to add one at its place (UI1).
     const stopAdd = engine.onAddRequest((at) => addPanelRef.current?.openAt(at));
+    // Drags of the spacing handles (1.32), one step each, as the Edit panel makes them.
+    const stopFieldDrags = connectFieldDrags(engine, session, connection.flush);
 
     return () => {
       setEngine(null);
+      stopFieldDrags();
       stopAdd();
       stopFrameWindow();
       removeFrameShortcuts?.();

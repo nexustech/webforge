@@ -58,6 +58,14 @@ describe("siteClasses", () => {
     expect(classes).toEqual([...new Set(classes)].sort());
   });
 
+  it("adds every spacing class a handle can drag to, styled before the next compile (1.32)", () => {
+    const session = createEditorSession(siteLibrary, starterSite());
+
+    const classes = siteClasses(session.history.document.getState(), session);
+
+    expect(classes).toEqual(expect.arrayContaining(["pt-32", "md:max-lg:mb-24", "lg:pl-0"]));
+  });
+
   it("keeps the classes of elements hidden in Layers, which the canvas still shows (#142)", () => {
     const site = starterSite();
     const home = site.pages[site.homePageId];

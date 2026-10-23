@@ -1,6 +1,10 @@
 import type { CanvasEngine, Unsubscribe } from "@webforge/engine";
 import type { NodeDoc, SiteDoc } from "@webforge/model";
-import { EDITOR_RENDER_CONTEXT, renderNodesToHtml } from "@webforge/site-components";
+import {
+  BOX_CLASS_SAFELIST,
+  EDITOR_RENDER_CONTEXT,
+  renderNodesToHtml,
+} from "@webforge/site-components";
 import type { CanvasCssRequest, CanvasCssResult } from "../../shared/ipc/canvas.js";
 import { withCanvasFonts } from "./canvas-fonts.js";
 import type { EditorSession } from "./editor-session.js";
@@ -36,14 +40,19 @@ function listClasses(nodes: readonly NodeDoc[], session: EditorSession): readonl
   return classes;
 }
 
-/** Every class name the site's pages, Header and Footer use, sorted and without duplicates. */
+/**
+ * Every class name the site's pages, Header and Footer use, and every spacing class a spacing
+ * handle can drag to (1.32), sorted and without duplicates.
+ */
 export function siteClasses(site: SiteDoc, session: EditorSession): string[] {
   const lists: readonly NodeDoc[][] = [
     site.layout.header,
     site.layout.footer,
     ...Object.values(site.pages).map((page) => page.doc.content),
   ];
-  return [...new Set(lists.flatMap((nodes) => listClasses(nodes, session)))].sort();
+  return [
+    ...new Set([...lists.flatMap((nodes) => listClasses(nodes, session)), ...BOX_CLASS_SAFELIST]),
+  ].sort();
 }
 
 /**
