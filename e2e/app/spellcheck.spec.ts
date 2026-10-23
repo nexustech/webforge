@@ -9,10 +9,80 @@ test.skip(process.platform === "linux", "spell check uses the system's checker (
 
 let app: ElectronApplication;
 let page: Page;
+/** Whether this computer's spell checker checks English at all; asked once (see below). */
+let checksEnglish: boolean | undefined;
+
+/**
+ * Whether the system's spell checker flags a misspelt English word. A computer without an English
+ * dictionary flags nothing: GitHub's Windows Server runners have none, and Windows spell check is the
+ * system's. Asked in a see-through window with a session of its own, so none of Webforge's settings
+ * play a part: where the system can check, a Webforge spell check that broke still fails these tests.
+ */
+async function systemChecksEnglish(electronApp: ElectronApplication): Promise<boolean> {
+  return electronApp.evaluate(async ({ BrowserWindow, session }) => {
+    const partition = "spellcheck-probe";
+    if (process.platform === "win32") {
+      session.fromPartition(partition).setSpellCheckerLanguages(["en-US"]);
+    }
+    // Shown but see-through: a hidden window's text isn't checked.
+    const probe = new BrowserWindow({
+      width: 400,
+      height: 120,
+      opacity: 0,
+      skipTaskbar: true,
+      webPreferences: { partition, spellcheck: true },
+    });
+    try {
+      await probe.loadURL("about:blank");
+      await probe.webContents.executeJavaScript(`
+        const field = document.createElement("textarea");
+        field.style.cssText = "position: fixed; inset: 0; font: 16px sans-serif";
+        document.body.append(field);
+        field.focus();
+      `);
+      // Typed, not set: the checker looks at what's typed.
+      probe.webContents.insertText("Our bakkery ");
+      // The checker works in the background. A right-click puts the caret in the word, and a word
+      // being typed in isn't flagged, so let it look first; then right-click until it has.
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        const word = await new Promise<string>((resolve) => {
+          const onMenu = (_event: unknown, params: { misspelledWord: string }) => {
+            clearTimeout(timer);
+            resolve(params.misspelledWord);
+          };
+          const timer = setTimeout(() => {
+            probe.webContents.off("context-menu", onMenu);
+            resolve("");
+          }, 500);
+          probe.webContents.once("context-menu", onMenu);
+          for (const type of ["mouseDown", "mouseUp"] as const) {
+            probe.webContents.sendInputEvent({
+              type,
+              x: 60,
+              y: 10,
+              button: "right",
+              clickCount: 1,
+            });
+          }
+        });
+        if (word !== "") return true;
+      }
+      return false;
+    } finally {
+      probe.destroy();
+    }
+  });
+}
 
 test.beforeEach(async () => {
   app = await launchDesktopApp();
   page = await app.firstWindow();
+  checksEnglish ??= await systemChecksEnglish(app);
+  test.skip(
+    !checksEnglish,
+    "this computer's spell checker has no English dictionary (GitHub's Windows runners)",
+  );
   await expect(page.getByRole("region", { name: "Right panels" })).toBeVisible();
   // Record the context menu instead of showing a native one the test can't close.
   await app.evaluate(({ Menu }) => {
