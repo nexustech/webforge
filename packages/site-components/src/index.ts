@@ -21,7 +21,9 @@ export type {
   ResolvedImage,
 } from "./library.js";
 export {
+  BOX_CLASS_SAFELIST,
   boundText,
+  boxTokenPixels,
   EDITOR_RENDER_CONTEXT,
   linkAttributes,
   linkValue,

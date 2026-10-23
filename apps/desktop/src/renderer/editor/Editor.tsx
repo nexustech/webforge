@@ -5,9 +5,11 @@ import {
   type EditorMode,
   type HistoryCommand,
   installHistoryKeys,
+  type ViewOptions,
 } from "@webforge/engine";
 import { t } from "@webforge/i18n";
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { type RefObject, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import type { CustomDevice } from "../../shared/ipc/prefs.js";
 import type { Preferences } from "../../shared/ipc-contract.js";
 import { type AddPanelRegistration, registerAddPanel } from "../add/register-add-panel.js";
 import {
@@ -27,6 +29,7 @@ import {
   type SharedSectionNaming,
 } from "../shared-sections/SharedSectionCommands.js";
 import { sharedSection } from "../shared-sections/shared-sections.js";
+import { widthOf } from "../shell/canvas-size.js";
 import { type CanvasView, connectCanvasView } from "../shell/canvas-view.js";
 import { useCommandRegistry } from "../shell/command-context.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
@@ -34,6 +37,7 @@ import { installCommandShortcuts } from "../shell/commands.js";
 import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
 import { usePanelRegistry } from "../shell/panel-context.js";
 import { connectCanvasSettings } from "../site-settings/canvas-settings.js";
+import { CanvasResizeHandles } from "./CanvasResizeHandles.js";
 import { registerCanvasCommands } from "./canvas-commands.js";
 import { EditPanelHost } from "./EditPanelHost.js";
 import {
@@ -43,6 +47,7 @@ import {
   type EngineConnection,
   runHistoryCommand,
 } from "./editor-session.js";
+import { connectFieldDrags } from "./field-drag.js";
 import { SharedRegionBanner } from "./SharedRegionBanner.js";
 import { confirmSharedRemovals, sharedCutConfirmation } from "./shared-confirmations.js";
 import { shownLayout } from "./shared-layout.js";
@@ -68,10 +73,42 @@ export type EditorProps = {
    * shared Header or Footer. Undo and Redo wait while it asks. Without it, they happen at once.
    */
   readonly siteWide?: Pick<SiteWideConfirm, "confirmSiteWide" | "current">;
+  /** The person's own devices, which dragging the canvas's edges snaps to (F-ED-25). */
+  readonly devices?: readonly CustomDevice[];
+  /** What the canvas shows besides the page: the View menu's options (F-ED-25). */
+  readonly viewOptions?: ViewOptions;
 };
 
 const compileWithPreload: CompileCanvasCss = (request) =>
   window.webforge.canvas.compileCss(request);
+
+/**
+ * The canvas frame's edge handles on `session`'s device view and `view`'s zoom: a width dragged or
+ * typed with the arrows becomes the view's width, as the toolbar's width field does (U6).
+ */
+function CanvasEdges({
+  session,
+  view,
+  container,
+  devices,
+}: {
+  readonly session: EditorSession;
+  readonly view: CanvasView;
+  readonly container: RefObject<HTMLElement | null>;
+  readonly devices: readonly CustomDevice[];
+}) {
+  const viewport = useSyncExternalStore(session.ui.subscribe, () => session.ui.getState().viewport);
+  const zoom = useSyncExternalStore(view.subscribe, () => view.getState().size?.zoom ?? 1);
+  return (
+    <CanvasResizeHandles
+      container={container}
+      width={widthOf(viewport)}
+      zoom={zoom}
+      devices={devices}
+      onChange={(next) => session.ui.setState({ viewport: next })}
+    />
+  );
+}
 
 /**
  * The site editor around one {@link EditorSession}: the canvas, plus the Undo and Redo commands
@@ -85,6 +122,8 @@ export function Editor({
   canvasView,
   editorLevel = "simple",
   siteWide,
+  devices = [],
+  viewOptions,
 }: EditorProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [engine, setEngine] = useState<CanvasEngine | null>(null);
@@ -218,9 +257,12 @@ export function Editor({
     });
     // The floating + opens the Add panel's Sections, ready to add one at its place (UI1).
     const stopAdd = engine.onAddRequest((at) => addPanelRef.current?.openAt(at));
+    // Drags of the spacing handles (1.32), one step each, as the Edit panel makes them.
+    const stopFieldDrags = connectFieldDrags(engine, session, connection.flush);
 
     return () => {
       setEngine(null);
+      stopFieldDrags();
       stopAdd();
       stopFrameWindow();
       removeFrameShortcuts?.();
@@ -242,6 +284,11 @@ export function Editor({
       element.remove();
     };
   }, [session, history, createEngine, compileCss, registry, siteWide]);
+
+  // The View menu's options (F-ED-25): view state, never an undo step (U6).
+  useEffect(() => {
+    if (viewOptions !== undefined) engine?.setViewOptions(viewOptions);
+  }, [engine, viewOptions]);
 
   useEffect(() => {
     engine?.setMode(mode);
@@ -347,7 +394,17 @@ export function Editor({
       <SharedRegionBanner session={session} />
       <RichTextLinkHost session={session} engine={engine} />
       <SharedSectionNameDialog session={session} naming={naming} onClose={() => setNaming(null)} />
-      <section className="editor__canvas" aria-label={t("editor.canvas")} ref={canvasRef} />
+      <div className="editor__stage">
+        <section className="editor__canvas" aria-label={t("editor.canvas")} ref={canvasRef} />
+        {canvasView !== undefined && (
+          <CanvasEdges
+            session={session}
+            view={canvasView}
+            container={canvasRef}
+            devices={devices}
+          />
+        )}
+      </div>
     </div>
   );
 }

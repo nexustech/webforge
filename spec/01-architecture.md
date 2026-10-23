@@ -134,6 +134,7 @@ interface CanvasEngine {
   onUserEdit(cb: (edit: EngineEdit) => void): Unsubscribe
   select(nodeId: string | null): void
   onSelectionChange(cb: (nodeId: string | null) => void): Unsubscribe
+  onFieldDrag(cb: (drag: FieldDrag) => void): Unsubscribe   // canvas handles: one step from start to commit, Esc cancels (1.32)
   onHistoryCommand(cb: (command: 'undo' | 'redo') => void): Unsubscribe   // keys pressed inside the canvas iframe (ADR 0004)
   setViewport(v: 'desktop' | 'tablet' | 'mobile' | number): void
   setMode(mode: 'design' | 'content'): void            // M3

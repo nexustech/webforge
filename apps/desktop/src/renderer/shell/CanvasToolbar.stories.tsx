@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { PageId } from "@webforge/model";
+import { DEFAULT_PREFERENCES } from "../../shared/ipc/prefs.js";
 import { CanvasToolbar } from "./CanvasToolbar.js";
 
 const noop = () => undefined;
@@ -20,6 +21,8 @@ const meta = {
     zoom: "fit",
     onZoomChange: noop,
     size: { width: 1280, height: 2140, zoom: 0.58 },
+    canvas: DEFAULT_PREFERENCES.canvas,
+    onCanvasChange: noop,
   },
   // Over the canvas, as wide as it is in a 1280 px window.
   render: (args) => (

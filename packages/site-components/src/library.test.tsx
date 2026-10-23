@@ -1,7 +1,9 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import {
+  BOX_CLASS_SAFELIST,
   boxClasses,
+  boxTokenPixels,
   EDITOR_RENDER_CONTEXT,
   optionValue,
   responsiveClasses,
@@ -127,6 +129,29 @@ describe("library helpers", () => {
     expect(
       boxClasses({ $responsive: { desktop: { left: "s" }, tablet: {} } }, "padding", SECTION),
     ).toBe("px-4 lg:pl-8 lg:pr-4 py-16");
+  });
+});
+
+describe("spacing for the canvas's handles (1.32)", () => {
+  it("boxTokenPixels gives each token's size in CSS pixels", () => {
+    expect(boxTokenPixels("padding")).toEqual({ none: 0, s: 32, m: 64, l: 96, xl: 128 });
+    expect(boxTokenPixels("margin")).toEqual({ none: 0, s: 16, m: 32, l: 64, xl: 96 });
+  });
+
+  it("BOX_CLASS_SAFELIST has every class boxClasses gives, on every device", () => {
+    const given = [
+      boxClasses(undefined, "padding", { top: 16, right: 4, bottom: 16, left: 4 }),
+      boxClasses({ left: "xl", right: "none", top: "s" }, "padding", { right: 4, bottom: 16 }),
+      boxClasses({ $responsive: { desktop: { top: "xl" }, tablet: { top: "m" } } }, "margin"),
+      boxClasses(
+        { $responsive: { desktop: { top: "s" }, tablet: { top: "l" }, mobile: { top: "s" } } },
+        "margin",
+      ),
+      boxClasses({ $responsive: { desktop: { top: "s", bottom: "s" }, mobile: {} } }, "margin"),
+    ].flatMap((classes) => classes.split(" "));
+
+    expect(given.filter((name) => !BOX_CLASS_SAFELIST.includes(name))).toEqual([]);
+    expect(new Set(BOX_CLASS_SAFELIST).size).toBe(BOX_CLASS_SAFELIST.length);
   });
 });
 

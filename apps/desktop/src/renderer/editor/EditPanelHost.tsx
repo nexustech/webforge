@@ -1,5 +1,4 @@
 import { EditPanel, type EditPanelField, type ListChange } from "@webforge/editor-ui";
-import type { EngineEdit } from "@webforge/engine";
 import { t } from "@webforge/i18n";
 import {
   BOX_SIDES,
@@ -7,19 +6,13 @@ import {
   boxValueSchema,
   imageValueSchema,
   type NodeAdvanced,
-  type NodeDoc,
-  responsiveBoxOf,
   type SiteDoc,
   SPACING_TOKENS,
 } from "@webforge/model";
 import type { FieldDef } from "@webforge/site-components";
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import { applyAnchor, asLinkFieldChange } from "../links/link-change.js";
-import {
-  anchorsTakenInSection,
-  copySelection,
-  updateSectionField,
-} from "../shared-sections/shared-sections.js";
+import { anchorsTakenInSection } from "../shared-sections/shared-sections.js";
 import {
   bindingLabel,
   boundFieldOf,
@@ -33,9 +26,9 @@ import {
   isAdvancedField,
   withAdvancedChange,
 } from "./advanced-fields.js";
-import { updateField } from "./apply-patch.js";
 import type { EditorSession } from "./editor-session.js";
-import { changedLabel, deviceLabelFor, labelFor } from "./labels.js";
+import { fieldTarget } from "./field-target.js";
+import { changedLabel, labelFor } from "./labels.js";
 import {
   applyListChange,
   type EditableList,
@@ -51,7 +44,7 @@ import {
   withoutOverride,
   withValueAt,
 } from "./responsive-value.js";
-import { sharedRegionOf, shownLayout, updateSharedField } from "./shared-layout.js";
+import { shownLayout } from "./shared-layout.js";
 
 /** The Edit panel's renderer kind for a field, or undefined for fields edited elsewhere. */
 function rendererKind(field: FieldDef): string | undefined {
@@ -198,25 +191,8 @@ export function EditPanelHost({
   const { history, ui, library } = session;
   const site = useSyncExternalStore(history.document.subscribe, history.document.getState);
   const { pageId, nodeId, viewport } = useSyncExternalStore(ui.subscribe, ui.getState);
-  const page = site.pages[pageId]?.doc;
-  const isSelected = (candidate: NodeDoc) => candidate.props.id === nodeId;
-  const ownNode =
-    page === undefined || nodeId === null ? undefined : findNode(page.content, isSelected);
-  // Not the page's own: an element of the shared Header or Footer the page shows, whose changes go
-  // to the site's layout and show on every page (F-ED-7).
-  const region =
-    ownNode !== undefined || nodeId === null
-      ? undefined
-      : sharedRegionOf(shownLayout(site, pageId), nodeId);
-  // Nor that: an element of a linked copy of a shared section, whose changes go to the shared
-  // section and show in every copy (F-ED-23).
-  const inCopy =
-    ownNode !== undefined || region !== undefined ? undefined : copySelection(site, pageId, nodeId);
-  const node =
-    region === undefined ? (ownNode ?? inCopy?.node) : findNode(site.layout[region], isSelected);
-  const component = node === undefined ? undefined : library.components[node.type];
-  // As the canvas shows it: two copies show one element of their section under two ids.
-  const selectedId = node === undefined ? undefined : (nodeId ?? undefined);
+  const target = fieldTarget(site, library, pageId, nodeId);
+  const selectedId = target?.id;
   const breakpoint = breakpointOf(viewport);
   const device = t(`device.${breakpoint}`);
 
@@ -246,18 +222,13 @@ export function EditPanelHost({
     run?.end();
   };
 
-  if (page === undefined || node === undefined || component === undefined) {
+  if (target === undefined) {
     return <EditPanel fields={[]} onChange={() => undefined} onCommit={() => undefined} />;
   }
-  const id = selectedId ?? node.props.id;
-  /**
-   * A field's stored value; one never set (older sites, new fields) has the component's default.
-   * A box is read in its current form, so a change writes it so (1.32).
-   */
-  const storedOr = (name: string, stored: unknown) => {
-    const value = stored ?? component.defaults[name];
-    return component.fields[name]?.kind === "box" ? responsiveBoxOf(value) : value;
-  };
+  const { page, node, component, id, region, inCopy, copyLabel, storedOr, editOf, write, recipe } =
+    target;
+  const labelOf = (name: string, field: FieldDef, reset = false) =>
+    target.labelOf(name, field, breakpoint, reset);
 
   const fields = Object.entries(component.fields).flatMap(([name, field]): EditPanelField[] => {
     const list = editableList(field, library);
@@ -307,52 +278,6 @@ export function EditPanelHost({
     fields.push(...advancedFields(node.props.advanced, takenAnchors));
   }
 
-  /** An edit of the selected element, to name in undo labels: "Changed shared Footer size". */
-  const editOf = (kind: EngineEdit["kind"], field: string): EngineEdit => ({
-    kind,
-    nodeId: id,
-    componentType: node.type,
-    field,
-    page,
-    selection: id,
-    ...(region === undefined ? {} : { shared: true, layout: site.layout }),
-  });
-
-  /** In a copy, every change is named as the canvas names it: "Edited shared section '…'". */
-  const copyLabel =
-    inCopy === undefined
-      ? undefined
-      : t("history.editedSharedSection", {
-          name: t("history.namedItem", { name: inCopy.shared.name }),
-        });
-
-  /** The undo label for a change to `name`; "… on Mobile" where it sets one device's value. */
-  const labelOf = (name: string, field: FieldDef, reset = false) => {
-    if (copyLabel !== undefined) return copyLabel;
-    const edit = editOf(field.kind === "text" ? "text" : "props", name);
-    return field.responsive === true && (reset || breakpoint !== "desktop")
-      ? deviceLabelFor(edit, library, device, reset)
-      : labelFor(edit, library);
-  };
-
-  /** Sets field `name` of the selected element to what `next` makes of it, in `draft`. */
-  const write = (draft: SiteDoc, name: string, next: (stored: unknown) => unknown) => {
-    if (region !== undefined) {
-      updateSharedField(draft.layout, site.layout, region, id, name, next);
-      return;
-    }
-    if (inCopy !== undefined) {
-      updateSectionField(draft, site, inCopy.shared.id, inCopy.node.props.id, name, next);
-      return;
-    }
-    const target = draft.pages[pageId];
-    if (target !== undefined) {
-      updateField(target.doc, page, id, name, next);
-    }
-  };
-  /** Sets field `name` to what `next` makes of its stored value, in the document being edited. */
-  const recipe = (name: string, next: (stored: unknown) => unknown) => (draft: SiteDoc) =>
-    write(draft, name, (stored) => next(storedOr(name, stored)));
   const selectionAfter = { pageId, viewport, nodeId: id };
 
   /** A change on the Advanced tab: one step, "Changed Heading CSS classes". */

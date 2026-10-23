@@ -7,6 +7,7 @@ export type {
   EngineEdit,
   EngineEditKind,
   EnginePatch,
+  FieldDrag,
   HistoryCommand,
   HistoryCommandHandler,
   InsertPoint,
@@ -14,6 +15,7 @@ export type {
   MountOptions,
   RichTextAt,
   Unsubscribe,
+  ViewOptions,
   Viewport,
 } from "./canvas-engine.js";
 export { historyCommandFor, installHistoryKeys } from "./history-keys.js";

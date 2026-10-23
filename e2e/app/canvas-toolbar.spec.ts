@@ -1,5 +1,6 @@
+import { rmSync } from "node:fs";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
-import { launchDesktopApp } from "./launch.js";
+import { launchDesktopApp, newUserDataDir } from "./launch.js";
 
 // The canvas toolbar (1.15, F-ED-8): device views, a custom width and the page shown, none of
 // them an undo step (U6).
@@ -109,4 +110,71 @@ test("keeps a zoom above Fit, though the page then overflows the canvas (#134)",
       { intervals: [250], timeout: 5_000 },
     )
     .toEqual(["1.5", "1.5", "1.5", "1.5", "1.5"]);
+});
+
+/** The canvas's scale, from the size readout ("1280 × 900 @ 50%"). */
+async function zoom(): Promise<number> {
+  const readout = await toolbar()
+    .getByRole("button", { name: /^Page size/ })
+    .textContent();
+  return Number(/@ (\d+)%/.exec(readout ?? "")?.[1] ?? "100") / 100;
+}
+
+test("drags the canvas's edge to a width that snaps to Tablet, without an undo step (F-ED-25)", async () => {
+  const before = await steps().count();
+  await toolbar().getByRole("radio", { name: "Mobile" }).click();
+  await expect.poll(pageWidth).toBe(375);
+  const edge = page.getByRole("separator", { name: "Canvas width, right edge" });
+  const box = await edge.boundingBox();
+  if (box === null) throw new Error("No edge handle");
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
+
+  // To 760 wide, which snaps to Tablet (768): the centred canvas's edge moves half the change.
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x + ((760 - 375) / 2) * (await zoom()), y, { steps: 5 });
+  await expect(page.getByText("768 px · Tablet")).toBeVisible();
+  await page.mouse.up();
+
+  await expect.poll(pageWidth).toBe(768);
+  await expect(toolbar().getByRole("radio", { name: "Tablet" })).toHaveAttribute(
+    "aria-checked",
+    "true",
+  );
+  await expect(steps()).toHaveCount(before);
+});
+
+test("keeps a device the person added, after a restart (F-ED-25)", async () => {
+  await app.close();
+  const userData = newUserDataDir();
+  try {
+    app = await launchDesktopApp({ userDataDir: userData });
+    page = await app.firstWindow();
+    await toolbar()
+      .getByRole("button", { name: /^Page size|^Devices$/ })
+      .click();
+    await page.getByRole("menuitem", { name: "Add device…" }).click();
+    const dialog = page.getByRole("dialog", { name: "Add a device" });
+    await dialog.getByRole("textbox", { name: "Name" }).fill("Kiosk");
+    await dialog.getByRole("spinbutton", { name: "Width in pixels" }).fill("1080");
+    await dialog.getByRole("spinbutton", { name: "Height in pixels" }).fill("1920");
+    await dialog.getByRole("button", { name: "Add Device" }).click();
+    await expect.poll(pageWidth).toBe(1080);
+    await app.close();
+
+    app = await launchDesktopApp({ userDataDir: userData });
+    page = await app.firstWindow();
+    await toolbar()
+      .getByRole("button", { name: /^Page size|^Devices$/ })
+      .click();
+    await page.getByRole("menuitem", { name: "Kiosk (1080 × 1920)" }).click();
+    await expect.poll(pageWidth).toBe(1080);
+    // Rotated: its height as the width.
+    await toolbar().getByRole("button", { name: "Rotate" }).click();
+    await expect.poll(pageWidth).toBe(1920);
+  } finally {
+    await app.close();
+    rmSync(userData, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  }
 });

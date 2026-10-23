@@ -38,6 +38,18 @@ export type CanvasSize = {
 /** Design mode edits everything; Content mode only text and images (M3). */
 export type EditorMode = "design" | "content";
 
+/**
+ * What the canvas shows besides the page (F-ED-25, the View menu): outlines around every element,
+ * an element's margins and padding on hover, element names, and room below the page. They change
+ * only what the canvas shows: never the page, its export or its history.
+ */
+export type ViewOptions = {
+  readonly outlines: boolean;
+  readonly spacingOnHover: boolean;
+  readonly elementNames: boolean;
+  readonly extraBottomSpace: boolean;
+};
+
 /** Stops a subscription. */
 export type Unsubscribe = () => void;
 
@@ -131,6 +143,22 @@ export type CanvasAction =
   | "duplicate"
   | "delete";
 
+/**
+ * A drag on the canvas that sets one field of one element, such as a spacing handle (1.32). From
+ * `start` to `commit` it is one change; `cancel` (Esc) puts the value from before back.
+ */
+export type FieldDrag = {
+  readonly phase: "start" | "update" | "commit" | "cancel";
+  /** The element, as the canvas shows it. */
+  readonly nodeId: string;
+  readonly field: string;
+  /**
+   * The field's value for the device the canvas shows, as the Edit panel sets it: at `start` and
+   * `cancel` the value from before, at `update` and `commit` the value the drag sets.
+   */
+  readonly value: unknown;
+};
+
 /** Where the floating + asks to add a section: a position in the page's top-level list. */
 export type InsertPoint = { readonly index: number };
 
@@ -205,12 +233,19 @@ export interface CanvasEngine {
    */
   setNavigation(navigation: RenderContext["navigation"]): void;
   setMode(mode: EditorMode): void;
+  /** Shows the View menu's options on the canvas (F-ED-25); none until called. */
+  setViewOptions(options: ViewOptions): void;
   /**
    * Does `action` to the selected element. Edits are reported through {@link onUserEdit} as one
    * step each, like the same action done with the mouse. Returns false if there is nothing to do:
    * no selection, the end of the list, or an action Content mode doesn't allow.
    */
   perform(action: CanvasAction): boolean;
+  /**
+   * The user drags a field's value on the canvas (1.32): the app records each drag as one history
+   * step, and the canvas shows each value as the document changes.
+   */
+  onFieldDrag(cb: (drag: FieldDrag) => void): Unsubscribe;
   /** The floating + between sections was clicked; the app decides what to add there. */
   onAddRequest(cb: (at: InsertPoint) => void): Unsubscribe;
   /**

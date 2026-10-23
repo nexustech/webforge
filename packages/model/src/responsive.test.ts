@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import { isResponsiveValue, resolveResponsive, responsiveSchema } from "./responsive.js";
+import {
+  breakpointForWidth,
+  isResponsiveValue,
+  resolveResponsive,
+  responsiveSchema,
+} from "./responsive.js";
 
 const padding = responsiveSchema(z.enum(["small", "medium", "large"]));
 
@@ -19,6 +24,19 @@ describe("resolveResponsive", () => {
     expect(resolveResponsive(tabletOnly, "mobile")).toBe("medium");
     expect(resolveResponsive({ $responsive: { desktop: "large" } }, "mobile")).toBe("large");
     expect(resolveResponsive(all, "mobile")).toBe("small");
+  });
+});
+
+describe("breakpointForWidth", () => {
+  it("gives the device whose values a page shows at a width, from Tailwind's md and lg", () => {
+    expect([375, 767, 768, 1023, 1024, 1440].map(breakpointForWidth)).toEqual([
+      "mobile",
+      "mobile",
+      "tablet",
+      "tablet",
+      "desktop",
+      "desktop",
+    ]);
   });
 });
 

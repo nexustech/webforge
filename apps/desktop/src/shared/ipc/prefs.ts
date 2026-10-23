@@ -25,6 +25,42 @@ const windowStateSchema = z.strictObject({
   bounds: windowBoundsSchema,
 });
 
+/** The canvas's narrowest and widest device: what a custom device may be, in CSS pixels. */
+export const DEVICE_SIZE = { min: 320, max: 2560 } as const;
+
+/** At most this many custom devices are kept. */
+export const MAX_DEVICES = 20;
+
+/** A device the person added for the canvas (*Add device…*, F-ED-25): its name and size. */
+const deviceSchema = z.strictObject({
+  id: z.string().min(1).max(64),
+  name: z.string().trim().min(1).max(40),
+  width: z.number().int().min(DEVICE_SIZE.min).max(DEVICE_SIZE.max),
+  height: z.number().int().min(DEVICE_SIZE.min).max(DEVICE_SIZE.max),
+});
+
+/** A device the person added for the canvas. */
+export type CustomDevice = z.infer<typeof deviceSchema>;
+
+/**
+ * How the canvas shows the page (F-ED-25, UX-7): the View menu's options, and the person's own
+ * devices. View state, never an undo step (U6).
+ */
+const canvasPreferencesSchema = z.strictObject({
+  /** Outlines around elements as the pointer passes over them. */
+  showOutlines: z.boolean(),
+  /** An element's margins and padding as the pointer passes over it. */
+  spacingOnHover: z.boolean(),
+  /** Each element's name above it. */
+  elementNames: z.boolean(),
+  /** Room below the page's last section, to drop into. */
+  extraBottomSpace: z.boolean(),
+  devices: z.array(deviceSchema).max(MAX_DEVICES),
+});
+
+/** How the canvas shows the page. */
+export type CanvasPreferences = z.infer<typeof canvasPreferencesSchema>;
+
 /**
  * One person's editor preferences (per user, not per site; T2). Stored by main in
  * `<userData>/preferences.json`.
@@ -38,6 +74,7 @@ export const preferencesSchema = z.strictObject({
   panelLayout: z.record(z.string().min(1).max(64), panelGroupLayoutSchema).refine(fewEntries),
   /** The main window as the person last left it; null until then (it opens maximised, ADR 0008). */
   window: windowStateSchema.nullable(),
+  canvas: canvasPreferencesSchema,
 });
 
 /** One person's editor preferences. */
@@ -49,6 +86,13 @@ export const DEFAULT_PREFERENCES: Preferences = {
   editorLevel: "simple",
   panelLayout: {},
   window: null,
+  canvas: {
+    showOutlines: true,
+    spacingOnHover: false,
+    elementNames: false,
+    extraBottomSpace: false,
+    devices: [],
+  },
 };
 
 /** A change to some preferences; the rest stay as they are. */
@@ -67,6 +111,7 @@ export function applyPreferencesChange(
     editorLevel: change.editorLevel ?? preferences.editorLevel,
     panelLayout: change.panelLayout ?? preferences.panelLayout,
     window: change.window === undefined ? preferences.window : change.window,
+    canvas: change.canvas ?? preferences.canvas,
   };
 }
 

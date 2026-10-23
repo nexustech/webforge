@@ -1,0 +1,126 @@
+// @vitest-environment happy-dom
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { ViewOptions } from "../canvas-engine.js";
+import { applyViewOptions } from "./view-options.js";
+
+const NONE: ViewOptions = {
+  outlines: false,
+  spacingOnHover: false,
+  elementNames: false,
+  extraBottomSpace: false,
+};
+
+/** Puck's wrapper around an element, at `top` on the page, holding the element's own markup. */
+function element(id: string, top: number): HTMLElement {
+  const wrapper = document.createElement("div");
+  wrapper.setAttribute("data-puck-component", id);
+  const inner = document.createElement("h2");
+  inner.style.margin = "8px 0px 12px 0px";
+  inner.style.padding = "4px 6px";
+  wrapper.append(inner);
+  const box = new DOMRect(10, top, 300, 40);
+  wrapper.getBoundingClientRect = () => box;
+  inner.getBoundingClientRect = () => box;
+  document.body.append(wrapper);
+  return inner;
+}
+
+beforeEach(() => {
+  vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
+    callback(0);
+    return 1;
+  });
+});
+
+afterEach(() => {
+  document.body.innerHTML = "";
+  document.head.innerHTML = "";
+  vi.unstubAllGlobals();
+});
+
+describe("applyViewOptions (F-ED-25)", () => {
+  it("marks the document for each option that is on, and takes it all away again", () => {
+    const stop = applyViewOptions(
+      document,
+      { ...NONE, outlines: true, extraBottomSpace: true },
+      () => undefined,
+    );
+    const root = document.documentElement;
+
+    expect(root.hasAttribute("data-wf-view-outlines")).toBe(true);
+    expect(root.hasAttribute("data-wf-view-extra-space")).toBe(true);
+    expect(root.hasAttribute("data-wf-view-names")).toBe(false);
+    expect(document.head.querySelectorAll("style[data-webforge-view-css]")).toHaveLength(1);
+    expect(document.querySelector(".wf-view-layer")).not.toBeNull();
+
+    stop();
+    expect(root.hasAttribute("data-wf-view-outlines")).toBe(false);
+    expect(document.querySelector(".wf-view-layer")).toBeNull();
+    // Applied again, the styles aren't added twice.
+    applyViewOptions(document, NONE, () => undefined)();
+    expect(document.head.querySelectorAll("style[data-webforge-view-css]")).toHaveLength(1);
+  });
+
+  it("names each element above it, inside it at the top of the page, but not the selected one", () => {
+    element("hero", 0);
+    element("text", 100);
+    element("faq", 200);
+    const selected = document.createElement("div");
+    selected.className = "wf-outline";
+    selected.dataset.state = "selected";
+    selected.dataset.wfId = "faq";
+    document.body.append(selected);
+    const names: Record<string, string> = { hero: "Hero", text: "Opening times", faq: "FAQ" };
+
+    applyViewOptions(document, { ...NONE, elementNames: true }, (id) => names[id]);
+
+    const labels = [...document.querySelectorAll<HTMLElement>(".wf-view-name")];
+    expect(labels.map((label) => [label.textContent, label.style.top])).toEqual([
+      ["Hero", "0px"],
+      ["Opening times", "84px"],
+    ]);
+    expect(labels[0]?.style.left).toBe("10px");
+  });
+
+  it("follows the page as it changes, not its hover and drag state", async () => {
+    element("hero", 0);
+    const observe = vi.spyOn(MutationObserver.prototype, "observe");
+    applyViewOptions(document, { ...NONE, elementNames: true }, () => "Section");
+
+    // Only the attributes that lay elements out; not Puck's and dnd-kit's data- and aria- state.
+    expect(observe).toHaveBeenCalledWith(
+      document.body,
+      expect.objectContaining({ attributeFilter: ["style", "class", "hidden"] }),
+    );
+    element("text", 100);
+    await new Promise((resolve) => setTimeout(resolve));
+    expect(document.querySelectorAll(".wf-view-name")).toHaveLength(2);
+    observe.mockRestore();
+  });
+
+  it("draws the hovered element's margin and padding, and nothing once the pointer leaves", () => {
+    const inner = element("hero", 100);
+    const stop = applyViewOptions(document, { ...NONE, spacingOnHover: true }, () => undefined);
+
+    inner.dispatchEvent(new Event("pointermove", { bubbles: true }));
+    const margin = document.querySelector<HTMLElement>(".wf-view-margin");
+    const padding = document.querySelector<HTMLElement>(".wf-view-padding");
+    expect(margin?.style.top).toBe("92px");
+    expect(margin?.style.height).toBe("60px");
+    const sides = (box: HTMLElement | null) =>
+      ["Top", "Right", "Bottom", "Left"].map((side) =>
+        box?.style.getPropertyValue(`border-${side.toLowerCase()}-width`),
+      );
+    expect(sides(margin)).toEqual(["8px", "0px", "12px", "0px"]);
+    expect(sides(padding)).toEqual(["4px", "6px", "4px", "6px"]);
+
+    // A resize moves the bands with the element.
+    inner.getBoundingClientRect = () => new DOMRect(10, 200, 300, 40);
+    window.dispatchEvent(new Event("resize"));
+    expect(margin?.style.top).toBe("192px");
+
+    document.documentElement.dispatchEvent(new Event("pointerleave"));
+    expect(document.querySelector(".wf-view-margin")).toBeNull();
+    stop();
+  });
+});
