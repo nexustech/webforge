@@ -36,8 +36,10 @@ import { ModeToggle } from "./shell/ModeToggle.js";
 import { PanelRegistryProvider } from "./shell/panel-context.js";
 import { createPanelRegistry } from "./shell/panels.js";
 import { ShellLayout } from "./shell/ShellLayout.js";
+import { ShortcutSheet } from "./shell/ShortcutSheet.js";
 import { TitleBar } from "./shell/TitleBar.js";
 import { UndoStepsMenu } from "./shell/UndoStepsMenu.js";
+import { registerViewCommands } from "./shell/view-commands.js";
 import { registerPageCommands } from "./site/page-commands.js";
 import { registerSitePanel } from "./site/SitePanel.js";
 import { SiteSettingsHost } from "./site-settings/SiteSettingsHost.js";
@@ -160,6 +162,11 @@ export function App({
     [panels, session, mode],
   );
   useEffect(() => registerCrashReportsCommand(registry), [registry]);
+  // View → Zoom In/Out, Actual Size, Zoom to Fit and the device views (F-ED-27).
+  useEffect(
+    () => registerViewCommands(registry, session.ui, canvasView),
+    [registry, session, canvasView],
+  );
 
   useEffect(
     () =>
@@ -289,6 +296,7 @@ export function App({
             </main>
           </div>
           <AboutDialog info={info} />
+          <ShortcutSheet />
           <SiteCommands />
           <SiteSettingsHost session={session} />
           <SiteWideConfirmDialog confirm={siteWide} />

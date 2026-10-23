@@ -37,8 +37,6 @@ export function registerClipboardCommands(
       id: "edit.cut",
       label: t("edit.cut"),
       menu: "edit",
-      shortcut: "Mod+X",
-      textShortcut: true,
       enabled: selected,
       run: async () => {
         beforeAction();
@@ -49,8 +47,6 @@ export function registerClipboardCommands(
       id: "edit.copy",
       label: t("edit.copy"),
       menu: "edit",
-      shortcut: "Mod+C",
-      textShortcut: true,
       enabled: selected,
       run: async () => {
         beforeAction();
@@ -61,8 +57,6 @@ export function registerClipboardCommands(
       id: "edit.paste",
       label: t("edit.paste"),
       menu: "edit",
-      shortcut: "Mod+V",
-      textShortcut: true,
       run: async () => {
         beforeAction();
         await pasteElements(session, clipboard, notify);

@@ -5,106 +5,80 @@ import type { CommandRegistry, MenuId } from "../shell/commands.js";
 
 /**
  * The canvas's keyboard actions (1.12, 1.30), in the order the Edit menu and command box list
- * them, with Bootstrap Studio's keys (F-ED-27). `text`: the shortcut is text's too (Mod+arrows move
- * the caret, Mod+Backspace deletes a word), so it doesn't run while text is being edited. `extra`:
- * more keys, not shown: Mod+Backspace deletes, as Cmd+Delete does on a Mac (decision of 23 Oct
- * 2026).
+ * them. Their keys are Bootstrap Studio's, from the shortcut standard (F-ED-27).
  */
 const CANVAS_COMMANDS: readonly {
   readonly id: string;
   readonly action: CanvasAction;
   readonly label: MessageKey;
-  readonly shortcut: string;
   readonly menu?: MenuId;
-  readonly text?: boolean;
-  readonly extra?: readonly string[];
 }[] = [
   {
     id: "edit.duplicate",
     action: "duplicate",
     label: "canvas.duplicate",
-    shortcut: "Mod+D",
     menu: "edit",
   },
   {
     id: "edit.delete",
     action: "delete",
     label: "canvas.delete",
-    shortcut: "Delete",
     menu: "edit",
-    text: true,
-    extra: ["Mod+Backspace"],
   },
   {
     id: "edit.moveUp",
     action: "moveUp",
     label: "canvas.moveUp",
-    shortcut: "Mod+Alt+ArrowUp",
     menu: "edit",
-    text: true,
   },
   {
     id: "edit.moveDown",
     action: "moveDown",
     label: "canvas.moveDown",
-    shortcut: "Mod+Alt+ArrowDown",
     menu: "edit",
-    text: true,
   },
   {
     id: "edit.editText",
     action: "editText",
     label: "canvas.editText",
-    shortcut: "Enter",
     menu: "edit",
   },
   {
     id: "edit.clearText",
     action: "clearText",
     label: "canvas.clearText",
-    shortcut: "Backspace",
   },
   {
     id: "edit.selectParent",
     action: "selectParent",
     label: "canvas.selectParent",
-    shortcut: "Mod+ArrowUp",
     menu: "edit",
-    text: true,
   },
   {
     id: "edit.selectChild",
     action: "selectChild",
     label: "canvas.selectChild",
-    shortcut: "Mod+ArrowDown",
     menu: "edit",
-    text: true,
   },
   {
     id: "edit.selectPreviousSibling",
     action: "selectPreviousSibling",
     label: "canvas.selectPreviousSibling",
-    shortcut: "Mod+ArrowLeft",
-    text: true,
   },
   {
     id: "edit.selectNextSibling",
     action: "selectNextSibling",
     label: "canvas.selectNextSibling",
-    shortcut: "Mod+ArrowRight",
-    text: true,
   },
   {
     id: "edit.selectPrevious",
     action: "selectPrevious",
     label: "canvas.selectPrevious",
-    shortcut: "ArrowUp",
   },
   {
     id: "edit.selectNext",
     action: "selectNext",
     label: "canvas.selectNext",
-    shortcut: "ArrowDown",
   },
 ];
 
@@ -181,10 +155,7 @@ export function registerCanvasCommands(
     registry.register({
       id: command.id,
       label: t(command.label),
-      shortcut: command.shortcut,
       ...(command.menu === undefined ? {} : { menu: command.menu }),
-      ...(command.text === true ? { textShortcut: true } : {}),
-      ...(command.extra === undefined ? {} : { extraShortcuts: command.extra }),
       enabled: !NEEDS_SELECTION.has(command.action),
       run: () => {
         beforeAction();

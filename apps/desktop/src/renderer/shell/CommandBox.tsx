@@ -19,10 +19,6 @@ import { useCommandRegistry, useCommands } from "./command-context.js";
 import { COMMAND_IDS } from "./command-ids.js";
 import { type Command as AppCommand, formatShortcut, type PaletteGroup } from "./commands.js";
 
-/** Opens the palette: Bootstrap Studio's key (UX-11), and the box's first one. */
-const COMMAND_BOX_SHORTCUT = "Mod+P";
-const OLD_COMMAND_BOX_SHORTCUT = "Mod+K";
-
 /** The palette's groups, in order: the app's commands, pages to go to, things to add. */
 const GROUPS = [
   { id: "commands", heading: "shell.commandBox.commands" },
@@ -46,6 +42,8 @@ export function CommandBox({ siteName }: CommandBoxProps) {
   const registry = useCommandRegistry();
   const commands = useCommands();
   const [open, setOpen] = useState(false);
+  // Its key (Mod+P, UX-11) comes from the shortcut standard, like every command's.
+  const ownKey = commands.find((command) => command.id === COMMAND_IDS.commandBox)?.shortcut;
 
   useEffect(
     () =>
@@ -53,8 +51,6 @@ export function CommandBox({ siteName }: CommandBoxProps) {
         id: COMMAND_IDS.commandBox,
         label: t("command.commandBox"),
         menu: "view",
-        shortcut: COMMAND_BOX_SHORTCUT,
-        extraShortcuts: [OLD_COMMAND_BOX_SHORTCUT],
         run: () => setOpen(true),
       }),
     [registry],
@@ -98,9 +94,9 @@ export function CommandBox({ siteName }: CommandBoxProps) {
         <span className="sr-only">{t("shell.commandBox.open")}</span>
         <SearchIcon className="size-4 shrink-0 text-muted-foreground" />
         <span className="min-w-0 flex-1 truncate text-left">{siteName}</span>
-        <kbd className="font-sans text-xs text-muted-foreground">
-          {formatShortcut(COMMAND_BOX_SHORTCUT)}
-        </kbd>
+        {ownKey !== undefined && (
+          <kbd className="font-sans text-xs text-muted-foreground">{formatShortcut(ownKey)}</kbd>
+        )}
       </button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent showClose={false} className="top-24 translate-y-0 gap-0 p-0 sm:max-w-lg">

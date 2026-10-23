@@ -8,6 +8,7 @@ import type { AppInfo, RecentSite } from "../../shared/ipc-contract.js";
 import { AboutDialog } from "../shell/AboutDialog.js";
 import { CommandRegistryProvider } from "../shell/command-context.js";
 import { createCommandRegistry, installCommandShortcuts } from "../shell/commands.js";
+import { ShortcutSheet } from "../shell/ShortcutSheet.js";
 import { TitleBar } from "../shell/TitleBar.js";
 import { openSiteWith } from "./open-site.js";
 import { SiteCommands } from "./SiteCommands.js";
@@ -166,6 +167,7 @@ export function StartScreen({ info, project, app, restart, locale }: StartScreen
         </div>
         <SiteCommands project={api} {...(restart === undefined ? {} : { restart })} />
         <AboutDialog info={info} />
+        <ShortcutSheet />
         <Toaster theme="dark" />
       </TooltipProvider>
     </CommandRegistryProvider>

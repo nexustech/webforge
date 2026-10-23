@@ -131,7 +131,6 @@ export function registerStyleCommands(
       id: "edit.copyStyle",
       label: t("edit.copyStyle"),
       menu: "edit",
-      shortcut: "Mod+Alt+C",
       enabled: false,
       run: () => {
         if (locked) return;
@@ -144,7 +143,6 @@ export function registerStyleCommands(
       id: "edit.pasteStyle",
       label: t("edit.pasteStyle"),
       menu: "edit",
-      shortcut: "Mod+Alt+V",
       enabled: false,
       run: () => {
         if (locked || copied === undefined) return;

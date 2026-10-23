@@ -43,8 +43,6 @@ export function registerElementCommands(
     id: "edit.toggleHidden",
     label: t("canvas.toggleHidden"),
     menu: "edit",
-    shortcut: "Mod+/",
-    textShortcut: true,
     enabled: false,
     run: () => {
       const { nodeId } = session.ui.getState();
@@ -67,7 +65,6 @@ export function registerElementCommands(
     id: "edit.rename",
     label: t("canvas.rename"),
     menu: "edit",
-    shortcut: "F2",
     enabled: false,
     run: () => {
       const layer = selectedLayer();

@@ -62,7 +62,6 @@ export function registerExportCommand(
     id: EXPORT_COMMAND_ID,
     label: t("command.exportSite"),
     menu: "file",
-    shortcut: "Mod+E",
     run,
   });
 }

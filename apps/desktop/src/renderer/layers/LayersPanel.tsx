@@ -24,6 +24,7 @@ import {
   useState,
 } from "react";
 import type { MenuPoint } from "../element-menu/ElementMenu.js";
+import { isMac } from "../shell/commands.js";
 import { type Layer, layerItem } from "./layers.js";
 
 /** What the Layers panel can do; the host binds them to the editor session and its commands. */
@@ -228,7 +229,15 @@ export function LayersPanel({
       return;
     }
     const at = rows.indexOf(row);
-    if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
+    // The canvas's keys (F-ED-27): Mod + arrows walk the tree, Mod + Alt + ↑/↓ move. Plain arrows
+    // move the focus, as in any tree (WAI-ARIA).
+    const mod = isMac() ? event.metaKey : event.ctrlKey;
+    if ((event.key === "ArrowRight" || event.key === "ArrowLeft") && mod) {
+      event.preventDefault();
+      const siblings = rows.filter((other) => other.parent === row.parent);
+      const sibling = siblings[siblings.indexOf(row) + (event.key === "ArrowRight" ? 1 : -1)];
+      if (sibling !== undefined) focusRow(sibling.layer.id);
+    } else if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
       event.preventDefault();
       const opening = event.key === "ArrowRight";
       if (row.layer.children.length > 0 && row.expanded !== opening && query === "") {
@@ -242,7 +251,7 @@ export function LayersPanel({
     } else if (event.key === "ArrowUp" || event.key === "ArrowDown") {
       event.preventDefault();
       const step = event.key === "ArrowUp" ? -1 : 1;
-      if (event.altKey) {
+      if (mod && event.altKey) {
         if (layoutLocked) {
           // Content mode keeps the layout (M3).
         } else if (alsoSelected.length > 0) {
@@ -251,7 +260,15 @@ export function LayersPanel({
         } else {
           actions.move(row.layer.id, row.index + step);
         }
-      } else {
+      } else if (mod && step < 0) {
+        if (row.parent !== "") focusRow(row.parent);
+      } else if (mod) {
+        const child = row.layer.children[0];
+        if (child !== undefined) {
+          setExpanded(row.layer.id, true);
+          focusRow(child.id);
+        }
+      } else if (!event.altKey) {
         const next = rows[at + step];
         if (next !== undefined) focusRow(next.layer.id);
       }

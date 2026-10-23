@@ -22,7 +22,6 @@ function registry(shared: { save: boolean; detach: boolean }) {
   commands.register({
     id: ELEMENT_MENU_COMMANDS.duplicate,
     label: "Duplicate",
-    shortcut: "Mod+D",
     run: () => run("duplicate"),
   });
   commands.register({
@@ -66,7 +65,7 @@ describe("ElementMenu (1.35)", () => {
       ["Rename", false],
       ["DuplicateCtrl+D", false],
       ["Save as shared section…", false],
-      ["Delete", true],
+      ["DeleteDelete", true],
     ]);
     await userEvent.click(menu().getByRole("menuitem", { name: /Duplicate/ }));
     expect(run).toHaveBeenCalledWith("duplicate");
@@ -84,7 +83,7 @@ describe("ElementMenu (1.35)", () => {
       ["Rename", true],
       ["DuplicateCtrl+D", false],
       ["Detach from shared section", false],
-      ["Delete", true],
+      ["DeleteDelete", true],
     ]);
   });
 
@@ -115,8 +114,8 @@ describe("ElementMenu (1.35)", () => {
     );
 
     expect(items().slice(3, 5)).toEqual([
-      ["Copy Style", false],
-      ["Paste Style (onto a Heading)", true],
+      ["Copy StyleCtrl+Alt+C", false],
+      ["Paste Style (onto a Heading)Ctrl+Alt+V", true],
     ]);
   });
 });

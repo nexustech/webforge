@@ -23,6 +23,7 @@ import { z } from "zod";
 import { thumbnailOutcomeSchema } from "../shared/export-worker-protocol.js";
 import { MEDIA_SCHEME } from "../shared/ipc/media.js";
 import { openFailureMessage } from "../shared/open-failure.js";
+import { applicationMenu } from "./app-menu.js";
 import { createBackupSchedule } from "./backup-schedule.js";
 import { createBackups } from "./backups.js";
 import { createCanvasCssCompiler, registerCanvasHandlers } from "./canvas-css.js";
@@ -401,6 +402,9 @@ function rememberWindowState(window: BrowserWindow, preferences: PreferencesStor
 
 async function start(): Promise<void> {
   await app.whenReady();
+  // No default menu: its zoom and reload keys are the editor's (F-ED-27).
+  const menu = applicationMenu(process.platform, devServerUrl !== undefined);
+  Menu.setApplicationMenu(menu === null ? null : Menu.buildFromTemplate(menu));
   hardenSession(session.defaultSession);
   session.defaultSession.protocol.handle(MEDIA_SCHEME, (request) => respondWithMedia(request.url));
   const preferences = await openPreferencesStore(join(app.getPath("userData"), "preferences.json"));

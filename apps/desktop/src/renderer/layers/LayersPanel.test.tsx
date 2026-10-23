@@ -2,6 +2,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { isMac } from "../shell/commands.js";
 import {
   dropIndex,
   LayersPanel,
@@ -9,6 +10,9 @@ import {
   type LayersPanelProps,
 } from "./LayersPanel.js";
 import type { Layer } from "./layers.js";
+
+/** The platform's Mod key: Ctrl, or Cmd on a Mac. */
+const MOD = isMac() ? { metaKey: true } : { ctrlKey: true };
 
 afterEach(cleanup);
 
@@ -92,7 +96,7 @@ describe("LayersPanel (F-ED-12)", () => {
     const rows = screen.getAllByRole("treeitem");
 
     expect(rows.every((row) => row.getAttribute("draggable") === "false")).toBe(true);
-    fireEvent.keyDown(rows[1] as HTMLElement, { key: "ArrowDown", altKey: true });
+    fireEvent.keyDown(rows[1] as HTMLElement, { key: "ArrowDown", altKey: true, ...MOD });
     for (const hide of screen.getAllByRole("button", { name: /^Hide/, hidden: true })) {
       fireEvent.click(hide);
     }
@@ -103,7 +107,7 @@ describe("LayersPanel (F-ED-12)", () => {
     expect(actions.select).toHaveBeenCalled();
   });
 
-  it("selects on click and with the arrow keys; Alt+arrows move among siblings", async () => {
+  it("selects on click and with the arrow keys; Mod+Alt+arrows move among siblings", async () => {
     const { actions } = setUp();
     const rows = screen.getAllByRole("treeitem");
 
@@ -111,8 +115,8 @@ describe("LayersPanel (F-ED-12)", () => {
     fireEvent.keyDown(rows[1] as HTMLElement, { key: "ArrowDown" });
     fireEvent.keyDown(rows[1] as HTMLElement, { key: "ArrowUp" });
     fireEvent.keyDown(rows[0] as HTMLElement, { key: "ArrowUp" });
-    fireEvent.keyDown(rows[1] as HTMLElement, { key: "ArrowDown", altKey: true });
-    fireEvent.keyDown(rows[2] as HTMLElement, { key: "ArrowUp", altKey: true });
+    fireEvent.keyDown(rows[1] as HTMLElement, { key: "ArrowDown", altKey: true, ...MOD });
+    fireEvent.keyDown(rows[2] as HTMLElement, { key: "ArrowUp", altKey: true, ...MOD });
     fireEvent.keyDown(rows[1] as HTMLElement, { key: "Delete" });
     expect(actions.remove).toHaveBeenCalledOnce();
 
@@ -121,6 +125,23 @@ describe("LayersPanel (F-ED-12)", () => {
       ["a", 1],
       ["b", 0],
     ]);
+  });
+
+  it("walks the tree with Mod+arrows, as on the canvas, and moves only with Mod+Alt (F-ED-27)", () => {
+    const { actions } = setUp("b");
+    const rows = screen.getAllByRole("treeitem");
+
+    // Parent, first child, next sibling; nothing before the first.
+    fireEvent.keyDown(rows[2] as HTMLElement, { key: "ArrowUp", ...MOD });
+    fireEvent.keyDown(rows[0] as HTMLElement, { key: "ArrowDown", ...MOD });
+    fireEvent.keyDown(rows[1] as HTMLElement, { key: "ArrowRight", ...MOD });
+    fireEvent.keyDown(rows[1] as HTMLElement, { key: "ArrowLeft", ...MOD });
+    fireEvent.keyDown(rows[0] as HTMLElement, { key: "ArrowRight", ...MOD });
+    // Alt alone no longer moves.
+    fireEvent.keyDown(rows[1] as HTMLElement, { key: "ArrowDown", altKey: true });
+
+    expect(actions.select.mock.calls).toEqual([["s1"], ["a"], ["b"], ["s2"]]);
+    expect(actions.move).not.toHaveBeenCalled();
   });
 
   it("selects several: Ctrl/Cmd-click adds or takes away, Shift-click a range (1.31)", async () => {
@@ -145,12 +166,12 @@ describe("LayersPanel (F-ED-12)", () => {
     expect(actions.select).not.toHaveBeenCalled();
   });
 
-  it("moves all selected layers with Alt+arrows, as the Edit menu does (1.31)", () => {
+  it("moves all selected layers with Mod+Alt+arrows, as the Edit menu does (1.31)", () => {
     const { actions } = setUp("a", true, false, ["b"]);
     const rows = screen.getAllByRole("treeitem");
 
-    fireEvent.keyDown(rows[1] as HTMLElement, { key: "ArrowDown", altKey: true });
-    fireEvent.keyDown(rows[1] as HTMLElement, { key: "ArrowUp", altKey: true });
+    fireEvent.keyDown(rows[1] as HTMLElement, { key: "ArrowDown", altKey: true, ...MOD });
+    fireEvent.keyDown(rows[1] as HTMLElement, { key: "ArrowUp", altKey: true, ...MOD });
 
     expect(actions.moveDown).toHaveBeenCalledOnce();
     expect(actions.moveUp).toHaveBeenCalledOnce();

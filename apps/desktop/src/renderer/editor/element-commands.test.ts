@@ -86,7 +86,7 @@ describe("registerElementCommands (1.30, F-ED-25, F-ED-27)", () => {
     expect(registry.get("edit.toggleHidden")).toMatchObject({
       shortcut: "Mod+/",
       menu: "edit",
-      textShortcut: true,
+      textKeys: ["Mod+/"],
       enabled: true,
       label: "Hide or show",
     });
