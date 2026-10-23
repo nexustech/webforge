@@ -6,6 +6,7 @@ import type { EditorSession } from "../editor/editor-session.js";
 import { createAutosave, type SaveStatus } from "./autosave.js";
 import type { LoadedSite } from "./load-site.js";
 import { installSaveTriggers } from "./save-triggers.js";
+import { siteSession } from "./site-session.js";
 
 /** The parts of `window.webforge` autosave uses; injectable for tests. */
 export type AutosaveApi = {
@@ -33,7 +34,7 @@ export function useAutosave(
     const autosave = createAutosave({
       document: session.history.document,
       saved: loaded.saved,
-      commit: (changes) => project.commit(changes),
+      commit: (changes) => project.commit(siteSession(), changes),
     });
     const removeTriggers = installSaveTriggers(window, autosave, session.ui, (save) =>
       app.onFlushRequest(save),

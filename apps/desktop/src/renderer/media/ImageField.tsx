@@ -12,6 +12,7 @@ import { ImagePlusIcon } from "lucide-react";
 import { useEffect, useId, useState, useSyncExternalStore } from "react";
 import { type MediaApi, mediaImageUrl } from "../../shared/ipc/media.js";
 import type { EditorSession } from "../editor/editor-session.js";
+import { siteSession } from "../storage/site-session.js";
 import type { ImagePickRequests } from "./image-picks.js";
 import { importItems } from "./import-media.js";
 import { addMedia } from "./media-commands.js";
@@ -88,7 +89,7 @@ export function ImageField({
   // Another image gets its own alt text from Media: the old override described the old image.
   const pick = (chosen: ImageMeta) => choose({ mediaId: chosen.id });
   const addNew = async () => {
-    const added = (await importItems(() => api.choose(), notify)).filter(isImageMeta);
+    const added = (await importItems(() => api.choose(siteSession()), notify)).filter(isImageMeta);
     addMedia(session, added);
     const [first] = added;
     if (first !== undefined) pick(first);

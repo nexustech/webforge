@@ -1,8 +1,17 @@
 import { type SiteDocumentChange, siteDocSchema } from "@webforge/model";
 import { z } from "zod";
 
+/**
+ * Which opening of a site a renderer was loaded for (R6): a new random id each time a site is
+ * opened or created. The renderer sends it with every change it saves, so a save that arrives after
+ * another site replaced the open one (a hand-off, 1.8) is refused, never written into that site.
+ */
+export const sessionIdSchema = z.uuid();
+
 /** The site (`.wforge` project) that is open in the main process. */
 const projectSummarySchema = z.strictObject({
+  /** This opening of the site (see {@link sessionIdSchema}). */
+  sessionId: sessionIdSchema,
   /** Site name chosen when it was created. */
   name: z.string().min(1),
   /** File name with extension, e.g. `Rosa's Bakery.wforge`; never the full path. */
@@ -90,8 +99,11 @@ const commitResultSchema = z.discriminatedUnion("status", [
   z.strictObject({ status: z.literal("saved") }),
   z.strictObject({
     status: z.literal("failed"),
-    /** No site open, a read-only site, changes that would break the site, or a write error. */
-    reason: z.enum(["no-site", "read-only", "invalid", "unknown"]),
+    /**
+     * No site open, another site opened since the renderer loaded (`stale-session`), a read-only
+     * site, changes that would break the site, or a write error.
+     */
+    reason: z.enum(["no-site", "stale-session", "read-only", "invalid", "unknown"]),
   }),
 ]);
 
@@ -112,7 +124,7 @@ const uiStateResultSchema = z.discriminatedUnion("status", [
   z.strictObject({ status: z.literal("saved") }),
   z.strictObject({
     status: z.literal("failed"),
-    reason: z.enum(["no-site", "read-only", "unknown"]),
+    reason: z.enum(["no-site", "stale-session", "read-only", "unknown"]),
   }),
 ]);
 
@@ -170,7 +182,7 @@ export const projectChannels = {
    */
   commitSite: {
     channel: "project:commit",
-    request: z.tuple([z.array(siteDocumentChangeSchema).max(10_000)]),
+    request: z.tuple([sessionIdSchema, z.array(siteDocumentChangeSchema).max(10_000)]),
     response: commitResultSchema,
   },
   /** The open site's editor state (Design or Content mode), or `null` without an open site. */
@@ -200,7 +212,7 @@ export const projectChannels = {
   /** Remembers the editor state with the open site. */
   setUiState: {
     channel: "project:set-ui-state",
-    request: z.tuple([siteUiStateSchema]),
+    request: z.tuple([sessionIdSchema, siteUiStateSchema]),
     response: uiStateResultSchema,
   },
   /** The renderer's answer to `app:flush`: every change is saved, the window may close. */
@@ -221,8 +233,11 @@ export interface ProjectApi {
   getCurrent(): Promise<ProjectSummary | null>;
   /** The open site's documents as one validated site. */
   readSite(): Promise<ReadSiteResult>;
-  /** Saves changed documents of the open site, e.g. from `changedDocuments(previous, next)`. */
-  commit(changes: readonly SiteDocumentChange[]): Promise<CommitResult>;
+  /**
+   * Saves changed documents of the open site, e.g. from `changedDocuments(previous, next)`, if it
+   * is still the opening `sessionId` names.
+   */
+  commit(sessionId: string, changes: readonly SiteDocumentChange[]): Promise<CommitResult>;
   /** The open site's editor state (Design or Content mode), or `null` without an open site. */
   getUiState(): Promise<SiteUiState | null>;
   /** The start screen's Recent list. */
@@ -231,6 +246,6 @@ export interface ProjectApi {
   openRecent(id: string): Promise<ProjectResult>;
   /** Takes a site off the Recent list. */
   removeRecent(id: string): Promise<null>;
-  /** Remembers the editor state with the open site. */
-  setUiState(state: SiteUiState): Promise<UiStateResult>;
+  /** Remembers the editor state with the open site, if it is still the opening `sessionId` names. */
+  setUiState(sessionId: string, state: SiteUiState): Promise<UiStateResult>;
 }

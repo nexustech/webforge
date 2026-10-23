@@ -74,7 +74,15 @@ export function registerProjectHandlers(
   });
   registerIpcHandler(ipc, "getCurrentProject", isTrustedSender, () => session.current());
   registerIpcHandler(ipc, "readSite", isTrustedSender, () => session.readSite());
-  registerIpcHandler(ipc, "commitSite", isTrustedSender, (changes) => session.commit(changes));
+  // Only from a renderer loaded for the site open now (R6): a save on its way while another site
+  // replaced it is refused.
+  registerIpcHandler(ipc, "commitSite", isTrustedSender, (sessionId, changes) => {
+    const reason = session.staleReason(sessionId);
+    return reason === undefined ? session.commit(changes) : { status: "failed", reason };
+  });
   registerIpcHandler(ipc, "getUiState", isTrustedSender, () => session.uiState());
-  registerIpcHandler(ipc, "setUiState", isTrustedSender, (state) => session.setUiState(state));
+  registerIpcHandler(ipc, "setUiState", isTrustedSender, (sessionId, state) => {
+    const reason = session.staleReason(sessionId);
+    return reason === undefined ? session.setUiState(state) : { status: "failed", reason };
+  });
 }

@@ -28,6 +28,7 @@ import {
   copySelection,
   updateSectionField,
 } from "../shared-sections/shared-sections.js";
+import { siteSession } from "../storage/site-session.js";
 
 /**
  * Copy, Cut and Paste of sections and elements (1.25, F-ED-16): within a page, between pages and
@@ -126,7 +127,7 @@ export async function copySelected(
   const ui = session.ui.getState();
   let result: ClipboardWriteResult;
   try {
-    result = await clipboard.write({
+    result = await clipboard.write(siteSession(), {
       nodes: [node],
       media: mediaOf(session, [node]),
       ...(whole ? { sharedSectionId: copy.shared.id } : {}),
@@ -222,7 +223,7 @@ export async function pasteElements(
 ): Promise<boolean> {
   let result: ClipboardReadResult;
   try {
-    result = await clipboard.read();
+    result = await clipboard.read(siteSession());
   } catch {
     result = { status: "failed", reason: "unknown" };
   }

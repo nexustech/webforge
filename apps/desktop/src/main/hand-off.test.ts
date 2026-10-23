@@ -7,6 +7,7 @@ const project = {
   fileName: "Florist.wforge",
   formatVersion: 1,
   syncService: null,
+  sessionId: "9b2f6c1e-4d3a-4f7b-8e21-5c6d7a8b9c0d",
 };
 const opened: ProjectResult = { status: "opened", project };
 

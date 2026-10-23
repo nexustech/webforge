@@ -2,6 +2,7 @@ import { createSite } from "@webforge/model";
 import { describe, expect, it, vi } from "vitest";
 import type { ReadSiteResult } from "../../shared/ipc-contract.js";
 import { loadSite } from "./load-site.js";
+import { siteSession } from "./site-session.js";
 
 const site = createSite({
   name: "Bakery",
@@ -15,7 +16,13 @@ const starter = createSite({
   homeTitle: "Home",
   notFoundTitle: "404",
 });
-const summary = { name: "Bakery", fileName: "Bakery.wforge", formatVersion: 1, syncService: null };
+const summary = {
+  sessionId: "9b2f6c1e-4d3a-4f7b-8e21-5c6d7a8b9c0d",
+  name: "Bakery",
+  fileName: "Bakery.wforge",
+  formatVersion: 1,
+  syncService: null,
+};
 
 function project(current: typeof summary | null, read: ReadSiteResult) {
   return { getCurrent: vi.fn(async () => current), readSite: vi.fn(async () => read) };
@@ -33,6 +40,15 @@ describe("loadSite", () => {
     await expect(
       loadSite(project(summary, { status: "ok", site }), () => starter),
     ).resolves.toEqual({ kind: "file", site, saved: site });
+  });
+
+  it("remembers the open site's session for the calls that change it, and none without a site (R6)", async () => {
+    await loadSite(project(summary, { status: "ok", site }), () => starter);
+    expect(siteSession()).toBe(summary.sessionId);
+
+    await loadSite(project(null, { status: "none" }), () => starter);
+    expect(siteSession()).not.toBe(summary.sessionId);
+    expect(siteSession()).toMatch(/^[0-9a-f-]{36}$/);
   });
 
   it("gives a new, empty site file the starter site, still unsaved", async () => {

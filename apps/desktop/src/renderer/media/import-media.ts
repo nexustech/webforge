@@ -7,6 +7,7 @@ import {
   type MediaApi,
 } from "../../shared/ipc/media.js";
 import type { MediaImportResult } from "../../shared/ipc-contract.js";
+import { siteSession } from "../storage/site-session.js";
 
 /** The parts of a dropped `File` the import reads. */
 export type DroppedFileLike = Pick<File, "name" | "size" | "arrayBuffer">;
@@ -63,7 +64,7 @@ export async function importDroppedFiles(
     if (payload.length === 0) {
       continue;
     }
-    const result = await media.import(payload);
+    const result = await media.import(siteSession(), payload);
     if (result.status !== "imported") {
       return result;
     }

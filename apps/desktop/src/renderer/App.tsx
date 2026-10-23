@@ -45,6 +45,7 @@ import { SiteCommands } from "./start/SiteCommands.js";
 import { AutosaveStatus } from "./storage/AutosaveStatus.js";
 import { registerCrashReportsCommand } from "./storage/crash-reports-command.js";
 import type { LoadedSite } from "./storage/load-site.js";
+import { siteSession } from "./storage/site-session.js";
 
 /** Props of {@link App}. */
 export type AppProps = {
@@ -71,7 +72,8 @@ export type AppProps = {
 
 const exportWithPreload = (request: ExportRequest) => window.webforge.site.export(request);
 const saveWithPreload = (change: PreferencesChange) => window.webforge.prefs.set(change);
-const saveUiStateWithPreload = (state: SiteUiState) => window.webforge.project.setUiState(state);
+const saveUiStateWithPreload = (state: SiteUiState) =>
+  window.webforge.project.setUiState(siteSession(), state);
 const spellCheckWithPreload = (language: string) =>
   window.webforge.app.setSpellCheckLanguage(language);
 
