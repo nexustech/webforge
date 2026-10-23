@@ -4,6 +4,10 @@ import { ArrowDownIcon, ArrowUpIcon, EyeIcon, EyeOffIcon, PencilIcon } from "luc
 import { type ReactNode, useLayoutEffect, useRef, useState } from "react";
 import type { FieldDrag, InsertPoint } from "../canvas-engine.js";
 import { HIDDEN_ATTRIBUTE } from "./config.js";
+
+/** Marks the element outlined from outside the canvas (`CanvasEngine.outline`). */
+export const OUTLINED_ATTRIBUTE = "data-wf-outlined";
+
 import { canPerform, performOnSelected } from "./selected-actions.js";
 import { type BoxHandleField, SPACING_HANDLES_CSS, SpacingHandles } from "./spacing-handles.js";
 import { ROOT_ZONE } from "./tree.js";
@@ -50,6 +54,11 @@ const CHROME_CSS = `
   cursor: pointer;
   pointer-events: auto;
   transform: translate(-50%, 50%) scale(calc(1 / var(--wf-zoom, 1)));
+}
+/* An element outlined from outside the canvas (a breadcrumb under the pointer): as on hover. */
+[${OUTLINED_ATTRIBUTE}] {
+  outline: calc(1px / var(--wf-zoom, 1)) solid #f028f3;
+  outline-offset: calc(-1px / var(--wf-zoom, 1));
 }
 /* A hidden element (Layers' Hide): dimmed, still there to select and show again. */
 [${HIDDEN_ATTRIBUTE}] {

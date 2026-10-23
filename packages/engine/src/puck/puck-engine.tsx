@@ -15,8 +15,13 @@ import {
   copiedNodeId,
   expandSharedCopies,
   type LayoutDoc,
+  type NodeDoc,
   newSharedCopy,
   type PageDoc,
+  pageAnchors,
+  pastedCopies,
+  SHARED_COPY_TYPE,
+  type SharedCopyNode,
   type SharedSectionsDoc,
 } from "@webforge/model";
 import {
@@ -48,6 +53,7 @@ import {
   applyChromeStyles,
   createSelectionOutline,
   type ElementActions,
+  OUTLINED_ATTRIBUTE,
   QuickActionBar,
 } from "./chrome.js";
 import { toPuckConfig } from "./config.js";
@@ -55,6 +61,14 @@ import { installContextMenu } from "./context-menu.js";
 import { deferredCommands } from "./deferred-commands.js";
 import { hidePuckDeleteKeys } from "./delete-keys.js";
 import { puckDictionary } from "./dictionary.js";
+import {
+  copyIndex,
+  type DragKeys,
+  type Drop,
+  insertedAt,
+  takeDragKeys,
+  trackDragKeys,
+} from "./drag-copies.js";
 import { createDragSources } from "./drag-sources.js";
 import { editFromAction, selectedNodeId, toPageDoc } from "./edit-from-action.js";
 import { keepElementsEnabled } from "./enabled-elements.js";
@@ -75,7 +89,7 @@ import { applySiteStyles, type SiteStyles } from "./site-styles.js";
 import { boxHandleFields } from "./spacing-handles.js";
 import { focusedRichTextId, richTextArrived, staleRichText } from "./stale-rich-text.js";
 import { startTextEditing } from "./text-editing.js";
-import { allNodes, findNode, nodeAt } from "./tree.js";
+import { allNodes, findNode, nodeAt, ROOT_ZONE } from "./tree.js";
 import { applyViewOptions } from "./view-options.js";
 
 /** Options of {@link createPuckEngine}. */
@@ -224,6 +238,8 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   let stopKeepingEnabled: (() => void) | null = null;
   /** Stops hiding Delete and Backspace from Puck in the editor window (see `delete-keys.ts`). */
   let stopHidingHostKeys: (() => void) | null = null;
+  /** Stops following the keys held in the editor window during a drag (see `drag-copies.ts`). */
+  let stopTrackingHostKeys: (() => void) | null = null;
   const followMode = () => {
     stopKeepingEnabled?.();
     stopKeepingEnabled =
@@ -536,10 +552,134 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     putBack(edit.page, true);
   };
 
+  /** The keys held while dragging on the canvas: Ctrl or Cmd copies (see `drag-copies.ts`). */
+  const dragKeys: DragKeys = { copy: false, linked: false, pressed: false };
+
+  /**
+   * A drag Puck made a move that Ctrl or Cmd asked to be a copy instead, if `action` is one, and
+   * whether Shift asked for a linked copy: only a drop (Puck is still dragging), never a move from
+   * the keyboard, which holds Ctrl too. Every drop takes the keys held for it.
+   */
+  const copyDrop = (
+    action: PuckAction,
+    prev: AppState,
+  ): { readonly drop: Drop; readonly linked: boolean } | null => {
+    if (prev.ui.isDragging !== true) return null;
+    if (action.type !== "move" && action.type !== "reorder" && action.type !== "insert") {
+      return null;
+    }
+    const held = takeDragKeys(dragKeys);
+    if (!held.copy || action.type === "insert") return null;
+    const drop =
+      action.type === "move" ? action : { ...action, sourceZone: action.destinationZone };
+    return { drop, linked: held.linked };
+  };
+
+  /**
+   * A drag with Ctrl or Cmd held (1.30, UX-4): what was dragged stays, and a copy goes where it was
+   * dropped, as one step ("Duplicated Heading"), its ids and anchors its own as a pasted one's are.
+   * With Shift too, a linked copy of a shared section places another linked copy there (F-ED-23);
+   * without, the copy is of its section, the page's own. An element inside a linked copy is copied
+   * within the shared section, as Duplicate does there; with Shift, nothing happens. Puck has moved
+   * the element by now (`next`), so its view is put right: the original back, the copy shown.
+   */
+  const copyOnDrop = (
+    action: PuckAction,
+    drop: Drop,
+    next: AppState,
+    prev: AppState,
+    linked: boolean,
+  ) => {
+    if (getPuck === null || library === null) return;
+    const before = toPageDoc(prev.data);
+    const shown = toPageDoc(next.data);
+    const node = nodeAt(before, drop.sourceZone, drop.sourceIndex);
+    // The Header and Footer themselves stay where they are, once each (F-ED-7).
+    if (node === undefined || isSharedRegion(layout, node.props.id)) {
+      putBack(shown);
+      return;
+    }
+    const copy = linked ? copyShownBy(node, copiesOn(page.content), shared) : undefined;
+    // Shift asks for a linked copy, which only a whole copy makes. An element inside one is
+    // neither the page's own nor the Header's or Footer's: copying it there instead would change
+    // every copy of the section, so nothing happens (#255 review).
+    const ownOrShared =
+      findNode(page, node.props.id) !== undefined || isShared(layout, node.props.id);
+    if (linked && copy === undefined && !ownOrShared) {
+      putBack(shown);
+      return;
+    }
+    if (copy !== undefined) {
+      placeLinkedCopy(copy, drop, shown);
+    } else {
+      const [clone] = pastedCopies([node], pageAnchors(page.content, shared, layout));
+      if (clone === undefined) return;
+      const after = insertedAt(before, drop.destinationZone, copyIndex(drop), clone);
+      const actions = pageActions(shown, after, slotsOf);
+      if (actions === null) {
+        dispatch({ type: "setData", data: () => toPuckData(after), recordHistory: false });
+      } else {
+        for (const action of actions) dispatch({ ...action, recordHistory: false });
+      }
+      const id = clone.props.id;
+      const edit: EngineEdit = {
+        kind: "duplicate",
+        nodeId: id,
+        componentType: clone.type,
+        field: null,
+        page: after,
+        selection: id,
+      };
+      reportEdit(edit, action, prev);
+    }
+    commands.edited();
+  };
+
+  /**
+   * Another linked copy of `copy`'s shared section, where a Ctrl/Cmd+Shift drag of `copy` dropped
+   * (F-ED-23): among the page's sections, between the Header and the Footer. `shown` is what Puck
+   * shows now.
+   */
+  const placeLinkedCopy = (copy: NodeDoc & SharedCopyNode, drop: Drop, shown: PageDoc) => {
+    const header = layout.header.length;
+    const at = page.content.indexOf(copy);
+    // Puck counts the drop without the copy that was dragged; the page still has it.
+    const among = drop.destinationZone === ROOT_ZONE ? drop.destinationIndex - header : Number.NaN;
+    if (Number.isNaN(among)) {
+      putBack(shown);
+      return;
+    }
+    const others = Math.min(Math.max(among, 0), page.content.length - 1);
+    const index = others >= at ? others + 1 : others;
+    const added = newSharedCopy(page.content, copy.props.sharedSectionId, shared, layout);
+    const content = [...page.content];
+    content.splice(index, 0, added);
+    page = { ...page, content };
+    const root = shared[copy.props.sharedSectionId]?.section.props.id;
+    const id = root === undefined ? null : copiedNodeId(added.props.id, root);
+    emitEdit({
+      kind: "duplicate",
+      nodeId: id,
+      componentType: SHARED_COPY_TYPE,
+      field: null,
+      page,
+      selection: id,
+      copyOf: copy.props.sharedSectionId,
+    });
+    putBack(shown);
+  };
+
   const handleAction = (action: PuckAction, next: AppState, prev: AppState) => {
     inAction = true;
     try {
       if (applying) {
+        return;
+      }
+      const copying = library === null ? null : copyDrop(action, prev);
+      if (copying !== null) {
+        // Made once Puck has finished its own update, where a dispatch would be lost.
+        const { drop, linked } = copying;
+        queueMicrotask(() => copyOnDrop(action, drop, next, prev, linked));
         return;
       }
       if (library !== null) {
@@ -674,6 +814,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       frameWindows.emit(frameWindow);
       const removeKeys = installHistoryKeys(frameWindow, runCommand);
       const showDeleteKeys = hidePuckDeleteKeys(frameWindow);
+      const stopDragKeys = trackDragKeys(frameWindow, dragKeys);
       // The element menu, but not in Content mode, where right-clicks get the browser's own.
       const removeMenu = installContextMenu(frameWindow.document, contextMenus.emit, {
         enabled: () => mode === "design",
@@ -681,6 +822,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       });
       return () => {
         showDeleteKeys();
+        stopDragKeys();
         removeMenu();
         stopKeepingEnabled?.();
         stopKeepingEnabled = null;
@@ -810,6 +952,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       config = configFor(opts.library);
       const hostWindow = el.ownerDocument.defaultView;
       stopHidingHostKeys = hostWindow === null ? null : hidePuckDeleteKeys(hostWindow);
+      stopTrackingHostKeys = hostWindow === null ? null : trackDragKeys(hostWindow, dragKeys);
       root = createRoot(el);
       render();
       // Puck starts with the current page.
@@ -883,6 +1026,17 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       return () => {
         commandHandlers.delete(handler);
       };
+    },
+
+    outline(nodeId) {
+      const doc = frameDocument ?? host?.ownerDocument;
+      for (const element of doc?.querySelectorAll(`[${OUTLINED_ATTRIBUTE}]`) ?? []) {
+        element.removeAttribute(OUTLINED_ATTRIBUTE);
+      }
+      if (nodeId === null) return;
+      doc
+        ?.querySelector(`[data-puck-component="${CSS.escape(nodeId)}"]`)
+        ?.setAttribute(OUTLINED_ATTRIBUTE, "");
     },
 
     select(nodeId) {
@@ -1017,6 +1171,8 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       getPuck = null;
       stopHidingHostKeys?.();
       stopHidingHostKeys = null;
+      stopTrackingHostKeys?.();
+      stopTrackingHostKeys = null;
       frameDocument = null;
       // Unmount after the current render: the app destroys the engine from an effect cleanup.
       queueMicrotask(() => {

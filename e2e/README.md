@@ -38,7 +38,7 @@ This packages the app with `electron-builder --dir` (asar, Fuses, unpacked bette
 pnpm visual
 ```
 
-This builds the editor UI's Storybook (`packages/editor-ui/storybook-static`, served on 127.0.0.1 by `visual/serve-storybook.ts`) and runs `visual/` in Chromium: axe on every story in both themes. Screenshots are compared only with `VISUAL_SCREENSHOTS=1`, which CI sets in the pinned `mcr.microsoft.com/playwright` Linux container, because fonts and anti-aliasing differ between machines. When a new story has no screenshot yet, CI writes one, fails, and uploads it as the `visual-screenshots` artifact: commit those files to `visual/__screenshots__/`. After an intended visual change, delete the affected files there and let CI write them again.
+This builds the editor UI's Storybook (`packages/editor-ui/storybook-static`, served on 127.0.0.1 by `visual/serve-storybook.ts`) and runs `visual/` in Chromium: axe on every story in both themes. Screenshots are compared only with `VISUAL_SCREENSHOTS=1`, which CI sets in the pinned `mcr.microsoft.com/playwright` Linux container, because fonts and anti-aliasing differ between machines. To make or update screenshots before CI, run `pnpm visual:docker` (Docker Desktop running): it runs these tests in that same container on this machine and writes screenshots for new stories into `visual/__screenshots__/`; after an intended visual change, `pnpm visual:docker --update` rewrites the changed ones. Commit them with the PR. If a PR reaches CI without them, CI writes the missing ones, fails, and uploads them as the `visual-screenshots` artifact.
 
 ```sh
 pnpm e2e:perf

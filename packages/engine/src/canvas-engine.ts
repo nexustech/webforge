@@ -213,6 +213,11 @@ export interface CanvasEngine {
   applyChange(change: DocChange): void;
   onUserEdit(cb: (edit: EngineEdit) => void): Unsubscribe;
   select(nodeId: string | null): void;
+  /**
+   * Outlines element `nodeId` on the canvas as a hovered element is, or none (`null`): for a
+   * pointer over something outside the canvas that names it, such as a breadcrumb (1.30).
+   */
+  outline(nodeId: string | null): void;
   onSelectionChange(cb: (nodeId: string | null) => void): Unsubscribe;
   /** Undo/redo shortcuts and Esc pressed inside the canvas (U4). */
   onHistoryCommand(cb: HistoryCommandHandler): Unsubscribe;
