@@ -61,6 +61,10 @@ export const panels = {
   "add.other": "Other",
   // The site's shared sections, listed first under Sections (1.29, F-ED-23).
   "add.sharedSections": "Shared sections",
+  // A shared section's "…" menu in the Add panel (1.29).
+  "add.sharedActions": "Actions for {name}",
+  "add.sharedRename": "Rename…",
+  "add.sharedDelete": "Delete…",
   "add.point.start": "Choose a section to add at the top of the page.",
   "add.point.after": "Choose a section to add after {item}.",
   "add.point.cancel": "Cancel",

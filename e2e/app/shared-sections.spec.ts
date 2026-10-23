@@ -28,8 +28,9 @@ const steps = () => page.locator(".undo-history__step");
 const banner = () => page.locator(".editor > [role='status']");
 const headings = () => canvas().locator(".site-heading");
 
-/** Runs an Edit menu command. */
-async function editMenu(name: string): Promise<void> {
+/** Runs an Edit menu command, once the menu a previous command closed has gone. */
+async function editMenu(name: string | RegExp): Promise<void> {
+  await expect(page.getByRole("menu")).toHaveCount(0);
   await page.getByRole("menuitem", { name: "Edit" }).click();
   await page.getByRole("menuitem", { name }).click();
 }
@@ -101,4 +102,81 @@ test("saves a shared section, edits every copy at once, undoes it, and detaches 
   await panel().getByLabel("Text", { exact: true }).fill("Only here");
   await expect(headings()).toHaveText(["Welcome to our business", "Only here"]);
   await expect(steps().first()).toHaveText("Edited Heading text");
+});
+
+test("renames a shared section, then deletes it after asking, its copies staying", async () => {
+  await selectSection();
+  await editMenu("Save as shared section…");
+  await page.getByRole("textbox", { name: "Name" }).fill("Welcome");
+  await page.getByRole("button", { name: "Save" }).click();
+  await editMenu("Duplicate");
+  await expect(headings()).toHaveCount(2);
+
+  await editMenu("Rename shared section…");
+  const rename = page.getByRole("dialog", { name: "Rename shared section" });
+  const name = rename.getByRole("textbox", { name: "Name" });
+  // Its own name, in other capitals, is allowed (another section's isn't: unit tests).
+  await name.fill("WELCOME ");
+  await expect(rename.getByRole("button", { name: "Rename" })).toBeEnabled();
+  await name.fill("Opening hours");
+  await rename.getByRole("button", { name: "Rename" }).click();
+  await expect(steps().first()).toHaveText("Renamed 'Welcome' to 'Opening hours'");
+  await expect(banner()).toHaveText(
+    "Editing shared section 'Opening hours': changes apply to 2 copies on 1 page",
+  );
+
+  // Deleting asks first (D7); its copies stay as normal sections.
+  await editMenu("Delete shared section…");
+  const ask = page.getByRole("alertdialog", { name: "Delete shared section 'Opening hours'?" });
+  await expect(ask).toContainText("This changes 1 page.");
+  await ask.getByRole("button", { name: "Delete Shared Section" }).click();
+  await expect(ask).toHaveCount(0);
+  await expect(steps().first()).toHaveText("Deleted shared section 'Opening hours'");
+  await expect(banner()).toHaveCount(0);
+  await expect(headings()).toHaveText(["Welcome to our business", "Welcome to our business"]);
+
+  // Now normal sections: an edit in one stays in it.
+  await selectHeading(1);
+  await panel().getByLabel("Text", { exact: true }).fill("Only here");
+  await expect(headings()).toHaveText(["Welcome to our business", "Only here"]);
+  await page.keyboard.press("ControlOrMeta+z");
+  await page.keyboard.press("ControlOrMeta+z");
+  await expect(banner()).toHaveText(
+    "Editing shared section 'Opening hours': changes apply to 2 copies on 1 page",
+  );
+});
+
+test("renames and deletes a shared section on no page from the Add panel, and undoes the delete", async () => {
+  await selectSection();
+  await editMenu("Save as shared section…");
+  await page.getByRole("textbox", { name: "Name" }).fill("Welcome");
+  await page.getByRole("button", { name: "Save" }).click();
+  // Its only copy deleted: the shared section is on no page, so only the Add panel reaches it.
+  await editMenu(/^Delete(?! shared)/);
+  await expect(headings()).toHaveCount(0);
+
+  const left = page.getByRole("region", { name: "Left panels" });
+  await left.getByRole("tab", { name: "Add" }).click();
+  const shared = left.getByRole("list", { name: "Shared sections" });
+  await shared.getByRole("button", { name: "Actions for Welcome" }).click();
+  await page.getByRole("menuitem", { name: "Rename…" }).click();
+  const rename = page.getByRole("dialog", { name: "Rename shared section" });
+  await expect(rename.getByRole("textbox", { name: "Name" })).toBeFocused();
+  await rename.getByRole("textbox", { name: "Name" }).fill("Opening hours");
+  await rename.getByRole("button", { name: "Rename" }).click();
+  await expect(shared.getByRole("button", { name: "Opening hours", exact: true })).toBeVisible();
+
+  // No page has a copy: nothing to ask (D7), and it goes in one step.
+  await shared.getByRole("button", { name: "Actions for Opening hours" }).click();
+  await page.getByRole("menuitem", { name: "Delete…" }).click();
+  await expect(page.getByRole("alertdialog")).toHaveCount(0);
+  await expect(shared).toHaveCount(0);
+
+  await editMenu("Undo");
+  await expect(shared.getByRole("button", { name: "Opening hours", exact: true })).toBeVisible();
+  await left.getByRole("tab", { name: "Undo History" }).click();
+  await expect(steps()).toContainText([
+    "Deleted shared section 'Opening hours'",
+    "Renamed 'Welcome' to 'Opening hours'",
+  ]);
 });

@@ -24,7 +24,9 @@ import {
   setMenuItemHidden,
 } from "../menu/menu-actions.js";
 import {
+  deleteSharedSection,
   detachCopy,
+  renameSharedSection,
   saveAsSharedSection,
   updateSectionField,
 } from "../shared-sections/shared-sections.js";
@@ -505,6 +507,25 @@ const commands: fc.Arbitrary<Command>[] = [
       const id = inside && first !== undefined ? first.props.id : section.props.id;
       ctx.session.ui.setState({ nodeId: copiedNodeId(copy.props.id, id) });
       detachCopy(ctx.session);
+    },
+  })),
+  fc
+    .record({ at: n, name: fc.constantFrom("Team", "team ", "Opening hours", "Prices") })
+    .map(({ at, name }) => ({
+      name: `rename shared section ${at} "${name}"`,
+      run: (ctx) => {
+        const ids = Object.keys(ctx.session.history.document.getState().sharedSections);
+        const id = ids[at % Math.max(ids.length, 1)];
+        if (id !== undefined) renameSharedSection(ctx.session, id as SharedSectionId, name);
+      },
+    })),
+  n.map((at) => ({
+    name: `delete shared section ${at}`,
+    run: (ctx) => {
+      // Its copies on every page become normal sections (F-ED-23), as one step.
+      const ids = Object.keys(ctx.session.history.document.getState().sharedSections);
+      const id = ids[at % Math.max(ids.length, 1)];
+      if (id !== undefined) deleteSharedSection(ctx.session, id as SharedSectionId);
     },
   })),
   fc.string({ maxLength: 4 }).map((text) => ({

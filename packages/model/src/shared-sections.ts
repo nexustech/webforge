@@ -124,11 +124,33 @@ export function copyIssues(content: readonly NodeDoc[]): CopyIssue[] {
   return issues;
 }
 
+/** The longest name a shared section may have. */
+export const SHARED_SECTION_NAME_MAX = 100;
+
 const sharedSectionSchema = z.strictObject({
   id: sharedSectionIdSchema,
-  name: z.string().trim().min(1).max(100),
+  name: z.string().trim().min(1).max(SHARED_SECTION_NAME_MAX),
   section: nodeDocSchema,
 });
+
+/**
+ * Whether two shared section names are the same name: the Add panel lists shared sections by
+ * name, so no two may share one, whatever its spaces around it or its capitals.
+ */
+export function sameSharedName(a: string, b: string): boolean {
+  return a.trim().toLowerCase() === b.trim().toLowerCase();
+}
+
+/** The shared section in `shared` called `name`, other than `except`, if there is one. */
+export function sharedSectionNamed(
+  shared: Readonly<Record<SharedSectionId, SharedSection>>,
+  name: string,
+  except?: SharedSectionId,
+): SharedSection | undefined {
+  return Object.values(shared).find(
+    (entry) => entry.id !== except && sameSharedName(entry.name, name),
+  );
+}
 
 /**
  * The site's shared sections, by id. A shared section holds no copy of another, so editing one
@@ -137,7 +159,17 @@ const sharedSectionSchema = z.strictObject({
 export const sharedSectionsDocSchema: z.ZodType<Record<SharedSectionId, SharedSection>> =
   withoutUnsafeKeys(
     z.record(sharedSectionIdSchema, sharedSectionSchema).superRefine((shared, ctx) => {
+      const named = new Set<string>();
       for (const [key, entry] of Object.entries(shared)) {
+        const name = entry.name.toLowerCase();
+        if (named.has(name)) {
+          ctx.addIssue({
+            code: "custom",
+            message: `Two shared sections are called "${entry.name}"`,
+            path: [key, "name"],
+          });
+        }
+        named.add(name);
         if (entry.id !== key) {
           ctx.addIssue({
             code: "custom",

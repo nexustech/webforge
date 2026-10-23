@@ -15,7 +15,7 @@ import { defaultSiteSettings, siteSettingsSchema } from "./settings.js";
 import { containsCopy, copyIssues, sharedSectionsDocSchema } from "./shared-sections.js";
 
 /** The format of {@link SiteDoc} this build writes. Bumped with a migration and a fixture. */
-export const SITE_FORMAT_VERSION = 3;
+export const SITE_FORMAT_VERSION = 4;
 
 const SEGMENT = "[a-z0-9]+(?:-[a-z0-9]+)*";
 
