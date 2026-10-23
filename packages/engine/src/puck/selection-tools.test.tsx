@@ -78,7 +78,9 @@ async function settle(): Promise<void> {
   });
 }
 
-describe("selection tools (1.30, F-ED-25, F-ED-27)", () => {
+// Each test mounts Puck and clicks through it: a second or two alone, but slower beside the whole
+// suite's other tests (coverage, parallel workers), so the 5 s default isn't always enough.
+describe("selection tools (1.30, F-ED-25, F-ED-27)", { timeout: 15_000 }, () => {
   let element: HTMLDivElement;
   let engine: CanvasEngine;
   let selected: string | null;
@@ -139,6 +141,40 @@ describe("selection tools (1.30, F-ED-25, F-ED-27)", () => {
     expect(await perform("selectNextSibling")).toBe(true);
     expect(selected).toBe("empty");
     expect(await perform("selectChild")).toBe(false);
+  });
+
+  it("adds with a Ctrl/Cmd-click, takes the shown one out, and gives the bar's actions way (1.31)", async () => {
+    const changes: [string | null, boolean][] = [];
+    engine.onSelectionChange((id, adding) => changes.push([id, adding]));
+    const click = async (id: string, init: MouseEventInit = {}) => {
+      await act(async () => {
+        element
+          .querySelector(`[data-puck-component="${id}"]`)
+          ?.dispatchEvent(new MouseEvent("click", { bubbles: true, ...init }));
+      });
+      await settle();
+    };
+
+    await click("first");
+    await click("picture", { ctrlKey: true });
+    // On the one shown: Puck selects nothing new, so the engine says so itself.
+    await click("picture", { metaKey: true });
+    expect(changes).toEqual([
+      ["first", false],
+      ["picture", true],
+      ["picture", true],
+    ]);
+
+    // While several are selected, the others are outlined and the bar only names the one shown.
+    await act(async () => engine.showSelected(["first"]));
+    await settle();
+    expect(
+      document.head.querySelector("style[data-webforge-also-selected]")?.textContent,
+    ).toContain('[data-puck-component="first"]');
+    expect(button("Edit")).toBeNull();
+    await act(async () => engine.showSelected([]));
+    await settle();
+    expect(button("Edit")).not.toBeNull();
   });
 
   it("outlines an element named outside the canvas, one at a time (breadcrumbs)", async () => {

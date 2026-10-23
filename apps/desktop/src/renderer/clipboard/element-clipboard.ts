@@ -23,7 +23,11 @@ import { type SharedRegion, sharedRegionOf, shownLayout } from "../editor/shared
 import { layerItem } from "../layers/layers.js";
 import { importMessages } from "../media/import-media.js";
 import { addMedia, putInMedia } from "../media/media-commands.js";
-import { type CopySelection, copySelection } from "../shared-sections/shared-sections.js";
+import {
+  type CopySelection,
+  copySelection,
+  updateSectionField,
+} from "../shared-sections/shared-sections.js";
 import { siteSession } from "../storage/site-session.js";
 
 /**
@@ -301,7 +305,9 @@ export async function pasteElements(
 /**
  * Pastes imported image files or a copied image (F-ED-16): one image goes into the selected
  * element's image field, if it has one ("Pasted image 'shop.png'"), and joins Media in the same
- * step; in the shared Header or Footer, every page shows it ("… into shared Header"). Anything
+ * step; in the shared Header or Footer, every page shows it ("… into shared Header"), and in a
+ * linked copy, the shared section holds it, so every copy does ("Edited shared section …", as the
+ * canvas names any edit there, F-ED-23). Anything
  * else is added to Media ("Added image 'shop.png'"), which a message says. Inserting a new element
  * for it comes with Phase 2's Image element. Files Media didn't take are named in a message, as
  * for a drop.
@@ -337,21 +343,33 @@ function pasteMedia(
     );
     return true;
   }
-  const { node, region } = selected;
+  const { node, region, copy } = selected;
   const ui = session.ui.getState();
   const id = node.props.id;
+  const site = session.history.document.getState();
+  const label =
+    copy !== undefined
+      ? t("history.editedSharedSection", {
+          name: t("history.namedItem", { name: copy.shared.name }),
+        })
+      : region === undefined
+        ? t("site.clipboard.history.pastedImage", {
+            name: t("history.namedItem", { name: item.fileName }),
+          })
+        : t("site.clipboard.history.pastedSharedImage", {
+            name: t("history.namedItem", { name: item.fileName }),
+            item: t("history.sharedItem", { item: itemName(session, node) }),
+          });
   session.edit(
     "props",
-    region === undefined
-      ? t("site.clipboard.history.pastedImage", {
-          name: t("history.namedItem", { name: item.fileName }),
-        })
-      : t("site.clipboard.history.pastedSharedImage", {
-          name: t("history.namedItem", { name: item.fileName }),
-          item: t("history.sharedItem", { item: itemName(session, node) }),
-        }),
+    label,
     (draft) => {
       putInMedia(draft, [item]);
+      if (copy !== undefined) {
+        // Inside a linked copy: the element is the shared section's, which every copy shows.
+        updateSectionField(draft, site, copy.shared.id, id, field, () => ({ mediaId: item.id }));
+        return;
+      }
       const list =
         region === undefined ? draft.pages[ui.pageId]?.doc.content : draft.layout[region];
       const target = list === undefined ? undefined : findNode(list, (n) => n.props.id === id);

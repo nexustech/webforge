@@ -19,8 +19,12 @@ A site's theme (2.1) as CSS, its colours and contrast checks, and the starter pr
 - **`contrastIssues(tokens)`:** the pairs below AA in the page's colours and the inverse sections'. Text needs `AA_TEXT` (4.5); brand colours on every surface need `AA_LARGE` (3).
 - **`oklchCss(color)`:** a colour as daisyUI writes it.
 - **`THEME_PRESETS`** and **`themePreset(name)`:** light (a new site's), dark and high-contrast-rounded.
+- **Fonts (2.2):**
+  - `FONT_CATALOGUE`: the ~50 families the installer bundles, from `src/fonts/catalogue.json`, which `pnpm font-catalogue` writes from Fontsource. Each has its CSS family, fallback, licence (OFL-1.1, Apache-2.0 or UFL-1.0 only, checked when it loads), npm package and version, and the files bundled (Latin and Latin Extended) with their sizes and SHA-256;
+  - `FONT_PAIRINGS`: the 15 tested pairings, a heading and a body font each; their names are `t("fonts.pairing.<id>")`;
+  - `catalogueFont(id)`, `fontRefOf(font)` (the font as a theme stores it), `bundledFontBytes(fonts)` and `FONT_BUDGET_BYTES` (15 MB).
 
 Every value written into CSS comes from a token the model's schema checked, so nothing a site contains reaches the stylesheet as written.
 
 ## Boundaries
-- Framework-free; depends on `@webforge/model` only.
+- Framework-free; depends on `@webforge/model` and zod only (its tests also read `@webforge/i18n`, to check every pairing and category has a name).

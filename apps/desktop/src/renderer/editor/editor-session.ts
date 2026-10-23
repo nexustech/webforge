@@ -17,20 +17,13 @@ import {
 import { t } from "@webforge/i18n";
 import type { PageDoc, PageEntry, PageId, SiteDoc } from "@webforge/model";
 import type { ComponentLibrary } from "@webforge/site-components";
-import { createStore, type StoreApi } from "zustand/vanilla";
+import type { StoreApi } from "zustand/vanilla";
 import { applyPatch } from "./apply-patch.js";
 import { labelFor } from "./labels.js";
+import { createSelectionStore, type EditorSelection, toggleSelected } from "./selection.js";
 import { shownLayout } from "./shared-layout.js";
 
-/**
- * What undo shows again (U3): the page, the selected element and the device view. It is also the
- * UI state (U6): changing it is never an undo step.
- */
-export type EditorSelection = {
-  readonly pageId: PageId;
-  readonly nodeId: string | null;
-  readonly viewport: Viewport;
-};
+export type { EditorSelection } from "./selection.js";
 
 /** What kind of change an entry records; 1.11's Undo toasts pick the ones they announce. */
 export type EditKind = EngineEditKind;
@@ -92,7 +85,7 @@ export function createEditorSession(
   site: SiteDoc,
   pageId: PageId = site.homePageId,
 ): EditorSession {
-  const ui = createStore<EditorSelection>()(() => ({ pageId, nodeId: null, viewport: "desktop" }));
+  const ui = createSelectionStore({ pageId, nodeId: null, viewport: "desktop" });
   const history = createHistoryManager<SiteDoc, EditorSelection>({
     initial: site,
     selection: { get: () => ui.getState(), restore: (selection) => ui.setState(selection, true) },
@@ -289,14 +282,16 @@ export function connectEngine(engine: CanvasEngine, session: EditorSession): Eng
       );
       textSession = key;
     }),
-    engine.onSelectionChange((nodeId) => {
+    engine.onSelectionChange((nodeId, adding) => {
       if (loading) {
         return;
       }
       if (textSession !== null && pendingEnd === null) {
         pendingEnd = setTimeout(endTextSession, TEXT_SESSION_GRACE_MS);
       }
-      ui.setState({ nodeId });
+      // Ctrl/Cmd- or Shift-click: one more selected element, or one fewer (1.31).
+      if (adding && nodeId !== null) toggleSelected(ui, nodeId);
+      else ui.setState({ nodeId });
     }),
     // A device view chosen on the canvas; not a history step (U6).
     engine.onViewportChange((viewport) => ui.setState({ viewport })),
@@ -335,6 +330,7 @@ export function connectEngine(engine: CanvasEngine, session: EditorSession): Eng
         engine.setViewport(state.viewport);
       }
       engine.select(state.nodeId);
+      if (state.others !== previous.others) engine.showSelected(state.others ?? []);
     }),
   ];
 

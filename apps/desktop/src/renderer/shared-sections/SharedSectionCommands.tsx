@@ -136,10 +136,12 @@ export function registerSharedSectionCommands(
   ];
   const update = () => {
     const site = session.history.document.getState();
-    const { pageId, nodeId } = session.ui.getState();
-    const inCopy = !locked && selectedCopy() !== undefined;
+    const { pageId, nodeId, others = [] } = session.ui.getState();
+    // One section at a time: not while several elements are selected (1.31).
+    const one = !locked && others.length === 0;
+    const inCopy = one && selectedCopy() !== undefined;
     registry.update(SHARED_SECTION_COMMANDS.save, {
-      enabled: !locked && savableSection(site, pageId, nodeId) !== undefined,
+      enabled: one && savableSection(site, pageId, nodeId) !== undefined,
     });
     for (const id of [
       SHARED_SECTION_COMMANDS.rename,

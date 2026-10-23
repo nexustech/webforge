@@ -140,6 +140,16 @@ describe("registerElementCommands (1.30, F-ED-25, F-ED-27)", () => {
     expect(pickImage).toHaveBeenCalledOnce();
   });
 
+  it("hides nothing while several elements are selected, until it hides them all (1.31)", () => {
+    const { session, engine, enabled, hidden } = setUp();
+
+    session.ui.setState({ nodeId: "a", others: [copiedNodeId("c1", "s")] });
+    expect(enabled()).toBe(false);
+    engine.requestFromElement({ kind: "toggleHidden", nodeId: "a" });
+
+    expect(hidden()).toBeUndefined();
+  });
+
   it("asks for a layer's name with F2, in Content mode too; nothing else has one (1.30)", () => {
     const { session, registry, rename, commands } = setUp();
     const renameEnabled = () => registry.get("edit.rename")?.enabled;

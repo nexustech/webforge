@@ -25,8 +25,12 @@ export function registerElementCommands(
 } {
   let locked = false;
   /** Whether element `id` can be hidden or shown now. */
+  // Not yet for several selected elements (1.31 part 2 hides them all as one step).
   const canHide = (id: string | null) =>
-    !locked && id !== null && shownLayer(session, id) !== undefined;
+    !locked &&
+    id !== null &&
+    (session.ui.getState().others ?? []).length === 0 &&
+    shownLayer(session, id) !== undefined;
   const hide = (id: string) => {
     if (!canHide(id)) return;
     beforeAction();
@@ -44,9 +48,10 @@ export function registerElementCommands(
       if (nodeId !== null) hide(nodeId);
     },
   });
+  // One element's name: off while several are selected (1.31).
   const selectedLayer = () => {
-    const { nodeId } = session.ui.getState();
-    return nodeId === null ? undefined : shownLayer(session, nodeId);
+    const { nodeId, others = [] } = session.ui.getState();
+    return nodeId === null || others.length > 0 ? undefined : shownLayer(session, nodeId);
   };
   const removeRename = registry.register({
     id: "edit.rename",

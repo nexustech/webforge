@@ -7,10 +7,12 @@
     ".": "./src/index.ts"
   },
   "devDependencies": {
+    "@webforge/i18n": "workspace:*",
     "fast-check": "4.10.2",
     "vitest": "catalog:"
   },
   "dependencies": {
-    "@webforge/model": "workspace:*"
+    "@webforge/model": "workspace:*",
+    "zod": "catalog:"
   }
 }
