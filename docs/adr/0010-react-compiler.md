@@ -22,7 +22,7 @@ The standards said "React Compiler enabled, so no manual `useMemo`/`useCallback`
 
 ## Consequences
 - Components re-render less: the compiler skips a child whose props didn't change, which a hand-written `memo` would have needed. The flip side is that a component may no longer re-render just because its parent did. Anything that relied on that (a dependency-less effect re-reading the DOM, a render that read a mutable variable) now needs a real input. The canvas chrome's action bars were changed for this reason.
-- Builds take longer: every React file goes through Babel. The PR has the numbers (renderer build, and the per-file transform cost that hot reload pays).
+- Builds and hot reloads take longer, because every editor file goes through Babel and the compiler. On a 2018 laptop (i7-8750H), `electron-vite build` went from 20–30 s to 80–88 s. Saving a large component (`Editor.tsx`, `LayersPanel.tsx`) costs up to about 0.9 s of extra transform before hot reload, and a small one about 0.1 s. The renderer's JavaScript grew by 4.3 % (206 KB; 52 KB gzipped). `@vitejs/plugin-react`'s oxc compiler would cut the transform time once it is stable.
 - A violation is caught by `pnpm check` with the file, the line and the compiler's reason, rather than as a subtle stale value at run time.
 - Puck itself (`node_modules`) isn't compiled; only our overrides of its UI are.
 - Turning it on for the site components later means measuring with `pnpm e2e:perf` first, and adding `packages/site-components/src` to the check.
