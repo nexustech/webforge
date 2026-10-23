@@ -3,7 +3,7 @@
 import type { PageDoc } from "@webforge/model";
 import type { ComponentLibrary } from "@webforge/site-components";
 import { describe, expect, it } from "vitest";
-import { focusedRichTextId, staleRichText } from "./stale-rich-text.js";
+import { focusedRichTextId, richTextArrived, staleRichText } from "./stale-rich-text.js";
 
 const library: ComponentLibrary = {
   components: {
@@ -51,5 +51,24 @@ describe("staleRichText", () => {
     document.getElementById("plain")?.focus();
     expect(focusedRichTextId(document)).toBeNull();
     expect(focusedRichTextId(null)).toBeNull();
+  });
+
+  it("says whether the focused editor's text has all reached the page (#146)", () => {
+    document.body.innerHTML =
+      '<div data-puck-component="a"><div class="ProseMirror" contenteditable="true" tabindex="0" id="editor"></div></div>' +
+      '<div data-puck-component="b"><input id="plain"></div>';
+    const element = document.getElementById("editor");
+    let html = "<p>1 and more</p>";
+    Object.assign(element ?? {}, { editor: { getHTML: () => html } });
+    element?.focus();
+
+    expect(richTextArrived(document, page("<p>1</p>", "2"))).toBe(false);
+    expect(richTextArrived(document, page("<p>1 and more</p>", "2"))).toBe(true);
+    html = "<p>1 and more!</p>";
+    expect(richTextArrived(document, page("<p>1 and more</p>", "2"))).toBe(false);
+    // No rich text has the focus: nothing is on its way.
+    document.getElementById("plain")?.focus();
+    expect(richTextArrived(document, page("<p>1</p>", "2"))).toBe(true);
+    expect(richTextArrived(null, page("<p>1</p>", "2"))).toBe(true);
   });
 });
