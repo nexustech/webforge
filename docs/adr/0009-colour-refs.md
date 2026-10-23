@@ -15,8 +15,8 @@ The product owner chose the second on 2026-10-23.
 
 ## Decision
 1. **Style fields hold a colour reference,** validated by `colorRefSchema` in `@webforge/model` (`color-ref.ts`):
-   - `<role>[-<shade>][/<opacity>]` for a theme colour. The role is one of daisyUI's colour roles (for example `primary`, `base-content`), the shade is 50–950, and the opacity is 5–90.
-   - `[#rrggbb][/<opacity>]` for a custom colour: exactly six hex digits, stored in lower case. Nothing else is allowed inside the brackets (no CSS variables, functions or other arbitrary values), so a reference can't inject CSS.
+   - `<role>[-<shade>][/<opacity>]` for a theme colour. The role is one of daisyUI's 20 colour roles (for example `primary`, `base-content`). Shades (50, 100, 200 … 900, 950) exist only for the 8 colour roles `primary`, `secondary`, `accent`, `neutral`, `info`, `success`, `warning` and `error`, not for `base-*` or `*-content`. The opacity is one of the steps 5, 10, 20, 30 … 90 (so `/85` is refused).
+   - `[#rrggbb][/<opacity>]` for a custom colour: exactly six hex digits, stored in lower case, with no shade. Nothing else is allowed inside the brackets (no CSS variables, functions or other arbitrary values), so a reference can't inject CSS.
    - `parseColorRef` and `formatColorRef` convert between the string and its parts.
 2. **A custom colour belongs to the field, not the theme.**
    - Only Advanced mode's colour field can set one, through a *Custom* choice. Theme Studio's "custom colour" means editing a role's own colour, which the theme tokens already allow.
