@@ -5,7 +5,7 @@ import { DEFAULT_THEME, type TextStyle } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { contrastRatio } from "@webforge/themes";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ColourField, contrastNeeded } from "./ColourField.js";
+import { ColourField, contrastNeeded, shownRatio } from "./ColourField.js";
 import { createEditorSession } from "./editor-session.js";
 import { starterSite } from "./starter-site.js";
 
@@ -125,6 +125,8 @@ describe("ColourField (1.37, UX-25, ADR 0009)", () => {
     const { onChange } = setUp("[#1f6feb]/50");
 
     expect(screen.getByText("Custom colour #1f6feb, off the theme")).toBeTruthy();
+    // Its opacity is Advanced mode's to change too.
+    expect(screen.queryByLabelText("Opacity")).toBeNull();
     await userEvent.click(screen.getByRole("button", { name: "Use a theme colour" }));
 
     expect(onChange).toHaveBeenLastCalledWith("default");
@@ -172,5 +174,14 @@ describe("contrastNeeded (WCAG AA, F-DS-2)", () => {
     expect(contrastNeeded(theme, [])).toBe(4.5);
     // Large on one device and small on another: what the small one needs.
     expect(contrastNeeded(theme, ["body", "h6"])).toBe(4.5);
+  });
+});
+
+describe("shownRatio", () => {
+  it("rounds down, so a failing ratio never shows as the one it needs", () => {
+    expect(shownRatio(4.46)).toBe("4.4");
+    expect(shownRatio(2.99)).toBe("2.9");
+    expect(shownRatio(4.5)).toBe("4.5");
+    expect(shownRatio(21)).toBe("21.0");
   });
 });

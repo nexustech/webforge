@@ -140,6 +140,12 @@ const hexOf = (color: Parameters<typeof oklchToSrgb>[0]) => {
     .join("")}`;
 };
 
+/**
+ * A contrast ratio as the warning shows it: rounded down to one decimal, so a ratio that fails
+ * never reads as the one it needs (4.46 shows as 4.4, not 4.5).
+ */
+export const shownRatio = (ratio: number) => (Math.floor(ratio * 10) / 10).toFixed(1);
+
 /** A swatch's colour, as CSS. */
 const swatchStyle = (colour: string): CSSProperties => ({ "--swatch": colour }) as CSSProperties;
 
@@ -248,7 +254,7 @@ export function ColourField({
         warning={
           ratio === undefined || ratio >= needed
             ? undefined
-            : t("field.color.lowContrast", { ratio: ratio.toFixed(1), needed })
+            : t("field.color.lowContrast", { ratio: shownRatio(ratio), needed })
         }
       />
       {hex !== undefined && advanced ? (
@@ -311,7 +317,8 @@ export function ColourField({
           </ToggleGroup>
         </div>
       ) : null}
-      {ref === undefined ? null : (
+      {/* A colour of its own is Advanced mode's to change, its opacity too (ADR 0009). */}
+      {ref === undefined || (hex !== undefined && !advanced) ? null : (
         <div className="flex items-center gap-2">
           <label htmlFor={opacityId} className="text-xs text-muted-foreground">
             {t("colour.opacity")}
