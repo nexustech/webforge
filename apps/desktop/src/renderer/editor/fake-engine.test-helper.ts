@@ -7,6 +7,7 @@ import type {
   HistoryCommand,
   HistoryCommandHandler,
   InsertPoint,
+  TextSplit,
   Unsubscribe,
   Viewport,
 } from "@webforge/engine";
@@ -30,6 +31,8 @@ export type FakeEngine = CanvasEngine & {
   dragField(drag: FieldDrag): void;
   /** A request from the selected element's quick actions (F-ED-25). */
   requestFromElement(request: ElementRequest): void;
+  /** Alt + Enter in rich text on the canvas: split it. */
+  splitText(split: TextSplit): void;
   /** Switches the device view with the canvas's own controls. */
   switchView(viewport: Viewport): void;
   readonly applied: PageDoc[];
@@ -57,6 +60,7 @@ export function createFakeEngine(): FakeEngine {
   const views = listeners<Viewport>();
   const drags = listeners<FieldDrag>();
   const elementRequests = listeners<ElementRequest>();
+  const textSplits = listeners<TextSplit>();
   const menus = listeners<CanvasContextMenu>();
   const applied: PageDoc[] = [];
   return {
@@ -85,6 +89,7 @@ export function createFakeEngine(): FakeEngine {
     onAddRequest: adds.add,
     onFieldDrag: drags.add,
     onElementRequest: elementRequests.add,
+    onTextSplit: textSplits.add,
     onContextMenu: menus.add,
     outline: vi.fn(),
     addDragSource: vi.fn(() => () => undefined),
@@ -102,6 +107,7 @@ export function createFakeEngine(): FakeEngine {
     switchView: views.emit,
     dragField: drags.emit,
     requestFromElement: elementRequests.emit,
+    splitText: textSplits.emit,
     rightClick: menus.emit,
   };
 }

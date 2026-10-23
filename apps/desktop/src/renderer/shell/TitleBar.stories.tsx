@@ -6,34 +6,31 @@ import { userEvent, within } from "storybook/test";
 import { createStore } from "zustand/vanilla";
 import { CommandRegistryProvider } from "./command-context.js";
 import { COMMAND_IDS } from "./command-ids.js";
-import { type Command, createCommandRegistry } from "./commands.js";
+import { type CommandSpec, createCommandRegistry } from "./commands.js";
 import { TitleBar } from "./TitleBar.js";
 import { UndoStepsMenu } from "./UndoStepsMenu.js";
 
 const noop = () => undefined;
 
 /** The commands the title bar shows once every area has contributed its own. */
-const COMMANDS: readonly Command[] = [
+const COMMANDS: readonly CommandSpec[] = [
   {
     id: COMMAND_IDS.newSite,
     label: "New Site…",
     menu: "file",
-    shortcut: "Mod+N",
     run: noop,
   },
   {
     id: COMMAND_IDS.openSite,
     label: "Open Site…",
     menu: "file",
-    shortcut: "Mod+O",
     run: noop,
   },
-  { id: COMMAND_IDS.undo, label: "Undo", menu: "edit", shortcut: "Mod+Z", run: noop },
+  { id: COMMAND_IDS.undo, label: "Undo", menu: "edit", run: noop },
   {
     id: COMMAND_IDS.redo,
     label: "Redo",
     menu: "edit",
-    shortcut: "Mod+Shift+Z",
     enabled: false,
     run: noop,
   },
@@ -46,7 +43,7 @@ function WithCommands({
   commands,
   undoSteps,
 }: {
-  readonly commands: readonly Command[];
+  readonly commands: readonly CommandSpec[];
   readonly undoSteps?: ReactNode;
 }) {
   const [registry] = useState(() => {

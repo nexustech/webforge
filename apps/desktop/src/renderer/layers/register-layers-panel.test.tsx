@@ -14,7 +14,7 @@ import { createEditorSession, currentPage } from "../editor/editor-session.js";
 import { selectElements, selectedIds } from "../editor/selection.js";
 import { starterSite } from "../editor/starter-site.js";
 import { CommandRegistryProvider } from "../shell/command-context.js";
-import { createCommandRegistry } from "../shell/commands.js";
+import { createCommandRegistry, isMac } from "../shell/commands.js";
 import { createPanelRegistry, panelsInSlot } from "../shell/panels.js";
 import { registerLayersPanel } from "./register-layers-panel.js";
 
@@ -81,6 +81,7 @@ describe("registerLayersPanel", () => {
     fireEvent.keyDown(screen.getAllByRole("treeitem")[1] as HTMLElement, {
       key: "ArrowDown",
       altKey: true,
+      ...(isMac() ? { metaKey: true } : { ctrlKey: true }),
     });
 
     expect(order()).toEqual(before);

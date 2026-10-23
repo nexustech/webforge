@@ -4,6 +4,7 @@ export const history = {
   "history.moved": "Moved {item}",
   "history.deleted": "Deleted {item}",
   "history.duplicated": "Duplicated {item}",
+  "history.splitText": "Split {item}",
   // Several selected elements at once (1.31).
   "history.deletedMany": "Deleted {count} elements",
   "history.duplicatedMany": "Duplicated {count} elements",

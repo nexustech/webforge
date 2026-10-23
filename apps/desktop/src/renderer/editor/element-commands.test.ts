@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 import {
   copiedNodeId,
   type NodeDoc,
@@ -86,7 +87,7 @@ describe("registerElementCommands (1.30, F-ED-25, F-ED-27)", () => {
     expect(registry.get("edit.toggleHidden")).toMatchObject({
       shortcut: "Mod+/",
       menu: "edit",
-      textShortcut: true,
+      textKeys: ["Mod+/"],
       enabled: true,
       label: "Hide or show",
     });
@@ -179,6 +180,77 @@ describe("registerElementCommands (1.30, F-ED-25, F-ED-27)", () => {
     }
     session.ui.setState({ nodeId: copiedNodeId("c1", "s") });
     expect(renameEnabled()).toBe(true);
+  });
+
+  it("splits text in two at the caret as one step, the second half selected (Alt+Enter, F-ED-27)", async () => {
+    const { session, engine, beforeAction, labels } = setUp();
+    const section = () => currentPage(session)?.doc.content[0]?.props.content as NodeDoc[];
+
+    engine.splitText({ nodeId: "a", field: "text", before: "Hel", after: "lo" });
+
+    const [first, second] = section();
+    expect(beforeAction).toHaveBeenCalledOnce();
+    expect(first?.props).toMatchObject({ id: "a", text: "Hel" });
+    expect(second?.type).toBe("Heading");
+    expect(second?.props.text).toBe("lo");
+    expect(second?.props.id).not.toBe("a");
+    expect(session.ui.getState().nodeId).toBe(second?.props.id);
+    expect(labels()).toEqual(["Split Heading"]);
+    // The second half is edited on.
+    await vi.waitFor(() => expect(engine.perform).toHaveBeenCalledWith("editText"));
+    session.history.undo();
+    expect(section().map((node) => node.props.text)).toEqual(["Hello"]);
+    expect(session.ui.getState().nodeId).toBe("a");
+  });
+
+  it("gives the second half its component's default for its other texts (a new FAQ question)", () => {
+    const { session, engine } = setUp();
+    session.history.run("Set up", (draft) => {
+      const content = draft.pages[draft.homePageId]?.doc.content[0]?.props.content as NodeDoc[];
+      content.push({
+        type: "FaqItem",
+        props: { id: "q1", question: "When are you open?", answer: "<p>Daily. Not Sundays.</p>" },
+      });
+    });
+    session.ui.setState({ nodeId: "q1" });
+
+    engine.splitText({
+      nodeId: "q1",
+      field: "answer",
+      before: "<p>Daily.</p>",
+      after: "<p>Not Sundays.</p>",
+    });
+
+    const items = ((currentPage(session)?.doc.content[0]?.props.content ?? []) as NodeDoc[]).slice(
+      1,
+    );
+    expect(items.map((item) => [item.props.question, item.props.answer])).toEqual([
+      ["When are you open?", "<p>Daily.</p>"],
+      [siteLibrary.components.FaqItem?.defaults.question, "<p>Not Sundays.</p>"],
+    ]);
+  });
+
+  it("splits only the page's own text, and nothing in Content mode, saying why (F-ED-27)", () => {
+    const { session, engine, commands, notify, labels } = setUp();
+
+    // Inside the linked copy: every page showing it would change.
+    engine.splitText({
+      nodeId: copiedNodeId("c1", "t"),
+      field: "text",
+      before: "H",
+      after: "ours",
+    });
+    commands.setLayoutLocked(true);
+    engine.splitText({ nodeId: "a", field: "text", before: "Hel", after: "lo" });
+
+    expect(notify.mock.calls).toEqual([
+      [
+        "Only the page's own text can be split. The shared Header and Footer, and shared sections, are shown on other pages too.",
+      ],
+      ["Splitting text adds an element. Switch to Design mode to split it."],
+    ]);
+    expect(labels()).toEqual([]);
+    expect(session.ui.getState().nodeId).toBe("a");
   });
 
   it("removes the command and stops following the chip and the selection", () => {

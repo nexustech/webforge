@@ -216,7 +216,6 @@ export function Editor({
       id: COMMAND_IDS.undo,
       label: t("editor.undo"),
       menu: "edit",
-      shortcut: "Mod+Z",
       enabled: history.state.getState().canUndo,
       run: () => runCommand("undo"),
     });
@@ -224,7 +223,6 @@ export function Editor({
       id: COMMAND_IDS.redo,
       label: t("editor.redo"),
       menu: "edit",
-      shortcut: "Mod+Shift+Z",
       enabled: history.state.getState().canRedo,
       run: () => runCommand("redo"),
     });

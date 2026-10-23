@@ -469,7 +469,7 @@ describe("copy and paste of shared sections (1.29, F-ED-23)", () => {
     return { session, shared, copy };
   }
 
-  it("copies a copy as its section with the shared section's id, and pastes another linked copy", async () => {
+  it("copies a copy as its section with the shared section's id; Paste as Linked Copy places another", async () => {
     const { session, shared, copy } = saved();
     const clipboard = fakeClipboard();
 
@@ -478,7 +478,7 @@ describe("copy and paste of shared sections (1.29, F-ED-23)", () => {
       expect.any(String),
       expect.objectContaining({ nodes: [shared.section], sharedSectionId: shared.id }),
     );
-    expect(await pasteElements(session, clipboard, vi.fn())).toBe(true);
+    expect(await pasteElements(session, clipboard, vi.fn(), true)).toBe(true);
 
     const [first, second] = content(session);
     expect(first).toBe(copy);
@@ -490,14 +490,59 @@ describe("copy and paste of shared sections (1.29, F-ED-23)", () => {
     expect(labels(session).at(-1)).toBe("Added a copy of 'Hours'");
   });
 
-  it("pastes a copy into a site without its shared section as a normal section", async () => {
+  it("pastes a copied linked copy as a section of the page's own with Paste (Mod+V, F-ED-23)", async () => {
+    const { session, shared, copy } = saved();
+    const clipboard = fakeClipboard();
+    await copySelected(session, clipboard, vi.fn());
+
+    expect(await pasteElements(session, clipboard, vi.fn())).toBe(true);
+
+    const [first, second] = content(session);
+    expect(first).toBe(copy);
+    expect(second?.type).toBe("Section");
+    expect(second?.props.id).not.toBe(shared.section.props.id);
+    expect(JSON.stringify(second)).toContain(JSON.stringify(heading(shared.section).props.text));
+    expect(session.ui.getState().nodeId).toBe(second?.props.id);
+    expect(labels(session).at(-1)).toBe("Pasted Section");
+    // One step: undo takes the pasted section away, and the linked copy stays.
+    session.history.undo();
+    expect(content(session)).toEqual([copy]);
+  });
+
+  it("pastes nothing as a linked copy but a copied linked copy, and says so", async () => {
+    const session = createEditorSession(siteLibrary, starterSite());
+    select(session, "heading-1");
+    const clipboard = fakeClipboard();
+    await copySelected(session, clipboard, vi.fn());
+    const notify = vi.fn();
+    const before = session.history.document.getState();
+
+    expect(await pasteElements(session, clipboard, notify, true)).toBe(false);
+    expect(
+      await pasteElements(
+        session,
+        fakeClipboard({ status: "media", items: [], rejected: [] }),
+        notify,
+        true,
+      ),
+    ).toBe(false);
+
+    expect(notify.mock.calls).toEqual([
+      ["Only a shared section can be pasted as a linked copy."],
+      ["Only a shared section can be pasted as a linked copy."],
+    ]);
+    expect(session.history.document.getState()).toBe(before);
+    expect(labels(session)).toEqual([]);
+  });
+
+  it("pastes a copy into a site without its shared section as a normal section, linked or not", async () => {
     const { session, shared } = saved();
     const clipboard = fakeClipboard();
     await copySelected(session, clipboard, vi.fn());
 
     const other = createEditorSession(siteLibrary, starterSite());
     select(other, "section-1");
-    expect(await pasteElements(other, clipboard, vi.fn())).toBe(true);
+    expect(await pasteElements(other, clipboard, vi.fn(), true)).toBe(true);
 
     const [, pasted] = content(other);
     expect(pasted?.type).toBe("Section");

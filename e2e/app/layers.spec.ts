@@ -54,12 +54,12 @@ test("Layers shows in Advanced mode only, and selects in step with the canvas", 
   await expect(row("Text")).toHaveAttribute("aria-selected", "false");
 });
 
-test("moves a layer with Alt+↓ and hides one, each as one undo step", async () => {
+test("moves a layer with Ctrl/Cmd+Alt+↓ and hides one, each as one undo step", async () => {
   await switchToAdvancedMode();
   await left().getByRole("tab", { name: "Layers" }).click();
 
   await row("Heading").click();
-  await row("Heading").press("Alt+ArrowDown");
+  await row("Heading").press("ControlOrMeta+Alt+ArrowDown");
   await expect(canvas().locator(".site-section")).toContainText(
     `${STARTER_TEXT}${STARTER_HEADING}`,
   );

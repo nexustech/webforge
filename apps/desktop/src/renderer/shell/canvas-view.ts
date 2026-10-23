@@ -24,6 +24,19 @@ export function createCanvasView(): CanvasView {
 
 /** The zoom levels the toolbar offers, besides Fit. */
 export const ZOOM_LEVELS = [0.25, 0.5, 0.75, 1, 1.5, 2] as const;
+const MIN_ZOOM = ZOOM_LEVELS[0];
+const MAX_ZOOM = ZOOM_LEVELS[ZOOM_LEVELS.length - 1] as number;
+
+/**
+ * The zoom level after `scale` (the scale the canvas shows, Fit's included) going in or out one
+ * step (F-ED-27: Mod + = and Mod + −), staying at the last level at either end.
+ */
+export function zoomStep(scale: number, direction: "in" | "out"): number {
+  if (direction === "in") {
+    return ZOOM_LEVELS.find((level) => level > scale + 0.005) ?? MAX_ZOOM;
+  }
+  return ZOOM_LEVELS.findLast((level) => level < scale - 0.005) ?? MIN_ZOOM;
+}
 
 /** What a canvas engine offers for zoom (#130). */
 type ZoomableCanvas = Pick<CanvasEngine, "setZoom" | "onCanvasSize">;

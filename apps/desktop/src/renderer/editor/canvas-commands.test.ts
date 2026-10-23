@@ -30,7 +30,7 @@ describe("registerCanvasCommands", () => {
     expect(
       registry
         .list()
-        .filter((command) => command.textShortcut === true)
+        .filter((command) => command.textKeys !== undefined)
         .map((command) => command.id),
     ).toEqual([
       "edit.delete",
