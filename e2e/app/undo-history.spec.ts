@@ -84,7 +84,7 @@ test.describe("Undo History and Undo toasts", () => {
     await page.getByRole("button", { name: "Undo several steps" }).click();
     const menu = page.getByRole("menu");
     await expect(menu.getByRole("menuitem")).toHaveText([
-      "Deleted Text",
+      "Deleted Text, Undoes this step",
       "Deleted Heading, Undoes 2 steps",
     ]);
     await menu.getByRole("menuitem", { name: /^Deleted Heading/ }).click();

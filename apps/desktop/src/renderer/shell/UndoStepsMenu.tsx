@@ -15,7 +15,7 @@ import type { HistoryState, ReadonlyStore } from "@webforge/history";
 import { t } from "@webforge/i18n";
 import { ChevronDownIcon } from "lucide-react";
 import { useState, useSyncExternalStore } from "react";
-import { useCommand, useCommandRegistry } from "./command-context.js";
+import { useCommand } from "./command-context.js";
 import { COMMAND_IDS } from "./command-ids.js";
 
 /** How many of the latest steps the menu lists; the Undo History panel lists them all. */
@@ -25,27 +25,26 @@ const UNDO_STEPS_SHOWN = 10;
 export type UndoStepsMenuProps = {
   /** The site's history state: its steps and how many are applied. */
   readonly state: ReadonlyStore<HistoryState<unknown>>;
+  /**
+   * Undoes the step `entryId` and every later one, as one jump; the open site's, once its editor
+   * is there (off until then).
+   */
+  readonly undoTo: ((entryId: string) => boolean) | undefined;
 };
 
 /**
  * The arrow beside the title bar's Undo (UX-16): the latest steps that can be undone, newest
- * first. Choosing one undoes it and every later one, as that many Undos would, so nothing is
- * recorded and Redo brings them back. Off whenever Undo is.
+ * first. Choosing one undoes it and every later one in one jump, as Undo History does, so nothing
+ * is recorded and Redo brings them back. Off whenever Undo is.
  */
-export function UndoStepsMenu({ state: store }: UndoStepsMenuProps) {
-  const registry = useCommandRegistry();
+export function UndoStepsMenu({ state: store, undoTo }: UndoStepsMenuProps) {
   const undo = useCommand(COMMAND_IDS.undo);
   const state = useSyncExternalStore(store.subscribe, store.getState, store.getState);
   // The step the pointer or focus is on: it and every later one are undone together.
   const [focused, setFocused] = useState<number | null>(null);
   const steps = state.entries.slice(0, state.cursor).toReversed().slice(0, UNDO_STEPS_SHOWN);
-  const disabled = undo === undefined || undo.enabled === false || steps.length === 0;
-
-  const undoTo = (index: number) => {
-    for (let count = 0; count <= index; count++) {
-      if (!registry.run(COMMAND_IDS.undo)) return;
-    }
-  };
+  const disabled =
+    undoTo === undefined || undo === undefined || undo.enabled === false || steps.length === 0;
 
   return (
     <DropdownMenu
@@ -81,12 +80,15 @@ export function UndoStepsMenu({ state: store }: UndoStepsMenuProps) {
             // Everything above the step in focus goes with it.
             className={cn(focused !== null && index < focused && "bg-hover")}
             onFocus={() => setFocused(index)}
-            onSelect={() => undoTo(index)}
+            onSelect={() => undoTo?.(entry.id)}
           >
             <span className="truncate">{entry.label}</span>
-            {index === 0 ? null : (
-              <span className="sr-only">, {t("shell.undoSteps.many", { count: index + 1 })}</span>
-            )}
+            <span className="sr-only">
+              ,{" "}
+              {index === 0
+                ? t("shell.undoSteps.one")
+                : t("shell.undoSteps.many", { count: index + 1 })}
+            </span>
           </DropdownMenuItem>
         ))}
         <DropdownMenuSeparator />

@@ -6,6 +6,7 @@ import { siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it } from "vitest";
 import { createEditorSession } from "../editor/editor-session.js";
 import { starterSite } from "../editor/starter-site.js";
+import { undoEntry } from "../editor/undo-toasts.js";
 import { CommandRegistryProvider } from "./command-context.js";
 import { COMMAND_IDS } from "./command-ids.js";
 import { createCommandRegistry } from "./commands.js";
@@ -36,7 +37,10 @@ function setUp(count: number) {
   render(
     <CommandRegistryProvider registry={registry}>
       <TooltipProvider>
-        <UndoStepsMenu state={session.history.state} />
+        <UndoStepsMenu
+          state={session.history.state}
+          undoTo={(entryId) => undoEntry(session.history, entryId)}
+        />
       </TooltipProvider>
     </CommandRegistryProvider>,
   );
@@ -56,12 +60,12 @@ describe("UndoStepsMenu (UX-16)", () => {
 
     expect(items()).toHaveLength(10);
     // Step 12 was undone: it can be redone, not undone again.
-    expect(items()[0]).toBe("Step 11");
+    expect(items()[0]).toBe("Step 11, Undoes this step");
     expect(items()[2]).toBe("Step 9, Undoes 3 steps");
     expect(items().at(-1)).toBe("Step 2, Undoes 10 steps");
   });
 
-  it("undoes the step chosen and every later one, as Undo does, so Redo brings them back", async () => {
+  it("undoes the step chosen and every later one, so Redo brings them back", async () => {
     const { session, arrow } = setUp(4);
     const name = () => session.history.document.getState().settings.general.name;
 

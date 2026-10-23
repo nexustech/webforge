@@ -3,7 +3,7 @@ import type { EditorMode } from "@webforge/engine";
 import { t } from "@webforge/i18n";
 import { siteLibrary } from "@webforge/site-components";
 import { PanelBottomIcon, PanelLeftIcon, PanelRightIcon } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { applyPreferencesChange } from "../shared/ipc/prefs.js";
 import type { ExportRequest } from "../shared/ipc/site.js";
 import type {
@@ -97,6 +97,14 @@ export function App({
   const [preferences, setPreferences] = useState(initialPreferences);
   // Design or Content (M3): remembered with the open site, never an undo step.
   const [mode, setMode] = useState<EditorMode>(uiState?.editorMode ?? "design");
+  // How the title bar's list of steps undoes back to one, which the editor hands over (UX-16).
+  const [undoTo, setUndoTo] = useState<((entryId: string) => boolean) | undefined>(undefined);
+  // A function as state: set through an updater, so React keeps it as is. Stable, so the editor
+  // hands it over once, not on every render.
+  const handUndoTo = useCallback(
+    (next: ((entryId: string) => boolean) | null) => setUndoTo(() => next ?? undefined),
+    [],
+  );
   // The latest preferences, for changes made before React re-renders (several groups at once).
   const latest = useRef(preferences);
   const siteName = useSyncExternalStore(
@@ -222,7 +230,7 @@ export function App({
             <TitleBar
               siteName={siteName}
               saveStatus={<AutosaveStatus session={session} loaded={loaded} />}
-              undoSteps={<UndoStepsMenu state={session.history.state} />}
+              undoSteps={<UndoStepsMenu state={session.history.state} undoTo={undoTo} />}
               tools={
                 <>
                   <ModeToggle mode={mode} onModeChange={changeMode} />
@@ -272,6 +280,7 @@ export function App({
                         viewOptions={viewOptions}
                         addPreferences={preferences.add}
                         onAddPreferencesChange={(add) => change({ add })}
+                        onUndoTo={handUndoTo}
                       />
                     </div>
                   </div>

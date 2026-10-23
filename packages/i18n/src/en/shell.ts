@@ -6,7 +6,7 @@ export const shell = {
   "shell.undoSteps": "Undo several steps",
   "shell.undoSteps.title": "Undo back to…",
   "shell.undoSteps.hint": "Undoes the step you choose and every later one.",
-  "shell.undoSteps.one": "Undo this step",
+  "shell.undoSteps.one": "Undoes this step",
   "shell.undoSteps.many": "Undoes {count} steps",
   "ui.close": "Close",
   // The picker dialog for images, icons and fonts (UX-15).

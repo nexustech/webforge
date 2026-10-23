@@ -120,7 +120,12 @@ const STEPS = createStore<HistoryState<unknown>>()(() => ({
 
 /** The arrow beside Undo open: the latest steps to undo back to (UX-16). */
 export const UndoSteps: Story = {
-  render: () => <WithCommands commands={COMMANDS} undoSteps={<UndoStepsMenu state={STEPS} />} />,
+  render: () => (
+    <WithCommands
+      commands={COMMANDS}
+      undoSteps={<UndoStepsMenu state={STEPS} undoTo={() => true} />}
+    />
+  ),
   play: async ({ canvasElement }) => {
     await userEvent.click(
       within(canvasElement).getByRole("button", { name: "Undo several steps" }),
