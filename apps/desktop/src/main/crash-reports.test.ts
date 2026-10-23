@@ -1,4 +1,4 @@
-import { mkdtempSync, readdirSync, readFileSync, rmSync, utimesSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -164,5 +164,33 @@ describe("createCrashReports", () => {
     reports.markSeen();
 
     expect(reports.hasUnseen()).toBe(false);
+  });
+
+  it("writes a report whole before it has its name, and leaves no partial file", () => {
+    const path = reports.write(report());
+
+    expect(readdirSync(dir)).toEqual(["crash-20261020-153000-main.json"]);
+    expect(JSON.parse(readFileSync(path, "utf8"))).toMatchObject({ kind: "crashed" });
+  });
+
+  it("takes neither a half-written report nor a partial file for a crash, and clears partials", () => {
+    // An older version cut short by a crash, and a report this one was writing when it crashed.
+    const truncated = join(dir, "crash-20261020-153000-main.json");
+    writeFileSync(truncated, '{ "time": "2026-10-20T15:30:00.000Z", "process": "ma');
+    const partial = join(dir, "crash-20261020-153001-main.json.tmp");
+    writeFileSync(partial, JSON.stringify(report()));
+    utimesSync(truncated, clock, clock);
+    utimesSync(partial, clock, clock);
+
+    expect(reports.hasUnseen()).toBe(false);
+    reports.prune();
+    expect(readdirSync(dir)).toEqual(["crash-20261020-153000-main.json"]);
+    // Not a report either: something else that happens to have a report's name.
+    writeFileSync(truncated, JSON.stringify({ note: "hello" }));
+    utimesSync(truncated, clock, clock);
+    expect(reports.hasUnseen()).toBe(false);
+
+    utimesSync(reports.write(report()), clock, clock);
+    expect(reports.hasUnseen()).toBe(true);
   });
 });

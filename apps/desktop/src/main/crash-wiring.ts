@@ -17,6 +17,8 @@ import { registerIpcHandler } from "./ipc.js";
  */
 export function startCrashReports() {
   const reports = createCrashReports({ dir: join(app.getPath("userData"), "crash-reports") });
+  // Old reports go, and any a crash left half-written.
+  reports.prune();
   installCrashHandlers(
     { process, app, crashReporter },
     reports,

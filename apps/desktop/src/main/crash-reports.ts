@@ -3,6 +3,7 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
+  renameSync,
   rmSync,
   statSync,
   writeFileSync,
@@ -129,11 +130,32 @@ export function buildCrashReport(
 
 /** `crash-20261020-153000-main.json`: UTC, Windows-safe (architecture §9). */
 const REPORT_NAME = /^crash-\d{8}-\d{6}(?:-\d+)?-[a-z]+\.json$/;
+/** A report being written: it gets its name once it is whole, so no one reads half of it. */
+const PARTIAL_SUFFIX = ".tmp";
 const KEEP = 20;
 const MAX_AGE_DAYS = 30;
 const SEEN_FILE = "last-seen.json";
 
 const seenSchema = z.strictObject({ time: z.iso.datetime() });
+
+/**
+ * What a report must have to count as one: a file cut short (a crash while an older version was
+ * writing it) or not a report at all doesn't. Other fields may differ between versions.
+ */
+const reportSchema = z.object({
+  time: z.iso.datetime(),
+  process: z.enum(["main", "renderer", "gpu", "utility", "other"]),
+  kind: z.string(),
+});
+
+/** Whether the file at `path` holds a whole, readable report. */
+function isReport(path: string): boolean {
+  try {
+    return reportSchema.safeParse(JSON.parse(readFileSync(path, "utf8"))).success;
+  } catch {
+    return false;
+  }
+}
 
 function fileStamp(time: string): string {
   return time.slice(0, 19).replace(/[-:]/g, "").replace("T", "-");
@@ -141,7 +163,8 @@ function fileStamp(time: string): string {
 
 /**
  * The crash-reports folder (`userData/crash-reports`): writes reports, keeps the last 20 for at
- * most 30 days, and remembers which ones the user has been told about.
+ * most 30 days, and remembers which ones the user has been told about. A report is written under a
+ * `.tmp` name and renamed once whole, so a half-written one is never taken for a report.
  */
 export function createCrashReports(options: {
   readonly dir: string;
@@ -165,11 +188,19 @@ export function createCrashReports(options: {
           .sort((a, b) => b.mtime - a.mtime)
       : [];
 
+  /** Removes old reports, and any a crash left half-written (`.tmp`). */
   const prune = () => {
     const cutoff = now().getTime() - maxAgeMs;
     for (const [index, report] of reports().entries()) {
       if (index >= keep || report.mtime < cutoff) {
         rmSync(report.path, { force: true });
+      }
+    }
+    if (existsSync(options.dir)) {
+      for (const name of readdirSync(options.dir)) {
+        if (name.endsWith(`.json${PARTIAL_SUFFIX}`)) {
+          rmSync(join(options.dir, name), { force: true });
+        }
       }
     }
   };
@@ -184,8 +215,11 @@ export function createCrashReports(options: {
       for (let n = 2; existsSync(join(options.dir, name)); n += 1) {
         name = `${base}-${n}-${report.process}.json`;
       }
+      // The name is new, so the rename never replaces a report (which fails on Windows anyway).
       const path = join(options.dir, name);
-      writeFileSync(path, `${JSON.stringify(report, null, 2)}\n`);
+      const partial = `${path}${PARTIAL_SUFFIX}`;
+      writeFileSync(partial, `${JSON.stringify(report, null, 2)}\n`);
+      renameSync(partial, path);
       prune();
       return path;
     },
@@ -199,7 +233,7 @@ export function createCrashReports(options: {
       } catch {
         // Never told: every report is new.
       }
-      return reports().some((report) => report.mtime > seen);
+      return reports().some((report) => report.mtime > seen && isReport(report.path));
     },
     /** Remembers that the user has been told about every report so far. */
     markSeen(): void {
