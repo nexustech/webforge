@@ -235,3 +235,30 @@ export function moveSelected(session: LayersSession, direction: "up" | "down"): 
   );
   return {};
 }
+
+/**
+ * The elements like layer `id` on the shown page (*Select similar*, 1.35): every one of the page's
+ * own elements of the same component, or, for a linked copy, every copy of the same shared
+ * section, by the ids the canvas shows them by, `id` first and the rest in the page's order.
+ * Undefined for an element that isn't a layer (the shared Header or Footer, or inside a copy).
+ */
+export function similarTo(session: LayersSession, id: string): string[] | undefined {
+  if (shownLayer(session, id) === undefined) return undefined;
+  const site = session.history.document.getState();
+  const content = site.pages[session.ui.getState().pageId]?.doc.content ?? [];
+  const own = ownId(content, site.sharedSections, id);
+  const node = findNode(content, (each) => each.props.id === own);
+  if (node === undefined) return undefined;
+  const similar = isSharedCopy(node)
+    ? content.flatMap((each) => {
+        if (!isSharedCopy(each) || each.props.sharedSectionId !== node.props.sharedSectionId) {
+          return [];
+        }
+        const root = site.sharedSections[each.props.sharedSectionId]?.section.props.id;
+        return [root === undefined ? each.props.id : copiedNodeId(each.props.id, root)];
+      })
+    : inOrder(content).flatMap((each) =>
+        each.type === node.type && !isSharedCopy(each) ? [each.props.id] : [],
+      );
+  return [id, ...similar.filter((each) => each !== id)];
+}

@@ -67,6 +67,7 @@ test("opens the same menu on the canvas and in Layers, acting on what was right-
     "Rename",
     "Duplicate",
     "Save as shared section…",
+    "Select similar",
     "Copy Style",
     "Paste Style",
     "Delete",
@@ -107,6 +108,74 @@ test("marks the rows a dragged layer can't go to, before it is dropped", async (
   await expect(canvas().locator(".site-section h1")).toHaveCount(1);
 });
 
+/**
+ * Drags Layers row `from` onto `to` (the same row: within it), holding `keys` from the press, and
+ * `added` from once the drag has started: Chromium starts no drag from a press with Shift held.
+ */
+async function dragRow(
+  from: string,
+  to: string,
+  keys: readonly string[],
+  added: readonly string[] = [],
+): Promise<void> {
+  const start = await row(from).first().boundingBox();
+  const end = await row(to).first().boundingBox();
+  if (start === null || end === null) throw new Error("rows not visible");
+  for (const key of keys) await page.keyboard.down(key);
+  await page.mouse.move(start.x + start.width / 2, start.y + start.height * 0.2);
+  await page.mouse.down();
+  // Far enough for a drag to start, even within the same row.
+  await page.mouse.move(start.x + start.width / 2 + 20, start.y + start.height * 0.2, { steps: 4 });
+  for (const key of added) await page.keyboard.down(key);
+  await page.mouse.move(end.x + end.width / 2, end.y + end.height * 0.8, { steps: 8 });
+  await page.mouse.up();
+  for (const key of [...keys, ...added].reverse()) await page.keyboard.up(key);
+}
+
+test("Select similar selects every element of the kind on the page, from the menu (1.35)", async () => {
+  await showLayers();
+  await canvas().locator("h1").click({ button: "right" });
+  await menu()
+    .getByRole("menuitem", { name: /Duplicate/ })
+    .click();
+  await expect(canvas().locator("h1")).toHaveCount(2);
+
+  await canvas().locator("h1").first().click({ button: "right" });
+  await menu().getByRole("menuitem", { name: "Select similar" }).click();
+
+  await expect(page.getByRole("status").filter({ hasText: "2 elements selected" })).toBeVisible();
+  await expect(tree().getByRole("treeitem", { selected: true })).toHaveCount(2);
+});
+
+test("copies a layer dragged with Ctrl/Cmd, and places another linked copy with Shift too (1.35, UX-4)", async () => {
+  await showLayers();
+
+  await dragRow("Heading", "Text", ["ControlOrMeta"]);
+  await expect(canvas().locator("h1")).toHaveCount(2);
+  // One step: a single undo takes the copy away.
+  await page.keyboard.press("ControlOrMeta+z");
+  await expect(canvas().locator("h1")).toHaveCount(1);
+
+  // A linked copy of a shared section, dragged onto itself with Shift too: another linked copy.
+  await row("Section").first().click();
+  await page.getByRole("menuitem", { name: "Edit" }).click();
+  await page.getByRole("menuitem", { name: "Save as shared section…" }).click();
+  const dialog = page.getByRole("dialog", { name: "Save as shared section" });
+  await dialog.getByRole("textbox", { name: "Name" }).fill("Welcome");
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(tree().getByRole("treeitem", { name: /Welcome/ })).toHaveCount(1);
+
+  await dragRow(
+    "Linked copy of 'Welcome'",
+    "Linked copy of 'Welcome'",
+    ["ControlOrMeta"],
+    ["Shift"],
+  );
+  // Another linked copy of Welcome: Layers shows two, and the canvas two sections.
+  await expect(tree().getByRole("treeitem", { name: /Welcome/ })).toHaveCount(2);
+  await expect(canvas().locator(".site-section")).toHaveCount(2);
+});
+
 test("filters Layers and collapses or expands the whole tree", async () => {
   await showLayers();
 
@@ -136,6 +205,8 @@ test("in Content mode, leaves the canvas's right-clicks alone and Layers' menu t
     ["Rename", true],
     ["Duplicate", false],
     ["Save as shared section…", false],
+    // Selecting changes no layout (M3).
+    ["Select similar", true],
     ["Copy Style", false],
     ["Paste Style", false],
     ["Delete", false],

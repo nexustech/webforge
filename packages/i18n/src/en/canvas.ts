@@ -32,6 +32,8 @@ export const canvas = {
   "canvas.breadcrumbs.page": "Page",
   // F2 on the canvas (1.30): asks for the selected element's name, as the element menu does.
   "canvas.rename": "Rename…",
+  // Selects every element of the page like the selected one (1.35, the element menu).
+  "canvas.selectSimilar": "Select similar",
   "canvas.sharedRegion.header": "Header",
   "canvas.sharedRegion.footer": "Footer",
   // Asked before an element of the shared Header or Footer goes from every page (D7).

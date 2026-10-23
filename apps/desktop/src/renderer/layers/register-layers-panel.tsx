@@ -6,7 +6,14 @@ import { ElementMenu } from "../element-menu/ElementMenu.js";
 import { useCommand, useCommandRegistry } from "../shell/command-context.js";
 import type { PanelRegistry } from "../shell/panels.js";
 import { LayersPanel } from "./LayersPanel.js";
-import { type Layer, layersOf, moveLayer, renameLayer, setLayerHidden } from "./layers.js";
+import {
+  copyLayer,
+  type Layer,
+  layersOf,
+  moveLayer,
+  renameLayer,
+  setLayerHidden,
+} from "./layers.js";
 
 /** No other selected layers. */
 const NO_OTHERS: readonly string[] = [];
@@ -96,6 +103,9 @@ export function registerLayersPanel(
           // One layer moves; several move together with the Edit menu's moves (1.31 part 2).
           move: (id, index) => {
             if ((ui.getState().others ?? []).length === 0) moveLayer(session, id, index);
+          },
+          copy: (id, index, linked) => {
+            if ((ui.getState().others ?? []).length === 0) copyLayer(session, id, index, linked);
           },
           moveUp: useCommandAction(TOOLBAR_COMMANDS.moveUp),
           moveDown: useCommandAction(TOOLBAR_COMMANDS.moveDown),
