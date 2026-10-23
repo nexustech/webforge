@@ -1,7 +1,9 @@
 import { t } from "@webforge/i18n";
 import {
   boundText,
+  boxClasses,
   type ComponentDef,
+  type FieldDef,
   optionValue,
   responsiveClasses,
   slotComponent,
@@ -16,9 +18,32 @@ const HEADING_CLASS = {
   small: "text-xl font-semibold",
 } as const;
 
-const PADDINGS = ["medium", "small", "large"] as const;
-// Design tokens (C4): users choose a size, never a raw value.
-const PADDING_CLASS = { small: "py-8", medium: "py-16", large: "py-24" } as const;
+/** A section's own padding (`px-4 py-16`), for the sides left unset (1.32). */
+export const SECTION_PADDING = { top: 16, right: 4, bottom: 16, left: 4 } as const;
+
+/** A section's padding, per side and device (1.32). */
+export const PADDING_FIELD: FieldDef = {
+  kind: "box",
+  label: t("field.padding"),
+  responsive: true,
+};
+
+/**
+ * A margin above and below, per device (1.32). A section's left and right stay `auto`, centring
+ * it, and an element's are its section's padding.
+ */
+export const MARGIN_FIELD: FieldDef = {
+  kind: "box",
+  label: t("field.margin"),
+  responsive: true,
+  sides: ["top", "bottom"],
+};
+
+/** The margin classes of a {@link MARGIN_FIELD} value, after a space; nothing when unset. */
+export function marginClasses(value: unknown): string {
+  const classes = boxClasses(value, "margin", {}, ["top", "bottom"]);
+  return classes === "" ? "" : ` ${classes}`;
+}
 
 /** Space between a section's elements, smallest first (the slider's steps). */
 const GAPS = ["none", "small", "medium", "large"] as const;
@@ -44,15 +69,8 @@ export const section: ComponentDef = {
   place: "section",
   category: t("category.basic"),
   fields: {
-    padding: {
-      kind: "spacing",
-      label: t("field.padding"),
-      responsive: true,
-      options: (["small", "medium", "large"] as const).map((value) => ({
-        label: t(`field.padding.${value}`),
-        value,
-      })),
-    },
+    padding: PADDING_FIELD,
+    margin: MARGIN_FIELD,
     gap: {
       kind: "slider",
       label: t("field.gap"),
@@ -66,20 +84,19 @@ export const section: ComponentDef = {
       allow: ["Heading", "Text", "Faq"],
     },
   },
-  defaults: { padding: "medium", gap: "medium", fullWidth: false, content: [] },
+  defaults: { gap: "medium", fullWidth: false, content: [] },
   render: (props) => {
     const Content = slotComponent(props, "content");
-    const padding = responsiveClasses<string>(
-      props.values.padding,
-      (value) => PADDING_CLASS[optionValue(value, PADDINGS)],
-    );
+    const padding = boxClasses(props.values.padding, "padding", SECTION_PADDING);
     const gap = responsiveClasses<string>(
       props.values.gap,
       (value) => GAP_CLASS[optionValue(value, ["medium", ...GAPS])],
     );
     const width = props.values.fullWidth === true ? "" : "max-w-4xl ";
     return (
-      <section className={`site-section mx-auto ${width}${gap} px-4 ${padding}`}>
+      <section
+        className={`site-section mx-auto ${width}${gap} ${padding}${marginClasses(props.values.margin)}`}
+      >
         <Content />
       </section>
     );
@@ -114,6 +131,7 @@ export const heading: ComponentDef = {
       label: t("field.color"),
       options: COLOURS.map((value) => ({ label: t(`field.color.${value}`), value })),
     },
+    margin: MARGIN_FIELD,
   },
   defaults: { text: t("element.heading"), size: "medium", color: "default" },
   render: ({ values, context }) => {
@@ -124,7 +142,9 @@ export const heading: ComponentDef = {
     // Bound to an empty Site Settings value in the export: no empty heading.
     if (content === null) return null;
     return (
-      <Tag className={`site-heading ${HEADING_CLASS[size]}${colour === "" ? "" : ` ${colour}`}`}>
+      <Tag
+        className={`site-heading ${HEADING_CLASS[size]}${colour === "" ? "" : ` ${colour}`}${marginClasses(values.margin)}`}
+      >
         {content}
       </Tag>
     );
@@ -137,10 +157,13 @@ export const text: ComponentDef = {
   category: t("category.text"),
   fields: {
     text: { kind: "richtext", label: t("field.text"), inline: true },
+    margin: MARGIN_FIELD,
   },
   defaults: { text: `<p>${t("element.text")}</p>` },
   render: ({ values }) => (
-    <div className="site-text text-lg leading-relaxed [&_a]:underline [&_p+p]:mt-4">
+    <div
+      className={`site-text text-lg leading-relaxed [&_a]:underline [&_p+p]:mt-4${marginClasses(values.margin)}`}
+    >
       {textValue(values.text)}
     </div>
   ),

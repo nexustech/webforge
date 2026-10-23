@@ -7,6 +7,14 @@ export {
   settingValues,
   validBindings,
 } from "./bindings.js";
+export type { BoxSide, BoxValue, SpacingToken } from "./box.js";
+export {
+  BOX_SIDES,
+  boxValueOf,
+  boxValueSchema,
+  responsiveBoxOf,
+  SPACING_TOKENS,
+} from "./box.js";
 export type { BrokenLink } from "./broken-links.js";
 export { findBrokenLinks } from "./broken-links.js";
 export type { CopiedElements } from "./clipboard.js";

@@ -410,6 +410,23 @@ describe("buildSite: documents (1.28)", () => {
     expect(output.report.warnings).toEqual([]);
   });
 
+  it("styles a margin set for one device on that device only (1.32)", async () => {
+    const heading: NodeDoc = {
+      type: "Heading",
+      props: {
+        id: "h",
+        text: "Prices",
+        margin: { $responsive: { desktop: { top: "l" }, mobile: { top: "s" } } },
+      },
+    };
+    const output = await buildSite(siteWith([heading]), siteLibrary, resources);
+    const css = text(output, fileNamed(output, /^assets\/css\//));
+
+    expect(text(output, "index.html")).toContain("max-md:mt-4 md:mt-16");
+    expect(css).toMatch(/@media \(width < 48rem\) \{\s*\.max-md\\:mt-4 \{/);
+    expect(css).toMatch(/@media \(width >= 48rem\) \{\s*\.md\\:mt-16 \{/);
+  });
+
   it("warns about a link to a document deleted from Media, and keeps building", async () => {
     const output = await buildSite(
       siteWith([heroLinkingTo("gone", { download: true })], { documents }),

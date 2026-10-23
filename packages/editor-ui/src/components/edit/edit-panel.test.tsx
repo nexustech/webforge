@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { t } from "@webforge/i18n";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -242,6 +242,108 @@ describe("style field renderers (1.14 part 2)", () => {
 
     expect(onReset).toHaveBeenCalledWith("padding");
     expect(document.querySelectorAll("[data-override]")).toHaveLength(1);
+  });
+});
+
+describe("box renderer (1.32)", () => {
+  const tokens = [
+    { label: "None", value: "none" },
+    { label: "S", value: "s" },
+    { label: "M", value: "m" },
+  ];
+  const sides = [
+    { label: "Top", value: "top" },
+    { label: "Right", value: "right" },
+    { label: "Bottom", value: "bottom" },
+    { label: "Left", value: "left" },
+  ];
+
+  function renderBox(value: unknown, fieldSides = sides) {
+    const onChange = vi.fn();
+    const onCommit = vi.fn();
+    render(
+      <EditPanel
+        heading="Section"
+        fields={[
+          {
+            name: "padding",
+            kind: "box",
+            label: "Padding",
+            group: "style",
+            value,
+            options: tokens,
+            sides: fieldSides,
+          },
+        ]}
+        onChange={onChange}
+        onCommit={onCommit}
+      />,
+    );
+    return { onChange, onCommit, user: userEvent.setup() };
+  }
+  const choices = (name: string) => within(screen.getByRole("radiogroup", { name }));
+
+  it("sets every side at once while they are the same, and Default unsets them", async () => {
+    const { onChange, onCommit, user } = renderBox({});
+    expect(
+      screen
+        .getByRole("switch", { name: "Padding Same on every side" })
+        .getAttribute("aria-checked"),
+    ).toBe("true");
+    expect(
+      choices("Padding").getByRole("radio", { name: "Default" }).getAttribute("aria-checked"),
+    ).toBe("true");
+
+    await user.click(choices("Padding").getByRole("radio", { name: "S" }));
+    expect(onChange.mock.calls).toEqual([
+      ["padding", { top: "s", right: "s", bottom: "s", left: "s" }],
+    ]);
+    expect(onCommit.mock.calls).toEqual([["padding"]]);
+  });
+
+  it("sets one side at a time, keeping the others", async () => {
+    const { onChange, user } = renderBox({ top: "m", bottom: "m" });
+    // Not the same on every side: a row per side.
+    expect(screen.queryByRole("radiogroup", { name: "Padding" })).toBeNull();
+    expect(
+      choices("Padding Top").getByRole("radio", { name: "M" }).getAttribute("aria-checked"),
+    ).toBe("true");
+    expect(
+      choices("Padding Left").getByRole("radio", { name: "Default" }).getAttribute("aria-checked"),
+    ).toBe("true");
+
+    await user.click(choices("Padding Left").getByRole("radio", { name: "None" }));
+    await user.click(choices("Padding Top").getByRole("radio", { name: "Default" }));
+
+    expect(onChange.mock.calls).toEqual([
+      ["padding", { top: "m", bottom: "m", left: "none" }],
+      ["padding", { bottom: "m" }],
+    ]);
+  });
+
+  it("switches between every side and each side without changing anything", async () => {
+    const { onChange, user } = renderBox({ top: "m", bottom: "m" });
+
+    await user.click(screen.getByRole("switch", { name: "Padding Same on every side" }));
+
+    // The sides differ, so no size is chosen until one is.
+    expect(
+      choices("Padding")
+        .getAllByRole("radio")
+        .filter((radio) => radio.getAttribute("aria-checked") === "true"),
+    ).toEqual([]);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("shows only the sides the field sets", () => {
+    renderBox(
+      { top: "s" },
+      sides.filter((side) => side.value === "top" || side.value === "bottom"),
+    );
+
+    expect(choices("Padding Top")).toBeDefined();
+    expect(choices("Padding Bottom")).toBeDefined();
+    expect(screen.queryByRole("radiogroup", { name: "Padding Left" })).toBeNull();
   });
 });
 

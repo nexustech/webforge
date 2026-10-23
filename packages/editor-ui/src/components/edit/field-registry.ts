@@ -6,8 +6,10 @@ export type FieldSpec = {
   readonly kind: string;
   /** Already translated. */
   readonly label: string;
-  /** For `select`, `color` and `spacing`: the choices, labels already translated. */
+  /** For `select`, `color`, `spacing` and `box`: the choices, labels already translated. */
   readonly options?: readonly { readonly label: string; readonly value: string }[];
+  /** For `box`: the sides it sets, in order (top, right, bottom, left), labels translated. */
+  readonly sides?: readonly { readonly label: string; readonly value: string }[];
   /** For `slider`: its steps, smallest first, labels already translated. */
   readonly steps?: readonly { readonly label: string; readonly value: string }[];
   /** For `text`: shown while the field is empty, already translated. */

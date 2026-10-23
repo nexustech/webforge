@@ -1,6 +1,7 @@
 import type { ListChange } from "@webforge/editor-ui";
 import type { EngineEdit } from "@webforge/engine";
 import {
+  type BoxValue,
   copiedNodeId,
   isSharedCopy,
   type MenuItemId,
@@ -363,9 +364,17 @@ const commands: fc.Arbitrary<Command>[] = [
       ),
   })),
   fc
-    .record({ at: n, device: devices, padding: fc.constantFrom("small", "medium", "large") })
+    .record({
+      at: n,
+      device: devices,
+      padding: fc.constantFrom<BoxValue>(
+        { top: "s" },
+        { top: "m", bottom: "m" },
+        { left: "xl", right: "none" },
+      ),
+    })
     .map(({ at, device, padding }) => ({
-      name: `padding ${at} ${device} ${padding}`,
+      name: `padding ${at} ${device} ${JSON.stringify(padding)}`,
       run: (ctx) =>
         sectionEdit(ctx, at, "padding", (stored) => withValueAt(stored, device, padding)),
     })),
