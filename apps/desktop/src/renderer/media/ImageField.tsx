@@ -9,7 +9,7 @@ import {
 import { t } from "@webforge/i18n";
 import { type ImageMeta, type ImageValue, imageValueSchema, isImageMeta } from "@webforge/model";
 import { ImagePlusIcon } from "lucide-react";
-import { useEffect, useId, useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useId, useState, useSyncExternalStore } from "react";
 import { type MediaApi, mediaImageUrl } from "../../shared/ipc/media.js";
 import type { EditorSession } from "../editor/editor-session.js";
 import type { ImagePickRequests } from "./image-picks.js";
@@ -41,7 +41,7 @@ export function ImageField({
   onCommit,
   session,
   media,
-  notify = (message) => toast(message),
+  notify = toast,
   imageUrl = mediaImageUrl,
   picks,
 }: FieldRendererProps & ImageFieldContext) {
@@ -69,18 +69,14 @@ export function ImageField({
   const item = current === undefined ? undefined : items[current.mediaId];
   const image = item !== undefined && isImageMeta(item) ? item : undefined;
   // The picker's items: each image by its file name, found by its alt text too.
-  const images = useMemo(
-    () =>
-      Object.values(items)
-        .filter(isImageMeta)
-        .map((each) => ({
-          id: each.id,
-          label: each.fileName,
-          keywords: each.alt === "" ? [] : [each.alt],
-          image: each,
-        })),
-    [items],
-  );
+  const images = Object.values(items)
+    .filter(isImageMeta)
+    .map((each) => ({
+      id: each.id,
+      label: each.fileName,
+      keywords: each.alt === "" ? [] : [each.alt],
+      image: each,
+    }));
   const api = media ?? window.webforge.media;
 
   /** One choice: a new value, then the end of the run, so it is one undo step. */

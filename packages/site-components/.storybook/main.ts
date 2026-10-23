@@ -1,5 +1,7 @@
+import babel from "@rolldown/plugin-babel";
 import type { StorybookConfig } from "@storybook/react-vite";
 import tailwindcss from "@tailwindcss/vite";
+import { reactCompilerPreset } from "@vitejs/plugin-react";
 
 /**
  * Storybook for the site components (standards §5): every component's variants as the export
@@ -18,7 +20,12 @@ const config: StorybookConfig = {
   },
   viteFinal: (viteConfig) => ({
     ...viteConfig,
-    plugins: [...(viteConfig.plugins ?? []), tailwindcss()],
+    // Compiled as the app compiles them (ADR 0010), so the stories show what the app draws.
+    plugins: [
+      ...(viteConfig.plugins ?? []),
+      babel({ presets: [reactCompilerPreset()] }),
+      tailwindcss(),
+    ],
   }),
 };
 

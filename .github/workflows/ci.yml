@@ -163,6 +163,9 @@ jobs:
       - name: No hard-coded UI strings
         run: pnpm ui-strings
 
+      - name: React Compiler compiles every component (ADR 0010)
+        run: pnpm react-compiler
+
       - name: Tests with coverage
         run: pnpm test
 

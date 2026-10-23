@@ -8,15 +8,7 @@ import {
   type ViewOptions,
 } from "@webforge/engine";
 import { t } from "@webforge/i18n";
-import {
-  type RefObject,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from "react";
+import { type RefObject, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createStore } from "zustand/vanilla";
 import {
   type AddPreferences,
@@ -72,7 +64,7 @@ import { SharedRegionBanner } from "./SharedRegionBanner.js";
 import { confirmSharedRemovals, sharedCutConfirmation } from "./shared-confirmations.js";
 import { shownLayout } from "./shared-layout.js";
 import { type CompileCanvasCss, connectSiteCss } from "./site-css.js";
-import { UndoHistoryPanel } from "./UndoHistoryPanel.js";
+import { UndoHistoryPanel, type UndoHistoryPanelProps } from "./UndoHistoryPanel.js";
 import { installUndoToasts, undoEntry } from "./undo-toasts.js";
 
 /** Props of {@link Editor}. */
@@ -115,6 +107,21 @@ const compileWithPreload: CompileCanvasCss = (request) =>
  * The canvas frame's edge handles on `session`'s device view and `view`'s zoom: a width dragged or
  * typed with the arrows becomes the view's width, as the toolbar's width field does (U6).
  */
+/** The Undo History panel for `history`, jumping to a step with `jumpTo`. */
+function undoHistoryPanel(
+  history: EditorSession["history"],
+  jumpTo: UndoHistoryPanelProps["history"]["jumpTo"],
+) {
+  return function UndoHistory() {
+    const state = useSyncExternalStore(
+      history.state.subscribe,
+      history.state.getState,
+      history.state.getState,
+    );
+    return <UndoHistoryPanel history={{ jumpTo }} state={state} />;
+  };
+}
+
 function CanvasEdges({
   session,
   view,
@@ -384,40 +391,29 @@ export function Editor({
   // Undoing back to a step from the title bar (UX-16): one jump, as Undo History and the Undo
   // toasts make, after the canvas's pending edit; a gesture in progress is dropped first, as
   // Ctrl/Cmd+Z drops it, so the jump lands where it was asked to.
-  const undoTo = useCallback(
-    (entryId: string) => {
+  useEffect(() => {
+    onUndoTo?.((entryId) => {
       connectionRef.current?.flush();
       session.cancelGesture();
       return undoEntry(history, entryId);
-    },
-    [session, history],
-  );
-  useEffect(() => {
-    onUndoTo?.(undoTo);
+    });
     return () => onUndoTo?.(null);
-  }, [onUndoTo, undoTo]);
+  }, [onUndoTo, session, history]);
 
   // Undo History goes in the left column's bottom (UI1).
-  useEffect(() => {
-    const jumpTo = (entryId: string | null) => {
-      connectionRef.current?.flush();
-      return history.jumpTo(entryId);
-    };
-    function UndoHistory() {
-      const historyState = useSyncExternalStore(
-        history.state.subscribe,
-        history.state.getState,
-        history.state.getState,
-      );
-      return <UndoHistoryPanel history={{ jumpTo }} state={historyState} />;
-    }
-    return panels.register({
-      id: "undoHistory",
-      slot: "left.bottom",
-      title: t("editor.undoHistory"),
-      component: UndoHistory,
-    });
-  }, [panels, history]);
+  useEffect(
+    () =>
+      panels.register({
+        id: "undoHistory",
+        slot: "left.bottom",
+        title: t("editor.undoHistory"),
+        component: undoHistoryPanel(history, (entryId) => {
+          connectionRef.current?.flush();
+          return history.jumpTo(entryId);
+        }),
+      }),
+    [panels, history],
+  );
 
   // The Edit panel replaces Puck's own fields (1.14). Registered on its own, so that changing the
   // editor level or mode (Content shows its Content tab only) redraws it alone.
@@ -461,17 +457,13 @@ export function Editor({
     [addStore],
   );
   // The sections' larger previews in the Add panel (UX-10), drawn with the site's theme.
-  const previews = useMemo(
-    () =>
-      createSectionPreviews({
-        library: session.library,
-        theme: () => session.history.document.getState().theme,
-        sharedSection: (id) => sharedSection(session.history.document.getState(), id)?.section,
-        compileCss,
-        baseUrl: document.baseURI,
-      }),
-    [session, compileCss],
-  );
+  const previews = createSectionPreviews({
+    library: session.library,
+    theme: () => session.history.document.getState().theme,
+    sharedSection: (id) => sharedSection(session.history.document.getState(), id)?.section,
+    compileCss,
+    baseUrl: document.baseURI,
+  });
 
   // The Add panel (1.13), hidden in Content mode (M3), and the palette's Add commands with it.
   useEffect(() => {

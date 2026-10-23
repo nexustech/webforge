@@ -3,7 +3,7 @@ import type { EditorMode } from "@webforge/engine";
 import { t } from "@webforge/i18n";
 import { siteLibrary } from "@webforge/site-components";
 import { PanelBottomIcon, PanelLeftIcon, PanelRightIcon } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { applyPreferencesChange } from "../shared/ipc/prefs.js";
 import type { ExportRequest } from "../shared/ipc/site.js";
 import type {
@@ -15,7 +15,7 @@ import type {
   UiStateResult,
 } from "../shared/ipc-contract.js";
 import { Editor, type EditorProps } from "./editor/Editor.js";
-import { createEditorSession } from "./editor/editor-session.js";
+import { createEditorSession, type EditorSession } from "./editor/editor-session.js";
 import { starterSite } from "./editor/starter-site.js";
 import { registerExportCommand } from "./export/export-command.js";
 import { exportRequestFor } from "./export/export-request.js";
@@ -75,6 +75,11 @@ const saveUiStateWithPreload = (state: SiteUiState) => window.webforge.project.s
 const spellCheckWithPreload = (language: string) =>
   window.webforge.app.setSpellCheckLanguage(language);
 
+/** The perf check's hooks (ADR 0007), loaded only in perf builds. */
+const installPerf = (session: EditorSession) => {
+  void import("./perf/perf-hooks.js").then((perf) => perf.installPerfHooks(session));
+};
+
 /** Root component of the editor window: the title bar over the panel layout and canvas. */
 export function App({
   info,
@@ -101,10 +106,8 @@ export function App({
   const [undoTo, setUndoTo] = useState<((entryId: string) => boolean) | undefined>(undefined);
   // A function as state: set through an updater, so React keeps it as is. Stable, so the editor
   // hands it over once, not on every render.
-  const handUndoTo = useCallback(
-    (next: ((entryId: string) => boolean) | null) => setUndoTo(() => next ?? undefined),
-    [],
-  );
+  const handUndoTo = (next: ((entryId: string) => boolean) | null) =>
+    setUndoTo(() => next ?? undefined);
   // The latest preferences, for changes made before React re-renders (several groups at once).
   const latest = useRef(preferences);
   const siteName = useSyncExternalStore(
@@ -141,10 +144,7 @@ export function App({
   const { theme, editorLevel } = preferences;
   // The View menu's options as the canvas takes them; the same object until one changes.
   const { showOutlines, spacingOnHover, elementNames, extraBottomSpace } = preferences.canvas;
-  const viewOptions = useMemo(
-    () => ({ outlines: showOutlines, spacingOnHover, elementNames, extraBottomSpace }),
-    [showOutlines, spacingOnHover, elementNames, extraBottomSpace],
-  );
+  const viewOptions = { outlines: showOutlines, spacingOnHover, elementNames, extraBottomSpace };
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
@@ -214,9 +214,7 @@ export function App({
 
   useEffect(() => {
     // Vite replaces MODE at build time, so normal builds drop this branch and the module with it.
-    if (import.meta.env.MODE === "perf") {
-      void import("./perf/perf-hooks.js").then((perf) => perf.installPerfHooks(session));
-    }
+    if (import.meta.env.MODE === "perf") installPerf(session);
   }, [session]);
 
   const rememberLayout = (groupId: string, layout: ResizableLayout) =>

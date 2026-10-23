@@ -33,7 +33,7 @@ A desktop builder for non-technical small-business owners that produces self-con
 
 ## Commands (pnpm 12, run from the repo root)
 - `pnpm dev`: start the desktop app with hot reload.
-- `pnpm check`: the static checks and unit tests CI runs (`lint`, `typecheck`, `deps`, `knip`, `licence-check`, `ui-strings`, `test`). Run it before opening a PR.
+- `pnpm check`: the static checks and unit tests CI runs (`lint`, `typecheck`, `deps`, `knip`, `licence-check`, `ui-strings`, `react-compiler`, `test`). Run it before opening a PR.
 - `pnpm e2e`: builds the desktop app and runs the Playwright tests: the Electron app (`e2e/app/`) and the exported fixture site opened from disk in Chromium, Firefox and WebKit (`e2e/export/`). Also run in CI (Linux on PRs, with Firefox and WebKit only when the exported site can change; Linux + Windows nightly and on `full-ci` PRs). Run it when touching main, preload, the renderer bootstrap, security settings, site components or the pipeline. First time: `pnpm --filter @webforge/e2e exec playwright install chromium firefox webkit`.
 - `pnpm e2e:packaged`: packages the app (`electron-builder --dir`) and runs `e2e/packaged/` against it (CI on Windows + macOS, nightly and on `full-ci` PRs only). Run it when touching packaging, Fuses or native modules, and label the PR `full-ci`.
 - `pnpm visual`: builds the editor UI's and the site components' Storybooks and runs `e2e/visual/`: axe on every story, in dark and light for the editor UI and in each theme on Desktop and Mobile for site components (screenshots only in CI's Linux container). Run it when touching `packages/editor-ui` or `packages/site-components`.

@@ -16,10 +16,12 @@ import {
   Trash2Icon,
 } from "lucide-react";
 import {
+  type ComponentType,
   type DragEvent,
   type KeyboardEvent,
   type ReactNode,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
 } from "react";
@@ -54,7 +56,7 @@ export type LayersPanelProps = {
    * The element menu (1.35), the canvas's too: open `at` a point for the selected layer, closed
    * with `onClose`; its Rename renames the layer in place.
    */
-  readonly menu?: (props: {
+  readonly menu?: ComponentType<{
     readonly at: MenuPoint | null;
     readonly onClose: () => void;
     readonly onRename: () => void;
@@ -63,7 +65,7 @@ export type LayersPanelProps = {
      * it if Rename was chosen.
      */
     readonly onCloseFocus: () => void;
-  }) => ReactNode;
+  }>;
 };
 
 /** A layer as a row: where it sits among its siblings, so moves stay within its parent. */
@@ -153,7 +155,7 @@ export function LayersPanel({
   selectedId,
   actions,
   layoutLocked = false,
-  menu,
+  menu: Menu,
 }: LayersPanelProps) {
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(() => new Set());
   const [filter, setFilter] = useState("");
@@ -162,7 +164,10 @@ export function LayersPanel({
   // A layer selected elsewhere (the canvas) shows: the layers it is in open once. They can be
   // collapsed again afterwards, hiding it.
   const latest = useRef({ layers, selectedId });
-  latest.current = { layers, selectedId };
+  // Kept up to date after each render, for the effect below and for focusing once React has drawn.
+  useLayoutEffect(() => {
+    latest.current = { layers, selectedId };
+  });
   useEffect(() => {
     const parents = parentsOf(latest.current.layers, selectedId);
     setCollapsed((current) =>
@@ -346,7 +351,7 @@ export function LayersPanel({
                 onClick={() => actions.select(layer.id)}
                 onDoubleClick={() => setRenaming(layer.id)}
                 onContextMenu={(event) => {
-                  if (menu === undefined) return;
+                  if (Menu === undefined) return;
                   event.preventDefault();
                   // From the keyboard (Shift+F10, the Menu key) there is no pointer: below the row.
                   const box = event.currentTarget.getBoundingClientRect();
@@ -541,18 +546,20 @@ export function LayersPanel({
           <ChevronsDownUpIcon />
         </ToolButton>
       </div>
-      {menu?.({
-        at: menuAt,
-        onClose: () => setMenuAt(null),
-        onRename: () => {
-          renamedFromMenu.current = true;
-        },
-        onCloseFocus: () => {
-          const id = latest.current.selectedId;
-          if (renamedFromMenu.current && id !== null) setRenaming(id);
-          else focusSelected();
-        },
-      })}
+      {Menu === undefined ? null : (
+        <Menu
+          at={menuAt}
+          onClose={() => setMenuAt(null)}
+          onRename={() => {
+            renamedFromMenu.current = true;
+          }}
+          onCloseFocus={() => {
+            const id = latest.current.selectedId;
+            if (renamedFromMenu.current && id !== null) setRenaming(id);
+            else focusSelected();
+          }}
+        />
+      )}
     </div>
   );
 }

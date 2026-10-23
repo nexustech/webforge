@@ -35,6 +35,11 @@ function frameBox(container: HTMLElement): FrameBox | null {
 }
 
 /** The readout while the width changes: "768 px · Tablet". */
+/** Whether two measurements put the frame's edges in the same places. */
+function sameEdges(a: FrameBox | null, b: FrameBox | null): boolean {
+  return a === null || b === null ? a === b : a.left === b.left && a.right === b.right;
+}
+
 function readout(width: number, devices: readonly CustomDevice[]): string {
   const device = deviceAt(width, devices);
   if (device === undefined) return t("canvasResize.readout", { width });
@@ -77,9 +82,7 @@ export function CanvasResizeHandles({
       cancelAnimationFrame(pending);
       pending = requestAnimationFrame(() => {
         const next = frameBox(element);
-        setBox((current) =>
-          current?.left === next?.left && current?.right === next?.right ? current : next,
-        );
+        setBox((current) => (sameEdges(current, next) ? current : next));
       });
     };
     setBox(frameBox(element));

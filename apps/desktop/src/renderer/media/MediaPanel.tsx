@@ -87,7 +87,7 @@ function sharedUsageText(item: MediaMeta, shared: readonly string[]): string {
 export function MediaPanel({
   session,
   media,
-  notify = (message) => toast(message),
+  notify = toast,
   imageUrl = mediaImageUrl,
 }: MediaPanelProps) {
   const items = useSyncExternalStore(

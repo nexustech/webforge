@@ -216,38 +216,19 @@ function barElementId(marker: Element | null): string | null {
 }
 
 /**
- * Whether the action bar holding `marker` is the selected element's. Puck also shows the bar of a
- * hovered element, and its props don't say which element it belongs to; the outline beside it
- * does (see {@link SelectionOutline}).
- */
-function inSelectedBar(marker: Element | null): boolean {
-  return (
-    marker?.closest("[data-puck-overlay]")?.querySelector('.wf-outline[data-state="selected"]') !=
-    null
-  );
-}
-
-/**
  * Moves the selected element one place up or down in its list, as one undo step ("Moved …").
  * Shown only in the selected element's bar and only where elements may be moved (not in Content
  * mode).
  */
 function MoveActions() {
   const getPuck = useGetPuck();
-  const marker = useRef<HTMLSpanElement>(null);
-  const [selectedBar, setSelectedBar] = useState(false);
-  useLayoutEffect(() => {
-    setSelectedBar(inSelectedBar(marker.current));
-  });
   const canMoveUp = usePuck((state) => canPerform(state, "moveUp"));
   const canMoveDown = usePuck((state) => canPerform(state, "moveDown"));
-  const marked = <span ref={marker} hidden />;
-  if (!selectedBar || !(canMoveUp || canMoveDown)) {
-    return marked;
+  if (!(canMoveUp || canMoveDown)) {
+    return null;
   }
   return (
     <>
-      {marked}
       <ActionBar.Action
         label={t("canvas.moveUp")}
         disabled={!canMoveUp}
@@ -271,33 +252,22 @@ function MoveActions() {
  * UX-1). Edit is content, so Content mode keeps it; Hide changes the layout, so only where elements
  * may be added (not in Content mode). Each is one undo step, or none until the text changes.
  */
-function ElementActionButtons({ actions }: { readonly actions: ElementActions }) {
-  const marker = useRef<HTMLSpanElement>(null);
-  const [bar, setBar] = useState<{ readonly selected: boolean; readonly id: string | null }>({
-    selected: false,
-    id: null,
-  });
-  useLayoutEffect(() => {
-    const selected = inSelectedBar(marker.current);
-    const id = barElementId(marker.current);
-    setBar((current) =>
-      current.selected === selected && current.id === id ? current : { selected, id },
-    );
-  });
-  const type = usePuck((state) => (bar.id === null ? undefined : state.getItemById(bar.id)?.type));
-  const hidden = usePuck(
-    (state) => bar.id !== null && state.getItemById(bar.id)?.props.hidden === true,
-  );
+function ElementActionButtons({
+  id,
+  actions,
+}: {
+  readonly id: string;
+  readonly actions: ElementActions;
+}) {
+  const type = usePuck((state) => state.getItemById(id)?.type);
+  const hidden = usePuck((state) => state.getItemById(id)?.props.hidden === true);
   // Not in Content mode, which locks the layout (M3).
   const layoutOpen = usePuck((state) => state.getPermissions().insert === true);
-  const marked = <span ref={marker} hidden />;
-  const { id } = bar;
-  if (!bar.selected || id === null || type === undefined) {
-    return marked;
+  if (type === undefined) {
+    return null;
   }
   return (
     <>
-      {marked}
       {actions.canEdit(type) ? (
         <ActionBar.Action label={t("canvas.edit")} onClick={() => actions.edit(id, type)}>
           <PencilIcon size={16} />
@@ -322,37 +292,33 @@ const BELOW_GAP = 4;
  * Keeps the selected element's bar inside the canvas: Puck draws it above its element at a fixed
  * size on screen, so on a zoomed-out canvas the bar of an element near the top of the page would
  * sit above the frame, where it can't be clicked. It then goes just below the element instead, so
- * it covers neither the element nor the frame's edge. A hovered element's bar stays put.
+ * it covers neither the element nor the frame's edge. A hovered element's bar stays put. Returns
+ * a function that stops following the frame's size.
  */
-function useKeptInFrame() {
-  const ref = useRef<HTMLDivElement>(null);
-  useLayoutEffect(() => {
-    const bar = ref.current;
-    const frame = bar?.ownerDocument.defaultView;
-    if (bar === null || !frame) {
+function keepInFrame(bar: HTMLElement, selected: boolean): (() => void) | undefined {
+  const frame = bar.ownerDocument.defaultView;
+  if (!frame) {
+    return undefined;
+  }
+  const place = () => {
+    bar.style.transform = "";
+    const element = bar.closest("[data-puck-overlay]");
+    if (element === null || !selected) {
       return;
     }
-    const place = () => {
-      bar.style.transform = "";
-      const element = bar.closest("[data-puck-overlay]");
-      if (element === null || !inSelectedBar(bar)) {
-        return;
-      }
-      const { top, height } = bar.getBoundingClientRect();
-      if (top >= 0 || height === 0) {
-        return;
-      }
-      // The bar is scaled to stay the same size on screen: `scale` turns screen into frame pixels.
-      const scale = height / bar.offsetHeight;
-      const below = element.getBoundingClientRect().bottom + BELOW_GAP * scale;
-      const target = Math.max(0, Math.min(below, frame.innerHeight - height));
-      bar.style.transform = `translateY(${(target - top) / scale}px)`;
-    };
-    place();
-    frame.addEventListener("resize", place);
-    return () => frame.removeEventListener("resize", place);
-  });
-  return ref;
+    const { top, height } = bar.getBoundingClientRect();
+    if (top >= 0 || height === 0) {
+      return;
+    }
+    // The bar is scaled to stay the same size on screen: `scale` turns screen into frame pixels.
+    const scale = height / bar.offsetHeight;
+    const below = element.getBoundingClientRect().bottom + BELOW_GAP * scale;
+    const target = Math.max(0, Math.min(below, frame.innerHeight - height));
+    bar.style.transform = `translateY(${(target - top) / scale}px)`;
+  };
+  place();
+  frame.addEventListener("resize", place);
+  return () => frame.removeEventListener("resize", place);
 }
 
 /**
@@ -367,14 +333,23 @@ export function QuickActionBar({
   isLocked,
   elementActions,
 }: QuickActionBarProps) {
-  const kept = useKeptInFrame();
-  const [locked, setLocked] = useState(false);
+  const kept = useRef<HTMLDivElement | null>(null);
+  // The element the bar belongs to, read from the outline beside it once the bar is in the page.
+  // Puck gives every element a bar of its own, so it stays the same while the bar is shown.
+  const [id, setId] = useState<string | null>(null);
+  const attach = (bar: HTMLDivElement | null) => {
+    kept.current = bar;
+    if (bar !== null) setId(barElementId(bar));
+  };
+  // Puck also shows a hovered element's bar; the move, Edit and Hide actions are the selected one's.
+  const selected = usePuck((state) => id !== null && state.selectedItem?.props.id === id);
   useLayoutEffect(() => {
-    const id = barElementId(kept.current);
-    setLocked(id !== null && isLocked?.(id) === true);
+    const bar = kept.current;
+    return bar === null ? undefined : keepInFrame(bar, selected);
   });
+  const locked = id !== null && isLocked?.(id) === true;
   return (
-    <div ref={kept}>
+    <div ref={attach}>
       <ActionBar>
         <ActionBar.Group>
           {parentAction}
@@ -382,10 +357,10 @@ export function QuickActionBar({
         </ActionBar.Group>
         {locked ? null : (
           <ActionBar.Group>
-            <MoveActions />
-            {elementActions === undefined ? null : (
-              <ElementActionButtons actions={elementActions} />
-            )}
+            {selected ? <MoveActions /> : null}
+            {selected && id !== null && elementActions !== undefined ? (
+              <ElementActionButtons id={id} actions={elementActions} />
+            ) : null}
             {children}
           </ActionBar.Group>
         )}

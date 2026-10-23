@@ -78,7 +78,7 @@ export function registerLayersPanel(
         layers={layers}
         selectedId={selectedId}
         layoutLocked={layoutLocked}
-        menu={(menu) => <ElementMenu {...menu} />}
+        menu={ElementMenu}
         actions={{
           select: (id) => ui.setState({ nodeId: id }),
           rename: (id, name) => renameLayer(session, id, name),

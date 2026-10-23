@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { ComponentProps } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   dropIndex,
@@ -41,7 +42,7 @@ function setUp(selectedId: string | null = "a", toolbar = true, layoutLocked = f
     duplicate: command(),
     remove: command(),
   } satisfies LayersPanelActions;
-  const menu = vi.fn((_: Parameters<NonNullable<LayersPanelProps["menu"]>>[0]) => null);
+  const menu = vi.fn((_: ComponentProps<NonNullable<LayersPanelProps["menu"]>>) => null);
   render(
     <LayersPanel
       layers={LAYERS}
