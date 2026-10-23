@@ -1,4 +1,4 @@
-import { Command as CommandPrimitive } from "cmdk";
+import { Command as CommandPrimitive, defaultFilter } from "cmdk";
 import { SearchIcon } from "lucide-react";
 import type { ComponentProps } from "react";
 import { cn } from "../../lib/cn.js";
@@ -17,6 +17,17 @@ export function Command({ className, ...props }: ComponentProps<typeof CommandPr
     />
   );
 }
+
+/**
+ * A {@link Command} `filter` that finds an item by its `keywords` only, never its `value`: give
+ * each item a unique value (an id) and the words it is found by as keywords, so two items may
+ * share a name and an id never makes an item match.
+ */
+export const filterByKeywords: NonNullable<ComponentProps<typeof CommandPrimitive>["filter"]> = (
+  _value,
+  search,
+  keywords,
+) => defaultFilter("", search, keywords);
 
 /** The search field. */
 export function CommandInput({

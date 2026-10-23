@@ -148,6 +148,25 @@ describe("shortcuts", () => {
       expect(event.defaultPrevented).toBe(true);
     });
 
+    it("runs a command from its extra shortcuts too", () => {
+      const registry = createCommandRegistry();
+      const run = vi.fn();
+      registry.register({
+        id: "palette",
+        label: "Palette",
+        shortcut: "Mod+P",
+        extraShortcuts: ["Mod+K"],
+        run,
+      });
+      remove = installCommandShortcuts(window, registry);
+      const ctrl = !isMac();
+
+      window.dispatchEvent(key({ key: "p", ctrlKey: ctrl, metaKey: !ctrl }));
+      window.dispatchEvent(key({ key: "k", ctrlKey: ctrl, metaKey: !ctrl }));
+
+      expect(run).toHaveBeenCalledTimes(2);
+    });
+
     it("leaves keys alone that were handled already, repeat or match no command", () => {
       const registry = createCommandRegistry();
       const run = vi.fn();

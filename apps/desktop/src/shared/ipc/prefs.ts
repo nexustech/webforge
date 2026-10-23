@@ -61,6 +61,23 @@ const canvasPreferencesSchema = z.strictObject({
 /** How the canvas shows the page. */
 export type CanvasPreferences = z.infer<typeof canvasPreferencesSchema>;
 
+/** At most this many favourites, and recently used items, are kept. */
+export const MAX_FAVOURITES = 30;
+export const MAX_RECENT = 6;
+
+/** An Add panel item: a component type ("Hero") or a shared section's id. */
+const addItemKeySchema = z.string().min(1).max(64);
+
+/** The Add panel's favourites and recently used items (F-ED-26, UX-10), per user. */
+const addPreferencesSchema = z.strictObject({
+  favourites: z.array(addItemKeySchema).max(MAX_FAVOURITES),
+  /** Newest first. */
+  recent: z.array(addItemKeySchema).max(MAX_RECENT),
+});
+
+/** The Add panel's favourites and recently used items. */
+export type AddPreferences = z.infer<typeof addPreferencesSchema>;
+
 /**
  * One person's editor preferences (per user, not per site; T2). Stored by main in
  * `<userData>/preferences.json`.
@@ -75,6 +92,7 @@ export const preferencesSchema = z.strictObject({
   /** The main window as the person last left it; null until then (it opens maximised, ADR 0008). */
   window: windowStateSchema.nullable(),
   canvas: canvasPreferencesSchema,
+  add: addPreferencesSchema,
 });
 
 /** One person's editor preferences. */
@@ -93,6 +111,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
     extraBottomSpace: false,
     devices: [],
   },
+  add: { favourites: [], recent: [] },
 };
 
 /** A change to some preferences; the rest stay as they are. */
@@ -112,6 +131,7 @@ export function applyPreferencesChange(
     panelLayout: change.panelLayout ?? preferences.panelLayout,
     window: change.window === undefined ? preferences.window : change.window,
     canvas: change.canvas ?? preferences.canvas,
+    add: change.add ?? preferences.add,
   };
 }
 

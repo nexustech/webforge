@@ -61,6 +61,14 @@ export const panels = {
   "add.other": "Other",
   // The site's shared sections, listed first under Sections (1.29, F-ED-23).
   "add.sharedSections": "Shared sections",
+  // The person's favourites and recently added items, first in each tab (1.34, F-ED-26).
+  "add.favourites": "Favourites",
+  "add.recent": "Recently used",
+  "add.favourite.add": "Add to Favourites",
+  "add.favourite.remove": "Remove from Favourites",
+  // The command palette's Add group (1.34, F-ED-26).
+  "add.palette.add": "Add {item}",
+  "add.palette.addCopy": "Add a copy of {name}",
   // A shared section's "…" menu in the Add panel (1.29).
   "add.sharedActions": "Actions for {name}",
   "add.sharedRename": "Rename…",
