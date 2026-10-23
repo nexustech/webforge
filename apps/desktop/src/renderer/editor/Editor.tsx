@@ -7,7 +7,8 @@ import {
   installHistoryKeys,
 } from "@webforge/engine";
 import { t } from "@webforge/i18n";
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { type RefObject, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import type { CustomDevice } from "../../shared/ipc/prefs.js";
 import type { Preferences } from "../../shared/ipc-contract.js";
 import { type AddPanelRegistration, registerAddPanel } from "../add/register-add-panel.js";
 import {
@@ -27,6 +28,7 @@ import {
   type SharedSectionNaming,
 } from "../shared-sections/SharedSectionCommands.js";
 import { sharedSection } from "../shared-sections/shared-sections.js";
+import { widthOf } from "../shell/canvas-size.js";
 import { type CanvasView, connectCanvasView } from "../shell/canvas-view.js";
 import { useCommandRegistry } from "../shell/command-context.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
@@ -34,6 +36,7 @@ import { installCommandShortcuts } from "../shell/commands.js";
 import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
 import { usePanelRegistry } from "../shell/panel-context.js";
 import { connectCanvasSettings } from "../site-settings/canvas-settings.js";
+import { CanvasResizeHandles } from "./CanvasResizeHandles.js";
 import { registerCanvasCommands } from "./canvas-commands.js";
 import { EditPanelHost } from "./EditPanelHost.js";
 import {
@@ -68,10 +71,40 @@ export type EditorProps = {
    * shared Header or Footer. Undo and Redo wait while it asks. Without it, they happen at once.
    */
   readonly siteWide?: Pick<SiteWideConfirm, "confirmSiteWide" | "current">;
+  /** The person's own devices, which dragging the canvas's edges snaps to (F-ED-25). */
+  readonly devices?: readonly CustomDevice[];
 };
 
 const compileWithPreload: CompileCanvasCss = (request) =>
   window.webforge.canvas.compileCss(request);
+
+/**
+ * The canvas frame's edge handles on `session`'s device view and `view`'s zoom: a width dragged or
+ * typed with the arrows becomes the view's width, as the toolbar's width field does (U6).
+ */
+function CanvasEdges({
+  session,
+  view,
+  container,
+  devices,
+}: {
+  readonly session: EditorSession;
+  readonly view: CanvasView;
+  readonly container: RefObject<HTMLElement | null>;
+  readonly devices: readonly CustomDevice[];
+}) {
+  const viewport = useSyncExternalStore(session.ui.subscribe, () => session.ui.getState().viewport);
+  const zoom = useSyncExternalStore(view.subscribe, () => view.getState().size?.zoom ?? 1);
+  return (
+    <CanvasResizeHandles
+      container={container}
+      width={widthOf(viewport)}
+      zoom={zoom}
+      devices={devices}
+      onChange={(next) => session.ui.setState({ viewport: next })}
+    />
+  );
+}
 
 /**
  * The site editor around one {@link EditorSession}: the canvas, plus the Undo and Redo commands
@@ -85,6 +118,7 @@ export function Editor({
   canvasView,
   editorLevel = "simple",
   siteWide,
+  devices = [],
 }: EditorProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [engine, setEngine] = useState<CanvasEngine | null>(null);
@@ -347,7 +381,17 @@ export function Editor({
       <SharedRegionBanner session={session} />
       <RichTextLinkHost session={session} engine={engine} />
       <SharedSectionNameDialog session={session} naming={naming} onClose={() => setNaming(null)} />
-      <section className="editor__canvas" aria-label={t("editor.canvas")} ref={canvasRef} />
+      <div className="editor__stage">
+        <section className="editor__canvas" aria-label={t("editor.canvas")} ref={canvasRef} />
+        {canvasView !== undefined && (
+          <CanvasEdges
+            session={session}
+            view={canvasView}
+            container={canvasRef}
+            devices={devices}
+          />
+        )}
+      </div>
     </div>
   );
 }

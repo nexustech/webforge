@@ -1,14 +1,16 @@
 // @vitest-environment happy-dom
-import { act, cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { CanvasSize } from "@webforge/engine";
 import type { PageId } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { type CanvasPreferences, DEFAULT_PREFERENCES } from "../../shared/ipc/prefs.js";
 import { createEditorSession } from "../editor/editor-session.js";
 import { starterSite } from "../editor/starter-site.js";
-import { CanvasToolbar, viewportFor, widthOf } from "./CanvasToolbar.js";
+import { CanvasToolbar } from "./CanvasToolbar.js";
 import { CanvasToolbarHost } from "./CanvasToolbarHost.js";
+import { viewportFor, widthOf } from "./canvas-size.js";
 import { type CanvasZoom, connectCanvasView, createCanvasView } from "./canvas-view.js";
 
 afterEach(cleanup);
@@ -16,10 +18,15 @@ afterEach(cleanup);
 const HOME = "page-home" as PageId;
 const ABOUT = "page-about" as PageId;
 
-function setUp(viewport: "desktop" | number = "desktop", size: CanvasSize | null = null) {
+function setUp(
+  viewport: "desktop" | number = "desktop",
+  size: CanvasSize | null = null,
+  canvas: CanvasPreferences = DEFAULT_PREFERENCES.canvas,
+) {
   const onShowPage = vi.fn();
   const onViewportChange = vi.fn();
   const onZoomChange = vi.fn();
+  const onCanvasChange = vi.fn();
   render(
     <CanvasToolbar
       pages={[
@@ -33,10 +40,12 @@ function setUp(viewport: "desktop" | number = "desktop", size: CanvasSize | null
       zoom="fit"
       onZoomChange={onZoomChange}
       size={size}
+      canvas={canvas}
+      onCanvasChange={onCanvasChange}
     />,
   );
   const width = () => screen.getByRole("spinbutton", { name: "Canvas width in pixels" });
-  return { onShowPage, onViewportChange, onZoomChange, width };
+  return { onShowPage, onViewportChange, onZoomChange, onCanvasChange, width };
 }
 
 describe("CanvasToolbar (F-ED-8)", () => {
@@ -193,11 +202,114 @@ describe("a zoom not shown yet", () => {
   });
 });
 
+describe("View menu and devices (F-ED-25)", () => {
+  const user = () => userEvent.setup({ delay: null });
+
+  it("turns the View menu's options on and off, keeping the menu open", async () => {
+    const { onCanvasChange } = setUp();
+
+    await user().click(screen.getByRole("button", { name: "View" }));
+    const outlines = screen.getByRole("menuitemcheckbox", { name: "Show outlines" });
+    expect(outlines.getAttribute("aria-checked")).toBe("true");
+    await user().click(screen.getByRole("menuitemcheckbox", { name: "Show spacing on hover" }));
+    await user().click(outlines);
+
+    expect(screen.getByRole("menu")).toBeTruthy();
+    expect(onCanvasChange.mock.calls).toEqual([
+      [{ ...DEFAULT_PREFERENCES.canvas, spacingOnHover: true }],
+      [{ ...DEFAULT_PREFERENCES.canvas, showOutlines: false }],
+    ]);
+  });
+
+  it("lists the devices from the size readout, the person's own included", async () => {
+    const canvas = {
+      ...DEFAULT_PREFERENCES.canvas,
+      devices: [{ id: "d1", name: "Old laptop", width: 1024, height: 600 }],
+    };
+    const { onViewportChange } = setUp("desktop", { width: 1280, height: 900, zoom: 0.5 }, canvas);
+
+    await user().click(
+      screen.getByRole("button", { name: "Page size 1280 × 900 @ 50%: choose a device" }),
+    );
+    expect(screen.getAllByRole("menuitem").map((item) => item.textContent)).toEqual([
+      "Desktop (1280)",
+      "Tablet (768)",
+      "Mobile (375)",
+      "Old laptop (1024 × 600)",
+      "Add device…",
+    ]);
+    await user().click(screen.getByRole("menuitem", { name: "Old laptop (1024 × 600)" }));
+    await user().click(screen.getByRole("button", { name: /Page size/ }));
+    await user().click(screen.getByRole("menuitem", { name: "Mobile (375)" }));
+
+    expect(onViewportChange.mock.calls).toEqual([[1024], ["mobile"]]);
+  });
+
+  it("rotates a device, and is off for a width that is no device's", async () => {
+    const { onViewportChange } = setUp(375);
+    await user().click(screen.getByRole("button", { name: "Rotate" }));
+    expect(onViewportChange).toHaveBeenCalledExactlyOnceWith(812);
+    cleanup();
+
+    setUp(900);
+    expect((screen.getByRole("button", { name: "Rotate" }) as HTMLButtonElement).disabled).toBe(
+      true,
+    );
+  });
+
+  it("adds no more devices than the preferences keep", async () => {
+    const devices = Array.from({ length: 20 }, (_, i) => ({
+      id: `d${i}`,
+      name: `Device ${i}`,
+      width: 400 + i,
+      height: 800,
+    }));
+    setUp("desktop", null, { ...DEFAULT_PREFERENCES.canvas, devices });
+
+    await user().click(screen.getByRole("button", { name: "Devices" }));
+
+    expect(
+      screen.getByRole("menuitem", { name: "Add device…" }).getAttribute("aria-disabled"),
+    ).toBe("true");
+  });
+
+  it("adds a device of the person's own, and shows the page at its width", async () => {
+    const { onCanvasChange, onViewportChange } = setUp();
+
+    await user().click(screen.getByRole("button", { name: "Devices" }));
+    await user().click(screen.getByRole("menuitem", { name: "Add device…" }));
+    const dialog = within(await screen.findByRole("dialog", { name: "Add a device" }));
+    await user().type(dialog.getByRole("textbox", { name: "Name" }), "Kiosk");
+    await user().type(dialog.getByRole("spinbutton", { name: "Width in pixels" }), "1080");
+    await user().type(dialog.getByRole("spinbutton", { name: "Height in pixels" }), "100");
+    // Too small for the canvas.
+    expect((dialog.getByRole("button", { name: "Add Device" }) as HTMLButtonElement).disabled).toBe(
+      true,
+    );
+    await user().type(dialog.getByRole("spinbutton", { name: "Height in pixels" }), "0");
+    await user().click(dialog.getByRole("button", { name: "Add Device" }));
+
+    expect(onCanvasChange).toHaveBeenCalledWith({
+      ...DEFAULT_PREFERENCES.canvas,
+      devices: [{ id: expect.any(String), name: "Kiosk", width: 1080, height: 1000 }],
+    });
+    expect(onViewportChange).toHaveBeenCalledWith(1080);
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+});
+
 describe("CanvasToolbarHost", () => {
   it("changes the view and the page without an undo step (U6)", async () => {
     const session = createEditorSession(siteLibrary, starterSite());
     const view = createCanvasView();
-    render(<CanvasToolbarHost session={session} view={view} />);
+    render(
+      <CanvasToolbarHost
+        session={session}
+        view={view}
+        canvas={DEFAULT_PREFERENCES.canvas}
+        onCanvasChange={vi.fn()}
+      />,
+    );
 
     await userEvent.click(screen.getByRole("radio", { name: "Tablet" }));
     await userEvent.selectOptions(
