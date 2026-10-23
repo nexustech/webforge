@@ -32,6 +32,7 @@ import type {
   CanvasSize,
   EditorMode,
   EngineEdit,
+  FieldDrag,
   HistoryCommandHandler,
   InsertPoint,
   LinkPicker,
@@ -62,6 +63,7 @@ import {
   splitPage,
 } from "./shared-layout.js";
 import { applySiteStyles, type SiteStyles } from "./site-styles.js";
+import { boxHandleFields } from "./spacing-handles.js";
 import { focusedRichTextId, staleRichText } from "./stale-rich-text.js";
 import { allNodes, findNode, nodeAt } from "./tree.js";
 import { applyViewOptions } from "./view-options.js";
@@ -259,6 +261,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
 
   const edits = emitter<EngineEdit>();
   const addRequests = emitter<InsertPoint>();
+  const fieldDrags = emitter<FieldDrag>();
   const dragSources = createDragSources(
     (componentType) => library?.components[componentType]?.label ?? componentType,
   );
@@ -639,11 +642,16 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     puck: Bridge,
     iframe: CanvasFrame,
     // Selection chrome (1.12): magenta outlines and the selected element's quick actions.
-    componentOverlay: createSelectionOutline((at) =>
-      // The floating + counts the Header's nodes; the app adds to the page's own content.
-      addRequests.emit({
-        index: Math.min(Math.max(at.index - layout.header.length, 0), page.content.length),
-      }),
+    componentOverlay: createSelectionOutline(
+      (at) =>
+        // The floating + counts the Header's nodes; the app adds to the page's own content.
+        addRequests.emit({
+          index: Math.min(Math.max(at.index - layout.header.length, 0), page.content.length),
+        }),
+      {
+        fieldsOf: (componentType) => boxHandleFields(library, componentType),
+        onFieldDrag: fieldDrags.emit,
+      },
     ),
     actionBar: SharedAwareActionBar,
   };
@@ -881,6 +889,8 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     },
 
     onAddRequest: addRequests.add,
+
+    onFieldDrag: fieldDrags.add,
 
     addDragSource: dragSources.add,
 

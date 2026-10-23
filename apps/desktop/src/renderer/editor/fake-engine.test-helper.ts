@@ -1,6 +1,7 @@
 import type {
   CanvasEngine,
   EngineEdit,
+  FieldDrag,
   HistoryCommand,
   HistoryCommandHandler,
   InsertPoint,
@@ -20,6 +21,8 @@ export type FakeEngine = CanvasEngine & {
   requestAdd(at: InsertPoint): void;
   /** Reports the canvas iframe's window (or that it went). */
   showFrame(frameWindow: Window | null): void;
+  /** Drags a field's value with a handle on the canvas (1.32). */
+  dragField(drag: FieldDrag): void;
   /** Switches the device view with the canvas's own controls. */
   switchView(viewport: Viewport): void;
   readonly applied: PageDoc[];
@@ -45,6 +48,7 @@ export function createFakeEngine(): FakeEngine {
   const adds = listeners<InsertPoint>();
   const frames = listeners<Window | null>();
   const views = listeners<Viewport>();
+  const drags = listeners<FieldDrag>();
   const applied: PageDoc[] = [];
   return {
     applied,
@@ -69,6 +73,7 @@ export function createFakeEngine(): FakeEngine {
     setViewOptions: vi.fn(),
     perform: vi.fn(() => true),
     onAddRequest: adds.add,
+    onFieldDrag: drags.add,
     addDragSource: vi.fn(() => () => undefined),
     setLinkPicker: vi.fn(),
     onFrameWindow: frames.add,
@@ -82,5 +87,6 @@ export function createFakeEngine(): FakeEngine {
     requestAdd: adds.emit,
     showFrame: frames.emit,
     switchView: views.emit,
+    dragField: drags.emit,
   };
 }

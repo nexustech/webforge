@@ -63,6 +63,8 @@ export type FieldDef = {
   | {
       readonly kind: "box";
       readonly label: string;
+      /** What it sets: inside the element's edge, or outside it. */
+      readonly property: "padding" | "margin";
       /** The sides that can be set; all four if omitted. */
       readonly sides?: readonly BoxSide[];
     }
@@ -352,6 +354,19 @@ const BOX_UNITS: Readonly<Record<"p" | "m", Readonly<Record<SpacingToken, number
   m: { none: 0, s: 4, m: 8, l: 16, xl: 24 },
 };
 
+/** How many CSS pixels each token of `property` is, as {@link boxClasses} styles it. */
+export function boxTokenPixels(
+  property: "padding" | "margin",
+): Readonly<Record<SpacingToken, number>> {
+  const units = BOX_UNITS[property === "padding" ? "p" : "m"];
+  return Object.fromEntries(
+    Object.entries(units).map(([token, size]) => [token, size * TAILWIND_UNIT_PX]),
+  ) as Record<SpacingToken, number>;
+}
+
+/** CSS pixels per Tailwind spacing unit. */
+const TAILWIND_UNIT_PX = 4;
+
 /** A box's sides in pairs, with their class names: left and right (`px-`), then top and bottom. */
 const BOX_AXES = [
   ["x", ["left", "l"], ["right", "r"]],
@@ -367,6 +382,26 @@ const DEVICE_RANGE: Readonly<Record<string, string>> = {
   "tablet desktop": "md:",
   "mobile tablet desktop": "",
 };
+
+/**
+ * Every class {@link boxClasses} can give, with the sizes the site's components use for sides left
+ * unset. The canvas compiles them all (1.32), so a size dragged to with a spacing handle is styled
+ * at once rather than once the canvas's CSS is compiled again; the export compiles only those used.
+ */
+export const BOX_CLASS_SAFELIST: readonly string[] = (() => {
+  const sizes = [...new Set([...Object.values(BOX_UNITS.p), ...Object.values(BOX_UNITS.m), 4])];
+  const prefixes = new Set([
+    ...BREAKPOINT_PREFIX.map(([, prefix]) => prefix),
+    ...Object.values(DEVICE_RANGE),
+  ]);
+  return [...prefixes].flatMap((prefix) =>
+    (["p", "m"] as const).flatMap((kind) =>
+      ["x", "y", "t", "r", "b", "l"].flatMap((side) =>
+        sizes.map((size) => `${prefix}${kind}${side}-${size}`),
+      ),
+    ),
+  );
+})();
 
 /**
  * The classes for a `box` field (1.32): `pl-`, `pr-`, `pt-` and `pb-` (or `m…` for margin), as

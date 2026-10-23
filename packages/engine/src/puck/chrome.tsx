@@ -2,9 +2,10 @@ import { ActionBar, createUsePuck, useGetPuck } from "@puckeditor/core";
 import { t } from "@webforge/i18n";
 import { ArrowDownIcon, ArrowUpIcon } from "lucide-react";
 import { type ReactNode, useLayoutEffect, useRef, useState } from "react";
-import type { InsertPoint } from "../canvas-engine.js";
+import type { FieldDrag, InsertPoint } from "../canvas-engine.js";
 import { HIDDEN_ATTRIBUTE } from "./config.js";
 import { canPerform, performOnSelected } from "./selected-actions.js";
+import { type BoxHandleField, SPACING_HANDLES_CSS, SpacingHandles } from "./spacing-handles.js";
 import { ROOT_ZONE } from "./tree.js";
 
 const usePuck = createUsePuck();
@@ -58,7 +59,7 @@ const CHROME_CSS = `
   outline: 2px solid #fff;
   outline-offset: 1px;
 }
-`;
+${SPACING_HANDLES_CSS}`;
 
 /** Adds the chrome's styles to the canvas document once. */
 export function applyChromeStyles(document: Document): void {
@@ -89,14 +90,30 @@ type OverlayProps = {
   readonly componentType: string;
 };
 
+/** What the selected element's spacing handles need (1.32). */
+export type SpacingHandleOptions = {
+  /** The `box` fields of a component type. */
+  readonly fieldsOf: (componentType: string) => readonly BoxHandleField[];
+  readonly onFieldDrag: (drag: FieldDrag) => void;
+};
+
 /**
  * The outline over an element on the canvas: 1 px magenta on hover, 2 px when selected. A hovered
  * or selected top-level section also gets the floating + on its bottom edge, which asks `onAdd` to
  * add a section after it (UI1: "opens the Add panel at the insertion point"); not where adding is
- * locked (Content mode).
+ * locked (Content mode). The selected element also gets its spacing handles (1.32), except in
+ * Content mode.
  */
-export function createSelectionOutline(onAdd: (at: InsertPoint) => void) {
-  return function SelectionOutline({ hover, isSelected, componentId }: OverlayProps) {
+export function createSelectionOutline(
+  onAdd: (at: InsertPoint) => void,
+  spacing?: SpacingHandleOptions,
+) {
+  return function SelectionOutline({
+    hover,
+    isSelected,
+    componentId,
+    componentType,
+  }: OverlayProps) {
     const ref = useRef<HTMLDivElement>(null);
     useLayoutEffect(() => {
       const element = ref.current;
@@ -110,8 +127,12 @@ export function createSelectionOutline(onAdd: (at: InsertPoint) => void) {
       return selector?.zone === ROOT_ZONE ? selector.index : -1;
     });
     const canInsert = usePuck((state) => state.getPermissions().insert === true);
+    const props = usePuck((state) =>
+      isSelected ? state.getItemById(componentId)?.props : undefined,
+    );
     const state = isSelected ? "selected" : hover ? "hover" : "none";
     const showAdd = state !== "none" && topLevelIndex >= 0 && canInsert;
+    const boxFields = isSelected && canInsert ? (spacing?.fieldsOf(componentType) ?? []) : [];
     return (
       <div ref={ref} className="wf-outline" data-state={state} data-wf-id={componentId}>
         {showAdd ? (
@@ -129,6 +150,14 @@ export function createSelectionOutline(onAdd: (at: InsertPoint) => void) {
           >
             +
           </button>
+        ) : null}
+        {spacing !== undefined && boxFields.length > 0 ? (
+          <SpacingHandles
+            nodeId={componentId}
+            fields={boxFields}
+            props={props}
+            onFieldDrag={spacing.onFieldDrag}
+          />
         ) : null}
       </div>
     );

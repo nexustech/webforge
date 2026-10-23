@@ -1,6 +1,7 @@
 import type { Viewport } from "@webforge/engine";
 import {
   type Breakpoint,
+  breakpointForWidth,
   isResponsiveValue,
   type Responsive,
   type ResponsiveValue,
@@ -8,18 +9,11 @@ import {
 } from "@webforge/model";
 
 /**
- * Where Tablet and Desktop start: Tailwind's `md` and `lg`, the classes `responsiveClasses` gives
- * the site, so a custom canvas width shows the values the page uses at that width.
+ * The device whose values the Edit panel shows for a canvas view: for a custom width, the values
+ * the page uses at that width.
  */
-const TABLET_FROM = 768;
-const DESKTOP_FROM = 1024;
-
-/** The device whose values the Edit panel shows for a canvas view. */
 export function breakpointOf(viewport: Viewport): Breakpoint {
-  if (typeof viewport !== "number") {
-    return viewport;
-  }
-  return viewport >= DESKTOP_FROM ? "desktop" : viewport >= TABLET_FROM ? "tablet" : "mobile";
+  return typeof viewport === "number" ? breakpointForWidth(viewport) : viewport;
 }
 
 const asResponsive = (value: unknown) => value as Responsive<unknown>;

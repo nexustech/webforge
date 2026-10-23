@@ -7,6 +7,7 @@ export type {
   EngineEdit,
   EngineEditKind,
   EnginePatch,
+  FieldDrag,
   HistoryCommand,
   HistoryCommandHandler,
   InsertPoint,
