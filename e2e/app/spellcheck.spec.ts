@@ -88,10 +88,16 @@ test("offers spelling suggestions inside rich text on the canvas (1.23)", async 
             range.setStart(node, index + 2);
             range.setEnd(node, index + 3);
             const box = range.getBoundingClientRect();
-            const frame = element.ownerDocument.defaultView?.frameElement?.getBoundingClientRect();
+            const frame = element.ownerDocument.defaultView?.frameElement as HTMLElement | null;
+            const place = frame?.getBoundingClientRect();
+            // The canvas is zoomed (to fit a small screen, #287): its points are scaled.
+            const scale =
+              frame !== null && frame !== undefined && place !== undefined && frame.offsetWidth > 0
+                ? place.width / frame.offsetWidth
+                : 1;
             return {
-              x: (frame?.x ?? 0) + box.x + box.width / 2,
-              y: (frame?.y ?? 0) + box.y + box.height / 2,
+              x: (place?.x ?? 0) + (box.x + box.width / 2) * scale,
+              y: (place?.y ?? 0) + (box.y + box.height / 2) * scale,
             };
           }
           return null;

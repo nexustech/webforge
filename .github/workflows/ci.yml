@@ -223,6 +223,24 @@ jobs:
         shell: pwsh
         run: Set-DisplayResolution -Width 1920 -Height 1080 -Force
 
+      - name: Screen size (macOS)
+        # The same on macOS where its screen offers it (#287): the first macOS run's window filled
+        # the screen at 1280 × 800, and the canvas zoomed out. Prints the screen either way.
+        if: runner.os == 'macOS'
+        continue-on-error: true
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: "1"
+          HOMEBREW_NO_INSTALL_CLEANUP: "1"
+        run: |
+          system_profiler SPDisplaysDataType | sed -n '/Displays:/,$p'
+          brew install displayplacer > /dev/null
+          displayplacer list
+          id=$(displayplacer list | awk '/^Persistent screen id:/ { print $4; exit }')
+          if displayplacer list | grep -q 'res:1920x1080'; then
+            displayplacer "id:$id res:1920x1080 origin:(0,0) degree:0"
+          fi
+          system_profiler SPDisplaysDataType | grep -i resolution
+
       - name: Allow the Chromium sandbox (Linux)
         # Ubuntu 24.04 restricts unprivileged user namespaces, which Electron's sandbox needs.
         if: runner.os == 'Linux'
