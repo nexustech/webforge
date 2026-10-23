@@ -35,8 +35,26 @@ function withSides(box: Box, sides: readonly string[], token: string): Box {
 export function BoxField({ id, labelId, field, value, onChange, onCommit }: FieldRendererProps) {
   const box = boxOf(value);
   const sides = field.sides ?? [];
-  const sizes = sides.map((side) => box[side.value] ?? DEFAULT);
-  const [same, setSame] = useState(() => sizes.every((size) => size === sizes[0]));
+  const sizesOf = (of: Box) => sides.map((side) => of[side.value] ?? DEFAULT);
+  const sizes = sizesOf(box);
+  const allSame = sizes.every((size) => size === sizes[0]);
+  const shown = sizes.join(" ");
+  // The mode goes with the sizes it was chosen for, and the sizes this field changed them to.
+  // Sizes from elsewhere (another element or device, Undo) start it afresh: every side at once if
+  // they are all the same.
+  const [mode, setMode] = useState<{
+    readonly same: boolean;
+    readonly shown: string;
+    readonly expected?: string;
+  }>({ same: allSame, shown });
+  const kept = mode.shown === shown || mode.expected === shown;
+  const same = kept ? mode.same : allSame;
+  if (mode.shown !== shown) setMode({ same, shown });
+  /** Reports `next`, keeping the mode for it. */
+  const change = (next: Box) => {
+    setMode({ same, shown, expected: sizesOf(next).join(" ") });
+    onChange(next);
+  };
   const options = [{ label: t("editPanel.box.default"), value: DEFAULT }, ...(field.options ?? [])];
 
   const choices = (
@@ -76,7 +94,7 @@ export function BoxField({ id, labelId, field, value, onChange, onCommit }: Fiel
             labelId={`${labelId} ${sameId}-label`}
             field={{ kind: "toggle", label: t("editPanel.box.same") }}
             value={same}
-            onChange={(next) => setSame(next === true)}
+            onChange={(next) => setMode({ same: next === true, shown })}
             onCommit={() => undefined}
           />
           <label id={`${sameId}-label`} htmlFor={sameId} className="text-xs text-muted-foreground">
@@ -85,18 +103,14 @@ export function BoxField({ id, labelId, field, value, onChange, onCommit }: Fiel
         </div>
       ) : null}
       {same || sides.length === 1
-        ? choices(
-            `${id}-all`,
-            labelId,
-            sizes.every((size) => size === sizes[0]) ? (sizes[0] ?? DEFAULT) : "",
-            (token) =>
-              onChange(
-                withSides(
-                  box,
-                  sides.map((side) => side.value),
-                  token,
-                ),
+        ? choices(`${id}-all`, labelId, allSame ? (sizes[0] ?? DEFAULT) : "", (token) =>
+            change(
+              withSides(
+                box,
+                sides.map((side) => side.value),
+                token,
               ),
+            ),
           )
         : sides.map((side, index) => {
             const sideId = `${id}-${side.value}`;
@@ -106,7 +120,7 @@ export function BoxField({ id, labelId, field, value, onChange, onCommit }: Fiel
                   {side.label}
                 </span>
                 {choices(sideId, `${labelId} ${sideId}-label`, sizes[index] ?? DEFAULT, (token) =>
-                  onChange(withSides(box, [side.value], token)),
+                  change(withSides(box, [side.value], token)),
                 )}
               </div>
             );

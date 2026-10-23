@@ -313,6 +313,38 @@ describe("EditPanelHost", () => {
       });
     });
 
+    it("shows each Section's and device's sides as they are, not the last one's (1.32)", async () => {
+      const { session, user } = setup("section-1");
+      act(() =>
+        session.edit("props", "Two sections", (draft) => {
+          const content = draft.pages[draft.homePageId]?.doc.content;
+          const first = content?.[0];
+          if (content === undefined || first === undefined) return;
+          first.props.padding = { $responsive: { desktop: { top: "m" }, mobile: {} } };
+          content.push({ type: "Section", props: { id: "section-2", padding: {} } });
+        }),
+      );
+      expect(
+        side("Padding Top").getByRole("radio", { name: "M" }).getAttribute("aria-checked"),
+      ).toBe("true");
+
+      // Every side the same on Mobile: one row for all of them.
+      act(() => session.ui.setState({ viewport: "mobile" }));
+      expect(screen.queryByRole("radiogroup", { name: "Padding Top" })).toBeNull();
+      act(() => session.ui.setState({ viewport: "desktop" }));
+      expect(side("Padding Top")).toBeDefined();
+
+      act(() => session.ui.setState({ nodeId: "section-2" }));
+      expect(screen.queryByRole("radiogroup", { name: "Padding Top" })).toBeNull();
+      await user.click(screen.getByRole("switch", { name: "Padding Same on every side" }));
+      act(() => session.ui.setState({ nodeId: "section-1" }));
+      expect(side("Padding Top")).toBeDefined();
+      act(() => session.ui.setState({ nodeId: "section-2" }));
+      expect(
+        side("Padding").getByRole("radio", { name: "Default" }).getAttribute("aria-checked"),
+      ).toBe("true");
+    });
+
     it("sets an element's margin above and below only (1.32)", async () => {
       const { labels, heading, user } = setup("heading-1");
       await user.click(screen.getByRole("tab", { name: "Style" }));

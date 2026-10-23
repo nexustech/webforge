@@ -335,6 +335,45 @@ describe("box renderer (1.32)", () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
+  it("keeps the mode for its own changes, and starts afresh for sizes from elsewhere", async () => {
+    const field = (value: unknown): EditPanelField => ({
+      name: "padding",
+      kind: "box",
+      label: "Padding",
+      group: "style",
+      value,
+      options: tokens,
+      sides,
+    });
+    const onChange = vi.fn();
+    const panel = (value: unknown) => (
+      <EditPanel heading="Section" fields={[field(value)]} onChange={onChange} onCommit={vi.fn()} />
+    );
+    const view = render(panel({ top: "m", bottom: "m" }));
+    const user = userEvent.setup();
+
+    // One side made like the others keeps the rows the user is working in.
+    await user.click(choices("Padding Left").getByRole("radio", { name: "M" }));
+    view.rerender(panel({ top: "m", bottom: "m", left: "m" }));
+    await user.click(choices("Padding Right").getByRole("radio", { name: "M" }));
+    view.rerender(panel({ top: "m", right: "m", bottom: "m", left: "m" }));
+    expect(choices("Padding Right")).toBeDefined();
+
+    // Another element (or device) with the same size on every side: one row.
+    view.rerender(panel({ top: "s", right: "s", bottom: "s", left: "s" }));
+    expect(screen.queryByRole("radiogroup", { name: "Padding Top" })).toBeNull();
+    expect(choices("Padding").getByRole("radio", { name: "S" }).getAttribute("aria-checked")).toBe(
+      "true",
+    );
+
+    // And one with mixed sizes: a row per side, not every side at once.
+    view.rerender(panel({ top: "none" }));
+    expect(screen.queryByRole("radiogroup", { name: "Padding" })).toBeNull();
+    expect(
+      choices("Padding Top").getByRole("radio", { name: "None" }).getAttribute("aria-checked"),
+    ).toBe("true");
+  });
+
   it("shows only the sides the field sets", () => {
     renderBox(
       { top: "s" },
