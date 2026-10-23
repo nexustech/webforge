@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import {
   copiedNodeId,
+  DEFAULT_THEME,
   type PageDoc,
   SHARED_COPY_TYPE,
   type SharedSectionId,
@@ -91,7 +92,7 @@ describe("selection tools (1.30, F-ED-25, F-ED-27)", () => {
       selected = id;
     });
     await act(async () => {
-      engine.mount(element, { library, theme: { name: "test" } });
+      engine.mount(element, { library, theme: { ...DEFAULT_THEME, preset: "test" } });
       engine.loadPage(page, { header: [], footer: [] });
     });
     await settle();
