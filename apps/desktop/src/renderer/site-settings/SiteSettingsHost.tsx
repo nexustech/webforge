@@ -1,5 +1,5 @@
 import { t } from "@webforge/i18n";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
 import type { EditorSession } from "../editor/editor-session.js";
 import { useCommandRegistry } from "../shell/command-context.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";

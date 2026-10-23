@@ -2,6 +2,7 @@ import { t } from "@webforge/i18n";
 import { useSyncExternalStore } from "react";
 import type { EditorSession } from "../editor/editor-session.js";
 import { sameValue } from "../editor/same-value.js";
+import { useUi } from "../editor/use-document.js";
 import { ElementMenu } from "../element-menu/ElementMenu.js";
 import { useCommand, useCommandRegistry } from "../shell/command-context.js";
 import type { PanelRegistry } from "../shell/panels.js";
@@ -77,16 +78,10 @@ export function registerLayersPanel(
     };
   };
 
-  const othersOf = () => ui.getState().others ?? NO_OTHERS;
-
   function Layers() {
     const layers = useSyncExternalStore(subscribe, currentLayers, currentLayers);
-    const selectedId = useSyncExternalStore(
-      ui.subscribe,
-      () => ui.getState().nodeId,
-      () => ui.getState().nodeId,
-    );
-    const alsoSelected = useSyncExternalStore(ui.subscribe, othersOf, othersOf);
+    const selectedId = useUi(session, (state) => state.nodeId);
+    const alsoSelected = useUi(session, (state) => state.others ?? NO_OTHERS);
     return (
       <LayersPanel
         layers={layers}

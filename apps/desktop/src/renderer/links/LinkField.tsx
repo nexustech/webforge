@@ -3,7 +3,7 @@ import { t } from "@webforge/i18n";
 import type { SiteDoc } from "@webforge/model";
 import { linkValue } from "@webforge/site-components";
 import { LinkIcon } from "lucide-react";
-import { useState, useSyncExternalStore } from "react";
+import { useState } from "react";
 import type { EditorSession } from "../editor/editor-session.js";
 import { sameValue } from "../editor/same-value.js";
 import { useDocument } from "../editor/use-document.js";

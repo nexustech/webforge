@@ -20,7 +20,7 @@ import {
 import { siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createEditorSession, currentPage } from "../editor/editor-session.js";
-import { selectElements, selectedIds } from "../editor/selection.js";
+import { selectedIds } from "../editor/selection.js";
 import { starterSite } from "../editor/starter-site.js";
 import { CommandRegistryProvider } from "../shell/command-context.js";
 import { createCommandRegistry, isMac } from "../shell/commands.js";

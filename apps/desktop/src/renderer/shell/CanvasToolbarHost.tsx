@@ -1,9 +1,8 @@
 import type { Viewport } from "@webforge/engine";
-import type { SiteDoc } from "@webforge/model";
 import { useSyncExternalStore } from "react";
 import type { CanvasPreferences } from "../../shared/ipc/prefs.js";
 import type { EditorSession } from "../editor/editor-session.js";
-import { pageListOf, useDocument } from "../editor/use-document.js";
+import { pageListOf, useDocument, useUi } from "../editor/use-document.js";
 import { CanvasToolbar } from "./CanvasToolbar.js";
 import type { CanvasView } from "./canvas-view.js";
 
@@ -28,11 +27,10 @@ export function CanvasToolbarHost({
   readonly canvas: CanvasPreferences;
   readonly onCanvasChange: (canvas: CanvasPreferences) => void;
 }) {
-  const { ui } = session;
   const zoom = useSyncExternalStore(view.subscribe, () => view.getState().zoom);
   const size = useSyncExternalStore(view.subscribe, () => view.getState().size);
-  const pageId = useSyncExternalStore(ui.subscribe, () => ui.getState().pageId);
-  const viewport = useSyncExternalStore(ui.subscribe, () => ui.getState().viewport);
+  const pageId = useUi(session, (state) => state.pageId);
+  const viewport = useUi(session, (state) => state.viewport);
   return (
     <CanvasToolbar
       pages={usePageList(session)}

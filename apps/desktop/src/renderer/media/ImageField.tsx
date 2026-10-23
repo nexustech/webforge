@@ -9,7 +9,7 @@ import {
 import { t } from "@webforge/i18n";
 import { type ImageMeta, type ImageValue, imageValueSchema, isImageMeta } from "@webforge/model";
 import { ImagePlusIcon } from "lucide-react";
-import { useEffect, useId, useState, useSyncExternalStore } from "react";
+import { useEffect, useId, useState } from "react";
 import { type MediaApi, mediaImageUrl } from "../../shared/ipc/media.js";
 import type { EditorSession } from "../editor/editor-session.js";
 import { useDocument } from "../editor/use-document.js";

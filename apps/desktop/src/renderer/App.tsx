@@ -3,7 +3,7 @@ import type { EditorMode } from "@webforge/engine";
 import { t } from "@webforge/i18n";
 import { siteLibrary } from "@webforge/site-components";
 import { PanelBottomIcon, PanelLeftIcon, PanelRightIcon } from "lucide-react";
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState } from "react";
 import { applyPreferencesChange } from "../shared/ipc/prefs.js";
 import type { ExportRequest } from "../shared/ipc/site.js";
 import type {

@@ -1,6 +1,5 @@
 import { t } from "@webforge/i18n";
 import type { PageId, SiteDoc } from "@webforge/model";
-import { useSyncExternalStore } from "react";
 import { copySelection, reachOf } from "../shared-sections/shared-sections.js";
 import type { EditorSession } from "./editor-session.js";
 import { pagesShowing, sharedRegionOf, shownLayout } from "./shared-layout.js";

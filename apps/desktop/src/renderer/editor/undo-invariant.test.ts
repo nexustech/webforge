@@ -53,7 +53,6 @@ import {
 import { createFakeEngine, type FakeEngine } from "./fake-engine.test-helper.js";
 import { applyListChange, editableList, listItems } from "./list-edit.js";
 import { withoutOverride, withValueAt } from "./responsive-value.js";
-import { selectElements } from "./selection.js";
 import { starterSite } from "./starter-site.js";
 
 // Undo invariant (U8) over the editor as wired: canvas edits of every kind on any page, page

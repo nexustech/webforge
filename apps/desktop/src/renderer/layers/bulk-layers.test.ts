@@ -8,7 +8,7 @@ import {
 import { siteLibrary } from "@webforge/site-components";
 import { describe, expect, it } from "vitest";
 import { createEditorSession, currentPage } from "../editor/editor-session.js";
-import { selectElements, selectedIds } from "../editor/selection.js";
+import { selectedIds } from "../editor/selection.js";
 import { starterSite } from "../editor/starter-site.js";
 import {
   deleteSelected,

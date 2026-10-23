@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { copiedNodeId, type MediaId, type PageDoc, type PageId } from "@webforge/model";
+import { copiedNodeId, type MediaId, type PageDoc } from "@webforge/model";
 import { type ComponentLibrary, siteLibrary } from "@webforge/site-components";
 import { Profiler } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
