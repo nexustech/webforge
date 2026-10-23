@@ -40,6 +40,11 @@ export type LayersPanelActions = {
   setHidden(id: string, hidden: boolean): void;
   /** Moves a layer to `index` among its siblings. */
   move(id: string, index: number): void;
+  /**
+   * Copies a layer to `index` among its siblings as they are now: a Ctrl/Cmd-drag, with Shift for
+   * another linked copy of a shared section (1.35, UX-4). Undefined where nothing can be copied.
+   */
+  copy?(id: string, index: number, linked: boolean): void;
   /** The canvas's own commands on the selected element (1.12); undefined while unavailable. */
   readonly moveUp: (() => void) | undefined;
   readonly moveDown: (() => void) | undefined;
@@ -300,15 +305,21 @@ export function LayersPanel({
   /** Whether the dragged layer can go next to `row`: only among its own siblings. */
   const canDropAt = (from: Row, row: Row) => from.parent === row.parent;
 
+  /** Whether a drag copies what it drags: Ctrl or Cmd held, as on the canvas (UX-4). */
+  const copying = (event: DragEvent) =>
+    actions.copy !== undefined && (event.ctrlKey || event.metaKey);
+
   const onDragOver = (event: DragEvent, row: Row) => {
     const from = dragged.current;
-    if (from === null || from.layer.id === row.layer.id) {
+    // A copy may go next to the layer it copies; a move to its own place changes nothing.
+    if (from === null || (from.layer.id === row.layer.id && !copying(event))) {
       return;
     }
     const allowed = canDropAt(from, row);
     const after = isAfter(event);
     if (allowed) {
       event.preventDefault();
+      event.dataTransfer.dropEffect = copying(event) ? "copy" : "move";
     } else {
       // Not a drop target: the pointer shows it can't go here, before anything is dropped.
       event.dataTransfer.dropEffect = "none";
@@ -322,10 +333,15 @@ export function LayersPanel({
     const from = dragged.current;
     event.preventDefault();
     setDrop(null);
-    if (from === null || !canDropAt(from, row) || from.layer.id === row.layer.id) {
+    if (from === null || !canDropAt(from, row)) {
       return;
     }
-    actions.move(from.layer.id, dropIndex(from.index, row.index, isAfter(event)));
+    if (copying(event)) {
+      // Next to the row it was dropped on, counted with the original still there.
+      actions.copy?.(from.layer.id, row.index + (isAfter(event) ? 1 : 0), event.shiftKey === true);
+    } else if (from.layer.id !== row.layer.id) {
+      actions.move(from.layer.id, dropIndex(from.index, row.index, isAfter(event)));
+    }
   };
 
   if (layers.length === 0) {
@@ -434,7 +450,8 @@ export function LayersPanel({
                 onDragStart={(event) => {
                   dragged.current = row;
                   setDragging(row);
-                  event.dataTransfer.effectAllowed = "move";
+                  event.dataTransfer.effectAllowed =
+                    actions.copy === undefined ? "move" : "copyMove";
                   event.dataTransfer.setData(DRAG_TYPE, layer.id);
                 }}
                 onDragEnd={() => {

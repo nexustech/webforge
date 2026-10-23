@@ -1,24 +1,16 @@
 import { type FontRef, fontRefSchema } from "@webforge/model";
 import { z } from "zod";
 import catalogueJson from "./catalogue.json" with { type: "json" };
-
-/**
- * The licences a font may have (C1): they allow bundling it with the app and the sites it makes.
- * `tools/src/build-font-catalogue.ts` refuses every other one, and so does this schema.
- */
-export const FONT_LICENCES = ["OFL-1.1", "Apache-2.0", "UFL-1.0"] as const;
+import {
+  FONT_CATEGORIES,
+  FONT_LICENCES,
+  FONT_SUBSETS,
+  fontIdSchema,
+  unicodeRangeSchema,
+} from "./plan.js";
 
 /** What the bundled fonts may add to the installer (2.2: a budget of about 10–15 MB). */
 export const FONT_BUDGET_BYTES = 15 * 1024 * 1024;
-
-/** The categories the font picker lists; `t("fonts.category.<category>")` names each. */
-export const FONT_CATEGORIES = [
-  "sans-serif",
-  "serif",
-  "display",
-  "handwriting",
-  "monospace",
-] as const;
 
 /** Whether `values` has none twice. */
 const unique = (values: readonly string[]) => new Set(values).size === values.length;
@@ -26,19 +18,20 @@ const unique = (values: readonly string[]) => new Set(values).size === values.le
 const fileSchema = z.strictObject({
   /** The file's name in its package's `files/` folder, and in an exported site's `assets/fonts/`. */
   file: z.string().regex(/^[a-z0-9-]+\.woff2$/),
-  subset: z.enum(["latin", "latin-ext"]),
+  subset: z.enum(FONT_SUBSETS),
   style: z.enum(["normal", "italic"]),
   /** The weight, or the range a variable font covers. */
   weight: z.union([z.number().int(), z.tuple([z.number().int(), z.number().int()])]),
   /** The subset's characters, as `@font-face`'s `unicode-range` takes them; nothing else fits. */
-  unicodeRange: z.string().regex(/^U\+[0-9A-Fa-f?-]+(?:,U\+[0-9A-Fa-f?-]+)*$/),
+  unicodeRange: unicodeRangeSchema,
   bytes: z.number().int().positive(),
   sha256: z.string().regex(/^[0-9a-f]{64}$/),
 });
 
-const familySchema = z.strictObject({
+/** A family as the catalogue lists it, and as the app keeps a downloaded one (2.2). */
+export const catalogueFontSchema = z.strictObject({
   /** Fontsource's id: `playfair-display`. */
-  id: z.string().regex(/^[a-z0-9-]+$/),
+  id: fontIdSchema,
   /** The CSS family name, as a theme's fonts store it. */
   family: fontRefSchema.shape.family,
   /** Where the font picker lists it (Fontsource's, or the catalogue's own for display fonts). */
@@ -57,7 +50,7 @@ const familySchema = z.strictObject({
 const catalogueSchema = z
   .strictObject({
     source: z.strictObject({ api: z.url(), files: z.url() }),
-    families: z.array(familySchema).min(1),
+    families: z.array(catalogueFontSchema).min(1),
     pairings: z.array(
       z.strictObject({ id: z.string().regex(/^[a-z-]+$/), heading: z.string(), body: z.string() }),
     ),
@@ -80,7 +73,7 @@ const catalogueSchema = z
   );
 
 /** A family the installer bundles (2.2): its name, licence, package and files. */
-export type CatalogueFont = z.infer<typeof familySchema>;
+export type CatalogueFont = z.infer<typeof catalogueFontSchema>;
 
 /** A tested pairing of a heading font and a body font, by family id. Its name is `t(fonts.pairing.<id>)`. */
 export type FontPairing = z.infer<typeof catalogueSchema>["pairings"][number];

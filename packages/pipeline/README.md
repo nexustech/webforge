@@ -13,7 +13,7 @@ Builds a self-contained static site from a `SiteSnapshot` and writes it to a fol
 
     Throws `BuildError` (`invalid-site`, `unknown-component`, `missing-font`). Broken page links are reported as warnings.
   - `writeSiteFolder(files, folder)`: writes to a staging folder and swaps it in. Replaces only an empty folder or one holding nothing but an earlier export (the `.webforge-export` marker lists the files it wrote), else throws `WriteError` (`folder-not-empty`, `write-failed`).
-  - `PipelineResources`, `compileCodecs(bytes)`: the files the pipeline needs, supplied by the caller (Tailwind stylesheets, the daisyUI plugin, jSquash WebAssembly codecs, and `readFont(face)` for the font files a site uses, which the build checks against the font catalogue's SHA-256). The catalogue's font packages are this package's dependencies; `loadNodeResources` reads them, and the desktop build copies them into the installer.
+  - `PipelineResources`, `compileCodecs(bytes)`: the files the pipeline needs, supplied by the caller (Tailwind stylesheets, the daisyUI plugin, jSquash WebAssembly codecs, and `readFont(face)` for the font files a site uses, which the build checks against the font catalogue's SHA-256). `fonts` adds the families downloaded on the computer (2.2) to the catalogue's; `buildSiteCss` takes them as its `fonts` option too. The catalogue's font packages are this package's dependencies; `loadNodeResources` reads them, and the desktop build copies them into the installer.
 - `@webforge/pipeline/node` (`src/node-resources.ts`): `loadNodeResources()` loads those resources from `node_modules`, for tests and Node scripts. The desktop app's export worker bundles them instead.
 
 ```ts

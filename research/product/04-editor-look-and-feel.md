@@ -40,7 +40,7 @@ Bootstrap Studio's window and the Webforge equivalent:
 |---|---|---|---|
 | **Title bar** (custom, frameless, 40 px) | Menu, New, Open, Save, Settings · Undo/Redo · central search box with design name · panel layout toggles · Preview / Export / Publish dropdowns · window controls | Same arrangement:<br>• Menu, **New**, **Open**, **save status** ("Saved" / "Saving…", click = Save version)<br>• Undo/Redo<br>• central **command palette** box showing site name<br>• left/right/bottom panel toggles<br>• **Design \| Content** mode toggle (M3)<br>• **Preview**, **Export**, **Publish** split-buttons<br>• window controls | Both |
 | **Left top** | Component library: tabs *Studio / Online*, search, collapsible categories | **Add panel**: tabs **Sections \| Elements**, search, categories (Headers, Heroes, Features, Testimonials, Pricing, Contact…), drag or click to insert | Both (hidden in Content mode) |
-| **Left bottom** | *Overview* (DOM tree) / *Assistant*; toolbar ↑ ↓ ← → duplicate · visibility · delete | **Layers** (tree, same toolbar) and **Undo History** tabs | Layers: Advanced. Undo History: both (T2) |
+| **Left bottom** | *Overview* (DOM tree) / *Assistant*; toolbar ↑ ↓ ← → duplicate · visibility · delete | **Layers** (tree, same toolbar), always shown under the column's **Add** and **Undo History** tabs ([ADR 0011](../../docs/adr/0011-layers-always-visible.md)) | Both, Layers included (T2) |
 | **Centre top** | Document tabs (one per open design) | Site tab (one site per window in MVP; tab strip kept for future) | Both |
 | **Canvas toolbar** | Zoom in/out, outlines, …, live size readout "1200px × 879px @ 100%", page dropdown, 6 device widths | Zoom, show outlines, size readout, **page dropdown**, **Desktop · Tablet · Mobile** (+ custom width) | Both |
 | **Canvas** | Dark radial gradient around a white page iframe; selection outlines; floating round **+** button | Same: dark gradient backdrop, page iframe with soft shadow, **magenta selection / hover outlines** with a small label chip, floating blue **+** (opens Add panel at the insertion point). *Corrected 2026-10-23 (UI6, LF-1/LF-2): flat backdrop, stage flush at the top without a shadow, **blue** (`--primary`) hover and selection; magenta is the grid outline of* Show outlines | Both |
@@ -157,7 +157,7 @@ These must be checked for WCAG AA contrast. Adjust light values where needed. Th
 |---|---|---|
 | Save button | "Saved" status + Save version | Periodic autosave (P2) |
 | Six device widths | Desktop · Tablet · Mobile (+ custom) | Simpler for DIY users (T1) |
-| Overview always visible | Layers in Advanced mode; Undo History visible in Simple mode | T2 |
+| Overview always visible | Layers always visible, under Add and Undo History, in Simple and Advanced mode | T2, [ADR 0011](../../docs/adr/0011-layers-always-visible.md) |
 | Appearance / Options / Animation | Content · Style · Advanced | Glossary (T1/T4) |
 | HTML / Styles drawer | Site Check (+ Code in Advanced) | Non-technical users (T1); X5 checks |
 | Design / Theme panel incl. Styles & JavaScript files | Site (Pages, Media, Fonts; Code in Advanced) / Theme | Simple mode hides code |

@@ -1,4 +1,5 @@
-import type { Theme } from "@webforge/model";
+import type { Theme, ThemeTokens } from "@webforge/model";
+import type { CatalogueFont } from "@webforge/themes";
 import type { IpcMain } from "electron";
 import { canvasStylesOutcomeSchema } from "../shared/export-worker-protocol.js";
 import type {
@@ -29,17 +30,23 @@ const COMPILE_TIMEOUT_MS = 60_000;
 /**
  * The canvas's styles, from one long-lived utility process (see {@link createWorkerRequests}), so
  * a recompile costs no process start: the site CSS (1.12) and the class catalogue (#276), which
- * loads Tailwind the same way. Anything unexpected, a timeout or an exit fails the request instead
+ * loads Tailwind the same way. `families` gives the downloaded fonts a theme uses (2.2), which the
+ * renderer never names itself. Anything unexpected, a timeout or an exit fails the request instead
  * of trusting it.
  */
 export function createCanvasStyles(
   startWorker: () => CssWorkerProcess,
   timeoutMs = COMPILE_TIMEOUT_MS,
+  families?: (theme: ThemeTokens) => Promise<CatalogueFont[]>,
 ): CanvasStyles {
   const request = createWorkerRequests(startWorker, canvasStylesOutcomeSchema, timeoutMs);
   return {
     compileCss: async (css) => {
-      const outcome = await request({ type: "compile-css", ...css });
+      const outcome = await request({
+        type: "compile-css",
+        ...css,
+        families: families === undefined ? [] : await families(css.theme),
+      });
       return outcome?.type === "css"
         ? { status: "compiled", css: outcome.css, bodyClass: outcome.bodyClass }
         : { status: "failed" };

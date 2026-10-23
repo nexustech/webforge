@@ -14,8 +14,10 @@ import {
   deleteSelected,
   duplicateSelected,
   moveSelected,
+  similarTo,
   toggleSelectedHidden,
 } from "./bulk-layers.js";
+import { copyLayer } from "./layers.js";
 
 const HOURS = "shared-hours" as SharedSectionId;
 const heading = (id: string, extra: Record<string, unknown> = {}): NodeDoc => ({
@@ -157,5 +159,79 @@ describe("bulk actions on several selected elements (1.31, UX-3)", () => {
     expect(page().map((node) => node.props.id)).toEqual(["s2", "c1"]);
     // One element left: it is named.
     expect(labels()).toEqual(["Deleted Section"]);
+  });
+});
+
+describe("Select similar (1.35)", () => {
+  it("finds the page's own elements of the same component, the one asked for first", () => {
+    const { session } = setUp();
+
+    expect(similarTo(session, "b")).toEqual(["b", "a", "c"]);
+    // Sections: the page's own, not the linked copy's.
+    expect(similarTo(session, "s2")).toEqual(["s2", "s1"]);
+  });
+
+  it("finds every linked copy of the same shared section", () => {
+    const { session } = setUp();
+    session.edit("insert", "Added a copy of 'Opening hours'", (draft) => {
+      draft.pages[draft.homePageId]?.doc.content.push({
+        type: SHARED_COPY_TYPE,
+        props: { id: "c2", sharedSectionId: HOURS },
+      });
+    });
+
+    expect(similarTo(session, COPY)).toEqual([COPY, copiedNodeId("c2", "s")]);
+  });
+
+  it("finds nothing for what isn't a layer: inside a linked copy, or the shared Header", () => {
+    const { session } = setUp();
+
+    expect(similarTo(session, copiedNodeId("c1", "t"))).toBeUndefined();
+    const header = session.history.document.getState().layout.header[0]?.props.id ?? "";
+    expect(similarTo(session, header)).toBeUndefined();
+  });
+});
+
+describe("copyLayer: Ctrl/Cmd-drag in Layers (1.35, UX-4)", () => {
+  it("copies a layer next to where it was dropped, with ids of its own, as one step", () => {
+    const { session, inS1, labels } = setUp();
+
+    copyLayer(session, "a", 3, false);
+
+    const ids = inS1();
+    expect(ids.slice(0, 3)).toEqual(["a", "b", "c"]);
+    expect(ids).toHaveLength(4);
+    const copy = ids[3] ?? "";
+    expect(copy).not.toBe("a");
+    expect(labels()).toEqual(["Duplicated Heading"]);
+    expect(session.ui.getState()).toMatchObject({ nodeId: copy, others: [] });
+    session.history.undo();
+    expect(inS1()).toEqual(["a", "b", "c"]);
+  });
+
+  it("places another linked copy with Shift, and the section as the page's own without", () => {
+    const { session, page, labels } = setUp();
+
+    copyLayer(session, COPY, 3, true);
+    const linked = page()[3];
+    expect(linked).toMatchObject({ type: SHARED_COPY_TYPE, props: { sharedSectionId: HOURS } });
+    expect(session.ui.getState().nodeId).toBe(copiedNodeId(linked?.props.id ?? "", "s"));
+
+    copyLayer(session, COPY, 0, false);
+    const own = page()[0];
+    expect(own?.type).toBe("Section");
+    expect(isSharedCopy(own as NodeDoc)).toBe(false);
+    expect(own?.props.id).not.toBe("s");
+    expect(labels()).toEqual(["Added a copy of 'Opening hours'", "Duplicated Section"]);
+  });
+
+  it("copies nothing that isn't a layer, or past the end of its list", () => {
+    const { session, labels } = setUp();
+
+    copyLayer(session, copiedNodeId("c1", "t"), 0, false);
+    copyLayer(session, "a", 4, false);
+    copyLayer(session, "gone", 0, false);
+
+    expect(labels()).toEqual([]);
   });
 });

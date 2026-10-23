@@ -1,0 +1,38 @@
+/** Marks the element the canvas is mounted in, which {@link PUCK_LAYOUT_CSS} is scoped to. */
+export const CANVAS_HOST_ATTRIBUTE = "data-webforge-canvas";
+
+/** Marks the one copy of {@link PUCK_LAYOUT_CSS} in a document. */
+const STYLE_ATTRIBUTE = "data-webforge-puck-layout";
+
+/**
+ * Hides Puck's own rail and sidebars (#274): Puck 0.23 always draws its plugin rail (Add, Layers,
+ * Fields), whose buttons open its sidebars again whatever `ui.leftSideBarVisible` says. The editor
+ * has its own Add panel (1.13), Layers (1.24) and Edit panel (1.14), so only Puck's canvas shows.
+ * Hidden rather than left out: rendering `<Puck>` with only its preview would also drop Puck's
+ * canvas, whose zoom and frame the engine uses. The rail's width goes to zero, so the canvas fills
+ * the editor's.
+ */
+const PUCK_LAYOUT_CSS = `
+[${CANVAS_HOST_ATTRIBUTE}] [class*="_PuckLayout-nav_"],
+[${CANVAS_HOST_ATTRIBUTE}] [class*="_Sidebar--left_"],
+[${CANVAS_HOST_ATTRIBUTE}] [class*="_Sidebar--right_"] {
+  display: none !important;
+}
+[${CANVAS_HOST_ATTRIBUTE}] [class*="_PuckLayout-inner_"] {
+  --puck-pluginbar-width: 0px !important;
+  --puck-sidebar-left-width: 0px !important;
+  --puck-sidebar-right-width: 0px !important;
+}
+`;
+
+/** Marks `host` as the canvas's and adds {@link PUCK_LAYOUT_CSS} to its document once. */
+export function hidePuckLayout(host: HTMLElement): void {
+  host.setAttribute(CANVAS_HOST_ATTRIBUTE, "");
+  const document = host.ownerDocument;
+  if (document.head.querySelector(`style[${STYLE_ATTRIBUTE}]`) === null) {
+    const style = document.createElement("style");
+    style.setAttribute(STYLE_ATTRIBUTE, "");
+    style.textContent = PUCK_LAYOUT_CSS;
+    document.head.append(style);
+  }
+}

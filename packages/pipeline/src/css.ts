@@ -1,5 +1,5 @@
 import type { ThemeTokens } from "@webforge/model";
-import { type FontFace, fontFacesFor, themeCss } from "@webforge/themes";
+import { type CatalogueFont, type FontFace, fontFacesFor, themeCss } from "@webforge/themes";
 import { compile } from "tailwindcss";
 import type { PipelineResources } from "./resources.js";
 
@@ -14,6 +14,8 @@ export type SiteCssOptions = {
   readonly candidates: readonly string[];
   /** Path from the CSS file to the fonts folder, e.g. `../fonts/`. */
   readonly fontsUrl: string;
+  /** The font families there are files for; see {@link PipelineResources.fonts}. */
+  readonly fonts?: readonly CatalogueFont[];
 };
 
 /**
@@ -47,7 +49,7 @@ export function siteStylesheetSource(options: SiteCssOptions): string {
     '@import "tailwindcss/preflight.css" layer(base);',
     '@import "tailwindcss/utilities.css" layer(utilities);',
     themeCss(options.theme),
-    fontFaces(fontFacesFor(options.theme), options.fontsUrl),
+    fontFaces(fontFacesFor(options.theme, options.fonts), options.fontsUrl),
   ]
     .filter((part) => part !== "")
     .join("\n");

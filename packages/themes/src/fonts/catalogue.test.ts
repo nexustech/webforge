@@ -6,10 +6,10 @@ import {
   catalogueFont,
   FONT_BUDGET_BYTES,
   FONT_CATALOGUE,
-  FONT_LICENCES,
   FONT_PAIRINGS,
   fontRefOf,
 } from "./catalogue.js";
+import { FONT_LICENCES } from "./plan.js";
 
 /** The UI's name for `key`, or undefined if the catalogue has none. */
 const nameOf = (key: string): string | undefined => t(key as MessageKey);
