@@ -6,6 +6,7 @@ import {
   CopyIcon,
   EyeIcon,
   EyeOffIcon,
+  Link2Icon,
   PencilIcon,
   Trash2Icon,
 } from "lucide-react";
@@ -160,6 +161,12 @@ export function LayersPanel({
         <div ref={treeRef} role="tree" aria-label={t("layers.title")} className="p-1">
           {rows.map((row) => {
             const { layer } = row;
+            const linked =
+              layer.sharedSection === undefined
+                ? undefined
+                : t("layers.linkedCopy", {
+                    name: t("history.namedItem", { name: layer.sharedSection }),
+                  });
             const isSelected = layer.id === selectedId;
             const focusable = isSelected || (selectedRow === undefined && row === rows[0]);
             return (
@@ -216,6 +223,13 @@ export function LayersPanel({
                   />
                 ) : (
                   <span className={cn("min-w-0 flex-1 truncate", layer.hidden && "line-through")}>
+                    {linked !== undefined && (
+                      // A linked copy of a shared section (F-ED-23): its section changes everywhere.
+                      <span title={linked}>
+                        <Link2Icon aria-hidden className="mr-1 inline size-3.5 align-[-2px]" />
+                        <span className="sr-only">{linked} </span>
+                      </span>
+                    )}
                     {layer.name === undefined ? (
                       layer.kind
                     ) : (

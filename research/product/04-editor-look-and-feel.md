@@ -45,7 +45,7 @@ Bootstrap Studio's window and the Webforge equivalent:
 | **Canvas** | Dark radial gradient around a white page iframe; selection outlines; floating round **+** button | Same: dark gradient backdrop, page iframe with soft shadow, **magenta selection / hover outlines** with a small label chip, floating blue **+** (opens Add panel at the insertion point) | Both |
 | **Bottom drawer** | *HTML* / *Styles* code editors | **Site Check** (Must fix · Should fix · Tips) and **Code** (Custom Code, Advanced) | Site Check: both. Code: Advanced |
 | **Right top** | Inspector tabs *Appearance / Options / Animation*; empty state "No components selected" | **Edit panel** tabs **Content \| Style \| Advanced**; empty state *"Select an element to edit it"* | Advanced tab: Advanced mode |
-| **Right bottom** | *Design* (Pages, Styles, JavaScript, Fonts, Images) / *Theme* | **Site** (Pages, Media, Fonts, Code ▸ Advanced) / **Theme** (preset, brand colours, fonts, roundness) | Both |
+| **Right bottom** | *Design* (Pages, Styles, JavaScript, Fonts, Images) / *Theme* | **Site** (Pages, Media, Code ▸ Advanced) / **Theme** (preset, brand colours, fonts, roundness; fonts moved here from Site on 23 Oct 2026) | Both |
 
 **Panel behaviour:**
 - Resizable splitters (react-resizable-panels, via shadcn *Resizable*).

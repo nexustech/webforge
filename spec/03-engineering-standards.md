@@ -97,7 +97,7 @@ Enforced in CI by dependency-cruiser:
 | **Component** | Vitest browser mode + Testing Library | Editor panels, dialogs, Edit panel fields; keyboard interaction | `packages/editor-ui` |
 | **Golden output** | Vitest snapshots | Exported HTML/CSS for each template is **byte-stable** and readable (X4); changes reviewed in PRs | `packages/pipeline/test/golden/` |
 | **Visual regression** | Playwright `toHaveScreenshot` over **Storybook stories** (in a pinned Linux container for stable fonts) | Every site component × 3 themes × Desktop/Mobile; templates' key pages | `e2e/visual/` |
-| **Accessibility** | @axe-core/playwright | All templates and components exported: zero serious/critical violations | `e2e/a11y/` |
+| **Accessibility** | @axe-core/playwright | All templates and components exported: zero serious/critical violations | `e2e/a11y/` for exported sites and templates (Phase 3); Storybook stories (editor UI and site components) are checked in `e2e/visual/` |
 | **E2E (app)** | Playwright `_electron` on Windows + macOS | Critical journeys: new site from template → edit text → change theme → undo/redo → add page → export → opens from disk; publish to a mocked Netlify; version restore; crash during save | `e2e/app/` |
 | **Exported-site compatibility** | Playwright Chromium/Firefox/WebKit with `file://` | Fonts, scripts, links work from disk; **network blocked → zero external requests** (C8) | `e2e/export/` |
 | **Performance** | `vitest bench` + Playwright traces | Budgets from [architecture §10](01-architecture.md#10-performance-targets); CI fails on >20% regression | `bench/` |

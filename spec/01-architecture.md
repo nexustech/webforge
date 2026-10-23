@@ -224,7 +224,7 @@ interface Publisher {
 - **Secrets never in `.wforge`.** Publish credentials live in the OS keychain via `safeStorage` (08).
 - **Untrusted projects:** validate the SQLite schema, use SQLite defensive mode, and custom scripts are off in the editor by default.
 - **Canvas iframe sandboxed;** no Node access anywhere in renderer contexts.
-- **Network:** the editor makes no network calls except updates, publishing, Netlify OAuth and user-initiated "Download and bundle" (C8).
+- **Network:** the editor makes no network calls except updates, publishing, Netlify OAuth, user-initiated "Download and bundle" (C8), and downloading a font the user picks from "Browse all fonts" (2.2; fonts are cached locally and self-hosted in exports).
 - **AI apps (MCP, F-AI-1):**
   - Off by default. When on, the server listens only on this computer (loopback or a local pipe; transport chosen by ADR).
   - **Pairing, not self-reported names:** Webforge issues a one-time code per AI app, which the user pastes into that app; the app then holds a token stored in the OS keychain on our side. Requests without a valid token are refused, and removing an app revokes it.

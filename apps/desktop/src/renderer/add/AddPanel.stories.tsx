@@ -1,4 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { t } from "@webforge/i18n";
+import type { SharedSectionId } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { userEvent, within } from "storybook/test";
 import { AddPanel } from "./AddPanel.js";
@@ -33,6 +35,21 @@ type Story = StoryObj<typeof meta>;
 
 /** Sections, by category. */
 export const Sections: Story = {};
+
+/** The site's shared sections first, each placed as a linked copy (F-ED-23). */
+export const SharedSections: Story = {
+  args: {
+    sections: [
+      ...(["Opening hours", "Testimonials"] as const).map((label, index) => ({
+        type: `shared-${index}`,
+        label,
+        category: t("add.sharedSections"),
+        sharedSectionId: `shared-${index}` as SharedSectionId,
+      })),
+      ...addItems(siteLibrary, "sections"),
+    ],
+  },
+};
 
 /** Opened by the canvas's +: the section chosen goes after the Hero. */
 export const AtThePlus: Story = { args: { point: { after: "Hero" } } };

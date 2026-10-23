@@ -59,6 +59,8 @@ export const panels = {
   "add.noSection": "Add a section first: elements go inside sections.",
   "add.noMatch": "Nothing matches '{query}'.",
   "add.other": "Other",
+  // The site's shared sections, listed first under Sections (1.29, F-ED-23).
+  "add.sharedSections": "Shared sections",
   "add.point.start": "Choose a section to add at the top of the page.",
   "add.point.after": "Choose a section to add after {item}.",
   "add.point.cancel": "Cancel",
@@ -70,6 +72,8 @@ export const panels = {
   "layers.show": "Show {item}",
   "layers.rename": "Rename",
   "layers.nameField": "Name for this {item}",
+  // A linked copy of a shared section, marked in Layers (1.29, F-ED-23).
+  "layers.linkedCopy": "Linked copy of {name}",
   "layers.history.renamed": "Renamed {item} to '{name}'",
   "layers.history.unnamed": "Removed the name of {item}",
   "layers.history.hid": "Hid {item}",

@@ -1,12 +1,22 @@
 import { t } from "@webforge/i18n";
-import { isNodeDoc, type NodeDoc, type PageDoc } from "@webforge/model";
+import {
+  copiedNodeId,
+  isNodeDoc,
+  isSharedCopy,
+  type NodeDoc,
+  type PageDoc,
+  type SharedCopyNode,
+  type SharedSectionsDoc,
+} from "@webforge/model";
 import type { ComponentLibrary } from "@webforge/site-components";
 import type { EditorSession } from "../editor/editor-session.js";
 import { findNode } from "../editor/nodes.js";
 
 /**
  * Layers (F-ED-12, Advanced): the shown page's sections and elements as a tree, and the changes the
- * Layers panel makes to them, each one labelled undo step that keeps the element selected.
+ * Layers panel makes to them, each one labelled undo step that keeps the element selected. A linked
+ * copy of a shared section is one layer, under the id the canvas shows its section by, so selecting
+ * either selects the other; its name and hidden state are the copy's own (F-ED-23).
  */
 
 /** One row of the Layers tree. */
@@ -18,6 +28,8 @@ export type Layer = {
   readonly name: string | undefined;
   readonly hidden: boolean;
   readonly children: readonly Layer[];
+  /** Set for a linked copy: the name of the shared section it shows (F-ED-23). */
+  readonly sharedSection?: string;
 };
 
 /** The longest layer name the model accepts. */
@@ -34,17 +46,48 @@ function slotsOf(node: NodeDoc, library: ComponentLibrary): NodeDoc[][] {
     });
 }
 
-/** The Layers tree of `nodes`: each node with the nodes in its slots as children. */
-export function layersOf(nodes: readonly NodeDoc[], library: ComponentLibrary): Layer[] {
-  return nodes.map((node) => {
-    const name = node.props.layerName?.trim();
-    return {
-      id: node.props.id,
-      kind: library.components[node.type]?.label ?? node.type,
-      name: name === "" ? undefined : name,
-      hidden: node.props.hidden === true,
-      children: slotsOf(node, library).flatMap((list) => layersOf(list, library)),
-    };
+/** The shared section a linked copy shows, if the site has it. */
+function sectionOf(shared: SharedSectionsDoc, copy: NodeDoc & SharedCopyNode) {
+  const id = copy.props.sharedSectionId;
+  return Object.hasOwn(shared, id) ? shared[id] : undefined;
+}
+
+/**
+ * The Layers tree of `nodes`: each node with the nodes in its slots as children. A linked copy is
+ * one layer, named after its shared section unless it has a name of its own; its section's elements
+ * are edited on the canvas. A copy of a shared section the site doesn't have shows nothing.
+ */
+export function layersOf(
+  nodes: readonly NodeDoc[],
+  library: ComponentLibrary,
+  shared: SharedSectionsDoc = {},
+): Layer[] {
+  return nodes.flatMap((node): Layer[] => {
+    const name = node.props.layerName?.trim() || undefined;
+    if (isSharedCopy(node)) {
+      const entry = sectionOf(shared, node);
+      if (entry === undefined) return [];
+      const { section } = entry;
+      return [
+        {
+          id: copiedNodeId(node.props.id, section.props.id),
+          kind: library.components[section.type]?.label ?? section.type,
+          name: name ?? entry.name,
+          hidden: node.props.hidden === true,
+          children: [],
+          sharedSection: entry.name,
+        },
+      ];
+    }
+    return [
+      {
+        id: node.props.id,
+        kind: library.components[node.type]?.label ?? node.type,
+        name,
+        hidden: node.props.hidden === true,
+        children: slotsOf(node, library).flatMap((list) => layersOf(list, library, shared)),
+      },
+    ];
   });
 }
 
@@ -78,22 +121,36 @@ function placeOf(
 /** The parts of an editor session the Layers panel uses. */
 export type LayersSession = Pick<EditorSession, "history" | "ui" | "edit" | "library">;
 
-/** The shown page and the layer `id` on it, before a change. */
+/** The page's own node for layer `id`: a linked copy for the id the canvas shows its section by. */
+function ownId(content: readonly NodeDoc[], shared: SharedSectionsDoc, id: string): string {
+  const copy = content.filter(isSharedCopy).find((node) => {
+    const section = sectionOf(shared, node)?.section;
+    return section !== undefined && copiedNodeId(node.props.id, section.props.id) === id;
+  });
+  return copy?.props.id ?? id;
+}
+
+/** The shown page and the layer `id` on it, before a change, with the page's own node for it. */
 function target(session: LayersSession, id: string) {
   const { pageId } = session.ui.getState();
-  const page: PageDoc | undefined = session.history.document.getState().pages[pageId]?.doc;
-  const node = page === undefined ? undefined : findNode(page.content, (n) => n.props.id === id);
+  const site = session.history.document.getState();
+  const page: PageDoc | undefined = site.pages[pageId]?.doc;
+  const own = page === undefined ? id : ownId(page.content, site.sharedSections, id);
+  const node = page === undefined ? undefined : findNode(page.content, (n) => n.props.id === own);
   if (node === undefined) {
     return undefined;
   }
-  const [layer] = layersOf([node], session.library);
-  return layer === undefined ? undefined : { pageId, layer };
+  const [layer] = layersOf([node], session.library, site.sharedSections);
+  return layer === undefined ? undefined : { pageId, layer, own };
 }
 
-/** Runs `change` on the node `id` of the shown page as one undo step. */
+/**
+ * Runs `change` on the page's own node `own` for layer `id` (which a step that selects selects) on
+ * the shown page, as one undo step.
+ */
 function editNode(
   session: LayersSession,
-  id: string,
+  { id, own }: { readonly id: string; readonly own: string },
   kind: "props" | "move",
   /** Whether the step selects the layer (a move does; a hide or rename leaves the selection). */
   select: boolean,
@@ -108,7 +165,7 @@ function editNode(
     label,
     (draft) => {
       const content = draft.pages[pageId]?.doc.content;
-      const place = content === undefined ? undefined : placeOf(content, id, session.library);
+      const place = content === undefined ? undefined : placeOf(content, own, session.library);
       const node = place?.list[place.index];
       if (place !== undefined && node !== undefined) {
         change(node, place);
@@ -129,11 +186,17 @@ export function renameLayer(session: LayersSession, id: string, name: string): v
   if (found === undefined || next === (found.layer.name ?? "")) {
     return;
   }
+  // A copy shows its shared section's name until it has one of its own: clearing it changes
+  // nothing then.
+  const named = found.layer.name === found.layer.sharedSection ? undefined : found.layer.name;
+  if (named === undefined && next === "") {
+    return;
+  }
   const label =
     next === ""
       ? t("layers.history.unnamed", { item: layerItem(found.layer) })
       : t("layers.history.renamed", { item: found.layer.kind, name: next });
-  editNode(session, id, "props", false, label, (node) => {
+  editNode(session, { id, own: found.own }, "props", false, label, (node) => {
     if (next === "") {
       delete node.props.layerName;
     } else {
@@ -149,7 +212,8 @@ export function setLayerHidden(session: LayersSession, id: string, hidden: boole
     return;
   }
   const key = hidden ? "layers.history.hid" : "layers.history.showed";
-  editNode(session, id, "props", false, t(key, { item: layerItem(found.layer) }), (node) => {
+  const at = { id, own: found.own };
+  editNode(session, at, "props", false, t(key, { item: layerItem(found.layer) }), (node) => {
     if (hidden) {
       node.props.hidden = true;
     } else {
@@ -166,7 +230,10 @@ export function moveLayer(session: LayersSession, id: string, index: number): vo
   const found = target(session, id);
   const content =
     session.history.document.getState().pages[session.ui.getState().pageId]?.doc.content;
-  const place = content === undefined ? undefined : placeOf(content, id, session.library);
+  const place =
+    content === undefined || found === undefined
+      ? undefined
+      : placeOf(content, found.own, session.library);
   if (
     found === undefined ||
     place === undefined ||
@@ -178,7 +245,7 @@ export function moveLayer(session: LayersSession, id: string, index: number): vo
   }
   editNode(
     session,
-    id,
+    { id, own: found.own },
     "move",
     true,
     t("history.moved", { item: layerItem(found.layer) }),
