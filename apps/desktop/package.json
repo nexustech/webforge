@@ -20,7 +20,6 @@
     "better-sqlite3": "catalog:"
   },
   "devDependencies": {
-    "@fontsource/inter": "catalog:",
     "@jsquash/jpeg": "catalog:",
     "@jsquash/png": "catalog:",
     "@jsquash/resize": "catalog:",

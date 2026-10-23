@@ -51,7 +51,8 @@ test.describe("exported site from disk", () => {
         .filter((font) => font.status === "loaded")
         .map((font) => `${font.family.replaceAll('"', "")} ${font.weight}`);
     });
-    expect(loadedFonts).toContain("Inter 700");
+    // Inter is a variable font (2.2): one file covers every weight.
+    expect(loadedFonts).toContain("Inter 100 900");
     const image = page.getByRole("img", { name: "Green hills under a morning sun" });
     await expect(image).toHaveJSProperty("complete", true);
     expect(await image.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);

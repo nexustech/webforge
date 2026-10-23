@@ -30,16 +30,40 @@ describe("classCandidates", () => {
 });
 
 describe("siteStylesheetSource", () => {
-  it("leaves out fonts when there are none", () => {
-    const source = siteStylesheetSource(
-      { ...resources, fonts: [] },
-      { theme: DEFAULT_THEME, candidates: [], fontsUrl: "../fonts/" },
-    );
+  it("leaves out fonts the catalogue doesn't have: the site shows their fallback", () => {
+    const fonts = {
+      heading: { family: "Comic Neue", fallback: "sans-serif" },
+      body: { family: "Comic Neue", fallback: "sans-serif" },
+    } as const;
+    const source = siteStylesheetSource({
+      theme: { ...DEFAULT_THEME, fonts },
+      candidates: [],
+      fontsUrl: "../fonts/",
+    });
 
     // The site's own theme, none of daisyUI's (2.1).
     expect(source).toContain('@plugin "daisyui" { themes: false; }');
     expect(source).toContain('name: "light";');
     expect(source).not.toContain("@font-face");
+  });
+
+  it("declares each face of the theme's fonts, by weight range and subset (2.2)", () => {
+    const source = siteStylesheetSource({
+      theme: DEFAULT_THEME,
+      candidates: [],
+      fontsUrl: "../fonts/",
+    });
+
+    // Inter is variable: one file per style and subset, for every weight.
+    expect(source).toContain(`@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("../fonts/inter-latin-wght-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131,`);
+    expect(source.match(/@font-face/g)).toHaveLength(4);
+    expect(source).toContain('url("../fonts/inter-latin-ext-wght-italic.woff2")');
   });
 });
 

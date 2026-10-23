@@ -7,6 +7,15 @@ const exportJobSchema = z.strictObject({
   snapshot: siteSnapshotSchema,
   /** Absolute path of the folder to write; chosen by the user in a native dialog. */
   destination: z.string().min(1),
+  /** The site's font files (2.2), read and checked by the main process: the worker reads none. */
+  fonts: z
+    .array(
+      z.strictObject({
+        file: z.string().regex(/^[a-z0-9-]+\.woff2$/),
+        data: z.instanceof(Uint8Array),
+      }),
+    )
+    .max(64),
 });
 
 /** What the main process asks the export worker to do. */

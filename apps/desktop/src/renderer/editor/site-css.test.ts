@@ -3,13 +3,10 @@ import { DEFAULT_THEME } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CanvasCssRequest, CanvasCssResult } from "../../shared/ipc/canvas.js";
-import { withCanvasFonts } from "./canvas-fonts.js";
 import { createEditorSession } from "./editor-session.js";
 import { createFakeEngine } from "./fake-engine.test-helper.js";
 import { connectSiteCss, SITE_CSS_DEBOUNCE_MS, siteClasses } from "./site-css.js";
 import { starterSite } from "./starter-site.js";
-
-const BASE = "file:///app/index.html";
 
 function setup(
   answer: (n: number) => CanvasCssResult = (n) => ({
@@ -27,7 +24,7 @@ function setup(
         answers.push(resolve);
       }),
   );
-  const stop = connectSiteCss(engine, session, compile, BASE);
+  const stop = connectSiteCss(engine, session, compile);
   /** Answers request `n` (0-based) and lets the promise settle. */
   const reply = async (n: number) => {
     answers[n]?.(answer(n));
@@ -191,7 +188,7 @@ describe("connectSiteCss", () => {
   it("handles a compile call that rejects, and tries again after the next change", async () => {
     const session = createEditorSession(siteLibrary, starterSite());
     const compile = vi.fn(() => Promise.reject(new Error("IPC failed")));
-    connectSiteCss(createFakeEngine(), session, compile, BASE);
+    connectSiteCss(createFakeEngine(), session, compile);
     await Promise.resolve();
 
     session.history.run("Changed site name", (draft) => {
@@ -224,24 +221,9 @@ describe("connectSiteCss", () => {
       async (_request: CanvasCssRequest): Promise<CanvasCssResult> => ({ status: "failed" }),
     );
 
-    connectSiteCss(createFakeEngine(), session, compile, BASE)();
+    connectSiteCss(createFakeEngine(), session, compile)();
 
     expect(compile).toHaveBeenCalledOnce();
     expect(compile.mock.calls[0]?.[0].candidates).toContain("site-section");
-  });
-});
-
-describe("withCanvasFonts", () => {
-  it("points known fonts at the editor's files, as absolute URLs, and leaves the others", () => {
-    const css = [
-      '@font-face { src: url("webforge-font:inter-latin-400-normal.woff2") format("woff2"); }',
-      '@font-face { src: url("webforge-font:unknown.woff2") format("woff2"); }',
-    ].join("\n");
-
-    const result = withCanvasFonts(css, BASE);
-
-    expect(result).not.toContain("webforge-font:inter-latin-400-normal.woff2");
-    expect(result).toMatch(/url\("[a-z]+:\/\/[^"]*inter-latin-400-normal[^"]*\.woff2"\)/);
-    expect(result).toContain('url("webforge-font:unknown.woff2")');
   });
 });
