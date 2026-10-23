@@ -19,10 +19,14 @@ const config: StorybookConfig = {
   },
   viteFinal: (viteConfig) => ({
     ...viteConfig,
-    // Compiled as the app compiles them (ADR 0010), so the stories show what the app draws.
+    // Compiled as the app compiles them (ADR 0010), so the stories show what the app draws: the
+    // same files as apps/desktop/electron.vite.config.ts, not node_modules or the site components.
     plugins: [
       ...(viteConfig.plugins ?? []),
-      babel({ presets: [reactCompilerPreset()] }),
+      babel({
+        presets: [reactCompilerPreset()],
+        exclude: [/[\\/]node_modules[\\/]/, /[\\/]packages[\\/]site-components[\\/]/],
+      }),
       tailwindcss(),
     ],
   }),
