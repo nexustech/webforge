@@ -134,6 +134,8 @@ const heading = defineComponent({
     margin: MARGIN_FIELD,
   },
   defaults: { text: t("element.heading"), size: "medium", color: "default" },
+  // Its level, which its size sets.
+  textStyle: (values) => HEADING_TAG[optionValue(values.size, SIZES)],
   render: ({ values, context }) => {
     const size = optionValue(values.size, SIZES);
     const Tag = HEADING_TAG[size];
@@ -160,6 +162,7 @@ const text = defineComponent({
     margin: MARGIN_FIELD,
   },
   defaults: { text: `<p>${t("element.text")}</p>` },
+  textStyle: () => "body",
   render: ({ values }) => (
     <div
       className={`site-text text-lg leading-relaxed [&_a]:underline [&_p+p]:mt-4${marginClasses(values.margin)}`}

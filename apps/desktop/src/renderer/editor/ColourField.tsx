@@ -30,14 +30,19 @@ const TEXT_PX: Readonly<Record<ThemeTokens["typeScale"][TextStyle]["size"], numb
 };
 
 /**
- * The least contrast WCAG AA asks of text in `style` (F-DS-2): 3:1 for large text (at least 24 px,
- * or 18.66 px when bold), 4.5:1 for any other, and for text whose style isn't known.
+ * The least contrast WCAG AA asks of text in `styles` (F-DS-2): 3:1 for large text (at least 24 px,
+ * or 18.66 px when bold), 4.5:1 for any other. Text set in several styles (a size per device)
+ * needs what its smallest needs; text whose style isn't known, 4.5:1.
  */
-export function contrastNeeded(theme: ThemeTokens, style: TextStyle | undefined): number {
-  if (style === undefined) return 4.5;
-  const { size, weight } = theme.typeScale[style];
-  const px = TEXT_PX[size];
-  return px >= 24 || (px >= 18.66 && weight >= 700) ? 3 : 4.5;
+export function contrastNeeded(theme: ThemeTokens, styles: readonly TextStyle[]): number {
+  if (styles.length === 0) return 4.5;
+  return Math.max(
+    ...styles.map((style) => {
+      const { size, weight } = theme.typeScale[style];
+      const px = TEXT_PX[size];
+      return px >= 24 || (px >= 18.66 && weight >= 700) ? 3 : 4.5;
+    }),
+  );
 }
 
 /**
@@ -51,10 +56,10 @@ export type ColourFieldContext = {
   readonly session: Pick<EditorSession, "history">;
   readonly contrastRatio?: ContrastRatio | undefined;
   /**
-   * The text style of the element being edited (a Heading's h2, a Text's body), which sets how much
-   * contrast it needs; the stricter 4.5:1 while it isn't known.
+   * The text styles of the element being edited (a Heading's h2, a Text's body; one per device if
+   * they differ), which set how much contrast it needs; the stricter 4.5:1 while none is known.
    */
-  readonly textStyle?: (() => TextStyle | undefined) | undefined;
+  readonly textStyles?: (() => readonly TextStyle[]) | undefined;
 };
 
 /** A theme colour as CSS, as daisyUI writes them. */
@@ -113,7 +118,7 @@ export function ColourField({
   onCommit,
   session,
   contrastRatio,
-  textStyle,
+  textStyles,
 }: FieldRendererProps & ColourFieldContext) {
   const theme = useSyncExternalStore(
     session.history.document.subscribe,
@@ -136,11 +141,11 @@ export function ColourField({
         onCommit();
       }}
       warning={
-        ratio === undefined || ratio >= contrastNeeded(theme, textStyle?.())
+        ratio === undefined || ratio >= contrastNeeded(theme, textStyles?.() ?? [])
           ? undefined
           : t("field.color.lowContrast", {
               ratio: ratio.toFixed(1),
-              needed: contrastNeeded(theme, textStyle?.()),
+              needed: contrastNeeded(theme, textStyles?.() ?? []),
             })
       }
     />

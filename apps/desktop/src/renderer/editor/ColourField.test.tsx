@@ -26,7 +26,7 @@ const contrastRatio: ContrastRatio = (colour) => (colour.l > 0.7 ? 1.9 : 9);
 function setUp(
   value: string,
   contrast: ContrastRatio | "none" = contrastRatio,
-  textStyle?: () => "h1" | "body",
+  textStyles?: () => readonly ("h1" | "body")[],
 ) {
   const session = createEditorSession(siteLibrary, starterSite());
   const onChange = vi.fn();
@@ -43,7 +43,7 @@ function setUp(
         onCommit={onCommit}
         session={session}
         contrastRatio={contrast === "none" ? undefined : contrast}
-        textStyle={textStyle}
+        textStyles={textStyles}
       />
     </>
   );
@@ -101,11 +101,11 @@ describe("ColourField (1.37, UX-25)", () => {
 
   it("asks less contrast of large text: a 3.5:1 colour is fine for a big heading, not for body text", () => {
     const fair: ContrastRatio = () => 3.5;
-    setUp("primary", fair, () => "h1");
+    setUp("primary", fair, () => ["h1"]);
     expect(screen.queryByText(/Hard to read/)).toBeNull();
     cleanup();
 
-    setUp("primary", fair, () => "body");
+    setUp("primary", fair, () => ["body"]);
     expect(screen.getByText(/contrast 3\.5:1, less than the 4\.5:1 this text needs/)).toBeTruthy();
   });
 });
@@ -119,11 +119,13 @@ describe("contrastNeeded (WCAG AA, F-DS-2)", () => {
     theme.typeScale.h5 = { size: "xl", weight: 600, leading: "normal" };
 
     // A small H6 needs the full 4.5:1, bold as it is; a large body style only 3:1.
-    expect(contrastNeeded(theme, "h6")).toBe(4.5);
-    expect(contrastNeeded(theme, "body")).toBe(3);
+    expect(contrastNeeded(theme, ["h6"])).toBe(4.5);
+    expect(contrastNeeded(theme, ["body"])).toBe(3);
     // 20 px is large only when bold.
-    expect(contrastNeeded(theme, "h4")).toBe(3);
-    expect(contrastNeeded(theme, "h5")).toBe(4.5);
-    expect(contrastNeeded(theme, undefined)).toBe(4.5);
+    expect(contrastNeeded(theme, ["h4"])).toBe(3);
+    expect(contrastNeeded(theme, ["h5"])).toBe(4.5);
+    expect(contrastNeeded(theme, [])).toBe(4.5);
+    // Large on one device and small on another: what the small one needs.
+    expect(contrastNeeded(theme, ["body", "h6"])).toBe(4.5);
   });
 });

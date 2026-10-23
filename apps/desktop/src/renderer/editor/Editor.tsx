@@ -8,6 +8,7 @@ import {
   type ViewOptions,
 } from "@webforge/engine";
 import { t } from "@webforge/i18n";
+import { textStylesOf } from "@webforge/site-components";
 import { type RefObject, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { createStore } from "zustand/vanilla";
 import {
@@ -57,6 +58,7 @@ import {
   runHistoryCommand,
 } from "./editor-session.js";
 import { connectFieldDrags } from "./field-drag.js";
+import { fieldTarget } from "./field-target.js";
 import { SharedRegionBanner } from "./SharedRegionBanner.js";
 import { confirmSharedRemovals, sharedCutConfirmation } from "./shared-confirmations.js";
 import { shownLayout } from "./shared-layout.js";
@@ -448,7 +450,25 @@ export function Editor({
   useEffect(() => registerImageField({ session }), [session]);
   // Colour fields show the theme's own colours (1.37, UX-25); the contrast warning comes with the
   // themes package's contrast helper (2.1).
-  useEffect(() => registerColourField({ session }), [session]);
+  useEffect(
+    () =>
+      registerColourField({
+        session,
+        // The selected element's text styles, wherever it is (the page, the shared Header or
+        // Footer, a linked copy), as the Edit panel finds it.
+        textStyles: () => {
+          const { pageId, nodeId } = session.ui.getState();
+          const target = fieldTarget(
+            session.history.document.getState(),
+            session.library,
+            pageId,
+            nodeId,
+          );
+          return target === undefined ? [] : textStylesOf(target.node, session.library);
+        },
+      }),
+    [session],
+  );
   useEffect(() => registerLinkField({ session }), [session]);
 
   return (

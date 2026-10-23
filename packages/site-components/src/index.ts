@@ -31,6 +31,7 @@ export {
   responsiveClasses,
   slotComponent,
   stringValue,
+  textStylesOf,
   textValue,
   withAdvanced,
 } from "./library.js";
