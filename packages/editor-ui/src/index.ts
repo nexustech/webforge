@@ -92,6 +92,7 @@ export {
   MenubarSubTrigger,
   MenubarTrigger,
 } from "./components/ui/menubar.js";
+export { Picker, type PickerItem, type PickerProps } from "./components/ui/picker.js";
 export {
   ResizableHandle,
   type ResizableLayout,
