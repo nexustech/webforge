@@ -90,7 +90,11 @@ const currentProject = (page: Page) =>
     (window as unknown as { webforge: { project: ProjectApi } }).webforge.project.getCurrent(),
   );
 
+/** The open site as `project.getCurrent` reports it; each opening has its own session id (R6). */
 const summary = (name: string) => ({
+  sessionId: expect.stringMatching(
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+  ),
   name,
   fileName: `${name}.wforge`,
   formatVersion: 1,
