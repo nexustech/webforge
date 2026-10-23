@@ -72,7 +72,9 @@ describe("Picker (UX-15)", () => {
     // Shown in the list, and read out by the status.
     expect(screen.getAllByText("Nothing matches 'places zzz'.")).toHaveLength(2);
     expect(screen.getByRole("button", { name: "Choose" })).toHaveProperty("disabled", true);
-  });
+    // Twenty keystrokes, each redrawing the dialog: about a second alone, more beside the whole
+    // suite's other tests.
+  }, 15_000);
 
   it("shows one category at a time", async () => {
     const { opener, options } = setUp();
