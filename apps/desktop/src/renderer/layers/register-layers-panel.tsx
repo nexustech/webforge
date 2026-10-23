@@ -115,10 +115,9 @@ export function registerLayersPanel(
 
   return panels.register({
     id: "layers",
-    slot: "left.bottom",
+    // Always shown, under Add and Undo History, in Simple and Advanced mode (ADR 0011).
+    slot: "left.lower",
     title: t("layers.title"),
-    advancedOnly: true,
-    order: -1,
     component: Layers,
   });
 }

@@ -105,10 +105,7 @@ test("places a copy from the Add panel, asks before deleting inside one, marks c
   await page.keyboard.press("ControlOrMeta+z");
   await expect(headings()).toHaveCount(2);
 
-  // Layers marks both copies (Advanced mode).
-  await page.getByRole("menuitem", { name: "View" }).click();
-  await page.getByRole("menuitem", { name: "Use Advanced Mode" }).click();
-  await left().getByRole("tab", { name: "Layers" }).click();
+  // Layers marks both copies.
   const copies = () =>
     left()
       .getByRole("tree", { name: "Layers" })

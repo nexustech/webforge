@@ -12,6 +12,7 @@ import { CanvasToolbar } from "./CanvasToolbar.js";
 import { CanvasToolbarHost } from "./CanvasToolbarHost.js";
 import { viewportFor, widthOf } from "./canvas-size.js";
 import { type CanvasZoom, connectCanvasView, createCanvasView } from "./canvas-view.js";
+import { openedDialog } from "./opened-dialog.test-helper.js";
 
 afterEach(cleanup);
 
@@ -278,7 +279,8 @@ describe("View menu and devices (F-ED-25)", () => {
 
     await user().click(screen.getByRole("button", { name: "Devices" }));
     await user().click(screen.getByRole("menuitem", { name: "Add device…" }));
-    const dialog = within(await screen.findByRole("dialog", { name: "Add a device" }));
+    // It opens as the menu closes: wait until it takes clicks.
+    const dialog = await openedDialog("Add a device");
     await user().type(dialog.getByRole("textbox", { name: "Name" }), "Kiosk");
     await user().type(dialog.getByRole("spinbutton", { name: "Width in pixels" }), "1080");
     await user().type(dialog.getByRole("spinbutton", { name: "Height in pixels" }), "100");

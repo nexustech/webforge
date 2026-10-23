@@ -46,7 +46,7 @@ function setUp(site: SiteDoc = starterSite()) {
 }
 
 describe("registerLayersPanel", () => {
-  it("adds Layers before Undo History, in Advanced mode only (T2)", () => {
+  it("adds Layers under the left column's tabs, in Simple and Advanced mode (ADR 0011)", () => {
     const { panels, remove } = setUp();
     panels.register({
       id: "undoHistory",
@@ -55,13 +55,13 @@ describe("registerLayersPanel", () => {
       component: () => null,
     });
 
+    // Not a tab beside Undo History: a pane of its own, shown with it.
     expect(panelsInSlot(panels.list(), "left.bottom", "simple").map((p) => p.id)).toEqual([
       "undoHistory",
     ]);
-    expect(panelsInSlot(panels.list(), "left.bottom", "advanced").map((p) => p.id)).toEqual([
-      "layers",
-      "undoHistory",
-    ]);
+    for (const level of ["simple", "advanced"] as const) {
+      expect(panelsInSlot(panels.list(), "left.lower", level).map((p) => p.id)).toEqual(["layers"]);
+    }
     remove();
     expect(panels.list().map((p) => p.id)).toEqual(["undoHistory"]);
   });
