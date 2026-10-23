@@ -49,6 +49,7 @@ import type {
   Viewport,
 } from "../canvas-engine.js";
 import { installHistoryKeys } from "../history-keys.js";
+import { installMenuKeys } from "../menu-keys.js";
 import { preserveCaret, refocusRichText } from "./caret.js";
 import {
   applyChromeStyles,
@@ -887,10 +888,13 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
         enabled: () => mode === "design",
         selected: () => selection,
       });
+      // Shift+F10 on macOS too (#287).
+      const removeMenuKeys = installMenuKeys(frameWindow.document);
       return () => {
         showDeleteKeys();
         stopDragKeys();
         removeMenu();
+        removeMenuKeys();
         stopClicks();
         stopKeepingEnabled?.();
         stopKeepingEnabled = null;

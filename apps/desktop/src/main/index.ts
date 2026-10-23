@@ -585,10 +585,10 @@ app.on("will-quit", () => {
   projectSession.close();
 });
 
+// Webforge quits when its window closes, on macOS too (spec/02 §1, #287): it's a one-window app,
+// and one left in the Dock with no window looks broken to the people it's for.
 app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") {
-    app.quit();
-  }
+  app.quit();
 });
 
 // No top-level await: Electron emits "ready" only after the ESM entry module has finished

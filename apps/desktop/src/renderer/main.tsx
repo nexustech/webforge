@@ -1,3 +1,4 @@
+import { installMenuKeys } from "@webforge/engine";
 import { t } from "@webforge/i18n";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
@@ -15,6 +16,8 @@ if (container === null) {
 }
 
 document.title = t("app.name");
+// Shift+F10 opens context menus on macOS too, as it does on Windows (#287).
+installMenuKeys(document);
 const [info, preferences, loaded, uiState] = await Promise.all([
   window.webforge.app.getInfo(),
   window.webforge.prefs.get(),
