@@ -13,7 +13,7 @@ import {
   mediaUsedBy,
   type RenderContext,
   type ResolvedImage,
-  renderNodesToHtml,
+  renderPage,
   UnknownComponentError,
 } from "@webforge/site-components";
 import { buildSiteCss, classCandidates } from "./css.js";
@@ -209,15 +209,13 @@ export async function buildSite(
       // An empty binding has no emptySetting here: the export leaves it out (1.17).
       setting: (key) => site.settings?.[key],
     };
-    return {
-      page,
-      prefix,
-      header:
-        page.hideHeader === true ? "" : renderNodesToHtml(site.layout.header, library, context),
-      main: renderNodesToHtml(page.doc.content, library, context),
-      footer:
-        page.hideFooter === true ? "" : renderNodesToHtml(site.layout.footer, library, context),
+    // The same renderer as the canvas engine's renderStatic (ADR 0005).
+    const regions = {
+      header: page.hideHeader === true ? [] : site.layout.header,
+      content: page.doc.content,
+      footer: page.hideFooter === true ? [] : site.layout.footer,
     };
+    return { page, prefix, ...renderPage(regions, library, context) };
   });
 
   const markup = rendered.flatMap((entry) => [entry.header, entry.main, entry.footer]);

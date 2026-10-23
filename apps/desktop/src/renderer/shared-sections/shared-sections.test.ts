@@ -21,6 +21,7 @@ import {
   renameSharedSection,
   savableSection,
   saveAsSharedSection,
+  sharedSection,
   updateSectionField,
 } from "./shared-sections.js";
 
@@ -248,6 +249,17 @@ describe("shared sections in the editor (1.29, F-ED-23)", () => {
     // Only an element of a copy can be detached.
     select(session, null);
     expect(detachCopy(session)).toBe(false);
+  });
+
+  it("finds a shared section the site has as its own, never an object's built-in key", () => {
+    const session = savedSession();
+    const { id } = theShared(session);
+
+    expect(sharedSection(site(session), id)?.name).toBe("Hours");
+    // A plain lookup would give Object's own function here (Stream A's #199 review).
+    for (const key of ["constructor", "toString", "__proto__"]) {
+      expect(sharedSection(site(session), key as SharedSectionId)).toBeUndefined();
+    }
   });
 
   it("refuses a name another shared section has, whatever its capitals or spaces", () => {

@@ -6,7 +6,6 @@ import {
   type Overrides,
   Puck,
   type PuckAction,
-  Render,
   useGetPuck,
 } from "@puckeditor/core";
 // Puck's default stylesheet loads the Inter font from rsms.me; Webforge makes no external requests.
@@ -24,10 +23,10 @@ import {
   type ComponentLibrary,
   EDITOR_RENDER_CONTEXT,
   type RenderContext,
+  renderPage,
 } from "@webforge/site-components";
 import { type ComponentProps, type ReactNode, useEffect } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { renderToStaticMarkup } from "react-dom/server";
 import type {
   CanvasEngine,
   CanvasSize,
@@ -857,15 +856,18 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       render();
     },
 
-    renderStatic(staticPage, _staticLayout, staticShared = {}) {
-      if (config === null) {
+    renderStatic(staticPage, staticLayout, staticShared = {}, context = EDITOR_RENDER_CONTEXT) {
+      if (library === null) {
         throw new Error("Mount the canvas engine before rendering pages");
       }
-      // Linked copies inline, as their shared sections (F-ED-23).
-      const content = expandSharedCopies(staticPage.content, staticShared);
-      return renderToStaticMarkup(
-        <Render config={config} data={toPuckData({ ...staticPage, content })} />,
-      );
+      // The export's renderer (ADR 0005), linked copies inline as their shared sections (F-ED-23).
+      const regions = {
+        header: staticLayout.header,
+        content: expandSharedCopies(staticPage.content, staticShared),
+        footer: staticLayout.footer,
+      };
+      const { header, main, footer } = renderPage(regions, library, context);
+      return `${header}${main}${footer}`;
     },
 
     destroy() {

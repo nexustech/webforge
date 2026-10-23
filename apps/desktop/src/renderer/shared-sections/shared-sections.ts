@@ -42,8 +42,8 @@ export type CopySelection = {
   readonly node: NodeDoc;
 };
 
-/** The shared section `id`, if the site has it. */
-function sharedSection(site: SiteDoc, id: SharedSectionId): SharedSection | undefined {
+/** The shared section `id`, if the site has it as its own (never `constructor` and the like). */
+export function sharedSection(site: SiteDoc, id: SharedSectionId): SharedSection | undefined {
   return Object.hasOwn(site.sharedSections, id) ? site.sharedSections[id] : undefined;
 }
 

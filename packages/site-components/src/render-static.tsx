@@ -171,6 +171,35 @@ function StaticNode(props: { readonly node: NodeDoc; readonly rendering: Renderi
   return <>{renderNode(props.node, props.rendering)}</>;
 }
 
+/** A page as static HTML: the Header and Footer it shows, and its own content. */
+export type RenderedPage = {
+  readonly header: string;
+  readonly main: string;
+  readonly footer: string;
+};
+
+/**
+ * Renders a page to static HTML (ADR 0005): its `content`, and the `header` and `footer` it shows
+ * (none where its Page Settings hide them), each with {@link renderNodesToHtml}. The one static
+ * renderer: the export builds every page with it, and the canvas engine's `renderStatic` gives its
+ * HTML, so the two never differ.
+ */
+export function renderPage(
+  regions: {
+    readonly header: readonly NodeDoc[];
+    readonly content: readonly NodeDoc[];
+    readonly footer: readonly NodeDoc[];
+  },
+  library: ComponentLibrary,
+  context: RenderContext,
+): RenderedPage {
+  return {
+    header: renderNodesToHtml(regions.header, library, context),
+    main: renderNodesToHtml(regions.content, library, context),
+    footer: renderNodesToHtml(regions.footer, library, context),
+  };
+}
+
 /**
  * Renders a list of nodes (a page's content, or the Header or Footer) to static HTML, without any
  * editor wrappers, and without hidden nodes unless `options.includeHidden`. Throws
