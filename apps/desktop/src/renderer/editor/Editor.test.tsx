@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { copiedNodeId, newSharedCopy } from "@webforge/model";
+import { copiedNodeId, newSharedCopy, type SharedSectionId } from "@webforge/model";
 import { siteLibrary, starterPage } from "@webforge/site-components";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { saveAsSharedSection } from "../shared-sections/shared-sections.js";
 import { CommandRegistryProvider } from "../shell/command-context.js";
 import { type CommandRegistry, createCommandRegistry } from "../shell/commands.js";
+import { createSiteWideConfirm } from "../shell/confirm-site-wide.js";
 import { PanelRegistryProvider, usePanels } from "../shell/panel-context.js";
 import { createPanelRegistry, type PanelRegistry } from "../shell/panels.js";
 import { Editor } from "./Editor.js";
@@ -142,7 +143,72 @@ describe("Editor", () => {
     expect(session.history.entries().at(-1)?.label).toBe("Detached 'Opening hours'");
   });
 
-  it("turns Save as shared section and Detach off in Content mode (M3)", async () => {
+  it("renames a shared section, refusing a name in use, and deletes it after asking (D7)", async () => {
+    const siteWide = createSiteWideConfirm();
+    await act(async () =>
+      root.render(
+        <CommandRegistryProvider registry={registry}>
+          <PanelRegistryProvider registry={panels}>
+            <Editor
+              session={session}
+              createEngine={createEngine}
+              compileCss={compileCss}
+              siteWide={siteWide}
+            />
+          </PanelRegistryProvider>
+        </CommandRegistryProvider>,
+      ),
+    );
+    await act(async () => {
+      session.ui.setState({ nodeId: "section-1" });
+      saveAsSharedSection(session, "Welcome");
+    });
+    await act(async () =>
+      session.edit("props", "Added a shared section", (draft) => {
+        const [welcome] = Object.values(draft.sharedSections);
+        const other = "shared-team" as SharedSectionId;
+        if (welcome !== undefined)
+          draft.sharedSections[other] = { ...welcome, id: other, name: "Team" };
+      }),
+    );
+    expect(enabled("edit.renameSharedSection")).toBe(true);
+    expect(enabled("edit.deleteSharedSection")).toBe(true);
+
+    await act(async () => registry.run("edit.renameSharedSection"));
+    const input = document.querySelector<HTMLInputElement>('[role="dialog"] input');
+    expect(input?.value).toBe("Welcome");
+    const type = (value: string) =>
+      act(async () => {
+        if (input === null) return;
+        const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+        setValue?.call(input, value);
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+    const confirm = () =>
+      document.querySelector<HTMLButtonElement>('[role="dialog"] button[type="submit"]');
+    await type(" TEAM ");
+    expect(document.querySelector('[role="dialog"]')?.textContent).toContain(
+      "A shared section called 'Team' already exists",
+    );
+    expect(confirm()?.disabled).toBe(true);
+    await type("Opening hours");
+    expect(confirm()?.disabled).toBe(false);
+    await act(async () => confirm()?.click());
+    expect(session.history.entries().at(-1)?.label).toBe("Renamed 'Welcome' to 'Opening hours'");
+
+    await act(async () => registry.run("edit.deleteSharedSection"));
+    expect(siteWide.current()).toMatchObject({
+      action: "Delete shared section 'Opening hours'?",
+      affectedPages: 1,
+    });
+    await act(async () => siteWide.answer(true));
+    const site = session.history.document.getState();
+    expect(Object.values(site.sharedSections).map((shared) => shared.name)).toEqual(["Team"]);
+    expect(session.history.entries().at(-1)?.label).toBe("Deleted shared section 'Opening hours'");
+    expect(enabled("edit.deleteSharedSection")).toBe(false);
+  });
+
+  it("turns the shared-section commands off in Content mode (M3)", async () => {
     await act(async () =>
       root.render(
         <CommandRegistryProvider registry={registry}>
@@ -160,6 +226,13 @@ describe("Editor", () => {
     await act(async () => session.ui.setState({ nodeId: "section-1" }));
 
     expect(enabled("edit.saveSharedSection")).toBe(false);
+    // Nor anything else that changes shared sections; edits in a copy's content still work.
+    await act(async () => {
+      saveAsSharedSection(session, "Welcome");
+    });
+    for (const id of ["rename", "detach", "delete"]) {
+      expect(enabled(`edit.${id}SharedSection`)).toBe(false);
+    }
   });
 
   it("says how many pages a change reaches while a shared element is selected (F-ED-7)", async () => {

@@ -258,4 +258,24 @@ describe("registerAddPanel", () => {
     act(() => session.history.undo());
     expect(screen.queryByRole("list", { name: "Shared sections" })).toBeNull();
   });
+
+  it("renames and deletes a shared section from its menu, opening each once the menu has closed (1.29)", async () => {
+    const session = createEditorSession(siteLibrary, withHours());
+    const panels = createPanelRegistry();
+    const sharedActions = { rename: vi.fn(), remove: vi.fn() };
+    registerAddPanel(panels, session, { sharedActions });
+    render(<Host panels={panels} />);
+    const user = userEvent.setup();
+
+    await user.click(button("Actions for Opening hours"));
+    await user.click(screen.getByRole("menuitem", { name: "Rename…" }));
+    expect(sharedActions.rename).toHaveBeenCalledWith(HOURS);
+    expect(screen.queryByRole("menu")).toBeNull();
+
+    await user.click(button("Actions for Opening hours"));
+    await user.click(screen.getByRole("menuitem", { name: "Delete…" }));
+    expect(sharedActions.remove).toHaveBeenCalledWith(HOURS);
+    // The library's sections have no such menu.
+    expect(screen.queryByRole("button", { name: "Actions for Hero" })).toBeNull();
+  });
 });

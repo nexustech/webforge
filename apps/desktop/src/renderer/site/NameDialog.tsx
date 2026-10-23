@@ -25,6 +25,8 @@ export type NameDialogProps = {
   readonly describe?: (value: string) => string;
   /** The longest name the field takes. */
   readonly maxLength?: number;
+  /** Why a name can't be used, if it can't: said under the field, with the confirm button off. */
+  readonly problem?: (value: string) => string | undefined;
   /** Called with the trimmed name; never with an empty one. */
   readonly onSubmit: (value: string) => void;
   readonly onCancel: () => void;
@@ -58,6 +60,7 @@ function NameForm({
   confirm,
   describe,
   maxLength = 200,
+  problem,
   onSubmit,
   onCancel,
 }: Omit<NameDialogProps, "open">) {
@@ -65,12 +68,14 @@ function NameForm({
   const fieldId = useId();
   const hintId = useId();
   const name = value.trim();
+  const issue = name === "" ? undefined : problem?.(name);
+  const hint = issue ?? (describe === undefined ? undefined : name === "" ? " " : describe(name));
   return (
     <form
       className="grid gap-3"
       onSubmit={(event) => {
         event.preventDefault();
-        if (name !== "") {
+        if (name !== "" && issue === undefined) {
           onSubmit(name);
         }
       }}
@@ -91,12 +96,18 @@ function NameForm({
           autoFocus
           onFocus={(event) => event.currentTarget.select()}
           onChange={(event) => setValue(event.currentTarget.value)}
-          aria-describedby={describe === undefined ? undefined : hintId}
+          aria-describedby={hint === undefined ? undefined : hintId}
+          aria-invalid={issue !== undefined}
           className="h-7 w-full rounded-md border border-border bg-input px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
         />
-        {describe !== undefined && (
-          <p id={hintId} className="text-xs text-muted-foreground">
-            {name === "" ? " " : describe(name)}
+        {hint !== undefined && (
+          <p
+            id={hintId}
+            className={
+              issue === undefined ? "text-xs text-muted-foreground" : "text-xs text-destructive"
+            }
+          >
+            {hint}
           </p>
         )}
       </div>
@@ -104,7 +115,7 @@ function NameForm({
         <Button type="button" variant="secondary" onClick={onCancel}>
           {t("pages.cancel")}
         </Button>
-        <Button type="submit" disabled={name === ""}>
+        <Button type="submit" disabled={name === "" || issue !== undefined}>
           {confirm}
         </Button>
       </DialogFooter>

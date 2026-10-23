@@ -37,6 +37,16 @@ export const site = {
     "{count} pages link to it. Those links will go nowhere until you choose another file. You can undo this.",
   "site.media.deleteDialog.usedOnMany":
     "It's used on {count} pages. Those places will show no image until you choose another. You can undo this.",
+  // Used only by shared sections no page shows yet (1.29, F-ED-23): {name} is quoted, {names} a
+  // list of quoted names.
+  "site.media.deleteDialog.usedInShared":
+    "It's used in the shared section {name}, which isn't on any page yet. Placed, it will show no image until you choose another. You can undo this.",
+  "site.media.deleteDialog.usedInSharedMany":
+    "It's used in the shared sections {names}, which aren't on any page yet. Placed, they will show no image until you choose another. You can undo this.",
+  "site.media.deleteDialog.linkedFromShared":
+    "The shared section {name} links to it, and isn't on any page yet. Placed, that link will go nowhere until you choose another file. You can undo this.",
+  "site.media.deleteDialog.linkedFromSharedMany":
+    "The shared sections {names} link to it, and aren't on any page yet. Placed, those links will go nowhere until you choose another file. You can undo this.",
   "site.media.deleteDialog.cancel": "Cancel",
   "site.media.deleteDialog.confirm": "Delete",
   "site.media.removedImage": "Image deleted from Media",

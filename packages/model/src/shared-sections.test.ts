@@ -11,6 +11,8 @@ import {
   pageAnchors,
   SHARED_COPY_TYPE,
   type SharedSectionsDoc,
+  sameSharedName,
+  sharedSectionNamed,
   sharedSectionsDocSchema,
 } from "./shared-sections.js";
 
@@ -68,6 +70,26 @@ describe("shared sections (F-ED-23)", () => {
     };
 
     expect(sharedSectionsDocSchema.safeParse({ [HOURS]: nested }).success).toBe(false);
+  });
+
+  it("refuses two shared sections with one name, whatever its capitals or spaces", () => {
+    const OTHER = "shared-other" as SharedSectionId;
+    const twice = (name: string) => ({
+      ...shared,
+      [OTHER]: { id: OTHER, name, section: { ...hours, props: { ...hours.props, id: "x" } } },
+    });
+
+    expect(sharedSectionsDocSchema.safeParse(twice("Hours")).success).toBe(true);
+    expect(sharedSectionsDocSchema.safeParse(twice("opening HOURS")).success).toBe(false);
+    expect(sharedSectionsDocSchema.safeParse(twice("  Opening hours ")).success).toBe(false);
+  });
+
+  it("finds a shared section by name, ignoring capitals and spaces, and never `except`", () => {
+    expect(sameSharedName("Opening hours", " opening HOURS ")).toBe(true);
+    expect(sameSharedName("Opening hours", "Opening  hours")).toBe(false);
+    expect(sharedSectionNamed(shared, "OPENING hours ")?.id).toBe(HOURS);
+    expect(sharedSectionNamed(shared, "Opening hours", HOURS)).toBeUndefined();
+    expect(sharedSectionNamed(shared, "Team")).toBeUndefined();
   });
 
   it("refuses unsafe keys inside a shared section", () => {

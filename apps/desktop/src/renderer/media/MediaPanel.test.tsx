@@ -241,6 +241,64 @@ describe("MediaPanel", () => {
     expect(media()[prices.id]).toEqual(prices);
   });
 
+  it("warns before deleting an image only a hidden copy or an unplaced shared section uses (F-ED-23)", async () => {
+    addMedia(session, [photo, prices]);
+    session.edit("insert", "Added shared sections", (draft) => {
+      const offer = "offer" as SharedSectionId;
+      draft.sharedSections[offer] = {
+        id: offer,
+        name: "Weekly offer",
+        section: { type: "Hero", props: { id: "h", title: "Offer", image: { mediaId: photo.id } } },
+      };
+      const files = "files" as SharedSectionId;
+      draft.sharedSections[files] = {
+        id: files,
+        name: "Price lists",
+        section: {
+          type: "Hero",
+          props: { id: "f", title: "Prices", buttonLink: { kind: "file", mediaId: prices.id } },
+        },
+      };
+      // Hidden in Layers: still a placement, which shows the image again once shown.
+      draft.pages[draft.homePageId]?.doc.content.push({
+        type: SHARED_COPY_TYPE,
+        props: { id: "copy", sharedSectionId: offer, hidden: true },
+      });
+    });
+    await render();
+    const dialogText = () => document.querySelector('[role="alertdialog"]')?.textContent;
+    const cancel = () =>
+      act(async () => {
+        [...document.querySelectorAll<HTMLButtonElement>('[role="alertdialog"] button')]
+          .find((element) => element.textContent === "Cancel")
+          ?.click();
+      });
+
+    await act(async () => button("shop.jpg")?.click());
+    await act(async () => button("Delete")?.click());
+    expect(dialogText()).toContain("It's used on 1 page.");
+    await cancel();
+
+    // "Price lists" is on no page: deleting what it links to still warns, by its name.
+    await act(async () => button("prices.pdf")?.click());
+    await act(async () => button("Delete")?.click());
+    expect(dialogText()).toContain(
+      "The shared section 'Price lists' links to it, and isn't on any page yet.",
+    );
+    await cancel();
+    expect(media()[prices.id]).toEqual(prices);
+
+    // Without the copy, "Weekly offer" is on no page either.
+    session.edit("remove", "Deleted the copy", (draft) => {
+      draft.pages[draft.homePageId]?.doc.content.pop();
+    });
+    await act(async () => button("shop.jpg")?.click());
+    await act(async () => button("Delete")?.click());
+    expect(dialogText()).toContain(
+      "It's used in the shared section 'Weekly offer', which isn't on any page yet.",
+    );
+  });
+
   it("warns before deleting an image pages use, and Undo brings it back for them", async () => {
     addMedia(session, [photo]);
     // The home page places the photo in a Hero.

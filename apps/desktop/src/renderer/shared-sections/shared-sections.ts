@@ -16,6 +16,7 @@ import {
   type SharedSection,
   type SharedSectionId,
   type SiteDoc,
+  sharedSectionNamed,
 } from "@webforge/model";
 import { updateField } from "../editor/apply-patch.js";
 import type { EditorSession } from "../editor/editor-session.js";
@@ -136,6 +137,21 @@ export function anchorsTakenInSection(
 }
 
 /**
+ * Why `name` can't name a shared section (`except`, when renaming it), if it can't: another shared
+ * section has it, whatever its capitals or spaces, since the Add panel lists them by name.
+ */
+export function nameProblem(
+  site: SiteDoc,
+  name: string,
+  except?: SharedSectionId,
+): string | undefined {
+  const taken = sharedSectionNamed(site.sharedSections, name, except);
+  return taken === undefined
+    ? undefined
+    : t("canvas.sharedSectionNameTaken", { name: t("history.namedItem", { name: taken.name }) });
+}
+
+/**
  * The section that the selected element `nodeId` of page `pageId` is, if it can be saved as a shared
  * section: a section of the page itself, not a copy (no shared section in another) and never the
  * Header or Footer.
@@ -161,7 +177,7 @@ export function saveAsSharedSection(session: SharedSectionSession, name: string)
   const site = session.history.document.getState();
   const ui = session.ui.getState();
   const section = savableSection(site, ui.pageId, ui.nodeId);
-  if (section === undefined) return false;
+  if (section === undefined || nameProblem(site, name) !== undefined) return false;
   const id = newId("sharedSection");
   const { layerName, hidden, ...props } = section.props;
   const stored: NodeDoc = { type: section.type, props: props as NodeDoc["props"] };
@@ -216,5 +232,90 @@ export function detachCopy(session: SharedSectionSession): boolean {
     { selectionAfter: { ...ui, nodeId: section.props.id } },
   );
   session.ui.setState({ nodeId: section.props.id });
+  return true;
+}
+
+/**
+ * Renames shared section `id` to `name` (F-ED-23), in one step ("Renamed 'Hours' to 'Opening
+ * hours'"). Returns false, changing nothing, if it isn't there or another shared section has the
+ * name.
+ */
+export function renameSharedSection(
+  session: SharedSectionSession,
+  id: SharedSectionId,
+  name: string,
+): boolean {
+  const site = session.history.document.getState();
+  const shared = sharedSection(site, id);
+  const trimmed = name.trim();
+  if (shared === undefined || trimmed === "" || nameProblem(site, trimmed, id) !== undefined) {
+    return false;
+  }
+  if (trimmed === shared.name) return true;
+  session.edit(
+    "props",
+    t("history.renamedSharedSection", {
+      name: t("history.namedItem", { name: shared.name }),
+      newName: t("history.namedItem", { name: trimmed }),
+    }),
+    (draft) => {
+      const entry = draft.sharedSections[id];
+      if (entry !== undefined) entry.name = trimmed;
+    },
+  );
+  return true;
+}
+
+/**
+ * Deletes shared section `id` (F-ED-23), in one step ("Deleted shared section 'Opening hours'"):
+ * every copy of it, on every page, becomes a normal section showing what the copy showed, its
+ * elements with new ids and its anchors as the copy had them, so no content is lost and links to
+ * it keep working. A selection inside a copy on the page shown moves to the section that copy
+ * becomes. Returns whether it deleted.
+ */
+export function deleteSharedSection(session: SharedSectionSession, id: SharedSectionId): boolean {
+  const site = session.history.document.getState();
+  const shared = sharedSection(site, id);
+  if (shared === undefined) return false;
+  const ui = session.ui.getState();
+  const selected = copySelection(site, ui.pageId, ui.nodeId);
+  // The normal section each copy becomes, by page, worked out once so the step and the
+  // selection agree.
+  const sections = new Map<PageId, Map<string, NodeDoc>>();
+  for (const page of Object.values(site.pages)) {
+    const copies = page.doc.content
+      .filter(isSharedCopy)
+      .filter((copy) => copy.props.sharedSectionId === id);
+    if (copies.length === 0) continue;
+    sections.set(
+      page.id,
+      new Map(
+        copies.flatMap((copy) => {
+          const [section] = pastedCopies(expandSharedCopies([copy], site.sharedSections));
+          return section === undefined ? [] : [[copy.props.id, section] as const];
+        }),
+      ),
+    );
+  }
+  const nodeId =
+    selected?.shared.id === id
+      ? (sections.get(ui.pageId)?.get(selected.copy.props.id)?.props.id ?? null)
+      : ui.nodeId;
+  session.edit(
+    "remove",
+    t("history.deletedSharedSection", { name: t("history.namedItem", { name: shared.name }) }),
+    (draft) => {
+      for (const [pageId, byCopy] of sections) {
+        const content = draft.pages[pageId]?.doc.content;
+        content?.forEach((node, index) => {
+          const section = byCopy.get(node.props.id);
+          if (section !== undefined) content[index] = section;
+        });
+      }
+      delete draft.sharedSections[id];
+    },
+    { selectionAfter: { ...ui, nodeId } },
+  );
+  if (nodeId !== ui.nodeId) session.ui.setState({ nodeId });
   return true;
 }
