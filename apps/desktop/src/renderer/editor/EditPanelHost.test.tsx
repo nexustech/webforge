@@ -424,6 +424,25 @@ describe("EditPanelHost", () => {
       expect(section()?.gap).toBeUndefined();
     });
 
+    it("makes one step of scrubbing a slider's step name (UX-20)", () => {
+      const { session, labels, section } = setup("section-1");
+      const slider = screen.getByLabelText("Space between elements");
+      const output = slider.parentElement?.querySelector("output");
+      if (output == null) throw new Error("no step name");
+
+      fireEvent.pointerDown(output, { button: 0, pointerId: 1 });
+      output.dispatchEvent(new PointerEvent("pointermove", { movementX: 12 }));
+      output.dispatchEvent(new PointerEvent("pointermove", { movementX: -24 }));
+      output.dispatchEvent(new PointerEvent("pointerup"));
+
+      expect(section()?.gap).toBe("small");
+      expect(labels()).toEqual(["Changed Section space between elements"]);
+      act(() => {
+        session.history.undo();
+      });
+      expect(section()?.gap).toBeUndefined();
+    });
+
     it("puts a slider back as it was when the drag is cancelled with Esc", () => {
       const { session, labels, section } = setup("section-1");
       const slider = screen.getByLabelText("Space between elements");
