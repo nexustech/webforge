@@ -22,7 +22,14 @@ import {
   type TextStyle,
   type ThemeTokens,
 } from "@webforge/model";
-import { AA_LARGE, AA_TEXT, contrastRatio, oklchCss, resolveColorRef } from "@webforge/themes";
+import {
+  AA_LARGE,
+  AA_TEXT,
+  contrastRatio,
+  oklchCss,
+  oklchToSrgb,
+  resolveColorRef,
+} from "@webforge/themes";
 import { type CSSProperties, useId, useSyncExternalStore } from "react";
 import type { EditorSession } from "./editor-session.js";
 
@@ -121,6 +128,18 @@ function roleOfOption(value: string): ColorRole | undefined {
 
 const isShaded = (role: ColorRole) => (SHADED_ROLES as readonly string[]).includes(role);
 
+/** `color` as the six lower-case hex digits a field's own colour is stored in: `#1f6feb`. */
+const hexOf = (color: Parameters<typeof oklchToSrgb>[0]) => {
+  const { r, g, b } = oklchToSrgb(color);
+  return `#${[r, g, b]
+    .map((channel) =>
+      Math.round(channel * 255)
+        .toString(16)
+        .padStart(2, "0"),
+    )
+    .join("")}`;
+};
+
 /** A swatch's colour, as CSS. */
 const swatchStyle = (colour: string): CSSProperties => ({ "--swatch": colour }) as CSSProperties;
 
@@ -218,7 +237,9 @@ export function ColourField({
         value={base}
         onChoose={(next) => {
           if (next === CUSTOM) {
-            choose(withOpacity({ base: { hex: hex ?? "#000000" } }));
+            // A colour of its own starts from the one it shows now, to adjust from there.
+            const start = hex ?? hexOf(shown?.color ?? theme.colors["base-content"]);
+            choose(withOpacity({ base: { hex: start } }));
             return;
           }
           const nextRole = roleOfOption(next);

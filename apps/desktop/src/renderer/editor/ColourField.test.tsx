@@ -107,9 +107,11 @@ describe("ColourField (1.37, UX-25, ADR 0009)", () => {
     expect(simple.names()).not.toContain("Custom");
     cleanup();
 
+    // It starts from the colour shown now: the brand colour, at the same opacity.
     const { onChange } = setUp("primary/50", { advanced: true });
     await userEvent.click(screen.getByRole("radio", { name: "Custom" }));
-    expect(onChange).toHaveBeenLastCalledWith("[#000000]/50");
+    expect(onChange).toHaveBeenLastCalledWith(expect.stringMatching(/^\[#[0-9a-f]{6}\]\/50$/));
+    expect(onChange).not.toHaveBeenLastCalledWith("[#000000]/50");
     cleanup();
 
     const custom = setUp("[#1f6feb]", { advanced: true });
