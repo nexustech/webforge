@@ -125,6 +125,23 @@ test.describe("Puck canvas with Webforge history", () => {
     await expect(currentStep()).toHaveText("Opened page");
   });
 
+  test("a drag with Ctrl/Cmd held copies the element where it is dropped, one step (1.30)", async () => {
+    const heading = canvas().locator("h1");
+    const text = canvas().getByText(STARTER_TEXT);
+
+    await page.keyboard.down("ControlOrMeta");
+    await drag(page, heading, await below(text, -3), 0.97);
+    await page.keyboard.up("ControlOrMeta");
+
+    // The original stays; the copy is where it was dropped, selected.
+    await expectSteps(["Duplicated Heading"], "Duplicated Heading");
+    await expect(canvas().locator(".site-section")).toContainText(
+      `${STARTER_HEADING}${STARTER_TEXT}${STARTER_HEADING}`,
+    );
+    await page.getByRole("button", { name: "Undo", exact: true }).click();
+    await expect(canvas().locator("h1")).toHaveCount(1);
+  });
+
   test("a text-editing session is one step, undoable word by word while it lasts", async () => {
     const field = canvas().locator("h1 [contenteditable]");
     // Puck makes the field editable only while it is hovered or focused.
