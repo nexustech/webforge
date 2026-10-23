@@ -33,6 +33,7 @@ import {
 import { registerStyleCommands } from "../clipboard/style-clipboard.js";
 import { CanvasElementMenu } from "../element-menu/CanvasElementMenu.js";
 import { deleteSelected, duplicateSelected, moveSelected } from "../layers/bulk-layers.js";
+import type { Layer } from "../layers/layers.js";
 import { registerLinkField } from "../links/LinkField.js";
 import { RichTextLinkHost } from "../links/RichTextLinkHost.js";
 import { connectCanvasImages } from "../media/canvas-images.js";
@@ -55,6 +56,7 @@ import { installCommandShortcuts } from "../shell/commands.js";
 import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
 import { usePanelRegistry } from "../shell/panel-context.js";
 import { connectCanvasSettings } from "../site-settings/canvas-settings.js";
+import { CanvasBreadcrumbs } from "./CanvasBreadcrumbs.js";
 import { CanvasResizeHandles } from "./CanvasResizeHandles.js";
 import { type BulkCanvasAction, registerCanvasCommands } from "./canvas-commands.js";
 import { EditPanelHost } from "./EditPanelHost.js";
@@ -173,6 +175,8 @@ export function Editor({
   // *Edit* on an image (F-ED-25) opens the Edit panel's image picker: the panel shows, and the
   // field opens it once it is drawn.
   const [imagePicks] = useState(createImagePickRequests);
+  // The layer whose name the rename dialog asks for (F2, or the element menu's Rename).
+  const [renaming, setRenaming] = useState<Layer | null>(null);
   const pickImageRef = useRef((nodeId: string) => {
     panels.show("edit");
     imagePicks.request(nodeId);
@@ -307,6 +311,7 @@ export function Editor({
       engine,
       connection.flush,
       (nodeId) => pickImageRef.current(nodeId),
+      setRenaming,
       (message) => toast(message),
     );
     elementCommands.setLayoutLocked(modeRef.current !== "design");
@@ -517,10 +522,16 @@ export function Editor({
 
   return (
     <div className="editor">
+      <CanvasBreadcrumbs session={session} engine={engine} />
       <SharedRegionBanner session={session} />
       <RichTextLinkHost session={session} engine={engine} />
       <SharedSectionNameDialog session={session} naming={naming} onClose={() => setNaming(null)} />
-      <CanvasElementMenu engine={engine} session={session} />
+      <CanvasElementMenu
+        engine={engine}
+        session={session}
+        renaming={renaming}
+        onRenamingChange={setRenaming}
+      />
       <div className="editor__stage">
         <section className="editor__canvas" aria-label={t("editor.canvas")} ref={canvasRef} />
         {canvasView !== undefined && (

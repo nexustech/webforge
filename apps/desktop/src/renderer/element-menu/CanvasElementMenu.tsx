@@ -19,15 +19,23 @@ function selectedLayer(session: EditorSession): Layer | undefined {
 export type CanvasElementMenuProps = {
   readonly engine: CanvasEngine | null;
   readonly session: EditorSession;
+  /** The layer whose name the dialog asks for, if it is open: from Rename here, or F2 (1.30). */
+  readonly renaming: Layer | null;
+  readonly onRenamingChange: (layer: Layer | null) => void;
 };
 
 /**
  * The element menu on the canvas (1.35): a right-click on an element selects it and opens the
- * menu Layers has too. Rename asks for the name in a dialog, as Layers isn't always showing.
+ * menu Layers has too. Rename asks for the name in a dialog, as Layers isn't always showing; F2
+ * opens the same dialog (see `element-commands.ts`).
  */
-export function CanvasElementMenu({ engine, session }: CanvasElementMenuProps) {
+export function CanvasElementMenu({
+  engine,
+  session,
+  renaming,
+  onRenamingChange: setRenaming,
+}: CanvasElementMenuProps) {
   const [at, setAt] = useState<MenuPoint | null>(null);
-  const [renaming, setRenaming] = useState<Layer | null>(null);
   // What had the focus when the menu opened (the canvas), to give it back when it closes; or, if
   // Rename was chosen, the layer whose name to ask for once it has closed.
   const opener = useRef<Element | null>(null);

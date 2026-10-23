@@ -40,5 +40,6 @@ export async function loadNodeResources(): Promise<PipelineResources> {
     resize: await bytes("@jsquash/resize/lib/resize/pkg/squoosh_resize_bg.wasm"),
   });
   const daisyui: unknown = (await import("daisyui")).default;
-  return { stylesheets, daisyui, fonts, codecs };
+  const daisyuiTheme: unknown = (await import("daisyui/theme")).default;
+  return { stylesheets, daisyui, daisyuiTheme, fonts, codecs };
 }

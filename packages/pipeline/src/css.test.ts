@@ -1,3 +1,4 @@
+import { DEFAULT_THEME } from "@webforge/model";
 import { beforeAll, describe, expect, it } from "vitest";
 import { buildSiteCss, classCandidates, siteStylesheetSource } from "./css.js";
 import { loadNodeResources } from "./node-resources.js";
@@ -32,31 +33,32 @@ describe("siteStylesheetSource", () => {
   it("leaves out fonts when there are none", () => {
     const source = siteStylesheetSource(
       { ...resources, fonts: [] },
-      { theme: "light", candidates: [], fontsUrl: "../fonts/" },
+      { theme: DEFAULT_THEME, candidates: [], fontsUrl: "../fonts/" },
     );
 
-    expect(source).toContain('@plugin "daisyui" { themes: light --default; }');
+    // The site's own theme, none of daisyUI's (2.1).
+    expect(source).toContain('@plugin "daisyui" { themes: false; }');
+    expect(source).toContain('name: "light";');
     expect(source).not.toContain("@font-face");
-    expect(source).not.toContain("--font-sans");
   });
 });
 
 describe("buildSiteCss", () => {
-  it("compiles only the candidates it is given, with the chosen theme", async () => {
+  it("compiles only the candidates it is given, with the site's theme", async () => {
     const css = await buildSiteCss(resources, {
-      theme: "dracula",
+      theme: { ...DEFAULT_THEME, preset: "dracula" },
       candidates: ["btn", "py-16"],
       fontsUrl: "../fonts/",
     });
 
-    expect(css).toContain("[data-theme=dracula]");
+    expect(css).toContain('[data-theme="dracula"]');
     expect(css).toContain(".py-16");
     expect(css).toContain(".btn");
     expect(css).not.toContain(".py-24");
   });
 
   it("fails when a Tailwind stylesheet is missing from the resources", async () => {
-    const options = { theme: "light", candidates: [], fontsUrl: "" };
+    const options = { theme: DEFAULT_THEME, candidates: [], fontsUrl: "" };
 
     await expect(buildSiteCss({ ...resources, stylesheets: {} }, options)).rejects.toThrow(
       'Unknown stylesheet "tailwindcss/theme.css"',

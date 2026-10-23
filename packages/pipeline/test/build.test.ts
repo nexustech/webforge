@@ -72,13 +72,13 @@ describe("buildSite: self-contained output (X1, C8)", () => {
     const css = text(built, fileNamed(built, /^assets\/css\//));
 
     expect(css).toContain("/*! tailwindcss v4");
-    expect(css).toContain("[data-theme=cupcake]");
+    expect(css).toContain('[data-theme="cupcake"]');
     expect(css).toContain('src: url("../fonts/inter-latin-400-normal.woff2") format("woff2");');
     expect(css).toContain(".md\\:menu-horizontal");
     expect(css).toContain(".data-open\\:flex");
     expect(css).toContain(".collapse-arrow");
     expect(css).not.toContain(".carousel");
-    expect(css).not.toContain("[data-theme=dracula]");
+    expect(css).not.toContain('[data-theme="dracula"]');
     expect(css.split("\n").length).toBeGreaterThan(500);
   });
 

@@ -214,6 +214,11 @@ export interface CanvasEngine {
   onUserEdit(cb: (edit: EngineEdit) => void): Unsubscribe;
   select(nodeId: string | null): void;
   /**
+   * Outlines element `nodeId` on the canvas as a hovered element is, or none (`null`): for a
+   * pointer over something outside the canvas that names it, such as a breadcrumb (1.30).
+   */
+  outline(nodeId: string | null): void;
+  /**
    * The selection changed on the canvas. `adding` for a Ctrl/Cmd- or Shift-click (1.31): it adds
    * `nodeId` to the selection, or takes it out if it is in it already; the app keeps the set.
    */

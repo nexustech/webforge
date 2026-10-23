@@ -48,6 +48,7 @@ function setUp() {
   const engine = createFakeEngine();
   const beforeAction = vi.fn();
   const pickImage = vi.fn();
+  const rename = vi.fn();
   const notify = vi.fn();
   const commands = registerElementCommands(
     registry,
@@ -55,6 +56,7 @@ function setUp() {
     engine,
     beforeAction,
     pickImage,
+    rename,
     notify,
   );
   const hidden = () =>
@@ -68,6 +70,7 @@ function setUp() {
     engine,
     beforeAction,
     pickImage,
+    rename,
     notify,
     commands,
     hidden,
@@ -160,6 +163,24 @@ describe("registerElementCommands (1.30, F-ED-25, F-ED-27)", () => {
     expect(labels()).toEqual(["Hid 2 elements"]);
   });
 
+  it("asks for a layer's name with F2, in Content mode too; nothing else has one (1.30)", () => {
+    const { session, registry, rename, commands } = setUp();
+    const renameEnabled = () => registry.get("edit.rename")?.enabled;
+
+    expect(registry.get("edit.rename")).toMatchObject({ shortcut: "F2", menu: "edit" });
+    commands.setLayoutLocked(true);
+    expect(renameEnabled()).toBe(true);
+    registry.run("edit.rename");
+    expect(rename).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ id: "a" }));
+
+    for (const id of [copiedNodeId("c1", "t"), "header-logo", null]) {
+      session.ui.setState({ nodeId: id });
+      expect(renameEnabled()).toBe(false);
+    }
+    session.ui.setState({ nodeId: copiedNodeId("c1", "s") });
+    expect(renameEnabled()).toBe(true);
+  });
+
   it("removes the command and stops following the chip and the selection", () => {
     const { session, registry, engine, commands, hidden } = setUp();
 
@@ -168,6 +189,7 @@ describe("registerElementCommands (1.30, F-ED-25, F-ED-27)", () => {
     session.ui.setState({ nodeId: null });
 
     expect(registry.get("edit.toggleHidden")).toBeUndefined();
+    expect(registry.get("edit.rename")).toBeUndefined();
     expect(hidden()).toBeUndefined();
   });
 });

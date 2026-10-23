@@ -1,15 +1,17 @@
 // @vitest-environment happy-dom
-import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
   copiedNodeId,
+  type NodeDoc,
   SHARED_COPY_TYPE,
   type SharedSectionId,
   type SiteDoc,
 } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createEditorSession } from "../editor/editor-session.js";
+import { createEditorSession, currentPage } from "../editor/editor-session.js";
+import { selectElements, selectedIds } from "../editor/selection.js";
 import { starterSite } from "../editor/starter-site.js";
 import { CommandRegistryProvider } from "../shell/command-context.js";
 import { createCommandRegistry } from "../shell/commands.js";
@@ -64,6 +66,26 @@ describe("registerLayersPanel", () => {
 
     act(() => session.ui.setState({ nodeId: "text-1" }));
     expect(rows()[2]?.getAttribute("aria-selected")).toBe("true");
+  });
+
+  it("never moves one layer alone while several are selected (#259 review)", () => {
+    // Alt+arrows hand several to the Edit menu's moves, which this panel alone doesn't have.
+    const { session } = setUp();
+    const order = () =>
+      ((currentPage(session)?.doc.content[0]?.props.content ?? []) as NodeDoc[]).map(
+        (node) => node.props.id,
+      );
+    const before = order();
+    act(() => selectElements(session.ui, ["heading-1", "text-1"]));
+
+    fireEvent.keyDown(screen.getAllByRole("treeitem")[1] as HTMLElement, {
+      key: "ArrowDown",
+      altKey: true,
+    });
+
+    expect(order()).toEqual(before);
+    expect(session.history.entries()).toHaveLength(0);
+    expect(selectedIds(session.ui.getState())).toEqual(["heading-1", "text-1"]);
   });
 
   it("follows changes to the page, and runs the canvas's commands from its toolbar", async () => {

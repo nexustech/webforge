@@ -25,7 +25,7 @@ const NONE: readonly string[] = [];
  * keeps one going; undo restores a selection whole.
  */
 export function createSelectionStore(initial: EditorSelection): StoreApi<EditorSelection> {
-  const store = createStore<EditorSelection>()(() => initial);
+  const store = createStore<EditorSelection>()(() => tidy(initial));
   const setState = (
     partial:
       | EditorSelection
@@ -34,16 +34,29 @@ export function createSelectionStore(initial: EditorSelection): StoreApi<EditorS
     replace?: boolean,
   ) => {
     if (replace === true) {
-      store.setState(partial as EditorSelection, true);
+      store.setState(tidy(partial as EditorSelection), true);
       return;
     }
     store.setState((state) => {
       const next = typeof partial === "function" ? partial(state) : partial;
       const selectsAlone = ("nodeId" in next || "pageId" in next) && !("others" in next);
-      return selectsAlone && (state.others ?? NONE).length > 0 ? { ...next, others: NONE } : next;
-    });
+      const ends = selectsAlone && (state.others ?? NONE).length > 0;
+      return tidy({ ...state, ...next, ...(ends ? { others: NONE } : {}) });
+    }, true);
   };
   return { ...store, setState: setState as StoreApi<EditorSelection>["setState"] };
+}
+
+/**
+ * `state` with each selected element once: none of the others is the one shown, and there are no
+ * others without one shown (#259 review: a step putting a selection back could list one twice).
+ */
+function tidy(state: EditorSelection): EditorSelection {
+  const others = state.others ?? NONE;
+  if (others.length === 0) return state;
+  if (state.nodeId === null) return { ...state, others: NONE };
+  const unique = [...new Set(others)].filter((id) => id !== state.nodeId);
+  return unique.length === others.length ? state : { ...state, others: unique };
 }
 
 /** Every selected element, the one the canvas shows first. */

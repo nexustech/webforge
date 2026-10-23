@@ -93,7 +93,10 @@ export function registerLayersPanel(
           selectMany: (ids) => selectElements(ui, ids),
           rename: (id, name) => renameLayer(session, id, name),
           setHidden: (id, hidden) => setLayerHidden(session, id, hidden),
-          move: (id, index) => moveLayer(session, id, index),
+          // One layer moves; several move together with the Edit menu's moves (1.31 part 2).
+          move: (id, index) => {
+            if ((ui.getState().others ?? []).length === 0) moveLayer(session, id, index);
+          },
           moveUp: useCommandAction(TOOLBAR_COMMANDS.moveUp),
           moveDown: useCommandAction(TOOLBAR_COMMANDS.moveDown),
           duplicate: useCommandAction(TOOLBAR_COMMANDS.duplicate),
