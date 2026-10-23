@@ -32,7 +32,16 @@ beforeEach(() => {
   });
 });
 
+/** Options shown by a test, taken away after it so no observer outlives it. */
+const shown: (() => void)[] = [];
+const apply = (...args: Parameters<typeof applyViewOptions>) => {
+  const stop = applyViewOptions(...args);
+  shown.push(stop);
+  return stop;
+};
+
 afterEach(() => {
+  for (const stop of shown.splice(0)) stop();
   document.body.innerHTML = "";
   document.head.innerHTML = "";
   vi.unstubAllGlobals();
@@ -57,7 +66,7 @@ describe("applyViewOptions (F-ED-25)", () => {
     expect(root.hasAttribute("data-wf-view-outlines")).toBe(false);
     expect(document.querySelector(".wf-view-layer")).toBeNull();
     // Applied again, the styles aren't added twice.
-    applyViewOptions(document, NONE, () => undefined)();
+    apply(document, NONE, () => undefined)();
     expect(document.head.querySelectorAll("style[data-webforge-view-css]")).toHaveLength(1);
   });
 
@@ -72,7 +81,7 @@ describe("applyViewOptions (F-ED-25)", () => {
     document.body.append(selected);
     const names: Record<string, string> = { hero: "Hero", text: "Opening times", faq: "FAQ" };
 
-    applyViewOptions(document, { ...NONE, elementNames: true }, (id) => names[id]);
+    apply(document, { ...NONE, elementNames: true }, (id) => names[id]);
 
     const labels = [...document.querySelectorAll<HTMLElement>(".wf-view-name")];
     expect(labels.map((label) => [label.textContent, label.style.top])).toEqual([
@@ -85,7 +94,7 @@ describe("applyViewOptions (F-ED-25)", () => {
   it("follows the page as it changes, not its hover and drag state", async () => {
     element("hero", 0);
     const observe = vi.spyOn(MutationObserver.prototype, "observe");
-    applyViewOptions(document, { ...NONE, elementNames: true }, () => "Section");
+    apply(document, { ...NONE, elementNames: true }, () => "Section");
 
     // Only the attributes that lay elements out; not Puck's and dnd-kit's data- and aria- state.
     expect(observe).toHaveBeenCalledWith(
@@ -100,7 +109,7 @@ describe("applyViewOptions (F-ED-25)", () => {
 
   it("draws the hovered element's margin and padding, and nothing once the pointer leaves", () => {
     const inner = element("hero", 100);
-    const stop = applyViewOptions(document, { ...NONE, spacingOnHover: true }, () => undefined);
+    const stop = apply(document, { ...NONE, spacingOnHover: true }, () => undefined);
 
     inner.dispatchEvent(new Event("pointermove", { bubbles: true }));
     const margin = document.querySelector<HTMLElement>(".wf-view-margin");
@@ -122,5 +131,55 @@ describe("applyViewOptions (F-ED-25)", () => {
     document.documentElement.dispatchEvent(new Event("pointerleave"));
     expect(document.querySelector(".wf-view-margin")).toBeNull();
     stop();
+  });
+
+  it("doesn't redraw names for Puck's overlays, and looks for the selected element once a draw", async () => {
+    element("hero", 0);
+    element("text", 100);
+    element("faq", 200);
+    const overlay = document.createElement("div");
+    overlay.setAttribute("data-puck-overlay", "");
+    document.body.append(overlay);
+    const frames = vi.fn((callback: FrameRequestCallback) => {
+      callback(0);
+      return 1;
+    });
+    vi.stubGlobal("requestAnimationFrame", frames);
+    const query = vi.spyOn(document, "querySelector");
+    apply(document, { ...NONE, elementNames: true }, () => "Section");
+    const selectedLookups = () =>
+      query.mock.calls.filter(([selector]) => String(selector).includes('data-state="selected"'))
+        .length;
+    expect(frames).toHaveBeenCalledOnce();
+    expect(selectedLookups()).toBe(1);
+
+    // The hover outline moving: Puck's overlay, not the page.
+    overlay.append(document.createElement("div"));
+    await new Promise((resolve) => setTimeout(resolve));
+    expect(frames).toHaveBeenCalledOnce();
+
+    element("cta", 300);
+    await new Promise((resolve) => setTimeout(resolve));
+    expect(frames).toHaveBeenCalledTimes(2);
+    expect(selectedLookups()).toBe(2);
+    query.mockRestore();
+  });
+
+  it("moves the spacing bands with the page under a still pointer, and drops them with their element", async () => {
+    const inner = element("hero", 100);
+    apply(document, { ...NONE, spacingOnHover: true }, () => undefined);
+    inner.dispatchEvent(new Event("pointermove", { bubbles: true }));
+    expect(document.querySelector<HTMLElement>(".wf-view-margin")?.style.top).toBe("92px");
+
+    // An element added above it (a drop, an undo) moves it down.
+    inner.getBoundingClientRect = () => new DOMRect(10, 160, 300, 40);
+    element("added", 0);
+    await new Promise((resolve) => setTimeout(resolve));
+    expect(document.querySelector<HTMLElement>(".wf-view-margin")?.style.top).toBe("152px");
+
+    // Deleted: no bands left behind.
+    inner.parentElement?.remove();
+    await new Promise((resolve) => setTimeout(resolve));
+    expect(document.querySelector(".wf-view-margin")).toBeNull();
   });
 });
