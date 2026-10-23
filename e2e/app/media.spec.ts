@@ -24,7 +24,7 @@ type MediaWindow = {
         items?: ImportedItem[];
         rejected?: { fileName: string; reason: string }[];
       }>;
-      choose(): Promise<{ status: string; items?: ImportedItem[] }>;
+      choose(sessionId: string): Promise<{ status: string; items?: ImportedItem[] }>;
     };
   };
 };
@@ -120,9 +120,10 @@ test("imports files chosen in the dialog", async () => {
   writeFileSync(prices, "%PDF-1.7\nprices");
   await stubFileDialogs(running(), prices);
 
-  const result = await page.evaluate(() =>
-    (window as unknown as MediaWindow).webforge.media.choose(),
-  );
+  const result = await page.evaluate(async () => {
+    const { project, media } = (window as unknown as MediaWindow).webforge;
+    return media.choose((await project.getCurrent())?.sessionId ?? "");
+  });
 
   expect(result).toMatchObject({ status: "imported", items: [{ kind: "file", name: "prices" }] });
 });
