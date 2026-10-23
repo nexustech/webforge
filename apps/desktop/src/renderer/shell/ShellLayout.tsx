@@ -37,6 +37,7 @@ const DEFAULTS = {
   sideMax: "360px",
   centerMin: "40%",
   drawer: "25%",
+  // The left column's lower pane (Layers) keeps between 15% and 85% of its height (ADR 0011).
   lowerMin: "15%",
   lowerMax: "85%",
 } as const;
@@ -310,7 +311,7 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
                   defaultLayout={layout[PANEL_GROUPS.left] ?? LEFT_SPLIT}
                   onLayoutChanged={remember(PANEL_GROUPS.left)}
                 >
-                  <ResizablePanel id="tabs" minSize="15%">
+                  <ResizablePanel id="tabs" minSize={DEFAULTS.lowerMin}>
                     <PanelTabs slots={SLOTS.left} editorLevel={editorLevel} />
                   </ResizablePanel>
                   <ResizableHandle aria-label={t("panels.resizeLower")} />
