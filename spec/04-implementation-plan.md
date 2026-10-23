@@ -562,7 +562,7 @@ Add panel: *Favourites* group (right-click *Add to Favourites*/*Remove*), *Recen
 Layers: valid/invalid drop feedback while dragging; indicators for shared (linked), hidden, animated and locked items; *Expand/Collapse all*; a filter field. The same right-click menu on Layers and the canvas: Rename, Duplicate, *Save as shared section* / *Detach*, *Select similar*, Delete. *Help for this element* moved to 5.4 on 23 Oct 2026, with the help pages it opens. In Content mode the canvas doesn't open this menu (the browser's own menu, spelling included, appears instead) and Layers offers Rename only.
 
 - [ ] Invalid drop targets are shown before dropping
-- [ ] The menu is identical on the canvas and in Layers
+- [ ] The menu is identical on the canvas and in Layers in Design mode
 - [ ] Select similar selects all items of the same type on the page
 
 **1.36 Edit panel tools: reset, search, changed cue, per-device dots, scrubbing** (added 22 Oct 2026, UI2/UI3)  
