@@ -1,0 +1,306 @@
+import {
+  COLOR_ROLES,
+  DEFAULT_THEME,
+  type Oklch,
+  SHADE_STEPS,
+  type ThemeTokens,
+  themeTokensSchema,
+} from "@webforge/model";
+import fc from "fast-check";
+import { describe, expect, it } from "vitest";
+import {
+  contrastRatio,
+  hexToOklch,
+  inverseColors,
+  oklchToSrgb,
+  resolveColorRef,
+  shadeOf,
+} from "./colors.js";
+import { AA_LARGE, AA_TEXT, contrastIssues } from "./contrast.js";
+import { THEME_PRESETS, themePreset } from "./presets.js";
+import { inverseThemeName, oklchCss, themeCss } from "./theme-css.js";
+
+const BLACK: Oklch = { l: 0, c: 0, h: 0 };
+const WHITE: Oklch = { l: 1, c: 0, h: 0 };
+const { inverse: _inverse, ...withoutInverse } = DEFAULT_THEME;
+
+const color = fc.record({
+  l: fc.double({ min: 0, max: 1, noNaN: true }),
+  c: fc.double({ min: 0, max: 0.4, noNaN: true }),
+  h: fc.double({ min: 0, max: 360, noNaN: true }),
+});
+
+describe("colours (2.1)", () => {
+  it("convert to sRGB as screens show them", () => {
+    const white = oklchToSrgb(WHITE);
+    const black = oklchToSrgb(BLACK);
+    for (const channel of ["r", "g", "b"] as const) {
+      expect(white[channel]).toBeCloseTo(1, 6);
+      expect(black[channel]).toBeCloseTo(0, 6);
+    }
+    // #767676 is OKLCH lightness 0.5658.
+    expect(oklchToSrgb({ l: 0.5658, c: 0, h: 0 }).r * 255).toBeCloseTo(118, 0);
+  });
+
+  it("give WCAG's ratios: 21 for black on white, 4.54 for #767676 on white, 1 on itself", () => {
+    expect(contrastRatio(BLACK, WHITE)).toBeCloseTo(21, 1);
+    expect(contrastRatio(WHITE, BLACK)).toBeCloseTo(21, 1);
+    expect(contrastRatio({ l: 0.5658, c: 0, h: 0 }, WHITE)).toBeCloseTo(4.54, 1);
+    expect(contrastRatio(DEFAULT_THEME.colors.primary, DEFAULT_THEME.colors.primary)).toBe(1);
+  });
+
+  it("lay a see-through foreground over its background first", () => {
+    // Black at 0% on white is white: no contrast; at 50% it's a mid grey.
+    expect(contrastRatio(BLACK, WHITE, 0)).toBe(1);
+    const half = contrastRatio(BLACK, WHITE, 0.5);
+    expect(half).toBeGreaterThan(3);
+    expect(half).toBeLessThan(contrastRatio(BLACK, WHITE));
+  });
+
+  it("are always between 1 and 21", () => {
+    fc.assert(
+      fc.property(color, color, fc.double({ min: 0, max: 1, noNaN: true }), (a, b, opacity) => {
+        const ratio = contrastRatio(a, b, opacity);
+        return ratio >= 1 && ratio <= 21.01;
+      }),
+    );
+  });
+
+  it("make shades from light to dark, keeping the hue", () => {
+    const shades = SHADE_STEPS.map((step) => shadeOf(DEFAULT_THEME.colors.primary, step));
+
+    expect(shades.map((shade) => shade.h)).toEqual(
+      SHADE_STEPS.map(() => DEFAULT_THEME.colors.primary.h),
+    );
+    for (const [index, shade] of shades.entries()) {
+      const next = shades[index + 1];
+      if (next !== undefined) expect(next.l).toBeLessThan(shade.l);
+    }
+  });
+});
+
+describe("colour refs with a theme (2.1)", () => {
+  const theme: ThemeTokens = DEFAULT_THEME;
+
+  it("show a role, a shade, an opacity and a field's own hex colour", () => {
+    expect(resolveColorRef(theme, "primary")).toEqual({
+      color: DEFAULT_THEME.colors.primary,
+      opacity: 1,
+    });
+    expect(resolveColorRef(theme, "primary-300/80")).toEqual({
+      color: shadeOf(DEFAULT_THEME.colors.primary, 300),
+      opacity: 0.8,
+    });
+    // In an inverse section, the role's own colour there; a hex colour stays as it is.
+    expect(resolveColorRef(theme, "base-100", "inverse")?.color).toEqual(
+      DEFAULT_THEME.inverse?.["base-100"],
+    );
+    const hex = resolveColorRef(theme, "[#1F6FEB]/50", "inverse");
+    expect(hex?.opacity).toBe(0.5);
+    expect(hex?.color).toEqual(hexToOklch("#1f6feb"));
+  });
+
+  it("read hex colours as OKLCH, and back to the same sRGB", () => {
+    expect(hexToOklch("#ffffff").l).toBeCloseTo(1, 5);
+    expect(hexToOklch("#000000")).toEqual({ l: 0, c: 0, h: 0 });
+    for (const hex of ["#1f6feb", "#ff0000", "#00ff00", "#767676", "#e5c07b"]) {
+      const { r, g, b } = oklchToSrgb(hexToOklch(hex));
+      const back = [r, g, b].map((value) => Math.round(value * 255));
+      expect(back).toEqual([1, 3, 5].map((at) => Number.parseInt(hex.slice(at, at + 2), 16)));
+    }
+    // #767676 on white is the classic 4.54:1.
+    expect(contrastRatio(hexToOklch("#767676"), WHITE)).toBeCloseTo(4.54, 2);
+  });
+
+  it("show nothing for a ref that isn't one", () => {
+    expect(resolveColorRef(theme, "brand")).toBeUndefined();
+    expect(resolveColorRef(theme, "custom-sky")).toBeUndefined();
+    expect(resolveColorRef(theme, "[#fff]")).toBeUndefined();
+  });
+
+  it("fall back to neutral for inverse sections in a theme without their colours", () => {
+    const inverse = inverseColors(withoutInverse);
+
+    expect(inverse["base-100"]).toEqual(DEFAULT_THEME.colors.neutral);
+    expect(inverse["base-content"]).toEqual(DEFAULT_THEME.colors["neutral-content"]);
+    expect(inverse.primary).toEqual(DEFAULT_THEME.colors.primary);
+  });
+});
+
+describe("contrastIssues (2.1)", () => {
+  it("reports exactly the pairs below AA, in both palettes", () => {
+    fc.assert(
+      fc.property(
+        fc.record(Object.fromEntries(COLOR_ROLES.map((role) => [role, color]))),
+        (colors) => {
+          const theme = themeTokensSchema.parse({ ...DEFAULT_THEME, colors, inverse: colors });
+          const issues = contrastIssues(theme);
+          for (const issue of issues) {
+            const ratio = contrastRatio(
+              theme.colors[issue.foreground],
+              theme.colors[issue.background],
+            );
+            expect(ratio).toBeLessThan(issue.required);
+            expect(issue.ratio).toBeLessThanOrEqual(ratio);
+          }
+          // The inverse palette is the same colours here, so it fails the same pairs.
+          const page = issues.filter((issue) => issue.palette === "colors");
+          expect(issues.filter((issue) => issue.palette === "inverse")).toHaveLength(page.length);
+        },
+      ),
+    );
+  });
+
+  it("reports nothing for a theme whose pairs all pass", () => {
+    const colors = Object.fromEntries(
+      COLOR_ROLES.map((role) => [role, role.endsWith("content") ? BLACK : WHITE]),
+    );
+    const theme = themeTokensSchema.parse({
+      ...DEFAULT_THEME,
+      // Brand colours on the page need contrast with it too.
+      colors: {
+        ...colors,
+        primary: BLACK,
+        secondary: BLACK,
+        accent: BLACK,
+        "primary-content": WHITE,
+        "secondary-content": WHITE,
+        "accent-content": WHITE,
+      },
+    });
+    const passing = themeTokensSchema.parse({ ...theme, inverse: theme.colors });
+
+    expect(contrastIssues(passing)).toEqual([]);
+  });
+
+  it("names a failing pair, its ratio rounded down, and what it needs", () => {
+    const grey: Oklch = { l: 0.7, c: 0, h: 0 };
+    const theme = themeTokensSchema.parse({
+      ...withoutInverse,
+      colors: { ...DEFAULT_THEME.colors, "base-content": grey },
+    });
+
+    const issues = contrastIssues(theme).filter(
+      (issue) => issue.palette === "colors" && issue.foreground === "base-content",
+    );
+    expect(issues.map((issue) => [issue.background, issue.required])).toEqual([
+      ["base-100", AA_TEXT],
+      ["base-200", AA_TEXT],
+      ["base-300", AA_TEXT],
+    ]);
+    expect(issues[0]?.ratio).toBe(Math.floor(contrastRatio(grey, WHITE) * 100) / 100);
+  });
+
+  it("checks brand colours on the page as large text", () => {
+    const theme = themeTokensSchema.parse({
+      ...DEFAULT_THEME,
+      colors: { ...DEFAULT_THEME.colors, primary: { l: 0.95, c: 0.02, h: 90 } },
+    });
+
+    expect(contrastIssues(theme)).toContainEqual(
+      expect.objectContaining({
+        background: "base-100",
+        foreground: "primary",
+        required: AA_LARGE,
+      }),
+    );
+  });
+});
+
+describe("presets (2.1)", () => {
+  it("are three valid themes, light first as a new site's", () => {
+    expect(THEME_PRESETS.map((preset) => preset.preset)).toEqual([
+      "light",
+      "dark",
+      "high-contrast-rounded",
+    ]);
+    for (const preset of THEME_PRESETS) {
+      expect(themeTokensSchema.parse(preset)).toEqual(preset);
+    }
+    expect(themePreset("light")).toBe(DEFAULT_THEME);
+    expect(themePreset("cupcake")).toBeUndefined();
+  });
+
+  it("include one that passes every contrast check, its inverse sections too", () => {
+    const preset = themePreset("high-contrast-rounded");
+    expect(preset === undefined ? ["missing"] : contrastIssues(preset)).toEqual([]);
+  });
+});
+
+describe("themeCss (2.1)", () => {
+  it("writes colours as daisyUI does", () => {
+    expect(oklchCss({ l: 0.45, c: 0.24, h: 277.023 })).toBe("oklch(45% 0.24 277.023)");
+    expect(oklchCss({ l: 0.97807, c: 0.029, h: 256.847 })).toBe("oklch(97.807% 0.029 256.847)");
+  });
+
+  it("writes every role for the page and for inverse sections, with or without its own", () => {
+    for (const theme of [DEFAULT_THEME, withoutInverse]) {
+      const css = themeCss(theme);
+      for (const role of COLOR_ROLES) {
+        expect(css.split(`--color-${role}:`)).toHaveLength(3);
+      }
+      expect(css).toContain(`name: "${inverseThemeName(theme)}";`);
+    }
+    // The light preset's inverse sections are dark.
+    expect(themeCss(DEFAULT_THEME)).toMatch(
+      /name: "light-inverse";\n {2}default: false;\n {2}color-scheme: dark;/,
+    );
+  });
+
+  it("writes the colour roles' shades, following the role", () => {
+    const css = themeCss(DEFAULT_THEME);
+
+    expect(css).toContain("--color-primary-300: var(--wf-color-primary-300);");
+    // Each theme sets its own shades, as `resolveColorRef` shows them.
+    const shadeIn = (selector: string, palette: "colors" | "inverse") => {
+      const block = css.slice(css.indexOf(`${selector} {`));
+      const shade = resolveColorRef(DEFAULT_THEME, "primary-300", palette);
+      expect(shade).toBeDefined();
+      expect(block.slice(0, block.indexOf("}"))).toContain(
+        `--wf-color-primary-300: ${oklchCss(shade?.color ?? DEFAULT_THEME.colors.primary)};`,
+      );
+    };
+    shadeIn(':root, [data-theme="light"]', "colors");
+    shadeIn('[data-theme="light-inverse"]', "inverse");
+    expect(css).not.toContain("--color-base-100-300");
+  });
+
+  it("writes every choice of the tokens as CSS", () => {
+    const css = (change: Partial<ThemeTokens>) => themeCss({ ...DEFAULT_THEME, ...change });
+
+    expect(css({ links: { underline: "never" } })).toContain("--wf-link-decoration: none;");
+    expect(css({ links: { underline: "never" } })).toContain("--wf-link-hover-decoration: none;");
+    expect(css({ links: { underline: "hover" } })).toContain(
+      "--wf-link-hover-decoration: underline;",
+    );
+    expect(css({ effects: { depth: false, noise: true } })).toMatch(/--depth: 0;\n {2}--noise: 1;/);
+    expect(css({ border: "thick" })).toContain("--border: 2px;");
+    expect(css({ spacing: "compact" })).toContain("--spacing: 0.225rem;");
+    expect(css({ shadow: "none" })).toContain("--wf-shadow: none;");
+    expect(css({ shadow: "strong" })).toContain("--wf-shadow: 0 10px 30px rgb(0 0 0 / 0.2);");
+    expect(css({ buttons: { shape: "square", size: "s", style: "outline" } })).toContain(
+      "--wf-button-radius: 0rem;\n  --wf-button-height: 2rem;",
+    );
+    expect(css({ radius: { box: "none", field: "full", selector: "s" } })).toContain(
+      "--radius-selector: 0.25rem;\n  --radius-field: 9999px;\n  --radius-box: 0rem;",
+    );
+  });
+
+  it("quotes every font family the model allows, safely", () => {
+    const css = (heading: string, body: string) =>
+      themeCss({
+        ...DEFAULT_THEME,
+        fonts: {
+          heading: { family: heading, fallback: "monospace" },
+          body: { family: body, fallback: "serif" },
+        },
+      });
+
+    expect(css("Josefin Sans", "Mrs. Saint-Delafield")).toContain(
+      '--font-sans: "Mrs. Saint-Delafield", ui-serif, Georgia, serif;\n  --font-heading: "Josefin Sans", ui-monospace, monospace;',
+    );
+    expect(css("Rock 'n' Roll One", "M PLUS 1p")).toContain(
+      "--font-heading: \"Rock 'n' Roll One\", ui-monospace, monospace;",
+    );
+  });
+});

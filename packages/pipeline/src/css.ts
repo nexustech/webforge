@@ -1,13 +1,18 @@
+import type { ThemeTokens } from "@webforge/model";
+import { themeCss } from "@webforge/themes";
 import { compile } from "tailwindcss";
 import type { FontFile, PipelineResources } from "./resources.js";
 
 /** The resources compiling CSS needs: no image codecs. */
-export type StyleResources = Pick<PipelineResources, "stylesheets" | "daisyui" | "fonts">;
+export type StyleResources = Pick<
+  PipelineResources,
+  "stylesheets" | "daisyui" | "daisyuiTheme" | "fonts"
+>;
 
 /** Options of {@link buildSiteCss}. */
 export type SiteCssOptions = {
-  /** daisyUI theme name, used as the site's default theme (`data-theme`). */
-  readonly theme: string;
+  /** The site's theme (2.1): its daisyUI theme, fonts, type scale and spacing. */
+  readonly theme: ThemeTokens;
   /** Classes found in the site's HTML. */
   readonly candidates: readonly string[];
   /** Path from the CSS file to the fonts folder, e.g. `../fonts/`. */
@@ -33,16 +38,12 @@ function fontFaces(fonts: readonly FontFile[], fontsUrl: string): string {
  * and the bundled fonts. No `@import "tailwindcss"`: each layer is loaded from the resources.
  */
 export function siteStylesheetSource(resources: StyleResources, options: SiteCssOptions): string {
-  const family = resources.fonts[0]?.family;
   return [
     "@layer theme, base, components, utilities;",
     '@import "tailwindcss/theme.css" layer(theme);',
     '@import "tailwindcss/preflight.css" layer(base);',
     '@import "tailwindcss/utilities.css" layer(utilities);',
-    `@plugin "daisyui" { themes: ${options.theme} --default; }`,
-    family === undefined
-      ? ""
-      : `@theme { --font-sans: "${family}", ui-sans-serif, system-ui, sans-serif; }`,
+    themeCss(options.theme),
     fontFaces(resources.fonts, options.fontsUrl),
   ]
     .filter((part) => part !== "")
@@ -67,10 +68,17 @@ export async function buildSiteCss(
       return { path: id, base, content };
     },
     loadModule: async (id, base) => {
-      if (id !== "daisyui") {
+      // daisyUI, and its custom-theme plugin for the site's own theme (2.1).
+      const module =
+        id === "daisyui"
+          ? resources.daisyui
+          : id === "daisyui/theme"
+            ? resources.daisyuiTheme
+            : null;
+      if (module === null) {
         throw new Error(`Unknown Tailwind plugin "${id}"`);
       }
-      return { path: id, base, module: resources.daisyui as never };
+      return { path: id, base, module: module as never };
     },
   });
   return compiler.build([...options.candidates]);
