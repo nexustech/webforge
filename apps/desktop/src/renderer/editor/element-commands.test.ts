@@ -43,7 +43,7 @@ function setUp() {
       },
     },
   });
-  session.ui.setState({ nodeId: "a" });
+  session.select("a");
   const registry = createCommandRegistry();
   const engine = createFakeEngine();
   const beforeAction = vi.fn();
@@ -92,15 +92,15 @@ describe("registerElementCommands (1.30, F-ED-25, F-ED-27)", () => {
     const { session, engine, enabled, labels } = setUp();
     const copy = copiedNodeId("c1", "s");
 
-    session.ui.setState({ nodeId: copy });
+    session.select(copy);
     expect(enabled()).toBe(true);
     // An element of the copy's shared section, and one of the shared Header.
     for (const id of [copiedNodeId("c1", "t"), "header-logo"]) {
-      session.ui.setState({ nodeId: id });
+      session.select(id);
       expect(enabled()).toBe(false);
       engine.requestFromElement({ kind: "toggleHidden", nodeId: id });
     }
-    session.ui.setState({ nodeId: null });
+    session.select(null);
     expect(enabled()).toBe(false);
 
     expect(labels()).toEqual([]);
@@ -126,7 +126,7 @@ describe("registerElementCommands (1.30, F-ED-25, F-ED-27)", () => {
 
     commands.remove();
     engine.requestFromElement({ kind: "toggleHidden", nodeId: "a" });
-    session.ui.setState({ nodeId: null });
+    session.select(null);
 
     expect(registry.get("edit.toggleHidden")).toBeUndefined();
     expect(hidden()).toBeUndefined();

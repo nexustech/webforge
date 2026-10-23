@@ -81,8 +81,9 @@ export function RichTextLinkHost({
   readonly engine: CanvasEngine | null;
 }) {
   const { document } = session.history;
-  const site = useSyncExternalStore(document.subscribe, document.getState, document.getState);
   const [request, setRequest] = useState<Request | null>(null);
+  // The site as it is when the dialog opens (a request redraws this) and when it saves (R9).
+  const site = document.getState();
   const open = useRef<Request | null>(null);
 
   useEffect(() => {
@@ -131,7 +132,7 @@ export function RichTextLinkHost({
           request.answer(null);
           return;
         }
-        giveAnchor(session, site, change, request.at);
+        giveAnchor(session, document.getState(), change, request.at);
         request.answer({ href: richTextHref(change.link), newTab: change.link.newTab === true });
       }}
       onCancel={() => request?.answer(undefined)}

@@ -5,6 +5,7 @@ import { type MediaId, pagePath, type SiteDoc } from "@webforge/model";
 import { type NavigationPage, navigationFor } from "@webforge/pipeline/navigation";
 import type { NavItem, NavLink } from "@webforge/site-components";
 import type { EditorSession } from "../editor/editor-session.js";
+import { sameValue } from "../editor/same-value.js";
 
 type Unsubscribe = () => void;
 
@@ -43,7 +44,7 @@ export function connectCanvasNavigation(
   session: Pick<EditorSession, "history" | "ui">,
 ): Unsubscribe {
   const { document } = session.history;
-  let shown = "";
+  let shown: readonly NavItem[] | undefined;
   const show = () => {
     const site = document.getState();
     const pages = navigationPages(site);
@@ -56,9 +57,8 @@ export function connectCanvasNavigation(
       (item): NavItem =>
         "children" in item ? { ...item, children: item.children.map(inert) } : inert(item),
     );
-    const key = JSON.stringify(items);
-    if (key !== shown) {
-      shown = key;
+    if (shown === undefined || !sameValue(items, shown)) {
+      shown = items;
       engine.setNavigation(items);
     }
   };

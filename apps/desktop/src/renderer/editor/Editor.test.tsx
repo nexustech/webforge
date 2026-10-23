@@ -82,14 +82,14 @@ describe("Editor", () => {
   it("says how many copies a change reaches while an element of a copy is selected (F-ED-23)", async () => {
     const banner = () => container.querySelector('[role="status"]')?.textContent ?? null;
     await act(async () => {
-      session.ui.setState({ nodeId: "section-1" });
+      session.select("section-1");
       saveAsSharedSection(session, "Welcome");
     });
     const site = () => session.history.document.getState();
     const [shared] = Object.values(site().sharedSections);
     if (shared === undefined) throw new Error("not saved");
     const copyId = site().pages[site().homePageId]?.doc.content[0]?.props.id ?? "";
-    await act(async () => session.ui.setState({ nodeId: copiedNodeId(copyId, "heading-1") }));
+    await act(async () => session.select(copiedNodeId(copyId, "heading-1")));
     expect(banner()).toBe("Editing shared section 'Welcome': changes apply to 1 copy on 1 page");
 
     const place = (onHome: boolean) =>
@@ -113,9 +113,9 @@ describe("Editor", () => {
     const save = "edit.saveSharedSection";
     const detach = "edit.detachSharedSection";
     expect(enabled(save)).toBe(false);
-    await act(async () => session.ui.setState({ nodeId: "heading-1" }));
+    await act(async () => session.select("heading-1"));
     expect(enabled(save)).toBe(false);
-    await act(async () => session.ui.setState({ nodeId: "section-1" }));
+    await act(async () => session.select("section-1"));
     expect(enabled(save)).toBe(true);
     expect(enabled(detach)).toBe(false);
 
@@ -160,7 +160,7 @@ describe("Editor", () => {
       ),
     );
     await act(async () => {
-      session.ui.setState({ nodeId: "section-1" });
+      session.select("section-1");
       saveAsSharedSection(session, "Welcome");
     });
     await act(async () =>
@@ -223,7 +223,7 @@ describe("Editor", () => {
         </CommandRegistryProvider>,
       ),
     );
-    await act(async () => session.ui.setState({ nodeId: "section-1" }));
+    await act(async () => session.select("section-1"));
 
     expect(enabled("edit.saveSharedSection")).toBe(false);
     // Nor anything else that changes shared sections; edits in a copy's content still work.
@@ -240,7 +240,7 @@ describe("Editor", () => {
     const pages = Object.keys(session.history.document.getState().pages).length;
     expect(banner()).toBeNull();
 
-    await act(async () => session.ui.setState({ nodeId: "footer" }));
+    await act(async () => session.select("footer"));
     expect(banner()).toBe(`Editing shared Footer: changes apply to all ${pages} pages`);
 
     // Hidden on the page shown: not on the canvas, so nothing selected there to edit.
@@ -252,19 +252,21 @@ describe("Editor", () => {
     );
     expect(banner()).toBeNull();
 
-    await act(async () => session.ui.setState({ nodeId: "header" }));
+    await act(async () => session.select("header"));
     expect(banner()).toBe(`Editing shared Header: changes apply to all ${pages} pages`);
     const notFound = Object.values(session.history.document.getState().pages).find(
       (page) => page.kind === "not-found",
     );
-    await act(
-      async () => notFound && session.ui.setState({ pageId: notFound.id, nodeId: "footer" }),
-    );
+    await act(async () => {
+      if (notFound === undefined) return;
+      session.showPage(notFound.id);
+      session.select("footer");
+    });
     // The new site's two pages: Home hides the Footer, so only this one shows it.
     expect(pages).toBe(2);
     expect(banner()).toBe("Editing shared Footer: changes apply to 1 page");
 
-    await act(async () => session.ui.setState({ nodeId: "heading-1" }));
+    await act(async () => session.select("heading-1"));
     expect(banner()).toBeNull();
   });
 

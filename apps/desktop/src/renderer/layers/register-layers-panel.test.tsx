@@ -62,7 +62,7 @@ describe("registerLayersPanel", () => {
     await userEvent.click(rows()[1] as HTMLElement);
     expect(session.ui.getState().nodeId).toBe("heading-1");
 
-    act(() => session.ui.setState({ nodeId: "text-1" }));
+    act(() => session.select("text-1"));
     expect(rows()[2]?.getAttribute("aria-selected")).toBe("true");
   });
 
@@ -72,7 +72,7 @@ describe("registerLayersPanel", () => {
     commands.register({ id: "edit.duplicate", label: "Duplicate", run });
     commands.register({ id: "edit.delete", label: "Delete", enabled: false, run: vi.fn() });
 
-    act(() => session.ui.setState({ nodeId: "heading-1" }));
+    act(() => session.select("heading-1"));
     const toolbar = () => within(screen.getByRole("toolbar", { name: "Layer actions" }));
     await userEvent.click(toolbar().getByRole("button", { name: "Hide Heading" }));
     expect(toolbar().getByRole("button", { name: "Show Heading" })).toBeTruthy();
@@ -114,10 +114,10 @@ describe("registerLayersPanel", () => {
     const copy = screen.getByRole("treeitem", { name: /Linked copy of 'Opening hours'/ });
     expect(copy.textContent).toContain("Opening hours Section");
 
-    act(() => session.ui.setState({ nodeId: copiedNodeId("c1", "s") }));
+    act(() => session.select(copiedNodeId("c1", "s")));
     expect(copy.getAttribute("aria-selected")).toBe("true");
     // Layers' actions act on the selection: an element inside the copy isn't the copy.
-    act(() => session.ui.setState({ nodeId: copiedNodeId("c1", "t") }));
+    act(() => session.select(copiedNodeId("c1", "t")));
     expect(copy.getAttribute("aria-selected")).toBe("false");
   });
 

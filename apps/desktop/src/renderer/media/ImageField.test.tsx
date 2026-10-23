@@ -189,7 +189,7 @@ describe("ImageField", () => {
 
   it("opens its picker when the canvas asks to edit the selected element's image (F-ED-25)", async () => {
     const picks = createImagePickRequests();
-    session.ui.setState({ nodeId: "img" });
+    session.select("img");
     // Asked before the Edit panel showed the field: it opens once it is drawn.
     picks.request("img");
     await render(undefined, undefined, picks);

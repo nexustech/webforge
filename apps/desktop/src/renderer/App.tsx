@@ -17,6 +17,7 @@ import type {
 import { Editor, type EditorProps } from "./editor/Editor.js";
 import { createEditorSession } from "./editor/editor-session.js";
 import { starterSite } from "./editor/starter-site.js";
+import { useDocument } from "./editor/use-document.js";
 import { registerExportCommand } from "./export/export-command.js";
 import { exportRequestFor } from "./export/export-request.js";
 import { registerLayersPanel } from "./layers/register-layers-panel.js";
@@ -107,14 +108,8 @@ export function App({
   );
   // The latest preferences, for changes made before React re-renders (several groups at once).
   const latest = useRef(preferences);
-  const siteName = useSyncExternalStore(
-    session.history.document.subscribe,
-    () => session.history.document.getState().settings.general.name,
-  );
-  const siteLanguage = useSyncExternalStore(
-    session.history.document.subscribe,
-    () => session.history.document.getState().settings.general.language,
-  );
+  const siteName = useDocument(session, (site) => site.settings.general.name);
+  const siteLanguage = useDocument(session, (site) => site.settings.general.language);
   // Spelling is checked in the site's language, including after Site Settings changes it (1.22).
   useEffect(() => {
     setSpellCheckLanguage(siteLanguage).catch((error: unknown) => {

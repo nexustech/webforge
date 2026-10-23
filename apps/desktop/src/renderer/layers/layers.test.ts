@@ -115,7 +115,7 @@ describe("Layers changes, one undo step each", () => {
 
   it("hides a layer and shows it again, leaving the selection as it is", () => {
     const { session, first, labels } = setUp();
-    session.ui.setState({ nodeId: "a" });
+    session.select("a");
 
     setLayerHidden(session, "b", true);
     setLayerHidden(session, "b", true);

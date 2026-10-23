@@ -132,7 +132,7 @@ function CanvasEdges({
       width={widthOf(viewport)}
       zoom={zoom}
       devices={devices}
-      onChange={(next) => session.ui.setState({ viewport: next })}
+      onChange={(next) => session.setViewport(next)}
     />
   );
 }

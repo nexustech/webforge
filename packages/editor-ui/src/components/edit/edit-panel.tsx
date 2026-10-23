@@ -1,8 +1,14 @@
 import { t } from "@webforge/i18n";
-import { useId } from "react";
+import { useId, useSyncExternalStore } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs.js";
 import { BoxField } from "./box-field.js";
-import { type FieldRenderer, type FieldSpec, fieldRenderer } from "./field-registry.js";
+import {
+  type FieldRenderer,
+  type FieldSpec,
+  fieldRenderer,
+  fieldRenderersVersion,
+  subscribeFieldRenderers,
+} from "./field-registry.js";
 import { ListField } from "./list-field.js";
 import { PLAIN_RENDERERS } from "./plain-renderers.js";
 
@@ -129,6 +135,9 @@ export function EditPanel({
   itemKey,
 }: EditPanelProps) {
   const idPrefix = useId();
+  // A renderer registered after the panel was drawn (the app's image, link and colour fields)
+  // redraws it, whatever else changes or doesn't.
+  useSyncExternalStore(subscribeFieldRenderers, fieldRenderersVersion, fieldRenderersVersion);
   if (heading === undefined) {
     return (
       <p className="flex h-full items-center justify-center p-4 text-center text-xs text-muted-foreground">

@@ -178,9 +178,8 @@ function editNode(
         change(node, place);
       }
     },
-    { selectionAfter },
+    { selectionAfter, apply: true },
   );
-  session.ui.setState(selectionAfter, true);
 }
 
 /**

@@ -28,7 +28,7 @@ function setUp(buttonLink?: unknown) {
     { type: "Section", props: { id: "times", layerName: "Opening times", content: [] } },
   );
   const session = createEditorSession(siteLibrary, site);
-  session.ui.setState({ nodeId: "hero" });
+  session.select("hero");
   const remove = registerLinkField({ session });
   render(<EditPanelHost session={session} flush={() => undefined} />);
   const node = (id: string) =>
@@ -121,7 +121,7 @@ describe("LinkField and LinkDialog (F-ED-18)", () => {
         if (hero !== undefined)
           draft.layout.footer.push({ ...hero, props: { ...hero.props, id: "shared-hero" } });
       });
-      session.ui.setState({ nodeId: "shared-hero" });
+      session.select("shared-hero");
     });
 
     await user.click(screen.getByRole("button", { name: "Add Link…" }));

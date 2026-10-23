@@ -536,7 +536,7 @@ const commands: fc.Arbitrary<Command>[] = [
       const { pageId } = ctx.session.ui.getState();
       const content = ctx.session.history.document.getState().pages[pageId]?.doc.content ?? [];
       const node = content[at % Math.max(content.length, 1)];
-      ctx.session.ui.setState({ nodeId: node?.props.id ?? null });
+      ctx.session.select(node?.props.id ?? null);
       saveAsSharedSection(ctx.session, name);
     },
   })),
@@ -554,7 +554,7 @@ const commands: fc.Arbitrary<Command>[] = [
         ? (section.props.content as NodeDoc[])
         : [];
       const id = inside && first !== undefined ? first.props.id : section.props.id;
-      ctx.session.ui.setState({ nodeId: copiedNodeId(copy.props.id, id) });
+      ctx.session.select(copiedNodeId(copy.props.id, id));
       detachCopy(ctx.session);
     },
   })),

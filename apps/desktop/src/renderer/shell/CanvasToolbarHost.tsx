@@ -3,24 +3,12 @@ import type { SiteDoc } from "@webforge/model";
 import { useMemo, useSyncExternalStore } from "react";
 import type { CanvasPreferences } from "../../shared/ipc/prefs.js";
 import type { EditorSession } from "../editor/editor-session.js";
+import { pageListOf, useDocument } from "../editor/use-document.js";
 import { CanvasToolbar } from "./CanvasToolbar.js";
 import type { CanvasView } from "./canvas-view.js";
 
 /** The page list as the toolbar shows it, kept while only page content changes. */
-function usePageList(session: EditorSession) {
-  const { document } = session.history;
-  const key = (site: SiteDoc) =>
-    JSON.stringify(site.pageOrder.map((id) => [id, site.pages[id]?.title ?? ""]));
-  const serialised = useSyncExternalStore(document.subscribe, () => key(document.getState()));
-  return useMemo(
-    () =>
-      (JSON.parse(serialised) as [SiteDoc["pageOrder"][number], string][]).map(([id, title]) => ({
-        id,
-        title,
-      })),
-    [serialised],
-  );
-}
+const usePageList = (session: EditorSession) => useDocument(session, pageListOf);
 
 /**
  * The canvas toolbar on an editor session: it shows the session's page and view, and changes them
@@ -51,7 +39,7 @@ export function CanvasToolbarHost({
       shownPageId={pageId}
       onShowPage={(id) => session.showPage(id)}
       viewport={viewport}
-      onViewportChange={(next: Viewport) => ui.setState({ viewport: next })}
+      onViewportChange={(next: Viewport) => session.setViewport(next)}
       zoom={zoom}
       onZoomChange={(next) => view.setState({ zoom: next })}
       size={size}

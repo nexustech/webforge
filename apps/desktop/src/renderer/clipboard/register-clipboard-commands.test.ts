@@ -44,7 +44,7 @@ describe("registerClipboardCommands", () => {
 
   it("copies the selected element when Copy runs, and stops when removed", async () => {
     const { registry, session, clipboard, commands } = setup();
-    session.ui.setState({ nodeId: "heading-1" });
+    session.select("heading-1");
     commands.setHasSelection(true);
 
     registry.run("edit.copy");

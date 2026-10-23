@@ -28,6 +28,7 @@ import {
 } from "react";
 import { type MediaApi, mediaImageUrl } from "../../shared/ipc/media.js";
 import type { EditorSession } from "../editor/editor-session.js";
+import { useDocument } from "../editor/use-document.js";
 import { useGesture } from "../editor/use-gesture.js";
 import { documentIcon, documentTypeName, fileSizeLabel } from "./document-types.js";
 import { importDroppedFiles, importItems } from "./import-media.js";
@@ -90,10 +91,7 @@ export function MediaPanel({
   notify = (message) => toast(message),
   imageUrl = mediaImageUrl,
 }: MediaPanelProps) {
-  const items = useSyncExternalStore(
-    session.history.document.subscribe,
-    () => session.history.document.getState().media,
-  );
+  const items = useDocument(session, (site) => site.media);
   const [selectedId, setSelectedId] = useState<MediaId>();
   const [dragging, setDragging] = useState(false);
   /** An image to delete that pages still use, and how many: the user confirms first. */

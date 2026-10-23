@@ -18,10 +18,8 @@ export type SiteSettingsHostProps = {
 export function SiteSettingsHost({ session }: SiteSettingsHostProps) {
   const registry = useCommandRegistry();
   const [open, setOpen] = useState(false);
-  const site = useSyncExternalStore(
-    session.history.document.subscribe,
-    session.history.document.getState,
-  );
+  // The site as it is when the dialog opens: opening redraws this (R9).
+  const site = session.history.document.getState();
 
   useEffect(
     () =>

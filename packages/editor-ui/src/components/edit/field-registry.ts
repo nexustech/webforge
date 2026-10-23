@@ -70,6 +70,24 @@ export type FieldRendererProps = {
 export type FieldRenderer = ComponentType<FieldRendererProps>;
 
 const renderers = new Map<string, FieldRenderer>();
+/** Bumped by every change to {@link renderers}, so an Edit panel drawn before it redraws. */
+let version = 0;
+const listeners = new Set<() => void>();
+const changed = () => {
+  version += 1;
+  for (const listener of listeners) listener();
+};
+
+/** Calls `listener` when a renderer is registered or removed; returns a function that stops. */
+export function subscribeFieldRenderers(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+/** A number that changes whenever the registered renderers do. */
+export const fieldRenderersVersion = () => version;
 
 /**
  * Makes `renderer` draw every field of `kind` in the Edit panel (1.14). Later registrations of a
@@ -78,6 +96,7 @@ const renderers = new Map<string, FieldRenderer>();
 export function registerFieldRenderer(kind: string, renderer: FieldRenderer): () => void {
   const previous = renderers.get(kind);
   renderers.set(kind, renderer);
+  changed();
   return () => {
     if (renderers.get(kind) !== renderer) {
       return;
@@ -87,6 +106,7 @@ export function registerFieldRenderer(kind: string, renderer: FieldRenderer): ()
     } else {
       renderers.set(kind, previous);
     }
+    changed();
   };
 }
 

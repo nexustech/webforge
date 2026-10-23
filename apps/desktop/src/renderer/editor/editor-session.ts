@@ -10,6 +10,7 @@ import {
   createHistoryManager,
   type HistoryEntry,
   type HistoryManager,
+  type ReadonlyStore,
   type Recipe,
   type RunOptions,
   syncDraft,
@@ -17,7 +18,7 @@ import {
 import { t } from "@webforge/i18n";
 import type { PageDoc, PageEntry, PageId, SiteDoc } from "@webforge/model";
 import type { ComponentLibrary } from "@webforge/site-components";
-import { createStore, type StoreApi } from "zustand/vanilla";
+import { createStore } from "zustand/vanilla";
 import { applyPatch } from "./apply-patch.js";
 import { labelFor } from "./labels.js";
 import { shownLayout } from "./shared-layout.js";
@@ -49,25 +50,36 @@ export type Gesture = {
   cancel(): void;
 };
 
-/** Everything one open site needs: its history (which owns the document) and the UI store. */
+/**
+ * Options of {@link EditorSession.edit}: the history's, and `apply` to show `selectionAfter` now
+ * (the element the change made or moved), as undo and redo will show it again.
+ */
+export type EditOptions = RunOptions<EditorSelection> & { readonly apply?: boolean };
+
+/**
+ * Everything one open site needs: its history (which owns the document) and the UI store. The UI
+ * store is read-only to the rest of the editor: the selection, the page and the device view change
+ * through {@link EditorSession.select}, {@link EditorSession.showPage},
+ * {@link EditorSession.setViewport} and `edit`'s `apply`, which never show a page the site doesn't
+ * have (R9).
+ */
 export type EditorSession = {
   readonly history: HistoryManager<SiteDoc, EditorSelection>;
-  readonly ui: StoreApi<EditorSelection>;
+  readonly ui: ReadonlyStore<EditorSelection>;
   readonly library: ComponentLibrary;
   /** Changes the document as one labelled undo step and tells {@link onEntryAdded} listeners. */
-  edit(
-    kind: EditKind,
-    label: string,
-    recipe: Recipe<SiteDoc>,
-    options?: RunOptions<EditorSelection>,
-  ): void;
+  edit(kind: EditKind, label: string, recipe: Recipe<SiteDoc>, options?: EditOptions): void;
   /** Starts a gesture. A gesture still open from before is committed first. */
   begin(kind: EditKind, label: string): Gesture;
   /** Cancels the gesture in progress; false if there is none. */
   cancelGesture(): boolean;
   onEntryAdded(listener: EntryListener): Unsubscribe;
-  /** Shows another page; not an undo step. */
+  /** Shows another page, with nothing selected; not an undo step (U6). */
   showPage(pageId: PageId): void;
+  /** Selects `nodeId` (or nothing) on the page shown; not an undo step (U6). */
+  select(nodeId: string | null): void;
+  /** Shows the canvas as `viewport` would (F-ED-4); not an undo step (U6). */
+  setViewport(viewport: Viewport): void;
 };
 
 /**
@@ -111,6 +123,12 @@ export function createEditorSession(
       for (const listener of listeners) listener(entry, kind);
     }
   };
+  /** Shows `next`, if its page is one the site has: the one way the UI store changes. */
+  const setSelection = (next: EditorSelection) => {
+    if (history.document.getState().pages[next.pageId] !== undefined) {
+      ui.setState(next, true);
+    }
+  };
   let gesture: Gesture | null = null;
   /** A canvas edit or another gesture can't wait for a gesture to end: it ends it as it is. */
   const commitGesture = () => {
@@ -124,7 +142,11 @@ export function createEditorSession(
     library,
     edit(kind, label, recipe, options) {
       commitGesture();
-      reporting(kind, () => history.run(label, recipe, options));
+      const { apply, ...runOptions } = options ?? {};
+      reporting(kind, () => history.run(label, recipe, runOptions));
+      if (apply === true && runOptions.selectionAfter !== undefined) {
+        setSelection(runOptions.selectionAfter);
+      }
     },
     begin(kind, label) {
       commitGesture();
@@ -154,9 +176,14 @@ export function createEditorSession(
       };
     },
     showPage(next) {
-      if (next !== ui.getState().pageId && history.document.getState().pages[next] !== undefined) {
-        ui.setState({ pageId: next, nodeId: null });
-      }
+      if (next !== ui.getState().pageId)
+        setSelection({ ...ui.getState(), pageId: next, nodeId: null });
+    },
+    select(nodeId) {
+      if (nodeId !== ui.getState().nodeId) setSelection({ ...ui.getState(), nodeId });
+    },
+    setViewport(viewport) {
+      if (viewport !== ui.getState().viewport) setSelection({ ...ui.getState(), viewport });
     },
   };
 }
@@ -296,10 +323,10 @@ export function connectEngine(engine: CanvasEngine, session: EditorSession): Eng
       if (textSession !== null && pendingEnd === null) {
         pendingEnd = setTimeout(endTextSession, TEXT_SESSION_GRACE_MS);
       }
-      ui.setState({ nodeId });
+      session.select(nodeId);
     }),
     // A device view chosen on the canvas; not a history step (U6).
-    engine.onViewportChange((viewport) => ui.setState({ viewport })),
+    engine.onViewportChange((viewport) => session.setViewport(viewport)),
     engine.onHistoryCommand((command) => {
       flush();
       return runHistoryCommand(session, command);

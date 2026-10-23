@@ -431,13 +431,13 @@ describe("pages, selection and device view (U3)", () => {
   it("goes back to the page, element and device view of an undone edit", () => {
     const { session, engine, home, about } = setup();
     session.showPage(about);
-    session.ui.setState({ viewport: "mobile" });
+    session.setViewport("mobile");
     engine.selectFromCanvas("about-heading");
     editAbout(engine, "Changed");
     engine.selectFromCanvas(null);
     vi.advanceTimersByTime(TEXT_SESSION_GRACE_MS);
     session.showPage(home);
-    session.ui.setState({ viewport: "desktop" });
+    session.setViewport("desktop");
 
     session.history.undo();
 
@@ -490,12 +490,16 @@ describe("pages, selection and device view (U3)", () => {
   });
 
   it("ignores canvas edits when the page shown no longer exists", () => {
-    const { session, engine } = setup();
-    session.ui.setState({ pageId: "page-gone" as PageId });
+    const { session, engine, labels } = setup();
+    // The page shown is taken away under the editor; nothing can show a page that isn't there.
+    session.edit("props", "Removed the page shown", (draft) => {
+      delete draft.pages[session.ui.getState().pageId];
+    });
+    session.showPage("page-gone" as PageId);
 
     editAbout(engine, "Lost");
 
-    expect(session.history.entries()).toEqual([]);
+    expect(labels()).toEqual(["Removed the page shown"]);
   });
 });
 

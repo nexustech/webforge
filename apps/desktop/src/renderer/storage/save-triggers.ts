@@ -12,7 +12,7 @@ type TriggerTarget = Pick<Window, "addEventListener" | "removeEventListener">;
 export function installSaveTriggers(
   target: TriggerTarget,
   autosave: Autosave,
-  ui: StoreApi<{ readonly pageId: string }>,
+  ui: Pick<StoreApi<{ readonly pageId: string }>, "getState" | "subscribe">,
   onFlushRequest: (save: () => Promise<void>) => () => void,
   /** Whether the app's document (or a frame in it, like the canvas) has focus. */
   hasFocus: () => boolean = () => document.hasFocus(),

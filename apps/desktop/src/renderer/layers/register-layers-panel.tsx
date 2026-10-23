@@ -1,6 +1,7 @@
 import { t } from "@webforge/i18n";
 import { useSyncExternalStore } from "react";
 import type { EditorSession } from "../editor/editor-session.js";
+import { sameValue } from "../editor/same-value.js";
 import { ElementMenu } from "../element-menu/ElementMenu.js";
 import { useCommand, useCommandRegistry } from "../shell/command-context.js";
 import type { PanelRegistry } from "../shell/panels.js";
@@ -38,10 +39,9 @@ export function registerLayersPanel(
   // The tree as last shown, for the page content and shared sections it was made from: rebuilt
   // only when they change, and kept (same object) when the rebuilt tree is the same, e.g. after
   // typing.
-  let shown: { content: unknown; shared: unknown; key: string; layers: Layer[] } = {
+  let shown: { content: unknown; shared: unknown; layers: Layer[] } = {
     content: undefined,
     shared: undefined,
-    key: "",
     layers: [],
   };
   const currentLayers = () => {
@@ -52,8 +52,9 @@ export function registerLayersPanel(
       return shown.layers;
     }
     const layers = content === undefined ? [] : layersOf(content, library, shared);
-    const key = JSON.stringify(layers);
-    shown = key === shown.key ? { ...shown, content, shared } : { content, shared, key, layers };
+    shown = sameValue(layers, shown.layers)
+      ? { ...shown, content, shared }
+      : { content, shared, layers };
     return shown.layers;
   };
 
@@ -80,7 +81,7 @@ export function registerLayersPanel(
         layoutLocked={layoutLocked}
         menu={(menu) => <ElementMenu {...menu} />}
         actions={{
-          select: (id) => ui.setState({ nodeId: id }),
+          select: (id) => session.select(id),
           rename: (id, name) => renameLayer(session, id, name),
           setHidden: (id, hidden) => setLayerHidden(session, id, hidden),
           move: (id, index) => moveLayer(session, id, index),

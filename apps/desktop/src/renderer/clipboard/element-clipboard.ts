@@ -32,7 +32,10 @@ import { type CopySelection, copySelection } from "../shared-sections/shared-sec
  */
 
 /** The parts of an editor session copying and pasting use. */
-export type ClipboardSession = Pick<EditorSession, "history" | "ui" | "edit" | "library">;
+export type ClipboardSession = Pick<
+  EditorSession,
+  "history" | "ui" | "edit" | "library" | "select"
+>;
 
 /** How undo labels and messages name an element: its Layers name, else its component's name. */
 function itemName(session: ClipboardSession, node: NodeDoc): string {
@@ -166,7 +169,7 @@ export async function copySelected(
       },
       { selectionAfter: { ...ui, nodeId: null } },
     );
-    if (session.ui.getState().nodeId === ui.nodeId) session.ui.setState({ nodeId: null });
+    if (session.ui.getState().nodeId === ui.nodeId) session.select(null);
   }
   return true;
 }
@@ -266,9 +269,8 @@ export async function pasteElements(
         const content = draft.pages[ui.pageId]?.doc.content;
         if (content !== undefined) insertAt(content, target, [copy]);
       },
-      { selectionAfter: { ...ui, nodeId: selected } },
+      { selectionAfter: { ...ui, nodeId: selected }, apply: true },
     );
-    session.ui.setState({ nodeId: selected });
     return true;
   }
   // The page's own anchors, its copies' and the shared Header's and Footer's are taken.
@@ -291,9 +293,8 @@ export async function pasteElements(
       );
       insertAt(content, target, copies);
     },
-    { selectionAfter: { ...ui, nodeId: firstId } },
+    { selectionAfter: { ...ui, nodeId: firstId }, apply: true },
   );
-  session.ui.setState({ nodeId: firstId });
   return true;
 }
 
