@@ -54,9 +54,9 @@ Current code size (approx. lines): desktop 2.7k · engine 1.6k · history 1.6k �
 
 **Scope change, 22 Oct 2026 (editor UI/UX parity, UI2–UI3):** +37 days for Bootstrap Studio-style canvas, selection and panel tools, the keyboard shortcut standard (items 1.30–1.38, 30 days), the Columns toolbar (2.17, 4 days), Theme Studio (2.3, +2 days) and template filters (2.14, +1 day) ([product/06](../research/product/06-editor-ui-ux-parity.md)). Phase 1 now ends about 17 Dec 2026 at estimates (5 Jan 2027 with contingency); the actual pace so far suggests earlier.
 
-**Scope change, 23 Oct 2026 (Bootstrap Studio screenshot pass, UI5):** +3 days from [bootstrap-studio/07](../research/bootstrap-studio/07-editor-screenshot-pass.md), SP-1…SP-13: hover name chip, size in the hover label, margin/padding colours, drop indicator, *Select parent* and Layers hover outlines (1.39, +1 day; recorded on 1.35 first, which had already closed); per-device rows, search highlights, group header copy/paste/reset (1.36, +1 day); contextual toolbars in the canvas toolbar's centre for Columns (2.17), Heading and List (2.9), and a *Suggested* group in the Add panel (2.9, +1 day); traffic-light dots in Site Check (3.6).
+**Scope change, 23 Oct 2026 (Bootstrap Studio screenshot pass, UI5):** +3 days from [bootstrap-studio/07](../research/bootstrap-studio/07-editor-screenshot-pass.md), SP-1…SP-13: hover name chip, size in the hover label, margin/padding colours, drop indicator, *Select parent* and Layers hover outlines (1.39, +1 day; recorded on 1.35 first, which had already closed); per-device rows, search highlights, group header copy/paste/reset (1.39, +1 day; moved from 1.36, whose PR predated them); contextual toolbars in the canvas toolbar's centre for Columns (2.17), Heading and List (2.9), and a *Suggested* group in the Add panel (2.9, +1 day); traffic-light dots in Site Check (3.6).
 
-**Scope change, 23 Oct 2026 (look and feel, UI6):** +6 days to copy Bootstrap Studio 9.0.1's look as far as the IP rule allows ([product/07](../research/product/07-look-and-feel-pass.md), LF-1…LF-13): a new item 1.39 (6 days, stream A after 1.37, including the six UI5 items moved from 1.35) for blue selection, the flat canvas, the quick-actions bar, toolbar order, tab strips, two-column fields, the card-grid start screen, one Settings dialog and the icon-only title bar; the New Site dialog layout on 2.14 (+1 day).
+**Scope change, 23 Oct 2026 (look and feel, UI6):** +6 days to copy Bootstrap Studio 9.0.1's look as far as the IP rule allows ([product/07](../research/product/07-look-and-feel-pass.md), LF-1…LF-13): a new item 1.39 (7 days, stream A after 1.37, including the nine UI5 items moved from 1.35 and 1.36) for blue selection, the flat canvas, the quick-actions bar, toolbar order, tab strips, two-column fields, the card-grid start screen, one Settings dialog and the icon-only title bar; the New Site dialog layout on 2.14 (+1 day).
 
 **Re-plan, 23 Oct 2026 (Phase 2):** Phase 2 was planned ahead of the Phase 1 exit so each stream can continue straight into it: three streams, items over 5 days split into sub-issues, Phase 1's actual pace (0.39 of estimates) applied as 0.5 for engineering and 0.7 for content. Code-complete about **1 Dec 2026** (9 Dec with +25%); milestone due 11 Dec 2026. See [Phase 2](#phase-2-design--components). The table below and the Gantt chart still show the baseline dates for Phases 2–5.
 
@@ -120,10 +120,10 @@ gantt
     1.33 Canvas view options and sizing :t1_33, after t1_21, 3d
     1.34 Add panel favourites and command palette :t1_34, after t1_33, 4d
     1.35 Layers tools and right-click menu :t1_35, after t1_29, 3d
-    1.36 Edit panel tools :t1_36, after t1_34, 5d
+    1.36 Edit panel tools :t1_36, after t1_34, 4d
     1.37 Colour, image pickers, copy style, undo list :t1_37, after t1_36, 5d
     1.38 Keyboard shortcut standard and sheet :t1_38, after t1_35, 2d
-    1.39 Look-and-feel pass :t1_39, after t1_37, 6d
+    1.39 Look-and-feel pass :t1_39, after t1_37, 7d
     section Phase 2
     2.1 Themes package – theme model → Tailwind/daisyU… :t2_1, 2027-03-02, 4d
     2.2 Fonts – bundled catalogue and on-demand download :t2_2, 2027-03-08, 3d
@@ -295,10 +295,10 @@ Fold spike learnings into architecture §6 (CanvasEngine, HistoryManager, Pipeli
 | 1.33 | Canvas view options and sizing | [#181](https://github.com/nexustech/webforge/issues/181) | shell | F-ED-25, UI2, UX-7, UX-8 | 3 | 1.15 |
 | 1.34 | Add panel favourites and the command palette | [#182](https://github.com/nexustech/webforge/issues/182) | shell | F-ED-26, UI2, UX-10, UX-11 | 4 | 1.13 |
 | 1.35 | Layers tools and the right-click menu | [#183](https://github.com/nexustech/webforge/issues/183) | engine | F-ED-26, UI2, UX-12, UX-24 | 3 | 1.24, 1.29 |
-| 1.36 | Edit panel tools: reset, search, changed cue, per-device dots, scrubbing | [#184](https://github.com/nexustech/webforge/issues/184) | shell | F-ED-26, UI2, UI5, UX-13, UX-18, UX-19, UX-20 | 5 | 1.14 |
+| 1.36 | Edit panel tools: reset, search, changed cue, per-device dots, scrubbing | [#184](https://github.com/nexustech/webforge/issues/184) | shell | F-ED-26, UI2, UI5, UX-13, UX-18, UX-19, UX-20 | 4 | 1.14 |
 | 1.37 | Colour picker, image picker, copy style and the undo list | [#185](https://github.com/nexustech/webforge/issues/185) | shell | F-ED-26, UI2, UX-25, UX-15, UX-14, UX-16 | 5 | 1.14, 1.16, 1.11 |
 | 1.38 | Keyboard shortcut standard and shortcut sheet | [#186](https://github.com/nexustech/webforge/issues/186) | shell | F-ED-27, UI3 | 2 | 1.30, 1.33, 1.34 |
-| 1.39 | Look-and-feel pass: selection colours, chrome, tab strips, two-column fields, start screen, Settings | [#278](https://github.com/nexustech/webforge/issues/278) | shell | F-ED-25, F-ED-26, UI1, UI5, UI6, LF-1…13, SP-1…3, SP-8…10 | 6 | 1.37, 1.36, 1.33, 1.34 |
+| 1.39 | Look-and-feel pass: selection colours, chrome, tab strips, two-column fields, start screen, Settings | [#278](https://github.com/nexustech/webforge/issues/278) | shell | F-ED-25, F-ED-26, UI1, UI5, UI6, LF-1…13, SP-1…3, SP-5…10 | 7 | 1.37, 1.36, 1.33, 1.34 |
 
 **Streams (re-plan of 20 Oct 2026).** Phase 1 runs as three concurrent streams, each in its own Claude Code session, with one item in progress per stream. A dependency counts as met when its PR is merged to `main`. Shared files are split up front so that streams add files instead of editing the same ones: per-area i18n catalogues (1.3), per-domain IPC files ([#90](https://github.com/nexustech/webforge/issues/90)), and command and panel registries (1.2).
 
@@ -572,10 +572,9 @@ Layers: valid/invalid drop feedback while dragging; indicators for shared (linke
 - [ ] Select similar selects all items of the same type on the page
 
 **1.36 Edit panel tools: reset, search, changed cue, per-device dots, scrubbing** (added 22 Oct 2026, UI2/UI3)  
-Reset per field and per group (right-click, Mod + Esc); *Expand/Collapse all* (Mod + Enter on a group); a search field that filters fields; the changed-group cue (group title in the accent colour when anything inside differs from the default); per-device dots replacing the '‹device› only' text (grey = inherits, accent = set here, click to clear); drag on numeric fields to change them (Shift = fine). Collapsing a side column leaves a strip of panel icons; clicking an icon re-opens the column on that panel (SP-11). **Added 23 Oct 2026 (UI5, +1 day):** expanding a field with a per-device value shows one row per device, a row with its own value has an accent label and the device in effect carries the dot (SP-5); the search opens the groups that match and highlights the matching labels (SP-6); group headers show copy, paste and reset icons on hover (SP-7).
+Reset per field and per group (right-click, Mod + Esc); *Expand/Collapse all* (Mod + Enter on a group); a search field that filters fields; the changed-group cue (group title in the accent colour when anything inside differs from the default); per-device dots replacing the '‹device› only' text (grey = inherits, accent = set here, click to clear); drag on numeric fields to change them (Shift = fine). Collapsing a side column leaves a strip of panel icons; clicking an icon re-opens the column on that panel (SP-11). *SP-5, SP-6 and SP-7 (UI5) were added here on 23 Oct 2026 after this item's PR was open; they moved to 1.39 the same day.*
 
 - [ ] Reset is one undo step per field or group
-- [ ] Per-device rows show which device set a value and which is in effect
 - [ ] Dots show and clear per-device overrides correctly (unit + E2E)
 - [ ] Scrubbing a number is one undo step
 - [ ] All controls keyboard operable
@@ -595,13 +594,14 @@ One shortcut registry implementing the F-ED-27 map on Windows and macOS (Mod + P
 - [ ] The sheet is generated from the registry, so it can't drift
 
 **1.39 Look-and-feel pass: selection colours, chrome, tab strips, two-column fields, start screen, Settings** (added 23 Oct 2026, UI6)  
-Close the visible gap to Bootstrap Studio 9.0.1 within the IP rule ([product/07](../research/product/07-look-and-feel-pass.md)): hover and selection in the accent blue, with `--selection-outline` renamed `--grid-outline` for *Show outlines* (LF-1); a flat backdrop with the stage flush at the top (LF-2); our own quick-actions bar and hover chip in a solid accent bar with white icons (LF-3); the stage toolbar reordered (zoom, Rotate, Fit, View and width on the left, contextual toolbars in the centre, page and devices on the right, LF-4); sentence-case tab strips with the active tab lifted and a magnifier (LF-5); plain collapsible rows in the Add panel (LF-6); two-column field rows in the Edit panel and Site Settings (LF-7); a card-grid start screen with a Help tab and search (LF-10); one Settings dialog with *App* and *This site* nav groups (LF-12); icon-only title-bar buttons with split-button carets, menus in the native menu bar on macOS (LF-13). LF-8 (a size-and-spacing diagram) only if cheap. **Also the six UI5 items moved from 1.35 (+1 day):** the hover name chip, always on (SP-1), with the element's size when *Show spacing on hover* is on (SP-2); the spacing overlay and handles tinting margin warm and padding green (SP-3); a 1 px accent drop line between Layers rows, mirrored on the canvas with the dragged element's chip (SP-8); *Select parent* in the right-click menu (SP-9); a Layers row outlining its element on hover (SP-10). Runs after 1.37 and 1.36.
+Close the visible gap to Bootstrap Studio 9.0.1 within the IP rule ([product/07](../research/product/07-look-and-feel-pass.md)): hover and selection in the accent blue, with `--selection-outline` renamed `--grid-outline` for *Show outlines* (LF-1); a flat backdrop with the stage flush at the top (LF-2); our own quick-actions bar and hover chip in a solid accent bar with white icons (LF-3); the stage toolbar reordered (zoom, Rotate, Fit, View and width on the left, contextual toolbars in the centre, page and devices on the right, LF-4); sentence-case tab strips with the active tab lifted and a magnifier (LF-5); plain collapsible rows in the Add panel (LF-6); two-column field rows in the Edit panel and Site Settings (LF-7); a card-grid start screen with a Help tab and search (LF-10); one Settings dialog with *App* and *This site* nav groups (LF-12); icon-only title-bar buttons with split-button carets, menus in the native menu bar on macOS (LF-13). LF-8 (a size-and-spacing diagram) only if cheap. **Also the six UI5 items moved from 1.35 (+1 day):** the hover name chip, always on (SP-1), with the element's size when *Show spacing on hover* is on (SP-2); the spacing overlay and handles tinting margin warm and padding green (SP-3); a 1 px accent drop line between Layers rows, mirrored on the canvas with the dragged element's chip (SP-8); *Select parent* in the right-click menu (SP-9); a Layers row outlining its element on hover (SP-10). **And the three moved from 1.36 (+1 day):** expanding a field with a per-device value shows one row per device, a row with its own value has an accent label and the device in effect carries the dot (SP-5); the search opens the groups that match and highlights the matching labels (SP-6); group headers show copy, paste and reset icons on hover (SP-7). Runs after 1.37 and 1.36.
 
 - [ ] Selection, hover, chip and bar share `--primary`; *Show outlines* uses `--grid-outline`
 - [ ] Stories for the parity window, title bar, canvas toolbar, Add, Edit and Layers panels, start screen and Settings updated in dark and light, axe-clean, contrast kept
 - [ ] Every title-bar button has an accessible name and a tooltip with its shortcut
 - [ ] Two-column rows stay keyboard operable at 240 px
 - [ ] The hover chip shows the element's name and, with spacing on hover, its size; the drop line shows in Layers and on the canvas
+- [ ] Per-device rows show which device set a value and which is in effect
 
 </details>
 

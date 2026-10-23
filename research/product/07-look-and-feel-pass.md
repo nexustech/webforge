@@ -51,7 +51,7 @@ Effort: **S** ≤ 1 day · **M** 2–4 days. Grouped as the new plan item 1.39 b
 | *Online* tab, *Assistant* tab in the left column | Not in the MVP (UI1 §5; the v1.1 assistant has its own design, UX-28) |
 
 ## 3. Where it lands
-- **New Phase 1 item 1.39 Look-and-feel pass** (stream A, 6 days): LF-1…LF-7, LF-10, LF-12 and LF-13; LF-8 if cheap once 1.36 is in; and the six UI5 items moved from 1.35 after it closed (SP-1, SP-2, SP-3, SP-8, SP-9, SP-10, +1 day). It runs after 1.37 and 1.36 so the two-column fields don't collide with the Edit panel tools.
+- **New Phase 1 item 1.39 Look-and-feel pass** (stream A, 7 days): LF-1…LF-7, LF-10, LF-12 and LF-13; LF-8 if cheap once 1.36 is in; and the nine UI5 items moved here (SP-1, SP-2, SP-3, SP-8, SP-9, SP-10 from 1.35 after it closed; SP-5, SP-6, SP-7 from 1.36, whose PR predated them; +2 days). It runs after 1.37 and 1.36 so the two-column fields don't collide with the Edit panel tools.
 - **2.14 Template format and New Site flow:** LF-11 (+1 day).
 - 1.8 and 1.17 are closed, so their screens (LF-10, LF-12) are reworked by 1.39 rather than reopened.
 - **UI1's note** gets the two corrections (LF-1, LF-2) and a pointer here; `--selection-outline` is renamed in the token table.
@@ -61,7 +61,7 @@ Decided by the product owner on 2026-10-23:
 
 | # | Decision |
 |---|---|
-| **UI6** | ✅ **Copy Bootstrap Studio's look and feel as far as the IP rule allows:** LF-1…LF-13 as written (LF-8 optional), as plan item 1.39 (+5 days, 6 with the UI5 items moved from 1.35) and 2.14 (+1 day). Dialogs stay dark; the device set stays Desktop · Tablet · Mobile |
+| **UI6** | ✅ **Copy Bootstrap Studio's look and feel as far as the IP rule allows:** LF-1…LF-13 as written (LF-8 optional), as plan item 1.39 (+5 days, 7 with the UI5 items moved from 1.35 and 1.36) and 2.14 (+1 day). Dialogs stay dark; the device set stays Desktop · Tablet · Mobile |
 
 ## Sources
 - [Bootstrap Studio 9.0.1 screenshot pass](../bootstrap-studio/07-editor-screenshot-pass.md) and its screenshots
