@@ -254,7 +254,7 @@ export function Editor({
     );
     connectionRef.current = connection;
     setEngine(engine);
-    const stopSiteCss = connectSiteCss(engine, session, compileCss, document.baseURI);
+    const stopSiteCss = connectSiteCss(engine, session, compileCss);
     const stopImages = connectCanvasImages(engine, session);
     const stopSettings = connectCanvasSettings(engine, session);
     const stopNavigation = connectCanvasNavigation(engine, session);
@@ -486,7 +486,6 @@ export function Editor({
         theme: () => session.history.document.getState().theme,
         sharedSection: (id) => sharedSection(session.history.document.getState(), id)?.section,
         compileCss,
-        baseUrl: document.baseURI,
       }),
     [session, compileCss],
   );

@@ -20,9 +20,10 @@ A site's theme (2.1) as CSS, its colours and contrast checks, and the starter pr
 - **`oklchCss(color)`:** a colour as daisyUI writes it.
 - **`THEME_PRESETS`** and **`themePreset(name)`:** light (a new site's), dark and high-contrast-rounded.
 - **Fonts (2.2):**
-  - `FONT_CATALOGUE`: the ~50 families the installer bundles, from `src/fonts/catalogue.json`, which `pnpm font-catalogue` writes from Fontsource. Each has its CSS family, fallback, licence (OFL-1.1, Apache-2.0 or UFL-1.0 only, checked when it loads), npm package and version, and the files bundled (Latin and Latin Extended) with their sizes and SHA-256;
+  - `FONT_CATALOGUE`: the ~50 families the installer bundles, from `src/fonts/catalogue.json`, which `pnpm font-catalogue` writes from Fontsource. Each has its CSS family, category (`FONT_CATEGORIES`), fallback, licence (OFL-1.1, Apache-2.0 or UFL-1.0 only, checked when it loads), npm package and version, and the files bundled (Latin and Latin Extended) with their unicode ranges, sizes and SHA-256;
+  - `fontFacesFor(theme)`: the font files a site with that theme uses, which its stylesheet declares and its export copies. These are the heading font's weights (upright) and the body font's weights, bold and italics; a static font's nearest weight stands in for a missing one. A family outside the catalogue has none;
   - `FONT_PAIRINGS`: the 15 tested pairings, a heading and a body font each; their names are `t("fonts.pairing.<id>")`;
-  - `catalogueFont(id)`, `fontRefOf(font)` (the font as a theme stores it), `bundledFontBytes(fonts)` and `FONT_BUDGET_BYTES` (15 MB).
+  - `catalogueFont(id)`, `catalogueFamily(family)`, `fontRefOf(font)` (the font as a theme stores it), `bundledFontBytes(fonts)` and `FONT_BUDGET_BYTES` (15 MB).
 
 Every value written into CSS comes from a token the model's schema checked, so nothing a site contains reaches the stylesheet as written.
 

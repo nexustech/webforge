@@ -24,6 +24,12 @@ const inter: FontMetadata = {
   variable: true,
   category: "sans-serif",
   license: "OFL-1.1",
+  unicodeRange: {
+    cyrillic: "U+0301,U+0400-045F",
+    latin: "U+0000-00FF,U+0131",
+    "latin-ext": "U+0100-02BA",
+    vietnamese: "U+0102-0103",
+  },
 };
 
 const poppins: FontMetadata = {
@@ -105,6 +111,24 @@ describe("planFamily (2.2)", () => {
     );
   });
 
+  it("gives each file its subset's characters, and lists a font where the selection says", () => {
+    const planned = planFamily(inter, { category: "display" }, "5.3.0", [100, 900]);
+
+    expect(planned.category).toBe("display");
+    expect(planned.files.map((file) => [file.subset, file.unicodeRange])).toEqual([
+      ["latin", "U+0000-00FF,U+0131"],
+      ["latin", "U+0000-00FF,U+0131"],
+      ["latin-ext", "U+0100-02BA"],
+      ["latin-ext", "U+0100-02BA"],
+    ]);
+    expect(() =>
+      planFamily({ ...inter, unicodeRange: { latin: "U+0000-00FF" } }, {}, "5.3.0", [100, 900]),
+    ).toThrow("Inter: no character range for its latin-ext subset");
+    expect(() => planFamily({ ...inter, category: "icons" }, {}, "5.3.0", [100, 900])).toThrow(
+      "Inter: category icons is not one the picker lists",
+    );
+  });
+
   it("refuses a font without Latin, and a variable font without a weight axis", () => {
     expect(() => planFamily({ ...inter, subsets: ["cyrillic"] }, {}, "5.3.0", [100, 900])).toThrow(
       "Inter: has no Latin subset",
@@ -118,6 +142,10 @@ describe("planFamily (2.2)", () => {
     expect(fontMetadataSchema.safeParse({ ...inter, styles: ["oblique"] }).success).toBe(false);
     expect(fontMetadataSchema.safeParse({ ...inter, weights: [] }).success).toBe(false);
     expect(fontMetadataSchema.safeParse({ ...inter, id: "../x" }).success).toBe(false);
+    // A range that could carry CSS.
+    expect(
+      fontMetadataSchema.safeParse({ ...inter, unicodeRange: { latin: "U+0000; } x {" } }).success,
+    ).toBe(false);
   });
 });
 

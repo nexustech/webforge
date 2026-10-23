@@ -5,7 +5,6 @@ import {
   renderNodesToHtml,
 } from "@webforge/site-components";
 import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { withCanvasFonts } from "../editor/canvas-fonts.js";
 import { type CompileCanvasCss, classesOfHtml } from "../editor/site-css.js";
 import type { AddItem } from "./add-items.js";
 
@@ -65,8 +64,6 @@ type PreviewSource = {
   /** The section a shared section stores, by its id, if the site has it. */
   readonly sharedSection: (id: SharedSectionId) => NodeDoc | undefined;
   readonly compileCss: CompileCanvasCss;
-  /** The editor's base URL, for the canvas fonts the CSS refers to. */
-  readonly baseUrl: string;
 };
 
 /**
@@ -169,7 +166,7 @@ export function createSectionPreviews(source: PreviewSource): (item: AddItem) =>
       candidates: [...new Set(classesOfHtml(html))].sort(),
     });
     if (result.status === "failed") return undefined;
-    const css = withCanvasFonts(result.css, source.baseUrl);
+    const { css } = result;
     return {
       html,
       css: css.replace(FONT_FACE, ""),

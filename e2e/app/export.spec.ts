@@ -30,7 +30,7 @@ test.describe("Export site", () => {
 
     await page.getByRole("button", { name: "Export", exact: true }).click();
 
-    await expect(page.getByText("Site exported to “my-site” (6 files).")).toBeVisible({
+    await expect(page.getByText("Site exported to “my-site” (8 files).")).toBeVisible({
       timeout: 30_000,
     });
     const index = readFileSync(join(folder, "index.html"), "utf8");
