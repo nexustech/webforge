@@ -138,7 +138,8 @@ export function App({
   };
 
   const { theme, editorLevel } = preferences;
-  // The View menu's options as the canvas takes them; the same object until one changes.
+  // The View menu's options as the canvas takes them (the compiler keeps the object until one
+  // changes; without it, the canvas is just told the same options again).
   const { showOutlines, spacingOnHover, elementNames, extraBottomSpace } = preferences.canvas;
   const viewOptions = { outlines: showOutlines, spacingOnHover, elementNames, extraBottomSpace };
   useEffect(() => {

@@ -70,10 +70,10 @@ import { type CompileCanvasCss, connectSiteCss } from "./site-css.js";
 import { UndoHistoryPanel, type UndoHistoryPanelProps } from "./UndoHistoryPanel.js";
 import { installUndoToasts, undoEntry } from "./undo-toasts.js";
 
-/** Props of {@link Editor}. */
 /** How the title bar's list of steps undoes back to one (UX-16): false if the step is gone. */
 export type UndoTo = { readonly run: (entryId: string) => boolean };
 
+/** Props of {@link Editor}. */
 export type EditorProps = {
   readonly session: EditorSession;
   /** Creates the canvas engine; injectable for tests. */
@@ -109,10 +109,6 @@ export type EditorProps = {
 const compileWithPreload: CompileCanvasCss = (request) =>
   window.webforge.canvas.compileCss(request);
 
-/**
- * The canvas frame's edge handles on `session`'s device view and `view`'s zoom: a width dragged or
- * typed with the arrows becomes the view's width, as the toolbar's width field does (U6).
- */
 /** The Undo History panel for `history`, jumping to a step with `jumpTo`. */
 function undoHistoryPanel(
   history: EditorSession["history"],
@@ -128,6 +124,10 @@ function undoHistoryPanel(
   };
 }
 
+/**
+ * The canvas frame's edge handles on `session`'s device view and `view`'s zoom: a width dragged or
+ * typed with the arrows becomes the view's width, as the toolbar's width field does (U6).
+ */
 function CanvasEdges({
   session,
   view,
@@ -467,6 +467,18 @@ export function Editor({
       }),
     [addStore],
   );
+  // The sections' larger previews in the Add panel (UX-10), drawn with the site's theme. Made once
+  // for the editor's session, so the drawings they keep outlive switches of mode.
+  const [previews] = useState(() =>
+    createSectionPreviews({
+      library: session.library,
+      theme: () => session.history.document.getState().theme,
+      sharedSection: (id) => sharedSection(session.history.document.getState(), id)?.section,
+      compileCss,
+      baseUrl: document.baseURI,
+    }),
+  );
+
   // The Add panel (1.13), hidden in Content mode (M3), and the palette's Add commands with it.
   useEffect(() => {
     if (mode !== "design") {
@@ -487,21 +499,14 @@ export function Editor({
       },
       preferences: addStore,
       commands: registry,
-      // The sections' larger previews (UX-10), drawn with the site's theme.
-      preview: createSectionPreviews({
-        library: session.library,
-        theme: () => session.history.document.getState().theme,
-        sharedSection: (id) => sharedSection(session.history.document.getState(), id)?.section,
-        compileCss,
-        baseUrl: document.baseURI,
-      }),
+      preview: previews,
     });
     addPanelRef.current = addPanel;
     return () => {
       addPanelRef.current = null;
       addPanel.remove();
     };
-  }, [panels, session, mode, engine, siteWide, addStore, registry, compileCss]);
+  }, [panels, session, mode, engine, siteWide, addStore, registry, previews]);
   useEffect(() => registerMediaPanel(panels, session), [panels, session]);
   useEffect(() => registerImageField({ session, picks: imagePicks }), [session, imagePicks]);
   // Colour fields show the theme's own colours and warn about low contrast (1.37, UX-25).
