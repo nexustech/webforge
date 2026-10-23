@@ -224,6 +224,21 @@ describe("LayersPanel (F-ED-12)", () => {
     ]);
   });
 
+  it("doesn't drag a selected layer while others are selected too, but drags one that isn't (#262)", () => {
+    setUp("a", true, false, ["b"]);
+    const draggable = screen
+      .getAllByRole("treeitem")
+      .map((row) => [row.getAttribute("data-layer"), row.getAttribute("draggable")]);
+
+    expect(draggable).toEqual([
+      ["s1", "true"],
+      ["a", "false"],
+      ["b", "false"],
+      ["c", "true"],
+      ["s2", "true"],
+    ]);
+  });
+
   it("works out where a dropped layer lands", () => {
     expect(dropIndex(0, 2, true)).toBe(2);
     expect(dropIndex(0, 2, false)).toBe(1);

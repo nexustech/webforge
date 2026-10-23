@@ -166,7 +166,8 @@ function editNode(
 ): void {
   const current = session.ui.getState();
   const { pageId } = current;
-  const selectionAfter = select ? { ...current, nodeId: id } : current;
+  // A step that selects selects the layer alone: keeping the others could list it twice (#262).
+  const selectionAfter = select ? { ...current, nodeId: id, others: [] } : current;
   session.edit(
     kind,
     label,
