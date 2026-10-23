@@ -166,6 +166,8 @@ test.describe("desktop shell", () => {
     const path = join(siteDir, "Rosa's Bakery.wforge");
     await stubFileDialogs(app, path);
     const project = {
+      // A new one for each opening of the site (R6).
+      sessionId: expect.stringMatching(/^[0-9a-f-]{36}$/),
       name: "Rosa's Bakery",
       fileName: "Rosa's Bakery.wforge",
       formatVersion: 1,
