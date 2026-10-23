@@ -43,6 +43,14 @@ export const components = {
   "field.color.primary": "Primary",
   "field.color.secondary": "Secondary",
   "field.color.accent": "Accent",
+  // The theme's colour roles, by their glossary names (UX-25).
+  "colour.role.brand": "Brand",
+  "colour.role.accent": "Accent",
+  "colour.role.secondAccent": "Second accent",
+  "colour.role.surface": "Surface",
+  "colour.role.text": "Text",
+  "field.color.lowContrast":
+    "Hard to read on the page: contrast {ratio}:1, less than the 4.5:1 text needs.",
   "field.alignment": "Alignment",
   "field.alignment.left": "Left",
   "field.alignment.centre": "Centre",

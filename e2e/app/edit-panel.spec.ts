@@ -62,6 +62,20 @@ test.describe("Edit panel", () => {
     await expect(canvas().locator("h3.site-heading")).toHaveText("Welcome to our business");
   });
 
+  test("offers the theme's colours by their names, one step a choice (1.37, UX-25)", async () => {
+    await selectHeading();
+    await panel().getByRole("tab", { name: "Style" }).click();
+    await expect(panel().getByRole("radio", { name: "Brand" })).toBeVisible();
+
+    await panel().getByRole("radio", { name: "Second accent" }).click();
+
+    await expect(steps().first()).toHaveText("Changed Heading colour");
+    await expect(panel().getByRole("radio", { name: "Second accent" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+  });
+
   test("makes one step of typing in a text field", async () => {
     await selectHeading();
     const field = panel().getByLabel("Text", { exact: true });

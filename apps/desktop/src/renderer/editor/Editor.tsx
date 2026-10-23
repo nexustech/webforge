@@ -38,6 +38,7 @@ import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
 import { usePanelRegistry } from "../shell/panel-context.js";
 import { connectCanvasSettings } from "../site-settings/canvas-settings.js";
 import { CanvasResizeHandles } from "./CanvasResizeHandles.js";
+import { registerColourField } from "./ColourField.js";
 import { registerCanvasCommands } from "./canvas-commands.js";
 import { EditPanelHost } from "./EditPanelHost.js";
 import {
@@ -387,6 +388,9 @@ export function Editor({
   }, [panels, session, mode, engine, siteWide]);
   useEffect(() => registerMediaPanel(panels, session), [panels, session]);
   useEffect(() => registerImageField({ session }), [session]);
+  // Colour fields show the theme's own colours (1.37, UX-25); the contrast warning comes with the
+  // themes package's contrast helper (2.1).
+  useEffect(() => registerColourField({ session }), [session]);
   useEffect(() => registerLinkField({ session }), [session]);
 
   return (
