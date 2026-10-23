@@ -5,8 +5,18 @@ import type { ComponentType } from "react";
  * {@link PanelRegistry.register} instead of editing the shell. Panels sharing a slot become tabs.
  */
 
-/** Where a panel goes: the left and right columns' top and bottom, or the bottom drawer. */
-export type PanelSlot = "left.top" | "left.bottom" | "right.top" | "right.bottom" | "drawer";
+/**
+ * Where a panel goes: the left and right columns' top and bottom, which share the column's tabs; the
+ * left column's lower pane (`left.lower`), shown under its tabs at the same time (ADR 0011: Layers);
+ * or the bottom drawer.
+ */
+export type PanelSlot =
+  | "left.top"
+  | "left.bottom"
+  | "left.lower"
+  | "right.top"
+  | "right.bottom"
+  | "drawer";
 
 /** One panel. `title` is already translated (`t()`) and labels its tab. */
 export type Panel = {
@@ -16,7 +26,7 @@ export type Panel = {
   readonly title: string;
   /** Its icon, in the strip a collapsed column leaves (UX-13); its title's first letter if none. */
   readonly icon?: ComponentType<{ readonly className?: string }>;
-  /** Shown only in Advanced mode (T2): Layers, Custom Code. */
+  /** Shown only in Advanced mode (T2): Custom Code. */
   readonly advancedOnly?: boolean;
   /** Tab order within the slot, lowest first; ties keep registration order. */
   readonly order?: number;

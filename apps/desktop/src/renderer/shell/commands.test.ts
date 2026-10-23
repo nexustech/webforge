@@ -224,6 +224,13 @@ describe("shortcuts", () => {
     expect(formatShortcut("Mod+Alt+ArrowUp", true)).toBe("⌥⌘↑");
     expect(formatShortcut("Mod+-", false)).toBe("Ctrl+−");
     expect(formatShortcut("Mod+Plus", false)).toBe("Ctrl++");
+    // Modifiers alone, held while dragging (1.35): shown, never matched.
+    expect(formatShortcut("Mod", false)).toBe("Ctrl");
+    expect(formatShortcut("Mod+Shift", false)).toBe("Ctrl+Shift");
+    expect(formatShortcut("Mod+Shift", true)).toBe("⇧⌘");
+    expect(
+      matchesShortcut(key({ key: "Shift", ctrlKey: true, shiftKey: true }), "Mod+Shift", false),
+    ).toBe(false);
     expect(formatShortcut("Escape", false)).toBe("Esc");
     expect(formatShortcut("Enter", true)).toBe("↩");
     expect(formatShortcut("?", false)).toBe("?");

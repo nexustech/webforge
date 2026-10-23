@@ -64,6 +64,31 @@ test.describe("window layout", () => {
     expect(await leftWidth()).toBeLessThan(resized + 3);
   });
 
+  test("keeps Layers' share of the left column after a restart; Reset Panels gives 60/40 back", async () => {
+    // Layers' part of the left column's height, under the tabs (ADR 0011).
+    const share = async () => {
+      const tabs = await page.locator('[data-panel][id="tabs"]').boundingBox();
+      const lower = await page.locator('[data-panel][id="lower"]').boundingBox();
+      return tabs === null || lower === null ? 0 : lower.height / (tabs.height + lower.height);
+    };
+    await expect.poll(share).toBeCloseTo(0.4, 1);
+    await page.getByRole("separator", { name: "Resize Layers", exact: true }).focus();
+    for (let step = 0; step < 10; step += 1) {
+      await page.keyboard.press("ArrowUp");
+    }
+    await expect.poll(share).toBeGreaterThan(0.45);
+    const resized = await share();
+    await expect.poll(() => savedPreferences().panelLayout?.["shell.left"]).toBeDefined();
+
+    await app.close();
+    await start();
+
+    await expect.poll(share).toBeCloseTo(resized, 2);
+    await page.getByRole("menuitem", { name: "View" }).click();
+    await page.getByRole("menuitem", { name: "Reset Panels" }).click();
+    await expect.poll(share).toBeCloseTo(0.4, 2);
+  });
+
   test("hides and shows the left panels from the title bar", async () => {
     const toggle = page.getByRole("button", { name: "Show or Hide Left Panels" });
     await toggle.click();
@@ -76,8 +101,10 @@ test.describe("window layout", () => {
     const toggle = page.getByRole("button", { name: "Show or Hide Left Panels" });
     await toggle.click();
     const strip = page.getByRole("navigation", { name: "Left panels, collapsed" });
-    await expect(strip.getByRole("button")).toHaveText(["", ""]);
+    // Layers too, from the column's lower pane (ADR 0011).
+    await expect(strip.getByRole("button")).toHaveText(["", "", ""]);
     await expect(strip.getByRole("button", { name: "Add" })).toBeVisible();
+    await expect(strip.getByRole("button", { name: "Layers" })).toBeVisible();
 
     await strip.getByRole("button", { name: "Undo History" }).click();
 

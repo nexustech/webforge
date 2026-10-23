@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { DEFAULT_THEME, type SiteSnapshot, type ThemeTokens } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
-import { FONT_CATALOGUE, fontFacesFor } from "@webforge/themes";
+import { type CatalogueFont, FONT_CATALOGUE, type FontFace, fontFacesFor } from "@webforge/themes";
 import { beforeAll, describe, expect, it } from "vitest";
 import { BuildError, buildSite } from "../src/build.js";
 import { loadNodeResources } from "../src/node-resources.js";
@@ -70,6 +70,49 @@ describe("exported fonts (2.2)", () => {
     );
 
     expect(fontFiles(built.files)).toEqual([]);
+  });
+
+  it("exports a downloaded family the app passes, declared in the stylesheet", async () => {
+    const data = new Uint8Array([1, 2, 3, 4]);
+    const comic: CatalogueFont = {
+      id: "comic-neue",
+      family: "Comic Neue",
+      category: "handwriting",
+      fallback: "sans-serif",
+      licence: "OFL-1.1",
+      variable: false,
+      weights: [400],
+      styles: ["normal"],
+      package: "@fontsource/comic-neue",
+      version: "5.2.5",
+      files: [
+        {
+          file: "comic-neue-latin-400-normal.woff2",
+          subset: "latin",
+          style: "normal",
+          weight: 400,
+          unicodeRange: "U+0000-00FF",
+          bytes: data.byteLength,
+          sha256: createHash("sha256").update(data).digest("hex"),
+        },
+      ],
+    };
+    const downloaded = {
+      ...resources,
+      fonts: [...FONT_CATALOGUE, comic],
+      readFont: async (face: FontFace) =>
+        face.file === "comic-neue-latin-400-normal.woff2" ? data : resources.readFont(face),
+    };
+
+    const built = await buildSite(siteWithFonts("Comic Neue", "Inter"), siteLibrary, downloaded);
+
+    expect(fontFiles(built.files)).toContain("assets/fonts/comic-neue-latin-400-normal.woff2");
+    const css = [...built.files]
+      .filter(([path]) => path.endsWith(".css"))
+      .map(([, bytes]) => new TextDecoder().decode(bytes))
+      .join("\n");
+    expect(css).toContain('font-family: "Comic Neue"');
+    expect(css).toContain('src: url("../fonts/comic-neue-latin-400-normal.woff2")');
   });
 
   it("refuses to export a font file that is missing or isn't the catalogue's", async () => {

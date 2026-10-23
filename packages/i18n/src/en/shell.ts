@@ -108,6 +108,9 @@ export const shell = {
   "shortcuts.layersChild": "Select the first child",
   "shortcuts.layersSibling": "Select the previous or next sibling",
   "shortcuts.layersMove": "Move up or down",
+  "shortcuts.layersCopy": "Copy: hold while dragging",
+  "shortcuts.layersLinkedCopy":
+    "Place a linked copy of a shared section: hold while dragging, adding Shift once it moves",
   "shortcuts.layersRename": "Rename",
   "shortcuts.toggleGroups": "Open or close all option groups",
   "shortcuts.resetOption": "Reset an option or group to its default",

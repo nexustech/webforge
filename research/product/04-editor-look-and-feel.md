@@ -2,6 +2,7 @@
 
 **Status:** Decided 2026-10-20 (decision UI1). Implementation guidance for `packages/editor-ui` and `apps/desktop/src/renderer`
 **Interaction details** (canvas, selection, panels, shortcuts) are proposed in [06-editor-ui-ux-parity.md](06-editor-ui-ux-parity.md).
+**Amended 2026-10-23 (UI6, [07-look-and-feel-pass.md](07-look-and-feel-pass.md)):** the running 9.0.1 app shows **blue** hover and selection (magenta is its grid outline) and a **flat** backdrop with the stage flush at the top, so the magenta selection and the gradient below are superseded (LF-1, LF-2). That note lists the remaining visual gaps (LF-3…LF-13) as plan item 1.39.
 **Goal:** Webforge's editor should feel familiar to Bootstrap Studio users: **same overall layout, dark professional colour scheme, dense panels, colour-coded main actions**. It keeps Webforge's own terminology ([01-terminology.md](01-terminology.md)), Simple/Advanced modes (T2) and shadcn/ui components ([stack/02](../stack/02-react-vs-svelte.md)).
 
 **Sources:**
@@ -39,10 +40,10 @@ Bootstrap Studio's window and the Webforge equivalent:
 |---|---|---|---|
 | **Title bar** (custom, frameless, 40 px) | Menu, New, Open, Save, Settings · Undo/Redo · central search box with design name · panel layout toggles · Preview / Export / Publish dropdowns · window controls | Same arrangement:<br>• Menu, **New**, **Open**, **save status** ("Saved" / "Saving…", click = Save version)<br>• Undo/Redo<br>• central **command palette** box showing site name<br>• left/right/bottom panel toggles<br>• **Design \| Content** mode toggle (M3)<br>• **Preview**, **Export**, **Publish** split-buttons<br>• window controls | Both |
 | **Left top** | Component library: tabs *Studio / Online*, search, collapsible categories | **Add panel**: tabs **Sections \| Elements**, search, categories (Headers, Heroes, Features, Testimonials, Pricing, Contact…), drag or click to insert | Both (hidden in Content mode) |
-| **Left bottom** | *Overview* (DOM tree) / *Assistant*; toolbar ↑ ↓ ← → duplicate · visibility · delete | **Layers** (tree, same toolbar) and **Undo History** tabs | Layers: Advanced. Undo History: both (T2) |
+| **Left bottom** | *Overview* (DOM tree) / *Assistant*; toolbar ↑ ↓ ← → duplicate · visibility · delete | **Layers** (tree, same toolbar), always shown under the column's **Add** and **Undo History** tabs ([ADR 0011](../../docs/adr/0011-layers-always-visible.md)) | Both, Layers included (T2) |
 | **Centre top** | Document tabs (one per open design) | Site tab (one site per window in MVP; tab strip kept for future) | Both |
 | **Canvas toolbar** | Zoom in/out, outlines, …, live size readout "1200px × 879px @ 100%", page dropdown, 6 device widths | Zoom, show outlines, size readout, **page dropdown**, **Desktop · Tablet · Mobile** (+ custom width) | Both |
-| **Canvas** | Dark radial gradient around a white page iframe; selection outlines; floating round **+** button | Same: dark gradient backdrop, page iframe with soft shadow, **magenta selection / hover outlines** with a small label chip, floating blue **+** (opens Add panel at the insertion point) | Both |
+| **Canvas** | Dark radial gradient around a white page iframe; selection outlines; floating round **+** button | Same: dark gradient backdrop, page iframe with soft shadow, **magenta selection / hover outlines** with a small label chip, floating blue **+** (opens Add panel at the insertion point). *Corrected 2026-10-23 (UI6, LF-1/LF-2): flat backdrop, stage flush at the top without a shadow, **blue** (`--primary`) hover and selection; magenta is the grid outline of* Show outlines | Both |
 | **Bottom drawer** | *HTML* / *Styles* code editors | **Site Check** (Must fix · Should fix · Tips) and **Code** (Custom Code, Advanced) | Site Check: both. Code: Advanced |
 | **Right top** | Inspector tabs *Appearance / Options / Animation*; empty state "No components selected" | **Edit panel** tabs **Content \| Style \| Advanced**; empty state *"Select an element to edit it"* | Advanced tab: Advanced mode |
 | **Right bottom** | *Design* (Pages, Styles, JavaScript, Fonts, Images) / *Theme* | **Site** (Pages, Media, Code ▸ Advanced) / **Theme** (preset, brand colours, fonts, roundness; fonts moved here from Site on 23 Oct 2026) | Both |
@@ -82,7 +83,7 @@ Values below are **our tokens**, chosen to match Bootstrap Studio's palette clos
 | `--primary` / `--ring` | `#0a6fb7` | Primary buttons, focus ring, active state, slider fill | active / focus outline |
 | `--accent` | `rgba(10,111,183,0.34)` | Selected row in trees and lists | tree highlight |
 | `--hover` (custom) | `rgba(255,255,255,0.05)` | Row hover | list item highlight |
-| `--selection-outline` (custom) | `#fd66ff` | Canvas selection/hover outline (magenta) | pink |
+| ~~`--selection-outline`~~ `--grid-outline` (custom) | `#fd66ff` | ~~Canvas selection/hover outline (magenta)~~ *Show outlines* and column outlines (renamed 2026-10-23, UI6 LF-1; selection and hover use `--primary`) | pink |
 | `--destructive` | `#c83b3d` | Delete, close-hover | close-button hover |
 | `--success` (custom) | `#28c174` | Export button, "Saved", success toasts | green |
 | `--warning` (custom) | `#fba929` | Open button, Should-fix issues | yellow |
@@ -131,7 +132,7 @@ These must be checked for WCAG AA contrast. Adjust light values where needed. Th
   - radius **3–4 px** (small, like Bootstrap Studio), not shadcn's 8–10 px
 - **Icons:** Lucide at 16 px (14 px in dense trees), stroke 1.75; tinted per the action colours above.
 - **Tree items:** disclosure triangles, bold element type followed by its muted label (Bootstrap Studio shows "Navbar *Navbar Centered Links*"); a small badge for shared Header/Footer (C5) and a lock icon for locked items.
-- **Canvas chrome:** 1 px magenta outline on hover, 2 px on selection, with a small label chip ("Section · Hero") and quick actions (move up/down, duplicate, delete) on the selected element.
+- **Canvas chrome:** 1 px ~~magenta~~ accent-blue outline on hover, 2 px on selection (UI6 LF-1), with a small label chip ("Section · Hero") and quick actions (move up/down, duplicate, delete) on the selected element, in a solid accent bar with white icons (LF-3).
 - **Empty states:** centred muted text in panels ("Select an element to edit it", "Drag a section here").
 - **Motion:** minimal, 100–150 ms fades and slides; respect *prefers-reduced-motion*.
 
@@ -156,7 +157,7 @@ These must be checked for WCAG AA contrast. Adjust light values where needed. Th
 |---|---|---|
 | Save button | "Saved" status + Save version | Periodic autosave (P2) |
 | Six device widths | Desktop · Tablet · Mobile (+ custom) | Simpler for DIY users (T1) |
-| Overview always visible | Layers in Advanced mode; Undo History visible in Simple mode | T2 |
+| Overview always visible | Layers always visible, under Add and Undo History, in Simple and Advanced mode | T2, [ADR 0011](../../docs/adr/0011-layers-always-visible.md) |
 | Appearance / Options / Animation | Content · Style · Advanced | Glossary (T1/T4) |
 | HTML / Styles drawer | Site Check (+ Code in Advanced) | Non-technical users (T1); X5 checks |
 | Design / Theme panel incl. Styles & JavaScript files | Site (Pages, Media, Fonts; Code in Advanced) / Theme | Simple mode hides code |

@@ -1,8 +1,8 @@
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { t } from "@webforge/i18n";
-import { DOCUMENT_EXTENSIONS, type SiteSnapshot } from "@webforge/model";
-import { fontFacesFor } from "@webforge/themes";
+import { DOCUMENT_EXTENSIONS, type SiteSnapshot, type ThemeTokens } from "@webforge/model";
+import { type CatalogueFont, FONT_CATALOGUE, fontFacesFor } from "@webforge/themes";
 import {
   app,
   BrowserWindow,
@@ -11,6 +11,7 @@ import {
   dialog,
   ipcMain,
   Menu,
+  net,
   type OpenDialogOptions,
   protocol,
   type Rectangle,
@@ -35,7 +36,14 @@ import type { E2eDialog } from "./e2e-dialogs.js";
 import { type ExportDialogs, registerExportHandlers } from "./export-ipc.js";
 import { runExportInWorker } from "./export-worker-client.js";
 import { createFlushOnClose } from "./flush-on-close.js";
-import { createFontReader, createFontResponder, FONT_SCHEME } from "./fonts.js";
+import { createFontLibrary, type FontLibrary, registerFontHandlers } from "./font-library.js";
+import {
+  catalogueFile,
+  createFontReader,
+  createFontResponder,
+  FONT_SCHEME,
+  type FontReader,
+} from "./fonts.js";
 import { createHandOff } from "./hand-off.js";
 import { registerIpcHandler } from "./ipc.js";
 import { type MediaDialogs, registerMediaHandlers } from "./media-ipc.js";
@@ -278,26 +286,58 @@ const exportDialogs: ExportDialogs = {
 
 // The installer's fonts, outside app.asar (2.2): in the packaged app's resources, or where the
 // build copied them while developing.
-const fonts = createFontReader(
+const bundledFonts = createFontReader(
   app.isPackaged ? join(process.resourcesPath, "fonts") : join(app.getAppPath(), "out", "fonts"),
 );
-const respondWithFont = createFontResponder(fonts);
+
+let fontLibrary: FontLibrary | undefined;
+/** The fonts downloaded on demand (2.2), in the user's data; made when first needed, once ready. */
+const downloadedFonts = (): FontLibrary => {
+  fontLibrary ??= createFontLibrary({
+    dir: join(app.getPath("userData"), "fonts"),
+    // Looked up at call time, so the E2E tests can stand in for Fontsource, or cut it off.
+    fetch: (url, init) => net.fetch(url, init),
+  });
+  return fontLibrary;
+};
+
+// Every font file is checked before it's used: the installer's against the catalogue, a
+// downloaded one against what its download measured.
+const fonts: FontReader = {
+  read: (face) =>
+    catalogueFile(face.file) === undefined
+      ? downloadedFonts().reader.read(face)
+      : bundledFonts.read(face),
+};
+const respondWithFont = createFontResponder(
+  fonts,
+  (name) => catalogueFile(name) ?? downloadedFonts().file(name),
+);
+
+/** The downloaded families `theme` sets its headings or text in: the canvas and an export need them. */
+async function downloadedFamiliesOf(theme: ThemeTokens): Promise<CatalogueFont[]> {
+  const used = [theme.fonts.heading.family, theme.fonts.body.family];
+  return (await downloadedFonts().downloaded()).filter((family) => used.includes(family.family));
+}
 
 // Each export runs in its own utility process, so building never blocks the window (07). The
 // worker resolves nothing itself: it gets the site's font files, read and checked here.
-const runExport = (snapshot: SiteSnapshot, destination: string) =>
-  runExportInWorker(
+const runExport = async (snapshot: SiteSnapshot, destination: string) => {
+  const families = await downloadedFamiliesOf(snapshot.theme);
+  return runExportInWorker(
     () => utilityProcess.fork(exportWorkerScript, [], { serviceName: "Webforge export" }),
     {
       type: "export",
       snapshot,
       destination,
-      fonts: fontFacesFor(snapshot.theme).flatMap((face) => {
+      fonts: fontFacesFor(snapshot.theme, [...FONT_CATALOGUE, ...families]).flatMap((face) => {
         const data = fonts.read(face);
         return data === undefined ? [] : [{ file: face.file, data }];
       }),
+      families,
     },
   );
+};
 
 // Media thumbnails are made in a long-lived worker too, started when first needed (1.16).
 const requestThumbnail = createWorkerRequests(
@@ -334,8 +374,10 @@ const mediaDialogs: MediaDialogs = {
 };
 
 // The canvas compiles its site CSS in one long-lived worker, started when first needed (1.12).
-const compileCanvasCss = createCanvasCssCompiler(() =>
-  utilityProcess.fork(exportWorkerScript, [], { serviceName: "Webforge canvas styles" }),
+const compileCanvasCss = createCanvasCssCompiler(
+  () => utilityProcess.fork(exportWorkerScript, [], { serviceName: "Webforge canvas styles" }),
+  undefined,
+  downloadedFamiliesOf,
 );
 
 function createMainWindow(preferences: PreferencesStore): void {
@@ -466,6 +508,7 @@ async function start(): Promise<void> {
     },
   );
   registerCanvasHandlers(ipcMain, (senderUrl) => isAppUrl(senderUrl, appUrl), compileCanvasCss);
+  registerFontHandlers(ipcMain, (senderUrl) => isAppUrl(senderUrl, appUrl), downloadedFonts());
   registerSpellCheckHandlers(
     ipcMain,
     (senderUrl) => isAppUrl(senderUrl, appUrl),

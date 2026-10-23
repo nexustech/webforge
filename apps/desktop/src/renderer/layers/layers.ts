@@ -4,13 +4,17 @@ import {
   isNodeDoc,
   isSharedCopy,
   type NodeDoc,
+  newSharedCopy,
   type PageDoc,
+  pageAnchors,
+  pastedCopies,
   type SharedCopyNode,
   type SharedSectionsDoc,
 } from "@webforge/model";
 import type { ComponentLibrary } from "@webforge/site-components";
 import type { EditorSession } from "../editor/editor-session.js";
 import { findNode } from "../editor/nodes.js";
+import { shownLayout } from "../editor/shared-layout.js";
 
 /**
  * Layers (F-ED-12, Advanced): the shown page's sections and elements as a tree, and the changes the
@@ -290,4 +294,64 @@ export function moveLayer(session: LayersSession, id: string, index: number): vo
       at.list.splice(index, 0, node);
     },
   );
+}
+
+/**
+ * Copies a layer to `index` among its siblings, counted as they are now, by a Ctrl/Cmd-drag (1.35,
+ * UX-4), as the canvas's own copy-drag does and in the same step: the copy has ids and anchors of
+ * its own ("Duplicated Heading"). A linked copy is copied as its section, the page's own; with
+ * `linked` (Shift too), it places another linked copy of the same shared section instead ("Added
+ * a copy of 'Hours'"), F-ED-23. The copy is selected.
+ */
+export function copyLayer(
+  session: LayersSession,
+  id: string,
+  index: number,
+  linked: boolean,
+): void {
+  const found = target(session, id);
+  const site = session.history.document.getState();
+  const current = session.ui.getState();
+  const content = site.pages[current.pageId]?.doc.content;
+  const place =
+    content === undefined || found === undefined
+      ? undefined
+      : placeOf(content, found.own, session.library);
+  const node = place?.list[place.index];
+  if (found === undefined || content === undefined || place === undefined || node === undefined) {
+    return;
+  }
+  if (index < 0 || index > place.list.length) return;
+  const layout = shownLayout(site, current.pageId);
+  const shared = isSharedCopy(node) ? site.sharedSections[node.props.sharedSectionId] : undefined;
+  let copy: NodeDoc | undefined;
+  let shown: string;
+  let label: string;
+  if (linked && isSharedCopy(node) && shared !== undefined) {
+    copy = newSharedCopy(content, node.props.sharedSectionId, site.sharedSections, layout);
+    shown = copiedNodeId(copy.props.id, shared.section.props.id);
+    label = t("history.addedSharedCopy", { name: t("history.namedItem", { name: shared.name }) });
+  } else {
+    // A linked copy without Shift: its section, as the page's own (the canvas does the same).
+    const original = shared === undefined ? node : shared.section;
+    [copy] = pastedCopies([original], pageAnchors(content, site.sharedSections, layout));
+    shown = copy?.props.id ?? id;
+    // Named as what it copies, as the canvas names it: "Duplicated Section" for a copy's section.
+    const [copied] = layersOf([original], session.library, site.sharedSections);
+    label = t("history.duplicated", { item: layerItem(copied ?? found.layer) });
+  }
+  if (copy === undefined) return;
+  const added = copy;
+  const selectionAfter = { ...current, nodeId: shown, others: [] };
+  session.edit(
+    "duplicate",
+    label,
+    (draft) => {
+      const list = draft.pages[current.pageId]?.doc.content;
+      const at = list === undefined ? undefined : placeOf(list, found.own, session.library);
+      at?.list.splice(index, 0, added);
+    },
+    { selectionAfter },
+  );
+  session.ui.setState(selectionAfter, true);
 }
