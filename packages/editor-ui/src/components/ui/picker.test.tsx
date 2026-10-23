@@ -69,7 +69,8 @@ describe("Picker (UX-15)", () => {
     await userEvent.keyboard("places");
     expect(options()).toEqual(["shop-front.jpg", "oven.jpg"]);
     await userEvent.keyboard(" zzz");
-    expect(screen.getByText("Nothing matches 'places zzz'.")).toBeTruthy();
+    // Shown in the list, and read out by the status.
+    expect(screen.getAllByText("Nothing matches 'places zzz'.")).toHaveLength(2);
     expect(screen.getByRole("button", { name: "Choose" })).toHaveProperty("disabled", true);
   });
 
@@ -167,5 +168,46 @@ describe("Picker (UX-15)", () => {
 
     expect(screen.getByText("This site has no images yet.")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Add new…" })).toBeTruthy();
+  });
+
+  it("chooses the first match with Enter after a search, even when the current choice matches too", async () => {
+    // The current choice is oven.jpg; "s" (in Places) matches shop-front.jpg first.
+    const { opener, onChoose } = setUp({ value: "oven" });
+    await userEvent.click(opener);
+
+    await userEvent.keyboard("s{Enter}");
+
+    expect(onChoose).toHaveBeenCalledExactlyOnceWith(ITEMS[2]);
+  });
+
+  it("says how many match as the person types", async () => {
+    const { opener } = setUp();
+    await userEvent.click(opener);
+    const status = screen.getByRole("status");
+    expect(status.textContent).toBe("");
+
+    await userEvent.keyboard("jpg");
+    expect(status.textContent).toBe("5 matches");
+    await userEvent.keyboard("{Backspace}{Backspace}{Backspace}cake");
+    expect(status.textContent).toBe("1 match");
+    await userEvent.keyboard("zzz");
+    expect(status.textContent).toBe("Nothing matches 'cakezzz'.");
+  });
+
+  it("scrolls the current choice into view when it opens", async () => {
+    const scrolled: Element[] = [];
+    const original = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = function scrollIntoView() {
+      scrolled.push(this);
+    };
+    try {
+      const { opener } = setUp({ value: "team" });
+      await userEvent.click(opener);
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+
+      expect(scrolled.map((element) => element.textContent)).toEqual(["team.jpg"]);
+    } finally {
+      Element.prototype.scrollIntoView = original;
+    }
   });
 });
