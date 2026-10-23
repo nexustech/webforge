@@ -1,10 +1,14 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import type { HistoryState } from "@webforge/history";
 import { CheckIcon } from "lucide-react";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
+import { userEvent, within } from "storybook/test";
+import { createStore } from "zustand/vanilla";
 import { CommandRegistryProvider } from "./command-context.js";
 import { COMMAND_IDS } from "./command-ids.js";
 import { type Command, createCommandRegistry } from "./commands.js";
 import { TitleBar } from "./TitleBar.js";
+import { UndoStepsMenu } from "./UndoStepsMenu.js";
 
 const noop = () => undefined;
 
@@ -38,7 +42,13 @@ const COMMANDS: readonly Command[] = [
   { id: COMMAND_IDS.publish, label: "Publish…", menu: "file", run: noop },
 ];
 
-function WithCommands({ commands }: { readonly commands: readonly Command[] }) {
+function WithCommands({
+  commands,
+  undoSteps,
+}: {
+  readonly commands: readonly Command[];
+  readonly undoSteps?: ReactNode;
+}) {
   const [registry] = useState(() => {
     const created = createCommandRegistry();
     for (const command of commands) created.register(command);
@@ -48,6 +58,7 @@ function WithCommands({ commands }: { readonly commands: readonly Command[] }) {
     <CommandRegistryProvider registry={registry}>
       <TitleBar
         siteName="Bloom Bakery"
+        undoSteps={undoSteps}
         saveStatus={
           <span className="flex items-center gap-1 px-1 text-xs text-save-status">
             <CheckIcon className="size-3.5" />
@@ -79,4 +90,40 @@ const EARLY = new Set<string>([COMMAND_IDS.undo, COMMAND_IDS.redo, COMMAND_IDS.e
 /** Before New, Open, Preview and Publish exist (Phase 1): their buttons are disabled. */
 export const EarlyCommands: Story = {
   render: () => <WithCommands commands={COMMANDS.filter((command) => EARLY.has(command.id))} />,
+};
+
+/** A site's steps so far; the last was undone. */
+const STEPS = createStore<HistoryState<unknown>>()(() => ({
+  entries: [
+    "Opened page",
+    "Added Hero",
+    "Edited Hero title",
+    "Changed Hero padding",
+    "Added Text",
+    "Deleted Heading",
+  ].map((label, index) => ({
+    id: `step-${index}`,
+    label,
+    forward: [],
+    inverse: [],
+    coalesceKey: null,
+    selectionBefore: null,
+    selectionAfter: null,
+    createdAt: 0,
+    updatedAt: 0,
+  })),
+  cursor: 5,
+  canUndo: true,
+  canRedo: true,
+  transaction: null,
+}));
+
+/** The arrow beside Undo open: the latest steps to undo back to (UX-16). */
+export const UndoSteps: Story = {
+  render: () => <WithCommands commands={COMMANDS} undoSteps={<UndoStepsMenu state={STEPS} />} />,
+  play: async ({ canvasElement }) => {
+    await userEvent.click(
+      within(canvasElement).getByRole("button", { name: "Undo several steps" }),
+    );
+  },
 };

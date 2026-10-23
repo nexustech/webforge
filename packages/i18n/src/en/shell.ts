@@ -2,6 +2,12 @@
 export const shell = {
   "editor.undo": "Undo",
   "editor.redo": "Redo",
+  // The arrow beside Undo (UX-16).
+  "shell.undoSteps": "Undo several steps",
+  "shell.undoSteps.title": "Undo back to…",
+  "shell.undoSteps.hint": "Undoes the step you choose and every later one.",
+  "shell.undoSteps.one": "Undo this step",
+  "shell.undoSteps.many": "Undoes {count} steps",
   "ui.close": "Close",
 
   // App menu (title bar).

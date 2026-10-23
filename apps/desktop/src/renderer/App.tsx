@@ -37,6 +37,7 @@ import { PanelRegistryProvider } from "./shell/panel-context.js";
 import { createPanelRegistry } from "./shell/panels.js";
 import { ShellLayout } from "./shell/ShellLayout.js";
 import { TitleBar } from "./shell/TitleBar.js";
+import { UndoStepsMenu } from "./shell/UndoStepsMenu.js";
 import { registerSitePanel } from "./site/SitePanel.js";
 import { SiteSettingsHost } from "./site-settings/SiteSettingsHost.js";
 import { SiteCommands } from "./start/SiteCommands.js";
@@ -218,6 +219,7 @@ export function App({
             <TitleBar
               siteName={siteName}
               saveStatus={<AutosaveStatus session={session} loaded={loaded} />}
+              undoSteps={<UndoStepsMenu state={session.history.state} />}
               tools={
                 <>
                   <ModeToggle mode={mode} onModeChange={changeMode} />
