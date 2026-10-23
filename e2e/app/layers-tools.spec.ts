@@ -143,10 +143,16 @@ test("Select similar selects every element of the kind on the page, from the men
     .getByRole("menuitem", { name: /Duplicate/ })
     .click();
   await expect(canvas().locator("h1")).toHaveCount(2);
+  await expect(tree().getByRole("treeitem", { selected: true })).toHaveCount(1);
 
   // The copy is selected; its quick actions sit over the first heading, so the copy is clicked.
-  await canvas().locator("h1").last().click({ button: "right" });
-  await menu().getByRole("menuitem", { name: "Select similar" }).click();
+  // While the canvas settles after Duplicate, a menu opened at once can close again (on Linux CI
+  // it was gone before the click): open it again until Select similar takes the click.
+  await expect(async () => {
+    await page.keyboard.press("Escape");
+    await canvas().locator("h1").last().click({ button: "right", timeout: 2_000 });
+    await menu().getByRole("menuitem", { name: "Select similar" }).click({ timeout: 2_000 });
+  }).toPass({ timeout: 20_000 });
 
   await expect(page.getByRole("status").filter({ hasText: "2 elements selected" })).toBeVisible();
   await expect(tree().getByRole("treeitem", { selected: true })).toHaveCount(2);
