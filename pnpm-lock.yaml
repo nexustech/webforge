@@ -347,6 +347,9 @@ importers:
       '@webforge/test-utils':
         specifier: workspace:*
         version: link:../../packages/test-utils
+      '@webforge/themes':
+        specifier: workspace:*
+        version: link:../../packages/themes
       babel-plugin-react-compiler:
         specifier: 'catalog:'
         version: 1.0.0
@@ -761,7 +764,13 @@ importers:
       '@webforge/model':
         specifier: workspace:*
         version: link:../model
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.7
     devDependencies:
+      '@webforge/i18n':
+        specifier: workspace:*
+        version: link:../i18n
       fast-check:
         specifier: 4.10.2
         version: 4.10.2

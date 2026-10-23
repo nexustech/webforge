@@ -1,14 +1,17 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import { siteLibrary } from "./catalogue/index.js";
 import {
   BOX_CLASS_SAFELIST,
   boxClasses,
   boxTokenPixels,
+  colorClass,
   EDITOR_RENDER_CONTEXT,
   optionValue,
   responsiveClasses,
   slotComponent,
   stringValue,
+  textStylesOf,
   textValue,
   withAdvanced,
 } from "./library.js";
@@ -177,5 +180,72 @@ describe("withAdvanced", () => {
     expect(html({ attributes: { onclick: "alert(1)" } })).toBe('<h2 class="site-heading">Hi</h2>');
     expect(html({ anchorId: "Not valid" })).toBe('<h2 class="site-heading">Hi</h2>');
     expect(renderToStaticMarkup(<>{withAdvanced("text", { className: "x" })}</>)).toBe("text");
+  });
+});
+
+describe("textStylesOf (1.37)", () => {
+  it("is a Heading's level by its size, a Text's body, and nothing for a component without text", () => {
+    expect(
+      textStylesOf({ type: "Heading", props: { id: "h", size: "large" } }, siteLibrary),
+    ).toEqual(["h1"]);
+    // Its default size, medium, when it has none.
+    expect(textStylesOf({ type: "Heading", props: { id: "h" } }, siteLibrary)).toEqual(["h2"]);
+    expect(textStylesOf({ type: "Text", props: { id: "t" } }, siteLibrary)).toEqual(["body"]);
+    expect(textStylesOf({ type: "Section", props: { id: "s" } }, siteLibrary)).toEqual([]);
+    expect(textStylesOf({ type: "Nothing", props: { id: "n" } }, siteLibrary)).toEqual([]);
+  });
+
+  it("gives each device's style when a value differs by device", () => {
+    const library = {
+      components: {
+        Title: {
+          label: "Title",
+          fields: {},
+          defaults: {},
+          render: () => null,
+          textStyle: (values: Readonly<Record<string, unknown>>) =>
+            values.big === true ? ("h1" as const) : ("h4" as const),
+        },
+      },
+    };
+    const node = {
+      type: "Title",
+      props: { id: "t", big: { $responsive: { desktop: true, mobile: false } } },
+    };
+
+    expect(textStylesOf(node, library)).toEqual(["h1", "h4"]);
+  });
+});
+
+describe("colorClass (1.37, ADR 0009)", () => {
+  it("gives a colour ref's class, and none for the element's own colour or anything else", () => {
+    expect(colorClass("text", "primary")).toBe("text-primary");
+    expect(colorClass("text", "primary-300/80")).toBe("text-primary-300/80");
+    expect(colorClass("bg", "[#1F6FEB]/50")).toBe("bg-[#1f6feb]/50");
+    expect(colorClass("text", "default")).toBe("");
+    // Nothing that isn't a colour ref reaches a class.
+    expect(colorClass("text", "red-500 hidden")).toBe("");
+    expect(colorClass("text", "[#1f6feb] x")).toBe("");
+    expect(colorClass("text", 42)).toBe("");
+  });
+
+  it("colours a Heading with the ref its field stores", () => {
+    const heading = siteLibrary.components.Heading;
+    if (heading === undefined) throw new Error("no Heading");
+    const html = (color: string) =>
+      renderToStaticMarkup(
+        <>
+          {heading.render({
+            values: { ...heading.defaults, text: "Hi", color },
+            slots: {},
+            context: EDITOR_RENDER_CONTEXT,
+            id: "h",
+          })}
+        </>,
+      );
+
+    expect(html("primary-300/80")).toContain("text-primary-300/80");
+    expect(html("[#1f6feb]")).toContain("text-[#1f6feb]");
+    expect(html("default")).not.toContain("text-primary");
   });
 });

@@ -220,7 +220,7 @@ describe("createPuckEngine", () => {
     );
     await settle();
 
-    expect(selections).toHaveBeenCalledWith(null);
+    expect(selections).toHaveBeenCalledWith(null, false);
   });
 
   it("reports inline text edits as text edits", async () => {
@@ -392,7 +392,7 @@ describe("createPuckEngine", () => {
 
     await act(async () => engine.loadPage(page, NO_LAYOUT));
 
-    expect(selections).toHaveBeenCalledWith(null);
+    expect(selections).toHaveBeenCalledWith(null, false);
   });
 
   it("forwards history commands only from the canvas iframe", () => {

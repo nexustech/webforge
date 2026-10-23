@@ -62,6 +62,37 @@ test.describe("Edit panel", () => {
     await expect(canvas().locator("h3.site-heading")).toHaveText("Welcome to our business");
   });
 
+  test("offers the theme's colours by their names, one step a choice (1.37, UX-25)", async () => {
+    await selectHeading();
+    await panel().getByRole("tab", { name: "Style" }).click();
+    await expect(panel().getByRole("radio", { name: "Brand" })).toBeVisible();
+
+    await panel().getByRole("radio", { name: "Second accent" }).click();
+
+    await expect(steps().first()).toHaveText("Changed Heading colour");
+    await expect(panel().getByRole("radio", { name: "Second accent" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+  });
+
+  test("gives a heading a shade of the brand colour at an opacity, shown on the canvas (ADR 0009)", async () => {
+    await selectHeading();
+    await panel().getByRole("tab", { name: "Style" }).click();
+    const heading = canvas().locator(".site-heading");
+    const plain = await heading.evaluate((element) => getComputedStyle(element).color);
+
+    await panel().getByRole("radio", { name: "Brand" }).click();
+    await panel().getByRole("radio", { name: "Shade 300" }).click();
+    await panel().getByLabel("Opacity").selectOption("80");
+
+    await expect(heading).toHaveClass(/text-primary-300\/80/);
+    await expect
+      .poll(() => heading.evaluate((element) => getComputedStyle(element).color))
+      .not.toBe(plain);
+    await expect(steps().first()).toHaveText("Changed Heading colour");
+  });
+
   test("copies a heading's style onto another heading, as one step (1.37, UX-14)", async () => {
     await selectHeading();
     await page.keyboard.press("ControlOrMeta+d");

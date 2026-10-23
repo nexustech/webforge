@@ -45,6 +45,7 @@
     "@webforge/site-components": "workspace:*",
     "@webforge/storage": "workspace:*",
     "@webforge/test-utils": "workspace:*",
+    "@webforge/themes": "workspace:*",
     "babel-plugin-react-compiler": "catalog:",
     "daisyui": "catalog:",
     "electron": "44.9.0",
