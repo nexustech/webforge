@@ -122,7 +122,7 @@ describe("MediaPanel", () => {
       container.querySelector("section")?.dispatchEvent(drop);
     });
 
-    expect(api.import).toHaveBeenCalledWith([
+    expect(api.import).toHaveBeenCalledWith(expect.any(String), [
       { fileName: "prices.pdf", data: new Uint8Array([0x25]) },
     ]);
     expect(media()[prices.id]).toEqual(prices);

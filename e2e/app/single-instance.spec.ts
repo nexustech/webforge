@@ -91,6 +91,49 @@ test("opens a site double-clicked while Webforge runs in the same window, saving
   expect(fileContains(bakery, `${STARTER_HEADING} today`)).toBe(true);
 });
 
+test("a save still on its way when a double-clicked site replaces the open one never reaches it (R6)", async () => {
+  const page = await openBakery();
+  const bakerySession = await page.evaluate(
+    async () =>
+      (await (window as unknown as RendererWindow).webforge.project.getCurrent())?.sessionId,
+  );
+  const florist = join(dir, "Florist.wforge");
+  ProjectStore.create(florist, { name: "Florist" }).close();
+
+  const reloaded = page.waitForEvent("load");
+  expect(await launchSecondInstance({ args: [florist], userDataDir: userData })).toBe(0);
+  await reloaded;
+  await expect(page.getByRole("banner").getByRole("status")).toHaveText("Saved", {
+    timeout: 30_000,
+  });
+
+  // Bakery's renderer typed during the switch, and its save arrives only now: Florist's home page,
+  // as Bakery's editor would send it, renamed.
+  const late = await page.evaluate(async (sessionId) => {
+    const api = (window as unknown as RendererWindow).webforge.project;
+    const read = (await api.readSite()) as {
+      site: { homePageId: string; pages: Record<string, { title: string }> };
+    };
+    const home = read.site.pages[read.site.homePageId];
+    const changes = [
+      {
+        type: "put",
+        id: `page:${read.site.homePageId}`,
+        kind: "page",
+        content: { ...home, title: "Typed in Bakery" },
+      },
+    ];
+    return api.commit(sessionId ?? "", changes);
+  }, bakerySession);
+
+  expect(late).toEqual({ status: "failed", reason: "stale-session" });
+  expect(await currentFile(page)).toBe("Florist.wforge");
+  const florists = await page.evaluate(() =>
+    (window as unknown as RendererWindow).webforge.project.readSite(),
+  );
+  expect(JSON.stringify(florists)).not.toContain("Typed in Bakery");
+});
+
 test("a second launch without a site, or with the open one, only brings the window forward", async () => {
   const page = await openBakery();
   // A mark on this page: a reload would clear it.

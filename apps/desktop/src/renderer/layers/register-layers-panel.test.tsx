@@ -68,7 +68,8 @@ describe("registerLayersPanel", () => {
     expect(rows()[2]?.getAttribute("aria-selected")).toBe("true");
   });
 
-  it("moves nothing with Alt+arrows or a drag while several are selected (#259 review)", () => {
+  it("never moves one layer alone while several are selected (#259 review)", () => {
+    // Alt+arrows hand several to the Edit menu's moves, which this panel alone doesn't have.
     const { session } = setUp();
     const order = () =>
       ((currentPage(session)?.doc.content[0]?.props.content ?? []) as NodeDoc[]).map(

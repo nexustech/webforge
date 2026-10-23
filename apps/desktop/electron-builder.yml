@@ -7,12 +7,19 @@ directories:
   buildResources: build
 files:
   - out/**
+  # The fonts go beside app.asar instead (below).
+  - "!out/fonts/**"
   - package.json
   # Production dependencies (only better-sqlite3) are added from node_modules automatically.
   # Ship only the prebuilt binary for the platform being packaged, not SQLite's C sources.
   - "!**/node_modules/better-sqlite3/{deps,src,binding.gyp}"
   - "!**/node_modules/better-sqlite3/prebuilds/!(${platform}-${arch}).node"
   - "!**/node_modules/node-addon-api/**"
+# The installer's fonts (2.2), outside app.asar as plain files: the main process checks each one
+# against the font catalogue's SHA-256 when it reads it.
+extraResources:
+  - from: out/fonts
+    to: fonts
 asar: true
 # Native addons can't be loaded from inside an asar archive.
 asarUnpack:

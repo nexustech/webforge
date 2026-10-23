@@ -3,6 +3,6 @@ import type { Call } from "./call.js";
 
 /** `window.webforge.media`. */
 export const mediaApi = (call: Call): MediaApi => ({
-  import: (files) => call("importMedia", [...files]),
-  choose: () => call("chooseMedia"),
+  import: (sessionId, files) => call("importMedia", sessionId, [...files]),
+  choose: (sessionId) => call("chooseMedia", sessionId),
 });

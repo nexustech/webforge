@@ -34,6 +34,7 @@ import {
 import { registerStyleCommands } from "../clipboard/style-clipboard.js";
 import { CanvasElementMenu } from "../element-menu/CanvasElementMenu.js";
 import { createErrorReporter, type ReportError } from "../error-reporting.js";
+import { deleteSelected, duplicateSelected, moveSelected } from "../layers/bulk-layers.js";
 import type { Layer } from "../layers/layers.js";
 import { registerLinkField } from "../links/LinkField.js";
 import { RichTextLinkHost } from "../links/RichTextLinkHost.js";
@@ -61,7 +62,7 @@ import { connectCanvasSettings } from "../site-settings/canvas-settings.js";
 import { CanvasBreadcrumbs } from "./CanvasBreadcrumbs.js";
 import { CanvasResizeHandles } from "./CanvasResizeHandles.js";
 import { registerColourField } from "./ColourField.js";
-import { registerCanvasCommands } from "./canvas-commands.js";
+import { type BulkCanvasAction, registerCanvasCommands } from "./canvas-commands.js";
 import { EditPanelHost } from "./EditPanelHost.js";
 import {
   connectEngine,
@@ -267,7 +268,7 @@ export function Editor({
     );
     connectionRef.current = connection;
     setEngine(engine);
-    const stopSiteCss = connectSiteCss(engine, session, compileCss, document.baseURI);
+    const stopSiteCss = connectSiteCss(engine, session, compileCss);
     const stopImages = connectCanvasImages(engine, session);
     const stopSettings = connectCanvasSettings(engine, session);
     const stopNavigation = connectCanvasNavigation(engine, session);
@@ -296,7 +297,17 @@ export function Editor({
     const styleCommands = registerStyleCommands(registry, session, connection.flush);
     styleCommands.setLayoutLocked(modeRef.current !== "design");
     styleCommandsRef.current = styleCommands;
-    const canvasCommands = registerCanvasCommands(registry, engine, connection.flush);
+    // While several elements are selected, the canvas's edits act on all of them (1.31).
+    const bulk = (action: BulkCanvasAction) => {
+      const { refused } =
+        action === "delete"
+          ? deleteSelected(session)
+          : action === "duplicate"
+            ? duplicateSelected(session)
+            : moveSelected(session, action === "moveUp" ? "up" : "down");
+      if (refused !== undefined) toast(refused);
+    };
+    const canvasCommands = registerCanvasCommands(registry, engine, connection.flush, bulk);
     canvasCommands.setHasSelection(session.ui.getState().nodeId !== null);
     // The shared-section commands (1.29), after the canvas's own actions.
     const sharedCommands = registerSharedSectionCommands(
@@ -318,6 +329,7 @@ export function Editor({
       connection.flush,
       (nodeId) => pickImageRef.current(nodeId),
       setRenaming,
+      (message) => toast(message),
     );
     elementCommands.setLayoutLocked(modeRef.current !== "design");
     elementCommandsRef.current = elementCommands;
@@ -488,7 +500,6 @@ export function Editor({
         theme: () => session.history.document.getState().theme,
         sharedSection: (id) => sharedSection(session.history.document.getState(), id)?.section,
         compileCss,
-        baseUrl: document.baseURI,
       }),
     [session, compileCss],
   );

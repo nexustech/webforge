@@ -11,6 +11,18 @@ export const FONT_LICENCES = ["OFL-1.1", "Apache-2.0", "UFL-1.0"] as const;
 /** What the bundled fonts may add to the installer (2.2: a budget of about 10–15 MB). */
 export const FONT_BUDGET_BYTES = 15 * 1024 * 1024;
 
+/** The categories the font picker lists; `t("fonts.category.<category>")` names each. */
+export const FONT_CATEGORIES = [
+  "sans-serif",
+  "serif",
+  "display",
+  "handwriting",
+  "monospace",
+] as const;
+
+/** Whether `values` has none twice. */
+const unique = (values: readonly string[]) => new Set(values).size === values.length;
+
 const fileSchema = z.strictObject({
   /** The file's name in its package's `files/` folder, and in an exported site's `assets/fonts/`. */
   file: z.string().regex(/^[a-z0-9-]+\.woff2$/),
@@ -18,6 +30,8 @@ const fileSchema = z.strictObject({
   style: z.enum(["normal", "italic"]),
   /** The weight, or the range a variable font covers. */
   weight: z.union([z.number().int(), z.tuple([z.number().int(), z.number().int()])]),
+  /** The subset's characters, as `@font-face`'s `unicode-range` takes them; nothing else fits. */
+  unicodeRange: z.string().regex(/^U\+[0-9A-Fa-f?-]+(?:,U\+[0-9A-Fa-f?-]+)*$/),
   bytes: z.number().int().positive(),
   sha256: z.string().regex(/^[0-9a-f]{64}$/),
 });
@@ -27,8 +41,8 @@ const familySchema = z.strictObject({
   id: z.string().regex(/^[a-z0-9-]+$/),
   /** The CSS family name, as a theme's fonts store it. */
   family: fontRefSchema.shape.family,
-  /** Fontsource's category: sans-serif, serif, display, handwriting or monospace. */
-  category: z.string(),
+  /** Where the font picker lists it (Fontsource's, or the catalogue's own for display fonts). */
+  category: z.enum(FONT_CATEGORIES),
   fallback: fontRefSchema.shape.fallback,
   licence: z.enum(FONT_LICENCES),
   variable: z.boolean(),
@@ -54,6 +68,15 @@ const catalogueSchema = z
       return pairings.every((pairing) => ids.has(pairing.heading) && ids.has(pairing.body));
     },
     { message: "A pairing names a family the catalogue doesn't have" },
+  )
+  // A theme names its fonts by family, and a pairing by id: each must be the only one.
+  .refine(
+    ({ families, pairings }) =>
+      unique(families.map((family) => family.id)) &&
+      unique(families.map((family) => family.family)) &&
+      unique(families.flatMap((family) => family.files.map((file) => file.file))) &&
+      unique(pairings.map((pairing) => pairing.id)),
+    { message: "A family, family name, file or pairing is listed twice" },
   );
 
 /** A family the installer bundles (2.2): its name, licence, package and files. */
@@ -83,4 +106,9 @@ export function fontRefOf(font: CatalogueFont): FontRef {
 /** The bytes the families' files take: what they add to the installer. */
 export function bundledFontBytes(fonts: readonly CatalogueFont[]): number {
   return fonts.flatMap((font) => font.files).reduce((sum, file) => sum + file.bytes, 0);
+}
+
+/** The bundled family named `family` (a theme's `fonts.heading.family`), if there is one. */
+export function catalogueFamily(family: string): CatalogueFont | undefined {
+  return FONT_CATALOGUE.find((font) => font.family === family);
 }

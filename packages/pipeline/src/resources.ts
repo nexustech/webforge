@@ -1,3 +1,5 @@
+import type { FontFace } from "@webforge/themes";
+
 /**
  * Everything file-based the pipeline needs, passed in by whoever runs it. The pipeline itself never
  * resolves files: under Vitest and in Node scripts they come from `node_modules`
@@ -11,20 +13,13 @@ export type PipelineResources = {
   readonly daisyui: unknown;
   /** daisyUI's custom-theme plugin (the default export of `daisyui/theme`), for the site's theme. */
   readonly daisyuiTheme: unknown;
-  /** Font files to copy into `assets/fonts/`, with the `@font-face` rules that use them. */
-  readonly fonts: readonly FontFile[];
+  /**
+   * The bytes of a font file a site uses (2.2, `fontFacesFor` in `@webforge/themes`), or
+   * `undefined` if there are none. The pipeline checks them against the catalogue's SHA-256.
+   */
+  readonly readFont: (face: FontFace) => Promise<Uint8Array<ArrayBuffer> | undefined>;
   /** WebAssembly modules of the image codecs (jSquash). */
   readonly codecs: CodecModules;
-};
-
-/** One woff2 file of a font family. */
-export type FontFile = {
-  /** The CSS font family, e.g. `Inter`. */
-  readonly family: string;
-  readonly weight: number;
-  /** File name in `assets/fonts/`, e.g. `inter-latin-400-normal.woff2`. */
-  readonly fileName: string;
-  readonly data: Uint8Array;
 };
 
 /** Compiled WebAssembly modules for decoding, resizing and encoding images. */

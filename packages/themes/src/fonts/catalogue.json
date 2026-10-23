@@ -21,6 +21,7 @@
           "subset": "latin",
           "style": "italic",
           "weight": [100, 900],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 51832,
           "sha256": "7291b5970da2237441273c03b424a504b70b18f09791473fab99687dcc314720"
         },
@@ -29,6 +30,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": [100, 900],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 48256,
           "sha256": "3100e775e8616cd2611beecfa23a4263d7037586789b43f035236a2e6fbd4c62"
         },
@@ -37,6 +39,7 @@
           "subset": "latin-ext",
           "style": "italic",
           "weight": [100, 900],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 91900,
           "sha256": "71254244ccb1ec21e14db3480fef6f6826d1136dc4aca1c7d3ca7ce31294fcce"
         },
@@ -45,6 +48,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": [100, 900],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 85068,
           "sha256": "34b9c504cab7a73e37b746343a449132e56cf7b5481af2cb81dc74dcff25c956"
         }
@@ -67,6 +71,7 @@
           "subset": "latin",
           "style": "italic",
           "weight": [100, 900],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 47208,
           "sha256": "14f23757c6b41b4b6c0b967ca3fa74ff47a868728158373461c4e6e4b6368f19"
         },
@@ -75,6 +80,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": [100, 900],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 43136,
           "sha256": "1404ca348bd75ef836f4dd8b6f2cc719458642d1237c368296b2fc652dca47dc"
         },
@@ -83,6 +89,7 @@
           "subset": "latin-ext",
           "style": "italic",
           "weight": [100, 900],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 31820,
           "sha256": "7f21d061a9de1ea78a858938ff3b8e677869656b10bad470fc6039f8f3daf329"
         },
@@ -91,6 +98,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": [100, 900],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 29392,
           "sha256": "cedb374b05a35034cf96db185db4eeb8f8ce49e1a56197673702ff11b5533d6e"
         }
@@ -113,6 +121,7 @@
           "subset": "latin",
           "style": "italic",
           "weight": [300, 800],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 50216,
           "sha256": "186836b74ceac07b2764c07c0379420e3014efb30fe918461c235e0ef6cbc4a2"
         },
@@ -121,6 +130,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": [300, 800],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 48320,
           "sha256": "d8e4fe0452aa2076429a9bb5d8757d00a994dd95986cf950e9a1a371b9a072a0"
         },
@@ -129,6 +139,7 @@
           "subset": "latin-ext",
           "style": "italic",
           "weight": [300, 800],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 37752,
           "sha256": "a6fa0e8ac2a665c121a19c2e2434fb286e3afdef7b9288739a73c7cb6849108c"
         },
@@ -137,6 +148,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": [300, 800],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 35156,
           "sha256": "d5bab8e28732fe3d10dcef4f77b9c248605bbb2a87d289a2539251ceafab536a"
         }
@@ -159,6 +171,7 @@
           "subset": "latin",
           "style": "italic",
           "weight": 400,
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 24408,
           "sha256": "bca1d88ada544d9c80872d4da27133fab6d347361fa26e932b47ec9559088fd0"
         },
@@ -167,6 +180,7 @@
           "subset": "latin",
           "style": "italic",
           "weight": 700,
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 24448,
           "sha256": "6c84348296ebe2e2a0830c3962eb02156419d9bc76371c2eadaf7329d827d550"
         },
@@ -175,6 +189,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": 300,
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 23236,
           "sha256": "115f6a626ca115d4ad5581b59275327e0e860b30330a52b0f785561332dd2429"
         },
@@ -183,6 +198,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": 400,
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 23580,
           "sha256": "918b7dc3e2e2d015c16ce08b57bcb64d2253bafc1707658f361e72865498e537"
         },
@@ -191,6 +207,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": 700,
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 23040,
           "sha256": "c447dd7677b419db7b21dbdfc6277c7816a913ffda76fd2e52702df538de0e49"
         },
@@ -199,6 +216,7 @@
           "subset": "latin-ext",
           "style": "italic",
           "weight": 400,
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 5776,
           "sha256": "077a69d5b698467f49de34980815c848fecb40e35f4b3969b42a703b8b916953"
         },
@@ -207,6 +225,7 @@
           "subset": "latin-ext",
           "style": "italic",
           "weight": 700,
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 5792,
           "sha256": "72373c5fe499b7b978e186b6550ee6c4a8dc0c9b77fb46a4d76a572c1986466e"
         },
@@ -215,6 +234,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": 300,
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 5820,
           "sha256": "5627143aaeb49ba46b4614d4fefb967ad8d163fb0743a2fa9c7e53930e559062"
         },
@@ -223,6 +243,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": 400,
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 5612,
           "sha256": "8b9fc9737043f88c1a9a7195c27a239bd329cc33d928ffb67736c61ae7a1dbbd"
         },
@@ -231,6 +252,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": 700,
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 5552,
           "sha256": "3a5797f440bc67b59830cad81e59a71011e35cb45ed7f747b61a69b0a9b0d6ae"
         }
@@ -253,6 +275,7 @@
           "subset": "latin",
           "style": "italic",
           "weight": [100, 900],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 39632,
           "sha256": "0eb22e3d769a66a92dbd82e3aefa5740e5bc21afa4485f62f92b22656d49182a"
         },
@@ -261,6 +284,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": [100, 900],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 37956,
           "sha256": "06b16db7a969135d48d38c49183be7fb88d4452e2a3011957c7851941f4e4879"
         },
@@ -269,6 +293,7 @@
           "subset": "latin-ext",
           "style": "italic",
           "weight": [100, 900],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 74892,
           "sha256": "9f7c3dc0c1fdbc8b09d53d1beb4aca048a5aff376ac5423878e03e83e89a7fe8"
         },
@@ -277,6 +302,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": [100, 900],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 70688,
           "sha256": "54d9a78b7ff60b689ad9f3017ffac8547b5d871afec733f6c1c3ae36577ee504"
         }
@@ -299,6 +325,7 @@
           "subset": "latin",
           "style": "italic",
           "weight": 400,
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 8668,
           "sha256": "50d0c1742d80ac71f4cde20e8c04d41a24806af342831f479938b527fbff0972"
         },
@@ -307,6 +334,7 @@
           "subset": "latin",
           "style": "italic",
           "weight": 700,
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 8596,
           "sha256": "4b0864712c6e7ca75f8c003f7bc1a9270af33d6becd4119463771593274c48d2"
         },
@@ -315,6 +343,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": 300,
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 7840,
           "sha256": "78bc3aa78faec288bbb3bf26c9a0fa4eb67b1e69da94a17233c5cab60525efdb"
         },
@@ -323,6 +352,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": 400,
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 7884,
           "sha256": "7d93459d86585bfcdbb7e0376056226adb25821ee54b96236fe2123e9560929f"
         },
@@ -331,6 +361,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": 500,
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 7748,
           "sha256": "cd36de204aca2d5fa263a731f7c20009b5e3d754ba1f1e03c33e93a48f3e7446"
         },
@@ -339,6 +370,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": 600,
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 8000,
           "sha256": "f4e80d9dfd374d02989b87a27b5ed4cb78fbb177c27f1478e9a8b0afb7513149"
         },
@@ -347,6 +379,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": 700,
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 7816,
           "sha256": "9338e65fc077355c7a87ae0d64cc101e23b9bf8ad78ae65f0f319c857311b526"
         },
@@ -355,6 +388,7 @@
           "subset": "latin-ext",
           "style": "italic",
           "weight": 400,
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 5964,
           "sha256": "1e91b430ebe5aa347934e70dcd76ca3c594e34d41d14ba3e2f1a7e1dcbc0cfc6"
         },
@@ -363,6 +397,7 @@
           "subset": "latin-ext",
           "style": "italic",
           "weight": 700,
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 5860,
           "sha256": "4c05ae2d20c308c3b949b4578256e5438d0af62a7d32ac6dfcc63a230246adb0"
         },
@@ -371,6 +406,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": 300,
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 5524,
           "sha256": "33ff412e573782b800c68bb81a6be6f987ad40c36b681aeeaf188e723a9fc46c"
         },
@@ -379,6 +415,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": 400,
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 5644,
           "sha256": "0b1fcab42c18b69bcfe9ce4799fcbff5af1621c53ffcfdc4723c6f5ec4ee3ffb"
         },
@@ -387,6 +424,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": 500,
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 5484,
           "sha256": "af5fda16a19169e029a132374616728e1bf326d90bef5a552395c5053e21cd0f"
         },
@@ -395,6 +433,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": 600,
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 5524,
           "sha256": "bb1f2d582e7fba586ab70c91ef062d3becaf78b887654953863521b73665d171"
         },
@@ -403,6 +442,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": 700,
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 5432,
           "sha256": "ccfd87f69ef00d811da3d06488cec4e79ec99d289cfbcbe4be42031cecae775a"
         }
@@ -425,6 +465,7 @@
           "subset": "latin",
           "style": "italic",
           "weight": [200, 1000],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 41760,
           "sha256": "6cfcc3786d5ba3b5c3a41797f95272e57f4290ccbd283a4bfd0033a3d857e64c"
         },
@@ -433,6 +474,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": [200, 1000],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 39128,
           "sha256": "ba344451eab25b217a165363b1982048a5e5830a0daf36577973955a04cac793"
         },
@@ -441,6 +483,7 @@
           "subset": "latin-ext",
           "style": "italic",
           "weight": [200, 1000],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 39072,
           "sha256": "1bb48a49c837d76a727223515b78eb2a14eaab783563be84b0718f338c56c846"
         },
@@ -449,6 +492,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": [200, 1000],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 35588,
           "sha256": "2c8d792869818ecb253a46bc3c63c7013df7aac2f69291c3c85e5cdc94160960"
         }
@@ -471,6 +515,7 @@
           "subset": "latin",
           "style": "italic",
           "weight": [100, 900],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 50244,
           "sha256": "8c08eb8b1fdd16dcdd6270e42a8b24fcf7ddc7e63d4363a55c174d110f90005f"
         },
@@ -479,6 +524,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": [100, 900],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 48264,
           "sha256": "b1bef1f03a77a36fc257c5525e32a1dd621bb6f935b743a419da7ed0b18dc8f5"
         },
@@ -487,6 +533,7 @@
           "subset": "latin-ext",
           "style": "italic",
           "weight": [100, 900],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 33476,
           "sha256": "263c505d5216c4431265e258c83785ba7c96d9d31ba2759f2e761c45de08e42d"
         },
@@ -495,6 +542,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": [100, 900],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 31480,
           "sha256": "2d603982caea60f15b741581c9e7bd88d1a7680fc52978137f9bc67c2dec61e0"
         }
@@ -517,6 +565,7 @@
           "subset": "latin",
           "style": "italic",
           "weight": [100, 900],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 48180,
           "sha256": "73468c2b5cc7c31456ee0c297ac87b2bfb7eb626bc79688dc3a320151fddcd2f"
         },
@@ -525,6 +574,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": [100, 900],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 50316,
           "sha256": "1dd49afc07fb2231b2ff686cbf007725fb2742271bb1f28ebd98f22a0d817343"
         },
@@ -533,6 +583,7 @@
           "subset": "latin-ext",
           "style": "italic",
           "weight": [100, 900],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 32280,
           "sha256": "7ad4dd06ed7836bad7fef7c5cb75a93229d549c8db9671aff1aa798dc1682a70"
         },
@@ -541,6 +592,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": [100, 900],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 35716,
           "sha256": "2aa17fc7b072e46652e84bbe3dbba9ec57cdea320d89e8c951ed7cf3218c300b"
         }
@@ -563,6 +615,7 @@
           "subset": "latin",
           "style": "italic",
           "weight": [100, 1000],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 39712,
           "sha256": "f1a235db5bcb8730707844188d35201ecdf63e56c5dcce97bab24a9c7066091d"
         },
@@ -571,6 +624,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": [100, 1000],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 36932,
           "sha256": "9fea608a947e67020c33cad9a6fe3d60c54119dfb8cff87768a8117a15ed7543"
         },
@@ -579,6 +633,7 @@
           "subset": "latin-ext",
           "style": "italic",
           "weight": [100, 1000],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 20808,
           "sha256": "6e646d2022808fb4532e77d38a9348e4dcf832796be2acc43a79052b60900db2"
         },
@@ -587,6 +642,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": [100, 1000],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 18228,
           "sha256": "a5d38fe99f930275684999b462c7123faa063d9e44e73b4b241723d884aa0f49"
         }
@@ -609,6 +665,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": [200, 800],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 24836,
           "sha256": "a30ddcd349703aff7464c34bef3fffdff405ee50c113440d7c8693c02d210972"
         },
@@ -617,6 +674,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": [200, 800],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 15120,
           "sha256": "3911b66d9f2e005a4b989223405d0e5032619c668597ba467cc76a23c8fffcfb"
         }
@@ -639,6 +697,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": [100, 900],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 32292,
           "sha256": "6c18d579fd87c3776be068b762cbc83fde3acb543d49eabd3ade842eb987e887"
         },
@@ -647,6 +706,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": [100, 900],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 14808,
           "sha256": "0f53d1c03b3918d744a843b5039001ee31695ca1e255e3914188df81beb461e9"
         }
@@ -669,6 +729,7 @@
           "subset": "latin",
           "style": "italic",
           "weight": [200, 800],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 29600,
           "sha256": "bb113d8f5be89636a9a31ffa0966762126546b98be171d6fa81115abb2cd5352"
         },
@@ -677,6 +738,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": [200, 800],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 27348,
           "sha256": "153fc85b70298beeb1d61a5f723331649e7f23bb77302a66e61cb3e2fbdb5e79"
         },
@@ -685,6 +747,7 @@
           "subset": "latin-ext",
           "style": "italic",
           "weight": [200, 800],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 23224,
           "sha256": "7524d4b5f829201192882f775b90d78dbd9f9b3014ea729cfb7a47f5261ec7cb"
         },
@@ -693,6 +756,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": [200, 800],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 21728,
           "sha256": "38e3b8fd8045048eb311d90170a4429ed2c8f405852dc3d91b5af8452758703f"
         }
@@ -715,6 +779,7 @@
           "subset": "latin",
           "style": "italic",
           "weight": [300, 900],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 20928,
           "sha256": "7242fa62d13d46172816b266f03c027999faa3755a52c2124bc2c440f6f4b983"
         },
@@ -723,6 +788,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": [300, 900],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 20156,
           "sha256": "4ba7d3d096695818fe0686be4f1e82c6b05134e18a22260336130335027462dd"
         },
@@ -731,6 +797,7 @@
           "subset": "latin-ext",
           "style": "italic",
           "weight": [300, 900],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 10376,
           "sha256": "a0cc105b3241fe952fd58ba226633f8ba733b16fd5419affbda6c8cc5c627a0b"
         },
@@ -739,6 +806,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": [300, 900],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 10280,
           "sha256": "bf7828e2c258cffcfa50a048ee388a36b95bc16b452e8d36fa797635dbe15965"
         }
@@ -761,6 +829,7 @@
           "subset": "latin",
           "style": "italic",
           "weight": [200, 900],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 28460,
           "sha256": "5fbc14d56cea35e60596c72ca969b349443c6a536f74e11748eed8b3a396e61d"
         },
@@ -769,6 +838,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": [200, 900],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 28872,
           "sha256": "19143dca075972bc84e3fd9eab7416dd40cc565dccb2435a044bdfabe060c7d5"
         },
@@ -777,6 +847,7 @@
           "subset": "latin-ext",
           "style": "italic",
           "weight": [200, 900],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C4,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 59496,
           "sha256": "6fe10a66ec416f77a26309b645471d032ad8175063bb605b886e9b7e57efaaa8"
         },
@@ -785,6 +856,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": [200, 900],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C4,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 60088,
           "sha256": "a85a7459bdb3cdc1136751e151a506bae653fc29ada3ca86237477df6f1b59e6"
         }
@@ -807,6 +879,7 @@
           "subset": "latin",
           "style": "italic",
           "weight": [300, 900],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 36616,
           "sha256": "4d9f552c4b0a7f02f231e56198d80aed8550bdfb7e7541260b2b20455b14fb88"
         },
@@ -815,6 +888,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": [300, 900],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 35348,
           "sha256": "691cd1d9b4c0cdf31a1dcf04259c86f92c85e69f6622abab7964d81e36890691"
         },
@@ -823,6 +897,7 @@
           "subset": "latin-ext",
           "style": "italic",
           "weight": [300, 900],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 21152,
           "sha256": "51999fc7e45d93d8d34d3c0f1c32e58f85ae6e69d8dfb700771062e5c3945e49"
         },
@@ -831,6 +906,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": [300, 900],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 19400,
           "sha256": "09472f217ad1ebb61a7669cf532f9f2f80685e07652ee862fde9a79665aef479"
         }
@@ -853,6 +929,7 @@
           "subset": "latin",
           "style": "italic",
           "weight": [100, 700],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 31144,
           "sha256": "698e572a1964ad255f2d8eebf2e3cad7ec7ba742463998eb72f3be0f91818421"
         },
@@ -861,6 +938,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": [100, 700],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 28528,
           "sha256": "21efe1559a026f9ad7f880772917faa3a621186688e8e79e0568e4308c0bafa9"
         },
@@ -869,6 +947,7 @@
           "subset": "latin-ext",
           "style": "italic",
           "weight": [100, 700],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 24800,
           "sha256": "ba02d91da3206cdab07665126853c86ac84870be3169a8f18a2b36f7e973b2ae"
         },
@@ -877,6 +956,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": [100, 700],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 21292,
           "sha256": "e9dfe6f6288f73d10e1b3c9ef920f74411f8cf442515b71fc5c2ed5517c14ff7"
         }
@@ -899,6 +979,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": [100, 900],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 39680,
           "sha256": "b7e7538f59bff1812841d7627f8e49e70fe86438f9f7b397a028c0d05301c874"
         },
@@ -907,6 +988,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": [100, 900],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 34476,
           "sha256": "b5d815d42066da25e5894bdfe47a415e1f79ef436486e3f843b475806d2e613c"
         }
@@ -929,6 +1011,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": [300, 700],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 22288,
           "sha256": "0640890476fc1198ab4de571fb658de443c4d85b66466ec09534a8737ab1ce9d"
         },
@@ -937,6 +1020,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": [300, 700],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 18940,
           "sha256": "952dddb45d2f96f71cbf3b7f510b24379afc3c89ea02fcf89d377b45d62c0166"
         }
@@ -959,6 +1043,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": [300, 700],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 28244,
           "sha256": "2add7d60b1cd2ab84c9967e23d5ec08eb3fc9635c46855b17d59404dec6b410e"
         },
@@ -967,6 +1052,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": [300, 700],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 26616,
           "sha256": "b5a37861949c4489894ff1e76d3657819830e91316b40effa16c5a6923bc0928"
         }
@@ -989,6 +1075,7 @@
           "subset": "latin",
           "style": "italic",
           "weight": [400, 900],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 38804,
           "sha256": "54af24bd0f911f0fd7399d5445ea2023ff501d6a69f2d728f1213072f977ab14"
         },
@@ -997,6 +1084,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": [400, 900],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 38404,
           "sha256": "e0c764a8e9e1cce92163c55bac4b2ad6cd4cf8c696ce2289ab5c41565e65b7e2"
         },
@@ -1005,6 +1093,7 @@
           "subset": "latin-ext",
           "style": "italic",
           "weight": [400, 900],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 23380,
           "sha256": "b9dff4aec6d8ef27af595330c808c455fcc3ff46881642aa6028ed4e27a96f89"
         },
@@ -1013,6 +1102,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": [400, 900],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 21140,
           "sha256": "42898ad49a6b23f32b109243e1df596edf831015ed685f429e4dafbb181d599d"
         }
@@ -1035,6 +1125,7 @@
           "subset": "latin",
           "style": "italic",
           "weight": [300, 900],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 100572,
           "sha256": "caa1da88ecea68d5d4b79881792675c76e691f5141ae3fef85bd472920436053"
         },
@@ -1043,6 +1134,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": [300, 900],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 97548,
           "sha256": "4fbe8dd9c23b1fd62a988bb8a69b8e692d810f773d9ef6ebca2ba2760c7b11ee"
         },
@@ -1051,6 +1143,7 @@
           "subset": "latin-ext",
           "style": "italic",
           "weight": [300, 900],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 78260,
           "sha256": "f11472cb2bef38bdb05eb91911e9672e8e45dd80756cb87a7f316ac9ec910e1f"
         },
@@ -1059,6 +1152,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": [300, 900],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 74960,
           "sha256": "8ca0880997847953a13964d6769b6712c57aa2dc2f881f4e6e805719791daed8"
         }
@@ -1081,6 +1175,7 @@
           "subset": "latin",
           "style": "italic",
           "weight": [400, 700],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 40772,
           "sha256": "d824d807d4d832d12c87932d0b8ec1314dcfd502157a56dee6bb04cf8a3768ae"
         },
@@ -1089,6 +1184,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": [400, 700],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 37788,
           "sha256": "ddb8c66035104e233fc024669183aad3738b6daa16deee2ebb1241bd0f98ace1"
         },
@@ -1097,6 +1193,7 @@
           "subset": "latin-ext",
           "style": "italic",
           "weight": [400, 700],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 21128,
           "sha256": "45f989df83f3a9f40007d2ecdea98bff248c8767a1a0bbe60e94fb37b605ecee"
         },
@@ -1105,6 +1202,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": [400, 700],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 20088,
           "sha256": "2a2d9c22c9863086a23f5013fede1428585321812b25f2662542c39d02967c5e"
         }
@@ -1127,6 +1225,7 @@
           "subset": "latin",
           "style": "italic",
           "weight": [400, 800],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 47940,
           "sha256": "c664773f7e1d42d36326aa457becf7674236168c74cf7d74e87e5778ef7640f9"
         },
@@ -1135,6 +1234,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": [400, 800],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 44336,
           "sha256": "88603384163d301aebd5bd769832a8bfe3c9004ec24178417b9817f0ad32c63b"
         },
@@ -1143,6 +1243,7 @@
           "subset": "latin-ext",
           "style": "italic",
           "weight": [400, 800],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 88576,
           "sha256": "fa866520f8b7fb646ebc730fd0d3cbf8945db74d92f25fdd6fee486808652fdf"
         },
@@ -1151,6 +1252,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": [400, 800],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 113928,
           "sha256": "f8d3fa06e20989a938972165406a1b731cdc7fe33ff2b0b6798c75aa63709901"
         }
@@ -1173,6 +1275,7 @@
           "subset": "latin",
           "style": "italic",
           "weight": [300, 700],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 39260,
           "sha256": "6f2f5c3b1abc3d0bb035a927f66a90ca873f94fc31c4966c8d024142c2036e55"
         },
@@ -1181,6 +1284,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": [300, 700],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 37640,
           "sha256": "d80df8ff5aecd299a61549f9e29ab1ed0b9b05f4ea71d50fe978e07d5240b235"
         },
@@ -1189,6 +1293,7 @@
           "subset": "latin-ext",
           "style": "italic",
           "weight": [300, 700],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 34392,
           "sha256": "cd5bf126b2c84ab41b254a6a9a1ffb5c326a0f9f82c22fb4704daa31c9aaa415"
         },
@@ -1197,6 +1302,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": [300, 700],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 33736,
           "sha256": "cfa9a397d86f66c5c51775a2500a712d5f632a04f0c5eca6930dfaf612d4566d"
         }
@@ -1219,6 +1325,7 @@
           "subset": "latin",
           "style": "italic",
           "weight": [400, 700],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 31244,
           "sha256": "1203eb6186789060d1376ca7ab20734b179e241c85ddc2d84502c818afb63210"
         },
@@ -1227,6 +1334,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": [400, 700],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 33872,
           "sha256": "22219fb90e3b9bd28debd1825fe8d9a0154a0e31f8b3fa601ac1a0a5aa5e6d1b"
         },
@@ -1235,6 +1343,7 @@
           "subset": "latin-ext",
           "style": "italic",
           "weight": [400, 700],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 35228,
           "sha256": "890c2ae602dfc42b941667f13dcb5ddb196a31e8d7aa76cea20f2afaa7531eff"
         },
@@ -1243,6 +1352,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": [400, 700],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 35468,
           "sha256": "8f7537ce3a6c1c0d0e93a9530432df13953312d378713a059e9a6cf0d0cde8b9"
         }
@@ -1265,6 +1375,7 @@
           "subset": "latin",
           "style": "italic",
           "weight": [200, 900],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 51576,
           "sha256": "b4f56ddc9873487f1c9a3ad5bbce31982fe89b951f57e4604f62b4c8a540fb19"
         },
@@ -1273,6 +1384,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": [200, 900],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 50936,
           "sha256": "382475f38242c52d42a3e5ff8dc69b5d73f10d0d21e4550b5fe232984688779a"
         },
@@ -1281,6 +1393,7 @@
           "subset": "latin-ext",
           "style": "italic",
           "weight": [200, 900],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C4,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 44420,
           "sha256": "14e38c2d6a4ea6effcddde38f0262c03af252cbf82dbc68037f2d6c9112f2097"
         },
@@ -1289,6 +1402,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": [200, 900],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C4,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 42212,
           "sha256": "d10ccbbd0dc4ebae2938958dc1f622a53460fe297e9c958564742dd684309c3f"
         }
@@ -1311,6 +1425,7 @@
           "subset": "latin",
           "style": "italic",
           "weight": [200, 900],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 51432,
           "sha256": "b3faa8f9ce36db53253e11fb107d77b983150c5c21dc8fcf3906234530ab69f2"
         },
@@ -1319,6 +1434,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": [200, 900],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 48200,
           "sha256": "20ce4189b9e41b3439a2a36dd63deff44b6d91182532202cb96b65521b4a3c23"
         },
@@ -1327,6 +1443,7 @@
           "subset": "latin-ext",
           "style": "italic",
           "weight": [200, 900],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 39808,
           "sha256": "01df7b443a6f81915a65df47439121da8307f8a574fadd7cde57c77d0b68c77b"
         },
@@ -1335,6 +1452,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": [200, 900],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 37988,
           "sha256": "ac89a08a6e022ad4f3af961eb95474b7d8531c67ff88b40194bb3569d2d64e1d"
         }
@@ -1357,6 +1475,7 @@
           "subset": "latin",
           "style": "italic",
           "weight": 400,
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 24572,
           "sha256": "ed8b291611e32fa2d2900488dd48fc95faf0957b2ef7ddf1527e8d21dd9cf2df"
         },
@@ -1365,6 +1484,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": 400,
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 24744,
           "sha256": "fdf61e20fd2c0108e0ea28da4daca0035205b4b7fc031a3974b865b704de160a"
         },
@@ -1373,6 +1493,7 @@
           "subset": "latin-ext",
           "style": "italic",
           "weight": 400,
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 11124,
           "sha256": "e026521e59b7b3e5d3257cc76069916111683b97c24e75f0c7a9f07621aa9460"
         },
@@ -1381,6 +1502,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": 400,
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 10804,
           "sha256": "3af47815d6183efcee27a5717970acfe31153365e9b842e62d30c04e86c0613a"
         }
@@ -1403,6 +1525,7 @@
           "subset": "latin",
           "style": "italic",
           "weight": [100, 900],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 45656,
           "sha256": "bceec2ef4d549efbc8df0194a8d5280b6a64c3e399244dffccd9ea1bd9ad6db7"
         },
@@ -1411,6 +1534,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": [100, 900],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 36620,
           "sha256": "7f9d191d999336d3b9790afa72e1358e50a13b06d4f289341e92a311967a80f9"
         },
@@ -1419,6 +1543,7 @@
           "subset": "latin-ext",
           "style": "italic",
           "weight": [100, 900],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 40528,
           "sha256": "877bcc2fd1be299c950d0971578336818ca5818e1e956f12e0d8c6736436ca45"
         },
@@ -1427,6 +1552,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": [100, 900],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 33584,
           "sha256": "a21ecfbf41fbc393e24ef9b7e38532a27e8da5e0a074aa7d66802d1b5ccec2f0"
         }
@@ -1449,6 +1575,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": [100, 900],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 34236,
           "sha256": "50cf7d32c18e1001749b51f1565ef745bc0687b0297b2b13465ed577cc20a8ff"
         },
@@ -1457,6 +1584,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": [100, 900],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 21188,
           "sha256": "8ed24f94c25ecf99a50b806ef6ca02988cf8c1d443228ddbd6a8ac99c99df81e"
         }
@@ -1479,6 +1607,7 @@
           "subset": "latin",
           "style": "italic",
           "weight": [100, 900],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 33320,
           "sha256": "46f805476f0bc693b935a7c7bd891736321fd48ae24c4887526d89d8de09cdd0"
         },
@@ -1487,6 +1616,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": [100, 900],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 34072,
           "sha256": "0efe0fbe6068354f3fad5a88bf31384051206652468eaa22232119354e7ea423"
         },
@@ -1495,6 +1625,7 @@
           "subset": "latin-ext",
           "style": "italic",
           "weight": [100, 900],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 31748,
           "sha256": "8e9a33cf70ab31a59cd27ff8253f1c7c90d146db96c34827df3d53c43a15e781"
         },
@@ -1503,6 +1634,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": [100, 900],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 32716,
           "sha256": "8c1f1559771de47e1f30a87c2bf501d46f42fabc4d93361f4401de05d8e6efa6"
         }
@@ -1525,6 +1657,7 @@
           "subset": "latin",
           "style": "italic",
           "weight": 400,
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 34896,
           "sha256": "cb373bde18855c82a0ebf2946ea661ebd0be58a7fbabdf20f7744ecd9c0a9cfd"
         },
@@ -1533,6 +1666,7 @@
           "subset": "latin",
           "style": "italic",
           "weight": 700,
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 28516,
           "sha256": "3cb3cfab3c562cbbb5a53accf433f65ed1cd0403ea3bdd6ceeb73bf87f23521c"
         },
@@ -1541,6 +1675,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": 400,
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 33116,
           "sha256": "4271064a37f3ffc0aac5f3806db8a72acc23e19447d1804e4e80d8796cbf6330"
         },
@@ -1549,6 +1684,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": 700,
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 29588,
           "sha256": "bf23a7a4eebedbb87d4084a69496b29815914a18e339a00f5dc73a03c9c9328f"
         },
@@ -1557,6 +1693,7 @@
           "subset": "latin-ext",
           "style": "italic",
           "weight": 400,
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 23224,
           "sha256": "e03d9090077c76165d69af4d266eccb7bad28091d03244a31def2a711d597062"
         },
@@ -1565,6 +1702,7 @@
           "subset": "latin-ext",
           "style": "italic",
           "weight": 700,
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 18796,
           "sha256": "1798f8e1f6f84c3ade658b73de077c97c187d0076efc75e47eac0420d98c8536"
         },
@@ -1573,6 +1711,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": 400,
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 21548,
           "sha256": "2d7cdb9a975f016db59cb42a61df1b21889842b3ed4e2226f270f4b1349cf704"
         },
@@ -1581,6 +1720,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": 700,
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 19492,
           "sha256": "94cdabe31b8195f0691d18eda86ea1fed049be7cd21eea22c858ad6dd6cc306b"
         }
@@ -1603,6 +1743,7 @@
           "subset": "latin",
           "style": "italic",
           "weight": 400,
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 22712,
           "sha256": "db397149a9f73fd6a41dd2fdf3314cf8a9daf0485134465cc268cac578766b71"
         },
@@ -1611,6 +1752,7 @@
           "subset": "latin",
           "style": "italic",
           "weight": 700,
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 24156,
           "sha256": "0c2722ef57c7ce87c9dc93a18107939e48fb1540ad14809b47957d1f4b2aa794"
         },
@@ -1619,6 +1761,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": 300,
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 22480,
           "sha256": "3ff652c63672dac64699f04465d7e679045d8cdddfb2a2a1a8762d28866e2891"
         },
@@ -1627,6 +1770,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": 400,
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 21696,
           "sha256": "cf8daee3b83c1e662196c6e34e444bc41344d54bfeb4fb5351e197de6ce94539"
         },
@@ -1635,6 +1779,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": 500,
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 22836,
           "sha256": "2b70215ed40f2c73bbc7bb53cff9c8975a244c8462569e60989c77b8c5a87a00"
         },
@@ -1643,6 +1788,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": 600,
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 22936,
           "sha256": "33faca8b5795a0de1af77cbc43a050a3655c4b1e03e04847fdef4d19d2e361d2"
         },
@@ -1651,6 +1797,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": 700,
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 23036,
           "sha256": "5276f202cce67e8caa9f697800e11cfc9d708da67d47f6f5507dcadcf1e11c11"
         },
@@ -1659,6 +1806,7 @@
           "subset": "latin-ext",
           "style": "italic",
           "weight": 400,
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 20644,
           "sha256": "f554218b51a0eadc0709d6027e684ad9b5b21ddc4f3dfd4ba171ba2b41b0c99f"
         },
@@ -1667,6 +1815,7 @@
           "subset": "latin-ext",
           "style": "italic",
           "weight": 700,
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 21604,
           "sha256": "6e379ab0a9b0c30ee3250d867af4d81efff11a83f537b645652327e4742d12a7"
         },
@@ -1675,6 +1824,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": 300,
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 20480,
           "sha256": "1760bea6409f3d1a95f6c68fc3cacabc61f327753870556c826371011d998b15"
         },
@@ -1683,6 +1833,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": 400,
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 20240,
           "sha256": "fc4b2566ccd9714a72c2137f822311cb0131296c83c8ee93848ae6f887969e85"
         },
@@ -1691,6 +1842,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": 500,
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 20644,
           "sha256": "747fb031bc07d1d88891efbab9d64ec5106407499fe8eb227c9bc47b3e5f77cd"
         },
@@ -1699,6 +1851,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": 600,
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 20824,
           "sha256": "dea6bd9ca650814af1f750b7474d7205b7fe0e4c79a6b58c6f7157d90dc8815c"
         },
@@ -1707,6 +1860,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": 700,
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 20824,
           "sha256": "9b5a5be420405c68cf73fcdd06fa4c9978dcd8fb8b87b0e187e107cfb7a5da29"
         }
@@ -1715,7 +1869,7 @@
     {
       "id": "bebas-neue",
       "family": "Bebas Neue",
-      "category": "sans-serif",
+      "category": "display",
       "fallback": "sans-serif",
       "licence": "OFL-1.1",
       "variable": false,
@@ -1729,6 +1883,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": 400,
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 13768,
           "sha256": "a7c90c89240c134f7fdd33d40c000ec90b79d675ea53e8cc5a6d423c073de412"
         },
@@ -1737,6 +1892,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": 400,
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 8928,
           "sha256": "16c95ce45a2922f52551d38d565d14c92cf257b8f219c89613407d81fdd21a39"
         }
@@ -1745,7 +1901,7 @@
     {
       "id": "oswald",
       "family": "Oswald",
-      "category": "sans-serif",
+      "category": "display",
       "fallback": "sans-serif",
       "licence": "OFL-1.1",
       "variable": true,
@@ -1759,6 +1915,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": [200, 700],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 28488,
           "sha256": "bd73278ee0c50041b91b4c03d1229e35b501637f46b6409e7da2d3a758446ea5"
         },
@@ -1767,6 +1924,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": [200, 700],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 23952,
           "sha256": "7989ccc7770f5aeffa67e088bcd3b294d42fae2f8b0eca3c3c51b953d1f735cc"
         }
@@ -1789,6 +1947,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": 400,
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 13156,
           "sha256": "edf7a1f3bc22e815ea426b102fa0493d20af482b242066e689a1263ebb2eeb68"
         },
@@ -1797,6 +1956,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": 400,
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 7716,
           "sha256": "c7cc6ab22643e87e9693f54ad411dde5012b5d4f96f53408f52c541144be9b6a"
         }
@@ -1819,6 +1979,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": 400,
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 12756,
           "sha256": "17055c538efddf7a754a98bb7db3d15405316dfb4645c287421ed3e7f8769144"
         },
@@ -1827,6 +1988,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": 400,
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 9700,
           "sha256": "5cdd7df84db547c59608d392341fd82e334e04562c0826ab4451942da40a0c50"
         }
@@ -1849,6 +2011,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": 400,
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 19052,
           "sha256": "48a110c7fda81f9921a6437e1a813dcea56df5a9f52f778c7b2f2151e36e4f2c"
         },
@@ -1857,6 +2020,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": 400,
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 19492,
           "sha256": "7b891f87cdd8387776924bc9c30cdc8e7cfe5e97161f54e89a6a710961ca6110"
         }
@@ -1865,7 +2029,7 @@
     {
       "id": "anton",
       "family": "Anton",
-      "category": "sans-serif",
+      "category": "display",
       "fallback": "sans-serif",
       "licence": "OFL-1.1",
       "variable": false,
@@ -1879,6 +2043,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": 400,
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 18612,
           "sha256": "d0fa07ff63dd60cbc0e2f58e29c802dca2a5ae0276c999f59c6111ab7bbaec3b"
         },
@@ -1887,6 +2052,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": 400,
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 31356,
           "sha256": "0d17b7880f389deeb6663a52fa4eadc6d9116bdda725f0aa1f3d404fbb7d3d59"
         }
@@ -1895,7 +2061,7 @@
     {
       "id": "syne",
       "family": "Syne",
-      "category": "sans-serif",
+      "category": "display",
       "fallback": "sans-serif",
       "licence": "OFL-1.1",
       "variable": true,
@@ -1909,6 +2075,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": [400, 800],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 34608,
           "sha256": "68b623f0e45b905041b2edb9b2e4f563a505f13db1cd06b5f1946eb2e1f47048"
         },
@@ -1917,6 +2084,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": [400, 800],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 14724,
           "sha256": "83885b130cf2a67bc2fd6175d6f3c2875833552c1762b5943b51335038ae01f2"
         }
@@ -1925,7 +2093,7 @@
     {
       "id": "unbounded",
       "family": "Unbounded",
-      "category": "sans-serif",
+      "category": "display",
       "fallback": "sans-serif",
       "licence": "OFL-1.1",
       "variable": true,
@@ -1939,6 +2107,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": [200, 900],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 50904,
           "sha256": "22f9b928aa3928a896340422b54d690fbb5875c30eae4c106f029c61f2289fd6"
         },
@@ -1947,6 +2116,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": [200, 900],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 118348,
           "sha256": "845e1c9fe2e9a7bfbedfeb447fbeba4bc1b5ecd6246277910ccdaad35a7a532c"
         }
@@ -1969,6 +2139,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": [400, 700],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 42708,
           "sha256": "51acdc0e009e1d84cca6b654c4218275d8ee33dd243f3df25f7412a824a78d99"
         },
@@ -1977,6 +2148,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": [400, 700],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 22652,
           "sha256": "35f77ad59c29ee47c90397fc1016a1c75a8313ea5292d64643eeae6a90a75ba2"
         }
@@ -1999,6 +2171,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": 400,
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 32280,
           "sha256": "99ec044ad9040a708e38f90ebd5984ca03fc46afeee26d5c77c4769c66ed89e2"
         },
@@ -2007,6 +2180,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": 400,
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 31080,
           "sha256": "0e2fe23a0a87bf572e6463b29ea7782e1898d87d6399698ad9fb40b676e13758"
         }
@@ -2029,6 +2203,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": [400, 700],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 74932,
           "sha256": "891951df5e8b5b0f0bc760d31375405e795c666b5add70437de12d4a6482b33f"
         },
@@ -2037,6 +2212,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": [400, 700],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 29472,
           "sha256": "f626b95c1efa95cf6b7c9b043d3bbe8862b6abbe5f55a082102f33f7de2fd4f9"
         }
@@ -2059,6 +2235,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": 400,
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 42800,
           "sha256": "c59dc73d29daf142ef2431f455d21464172374aa750d793a79d608735db2d856"
         },
@@ -2067,6 +2244,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": 400,
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 66480,
           "sha256": "b63469c752efac950ef0497a345e3823d70211b70f60d61887066a87bc3b62f3"
         }
@@ -2089,6 +2267,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": 400,
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 23708,
           "sha256": "2fcd867d2812578d001b0eca921848e24de91d01986f26e038be374ec7c5cfd2"
         },
@@ -2097,6 +2276,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": 400,
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 14352,
           "sha256": "3b06ffc2dd2edc31fd3f8e301c92a91557c9d8846594486507c5f31b05cf781e"
         }
@@ -2119,6 +2299,7 @@
           "subset": "latin",
           "style": "italic",
           "weight": [100, 800],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 42964,
           "sha256": "a8afa085e9ca5e53434e2ee918ba6b65c7dd4dda56509976b36591478c99d62e"
         },
@@ -2127,6 +2308,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": [100, 800],
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 40404,
           "sha256": "18be452724bfdc236c074ca94a249a7f41a86752c7d04ab258ce9ed5651f6a7e"
         },
@@ -2135,6 +2317,7 @@
           "subset": "latin-ext",
           "style": "italic",
           "weight": [100, 800],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 16520,
           "sha256": "60652c78382d7e5021ce4c3ed8985fc41d8f3d1b1a3bedcec2a44ed8979fe5eb"
         },
@@ -2143,6 +2326,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": [100, 800],
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 15196,
           "sha256": "79bfdab9ba467e26eea4122e6f2567e188dd8a09a8c730d501fc487c4ab99c6e"
         }
@@ -2165,6 +2349,7 @@
           "subset": "latin",
           "style": "italic",
           "weight": 400,
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 16448,
           "sha256": "0840095faae86403735a8c04014b72cb29e7923646b222b360b7e8252932e4e3"
         },
@@ -2173,6 +2358,7 @@
           "subset": "latin",
           "style": "italic",
           "weight": 700,
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 16540,
           "sha256": "2bb0d4c82652472446ed1a5a89a0553f2db1e4ea17cbda66a45e690899d83e91"
         },
@@ -2181,6 +2367,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": 300,
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 14748,
           "sha256": "d2ce22595d55a52b0c63f837515729bd97706bfa1b833816509f13d93daa59b5"
         },
@@ -2189,6 +2376,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": 400,
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 14708,
           "sha256": "08949f728dc52d528e69b1667d15c89a5686a4ee9a296ff90983985f99c380f7"
         },
@@ -2197,6 +2385,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": 500,
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 14888,
           "sha256": "01d285447409c8a588692162439a038b8cbd7871309ee20267b0d2d91c6e8e22"
         },
@@ -2205,6 +2394,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": 600,
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 15620,
           "sha256": "0d1f0b8d0722224e32e9f28261bdc86c79115be73444ae5eceb73976a1bcdf83"
         },
@@ -2213,6 +2403,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": 700,
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 14908,
           "sha256": "4f84d86cfd060f4ded334358ff8a4c81d4db2ed5addd568359d693f44a87765a"
         },
@@ -2221,6 +2412,7 @@
           "subset": "latin-ext",
           "style": "italic",
           "weight": 400,
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 14524,
           "sha256": "1b07eee6df7d26b31864581c2365131d384077605e0b63ae67c4a0a64363a6de"
         },
@@ -2229,6 +2421,7 @@
           "subset": "latin-ext",
           "style": "italic",
           "weight": 700,
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 14684,
           "sha256": "18c8dc28d75ecbda23c88fb11126852b2232916ec2e6d6dc0225def886a0cc98"
         },
@@ -2237,6 +2430,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": 300,
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 13404,
           "sha256": "40a4c5fb57ace858d7d9f7da764a9104a75976c88fc27f8e957d717e6189938d"
         },
@@ -2245,6 +2439,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": 400,
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 13348,
           "sha256": "6bc0f226a5b7884a8170e3f62c63d7675609d4631bdc5931b5cdab81821f00eb"
         },
@@ -2253,6 +2448,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": 500,
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 13432,
           "sha256": "6bb06407c97584b0867a959e05e8874693bfeb8c317de190811c51598f2d99ea"
         },
@@ -2261,6 +2457,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": 600,
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 14328,
           "sha256": "32057cf50dd14bdb21a2c93766c4a2c43e4abe688ea3922df3203cac7751a98b"
         },
@@ -2269,6 +2466,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": 700,
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 13380,
           "sha256": "5b9b81f54dd69635c7adcaacd4c4545a73fe4809c528e22734b238a83a74135f"
         }
@@ -2291,6 +2489,7 @@
           "subset": "latin",
           "style": "italic",
           "weight": 400,
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 18300,
           "sha256": "a5fb49042e7305918585561ab5fbd587d708ce74b0f54b56751e2b1151922d19"
         },
@@ -2299,6 +2498,7 @@
           "subset": "latin",
           "style": "italic",
           "weight": 700,
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 18640,
           "sha256": "e84908e18ffcfab7d46490f4fd9781bc701cbd76aa3af4cb3e625858fd39ff3d"
         },
@@ -2307,6 +2507,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": 400,
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 16520,
           "sha256": "fb4a81a2d0a893e5c38c394a7e716a1cef0b24610a0af49c96f6d529bd66bf2b"
         },
@@ -2315,6 +2516,7 @@
           "subset": "latin",
           "style": "normal",
           "weight": 700,
+          "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
           "bytes": 16724,
           "sha256": "2d46bd159b53f55c41167a4f1540a074649464194fd1e416f5b4694a6c0f282c"
         },
@@ -2323,6 +2525,7 @@
           "subset": "latin-ext",
           "style": "italic",
           "weight": 400,
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 17196,
           "sha256": "a7642ae8cb7a389cb781e6c63d799e62932d916089afac98087f3af76b050a11"
         },
@@ -2331,6 +2534,7 @@
           "subset": "latin-ext",
           "style": "italic",
           "weight": 700,
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 17740,
           "sha256": "0db253a66a34fcb80b80c5f8a400055550348e7c379e67349b07471d7b81a773"
         },
@@ -2339,6 +2543,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": 400,
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 15832,
           "sha256": "44ad50c760fa8f5b62da3d489edb40adebabaf97988b9b0adbbc3f0be859050a"
         },
@@ -2347,6 +2552,7 @@
           "subset": "latin-ext",
           "style": "normal",
           "weight": 700,
+          "unicodeRange": "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF",
           "bytes": 15808,
           "sha256": "52edd9a8959ec3e68d618e2a4757182c0e61bfeea61679850cad8744a68cadf3"
         }

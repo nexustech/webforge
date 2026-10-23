@@ -19,6 +19,12 @@ import { siteLibrary, starterPage } from "@webforge/site-components";
 import fc from "fast-check";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  deleteSelected,
+  duplicateSelected,
+  moveSelected,
+  toggleSelectedHidden,
+} from "../layers/bulk-layers.js";
+import {
   addMenuItem,
   editMenuLink,
   followPages,
@@ -45,6 +51,7 @@ import {
 import { createFakeEngine, type FakeEngine } from "./fake-engine.test-helper.js";
 import { applyListChange, editableList, listItems } from "./list-edit.js";
 import { withoutOverride, withValueAt } from "./responsive-value.js";
+import { selectElements } from "./selection.js";
 import { starterSite } from "./starter-site.js";
 
 // Undo invariant (U8) over the editor as wired: canvas edits of every kind on any page, page
@@ -650,6 +657,37 @@ const commands: fc.Arbitrary<Command>[] = [
       ctx.engine.selectFromCanvas(node?.props.id ?? null);
     },
   })),
+  // Several selected elements (1.31): any of the page's, some not layers (refused, with a reason),
+  // then the bulk actions on them.
+  fc.array(fc.nat({ max: 20 }), { minLength: 1, maxLength: 4 }).map((ats) => ({
+    name: `select several ${ats.join(" ")}`,
+    run: (ctx) => {
+      const page = ctx.shown();
+      const nodes = page === undefined ? [] : nodesOf(page);
+      const ids = ats.flatMap((at) => {
+        const node = nodes[at % Math.max(nodes.length, 1)];
+        if (node === undefined) return [];
+        // A linked copy is selected by the id the canvas shows its section by.
+        return [isSharedCopy(node) ? copiedNodeId(node.props.id, "hours") : node.props.id];
+      });
+      selectElements(ctx.session.ui, ids);
+    },
+  })),
+  fc
+    .constantFrom(
+      ["delete", deleteSelected] as const,
+      ["duplicate", duplicateSelected] as const,
+      ["hide or show", toggleSelectedHidden] as const,
+      ["move up", (session: EditorSession) => moveSelected(session, "up")] as const,
+      ["move down", (session: EditorSession) => moveSelected(session, "down")] as const,
+    )
+    .map(([name, act]) => ({
+      name: `${name} the selected elements`,
+      run: (ctx) => {
+        ctx.connection.flush();
+        act(ctx.session);
+      },
+    })),
   fc.constant<Command>({
     name: "undo",
     run: (ctx) => {

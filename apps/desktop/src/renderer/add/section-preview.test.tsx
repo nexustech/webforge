@@ -36,7 +36,6 @@ function setUp(status: "compiled" | "failed" = "compiled") {
     theme: () => theme,
     sharedSection: (id) => (id === HOURS ? HOURS_SECTION : undefined),
     compileCss,
-    baseUrl: "http://localhost/",
   });
   return { previews, compileCss };
 }
@@ -98,7 +97,6 @@ describe("createSectionPreviews (UX-10)", () => {
       theme: () => current,
       sharedSection: () => undefined,
       compileCss,
-      baseUrl: "http://localhost/",
     });
     const hero = { type: "Hero", label: "Hero", category: "Heroes" };
 

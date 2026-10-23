@@ -15,8 +15,9 @@ export type ContentSecurityPolicyOptions = {
  * (Puck's canvas interaction styles inside the iframe, Tiptap's editor styles), some with
  * per-drag content that no hash can cover (ADR 0004). Scripts stay strict. Inline CSS cannot load
  * anything from elsewhere either: images and fonts are limited to the app by `img-src`/`font-src`.
- * Media images come from the main process through `webforge-media:` (`MEDIA_SCHEME`, 1.16); this
- * file is also loaded by the Vite config, so it names the scheme itself.
+ * Media images come from the main process through `webforge-media:` (`MEDIA_SCHEME`, 1.16), and the
+ * site's fonts through `webforge-font:` (`FONT_SCHEME`, 2.2); this file is also loaded by the Vite
+ * config, so it names the schemes itself.
  * No nonce goes on `style-src`: with a nonce present, browsers ignore `'unsafe-inline'`.
  */
 export function buildContentSecurityPolicy(options: ContentSecurityPolicyOptions = {}): string {
@@ -26,7 +27,7 @@ export function buildContentSecurityPolicy(options: ContentSecurityPolicyOptions
     `script-src 'self'${nonce}`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: webforge-media:",
-    "font-src 'self'",
+    "font-src 'self' webforge-font:",
     "connect-src 'self'",
     "base-uri 'none'",
     "form-action 'none'",
