@@ -39,20 +39,17 @@ export function BoxField({ id, labelId, field, value, onChange, onCommit }: Fiel
   const sizes = sizesOf(box);
   const allSame = sizes.every((size) => size === sizes[0]);
   const shown = sizes.join(" ");
-  // The mode goes with the sizes it was chosen for, and the sizes this field changed them to.
-  // Sizes from elsewhere (another element or device, Undo) start it afresh: every side at once if
-  // they are all the same.
-  const [mode, setMode] = useState<{
-    readonly same: boolean;
-    readonly shown: string;
-    readonly expected?: string;
-  }>({ same: allSame, shown });
-  const kept = mode.shown === shown || mode.expected === shown;
-  const same = kept ? mode.same : allSame;
-  if (mode.shown !== shown) setMode({ same, shown });
+  // The mode goes with the sizes it was chosen for, or the sizes this field last changed them to.
+  // Other sizes (another element or device, Undo) start it afresh: every side at once if they are
+  // all the same. Worked out while drawing, never stored then (R2).
+  const [mode, setMode] = useState<{ readonly same: boolean; readonly shown: string }>({
+    same: allSame,
+    shown,
+  });
+  const same = mode.shown === shown ? mode.same : allSame;
   /** Reports `next`, keeping the mode for it. */
   const change = (next: Box) => {
-    setMode({ same, shown, expected: sizesOf(next).join(" ") });
+    setMode({ same, shown: sizesOf(next).join(" ") });
     onChange(next);
   };
   const options = [{ label: t("editPanel.box.default"), value: DEFAULT }, ...(field.options ?? [])];

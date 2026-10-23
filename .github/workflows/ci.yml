@@ -163,8 +163,14 @@ jobs:
       - name: No hard-coded UI strings
         run: pnpm ui-strings
 
+      - name: React Compiler compiles every component (ADR 0010)
+        run: pnpm react-compiler
+
       - name: Tests with coverage
         run: pnpm test
+
+      - name: Tests on compiled code (React Compiler, ADR 0010)
+        run: pnpm test:compiled
 
       - name: Upload coverage report
         if: always() && matrix.os == 'ubuntu-latest'

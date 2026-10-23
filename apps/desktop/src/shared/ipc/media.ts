@@ -1,5 +1,6 @@
 import { mediaMetaSchema } from "@webforge/model";
 import { z } from "zod";
+import { sessionIdSchema } from "./project.js";
 
 /** The largest file Media takes (F-ED-5). */
 export const MAX_MEDIA_BYTES = 50 * 1024 * 1024;
@@ -50,7 +51,8 @@ const importResultSchema = z.discriminatedUnion("status", [
   z.strictObject({ status: z.literal("canceled") }),
   z.strictObject({
     status: z.literal("failed"),
-    reason: z.enum(["no-site", "read-only", "unknown"]),
+    /** `stale-session`: another site opened since the renderer loaded (R6). */
+    reason: z.enum(["no-site", "stale-session", "read-only", "unknown"]),
   }),
 ]);
 
@@ -74,6 +76,7 @@ export const mediaChannels = {
   importMedia: {
     channel: "media:import",
     request: z.tuple([
+      sessionIdSchema,
       z
         .array(droppedFileSchema)
         .min(1)
@@ -86,18 +89,18 @@ export const mediaChannels = {
     ]),
     response: importResultSchema,
   },
-  /** Asks for images or PDFs with a native dialog, then imports them. */
+  /** Asks for images or PDFs with a native dialog, then imports them, as `importMedia` does. */
   chooseMedia: {
     channel: "media:choose",
-    request: z.tuple([]),
+    request: z.tuple([sessionIdSchema]),
     response: importResultSchema,
   },
 } as const;
 
 /** `window.webforge.media`. */
 export interface MediaApi {
-  /** Imports dropped files into the open site's file. */
-  import(files: readonly DroppedFile[]): Promise<MediaImportResult>;
-  /** Lets the user pick files to import. */
-  choose(): Promise<MediaImportResult>;
+  /** Imports dropped files into the open site's file, if it is still the opening `sessionId` names. */
+  import(sessionId: string, files: readonly DroppedFile[]): Promise<MediaImportResult>;
+  /** Lets the user pick files to import into the open site, if it is still the opening `sessionId` names. */
+  choose(sessionId: string): Promise<MediaImportResult>;
 }

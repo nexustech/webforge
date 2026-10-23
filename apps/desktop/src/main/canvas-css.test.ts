@@ -140,7 +140,9 @@ describe("registerCanvasHandlers", () => {
     await expect(handler?.(from("file:///app"), request(["btn"]))).resolves.toEqual({
       status: "failed",
     });
-    await expect(handler?.(from("https://evil.example"), request([]))).rejects.toThrow(/untrusted/);
+    await expect(handler?.(from("https://evil.example"), request([]))).rejects.toThrow(
+      "ipc-failed",
+    );
     await expect(
       handler?.(from("file:///app"), { theme: { name: "Bad Theme" } }),
     ).rejects.toThrow();

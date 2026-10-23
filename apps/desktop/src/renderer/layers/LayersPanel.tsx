@@ -16,14 +16,17 @@ import {
   Trash2Icon,
 } from "lucide-react";
 import {
+  type ComponentType,
   type DragEvent,
   type KeyboardEvent,
   type ReactNode,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
 } from "react";
 import type { MenuPoint } from "../element-menu/ElementMenu.js";
+import { isMac } from "../shell/commands.js";
 import { type Layer, layerItem } from "./layers.js";
 
 /** What the Layers panel can do; the host binds them to the editor session and its commands. */
@@ -65,7 +68,7 @@ export type LayersPanelProps = {
    * The element menu (1.35), the canvas's too: open `at` a point for the selected layer, closed
    * with `onClose`; its Rename renames the layer in place.
    */
-  readonly menu?: (props: {
+  readonly menu?: ComponentType<{
     readonly at: MenuPoint | null;
     readonly onClose: () => void;
     readonly onRename: () => void;
@@ -74,7 +77,7 @@ export type LayersPanelProps = {
      * it if Rename was chosen.
      */
     readonly onCloseFocus: () => void;
-  }) => ReactNode;
+  }>;
 };
 
 /** A layer as a row: where it sits among its siblings, so moves stay within its parent. */
@@ -151,7 +154,7 @@ const DRAG_TYPE = "application/x-webforge-layer";
 
 /**
  * Layers (F-ED-12, UI1; Advanced mode): the page's sections and elements as a tree, selected in
- * step with the canvas. Drag a layer, or press Alt+↑/↓, to move it among its siblings; while
+ * step with the canvas. Drag a layer, or press Mod+Alt+↑/↓, to move it among its siblings; while
  * dragging, the rows it can't go to are marked (1.35). F2 or double-click renames it; the eye
  * hides it (dimmed on the canvas, left out of the export). ←/→ and the arrows beside the names
  * collapse and expand the tree, the toolbar all of it at once; the filter shows the layers whose
@@ -165,7 +168,7 @@ export function LayersPanel({
   alsoSelected = [],
   actions,
   layoutLocked = false,
-  menu,
+  menu: Menu,
 }: LayersPanelProps) {
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(() => new Set());
   const [filter, setFilter] = useState("");
@@ -174,7 +177,10 @@ export function LayersPanel({
   // A layer selected elsewhere (the canvas) shows: the layers it is in open once. They can be
   // collapsed again afterwards, hiding it.
   const latest = useRef({ layers, selectedId });
-  latest.current = { layers, selectedId };
+  // Kept up to date after each render, for the effect below and for focusing once React has drawn.
+  useLayoutEffect(() => {
+    latest.current = { layers, selectedId };
+  });
   useEffect(() => {
     const parents = parentsOf(latest.current.layers, selectedId);
     setCollapsed((current) =>
@@ -233,7 +239,15 @@ export function LayersPanel({
       return;
     }
     const at = rows.indexOf(row);
-    if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
+    // The canvas's keys (F-ED-27): Mod + arrows walk the tree, Mod + Alt + ↑/↓ move (Alt + ↑/↓
+    // too, Layers' first keys). Plain arrows move the focus, as in any tree (WAI-ARIA).
+    const mod = isMac() ? event.metaKey : event.ctrlKey;
+    if ((event.key === "ArrowRight" || event.key === "ArrowLeft") && mod) {
+      event.preventDefault();
+      const siblings = rows.filter((other) => other.parent === row.parent);
+      const sibling = siblings[siblings.indexOf(row) + (event.key === "ArrowRight" ? 1 : -1)];
+      if (sibling !== undefined) focusRow(sibling.layer.id);
+    } else if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
       event.preventDefault();
       const opening = event.key === "ArrowRight";
       if (row.layer.children.length > 0 && row.expanded !== opening && query === "") {
@@ -255,6 +269,18 @@ export function LayersPanel({
           (step < 0 ? actions.moveUp : actions.moveDown)?.();
         } else {
           actions.move(row.layer.id, row.index + step);
+        }
+      } else if (mod && step < 0) {
+        if (row.parent !== "") focusRow(row.parent);
+      } else if (mod) {
+        // The first child as listed: a filter may leave it out, and then there's none to go to.
+        const next = rows[at + 1];
+        const first = row.layer.children[0];
+        if (row.expanded && next?.parent === row.layer.id) {
+          focusRow(next.layer.id);
+        } else if (!row.expanded && query === "" && first !== undefined) {
+          setExpanded(row.layer.id, true);
+          focusRow(first.id);
         }
       } else {
         const next = rows[at + step];
@@ -407,7 +433,7 @@ export function LayersPanel({
                 }}
                 onDoubleClick={() => setRenaming(layer.id)}
                 onContextMenu={(event) => {
-                  if (menu === undefined) return;
+                  if (Menu === undefined) return;
                   event.preventDefault();
                   // From the keyboard (Shift+F10, the Menu key) there is no pointer: below the row.
                   const box = event.currentTarget.getBoundingClientRect();
@@ -603,18 +629,20 @@ export function LayersPanel({
           <ChevronsDownUpIcon />
         </ToolButton>
       </div>
-      {menu?.({
-        at: menuAt,
-        onClose: () => setMenuAt(null),
-        onRename: () => {
-          renamedFromMenu.current = true;
-        },
-        onCloseFocus: () => {
-          const id = latest.current.selectedId;
-          if (renamedFromMenu.current && id !== null) setRenaming(id);
-          else focusSelected();
-        },
-      })}
+      {Menu === undefined ? null : (
+        <Menu
+          at={menuAt}
+          onClose={() => setMenuAt(null)}
+          onRename={() => {
+            renamedFromMenu.current = true;
+          }}
+          onCloseFocus={() => {
+            const id = latest.current.selectedId;
+            if (renamedFromMenu.current && id !== null) setRenaming(id);
+            else focusSelected();
+          }}
+        />
+      )}
     </div>
   );
 }

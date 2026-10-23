@@ -4,6 +4,7 @@ import { similarTo, toggleSelectedHidden } from "../layers/bulk-layers.js";
 import { type Layer, type LayersSession, shownLayer, toggleLayerHidden } from "../layers/layers.js";
 import type { CommandRegistry } from "../shell/commands.js";
 import { selectElements } from "./selection.js";
+import { splitText } from "./split-text.js";
 
 /**
  * *Hide or show* for the selected element (F-ED-27: Mod + /) in the Edit menu and the command
@@ -45,8 +46,6 @@ export function registerElementCommands(
     id: "edit.toggleHidden",
     label: t("canvas.toggleHidden"),
     menu: "edit",
-    shortcut: "Mod+/",
-    textShortcut: true,
     enabled: false,
     run: () => {
       const { nodeId } = session.ui.getState();
@@ -69,7 +68,6 @@ export function registerElementCommands(
     id: "edit.rename",
     label: t("canvas.rename"),
     menu: "edit",
-    shortcut: "F2",
     enabled: false,
     run: () => {
       const layer = selectedLayer();
@@ -94,6 +92,19 @@ export function registerElementCommands(
     if (request.kind === "pickImage") pickImage(request.nodeId);
     else hide(request.nodeId);
   });
+  // Alt + Enter in rich text (F-ED-27): adding an element changes the layout, which Content mode
+  // locks (M3).
+  const stopSplits = engine.onTextSplit((split) => {
+    if (locked) {
+      notify(t("canvas.splitText.locked"));
+      return;
+    }
+    beforeAction();
+    if (splitText(session, split, notify) !== undefined) {
+      // The text after the caret is edited on, as the editor was.
+      requestAnimationFrame(() => engine.perform("editText"));
+    }
+  });
   const update = () => {
     registry.update("edit.toggleHidden", { enabled: canHide(session.ui.getState().nodeId) });
     registry.update("edit.rename", { enabled: selectedLayer() !== undefined });
@@ -108,6 +119,7 @@ export function registerElementCommands(
       stopDocument();
       stopSelection();
       stopRequests();
+      stopSplits();
       removeRename();
       removeSimilar();
       removeCommand();

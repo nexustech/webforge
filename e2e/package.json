@@ -16,6 +16,7 @@
     "@webforge/model": "workspace:*",
     "@webforge/storage": "workspace:*",
     "@webforge/test-utils": "workspace:*",
+    "@webforge/themes": "workspace:*",
     "zod": "catalog:"
   }
 }

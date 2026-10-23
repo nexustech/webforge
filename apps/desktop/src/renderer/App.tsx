@@ -3,7 +3,7 @@ import type { EditorMode } from "@webforge/engine";
 import { t } from "@webforge/i18n";
 import { siteLibrary } from "@webforge/site-components";
 import { PanelBottomIcon, PanelLeftIcon, PanelRightIcon } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { applyPreferencesChange } from "../shared/ipc/prefs.js";
 import type { ExportRequest } from "../shared/ipc/site.js";
 import type {
@@ -14,8 +14,8 @@ import type {
   SiteUiState,
   UiStateResult,
 } from "../shared/ipc-contract.js";
-import { Editor, type EditorProps } from "./editor/Editor.js";
-import { createEditorSession } from "./editor/editor-session.js";
+import { Editor, type EditorProps, type UndoTo } from "./editor/Editor.js";
+import { createEditorSession, type EditorSession } from "./editor/editor-session.js";
 import { starterSite } from "./editor/starter-site.js";
 import { registerExportCommand } from "./export/export-command.js";
 import { exportRequestFor } from "./export/export-request.js";
@@ -36,8 +36,10 @@ import { ModeToggle } from "./shell/ModeToggle.js";
 import { PanelRegistryProvider } from "./shell/panel-context.js";
 import { createPanelRegistry } from "./shell/panels.js";
 import { ShellLayout } from "./shell/ShellLayout.js";
+import { ShortcutSheet } from "./shell/ShortcutSheet.js";
 import { TitleBar } from "./shell/TitleBar.js";
 import { UndoStepsMenu } from "./shell/UndoStepsMenu.js";
+import { registerViewCommands } from "./shell/view-commands.js";
 import { registerPageCommands } from "./site/page-commands.js";
 import { registerSitePanel } from "./site/SitePanel.js";
 import { SiteSettingsHost } from "./site-settings/SiteSettingsHost.js";
@@ -45,6 +47,7 @@ import { SiteCommands } from "./start/SiteCommands.js";
 import { AutosaveStatus } from "./storage/AutosaveStatus.js";
 import { registerCrashReportsCommand } from "./storage/crash-reports-command.js";
 import type { LoadedSite } from "./storage/load-site.js";
+import { siteSession } from "./storage/site-session.js";
 
 /** Props of {@link App}. */
 export type AppProps = {
@@ -71,9 +74,15 @@ export type AppProps = {
 
 const exportWithPreload = (request: ExportRequest) => window.webforge.site.export(request);
 const saveWithPreload = (change: PreferencesChange) => window.webforge.prefs.set(change);
-const saveUiStateWithPreload = (state: SiteUiState) => window.webforge.project.setUiState(state);
+const saveUiStateWithPreload = (state: SiteUiState) =>
+  window.webforge.project.setUiState(siteSession(), state);
 const spellCheckWithPreload = (language: string) =>
   window.webforge.app.setSpellCheckLanguage(language);
+
+/** The perf check's hooks (ADR 0007), loaded only in perf builds. */
+const installPerf = (session: EditorSession) => {
+  void import("./perf/perf-hooks.js").then((perf) => perf.installPerfHooks(session));
+};
 
 /** Root component of the editor window: the title bar over the panel layout and canvas. */
 export function App({
@@ -98,13 +107,7 @@ export function App({
   // Design or Content (M3): remembered with the open site, never an undo step.
   const [mode, setMode] = useState<EditorMode>(uiState?.editorMode ?? "design");
   // How the title bar's list of steps undoes back to one, which the editor hands over (UX-16).
-  const [undoTo, setUndoTo] = useState<((entryId: string) => boolean) | undefined>(undefined);
-  // A function as state: set through an updater, so React keeps it as is. Stable, so the editor
-  // hands it over once, not on every render.
-  const handUndoTo = useCallback(
-    (next: ((entryId: string) => boolean) | null) => setUndoTo(() => next ?? undefined),
-    [],
-  );
+  const [undoTo, setUndoTo] = useState<UndoTo | null>(null);
   // The latest preferences, for changes made before React re-renders (several groups at once).
   const latest = useRef(preferences);
   const siteName = useSyncExternalStore(
@@ -139,12 +142,10 @@ export function App({
   };
 
   const { theme, editorLevel } = preferences;
-  // The View menu's options as the canvas takes them; the same object until one changes.
+  // The View menu's options as the canvas takes them (the compiler keeps the object until one
+  // changes; without it, the canvas is just told the same options again).
   const { showOutlines, spacingOnHover, elementNames, extraBottomSpace } = preferences.canvas;
-  const viewOptions = useMemo(
-    () => ({ outlines: showOutlines, spacingOnHover, elementNames, extraBottomSpace }),
-    [showOutlines, spacingOnHover, elementNames, extraBottomSpace],
-  );
+  const viewOptions = { outlines: showOutlines, spacingOnHover, elementNames, extraBottomSpace };
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
@@ -160,6 +161,11 @@ export function App({
     [panels, session, mode],
   );
   useEffect(() => registerCrashReportsCommand(registry), [registry]);
+  // View → Zoom In/Out, Actual Size, Zoom to Fit and the device views (F-ED-27).
+  useEffect(
+    () => registerViewCommands(registry, session.ui, canvasView),
+    [registry, session, canvasView],
+  );
 
   useEffect(
     () =>
@@ -214,9 +220,7 @@ export function App({
 
   useEffect(() => {
     // Vite replaces MODE at build time, so normal builds drop this branch and the module with it.
-    if (import.meta.env.MODE === "perf") {
-      void import("./perf/perf-hooks.js").then((perf) => perf.installPerfHooks(session));
-    }
+    if (import.meta.env.MODE === "perf") installPerf(session);
   }, [session]);
 
   const rememberLayout = (groupId: string, layout: ResizableLayout) =>
@@ -230,7 +234,7 @@ export function App({
             <TitleBar
               siteName={siteName}
               saveStatus={<AutosaveStatus session={session} loaded={loaded} />}
-              undoSteps={<UndoStepsMenu state={session.history.state} undoTo={undoTo} />}
+              undoSteps={<UndoStepsMenu state={session.history.state} undoTo={undoTo?.run} />}
               tools={
                 <>
                   <ModeToggle mode={mode} onModeChange={changeMode} />
@@ -280,7 +284,7 @@ export function App({
                         viewOptions={viewOptions}
                         addPreferences={preferences.add}
                         onAddPreferencesChange={(add) => change({ add })}
-                        onUndoTo={handUndoTo}
+                        onUndoTo={setUndoTo}
                       />
                     </div>
                   </div>
@@ -289,6 +293,7 @@ export function App({
             </main>
           </div>
           <AboutDialog info={info} />
+          <ShortcutSheet />
           <SiteCommands />
           <SiteSettingsHost session={session} />
           <SiteWideConfirmDialog confirm={siteWide} />

@@ -1,6 +1,4 @@
 import { Buffer } from "node:buffer";
-import interRegular from "@fontsource/inter/files/inter-latin-400-normal.woff2?base64";
-import interBold from "@fontsource/inter/files/inter-latin-700-normal.woff2?base64";
 import jpegDecode from "@jsquash/jpeg/codec/dec/mozjpeg_dec.wasm?base64";
 import jpegEncode from "@jsquash/jpeg/codec/enc/mozjpeg_enc.wasm?base64";
 import png from "@jsquash/png/codec/pkg/squoosh_png_bg.wasm?base64";
@@ -14,8 +12,9 @@ import theme from "tailwindcss/theme.css?raw";
 import utilities from "tailwindcss/utilities.css?raw";
 
 // Every file the pipeline needs is bundled into the worker: CSS as text, binaries as base64
-// strings (the ?base64 plugin in electron.vite.config.ts). Nothing is resolved from node_modules or
-// read from app.asar at run time.
+// strings (the ?base64 plugin in electron.vite.config.ts), except a site's fonts, which the main
+// process sends with an export (2.2). Nothing is resolved from node_modules or read from app.asar
+// at run time.
 
 function bytesOf(base64: string): Uint8Array<ArrayBuffer> {
   return new Uint8Array(Buffer.from(base64, "base64"));
@@ -24,7 +23,7 @@ function bytesOf(base64: string): Uint8Array<ArrayBuffer> {
 let styles: StyleResources | null = null;
 let resources: Promise<PipelineResources> | null = null;
 
-/** What compiling CSS needs: stylesheets, daisyUI and fonts, decoded once per worker. */
+/** What compiling CSS needs: stylesheets and daisyUI, loaded once per worker. */
 export function loadStyleResources(): StyleResources {
   styles ??= {
     stylesheets: {
@@ -34,20 +33,6 @@ export function loadStyleResources(): StyleResources {
     },
     daisyui,
     daisyuiTheme,
-    fonts: [
-      {
-        family: "Inter",
-        weight: 400,
-        fileName: "inter-latin-400-normal.woff2",
-        data: bytesOf(interRegular),
-      },
-      {
-        family: "Inter",
-        weight: 700,
-        fileName: "inter-latin-700-normal.woff2",
-        data: bytesOf(interBold),
-      },
-    ],
   };
   return styles;
 }
@@ -65,7 +50,8 @@ export function loadBundledResources(): Promise<PipelineResources> {
       webpEncode: bytesOf(webpEncode),
       resize: bytesOf(resize),
     });
-    return { ...loadStyleResources(), codecs };
+    // An export's fonts come with its job (`runExport`); no other job needs any.
+    return { ...loadStyleResources(), codecs, readFont: async () => undefined };
   })();
   return resources;
 }

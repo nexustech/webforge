@@ -1,13 +1,10 @@
 import type { ThemeTokens } from "@webforge/model";
-import { themeCss } from "@webforge/themes";
+import { type FontFace, fontFacesFor, themeCss } from "@webforge/themes";
 import { compile } from "tailwindcss";
-import type { FontFile, PipelineResources } from "./resources.js";
+import type { PipelineResources } from "./resources.js";
 
-/** The resources compiling CSS needs: no image codecs. */
-export type StyleResources = Pick<
-  PipelineResources,
-  "stylesheets" | "daisyui" | "daisyuiTheme" | "fonts"
->;
+/** The resources compiling CSS needs: no image codecs, and no font bytes. */
+export type StyleResources = Pick<PipelineResources, "stylesheets" | "daisyui" | "daisyuiTheme">;
 
 /** Options of {@link buildSiteCss}. */
 export type SiteCssOptions = {
@@ -19,15 +16,21 @@ export type SiteCssOptions = {
   readonly fontsUrl: string;
 };
 
-function fontFaces(fonts: readonly FontFile[], fontsUrl: string): string {
-  return fonts
+/**
+ * An `@font-face` for each of `faces` (2.2): a variable font's weight range, and the subset's
+ * characters, so a browser loads only the files a page's text needs. Every value comes from the
+ * catalogue's schema, so none can carry other CSS.
+ */
+function fontFaces(faces: readonly FontFace[], fontsUrl: string): string {
+  return faces
     .map(
-      (font) => `@font-face {
-  font-family: "${font.family}";
-  font-style: normal;
-  font-weight: ${font.weight};
+      (face) => `@font-face {
+  font-family: "${face.family}";
+  font-style: ${face.style};
+  font-weight: ${typeof face.weight === "number" ? face.weight : face.weight.join(" ")};
   font-display: swap;
-  src: url("${fontsUrl}${font.fileName}") format("woff2");
+  src: url("${fontsUrl}${face.file}") format("woff2");
+  unicode-range: ${face.unicodeRange.replaceAll(",", ", ")};
 }`,
     )
     .join("\n");
@@ -35,16 +38,16 @@ function fontFaces(fonts: readonly FontFile[], fontsUrl: string): string {
 
 /**
  * The Tailwind entry stylesheet: theme, base styles and utilities, daisyUI with the site's theme,
- * and the bundled fonts. No `@import "tailwindcss"`: each layer is loaded from the resources.
+ * and the fonts its theme uses. No `@import "tailwindcss"`: each layer is loaded from the resources.
  */
-export function siteStylesheetSource(resources: StyleResources, options: SiteCssOptions): string {
+export function siteStylesheetSource(options: SiteCssOptions): string {
   return [
     "@layer theme, base, components, utilities;",
     '@import "tailwindcss/theme.css" layer(theme);',
     '@import "tailwindcss/preflight.css" layer(base);',
     '@import "tailwindcss/utilities.css" layer(utilities);',
     themeCss(options.theme),
-    fontFaces(resources.fonts, options.fontsUrl),
+    fontFaces(fontFacesFor(options.theme), options.fontsUrl),
   ]
     .filter((part) => part !== "")
     .join("\n");
@@ -58,7 +61,7 @@ export async function buildSiteCss(
   resources: StyleResources,
   options: SiteCssOptions,
 ): Promise<string> {
-  const compiler = await compile(siteStylesheetSource(resources, options), {
+  const compiler = await compile(siteStylesheetSource(options), {
     base: "/",
     loadStylesheet: async (id, base) => {
       const content = resources.stylesheets[id];

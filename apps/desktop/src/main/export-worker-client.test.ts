@@ -16,6 +16,7 @@ const job: ExportJob = {
     ],
     media: [],
   },
+  fonts: [],
 };
 
 /** A worker the test drives: it records the job and answers when told to. */

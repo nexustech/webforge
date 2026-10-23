@@ -15,7 +15,13 @@ export async function runExport(
 ): Promise<ExportOutcome> {
   const started = performance.now();
   try {
-    const built = await buildSite(job.snapshot, siteLibrary, await loadResources());
+    // The site's fonts come with the job: the main process read and checked them (2.2).
+    const fonts = new Map(job.fonts.map((font) => [font.file, font.data]));
+    const resources = {
+      ...(await loadResources()),
+      readFont: async (face: { readonly file: string }) => fonts.get(face.file),
+    };
+    const built = await buildSite(job.snapshot, siteLibrary, resources);
     await writeSiteFolder(built.files, job.destination);
     return {
       type: "exported",

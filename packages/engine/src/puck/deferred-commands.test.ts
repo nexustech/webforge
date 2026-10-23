@@ -85,6 +85,23 @@ describe("deferredCommands (#146)", () => {
     expect(ran).toEqual(["undo"]);
   });
 
+  it("runs an action (Alt+Enter's split) after the pending keystrokes too, in order with Undo", async () => {
+    const commands = setup();
+    const split = vi.fn(() => ran.push("redo"));
+    pending = true;
+
+    commands.whenSent(split);
+    commands.run("undo");
+    expect(split).not.toHaveBeenCalled();
+    commands.edited();
+    await microtasks();
+
+    expect(ran).toEqual(["redo", "undo"]);
+    // With nothing pending, it runs at once.
+    commands.whenSent(split);
+    expect(split).toHaveBeenCalledTimes(2);
+  });
+
   it("never holds Esc back", () => {
     const commands = setup();
     pending = true;

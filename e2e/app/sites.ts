@@ -1,6 +1,7 @@
 import type { ElectronApplication } from "@playwright/test";
 
 type ProjectSummary = {
+  sessionId: string;
   name: string;
   fileName: string;
   formatVersion: number;
@@ -15,7 +16,7 @@ export type RendererWindow = {
       open(): Promise<unknown>;
       getCurrent(): Promise<ProjectSummary | null>;
       readSite(): Promise<unknown>;
-      commit(changes: readonly unknown[]): Promise<unknown>;
+      commit(sessionId: string, changes: readonly unknown[]): Promise<unknown>;
     };
   };
 };

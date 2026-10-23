@@ -1,6 +1,6 @@
 import type { Viewport } from "@webforge/engine";
 import type { SiteDoc } from "@webforge/model";
-import { useMemo, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 import type { CanvasPreferences } from "../../shared/ipc/prefs.js";
 import type { EditorSession } from "../editor/editor-session.js";
 import { CanvasToolbar } from "./CanvasToolbar.js";
@@ -12,13 +12,8 @@ function usePageList(session: EditorSession) {
   const key = (site: SiteDoc) =>
     JSON.stringify(site.pageOrder.map((id) => [id, site.pages[id]?.title ?? ""]));
   const serialised = useSyncExternalStore(document.subscribe, () => key(document.getState()));
-  return useMemo(
-    () =>
-      (JSON.parse(serialised) as [SiteDoc["pageOrder"][number], string][]).map(([id, title]) => ({
-        id,
-        title,
-      })),
-    [serialised],
+  return (JSON.parse(serialised) as [SiteDoc["pageOrder"][number], string][]).map(
+    ([id, title]) => ({ id, title }),
   );
 }
 

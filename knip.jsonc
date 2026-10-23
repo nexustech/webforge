@@ -26,8 +26,9 @@
       "entry": ["test/support/make-v1-fixture.ts"]
     },
     "packages/pipeline": {
-      // Font files are read by path (require.resolve) in src/node-resources.ts.
-      "ignoreDependencies": ["@fontsource/inter"]
+      // The font catalogue's packages (2.2): their files are read by path, never imported
+      // (src/node-resources.ts, and the desktop build's copy into out/fonts).
+      "ignoreDependencies": ["@fontsource/.+", "@fontsource-variable/.+"]
     }
   }
 }

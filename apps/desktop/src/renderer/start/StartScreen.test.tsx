@@ -11,7 +11,13 @@ declare global {
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
 const info = { name: "Webforge", version: "1.0.0" };
-const project = { name: "Bakery", fileName: "Bakery.wforge", formatVersion: 1, syncService: null };
+const project = {
+  sessionId: "9b2f6c1e-4d3a-4f7b-8e21-5c6d7a8b9c0d",
+  name: "Bakery",
+  fileName: "Bakery.wforge",
+  formatVersion: 1,
+  syncService: null,
+};
 const bakery: RecentSite = {
   id: "a".repeat(32),
   name: "Rosa's Bakery",

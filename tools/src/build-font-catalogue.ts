@@ -39,12 +39,28 @@ export const FONT_BUDGET_BYTES = 15 * 1024 * 1024;
 
 type Fallback = "sans-serif" | "serif" | "monospace";
 
+/** The categories the font picker lists (Fontsource's, less `icons` and `other`). */
+export const FONT_CATEGORIES = [
+  "sans-serif",
+  "serif",
+  "display",
+  "handwriting",
+  "monospace",
+] as const;
+type Category = (typeof FONT_CATEGORIES)[number];
+
 /**
  * The bundled families (S4, F-DS-2: about 50): the popular, readable choices for a small
  * business's site, across sans, serif, display, handwriting and monospace. The fallback, for
- * display and handwriting fonts, is the generic family closest in look.
+ * display and handwriting fonts, is the generic family closest in look. `category` puts a font
+ * the picker should list elsewhere than Fontsource does: its display fonts for headings, which
+ * Fontsource files as sans-serif.
  */
-export const FAMILIES: readonly { readonly id: string; readonly fallback?: Fallback }[] = [
+export const FAMILIES: readonly {
+  readonly id: string;
+  readonly fallback?: Fallback;
+  readonly category?: Category;
+}[] = [
   // Sans-serif.
   { id: "inter" },
   { id: "roboto" },
@@ -82,14 +98,14 @@ export const FAMILIES: readonly { readonly id: string; readonly fallback?: Fallb
   { id: "pt-serif" },
   { id: "spectral" },
   // Display: for headings.
-  { id: "bebas-neue" },
-  { id: "oswald" },
+  { id: "bebas-neue", category: "display", fallback: "sans-serif" },
+  { id: "oswald", category: "display", fallback: "sans-serif" },
   { id: "abril-fatface", fallback: "serif" },
   { id: "righteous", fallback: "sans-serif" },
   { id: "alfa-slab-one", fallback: "serif" },
-  { id: "anton" },
-  { id: "syne" },
-  { id: "unbounded" },
+  { id: "anton", category: "display", fallback: "sans-serif" },
+  { id: "syne", category: "display", fallback: "sans-serif" },
+  { id: "unbounded", category: "display", fallback: "sans-serif" },
   // Handwriting: for headings and short lines.
   { id: "dancing-script", fallback: "serif" },
   { id: "pacifico", fallback: "sans-serif" },
@@ -135,6 +151,11 @@ export const fontMetadataSchema = z.object({
   variable: z.boolean(),
   category: z.string(),
   license: z.string(),
+  /** Each subset's characters, as `@font-face`'s `unicode-range` takes them. */
+  unicodeRange: z.record(
+    z.string(),
+    z.string().regex(/^U\+[0-9A-Fa-f?-]+(?:,U\+[0-9A-Fa-f?-]+)*$/),
+  ),
 });
 export type FontMetadata = z.infer<typeof fontMetadataSchema>;
 
@@ -150,13 +171,15 @@ export type PlannedFile = {
   readonly style: "normal" | "italic";
   /** The weight, or the range a variable font covers. */
   readonly weight: number | readonly [number, number];
+  /** The subset's characters, for `@font-face`'s `unicode-range`. */
+  readonly unicodeRange: string;
 };
 
 /** A family as the catalogue lists it, before its files' sizes and hashes are known. */
 export type PlannedFamily = {
   readonly id: string;
   readonly family: string;
-  readonly category: string;
+  readonly category: Category;
   readonly fallback: Fallback;
   readonly licence: (typeof FONT_LICENCES)[number];
   readonly variable: boolean;
@@ -184,12 +207,13 @@ function fallbackOf(category: string, chosen: Fallback | undefined): Fallback | 
 /**
  * Plans one family of the catalogue from its metadata: its licence, fallback, package and the
  * files to bundle. `weightAxis` is a variable font's weight range. Throws, naming the family, for
- * a licence the catalogue doesn't allow, a font without Latin, a display or handwriting font with
- * no fallback chosen, or a variable font without a weight axis.
+ * a licence the catalogue doesn't allow, a font without Latin or its characters' range, a category
+ * the picker doesn't list, a display or handwriting font with no fallback chosen, or a variable
+ * font without a weight axis.
  */
 export function planFamily(
   metadata: FontMetadata,
-  choice: { readonly fallback?: Fallback },
+  choice: { readonly fallback?: Fallback; readonly category?: Category },
   version: string,
   weightAxis?: readonly [number, number],
 ): PlannedFamily {
@@ -199,6 +223,12 @@ export function planFamily(
   }
   if (!metadata.subsets.includes("latin")) {
     throw new Error(`${metadata.family}: has no Latin subset`);
+  }
+  const category = choice.category ?? FONT_CATEGORIES.find((each) => each === metadata.category);
+  if (category === undefined) {
+    throw new Error(
+      `${metadata.family}: category ${metadata.category} is not one the picker lists`,
+    );
   }
   const fallback = fallbackOf(metadata.category, choice.fallback);
   if (fallback === undefined) {
@@ -210,6 +240,10 @@ export function planFamily(
   const subsets = BUNDLED_SUBSETS.filter((subset) => metadata.subsets.includes(subset));
   const files: PlannedFile[] = [];
   for (const subset of subsets) {
+    const unicodeRange = metadata.unicodeRange[subset];
+    if (unicodeRange === undefined) {
+      throw new Error(`${metadata.family}: no character range for its ${subset} subset`);
+    }
     for (const style of metadata.styles) {
       if (weightAxis !== undefined) {
         files.push({
@@ -217,6 +251,7 @@ export function planFamily(
           subset,
           style,
           weight: weightAxis,
+          unicodeRange,
         });
         continue;
       }
@@ -229,6 +264,7 @@ export function planFamily(
           subset,
           style,
           weight,
+          unicodeRange,
         });
       }
     }
@@ -236,7 +272,7 @@ export function planFamily(
   return {
     id: metadata.id,
     family: metadata.family,
-    category: metadata.category,
+    category,
     fallback,
     licence,
     variable: metadata.variable,

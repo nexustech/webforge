@@ -263,7 +263,7 @@ export function toggleLayerHidden(session: LayersSession, id: string): void {
 }
 
 /**
- * Moves a layer to `index` among its siblings (by drag or Alt+arrow), as one step. An index past
+ * Moves a layer to `index` among its siblings (by drag or Mod+Alt+arrow), as one step. An index past
  * either end, or the layer's own place, changes nothing.
  */
 export function moveLayer(session: LayersSession, id: string, index: number): void {

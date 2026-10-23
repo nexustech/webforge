@@ -22,7 +22,6 @@ function registry(shared: { save: boolean; detach: boolean }) {
   commands.register({
     id: ELEMENT_MENU_COMMANDS.duplicate,
     label: "Duplicate",
-    shortcut: "Mod+D",
     run: () => run("duplicate"),
   });
   commands.register({
@@ -72,7 +71,7 @@ describe("ElementMenu (1.35)", () => {
       ["DuplicateCtrl+D", false],
       ["Save as shared section…", false],
       ["Select similar", false],
-      ["Delete", true],
+      ["DeleteDelete", true],
     ]);
     await userEvent.click(menu().getByRole("menuitem", { name: /Duplicate/ }));
     expect(run).toHaveBeenCalledWith("duplicate");
@@ -91,7 +90,7 @@ describe("ElementMenu (1.35)", () => {
       ["DuplicateCtrl+D", false],
       ["Detach from shared section", false],
       ["Select similar", false],
-      ["Delete", true],
+      ["DeleteDelete", true],
     ]);
   });
 
@@ -104,6 +103,33 @@ describe("ElementMenu (1.35)", () => {
     );
 
     expect(screen.queryByRole("menu")).toBeNull();
+  });
+
+  it("offers Cut, Copy, Paste and Paste as Linked Copy with their keys (F-ED-23, F-ED-27)", async () => {
+    const { commands } = registry({ save: true, detach: false });
+    const pasteLinked = vi.fn();
+    commands.register({ id: ELEMENT_MENU_COMMANDS.cut, label: "Cut", run: vi.fn() });
+    commands.register({ id: ELEMENT_MENU_COMMANDS.copy, label: "Copy", run: vi.fn() });
+    commands.register({ id: ELEMENT_MENU_COMMANDS.paste, label: "Paste", run: vi.fn() });
+    commands.register({
+      id: ELEMENT_MENU_COMMANDS.pasteLinked,
+      label: "Paste as Linked Copy",
+      run: pasteLinked,
+    });
+    render(
+      <CommandRegistryProvider registry={commands}>
+        <ElementMenu at={{ x: 0, y: 0 }} onClose={vi.fn()} onRename={vi.fn()} />
+      </CommandRegistryProvider>,
+    );
+
+    expect(items().slice(4, 8)).toEqual([
+      ["CutCtrl+X", false],
+      ["CopyCtrl+C", false],
+      ["PasteCtrl+V", false],
+      ["Paste as Linked CopyCtrl+Shift+V", false],
+    ]);
+    await userEvent.click(menu().getByRole("menuitem", { name: /Paste as Linked Copy/ }));
+    expect(pasteLinked).toHaveBeenCalledOnce();
   });
 
   it("offers Copy Style and Paste Style once they are registered (1.37)", () => {
@@ -122,8 +148,8 @@ describe("ElementMenu (1.35)", () => {
     );
 
     expect(items().slice(4, 6)).toEqual([
-      ["Copy Style", false],
-      ["Paste Style (onto a Heading)", true],
+      ["Copy StyleCtrl+Alt+C", false],
+      ["Paste Style (onto a Heading)Ctrl+Alt+V", true],
     ]);
   });
 });

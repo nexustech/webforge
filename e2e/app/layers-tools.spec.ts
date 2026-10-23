@@ -68,6 +68,10 @@ test("opens the same menu on the canvas and in Layers, acting on what was right-
     "Duplicate",
     "Save as shared section…",
     "Select similar",
+    "Cut",
+    "Copy",
+    "Paste",
+    "Paste as Linked Copy",
     "Copy Style",
     "Paste Style",
     "Delete",
@@ -208,6 +212,11 @@ test("in Content mode, leaves the canvas's right-clicks alone and Layers' menu t
     ["Save as shared section…", false],
     // Selecting changes no layout (M3).
     ["Select similar", true],
+    // Copying isn't a change to the layout: Content mode keeps it (M3).
+    ["Cut", false],
+    ["Copy", true],
+    ["Paste", false],
+    ["Paste as Linked Copy", false],
     ["Copy Style", false],
     ["Paste Style", false],
     ["Delete", false],

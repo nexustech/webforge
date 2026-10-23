@@ -8,14 +8,16 @@
 //   pnpm visual:docker -- --grep Picker   pass anything after -- to Playwright
 //
 // The working tree as git sees it (tracked files and new unignored ones, uncommitted changes
-// included) is copied into the container, installed there and built as CI's Storybook job does. Only the screenshots, and the
+// included) is copied into the container: git lists the files on the host, which also works in a
+// worktree, whose .git file points at a host path the container can't follow. They are installed there and built as CI's Storybook job does. Only the screenshots, and the
 // Playwright report when something fails, are copied back. Downloads (Node, pnpm and the pnpm store)
 // are cached in the Docker volume "webforge-visual-cache".
 //
 // This file has no relative imports so Node can run it directly with type stripping.
 
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
 export const CACHE_VOLUME = "webforge-visual-cache";
@@ -85,13 +87,12 @@ export function containerScript(options: VisualDockerOptions): string {
     '  export PATH="$node_dir/bin:$PATH"',
     "fi",
     "corepack enable pnpm",
-    // A fresh copy of what git sees: tracked files and new ones that aren't ignored, so build
-    // output, node_modules and the streams' worktrees (.claude/worktrees) stay out. Files deleted
-    // in the working tree are still in the index; --ignore-failed-read skips them.
+    // A fresh copy of what git sees (/files.list, listed on the host by gitFileList): tracked
+    // files and new ones that aren't ignored, so build output, node_modules and the streams'
+    // worktrees (.claude/worktrees) stay out. Files deleted in the working tree are still in the
+    // index; --ignore-failed-read skips them.
     "rm -rf /work && mkdir /work",
-    "git config --global --add safe.directory /src",
-    "git -C /src ls-files -z --cached --others --exclude-standard |" +
-      " tar -C /src --null --ignore-failed-read -T - -cf - | tar -C /work -xf -",
+    "tar -C /src --null --ignore-failed-read -T /files.list -cf - | tar -C /work -xf -",
     "cd /work",
     // lefthook's install script expects a git repository.
     "git init -q",
@@ -108,8 +109,28 @@ export function containerScript(options: VisualDockerOptions): string {
   ].join("\n");
 }
 
-/** `docker run` arguments: the repository mounted at /src, and the cache volume at /cache. */
-export function dockerArgs(repo: string, image: string, options: VisualDockerOptions): string[] {
+/** The files git sees in `repo`, NUL-separated: tracked ones and new ones that aren't ignored. */
+export function gitFileList(repo: string): Buffer {
+  const git = spawnSync("git", ["ls-files", "-z", "--cached", "--others", "--exclude-standard"], {
+    cwd: repo,
+    maxBuffer: 64 * 1024 * 1024,
+  });
+  if (git.status !== 0) {
+    throw new Error(`git ls-files failed in ${repo}`);
+  }
+  return git.stdout;
+}
+
+/**
+ * `docker run` arguments: the repository mounted at /src, the list of its files (`fileList`, a
+ * host path) at /files.list, and the cache volume at /cache.
+ */
+export function dockerArgs(
+  repo: string,
+  fileList: string,
+  image: string,
+  options: VisualDockerOptions,
+): string[] {
   return [
     "run",
     "--rm",
@@ -118,6 +139,8 @@ export function dockerArgs(repo: string, image: string, options: VisualDockerOpt
     "--ipc=host",
     "-v",
     `${repo}:/src`,
+    "-v",
+    `${fileList}:/files.list:ro`,
     "-v",
     `${CACHE_VOLUME}:/cache`,
     image,
@@ -137,7 +160,13 @@ if (import.meta.main) {
       console.error("Docker isn't running. Start Docker Desktop and try again.");
       process.exit(1);
     }
-    const run = spawnSync("docker", dockerArgs(repo, image, options), { stdio: "inherit" });
+    const listDir = mkdtempSync(join(tmpdir(), "webforge-visual-"));
+    const fileList = join(listDir, "files.list");
+    writeFileSync(fileList, gitFileList(repo));
+    const run = spawnSync("docker", dockerArgs(repo, fileList, image, options), {
+      stdio: "inherit",
+    });
+    rmSync(listDir, { recursive: true, force: true });
     if (run.status === 0) {
       console.log("Done. Commit any new or changed files in e2e/visual/__screenshots__/.");
     } else {
