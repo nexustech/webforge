@@ -1,8 +1,9 @@
 import type { CanvasEngine } from "@webforge/engine";
 import { t } from "@webforge/i18n";
-import { toggleSelectedHidden } from "../layers/bulk-layers.js";
+import { similarTo, toggleSelectedHidden } from "../layers/bulk-layers.js";
 import { type Layer, type LayersSession, shownLayer, toggleLayerHidden } from "../layers/layers.js";
 import type { CommandRegistry } from "../shell/commands.js";
+import { selectElements } from "./selection.js";
 import { splitText } from "./split-text.js";
 
 /**
@@ -13,8 +14,9 @@ import { splitText } from "./split-text.js";
  * element of the shared Header or Footer, nor one inside a linked copy. Content mode's lock (M3)
  * turns it off. *Rename…* (F2, 1.30) asks for a layer's name (`rename`), in Content mode too: names
  * aren't layout. While several elements are selected, Mod + / hides or shows them all as one step,
- * or `notify` says why it can't (1.31). Returns a function that removes them, and one that follows
- * the lock.
+ * or `notify` says why it can't (1.31). *Select similar* (1.35) selects every element of the
+ * page like the selected one, which the bulk actions then act on; it changes no layout, so Content
+ * mode keeps it. Returns a function that removes them, and one that follows the lock.
  */
 export function registerElementCommands(
   registry: CommandRegistry,
@@ -72,6 +74,20 @@ export function registerElementCommands(
       if (layer !== undefined) rename(layer);
     },
   });
+  const similar = () => {
+    const { nodeId } = session.ui.getState();
+    return nodeId === null ? undefined : similarTo(session, nodeId);
+  };
+  const removeSimilar = registry.register({
+    id: "edit.selectSimilar",
+    label: t("canvas.selectSimilar"),
+    menu: "edit",
+    enabled: false,
+    run: () => {
+      const ids = similar();
+      if (ids !== undefined) selectElements(session.ui, ids);
+    },
+  });
   const stopRequests = engine.onElementRequest((request) => {
     if (request.kind === "pickImage") pickImage(request.nodeId);
     else hide(request.nodeId);
@@ -92,6 +108,7 @@ export function registerElementCommands(
   const update = () => {
     registry.update("edit.toggleHidden", { enabled: canHide(session.ui.getState().nodeId) });
     registry.update("edit.rename", { enabled: selectedLayer() !== undefined });
+    registry.update("edit.selectSimilar", { enabled: similar() !== undefined });
   };
   update();
   // The selection, or the page under it, changes what can be hidden.
@@ -104,6 +121,7 @@ export function registerElementCommands(
       stopRequests();
       stopSplits();
       removeRename();
+      removeSimilar();
       removeCommand();
     },
     setLayoutLocked: (next) => {

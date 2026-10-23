@@ -22,8 +22,10 @@ import {
   deleteSelected,
   duplicateSelected,
   moveSelected,
+  similarTo,
   toggleSelectedHidden,
 } from "../layers/bulk-layers.js";
+import { copyLayer } from "../layers/layers.js";
 import {
   addMenuItem,
   editMenuLink,
@@ -688,6 +690,23 @@ const commands: fc.Arbitrary<Command>[] = [
         act(ctx.session);
       },
     })),
+  // Select similar, then a Ctrl/Cmd-drag copy in Layers, with Shift or not (1.35).
+  fc.constant<Command>({
+    name: "select similar",
+    run: (ctx) => {
+      const { nodeId } = ctx.session.ui.getState();
+      const ids = nodeId === null ? undefined : similarTo(ctx.session, nodeId);
+      if (ids !== undefined) selectElements(ctx.session.ui, ids);
+    },
+  }),
+  fc.record({ at: fc.nat({ max: 6 }), linked: fc.boolean() }).map(({ at, linked }) => ({
+    name: `copy the selected layer to ${at}${linked ? " linked" : ""}`,
+    run: (ctx) => {
+      ctx.connection.flush();
+      const { nodeId } = ctx.session.ui.getState();
+      if (nodeId !== null) copyLayer(ctx.session, nodeId, at, linked);
+    },
+  })),
   fc.constant<Command>({
     name: "undo",
     run: (ctx) => {

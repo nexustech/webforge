@@ -182,6 +182,35 @@ describe("registerElementCommands (1.30, F-ED-25, F-ED-27)", () => {
     expect(renameEnabled()).toBe(true);
   });
 
+  it("selects every element like the selected one, in Content mode too, and never the Header (1.35)", () => {
+    const { session, registry, commands } = setUp();
+    session.edit("insert", "Added Heading", (draft) => {
+      const section = draft.pages[draft.homePageId]?.doc.content[0];
+      (section?.props.content as NodeDoc[] | undefined)?.push({
+        type: "Heading",
+        props: { id: "b", text: "Again" },
+      });
+    });
+    const enabled = () => registry.get("edit.selectSimilar")?.enabled;
+
+    expect(registry.get("edit.selectSimilar")).toMatchObject({
+      label: "Select similar",
+      menu: "edit",
+    });
+    // Selecting changes no layout (M3).
+    commands.setLayoutLocked(true);
+    expect(enabled()).toBe(true);
+    registry.run("edit.selectSimilar");
+    expect(session.ui.getState()).toMatchObject({ nodeId: "a", others: ["b"] });
+    // No undo step: the selection is the editor's (U6).
+    expect(session.history.entries().map((entry) => entry.label)).toEqual(["Added Heading"]);
+
+    for (const id of [copiedNodeId("c1", "t"), "header-logo", null]) {
+      session.ui.setState({ nodeId: id });
+      expect(enabled()).toBe(false);
+    }
+  });
+
   it("splits text in two at the caret as one step, the second half selected (Alt+Enter, F-ED-27)", async () => {
     const { session, engine, beforeAction, labels } = setUp();
     const section = () => currentPage(session)?.doc.content[0]?.props.content as NodeDoc[];

@@ -126,6 +126,9 @@ export const OTHER_SHORTCUTS: readonly OtherShortcut[] = [
     group: "layers",
     keys: ["Mod+Alt+ArrowUp", "Mod+Alt+ArrowDown"],
   },
+  // Held while dragging a layer (1.35). Shift for a linked copy works once the drag has started.
+  { label: "shortcuts.layersCopy", group: "layers", keys: ["Mod"] },
+  { label: "shortcuts.layersLinkedCopy", group: "layers", keys: ["Mod+Shift"] },
   { label: "shortcuts.layersRename", group: "layers", keys: ["F2"] },
   { label: "shortcuts.layersDelete", group: "layers", keys: ["Delete", "Backspace"] },
 ];

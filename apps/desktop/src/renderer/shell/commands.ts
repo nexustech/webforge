@@ -208,9 +208,13 @@ type ParsedShortcut = {
   readonly alt: boolean;
 };
 
+/** The modifiers a shortcut names; one made of them alone (`Mod+Shift`) is held while dragging. */
+const MODIFIERS: ReadonlySet<string> = new Set(["mod", "shift", "alt"]);
+
 function parseShortcut(shortcut: string): ParsedShortcut {
   const parts = shortcut.split("+");
-  const name = parts.pop() ?? "";
+  const last = parts.at(-1)?.toLowerCase() ?? "";
+  const name = MODIFIERS.has(last) ? "" : (parts.pop() ?? "");
   // `+` can't be written after a `+`, nor a space read.
   const key = (name === "Plus" ? "+" : name === "Space" ? " " : name).toLowerCase();
   const modifiers = new Set(parts.map((part) => part.toLowerCase()));
@@ -295,7 +299,7 @@ const OTHER_KEYS: Readonly<Record<string, () => string>> = {
 /** A shortcut as people read it: `⌘⇧Z` on macOS, `Ctrl+Shift+Z` elsewhere. */
 export function formatShortcut(shortcut: string, mac = isMac()): string {
   const { key, mod, shift, alt } = parseShortcut(shortcut);
-  const plain = key.length === 1 ? key.toUpperCase() : key[0]?.toUpperCase() + key.slice(1);
+  const plain = key.length <= 1 ? key.toUpperCase() : key[0]?.toUpperCase() + key.slice(1);
   if (mac) {
     const name = key === " " ? t("keys.space") : (MAC_KEYS[key] ?? plain);
     return `${alt ? "⌥" : ""}${shift ? "⇧" : ""}${mod ? "⌘" : ""}${name}`;
