@@ -314,7 +314,16 @@ export function connectEngine(engine: CanvasEngine, session: EditorSession): Eng
     }),
     ui.subscribe((state, previous) => {
       if (state.pageId !== previous.pageId) {
-        endTextSession();
+        // Leaving the page ends its text session; when undo shows another page, just after the
+        // history has finished changing, which can't be changed again from inside it (#238).
+        const leaving = textSession;
+        if (!history.isChanging()) {
+          endTextSession();
+        } else if (leaving !== null) {
+          queueMicrotask(() => {
+            if (textSession === leaving) endTextSession();
+          });
+        }
         const site = history.document.getState();
         const page = pageDoc(site, state.pageId);
         if (page !== undefined) {

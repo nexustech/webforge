@@ -115,6 +115,22 @@ const commands: fc.Arbitrary<Command>[] = [
     name: `end session ${at}`,
     run: ({ history }) => history.endSession(`text:${at}`),
   })),
+  // Changes that fail (#238): a recipe that throws, and one that changes the history from inside.
+  // Neither may leave a trace.
+  fc.constantFrom("throw", "nested").map((kind) => ({
+    name: `${kind} mid-recipe`,
+    run: ({ history }: Ctx) => {
+      const before = history.document.getState();
+      expect(() =>
+        history.run("Broken", (draft) => {
+          draft.root.props.title = "Broken";
+          if (kind === "throw") throw new Error("broken recipe");
+          history.undo();
+        }),
+      ).toThrow();
+      expect(history.document.getState()).toBe(before);
+    },
+  })),
   fc.constant({ name: "undo", run: ({ history }: Ctx) => void history.undo() }),
   fc.constant({ name: "redo", run: ({ history }: Ctx) => void history.redo() }),
   fc.constant({ name: "break", run: ({ history }: Ctx) => history.breakCoalescing() }),
