@@ -5,6 +5,7 @@ import { deferredCommands } from "./deferred-commands.js";
 describe("deferredCommands (#146)", () => {
   let ran: HistoryCommand[];
   let pending: boolean;
+  let settled: boolean;
   const setup = () =>
     deferredCommands(
       (command) => {
@@ -16,6 +17,7 @@ describe("deferredCommands (#146)", () => {
         pending = false;
         return had;
       },
+      () => settled,
       500,
     );
   const microtasks = () => new Promise<void>((resolve) => queueMicrotask(resolve));
@@ -24,6 +26,7 @@ describe("deferredCommands (#146)", () => {
     vi.useFakeTimers();
     ran = [];
     pending = false;
+    settled = true;
   });
 
   afterEach(() => {
@@ -64,6 +67,24 @@ describe("deferredCommands (#146)", () => {
     expect(ran).toEqual(["undo", "undo", "redo"]);
   });
 
+  it("waits on while an earlier batch of keystrokes arrives before the last one", async () => {
+    const commands = setup();
+    pending = true;
+    commands.run("undo");
+
+    // The batch Puck had already let go arrives first: the last keystrokes are still on their way.
+    settled = false;
+    commands.edited();
+    await microtasks();
+    expect(ran).toEqual([]);
+    // Then the last keystrokes: the text is all there, and the Undo takes it all back.
+    settled = true;
+    commands.edited();
+    await microtasks();
+
+    expect(ran).toEqual(["undo"]);
+  });
+
   it("never holds Esc back", () => {
     const commands = setup();
     pending = true;
@@ -82,6 +103,19 @@ describe("deferredCommands (#146)", () => {
     vi.advanceTimersByTime(499);
     expect(ran).toEqual([]);
     vi.advanceTimersByTime(1);
+
+    expect(ran).toEqual(["undo"]);
+  });
+
+  it("runs after the timeout too when the text never seems to arrive", async () => {
+    const commands = setup();
+    pending = true;
+    settled = false;
+    commands.run("undo");
+    commands.edited();
+    await microtasks();
+
+    vi.advanceTimersByTime(500);
 
     expect(ran).toEqual(["undo"]);
   });

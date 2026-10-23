@@ -3,6 +3,13 @@ export const shell = {
   "editor.undo": "Undo",
   "editor.redo": "Redo",
   "ui.close": "Close",
+  // The picker dialog for images, icons and fonts (UX-15).
+  "ui.picker.search": "Search",
+  "ui.picker.categories": "Categories",
+  "ui.picker.all": "All",
+  "ui.picker.noMatch": "Nothing matches '{query}'.",
+  "ui.picker.choose": "Choose",
+  "ui.picker.cancel": "Cancel",
 
   // App menu (title bar).
   "shell.menu": "App menu",

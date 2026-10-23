@@ -28,6 +28,30 @@ export function staleRichText(
     .map((node) => node.props.id);
 }
 
+/** The focused rich-text editor in `frameDocument`: Tiptap keeps it on its element. */
+function focusedEditor(frameDocument: Document | null): { getHTML(): string } | null {
+  const element = frameDocument?.activeElement?.closest(".ProseMirror") as {
+    readonly editor?: { getHTML?: unknown };
+  } | null;
+  const editor = element?.editor;
+  return typeof editor?.getHTML === "function" ? (editor as { getHTML(): string }) : null;
+}
+
+/**
+ * Whether what the focused rich-text editor in `frameDocument` shows has all reached `page` (#146):
+ * its text is its element's value there. True when no rich text has the focus.
+ */
+export function richTextArrived(frameDocument: Document | null, page: PageDoc): boolean {
+  const editor = focusedEditor(frameDocument);
+  const id = focusedRichTextId(frameDocument);
+  if (editor === null || id === null) {
+    return true;
+  }
+  const html = editor.getHTML();
+  const node = allNodes(page).find((each) => each.props.id === id);
+  return node !== undefined && Object.values(node.props).includes(html);
+}
+
 /** The id of the node whose rich-text editor has the focus in `frameDocument`, if any. */
 export function focusedRichTextId(frameDocument: Document | null): string | null {
   const active = frameDocument?.activeElement;

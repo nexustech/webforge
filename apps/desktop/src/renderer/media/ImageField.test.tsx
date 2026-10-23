@@ -74,10 +74,18 @@ async function render(
   return { onChange, onCommit, choose };
 }
 
+// The picker is a dialog, outside the field: look through the whole document.
 const button = (name: string) =>
-  [...container.querySelectorAll("button")].find((element) =>
+  [...document.querySelectorAll("button")].find((element) =>
     (element.getAttribute("aria-label") ?? element.textContent ?? "").includes(name),
   );
+const options = () => [...document.querySelectorAll<HTMLElement>('[role="option"]')];
+const option = (name: string) => options().find((element) => element.textContent === name);
+/** Double-clicks an image in the picker, which chooses it. */
+const chooseImage = (name: string) =>
+  act(async () => {
+    option(name)?.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+  });
 
 describe("ImageField", () => {
   it("chooses an image from Media in one step", async () => {
@@ -85,11 +93,28 @@ describe("ImageField", () => {
     expect(button("Choose an image")?.id).toBe("field-image");
 
     await act(async () => button("Choose an image")?.click());
-    expect(container.querySelector('[aria-label="Images in Media"]')?.children).toHaveLength(2);
-    await act(async () => button("b2.jpg")?.click());
+    expect(document.querySelector('[role="dialog"]')?.textContent).toContain("Choose an image");
+    expect(options().map((each) => each.textContent)).toEqual(["a1.jpg", "b2.jpg"]);
+    await chooseImage("b2.jpg");
 
     expect(onChange).toHaveBeenCalledWith({ mediaId: "b2" });
     expect(onCommit).toHaveBeenCalledTimes(1);
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+  });
+
+  it("finds an image by its alt text, and starts on the image placed", async () => {
+    await render({ mediaId: "b2" });
+
+    await act(async () => button("Change image")?.click());
+    expect(option("b2.jpg")?.getAttribute("aria-selected")).toBe("true");
+    const search = document.querySelector<HTMLInputElement>('input[type="search"]');
+    const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+    await act(async () => {
+      setValue?.call(search, "shop front");
+      search?.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+
+    expect(options().map((each) => each.textContent)).toEqual(["a1.jpg"]);
   });
 
   it("shows the chosen image, drops the old image's alt override when it changes, and removes it", async () => {
@@ -98,7 +123,7 @@ describe("ImageField", () => {
     expect(container.textContent).toContain("a1.jpg");
 
     await act(async () => button("Change image")?.click());
-    await act(async () => button("b2.jpg")?.click());
+    await chooseImage("b2.jpg");
     expect(onChange).toHaveBeenLastCalledWith({ mediaId: "b2" });
 
     await act(async () => button("Remove image")?.click());
@@ -168,12 +193,13 @@ describe("ImageField", () => {
     // Asked before the Edit panel showed the field: it opens once it is drawn.
     picks.request("img");
     await render(undefined, undefined, picks);
-    const picker = () => container.querySelector('[aria-label="Images in Media"]');
-    expect(picker()).not.toBeNull();
-    expect(document.activeElement?.id).toBe("field-image");
+    const picker = () => document.querySelector('[role="dialog"]');
+    expect(picker()?.textContent).toContain("Choose an image");
 
-    await act(async () => button("Choose an image")?.click());
+    // Closed, focus goes back to the field's button, which opened it.
+    await act(async () => button("Cancel")?.click());
     expect(picker()).toBeNull();
+    expect(document.activeElement?.id).toBe("field-image");
     // Another element's image is its own field's.
     await act(async () => picks.request("other"));
     expect(picker()).toBeNull();

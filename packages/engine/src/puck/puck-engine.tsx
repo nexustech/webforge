@@ -73,7 +73,7 @@ import {
 } from "./shared-layout.js";
 import { applySiteStyles, type SiteStyles } from "./site-styles.js";
 import { boxHandleFields } from "./spacing-handles.js";
-import { focusedRichTextId, staleRichText } from "./stale-rich-text.js";
+import { focusedRichTextId, richTextArrived, staleRichText } from "./stale-rich-text.js";
 import { startTextEditing } from "./text-editing.js";
 import { allNodes, findNode, nodeAt } from "./tree.js";
 import { applyViewOptions } from "./view-options.js";
@@ -294,6 +294,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   const commands = deferredCommands(
     runHandlers,
     () => getPuck !== null && flushRichText(getPuck()),
+    () => richTextArrived(frameDocument, composePage(page, layout, shared)),
     RICH_TEXT_FLUSH_TIMEOUT_MS,
   );
   const runCommand = commands.run;

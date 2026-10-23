@@ -1,15 +1,15 @@
 import {
   Button,
-  cn,
   type FieldRendererProps,
   fieldControlClass,
+  Picker,
   registerFieldRenderer,
   toast,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { type ImageMeta, type ImageValue, imageValueSchema, isImageMeta } from "@webforge/model";
 import { ImagePlusIcon } from "lucide-react";
-import { useEffect, useId, useState, useSyncExternalStore } from "react";
+import { useEffect, useId, useMemo, useState, useSyncExternalStore } from "react";
 import { type MediaApi, mediaImageUrl } from "../../shared/ipc/media.js";
 import type { EditorSession } from "../editor/editor-session.js";
 import type { ImagePickRequests } from "./image-picks.js";
@@ -28,9 +28,10 @@ export type ImageFieldContext = {
 };
 
 /**
- * The Edit panel's image field (F-ED-5, G15): which Media image an element shows, chosen from
- * Media's images or added on the spot, and alt text for this placement only. Left empty, the alt
- * text is the image's own from Media, so describing an image once covers every placement.
+ * The Edit panel's image field (F-ED-5, G15): which Media image an element shows, chosen in the
+ * picker dialog (UX-15) from Media's images or added on the spot, and alt text for this placement
+ * only. Left empty, the alt text is the image's own from Media, so describing an image once covers
+ * every placement.
  */
 export function ImageField({
   id,
@@ -67,7 +68,19 @@ export function ImageField({
   const current = placed.success ? placed.data : undefined;
   const item = current === undefined ? undefined : items[current.mediaId];
   const image = item !== undefined && isImageMeta(item) ? item : undefined;
-  const images = Object.values(items).filter(isImageMeta);
+  // The picker's items: each image by its file name, found by its alt text too.
+  const images = useMemo(
+    () =>
+      Object.values(items)
+        .filter(isImageMeta)
+        .map((each) => ({
+          id: each.id,
+          label: each.fileName,
+          keywords: each.alt === "" ? [] : [each.alt],
+          image: each,
+        })),
+    [items],
+  );
   const api = media ?? window.webforge.media;
 
   /** One choice: a new value, then the end of the run, so it is one undo step. */
@@ -109,8 +122,8 @@ export function ImageField({
           variant="outline"
           // "Image, Choose an image…": the field's label, then what the button does.
           aria-labelledby={`${labelId} ${actionId}`}
-          aria-expanded={picking}
-          onClick={() => setPicking((open) => !open)}
+          aria-haspopup="dialog"
+          onClick={() => setPicking(true)}
         >
           <span id={actionId}>
             {current === undefined ? t("site.media.field.choose") : t("site.media.field.change")}
@@ -122,50 +135,44 @@ export function ImageField({
           </Button>
         )}
       </div>
-      {picking ? (
-        <div className="flex flex-col gap-1.5 rounded-sm border border-border p-1.5">
-          {images.length === 0 ? (
-            <p className="m-0 text-xs text-muted-foreground">{t("site.media.field.noImages")}</p>
-          ) : (
-            <ul
-              aria-label={t("site.media.field.pick")}
-              className="m-0 grid list-none grid-cols-3 gap-1 p-0"
-            >
-              {images.map((candidate) => (
-                <li key={candidate.id}>
-                  <button
-                    type="button"
-                    aria-label={candidate.fileName}
-                    aria-pressed={candidate.id === current?.mediaId}
-                    title={candidate.fileName}
-                    className={cn(
-                      "block w-full overflow-hidden rounded-sm border border-border outline-none",
-                      "hover:border-border-strong focus-visible:ring-2 focus-visible:ring-ring",
-                      candidate.id === current?.mediaId && "border-ring",
-                    )}
-                    onClick={() => pick(candidate)}
-                  >
-                    <img
-                      src={imageUrl(candidate, "thumbnail")}
-                      alt=""
-                      className="aspect-square w-full object-cover"
-                    />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-          <div className="flex flex-wrap gap-1.5">
-            <Button type="button" size="sm" variant="outline" onClick={() => void addNew()}>
-              <ImagePlusIcon />
-              {t("site.media.field.addNew")}
-            </Button>
-            <Button type="button" size="sm" variant="ghost" onClick={() => setPicking(false)}>
-              {t("site.media.field.cancel")}
-            </Button>
-          </div>
-        </div>
-      ) : null}
+      <Picker
+        open={picking}
+        onOpenChange={setPicking}
+        title={t("site.media.picker.title")}
+        description={t("site.media.picker.description")}
+        items={images}
+        value={current?.mediaId ?? null}
+        renderItem={(candidate) => (
+          <img
+            src={imageUrl(candidate.image, "thumbnail")}
+            alt=""
+            className="aspect-square w-full rounded-sm bg-input object-cover"
+          />
+        )}
+        renderPreview={(candidate) => (
+          <>
+            <img
+              src={imageUrl(candidate.image, "thumbnail")}
+              alt=""
+              className="w-full rounded-sm bg-input object-contain"
+            />
+            <p className="m-0 text-xs break-all">{candidate.image.fileName}</p>
+            <p className="m-0 text-xs text-muted-foreground">
+              {candidate.image.alt === ""
+                ? t("site.media.field.altNone")
+                : t("site.media.field.altFrom", { alt: candidate.image.alt })}
+            </p>
+          </>
+        )}
+        onChoose={(candidate) => pick(candidate.image)}
+        actions={
+          <Button type="button" size="sm" variant="outline" onClick={() => void addNew()}>
+            <ImagePlusIcon />
+            {t("site.media.field.addNew")}
+          </Button>
+        }
+        emptyText={t("site.media.field.noImages")}
+      />
       {current === undefined ? null : (
         <div className="flex flex-col gap-1">
           <label htmlFor={altId} className="text-xs text-muted-foreground">
