@@ -55,7 +55,9 @@ function setUp(
   return { onChoose, opener, options, focused };
 }
 
-describe("Picker (UX-15)", () => {
+// Each test types and moves through a dialog: about a second alone, but slower beside the whole
+// suite's other tests (coverage, parallel workers), so the 5 s default isn't always enough.
+describe("Picker (UX-15)", { timeout: 15_000 }, () => {
   it("searches by name, category or keyword, and says when nothing matches", async () => {
     const { opener, options } = setUp();
     await userEvent.click(opener);
@@ -72,9 +74,7 @@ describe("Picker (UX-15)", () => {
     // Shown in the list, and read out by the status.
     expect(screen.getAllByText("Nothing matches 'places zzz'.")).toHaveLength(2);
     expect(screen.getByRole("button", { name: "Choose" })).toHaveProperty("disabled", true);
-    // Twenty keystrokes, each redrawing the dialog: about a second alone, more beside the whole
-    // suite's other tests.
-  }, 15_000);
+  });
 
   it("shows one category at a time", async () => {
     const { opener, options } = setUp();
