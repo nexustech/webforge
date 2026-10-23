@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { act, cleanup, render, screen, within } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
   copiedNodeId,
@@ -119,5 +119,21 @@ describe("registerLayersPanel", () => {
     // Layers' actions act on the selection: an element inside the copy isn't the copy.
     act(() => session.ui.setState({ nodeId: copiedNodeId("c1", "t") }));
     expect(copy.getAttribute("aria-selected")).toBe("false");
+  });
+
+  it("renames from the element menu, and gives the row the focus back when it closes (1.35)", async () => {
+    const { session } = setUp();
+    const heading = () => screen.getByRole("treeitem", { name: /Heading/ });
+    const menu = () => within(screen.getByRole("menu", { name: "Element actions" }));
+
+    await userEvent.pointer({ keys: "[MouseRight]", target: heading() });
+    await userEvent.click(menu().getByRole("menuitem", { name: "Rename" }));
+    await userEvent.keyboard("Intro{Enter}");
+
+    expect(session.history.entries().at(-1)?.label).toBe("Renamed Heading to 'Intro'");
+
+    await userEvent.pointer({ keys: "[MouseRight]", target: heading() });
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(document.activeElement).toBe(heading()));
   });
 });

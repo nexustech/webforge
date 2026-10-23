@@ -30,6 +30,13 @@ export type Layer = {
   readonly children: readonly Layer[];
   /** Set for a linked copy: the name of the shared section it shows (F-ED-23). */
   readonly sharedSection?: string;
+  /**
+   * It can't be moved or deleted, only edited (UX-12), as the shared Header and Footer themselves
+   * are. Nothing the page lists is locked yet; Layers marks it when something is.
+   */
+  readonly locked?: boolean;
+  /** It has an animation (UX-12), which 2.12 adds; Layers marks it. */
+  readonly animated?: boolean;
 };
 
 /** The longest layer name the model accepts. */

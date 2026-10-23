@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { CheckIcon } from "lucide-react";
 import { useState } from "react";
+import { userEvent, within } from "storybook/test";
 import { CommandRegistryProvider } from "./command-context.js";
 import { COMMAND_IDS } from "./command-ids.js";
 import { type Command, createCommandRegistry } from "./commands.js";
@@ -79,4 +80,22 @@ const EARLY = new Set<string>([COMMAND_IDS.undo, COMMAND_IDS.redo, COMMAND_IDS.e
 /** Before New, Open, Preview and Publish exist (Phase 1): their buttons are disabled. */
 export const EarlyCommands: Story = {
   render: () => <WithCommands commands={COMMANDS.filter((command) => EARLY.has(command.id))} />,
+};
+
+/** The palette open (Ctrl/Cmd+P): commands, pages to go to and things to add (UX-11). */
+export const Palette: Story = {
+  render: () => (
+    <WithCommands
+      commands={[
+        ...COMMANDS,
+        { id: "page.goto.home", label: "Home", palette: "pages", keywords: ["index"], run: noop },
+        { id: "page.goto.about", label: "About", palette: "pages", keywords: ["about"], run: noop },
+        { id: "add.item.Hero", label: "Add Hero", palette: "add", run: noop },
+        { id: "add.item.Text", label: "Add Text", palette: "add", enabled: false, run: noop },
+      ]}
+    />
+  ),
+  play: async ({ canvasElement }) => {
+    await userEvent.click(within(canvasElement).getByRole("button", { name: /^Search commands/ }));
+  },
 };

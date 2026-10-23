@@ -138,7 +138,39 @@ function place(element: HTMLElement, band: Band): void {
   element.style.borderWidth = band.sides.map((side) => `${side}px`).join(" ");
 }
 
-/** Draws the hovered element's margin and padding in `layer`. Returns a function that stops. */
+/** Puck's overlays (1.12's hover outline and selected bar among them), which move with the pointer. */
+const OVERLAY = "[data-puck-overlay]";
+
+/**
+ * Calls `onChange` (once for each batch of changes) when the page in `document` changes in a way
+ * that can move its elements: content, text, and the attributes that lay them out. Not `layer`'s own
+ * changes, nor Puck's overlays, which follow every pointer move and scroll, nor the hover and
+ * drag state Puck and dnd-kit keep in data- and aria- attributes. Returns a function that stops.
+ */
+function watchPage(document: Document, layer: HTMLElement, onChange: () => void): () => void {
+  const changed = new MutationObserver((records) => {
+    const moved = records.some((record) => {
+      // Nodes from the canvas document: not this realm's `Element`.
+      const node = record.target;
+      const element = node.nodeType === 1 ? (node as Element) : node.parentElement;
+      return !layer.contains(node) && (element?.closest(OVERLAY) ?? null) === null;
+    });
+    if (moved) onChange();
+  });
+  changed.observe(document.body, {
+    subtree: true,
+    childList: true,
+    characterData: true,
+    attributes: true,
+    attributeFilter: ["style", "class", "hidden"],
+  });
+  return () => changed.disconnect();
+}
+
+/**
+ * Draws the hovered element's margin and padding in `layer`, following it as the page changes
+ * under a still pointer (a drag, an undo, an Edit panel change). Returns a function that stops.
+ */
 function showSpacingOnHover(document: Document, view: Window, layer: HTMLElement): () => void {
   const margin = document.createElement("div");
   margin.className = "wf-view-margin";
@@ -146,6 +178,8 @@ function showSpacingOnHover(document: Document, view: Window, layer: HTMLElement
   padding.className = "wf-view-padding";
   let hovered: Element | null = null;
   const show = () => {
+    // An element taken off the page (deleted, undone) shows nothing.
+    if (hovered?.isConnected === false) hovered = null;
     // The element's own markup, inside Puck's wrapper.
     const shown = hovered?.firstElementChild ?? hovered;
     if (shown === null) {
@@ -179,7 +213,9 @@ function showSpacingOnHover(document: Document, view: Window, layer: HTMLElement
   // The canvas moving the element under a still pointer: scrolled, or resized (another device).
   view.addEventListener("scroll", show);
   view.addEventListener("resize", show);
+  const stopWatching = watchPage(document, layer, show);
   return () => {
+    stopWatching();
     document.removeEventListener("pointermove", onMove);
     document.documentElement.removeEventListener("pointerleave", onLeave);
     view.removeEventListener("scroll", show);
@@ -205,15 +241,16 @@ function showElementNames(
     pending = requestAnimationFrame(() => {
       zoomed();
       const above = NAME_HEIGHT / canvasZoom(document.documentElement);
+      // Looked up once a draw: its own bar names the selected element.
+      const selected = document
+        .querySelector('.wf-outline[data-state="selected"]')
+        ?.getAttribute("data-wf-id");
       const labels: HTMLElement[] = [];
       for (const element of document.querySelectorAll<HTMLElement>(ELEMENT)) {
         const id = element.getAttribute("data-puck-component") ?? "";
         const name = nameOf(id);
-        const selected = document.querySelector(
-          `.wf-outline[data-state="selected"][data-wf-id="${CSS.escape(id)}"]`,
-        );
         const box = element.getBoundingClientRect();
-        if (name === undefined || selected !== null || box.width === 0) continue;
+        if (name === undefined || id === selected || box.width === 0) continue;
         const label = document.createElement("span");
         label.className = "wf-view-name";
         label.textContent = name;
@@ -227,23 +264,11 @@ function showElementNames(
     });
   };
   draw();
-  const changed = new MutationObserver((records) => {
-    // Not its own labels: drawing them changes only the layer.
-    if (records.some((record) => !layer.contains(record.target))) draw();
-  });
-  // Changes that move elements: content, text, and the style and class attributes that lay them
-  // out. Not the hover and drag state Puck and dnd-kit keep setting in data- and aria- attributes.
-  changed.observe(document.body, {
-    subtree: true,
-    childList: true,
-    characterData: true,
-    attributes: true,
-    attributeFilter: ["style", "class", "hidden"],
-  });
+  const stopWatching = watchPage(document, layer, draw);
   view.addEventListener("resize", draw);
   return () => {
     cancelAnimationFrame(pending);
-    changed.disconnect();
+    stopWatching();
     view.removeEventListener("resize", draw);
   };
 }

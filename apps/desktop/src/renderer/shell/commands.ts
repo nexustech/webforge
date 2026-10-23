@@ -7,6 +7,12 @@
 /** The app menu a command appears in. */
 export type MenuId = "file" | "edit" | "view" | "help";
 
+/**
+ * The command palette's group for a command that isn't one of the app's own (F-ED-26, UX-11):
+ * a page to go to, or a section or element to add.
+ */
+export type PaletteGroup = "pages" | "add";
+
 /** One action. `label` is already translated (`t()`). */
 export type Command = {
   /** Unique, dotted (`edit.undo`, `site.export`). */
@@ -19,6 +25,8 @@ export type Command = {
    * menus and the command box, and handled by {@link installCommandShortcuts}.
    */
   readonly shortcut?: string;
+  /** More keys that run it, not shown: an older key kept working (Mod+K for the palette). */
+  readonly extraShortcuts?: readonly string[];
   /** Defaults to true; a disabled command is shown but can't run. */
   readonly enabled?: boolean;
   /**
@@ -26,8 +34,18 @@ export type Command = {
    * in editable text or some text is selected, so the text gets it.
    */
   readonly textShortcut?: boolean;
+  /** The palette's group for it; the app's own commands when left out. */
+  readonly palette?: PaletteGroup;
+  /** More words the palette finds it by (a page's file name, a component's category). */
+  readonly keywords?: readonly string[];
   readonly run: () => void | Promise<void>;
 };
+
+/** A command's keys: its shortcut, then any others. */
+const keysOf = (command: Command): readonly string[] => [
+  ...(command.shortcut === undefined ? [] : [command.shortcut]),
+  ...(command.extraShortcuts ?? []),
+];
 
 /** What a registered command's owner may change later, such as Undo becoming available. */
 type CommandChanges = Partial<Pick<Command, "label" | "enabled">>;
@@ -272,10 +290,10 @@ export function installCommandShortcuts(target: Window, registry: CommandRegistr
       .list()
       .find(
         (entry) =>
-          entry.shortcut !== undefined &&
-          (!inControl || parseShortcut(entry.shortcut).mod) &&
-          matchesShortcut(event, entry.shortcut) &&
-          !(entry.textShortcut === true && isForText(target, event)),
+          keysOf(entry).some(
+            (shortcut) =>
+              (!inControl || parseShortcut(shortcut).mod) && matchesShortcut(event, shortcut),
+          ) && !(entry.textShortcut === true && isForText(target, event)),
       );
     if (command !== undefined && registry.run(command.id)) {
       event.preventDefault();

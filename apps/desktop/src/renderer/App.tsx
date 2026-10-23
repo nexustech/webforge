@@ -37,6 +37,7 @@ import { PanelRegistryProvider } from "./shell/panel-context.js";
 import { createPanelRegistry } from "./shell/panels.js";
 import { ShellLayout } from "./shell/ShellLayout.js";
 import { TitleBar } from "./shell/TitleBar.js";
+import { registerPageCommands } from "./site/page-commands.js";
 import { registerSitePanel } from "./site/SitePanel.js";
 import { SiteSettingsHost } from "./site-settings/SiteSettingsHost.js";
 import { SiteCommands } from "./start/SiteCommands.js";
@@ -142,6 +143,8 @@ export function App({
   useEffect(() => installCommandShortcuts(window, registry), [registry]);
   useEffect(() => pauseCommandsWhileAsking(siteWide, registry), [siteWide, registry]);
   useEffect(() => registerSitePanel(panels, session, siteWide), [panels, session, siteWide]);
+  // The command palette's Go to page (1.34, F-ED-26).
+  useEffect(() => registerPageCommands(registry, session), [registry, session]);
   // Content mode locks the layout in Layers too (M3).
   useEffect(
     () => registerLayersPanel(panels, session, { layoutLocked: mode !== "design" }),
@@ -265,6 +268,8 @@ export function App({
                         editorLevel={editorLevel}
                         devices={preferences.canvas.devices}
                         viewOptions={viewOptions}
+                        addPreferences={preferences.add}
+                        onAddPreferencesChange={(add) => change({ add })}
                       />
                     </div>
                   </div>

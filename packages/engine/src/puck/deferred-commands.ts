@@ -16,10 +16,15 @@ export type DeferredCommands = {
  * any. If so, the command waits until their edit is recorded (`edited`), so they belong to the
  * session being undone, or `timeoutMs` at most. Undo or Redo pressed meanwhile waits behind it, in
  * order. Esc (`cancel`) never waits.
+ *
+ * An earlier batch of keystrokes can still be on its way when they are sent, and arrive first: the
+ * command then waits on until `settled` says the text being typed has all arrived. Run before it,
+ * the Undo would leave the last keystrokes to arrive after it, as a new step.
  */
 export function deferredCommands(
   runNow: HistoryCommandHandler,
   sendPending: () => boolean,
+  settled: () => boolean,
   timeoutMs: number,
 ): DeferredCommands {
   let waiting: {
@@ -50,7 +55,10 @@ export function deferredCommands(
       return runNow(command);
     },
     edited() {
-      if (waiting !== null) queueMicrotask(runWaiting);
+      if (waiting === null) return;
+      queueMicrotask(() => {
+        if (settled()) runWaiting();
+      });
     },
     dispose() {
       if (waiting !== null) clearTimeout(waiting.timer);

@@ -30,6 +30,7 @@ describe("parsePreferences", () => {
       panelLayout: { "shell.columns": { left: 20, center: 60, right: 20 } },
       window: null,
       canvas: DEFAULT_PREFERENCES.canvas,
+      add: DEFAULT_PREFERENCES.add,
     });
     expect(parsePreferences({ panelLayout: { group: { panel: 250 } } }).panelLayout).toEqual({});
     // A device too narrow for the canvas makes the canvas preferences the defaults.
@@ -39,6 +40,17 @@ describe("parsePreferences", () => {
     ).toEqual(DEFAULT_PREFERENCES.canvas);
     const tooMany = Object.fromEntries(Array.from({ length: 33 }, (_, i) => [`g${i}`, {}]));
     expect(parsePreferences({ panelLayout: tooMany }).panelLayout).toEqual({});
+  });
+
+  it("keeps the Add panel's favourites and recently used, or none if the list is invalid", () => {
+    const add = { favourites: ["Faq", "shared-hours"], recent: ["Hero"] };
+    expect(parsePreferences({ add }).add).toEqual(add);
+    expect(parsePreferences({ add: { favourites: [""], recent: [] } }).add).toEqual(
+      DEFAULT_PREFERENCES.add,
+    );
+    expect(
+      parsePreferences({ add: { favourites: [], recent: Array(7).fill("Hero") } }).add,
+    ).toEqual(DEFAULT_PREFERENCES.add);
   });
 });
 

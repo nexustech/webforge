@@ -193,7 +193,7 @@ test.describe("editor modes", () => {
     // An image swapped, and a link set, on the Hero.
     await frame.locator("h1").click();
     await page.getByRole("button", { name: "Image Choose an image…" }).click();
-    await page.getByRole("button", { name: "Shop front.jpg" }).click();
+    await page.getByRole("option", { name: "Shop front.jpg" }).dblclick();
     await expect(frame.locator(".site-hero img")).toHaveAttribute("alt", "Our shop front");
     await edit.getByRole("button", { name: "Add Link…" }).click();
     const dialog = page.getByRole("dialog", { name: "Link" });

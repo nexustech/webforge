@@ -21,6 +21,17 @@ export const SITE_CSS_DEBOUNCE_MS = 300;
  */
 const classesOfList = new WeakMap<readonly NodeDoc[], readonly string[]>();
 
+/** The class names in static `html`, in order, repeats included. */
+export function classesOfHtml(html: string): string[] {
+  const found: string[] = [];
+  for (const match of html.matchAll(/\sclass="([^"]*)"/g)) {
+    // React escapes `&` in attributes; Tailwind needs the raw class name. The same rule as the
+    // export pipeline's classCandidates, which the renderer can't import.
+    found.push(...(match[1] ?? "").split(/\s+/).map((name) => name.replaceAll("&amp;", "&")));
+  }
+  return found.filter((name) => name !== "");
+}
+
 function listClasses(nodes: readonly NodeDoc[], session: EditorSession): readonly string[] {
   let classes = classesOfList.get(nodes);
   if (classes === undefined) {
@@ -28,13 +39,7 @@ function listClasses(nodes: readonly NodeDoc[], session: EditorSession): readonl
     const html = renderNodesToHtml(nodes, session.library, EDITOR_RENDER_CONTEXT, {
       includeHidden: true,
     });
-    const found: string[] = [];
-    for (const match of html.matchAll(/\sclass="([^"]*)"/g)) {
-      // React escapes `&` in attributes; Tailwind needs the raw class name. The same rule as the
-      // export pipeline's classCandidates, which the renderer can't import.
-      found.push(...(match[1] ?? "").split(/\s+/).map((name) => name.replaceAll("&amp;", "&")));
-    }
-    classes = found.filter((name) => name !== "");
+    classes = classesOfHtml(html);
     classesOfList.set(nodes, classes);
   }
   return classes;

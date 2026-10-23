@@ -324,6 +324,40 @@ describe("Editor", () => {
     ).toBe("Hero");
   });
 
+  it("shows the favourites it is given, and saves what the Add panel changes, once (1.34)", async () => {
+    const save = vi.fn();
+    const renderWith = (add: { favourites: string[]; recent: string[] }) =>
+      act(async () =>
+        root.render(
+          <CommandRegistryProvider registry={registry}>
+            <PanelRegistryProvider registry={panels}>
+              <Editor
+                session={session}
+                createEngine={createEngine}
+                compileCss={compileCss}
+                addPreferences={add}
+                onAddPreferencesChange={save}
+              />
+              <PanelHost id="add" />
+            </PanelRegistryProvider>
+          </CommandRegistryProvider>,
+        ),
+      );
+    const firstGroup = () => container.querySelector("ul[aria-label]")?.getAttribute("aria-label");
+
+    await renderWith({ favourites: ["Faq"], recent: [] });
+    expect(firstGroup()).toBe("Favourites");
+    expect(save).not.toHaveBeenCalled();
+
+    await act(async () => registry.run("add.item.Hero"));
+    expect(save).toHaveBeenCalledExactlyOnceWith({ favourites: ["Faq"], recent: ["Hero"] });
+
+    // Preferences changed elsewhere are shown, not saved back.
+    await renderWith({ favourites: [], recent: ["Faq"] });
+    expect(firstGroup()).toBe("Recently used");
+    expect(save).toHaveBeenCalledOnce();
+  });
+
   it("lets the Add panel's items be dragged onto the canvas", () => {
     expect(engine.addDragSource).toHaveBeenCalledWith(expect.any(HTMLButtonElement), "Hero");
   });
