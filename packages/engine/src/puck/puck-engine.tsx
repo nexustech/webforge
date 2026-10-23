@@ -622,7 +622,11 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       }
       frameWindows.emit(frameWindow);
       const removeKeys = installHistoryKeys(frameWindow, runCommand);
-      const removeMenu = installContextMenu(frameWindow.document, contextMenus.emit);
+      // The element menu, but not in Content mode, where right-clicks get the browser's own.
+      const removeMenu = installContextMenu(frameWindow.document, contextMenus.emit, {
+        enabled: () => mode === "design",
+        selected: () => selection,
+      });
       return () => {
         removeMenu();
         stopKeepingEnabled?.();

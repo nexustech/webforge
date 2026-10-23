@@ -1,6 +1,6 @@
 import type { CanvasEngine } from "@webforge/engine";
 import { t } from "@webforge/i18n";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { EditorSession } from "../editor/editor-session.js";
 import { type Layer, layerItem, layersOf, renameLayer } from "../layers/layers.js";
 import { NameDialog } from "../site/NameDialog.js";
@@ -41,10 +41,16 @@ export type CanvasElementMenuProps = {
 export function CanvasElementMenu({ engine, session }: CanvasElementMenuProps) {
   const [at, setAt] = useState<MenuPoint | null>(null);
   const [renaming, setRenaming] = useState<Layer | null>(null);
+  // What had the focus when the menu opened (the canvas), to give it back when it closes; or, if
+  // Rename was chosen, the layer whose name to ask for once it has closed.
+  const opener = useRef<Element | null>(null);
+  const toRename = useRef<Layer | null>(null);
 
   useEffect(
     () =>
       engine?.onContextMenu(({ nodeId, x, y }) => {
+        opener.current = document.activeElement;
+        toRename.current = null;
         session.ui.setState({ nodeId });
         setAt({ x, y });
       }),
@@ -57,7 +63,19 @@ export function CanvasElementMenu({ engine, session }: CanvasElementMenuProps) {
       <ElementMenu
         at={at}
         onClose={() => setAt(null)}
-        onRename={layer === undefined ? undefined : () => setRenaming(layer)}
+        onRename={
+          layer === undefined
+            ? undefined
+            : () => {
+                toRename.current = layer;
+              }
+        }
+        onCloseFocus={() => {
+          const layer = toRename.current;
+          // The dialog opens once the menu has gone, so it alone takes the pointer and the focus.
+          if (layer !== null) requestAnimationFrame(() => setRenaming(layer));
+          else (opener.current as HTMLElement | null)?.focus?.();
+        }}
       />
       <NameDialog
         open={renaming !== null}

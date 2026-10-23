@@ -255,8 +255,10 @@ export interface CanvasEngine {
    */
   onFieldDrag(cb: (drag: FieldDrag) => void): Unsubscribe;
   /**
-   * An element was right-clicked on the canvas (1.35): the app selects it and shows its menu there.
-   * The browser's own menu doesn't open.
+   * The element menu was asked for on the canvas (1.35): a right-click on an element, or Shift+F10
+   * or the menu key for the selected one. The app selects it and shows its menu there. Not in
+   * Content mode, nor in text being edited, where the browser's own menu opens (its spelling
+   * suggestions among it).
    */
   onContextMenu(cb: (menu: CanvasContextMenu) => void): Unsubscribe;
   /** The floating + between sections was clicked; the app decides what to add there. */

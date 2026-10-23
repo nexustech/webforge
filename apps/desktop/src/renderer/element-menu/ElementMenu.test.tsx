@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { act, cleanup, render, screen, within } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -118,7 +118,7 @@ describe("CanvasElementMenu (1.35)", () => {
 
     expect(session.ui.getState().nodeId).toBe("heading-1");
     await userEvent.click(menu().getByRole("menuitem", { name: "Rename" }));
-    const dialog = within(screen.getByRole("dialog", { name: "Rename Heading" }));
+    const dialog = within(await screen.findByRole("dialog", { name: "Rename Heading" }));
     await userEvent.type(dialog.getByRole("textbox", { name: "Name for this Heading" }), "Intro");
     await userEvent.click(dialog.getByRole("button", { name: "Rename" }));
 
@@ -127,6 +127,19 @@ describe("CanvasElementMenu (1.35)", () => {
     const heading = content?.[0];
     expect(heading?.props.layerName).toBe("Intro");
     expect(session.history.entries().at(-1)?.label).toBe("Renamed Heading to 'Intro'");
+  });
+
+  it("gives the focus back to the canvas when the menu closes (#223 review)", async () => {
+    const { engine } = setUp();
+    const canvas = document.createElement("button");
+    document.body.append(canvas);
+    canvas.focus();
+
+    act(() => engine.rightClick({ nodeId: "heading-1", x: 0, y: 0 }));
+    await userEvent.keyboard("{Escape}");
+
+    await waitFor(() => expect(document.activeElement).toBe(canvas));
+    canvas.remove();
   });
 
   it("has no Rename for an element of the shared Header, which Layers doesn't list", () => {

@@ -31,6 +31,11 @@ export type ElementMenuProps = {
   readonly onClose: () => void;
   /** Renames the selected element, or undefined where it has no name to give (not a layer). */
   readonly onRename: (() => void) | undefined;
+  /**
+   * Puts the focus back where the menu was opened from (a row of Layers, the canvas) once it
+   * closes; the point it opens from can't take it.
+   */
+  readonly onCloseFocus?: () => void;
 };
 
 /**
@@ -38,7 +43,7 @@ export type ElementMenuProps = {
  * Rename, Duplicate, Save as shared section (or Detach, for a linked copy) and Delete. The element
  * is selected before it opens, so each item acts on it.
  */
-export function ElementMenu({ at, onClose, onRename }: ElementMenuProps) {
+export function ElementMenu({ at, onClose, onRename, onCloseFocus }: ElementMenuProps) {
   const registry = useCommandRegistry();
   const duplicate = useCommand(ELEMENT_MENU_COMMANDS.duplicate);
   const save = useCommand(ELEMENT_MENU_COMMANDS.saveShared);
@@ -81,6 +86,10 @@ export function ElementMenu({ at, onClose, onRename }: ElementMenuProps) {
         align="start"
         aria-label={t("elementMenu.label")}
         aria-labelledby={undefined}
+        onCloseAutoFocus={(event) => {
+          event.preventDefault();
+          onCloseFocus?.();
+        }}
       >
         <DropdownMenuItem disabled={onRename === undefined} onSelect={onRename}>
           {t("layers.rename")}

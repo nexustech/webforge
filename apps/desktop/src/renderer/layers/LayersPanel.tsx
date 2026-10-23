@@ -15,7 +15,14 @@ import {
   SparklesIcon,
   Trash2Icon,
 } from "lucide-react";
-import { type DragEvent, type KeyboardEvent, type ReactNode, useRef, useState } from "react";
+import {
+  type DragEvent,
+  type KeyboardEvent,
+  type ReactNode,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import type { MenuPoint } from "../element-menu/ElementMenu.js";
 import { type Layer, layerItem } from "./layers.js";
 
@@ -51,6 +58,11 @@ export type LayersPanelProps = {
     readonly at: MenuPoint | null;
     readonly onClose: () => void;
     readonly onRename: () => void;
+    /**
+     * Once the menu has closed: puts the focus back on the selected layer's row, or starts renaming
+     * it if Rename was chosen.
+     */
+    readonly onCloseFocus: () => void;
   }) => ReactNode;
 };
 
@@ -70,8 +82,6 @@ type TreeView = {
   readonly collapsed: ReadonlySet<string>;
   /** Lower case; empty for no filter. */
   readonly filter: string;
-  /** The selected layer's parents, which stay expanded so it shows. */
-  readonly open: ReadonlySet<string>;
 };
 
 /** Whether `layer`'s name or kind contains `filter`. */
@@ -90,8 +100,7 @@ function rowsOf(layers: readonly Layer[], view: TreeView, depth = 1, parent = ""
   return layers.flatMap((layer, index) => {
     if (view.filter !== "" && !anyMatch(layer, view.filter)) return [];
     const expanded =
-      layer.children.length > 0 &&
-      (view.filter !== "" || !view.collapsed.has(layer.id) || view.open.has(layer.id));
+      layer.children.length > 0 && (view.filter !== "" || !view.collapsed.has(layer.id));
     return [
       { layer, depth, parent, index, siblings: layers.length, expanded },
       ...(expanded ? rowsOf(layer.children, view, depth + 1, layer.id) : []),
@@ -149,12 +158,23 @@ export function LayersPanel({
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(() => new Set());
   const [filter, setFilter] = useState("");
   const query = filter.trim().toLocaleLowerCase();
-  const rows = rowsOf(layers, {
-    collapsed,
-    filter: query,
-    open: new Set(parentsOf(layers, selectedId)),
-  });
+  const rows = rowsOf(layers, { collapsed, filter: query });
+  // A layer selected elsewhere (the canvas) shows: the layers it is in open once. They can be
+  // collapsed again afterwards, hiding it.
+  const latest = useRef({ layers, selectedId });
+  latest.current = { layers, selectedId };
+  useEffect(() => {
+    const parents = parentsOf(latest.current.layers, selectedId);
+    setCollapsed((current) =>
+      parents.some((id) => current.has(id))
+        ? new Set([...current].filter((id) => !parents.includes(id)))
+        : current,
+    );
+  }, [selectedId]);
   const [renaming, setRenaming] = useState<string | null>(null);
+  // Set when the menu's Rename was chosen: renaming starts once the menu has closed, so the name
+  // field gets the focus and keeps it.
+  const renamedFromMenu = useRef(false);
   const [menuAt, setMenuAt] = useState<MenuPoint | null>(null);
   const [drop, setDrop] = useState<{ id: string; after: boolean; allowed: boolean } | null>(null);
   // The row being dragged, in state too, so the rows it can't go to are marked while it moves.
@@ -182,8 +202,17 @@ export function LayersPanel({
   /** Opens the element menu for `id` at `at`, selecting it first so the menu acts on it. */
   const openMenu = (id: string, at: MenuPoint) => {
     actions.select(id);
+    renamedFromMenu.current = false;
     setMenuAt(at);
   };
+
+  /** Focuses the selected layer's row, as it is once React has drawn it. */
+  const focusSelected = () =>
+    requestAnimationFrame(() => {
+      const id = latest.current.selectedId;
+      if (id === null) return;
+      treeRef.current?.querySelector<HTMLElement>(`[data-layer="${CSS.escape(id)}"]`)?.focus();
+    });
 
   const onKeyDown = (event: KeyboardEvent, row: Row) => {
     if (renaming !== null) {
@@ -300,11 +329,6 @@ export function LayersPanel({
                 aria-expanded={hasChildren ? row.expanded : undefined}
                 tabIndex={focusable ? 0 : -1}
                 draggable={!layoutLocked && renaming !== layer.id}
-                title={
-                  notAllowed
-                    ? t("layers.dropNotAllowed", { item: layerItem(dragging.layer) })
-                    : undefined
-                }
                 className={cn(
                   "group relative flex h-6 items-center gap-1 rounded-sm pr-1 text-xs outline-none",
                   "hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
@@ -447,6 +471,13 @@ export function LayersPanel({
         </div>
       </ScrollArea>
 
+      {/* While a layer is over a row it can't go to, why: browsers show no tooltips in a drag. */}
+      <p role="status" className="shrink-0 px-2 text-xs text-destructive empty:hidden">
+        {dragging !== null && drop?.allowed === false
+          ? t("layers.dropNotAllowed", { item: layerItem(dragging.layer) })
+          : ""}
+      </p>
+
       <div className="shrink-0 border-t border-border p-1">
         <input
           type="search"
@@ -514,7 +545,12 @@ export function LayersPanel({
         at: menuAt,
         onClose: () => setMenuAt(null),
         onRename: () => {
-          if (selectedId !== null) setRenaming(selectedId);
+          renamedFromMenu.current = true;
+        },
+        onCloseFocus: () => {
+          const id = latest.current.selectedId;
+          if (renamedFromMenu.current && id !== null) setRenaming(id);
+          else focusSelected();
         },
       })}
     </div>

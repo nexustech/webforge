@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
@@ -255,12 +255,31 @@ describe("LayersPanel (F-ED-12)", () => {
       expect(actions.select.mock.calls).toEqual([["a"], ["s1"]]);
     });
 
-    it("keeps the selected layer showing inside a collapsed one", async () => {
-      setUp("b");
+    it("collapses the selected layer's parent, and opens it for a layer selected elsewhere", async () => {
+      const props = {
+        layers: LAYERS,
+        actions: {
+          select: vi.fn(),
+          rename: vi.fn(),
+          setHidden: vi.fn(),
+          move: vi.fn(),
+          moveUp: undefined,
+          moveDown: undefined,
+          duplicate: undefined,
+          remove: undefined,
+        },
+      };
+      const view = render(<LayersPanel {...props} selectedId="a" />);
 
-      await userEvent.click(screen.getByRole("button", { name: "Collapse all" }));
+      // Collapsing the selected layer's parent hides it (#223 review).
+      await userEvent.click(screen.getAllByTitle("Collapse Section")[0] as HTMLElement);
+      expect(shown()).toEqual(["Section", "Section"]);
 
+      // Selected elsewhere (the canvas): the layers it is in open, once.
+      view.rerender(<LayersPanel {...props} selectedId="b" />);
       expect(shown()).toEqual(["Section", "Heading", "Hours Heading", "Heading", "Section"]);
+      await userEvent.click(screen.getByRole("button", { name: "Collapse all" }));
+      expect(shown()).toEqual(["Section", "Section"]);
     });
 
     it("filters by name or kind, keeping the layers a match is in; Esc clears it", async () => {
@@ -295,13 +314,14 @@ describe("LayersPanel (F-ED-12)", () => {
         null,
         "not-allowed",
       ]);
-      expect(screen.getAllByRole("treeitem")[4]?.title).toBe(
-        "Heading can only move among its own section's elements",
-      );
-      // Over one of them, it isn't a drop target (the event isn't taken), and the row says so.
+      // Over one of them, it isn't a drop target (the event isn't taken), and the row and the
+      // panel say so: browsers show no tooltips in a drag.
       const over = fireEvent.dragOver(rows[4] as HTMLElement, { dataTransfer });
       expect(over).toBe(true);
       expect(screen.getAllByRole("treeitem")[4]?.className).toContain("var(--destructive)");
+      expect(screen.getByRole("status").textContent).toBe(
+        "Heading can only move among its own section's elements",
+      );
       fireEvent.drop(rows[4] as HTMLElement, { dataTransfer });
       fireEvent.dragEnd(rows[1] as HTMLElement, { dataTransfer });
 
@@ -329,9 +349,22 @@ describe("LayersPanel (F-ED-12)", () => {
       fireEvent.contextMenu(screen.getAllByRole("treeitem")[1] as HTMLElement);
       expect(lastMenu()?.at).toEqual({ x: 16, y: 0 });
 
-      // Its Rename renames the selected layer in place.
-      act(() => lastMenu()?.onRename());
-      expect(screen.getByRole("textbox", { name: "Name for this Heading" })).toBeTruthy();
+      // Closed, it gives the focus back to the selected layer's row (#223 review).
+      act(() => lastMenu()?.onCloseFocus());
+      await waitFor(() =>
+        expect(document.activeElement?.getAttribute("data-layer")).toBe(
+          screen.getAllByRole("treeitem")[1]?.getAttribute("data-layer"),
+        ),
+      );
+
+      // Its Rename renames the selected layer in place, and the name field keeps the focus.
+      act(() => {
+        lastMenu()?.onRename();
+        lastMenu()?.onCloseFocus();
+      });
+      const field = screen.getByRole("textbox", { name: "Name for this Heading" });
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      expect(document.activeElement).toBe(field);
     });
 
     it("marks locked and animated layers, as it marks linked and hidden ones", () => {

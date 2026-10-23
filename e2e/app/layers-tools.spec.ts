@@ -52,6 +52,14 @@ test("opens the same menu on the canvas and in Layers, acting on what was right-
   // The right-clicked element was selected first, so the menu acted on it.
   await expect(row("Heading")).toHaveAttribute("aria-selected", "true");
 
+  // From the keyboard in Layers: the same menu, and Esc gives the row its focus back.
+  await row("Heading").focus();
+  await page.keyboard.press("Shift+F10");
+  await expect(menu()).toBeVisible();
+  expect(await menuItems()).toEqual(onCanvas);
+  await page.keyboard.press("Escape");
+  await expect(row("Heading")).toBeFocused();
+
   await row("Heading").click({ button: "right" });
   await expect(menu()).toBeVisible();
   expect(await menuItems()).toEqual(onCanvas);
@@ -111,4 +119,21 @@ test("filters Layers and collapses or expands the whole tree", async () => {
   await expect(row("Heading")).toHaveCount(0);
   await left().getByRole("searchbox", { name: "Filter layers" }).press("Escape");
   await expect(row("Heading")).toBeVisible();
+});
+
+test("in Content mode, leaves the canvas's right-clicks alone and Layers' menu to Rename", async () => {
+  await showLayers();
+  await page.getByRole("radio", { name: "Content", exact: true }).click();
+
+  await canvas().locator("h1").click({ button: "right" });
+  await expect(menu()).toHaveCount(0);
+
+  await row("Heading").click({ button: "right" });
+  await expect(menu()).toBeVisible();
+  expect((await menuItems()).map(([label, on]) => [String(label).split("\n")[0], on])).toEqual([
+    ["Rename", true],
+    ["Duplicate", false],
+    ["Save as shared section…", false],
+    ["Delete", false],
+  ]);
 });
