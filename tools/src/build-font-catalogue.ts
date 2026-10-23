@@ -8,46 +8,29 @@
 // OFL-1.1, Apache-2.0 and UFL-1.0, and lists the files to bundle: the Latin and Latin Extended
 // subsets of the family's npm package (`@fontsource-variable/<id>` when the font is variable,
 // else `@fontsource/<id>`), at the version the registry has now. Each file's size and SHA-256 come
-// from the package's own copy on jsDelivr, so later builds can check what they bundle or download.
+// from the package's own copy on jsDelivr, so later builds can check what they bundle. Which files
+// a family gets follows `@webforge/themes/font-plan`, as the app's downloads do.
 //
 // This file has no relative imports so Node can run it directly with type stripping.
 
 import { createHash } from "node:crypto";
 import { writeFileSync } from "node:fs";
+import {
+  FONTSOURCE_API,
+  type FontCategory,
+  type FontFallback,
+  fontAxesSchema,
+  fontMetadataSchema,
+  fontPackage,
+  PACKAGE_FILES,
+  planFamily,
+} from "@webforge/themes/font-plan";
 import { z } from "zod";
 
-/** Fontsource's API, pinned to its version 1. */
-export const FONTSOURCE_API = "https://api.fontsource.org/v1";
-/** Where a package's files are read from: jsDelivr's copy of the npm package. */
-export const PACKAGE_FILES = "https://cdn.jsdelivr.net/npm";
 const NPM_REGISTRY = "https://registry.npmjs.org";
-
-/**
- * The licences a catalogued font may have (C1): they allow bundling the fonts with any software
- * and with the sites it makes, only not selling them on their own.
- */
-export const FONT_LICENCES = ["OFL-1.1", "Apache-2.0", "UFL-1.0"] as const;
-
-/** The subsets the installer bundles: enough for every language written in Latin script. */
-export const BUNDLED_SUBSETS = ["latin", "latin-ext"] as const;
-/** The weights bundled of a font that isn't variable, when it has them; italics only at two. */
-const STATIC_WEIGHTS = [300, 400, 500, 600, 700];
-const STATIC_ITALIC_WEIGHTS = [400, 700];
 
 /** What the bundled fonts may add to the installer (2.2: a budget of about 10–15 MB). */
 export const FONT_BUDGET_BYTES = 15 * 1024 * 1024;
-
-type Fallback = "sans-serif" | "serif" | "monospace";
-
-/** The categories the font picker lists (Fontsource's, less `icons` and `other`). */
-export const FONT_CATEGORIES = [
-  "sans-serif",
-  "serif",
-  "display",
-  "handwriting",
-  "monospace",
-] as const;
-type Category = (typeof FONT_CATEGORIES)[number];
 
 /**
  * The bundled families (S4, F-DS-2: about 50): the popular, readable choices for a small
@@ -58,8 +41,8 @@ type Category = (typeof FONT_CATEGORIES)[number];
  */
 export const FAMILIES: readonly {
   readonly id: string;
-  readonly fallback?: Fallback;
-  readonly category?: Category;
+  readonly fallback?: FontFallback;
+  readonly category?: FontCategory;
 }[] = [
   // Sans-serif.
   { id: "inter" },
@@ -141,149 +124,6 @@ export const PAIRINGS: readonly {
   { id: "luxury", heading: "dm-serif-display", body: "manrope" },
 ];
 
-/** A family's metadata from Fontsource's API (`/v1/fonts/<id>`), the parts the catalogue uses. */
-export const fontMetadataSchema = z.object({
-  id: z.string().regex(/^[a-z0-9-]+$/),
-  family: z.string().min(1),
-  subsets: z.array(z.string()),
-  weights: z.array(z.number().int().min(1).max(1000)).min(1),
-  styles: z.array(z.enum(["normal", "italic"])).min(1),
-  variable: z.boolean(),
-  category: z.string(),
-  license: z.string(),
-  /** Each subset's characters, as `@font-face`'s `unicode-range` takes them. */
-  unicodeRange: z.record(
-    z.string(),
-    z.string().regex(/^U\+[0-9A-Fa-f?-]+(?:,U\+[0-9A-Fa-f?-]+)*$/),
-  ),
-});
-export type FontMetadata = z.infer<typeof fontMetadataSchema>;
-
-/** A variable font's axes (`/v1/variable/<id>`): the catalogue needs its weight axis. */
-const axesSchema = z.object({
-  axes: z.record(z.string(), z.object({ min: z.coerce.number(), max: z.coerce.number() })),
-});
-
-/** One file of a family to bundle, before its size and hash are known. */
-export type PlannedFile = {
-  readonly file: string;
-  readonly subset: (typeof BUNDLED_SUBSETS)[number];
-  readonly style: "normal" | "italic";
-  /** The weight, or the range a variable font covers. */
-  readonly weight: number | readonly [number, number];
-  /** The subset's characters, for `@font-face`'s `unicode-range`. */
-  readonly unicodeRange: string;
-};
-
-/** A family as the catalogue lists it, before its files' sizes and hashes are known. */
-export type PlannedFamily = {
-  readonly id: string;
-  readonly family: string;
-  readonly category: Category;
-  readonly fallback: Fallback;
-  readonly licence: (typeof FONT_LICENCES)[number];
-  readonly variable: boolean;
-  readonly weights: readonly number[];
-  readonly styles: readonly ("normal" | "italic")[];
-  readonly package: string;
-  readonly version: string;
-  readonly files: readonly PlannedFile[];
-};
-
-/** A licence the catalogue may have, or undefined for any other. */
-export function allowedLicence(licence: string): (typeof FONT_LICENCES)[number] | undefined {
-  return FONT_LICENCES.find((allowed) => allowed === licence);
-}
-
-/** The generic family a font falls back to: its own choice, or its category's. */
-function fallbackOf(category: string, chosen: Fallback | undefined): Fallback | undefined {
-  if (chosen !== undefined) return chosen;
-  if (category === "sans-serif" || category === "serif" || category === "monospace") {
-    return category;
-  }
-  return undefined;
-}
-
-/**
- * Plans one family of the catalogue from its metadata: its licence, fallback, package and the
- * files to bundle. `weightAxis` is a variable font's weight range. Throws, naming the family, for
- * a licence the catalogue doesn't allow, a font without Latin or its characters' range, a category
- * the picker doesn't list, a display or handwriting font with no fallback chosen, or a variable
- * font without a weight axis.
- */
-export function planFamily(
-  metadata: FontMetadata,
-  choice: { readonly fallback?: Fallback; readonly category?: Category },
-  version: string,
-  weightAxis?: readonly [number, number],
-): PlannedFamily {
-  const licence = allowedLicence(metadata.license);
-  if (licence === undefined) {
-    throw new Error(`${metadata.family}: licence ${metadata.license} is not allowed`);
-  }
-  if (!metadata.subsets.includes("latin")) {
-    throw new Error(`${metadata.family}: has no Latin subset`);
-  }
-  const category = choice.category ?? FONT_CATEGORIES.find((each) => each === metadata.category);
-  if (category === undefined) {
-    throw new Error(
-      `${metadata.family}: category ${metadata.category} is not one the picker lists`,
-    );
-  }
-  const fallback = fallbackOf(metadata.category, choice.fallback);
-  if (fallback === undefined) {
-    throw new Error(`${metadata.family}: a ${metadata.category} font needs a fallback`);
-  }
-  if (metadata.variable && weightAxis === undefined) {
-    throw new Error(`${metadata.family}: a variable font without a weight axis`);
-  }
-  const subsets = BUNDLED_SUBSETS.filter((subset) => metadata.subsets.includes(subset));
-  const files: PlannedFile[] = [];
-  for (const subset of subsets) {
-    const unicodeRange = metadata.unicodeRange[subset];
-    if (unicodeRange === undefined) {
-      throw new Error(`${metadata.family}: no character range for its ${subset} subset`);
-    }
-    for (const style of metadata.styles) {
-      if (weightAxis !== undefined) {
-        files.push({
-          file: `${metadata.id}-${subset}-wght-${style}.woff2`,
-          subset,
-          style,
-          weight: weightAxis,
-          unicodeRange,
-        });
-        continue;
-      }
-      const wanted = style === "italic" ? STATIC_ITALIC_WEIGHTS : STATIC_WEIGHTS;
-      const weights = metadata.weights.filter((weight) => wanted.includes(weight));
-      // A font with one weight outside the usual ones (a display font's 400 is in) keeps it.
-      for (const weight of weights.length > 0 ? weights : metadata.weights.slice(0, 1)) {
-        files.push({
-          file: `${metadata.id}-${subset}-${weight}-${style}.woff2`,
-          subset,
-          style,
-          weight,
-          unicodeRange,
-        });
-      }
-    }
-  }
-  return {
-    id: metadata.id,
-    family: metadata.family,
-    category,
-    fallback,
-    licence,
-    variable: metadata.variable,
-    weights: metadata.weights,
-    styles: metadata.styles,
-    package: `${metadata.variable ? "@fontsource-variable" : "@fontsource"}/${metadata.id}`,
-    version,
-    files,
-  };
-}
-
 /** The pairings' problems: a family the catalogue doesn't have, or an id used twice. */
 export function pairingProblems(
   pairings: typeof PAIRINGS,
@@ -323,9 +163,10 @@ async function buildFamily(get: Fetch, choice: (typeof FAMILIES)[number]) {
     await fetchJson(get, `${FONTSOURCE_API}/fonts/${choice.id}`),
   );
   const weightAxis = metadata.variable
-    ? axesSchema.parse(await fetchJson(get, `${FONTSOURCE_API}/variable/${choice.id}`)).axes.wght
+    ? fontAxesSchema.parse(await fetchJson(get, `${FONTSOURCE_API}/variable/${choice.id}`)).axes
+        .wght
     : undefined;
-  const name = `${metadata.variable ? "@fontsource-variable" : "@fontsource"}/${metadata.id}`;
+  const name = fontPackage(metadata.id, metadata.variable);
   const { version } = z
     .object({ version: z.string() })
     .parse(await fetchJson(get, `${NPM_REGISTRY}/${name}/latest`));
@@ -373,20 +214,34 @@ export async function buildCatalogue(
   return { catalogue, bytes, problems };
 }
 
-async function main(): Promise<void> {
-  const { catalogue, bytes, problems } = await buildCatalogue(fetch);
+/** Where the catalogue goes: the themes package, which loads and checks it. */
+export const CATALOGUE_FILE = new URL(
+  "../../packages/themes/src/fonts/catalogue.json",
+  import.meta.url,
+);
+
+/**
+ * Builds the catalogue (see {@link buildCatalogue}) and writes it with `write`, or reports its
+ * problems and writes nothing. Returns whether it wrote it.
+ */
+export async function writeCatalogue(
+  get: Fetch,
+  write: (target: URL, text: string) => void,
+  families: typeof FAMILIES = FAMILIES,
+  pairings: typeof PAIRINGS = PAIRINGS,
+): Promise<boolean> {
+  const { catalogue, bytes, problems } = await buildCatalogue(get, families, pairings);
   if (problems.length > 0) {
     console.error(problems.join("\n"));
-    process.exitCode = 1;
-    return;
+    return false;
   }
-  const target = new URL("../../packages/themes/src/fonts/catalogue.json", import.meta.url);
-  writeFileSync(target, `${JSON.stringify(catalogue, null, 2)}\n`);
+  write(CATALOGUE_FILE, `${JSON.stringify(catalogue, null, 2)}\n`);
   console.log(
     `Wrote ${catalogue.families.length} families, ${(bytes / 1024 / 1024).toFixed(1)} MB of fonts.`,
   );
+  return true;
 }
 
-if (import.meta.main) {
-  await main();
+if (import.meta.main && !(await writeCatalogue(fetch, writeFileSync))) {
+  process.exitCode = 1;
 }

@@ -5,6 +5,7 @@
   "description": "Repository scripts: licence check, UI-string guard (later: release, fixture generation)",
   "type": "module",
   "dependencies": {
+    "@webforge/themes": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {

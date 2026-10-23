@@ -228,6 +228,7 @@ export async function buildSite(
     theme: site.theme,
     candidates: classCandidates([`<body class="${BODY_CLASS}">`, ...markup].join("\n")),
     fontsUrl: "../fonts/",
+    ...(resources.fonts === undefined ? {} : { fonts: resources.fonts }),
   });
   const cssPath = `assets/css/site.${contentHash(css)}.css`;
   files.set(cssPath, text.encode(css));
@@ -248,8 +249,8 @@ export async function buildSite(
   if (script !== undefined && scriptPath !== undefined) {
     files.set(scriptPath, text.encode(script));
   }
-  // Only the fonts the theme uses (2.2), each exactly the file the catalogue lists.
-  for (const face of fontFacesFor(site.theme)) {
+  // Only the fonts the theme uses (2.2), each exactly the file the catalogue (or the download) lists.
+  for (const face of fontFacesFor(site.theme, resources.fonts)) {
     const data = await resources.readFont(face);
     if (data === undefined || data.byteLength !== face.bytes || sha256(data) !== face.sha256) {
       throw new BuildError("missing-font", `The font file ${face.file} is missing or damaged`);

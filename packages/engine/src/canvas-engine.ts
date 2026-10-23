@@ -181,6 +181,19 @@ export type ElementRequest = {
   readonly nodeId: string;
 };
 
+/**
+ * Alt + Enter in rich text being edited (F-ED-27): the element splits in two at the caret, as one
+ * step the app records. `before` stays in field `field` of element `nodeId`; `after` goes into a
+ * copy of it placed just after it. Both are rich-text HTML.
+ */
+export type TextSplit = {
+  /** The element, as the canvas shows it. */
+  readonly nodeId: string;
+  readonly field: string;
+  readonly before: string;
+  readonly after: string;
+};
+
 /** A right-click on an element of the canvas (1.35), at its point in the editor window. */
 export type CanvasContextMenu = {
   /** The element, as the canvas shows it. */
@@ -300,6 +313,8 @@ export interface CanvasEngine {
   onFieldDrag(cb: (drag: FieldDrag) => void): Unsubscribe;
   /** The selected element's quick actions ask for something only the app can do (F-ED-25). */
   onElementRequest(cb: (request: ElementRequest) => void): Unsubscribe;
+  /** Rich text being edited is split in two at the caret (Alt + Enter, F-ED-27). */
+  onTextSplit(cb: (split: TextSplit) => void): Unsubscribe;
   /**
    * The element menu was asked for on the canvas (1.35): a right-click on an element, or Shift+F10
    * or the menu key for the selected one. The app selects it and shows its menu there. Not in

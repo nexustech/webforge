@@ -1,7 +1,11 @@
+import { t } from "@webforge/i18n";
+import { COMMAND_SHORTCUTS, type StandardShortcut } from "./shortcut-standard.js";
+
 /**
  * The command registry: every action the title bar, the app menu, the command box and keyboard
  * shortcuts offer. Areas contribute commands with {@link CommandRegistry.register} instead of
- * editing the shell, so Undo, Export or Add page reach every surface the same way.
+ * editing the shell, so Undo, Export or Add page reach every surface the same way. Their keys come
+ * from the shortcut standard (F-ED-27, `shortcut-standard.ts`), by command id.
  */
 
 /** The app menu a command appears in. */
@@ -21,19 +25,19 @@ export type Command = {
   /** The app menu to list it in; commands without one are in the command box only. */
   readonly menu?: MenuId;
   /**
-   * Keys that run it, such as `Mod+Shift+Z` (`Mod` is Cmd on macOS, Ctrl elsewhere). Shown in
-   * menus and the command box, and handled by {@link installCommandShortcuts}.
+   * The key menus and the command box show, such as `Mod+Shift+Z` (`Mod` is Cmd on macOS, Ctrl
+   * elsewhere): the first of the standard's keys this keyboard has. Set by the registry.
    */
   readonly shortcut?: string;
-  /** More keys that run it, not shown: an older key kept working (Mod+K for the palette). */
+  /** More keys that run it, from the standard: Mod+K for the palette, Mod+Y to redo. */
   readonly extraShortcuts?: readonly string[];
+  /**
+   * The keys that are text's own too (Copy, Cut, Paste): they don't run the command while focus is
+   * in editable text or some text is selected, so the text gets them. From the standard.
+   */
+  readonly textKeys?: readonly string[];
   /** Defaults to true; a disabled command is shown but can't run. */
   readonly enabled?: boolean;
-  /**
-   * The shortcut is text's own too (Copy, Cut, Paste): it doesn't run the command while focus is
-   * in editable text or some text is selected, so the text gets it.
-   */
-  readonly textShortcut?: boolean;
   /** The palette's group for it; the app's own commands when left out. */
   readonly palette?: PaletteGroup;
   /** More words the palette finds it by (a page's file name, a component's category). */
@@ -47,13 +51,26 @@ const keysOf = (command: Command): readonly string[] => [
   ...(command.extraShortcuts ?? []),
 ];
 
+/**
+ * A command as an area registers it: its keys come from the shortcut standard, never from the
+ * area, so they can't differ between the menus, the command box and the sheet.
+ */
+export type CommandSpec = Omit<Command, "shortcut" | "extraShortcuts" | "textKeys"> & {
+  readonly shortcut?: never;
+  readonly extraShortcuts?: never;
+  readonly textKeys?: never;
+};
+
 /** What a registered command's owner may change later, such as Undo becoming available. */
 type CommandChanges = Partial<Pick<Command, "label" | "enabled">>;
 
 /** The registry; one per window. */
 export type CommandRegistry = {
-  /** Adds a command and returns a function that removes it. Ids must be unique. */
-  register(command: Command): () => void;
+  /**
+   * Adds a command, with its keys from the standard, and returns a function that removes it. Ids
+   * must be unique.
+   */
+  register(command: CommandSpec): () => void;
   /** Changes a registered command; ignored if it isn't registered. */
   update(id: string, changes: CommandChanges): void;
   /** Runs a command if it is registered and enabled, and not paused; returns whether it ran. */
@@ -70,8 +87,39 @@ export type CommandRegistry = {
   subscribe(listener: () => void): () => void;
 };
 
-/** Creates an empty registry. */
-export function createCommandRegistry(): CommandRegistry {
+/** `command` with its keys from `standard`, the shown one first: the first this keyboard has. */
+function withKeys(
+  command: CommandSpec,
+  standard: StandardShortcut | undefined,
+  mac: boolean,
+): Command {
+  if (standard === undefined) {
+    return command;
+  }
+  const [shown, ...others] = [
+    ...standard.keys.filter((key) => onKeyboard(key, mac)),
+    ...standard.keys.filter((key) => !onKeyboard(key, mac)),
+  ];
+  const text = standard.text === true ? standard.keys : (standard.text ?? []);
+  return {
+    ...command,
+    ...(shown === undefined ? {} : { shortcut: shown }),
+    ...(others.length === 0 ? {} : { extraShortcuts: others }),
+    ...(text.length === 0 ? {} : { textKeys: text }),
+  };
+}
+
+/**
+ * Creates an empty registry. Commands take their keys from `shortcuts` (the standard), showing
+ * the ones a Mac keyboard has when `mac`.
+ */
+export function createCommandRegistry({
+  shortcuts = COMMAND_SHORTCUTS,
+  mac = isMac(),
+}: {
+  readonly shortcuts?: Readonly<Record<string, StandardShortcut>>;
+  readonly mac?: boolean;
+} = {}): CommandRegistry {
   const commands = new Map<string, Command>();
   /** Who registered each id, so a stale unregister can't remove a later registration. */
   const owners = new Map<string, object>();
@@ -85,10 +133,11 @@ export function createCommandRegistry(): CommandRegistry {
   };
 
   return {
-    register(command) {
-      if (commands.has(command.id)) {
-        throw new Error(`Command "${command.id}" is already registered`);
+    register(spec) {
+      if (commands.has(spec.id)) {
+        throw new Error(`Command "${spec.id}" is already registered`);
       }
+      const command = withKeys(spec, shortcuts[spec.id], mac);
       const owner = {};
       commands.set(command.id, command);
       owners.set(command.id, owner);
@@ -161,7 +210,9 @@ type ParsedShortcut = {
 
 function parseShortcut(shortcut: string): ParsedShortcut {
   const parts = shortcut.split("+");
-  const key = (parts.pop() ?? "").toLowerCase();
+  const name = parts.pop() ?? "";
+  // `+` can't be written after a `+`, nor a space read.
+  const key = (name === "Plus" ? "+" : name === "Space" ? " " : name).toLowerCase();
   const modifiers = new Set(parts.map((part) => part.toLowerCase()));
   return {
     key,
@@ -171,7 +222,26 @@ function parseShortcut(shortcut: string): ParsedShortcut {
   };
 }
 
-type KeyInfo = Pick<KeyboardEvent, "key" | "ctrlKey" | "metaKey" | "altKey" | "shiftKey">;
+type KeyInfo = Pick<KeyboardEvent, "key" | "ctrlKey" | "metaKey" | "altKey" | "shiftKey"> &
+  Partial<Pick<KeyboardEvent, "code">>;
+
+/**
+ * The letter a key press with Alt is for. On a Mac, Option changes the character (⌥B types `∫`),
+ * so a letter shortcut with Alt matches the key's place (`KeyB`) when the character isn't a letter.
+ */
+function letterOf(event: KeyInfo): string {
+  const key = event.key.toLowerCase();
+  if (event.altKey && !/^[a-z]$/.test(key) && /^Key[A-Z]$/.test(event.code ?? "")) {
+    return (event.code ?? "").slice(3).toLowerCase();
+  }
+  return key;
+}
+
+/**
+ * Whether `key` is a symbol or a digit: which Shift it needs depends on the keyboard layout (`?` is
+ * Shift+/ in the US, `0` Shift+à on AZERTY), so its shortcuts match with or without Shift.
+ */
+const isSymbol = (key: string) => key.length === 1 && key.toLowerCase() === key.toUpperCase();
 
 /** Whether a key press matches `shortcut`, using Cmd on macOS and Ctrl elsewhere for `Mod`. */
 export function matchesShortcut(event: KeyInfo, shortcut: string, mac = isMac()): boolean {
@@ -179,22 +249,61 @@ export function matchesShortcut(event: KeyInfo, shortcut: string, mac = isMac())
   const mod = mac ? event.metaKey : event.ctrlKey;
   const otherMod = mac ? event.ctrlKey : event.metaKey;
   return (
-    event.key.toLowerCase() === parsed.key &&
+    (event.key.toLowerCase() === parsed.key || letterOf(event) === parsed.key) &&
     mod === parsed.mod &&
     !otherMod &&
-    event.shiftKey === parsed.shift &&
+    (event.shiftKey === parsed.shift || (isSymbol(parsed.key) && !parsed.shift)) &&
     event.altKey === parsed.alt
   );
 }
 
+/**
+ * Whether a keyboard has the keys of `shortcut`: a Mac keyboard has no Delete key (fn+Backspace
+ * makes one), so Delete's command shows Mod+Backspace there.
+ */
+export function onKeyboard(shortcut: string, mac = isMac()): boolean {
+  return !(mac && parseShortcut(shortcut).key === "delete");
+}
+
+/** Keys as a Mac shows them. */
+const MAC_KEYS: Readonly<Record<string, string>> = {
+  arrowup: "↑",
+  arrowdown: "↓",
+  arrowleft: "←",
+  arrowright: "→",
+  backspace: "⌫",
+  delete: "⌦",
+  enter: "↩",
+  escape: "⎋",
+  "-": "−",
+};
+
+/** Keys as Windows shows them, the names translated. */
+const OTHER_KEYS: Readonly<Record<string, () => string>> = {
+  arrowup: () => "↑",
+  arrowdown: () => "↓",
+  arrowleft: () => "←",
+  arrowright: () => "→",
+  backspace: () => t("keys.backspace"),
+  delete: () => t("keys.delete"),
+  enter: () => t("keys.enter"),
+  escape: () => t("keys.escape"),
+  " ": () => t("keys.space"),
+  "-": () => "−",
+};
+
 /** A shortcut as people read it: `⌘⇧Z` on macOS, `Ctrl+Shift+Z` elsewhere. */
 export function formatShortcut(shortcut: string, mac = isMac()): string {
   const { key, mod, shift, alt } = parseShortcut(shortcut);
-  const name = key.length === 1 ? key.toUpperCase() : key[0]?.toUpperCase() + key.slice(1);
+  const plain = key.length === 1 ? key.toUpperCase() : key[0]?.toUpperCase() + key.slice(1);
   if (mac) {
+    const name = key === " " ? t("keys.space") : (MAC_KEYS[key] ?? plain);
     return `${alt ? "⌥" : ""}${shift ? "⇧" : ""}${mod ? "⌘" : ""}${name}`;
   }
-  return [mod && "Ctrl", alt && "Alt", shift && "Shift", name].filter(Boolean).join("+");
+  const name = OTHER_KEYS[key]?.() ?? plain;
+  return [mod && t("keys.ctrl"), alt && t("keys.alt"), shift && t("keys.shift"), name]
+    .filter(Boolean)
+    .join("+");
 }
 
 /** Tags that use plain keys (arrows, Delete) themselves. */
@@ -225,6 +334,22 @@ const CONTROL_ROLES: ReadonlySet<string> = new Set([
   "tree",
   "treeitem",
 ]);
+
+/** Open modal dialogs and menus, which own the keys while they're open. */
+const MODAL = '[role="dialog"][aria-modal="true"], [role="alertdialog"], [role="menu"]';
+
+/**
+ * Whether a dialog or a menu has the keys: `target` is inside one, or the editor window `doc` has
+ * a modal dialog or a menu open (a key pressed in the canvas while one is open counts too).
+ * Duck-typed, as in {@link isFocusedControl}.
+ */
+function isInDialog(target: EventTarget | null, doc: Pick<Document, "querySelector">): boolean {
+  const element = target as { closest?: (selector: string) => unknown } | null;
+  return (
+    element?.closest?.('[role="dialog"], [role="alertdialog"], [role="menu"]') != null ||
+    doc.querySelector(MODAL) !== null
+  );
+}
 
 /**
  * Whether a key press goes to a control that uses plain keys itself: a field, editable text, a
@@ -276,24 +401,27 @@ function isForText(target: Window, event: KeyboardEvent): boolean {
 /**
  * Runs registered commands from their shortcuts on `target` (the editor window, or the canvas
  * iframe's). Listens in the bubble phase, so keys that something else already handled (text fields,
- * the history keys) never run a command twice. Shortcuts without `Mod` (arrows, Delete) don't run
- * while a control that uses those keys has focus: a text field, editable text, a list or a menu.
- * Text shortcuts (Copy, Cut, Paste) don't run while text would take them.
+ * the history keys) never run a command twice. Shortcuts without `Mod` (arrows, Delete, `?`) don't
+ * run while a control that uses those keys has focus: a text field, editable text, a list or a
+ * menu. Text's own keys (Copy, Cut, Paste, Mod+K) don't run a command while text would take them.
  */
 export function installCommandShortcuts(target: Window, registry: CommandRegistry): () => void {
   const onKeyDown = (event: KeyboardEvent) => {
-    if (event.defaultPrevented || event.repeat) {
+    // While a dialog (the sheet, Link, Rename) or a menu is open, no command runs: the page behind
+    // it must not change, and Mod keys such as Mod+D would change it.
+    if (event.defaultPrevented || event.repeat || isInDialog(event.target, document)) {
       return;
     }
     const inControl = isFocusedControl(event.target);
     const command = registry
       .list()
-      .find(
-        (entry) =>
-          keysOf(entry).some(
-            (shortcut) =>
-              (!inControl || parseShortcut(shortcut).mod) && matchesShortcut(event, shortcut),
-          ) && !(entry.textShortcut === true && isForText(target, event)),
+      .find((entry) =>
+        keysOf(entry).some(
+          (shortcut) =>
+            (!inControl || parseShortcut(shortcut).mod) &&
+            matchesShortcut(event, shortcut) &&
+            !(entry.textKeys?.includes(shortcut) === true && isForText(target, event)),
+        ),
       );
     if (command !== undefined && registry.run(command.id)) {
       event.preventDefault();

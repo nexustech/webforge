@@ -528,6 +528,9 @@ importers:
       '@puckeditor/core':
         specifier: 0.23.0
         version: 0.23.0(patch_hash=db41856f204f0d1b13dc63ca06abaa3eb245f3d9aebc7dd69669ad302a83891e)(@floating-ui/dom@1.8.0)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(immer@11.1.21)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(use-sync-external-store@1.7.0(react@19.3.1))
+      '@tiptap/core':
+        specifier: 3.32.0
+        version: 3.32.0(@tiptap/pm@3.32.0)
       '@webforge/i18n':
         specifier: workspace:*
         version: link:../i18n
@@ -936,6 +939,9 @@ importers:
 
   tools:
     dependencies:
+      '@webforge/themes':
+        specifier: workspace:*
+        version: link:../packages/themes
       zod:
         specifier: 'catalog:'
         version: 4.6.7

@@ -1,9 +1,14 @@
-import type { HistoryCommand, HistoryCommandHandler } from "../canvas-engine.js";
+import type { HistoryCommandHandler } from "../canvas-engine.js";
 
 /** What {@link deferredCommands} returns to the engine. */
 export type DeferredCommands = {
   /** Runs `command`, or holds it back (and returns true) as described on {@link deferredCommands}. */
   readonly run: HistoryCommandHandler;
+  /**
+   * Runs `action` once the rich text being typed has all arrived, as Undo waits (Alt + Enter's
+   * split, which must not leave the last keystrokes out of the step before it).
+   */
+  whenSent(action: () => void): void;
   /** An edit was just recorded: commands held back run now, in order. */
   edited(): void;
   /** Drops commands still held back (the canvas goes away). */
@@ -28,7 +33,7 @@ export function deferredCommands(
   timeoutMs: number,
 ): DeferredCommands {
   let waiting: {
-    readonly commands: HistoryCommand[];
+    readonly actions: (() => void)[];
     readonly timer: ReturnType<typeof setTimeout>;
   } | null = null;
   const runWaiting = () => {
@@ -36,23 +41,31 @@ export function deferredCommands(
       return;
     }
     clearTimeout(waiting.timer);
-    const { commands } = waiting;
+    const { actions } = waiting;
     waiting = null;
-    for (const command of commands) runNow(command);
+    for (const action of actions) action();
+  };
+  /** Holds `action` back if keystrokes are on their way; true if it did. */
+  const holdBack = (action: () => void): boolean => {
+    if (waiting !== null) {
+      waiting.actions.push(action);
+      return true;
+    }
+    if (sendPending()) {
+      waiting = { actions: [action], timer: setTimeout(runWaiting, timeoutMs) };
+      return true;
+    }
+    return false;
   };
   return {
     run(command) {
-      if (command !== "cancel") {
-        if (waiting !== null) {
-          waiting.commands.push(command);
-          return true;
-        }
-        if (sendPending()) {
-          waiting = { commands: [command], timer: setTimeout(runWaiting, timeoutMs) };
-          return true;
-        }
+      if (command !== "cancel" && holdBack(() => runNow(command))) {
+        return true;
       }
       return runNow(command);
+    },
+    whenSent(action) {
+      if (!holdBack(action)) action();
     },
     edited() {
       if (waiting === null) return;

@@ -36,6 +36,8 @@ Details: [03-project-file-format.md](03-project-file-format.md)
 
 **Version 9.0 (Oct 2026), competitor review:** [06-bootstrap-studio-9.md](06-bootstrap-studio-9.md). This covers the new CMS, components, editor and AI changes, and records the MVP and v1.1 decisions (BS9-1…10). The notes above describe v8.0.1.
 
+**Editor screenshot pass (9.0.1, 23 Oct 2026):** [07-editor-screenshot-pass.md](07-editor-screenshot-pass.md), with 85 screenshots in [`screenshots/`](screenshots/). The running app, driven through computer use on this Mac: canvas and selection chrome, panels, menus and dialogs, checked against Webforge's merged parity items; its proposals SP-1…SP-13 for the open ones were adopted the same day (UI5).
+
 ## What was examined
 
 | Location | Finding |
