@@ -1,7 +1,13 @@
 // @vitest-environment happy-dom
 import type { NodeDoc, PageDoc } from "@webforge/model";
 import { afterEach, describe, expect, it } from "vitest";
-import { copyIndex, type DragKeys, insertedAt, trackDragKeys } from "./drag-copies.js";
+import {
+  copyIndex,
+  type DragKeys,
+  insertedAt,
+  takeDragKeys,
+  trackDragKeys,
+} from "./drag-copies.js";
 import { ROOT_ZONE } from "./tree.js";
 
 const node = (id: string, content?: NodeDoc[]): NodeDoc => ({
@@ -94,6 +100,17 @@ describe("trackDragKeys", () => {
     pointer("pointerdown");
     pointer("pointerup");
     expect(held.copy).toBe(false);
+  });
+
+  it("gives each drop the keys held for it once, so a later drag can't inherit them (#255 review)", () => {
+    const held = keys();
+    stop = trackDragKeys(window, held);
+    pointer("pointerdown", { ctrlKey: true, shiftKey: true });
+    pointer("pointerup", { ctrlKey: true, shiftKey: true });
+
+    expect(takeDragKeys(held)).toEqual({ copy: true, linked: true });
+    // A drag from the keyboard next: no pointer, so nothing held.
+    expect(takeDragKeys(held)).toEqual({ copy: false, linked: false });
   });
 
   it("stops following", () => {

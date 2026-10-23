@@ -60,7 +60,14 @@ import { installContextMenu } from "./context-menu.js";
 import { deferredCommands } from "./deferred-commands.js";
 import { hidePuckDeleteKeys } from "./delete-keys.js";
 import { puckDictionary } from "./dictionary.js";
-import { copyIndex, type DragKeys, type Drop, insertedAt, trackDragKeys } from "./drag-copies.js";
+import {
+  copyIndex,
+  type DragKeys,
+  type Drop,
+  insertedAt,
+  takeDragKeys,
+  trackDragKeys,
+} from "./drag-copies.js";
 import { createDragSources } from "./drag-sources.js";
 import { editFromAction, selectedNodeId, toPageDoc } from "./edit-from-action.js";
 import { keepElementsEnabled } from "./enabled-elements.js";
@@ -548,22 +555,32 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   const dragKeys: DragKeys = { copy: false, linked: false, pressed: false };
 
   /**
-   * A drag Puck made a move that Ctrl or Cmd asked to be a copy instead, if `action` is one: only
-   * a drop (Puck is still dragging), never a move from the keyboard, which holds Ctrl too.
+   * A drag Puck made a move that Ctrl or Cmd asked to be a copy instead, if `action` is one, and
+   * whether Shift asked for a linked copy: only a drop (Puck is still dragging), never a move from
+   * the keyboard, which holds Ctrl too. Every drop takes the keys held for it.
    */
-  const copyDrop = (action: PuckAction, prev: AppState): Drop | null => {
-    if (!dragKeys.copy || prev.ui.isDragging !== true) return null;
-    if (action.type === "move") return action;
-    if (action.type === "reorder") return { ...action, sourceZone: action.destinationZone };
-    return null;
+  const copyDrop = (
+    action: PuckAction,
+    prev: AppState,
+  ): { readonly drop: Drop; readonly linked: boolean } | null => {
+    if (prev.ui.isDragging !== true) return null;
+    if (action.type !== "move" && action.type !== "reorder" && action.type !== "insert") {
+      return null;
+    }
+    const held = takeDragKeys(dragKeys);
+    if (!held.copy || action.type === "insert") return null;
+    const drop =
+      action.type === "move" ? action : { ...action, sourceZone: action.destinationZone };
+    return { drop, linked: held.linked };
   };
 
   /**
    * A drag with Ctrl or Cmd held (1.30, UX-4): what was dragged stays, and a copy goes where it was
    * dropped, as one step ("Duplicated Heading"), its ids and anchors its own as a pasted one's are.
    * With Shift too, a linked copy of a shared section places another linked copy there (F-ED-23);
-   * without, the copy is of its section, the page's own. Puck has moved the element by now (`next`),
-   * so its view is put right: the original back, the copy shown.
+   * without, the copy is of its section, the page's own. An element inside a linked copy is copied
+   * within the shared section, as Duplicate does there; with Shift, nothing happens. Puck has moved
+   * the element by now (`next`), so its view is put right: the original back, the copy shown.
    */
   const copyOnDrop = (
     action: PuckAction,
@@ -582,6 +599,15 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       return;
     }
     const copy = linked ? copyShownBy(node, copiesOn(page.content), shared) : undefined;
+    // Shift asks for a linked copy, which only a whole copy makes. An element inside one is
+    // neither the page's own nor the Header's or Footer's: copying it there instead would change
+    // every copy of the section, so nothing happens (#255 review).
+    const ownOrShared =
+      findNode(page, node.props.id) !== undefined || isShared(layout, node.props.id);
+    if (linked && copy === undefined && !ownOrShared) {
+      putBack(shown);
+      return;
+    }
     if (copy !== undefined) {
       placeLinkedCopy(copy, drop, shown);
     } else {
@@ -648,10 +674,10 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       if (applying) {
         return;
       }
-      const drop = library === null ? null : copyDrop(action, prev);
-      if (drop !== null) {
+      const copying = library === null ? null : copyDrop(action, prev);
+      if (copying !== null) {
         // Made once Puck has finished its own update, where a dispatch would be lost.
-        const linked = dragKeys.linked;
+        const { drop, linked } = copying;
         queueMicrotask(() => copyOnDrop(action, drop, next, prev, linked));
         return;
       }

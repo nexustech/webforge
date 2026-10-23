@@ -1,5 +1,5 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
-import { type Box, boxOf, drag } from "./drag.js";
+import { type Box, below, boxOf, drag } from "./drag.js";
 import { launchDesktopApp } from "./launch.js";
 
 // Shared sections (1.29, F-ED-23): a section saved once and placed as linked copies; editing any
@@ -209,6 +209,20 @@ test("Ctrl/Cmd+Shift-drag of a copy places another linked copy; Ctrl/Cmd-drag a 
   await expect(banner()).toHaveText(
     "Editing shared section 'Welcome': changes apply to 2 copies on 1 page",
   );
+
+  // An element inside a copy can't be a linked copy: with Shift, its drag changes nothing.
+  await page.keyboard.down("ControlOrMeta");
+  await page.keyboard.down("Shift");
+  await drag(
+    page,
+    headings().first(),
+    await below(canvas().locator(".site-text").first(), -3),
+    0.97,
+  );
+  await page.keyboard.up("Shift");
+  await page.keyboard.up("ControlOrMeta");
+  await expect(headings()).toHaveCount(2);
+  await expect(steps().first()).toHaveText("Added a copy of 'Welcome'");
 
   // With Ctrl/Cmd alone: a section of the page's own, linked to nothing.
   const last = sections.last();

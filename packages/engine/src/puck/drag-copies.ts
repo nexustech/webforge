@@ -44,6 +44,17 @@ export function trackDragKeys(target: Window, keys: DragKeys): Unsubscribe {
   };
 }
 
+/**
+ * The keys held for the drop just made, and none from now on: each drop takes them once, so a
+ * later drag that doesn't start with the pointer (from the keyboard) can't inherit a Ctrl.
+ */
+export function takeDragKeys(keys: DragKeys): { readonly copy: boolean; readonly linked: boolean } {
+  const held = { copy: keys.copy, linked: keys.linked };
+  keys.copy = false;
+  keys.linked = false;
+  return held;
+}
+
 /** A Puck drag that moved an element: where from and where to, as Puck's `move` says. */
 export type Drop = {
   readonly sourceZone: string;
