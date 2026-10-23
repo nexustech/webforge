@@ -87,7 +87,7 @@ if (!primaryInstance) {
 }
 
 // Local crash reports first, so even a failing start-up leaves one (F-SITE-7).
-const crashReports = startCrashReports();
+const crashReports = startCrashReports(primaryInstance);
 
 // Sandbox every renderer, including any created later by dependencies.
 app.enableSandbox();

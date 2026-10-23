@@ -1,7 +1,15 @@
-import { mkdtempSync, readdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
+import {
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  utimesSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   buildCrashReport,
   type CrashContext,
@@ -173,8 +181,8 @@ describe("createCrashReports", () => {
     expect(JSON.parse(readFileSync(path, "utf8"))).toMatchObject({ kind: "crashed" });
   });
 
-  it("takes neither a half-written report nor a partial file for a crash, and clears partials", () => {
-    // An older version cut short by a crash, and a report this one was writing when it crashed.
+  it("takes neither a half-written report nor a partial file for a crash", () => {
+    // An older version cut short by a crash, and a report being written.
     const truncated = join(dir, "crash-20261020-153000-main.json");
     writeFileSync(truncated, '{ "time": "2026-10-20T15:30:00.000Z", "process": "ma');
     const partial = join(dir, "crash-20261020-153001-main.json.tmp");
@@ -183,8 +191,6 @@ describe("createCrashReports", () => {
     utimesSync(partial, clock, clock);
 
     expect(reports.hasUnseen()).toBe(false);
-    reports.prune();
-    expect(readdirSync(dir)).toEqual(["crash-20261020-153000-main.json"]);
     // Not a report either: something else that happens to have a report's name.
     writeFileSync(truncated, JSON.stringify({ note: "hello" }));
     utimesSync(truncated, clock, clock);
@@ -192,5 +198,64 @@ describe("createCrashReports", () => {
 
     utimesSync(reports.write(report()), clock, clock);
     expect(reports.hasUnseen()).toBe(true);
+  });
+
+  it("leaves a .tmp being written; one left over a minute is named if whole, else removed", () => {
+    const fresh = join(dir, "crash-20261020-153000-main.json.tmp");
+    const leftWhole = join(dir, "crash-20261020-152000-renderer.json.tmp");
+    const leftBroken = join(dir, "crash-20261020-152000-main.json.tmp");
+    writeFileSync(fresh, JSON.stringify(report()));
+    writeFileSync(leftWhole, JSON.stringify(report("renderer")));
+    writeFileSync(leftBroken, '{ "time": "2026-10-');
+    // Another Webforge writing right now, and two from a crash ten minutes ago.
+    const earlier = new Date(clock.getTime() - 10 * 60_000);
+    utimesSync(fresh, clock, clock);
+    utimesSync(leftWhole, earlier, earlier);
+    utimesSync(leftBroken, earlier, earlier);
+
+    reports.prune();
+
+    expect(readdirSync(dir).sort()).toEqual([
+      "crash-20261020-152000-renderer.json",
+      "crash-20261020-153000-main.json.tmp",
+    ]);
+    // A new report doesn't take the name the one being written will get.
+    expect(reports.write(report())).toBe(join(dir, "crash-20261020-153000-2-main.json"));
+  });
+
+  it("tries a rename Windows holds once more, and keeps the report whole if it still can't", () => {
+    const locked = () => Object.assign(new Error("locked"), { code: "EBUSY" });
+    const pause = vi.fn();
+    let failures = 1;
+    const flaky = createCrashReports({
+      dir,
+      now: () => clock,
+      pause,
+      rename: (from, to) => {
+        if (failures-- > 0) throw locked();
+        renameSync(from, to);
+      },
+    });
+
+    expect(flaky.write(report())).toBe(join(dir, "crash-20261020-153000-main.json"));
+    expect(pause).toHaveBeenCalledExactlyOnceWith(100);
+
+    failures = 2;
+    const kept = flaky.write(report());
+    expect(kept).toBe(join(dir, "crash-20261020-153000-2-main.json.tmp"));
+    expect(JSON.parse(readFileSync(kept, "utf8"))).toMatchObject({ process: "main" });
+
+    // Anything else isn't a passing lock: no second try.
+    pause.mockClear();
+    const broken = createCrashReports({
+      dir,
+      now: () => clock,
+      pause,
+      rename: () => {
+        throw Object.assign(new Error("gone"), { code: "ENOENT" });
+      },
+    });
+    broken.write(report());
+    expect(pause).not.toHaveBeenCalled();
   });
 });

@@ -13,12 +13,13 @@ import { registerIpcHandler } from "./ipc.js";
 /**
  * Starts local crash reporting (F-SITE-7, architecture §9) as early as possible: crashReporter for
  * native crashes, handlers for uncaught errors and processes that went away, all writing to
- * `userData/crash-reports`. Nothing is ever uploaded.
+ * `userData/crash-reports`. Nothing is ever uploaded. Only the `primary` instance tidies the
+ * folder at start-up: a second launch, about to hand over and quit, leaves it to the first.
  */
-export function startCrashReports() {
+export function startCrashReports(primary: boolean) {
   const reports = createCrashReports({ dir: join(app.getPath("userData"), "crash-reports") });
-  // Old reports go, and any a crash left half-written.
-  reports.prune();
+  // Old reports go, and any a crash left as `.tmp` are named or removed.
+  if (primary) reports.prune();
   installCrashHandlers(
     { process, app, crashReporter },
     reports,

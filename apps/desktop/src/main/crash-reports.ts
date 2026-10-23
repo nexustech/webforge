@@ -132,6 +132,21 @@ export function buildCrashReport(
 const REPORT_NAME = /^crash-\d{8}-\d{6}(?:-\d+)?-[a-z]+\.json$/;
 /** A report being written: it gets its name once it is whole, so no one reads half of it. */
 const PARTIAL_SUFFIX = ".tmp";
+/** How long a `.tmp` report may be in the writing before it counts as left behind. */
+const STALE_PARTIAL_MS = 60_000;
+/** The pause before trying a locked rename again. */
+const RENAME_RETRY_MS = 100;
+
+/** Whether `error` is Windows holding a file for a moment (antivirus, the search indexer). */
+const isLocked = (error: unknown) =>
+  error instanceof Error &&
+  "code" in error &&
+  (error.code === "EPERM" || error.code === "EBUSY" || error.code === "EACCES");
+
+/** Waits `ms` without returning to the event loop: a crash report is written as the app exits. */
+function pauseSync(ms: number): void {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
 const KEEP = 20;
 const MAX_AGE_DAYS = 30;
 const SEEN_FILE = "last-seen.json";
@@ -171,6 +186,10 @@ export function createCrashReports(options: {
   readonly now?: () => Date;
   readonly keep?: number;
   readonly maxAgeDays?: number;
+  /** Renames a file; `renameSync` but in tests. */
+  readonly rename?: (from: string, to: string) => void;
+  /** Waits before a retry; a real pause but in tests. */
+  readonly pause?: (ms: number) => void;
 }) {
   const now = options.now ?? (() => new Date());
   const keep = options.keep ?? KEEP;
@@ -188,7 +207,34 @@ export function createCrashReports(options: {
           .sort((a, b) => b.mtime - a.mtime)
       : [];
 
-  /** Removes old reports, and any a crash left half-written (`.tmp`). */
+  const rename = options.rename ?? renameSync;
+  const pause = options.pause ?? pauseSync;
+
+  /**
+   * Gives a whole report at `partial` its name `path`. Antivirus or a search indexer can hold a
+   * new file on Windows for a moment: one more try after a pause. False if it still can't.
+   */
+  const finish = (partial: string, path: string): boolean => {
+    try {
+      rename(partial, path);
+      return true;
+    } catch (error) {
+      if (!isLocked(error)) return false;
+    }
+    pause(RENAME_RETRY_MS);
+    try {
+      rename(partial, path);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  /**
+   * Removes old reports. A report left as `.tmp` for over a minute (a crash, or a rename that
+   * failed) gets its name if it is whole, and goes if not; a newer one may still be being written,
+   * by this Webforge or another starting up, so it stays.
+   */
   const prune = () => {
     const cutoff = now().getTime() - maxAgeMs;
     for (const [index, report] of reports().entries()) {
@@ -196,11 +242,16 @@ export function createCrashReports(options: {
         rmSync(report.path, { force: true });
       }
     }
-    if (existsSync(options.dir)) {
-      for (const name of readdirSync(options.dir)) {
-        if (name.endsWith(`.json${PARTIAL_SUFFIX}`)) {
-          rmSync(join(options.dir, name), { force: true });
-        }
+    if (!existsSync(options.dir)) {
+      return;
+    }
+    for (const name of readdirSync(options.dir)) {
+      if (!name.endsWith(`.json${PARTIAL_SUFFIX}`)) continue;
+      const partial = join(options.dir, name);
+      if (statSync(partial).mtimeMs > now().getTime() - STALE_PARTIAL_MS) continue;
+      const path = partial.slice(0, -PARTIAL_SUFFIX.length);
+      if (existsSync(path) || !isReport(partial) || !finish(partial, path)) {
+        rmSync(partial, { force: true });
       }
     }
   };
@@ -211,17 +262,21 @@ export function createCrashReports(options: {
     write(report: CrashReport): string {
       mkdirSync(options.dir, { recursive: true });
       const base = `crash-${fileStamp(report.time)}`;
+      const taken = (name: string) =>
+        existsSync(join(options.dir, name)) ||
+        existsSync(join(options.dir, `${name}${PARTIAL_SUFFIX}`));
       let name = `${base}-${report.process}.json`;
-      for (let n = 2; existsSync(join(options.dir, name)); n += 1) {
+      for (let n = 2; taken(name); n += 1) {
         name = `${base}-${n}-${report.process}.json`;
       }
       // The name is new, so the rename never replaces a report (which fails on Windows anyway).
       const path = join(options.dir, name);
       const partial = `${path}${PARTIAL_SUFFIX}`;
       writeFileSync(partial, `${JSON.stringify(report, null, 2)}\n`);
-      renameSync(partial, path);
+      // If it can't get its name, it stays whole as `.tmp`: a later start names it.
+      const written = finish(partial, path) ? path : partial;
       prune();
-      return path;
+      return written;
     },
     /** Whether reports were written since the user was last told (next-launch notice). */
     hasUnseen(): boolean {
