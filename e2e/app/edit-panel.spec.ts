@@ -62,6 +62,30 @@ test.describe("Edit panel", () => {
     await expect(canvas().locator("h3.site-heading")).toHaveText("Welcome to our business");
   });
 
+  test("copies a heading's style onto another heading, as one step (1.37, UX-14)", async () => {
+    await selectHeading();
+    await page.keyboard.press("ControlOrMeta+d");
+    await expect(canvas().locator(".site-heading")).toHaveCount(2);
+    // The copy is selected: make it small, and copy its style.
+    await panel().getByRole("tab", { name: "Style" }).click();
+    await panel().getByLabel("Size", { exact: true }).selectOption("small");
+    await expect(canvas().locator("h3.site-heading")).toHaveCount(1);
+    await page.keyboard.press("ControlOrMeta+Alt+c");
+
+    // The first heading, still large, gets it from the Edit menu.
+    const first = canvas().locator("h1.site-heading");
+    const box = await first.boundingBox();
+    if (box === null) throw new Error("Heading not visible");
+    await first.click({ position: { x: box.width * 0.97, y: box.height - 2 } });
+    await page.getByRole("menuitem", { name: "Edit" }).click();
+    await page.getByRole("menuitem", { name: "Paste Style" }).click();
+
+    await expect(canvas().locator("h3.site-heading")).toHaveCount(2);
+    await expect(steps().first()).toHaveText("Pasted style on Heading");
+    await page.keyboard.press("ControlOrMeta+z");
+    await expect(canvas().locator("h3.site-heading")).toHaveCount(1);
+  });
+
   test("makes one step of typing in a text field", async () => {
     await selectHeading();
     const field = panel().getByLabel("Text", { exact: true });
