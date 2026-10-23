@@ -115,25 +115,23 @@ export function duplicateSelected(session: LayersSession): BulkResult {
   const content = site.pages[current.pageId]?.doc.content ?? [];
   const layout = shownLayout(site, current.pageId);
   // Made before the step, so it can select them; each copy's anchors are free of the ones before.
-  const copies: NodeDoc[] = [];
-  const shownIds: string[] = [];
+  // Each copy with its original's own id, and the id the canvas shows it by.
+  const copies: { readonly after: string; readonly copy: NodeDoc; readonly shown: string }[] = [];
   for (const { own } of layers) {
     const node = findNode(content, (each) => each.props.id === own);
-    const soFar = [...content, ...copies];
+    const soFar = [...content, ...copies.map((each) => each.copy)];
     if (node !== undefined && isSharedCopy(node)) {
       const id = node.props.sharedSectionId;
       const linked = newSharedCopy(soFar, id, site.sharedSections, layout);
       const root = site.sharedSections[id]?.section.props.id;
-      copies.push(linked);
-      shownIds.push(root === undefined ? linked.props.id : copiedNodeId(linked.props.id, root));
+      const shown = root === undefined ? linked.props.id : copiedNodeId(linked.props.id, root);
+      copies.push({ after: own, copy: linked, shown });
     } else if (node !== undefined) {
       const [copy] = pastedCopies([node], pageAnchors(soFar, site.sharedSections, layout));
-      if (copy !== undefined) {
-        copies.push(copy);
-        shownIds.push(copy.props.id);
-      }
+      if (copy !== undefined) copies.push({ after: own, copy, shown: copy.props.id });
     }
   }
+  const shownIds = copies.map((each) => each.shown);
   const copiesSelected = { ...current, nodeId: shownIds[0] ?? null, others: shownIds.slice(1) };
   session.edit(
     "duplicate",
@@ -145,11 +143,10 @@ export function duplicateSelected(session: LayersSession): BulkResult {
     (draft) => {
       const page = draft.pages[current.pageId]?.doc.content;
       if (page === undefined) return;
-      layers.forEach(({ own }, index) => {
-        const place = placeOf(page, own, session.library);
-        const copy = copies[index];
-        if (place !== undefined && copy !== undefined) place.list.splice(place.index + 1, 0, copy);
-      });
+      for (const { after, copy } of copies) {
+        const place = placeOf(page, after, session.library);
+        place?.list.splice(place.index + 1, 0, copy);
+      }
     },
     { selectionAfter: copiesSelected },
   );
