@@ -257,6 +257,22 @@ describe("View menu and devices (F-ED-25)", () => {
     );
   });
 
+  it("adds no more devices than the preferences keep", async () => {
+    const devices = Array.from({ length: 20 }, (_, i) => ({
+      id: `d${i}`,
+      name: `Device ${i}`,
+      width: 400 + i,
+      height: 800,
+    }));
+    setUp("desktop", null, { ...DEFAULT_PREFERENCES.canvas, devices });
+
+    await user().click(screen.getByRole("button", { name: "Devices" }));
+
+    expect(
+      screen.getByRole("menuitem", { name: "Add device…" }).getAttribute("aria-disabled"),
+    ).toBe("true");
+  });
+
   it("adds a device of the person's own, and shows the page at its width", async () => {
     const { onCanvasChange, onViewportChange } = setUp();
 

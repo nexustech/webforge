@@ -29,7 +29,7 @@ const windowStateSchema = z.strictObject({
 export const DEVICE_SIZE = { min: 320, max: 2560 } as const;
 
 /** At most this many custom devices are kept. */
-const MAX_DEVICES = 20;
+export const MAX_DEVICES = 20;
 
 /** A device the person added for the canvas (*Add device…*, F-ED-25): its name and size. */
 const deviceSchema = z.strictObject({

@@ -22,7 +22,7 @@ import {
   TabletIcon,
 } from "lucide-react";
 import { useId, useState } from "react";
-import { type CanvasPreferences, DEVICE_SIZE } from "../../shared/ipc/prefs.js";
+import { type CanvasPreferences, DEVICE_SIZE, MAX_DEVICES } from "../../shared/ipc/prefs.js";
 import {
   DEVICE_WIDTHS,
   type DeviceView,
@@ -33,9 +33,6 @@ import {
 import { type CanvasZoom, ZOOM_LEVELS } from "./canvas-view.js";
 import { DeviceDialog, type NewDevice } from "./DeviceDialog.js";
 import { useMenuDialog } from "./use-menu-dialog.js";
-
-/** The narrowest and widest custom canvas width. */
-const CUSTOM_WIDTH = DEVICE_SIZE;
 
 const DEVICES = [
   { id: "desktop", icon: MonitorIcon },
@@ -308,7 +305,11 @@ function DeviceMenu({
             </DropdownMenuItem>
           ))}
           <DropdownMenuSeparator />
-          <DropdownMenuItem onSelect={() => dialog.choose("add")}>
+          {/* The preferences keep so many devices; past that, one has to go first. */}
+          <DropdownMenuItem
+            disabled={canvas.devices.length >= MAX_DEVICES}
+            onSelect={() => dialog.choose("add")}
+          >
             {t("canvasToolbar.addDevice")}
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -334,7 +335,7 @@ function CustomWidth({
       setValue(String(width));
       return;
     }
-    const next = Math.min(CUSTOM_WIDTH.max, Math.max(CUSTOM_WIDTH.min, typed));
+    const next = Math.min(DEVICE_SIZE.max, Math.max(DEVICE_SIZE.min, typed));
     setValue(String(next));
     if (next !== width) {
       onChange(viewportFor(next));
@@ -349,8 +350,8 @@ function CustomWidth({
         id={id}
         type="number"
         inputMode="numeric"
-        min={CUSTOM_WIDTH.min}
-        max={CUSTOM_WIDTH.max}
+        min={DEVICE_SIZE.min}
+        max={DEVICE_SIZE.max}
         className={cn(fieldControlClass, "w-20 text-right")}
         value={value}
         onChange={(event) => setValue(event.currentTarget.value)}

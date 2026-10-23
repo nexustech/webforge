@@ -81,10 +81,8 @@ export function deviceAt(
   width: number,
   custom: readonly CustomDevice[],
 ): { readonly view: DeviceView } | { readonly name: string } | undefined {
-  const view = (Object.keys(DEVICE_WIDTHS) as DeviceView[]).find(
-    (id) => DEVICE_WIDTHS[id] === width,
-  );
-  if (view !== undefined) return { view };
+  const view = viewportFor(width);
+  if (typeof view === "string") return { view };
   const own = custom.find((device) => device.width === width);
   return own === undefined ? undefined : { name: own.name };
 }
