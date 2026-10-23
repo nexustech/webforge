@@ -63,6 +63,8 @@ export const canvas = {
   // A value set for one device only (F-ED-4).
   "editPanel.override": "{device} only",
   "editPanel.useDesktop": "Use Desktop value",
+  "editPanel.box.default": "Default",
+  "editPanel.box.same": "Same on every side",
   // The Advanced tab (Advanced mode, F-ED-11): technical words are fine here, clearly labelled.
   "editPanel.advanced": "Advanced",
   "editPanel.advanced.className": "CSS classes",
