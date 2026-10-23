@@ -917,7 +917,9 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
         pickLink,
         split: (halves) => {
           const at = editingRichText();
-          if (at !== null) textSplits.emit({ ...at, ...halves });
+          // After the last keystrokes Puck still holds back, so the step before the split has them
+          // and undoing the split gives back all that was typed.
+          if (at !== null) commands.whenSent(() => textSplits.emit({ ...at, ...halves }));
         },
       }),
     ],
