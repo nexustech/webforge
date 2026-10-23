@@ -54,6 +54,8 @@ Current code size (approx. lines): desktop 2.7k · engine 1.6k · history 1.6k �
 
 **Scope change, 22 Oct 2026 (editor UI/UX parity, UI2–UI3):** +37 days for Bootstrap Studio-style canvas, selection and panel tools, the keyboard shortcut standard (items 1.30–1.38, 30 days), the Columns toolbar (2.17, 4 days), Theme Studio (2.3, +2 days) and template filters (2.14, +1 day) ([product/06](../research/product/06-editor-ui-ux-parity.md)). Phase 1 now ends about 17 Dec 2026 at estimates (5 Jan 2027 with contingency); the actual pace so far suggests earlier.
 
+**Re-plan, 23 Oct 2026 (Phase 2):** Phase 2 was planned ahead of the Phase 1 exit so each stream can continue straight into it: three streams, items over 5 days split into sub-issues, Phase 1's actual pace (0.39 of estimates) applied as 0.5 for engineering and 0.7 for content. Code-complete about **1 Dec 2026** (9 Dec with +25%); milestone due 11 Dec 2026. See [Phase 2](#phase-2-design--components). The table below and the Gantt chart still show the baseline dates for Phases 2–5.
+
 | Phase | Effort (days) | Starts | Ends (100%) | Ends (+25%) | Exit criteria |
 |---|---|---|---|---|---|
 | [Phase 0: Prototype (finish)](#phase-0-prototype-finish) | 11 | 26 Oct 2026 | 18 Nov 2026 | 24 Nov 2026 | Netlify and SFTP/FTPS publish spikes meet the spike criteria in research/stack/08<br>Signed NSIS and DMG builds install, and auto-update from a test feed on both OSes<br>A large page (200+ elements) stays within the editing performance budget<br>ADRs written; architecture §6 interfaces updated |
@@ -606,11 +608,11 @@ One shortcut registry implementing the F-ED-27 map on Windows and macOS (Mod + P
 | 2.8 | Sections C: Opening hours & contact, Contact form, Map, Video, Newsletter | [#50](https://github.com/nexustech/webforge/issues/50) | components | S1, F-CM-1, F-CM-4, F-CM-6, GA3 | 5 | 2.5, 1.17 |
 | 2.9 | Elements: basic set and icon picker | [#51](https://github.com/nexustech/webforge/issues/51) | components | S1, F-ED-21, F-ED-22, F-CM-5, F-CM-9, BS9-2 | 6 | 2.5, 1.17, 1.37 |
 | 2.10 | Carousel element | [#52](https://github.com/nexustech/webforge/issues/52) | components | G9, GA1 | 6 | 2.5 |
-| 2.11 | Elements: tabs, commerce, forms, embeds and custom code | [#53](https://github.com/nexustech/webforge/issues/53) | components | F-CM-2, F-CM-7, F-ED-15, F-ED-16 | 5 | 2.5 |
+| 2.11 | Elements: tabs, commerce, forms, embeds and custom code | [#53](https://github.com/nexustech/webforge/issues/53) | components | F-CM-2, F-CM-7, F-ED-15, F-ED-16 | 5 | 2.5, 2.8 |
 | 2.12 | Animations and hover effects | [#54](https://github.com/nexustech/webforge/issues/54) | components | F-DS-5, G8 | 2 | 2.5 |
 | 2.13 | Design 10–12 curated themes | [#55](https://github.com/nexustech/webforge/issues/55) | themes | S3, F-DS-1 | 14 | 2.3, 2.6, 2.7, 2.8, 2.9 |
-| 2.14 | Template format and New Site flow | [#56](https://github.com/nexustech/webforge/issues/56) | content | F-SITE-1, S2, S5, UX-29 | 4 | 1.8, 2.13 |
-| 2.15 | Templates: 8 starter sites | [#57](https://github.com/nexustech/webforge/issues/57) | content | F-SITE-1, S2, S5 | 20 | 2.14, 2.10, 2.11, 2.12 |
+| 2.14 | Template format and New Site flow | [#56](https://github.com/nexustech/webforge/issues/56) | content | F-SITE-1, S2, S5, UX-29 | 4 | 1.8, 2.1 |
+| 2.15 | Templates: 8 starter sites | [#57](https://github.com/nexustech/webforge/issues/57) | content | F-SITE-1, S2, S5 | 20 | 2.14, 2.10, 2.11, 2.12, the theme each template uses (2.13) |
 | 2.16 | Component accessibility and visual regression sweep | [#58](https://github.com/nexustech/webforge/issues/58) | components | standards §5, MVP §4 | 3 | 2.6, 2.7, 2.8, 2.9, 2.10, 2.11, 2.12, 2.13 |
 | 2.17 | Columns toolbar, image resize handles and edit-only previews | [#187](https://github.com/nexustech/webforge/issues/187) | components | F-ED-25, UI2, UX-6, UX-26 | 4 | 2.9, 2.6, 1.32 |
 
@@ -618,19 +620,26 @@ One shortcut registry implementing the F-ED-27 map on Windows and macOS (Mod + P
 
 | Stream | Items, in order (after its Phase 1 items) |
 |---|---|
-| A: Shell & panels | 2.3 → 2.9 → 2.11 → 2.12 → 2.13 (themes 1–4) → 2.15 (Café/Restaurant, Salon/Beauty, Trades) |
+| A: Shell & panels | 2.9 → 2.3 → 2.11 → 2.12 → 2.13 (themes 1–4) → 2.15 (Café/Restaurant, Salon/Beauty, Trades) |
 | B: Data & site | 2.1 → 2.2 → 2.4 → 2.8 → 2.7 → 2.14 → 2.13 (themes 5–8) → 2.15 (Consultant, Photographer/Portfolio, Shop) |
-| C: History & canvas | 2.5 (before 1.30) → 2.6 → 2.10 → 2.17 → 2.16 → 2.13 (themes 9–12) → 2.15 (Personal/CV, Blank) |
+| C: History & canvas | 2.5 (before 1.30) → 2.6 → 2.10 → 2.17 → 2.13 (themes 9–12) → 2.16 → 2.15 (Personal/CV, Blank) |
 
-Shared files are split in 2.5 so that streams add files instead of editing the same ones: the site-components catalogue becomes one module per component family assembled by an index, the behaviour registry is per file, and a section slot's allowed elements come from each element's `place` rather than a hand-written list.
+Review of 23 Oct 2026 (product owner decisions): stream A starts with 2.9, whose dependencies are met, instead of waiting for stream B's 2.1 and 2.2; stream C does 2.16 after its theme batch, because 2.16 depends on all themes; 2.14 depends on the theme model (2.1), not on the curated themes; each template waits only for the theme it uses (its own stream's batch unless it picks another); and themes 5–12 are drafted in parallel with themes 1–4, the product owner's review of the first four feeding corrections into all three batches rather than gating them.
 
-**Decisions (23 Oct 2026):**
-- Theme Studio is a large in-app dialog, not a separate window.
-- The theme model keeps daisyUI's colour roles; the UI names them Brand (primary), Accent (secondary, accent), Surface (base) and Text (base-content).
-- The type scale is H1–H6, body and small, plus link styles; the theme model also has a shadow scale.
-- Social icons use Simple Icons (CC0-1.0); every other icon uses Lucide (`lucide-static`, ISC).
-- One `embed` behaviour (click-to-load, privacy mode) is built in 2.8 and reused by 2.11.
-- The Booking button is a Button preset (a plain link), so the element count stays 17. There is no product card in the MVP.
+Shared files are split in 2.5 so that streams add files instead of editing the same ones: the site-components catalogue becomes one module per component family assembled by an index, the behaviour registry is per file, and a section slot's allowed elements come from each element's `place` rather than a hand-written list. Two Phase 2 items reach into another stream's files and go through a small PR agreed with that stream, as 1.29 did: 2.9's back-to-top option adds Site Settings and Page Settings fields with a migration (stream B's model), and 2.11's video-URL paste changes the clipboard code (stream B). 2.8 and 2.11 share one form-field module (field renderers and honeypot) and one `embed` behaviour; 2.8 builds them, 2.11 adds call sites.
+
+**Decisions (23 Oct 2026).** The implementation-plan comments on the Phase 2 issues cite these as P1–P11; those numbers are not the project-file decisions P1–P5 of [stack/06](../research/stack/06-project-file-format.md) and the MVP spec, so this document numbers them PH2-n.
+- PH2-1: not written up on the issues; to be recorded by the product owner.
+- PH2-2: template photos are CC0 or public domain only, with Claude drafting the copy for the product owner's review (Q6).
+- PH2-3: the Newsletter section posts to a generic form action; no provider presets in the MVP (Q4).
+- PH2-4: social icons use Simple Icons (CC0-1.0); every other icon uses Lucide (`lucide-static`, ISC). CC0 needs a reviewed entry in `tools/src/check-licences.ts`; the logos themselves are trademarks, so the Social links help text points to each brand's guidelines.
+- PH2-5: Theme Studio is a large in-app dialog, not a separate window.
+- PH2-6: the theme model keeps daisyUI's colour roles; the UI names them Brand (primary), Accent (secondary, accent), Surface (base) and Text (base-content).
+- PH2-7: the type scale is H1–H6, body and small, plus link styles; the theme model also has a shadow scale.
+- PH2-8: fonts downloaded on demand are fetched from Fontsource's pinned API into `userData/fonts/` and checked against a hash.
+- PH2-9: one `embed` behaviour (click-to-load, privacy mode) is built in 2.8 and reused by 2.11.
+- PH2-10: the Booking button is a Button preset (a plain link), so the element count stays 17. There is no product card in the MVP.
+- PH2-11: not written up on the issues; to be recorded by the product owner.
 
 <details><summary>Scope and acceptance criteria</summary>
 
@@ -687,7 +696,7 @@ Opening hours & contact details (bound to Site Settings), Contact form section, 
 - [ ] No external requests until the visitor clicks an embed
 
 **2.9 Elements: basic set and icon picker**  
-Heading, Text, Image (focal point), Button, Columns, Spacer, Divider, List, Icon with the searchable Lucide icon picker (also the icon field control), Social links bound to Site Settings → Social, with Simple Icons (CC0-1.0) for the brand icons. Back-to-top button (F-CM-9, added 22 Oct 2026): a Site Settings option with a per-page switch; appears after scrolling, keyboard accessible, respects reduced motion.
+Heading, Text, Image (focal point), Button, Columns, Spacer, Divider, List, Icon with the searchable Lucide icon picker (also the icon field control, used by Icon, Button and List per F-ED-22), Social links bound to Site Settings → Social, with Simple Icons (CC0-1.0) for the brand icons. Back-to-top button (F-CM-9, added 22 Oct 2026): a Site Settings option with a per-page switch; appears after scrolling, keyboard accessible, respects reduced motion.
 
 - [ ] Icons inlined as SVG at export
 - [ ] Columns stack responsively
@@ -709,7 +718,7 @@ Tabs (ARIA), Buy button (payment link), Booking button (a Button preset with a g
 - [ ] Pasting a video URL creates an embed
 
 **2.12 Animations and hover effects**  
-Entrance animation presets (fade, slide, zoom; delay) and hover effects (lift, grow, shadow) via CSS + a tiny observer in webforge.js; disabled for prefers-reduced-motion; works from disk.
+Entrance animation presets (fade, slide, zoom; delay) and hover effects (lift, grow, shadow) via CSS + a tiny observer in webforge.js; disabled for prefers-reduced-motion; works from disk. Wires Layers' *animated* indicator (1.35) to the new field.
 
 - [ ] No animation when reduced motion is set
 - [ ] Content is visible without JavaScript (F-DS-5)
@@ -722,7 +731,7 @@ Entrance animation presets (fade, slide, zoom; delay) and hover effects (lift, g
 - [ ] Themes reviewed side by side in Storybook and look distinct
 
 **2.14 Template format and New Site flow**  
-Template package format (pages, theme, sample content, images with an image-licence manifest), start-screen template gallery with thumbnails, New Site asks name + theme, creating a site copies the template into a new .wforge. The gallery can be filtered and sorted (UX-29, added 22 Oct 2026, +1 day).
+Template package format (pages, theme, sample content, images with an image-licence manifest), start-screen template gallery with thumbnails, New Site asks name + theme, creating a site copies the template into a new .wforge. The gallery can be filtered and sorted (UX-29, added 22 Oct 2026, +1 day). The theme choice offers the presets that exist (2.1's development presets first); the curated themes join it as their PRs land.
 
 - [ ] Template thumbnails generated in CI
 - [ ] Image manifest validated (source + licence per image)
@@ -736,7 +745,7 @@ Café/Restaurant, Salon/Beauty, Trades, Consultant, Photographer/Portfolio, Shop
 - [ ] Export checks run on every template in Phase 3
 
 **2.16 Component accessibility and visual regression sweep**  
-Screenshot baselines for every component × 3 themes × Desktop/Mobile (PR) and all themes (nightly); axe with zero serious/critical violations; keyboard checks via Storybook play functions.
+Screenshot baselines for every component × 3 themes × Desktop/Mobile (PR; the 3 development presets from 2.1) and all themes (nightly); axe with zero serious/critical violations; keyboard checks via Storybook play functions; the 8 templates' pages are screenshotted once 2.15 lands (MVP §6).
 
 - [ ] Visual + a11y suites green in CI
 - [ ] Nightly full-theme run configured
