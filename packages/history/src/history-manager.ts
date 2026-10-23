@@ -118,13 +118,16 @@ export interface HistoryManager<D, S> {
   endSession(coalesceKey: string): void;
   /** Forgets all entries; the document is unchanged. */
   clear(): void;
+  /**
+   * Whether a change to the history is in progress: a subscriber reacting to it can't change the
+   * history too (that throws {@link HistoryError} "reentrant"), and waits until it is done.
+   */
+  isChanging(): boolean;
 }
 
-/** Options of {@link createHistoryManager}. */
-export type HistoryManagerOptions<D, S> = {
+/** Options of {@link createHistoryManager} other than the selection adapter. */
+type BaseOptions<D> = {
   readonly initial: D;
-  /** Required when `S` is not `null`. */
-  readonly selection?: SelectionAdapter<S>;
   /** Maximum number of entries kept; the oldest are dropped first (U7). Default 200. */
   readonly limit?: number;
   /**
@@ -140,8 +143,17 @@ export type HistoryManagerOptions<D, S> = {
   readonly now?: () => number;
 };
 
+/**
+ * Options of {@link createHistoryManager}. `selection` is required when `S` isn't `null`: a
+ * history that records selections needs to read and restore them.
+ */
+export type HistoryManagerOptions<D, S> = BaseOptions<D> &
+  ([S] extends [null]
+    ? { readonly selection?: SelectionAdapter<S> }
+    : { readonly selection: SelectionAdapter<S> });
+
 /** Error codes of {@link HistoryError}. */
-export type HistoryErrorCode = "transaction-open" | "transaction-closed";
+export type HistoryErrorCode = "transaction-open" | "transaction-closed" | "reentrant";
 
 /** A programming error in the use of the history (not shown to users). */
 export class HistoryError extends Error {
@@ -160,8 +172,14 @@ const NO_SELECTION: SelectionAdapter<null> = { get: () => null, restore: () => u
  * Creates the history manager and the document store it owns. Document edits are Immer recipes;
  * each entry keeps the forward and inverse patches (approach B in research/stack/03-undo-redo.md).
  */
-export function createHistoryManager<D extends Objectish, S = null>(
+export function createHistoryManager<D extends Objectish>(
+  options: HistoryManagerOptions<D, null>,
+): HistoryManager<D, null>;
+export function createHistoryManager<D extends Objectish, S>(
   options: HistoryManagerOptions<D, S>,
+): HistoryManager<D, S>;
+export function createHistoryManager<D extends Objectish, S>(
+  options: BaseOptions<D> & { readonly selection?: SelectionAdapter<S> },
 ): HistoryManager<D, S> {
   // Without an adapter S is null (see the type of `selection`).
   const selection = options.selection ?? (NO_SELECTION as unknown as SelectionAdapter<S>);
@@ -227,6 +245,44 @@ export function createHistoryManager<D extends Objectish, S = null>(
     documentStore.setState(next, true);
   };
 
+  /**
+   * Sets the document, then `record`s the step that changed it. A subscriber that throws (one that
+   * tried to change the history from inside this change, say) is told so only once the step is
+   * recorded, so the document and the history never disagree.
+   */
+  const setDocumentThen = (next: D, record: () => void) => {
+    let failure: { readonly error: unknown } | undefined;
+    try {
+      setDocument(next);
+    } catch (error) {
+      failure = { error };
+    }
+    record();
+    if (failure !== undefined) throw failure.error;
+  };
+
+  /** Whether a change to the history is in progress; see {@link exclusively}. */
+  let busy = false;
+  /**
+   * Runs `work`, a change to the history, with nothing else changing it meanwhile: a recipe or a
+   * subscriber that runs, undoes or jumps from inside it would record a step on top of a document
+   * the change then overwrites (#238), so it throws {@link HistoryError} "reentrant" instead.
+   */
+  const exclusively = <T>(work: () => T): T => {
+    if (busy) {
+      throw new HistoryError(
+        "reentrant",
+        "Cannot change the history from inside a change to it (a recipe or a subscriber)",
+      );
+    }
+    busy = true;
+    try {
+      return work();
+    } finally {
+      busy = false;
+    }
+  };
+
   const push = (entry: Omit<HistoryEntry<S>, "id">) => {
     entries = [...entries.slice(0, cursor), { id: `h${nextId++}`, ...entry }];
     if (entries.length > limit) {
@@ -244,17 +300,30 @@ export function createHistoryManager<D extends Objectish, S = null>(
     }
   };
 
-  const run: HistoryManager<D, S>["run"] = (label, recipe, runOptions = {}) => {
-    assertNoTransaction();
-    const selectionBefore = selection.get();
-    const [next, forward, inverse] = produceWithPatches(documentStore.getState(), (draft) => {
-      // Ignore a value returned by mistake (e.g. `draft => draft.list.push(x)`): recipes only mutate.
-      recipe(draft);
+  const run: HistoryManager<D, S>["run"] = (label, recipe, runOptions = {}) =>
+    exclusively(() => {
+      assertNoTransaction();
+      const selectionBefore = selection.get();
+      const [next, forward, inverse] = produceWithPatches(documentStore.getState(), (draft) => {
+        // Ignore a value returned by mistake (e.g. `draft => draft.list.push(x)`): recipes only mutate.
+        recipe(draft);
+      });
+      if (forward.length === 0) {
+        return;
+      }
+      setDocumentThen(next as D, () =>
+        record(label, forward, inverse, selectionBefore, runOptions),
+      );
     });
-    if (forward.length === 0) {
-      return;
-    }
-    setDocument(next as D);
+
+  /** Records a run's step: a new entry, or merged into the current one while they coalesce. */
+  const record = (
+    label: string,
+    forward: Patch[],
+    inverse: Patch[],
+    selectionBefore: S,
+    runOptions: RunOptions<S>,
+  ) => {
     const selectionAfter =
       "selectionAfter" in runOptions ? (runOptions.selectionAfter as S) : selection.get();
     const key = runOptions.coalesceKey ?? null;
@@ -296,74 +365,83 @@ export function createHistoryManager<D extends Objectish, S = null>(
     publish();
   };
 
-  const begin: HistoryManager<D, S>["begin"] = (label) => {
-    assertNoTransaction();
-    const handle = { label };
-    transaction = handle;
-    openChain = null;
-    const base = documentStore.getState();
-    const selectionBefore = selection.get();
-    const forward: Patch[] = [];
-    let inverse: Patch[] = [];
-    publish();
+  const begin: HistoryManager<D, S>["begin"] = (label) =>
+    exclusively(() => {
+      assertNoTransaction();
+      const handle = { label };
+      transaction = handle;
+      openChain = null;
+      const base = documentStore.getState();
+      const selectionBefore = selection.get();
+      const forward: Patch[] = [];
+      let inverse: Patch[] = [];
+      publish();
 
-    const assertActive = () => {
-      if (transaction !== handle) {
-        throw new HistoryError(
-          "transaction-closed",
-          `"${label}" was already committed or cancelled`,
-        );
-      }
-    };
-    const close = () => {
-      transaction = null;
-    };
-
-    return {
-      get active() {
-        return transaction === handle;
-      },
-      update(recipe) {
-        assertActive();
-        const [next, f, i] = produceWithPatches(documentStore.getState(), (draft) => {
-          recipe(draft);
-        });
-        forward.push(...f);
-        inverse = [...i, ...inverse];
-        setDocument(next as D);
-      },
-      commit(commitOptions = {}) {
-        assertActive();
-        close();
-        if (forward.length > 0) {
-          const timestamp = now();
-          push({
-            label: commitOptions.label ?? label,
-            forward: compactPatches(forward),
-            inverse: compactPatches(inverse),
-            coalesceKey: null,
-            selectionBefore,
-            selectionAfter:
-              "selectionAfter" in commitOptions
-                ? (commitOptions.selectionAfter as S)
-                : selection.get(),
-            createdAt: timestamp,
-            updatedAt: timestamp,
-          });
+      const assertActive = () => {
+        if (transaction !== handle) {
+          throw new HistoryError(
+            "transaction-closed",
+            `"${label}" was already committed or cancelled`,
+          );
         }
-        publish();
-      },
-      cancel() {
-        assertActive();
-        close();
-        // Nothing else can change the document while the transaction is open, so `base` is
-        // exactly the state to return to.
-        setDocument(base);
-        selection.restore(selectionBefore);
-        publish();
-      },
-    };
-  };
+      };
+      const close = () => {
+        transaction = null;
+      };
+
+      return {
+        get active() {
+          return transaction === handle;
+        },
+        update(recipe) {
+          exclusively(() => {
+            assertActive();
+            const [next, f, i] = produceWithPatches(documentStore.getState(), (draft) => {
+              recipe(draft);
+            });
+            setDocumentThen(next as D, () => {
+              forward.push(...f);
+              inverse = [...i, ...inverse];
+            });
+          });
+        },
+        commit(commitOptions = {}) {
+          exclusively(() => {
+            assertActive();
+            close();
+            if (forward.length > 0) {
+              const timestamp = now();
+              push({
+                label: commitOptions.label ?? label,
+                forward: compactPatches(forward),
+                inverse: compactPatches(inverse),
+                coalesceKey: null,
+                selectionBefore,
+                selectionAfter:
+                  "selectionAfter" in commitOptions
+                    ? (commitOptions.selectionAfter as S)
+                    : selection.get(),
+                createdAt: timestamp,
+                updatedAt: timestamp,
+              });
+            }
+            publish();
+          });
+        },
+        cancel() {
+          exclusively(() => {
+            assertActive();
+            close();
+            // Nothing else can change the document while the transaction is open, so `base` is
+            // exactly the state to return to.
+            setDocumentThen(base, () => {
+              selection.restore(selectionBefore);
+              publish();
+            });
+          });
+        },
+      };
+    });
 
   /** Moves the cursor to `target`, applying patches on the way, and restores selection once. */
   const moveTo = (target: number) => {
@@ -385,42 +463,48 @@ export function createHistoryManager<D extends Objectish, S = null>(
       cursor++;
     }
     openChain = null;
-    setDocument(doc);
-    if (hasRestore) {
-      selection.restore(restore as S);
-    }
-    publish();
+    setDocumentThen(doc, () => {
+      if (hasRestore) {
+        selection.restore(restore as S);
+      }
+      publish();
+    });
   };
 
-  const undo = () => {
-    if (transaction !== null || cursor === 0) {
-      return false;
-    }
-    moveTo(cursor - 1);
-    return true;
-  };
+  const undo = () =>
+    exclusively(() => {
+      if (transaction !== null || cursor === 0) {
+        return false;
+      }
+      moveTo(cursor - 1);
+      return true;
+    });
 
-  const redo = () => {
-    if (transaction !== null || cursor === entries.length) {
-      return false;
-    }
-    moveTo(cursor + 1);
-    return true;
-  };
+  const redo = () =>
+    exclusively(() => {
+      if (transaction !== null || cursor === entries.length) {
+        return false;
+      }
+      moveTo(cursor + 1);
+      return true;
+    });
 
-  const jumpTo = (entryId: string | null) => {
-    if (transaction !== null) {
-      return false;
-    }
-    const target = entryId === null ? 0 : entries.findIndex((entry) => entry.id === entryId) + 1;
-    if (target === 0 && entryId !== null) {
-      return false;
-    }
-    moveTo(target);
-    return true;
-  };
+  const jumpTo = (entryId: string | null) =>
+    exclusively(() => {
+      if (transaction !== null) {
+        return false;
+      }
+      const target = entryId === null ? 0 : entries.findIndex((entry) => entry.id === entryId) + 1;
+      if (target === 0 && entryId !== null) {
+        return false;
+      }
+      moveTo(target);
+      return true;
+    });
 
-  const endSession = (coalesceKey: string) => {
+  const endSession = (coalesceKey: string) => exclusively(() => endSessionNow(coalesceKey));
+
+  const endSessionNow = (coalesceKey: string) => {
     let start = cursor;
     while (start > 0 && entries[start - 1]?.coalesceKey === coalesceKey) {
       start--;
@@ -471,12 +555,14 @@ export function createHistoryManager<D extends Objectish, S = null>(
       openChain = null;
     },
     endSession,
-    clear: () => {
-      assertNoTransaction();
-      entries = [];
-      cursor = 0;
-      openChain = null;
-      publish();
-    },
+    isChanging: () => busy,
+    clear: () =>
+      exclusively(() => {
+        assertNoTransaction();
+        entries = [];
+        cursor = 0;
+        openChain = null;
+        publish();
+      }),
   };
 }

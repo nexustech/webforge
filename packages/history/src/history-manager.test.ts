@@ -709,4 +709,98 @@ describe("createHistoryManager", () => {
 
     expect(JSON.parse(JSON.stringify(entries))).toEqual(entries);
   });
+
+  describe("changes from inside a change (#238)", () => {
+    const reentrant = expect.objectContaining({ name: "HistoryError", code: "reentrant" });
+
+    it("refuses a run, undo or jump from inside a recipe, changing nothing", () => {
+      const { history, doc } = setup();
+      history.run("First", (draft) => {
+        draft.title = "One";
+      });
+      const before = { doc: doc(), state: history.state.getState() };
+
+      for (const nested of [
+        () => history.run("Inner", (draft) => void draft.items.pop()),
+        () => history.undo(),
+        () => history.jumpTo(null),
+        () => history.endSession("text:a"),
+      ]) {
+        expect(() =>
+          history.run("Outer", (draft) => {
+            draft.title = "Two";
+            nested();
+          }),
+        ).toThrow(reentrant);
+      }
+
+      expect(doc()).toBe(before.doc);
+      expect(history.state.getState()).toBe(before.state);
+    });
+
+    it("leaves the document, entries and cursor as they were when a recipe throws", () => {
+      const { history, doc } = setup();
+      history.run("First", (draft) => {
+        draft.title = "One";
+      });
+      const before = { doc: doc(), state: history.state.getState() };
+
+      expect(() =>
+        history.run("Broken", (draft) => {
+          draft.title = "Two";
+          throw new Error("broken recipe");
+        }),
+      ).toThrow("broken recipe");
+
+      expect(doc()).toBe(before.doc);
+      expect(history.state.getState()).toBe(before.state);
+      // And the history still works.
+      expect(history.undo()).toBe(true);
+      expect(doc().title).toBe("Home");
+    });
+
+    it("records the step before telling a subscriber that changed it again from inside", () => {
+      const { history, doc } = setup();
+      const inner = vi.fn();
+      const stop = history.document.subscribe(() => {
+        inner(history.isChanging());
+        history.run("Inner", (draft) => {
+          draft.title = "Inner";
+        });
+      });
+
+      expect(() =>
+        history.run("Outer", (draft) => {
+          draft.title = "Outer";
+        }),
+      ).toThrow(reentrant);
+      stop();
+
+      expect(inner).toHaveBeenCalledExactlyOnceWith(true);
+      expect(doc().title).toBe("Outer");
+      expect(history.entries().map((entry) => entry.label)).toEqual(["Outer"]);
+      expect(history.isChanging()).toBe(false);
+      history.undo();
+      expect(doc().title).toBe("Home");
+    });
+
+    it("refuses a gesture's update from inside a run, and a run from inside its update", () => {
+      const { history } = setup();
+      const gesture = history.begin("Drag");
+      expect(() =>
+        gesture.update(() => {
+          history.redo();
+          history.run("Inner", () => undefined);
+        }),
+      ).toThrow(reentrant);
+      gesture.cancel();
+      expect(history.entries()).toEqual([]);
+    });
+  });
+
+  it("needs a selection adapter when the selection isn't null", () => {
+    // @ts-expect-error: a history that records selections has to read and restore them.
+    const history = createHistoryManager<Doc, string | null>({ initial });
+    expect(history.entries()).toEqual([]);
+  });
 });
