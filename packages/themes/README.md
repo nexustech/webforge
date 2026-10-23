@@ -16,7 +16,7 @@ A site's theme (2.1) as CSS, its colours and contrast checks, and the starter pr
   - `hexToOklch(hex)`: a colour field's own `#rrggbb` colour, for contrast and swatches;
   - `resolveColorRef(tokens, ref, palette?)`: what a colour style field's value shows, for swatches and contrast;
   - `inverseColors(tokens)`.
-- **`contrastIssues(tokens)`:** the pairs below AA in the page's colours and the inverse sections'. Text needs `AA_TEXT` (4.5); brand colours on the page need `AA_LARGE` (3).
+- **`contrastIssues(tokens)`:** the pairs below AA in the page's colours and the inverse sections'. Text needs `AA_TEXT` (4.5); brand colours on every surface need `AA_LARGE` (3).
 - **`oklchCss(color)`:** a colour as daisyUI writes it.
 - **`THEME_PRESETS`** and **`themePreset(name)`:** light (a new site's), dark and high-contrast-rounded.
 
