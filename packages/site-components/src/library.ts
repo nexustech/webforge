@@ -4,11 +4,13 @@ import {
   type BoxSide,
   type Breakpoint,
   bindingOf,
+  formatColorRef,
   isResponsiveValue,
   type LinkValue,
   linkValueSchema,
   type NodeDoc,
   nodeAdvancedSchema,
+  parseColorRef,
   type Responsive,
   resolveResponsive,
   responsiveBoxOf,
@@ -249,6 +251,17 @@ export type ComponentDef = {
    */
   readonly textStyle?: (values: Readonly<Record<string, unknown>>) => TextStyle | undefined;
 };
+
+/**
+ * The class that gives an element the colour a colour field stores (1.37, ADR 0009): `prefix` and
+ * the colour ref, `text-primary-300/80` or `bg-[#1f6feb]/50`. None for `default` (the element's
+ * own colour) or anything that isn't a colour ref, so nothing else can reach a class.
+ */
+export function colorClass(prefix: "text" | "bg" | "border", value: unknown): string {
+  if (typeof value !== "string" || value === "default") return "";
+  const parsed = parseColorRef(value);
+  return parsed === undefined ? "" : `${prefix}-${formatColorRef(parsed)}`;
+}
 
 /**
  * The text styles `node`'s text is set in, one for each device its values differ on (a size set per

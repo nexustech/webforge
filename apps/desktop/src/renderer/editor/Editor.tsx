@@ -454,6 +454,7 @@ export function Editor({
     () =>
       registerColourField({
         session,
+        advanced: editorLevel === "advanced",
         // The selected element's text styles, wherever it is (the page, the shared Header or
         // Footer, a linked copy), as the Edit panel finds it.
         textStyles: () => {
@@ -467,7 +468,7 @@ export function Editor({
           return target === undefined ? [] : textStylesOf(target.node, session.library);
         },
       }),
-    [session],
+    [session, editorLevel],
   );
   useEffect(() => registerLinkField({ session }), [session]);
 

@@ -1,18 +1,29 @@
 import {
+  Button,
   type FieldRendererProps,
+  fieldControlClass,
   registerFieldRenderer,
   SwatchField,
   type SwatchOption,
+  ToggleGroup,
+  ToggleGroupItem,
 } from "@webforge/editor-ui";
 import { type MessageKey, t } from "@webforge/i18n";
 import {
   COLOR_ROLES,
+  type ColorRef,
   type ColorRole,
-  type Oklch,
+  formatColorRef,
+  OPACITY_STEPS,
+  parseColorRef,
+  SHADE_STEPS,
+  SHADED_ROLES,
+  type ShadeStep,
   type TextStyle,
   type ThemeTokens,
 } from "@webforge/model";
-import { useSyncExternalStore } from "react";
+import { AA_LARGE, AA_TEXT, contrastRatio, oklchCss, resolveColorRef } from "@webforge/themes";
+import { type CSSProperties, useId, useSyncExternalStore } from "react";
 import type { EditorSession } from "./editor-session.js";
 
 /** Tailwind's text sizes in CSS pixels, as the type scale names them. */
@@ -35,35 +46,30 @@ const TEXT_PX: Readonly<Record<ThemeTokens["typeScale"][TextStyle]["size"], numb
  * needs what its smallest needs; text whose style isn't known, 4.5:1.
  */
 export function contrastNeeded(theme: ThemeTokens, styles: readonly TextStyle[]): number {
-  if (styles.length === 0) return 4.5;
+  if (styles.length === 0) return AA_TEXT;
   return Math.max(
     ...styles.map((style) => {
       const { size, weight } = theme.typeScale[style];
       const px = TEXT_PX[size];
-      return px >= 24 || (px >= 18.66 && weight >= 700) ? 3 : 4.5;
+      return px >= 24 || (px >= 18.66 && weight >= 700) ? AA_LARGE : AA_TEXT;
     }),
   );
 }
 
-/**
- * WCAG's contrast ratio of two theme colours, 1–21. The themes package's (2.1) is passed in; until
- * it is, the field shows no contrast warning.
- */
-export type ContrastRatio = (a: Oklch, b: Oklch) => number;
-
 /** What the colour field needs besides its field's props. */
 export type ColourFieldContext = {
   readonly session: Pick<EditorSession, "history">;
-  readonly contrastRatio?: ContrastRatio | undefined;
+  /**
+   * Advanced mode, where a field may have a colour of its own, off the theme (1.37, ADR 0009).
+   * Simple mode shows such a colour, and offers the theme's in its place.
+   */
+  readonly advanced?: boolean | undefined;
   /**
    * The text styles of the element being edited (a Heading's h2, a Text's body; one per device if
    * they differ), which set how much contrast it needs; the stricter 4.5:1 while none is known.
    */
   readonly textStyles?: (() => readonly TextStyle[]) | undefined;
 };
-
-/** A theme colour as CSS, as daisyUI writes them. */
-const cssColour = ({ l, c, h }: Oklch) => `oklch(${l * 100}% ${c} ${h})`;
 
 /**
  * The names people see for the theme's colour roles (glossary, 23 Oct 2026): Brand, Accent and the
@@ -77,37 +83,54 @@ const ROLE_NAMES: Partial<Record<ColorRole, MessageKey>> = {
   "base-content": "colour.role.text",
 };
 
+/** The base choice that stands for a field's own colour, off the theme. */
+const CUSTOM = "custom";
+
+/** A colour ref, read: `default` (the element's own colour) is the theme's text colour. */
+function readRef(value: unknown): ColorRef | undefined {
+  if (value === "default") return { base: { role: "base-content" } };
+  return typeof value === "string" ? parseColorRef(value) : undefined;
+}
+
+/** The base swatch a ref is on: its role (or `default`, offered as the text colour), or custom. */
+function baseKey(ref: ColorRef | undefined, options: readonly string[]): string | undefined {
+  if (ref === undefined) return undefined;
+  if ("hex" in ref.base) return CUSTOM;
+  const { role } = ref.base;
+  return role === "base-content" && options.includes("default") ? "default" : role;
+}
+
 /**
- * The theme colour a colour field's value names: the theme's text colour for `default`, else the
- * role of that name. Undefined for a value that names no role.
+ * `ref` as the field stores it: the theme's text colour, plain, as `default` where the field
+ * offers that (so it stays the element's own colour), anything else as a colour ref.
  */
-function roleOf(value: string): ColorRole | undefined {
+function storedRef(ref: ColorRef, options: readonly string[]): string {
+  const plainText =
+    "role" in ref.base &&
+    ref.base.role === "base-content" &&
+    ref.shade === undefined &&
+    ref.opacity === undefined;
+  return plainText && options.includes("default") ? "default" : formatColorRef(ref);
+}
+
+/** The role a field option names: its own, or the text colour for `default`. */
+function roleOfOption(value: string): ColorRole | undefined {
   if (value === "default") return "base-content";
   return (COLOR_ROLES as readonly string[]).includes(value) ? (value as ColorRole) : undefined;
 }
 
-/**
- * The colours a field offers, each in the theme's colour and by its glossary name: the field's own
- * choices, which are theme colours (C4). The theme's custom colours (UX-25) join them once the
- * theme has them (2.1), and shades and opacity once the theme's CSS names them.
- */
-function coloursOf(field: FieldRendererProps["field"], theme: ThemeTokens): SwatchOption[] {
-  return (field.options ?? []).map((option) => {
-    const role = roleOf(option.value);
-    if (role === undefined) return option;
-    const name = ROLE_NAMES[role];
-    return {
-      value: option.value,
-      label: name === undefined ? option.label : t(name),
-      colour: cssColour(theme.colors[role]),
-    };
-  });
-}
+const isShaded = (role: ColorRole) => (SHADED_ROLES as readonly string[]).includes(role);
+
+/** A swatch's colour, as CSS. */
+const swatchStyle = (colour: string): CSSProperties => ({ "--swatch": colour }) as CSSProperties;
 
 /**
- * The Edit panel's colour field (1.37, UX-25): the theme's colours as swatches, as this site shows
- * them, and a warning when the one chosen is hard to read on the page (below what WCAG AA asks of
- * text of its size: {@link contrastNeeded}; sections all have the page's background so far).
+ * The Edit panel's colour field (1.37, UX-25, ADR 0009): the theme's colours as swatches, as this
+ * site shows them, by their glossary names; then a shade of the one chosen, and its opacity. In
+ * Advanced mode, a colour of the field's own (hex), marked off the theme, which theme changes leave
+ * as it is. Below them, a warning when the colour is hard to read on the page (below what WCAG AA
+ * asks of text of its size, {@link contrastNeeded}; sections all have the page's background so
+ * far). Each choice is one change.
  */
 export function ColourField({
   id,
@@ -117,38 +140,183 @@ export function ColourField({
   onChange,
   onCommit,
   session,
-  contrastRatio,
+  advanced = false,
   textStyles,
 }: FieldRendererProps & ColourFieldContext) {
   const theme = useSyncExternalStore(
     session.history.document.subscribe,
     () => session.history.document.getState().theme,
   );
-  const chosen = typeof value === "string" ? value : undefined;
-  const role = chosen === undefined ? undefined : roleOf(chosen);
+  const shadeLabelId = useId();
+  const opacityId = useId();
+  const customId = useId();
+  const options = (field.options ?? []).map((option) => option.value);
+  const ref = readRef(value);
+  const base = baseKey(ref, options);
+  const hex = ref !== undefined && "hex" in ref.base ? ref.base.hex : undefined;
+  const role = ref !== undefined && "role" in ref.base ? ref.base.role : undefined;
+
+  /** One choice: the new colour, stored, and the end of the change. */
+  const choose = (next: ColorRef) => {
+    onChange(storedRef(next, options));
+    onCommit();
+  };
+  const withOpacity = (next: ColorRef): ColorRef =>
+    ref?.opacity === undefined ? next : { ...next, opacity: ref.opacity };
+
+  const swatches: SwatchOption[] = (field.options ?? []).map((option) => {
+    const optionRole = roleOfOption(option.value);
+    if (optionRole === undefined) return option;
+    const name = ROLE_NAMES[optionRole];
+    return {
+      value: option.value,
+      label: name === undefined ? option.label : t(name),
+      colour: oklchCss(theme.colors[optionRole]),
+    };
+  });
+  // Advanced mode offers a colour of the field's own; Simple mode shows one it already has.
+  if (advanced) {
+    swatches.push({
+      value: CUSTOM,
+      label: t("colour.custom"),
+      ...(hex === undefined ? {} : { colour: hex }),
+    });
+  }
+
+  const shown = ref === undefined ? undefined : resolveColorRef(theme, formatColorRef(ref));
   const ratio =
-    role === undefined || contrastRatio === undefined
+    shown === undefined
       ? undefined
-      : contrastRatio(theme.colors[role], theme.colors["base-100"]);
+      : contrastRatio(shown.color, theme.colors["base-100"], shown.opacity);
+  const needed = contrastNeeded(theme, textStyles?.() ?? []);
+
   return (
-    <SwatchField
-      id={id}
-      labelId={labelId}
-      options={coloursOf(field, theme)}
-      value={chosen}
-      onChoose={(next) => {
-        onChange(next);
-        onCommit();
-      }}
-      warning={
-        ratio === undefined || ratio >= contrastNeeded(theme, textStyles?.() ?? [])
-          ? undefined
-          : t("field.color.lowContrast", {
-              ratio: ratio.toFixed(1),
-              needed: contrastNeeded(theme, textStyles?.() ?? []),
-            })
-      }
-    />
+    <div className="flex flex-col gap-2">
+      {hex !== undefined && !advanced ? (
+        // A colour of the field's own, from Advanced mode: shown, kept, and replaceable.
+        <div className="flex flex-wrap items-center gap-1.5 text-xs">
+          <span
+            aria-hidden
+            className="size-4 shrink-0 rounded-full bg-(--swatch)"
+            style={swatchStyle(hex)}
+          />
+          <span>{t("colour.customValue", { hex })}</span>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => choose({ base: { role: "base-content" } })}
+          >
+            {t("colour.useTheme")}
+          </Button>
+        </div>
+      ) : null}
+      <SwatchField
+        id={id}
+        labelId={labelId}
+        options={swatches}
+        value={base}
+        onChoose={(next) => {
+          if (next === CUSTOM) {
+            choose(withOpacity({ base: { hex: hex ?? "#000000" } }));
+            return;
+          }
+          const nextRole = roleOfOption(next);
+          if (nextRole !== undefined) choose(withOpacity({ base: { role: nextRole } }));
+        }}
+        warning={
+          ratio === undefined || ratio >= needed
+            ? undefined
+            : t("field.color.lowContrast", { ratio: ratio.toFixed(1), needed })
+        }
+      />
+      {hex !== undefined && advanced ? (
+        <div className="flex flex-col gap-1">
+          <label htmlFor={customId} className="text-xs text-muted-foreground">
+            {t("colour.customHex")}
+          </label>
+          <input
+            id={customId}
+            type="color"
+            className={`${fieldControlClass} h-7 w-16 p-0.5`}
+            value={hex}
+            onChange={(event) =>
+              onChange(storedRef(withOpacity({ base: { hex: event.target.value } }), options))
+            }
+            onBlur={onCommit}
+          />
+          <p className="m-0 text-xs text-muted-foreground">{t("colour.offTheme")}</p>
+        </div>
+      ) : null}
+      {role !== undefined && isShaded(role) ? (
+        <div className="flex flex-col gap-1">
+          <span id={shadeLabelId} className="text-xs text-muted-foreground">
+            {t("colour.shade")}
+          </span>
+          <ToggleGroup
+            type="single"
+            aria-labelledby={shadeLabelId}
+            className="flex w-full flex-wrap gap-0.5"
+            value={ref?.shade === undefined ? "" : String(ref.shade)}
+            onValueChange={(next) => {
+              const shade = next === "" ? undefined : (Number(next) as ShadeStep);
+              choose({
+                base: { role },
+                ...(shade === undefined ? {} : { shade }),
+                ...(ref?.opacity === undefined ? {} : { opacity: ref.opacity }),
+              });
+            }}
+          >
+            {SHADE_STEPS.map((step) => (
+              <ToggleGroupItem
+                key={step}
+                value={String(step)}
+                aria-label={t("colour.shadeStep", { step })}
+                title={t("colour.shadeStep", { step })}
+                className="size-5 min-w-0 rounded-sm p-0 data-[state=on]:ring-2 data-[state=on]:ring-ring"
+              >
+                <span
+                  aria-hidden
+                  className="block size-full rounded-sm bg-(--swatch)"
+                  style={swatchStyle(
+                    oklchCss(
+                      resolveColorRef(theme, formatColorRef({ base: { role }, shade: step }))
+                        ?.color ?? theme.colors[role],
+                    ),
+                  )}
+                />
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+        </div>
+      ) : null}
+      {ref === undefined ? null : (
+        <div className="flex items-center gap-2">
+          <label htmlFor={opacityId} className="text-xs text-muted-foreground">
+            {t("colour.opacity")}
+          </label>
+          <select
+            id={opacityId}
+            className={`${fieldControlClass} h-7 w-24 text-xs`}
+            value={ref.opacity === undefined ? "100" : String(ref.opacity)}
+            onChange={(event) => {
+              const opacity = Number(event.target.value);
+              choose({
+                base: ref.base,
+                ...(ref.shade === undefined ? {} : { shade: ref.shade }),
+                ...(opacity === 100 ? {} : { opacity: opacity as (typeof OPACITY_STEPS)[number] }),
+              });
+            }}
+          >
+            {[100, ...[...OPACITY_STEPS].reverse()].map((step) => (
+              <option key={step} value={step}>
+                {t("colour.opacityStep", { step })}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+    </div>
   );
 }
 

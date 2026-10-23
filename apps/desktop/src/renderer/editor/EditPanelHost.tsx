@@ -4,6 +4,7 @@ import {
   BOX_SIDES,
   type Breakpoint,
   boxValueSchema,
+  colorRefSchema,
   imageValueSchema,
   type NodeAdvanced,
   type SiteDoc,
@@ -132,6 +133,9 @@ function accepts(field: FieldDef, value: unknown): boolean {
       return asLinkFieldChange(value) !== undefined;
     case "box":
       return boxValueSchema.safeParse(value).success;
+    // A colour ref (ADR 0009), or the element's own colour.
+    case "color":
+      return value === "default" || colorRefSchema.safeParse(value).success;
     default:
       return typeof value === "string";
   }

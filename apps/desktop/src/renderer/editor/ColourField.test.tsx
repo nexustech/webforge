@@ -1,10 +1,11 @@
 // @vitest-environment happy-dom
-import { act, cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { DEFAULT_THEME } from "@webforge/model";
+import { DEFAULT_THEME, type TextStyle } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
+import { contrastRatio } from "@webforge/themes";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ColourField, type ContrastRatio, contrastNeeded } from "./ColourField.js";
+import { ColourField, contrastNeeded } from "./ColourField.js";
 import { createEditorSession } from "./editor-session.js";
 import { starterSite } from "./starter-site.js";
 
@@ -16,50 +17,51 @@ const FIELD = {
   options: [
     { label: "Text colour", value: "default" },
     { label: "Primary", value: "primary" },
+    { label: "Secondary", value: "secondary" },
     { label: "Accent", value: "accent" },
   ],
 };
 
-/** A stand-in for the themes package's contrast: too little for anything as light as the accent. */
-const contrastRatio: ContrastRatio = (colour) => (colour.l > 0.7 ? 1.9 : 9);
-
 function setUp(
   value: string,
-  contrast: ContrastRatio | "none" = contrastRatio,
-  textStyles?: () => readonly ("h1" | "body")[],
+  options: { readonly advanced?: boolean; readonly textStyles?: readonly TextStyle[] } = {},
 ) {
   const session = createEditorSession(siteLibrary, starterSite());
   const onChange = vi.fn();
   const onCommit = vi.fn();
-  const view = (current: string) => (
+  render(
     <>
       <span id="label">Colour</span>
       <ColourField
         id="field-color"
         labelId="label"
         field={FIELD}
-        value={current}
+        value={value}
         onChange={onChange}
         onCommit={onCommit}
         session={session}
-        contrastRatio={contrast === "none" ? undefined : contrast}
-        textStyles={textStyles}
+        advanced={options.advanced}
+        textStyles={options.textStyles === undefined ? undefined : () => options.textStyles ?? []}
       />
-    </>
+    </>,
   );
-  const { rerender } = render(view(value));
   const swatch = (name: string) =>
     screen
       .getByRole("radio", { name })
       .querySelector<HTMLElement>("[data-swatch]")
       ?.style.getPropertyValue("--swatch");
-  return { session, onChange, onCommit, swatch, rerender: (next: string) => rerender(view(next)) };
+  const names = () =>
+    [...(document.getElementById("field-color")?.querySelectorAll('[role="radio"]') ?? [])].map(
+      (radio) => radio.textContent,
+    );
+  return { session, onChange, onCommit, swatch, names };
 }
 
-describe("ColourField (1.37, UX-25)", () => {
-  it("shows each theme colour in the site's own colour, and keeps up with the theme", () => {
-    const { session, swatch } = setUp("default");
+describe("ColourField (1.37, UX-25, ADR 0009)", () => {
+  it("shows each theme colour in the site's own colour, by its glossary name", () => {
+    const { session, swatch, names } = setUp("default");
 
+    expect(names()).toEqual(["Text", "Brand", "Accent", "Second accent"]);
     expect(swatch("Brand")).toBe("oklch(45% 0.24 277.023)");
     act(() =>
       session.edit("root", "Changed theme colours", (draft) => {
@@ -69,44 +71,85 @@ describe("ColourField (1.37, UX-25)", () => {
     expect(swatch("Brand")).toBe("oklch(50% 0.2 30)");
   });
 
-  it("makes one change of a choice", async () => {
-    const { onChange, onCommit } = setUp("default");
+  it("makes one change of a choice, storing a colour ref, the text colour as the element's own", async () => {
+    const { onChange, onCommit } = setUp("primary-300/80");
 
-    await userEvent.click(screen.getByRole("radio", { name: "Brand" }));
-
-    expect(onChange).toHaveBeenCalledExactlyOnceWith("primary");
+    await userEvent.click(screen.getByRole("radio", { name: "Accent" }));
+    // Another role keeps the opacity.
+    expect(onChange).toHaveBeenLastCalledWith("secondary/80");
     expect(onCommit).toHaveBeenCalledOnce();
-  });
-
-  it("warns when the colour chosen is hard to read on the page, and not otherwise", () => {
-    const { rerender } = setUp("primary");
-    expect(screen.queryByText(/Hard to read/)).toBeNull();
-
-    rerender("accent");
-
-    expect(screen.getByText(/contrast 1\.9:1, less than the 4\.5:1 this text needs/)).toBeTruthy();
-    expect(document.getElementById("field-color")?.getAttribute("aria-describedby")).not.toBe(null);
-  });
-
-  it("names the colours as people know them, and has no warning without a contrast check", () => {
-    setUp("accent", "none");
-
-    expect(screen.getAllByRole("radio").map((radio) => radio.textContent)).toEqual([
-      "Text",
-      "Brand",
-      "Second accent",
-    ]);
-    expect(screen.queryByText(/Hard to read/)).toBeNull();
-  });
-
-  it("asks less contrast of large text: a 3.5:1 colour is fine for a big heading, not for body text", () => {
-    const fair: ContrastRatio = () => 3.5;
-    setUp("primary", fair, () => ["h1"]);
-    expect(screen.queryByText(/Hard to read/)).toBeNull();
     cleanup();
 
-    setUp("primary", fair, () => ["body"]);
-    expect(screen.getByText(/contrast 3\.5:1, less than the 4\.5:1 this text needs/)).toBeTruthy();
+    const plain = setUp("primary");
+    await userEvent.click(screen.getByRole("radio", { name: "Text" }));
+    expect(plain.onChange).toHaveBeenLastCalledWith("default");
+  });
+
+  it("offers the colour roles' shades, and an opacity for any colour", async () => {
+    const { onChange } = setUp("primary");
+
+    await userEvent.click(screen.getByRole("radio", { name: "Shade 300" }));
+    expect(onChange).toHaveBeenLastCalledWith("primary-300");
+    fireEvent.change(screen.getByLabelText("Opacity"), { target: { value: "80" } });
+    expect(onChange).toHaveBeenLastCalledWith("primary/80");
+    cleanup();
+
+    // The text colour has no shades; 100% is no opacity at all.
+    const text = setUp("base-content/70");
+    expect(screen.queryByRole("radio", { name: "Shade 300" })).toBeNull();
+    fireEvent.change(screen.getByLabelText("Opacity"), { target: { value: "100" } });
+    expect(text.onChange).toHaveBeenLastCalledWith("default");
+  });
+
+  it("offers a colour of the field's own in Advanced mode only, marked off the theme", async () => {
+    const simple = setUp("primary");
+    expect(screen.queryByRole("radio", { name: "Custom" })).toBeNull();
+    expect(simple.names()).not.toContain("Custom");
+    cleanup();
+
+    const { onChange } = setUp("primary/50", { advanced: true });
+    await userEvent.click(screen.getByRole("radio", { name: "Custom" }));
+    expect(onChange).toHaveBeenLastCalledWith("[#000000]/50");
+    cleanup();
+
+    const custom = setUp("[#1f6feb]", { advanced: true });
+    expect(custom.swatch("Custom")).toBe("#1f6feb");
+    expect(screen.getByText(/Off the theme/)).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Custom colour"), { target: { value: "#ff8800" } });
+    expect(custom.onChange).toHaveBeenLastCalledWith("[#ff8800]");
+  });
+
+  it("keeps a custom colour in Simple mode, shown, with a way back to the theme", async () => {
+    const { onChange } = setUp("[#1f6feb]/50");
+
+    expect(screen.getByText("Custom colour #1f6feb, off the theme")).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: "Use a theme colour" }));
+
+    expect(onChange).toHaveBeenLastCalledWith("default");
+  });
+
+  it("warns when the colour is hard to read on the page, by the text's size", () => {
+    const { colors } = DEFAULT_THEME;
+    const page = colors["base-100"];
+    // A theme colour between 3:1 and 4.5:1 on the page: fine for a large heading only.
+    const middling = (["secondary", "info", "success", "error"] as const).find((role) => {
+      const ratio = contrastRatio(colors[role], page);
+      return ratio >= 3 && ratio < 4.5;
+    });
+    if (middling === undefined) throw new Error("no colour between 3:1 and 4.5:1");
+
+    setUp("primary");
+    expect(screen.queryByText(/Hard to read/)).toBeNull();
+    cleanup();
+    // Opacity counts: the brand colour at 20% hardly shows.
+    setUp("primary/20");
+    expect(screen.getByText(/Hard to read on the page/)).toBeTruthy();
+    cleanup();
+    setUp(middling, { textStyles: ["h1"] });
+    expect(screen.queryByText(/Hard to read/)).toBeNull();
+    cleanup();
+    setUp(middling, { textStyles: ["body"] });
+    expect(screen.getByText(/less than the 4\.5:1 this text needs/)).toBeTruthy();
   });
 });
 
