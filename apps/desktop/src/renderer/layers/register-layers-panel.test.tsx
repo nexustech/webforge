@@ -1,6 +1,12 @@
 // @vitest-environment happy-dom
 import { act, cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import {
+  copiedNodeId,
+  SHARED_COPY_TYPE,
+  type SharedSectionId,
+  type SiteDoc,
+} from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createEditorSession } from "../editor/editor-session.js";
@@ -12,8 +18,8 @@ import { registerLayersPanel } from "./register-layers-panel.js";
 
 afterEach(cleanup);
 
-function setUp() {
-  const session = createEditorSession(siteLibrary, starterSite());
+function setUp(site: SiteDoc = starterSite()) {
+  const session = createEditorSession(siteLibrary, site);
   const panels = createPanelRegistry();
   const commands = createCommandRegistry();
   const remove = registerLayersPanel(panels, session);
@@ -83,5 +89,35 @@ describe("registerLayersPanel", () => {
 
     act(() => session.history.undo());
     expect(toolbar().getByRole("button", { name: "Hide Heading" })).toBeTruthy();
+  });
+
+  it("marks a linked copy, selected while the copy is, not an element inside it (F-ED-23)", () => {
+    const hours = "shared-hours" as SharedSectionId;
+    const site = starterSite();
+    site.pages[site.homePageId]?.doc.content.push({
+      type: SHARED_COPY_TYPE,
+      props: { id: "c1", sharedSectionId: hours },
+    });
+    const { session } = setUp({
+      ...site,
+      sharedSections: {
+        [hours]: {
+          id: hours,
+          name: "Opening hours",
+          section: {
+            type: "Section",
+            props: { id: "s", content: [{ type: "Heading", props: { id: "t" } }] },
+          },
+        },
+      },
+    });
+    const copy = screen.getByRole("treeitem", { name: /Linked copy of 'Opening hours'/ });
+    expect(copy.textContent).toContain("Opening hours Section");
+
+    act(() => session.ui.setState({ nodeId: copiedNodeId("c1", "s") }));
+    expect(copy.getAttribute("aria-selected")).toBe("true");
+    // Layers' actions act on the selection: an element inside the copy isn't the copy.
+    act(() => session.ui.setState({ nodeId: copiedNodeId("c1", "t") }));
+    expect(copy.getAttribute("aria-selected")).toBe("false");
   });
 });

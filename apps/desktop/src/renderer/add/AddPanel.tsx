@@ -35,7 +35,10 @@ export type AddPanelProps = {
   readonly dragSource?: ((element: HTMLElement, type: string) => () => void) | undefined;
 };
 
-/** One component to add: a click (or Enter) adds it, and it can be dragged onto the canvas. */
+/**
+ * One component to add: a click (or Enter) adds it, and it can be dragged onto the canvas. A shared
+ * section is added by a click, as a linked copy.
+ */
 function AddButton({
   item,
   disabled,
@@ -50,11 +53,17 @@ function AddButton({
   const ref = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     const element = ref.current;
-    if (element === null || dragSource === undefined || disabled) {
+    // A shared section is placed by a click only: the canvas drags in components, not copies.
+    if (
+      element === null ||
+      dragSource === undefined ||
+      disabled ||
+      item.sharedSectionId !== undefined
+    ) {
       return;
     }
     return dragSource(element, item.type);
-  }, [dragSource, item.type, disabled]);
+  }, [dragSource, item.type, item.sharedSectionId, disabled]);
   return (
     <Button
       ref={ref}
@@ -76,7 +85,8 @@ function AddButton({
  * The Add panel (F-ED-1, UI1): Sections | Elements, a search box, and each tab's components in
  * categories. A click (or Enter) adds one where it fits: a section after the selected one, or where
  * the canvas's + was clicked; an element into the selected section. Or drag one onto the canvas,
- * where its drop indicators show where it may go. Header, Footer and child-only components are
+ * where its drop indicators show where it may go. The site's shared sections come first under
+ * Sections, each placed as a linked copy (F-ED-23). Header, Footer and child-only components are
  * never offered (ADR 0005). Hidden in Content mode.
  */
 export function AddPanel({

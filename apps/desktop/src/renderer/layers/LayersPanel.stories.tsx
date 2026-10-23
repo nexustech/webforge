@@ -62,5 +62,17 @@ export const Renaming: Story = {
   },
 };
 
+/** Linked copies of a shared section, marked, one with a name of its own, selected (F-ED-23). */
+export const LinkedCopies: Story = {
+  args: {
+    layers: [
+      layer("hero", "Section", { children: [layer("h1", "Heading")] }),
+      layer("c1~s", "Section", { name: "Opening hours", sharedSection: "Opening hours" }),
+      layer("c2~s", "Section", { name: "Weekend hours", sharedSection: "Opening hours" }),
+    ],
+    selectedId: "c1~s",
+  },
+};
+
 /** A page with no sections yet. */
 export const Empty: Story = { args: { layers: [], selectedId: null } };

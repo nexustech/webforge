@@ -19,6 +19,11 @@ export const canvas = {
   // Asked before an element of the shared Header or Footer goes from every page (D7).
   "canvas.sharedDelete.title": "Delete {item} from the shared {region}?",
   "canvas.sharedCut.title": "Cut {item} from the shared {region}?",
+  // Asked before an element of a shared section goes from every copy of it (1.29, D7, F-ED-23).
+  "canvas.sharedSectionDelete.title": "Delete {item} from the shared section {name}?",
+  "canvas.sharedSectionCut.title": "Cut {item} from the shared section {name}?",
+  "canvas.sharedSectionChange.one": "The section's 1 copy shows the change.",
+  "canvas.sharedSectionChange.many": "All {copies} copies of the section show the change.",
   "canvas.sharedBanner.all": "Editing shared {region}: changes apply to all {count} pages",
   "canvas.sharedBanner.some": "Editing shared {region}: changes apply to {count} pages",
   "canvas.sharedBanner.one": "Editing shared {region}: changes apply to 1 page",

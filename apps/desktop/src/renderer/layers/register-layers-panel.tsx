@@ -24,7 +24,8 @@ function useCommandAction(id: string): (() => void) | undefined {
 /**
  * Adds Layers to the left column's bottom, before Undo History (UI1), in Advanced mode only (T2).
  * The tree follows the shown page and the selection; it is rebuilt only when the page's structure
- * or names change, not on every keystroke. With `layoutLocked` (Content mode, M3) nothing can be
+ * or names change, not on every keystroke. A linked copy's layer is selected while the copy is,
+ * not an element inside it: Layers' actions act on what is selected (F-ED-23). With `layoutLocked` (Content mode, M3) nothing can be
  * dragged, moved or hidden. Returns a function that removes the panel.
  */
 export function registerLayersPanel(
@@ -33,23 +34,28 @@ export function registerLayersPanel(
   { layoutLocked = false }: { readonly layoutLocked?: boolean } = {},
 ): () => void {
   const { history, ui, library } = session;
-  // The tree as last shown, for the page content it was made from: rebuilt only when that content
-  // changes, and kept (same object) when the rebuilt tree is the same, e.g. after typing.
-  let shown: { content: unknown; key: string; layers: Layer[] } = {
+  // The tree as last shown, for the page content and shared sections it was made from: rebuilt
+  // only when they change, and kept (same object) when the rebuilt tree is the same, e.g. after
+  // typing.
+  let shown: { content: unknown; shared: unknown; key: string; layers: Layer[] } = {
     content: undefined,
+    shared: undefined,
     key: "",
     layers: [],
   };
   const currentLayers = () => {
-    const content = history.document.getState().pages[ui.getState().pageId]?.doc.content;
-    if (content === shown.content) {
+    const site = history.document.getState();
+    const content = site.pages[ui.getState().pageId]?.doc.content;
+    const shared = site.sharedSections;
+    if (content === shown.content && shared === shown.shared) {
       return shown.layers;
     }
-    const layers = content === undefined ? [] : layersOf(content, library);
+    const layers = content === undefined ? [] : layersOf(content, library, shared);
     const key = JSON.stringify(layers);
-    shown = key === shown.key ? { ...shown, content } : { content, key, layers };
+    shown = key === shown.key ? { ...shown, content, shared } : { content, shared, key, layers };
     return shown.layers;
   };
+
   const subscribe = (listener: () => void) => {
     const stopDocument = history.document.subscribe(listener);
     const stopUi = ui.subscribe(listener);

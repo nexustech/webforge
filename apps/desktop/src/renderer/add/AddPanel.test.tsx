@@ -1,6 +1,12 @@
 // @vitest-environment happy-dom
 import { act, cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import {
+  copiedNodeId,
+  SHARED_COPY_TYPE,
+  type SharedSectionId,
+  type SiteDoc,
+} from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createEditorSession, currentPage } from "../editor/editor-session.js";
@@ -14,6 +20,27 @@ import { registerAddPanel } from "./register-add-panel.js";
 afterEach(cleanup);
 
 const button = (name: string) => screen.getByRole("button", { name });
+
+const HOURS = "shared-hours" as SharedSectionId;
+
+/** The starter site with a shared section, "Opening hours", and a copy of it on the home page. */
+function withHours(): SiteDoc {
+  const site = starterSite();
+  site.pages[site.homePageId]?.doc.content.push({
+    type: SHARED_COPY_TYPE,
+    props: { id: "c1", sharedSectionId: HOURS },
+  });
+  return {
+    ...site,
+    sharedSections: {
+      [HOURS]: {
+        id: HOURS,
+        name: "Opening hours",
+        section: { type: "Section", props: { id: "s", content: [] } },
+      },
+    },
+  };
+}
 
 describe("AddPanel (F-ED-1)", () => {
   const setUp = (canAdd = (_type: string) => true) => {
@@ -82,7 +109,15 @@ describe("dragging from the Add panel", () => {
       return stop;
     });
     const props = {
-      sections: addItems(siteLibrary, "sections"),
+      sections: [
+        {
+          type: HOURS,
+          label: "Opening hours",
+          category: "Shared sections",
+          sharedSectionId: HOURS,
+        },
+        ...addItems(siteLibrary, "sections"),
+      ],
       elements: addItems(siteLibrary, "elements"),
       tab: "sections" as const,
       onTabChange: vi.fn(),
@@ -94,7 +129,7 @@ describe("dragging from the Add panel", () => {
     };
     const view = render(<AddPanel {...props} />);
 
-    // Not the FAQ, which has nowhere to go.
+    // Not the FAQ, which has nowhere to go, nor a shared section: copies are placed by a click.
     expect(dragSource.mock.calls.map(([, type]) => type)).toEqual(["Section", "Hero"]);
     expect(button("Hero").className).toContain("relative");
     view.unmount();
@@ -177,5 +212,50 @@ describe("registerAddPanel", () => {
     act(() => session.ui.setState({ pageId: other }));
 
     expect(screen.queryByRole("status")).toBeNull();
+  });
+
+  it("lists the site's shared sections first, and places a copy of one at the + button's place", async () => {
+    const session = createEditorSession(siteLibrary, withHours());
+    const panels = createPanelRegistry();
+    const addPanel = registerAddPanel(panels, session);
+    render(<Host panels={panels} />);
+    const groups = () =>
+      screen.getAllByRole("list").map((list) => list.getAttribute("aria-label") ?? "");
+    expect(groups()[0]).toBe("Shared sections");
+
+    // The + after the copy names it after its shared section.
+    act(() => addPanel.openAt({ index: 2 }));
+    expect(screen.getByRole("status").textContent).toContain("after 'Opening hours'");
+    await userEvent.click(button("Opening hours"));
+
+    const content = currentPage(session)?.doc.content ?? [];
+    expect(content.map((node) => node.props.sharedSectionId ?? node.type)).toEqual([
+      "Section",
+      HOURS,
+      HOURS,
+    ]);
+    expect(session.ui.getState().nodeId).toBe(copiedNodeId(content[2]?.props.id ?? "", "s"));
+    expect(screen.queryByRole("status")).toBeNull();
+  });
+
+  it("lists a shared section once the site has one, and none once it is gone", () => {
+    const session = createEditorSession(siteLibrary, starterSite());
+    const panels = createPanelRegistry();
+    registerAddPanel(panels, session);
+    render(<Host panels={panels} />);
+    expect(screen.queryByRole("list", { name: "Shared sections" })).toBeNull();
+
+    act(() =>
+      session.edit("insert", "Saved", (draft) => {
+        draft.sharedSections[HOURS] = {
+          id: HOURS,
+          name: "Opening hours",
+          section: { type: "Section", props: { id: "s", content: [] } },
+        };
+      }),
+    );
+    expect(screen.getByRole("list", { name: "Shared sections" }).textContent).toBe("Opening hours");
+    act(() => session.history.undo());
+    expect(screen.queryByRole("list", { name: "Shared sections" })).toBeNull();
   });
 });
