@@ -28,6 +28,7 @@ import {
 import { type ComponentProps, type ReactNode, useEffect } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import type {
+  CanvasContextMenu,
   CanvasEngine,
   CanvasSize,
   EditorMode,
@@ -44,6 +45,7 @@ import { installHistoryKeys } from "../history-keys.js";
 import { preserveCaret, refocusRichText } from "./caret.js";
 import { applyChromeStyles, createSelectionOutline, QuickActionBar } from "./chrome.js";
 import { toPuckConfig } from "./config.js";
+import { installContextMenu } from "./context-menu.js";
 import { deferredCommands } from "./deferred-commands.js";
 import { puckDictionary } from "./dictionary.js";
 import { createDragSources } from "./drag-sources.js";
@@ -262,6 +264,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   const edits = emitter<EngineEdit>();
   const addRequests = emitter<InsertPoint>();
   const fieldDrags = emitter<FieldDrag>();
+  const contextMenus = emitter<CanvasContextMenu>();
   const dragSources = createDragSources(
     (componentType) => library?.components[componentType]?.label ?? componentType,
   );
@@ -619,7 +622,9 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       }
       frameWindows.emit(frameWindow);
       const removeKeys = installHistoryKeys(frameWindow, runCommand);
+      const removeMenu = installContextMenu(frameWindow.document, contextMenus.emit);
       return () => {
+        removeMenu();
         stopKeepingEnabled?.();
         stopKeepingEnabled = null;
         stopViewOptions?.();
@@ -891,6 +896,8 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     onAddRequest: addRequests.add,
 
     onFieldDrag: fieldDrags.add,
+
+    onContextMenu: contextMenus.add,
 
     addDragSource: dragSources.add,
 

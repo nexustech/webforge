@@ -1,4 +1,5 @@
 import type {
+  CanvasContextMenu,
   CanvasEngine,
   EngineEdit,
   FieldDrag,
@@ -21,6 +22,8 @@ export type FakeEngine = CanvasEngine & {
   requestAdd(at: InsertPoint): void;
   /** Reports the canvas iframe's window (or that it went). */
   showFrame(frameWindow: Window | null): void;
+  /** Right-clicks an element on the canvas (1.35). */
+  rightClick(menu: CanvasContextMenu): void;
   /** Drags a field's value with a handle on the canvas (1.32). */
   dragField(drag: FieldDrag): void;
   /** Switches the device view with the canvas's own controls. */
@@ -49,6 +52,7 @@ export function createFakeEngine(): FakeEngine {
   const frames = listeners<Window | null>();
   const views = listeners<Viewport>();
   const drags = listeners<FieldDrag>();
+  const menus = listeners<CanvasContextMenu>();
   const applied: PageDoc[] = [];
   return {
     applied,
@@ -74,6 +78,7 @@ export function createFakeEngine(): FakeEngine {
     perform: vi.fn(() => true),
     onAddRequest: adds.add,
     onFieldDrag: drags.add,
+    onContextMenu: menus.add,
     addDragSource: vi.fn(() => () => undefined),
     setLinkPicker: vi.fn(),
     onFrameWindow: frames.add,
@@ -88,5 +93,6 @@ export function createFakeEngine(): FakeEngine {
     showFrame: frames.emit,
     switchView: views.emit,
     dragField: drags.emit,
+    rightClick: menus.emit,
   };
 }

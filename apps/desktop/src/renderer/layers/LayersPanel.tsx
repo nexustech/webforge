@@ -3,14 +3,20 @@ import { t } from "@webforge/i18n";
 import {
   ArrowDownIcon,
   ArrowUpIcon,
+  ChevronRightIcon,
+  ChevronsDownUpIcon,
+  ChevronsUpDownIcon,
   CopyIcon,
   EyeIcon,
   EyeOffIcon,
   Link2Icon,
+  LockIcon,
   PencilIcon,
+  SparklesIcon,
   Trash2Icon,
 } from "lucide-react";
 import { type DragEvent, type KeyboardEvent, type ReactNode, useRef, useState } from "react";
+import type { MenuPoint } from "../element-menu/ElementMenu.js";
 import { type Layer, layerItem } from "./layers.js";
 
 /** What the Layers panel can do; the host binds them to the editor session and its commands. */
@@ -37,6 +43,15 @@ export type LayersPanelProps = {
    * stay; the toolbar's commands are off as their commands are.
    */
   readonly layoutLocked?: boolean;
+  /**
+   * The element menu (1.35), the canvas's too: open `at` a point for the selected layer, closed
+   * with `onClose`; its Rename renames the layer in place.
+   */
+  readonly menu?: (props: {
+    readonly at: MenuPoint | null;
+    readonly onClose: () => void;
+    readonly onRename: () => void;
+  }) => ReactNode;
 };
 
 /** A layer as a row: where it sits among its siblings, so moves stay within its parent. */
@@ -46,14 +61,61 @@ type Row = {
   readonly parent: string;
   readonly index: number;
   readonly siblings: number;
+  /** Its children show below it (it has some, and isn't collapsed). */
+  readonly expanded: boolean;
 };
 
-function rowsOf(layers: readonly Layer[], depth = 1, parent = ""): Row[] {
-  return layers.flatMap((layer, index) => [
-    { layer, depth, parent, index, siblings: layers.length },
-    ...rowsOf(layer.children, depth + 1, layer.id),
-  ]);
+/** How the tree is shown: the layers collapsed, and the filter's text. */
+type TreeView = {
+  readonly collapsed: ReadonlySet<string>;
+  /** Lower case; empty for no filter. */
+  readonly filter: string;
+  /** The selected layer's parents, which stay expanded so it shows. */
+  readonly open: ReadonlySet<string>;
+};
+
+/** Whether `layer`'s name or kind contains `filter`. */
+const matches = (layer: Layer, filter: string) =>
+  `${layer.name ?? ""} ${layer.kind}`.toLocaleLowerCase().includes(filter);
+
+/** Whether `layer` or a layer inside it matches `filter`. */
+const anyMatch = (layer: Layer, filter: string): boolean =>
+  matches(layer, filter) || layer.children.some((child) => anyMatch(child, filter));
+
+/**
+ * The rows shown: every layer, except those inside a collapsed one; with a filter, the layers
+ * that match it and the layers they are in, whatever is collapsed.
+ */
+function rowsOf(layers: readonly Layer[], view: TreeView, depth = 1, parent = ""): Row[] {
+  return layers.flatMap((layer, index) => {
+    if (view.filter !== "" && !anyMatch(layer, view.filter)) return [];
+    const expanded =
+      layer.children.length > 0 &&
+      (view.filter !== "" || !view.collapsed.has(layer.id) || view.open.has(layer.id));
+    return [
+      { layer, depth, parent, index, siblings: layers.length, expanded },
+      ...(expanded ? rowsOf(layer.children, view, depth + 1, layer.id) : []),
+    ];
+  });
 }
+
+/** The ids of the layers `id` is inside, outermost first; empty if it isn't in `layers`. */
+function parentsOf(layers: readonly Layer[], id: string | null): string[] {
+  for (const layer of layers) {
+    if (layer.id === id) return [];
+    const inside = parentsOf(layer.children, id);
+    if (inside.length > 0 || layer.children.some((child) => child.id === id)) {
+      return [layer.id, ...inside];
+    }
+  }
+  return [];
+}
+
+/** Every layer with children: what Collapse all collapses. */
+const withChildren = (layers: readonly Layer[]): string[] =>
+  layers.flatMap((layer) =>
+    layer.children.length > 0 ? [layer.id, ...withChildren(layer.children)] : [],
+  );
 
 /**
  * Where a layer at `from` lands when dropped before or `after` its sibling at `over`, counted once
@@ -69,19 +131,34 @@ const DRAG_TYPE = "application/x-webforge-layer";
 
 /**
  * Layers (F-ED-12, UI1; Advanced mode): the page's sections and elements as a tree, selected in
- * step with the canvas. Drag a layer, or press Alt+↑/↓, to move it among its siblings; F2 or
- * double-click renames it; the eye hides it (dimmed on the canvas, left out of the export). The
- * toolbar moves, duplicates and deletes the selected element. Every change is one undo step.
+ * step with the canvas. Drag a layer, or press Alt+↑/↓, to move it among its siblings; while
+ * dragging, the rows it can't go to are marked (1.35). F2 or double-click renames it; the eye
+ * hides it (dimmed on the canvas, left out of the export). ←/→ and the arrows beside the names
+ * collapse and expand the tree, the toolbar all of it at once; the filter shows the layers whose
+ * name or kind matches. A right-click (or Shift+F10) opens the element menu. The toolbar moves,
+ * duplicates and deletes the selected element. Every change to the page is one undo step; how the
+ * tree is shown is not.
  */
 export function LayersPanel({
   layers,
   selectedId,
   actions,
   layoutLocked = false,
+  menu,
 }: LayersPanelProps) {
-  const rows = rowsOf(layers);
+  const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(() => new Set());
+  const [filter, setFilter] = useState("");
+  const query = filter.trim().toLocaleLowerCase();
+  const rows = rowsOf(layers, {
+    collapsed,
+    filter: query,
+    open: new Set(parentsOf(layers, selectedId)),
+  });
   const [renaming, setRenaming] = useState<string | null>(null);
-  const [drop, setDrop] = useState<{ id: string; after: boolean } | null>(null);
+  const [menuAt, setMenuAt] = useState<MenuPoint | null>(null);
+  const [drop, setDrop] = useState<{ id: string; after: boolean; allowed: boolean } | null>(null);
+  // The row being dragged, in state too, so the rows it can't go to are marked while it moves.
+  const [dragging, setDragging] = useState<Row | null>(null);
   const dragged = useRef<Row | null>(null);
   const treeRef = useRef<HTMLDivElement>(null);
   const selectedRow = rows.find((row) => row.layer.id === selectedId);
@@ -94,12 +171,37 @@ export function LayersPanel({
     });
   };
 
+  const setExpanded = (id: string, expanded: boolean) =>
+    setCollapsed((current) => {
+      const next = new Set(current);
+      if (expanded) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  /** Opens the element menu for `id` at `at`, selecting it first so the menu acts on it. */
+  const openMenu = (id: string, at: MenuPoint) => {
+    actions.select(id);
+    setMenuAt(at);
+  };
+
   const onKeyDown = (event: KeyboardEvent, row: Row) => {
     if (renaming !== null) {
       return;
     }
     const at = rows.indexOf(row);
-    if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+    if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
+      event.preventDefault();
+      const opening = event.key === "ArrowRight";
+      if (row.layer.children.length > 0 && row.expanded !== opening && query === "") {
+        setExpanded(row.layer.id, opening);
+      } else if (opening && row.expanded) {
+        const child = rows[at + 1];
+        if (child !== undefined) focusRow(child.layer.id);
+      } else if (!opening && row.parent !== "") {
+        focusRow(row.parent);
+      }
+    } else if (event.key === "ArrowUp" || event.key === "ArrowDown") {
       event.preventDefault();
       const step = event.key === "ArrowUp" ? -1 : 1;
       if (event.altKey) {
@@ -124,15 +226,24 @@ export function LayersPanel({
     return event.clientY > box.top + box.height / 2;
   };
 
+  /** Whether the dragged layer can go next to `row`: only among its own siblings. */
+  const canDropAt = (from: Row, row: Row) => from.parent === row.parent;
+
   const onDragOver = (event: DragEvent, row: Row) => {
     const from = dragged.current;
-    if (from === null || from.parent !== row.parent || from.layer.id === row.layer.id) {
+    if (from === null || from.layer.id === row.layer.id) {
       return;
     }
-    event.preventDefault();
+    const allowed = canDropAt(from, row);
     const after = isAfter(event);
-    if (drop?.id !== row.layer.id || drop.after !== after) {
-      setDrop({ id: row.layer.id, after });
+    if (allowed) {
+      event.preventDefault();
+    } else {
+      // Not a drop target: the pointer shows it can't go here, before anything is dropped.
+      event.dataTransfer.dropEffect = "none";
+    }
+    if (drop?.id !== row.layer.id || drop.after !== after || drop.allowed !== allowed) {
+      setDrop({ id: row.layer.id, after, allowed });
     }
   };
 
@@ -140,13 +251,13 @@ export function LayersPanel({
     const from = dragged.current;
     event.preventDefault();
     setDrop(null);
-    if (from === null || from.parent !== row.parent || from.layer.id === row.layer.id) {
+    if (from === null || !canDropAt(from, row) || from.layer.id === row.layer.id) {
       return;
     }
     actions.move(from.layer.id, dropIndex(from.index, row.index, isAfter(event)));
   };
 
-  if (rows.length === 0) {
+  if (layers.length === 0) {
     return (
       <div className="flex h-full items-center justify-center p-4 text-center text-xs text-muted-foreground">
         {t("layers.empty")}
@@ -158,6 +269,9 @@ export function LayersPanel({
   return (
     <div className="flex h-full flex-col">
       <ScrollArea className="min-h-0 flex-1">
+        {rows.length === 0 ? (
+          <p className="p-4 text-center text-xs text-muted-foreground">{t("layers.noMatches")}</p>
+        ) : null}
         <div ref={treeRef} role="tree" aria-label={t("layers.title")} className="p-1">
           {rows.map((row) => {
             const { layer } = row;
@@ -169,38 +283,68 @@ export function LayersPanel({
                   });
             const isSelected = layer.id === selectedId;
             const focusable = isSelected || (selectedRow === undefined && row === rows[0]);
+            // While a layer is dragged, the rows it can't go next to (outside its own list).
+            const notAllowed =
+              dragging !== null && dragging.layer.id !== layer.id && !canDropAt(dragging, row);
+            const hasChildren = layer.children.length > 0;
             return (
               <div
                 key={layer.id}
                 role="treeitem"
                 data-layer={layer.id}
+                data-drop={notAllowed ? "not-allowed" : undefined}
                 aria-level={row.depth}
                 aria-selected={isSelected}
                 aria-setsize={row.siblings}
                 aria-posinset={row.index + 1}
+                aria-expanded={hasChildren ? row.expanded : undefined}
                 tabIndex={focusable ? 0 : -1}
                 draggable={!layoutLocked && renaming !== layer.id}
+                title={
+                  notAllowed
+                    ? t("layers.dropNotAllowed", { item: layerItem(dragging.layer) })
+                    : undefined
+                }
                 className={cn(
                   "group relative flex h-6 items-center gap-1 rounded-sm pr-1 text-xs outline-none",
                   "hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
                   isSelected && "bg-accent text-accent-foreground",
                   layer.hidden && !isSelected && "text-muted-foreground",
+                  notAllowed && "cursor-not-allowed opacity-50",
                   drop?.id === layer.id &&
-                    (drop.after
-                      ? "shadow-[inset_0_-2px_0_var(--ring)]"
-                      : "shadow-[inset_0_2px_0_var(--ring)]"),
+                    (!drop.allowed
+                      ? "shadow-[inset_0_0_0_1px_var(--destructive)]"
+                      : drop.after
+                        ? "shadow-[inset_0_-2px_0_var(--ring)]"
+                        : "shadow-[inset_0_2px_0_var(--ring)]"),
                 )}
-                style={{ paddingLeft: `${(row.depth - 1) * 12 + 8}px` }}
+                style={{ paddingLeft: `${(row.depth - 1) * 12 + 4}px` }}
                 onClick={() => actions.select(layer.id)}
                 onDoubleClick={() => setRenaming(layer.id)}
+                onContextMenu={(event) => {
+                  if (menu === undefined) return;
+                  event.preventDefault();
+                  // From the keyboard (Shift+F10, the Menu key) there is no pointer: below the row.
+                  const box = event.currentTarget.getBoundingClientRect();
+                  const keyboard =
+                    event.button !== 2 || (event.clientX === 0 && event.clientY === 0);
+                  openMenu(
+                    layer.id,
+                    keyboard
+                      ? { x: box.left + 16, y: box.bottom }
+                      : { x: event.clientX, y: event.clientY },
+                  );
+                }}
                 onKeyDown={(event) => onKeyDown(event, row)}
                 onDragStart={(event) => {
                   dragged.current = row;
+                  setDragging(row);
                   event.dataTransfer.effectAllowed = "move";
                   event.dataTransfer.setData(DRAG_TYPE, layer.id);
                 }}
                 onDragEnd={() => {
                   dragged.current = null;
+                  setDragging(null);
                   setDrop(null);
                 }}
                 onDragOver={(event) => onDragOver(event, row)}
@@ -212,6 +356,28 @@ export function LayersPanel({
                 }}
                 onDrop={(event) => onDrop(event, row)}
               >
+                {hasChildren ? (
+                  // For the mouse: the row itself expands and collapses with →/←, and says
+                  // which it is (aria-expanded), so the arrow isn't part of its name.
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    aria-hidden
+                    title={t(row.expanded ? "layers.collapse" : "layers.expand", {
+                      item: layerItem(layer),
+                    })}
+                    disabled={query !== ""}
+                    className="flex size-4 shrink-0 items-center justify-center rounded-sm hover:bg-hover [&_svg]:size-3"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setExpanded(layer.id, !row.expanded);
+                    }}
+                  >
+                    <ChevronRightIcon className={cn(row.expanded && "rotate-90")} />
+                  </button>
+                ) : (
+                  <span aria-hidden className="size-4 shrink-0" />
+                )}
                 {renaming === layer.id ? (
                   <RenameField
                     layer={layer}
@@ -228,6 +394,20 @@ export function LayersPanel({
                       <span title={linked}>
                         <Link2Icon aria-hidden className="mr-1 inline size-3.5 align-[-2px]" />
                         <span className="sr-only">{linked} </span>
+                      </span>
+                    )}
+                    {layer.locked === true && (
+                      // Can't be moved or deleted, only edited (UX-12).
+                      <span title={t("layers.locked")}>
+                        <LockIcon aria-hidden className="mr-1 inline size-3.5 align-[-2px]" />
+                        <span className="sr-only">{t("layers.locked")} </span>
+                      </span>
+                    )}
+                    {layer.animated === true && (
+                      // Has an animation (UX-12, 2.12).
+                      <span title={t("layers.animated")}>
+                        <SparklesIcon aria-hidden className="mr-1 inline size-3.5 align-[-2px]" />
+                        <span className="sr-only">{t("layers.animated")} </span>
                       </span>
                     )}
                     {layer.name === undefined ? (
@@ -267,6 +447,23 @@ export function LayersPanel({
         </div>
       </ScrollArea>
 
+      <div className="shrink-0 border-t border-border p-1">
+        <input
+          type="search"
+          aria-label={t("layers.filter")}
+          placeholder={t("layers.filterPlaceholder")}
+          value={filter}
+          className={cn(fieldControlClass, "h-6 w-full px-1.5 text-xs")}
+          onChange={(event) => setFilter(event.currentTarget.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Escape" && filter !== "") {
+              event.stopPropagation();
+              setFilter("");
+            }
+          }}
+        />
+      </div>
+
       <div
         role="toolbar"
         aria-label={t("layers.toolbar")}
@@ -302,7 +499,24 @@ export function LayersPanel({
         <ToolButton label={t("canvas.delete")} onClick={actions.remove}>
           <Trash2Icon />
         </ToolButton>
+        <span className="flex-1" />
+        <ToolButton label={t("layers.expandAll")} onClick={() => setCollapsed(new Set())}>
+          <ChevronsUpDownIcon />
+        </ToolButton>
+        <ToolButton
+          label={t("layers.collapseAll")}
+          onClick={() => setCollapsed(new Set(withChildren(layers)))}
+        >
+          <ChevronsDownUpIcon />
+        </ToolButton>
       </div>
+      {menu?.({
+        at: menuAt,
+        onClose: () => setMenuAt(null),
+        onRename: () => {
+          if (selectedId !== null) setRenaming(selectedId);
+        },
+      })}
     </div>
   );
 }

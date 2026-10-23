@@ -1,6 +1,7 @@
 import { t } from "@webforge/i18n";
 import { useSyncExternalStore } from "react";
 import type { EditorSession } from "../editor/editor-session.js";
+import { ElementMenu } from "../element-menu/ElementMenu.js";
 import { useCommand, useCommandRegistry } from "../shell/command-context.js";
 import type { PanelRegistry } from "../shell/panels.js";
 import { LayersPanel } from "./LayersPanel.js";
@@ -77,6 +78,7 @@ export function registerLayersPanel(
         layers={layers}
         selectedId={selectedId}
         layoutLocked={layoutLocked}
+        menu={(menu) => <ElementMenu {...menu} />}
         actions={{
           select: (id) => ui.setState({ nodeId: id }),
           rename: (id, name) => renameLayer(session, id, name),
