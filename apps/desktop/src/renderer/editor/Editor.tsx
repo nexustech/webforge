@@ -17,6 +17,7 @@ import {
   registerClipboardCommands,
 } from "../clipboard/register-clipboard-commands.js";
 import { registerStyleCommands } from "../clipboard/style-clipboard.js";
+import { CanvasElementMenu } from "../element-menu/CanvasElementMenu.js";
 import { registerLinkField } from "../links/LinkField.js";
 import { RichTextLinkHost } from "../links/RichTextLinkHost.js";
 import { connectCanvasImages } from "../media/canvas-images.js";
@@ -403,6 +404,7 @@ export function Editor({
       <SharedRegionBanner session={session} />
       <RichTextLinkHost session={session} engine={engine} />
       <SharedSectionNameDialog session={session} naming={naming} onClose={() => setNaming(null)} />
+      <CanvasElementMenu engine={engine} session={session} />
       <div className="editor__stage">
         <section className="editor__canvas" aria-label={t("editor.canvas")} ref={canvasRef} />
         {canvasView !== undefined && (
