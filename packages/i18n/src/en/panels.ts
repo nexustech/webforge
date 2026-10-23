@@ -11,6 +11,9 @@ export const panels = {
   "panels.rightCollapsed": "Right panels, collapsed",
   "panels.drawer": "Bottom panel",
   "panels.empty": "Nothing here yet",
+  // A panel that ran into an error (R3): the rest of the editor keeps working.
+  "panels.error.message": "Something went wrong in this panel. Your work is saved.",
+  "panels.error.reload": "Reload panel",
   "panels.resizeLeft": "Resize the left panels",
   "panels.resizeRight": "Resize the right panels",
   "panels.resizeDrawer": "Resize the bottom panel",

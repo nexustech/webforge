@@ -37,7 +37,7 @@ Effort: **S** ≤ 1 day · **M** 2–4 days. Grouped as the new plan item 1.39 b
 ### 2.3 Screens
 | # | Bootstrap Studio | Webforge today | Change | Effort |
 |---|---|---|---|---|
-| LF-10 | **Start screen:** logo, name and version on the left with *New Design* and *Open*; on the right *Recent Designs* and *Tutorials* tabs, a search field, and a **card grid**: thumbnail, name, path, a version badge, last-opened date, pin and remove on hover (00) | A recent list with thumbnails (1.8) | The same two-column start screen: a card grid for recent sites (thumbnail, name, folder, last edited, pin, remove), a *Help* tab in place of Tutorials, search | S |
+| LF-10 | **Start screen:** logo, name and version on the left with *New Design* and *Open*; on the right *Recent Designs* and *Tutorials* tabs, a search field, and a **card grid**: thumbnail, name, path, a version badge, last-opened date, pin and remove on hover (00) | A recent list with thumbnails (1.8) | The same two-column start screen: a card grid for recent sites (thumbnail, name, folder, last edited, pin, remove), a *Help* tab in place of Tutorials, search. With 2.14, which builds the template gallery on the same screen (moved from 1.39 by the plan review, 23 Oct) | S |
 | LF-11 | **New Design dialog:** name and version at the left; *Starters* (Blank, +) and *Templates* with filter chips (All · Premium · Owned · Free), a sort menu and a *Details* link per card (01) | New Site asks name + theme; gallery with filter and sort (2.14, UX-29) | The same layout: name and theme on the left, a *Blank* starter row, the template grid with category chips and sort, *Details* opening a preview. 2.14, +1 day | S |
 | LF-12 | **Settings:** one dialog with a grouped left nav (*Application:* Interface, Notifications, Preview, Themes, Backups, Devices, External Editors, Updates; *Design:* Bootstrap, SEO, Favicons, PWA, Meta Tags, Head Content, Export, Publish, Ecommerce), *Save / Cancel* (48, 48a–c) | Site Settings (1.17) and app settings are separate dialogs | One **Settings** dialog with two nav groups: *App* (Interface, Backups, Devices, Updates) and *This site* (General, Web address, Social, Contact, Search engines, Analytics, Forms, Publish). Site changes stay one undo step | S |
 | LF-13 | **Title bar:** icon-only New, Open, Save and Settings with tooltips; Preview, Export and Publish as tinted icon split buttons; the native macOS menu bar carries File, Edit, View, Selection, Cloud, Help (07, 38–41) | Icon + text for New, Open, Saved, Preview, Export, Publish; File, Edit, View as text in the title bar | Icon-only buttons with tooltips and accessible names, split-button carets on Preview, Export and Publish. On macOS the menus live in the native menu bar and leave the title bar; on Windows the title bar keeps them | S |
@@ -51,9 +51,9 @@ Effort: **S** ≤ 1 day · **M** 2–4 days. Grouped as the new plan item 1.39 b
 | *Online* tab, *Assistant* tab in the left column | Not in the MVP (UI1 §5; the v1.1 assistant has its own design, UX-28) |
 
 ## 3. Where it lands
-- **New Phase 1 item 1.39 Look-and-feel pass** (stream A, 5 days): LF-1…LF-7, LF-10, LF-12 and LF-13; LF-8 if cheap once 1.36 is in. It runs after 1.37 and 1.36 so the two-column fields don't collide with the Edit panel tools.
-- **2.14 Template format and New Site flow:** LF-11 (+1 day).
-- 1.8 and 1.17 are closed, so their screens (LF-10, LF-12) are reworked by 1.39 rather than reopened.
+- **New Phase 1 item 1.39 Look-and-feel pass** (stream A, 6 days): LF-1…LF-7, LF-12 and LF-13; LF-8 if cheap once 1.36 is in; and the nine UI5 items moved here (SP-1, SP-2, SP-3, SP-8, SP-9, SP-10 from 1.35 after it closed; SP-5, SP-6, SP-7 from 1.36, whose PR predated them; +2 days). It runs after 1.37 and 1.36 so the two-column fields don't collide with the Edit panel tools.
+- **2.14 Template format and New Site flow:** LF-10 and LF-11 (+2 days; LF-10 moved here from 1.39 by the plan review, so one stream builds the whole start screen).
+- 1.8 and 1.17 are closed, so their screens are reworked by 2.14 (LF-10) and 1.39 (LF-12) rather than reopened.
 - **UI1's note** gets the two corrections (LF-1, LF-2) and a pointer here; `--selection-outline` is renamed in the token table.
 
 ## 4. Decision
@@ -61,7 +61,7 @@ Decided by the product owner on 2026-10-23:
 
 | # | Decision |
 |---|---|
-| **UI6** | ✅ **Copy Bootstrap Studio's look and feel as far as the IP rule allows:** LF-1…LF-13 as written (LF-8 optional), as plan item 1.39 (+5 days) and 2.14 (+1 day). Dialogs stay dark; the device set stays Desktop · Tablet · Mobile |
+| **UI6** | ✅ **Copy Bootstrap Studio's look and feel as far as the IP rule allows:** LF-1…LF-13 as written (LF-8 optional), as plan item 1.39 (+4 days, 6 with the UI5 items moved from 1.35 and 1.36) and 2.14 (+2 days). Dialogs stay dark; the device set stays Desktop · Tablet · Mobile |
 
 ## Sources
 - [Bootstrap Studio 9.0.1 screenshot pass](../bootstrap-studio/07-editor-screenshot-pass.md) and its screenshots

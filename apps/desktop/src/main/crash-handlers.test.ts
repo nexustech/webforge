@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
+import { installWorkerCrashHandlers } from "../worker/crash-handlers.js";
 import { type CrashSources, installCrashHandlers, noticeAfterCrash } from "./crash-handlers.js";
 import type { CrashContext, CrashReport } from "./crash-reports.js";
 
@@ -29,9 +30,18 @@ function setUp() {
     return "/reports/crash.json";
   });
   const onFatal = vi.fn();
-  installCrashHandlers(sources, { write }, context, onFatal);
+  let clock = new Date("2026-10-23T12:00:00.000Z");
+  const handlers = installCrashHandlers(
+    sources,
+    { write },
+    { ...context, now: () => clock },
+    onFatal,
+  );
   const emit = (event: string, ...args: unknown[]) => listeners.get(event)?.(...args);
-  return { crashReporter, written, write, onFatal, emit };
+  const later = (ms: number) => {
+    clock = new Date(clock.getTime() + ms);
+  };
+  return { crashReporter, written, write, onFatal, emit, handlers, later };
 }
 
 describe("installCrashHandlers", () => {
@@ -90,6 +100,85 @@ describe("installCrashHandlers", () => {
 
     expect(() => emit("uncaughtException", new Error("x"))).not.toThrow();
     expect(onFatal).toHaveBeenCalled();
+  });
+
+  it("reports a renderer's error as one the editor survived, at most 5 a minute (R3)", () => {
+    const { handlers, written, later } = setUp();
+    const error = { name: "TypeError", frames: ["at Panel (app:///index.js:1:2)"] };
+
+    for (let n = 0; n < 7; n += 1) {
+      handlers.report({ process: "renderer", kind: "render-error", error, fatal: false });
+    }
+    expect(written).toHaveLength(5);
+    expect(written[0]).toMatchObject({
+      process: "renderer",
+      kind: "render-error",
+      fatal: false,
+      error: { name: "TypeError", stack: ["at Panel (app:///index.js:1:2)"] },
+    });
+
+    later(60_000);
+    handlers.report({ process: "renderer", kind: "uncaught-error", error, fatal: false });
+    expect(written).toHaveLength(6);
+  });
+
+  it("reports a worker that crashed on a job, with its frames and no message (R3)", () => {
+    const { handlers, written } = setUp();
+    // A worker as Electron gives it, and the crash handlers the worker installs in itself.
+    const toMain = new Set<(message: unknown) => void>();
+    const worker = handlers.watchWorker({
+      on: (_event: "message", listener: (message: unknown) => void) => toMain.add(listener),
+    });
+    const workerEvents = new Map<string, (error: unknown) => void>();
+    const exit = vi.fn();
+    installWorkerCrashHandlers(
+      { on: (event, listener) => workerEvents.set(event, listener) },
+      (crash) => {
+        for (const listener of toMain) listener(crash);
+      },
+      exit,
+      (run) => run(),
+    );
+    const job = () => {
+      throw new RangeError("Rosa's Bakery: 12 images");
+    };
+    try {
+      job();
+    } catch (error) {
+      workerEvents.get("uncaughtException")?.(error);
+    }
+
+    expect(worker).toBeDefined();
+    expect(exit).toHaveBeenCalledTimes(1);
+    expect(written).toHaveLength(1);
+    expect(written[0]).toMatchObject({
+      process: "utility",
+      kind: "uncaught-exception",
+      fatal: false,
+      error: { name: "RangeError" },
+    });
+    expect(written[0]?.error?.stack[0]).toMatch(/^at job \(/);
+    expect(JSON.stringify(written)).not.toMatch(/Rosa|Bakery|images/);
+  });
+
+  it("ignores a worker's other messages", () => {
+    const { handlers, written } = setUp();
+    let send: (message: unknown) => void = () => undefined;
+    handlers.watchWorker({
+      on: (_event: "message", listener: (message: unknown) => void) => {
+        send = listener;
+      },
+    });
+
+    send({ type: "compiled", id: 1, css: "" });
+    send({
+      type: "crashed",
+      kind: "uncaught-exception",
+      error: { name: "Error", frames: [] },
+      x: 1,
+    });
+
+    expect(written).toEqual([]);
   });
 
   it("uses no network code anywhere in crash reporting", () => {

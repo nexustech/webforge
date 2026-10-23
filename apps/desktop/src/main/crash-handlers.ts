@@ -1,3 +1,4 @@
+import { type ErrorDetails, workerCrashSchema } from "../shared/error-details.js";
 import {
   buildCrashReport,
   type CrashContext,
@@ -30,6 +31,37 @@ export type CrashSources = {
   readonly crashReporter: { start(options: { uploadToServer: boolean; compress: boolean }): void };
 };
 
+/**
+ * At most this many reports a minute from other processes: an error on every render mustn't fill
+ * the disk or slow the app down.
+ */
+const MAX_REPORTED_PER_MINUTE = 5;
+
+/** What another process reported (R3): a renderer error, or a utility process that crashed. */
+type ReportedError = {
+  readonly process: CrashProcess;
+  readonly kind: string;
+  readonly error: ErrorDetails;
+  /** Whether Webforge or a window went away; see `CrashReport.fatal`. */
+  readonly fatal: boolean;
+};
+
+/** What {@link installCrashHandlers} gives for errors other processes report (R3). */
+export type CrashReporting = {
+  /** Writes a report of what another process said about an error, unless it says too much. */
+  readonly report: (reported: ReportedError) => void;
+  /**
+   * Writes a report when one of `worker`'s messages says it crashed. The worker exits next, and
+   * whoever runs it takes that as a failed job; Webforge itself goes on. Returns `worker`.
+   */
+  readonly watchWorker: <W extends WatchedWorker>(worker: W) => W;
+};
+
+/** A utility process, as far as {@link CrashReporting.watchWorker} listens to it. */
+type WatchedWorker = {
+  on(event: "message", listener: (message: unknown) => void): unknown;
+};
+
 /** Electron's child process types, as the report names them. */
 function processOf(type: string | undefined): CrashProcess {
   if (type === "GPU") return "gpu";
@@ -48,7 +80,7 @@ export function installCrashHandlers(
   reports: Pick<CrashReports, "write">,
   context: CrashContext,
   onFatal: () => void,
-): void {
+): CrashReporting {
   sources.crashReporter.start({ uploadToServer: false, compress: true });
 
   const write = (details: Parameters<typeof buildCrashReport>[1]) => {
@@ -84,6 +116,37 @@ export function installCrashHandlers(
       write({ process: processOf(details.type), kind: details.reason, exitCode: details.exitCode });
     }
   });
+
+  let recent: number[] = [];
+  const report = (reported: ReportedError) => {
+    const now = (context.now?.() ?? new Date()).getTime();
+    recent = recent.filter((time) => now - time < 60_000);
+    if (recent.length >= MAX_REPORTED_PER_MINUTE) return;
+    recent.push(now);
+    write({
+      process: reported.process,
+      kind: reported.kind,
+      reported: reported.error,
+      fatal: reported.fatal,
+    });
+  };
+  return {
+    report,
+    watchWorker(worker) {
+      worker.on("message", (message) => {
+        const crash = workerCrashSchema.safeParse(message);
+        if (crash.success) {
+          report({
+            process: "utility",
+            kind: crash.data.kind,
+            error: crash.data.error,
+            fatal: false,
+          });
+        }
+      });
+      return worker;
+    },
+  };
 }
 
 /**

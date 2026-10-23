@@ -15,6 +15,7 @@ import { type ReactNode, useEffect, useRef, useState } from "react";
 import type { Preferences } from "../../shared/ipc-contract.js";
 import { useCommandRegistry } from "./command-context.js";
 import { COMMAND_IDS } from "./command-ids.js";
+import { CanvasErrorBoundary, PanelErrorBoundary } from "./error-boundaries.js";
 import { usePanelRegistry, usePanels } from "./panel-context.js";
 import { type PanelSlot, panelsInSlot } from "./panels.js";
 
@@ -134,7 +135,9 @@ function PanelTabs({
       </TabsList>
       {panels.map((panel) => (
         <TabsContent key={panel.id} value={panel.id} className="overflow-auto">
-          <panel.component />
+          <PanelErrorBoundary>
+            <panel.component />
+          </PanelErrorBoundary>
         </TabsContent>
       ))}
     </Tabs>
@@ -415,7 +418,7 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
           onLayoutChanged={remember(PANEL_GROUPS.center)}
         >
           <ResizablePanel id="canvas" minSize="30%" className="canvas-backdrop">
-            {center}
+            <CanvasErrorBoundary>{center}</CanvasErrorBoundary>
           </ResizablePanel>
           <ResizableHandle aria-label={t("panels.resizeDrawer")} />
           <ResizablePanel id="drawer" panelRef={drawer} minSize="10%" maxSize="60%" collapsible>

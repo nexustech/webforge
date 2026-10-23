@@ -9,7 +9,7 @@ import {
   type SharedSectionsDoc,
 } from "@webforge/model";
 import { boundText, type ComponentLibrary, textValue } from "@webforge/site-components";
-import { act } from "react";
+import { act, Component, type ReactNode } from "react";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CanvasEngine, CanvasSize, EngineEdit, Unsubscribe } from "../canvas-engine.js";
 import { pageActions } from "./page-actions.js";
@@ -978,5 +978,70 @@ describe("createPuckEngine before mount", () => {
       expect(engine.perform("delete")).toBe(false);
       engine.destroy();
     }).not.toThrow();
+  });
+});
+
+describe("createPuckEngine's error boundary (R3)", () => {
+  it("shows the boundary's fallback when an element throws, tells onError, and recovers", async () => {
+    let broken = true;
+    let tryAgain = () => undefined as void;
+    class Boundary extends Component<{ readonly children: ReactNode }, { failed: boolean }> {
+      override state = { failed: false };
+      static getDerivedStateFromError() {
+        return { failed: true };
+      }
+      override render(): ReactNode {
+        if (!this.state.failed) return this.props.children;
+        tryAgain = () => this.setState({ failed: false });
+        return <p className="t-fallback">Something went wrong</p>;
+      }
+    }
+    const throwing: ComponentLibrary = {
+      components: {
+        ...library.components,
+        Broken: {
+          label: "Broken",
+          fields: {},
+          defaults: {},
+          render: () => {
+            if (broken) throw new Error("Rosa's Bakery");
+            return <p className="t-heading">Mended</p>;
+          },
+        },
+      },
+    };
+    const onError = vi.fn();
+    const element = document.createElement("div");
+    document.body.append(element);
+    const engine = createPuckEngine({ iframe: false });
+    await act(async () => {
+      engine.mount(element, {
+        library: throwing,
+        theme: { ...DEFAULT_THEME, preset: "test" },
+        errorBoundary: Boundary,
+        onError,
+      });
+      engine.loadPage(
+        { ...page, content: [...page.content, { type: "Broken", props: { id: "x" } }] },
+        NO_LAYOUT,
+      );
+    });
+    await settle();
+
+    expect(element.querySelector(".t-fallback")?.textContent).toBe("Something went wrong");
+    expect(onError).toHaveBeenCalledWith(expect.any(Error), true);
+
+    broken = false;
+    await act(async () => tryAgain());
+    await settle();
+    expect([...element.querySelectorAll(".t-heading")].map((h) => h.textContent)).toEqual([
+      "First",
+      "Second",
+      "Mended",
+    ]);
+
+    engine.destroy();
+    await settle();
+    element.remove();
   });
 });
