@@ -78,6 +78,10 @@ describe("buildSite: self-contained output (X1, C8)", () => {
     // The header's own class sets the page's scroll padding: `:root:has(<that class>)`.
     expect(css).toMatch(/:root:has\(\.\S*scroll-pt-20\) \{\n\s*scroll-padding-top:/);
     expect(css).toContain("scroll-padding-top: calc(var(--spacing) * 20);");
+    // The centred Header is taller on wide screens, its menu below the name: more padding there.
+    expect(css).toMatch(
+      /@media [^{]*\{\n\s*:root:has\(\.\S*scroll-pt-32\) \{\n\s*scroll-padding-top:/,
+    );
     expect(css).toContain(".data-scrolled\\:shadow-md");
     expect(text(built, fileNamed(built, /^assets\/js\//))).toContain("Sticky header (F-DS-6)");
   });

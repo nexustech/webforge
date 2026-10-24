@@ -45,6 +45,9 @@ describe("addItems (F-ED-1, ADR 0005)", () => {
     expect(addItems(siteLibrary, "sections").map((item) => item.type)).toEqual([
       "Section",
       "Hero",
+      "TextSection",
+      "TextImage",
+      "CallToAction",
       "Faq",
     ]);
     expect(addItems(siteLibrary, "elements")).toEqual([
@@ -60,7 +63,9 @@ describe("addItems (F-ED-1, ADR 0005)", () => {
     expect(groupItems(sections, "")).toEqual([
       { category: "Basic", items: [sections[0]] },
       { category: "Heroes", items: [sections[1]] },
-      { category: "Questions and answers", items: [sections[2]] },
+      { category: "Text", items: [sections[2], sections[3]] },
+      { category: "Calls to action", items: [sections[4]] },
+      { category: "Questions and answers", items: [sections[5]] },
     ]);
     expect(groupItems(sections, "  QUESTIONS ").map((group) => group.category)).toEqual([
       "Questions and answers",

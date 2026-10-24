@@ -8,7 +8,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-const hero = (alignment: string) => ({
+const hero = (alignment: string, props: Record<string, unknown> = {}) => ({
   type: "Hero",
   props: {
     id: `hero-${alignment}`,
@@ -18,6 +18,7 @@ const hero = (alignment: string) => ({
     buttonLink: { kind: "url", href: "https://example.com" },
     alignment,
     image: { mediaId: "photo" },
+    ...props,
   },
 });
 
@@ -26,6 +27,68 @@ export const Hero: Story = { args: { nodes: [hero("centre")] } };
 
 /** The Hero aligned to the left. */
 export const HeroLeft: Story = { args: { nodes: [hero("left")] } };
+
+/** The Hero centred, its image below the text (2.6). */
+export const HeroCentred: Story = { args: { nodes: [hero("centre", { variant: "centred" })] } };
+
+/** The Hero's text over its image, which fills the section (2.6). */
+export const HeroBackground: Story = {
+  args: { nodes: [hero("left", { variant: "background" })] },
+};
+
+/** The Hero with text only (2.6). */
+export const HeroMinimal: Story = { args: { nodes: [hero("centre", { variant: "minimal" })] } };
+
+/** A Text section: a title and formatted text (2.6). */
+export const Text: Story = {
+  args: {
+    nodes: [
+      {
+        type: "TextSection",
+        props: {
+          id: "story",
+          title: "Our story",
+          text: '<p>Rosa opened the bakery in 1998 with one oven and a sourdough starter from her grandmother.</p><p>Today we bake every morning from 4am, and <a href="https://example.com">sell at the market</a> on Saturdays.</p>',
+        },
+      },
+    ],
+  },
+};
+
+const textImage = (variant: string) => ({
+  type: "TextImage",
+  props: {
+    id: `text-image-${variant}`,
+    title: "What we bake",
+    text: "<p>Sourdough, rye and seeded loaves; cakes to order with two days' notice.</p>",
+    image: { mediaId: "photo", alt: "Loaves cooling on a rack" },
+    variant,
+  },
+});
+
+/** Text + Image, the image on the right (2.6). */
+export const TextImageRight: Story = { args: { nodes: [textImage("imageRight")] } };
+
+/** Text + Image, the image on the left (2.6). */
+export const TextImageLeft: Story = { args: { nodes: [textImage("imageLeft")] } };
+
+const callToAction = (variant: string) => ({
+  type: "CallToAction",
+  props: {
+    id: `cta-${variant}`,
+    title: "Order a cake",
+    text: "Tell us what you'd like two days ahead, and we'll have it ready.",
+    buttonLabel: "Get in touch",
+    buttonLink: { kind: "url", href: "https://example.com" },
+    variant,
+  },
+});
+
+/** A Call to action as a banner in the theme's main colour (2.6). */
+export const CallToActionBanner: Story = { args: { nodes: [callToAction("banner")] } };
+
+/** A Call to action with its button beside the text (2.6). */
+export const CallToActionSplit: Story = { args: { nodes: [callToAction("split")] } };
 
 /** An FAQ: each question opens with the keyboard or a click, without JavaScript. */
 export const Faq: Story = {
