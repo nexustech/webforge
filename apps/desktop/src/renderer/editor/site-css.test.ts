@@ -215,7 +215,7 @@ describe("connectSiteCss", () => {
 
   it("styles the rest of a site with a component the library lacks (#142)", () => {
     const site = starterSite();
-    site.layout.header = [{ type: "Carousel", props: { id: "c" } }];
+    site.layout.header = [{ type: "NoSuchComponent", props: { id: "c" } }];
     const session = createEditorSession(siteLibrary, site);
     const compile = vi.fn(
       async (_request: CanvasCssRequest): Promise<CanvasCssResult> => ({ status: "failed" }),

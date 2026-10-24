@@ -53,6 +53,7 @@ describe("addItems (F-ED-1, ADR 0005)", () => {
     expect(addItems(siteLibrary, "elements")).toEqual([
       { type: "Heading", label: "Heading", category: "Text" },
       { type: "Text", label: "Text", category: "Text" },
+      { type: "Carousel", label: "Carousel", category: "Images and media" },
     ]);
   });
 

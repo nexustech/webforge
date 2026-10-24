@@ -2,7 +2,7 @@
 
 A desktop visual website builder for **DIY small-business owners**. Users drag and drop sections, click to edit text, choose a theme, and publish a fast, **self-contained static website** (plain HTML/CSS/JS, no server, no CDN), to a folder/ZIP, FTP/FTPS/SFTP or Netlify.
 
-**Status:** planning complete; Phase 0 (prototype) next.
+**Status:** Phase 1 (editor core) is all but complete and Phase 2 (design and components) has started; the remaining Phase 0 items are the publishing spikes and signed installers. The live state is in the [GitHub milestones](https://github.com/nexustech/webforge/milestones) and the [implementation plan](spec/04-implementation-plan.md).
 
 ## Documentation
 | Document | What it covers |
@@ -13,6 +13,10 @@ A desktop visual website builder for **DIY small-business owners**. Users drag a
 | [spec/04-implementation-plan.md](spec/04-implementation-plan.md) | MVP work breakdown, schedule, risks and open questions (live tracking in GitHub issues) |
 | [research/README.md](research/README.md) | Research notes and the reasoning behind every decision |
 | [docs/adr/](docs/adr/) | Architecture decisions made during implementation |
+| [docs/reviews/](docs/reviews/) | Reviews of `main` and of the plan: architecture (findings R1–R17), plan feasibility, extensibility |
+| [docs/components.md](docs/components.md) | How to write a site component |
+| [e2e/README.md](e2e/README.md) | The Playwright suites: desktop app, exported sites, packaged app, visual regression, performance |
+| [CLAUDE.md](CLAUDE.md) | Guidance for coding assistants: hard rules, commands, workflow |
 | [ideas.md](ideas.md) | Original brief |
 
 ## Getting started
@@ -21,10 +25,10 @@ Requires Node 24 and pnpm 12 (`npm install -g pnpm@12`; the exact version is pin
 ```sh
 pnpm install   # also installs the git hooks (lefthook)
 pnpm dev       # start the desktop app with hot reload
-pnpm check     # lint, typecheck, package boundaries, unused code, licences, tests with coverage
+pnpm check     # lint, typecheck, package boundaries, unused code, licences, UI strings, React Compiler, tests with coverage
 ```
 
-Repository layout: `apps/desktop` (Electron app) and `packages/*` (model, history, storage, engine, site-components, themes, pipeline, publish, editor-ui, i18n, test-utils). See [architecture §4](spec/01-architecture.md#4-package--module-structure-pnpm-monorepo).
+Repository layout: `apps/desktop` (Electron app), `packages/*` (model, history, storage, engine, site-components, themes, pipeline, publish, editor-ui, i18n, errors, test-utils), `e2e/` (Playwright tests) and `tools/` (repository scripts such as the licence check and the checks `pnpm check` runs). See [architecture §4](spec/01-architecture.md#4-package--module-structure-pnpm-monorepo).
 
 ## Stack at a glance
 Electron 44 · React 19 + shadcn/ui · Tailwind v4 + daisyUI 5 · Puck (canvas engine) · Zustand + Immer (undo/redo) · SQLite `.wforge` files (better-sqlite3) · TypeScript 7 · pnpm + Turborepo · Biome · Vitest · Playwright · Storybook · electron-builder

@@ -15,6 +15,7 @@ import {
   type EditKind,
   runHistoryCommand,
   TEXT_SESSION_GRACE_MS,
+  TYPING_PAUSE_MS,
 } from "./editor-session.js";
 import { createFakeEngine } from "./fake-engine.test-helper.js";
 import { starterSite } from "./starter-site.js";
@@ -65,7 +66,11 @@ function setup() {
   const connection = connectEngine(engine, session);
   const doc = () => currentPage(session)?.doc as PageDoc;
   const labels = () => session.history.entries().map((entry) => entry.label);
-  const typeHeading = (text: string, selection: string | null = "heading-1") =>
+  const typeHeading = (
+    text: string,
+    selection: string | null = "heading-1",
+    typingPauseMs?: number,
+  ) =>
     engine.edit({
       kind: "text",
       nodeId: "heading-1",
@@ -73,6 +78,7 @@ function setup() {
       field: "text",
       page: withHeadingText(doc(), text),
       selection,
+      ...(typingPauseMs === undefined ? {} : { typingPauseMs }),
     });
   return { session, engine, connection, doc, labels, typeHeading, home, about };
 }
@@ -268,8 +274,9 @@ describe("connectEngine", () => {
   it("keeps a text session as one step once something else is selected (D1)", () => {
     const { session, engine, labels, typeHeading, doc } = setup();
     typeHeading("Welcome!");
+    // Typed after a pause: a chunk of its own while the session lasts.
     vi.advanceTimersByTime(2_000);
-    typeHeading("Welcome!!");
+    typeHeading("Welcome!!", "heading-1", 2_000);
     expect(labels()).toEqual(["Edited Heading text", "Edited Heading text"]);
 
     engine.selectFromCanvas("text-1");
@@ -312,7 +319,7 @@ describe("connectEngine", () => {
     const { connection, labels, typeHeading, engine } = setup();
     typeHeading("A");
     vi.advanceTimersByTime(2_000);
-    typeHeading("AB");
+    typeHeading("AB", "heading-1", 2_000);
 
     connection.flush();
     expect(labels()).toHaveLength(2);
@@ -320,6 +327,35 @@ describe("connectEngine", () => {
     engine.selectFromCanvas(null);
     connection.flush();
     expect(labels()).toHaveLength(1);
+  });
+
+  it("chunks typing by the user's own pauses, not by when the text arrives (#307)", () => {
+    const { labels, typeHeading, engine, doc } = setup();
+    typeHeading("Wel", "heading-1", Number.POSITIVE_INFINITY);
+    // The rest, typed without a pause, arrives late from a busy canvas: still the same chunk.
+    vi.advanceTimersByTime(2_000);
+    typeHeading("Welcome", "heading-1", 60);
+    expect(labels()).toEqual(["Edited Heading text"]);
+
+    // A real pause in the typing starts a chunk, however soon its text arrives.
+    typeHeading("Welcome!", "heading-1", TYPING_PAUSE_MS + 1);
+    expect(labels()).toEqual(["Edited Heading text", "Edited Heading text"]);
+    engine.command("undo");
+    expect(doc()).toEqual(withHeadingText(starterPage(), "Welcome"));
+    engine.command("undo");
+    expect(doc()).toEqual(starterPage());
+  });
+
+  it("keeps an edit with no keystrokes of its own in the open session's chunk (#307)", () => {
+    const { labels, typeHeading } = setup();
+    // The first edit of a session, with no keystrokes: as before, by when it arrives.
+    typeHeading("Wel");
+    vi.advanceTimersByTime(2_000);
+    typeHeading("Welcome");
+    expect(labels()).toEqual(["Edited Heading text"]);
+    vi.advanceTimersByTime(2_000);
+    typeHeading("Welcome!");
+    expect(labels()).toEqual(["Edited Heading text"]);
   });
 
   it("ends a text session when a different edit follows", () => {

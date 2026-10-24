@@ -177,8 +177,11 @@ function frozen<T>(value: T): T {
  * migrations.ts): this default may change from now on, that copy never.
  *
  * The tokens a new site starts with: the "light" preset, whose colours are daisyUI's light
- * theme's, so a site looks as it did when its theme was daisyUI's own. Frozen: copy it to change
- * it ({@link copyTheme}).
+ * theme's, so a site looks as it did when its theme was daisyUI's own, and its dark sections
+ * daisyUI's dark theme's. A few are adjusted so every pair of colours the components use passes
+ * WCAG AA (#312): the light secondary and accent are darker (the accent with light text), and in
+ * the dark colours primary is a little darker and secondary a little lighter with dark text. Each
+ * keeps its hue and chroma. Frozen: copy it to change it ({@link copyTheme}).
  */
 export const DEFAULT_THEME: ThemeTokens = frozen({
   preset: "light",
@@ -190,10 +193,10 @@ export const DEFAULT_THEME: ThemeTokens = frozen({
     "base-content": { l: 0.21, c: 0.006, h: 285.885 },
     primary: { l: 0.45, c: 0.24, h: 277.023 },
     "primary-content": { l: 0.93, c: 0.034, h: 272.788 },
-    secondary: { l: 0.65, c: 0.241, h: 354.308 },
+    secondary: { l: 0.53, c: 0.241, h: 354.308 },
     "secondary-content": { l: 0.94, c: 0.028, h: 342.258 },
-    accent: { l: 0.77, c: 0.152, h: 181.912 },
-    "accent-content": { l: 0.38, c: 0.063, h: 188.416 },
+    accent: { l: 0.5, c: 0.152, h: 181.912 },
+    "accent-content": { l: 0.98, c: 0.063, h: 188.416 },
     neutral: { l: 0.14, c: 0.005, h: 285.823 },
     "neutral-content": { l: 0.92, c: 0.004, h: 286.32 },
     info: { l: 0.74, c: 0.16, h: 232.661 },
@@ -210,10 +213,10 @@ export const DEFAULT_THEME: ThemeTokens = frozen({
     "base-200": { l: 0.2326, c: 0.014, h: 253.1 },
     "base-300": { l: 0.2115, c: 0.012, h: 254.09 },
     "base-content": { l: 0.97807, c: 0.029, h: 256.847 },
-    primary: { l: 0.58, c: 0.233, h: 277.117 },
+    primary: { l: 0.555, c: 0.233, h: 277.117 },
     "primary-content": { l: 0.96, c: 0.018, h: 272.314 },
-    secondary: { l: 0.65, c: 0.241, h: 354.308 },
-    "secondary-content": { l: 0.94, c: 0.028, h: 342.258 },
+    secondary: { l: 0.67, c: 0.241, h: 354.308 },
+    "secondary-content": { l: 0.25, c: 0.028, h: 342.258 },
     accent: { l: 0.77, c: 0.152, h: 181.912 },
     "accent-content": { l: 0.38, c: 0.063, h: 188.416 },
     neutral: { l: 0.14, c: 0.005, h: 285.823 },

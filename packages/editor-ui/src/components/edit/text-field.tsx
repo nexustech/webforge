@@ -15,7 +15,7 @@ export const fieldControlClass = cn(
  * may pass through invalid text on the way to valid text. Leaving the field or pressing Enter
  * reports the text if it is valid, else shows why not and keeps it; Esc goes back to the value.
  */
-export function TextField({ id, field, value, onChange, onCommit }: FieldRendererProps) {
+export function TextField({ id, helpId, field, value, onChange, onCommit }: FieldRendererProps) {
   const stored = typeof value === "string" ? value : "";
   const [draft, setDraft] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -65,7 +65,9 @@ export function TextField({ id, field, value, onChange, onCommit }: FieldRendere
         placeholder={field.placeholder}
         spellCheck={false}
         aria-invalid={error !== null}
-        aria-describedby={error === null ? undefined : errorId}
+        aria-describedby={
+          [error === null ? undefined : errorId, helpId].filter(Boolean).join(" ") || undefined
+        }
         onChange={(event) => {
           setDraft(event.target.value);
           setError(null);

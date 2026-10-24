@@ -351,6 +351,7 @@ function FieldRow({
   const Renderer = rendererFor(registered, field.kind) as FieldRenderer;
   const id = `${idPrefix}-${field.name}`;
   const labelId = `${id}-label`;
+  const helpId = field.help === undefined ? undefined : `${id}-help`;
   const resetField =
     field.changed === true && onResetToDefault !== undefined
       ? () => onResetToDefault([field.name])
@@ -383,11 +384,17 @@ function FieldRow({
       <Renderer
         id={id}
         labelId={labelId}
+        {...(helpId === undefined ? {} : { helpId })}
         field={field}
         value={field.value}
         onChange={(value) => onChange(field.name, value)}
         onCommit={() => onCommit(field.name)}
       />
+      {helpId === undefined ? null : (
+        <p id={helpId} className="text-xs text-muted-foreground">
+          {field.help}
+        </p>
+      )}
     </div>
   );
 }
