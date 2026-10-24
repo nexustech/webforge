@@ -194,9 +194,10 @@ export type RenderContext = {
 
 /**
  * The name of a script in `webforge.js` that components can need on the exported site: a file of
- * `behaviours/` without `.js` ("menu"). `defineComponent` checks that it exists.
+ * `behaviours/` without `.js` ("menu"). Generated with the scripts (`pnpm behaviours`), so a name
+ * without a file is a type error; `defineComponent` checks it again for specs typed loosely.
  */
-export type BehaviourName = string;
+export type { BehaviourName } from "./behaviours/index.js";
 
 /**
  * Where a component goes (F-ED-1, ADR 0005): a `section` is a band of the page, at its top level;
