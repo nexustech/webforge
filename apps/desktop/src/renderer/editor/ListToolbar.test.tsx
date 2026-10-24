@@ -2,7 +2,6 @@
 import { act, cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { copiedNodeId, type NodeDoc } from "@webforge/model";
-import { siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { saveAsSharedSection } from "../shared-sections/shared-sections.js";
 import { CanvasToolbarHost } from "../shell/CanvasToolbarHost.js";
@@ -10,7 +9,8 @@ import { createCanvasView } from "../shell/canvas-view.js";
 import { ContextualToolbarsProvider } from "../shell/contextual-toolbar-context.js";
 import { createContextualToolbars } from "../shell/contextual-toolbars.js";
 import { createPreferencesStore } from "../shell/preferences-store.js";
-import { createEditorSession, currentPage } from "./editor-session.js";
+import { sessionWith } from "../testing/fixtures.js";
+import { currentPage } from "./editor-session.js";
 import { listToolbar } from "./ListToolbar.js";
 import { starterSite } from "./starter-site.js";
 
@@ -29,7 +29,7 @@ function setUp(mode: "design" | "content" = "design") {
   const section = home?.doc.content[0];
   if (section === undefined) throw new Error("no section");
   (section.props.content as NodeDoc[]).push(list());
-  const session = createEditorSession(siteLibrary, site);
+  const session = sessionWith(site);
   const flush = vi.fn();
   const toolbars = createContextualToolbars();
   toolbars.register(listToolbar({ session, flush }));

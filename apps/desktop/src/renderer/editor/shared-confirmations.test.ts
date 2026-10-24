@@ -6,11 +6,11 @@ import {
   type SharedSectionId,
   type SiteDoc,
 } from "@webforge/model";
-import { siteLibrary } from "@webforge/site-components";
+import { createFakeEngine } from "@webforge/test-utils/renderer";
 import { describe, expect, it, vi } from "vitest";
 import type { SiteWideAction } from "../shell/confirm-site-wide.js";
-import { connectEngine, createEditorSession, currentPage } from "./editor-session.js";
-import { createFakeEngine } from "./fake-engine.test-helper.js";
+import { sessionWith } from "../testing/fixtures.js";
+import { connectEngine, currentPage } from "./editor-session.js";
 import { confirmSharedRemovals, sharedCutConfirmation } from "./shared-confirmations.js";
 import { starterSite } from "./starter-site.js";
 
@@ -29,7 +29,7 @@ function footerSite(): SiteDoc {
  * answers it with `settle`.
  */
 function setUp(answer?: boolean, site: SiteDoc = footerSite()) {
-  const session = createEditorSession(siteLibrary, site);
+  const session = sessionWith(site);
   const engine = createFakeEngine();
   let settle: (confirmed: boolean) => void = () => undefined;
   let asking = false;

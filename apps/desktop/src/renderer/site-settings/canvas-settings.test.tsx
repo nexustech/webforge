@@ -1,9 +1,7 @@
-import { siteLibrary } from "@webforge/site-components";
 import { isValidElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import { createEditorSession } from "../editor/editor-session.js";
-import { starterSite } from "../editor/starter-site.js";
+import { sessionWith } from "../testing/fixtures.js";
 import { connectCanvasSettings } from "./canvas-settings.js";
 import { saveSiteSettings } from "./settings-form.js";
 
@@ -16,7 +14,7 @@ function bindingsGiven(setSettings: ReturnType<typeof vi.fn>, index: number) {
 
 describe("connectCanvasSettings", () => {
   it("gives the canvas Site Settings values, again whenever they change, and hints for empty ones", () => {
-    const session = createEditorSession(siteLibrary, starterSite());
+    const session = sessionWith();
     const engine = { setSettings: vi.fn() };
     const stop = connectCanvasSettings(engine, session);
 
@@ -47,7 +45,7 @@ describe("connectCanvasSettings", () => {
   });
 
   it("gives the canvas the opening hours too, again when they change (2.8)", () => {
-    const session = createEditorSession(siteLibrary, starterSite());
+    const session = sessionWith();
     const engine = { setSettings: vi.fn() };
     connectCanvasSettings(engine, session);
     expect(bindingsGiven(engine.setSettings, 0).openingHours).toEqual([]);
@@ -60,7 +58,7 @@ describe("connectCanvasSettings", () => {
   });
 
   it("gives the canvas the site's language and form service, and a hint without one (2.8)", () => {
-    const session = createEditorSession(siteLibrary, starterSite());
+    const session = sessionWith();
     const engine = { setSettings: vi.fn() };
     connectCanvasSettings(engine, session);
     const first = bindingsGiven(engine.setSettings, 0);

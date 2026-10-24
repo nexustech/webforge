@@ -1,10 +1,9 @@
 import type { SiteDoc } from "@webforge/model";
 import { DEFAULT_THEME } from "@webforge/model";
-import { siteLibrary } from "@webforge/site-components";
+import { createFakeEngine } from "@webforge/test-utils/renderer";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CanvasCssRequest, CanvasCssResult } from "../../shared/ipc/canvas.js";
-import { createEditorSession } from "./editor-session.js";
-import { createFakeEngine } from "./fake-engine.test-helper.js";
+import { sessionWith } from "../testing/fixtures.js";
 import { classesOfHtml, connectSiteCss, SITE_CSS_DEBOUNCE_MS, siteClasses } from "./site-css.js";
 import { starterSite } from "./starter-site.js";
 
@@ -15,7 +14,7 @@ function setup(
     bodyClass: "bg-base-100",
   }),
 ) {
-  const session = createEditorSession(siteLibrary, starterSite());
+  const session = sessionWith();
   const engine = createFakeEngine();
   const answers: ((result: CanvasCssResult) => void)[] = [];
   const compile = vi.fn(
@@ -56,7 +55,7 @@ describe("classesOfHtml", () => {
 
 describe("siteClasses", () => {
   it("collects the classes of every page, the Header and the Footer", () => {
-    const session = createEditorSession(siteLibrary, starterSite());
+    const session = sessionWith();
 
     const classes = siteClasses(session.history.document.getState(), session);
 
@@ -67,7 +66,7 @@ describe("siteClasses", () => {
   });
 
   it("adds every spacing class a handle can drag to, styled before the next compile (1.32)", () => {
-    const session = createEditorSession(siteLibrary, starterSite());
+    const session = sessionWith();
 
     const classes = siteClasses(session.history.document.getState(), session);
 
@@ -75,7 +74,7 @@ describe("siteClasses", () => {
   });
 
   it("collects a colour field's own hex colours, which no safelist has (2.1)", () => {
-    const session = createEditorSession(siteLibrary, starterSite());
+    const session = sessionWith();
     session.history.run("Changed Heading colour", (draft) => {
       const heading = firstHeading(draft);
       if (heading !== undefined) {
@@ -105,7 +104,7 @@ describe("siteClasses", () => {
         },
       },
     };
-    const session = createEditorSession(siteLibrary, hidden);
+    const session = sessionWith(hidden);
 
     const classes = siteClasses(hidden, session);
 
@@ -196,7 +195,7 @@ describe("connectSiteCss", () => {
   });
 
   it("handles a compile call that rejects, and tries again after the next change", async () => {
-    const session = createEditorSession(siteLibrary, starterSite());
+    const session = sessionWith();
     const compile = vi.fn(() => Promise.reject(new Error("IPC failed")));
     connectSiteCss(createFakeEngine(), session, compile);
     await Promise.resolve();
@@ -226,7 +225,7 @@ describe("connectSiteCss", () => {
   it("styles the rest of a site with a component the library lacks (#142)", () => {
     const site = starterSite();
     site.layout.header = [{ type: "NoSuchComponent", props: { id: "c" } }];
-    const session = createEditorSession(siteLibrary, site);
+    const session = sessionWith(site);
     const compile = vi.fn(
       async (_request: CanvasCssRequest): Promise<CanvasCssResult> => ({ status: "failed" }),
     );

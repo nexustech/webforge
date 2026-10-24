@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { copiedNodeId, newSharedCopy, type SharedSectionId } from "@webforge/model";
 import { siteLibrary, starterPage } from "@webforge/site-components";
+import { createFakeEngine, type FakeEngine } from "@webforge/test-utils/renderer";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -15,10 +16,9 @@ import { CanvasErrorBoundary } from "../shell/error-boundaries.js";
 import { PanelRegistryProvider, usePanels } from "../shell/panel-context.js";
 import { createPanelRegistry, type PanelRegistry } from "../shell/panels.js";
 import { createPreferencesStore } from "../shell/preferences-store.js";
+import { sessionWith } from "../testing/fixtures.js";
 import { Editor } from "./Editor.js";
-import { createEditorSession, type EditorSession } from "./editor-session.js";
-import { createFakeEngine, type FakeEngine } from "./fake-engine.test-helper.js";
-import { starterSite } from "./starter-site.js";
+import type { EditorSession } from "./editor-session.js";
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean;
@@ -50,7 +50,7 @@ describe("Editor", () => {
     container = document.createElement("div");
     document.body.append(container);
     root = createRoot(container);
-    session = createEditorSession(siteLibrary, starterSite());
+    session = sessionWith();
     engine = createFakeEngine();
     createEngine = () => engine;
     registry = createCommandRegistry();

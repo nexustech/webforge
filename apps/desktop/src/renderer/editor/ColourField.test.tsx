@@ -3,12 +3,10 @@ import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event";
 import type { FieldSpec } from "@webforge/editor-ui";
 import { DEFAULT_THEME, type TextStyle } from "@webforge/model";
-import { siteLibrary } from "@webforge/site-components";
 import { contrastRatio, hexToOklch } from "@webforge/themes";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { sessionWith } from "../testing/fixtures.js";
 import { ColourField, contrastNeeded, shownRatio } from "./ColourField.js";
-import { createEditorSession } from "./editor-session.js";
-import { starterSite } from "./starter-site.js";
 
 afterEach(cleanup);
 
@@ -27,7 +25,7 @@ function setUp(
   value: string,
   options: { readonly advanced?: boolean; readonly textStyles?: readonly TextStyle[] } = {},
 ) {
-  const session = createEditorSession(siteLibrary, starterSite());
+  const session = sessionWith();
   const onChange = vi.fn();
   const onCommit = vi.fn();
   render(

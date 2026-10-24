@@ -10,6 +10,7 @@ import { linkFieldRenderer } from "../links/LinkField.js";
 import { imageFieldRenderer } from "../media/ImageField.js";
 import { addMedia } from "../media/media-commands.js";
 import { saveAsSharedSection } from "../shared-sections/shared-sections.js";
+import { sessionWith } from "../testing/fixtures.js";
 import { EditPanelHost } from "./EditPanelHost.js";
 import {
   createEditorSession,
@@ -54,7 +55,7 @@ function setup(
   nodeId: string | null = "heading-1",
   renderersOf: (session: EditorSession) => FieldRenderers = () => ({}),
 ) {
-  const session = createEditorSession(siteLibrary, siteWithHero());
+  const session = sessionWith(siteWithHero());
   session.select(nodeId);
   const flush = vi.fn();
   render(
@@ -87,7 +88,7 @@ function setup(
 
 describe("EditPanelHost redraws (R9)", () => {
   it("draws nothing again, its link field included, while typing changes another element", () => {
-    const session = createEditorSession(siteLibrary, siteWithHero());
+    const session = sessionWith(siteWithHero());
     session.select("hero");
     let commits = 0;
     render(
@@ -125,7 +126,7 @@ describe("EditPanelHost redraws (R9)", () => {
 
 describe("EditPanelHost redraws a Section (R9, #296 review)", () => {
   it("draws nothing again while typing in an element inside the selected Section", () => {
-    const session = createEditorSession(siteLibrary, siteWithHero());
+    const session = sessionWith(siteWithHero());
     session.select("section-1");
     let commits = 0;
     render(
@@ -163,7 +164,7 @@ describe("EditPanelHost changes to an element that has gone (#296 review)", () =
 
 describe("EditPanelHost in Content mode (M3)", () => {
   it("keeps texts, links and list items, and leaves styles out", async () => {
-    const session = createEditorSession(siteLibrary, siteWithHero());
+    const session = sessionWith(siteWithHero());
     session.select("hero");
     const view = render(<EditPanelHost session={session} flush={vi.fn()} contentOnly />);
 
@@ -426,7 +427,7 @@ describe("EditPanelHost", () => {
     });
 
     it("shows the groups closed for the element's type, and reports closing another (UX-13)", async () => {
-      const session = createEditorSession(siteLibrary, siteWithHero());
+      const session = sessionWith(siteWithHero());
       session.select("section-1");
       const onClosedGroupsChange = vi.fn();
       render(
@@ -777,7 +778,7 @@ describe("EditPanelHost", () => {
 
   describe("Advanced tab (F-ED-11)", () => {
     function setupAdvanced() {
-      const session = createEditorSession(siteLibrary, siteWithHero());
+      const session = sessionWith(siteWithHero());
       session.select("heading-1");
       render(<EditPanelHost session={session} flush={vi.fn()} advanced />);
       const labels = () => session.history.entries().map((entry) => entry.label);

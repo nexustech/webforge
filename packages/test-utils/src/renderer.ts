@@ -1,3 +1,9 @@
+/**
+ * The renderer's test kit (2.20, B6): fakes of what the editor's renderer talks to, for its tests
+ * and those of any package that drives a canvas. The app's own fixtures (an editor session, test
+ * registries, a fake preload API, story helpers) are in `apps/desktop/src/renderer/testing/`,
+ * since a package can't import the app.
+ */
 import type {
   CanvasContextMenu,
   CanvasEngine,

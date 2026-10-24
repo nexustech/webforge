@@ -10,13 +10,14 @@ import {
 import { siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_PREFERENCES } from "../../shared/ipc/prefs.js";
-import { createEditorSession, currentPage } from "../editor/editor-session.js";
+import { currentPage } from "../editor/editor-session.js";
 import { starterSite } from "../editor/starter-site.js";
 import { saveAsSharedSection } from "../shared-sections/index.js";
 import { createCommandRegistry } from "../shell/commands.js";
 import { PanelRegistryProvider, usePanels } from "../shell/panel-context.js";
 import { createPanelRegistry, type PanelRegistry } from "../shell/panels.js";
 import { createPreferencesStore } from "../shell/preferences-store.js";
+import { sessionWith } from "../testing/fixtures.js";
 import { AddPanel } from "./AddPanel.js";
 import { addComponent, addItems } from "./add-items.js";
 import { registerAddPanel } from "./register-add-panel.js";
@@ -159,7 +160,7 @@ describe("registerAddPanel", () => {
   );
 
   it("opens at the + button's place and adds the chosen section there, then forgets the place", async () => {
-    const session = createEditorSession(siteLibrary, starterSite());
+    const session = sessionWith();
     const panels = createPanelRegistry();
     const shown = vi.fn();
     panels.onShow(shown);
@@ -182,7 +183,7 @@ describe("registerAddPanel", () => {
   });
 
   it("keeps the + button's place with its section while the page changes, and drops it once gone", async () => {
-    const session = createEditorSession(siteLibrary, starterSite());
+    const session = sessionWith();
     const panels = createPanelRegistry();
     const addPanel = registerAddPanel(panels, session);
     render(<Host panels={panels} />);
@@ -204,7 +205,7 @@ describe("registerAddPanel", () => {
   });
 
   it("forgets the + button's place when cancelled or when another page is shown", async () => {
-    const session = createEditorSession(siteLibrary, starterSite());
+    const session = sessionWith();
     const panels = createPanelRegistry();
     const addPanel = registerAddPanel(panels, session);
     render(<Host panels={panels} />);
@@ -223,7 +224,7 @@ describe("registerAddPanel", () => {
   });
 
   it("lists the site's shared sections first, and places a copy of one at the + button's place", async () => {
-    const session = createEditorSession(siteLibrary, withHours());
+    const session = sessionWith(withHours());
     const panels = createPanelRegistry();
     const addPanel = registerAddPanel(panels, session);
     render(<Host panels={panels} />);
@@ -247,7 +248,7 @@ describe("registerAddPanel", () => {
   });
 
   it("lists a shared section once the site has one, and none once it is gone", () => {
-    const session = createEditorSession(siteLibrary, starterSite());
+    const session = sessionWith();
     const panels = createPanelRegistry();
     registerAddPanel(panels, session);
     render(<Host panels={panels} />);
@@ -268,7 +269,7 @@ describe("registerAddPanel", () => {
   });
 
   it("renames and deletes a shared section from its menu, opening each once the menu has closed (1.29)", async () => {
-    const session = createEditorSession(siteLibrary, withHours());
+    const session = sessionWith(withHours());
     const panels = createPanelRegistry();
     const sharedActions = { rename: vi.fn(), remove: vi.fn() };
     registerAddPanel(panels, session, { sharedActions });
@@ -295,7 +296,7 @@ describe("registerAddPanel", () => {
     screen.getAllByRole("list").map((list) => list.getAttribute("aria-label") ?? "");
 
   it("leads with the person's favourites, added and removed from an item's context menu", async () => {
-    const session = createEditorSession(siteLibrary, starterSite());
+    const session = sessionWith();
     const panels = createPanelRegistry();
     const preferences = preferencesWith(["Faq"]);
     // With previews, as in the app: the menu and the card share the item.
@@ -323,7 +324,7 @@ describe("registerAddPanel", () => {
   it("shows a section's preview while the pointer rests on it, through the canvas's drag handle", () => {
     vi.useFakeTimers();
     try {
-      const session = createEditorSession(siteLibrary, starterSite());
+      const session = sessionWith();
       const panels = createPanelRegistry();
       registerAddPanel(panels, session, { preview: () => <span>Preview of it</span> });
       render(<Host panels={panels} />);
@@ -349,7 +350,7 @@ describe("registerAddPanel", () => {
   });
 
   it("remembers what the person adds as recently used, newest first", async () => {
-    const session = createEditorSession(siteLibrary, starterSite());
+    const session = sessionWith();
     const panels = createPanelRegistry();
     const preferences = preferencesWith();
     registerAddPanel(panels, session, { preferences });
@@ -365,7 +366,7 @@ describe("registerAddPanel", () => {
   });
 
   it("offers every item in the palette's Add group, adding where a click would, as one step", () => {
-    const session = createEditorSession(siteLibrary, starterSite());
+    const session = sessionWith();
     const panels = createPanelRegistry();
     const registry = createCommandRegistry();
     const preferences = preferencesWith();
@@ -384,7 +385,7 @@ describe("registerAddPanel", () => {
   });
 
   it("names a shared section's Add in the palette by its name now", () => {
-    const session = createEditorSession(siteLibrary, starterSite());
+    const session = sessionWith();
     const registry = createCommandRegistry();
     registerAddPanel(createPanelRegistry(), session, { commands: registry });
     session.select("section-1");
@@ -403,7 +404,7 @@ describe("registerAddPanel", () => {
     const home = site.pages[site.homePageId];
     if (home === undefined) throw new Error("no home page");
     home.doc.content = [];
-    const session = createEditorSession(siteLibrary, site);
+    const session = sessionWith(site);
     const registry = createCommandRegistry();
     registerAddPanel(createPanelRegistry(), session, { commands: registry });
 

@@ -140,6 +140,8 @@ export default {
           // Declared subpath export: @webforge/themes/font-plan (zod only: no font catalogue, so
           // the preload and the catalogue build under plain Node can take it).
           "^packages/themes/src/fonts/plan\\.ts$",
+          // Declared subpath export: @webforge/test-utils/renderer (the renderer's test kit, B6).
+          "^packages/test-utils/src/renderer\\.ts$",
         ],
       },
     },
@@ -155,19 +157,31 @@ export default {
       severity: "error",
       comment:
         "A renderer area (renderer/<area>/) uses another only through that area's index.ts (B2): " +
-        "what it offers the others. shell/ and editor/ are what every area builds on. " +
+        "what it offers the others. shell/ and editor/ are what every area builds on, and " +
+        "testing/ what every area's tests and stories use. " +
         "tools/src/check-area-cycles.ts checks there are no cycles between areas.",
       from: {
         path: "^apps/desktop/src/renderer/([^/]+)/",
-        pathNot: "^apps/desktop/src/renderer/(shell|editor)/",
+        pathNot: "^apps/desktop/src/renderer/(shell|editor|testing)/",
       },
       to: {
         path: "^apps/desktop/src/renderer/[^/]+/",
         pathNot: [
-          "^apps/desktop/src/renderer/(shell|editor|$1)/",
+          "^apps/desktop/src/renderer/(shell|editor|testing|$1)/",
           "^apps/desktop/src/renderer/[^/]+/index\\.ts$",
         ],
       },
+    },
+    {
+      name: "renderer-testing-only-in-tests",
+      severity: "error",
+      comment:
+        "renderer/testing/ (B6) holds fixtures and story helpers for tests and stories only, so " +
+        "none of it reaches the app or its bundle.",
+      from: {
+        pathNot: ["\\.test\\.tsx?$", "\\.stories\\.tsx$", "^apps/desktop/src/renderer/testing/"],
+      },
+      to: { path: "^apps/desktop/src/renderer/testing/" },
     },
     {
       name: "no-orphans",
