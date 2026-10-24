@@ -58,4 +58,24 @@ describe("connectCanvasSettings", () => {
 
     expect(bindingsGiven(engine.setSettings, 1).openingHours).toEqual(openingHours);
   });
+
+  it("gives the canvas the site's language and form service, and a hint without one (2.8)", () => {
+    const session = createEditorSession(siteLibrary, starterSite());
+    const engine = { setSettings: vi.fn() };
+    connectCanvasSettings(engine, session);
+    const first = bindingsGiven(engine.setSettings, 0);
+    expect(first.language).toBe(session.history.document.getState().settings.general.language);
+    expect(first.formService).toBeUndefined();
+    expect(renderToStaticMarkup(first.formHint("noService"))).toContain(
+      "Choose where submissions go in Site Settings",
+    );
+    expect(renderToStaticMarkup(first.formHint("insecure"))).toContain("must start with https://");
+    expect(renderToStaticMarkup(first.formHint("netlify"))).toContain("Netlify Forms");
+
+    const settings = session.history.document.getState().settings;
+    const service = { kind: "formspree" as const, formId: "xyzAbc12" };
+    saveSiteSettings(session, { ...settings, forms: { service } });
+
+    expect(bindingsGiven(engine.setSettings, 1).formService).toEqual(service);
+  });
 });

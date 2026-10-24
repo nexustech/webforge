@@ -68,13 +68,16 @@ export type OpeningHours = z.infer<typeof openingHoursSchema>;
  * Where forms send submissions by default (B3, B6). None of these values is a secret: each one
  * ends up in the exported HTML.
  */
-const formServiceSchema = z.discriminatedUnion("kind", [
+export const formServiceSchema = z.discriminatedUnion("kind", [
   z.strictObject({ kind: z.literal("formspree"), formId: z.string().regex(/^[A-Za-z0-9]{4,32}$/) }),
   z.strictObject({ kind: z.literal("web3forms"), accessKey: z.uuid() }),
   z.strictObject({ kind: z.literal("formsubmit"), email: z.email() }),
   z.strictObject({ kind: z.literal("netlify") }),
   z.strictObject({ kind: z.literal("custom"), url: webUrlSchema }),
 ]);
+
+/** See {@link formServiceSchema}. */
+export type FormService = z.infer<typeof formServiceSchema>;
 
 /**
  * A place the site is published to (B1). Passwords and tokens are never stored in the site: they

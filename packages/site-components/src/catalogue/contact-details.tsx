@@ -23,7 +23,7 @@ const settingOf = (context: RenderContext, key: BindableSetting): string | React
 
 /** The business's opening hours, one line for each group of days, and the note under them. */
 function Hours({ context }: { readonly context: RenderContext }) {
-  const lines = openingHoursLines(context.openingHours ?? []);
+  const lines = openingHoursLines(context.openingHours ?? [], context.language);
   const note = settingOf(context, "contact.openingHoursNote");
   // Nothing to say in the export without hours or a note; the canvas still shows the note's hint.
   if (lines.length === 0 && note === null) return null;
@@ -36,8 +36,8 @@ function Hours({ context }: { readonly context: RenderContext }) {
             <div className="contents" key={`${line.days} ${line.opens}`}>
               <dt className="font-medium">{line.days}</dt>
               <dd>
-                <time dateTime={line.opens}>{line.opens}</time>–
-                <time dateTime={line.closes}>{line.closes}</time>
+                <time dateTime={line.opens}>{line.opensText}</time>–
+                <time dateTime={line.closes}>{line.closesText}</time>
               </dd>
             </div>
           ))}

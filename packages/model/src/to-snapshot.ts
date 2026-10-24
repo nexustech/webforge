@@ -64,6 +64,7 @@ export function siteToSnapshot(
     media,
     settings: settingValues(site.settings),
     openingHours: site.settings.contact.openingHours,
+    formService: site.settings.forms.service,
     menu: site.menu,
   };
 }
