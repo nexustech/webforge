@@ -212,6 +212,28 @@ test("sets a padding for the Mobile view only, shown and cleared with its dot (F
   await expect(section).toHaveCSS("padding-top", "64px");
 });
 
+test("reverses a section's colours, on the canvas too, as one step (2.4, F-DS-3)", async () => {
+  const section = canvas().locator(".site-section");
+  const colours = () =>
+    section.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return { background: style.backgroundColor, text: style.color };
+    });
+  const before = await colours();
+  await selectSection();
+
+  await panel().getByLabel("Colours", { exact: true }).selectOption("inverse");
+
+  await expect(steps().first()).toHaveText("Changed Section colours");
+  await expect(section).toHaveAttribute("data-theme", "wf_inverse");
+  // The theme's reversed colours: a dark band on the light page, its text light.
+  await expect.poll(async () => (await colours()).background).not.toBe(before.background);
+  expect((await colours()).text).not.toBe(before.text);
+
+  await page.keyboard.press("ControlOrMeta+z");
+  await expect(section).not.toHaveAttribute("data-theme");
+});
+
 test("remembers the option groups closed for a kind of element, after a restart (UX-13)", async () => {
   const userDataDir = newUserDataDir();
   const reopen = async () => {

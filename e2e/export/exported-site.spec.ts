@@ -99,6 +99,31 @@ test.describe("exported site from disk", () => {
     );
   });
 
+  test("draws a section with reversed colours on the theme's reversed colours (2.4)", async ({
+    page,
+  }) => {
+    await open(page, "index.html");
+    const colours = (selector: string) =>
+      page
+        .locator(selector)
+        .first()
+        .evaluate((element) => {
+          const style = getComputedStyle(element);
+          return { background: style.backgroundColor, text: style.color };
+        });
+
+    const band = page.locator('section[data-theme="wf_inverse"]');
+    await expect(band.getByRole("heading", { name: "Fresh every day" })).toBeVisible();
+    const onPage = await colours("body");
+    const reversed = await colours('section[data-theme="wf_inverse"]');
+    // Its own background and text: the theme's reversed colours, not the page's.
+    expect(reversed.background).not.toBe("rgba(0, 0, 0, 0)");
+    expect(reversed.background).not.toBe(onPage.background);
+    expect(reversed.text).not.toBe(onPage.text);
+    // Its heading follows the band's text colour, not the page's.
+    expect((await colours('section[data-theme="wf_inverse"] h3')).text).toBe(reversed.text);
+  });
+
   test("navigates between pages with relative links", async ({ page }) => {
     await open(page, "index.html");
 

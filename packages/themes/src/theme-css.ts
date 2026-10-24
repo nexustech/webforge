@@ -1,6 +1,7 @@
 import {
   COLOR_ROLES,
   type FontRef,
+  INVERSE_THEME,
   type Oklch,
   SHADE_STEPS,
   SHADED_ROLES,
@@ -105,9 +106,6 @@ function daisyTheme(
   ].join("\n");
 }
 
-/** The name sections that invert the page (2.4) use: `data-theme="<preset>-inverse"`. */
-export const inverseThemeName = (tokens: ThemeTokens) => `${tokens.preset}-inverse`;
-
 /** The colour roles' shades in `colors`, as the variables the shade utilities read. */
 const roleShades = (colors: ThemeTokens["colors"]) =>
   SHADED_ROLES.flatMap((role) =>
@@ -125,7 +123,7 @@ const schemeOf = (colors: ThemeTokens["colors"]): ThemeTokens["scheme"] =>
  * own imports:
  * - daisyUI with none of its built-in themes, and the site's own: every colour role, the corners,
  *   the border, depth and noise, named after the preset and the page's default;
- * - a second theme for sections that invert the page ({@link inverseThemeName}): the theme's
+ * - a second theme for sections that invert the page (`INVERSE_THEME`, 2.4): the theme's
  *   inverse colours, or its fallback (`inverseColors`);
  * - Tailwind's `@theme`: the fonts (`font-sans` for body text, `font-heading`), the spacing unit
  *   every padding, margin and gap is measured in, the type scale as `text-h1` … `text-small`, each
@@ -142,7 +140,7 @@ export function themeCss(tokens: ThemeTokens): string {
   const inverse = inverseColors(tokens);
   const themes = [
     daisyTheme(tokens, tokens.preset, tokens.colors, { default: true, scheme: tokens.scheme }),
-    daisyTheme(tokens, inverseThemeName(tokens), inverse, {
+    daisyTheme(tokens, INVERSE_THEME, inverse, {
       default: false,
       scheme: schemeOf(inverse),
     }),
@@ -177,7 +175,7 @@ export function themeCss(tokens: ThemeTokens): string {
     `  --wf-shadow: ${SHADOW[tokens.shadow]};`,
     ...roleShades(tokens.colors),
     "}",
-    `[data-theme="${inverseThemeName(tokens)}"] {`,
+    `[data-theme="${INVERSE_THEME}"] {`,
     ...roleShades(inverse),
     "}",
   ].join("\n");
