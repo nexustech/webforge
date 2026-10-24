@@ -5,8 +5,8 @@ import { SwatchField } from "./swatch-field.js";
 const OPTIONS = [
   { value: "default", label: "Text colour", colour: "oklch(21% 0.006 285.885)" },
   { value: "primary", label: "Primary", colour: "oklch(45% 0.24 277.023)" },
-  { value: "secondary", label: "Secondary", colour: "oklch(65% 0.241 354.308)" },
-  { value: "accent", label: "Accent", colour: "oklch(77% 0.152 181.912)" },
+  { value: "secondary", label: "Secondary", colour: "oklch(53% 0.241 354.308)" },
+  { value: "accent", label: "Accent", colour: "oklch(50% 0.152 181.912)" },
 ];
 
 const meta = {

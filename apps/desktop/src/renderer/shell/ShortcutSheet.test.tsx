@@ -60,6 +60,25 @@ describe("shortcutSheet", () => {
       { label: "Delete", keys: ["⌘⌫"] },
     ]);
   });
+
+  it("shows only the keys of the person's system: no Ctrl+Esc on Windows, its Alt+arrows (#290)", () => {
+    const registry = (mac: boolean) => {
+      const commands = createCommandRegistry({ mac });
+      commands.register({ id: "edit.moveUp", label: "Move Up", menu: "edit", run: vi.fn() });
+      return commands;
+    };
+    const rows = (mac: boolean) =>
+      shortcutSheet(registry(mac).list(), mac).flatMap((group) => group.rows);
+    const reset = "Reset an option or group to its default";
+
+    expect(rows(false).find((row) => row.label === "Move Up")?.keys).toEqual([
+      "Ctrl+Alt+↑",
+      "Alt+↑",
+    ]);
+    expect(rows(false).some((row) => row.label === reset)).toBe(false);
+    expect(rows(true).find((row) => row.label === "Move Up")?.keys).toEqual(["⌥⌘↑"]);
+    expect(rows(true).find((row) => row.label === reset)?.keys).toEqual(["⌘⎋"]);
+  });
 });
 
 describe("ShortcutSheet", () => {
