@@ -524,9 +524,9 @@ describe("renderNodesToHtml", () => {
         context,
       );
 
-    expect(cta("banner")).toContain('<section class="site-cta bg-primary text-primary-content');
+    expect(cta("banner")).toContain('<section class="site-cta bg-neutral text-neutral-content');
     expect(cta("banner")).toContain(
-      '<a class="btn btn-lg mt-8" href="about.html">Book a table</a>',
+      '<a class="btn btn-primary btn-lg mt-8" href="about.html">Book a table</a>',
     );
     expect(cta("split")).toContain("md:flex-row md:items-center md:justify-between");
     expect(cta("split")).toContain(

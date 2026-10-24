@@ -149,7 +149,6 @@ const textSection = defineComponent({
     margin: MARGIN_FIELD,
   },
   defaults: { title: t("starter.textTitle"), text: `<p>${t("starter.textBody")}</p>` },
-  textStyle: () => "body",
   render: ({ values }) => (
     <section className={`site-text-section bg-base-100 ${sectionBox(values)}`}>
       <div className="mx-auto max-w-3xl">
@@ -179,7 +178,6 @@ const textImage = defineComponent({
     margin: MARGIN_FIELD,
   },
   defaults: { title: t("starter.textImageTitle"), text: `<p>${t("starter.textImageBody")}</p>` },
-  textStyle: () => "body",
   render: ({ values, context }) => {
     const placed = values.image;
     const image = placed === undefined ? null : context.image(placed.mediaId);
@@ -210,8 +208,9 @@ const textImage = defineComponent({
 });
 
 /**
- * Asks visitors to do one thing, with a button: a centred banner in the theme's main colour, or
- * the text with the button beside it (2.6).
+ * Asks visitors to do one thing, with a button: a centred banner in the theme's dark colour (whose
+ * text every theme keeps readable, unlike its main colour's), or the text with the button beside
+ * it (2.6).
  */
 const callToAction = defineComponent({
   label: t("section.callToAction"),
@@ -235,7 +234,7 @@ const callToAction = defineComponent({
     const banner = values.variant === "banner";
     return (
       <section
-        className={`site-cta ${banner ? "bg-primary text-primary-content" : "bg-base-200"} ${sectionBox(values)}`}
+        className={`site-cta ${banner ? "bg-neutral text-neutral-content" : "bg-base-200"} ${sectionBox(values)}`}
       >
         <div
           className={
@@ -252,7 +251,7 @@ const callToAction = defineComponent({
             label={values.buttonLabel}
             link={values.buttonLink}
             context={context}
-            className={banner ? "btn btn-lg mt-8" : "btn btn-primary btn-lg shrink-0"}
+            className={banner ? "btn btn-primary btn-lg mt-8" : "btn btn-primary btn-lg shrink-0"}
           />
         </div>
       </section>
