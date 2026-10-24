@@ -169,6 +169,14 @@ describe("element names (R10: one definition for every list, label and message)"
     );
   });
 
+  it("labels a canvas edit to an unnamed linked copy by its shared section's name (#333 review)", () => {
+    const page: PageDoc = { root: { props: {} }, content: [copy] };
+    const moved = edit("move", { nodeId: "c", componentType: "Section", page });
+    expect(labelFor(moved, siteLibrary, undefined, shared)).toBe("Moved 'Opening hours'");
+    // Without the site's shared sections, all there is to go on is what it is.
+    expect(labelFor(moved, siteLibrary)).toBe("Moved Section");
+  });
+
   it("names a linked copy by its own name, else its shared section's, as a Section (F-ED-23)", () => {
     expect(elementKind(copy, siteLibrary, shared)).toBe("Section");
     expect(quotedElementName(copy, siteLibrary, shared)).toBe("'Opening hours'");

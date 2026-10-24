@@ -32,14 +32,14 @@ export const pageLinkSchema = z.strictObject({
   newTab,
 });
 
+/** The longest subject an e-mail link can fill in. */
+export const EMAIL_SUBJECT_MAX = 200;
+
 /**
  * Where a link goes (F-ED-18): a page of the site (optionally a section on it), an e-mail address,
  * a phone number, a web address or a file in Media. Internal links store the page's id, so renaming
  * the page or changing its folder never breaks them; the export turns them into relative paths.
  */
-/** The longest subject an e-mail link can fill in. */
-export const EMAIL_SUBJECT_MAX = 200;
-
 export const linkValueSchema = z.discriminatedUnion("kind", [
   pageLinkSchema,
   z.strictObject({

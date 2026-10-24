@@ -98,7 +98,7 @@ export function StartScreen({ info, project, app, restart, locale }: StartScreen
                   </Button>
                 </div>
                 {message === undefined ? null : (
-                  <p role="alert" className="m-0 text-sm text-destructive">
+                  <p role="alert" className="m-0 text-sm text-destructive-text">
                     {message}
                   </p>
                 )}

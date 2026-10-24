@@ -20,10 +20,6 @@ export const SITE_FORMAT_VERSION = 6;
 
 const SEGMENT = "[a-z0-9]+(?:-[a-z0-9]+)*";
 
-/**
- * A page's file name without `.html` (X1): lowercase ASCII letters, digits and single hyphens,
- * e.g. `about` or `opening-times`.
- */
 /** The longest file name a page can have, without `.html`. */
 export const PAGE_SLUG_MAX = 80;
 /** The longest folder path a page can be in, e.g. `services/cakes`. */
@@ -33,6 +29,10 @@ export const PAGE_TITLE_MAX = 200;
 /** The longest description a page or the site can have for search results (X3). */
 export const PAGE_DESCRIPTION_MAX = 300;
 
+/**
+ * A page's file name without `.html` (X1): lowercase ASCII letters, digits and single hyphens,
+ * e.g. `about` or `opening-times`.
+ */
 export const slugSchema = z
   .string()
   .max(PAGE_SLUG_MAX)
