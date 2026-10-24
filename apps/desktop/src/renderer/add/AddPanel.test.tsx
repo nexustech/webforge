@@ -3,6 +3,7 @@ import { act, cleanup, fireEvent, render, screen, within } from "@testing-librar
 import userEvent from "@testing-library/user-event";
 import {
   copiedNodeId,
+  type NodeDoc,
   SHARED_COPY_TYPE,
   type SharedSectionId,
   type SiteDoc,
@@ -180,6 +181,50 @@ describe("registerAddPanel", () => {
     expect(screen.queryByRole("status")).toBeNull();
     addPanel.remove();
     expect(panels.list()).toEqual([]);
+  });
+
+  it("leads the Elements tab with what fits inside the selection, which a click adds there (SP-12)", async () => {
+    const session = sessionWith();
+    const panels = createPanelRegistry();
+    registerAddPanel(panels, session);
+    render(<Host panels={panels} />);
+    await userEvent.click(screen.getByRole("tab", { name: "Elements" }));
+    expect(screen.queryByText("Suggested")).toBeNull();
+
+    act(() => {
+      addComponent(session, "List");
+    });
+    const list = currentPage(session)?.doc.content[0]?.props.content as NodeDoc[] | undefined;
+    const listId = list?.find((node) => node.type === "List")?.props.id ?? "";
+    act(() => session.select(listId));
+
+    expect(screen.getByText("Suggested")).toBeTruthy();
+    await userEvent.click(button("List item"));
+    const items = () =>
+      (
+        (currentPage(session)?.doc.content[0]?.props.content as NodeDoc[] | undefined)?.find(
+          (node) => node.type === "List",
+        )?.props.items as NodeDoc[] | undefined
+      )?.length;
+    expect(items()).toBe(4);
+  });
+
+  it("offers no Favourites on a suggested item, which is listed only there (SP-12)", async () => {
+    const session = sessionWith();
+    const panels = createPanelRegistry();
+    registerAddPanel(panels, session, { preferences: createPreferencesStore() });
+    render(<Host panels={panels} />);
+    await userEvent.click(screen.getByRole("tab", { name: "Elements" }));
+    act(() => {
+      addComponent(session, "List");
+    });
+    const list = currentPage(session)?.doc.content[0]?.props.content as NodeDoc[] | undefined;
+    act(() => session.select(list?.find((node) => node.type === "List")?.props.id ?? null));
+
+    fireEvent.contextMenu(button("List item"));
+    expect(screen.queryByRole("menuitem")).toBeNull();
+    fireEvent.contextMenu(button("Heading"));
+    expect(await screen.findByRole("menuitem", { name: "Add to Favourites" })).toBeTruthy();
   });
 
   it("keeps the + button's place with its section while the page changes, and drops it once gone", async () => {
