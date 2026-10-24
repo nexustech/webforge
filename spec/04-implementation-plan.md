@@ -66,12 +66,12 @@ Current code size (approx. lines): desktop 2.7k · engine 1.6k · history 1.6k �
 |---|---|---|---|---|---|
 | [Phase 0: Prototype (finish)](#phase-0-prototype-finish) | 11 | 26 Oct 2026 | 18 Nov 2026 | 24 Nov 2026 | Netlify and SFTP/FTPS publish spikes meet the spike criteria in research/stack/08<br>Signed NSIS and DMG builds install, and auto-update from a test feed on both OSes<br>A large page (200+ elements) stays within the editing performance budget<br>ADRs written; architecture §6 interfaces updated |
 | [Phase 1: Editor core](#phase-1-editor-core) | 128 | 22 Oct 2026 | 17 Dec 2026 | 5 Jan 2027 | Build a 3-page site from blank, close, reopen: everything restored<br>Undo-all property tests green; every edit has a meaningful label<br>Shell matches UI1 as amended by UI6 in dark and light (Storybook screenshots) |
-| [Phase 2: Design & components](#phase-2-design--components) | 108 | 2 Mar 2027 | 14 Jul 2027 | 16 Sep 2027 | Every component has stories × 3 themes × Desktop/Mobile, axe-clean<br>New Site from each of the 8 templates works and looks distinct<br>Theme changes restyle every component; contrast warnings work |
+| [Phase 2: Design & components](#phase-2-design--components) | 108 | 2 Mar 2027 | 14 Jul 2027 | 16 Sep 2027 | Every component has stories × 3 themes × Desktop/Mobile, axe-clean (colour contrast in site themes reported, not blocking)<br>New Site from each of the 8 templates works and looks distinct<br>Theme changes restyle every component; contrast warnings work |
 | [Phase 3: Output](#phase-3-output) | 32 | 15 Jul 2027 | 26 Aug 2027 | 10 Nov 2027 | Exported templates open from disk in Chromium, Firefox, WebKit (+ Edge on Windows) with no external requests<br>Site Check blocks only Must-fix issues on export<br>Preview CSS hot-swap < 100 ms; phone preview via QR works |
 | [Phase 4: Publish & versions](#phase-4-publish--versions) | 30 | 27 Aug 2027 | 28 Sep 2027 | 17 Dec 2027 | Publish + rollback on all targets in E2E tests (mock Netlify, local FTP/SFTP)<br>A paired AI app's edits are undoable, and the MCP server can't be reached from another computer<br>Version History: save, auto-retention, preview, restore, open as new site, republish |
 | [Phase 5: Beta hardening](#phase-5-beta-hardening) | 38 | 29 Sep 2027 | 19 Nov 2027 | 25 Feb 2028 | All performance budgets met on Windows and macOS<br>Signed, notarised builds auto-update from the production feed<br>Beta running with 10–20 users; no open Must-fix bugs |
 
-Phase 0's signed-installer item waits on enrolment (lead time), so Phase 1 work starts while it waits. The Gantt chart shows the 100% schedule. Items added on 22 Oct 2026 (1.28, 1.29, 4.8, 4.9, and 3.5's extra day) are drawn after their predecessors, so some overlap the baseline bars that follow them until the Phase 1 exit re-plan.
+Phase 0's signed-installer item waits on enrolment (lead time), so Phase 1 work starts while it waits. **Enrolment (0.1) is deferred** (product owner, 24 Oct 2026) to a date the product owner sets; it needs a couple of weeks' lead before 0.5 and the beta. The Gantt chart shows the 100% schedule. Items added on 22 Oct 2026 (1.28, 1.29, 4.8, 4.9, and 3.5's extra day) are drawn after their predecessors, so some overlap the baseline bars that follow them until the Phase 1 exit re-plan.
 
 ```mermaid
 gantt
@@ -301,7 +301,7 @@ Fold spike learnings into architecture §6 (CanvasEngine, HistoryManager, Pipeli
 | 1.36 | Edit panel tools: reset, search, changed cue, per-device dots, scrubbing | [#184](https://github.com/nexustech/webforge/issues/184) | shell | F-ED-26, UI2, UI5, UX-13, UX-18, UX-19, UX-20 | 4 | 1.14 |
 | 1.37 | Colour picker, image picker, copy style and the undo list | [#185](https://github.com/nexustech/webforge/issues/185) | shell | F-ED-26, UI2, UX-25, UX-15, UX-14, UX-16 | 5 | 1.14, 1.16, 1.11 |
 | 1.38 | Keyboard shortcut standard and shortcut sheet | [#186](https://github.com/nexustech/webforge/issues/186) | shell | F-ED-27, UI3 | 2 | 1.30, 1.33, 1.34 |
-| 1.39 | Look-and-feel pass: selection colours, chrome, tab strips, two-column fields, Settings | [#278](https://github.com/nexustech/webforge/issues/278) | shell | F-ED-25, F-ED-26, UI1, UI5, UI6, LF-1…9, LF-12, LF-13, SP-1…3, SP-5…10 | 6 | 1.37, 1.36, 1.33, 1.34 |
+| 1.39 | Look-and-feel pass: selection colours, chrome, tab strips, two-column fields, Settings | [#278](https://github.com/nexustech/webforge/issues/278) | shell | F-ED-25, F-ED-26, UI1, UI5, UI6, LF-1…8, LF-12, LF-13, SP-1…3, SP-5…10 | 6 | 1.37, 1.36, 1.33, 1.34 |
 
 **Streams (re-plan of 20 Oct 2026).** Phase 1 runs as three concurrent streams, each in its own Claude Code session, with one item in progress per stream. A dependency counts as met when its PR is merged to `main`. Shared files are split up front so that streams add files instead of editing the same ones: per-area i18n catalogues (1.3), per-domain IPC files ([#90](https://github.com/nexustech/webforge/issues/90)), and command and panel registries (1.2).
 
@@ -636,7 +636,7 @@ Close the visible gap to Bootstrap Studio 9.0.1 within the IP rule ([product/07]
 | 2.17 | Columns toolbar, image resize handles and edit-only previews | [#187](https://github.com/nexustech/webforge/issues/187) | components | F-ED-25, UI2, UI5, UX-6, UX-26 | 4 | 2.9, 2.6, 1.32 |
 | 2.18 | Advanced mode: CSS class autocomplete and browser | [#276](https://github.com/nexustech/webforge/issues/276) | shell | F-ED-11, UX-15 | 3 | 1.37 |
 
-**Streams (plan of 23 Oct 2026, product owner approved).** The Phase 1 stream rules carry over. PRs open as drafts and are marked ready only once `pnpm check` (and `pnpm e2e` or `pnpm visual` where needed) and the code review pass, so CI runs once per ready version. Items over 5 days are split into sub-issues on GitHub.
+**Streams (plan of 23 Oct 2026, product owner approved).** The Phase 1 stream rules carry over. PRs open as drafts and are marked ready only once `pnpm check` (and `pnpm e2e` or `pnpm visual` where needed) and the code review pass; marking a PR ready leads to its merge review and auto-merge (CLAUDE.md, spec/03 §6). Items over 5 days are split into sub-issues on GitHub.
 
 | Stream | Items, in order (after its Phase 1 items) |
 |---|---|
@@ -750,7 +750,7 @@ Entrance animation presets (fade, slide, zoom; delay) and hover effects (lift, g
 **2.13 Design 10–12 curated themes**  
 10–12 visibly distinct themes (colours, font pairing, corner style, spacing, button style) with light and dark variants, tuned against the real component catalogue. About 1–2 days per theme including contrast checks (product/03).
 
-- [ ] Every theme passes WCAG AA contrast
+- [ ] Every theme aims for WCAG AA contrast; `contrastIssues` is reported for each, not a CI gate (contrast is a guideline the site owner can override, product owner, 24 Oct 2026)
 - [ ] Themes reviewed side by side in Storybook and look distinct
 
 **2.14 Template format and New Site flow**  
@@ -789,7 +789,7 @@ The Advanced tab's CSS classes field suggests from the site's own class catalogu
 
 </details>
 
-**Phase exit:** Every component has stories × 3 themes × Desktop/Mobile, axe-clean; New Site from each of the 8 templates works and looks distinct; Theme changes restyle every component; contrast warnings work; all templates pass axe and visual regression (MVP §6).
+**Phase exit:** Every component has stories × 3 themes × Desktop/Mobile, axe-clean (colour contrast in site themes is reported, not blocking); New Site from each of the 8 templates works and looks distinct; Theme changes restyle every component; contrast warnings work; all templates pass axe and visual regression (MVP §6).
 
 ### Phase 3: Output
 **Goal:** Preview, export and Site Check: every template exports to a self-contained site that opens from disk in all browsers with zero external requests.  
