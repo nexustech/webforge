@@ -166,6 +166,29 @@ describe("the section frame (2.19)", () => {
     }
   });
 
+  it.each(["id", "type", "props"])(
+    "refuses a section whose list items have a field named %s, as defineComponent does (R14)",
+    (itemField) => {
+      expect(() =>
+        defineSection({
+          label: "Plans",
+          name: "plans",
+          fields: {
+            plans: {
+              kind: "list",
+              label: "Plans",
+              itemLabel: "Plan",
+              fields: { [itemField]: { kind: "text", label: "Kind" } },
+              defaults: {},
+            },
+          },
+          defaults: { plans: [] },
+          render: () => null,
+        }),
+      ).toThrow(`'Plans' names a field of "plans"'s items "${itemField}", which items can't have`);
+    },
+  );
+
   it("refuses a section that declares its own colours", () => {
     expect(() =>
       defineSection({
