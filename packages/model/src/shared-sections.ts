@@ -187,7 +187,7 @@ export const sharedSectionsDocSchema: z.ZodType<Record<SharedSectionId, SharedSe
         }
       }
     }),
-  ) as z.ZodType<Record<SharedSectionId, SharedSection>>;
+  );
 
 /** The site's shared sections, by id. */
 export type SharedSectionsDoc = Readonly<Record<SharedSectionId, SharedSection>>;

@@ -1,5 +1,6 @@
 import {
   expandSharedCopies,
+  MIGRATIONS,
   type NodeDoc,
   SHARED_COPY_TYPE,
   type SharedSectionId,
@@ -579,7 +580,10 @@ describe("renderNodesToHtml", () => {
     const html = renderNodesToHtml(
       [
         ...starterLayout("x").footer,
-        { type: "Section", props: { id: "s", padding: "large", content: "not a list" } },
+        {
+          type: "Section",
+          props: { id: "s", padding: { top: "l", bottom: "l" }, content: "not a list" },
+        },
       ],
       siteLibrary,
       context,
@@ -620,7 +624,12 @@ describe("renderNodesToHtml", () => {
           type: "Section",
           props: {
             id: "s",
-            padding: { $responsive: { desktop: "large", mobile: "small" } },
+            padding: {
+              $responsive: {
+                desktop: { top: "l", bottom: "l" },
+                mobile: { top: "s", bottom: "s" },
+              },
+            },
             gap: { $responsive: { desktop: "medium", tablet: "none" } },
             fullWidth: true,
             content: [],
@@ -636,7 +645,7 @@ describe("renderNodesToHtml", () => {
     );
   });
 
-  it("renders a page saved before 1.32 exactly as before, and its box form the same (1.32)", () => {
+  it("renders a page saved before 1.32 exactly as before once format 6 migrates it (R14)", () => {
     const page = (first: unknown, second: unknown): NodeDoc[] => [
       {
         type: "Hero",
@@ -653,7 +662,18 @@ describe("renderNodesToHtml", () => {
       { type: "Section", props: { id: "b", padding: second } },
       { type: "Section", props: { id: "c" } },
     ];
-    const legacy = page("medium", { $responsive: { desktop: "large", mobile: "small" } });
+    // Format 5's padding sizes, as MIGRATIONS[5] turns them into boxes.
+    const raw = {
+      formatVersion: 5,
+      pages: {
+        home: {
+          doc: { content: page("medium", { $responsive: { desktop: "large", mobile: "small" } }) },
+        },
+      },
+    };
+    const migrate = MIGRATIONS[5];
+    if (migrate === undefined) throw new Error("No migration from format 5");
+    const legacy = (migrate(raw) as typeof raw).pages.home.doc.content;
     const html = renderNodesToHtml(legacy, siteLibrary, context);
 
     expect(html).toContain('<section class="site-hero hero bg-base-200 px-4 py-16">');
@@ -712,7 +732,8 @@ describe("renderNodesToHtml", () => {
     expect(html).toContain(
       '<div class="site-text text-lg leading-relaxed [&amp;_a]:underline [&amp;_p+p]:mt-4 mb-8">',
     );
-    expect(html).toContain('<div class="site-faq space-y-4 my-4">');
+    // An FAQ is a section like the others (2.19): its own padding, its margin set.
+    expect(html).toContain('<section class="site-faq bg-base-100 px-4 py-16 my-4">');
   });
 
   describe("the Carousel (2.10)", () => {

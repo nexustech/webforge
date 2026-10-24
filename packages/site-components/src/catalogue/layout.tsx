@@ -3,6 +3,7 @@ import { defineComponent } from "../define.js";
 import { isDocumentPath } from "../document-path.js";
 import { boundText, type ComponentDef } from "../library.js";
 import type { NavItem, NavLink } from "../schema.js";
+import { BUTTON_CLASSES } from "../typography.js";
 
 /** Three-line menu icon, drawn inline so the site needs no icon font (C8). */
 function MenuIcon() {
@@ -44,7 +45,7 @@ function NavLinkItem({ link }: { readonly link: NavLink }) {
     <li>
       <NavAnchor
         link={link}
-        {...(link.button === true ? { className: "btn btn-primary btn-sm md:ml-2" } : {})}
+        {...(link.button === true ? { className: `${BUTTON_CLASSES.primarySmall} md:ml-2` } : {})}
       />
     </li>
   );
@@ -107,7 +108,7 @@ function HeaderNavigation({
         <NavItems items={items} />
       </ul>
       <details className="site-menu md:hidden" data-wf-menu="">
-        <summary className="btn btn-square btn-ghost list-none [&::-webkit-details-marker]:hidden">
+        <summary className={`${BUTTON_CLASSES.menu} list-none [&::-webkit-details-marker]:hidden`}>
           <MenuIcon />
           <span className="sr-only">{t("siteText.menu")}</span>
         </summary>
@@ -212,7 +213,7 @@ const header = defineComponent({
           {...(layout === "left" ? {} : { className: "md:flex md:flex-1 md:justify-center" })}
         />
         {button === null ? null : (
-          <NavAnchor link={button} className="btn btn-primary hidden md:inline-flex" />
+          <NavAnchor link={button} className={`${BUTTON_CLASSES.primary} hidden md:inline-flex`} />
         )}
       </header>
     );
