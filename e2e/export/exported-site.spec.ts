@@ -577,11 +577,20 @@ test.describe("exported site from disk", () => {
   }) => {
     await open(page, "about.html");
     const contact = page.getByRole("form", { name: "Contact form" });
-    const newsletter = page.getByRole("form", { name: "Newsletter signup" });
+    // The fixture has two signups: one with its form address, one without yet.
+    const newsletters = page.getByRole("form", { name: "Newsletter signup" });
+    const newsletter = newsletters.first();
+    const unset = newsletters.last();
 
     await expect(contact).toHaveAttribute("action", "https://formspree.io/f/xyzAbc12");
     await expect(contact).toHaveAttribute("method", "post");
     await expect(newsletter).toHaveAttribute("action", "https://example.com/newsletter/signup");
+    await expect(contact.getByRole("button", { name: "Send message" })).toBeEnabled();
+    await expect(newsletter.getByRole("button", { name: "Sign up" })).toBeEnabled();
+    // Without an address the form would post to this page and lose the message: it can't send.
+    await expect(unset).not.toHaveAttribute("action");
+    await expect(unset).toHaveAttribute("data-wf-form-unset", "");
+    await expect(unset.getByRole("button", { name: "Sign up" })).toBeDisabled();
     // Labelled fields; the honeypot is there but hidden from visitors.
     await expect(contact.getByLabel("Email address")).toHaveAttribute("type", "email");
     await expect(contact.getByLabel("Phone number")).toHaveAttribute("type", "tel");

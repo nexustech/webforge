@@ -172,7 +172,8 @@ export function formAction(service: FormService | undefined): FormTarget | undef
 /**
  * A form that posts its fields to `target`, a form service (F-CM-1, F-CM-6): plain HTML, no
  * script, the honeypot included. Without one it still draws, so the person sees it while choosing
- * a service, but has no `action` (it would post to the page itself) and is marked
+ * a service, but has no `action` and its button is disabled: it would post to the page itself, and
+ * a static host would answer with an error page and lose the visitor's message. It is marked
  * `data-wf-form-unset`, for Site Check (3.7); `unsetHint` says on the canvas what to do.
  */
 export function SiteForm({
@@ -209,7 +210,12 @@ export function SiteForm({
       ))}
       {children}
       <Honeypot />
-      <button type="submit" className={BUTTON_CLASSES.primary}>
+      {/* Without a target the form would post to the page itself and lose the message: no send. */}
+      <button
+        type="submit"
+        className={BUTTON_CLASSES.primary}
+        {...(target === undefined ? { disabled: true } : {})}
+      >
         {submitLabel}
       </button>
     </form>

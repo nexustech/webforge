@@ -87,6 +87,7 @@ describe("SiteForm (F-CM-1, F-CM-6, B6)", () => {
       "aria-label": "Contact form",
     });
     expect(form?.hasAttribute("data-wf-form-unset")).toBe(false);
+    expect(form?.querySelector("button")?.hasAttribute("disabled")).toBe(false);
     const honeypot = form?.querySelector(`input[name="${HONEYPOT_NAME}"]`);
     expect(honeypot?.closest("[hidden]")).not.toBeNull();
     expect(honeypot?.getAttribute("tabindex")).toBe("-1");
@@ -123,6 +124,8 @@ describe("SiteForm (F-CM-1, F-CM-6, B6)", () => {
     // No action: a form without one would post to the page itself.
     expect(form?.hasAttribute("action")).toBe(false);
     expect(form?.hasAttribute("data-wf-form-unset")).toBe(true);
+    // Nothing to send to: the button can't send the visitor's message into an error page.
+    expect(form?.querySelector("button")?.hasAttribute("disabled")).toBe(true);
     expect(form?.querySelector("em")?.textContent).toBe("Choose one");
     // The export has no hint.
     const exported = drawn(

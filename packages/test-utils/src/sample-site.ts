@@ -289,6 +289,11 @@ export function sampleSite(): SiteSnapshot {
                 action: "https://example.com/newsletter/signup",
               },
             },
+            {
+              // A signup whose form address isn't set yet: it draws, but can't send (2.8).
+              type: "Newsletter",
+              props: { id: "news-unset", title: "Cake club", action: "" },
+            },
           ],
         },
       },
