@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 
-import { t } from "@webforge/i18n";
+import { t, template } from "@webforge/i18n";
 import { DEFAULT_THEME } from "@webforge/model";
 import type { ComponentLibrary } from "@webforge/site-components";
 import { act } from "react";
@@ -29,7 +29,7 @@ describe("puckDictionary", () => {
   it("resolves every Puck string through t()", () => {
     const dictionary = puckDictionary();
     for (const [puckKey, key] of Object.entries(PUCK_MESSAGES)) {
-      expect(dictionary[puckKey], puckKey).toBe(t(key));
+      expect(dictionary[puckKey], puckKey).toBe(template(key));
       expect(dictionary[puckKey]?.trim(), puckKey).not.toBe("");
     }
     expect(Object.keys(dictionary)).toEqual(Object.keys(PUCK_MESSAGES));

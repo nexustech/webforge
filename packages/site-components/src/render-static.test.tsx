@@ -5,9 +5,11 @@ import {
   SHARED_COPY_TYPE,
   type SharedSectionId,
 } from "@webforge/model";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { siteLibrary, starterLayout, starterPage } from "./catalogue/index.js";
 import { EDITOR_RENDER_CONTEXT } from "./library.js";
+import { type EditPreviews, PREVIEW_ATTRIBUTE } from "./previews.js";
 import {
   behavioursUsedBy,
   documentsLinkedBy,
@@ -1093,5 +1095,46 @@ describe("tree helpers", () => {
       behavioursUsedBy([{ ...header, props: { ...header.props, sticky: true } }], siteLibrary),
     ).toEqual(["menu", "sticky"]);
     expect(behavioursUsedBy(starterPage().content, siteLibrary)).toEqual([]);
+  });
+});
+
+describe("edit-only previews (UX-26)", () => {
+  /** Every preview there is, on: a new one fails to compile here until this test covers it. */
+  const ALL_PREVIEWS: Required<EditPreviews> = { mobileMenu: true };
+  const previewing: RenderContext = { ...context, previews: ALL_PREVIEWS };
+
+  it("shows the Header's small screens' menu open on the canvas, marked as a preview", () => {
+    const header = siteLibrary.components.Header;
+    if (header === undefined) throw new Error("No Header");
+    const draw = (previews: EditPreviews) =>
+      renderToStaticMarkup(
+        <>
+          {header.render({
+            id: "header",
+            values: header.defaults,
+            slots: {},
+            context: { ...context, previews },
+          })}
+        </>,
+      );
+
+    expect(draw({ mobileMenu: true })).toContain(
+      `<details class="site-menu md:hidden" data-wf-menu="" open="" ${PREVIEW_ATTRIBUTE}="mobile-menu">`,
+    );
+    expect(draw({})).toContain('<details class="site-menu md:hidden" data-wf-menu="">');
+  });
+
+  it("never reaches the export: every component renders the same with every preview on", () => {
+    const layout = starterLayout("Rosa's Bakery");
+    const everyComponent = Object.entries(siteLibrary.components).map(([type, def]) => ({
+      type,
+      props: { ...def.defaults, id: `every-${type}` },
+    }));
+
+    for (const nodes of [layout.header, starterPage().content, layout.footer, everyComponent]) {
+      const exported = renderNodesToHtml(nodes, siteLibrary, previewing);
+      expect(exported).toBe(renderNodesToHtml(nodes, siteLibrary, context));
+      expect(exported).not.toContain(PREVIEW_ATTRIBUTE);
+    }
   });
 });
