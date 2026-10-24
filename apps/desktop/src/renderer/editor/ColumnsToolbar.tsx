@@ -7,13 +7,12 @@ import {
   TooltipTrigger,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
-import { isNodeDoc, type NodeDoc, newId, pastedCopies, type SiteDoc } from "@webforge/model";
+import { isNodeDoc, type NodeDoc, newId, pastedCopies } from "@webforge/model";
 import {
   COLUMN_LAYOUTS,
   type ColumnLayout,
   columnLayoutsFor,
   MIN_COLUMNS,
-  slotsOverfull,
 } from "@webforge/site-components";
 import { MinusIcon, PlusIcon } from "lucide-react";
 import { type ReactNode, useId } from "react";
@@ -227,14 +226,14 @@ function columnTemplate(library: EditorSession["library"]): NodeDoc | undefined 
   return Array.isArray(placed) ? placed.find(isNodeDoc) : undefined;
 }
 
-/** `node` with `column` added at the end, if its slot's `max` has room for it, as for any add. */
-function withColumn(
-  library: EditorSession["library"],
-  node: NodeDoc,
-  column: NodeDoc,
-): NodeDoc | undefined {
-  const after = { ...node, props: { ...node.props, columns: [...columnsIn(node), column] } };
-  return slotsOverfull(library, [after]) && !slotsOverfull(library, [node]) ? undefined : after;
+/**
+ * How many columns a Columns holds at most: its `columns` slot's `max`, which every way of adding
+ * keeps to. Its own count is compared with it, so a column too many inside one of its columns (a
+ * nested Columns from an old file) neither blocks nor allows one more here.
+ */
+function maxColumns(library: EditorSession["library"]): number {
+  const slot = library.components.Columns?.fields.columns;
+  return slot?.kind === "slot" && slot.max !== undefined ? slot.max : Number.POSITIVE_INFINITY;
 }
 
 /**
@@ -255,7 +254,7 @@ function addColumn(session: EditorSession, flush: () => void, nodeId: string): v
   const id = newId("node");
   const ids = [id];
   const [column] = pastedCopies([template], new Set(), () => ids.shift() ?? newId("node"));
-  if (column === undefined || withColumn(session.library, target.node, column) === undefined) {
+  if (column === undefined || columnsIn(target.node).length >= maxColumns(session.library)) {
     return;
   }
   const label =
@@ -352,17 +351,11 @@ export function columnsToolbar({
         session,
         (site) => holderOf(site, session, pageId, nodeId, "Columns", "Column")?.holderId ?? nodeId,
       );
-      const nodeIn = (site: SiteDoc) => fieldTarget(site, session.library, pageId, columnsId)?.node;
-      const count = useDocument(session, (site) => columnsIn(nodeIn(site)).length);
-      const canAdd = useDocument(session, (site) => {
-        const node = nodeIn(site);
-        const template = columnTemplate(session.library);
-        return (
-          node !== undefined &&
-          template !== undefined &&
-          withColumn(session.library, node, template) !== undefined
-        );
-      });
+      const count = useDocument(
+        session,
+        (site) => columnsIn(fieldTarget(site, session.library, pageId, columnsId)?.node).length,
+      );
+      const canAdd = count < maxColumns(session.library);
       const stored = useFieldValue(session, columnsId, "layout");
       const outlines = useStore(previews, (choices) => choices.columnOutlines);
       const layout = COLUMN_LAYOUTS.find((each) => each === stored);

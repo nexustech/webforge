@@ -23,8 +23,11 @@ const column = (id: string): NodeDoc => ({
   props: { id, content: [text(`${id}-text`)] },
 });
 
-/** The starter page with a two-column Columns in its Section, and the Columns toolbar. */
-function setUp(mode: "design" | "content" = "design") {
+/** The starter page with a Columns of `columns` (two) in its Section, and the Columns toolbar. */
+function setUp(
+  mode: "design" | "content" = "design",
+  columns: NodeDoc[] = [column("left"), column("right")],
+) {
   const site = starterSite();
   const section = site.pages[site.homePageId]?.doc.content[0];
   if (section === undefined) throw new Error("no section");
@@ -32,7 +35,7 @@ function setUp(mode: "design" | "content" = "design") {
     type: "Columns",
     props: {
       id: "columns",
-      columns: [column("left"), column("right")],
+      columns,
       layout: { $responsive: { desktop: "equal", mobile: "stacked" } },
     },
   });
@@ -54,9 +57,9 @@ function setUp(mode: "design" | "content" = "design") {
     (currentPage(session)?.doc.content[0]?.props.content as NodeDoc[] | undefined)?.find(
       (node) => node.type === "Columns",
     );
-  const columns = () => (columnsNode()?.props.columns as NodeDoc[] | undefined) ?? [];
+  const shown = () => (columnsNode()?.props.columns as NodeDoc[] | undefined) ?? [];
   const labels = () => session.history.entries().map((entry) => entry.label);
-  return { session, flush, previews, columnsNode, columns, labels };
+  return { session, flush, previews, columnsNode, columns: shown, labels };
 }
 
 const button = (name: string) => screen.getByRole("button", { name });
@@ -137,6 +140,27 @@ describe("the Columns toolbar (2.17, SP-4)", () => {
 
     expect(choices()).toEqual(["Equal", "One under another"]);
     expect(button("Add column")).toHaveProperty("disabled", true);
+  });
+
+  it("counts its own columns only: a column too many inside one adds no fifth (2.17 review)", async () => {
+    // Four columns, the first holding a nested Columns of five, as an old file might.
+    const nested: NodeDoc = {
+      type: "Columns",
+      props: { id: "nested", columns: ["n1", "n2", "n3", "n4", "n5"].map(column) },
+    };
+    const first: NodeDoc = { type: "Column", props: { id: "c1", content: [nested] } };
+    const { session, columns, labels } = setUp("design", [
+      first,
+      column("c2"),
+      column("c3"),
+      column("c4"),
+    ]);
+    act(() => session.select("columns"));
+
+    expect(button("Add column")).toHaveProperty("disabled", true);
+    await userEvent.click(button("Add column"));
+    expect(columns()).toHaveLength(4);
+    expect(labels()).toEqual([]);
   });
 
   it("sets the widths for the device shown only, as one step named as the Edit panel names it", async () => {
