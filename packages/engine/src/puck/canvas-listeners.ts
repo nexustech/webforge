@@ -1,6 +1,7 @@
 import type { CanvasContextMenu, HistoryCommandHandler } from "../canvas-engine.js";
 import { installHistoryKeys } from "../history-keys.js";
 import { installMenuKeys } from "../menu-keys.js";
+import { keepLinksOnCanvas } from "./canvas-links.js";
 import { installContextMenu } from "./context-menu.js";
 import { hidePuckDeleteKeys } from "./delete-keys.js";
 import { type DragKeys, trackDragKeys } from "./drag-copies.js";
@@ -47,8 +48,8 @@ export function listenInEditor(target: Window, options: CanvasListenerOptions): 
 /**
  * Listens in the canvas iframe's window `frame`: as in the editor window, plus Undo and Redo from
  * the keyboard (taken before Puck's own hotkeys, ADR 0004), and the element menu from a right-click
- * or the keyboard, Shift+F10 on macOS too (#287), and the time of each key typed (#307). Returns
- * what stops it.
+ * or the keyboard, Shift+F10 on macOS too (#287), the time of each key typed (#307), and its links
+ * followed nowhere. Returns what stops it.
  */
 export function listenInFrame(frame: Window, options: FrameListenerOptions): () => void {
   const stops = [
@@ -60,6 +61,7 @@ export function listenInFrame(frame: Window, options: FrameListenerOptions): () 
       selected: options.selected,
     }),
     installMenuKeys(frame.document),
+    keepLinksOnCanvas(frame.document),
   ];
   return () => {
     for (const stop of stops) stop();

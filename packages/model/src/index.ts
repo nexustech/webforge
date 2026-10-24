@@ -27,6 +27,7 @@ export {
   attributeNameSchema,
   classNamesSchema,
   isNodeDoc,
+  LAYER_NAME_MAX,
   layoutDocSchema,
   nodeAdvancedSchema,
   nodeDocSchema,
@@ -39,7 +40,6 @@ export type {
   IdKind,
   MediaId,
   MenuItemId,
-  NodeId,
   PageId,
   SharedSectionId,
 } from "./ids.js";
@@ -52,7 +52,7 @@ export {
   sharedSectionIdSchema,
 } from "./ids.js";
 export type { LinkValue } from "./link.js";
-export { anchorIdSchema, linkValueSchema, webUrlSchema } from "./link.js";
+export { anchorIdSchema, EMAIL_SUBJECT_MAX, linkValueSchema, webUrlSchema } from "./link.js";
 export type {
   FileMeta,
   FileMimeType,
@@ -71,12 +71,13 @@ export {
   IMAGE_MIME_TYPES,
   imageValueSchema,
   isImageMeta,
+  mediaItem,
   mediaMetaSchema,
   mediaNameFor,
   mediaNameSchema,
 } from "./media.js";
 export type { MenuDoc, MenuItem, MenuLeaf } from "./menu.js";
-export { menuDocSchema, menuItemSchema } from "./menu.js";
+export { MENU_LABEL_MAX, menuDocSchema, menuFileLinks, menuItemSchema } from "./menu.js";
 export { syncMenuWithPages } from "./menu-sync.js";
 export type {
   MigrateOptions,
@@ -104,11 +105,18 @@ export {
 } from "./rich-text-links.js";
 export type { SiteSettings } from "./settings.js";
 export {
+  BUSINESS_NAME_MAX,
   defaultSiteSettings,
   languageTagSchema,
+  MEASUREMENT_ID_MAX,
+  OPENING_HOURS_NOTE_MAX,
+  POSTAL_ADDRESS_MAX,
+  SITE_DESCRIPTION_MAX,
+  SITE_NAME_MAX,
   SOCIAL_NETWORKS,
   siteSettingsSchema,
   webAddressSchema,
+  X_HANDLE_MAX,
 } from "./settings.js";
 export type { SharedCopyNode, SharedSection, SharedSectionsDoc } from "./shared-sections.js";
 export {
@@ -129,6 +137,10 @@ export type { CreateSiteOptions, PageEntry, PageSettings, SiteDoc } from "./site
 export {
   createSite,
   folderSchema,
+  PAGE_DESCRIPTION_MAX,
+  PAGE_FOLDER_MAX,
+  PAGE_SLUG_MAX,
+  PAGE_TITLE_MAX,
   pageEntrySchema,
   pagePath,
   RESERVED_SLUGS,
@@ -141,6 +153,8 @@ export {
   applySiteChanges,
   changedDocuments,
   pageDocumentId,
+  SITE_DOCUMENT_KINDS,
+  siteDocumentChangeSchema,
   siteDocuments,
   siteFromDocuments,
 } from "./site-documents.js";

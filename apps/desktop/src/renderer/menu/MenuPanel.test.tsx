@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { MENU_LABEL_MAX } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it } from "vitest";
 import { createEditorSession } from "../editor/editor-session.js";
@@ -84,6 +85,11 @@ describe("MenuPanel (F-ED-17)", () => {
 
     await user.click(menu().getByRole("button", { name: "About, page" }));
     const dialog = await openedDialog("Rename menu item");
+    // As long as a menu label may be, not the 200 characters a page title may (R10).
+    expect(dialog.getByRole("textbox", { name: "Name in the menu" })).toHaveProperty(
+      "maxLength",
+      MENU_LABEL_MAX,
+    );
     await user.clear(dialog.getByRole("textbox", { name: "Name in the menu" }));
     await user.paste("Our story");
     await user.click(dialog.getByRole("button", { name: "Rename" }));

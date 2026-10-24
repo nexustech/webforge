@@ -1,20 +1,85 @@
 import type { EngineEdit } from "@webforge/engine";
 import { t } from "@webforge/i18n";
-import type { PageDoc } from "@webforge/model";
+import { isSharedCopy, type NodeDoc, type PageDoc, type SharedSectionsDoc } from "@webforge/model";
 import type { ComponentLibrary, FieldDef } from "@webforge/site-components";
 import { findNode } from "./nodes.js";
+
+/** The shared section a linked copy shows (F-ED-23), if the site has it. */
+function sharedOf(node: NodeDoc, shared: SharedSectionsDoc) {
+  if (!isSharedCopy(node)) return undefined;
+  const id = node.props.sharedSectionId;
+  return Object.hasOwn(shared, id) ? shared[id] : undefined;
+}
+
+/**
+ * The name the person gave an element: its Layers name, else for a linked copy its shared
+ * section's name (F-ED-23); none for an element they haven't named.
+ */
+export function givenElementName(
+  node: NodeDoc,
+  shared: SharedSectionsDoc = {},
+): string | undefined {
+  const own = node.props.layerName?.trim();
+  return own === undefined || own === "" ? sharedOf(node, shared)?.name : own;
+}
+
+/** What an element is: its component's display name ("Heading"); a linked copy's section's. */
+export function elementKind(
+  node: NodeDoc,
+  library: ComponentLibrary,
+  shared: SharedSectionsDoc = {},
+): string {
+  const shown = sharedOf(node, shared)?.section ?? node;
+  return library.components[shown.type]?.label ?? shown.type;
+}
+
+/**
+ * How lists, suggestions and the link dialog name an element (D2): the name the person gave it,
+ * else what it is ("Opening times", "Heading").
+ */
+export function elementName(
+  node: NodeDoc,
+  library: ComponentLibrary,
+  shared: SharedSectionsDoc = {},
+): string {
+  return givenElementName(node, shared) ?? elementKind(node, library, shared);
+}
+
+/** `kind`, or a `name` the person gave in quotes, as undo labels name an element: "'Opening times'". */
+export const quotedName = (kind: string, name: string | undefined): string =>
+  name === undefined ? kind : t("history.namedItem", { name });
+
+/** How undo labels and messages name an element (D2): "'Opening times'", else "Heading". */
+export function quotedElementName(
+  node: NodeDoc,
+  library: ComponentLibrary,
+  shared: SharedSectionsDoc = {},
+): string {
+  return quotedName(elementKind(node, library, shared), givenElementName(node, shared));
+}
 
 /**
  * How undo labels name an element: the name the user gave it in Layers ("'Opening times'"), else
  * its component's display name ("Heading"), as the glossary has it (D2).
  */
-function itemName(edit: EngineEdit, library: ComponentLibrary, pages: readonly PageDoc[]): string {
-  const name = ownName(edit, library, pages);
+function itemName(
+  edit: EngineEdit,
+  library: ComponentLibrary,
+  pages: readonly PageDoc[],
+  shared: SharedSectionsDoc = {},
+): string {
+  const name = ownName(edit, library, pages, shared);
   // An element of the shared Header or Footer: "Edited shared Footer text" (F-ED-7).
   return edit.shared === true ? t("history.sharedItem", { item: name }) : name;
 }
 
-function ownName(edit: EngineEdit, library: ComponentLibrary, pages: readonly PageDoc[]): string {
+/** As {@link itemName}; a linked copy by its shared section's name (`shared`), as Layers names it. */
+function ownName(
+  edit: EngineEdit,
+  library: ComponentLibrary,
+  pages: readonly PageDoc[],
+  shared: SharedSectionsDoc,
+): string {
   const id = edit.nodeId;
   const layout = edit.layout === undefined ? [] : [...edit.layout.header, ...edit.layout.footer];
   const node =
@@ -23,13 +88,12 @@ function ownName(edit: EngineEdit, library: ComponentLibrary, pages: readonly Pa
       : [...pages.map((page) => page.content), layout]
           .map((nodes) => findNode(nodes, (n) => n.props.id === id))
           .find(Boolean);
-  const layerName = node?.props.layerName;
-  if (typeof layerName === "string" && layerName.trim() !== "") {
-    return t("history.namedItem", { name: layerName.trim() });
-  }
   const component =
     edit.componentType === null ? undefined : library.components[edit.componentType];
-  return component?.label ?? edit.componentType ?? "";
+  return quotedName(
+    component?.label ?? edit.componentType ?? "",
+    node === undefined ? undefined : givenElementName(node, shared),
+  );
 }
 
 /** The undo label for Paste Style (1.37): "Pasted style on Heading", or on a named element. */
@@ -94,10 +158,21 @@ export function deviceLabelFor(
 
 /**
  * The undo label for a canvas edit (D2), e.g. "Moved Heading", "Edited Heading text" or "Edited
- * 'Opening times' text". `before` is the page as it was, where a removed element is still found.
+ * 'Opening times' text". `before` is the page as it was, where a removed element is still found;
+ * `shared`, the site's shared sections, names a linked copy as Layers does ("Moved 'Opening hours'").
  */
-export function labelFor(edit: EngineEdit, library: ComponentLibrary, before?: PageDoc): string {
-  const item = itemName(edit, library, before === undefined ? [edit.page] : [edit.page, before]);
+export function labelFor(
+  edit: EngineEdit,
+  library: ComponentLibrary,
+  before?: PageDoc,
+  shared: SharedSectionsDoc = {},
+): string {
+  const item = itemName(
+    edit,
+    library,
+    before === undefined ? [edit.page] : [edit.page, before],
+    shared,
+  );
   switch (edit.kind) {
     case "insert":
       return t("history.added", { item });

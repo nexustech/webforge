@@ -1,5 +1,6 @@
 import {
   Button,
+  Check,
   cn,
   Dialog,
   DialogContent,
@@ -7,45 +8,45 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  ErrorText,
+  Field,
   fieldControlClass,
+  ImageChoice,
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
+  TextInput,
+  TimeInput,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import {
+  BUSINESS_NAME_MAX,
   type ImageMeta,
   isImageMeta,
+  MEASUREMENT_ID_MAX,
   type MediaId,
+  OPENING_HOURS_NOTE_MAX,
+  POSTAL_ADDRESS_MAX,
+  SITE_DESCRIPTION_MAX,
+  SITE_NAME_MAX,
   type SiteDoc,
   type SiteSettings,
   SOCIAL_NETWORKS,
+  X_HANDLE_MAX,
 } from "@webforge/model";
 import { PlusIcon, XIcon } from "lucide-react";
-import { type ReactNode, useState } from "react";
+import { useState } from "react";
 import { mediaImageUrl } from "../../shared/ipc/media.js";
-import { Check, Field, ImageChoice } from "../site/PageSettingsDialog.js";
 import {
   checkSettings,
   DAYS,
   FORM_SERVICES,
-  type FormServiceKind,
+  SECTIONS,
+  type Section,
   type SettingsForm,
   toSettingsForm,
 } from "./settings-form.js";
-
-/** The dialog's sections, in order (F-SET-1); each field's first path part names its section. */
-const SECTIONS = [
-  "general",
-  "address",
-  "social",
-  "contact",
-  "search",
-  "analytics",
-  "forms",
-] as const;
-type Section = (typeof SECTIONS)[number];
 
 /** Props of {@link SiteSettingsDialog}. */
 export type SiteSettingsDialogProps = {
@@ -97,7 +98,7 @@ function SiteSettingsForm({
   const [section, setSection] = useState<Section>(initialSection);
   const images = Object.values(site.media).filter(isImageMeta);
   const change = (next: Partial<SettingsForm>) => setForm((current) => ({ ...current, ...next }));
-  const invalid = (field: string, hintId?: string) => errorProps(field, errors, hintId);
+  const invalid = (field: string) => errorProps(field, errors);
 
   return (
     <form
@@ -123,7 +124,10 @@ function SiteSettingsForm({
         <DialogDescription>{t("site.settings.description")}</DialogDescription>
       </DialogHeader>
 
-      <Tabs value={section} onValueChange={(value) => setSection(value as Section)}>
+      <Tabs
+        value={section}
+        onValueChange={(value) => setSection(SECTIONS.find((name) => name === value) ?? section)}
+      >
         <TabsList
           aria-label={t("site.settings.sections")}
           // Seven sections wrap onto a second row in a narrow window; each row keeps the tabs' height.
@@ -140,49 +144,35 @@ function SiteSettingsForm({
         </TabsList>
 
         <TabsContent value="general" className="grid gap-3 pt-3">
-          <Field label={t("site.settings.name")}>
-            {({ id }) => (
-              <>
-                <input
-                  id={id}
-                  className={fieldControlClass}
-                  value={form.name}
-                  maxLength={100}
-                  onChange={(event) => change({ name: event.currentTarget.value })}
-                  {...invalid("general.name")}
-                />
-                <ErrorText field="general.name" errors={errors} />
-              </>
-            )}
-          </Field>
-          <Field
+          <TextInput
+            label={t("site.settings.name")}
+            value={form.name}
+            maxLength={SITE_NAME_MAX}
+            error={errors["general.name"]}
+            onChange={(name) => change({ name })}
+          />
+          <TextInput
             label={t("site.settings.siteDescription")}
             hint={t("site.settings.siteDescriptionHint")}
+            multiline
+            value={form.description}
+            maxLength={SITE_DESCRIPTION_MAX}
+            error={errors["general.description"]}
+            onChange={(description) => change({ description })}
+          />
+          <Field
+            label={t("site.settings.language")}
+            hint={t("site.settings.languageHint")}
+            error={errors["general.language"]}
           >
-            {({ id, hintId }) => (
-              <textarea
-                id={id}
-                className={cn(fieldControlClass, "h-16 resize-none py-1")}
-                value={form.description}
-                maxLength={300}
-                onChange={(event) => change({ description: event.currentTarget.value })}
-                {...invalid("general.description", hintId)}
+            {(control) => (
+              <input
+                {...control}
+                className={cn(fieldControlClass, "w-32")}
+                value={form.language}
+                maxLength={35}
+                onChange={(event) => change({ language: event.currentTarget.value })}
               />
-            )}
-          </Field>
-          <Field label={t("site.settings.language")} hint={t("site.settings.languageHint")}>
-            {({ id, hintId }) => (
-              <>
-                <input
-                  id={id}
-                  className={cn(fieldControlClass, "w-32")}
-                  value={form.language}
-                  maxLength={35}
-                  onChange={(event) => change({ language: event.currentTarget.value })}
-                  {...invalid("general.language", hintId)}
-                />
-                <ErrorText field="general.language" errors={errors} />
-              </>
             )}
           </Field>
           <ImagePicker
@@ -197,21 +187,21 @@ function SiteSettingsForm({
         </TabsContent>
 
         <TabsContent value="address" className="grid gap-3 pt-3">
-          <Field label={t("site.settings.webAddress")} hint={t("site.settings.webAddressHint")}>
-            {({ id, hintId }) => (
-              <>
-                <input
-                  id={id}
-                  type="url"
-                  inputMode="url"
-                  className={fieldControlClass}
-                  placeholder={t("site.settings.webAddressPlaceholder")}
-                  value={form.url}
-                  onChange={(event) => change({ url: event.currentTarget.value })}
-                  {...invalid("address.url", hintId)}
-                />
-                <ErrorText field="address.url" errors={errors} />
-              </>
+          <Field
+            label={t("site.settings.webAddress")}
+            hint={t("site.settings.webAddressHint")}
+            error={errors["address.url"]}
+          >
+            {(control) => (
+              <input
+                {...control}
+                type="url"
+                inputMode="url"
+                className={fieldControlClass}
+                placeholder={t("site.settings.webAddressPlaceholder")}
+                value={form.url}
+                onChange={(event) => change({ url: event.currentTarget.value })}
+              />
             )}
           </Field>
         </TabsContent>
@@ -238,11 +228,11 @@ function SiteSettingsForm({
                       aria-label={t("site.settings.network")}
                       className={cn(fieldControlClass, "w-32")}
                       value={profile.network}
-                      onChange={(event) =>
-                        replace({
-                          network: event.currentTarget.value as (typeof SOCIAL_NETWORKS)[number],
-                        })
-                      }
+                      onChange={(event) => {
+                        const { value } = event.currentTarget;
+                        const network = SOCIAL_NETWORKS.find((name) => name === value);
+                        if (network !== undefined) replace({ network });
+                      }}
                     >
                       {SOCIAL_NETWORKS.map((network) => (
                         <option key={network} value={network}>
@@ -273,7 +263,7 @@ function SiteSettingsForm({
                       <XIcon />
                     </Button>
                   </div>
-                  <ErrorText field={field} errors={errors} />
+                  <ErrorText id={errorId(field)} message={errors[field]} />
                 </div>
               );
             })}
@@ -299,20 +289,16 @@ function SiteSettingsForm({
             value={form.shareImage}
             onChange={(shareImage) => change({ shareImage })}
           />
-          <Field label={t("site.settings.xHandle")}>
-            {({ id }) => (
-              <>
-                <input
-                  id={id}
-                  className={cn(fieldControlClass, "w-48")}
-                  placeholder="@"
-                  value={form.xHandle}
-                  maxLength={16}
-                  onChange={(event) => change({ xHandle: event.currentTarget.value })}
-                  {...invalid("social.xHandle")}
-                />
-                <ErrorText field="social.xHandle" errors={errors} />
-              </>
+          <Field label={t("site.settings.xHandle")} error={errors["social.xHandle"]}>
+            {(control) => (
+              <input
+                {...control}
+                className={cn(fieldControlClass, "w-48")}
+                placeholder="@"
+                value={form.xHandle}
+                maxLength={X_HANDLE_MAX}
+                onChange={(event) => change({ xHandle: event.currentTarget.value })}
+              />
             )}
           </Field>
         </TabsContent>
@@ -320,48 +306,40 @@ function SiteSettingsForm({
         <TabsContent value="contact" className="grid gap-3 pt-3">
           <TextInput
             label={t("site.settings.businessName")}
-            field="contact.businessName"
+            error={errors["contact.businessName"]}
             value={form.businessName}
-            maxLength={200}
-            errors={errors}
+            maxLength={BUSINESS_NAME_MAX}
             onChange={(businessName) => change({ businessName })}
           />
           <TextInput
             label={t("site.settings.email")}
-            field="contact.email"
+            error={errors["contact.email"]}
             type="email"
             value={form.email}
-            errors={errors}
             onChange={(email) => change({ email })}
           />
           <TextInput
             label={t("site.settings.phone")}
-            field="contact.phone"
+            error={errors["contact.phone"]}
             type="tel"
             value={form.phone}
-            errors={errors}
             onChange={(phone) => change({ phone })}
           />
-          <Field label={t("site.settings.address")}>
-            {({ id }) => (
-              <textarea
-                id={id}
-                className={cn(fieldControlClass, "h-16 resize-none py-1")}
-                value={form.address}
-                maxLength={500}
-                onChange={(event) => change({ address: event.currentTarget.value })}
-                {...invalid("contact.address")}
-              />
-            )}
-          </Field>
+          <TextInput
+            label={t("site.settings.address")}
+            multiline
+            value={form.address}
+            maxLength={POSTAL_ADDRESS_MAX}
+            error={errors["contact.address"]}
+            onChange={(address) => change({ address })}
+          />
           <OpeningHours form={form} errors={errors} invalid={invalid} change={change} />
           <TextInput
             label={t("site.settings.openingHoursNote")}
             hint={t("site.settings.openingHoursNoteHint")}
-            field="contact.openingHoursNote"
+            error={errors["contact.openingHoursNote"]}
             value={form.openingHoursNote}
-            maxLength={300}
-            errors={errors}
+            maxLength={OPENING_HOURS_NOTE_MAX}
             onChange={(openingHoursNote) => change({ openingHoursNote })}
           />
         </TabsContent>
@@ -383,10 +361,9 @@ function SiteSettingsForm({
           <TextInput
             label={t("site.settings.measurementId")}
             hint={t("site.settings.measurementIdHint")}
-            field="analytics.measurementId"
+            error={errors["analytics.measurementId"]}
             value={form.measurementId}
-            maxLength={14}
-            errors={errors}
+            maxLength={MEASUREMENT_ID_MAX}
             onChange={(measurementId) => change({ measurementId })}
           />
           <Check
@@ -398,18 +375,16 @@ function SiteSettingsForm({
 
         <TabsContent value="forms" className="grid gap-3 pt-3">
           <Field label={t("site.settings.formService")} hint={t("site.settings.formServiceHint")}>
-            {({ id, hintId }) => (
+            {(control) => (
               <select
-                id={id}
+                {...control}
                 className={cn(fieldControlClass, "w-48")}
                 value={form.formService}
-                aria-describedby={hintId}
-                onChange={(event) =>
-                  change({
-                    formService: event.currentTarget.value as FormServiceKind,
-                    formValue: "",
-                  })
-                }
+                onChange={(event) => {
+                  const { value } = event.currentTarget;
+                  const formService = FORM_SERVICES.find((service) => service === value);
+                  if (formService !== undefined) change({ formService, formValue: "" });
+                }}
               >
                 {FORM_SERVICES.map((service) => (
                   <option key={service} value={service}>
@@ -422,7 +397,7 @@ function SiteSettingsForm({
           {form.formService === "" || form.formService === "netlify" ? null : (
             <TextInput
               label={t(`site.settings.formValue.${form.formService}`)}
-              field="forms.value"
+              error={errors["forms.value"]}
               type={
                 form.formService === "formsubmit"
                   ? "email"
@@ -431,7 +406,6 @@ function SiteSettingsForm({
                     : "text"
               }
               value={form.formValue}
-              errors={errors}
               onChange={(formValue) => change({ formValue })}
             />
           )}
@@ -439,7 +413,7 @@ function SiteSettingsForm({
       </Tabs>
 
       {Object.keys(errors).length === 0 ? null : (
-        <p role="alert" className="m-0 text-xs text-destructive">
+        <p role="alert" className="m-0 text-xs text-destructive-text">
           {t("site.settings.fixErrors")}
         </p>
       )}
@@ -457,76 +431,18 @@ function SiteSettingsForm({
  * What an input needs to show a field's error: `aria-invalid`, and `aria-describedby` pointing at
  * its hint and its message.
  */
-function errorProps(field: string, errors: Readonly<Record<string, string>>, hintId?: string) {
-  const error = errors[field];
-  const describedBy = [hintId, error === undefined ? undefined : `error-${field}`].filter(
-    (id) => id !== undefined,
-  );
-  return {
-    "aria-invalid": error === undefined ? undefined : true,
-    "aria-describedby": describedBy.length === 0 ? undefined : describedBy.join(" "),
-  } as const;
+function errorProps(field: string, errors: Readonly<Record<string, string>>) {
+  return errors[field] === undefined
+    ? {}
+    : ({ "aria-invalid": true, "aria-describedby": errorId(field) } as const);
 }
+
+/** The id of the error under an inline control (a row of profiles or opening hours). */
+const errorId = (field: string) => `error-${field}`;
 
 /** The section a field is in: the first part of its path. */
 function sectionOf(field: string): string {
   return field.split(".")[0] ?? "";
-}
-
-/** A field's message, if Save found something to fix there. */
-function ErrorText({
-  field,
-  errors,
-}: {
-  readonly field: string;
-  readonly errors: Readonly<Record<string, string>>;
-}) {
-  const message = errors[field];
-  return message === undefined ? null : (
-    <p id={`error-${field}`} className="m-0 text-xs text-destructive">
-      {message}
-    </p>
-  );
-}
-
-/** A labelled one-line input with its hint and error. */
-function TextInput({
-  label,
-  hint,
-  field,
-  type = "text",
-  value,
-  maxLength,
-  errors,
-  onChange,
-}: {
-  readonly label: string;
-  readonly hint?: string;
-  readonly field: string;
-  readonly type?: "text" | "email" | "tel" | "url";
-  readonly value: string;
-  readonly maxLength?: number;
-  readonly errors: Readonly<Record<string, string>>;
-  readonly onChange: (value: string) => void;
-}) {
-  return (
-    <Field label={label} {...(hint === undefined ? {} : { hint })}>
-      {({ id, hintId }) => (
-        <>
-          <input
-            id={id}
-            type={type}
-            className={fieldControlClass}
-            value={value}
-            {...(maxLength === undefined ? {} : { maxLength })}
-            {...errorProps(field, errors, hintId)}
-            onChange={(event) => onChange(event.currentTarget.value)}
-          />
-          <ErrorText field={field} errors={errors} />
-        </>
-      )}
-    </Field>
-  );
 }
 
 /** A choice of one of Media's images, or none. */
@@ -642,20 +558,18 @@ function OpeningHours({
                 <XIcon />
               </Button>
             </fieldset>
-            <ErrorText field={`${field}.days`} errors={errors} />
+            <ErrorText id={errorId(`${field}.days`)} message={errors[`${field}.days`]} />
             <div className="flex flex-wrap items-center gap-2 text-xs">
               <TimeInput
                 label={t("site.settings.opens")}
                 value={hours.opens}
-                field={`${field}.opens`}
-                errors={errors}
+                error={errors[`${field}.opens`]}
                 onChange={(opens) => replace(index, { opens })}
               />
               <TimeInput
                 label={t("site.settings.closes")}
                 value={hours.closes}
-                field={`${field}.closes`}
-                errors={errors}
+                error={errors[`${field}.closes`]}
                 onChange={(closes) => replace(index, { closes })}
               />
             </div>
@@ -677,37 +591,5 @@ function OpeningHours({
         {t("site.settings.addHours")}
       </Button>
     </fieldset>
-  );
-}
-
-/** One time of opening hours, `HH:MM`. */
-function TimeInput({
-  label,
-  value,
-  field,
-  errors,
-  onChange,
-}: {
-  readonly label: ReactNode;
-  readonly value: string;
-  readonly field: string;
-  readonly errors: Readonly<Record<string, string>>;
-  readonly onChange: (value: string) => void;
-}) {
-  return (
-    <label className="flex flex-col gap-0.5 text-muted-foreground">
-      <span className="flex items-center gap-1.5">
-        {label}
-        <input
-          type="time"
-          // Wide enough for a 12-hour clock ("07:00 AM") as well as a 24-hour one.
-          className={cn(fieldControlClass, "w-32")}
-          value={value}
-          {...errorProps(field, errors)}
-          onChange={(event) => onChange(event.currentTarget.value)}
-        />
-      </span>
-      <ErrorText field={field} errors={errors} />
-    </label>
   );
 }

@@ -2,6 +2,7 @@ import { z } from "zod";
 import {
   anchorsIn,
   isNodeDoc,
+  LAYER_NAME_MAX,
   type LayoutDoc,
   type NodeAdvanced,
   type NodeDoc,
@@ -79,7 +80,7 @@ const sharedCopyNodeSchema = z.strictObject({
       .regex(/^[1-9][0-9]{0,5}$/)
       .optional(),
     // What Layers sets on any node: renaming or hiding a copy (F-ED-12).
-    layerName: z.string().max(100).optional(),
+    layerName: z.string().max(LAYER_NAME_MAX).optional(),
     hidden: z.boolean().optional(),
     advanced: nodeAdvancedSchema.optional(),
   }),
@@ -186,7 +187,7 @@ export const sharedSectionsDocSchema: z.ZodType<Record<SharedSectionId, SharedSe
         }
       }
     }),
-  ) as z.ZodType<Record<SharedSectionId, SharedSection>>;
+  );
 
 /** The site's shared sections, by id. */
 export type SharedSectionsDoc = Readonly<Record<SharedSectionId, SharedSection>>;

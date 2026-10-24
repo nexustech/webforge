@@ -2,6 +2,9 @@ import { z } from "zod";
 import { anchorIdSchema } from "./link.js";
 import { type ThemeTokens, themeTokensSchema } from "./theme.js";
 
+/** The longest name an element can be given in Layers (F-ED-26). */
+export const LAYER_NAME_MAX = 100;
+
 /**
  * Advanced-mode options of a node (F-ED-11): extra CSS classes, HTML attributes and the anchor that
  * section links point at.
@@ -68,16 +71,46 @@ export const nodeAdvancedSchema: z.ZodType<NodeAdvanced> = z.strictObject({
   anchorId: anchorIdSchema.optional(),
 });
 
-/** A node as files and IPC carry it; slot arrays inside its props are not checked here. */
+/**
+ * Whether `value` is a slot: an array in a node's props holding nodes (a Section's `content`). Any
+ * object in it with `props` counts, so a broken node (`{ type: 5, props: null }`) can't pass as a
+ * plain list item. A list field's items never have `props` (`defineComponent` refuses such a
+ * field), so an item with a field called `type` is still a list item.
+ */
+const isSlot = (value: unknown): value is readonly unknown[] =>
+  Array.isArray(value) &&
+  value.some((item) => typeof item === "object" && item !== null && "props" in item);
+
+/**
+ * A node as files and IPC carry it, with every node in its slots at any depth (R14). Props are
+ * component-specific beyond the common ones; the component's own fields are checked where it
+ * renders. Always used inside {@link withoutUnsafeKeys}, whose depth limit keeps this recursion
+ * shallow.
+ */
 export const nodeDocSchema: z.ZodType<NodeDoc> = z.object({
   type: z.string().min(1),
-  // Props are component-specific; slot arrays inside them are checked when the tree is walked.
-  props: z.looseObject({
-    id: z.string().min(1),
-    layerName: z.string().max(100).optional(),
-    hidden: z.boolean().optional(),
-    advanced: nodeAdvancedSchema.optional(),
-  }),
+  props: z
+    .looseObject({
+      id: z.string().min(1),
+      layerName: z.string().max(LAYER_NAME_MAX).optional(),
+      hidden: z.boolean().optional(),
+      advanced: nodeAdvancedSchema.optional(),
+    })
+    .superRefine((props, context) => {
+      for (const [key, value] of Object.entries(props)) {
+        if (!isSlot(value)) continue;
+        for (const [index, item] of value.entries()) {
+          const node = nodeDocSchema.safeParse(item);
+          for (const issue of node.success ? [] : node.error.issues) {
+            context.addIssue({
+              code: "custom",
+              message: issue.message,
+              path: [key, index, ...issue.path],
+            });
+          }
+        }
+      }
+    }),
 });
 
 /**
@@ -87,42 +120,56 @@ export const nodeDocSchema: z.ZodType<NodeDoc> = z.object({
  */
 const UNSAFE_KEYS: ReadonlySet<string> = new Set(["__proto__", "constructor", "prototype"]);
 
-/** The first key in {@link UNSAFE_KEYS} at any depth of `value`, or undefined if there is none. */
-function findUnsafeKey(value: unknown): string | undefined {
-  // Iterative: a crafted file nested very deeply can't overflow the stack.
-  const pending: unknown[] = [value];
+/**
+ * How deeply a document may nest objects and arrays (R14): far deeper than any page needs (a node
+ * takes three levels: itself, its props and a slot), and shallow enough that the code walking a
+ * tree, which recurses, never overflows the stack.
+ */
+const MAX_DOCUMENT_DEPTH = 200;
+
+/**
+ * What makes `value` unsafe to take in: a key in {@link UNSAFE_KEYS} at any depth, or nesting
+ * deeper than {@link MAX_DOCUMENT_DEPTH}. Undefined if it's neither.
+ */
+function documentIssue(value: unknown): string | undefined {
+  // Iterative: a crafted file nested very deeply can't overflow the stack here.
+  const pending: [unknown, number][] = [[value, 0]];
   // Structured clone (IPC) keeps cycles, and this runs before zod refuses anything: each object
   // is visited once, so a cycle can't loop forever.
   const seen = new WeakSet<object>();
   while (pending.length > 0) {
-    const item = pending.pop();
+    const [item, depth] = pending.pop() ?? [undefined, 0];
     // Image bytes (a snapshot's `media[].data`) have no keys worth checking, only millions of
     // indices.
     if (typeof item !== "object" || item === null || ArrayBuffer.isView(item) || seen.has(item)) {
       continue;
     }
+    if (depth > MAX_DOCUMENT_DEPTH) {
+      return `Documents may not nest deeper than ${MAX_DOCUMENT_DEPTH} levels`;
+    }
     seen.add(item);
     for (const key of Object.keys(item)) {
       if (UNSAFE_KEYS.has(key)) {
-        return key;
+        return `Documents may not contain a "${key}" key`;
       }
-      pending.push((item as Record<string, unknown>)[key]);
+      pending.push([(item as Record<string, unknown>)[key], depth + 1]);
     }
   }
   return undefined;
 }
 
 /**
- * `schema`, refusing input with an unsafe key anywhere before zod copies any of it. Used for
- * everything that can come from a file: node trees here, and whole sites (`siteDocSchema`).
+ * `schema`, refusing input with an unsafe key anywhere, or nested too deeply, before zod copies
+ * any of it. Used for everything that can come from a file: node trees here, and whole sites
+ * (`siteDocSchema`).
  */
 export function withoutUnsafeKeys<T>(schema: z.ZodType<T>): z.ZodType<T> {
   return z
     .unknown()
     .superRefine((value, context) => {
-      const key = findUnsafeKey(value);
-      if (key !== undefined) {
-        context.addIssue({ code: "custom", message: `Documents may not contain a "${key}" key` });
+      const issue = documentIssue(value);
+      if (issue !== undefined) {
+        context.addIssue({ code: "custom", message: issue });
       }
     })
     .pipe(schema);

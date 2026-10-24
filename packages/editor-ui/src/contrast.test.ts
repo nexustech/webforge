@@ -68,6 +68,8 @@ const TEXT_PAIRS: Readonly<Record<string, readonly string[]>> = {
   "secondary-foreground": ["secondary"],
   "primary-foreground": ["primary"],
   "destructive-foreground": ["destructive"],
+  // Errors under fields and in dialogs, and messages that something failed.
+  "destructive-text": ["background", "panel", "panel-group", "card", "popover"],
   // Links in panels and the "Saved" status in the title bar.
   info: ["panel", "card"],
   "save-status": ["titlebar"],

@@ -10,15 +10,24 @@ import {
 } from "./documents.js";
 import { mediaIdSchema, newId, type PageId, pageIdSchema } from "./ids.js";
 import { mediaMetaSchema } from "./media.js";
-import { type MenuItem, menuDocSchema } from "./menu.js";
+import { MENU_LABEL_MAX, type MenuItem, menuDocSchema } from "./menu.js";
 import { defaultSiteSettings, siteSettingsSchema } from "./settings.js";
 import { containsCopy, copyIssues, sharedSectionsDocSchema } from "./shared-sections.js";
 import { copyTheme, DEFAULT_THEME, type ThemeTokens } from "./theme.js";
 
 /** The format of {@link SiteDoc} this build writes. Bumped with a migration and a fixture. */
-export const SITE_FORMAT_VERSION = 5;
+export const SITE_FORMAT_VERSION = 6;
 
 const SEGMENT = "[a-z0-9]+(?:-[a-z0-9]+)*";
+
+/** The longest file name a page can have, without `.html`. */
+export const PAGE_SLUG_MAX = 80;
+/** The longest folder path a page can be in, e.g. `services/cakes`. */
+export const PAGE_FOLDER_MAX = 200;
+/** The longest title a page can have (the browser tab, search results). */
+export const PAGE_TITLE_MAX = 200;
+/** The longest description a page or the site can have for search results (X3). */
+export const PAGE_DESCRIPTION_MAX = 300;
 
 /**
  * A page's file name without `.html` (X1): lowercase ASCII letters, digits and single hyphens,
@@ -26,13 +35,13 @@ const SEGMENT = "[a-z0-9]+(?:-[a-z0-9]+)*";
  */
 export const slugSchema = z
   .string()
-  .max(80)
+  .max(PAGE_SLUG_MAX)
   .regex(new RegExp(`^${SEGMENT}$`));
 
 /** A folder for pages, e.g. `services` or `services/cakes`. */
 export const folderSchema = z
   .string()
-  .max(200)
+  .max(PAGE_FOLDER_MAX)
   .regex(new RegExp(`^${SEGMENT}(?:/${SEGMENT})*$`));
 
 /**
@@ -44,7 +53,7 @@ export const RESERVED_SLUGS: ReadonlySet<string> = new Set(["index", "404", "ass
 /** Page Settings (F-SET-2). Title and slug live on the page entry itself. */
 const pageSettingsSchema = z.strictObject({
   /** Meta description; the site's description when absent (X3). */
-  description: z.string().max(300).optional(),
+  description: z.string().max(PAGE_DESCRIPTION_MAX).optional(),
   /** `og:image`; the site's share image when absent. */
   shareImage: mediaIdSchema.optional(),
   hideHeader: z.boolean(),
@@ -65,9 +74,9 @@ export const pageEntrySchema = z.strictObject({
   slug: slugSchema,
   folder: folderSchema.optional(),
   /** Shown in the browser tab and search results. */
-  title: z.string().max(200),
+  title: z.string().max(PAGE_TITLE_MAX),
   /** Shown in the navigation menu instead of the title, when set (decision S5). */
-  navLabel: z.string().min(1).max(100).optional(),
+  navLabel: z.string().min(1).max(MENU_LABEL_MAX).optional(),
   settings: pageSettingsSchema,
   doc: pageDocSchema,
 });

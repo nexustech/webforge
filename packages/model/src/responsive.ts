@@ -61,5 +61,5 @@ export function responsiveSchema<T>(inner: z.ZodType<T>): z.ZodType<Responsive<T
       }),
     }),
     inner,
-  ]) as z.ZodType<Responsive<T>>;
+  ]);
 }

@@ -1,12 +1,13 @@
 import { z } from "zod";
 
-/** A string that the type checker tells apart from other strings, e.g. a page id from a slug. */
-export type Brand<T, B extends string> = T & { readonly __brand: B };
+/**
+ * A string that the type checker tells apart from other strings, e.g. a page id from a slug. It is
+ * zod's brand, so an id schema's `.brand()` parses to the id's type without a cast.
+ */
+export type Brand<T, B extends string> = T & z.$brand<B>;
 
 /** Identifies a page for its whole life: links and menu items point at it, so a rename is safe. */
 export type PageId = Brand<string, "PageId">;
-/** Identifies a section or element (a node of a page or of the shared layout). */
-export type NodeId = Brand<string, "NodeId">;
 /** Identifies an item in the site's Media. */
 export type MediaId = Brand<string, "MediaId">;
 /** Identifies an item of the navigation menu. */
@@ -16,7 +17,9 @@ export type SharedSectionId = Brand<string, "SharedSectionId">;
 
 type IdTypes = {
   page: PageId;
-  node: NodeId;
+  // A section's or element's id stays a plain string: Puck makes node ids too (`Heading-1b2c…`),
+  // so a brand would need a cast wherever one comes back from the editor.
+  node: string;
   media: MediaId;
   menuItem: MenuItemId;
   sharedSection: SharedSectionId;
@@ -57,18 +60,16 @@ export function newId<K extends IdKind>(_kind: K): IdTypes[K] {
   return id as IdTypes[K];
 }
 
-function idSchema<K extends IdKind>(): z.ZodType<IdTypes[K], string> {
-  // A plain string check; the cast only adds the brand to the parsed type.
-  return z.string().regex(ID_PATTERN) as unknown as z.ZodType<IdTypes[K], string>;
-}
+/** Validates a string shaped like an id; `.brand()` gives it its kind's type. */
+const idString = () => z.string().regex(ID_PATTERN);
 
 /** Validates a {@link PageId}. */
-export const pageIdSchema = idSchema<"page">();
-/** Validates a {@link NodeId}. */
-export const nodeIdSchema = idSchema<"node">();
+export const pageIdSchema = idString().brand<"PageId">();
+/** Validates the id of a section or element. */
+export const nodeIdSchema = idString();
 /** Validates a {@link MediaId}. */
-export const mediaIdSchema = idSchema<"media">();
+export const mediaIdSchema = idString().brand<"MediaId">();
 /** Validates a {@link MenuItemId}. */
-export const menuItemIdSchema = idSchema<"menuItem">();
+export const menuItemIdSchema = idString().brand<"MenuItemId">();
 /** Validates a {@link SharedSectionId}. */
-export const sharedSectionIdSchema = idSchema<"sharedSection">();
+export const sharedSectionIdSchema = idString().brand<"SharedSectionId">();

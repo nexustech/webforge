@@ -102,7 +102,11 @@ export function CanvasToolbar({
         id={pageId}
         className={cn(fieldControlClass, "w-44")}
         value={shownPageId}
-        onChange={(event) => onShowPage(event.currentTarget.value as PageId)}
+        onChange={(event) => {
+          const { value } = event.currentTarget;
+          const page = pages.find((candidate) => candidate.id === value);
+          if (page !== undefined) onShowPage(page.id);
+        }}
       >
         {pages.map((page) => (
           <option key={page.id} value={page.id}>

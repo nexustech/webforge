@@ -152,7 +152,7 @@ describe("MediaPanel", () => {
     expect(media()[photo.id]).toMatchObject({ alt: "Our shop" });
     expect(session.history.state.getState().entries.map((entry) => entry.label)).toEqual([
       "Added image 'shop.jpg'",
-      "Edited alt text",
+      "Edited alt text of 'shop.jpg'",
     ]);
   });
 
@@ -162,7 +162,7 @@ describe("MediaPanel", () => {
     await act(async () => button("shop.jpg")?.click());
 
     await act(async () => button("Square")?.click());
-    expect(lastLabel()).toBe("Cropped image");
+    expect(lastLabel()).toBe("Cropped image 'shop.jpg'");
     expect(media()[photo.id]).toMatchObject({ crop: { width: 0.625, height: 1 } });
 
     const marker = button("Focal point");
@@ -170,7 +170,7 @@ describe("MediaPanel", () => {
     await act(async () => {
       marker?.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
     });
-    expect(lastLabel()).toBe("Changed focal point");
+    expect(lastLabel()).toBe("Changed focal point of 'shop.jpg'");
     expect(media()[photo.id]).toMatchObject({ focal: { x: 0.55, y: 0.5 } });
     expect(button("Focal point")?.getAttribute("aria-label")).toBe(
       "Focal point, 55% across, 50% down",

@@ -1,5 +1,6 @@
 import { Button, cn, fieldControlClass, ScrollArea } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
+import { LAYER_NAME_MAX } from "@webforge/model";
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -560,7 +561,7 @@ export function LayersPanel({
       </ScrollArea>
 
       {/* While a layer is over a row it can't go to, why: browsers show no tooltips in a drag. */}
-      <p role="status" className="shrink-0 px-2 text-xs text-destructive empty:hidden">
+      <p role="status" className="shrink-0 px-2 text-xs text-destructive-text empty:hidden">
         {dragging !== null && drop?.allowed === false
           ? t("layers.dropNotAllowed", { item: layerItem(dragging.layer) })
           : ""}
@@ -693,7 +694,7 @@ function RenameField({
       placeholder={layer.kind}
       // biome-ignore lint/a11y/noAutofocus: renaming starts by typing the name.
       autoFocus
-      maxLength={100}
+      maxLength={LAYER_NAME_MAX}
       value={value}
       className={cn(fieldControlClass, "h-5 flex-1 px-1 text-xs")}
       onFocus={(event) => event.currentTarget.select()}
