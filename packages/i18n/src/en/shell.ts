@@ -14,8 +14,9 @@ export const shell = {
   "ui.picker.categories": "Categories",
   "ui.picker.all": "All",
   "ui.picker.noMatch": "Nothing matches '{query}'.",
-  "ui.picker.matchOne": "1 match",
-  "ui.picker.matchMany": "{count} matches",
+  // A count: plural("ui.picker.match", n) picks one or other (B10).
+  "ui.picker.match.one": "{count} match",
+  "ui.picker.match.other": "{count} matches",
   "ui.picker.choose": "Choose",
   "ui.picker.cancel": "Cancel",
 
