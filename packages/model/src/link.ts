@@ -37,12 +37,15 @@ export const pageLinkSchema = z.strictObject({
  * a phone number, a web address or a file in Media. Internal links store the page's id, so renaming
  * the page or changing its folder never breaks them; the export turns them into relative paths.
  */
+/** The longest subject an e-mail link can fill in. */
+export const EMAIL_SUBJECT_MAX = 200;
+
 export const linkValueSchema = z.discriminatedUnion("kind", [
   pageLinkSchema,
   z.strictObject({
     kind: z.literal("email"),
     address: z.email(),
-    subject: z.string().max(200).optional(),
+    subject: z.string().max(EMAIL_SUBJECT_MAX).optional(),
     newTab,
   }),
   z.strictObject({ kind: z.literal("phone"), number: phoneNumberSchema, newTab }),

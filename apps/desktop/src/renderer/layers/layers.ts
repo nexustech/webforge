@@ -3,6 +3,7 @@ import {
   copiedNodeId,
   isNodeDoc,
   isSharedCopy,
+  LAYER_NAME_MAX,
   type NodeDoc,
   newSharedCopy,
   type PageDoc,
@@ -45,7 +46,6 @@ export type Layer = {
 };
 
 /** The longest layer name the model accepts. */
-const MAX_NAME_LENGTH = 100;
 
 /** The node lists inside `node`: its slots' contents, in field order. */
 function slotsOf(node: NodeDoc, library: ComponentLibrary): NodeDoc[][] {
@@ -194,7 +194,7 @@ function editNode(
  */
 export function renameLayer(session: LayersSession, id: string, name: string): void {
   const found = target(session, id);
-  const next = name.trim().slice(0, MAX_NAME_LENGTH).trim();
+  const next = name.trim().slice(0, LAYER_NAME_MAX).trim();
   if (found === undefined || next === (found.layer.name ?? "")) {
     return;
   }

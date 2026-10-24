@@ -2,7 +2,10 @@ import { z } from "zod";
 import { menuItemIdSchema, pageIdSchema } from "./ids.js";
 import { anchorIdSchema, linkValueSchema, pageLinkSchema } from "./link.js";
 
-const label = z.string().min(1).max(100);
+/** The longest label a menu item can have, in the menu or as a page's navigation label (S5). */
+export const MENU_LABEL_MAX = 100;
+
+const label = z.string().min(1).max(MENU_LABEL_MAX);
 
 const itemBase = {
   id: menuItemIdSchema,

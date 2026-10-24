@@ -8,7 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
-import type { MenuItem, MenuItemId, SiteDoc } from "@webforge/model";
+import { MENU_LABEL_MAX, type MenuItem, type MenuItemId, type SiteDoc } from "@webforge/model";
 import {
   ChevronDownIcon,
   EllipsisIcon,
@@ -337,6 +337,7 @@ export function MenuPanel({ site, linkContext, actions }: MenuPanelProps) {
         open={open && (editing?.kind === "page" || editing?.kind === "group")}
         title={t("menu.renameDialog.title")}
         label={t("menu.renameDialog.label")}
+        maxLength={MENU_LABEL_MAX}
         initialValue={editing === undefined ? "" : itemLabel(site, editing)}
         confirm={t("menu.renameDialog.confirm")}
         describe={() => ""}
@@ -351,6 +352,7 @@ export function MenuPanel({ site, linkContext, actions }: MenuPanelProps) {
         title={t("menu.groupDialog.title")}
         description={t("menu.groupDialog.description")}
         label={t("menu.groupDialog.label")}
+        maxLength={MENU_LABEL_MAX}
         initialValue=""
         confirm={t("menu.groupDialog.confirm")}
         describe={() => ""}

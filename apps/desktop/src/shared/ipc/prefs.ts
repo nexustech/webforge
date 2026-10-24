@@ -32,9 +32,12 @@ export const DEVICE_SIZE = { min: 320, max: 2560 } as const;
 export const MAX_DEVICES = 20;
 
 /** A device the person added for the canvas (*Add device…*, F-ED-25): its name and size. */
+/** The longest name a device of the person's own can have (F-ED-25). */
+export const DEVICE_NAME_MAX = 40;
+
 const deviceSchema = z.strictObject({
   id: z.string().min(1).max(64),
-  name: z.string().trim().min(1).max(40),
+  name: z.string().trim().min(1).max(DEVICE_NAME_MAX),
   width: z.number().int().min(DEVICE_SIZE.min).max(DEVICE_SIZE.max),
   height: z.number().int().min(DEVICE_SIZE.min).max(DEVICE_SIZE.max),
 });

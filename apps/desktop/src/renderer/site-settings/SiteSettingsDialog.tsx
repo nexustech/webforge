@@ -15,12 +15,19 @@ import {
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import {
+  BUSINESS_NAME_MAX,
   type ImageMeta,
   isImageMeta,
+  MEASUREMENT_ID_MAX,
   type MediaId,
+  OPENING_HOURS_NOTE_MAX,
+  POSTAL_ADDRESS_MAX,
+  SITE_DESCRIPTION_MAX,
+  SITE_NAME_MAX,
   type SiteDoc,
   type SiteSettings,
   SOCIAL_NETWORKS,
+  X_HANDLE_MAX,
 } from "@webforge/model";
 import { PlusIcon, XIcon } from "lucide-react";
 import { type ReactNode, useState } from "react";
@@ -147,7 +154,7 @@ function SiteSettingsForm({
                   id={id}
                   className={fieldControlClass}
                   value={form.name}
-                  maxLength={100}
+                  maxLength={SITE_NAME_MAX}
                   onChange={(event) => change({ name: event.currentTarget.value })}
                   {...invalid("general.name")}
                 />
@@ -164,7 +171,7 @@ function SiteSettingsForm({
                 id={id}
                 className={cn(fieldControlClass, "h-16 resize-none py-1")}
                 value={form.description}
-                maxLength={300}
+                maxLength={SITE_DESCRIPTION_MAX}
                 onChange={(event) => change({ description: event.currentTarget.value })}
                 {...invalid("general.description", hintId)}
               />
@@ -307,7 +314,7 @@ function SiteSettingsForm({
                   className={cn(fieldControlClass, "w-48")}
                   placeholder="@"
                   value={form.xHandle}
-                  maxLength={16}
+                  maxLength={X_HANDLE_MAX}
                   onChange={(event) => change({ xHandle: event.currentTarget.value })}
                   {...invalid("social.xHandle")}
                 />
@@ -322,7 +329,7 @@ function SiteSettingsForm({
             label={t("site.settings.businessName")}
             field="contact.businessName"
             value={form.businessName}
-            maxLength={200}
+            maxLength={BUSINESS_NAME_MAX}
             errors={errors}
             onChange={(businessName) => change({ businessName })}
           />
@@ -348,7 +355,7 @@ function SiteSettingsForm({
                 id={id}
                 className={cn(fieldControlClass, "h-16 resize-none py-1")}
                 value={form.address}
-                maxLength={500}
+                maxLength={POSTAL_ADDRESS_MAX}
                 onChange={(event) => change({ address: event.currentTarget.value })}
                 {...invalid("contact.address")}
               />
@@ -360,7 +367,7 @@ function SiteSettingsForm({
             hint={t("site.settings.openingHoursNoteHint")}
             field="contact.openingHoursNote"
             value={form.openingHoursNote}
-            maxLength={300}
+            maxLength={OPENING_HOURS_NOTE_MAX}
             errors={errors}
             onChange={(openingHoursNote) => change({ openingHoursNote })}
           />
@@ -385,7 +392,7 @@ function SiteSettingsForm({
             hint={t("site.settings.measurementIdHint")}
             field="analytics.measurementId"
             value={form.measurementId}
-            maxLength={14}
+            maxLength={MEASUREMENT_ID_MAX}
             errors={errors}
             onChange={(measurementId) => change({ measurementId })}
           />

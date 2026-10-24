@@ -24,7 +24,7 @@ export type NameDialogProps = {
   /** A line under the field, updated as the person types: the file name the page will get. */
   readonly describe?: (value: string) => string;
   /** The longest name the field takes. */
-  readonly maxLength?: number;
+  readonly maxLength: number;
   /** Why a name can't be used, if it can't: said under the field, with the confirm button off. */
   readonly problem?: (value: string) => string | undefined;
   /** Called with the trimmed name; never with an empty one. */
@@ -59,7 +59,7 @@ function NameForm({
   initialValue,
   confirm,
   describe,
-  maxLength = 200,
+  maxLength,
   problem,
   onSubmit,
   onCancel,
