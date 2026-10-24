@@ -171,22 +171,48 @@ describe("the carousel behaviour (2.10)", () => {
     expect(root.dataset.current).toBe("0");
   });
 
-  it("follows a swipe at once after a move that had nowhere to scroll", () => {
-    const { root, track, document, window, button } = page({}, 3);
+  it("follows a swipe once the strip comes to rest", () => {
+    const { root, track, document, window } = page({}, 3);
     const slides = [...document.querySelectorAll<HTMLElement>(".site-carousel-slide")];
     slides.forEach((slide, index) => {
       Object.defineProperty(slide, "offsetLeft", { value: index * 100 });
     });
+    const scrollTo = (left: number) => {
+      track.scrollLeft = left;
+      track.dispatchEvent(new window.Event("scroll"));
+    };
 
-    // Round to the last slide, then back to the first: where the strip still is (left 0, as the
-    // test's strip doesn't scroll), so no scroll will say it arrived.
-    button("previous").click();
-    button("next").click();
-    expect(root.dataset.current).toBe("0");
-    // A swipe to the second slide counts at once, though the last move was a moment ago.
-    track.scrollLeft = 100;
-    track.dispatchEvent(new window.Event("scroll"));
+    scrollTo(40);
+    scrollTo(90);
+    expect(root.dataset.current).toBeUndefined();
+    vi.advanceTimersByTime(150);
     expect(root.dataset.current).toBe("1");
+  });
+
+  it("counts a quick run of presses as they add up, whatever the strip passes meanwhile (#330)", () => {
+    const { root, track, document, window, button, status } = page({}, 3);
+    const slides = [...document.querySelectorAll<HTMLElement>(".site-carousel-slide")];
+    slides.forEach((slide, index) => {
+      Object.defineProperty(slide, "offsetLeft", { value: index * 100 });
+    });
+    const scrollTo = (left: number) => {
+      track.scrollLeft = left;
+      track.dispatchEvent(new window.Event("scroll"));
+    };
+
+    button("next").click();
+    scrollTo(30);
+    button("previous").click();
+    // Next's smooth scroll carries on past slide 2 for a moment (Firefox), then turns back.
+    scrollTo(10);
+    scrollTo(100);
+    button("previous").click();
+
+    expect(root.dataset.current).toBe("2");
+    expect(status()?.textContent).toBe("3 of 3");
+    scrollTo(200);
+    vi.advanceTimersByTime(150);
+    expect(root.dataset.current).toBe("2");
   });
 
   describe("playing automatically", () => {

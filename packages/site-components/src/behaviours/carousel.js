@@ -8,6 +8,8 @@
 // first (WCAG 2.2.2); it pauses while the pointer or the focus is in it, and never plays when the
 // visitor prefers reduced motion.
 (() => {
+  /** How long the strip goes without scrolling before it counts as at rest, in ms. */
+  const REST = 150;
   const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
 
   for (const root of document.querySelectorAll("[data-wf-carousel]")) {
@@ -72,8 +74,6 @@
     };
 
     let current = 0;
-    /** The slide the script is scrolling to, and since when: its own scrolling moves nothing. */
-    let aim = { index: -1, since: 0 };
     /**
      * Moves `pages` pages of what's in view on (back if negative): the last page full, and round
      * past either end. `announce` says what shows if asked.
@@ -88,41 +88,37 @@
       const first = slides[0];
       const slide = slides[current];
       if (first !== undefined && slide !== undefined) {
-        const left = slide.offsetLeft - first.offsetLeft;
-        // Already there (the strip's end, or a strip that all fits): no scroll will say it arrived.
-        aim =
-          Math.abs(left - track.scrollLeft) < 1
-            ? { index: -1, since: 0 }
-            : { index: current, since: Date.now() };
         // The strip's CSS sets how: smoothly, or at once for a visitor who prefers less motion.
-        track.scrollTo({ left });
+        track.scrollTo({ left: slide.offsetLeft - first.offsetLeft });
       }
       root.dataset.current = String(current);
       if (announce && status !== null) {
         status.textContent = showing(current, current === last);
       }
     };
-    // A swipe or a scroll by hand moves the current slide too: the one nearest the start.
+    // A swipe or a scroll by hand moves the current slide too: the one nearest the start, once the
+    // strip has come to rest. Not while it moves: a smooth scroll the buttons started may still be
+    // passing other slides, as a quick run of presses would leave it (in Firefox, #330), and the
+    // buttons' own moves already say where it is going.
+    /** @type {ReturnType<typeof setTimeout> | undefined} */
+    let resting;
     track.addEventListener(
       "scroll",
       () => {
-        const first = slides[0];
-        if (first === undefined) return;
-        const left = track.scrollLeft;
-        let nearest = 0;
-        slides.forEach((slide, index) => {
-          const offset = slide.offsetLeft - first.offsetLeft;
-          const best = (slides[nearest]?.offsetLeft ?? 0) - first.offsetLeft;
-          if (Math.abs(offset - left) < Math.abs(best - left)) nearest = index;
-        });
-        // On its way to the slide it was sent to (for a second at most, as a swipe can stop it).
-        if (aim.index !== -1 && Date.now() - aim.since < 1000) {
-          if (nearest === aim.index) aim = { index: -1, since: 0 };
-          return;
-        }
-        aim = { index: -1, since: 0 };
-        current = nearest;
-        root.dataset.current = String(current);
+        clearTimeout(resting);
+        resting = setTimeout(() => {
+          const first = slides[0];
+          if (first === undefined) return;
+          const left = track.scrollLeft;
+          let nearest = 0;
+          slides.forEach((slide, index) => {
+            const offset = slide.offsetLeft - first.offsetLeft;
+            const best = (slides[nearest]?.offsetLeft ?? 0) - first.offsetLeft;
+            if (Math.abs(offset - left) < Math.abs(best - left)) nearest = index;
+          });
+          current = nearest;
+          root.dataset.current = String(current);
+        }, REST);
       },
       { passive: true },
     );
