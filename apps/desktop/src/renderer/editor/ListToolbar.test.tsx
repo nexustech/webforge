@@ -2,7 +2,6 @@
 import { act, cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { copiedNodeId, type NodeDoc } from "@webforge/model";
-import { siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { saveAsSharedSection } from "../shared-sections/shared-sections.js";
 import { CanvasToolbarHost } from "../shell/CanvasToolbarHost.js";
@@ -11,7 +10,7 @@ import { ContextualToolbarsProvider } from "../shell/contextual-toolbar-context.
 import { createContextualToolbars } from "../shell/contextual-toolbars.js";
 import { createPreferencesStore } from "../shell/preferences-store.js";
 import { sessionWith } from "../testing/fixtures.js";
-import { createEditorSession, currentPage } from "./editor-session.js";
+import { currentPage } from "./editor-session.js";
 import { listToolbar } from "./ListToolbar.js";
 import { starterSite } from "./starter-site.js";
 
