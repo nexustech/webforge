@@ -96,7 +96,11 @@ test("a renderer crash leaves a local report", async () => {
 
   const { name, report } = await onlyReport();
   expect(name).toMatch(/^crash-\d{8}-\d{6}-renderer\.json$/);
-  expect(report).toMatchObject({ process: "renderer", kind: "crashed" });
+  // The reason Electron gives: macOS reports a forced crash as the process being killed (#287).
+  expect(report).toMatchObject({
+    process: "renderer",
+    kind: process.platform === "darwin" ? "killed" : "crashed",
+  });
 
   // The crashed window has nothing to save or capture, so it closes at once (#121).
   const started = Date.now();
