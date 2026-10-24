@@ -4,6 +4,8 @@
     "jsx": "react-jsx"
   },
   "include": ["src"],
+  // The behaviours and their tests: tsconfig.behaviours.json, with the DOM.
+  "exclude": ["src/behaviours/*.test.ts"],
   "references": [
     {
       "path": "../i18n"

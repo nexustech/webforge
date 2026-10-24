@@ -23,6 +23,7 @@
     "deps": "depcruise apps packages e2e tools",
     "knip": "knip",
     "licence-check": "pnpm licenses list -r --json | node tools/src/check-licences.ts",
+    "behaviours": "node tools/src/build-behaviours.ts && biome format --write packages/site-components/src/behaviours/index.ts",
     "font-catalogue": "node tools/src/build-font-catalogue.ts && biome format --write packages/themes/src/fonts/catalogue.json",
     "ui-strings": "node tools/src/check-ui-strings.ts apps/desktop/src/renderer packages/editor-ui/src packages/engine/src packages/site-components/src",
     "react-compiler": "node tools/src/check-react-compiler.ts apps/desktop/src/renderer packages/editor-ui/src packages/engine/src",

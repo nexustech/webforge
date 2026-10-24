@@ -1,7 +1,8 @@
 import { t } from "@webforge/i18n";
 import { defineComponent } from "../define.js";
 import { isDocumentPath } from "../document-path.js";
-import { boundText, type ComponentDef, type NavLink, type RenderContext } from "../library.js";
+import { boundText, type ComponentDef } from "../library.js";
+import type { NavLink, RenderContext } from "../schema.js";
 
 /** Three-line menu icon, drawn inline so the site needs no icon font (C8). */
 function MenuIcon() {
