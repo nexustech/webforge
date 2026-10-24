@@ -1,10 +1,15 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    // The DOM's types too: the renderer's test kit (src/renderer.ts) fakes the canvas engine.
+    "lib": ["es2024", "dom", "dom.iterable"],
     "types": ["node"]
   },
   "include": ["src"],
   "references": [
+    {
+      "path": "../engine"
+    },
     {
       "path": "../model"
     }

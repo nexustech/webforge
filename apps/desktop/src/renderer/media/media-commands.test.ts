@@ -1,8 +1,7 @@
 import type { ImageMeta, MediaId, MediaMeta } from "@webforge/model";
-import { siteLibrary } from "@webforge/site-components";
 import { describe, expect, it } from "vitest";
-import { createEditorSession, type EditorSession } from "../editor/editor-session.js";
-import { starterSite } from "../editor/starter-site.js";
+import type { EditorSession } from "../editor/editor-session.js";
+import { sessionWith } from "../testing/fixtures.js";
 import {
   addMedia,
   cropMedia,
@@ -32,8 +31,8 @@ const prices: MediaMeta = {
   mimeType: "application/pdf",
 };
 
-function sessionWith(...items: MediaMeta[]): EditorSession {
-  const session = createEditorSession(siteLibrary, starterSite());
+function sessionWithMedia(...items: MediaMeta[]): EditorSession {
+  const session = sessionWith();
   if (items.length > 0) {
     addMedia(session, items);
   }
@@ -48,7 +47,7 @@ const lastLabel = (session: EditorSession) => {
 
 describe("addMedia", () => {
   it("adds one item as one undo step named after its file", () => {
-    const session = sessionWith(photo);
+    const session = sessionWithMedia(photo);
 
     expect(media(session)).toEqual({ photo });
     expect(lastLabel(session)).toBe("Added image 'shop.jpg'");
@@ -57,7 +56,7 @@ describe("addMedia", () => {
   });
 
   it("adds several items in one step, with names no other item has", () => {
-    const session = sessionWith(photo);
+    const session = sessionWithMedia(photo);
 
     addMedia(session, [
       { ...photo, id: "again" as MediaId },
@@ -75,7 +74,7 @@ describe("addMedia", () => {
   });
 
   it("does nothing without items", () => {
-    const session = sessionWith();
+    const session = sessionWithMedia();
     addMedia(session, []);
     expect(session.history.state.getState().entries).toHaveLength(0);
   });
@@ -83,7 +82,7 @@ describe("addMedia", () => {
 
 describe("replaceMedia", () => {
   it("swaps the file and keeps the id, name, alt text and focal point, dropping the crop", () => {
-    const session = sessionWith({
+    const session = sessionWithMedia({
       ...photo,
       alt: "Our shop front",
       focal: { x: 0.2, y: 0.3 },
@@ -115,7 +114,7 @@ describe("replaceMedia", () => {
   });
 
   it("replaces a file with an image, and ignores unknown items", () => {
-    const session = sessionWith(prices);
+    const session = sessionWithMedia(prices);
 
     replaceMedia(session, prices.id, { ...photo, alt: "New" });
     replaceMedia(session, "missing" as MediaId, photo);
@@ -131,7 +130,7 @@ describe("replaceMedia", () => {
 
 describe("deleteMedia", () => {
   it("deletes an item as an undoable step", () => {
-    const session = sessionWith(photo, prices);
+    const session = sessionWithMedia(photo, prices);
 
     deleteMedia(session, prices.id);
     expect(lastLabel(session)).toBe("Deleted file 'prices.pdf'");
@@ -148,7 +147,7 @@ describe("deleteMedia", () => {
 
 describe("cropMedia", () => {
   it("crops to a preset around the focal point, and back to the original", () => {
-    const session = sessionWith({ ...photo, focal: { x: 0, y: 0.5 } });
+    const session = sessionWithMedia({ ...photo, focal: { x: 0, y: 0.5 } });
 
     cropMedia(session, photo.id, "square");
     expect(lastLabel(session)).toBe("Cropped image 'shop.jpg'");
@@ -168,7 +167,7 @@ describe("cropMedia", () => {
   });
 
   it("leaves files alone", () => {
-    const session = sessionWith(prices);
+    const session = sessionWithMedia(prices);
     cropMedia(session, prices.id, "square");
     expect(lastLabel(session)).toBe("Added file 'prices.pdf'");
   });
@@ -184,7 +183,7 @@ describe("cropPresetOf", () => {
 
 describe("setFocalPoint", () => {
   it("moves the focal point within the image, and the crop with it", () => {
-    const session = sessionWith(photo);
+    const session = sessionWithMedia(photo);
     cropMedia(session, photo.id, "square");
 
     setFocalPoint(session, photo.id, { x: 1.4, y: 0.33333 });
@@ -197,7 +196,7 @@ describe("setFocalPoint", () => {
   });
 
   it("merges a run of arrow-key nudges into one step", () => {
-    const session = sessionWith(photo);
+    const session = sessionWithMedia(photo);
 
     setFocalPoint(session, photo.id, { x: 0.55, y: 0.5 }, true);
     setFocalPoint(session, photo.id, { x: 0.6, y: 0.5 }, true);
@@ -210,7 +209,7 @@ describe("setFocalPoint", () => {
   });
 
   it("leaves files alone", () => {
-    const session = sessionWith(prices);
+    const session = sessionWithMedia(prices);
     setFocalPoint(session, prices.id, { x: 0.5, y: 0.5 });
     expect(lastLabel(session)).toBe("Added file 'prices.pdf'");
   });

@@ -19,6 +19,7 @@ import { starterSite } from "../editor/starter-site.js";
 import { setFailureLog } from "../log.js";
 import { addMedia } from "../media/index.js";
 import { saveAsSharedSection } from "../shared-sections/index.js";
+import { sessionWith } from "../testing/fixtures.js";
 import { copySelected, pasteElements, pasteTarget } from "./element-clipboard.js";
 
 const prices: MediaMeta = {
@@ -66,7 +67,7 @@ const select = (session: EditorSession, nodeId: string | null) => session.select
 
 describe("copy and paste (1.25)", () => {
   it("pastes a copy after the selected element with new ids, as one step that selects it", async () => {
-    const session = createEditorSession(siteLibrary, starterSite());
+    const session = sessionWith();
     const clipboard = fakeClipboard();
     const notify = vi.fn();
     select(session, "heading-1");
@@ -88,7 +89,7 @@ describe("copy and paste (1.25)", () => {
   });
 
   it("cuts the selection as one step once it is copied, and pastes it back", async () => {
-    const session = createEditorSession(siteLibrary, starterSite());
+    const session = sessionWith();
     const clipboard = fakeClipboard();
     select(session, "text-1");
 
@@ -104,7 +105,7 @@ describe("copy and paste (1.25)", () => {
   });
 
   it("pastes into another site with the images the elements show, in the same step", async () => {
-    const first = createEditorSession(siteLibrary, starterSite());
+    const first = sessionWith();
     addMedia(first, [photo]);
     first.edit("insert", "Added Hero", (draft) => {
       draft.pages[draft.homePageId]?.doc.content.push({
@@ -120,7 +121,7 @@ describe("copy and paste (1.25)", () => {
       expect.objectContaining({ media: [expect.objectContaining({ id: "photo" })] }),
     );
 
-    const second = createEditorSession(siteLibrary, starterSite());
+    const second = sessionWith();
     await pasteElements(second, clipboard, vi.fn());
 
     expect(content(second).at(-1)).toMatchObject({
@@ -133,7 +134,7 @@ describe("copy and paste (1.25)", () => {
   });
 
   it("keeps an image the site already has as it is", async () => {
-    const session = createEditorSession(siteLibrary, starterSite());
+    const session = sessionWith();
     addMedia(session, [{ ...photo, alt: "Changed since" }]);
     const hero: NodeDoc = { type: "Hero", props: { id: "hero", image: { mediaId: photo.id } } };
     const clipboard = fakeClipboard({
@@ -149,7 +150,7 @@ describe("copy and paste (1.25)", () => {
   });
 
   it("leaves out an anchor the Header or Footer already uses", async () => {
-    const session = createEditorSession(siteLibrary, starterSite());
+    const session = sessionWith();
     session.edit("page", "Anchored the footer", (draft) => {
       draft.layout.footer.push({
         type: "Footer",
@@ -171,7 +172,7 @@ describe("copy and paste (1.25)", () => {
   });
 
   it("refuses a place that doesn't take the elements, changing nothing", async () => {
-    const session = createEditorSession(siteLibrary, starterSite());
+    const session = sessionWith();
     const question: NodeDoc = { type: "FaqItem", props: { id: "q", question: "Open on Sundays?" } };
     const notify = vi.fn();
 
@@ -190,7 +191,7 @@ describe("copy and paste (1.25)", () => {
   });
 
   it("says when there is nothing to paste or the paste failed", async () => {
-    const session = createEditorSession(siteLibrary, starterSite());
+    const session = sessionWith();
     const notify = vi.fn();
 
     await pasteElements(session, fakeClipboard(), notify);
@@ -205,7 +206,7 @@ describe("copy and paste (1.25)", () => {
   });
 
   it("logs a paste that failed by the error's code (R12)", async () => {
-    const session = createEditorSession(siteLibrary, starterSite());
+    const session = sessionWith();
     const failures = vi.fn(async () => null);
     setFailureLog(failures);
 
@@ -216,7 +217,7 @@ describe("copy and paste (1.25)", () => {
   });
 
   it("copies nothing without a selection, and says when a copy failed", async () => {
-    const session = createEditorSession(siteLibrary, starterSite());
+    const session = sessionWith();
     const notify = vi.fn();
     const clipboard = {
       write: vi.fn(async () => ({ status: "failed", reason: "unknown" }) as const),
@@ -233,7 +234,7 @@ describe("copy and paste (1.25)", () => {
   });
 
   it("puts several elements where the first goes, if that place takes them all", () => {
-    const page = content(createEditorSession(siteLibrary, starterSite()));
+    const page = content(sessionWith());
     const heading: NodeDoc = { type: "Heading", props: { id: "h" } };
     const section: NodeDoc = { type: "Section", props: { id: "s" } };
 
@@ -247,7 +248,7 @@ describe("copy and paste (1.25)", () => {
   });
 
   it("cuts past elements whose list fields hold plain items, not elements", async () => {
-    const session = createEditorSession(siteLibrary, starterSite());
+    const session = sessionWith();
     session.edit("insert", "Added a list", (draft) => {
       const section = draft.pages[draft.homePageId]?.doc.content[0];
       const list = section?.props.content;
@@ -269,7 +270,7 @@ describe("copy and paste (1.25)", () => {
     const media = (items: ImageMeta[] | MediaMeta[], rejected: RejectedFile[] = []) =>
       fakeClipboard({ status: "media", items, rejected });
     const withHero = () => {
-      const session = createEditorSession(siteLibrary, starterSite());
+      const session = sessionWith();
       session.edit("insert", "Added Hero", (draft) => {
         draft.pages[draft.homePageId]?.doc.content.push({
           type: "Hero",
@@ -295,7 +296,7 @@ describe("copy and paste (1.25)", () => {
     });
 
     it("puts one image in an Image element of its own when nothing selected takes one (2.9)", async () => {
-      const session = createEditorSession(siteLibrary, starterSite());
+      const session = sessionWith();
       const notify = vi.fn();
       select(session, "heading-1");
 
@@ -319,7 +320,7 @@ describe("copy and paste (1.25)", () => {
     });
 
     it("adds several images and files to Media, and says so", async () => {
-      const session = createEditorSession(siteLibrary, starterSite());
+      const session = sessionWith();
       const notify = vi.fn();
       select(session, "heading-1");
 
@@ -394,7 +395,7 @@ describe("copy and paste (1.25)", () => {
       session.history.document.getState().layout.header.at(-1)?.props.content;
 
     it("never copies or cuts the Header or Footer themselves", async () => {
-      const session = createEditorSession(siteLibrary, starterSite());
+      const session = sessionWith();
       const clipboard = fakeClipboard();
       const notify = vi.fn();
       select(session, "header");
@@ -494,7 +495,7 @@ describe("copy and paste (1.25)", () => {
 describe("copy and paste of shared sections (1.29, F-ED-23)", () => {
   /** The starter site with its section saved as the shared section "Hours", the copy selected. */
   function saved() {
-    const session = createEditorSession(siteLibrary, starterSite());
+    const session = sessionWith();
     select(session, "section-1");
     saveAsSharedSection(session, "Hours");
     const [shared] = Object.values(session.history.document.getState().sharedSections);
@@ -544,7 +545,7 @@ describe("copy and paste of shared sections (1.29, F-ED-23)", () => {
   });
 
   it("pastes nothing as a linked copy but a copied linked copy, and says so", async () => {
-    const session = createEditorSession(siteLibrary, starterSite());
+    const session = sessionWith();
     select(session, "heading-1");
     const clipboard = fakeClipboard();
     await copySelected(session, clipboard, vi.fn());
@@ -574,7 +575,7 @@ describe("copy and paste of shared sections (1.29, F-ED-23)", () => {
     const clipboard = fakeClipboard();
     await copySelected(session, clipboard, vi.fn());
 
-    const other = createEditorSession(siteLibrary, starterSite());
+    const other = sessionWith();
     select(other, "section-1");
     expect(await pasteElements(other, clipboard, vi.fn(), true)).toBe(true);
 
@@ -604,7 +605,7 @@ describe("copy and paste of shared sections (1.29, F-ED-23)", () => {
   });
 
   it("pastes an image into an element inside a copy, as an edit of the shared section (#234)", async () => {
-    const session = createEditorSession(siteLibrary, starterSite());
+    const session = sessionWith();
     session.edit("insert", "Added Hero", (draft) => {
       const section = draft.pages[draft.homePageId]?.doc.content[0];
       (section?.props.content as NodeDoc[] | undefined)?.push({
@@ -668,7 +669,7 @@ describe("copy and paste of shared sections (1.29, F-ED-23)", () => {
     const start = starterSite();
     const section = start.pages[start.homePageId]?.doc.content[0];
     if (section !== undefined) section.props.advanced = { anchorId: "hours" };
-    const session = createEditorSession(siteLibrary, start);
+    const session = sessionWith(start);
     const clipboard = fakeClipboard();
     // Copied before it's shared: a normal section with the anchor `hours`.
     select(session, "section-1");

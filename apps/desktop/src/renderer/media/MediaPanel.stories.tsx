@@ -1,8 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { ImageMeta, MediaId, MediaMeta } from "@webforge/model";
-import { siteLibrary } from "@webforge/site-components";
-import { createEditorSession } from "../editor/editor-session.js";
-import { starterSite } from "../editor/starter-site.js";
+import { sessionWith } from "../testing/fixtures.js";
 import { MediaPanel } from "./MediaPanel.js";
 import { addMedia } from "./media-commands.js";
 
@@ -48,8 +46,8 @@ const placeholder = (item: ImageMeta) =>
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${item.width} ${item.height}"><defs><linearGradient id="g"><stop offset="0" stop-color="#e8a87c"/><stop offset="1" stop-color="#85cdca"/></linearGradient></defs><rect width="100%" height="100%" fill="url(#g)"/></svg>`,
   )}`;
 
-function sessionWith(items: readonly MediaMeta[]) {
-  const session = createEditorSession(siteLibrary, starterSite());
+function sessionWithMedia(items: readonly MediaMeta[]) {
+  const session = sessionWith();
   addMedia(session, items);
   return session;
 }
@@ -60,7 +58,7 @@ const meta = {
   title: "Panels/Media",
   component: MediaPanel,
   args: {
-    session: sessionWith(ITEMS),
+    session: sessionWithMedia(ITEMS),
     media: { import: noImport, choose: noImport },
     notify: () => undefined,
     imageUrl: placeholder,
@@ -77,14 +75,14 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 /** A new site: nothing in Media yet. */
-export const Empty: Story = { args: { session: sessionWith([]) } };
+export const Empty: Story = { args: { session: sessionWithMedia([]) } };
 
 /** Images and a PDF. */
 export const WithItems: Story = {};
 
 /** An image chosen: focal point, alt text and crop. */
 export const ImageChosen: Story = {
-  args: { session: sessionWith(ITEMS) },
+  args: { session: sessionWithMedia(ITEMS) },
   play: ({ canvasElement }) => {
     const item = [...canvasElement.querySelectorAll("li button")].find((button) =>
       button.textContent?.includes("Shop front.jpg"),

@@ -1,8 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { ImageMeta, MediaId } from "@webforge/model";
-import { siteLibrary } from "@webforge/site-components";
-import { createEditorSession } from "../editor/editor-session.js";
-import { starterSite } from "../editor/starter-site.js";
+import { sessionWith } from "../testing/fixtures.js";
 import { ImageField } from "./ImageField.js";
 import { addMedia } from "./media-commands.js";
 
@@ -31,7 +29,7 @@ const placeholder = () =>
   )}`;
 
 function sessionWithImages() {
-  const session = createEditorSession(siteLibrary, starterSite());
+  const session = sessionWith();
   addMedia(session, IMAGES);
   return session;
 }

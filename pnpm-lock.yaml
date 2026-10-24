@@ -947,6 +947,9 @@ importers:
 
   packages/test-utils:
     dependencies:
+      '@webforge/engine':
+        specifier: workspace:*
+        version: link:../engine
       '@webforge/model':
         specifier: workspace:*
         version: link:../model

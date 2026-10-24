@@ -1,14 +1,12 @@
-import { siteLibrary } from "@webforge/site-components";
 import { describe, expect, it, vi } from "vitest";
-import { createEditorSession } from "../editor/editor-session.js";
-import { starterSite } from "../editor/starter-site.js";
 import { createCommandRegistry } from "../shell/commands.js";
+import { sessionWith } from "../testing/fixtures.js";
 import { registerClipboardCommands } from "./register-clipboard-commands.js";
 
 describe("registerClipboardCommands", () => {
   const setup = () => {
     const registry = createCommandRegistry();
-    const session = createEditorSession(siteLibrary, starterSite());
+    const session = sessionWith();
     const clipboard = {
       write: vi.fn(async () => ({ status: "copied" }) as const),
       read: vi.fn(async () => ({ status: "empty" }) as const),

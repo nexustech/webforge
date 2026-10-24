@@ -17,20 +17,20 @@ import {
   type SharedSectionId,
   type SiteDoc,
 } from "@webforge/model";
-import { siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createEditorSession, currentPage } from "../editor/editor-session.js";
+import { currentPage } from "../editor/editor-session.js";
 import { selectedIds } from "../editor/selection.js";
 import { starterSite } from "../editor/starter-site.js";
 import { CommandRegistryProvider } from "../shell/command-context.js";
 import { createCommandRegistry, isMac } from "../shell/commands.js";
 import { createPanelRegistry, panelsInSlot } from "../shell/panels.js";
+import { sessionWith } from "../testing/fixtures.js";
 import { registerLayersPanel } from "./register-layers-panel.js";
 
 afterEach(cleanup);
 
 function setUp(site: SiteDoc = starterSite()) {
-  const session = createEditorSession(siteLibrary, site);
+  const session = sessionWith(site);
   const panels = createPanelRegistry();
   const commands = createCommandRegistry();
   const remove = registerLayersPanel(panels, session);

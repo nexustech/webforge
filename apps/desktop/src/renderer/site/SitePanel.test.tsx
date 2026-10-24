@@ -1,18 +1,16 @@
 // @vitest-environment happy-dom
 import { act, cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createEditorSession } from "../editor/editor-session.js";
-import { starterSite } from "../editor/starter-site.js";
 import { createPanelRegistry } from "../shell/panels.js";
+import { sessionWith } from "../testing/fixtures.js";
 import { pagesPanelActions, registerSitePanel } from "./SitePanel.js";
 
 afterEach(cleanup);
 
 describe("Site panel", () => {
   it("shows the session's pages in the right column's bottom and follows its changes", async () => {
-    const session = createEditorSession(siteLibrary, starterSite());
+    const session = sessionWith();
     const panels = createPanelRegistry();
     const remove = registerSitePanel(panels, session);
     const panel = panels.list()[0];
@@ -47,7 +45,7 @@ describe("Site panel", () => {
   });
 
   it("asks before deleting a page, saying how many pages it changes (D7)", async () => {
-    const session = createEditorSession(siteLibrary, starterSite());
+    const session = sessionWith();
     const answers = [false, true];
     const confirmSiteWide = vi.fn(async () => answers.shift() ?? false);
     const actions = pagesPanelActions(session, { confirmSiteWide });
@@ -72,7 +70,7 @@ describe("Site panel", () => {
   });
 
   it("binds every action to the session as one undo step", () => {
-    const session = createEditorSession(siteLibrary, starterSite());
+    const session = sessionWith();
     const actions = pagesPanelActions(session);
     const site = () => session.history.document.getState();
     const home = site().homePageId;
