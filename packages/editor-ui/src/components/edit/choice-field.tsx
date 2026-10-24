@@ -1,5 +1,6 @@
 import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group.js";
 import type { FieldRendererProps } from "./field-spec.js";
+import { describedBy } from "./text-field.js";
 
 /**
  * A short row of choices (Small · Medium · Large, the theme's colours): one click is one change.
@@ -8,6 +9,9 @@ import type { FieldRendererProps } from "./field-spec.js";
 export function ChoiceField({
   id,
   labelId,
+  helpId,
+  errorId,
+  disabled = false,
   field,
   value,
   onChange,
@@ -19,6 +23,9 @@ export function ChoiceField({
       id={id}
       type="single"
       aria-labelledby={labelId}
+      aria-invalid={errorId !== undefined}
+      aria-describedby={describedBy(errorId, helpId)}
+      disabled={disabled}
       className="flex w-full flex-wrap"
       value={typeof value === "string" ? value : ""}
       onValueChange={(next) => {

@@ -37,6 +37,10 @@ export type EditPanelField = FieldSpec & {
   readonly overridden?: boolean;
   /** The value differs from the element's default, so it can be reset (UX-18). */
   readonly changed?: boolean;
+  /** The field can't be changed now: shown greyed out. */
+  readonly disabled?: boolean;
+  /** Why its value isn't acceptable (translated), shown under its control. */
+  readonly error?: string;
   /**
    * The option group it is shown in (UX-13), by its kind if not given: `id` stays the same in every
    * language and is what closed groups are remembered by, `label` is translated. Not "section":
@@ -142,6 +146,9 @@ function DeviceDot({
  */
 const BUILT_IN: FieldRenderers = { ...PLAIN_RENDERERS, list: ListField, box: BoxField };
 
+/** A field the person can reset to its default: changed, and not disabled (R11). */
+const resettable = (field: EditPanelField) => field.changed === true && field.disabled !== true;
+
 /** The groups of fields that name none (UX-13), by kind; each id is its translation key's. */
 type FallbackGroup =
   | "advanced"
@@ -240,7 +247,7 @@ function FieldList({
       {groups.map(({ key, label: name, fields: inGroup }, index) => {
         // Searching shows every group with a match open.
         const open = query !== "" || !closed.includes(key);
-        const changed = inGroup.filter((field) => field.changed === true);
+        const changed = inGroup.filter(resettable);
         const resetGroup =
           changed.length > 0 && onResetToDefault !== undefined
             ? () =>
@@ -348,8 +355,9 @@ function FieldRow({
   const id = `${idPrefix}-${field.name}`;
   const labelId = `${id}-label`;
   const helpId = field.help === undefined ? undefined : `${id}-help`;
+  const errorId = field.error === undefined ? undefined : `${id}-error`;
   const resetField =
-    field.changed === true && onResetToDefault !== undefined
+    resettable(field) && onResetToDefault !== undefined
       ? () => onResetToDefault([field.name])
       : undefined;
   return (
@@ -366,7 +374,11 @@ function FieldRow({
                 label={field.label}
                 device={device ?? ""}
                 overridden={field.overridden === true}
-                onClear={onReset === undefined ? undefined : () => onReset(field.name)}
+                onClear={
+                  onReset === undefined || field.disabled === true
+                    ? undefined
+                    : () => onReset(field.name)
+                }
               />
             ) : null}
           </div>
@@ -381,11 +393,18 @@ function FieldRow({
         id,
         labelId,
         ...(helpId === undefined ? {} : { helpId }),
+        ...(errorId === undefined ? {} : { errorId }),
+        ...(field.disabled === true ? { disabled: true } : {}),
         field,
         value: field.value,
         onChange: (value) => onChange(field.name, value),
         onCommit: () => onCommit(field.name),
       })}
+      {errorId === undefined ? null : (
+        <p id={errorId} className="text-2xs text-destructive-text">
+          {field.error}
+        </p>
+      )}
       {helpId === undefined ? null : (
         <p id={helpId} className="text-xs text-muted-foreground">
           {field.help}
@@ -464,7 +483,7 @@ export function EditPanel({
       return;
     }
     const name = (event.target as Element).closest("[data-field]")?.getAttribute("data-field");
-    if (groupFields.some((field) => field.name === name && field.changed === true) && name) {
+    if (groupFields.some((field) => field.name === name && resettable(field)) && name) {
       event.preventDefault();
       event.stopPropagation();
       onResetToDefault([name]);
