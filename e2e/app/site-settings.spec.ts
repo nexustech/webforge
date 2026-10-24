@@ -134,8 +134,11 @@ test("lists Site Settings' opening hours and contact details, on the canvas and 
   await dialog.getByRole("tab", { name: "Contact & hours" }).click();
   await dialog.getByLabel("Phone number").fill("+44 1234 567890");
   await dialog.getByRole("button", { name: "Add opening hours" }).click();
-  await dialog.getByRole("checkbox", { name: "Sat" }).check();
-  await dialog.getByRole("checkbox", { name: "Sun" }).check();
+  // Each day is a button-like label around a hidden checkbox, clicked as people do.
+  for (const day of ["Sat", "Sun"]) {
+    await dialog.locator("label", { hasText: new RegExp(`^${day}$`) }).click();
+    await expect(dialog.getByRole("checkbox", { name: day })).toBeChecked();
+  }
   await dialog.getByRole("button", { name: "Save" }).click();
   await expect(dialog).toHaveCount(0);
 
