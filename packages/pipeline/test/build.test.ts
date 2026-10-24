@@ -348,7 +348,7 @@ describe("buildSite: checks (X5)", () => {
   });
 
   it("fails for a component type the library does not have", async () => {
-    const site = siteWith([{ type: "Carousel", props: { id: "c" } }]);
+    const site = siteWith([{ type: "NoSuchComponent", props: { id: "c" } }]);
 
     await expect(buildSite(site, siteLibrary, resources)).rejects.toMatchObject({
       code: "unknown-component",

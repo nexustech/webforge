@@ -3,7 +3,7 @@
 exports[`buildSite: golden output (X4: byte-stable, readable) > writes the expected files 1`] = `
 [
   "about.html",
-  "assets/css/site.af4b881721.css",
+  "assets/css/site.48f13abf77.css",
   "assets/fonts/inter-latin-ext-wght-italic.woff2",
   "assets/fonts/inter-latin-ext-wght-normal.woff2",
   "assets/fonts/inter-latin-wght-italic.woff2",
@@ -14,7 +14,7 @@ exports[`buildSite: golden output (X4: byte-stable, readable) > writes the expec
   "assets/img/hero-1600.webp",
   "assets/img/hero-640.jpg",
   "assets/img/hero-640.webp",
-  "assets/js/webforge.ceca705b9e.js",
+  "assets/js/webforge.f67641704f.js",
   "files/price-list.pdf",
   "index.html",
 ]

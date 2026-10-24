@@ -6,6 +6,11 @@ export type FieldSpec = {
   readonly kind: string;
   /** Already translated. */
   readonly label: string;
+  /**
+   * A sentence shown under the control, already translated: what the field does that its label
+   * can't say. The control is described by it (`aria-describedby`).
+   */
+  readonly help?: string;
   /** For `select`, `color`, `spacing` and `box`: the choices, labels already translated. */
   readonly options?: readonly { readonly label: string; readonly value: string }[];
   /** For `box`: the sides it sets, in order (top, right, bottom, left), labels translated. */
@@ -52,6 +57,8 @@ export type FieldRendererProps = {
   readonly id: string;
   /** The label's DOM id, for controls a `<label for>` can't name (groups): `aria-labelledby`. */
   readonly labelId: string;
+  /** The DOM id of the field's help text, if it has one: the control's `aria-describedby`. */
+  readonly helpId?: string;
   readonly field: FieldSpec;
   readonly value: unknown;
   /**

@@ -2,7 +2,14 @@ import { cn } from "../../lib/cn.js";
 import type { FieldRendererProps } from "./field-registry.js";
 
 /** On or off, as a switch. One click is one change. */
-export function ToggleField({ id, labelId, value, onChange, onCommit }: FieldRendererProps) {
+export function ToggleField({
+  id,
+  labelId,
+  helpId,
+  value,
+  onChange,
+  onCommit,
+}: FieldRendererProps) {
   const on = value === true;
   return (
     <button
@@ -11,6 +18,7 @@ export function ToggleField({ id, labelId, value, onChange, onCommit }: FieldRen
       role="switch"
       aria-checked={on}
       aria-labelledby={labelId}
+      aria-describedby={helpId}
       className={cn(
         "relative h-4 w-7 shrink-0 rounded-full border border-border transition-colors",
         "outline-none focus-visible:ring-2 focus-visible:ring-ring",
