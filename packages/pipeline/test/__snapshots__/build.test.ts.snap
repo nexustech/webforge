@@ -3,7 +3,7 @@
 exports[`buildSite: golden output (X4: byte-stable, readable) > writes the expected files 1`] = `
 [
   "about.html",
-  "assets/css/site.06af9774bc.css",
+  "assets/css/site.24ff2c9d2f.css",
   "assets/fonts/inter-latin-ext-wght-italic.woff2",
   "assets/fonts/inter-latin-ext-wght-normal.woff2",
   "assets/fonts/inter-latin-wght-italic.woff2",

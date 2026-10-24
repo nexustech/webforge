@@ -70,7 +70,7 @@ function Lightbox() {
               data-wf-lightbox-image=""
             />
           </picture>
-          <figcaption className="text-center" data-wf-lightbox-caption="" />
+          <figcaption className="text-center empty:hidden" data-wf-lightbox-caption="" />
         </figure>
         <div className="flex items-center gap-3">
           <button
@@ -175,7 +175,8 @@ const galleryImage = defineComponent({
             />
           </a>
         )}
-        <figcaption className="text-sm">{values.caption}</figcaption>
+        {/* Hidden when empty, without the gap under the image; on the canvas it holds its editor. */}
+        <figcaption className="text-sm empty:hidden">{values.caption}</figcaption>
       </figure>
     );
   },

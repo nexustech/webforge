@@ -833,7 +833,7 @@ describe("renderNodesToHtml", () => {
       expect(html).toContain(
         '<a href="assets/img/hero-640.jpg" class="block" aria-label="Open larger: Our bakery" data-wf-lightbox-item="">',
       );
-      expect(html).toContain('<figcaption class="text-sm">The shop</figcaption>');
+      expect(html).toContain('<figcaption class="text-sm empty:hidden">The shop</figcaption>');
       // An image not chosen yet: a placeholder, no link.
       expect(html.match(/data-wf-lightbox-item/g)).toHaveLength(1);
     });
