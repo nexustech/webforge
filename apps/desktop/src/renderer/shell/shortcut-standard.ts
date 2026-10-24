@@ -12,6 +12,10 @@ import { COMMAND_IDS } from "./command-ids.js";
  * or `Plus` for `+` and `Space` for a space. Symbols match whichever Shift their keyboard layout
  * needs (`?`, `Mod+0` on AZERTY).
  *
+ * **A shortcut that can't work on Windows is left out there or gets an alternative** (product
+ * owner, #290): `macKeys` and `windowsKeys` are keys of one platform only, and Windows' own keys
+ * ({@link WINDOWS_RESERVED_KEYS}) are never a standard key there (a test checks).
+ *
  * New `Mod+Alt` shortcuts: avoid letters whose key moves on other layouts, A, Q, Z and W on AZERTY,
  * Y and Z on QWERTZ. Keys match by `KeyboardEvent.key`, so such a shortcut moves across the
  * keyboard on those layouts, away from where a guide written for QWERTY says it is.
@@ -39,6 +43,10 @@ export type StandardShortcut = {
    * key, so Delete's own command shows Mod+Backspace there.
    */
   readonly keys: readonly string[];
+  /** Keys on macOS only: their Windows twin is the system's (Ctrl+Esc opens the Start menu). */
+  readonly macKeys?: readonly string[];
+  /** Keys on Windows (and Linux) only: an alternative where the shared key may not reach the app. */
+  readonly windowsKeys?: readonly string[];
   /**
    * The keys that are text's own too (Copy, Mod+K for a link, Mod+I for italic): they don't run
    * the command while focus is in editable text or text is selected, so the text gets them. `true`
@@ -52,8 +60,19 @@ const CANVAS: Readonly<Record<string, StandardShortcut>> = {
   "edit.duplicate": { group: "edit", keys: ["Mod+D"] },
   // Mod+Backspace deletes too, as Cmd+Delete does in a Mac's Finder (decision of 23 Oct 2026).
   "edit.delete": { group: "edit", keys: ["Delete", "Mod+Backspace"], text: true },
-  "edit.moveUp": { group: "edit", keys: ["Mod+Alt+ArrowUp"], text: true },
-  "edit.moveDown": { group: "edit", keys: ["Mod+Alt+ArrowDown"], text: true },
+  // Ctrl+Alt+arrows rotate the screen on PCs whose Intel graphics driver has its hotkeys on (#290).
+  "edit.moveUp": {
+    group: "edit",
+    keys: ["Mod+Alt+ArrowUp"],
+    windowsKeys: ["Alt+ArrowUp"],
+    text: true,
+  },
+  "edit.moveDown": {
+    group: "edit",
+    keys: ["Mod+Alt+ArrowDown"],
+    windowsKeys: ["Alt+ArrowDown"],
+    text: true,
+  },
   "edit.editText": { group: "edit", keys: ["Enter"] },
   "edit.clearText": { group: "edit", keys: ["Backspace"] },
   "edit.selectParent": { group: "select", keys: ["Mod+ArrowUp"], text: true },
@@ -103,7 +122,37 @@ export type OtherShortcut = {
   readonly label: MessageKey;
   readonly group: ShortcutGroup;
   readonly keys: readonly string[];
+  /** As {@link StandardShortcut.macKeys}. */
+  readonly macKeys?: readonly string[];
+  /** As {@link StandardShortcut.windowsKeys}. */
+  readonly windowsKeys?: readonly string[];
 };
+
+/** The keys a shortcut has on this platform: its shared keys, then its own platform's. */
+export function platformKeys(
+  shortcut: Pick<StandardShortcut, "keys" | "macKeys" | "windowsKeys">,
+  mac: boolean,
+): readonly string[] {
+  return [...shortcut.keys, ...((mac ? shortcut.macKeys : shortcut.windowsKeys) ?? [])];
+}
+
+/**
+ * Keys Windows keeps for itself, in the standard's notation with `Mod` as Ctrl: Webforge never
+ * receives them, or they do something else first. No standard key on Windows may be one (a test
+ * checks); a new shortcut that needs one gets `macKeys` and an alternative in `windowsKeys`.
+ * The Windows key's own combinations are left out: the standard has no key for it.
+ */
+export const WINDOWS_RESERVED_KEYS: readonly string[] = [
+  // The Start menu, and the Task Manager.
+  "Mod+Escape",
+  "Mod+Shift+Escape",
+  // Switching windows, the window menu, closing a window, and the security screen.
+  "Alt+Tab",
+  "Alt+Escape",
+  "Alt+Space",
+  "Alt+F4",
+  "Mod+Alt+Delete",
+];
 
 /**
  * Keys handled outside the command registry: the main process saves on Mod+S (P2), the rich-text
@@ -127,7 +176,9 @@ export const OTHER_SHORTCUTS: readonly OtherShortcut[] = [
   {
     label: "shortcuts.layersMove",
     group: "layers",
-    keys: ["Mod+Alt+ArrowUp", "Mod+Alt+ArrowDown"],
+    // Alt+arrows were Layers' first keys and still move a layer on every platform, so they're
+    // shared; on Windows they're also the alternative where Ctrl+Alt+arrows rotate the screen.
+    keys: ["Mod+Alt+ArrowUp", "Mod+Alt+ArrowDown", "Alt+ArrowUp", "Alt+ArrowDown"],
   },
   // Held while dragging a layer (1.35). Shift for a linked copy works once the drag has started.
   { label: "shortcuts.layersCopy", group: "layers", keys: ["Mod"] },
@@ -136,5 +187,7 @@ export const OTHER_SHORTCUTS: readonly OtherShortcut[] = [
   { label: "shortcuts.layersDelete", group: "layers", keys: ["Delete", "Backspace"] },
   // The Edit panel's option groups (1.36, UX-13): its own keys, on a group's title or in a field.
   { label: "shortcuts.toggleGroups", group: "editPanel", keys: ["Mod+Enter"] },
-  { label: "shortcuts.resetOption", group: "editPanel", keys: ["Mod+Escape"] },
+  // Cmd+Esc on a Mac only: Ctrl+Esc opens Windows' Start menu. There, the group's right-click menu
+  // (Shift+F10 or the menu key) resets it, as everywhere (#290).
+  { label: "shortcuts.resetOption", group: "editPanel", keys: [], macKeys: ["Mod+Escape"] },
 ];
