@@ -10,6 +10,12 @@
 (() => {
   /** How long the strip goes without scrolling before it counts as at rest, in ms. */
   const REST = 150;
+  /**
+   * How long a move's scroll may take to get where it's going, in ms. After that the strip's rests
+   * count again, wherever it stopped (a resize moved the slides, or something cut the scroll short).
+   * WebKit took over a second for one slide on a busy machine.
+   */
+  const ARRIVE = 3000;
   const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
 
   for (const root of document.querySelectorAll("[data-wf-carousel]")) {
@@ -77,9 +83,14 @@
     /** Set while the strip is scrolling: it then says where it came to rest (see below). */
     /** @type {ReturnType<typeof setTimeout> | undefined} */
     let resting;
-    /** Where a move is scrolling the strip to, until it gets there or is scrolled by hand. */
+    /**
+     * Where a move is scrolling the strip to, until it gets there, is scrolled by hand, or has had
+     * `ARRIVE` ms to get there.
+     */
     /** @type {number | null} */
     let heading = null;
+    /** @type {ReturnType<typeof setTimeout> | undefined} */
+    let arriving;
     /**
      * Moves `pages` pages of what's in view on (back if negative): the last page full, and round
      * past either end. `announce` says what shows if asked.
@@ -97,8 +108,16 @@
       const slide = slides[current];
       if (first !== undefined && slide !== undefined) {
         // The strip's CSS sets how: smoothly, or at once for a visitor who prefers less motion.
-        heading = slide.offsetLeft - first.offsetLeft;
-        track.scrollTo({ left: heading });
+        const left = slide.offsetLeft - first.offsetLeft;
+        // Already there (logos that all fit, say), it doesn't scroll, so nothing would arrive.
+        heading = Math.abs(left - track.scrollLeft) > 1 ? left : null;
+        clearTimeout(arriving);
+        if (heading !== null) {
+          arriving = setTimeout(() => {
+            heading = null;
+          }, ARRIVE);
+        }
+        track.scrollTo({ left });
       }
       root.dataset.current = String(current);
       if (announce && status !== null) {

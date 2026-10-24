@@ -242,7 +242,11 @@ describe("the carousel behaviour (2.10)", () => {
     expect(status()?.textContent).toBe("3 of 3");
   });
 
-  it("follows a swipe that takes over from a press's scroll", () => {
+  it.each([
+    ["a swipe", "pointerdown"],
+    ["a touch", "touchstart"],
+    ["the wheel", "wheel"],
+  ])("follows %s that takes over from a press's scroll", (_name, type) => {
     const { root, track, document, window, button } = page({}, 3);
     const slides = [...document.querySelectorAll<HTMLElement>(".site-carousel-slide")];
     slides.forEach((slide, index) => {
@@ -250,9 +254,50 @@ describe("the carousel behaviour (2.10)", () => {
     });
 
     button("next").click();
-    track.dispatchEvent(new window.PointerEvent("pointerdown"));
+    track.dispatchEvent(new window.Event(type));
     track.scrollLeft = 190;
     track.dispatchEvent(new window.Event("scroll"));
+    vi.advanceTimersByTime(150);
+
+    expect(root.dataset.current).toBe("2");
+  });
+
+  it("follows a scroll after a press that had nowhere to scroll", () => {
+    const { root, track, document, window, button } = page({}, 3);
+    const slides = [...document.querySelectorAll<HTMLElement>(".site-carousel-slide")];
+    slides.forEach((slide, index) => {
+      Object.defineProperty(slide, "offsetLeft", { value: index * 100 });
+    });
+
+    // The strip is at slide 2 already (its scroll events not yet fired): nothing to wait for.
+    track.scrollLeft = 100;
+    button("next").click();
+    // Then it's scrolled on without a pointer (momentum, the scroll bar's arrows).
+    track.scrollLeft = 190;
+    track.dispatchEvent(new window.Event("scroll"));
+    vi.advanceTimersByTime(150);
+
+    expect(root.dataset.current).toBe("2");
+  });
+
+  it("counts the strip's rests again once a press's scroll has had 3 seconds to arrive", () => {
+    const { root, track, document, window, button } = page({}, 3);
+    const slides = [...document.querySelectorAll<HTMLElement>(".site-carousel-slide")];
+    slides.forEach((slide, index) => {
+      Object.defineProperty(slide, "offsetLeft", { value: index * 100 });
+    });
+    const scrollTo = (left: number) => {
+      track.scrollLeft = left;
+      track.dispatchEvent(new window.Event("scroll"));
+    };
+
+    // Next's scroll cut short at 30 px (a resize, say): it never gets to slide 2.
+    button("next").click();
+    scrollTo(30);
+    vi.advanceTimersByTime(2_000);
+    expect(root.dataset.current).toBe("1");
+    vi.advanceTimersByTime(1_000);
+    scrollTo(190);
     vi.advanceTimersByTime(150);
 
     expect(root.dataset.current).toBe("2");
