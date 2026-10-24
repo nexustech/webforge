@@ -29,7 +29,7 @@ export function FieldStory({
 
 /** The panel's size in the Edit/Fields stories. */
 export const fieldStoryFrame: Decorator = (Story) => (
-  <div className="h-80 w-72 bg-panel">
+  <div className="h-96 w-72 bg-panel">
     <Story />
   </div>
 );

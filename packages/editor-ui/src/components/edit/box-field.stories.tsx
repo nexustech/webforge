@@ -40,7 +40,7 @@ export const Disabled: Story = { args: { field: { ...field, disabled: true } } }
 
 /** Its value isn't acceptable: the message below it, which the control is described by. */
 export const WithError: Story = {
-  args: { field: { ...field, error: "Use the same padding on the left and right" } },
+  args: { field: { ...field, error: "Use the same padding above and below" } },
 };
 
 /** Seen on Mobile, with a value set for Mobile only: the accent dot beside its label (UX-19). */
