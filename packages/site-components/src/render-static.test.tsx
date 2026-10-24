@@ -567,7 +567,7 @@ describe("renderNodesToHtml", () => {
       expect(html).toMatch(/<section class="site-carousel group\/carousel/);
       // The keyboard reaches the strip, so it scrolls without the script too.
       expect(html).toMatch(
-        /class="[^"]*snap-x snap-mandatory[^"]*overflow-x-auto[^"]*" data-wf-carousel-track="" tabindex="0"/,
+        /class="[^"]*snap-x snap-mandatory[^"]*overflow-x-auto[^"]*" data-wf-carousel-track="" role="group" aria-label="Slides" tabindex="0"/,
       );
       expect(html.match(/<figure class="site-carousel-slide/g)).toHaveLength(2);
       expect(html).toContain("<figcaption");

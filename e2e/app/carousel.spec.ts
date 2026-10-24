@@ -84,6 +84,14 @@ test("adds slides from the Edit panel's list, and shows each one on the canvas",
   // Its buttons only show on the exported site, where they work.
   await expect(canvas().getByRole("button", { name: "Next slide" })).toBeHidden();
 
+  // Autoplay is the person's choice, off by default, with its interval beside it and a word on
+  // reduced motion.
+  await panel().getByRole("tab", { name: "Style" }).click();
+  const autoplay = panel().getByRole("switch", { name: "Play automatically" });
+  await expect(autoplay).toHaveAttribute("aria-checked", "false");
+  await expect(autoplay).toHaveAccessibleDescription(/prefer less motion/);
+  await expect(panel().getByLabel("Next slide after")).toBeVisible();
+
   await left().getByRole("tab", { name: "Undo History" }).click();
   await expect(page.locator(".undo-history__step")).toHaveText(["Added Slide", "Opened page"]);
 });

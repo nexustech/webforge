@@ -242,8 +242,10 @@ test.describe("exported site from disk", () => {
       await button("Stop the slides").click();
       await expect(button("Play the slides")).toBeVisible();
 
-      await expect(carousel.getByRole("group")).toHaveCount(3);
-      await expect(carousel.getByRole("group").first()).toHaveAccessibleName("1 of 3");
+      // The slides, inside the strip (a group too, named "Slides").
+      const slides = carousel.getByRole("group", { name: /^\d of 3$/ });
+      await expect(slides).toHaveCount(3);
+      await expect(slides.first()).toHaveAccessibleName("1 of 3");
       await button("Next slide").click();
       await expect(carousel.locator("[data-wf-carousel-status]")).toHaveText("2 of 3");
       await expect.poll(scrollLeft).toBeGreaterThan(0);
@@ -305,6 +307,9 @@ test.describe("exported site from disk", () => {
       const { carousel, track, scrollLeft } = quotes(page);
 
       await expect(carousel.getByRole("button")).toHaveCount(0);
+      // Reached and scrolled by the keyboard alone: a named group in the tab order.
+      await expect(track).toHaveAccessibleName("Slides");
+      await expect(track).toHaveAttribute("tabindex", "0");
       await track.focus();
       await expect(track).toBeFocused();
       await page.keyboard.press("ArrowRight");

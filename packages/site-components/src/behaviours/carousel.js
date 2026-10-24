@@ -2,6 +2,8 @@
 // by itself, its slides snapping into place. The script shows the previous and next buttons (which
 // go round from the last slide to the first), moves with the arrow keys while the focus is in the
 // carousel, names each slide "2 of 5" for screen readers and says which one shows after a move.
+// Where several slides show at once (logos), the buttons move by what's in view, the last page
+// full rather than one logo alone, and say which slides show ("5 to 8 of 10").
 // One set to play automatically moves on every few seconds, with a button to stop it that comes
 // first (WCAG 2.2.2); it pauses while the pointer or the focus is in it, and never plays when the
 // visitor prefers reduced motion.
@@ -22,6 +24,23 @@
       (root.dataset.slideOf ?? "{n} of {total}")
         .replace("{n}", String(index + 1))
         .replace("{total}", String(total));
+    /** How many slides show at once: one, or several logos. */
+    const inView = () => {
+      const [first, second] = slides;
+      if (first === undefined || second === undefined) return 1;
+      const step = second.offsetLeft - first.offsetLeft;
+      const gap = step - first.offsetWidth;
+      return step > 0 ? Math.max(1, Math.round((track.clientWidth + gap) / step)) : 1;
+    };
+    /** What shows from slide `index`: "2 of 5", or "5 to 8 of 10" when several do. */
+    const showing = (/** @type {number} */ index) => {
+      const count = inView();
+      if (count === 1) return position(index);
+      return (root.dataset.slidesOf ?? "{from} to {to} of {total}")
+        .replace("{from}", String(index + 1))
+        .replace("{to}", String(Math.min(index + count, total)))
+        .replace("{total}", String(total));
+    };
     slides.forEach((slide, index) => {
       slide.setAttribute("role", "group");
       slide.setAttribute("aria-roledescription", root.dataset.slideLabel ?? "slide");
@@ -37,23 +56,29 @@
     let current = 0;
     /** The slide the script is scrolling to, and since when: its own scrolling moves nothing. */
     let aim = { index: -1, since: 0 };
-    /** Scrolls to slide `index`, going round past either end; `announce` says so if asked. */
-    const go = (/** @type {number} */ index, /** @type {boolean} */ announce) => {
-      // Past the last slide that fits (several logos show at once), back to the first. A strip
-      // that all fits has no end to reach.
-      const atEnd =
-        track.scrollWidth > track.clientWidth &&
-        track.scrollLeft + track.clientWidth >= track.scrollWidth - 1;
-      current = index >= total || (index > current && atEnd) ? 0 : (index + total) % total;
+    /**
+     * Moves `pages` pages of what's in view on (back if negative): the last page full, and round
+     * past either end. `announce` says what shows if asked.
+     */
+    const move = (/** @type {number} */ pages, /** @type {boolean} */ announce) => {
+      const count = inView();
+      const last = Math.max(0, total - count);
+      let target = current + pages * count;
+      if (target > last) target = current >= last ? 0 : last;
+      if (target < 0) target = current <= 0 ? last : 0;
+      current = target;
       const first = slides[0];
       const slide = slides[current];
       if (first !== undefined && slide !== undefined) {
         aim = { index: current, since: Date.now() };
-        track.scrollTo({ left: slide.offsetLeft - first.offsetLeft, behavior: "smooth" });
+        track.scrollTo({
+          left: slide.offsetLeft - first.offsetLeft,
+          behavior: reducedMotion ? "auto" : "smooth",
+        });
       }
       root.dataset.current = String(current);
       if (announce && status !== null) {
-        status.textContent = position(current);
+        status.textContent = showing(current);
       }
     };
     // A swipe or a scroll by hand moves the current slide too: the one nearest the start.
@@ -81,15 +106,15 @@
       { passive: true },
     );
     root.querySelector("[data-wf-carousel-previous]")?.addEventListener("click", () => {
-      go(current - 1, true);
+      move(-1, true);
     });
     root.querySelector("[data-wf-carousel-next]")?.addEventListener("click", () => {
-      go(current + 1, true);
+      move(1, true);
     });
     root.addEventListener("keydown", (event) => {
       if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
       event.preventDefault();
-      go(current + (event.key === "ArrowLeft" ? -1 : 1), true);
+      move(event.key === "ArrowLeft" ? -1 : 1, true);
     });
 
     const interval = Number(root.dataset.interval);
@@ -113,7 +138,7 @@
         (stopped ? play.dataset.labelStart : play.dataset.labelStop) ?? "",
       );
       if (playing && timer === undefined) {
-        timer = setInterval(() => go(current + 1, false), interval);
+        timer = setInterval(() => move(1, false), interval);
       } else if (!playing && timer !== undefined) {
         clearInterval(timer);
         timer = undefined;

@@ -6,6 +6,8 @@ import { MARGIN_FIELD, marginClasses } from "./basic.js";
 
 const CAROUSEL_LAYOUTS = ["images", "testimonials", "logos"] as const;
 const INTERVALS = ["5", "7", "10"] as const;
+/** Autoplay's options, shown together in the Edit panel. */
+const AUTOPLAY_GROUP = { id: "autoplay", label: t("field.autoplayGroup") };
 
 /** A small icon for the carousel's buttons, drawn inline so the site needs no icon font (C8). */
 function Icon({ path }: { readonly path: string }) {
@@ -47,10 +49,16 @@ const carousel = defineComponent({
   fields: {
     label: { kind: "text", label: t("field.carouselLabel") },
     slides: { kind: "slot", label: t("field.slides"), allow: ["CarouselSlide"] },
-    autoplay: { kind: "toggle", label: t("field.autoplay") },
+    autoplay: {
+      kind: "toggle",
+      label: t("field.autoplay"),
+      help: t("field.autoplay.help"),
+      optionGroup: AUTOPLAY_GROUP,
+    },
     interval: {
       kind: "select",
       label: t("field.interval"),
+      optionGroup: AUTOPLAY_GROUP,
       options: INTERVALS.map((value) => ({ label: t(`field.interval.${value}`), value })),
     },
     margin: MARGIN_FIELD,
@@ -70,6 +78,7 @@ const carousel = defineComponent({
         data-wf-carousel=""
         data-slide-label={t("siteText.slide")}
         data-slide-of={t("siteText.slideOf")}
+        data-slides-of={t("siteText.slidesOf")}
         {...(values.autoplay ? { "data-interval": `${Number(values.interval) * 1000}` } : {})}
       >
         {/* Shown by the script, which makes them work; the rotation button comes first (APG). */}
@@ -109,9 +118,12 @@ const carousel = defineComponent({
           </button>
         </div>
         {/* Focusable, so the keyboard can scroll it without the script too. */}
+        {/* biome-ignore lint/a11y/useSemanticElements: a named strip of slides, not a <fieldset> of form controls. */}
         <div
           className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth rounded-box motion-reduce:scroll-auto"
           data-wf-carousel-track=""
+          role="group"
+          aria-label={t("siteText.slides")}
           // biome-ignore lint/a11y/noNoninteractiveTabindex: a scrolling region the keyboard must reach (axe's scrollable-region-focusable).
           tabIndex={0}
         >

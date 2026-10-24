@@ -106,6 +106,37 @@ describe("the carousel behaviour (2.10)", () => {
     expect(status()?.textContent).toBe("3 of 3");
   });
 
+  it("jumps without smooth scrolling for a visitor who prefers reduced motion", () => {
+    const { button, scrolled } = page({}, 3, true);
+
+    button("next").click();
+    expect(scrolled).toHaveBeenLastCalledWith(expect.objectContaining({ behavior: "auto" }));
+  });
+
+  it("moves logos a page of what's in view at a time, the last page full", () => {
+    const { root, track, document, button, status, scrolled } = page({ variant: "logos" }, 10);
+    // Four in view: slides 100 px apart (84 px and a 16 px gap) in a 400 px strip.
+    const slides = [...document.querySelectorAll<HTMLElement>(".site-carousel-slide")];
+    slides.forEach((slide, index) => {
+      Object.defineProperty(slide, "offsetLeft", { value: index * 100 });
+      Object.defineProperty(slide, "offsetWidth", { value: 84 });
+    });
+    Object.defineProperty(track, "clientWidth", { value: 400 });
+
+    button("next").click();
+    expect(root.dataset.current).toBe("4");
+    expect(status()?.textContent).toBe("5 to 8 of 10");
+    // Not slides 9 and 10 alone with empty space: the last four.
+    button("next").click();
+    expect(root.dataset.current).toBe("6");
+    expect(status()?.textContent).toBe("7 to 10 of 10");
+    expect(scrolled).toHaveBeenLastCalledWith(expect.objectContaining({ left: 600 }));
+    button("next").click();
+    expect(root.dataset.current).toBe("0");
+    button("previous").click();
+    expect(root.dataset.current).toBe("6");
+  });
+
   it("moves with the arrow keys while the focus is in it", () => {
     const { root, window, track } = page();
 
