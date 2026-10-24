@@ -1,4 +1,5 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { placeCaret } from "./caret.js";
 import { launchDesktopApp } from "./launch.js";
 
 // The keyboard shortcut standard (1.38, F-ED-27): the sheet from the Help menu and `?`, the view
@@ -142,12 +143,7 @@ test("in rich text: Mod+K links, Shift+Space types a non-breaking space, Alt+Ent
   await expect(link).toHaveCount(0);
 
   await editor.click();
-  // The caret to the start of the text. Not with Home, which doesn't move it on macOS (#287).
-  await editor.evaluate((element) => {
-    const walker = element.ownerDocument.createTreeWalker(element, NodeFilter.SHOW_TEXT);
-    const first = walker.nextNode();
-    if (first !== null) element.ownerDocument.getSelection()?.collapse(first, 0);
-  });
+  await placeCaret(editor, "start");
   await page.keyboard.type("Open", { delay: 20 });
   await page.keyboard.press("Shift+Space");
   await expect(editor).toContainText("Open Tell visitors");
