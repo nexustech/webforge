@@ -83,8 +83,12 @@ function NavItems({ items }: { readonly items: readonly NavItem[] }) {
  * The Header's navigation: its items in a row on wide screens; on small ones, a menu that its
  * button opens. The menu is a `<details>`, so it opens and closes without the script too, with a
  * tap on iOS, and is announced as expanded or collapsed (2.6); `webforge.js`'s "menu" behaviour
- * closes it with Escape, a click outside or a chosen link. Each list is drawn once for its screen
- * size: a closed `<details>` hides what it holds, which CSS can't show again everywhere.
+ * closes it with Escape, a click outside or a chosen link.
+ *
+ * The site's menu is drawn twice, once for each screen size: a closed `<details>` hides what it
+ * holds, which CSS can't show again on wide screens. Both lists come from the same items through
+ * {@link NavItems}, so they hold the same links (the split layout's button aside, which is drawn
+ * beside the row); a test checks they can't drift apart.
  */
 function HeaderNavigation({
   items,
@@ -120,18 +124,26 @@ const SCROLL_STYLES = ["shadow", "shrink", "solid", "none"] as const;
 
 /**
  * A sticky header's classes for its scroll style (F-DS-6), applied once the page has scrolled 80 px
- * (`data-scrolled`, set by `webforge.js`'s "sticky" behaviour). Each also gives the page a scroll
- * padding, so anchor targets aren't hidden under the header without the script either; the script
- * then follows the header's real height.
+ * (`data-scrolled`, set by `webforge.js`'s "sticky" behaviour).
  */
 const STICKY_CLASSES: Readonly<Record<(typeof SCROLL_STYLES)[number], string>> = {
-  shadow:
-    "sticky top-0 bg-base-100 shadow-none transition-shadow data-scrolled:shadow-md [:root:has(&)]:scroll-pt-20",
+  shadow: "sticky top-0 bg-base-100 shadow-none transition-shadow data-scrolled:shadow-md",
   shrink:
-    "sticky top-0 bg-base-100 shadow-sm transition-[min-height,padding] data-scrolled:min-h-12 data-scrolled:py-1 [:root:has(&)]:scroll-pt-20",
+    "sticky top-0 bg-base-100 shadow-sm transition-[min-height,padding] data-scrolled:min-h-12 data-scrolled:py-1",
   solid:
-    "sticky top-0 bg-base-100/80 shadow-sm backdrop-blur transition-colors data-scrolled:bg-base-100 [:root:has(&)]:scroll-pt-20",
-  none: "sticky top-0 bg-base-100 shadow-sm [:root:has(&)]:scroll-pt-20",
+    "sticky top-0 bg-base-100/80 shadow-sm backdrop-blur transition-colors data-scrolled:bg-base-100",
+  none: "sticky top-0 bg-base-100 shadow-sm",
+};
+
+/**
+ * The scroll padding a sticky header gives the page, so anchor targets aren't hidden under it
+ * without the script either: at least its height in each layout (the script then follows its real
+ * height). The centred layout is taller on wide screens, its menu below the name.
+ */
+const STICKY_OFFSET: Readonly<Record<(typeof HEADER_LAYOUTS)[number], string>> = {
+  left: "[:root:has(&)]:scroll-pt-20",
+  centred: "[:root:has(&)]:scroll-pt-20 md:[:root:has(&)]:scroll-pt-32",
+  split: "[:root:has(&)]:scroll-pt-20",
 };
 
 /** Each layout's own classes: where the site name, the navigation and the button go. */
@@ -174,7 +186,9 @@ const header = defineComponent({
     const last = items.at(-1);
     const button = layout === "split" && last !== undefined && !("children" in last) ? last : null;
     const row = button === null ? items : items.slice(0, -1);
-    const look = values.sticky ? STICKY_CLASSES[values.scrollStyle] : "bg-base-100 shadow-sm";
+    const look = values.sticky
+      ? `${STICKY_CLASSES[values.scrollStyle]} ${STICKY_OFFSET[layout]}`
+      : "bg-base-100 shadow-sm";
     const name = (
       <a className="text-xl font-bold" href={context.link("index")}>
         {boundText(values, "siteName", context)}

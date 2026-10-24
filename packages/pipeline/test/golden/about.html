@@ -4,14 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>About us | Rosa's Bakery</title>
-  <link rel="stylesheet" href="assets/css/site.c5a5d128e2.css">
+  <link rel="stylesheet" href="assets/css/site.0fb3ec6116.css">
   <script defer src="assets/js/webforge.ceca705b9e.js"></script>
 </head>
 <body class="flex min-h-screen flex-col bg-base-100 font-sans text-base-content">
   <!-- Header (shared) -->
-  <header class="site-header relative z-30 navbar gap-2 px-4 sticky top-0 bg-base-100 shadow-none transition-shadow data-scrolled:shadow-md [:root:has(&amp;)]:scroll-pt-20" data-wf-sticky="">
-    <div class="flex-1"><a class="text-xl font-bold" href="index.html">Rosa&#x27;s Bakery</a></div>
-    <nav aria-label="Main navigation">
+  <header class="site-header relative z-30 flex items-center justify-between gap-2 px-4 py-3 md:flex-col md:justify-center sticky top-0 bg-base-100 shadow-none transition-shadow data-scrolled:shadow-md [:root:has(&amp;)]:scroll-pt-20 md:[:root:has(&amp;)]:scroll-pt-32" data-wf-sticky=""><a class="text-xl font-bold" href="index.html">Rosa&#x27;s Bakery</a>
+    <nav aria-label="Main navigation" class="md:flex md:flex-1 md:justify-center">
       <ul class="menu menu-horizontal hidden p-0 md:flex">
         <li><a href="index.html">Home</a></li>
         <li><a href="about.html" aria-current="page">About us</a></li>
@@ -48,11 +47,39 @@
     </nav>
   </header>
   <main id="main" class="flex-1">
-    <section class="site-hero hero bg-base-200 px-4 py-16">
-      <div class="hero-content max-w-6xl flex-col gap-10 lg:flex-row-reverse text-center">
+    <section class="site-hero bg-base-200 px-4 py-16">
+      <div class="mx-auto max-w-3xl text-center">
         <div class="max-w-xl">
           <h1 class="text-4xl font-bold md:text-5xl">About Rosa&#x27;s Bakery</h1>
           <p class="py-6 text-lg">A family bakery since 1998. Cakes to order, with two days&#x27; notice.</p><a class="btn btn-primary" href="files/price-list.pdf" target="_blank" rel="noopener">Price list (PDF)</a>
+        </div>
+      </div>
+    </section>
+    <section class="site-text-section bg-base-100 px-4 py-16">
+      <div class="mx-auto max-w-3xl">
+        <h2 class="text-3xl font-bold">Our story</h2>
+        <div class="mt-4 text-lg leading-relaxed [&amp;_a]:underline [&amp;_p+p]:mt-4">
+          <div class="contents">
+            <p>Rosa opened the bakery with one oven.</p>
+            <p>We still bake every morning.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="site-text-image bg-base-100 px-4 py-16">
+      <div class="mx-auto grid max-w-6xl items-center gap-10 md:grid-cols-2">
+        <div>
+          <h2 class="text-3xl font-bold">What we bake</h2>
+          <div class="mt-4 text-lg leading-relaxed [&amp;_a]:underline [&amp;_p+p]:mt-4">
+            <div class="contents">
+              <p>Sourdough, rye and cakes to order.</p>
+            </div>
+          </div>
+        </div>
+        <div class="md:order-first">
+          <picture>
+            <source type="image/webp" srcSet="assets/img/hero-640.webp 640w, assets/img/hero-1280.webp 1280w, assets/img/hero-1600.webp 1600w" sizes="(min-width: 768px) 50vw, 100vw" /><img src="assets/img/hero-1600.jpg" srcSet="assets/img/hero-640.jpg 640w, assets/img/hero-1280.jpg 1280w, assets/img/hero-1600.jpg 1600w" sizes="(min-width: 768px) 50vw, 100vw" width="1600" height="1000" alt="Hills where our wheat grows" loading="lazy" decoding="async" class="h-auto w-full rounded-box shadow-lg" />
+          </picture>
         </div>
       </div>
     </section>
