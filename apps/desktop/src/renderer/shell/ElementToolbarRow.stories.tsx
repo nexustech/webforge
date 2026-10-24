@@ -1,4 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { ColumnsTools } from "../editor/ColumnsToolbar.js";
+import { MobileMenuToggle } from "../editor/HeaderToolbar.js";
 import { HeadingLevelToolbar } from "../editor/HeadingToolbar.js";
 import { ListItemsToolbar } from "../editor/ListToolbar.js";
 import { ElementToolbarRow } from "./ElementToolbarRow.js";
@@ -32,4 +34,65 @@ export const ListItemSelected: Story = {
 /** The List itself selected: an item at its end only. */
 export const ListSelected: Story = {
   args: { children: <ListItemsToolbar itemSelected={false} onAdd={() => undefined} /> },
+};
+
+/** What every Columns story's toolbar does: nothing, in a story. */
+const columnsActions = {
+  onAdd: () => undefined,
+  onRemove: () => undefined,
+  onLayout: () => undefined,
+  onOutlines: () => undefined,
+} as const;
+
+/** A Columns selected (2.17): three columns, the middle one wide on Desktop, outlines shown. */
+export const ColumnsSelected: Story = {
+  args: {
+    children: (
+      <ColumnsTools
+        count={3}
+        canAdd
+        layout="wideMiddle"
+        device="desktop"
+        outlines
+        {...columnsActions}
+      />
+    ),
+  },
+};
+
+/** One column, which can't be removed; one layout only, on Mobile; outlines off. */
+export const ColumnsOne: Story = {
+  args: {
+    children: (
+      <ColumnsTools
+        count={1}
+        canAdd
+        layout="equal"
+        device="mobile"
+        outlines={false}
+        {...columnsActions}
+      />
+    ),
+  },
+};
+
+/** Four columns, as many as a Columns holds: no more can be added. */
+export const ColumnsFull: Story = {
+  args: {
+    children: (
+      <ColumnsTools
+        count={4}
+        canAdd={false}
+        layout="stacked"
+        device="tablet"
+        outlines
+        {...columnsActions}
+      />
+    ),
+  },
+};
+
+/** The Header selected in the Mobile view (UX-26): its menu shown open on the canvas. */
+export const HeaderMobileMenu: Story = {
+  args: { children: <MobileMenuToggle pressed onChange={() => undefined} /> },
 };
