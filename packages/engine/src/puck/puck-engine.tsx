@@ -82,6 +82,7 @@ import { editFromAction, selectedNodeId, toPageDoc } from "./edit-from-action.js
 import { keepElementsEnabled } from "./enabled-elements.js";
 import { hidePuckLayout } from "./layout-styles.js";
 import { pageActions, type SlotsOf } from "./page-actions.js";
+import { CANVAS_ROOT, componentSelector, puckPrivateApi } from "./puck-dom.js";
 import { createFormatToolbar } from "./rich-text.js";
 import { performOnSelected } from "./selected-actions.js";
 import { showAlsoSelected, watchAddingClicks } from "./selection-clicks.js";
@@ -114,35 +115,17 @@ export type PuckEngineOptions = {
  * short debounce), through our Puck patch. True if there was one: its edit is then on its way.
  */
 function flushRichText(puck: ReturnType<GetPuck>): boolean {
-  const flush = (puck as { readonly __private?: { readonly flushRichText?: () => boolean } })
-    .__private?.flushRichText;
-  return flush?.() === true;
+  return puckPrivateApi(puck)?.flushRichText() === true;
 }
 
 /** How long Undo or Redo waits at most for a rich-text change it asked Puck to send. */
 const RICH_TEXT_FLUSH_TIMEOUT_MS = 500;
 
-/** Puck's canvas zoom (`zoomConfig`), which its public API leaves out. */
-type ZoomConfig = { readonly zoom: number; readonly autoZoom: number; readonly rootHeight: number };
-
-/** What our Puck patch adds to Puck's API object: its canvas zoom. */
-type ZoomAccess = {
-  readonly getZoomConfig: () => ZoomConfig;
-  readonly setZoomConfig: (zoomConfig: ZoomConfig) => void;
-};
-
 /**
- * The canvas zoom in Puck's store, reached through our Puck patch (see `pnpm-workspace.yaml`), or
- * undefined if the patch is missing, e.g. after a Puck upgrade: zooming then does nothing.
+ * The canvas zoom in Puck's store, reached through our Puck patch, or undefined if the patch is
+ * missing, e.g. after a Puck upgrade: zooming then does nothing.
  */
-function zoomAccess(puck: ReturnType<GetPuck>): ZoomAccess | undefined {
-  const internal = (puck as { readonly __private?: Partial<ZoomAccess> }).__private;
-  const get = internal?.getZoomConfig;
-  const set = internal?.setZoomConfig;
-  return get === undefined || set === undefined
-    ? undefined
-    : { getZoomConfig: get, setZoomConfig: set };
-}
+const zoomAccess = (puck: ReturnType<GetPuck>) => puckPrivateApi(puck);
 
 const VIEWPORT_WIDTHS = { desktop: 1280, tablet: 768, mobile: 375 } as const;
 
@@ -778,7 +761,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     // Puck changes the zoom inside its store, where nothing reports it, and shows it on the canvas
     // root's style (its scale and height): watch that.
     useEffect(() => {
-      const canvasRoot = host?.querySelector('[class*="PuckCanvas-root"]');
+      const canvasRoot = host?.querySelector(CANVAS_ROOT);
       if (!canvasRoot) {
         return;
       }
@@ -1157,9 +1140,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
         element.removeAttribute(OUTLINED_ATTRIBUTE);
       }
       if (nodeId === null) return;
-      doc
-        ?.querySelector(`[data-puck-component="${CSS.escape(nodeId)}"]`)
-        ?.setAttribute(OUTLINED_ATTRIBUTE, "");
+      doc?.querySelector(componentSelector(nodeId))?.setAttribute(OUTLINED_ATTRIBUTE, "");
     },
 
     select(nodeId) {
@@ -1234,8 +1215,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       if (action.startsWith("select")) {
         // Walking through a long page from the keyboard keeps the selection in view.
         const id = puck().selectedItem?.props.id;
-        const element =
-          id === undefined ? null : doc?.querySelector(`[data-puck-component="${id}"]`);
+        const element = id === undefined ? null : doc?.querySelector(componentSelector(id));
         element?.scrollIntoView?.({ block: "nearest" });
       }
       return true;

@@ -8,6 +8,7 @@ import { HIDDEN_ATTRIBUTE } from "./config.js";
 /** Marks the element outlined from outside the canvas (`CanvasEngine.outline`). */
 export const OUTLINED_ATTRIBUTE = "data-wf-outlined";
 
+import { OVERLAY } from "./puck-dom.js";
 import { canPerform, performOnSelected } from "./selected-actions.js";
 import { type BoxHandleField, SPACING_HANDLES_CSS, SpacingHandles } from "./spacing-handles.js";
 import { ROOT_ZONE } from "./tree.js";
@@ -211,7 +212,7 @@ type QuickActionBarProps = ActionBarProps & {
  * the outline is the canvas iframe's, whose `HTMLElement` isn't this window's.
  */
 function barElementId(marker: Element | null): string | null {
-  const outline = marker?.closest("[data-puck-overlay]")?.querySelector(".wf-outline");
+  const outline = marker?.closest(OVERLAY)?.querySelector(".wf-outline");
   return outline?.getAttribute("data-wf-id") ?? null;
 }
 
@@ -302,7 +303,7 @@ function keepInFrame(bar: HTMLElement, selected: boolean): (() => void) | undefi
   }
   const place = () => {
     bar.style.transform = "";
-    const element = bar.closest("[data-puck-overlay]");
+    const element = bar.closest(OVERLAY);
     if (element === null || !selected) {
       return;
     }

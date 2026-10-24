@@ -1,3 +1,5 @@
+import { COMPONENT, componentSelector } from "./puck-dom.js";
+
 /**
  * Starting to edit an element's text from the keyboard (F-ED-27: Enter edits text, Backspace
  * empties it and starts editing). Puck makes a plain-text field editable only while it is hovered
@@ -7,7 +9,7 @@
  */
 
 /** Puck's wrapper around each element on the canvas. */
-const ELEMENT = "[data-puck-component]";
+const ELEMENT = COMPONENT;
 
 /** The canvas's editable text: Puck's plain-text fields and the rich-text editor. */
 const TEXT_FIELD = "[contenteditable]";
@@ -27,7 +29,7 @@ function ownTextFields(element: Element): HTMLElement[] {
  * `clear`, its text emptied first. Returns false if it has no text of its own (a Section).
  */
 export function startTextEditing(document: Document, nodeId: string, clear: boolean): boolean {
-  const element = document.querySelector(`[data-puck-component="${CSS.escape(nodeId)}"]`);
+  const element = document.querySelector(componentSelector(nodeId));
   const [field] = element === null ? [] : ownTextFields(element);
   if (field === undefined) return false;
   // Puck's plain-text field says "false" until it is hovered or focused; focusing keeps it on.

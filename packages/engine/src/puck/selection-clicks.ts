@@ -1,4 +1,5 @@
 import type { Unsubscribe } from "../canvas-engine.js";
+import { COMPONENT, COMPONENT_ATTRIBUTE, componentSelector, OVERLAY } from "./puck-dom.js";
 
 /** Marks the stylesheet that outlines the other selected elements (see {@link showAlsoSelected}). */
 const ALSO_SELECTED_STYLE = "data-webforge-also-selected";
@@ -22,12 +23,12 @@ export function watchAddingClicks(
     // The canvas iframe's elements aren't this window's `Element`: duck-typed.
     const clicked = event.target as Partial<Element> | null;
     if (typeof clicked?.closest !== "function") return undefined;
-    if (clicked.closest("[data-puck-overlay]") !== null) return undefined;
+    if (clicked.closest(OVERLAY) !== null) return undefined;
     const editable = clicked.closest("[contenteditable]");
     if (editable !== null && focusedAtPress !== null && editable.contains(focusedAtPress)) {
       return undefined;
     }
-    const id = clicked.closest("[data-puck-component]")?.getAttribute("data-puck-component");
+    const id = clicked.closest(COMPONENT)?.getAttribute(COMPONENT_ATTRIBUTE);
     return typeof id === "string" ? id : undefined;
   };
   const onPointerDown = () => {
@@ -70,7 +71,7 @@ export function showAlsoSelected(doc: Document, ids: readonly string[]): void {
   style.textContent = ids
     .map(
       (id) =>
-        `[data-puck-component="${CSS.escape(id)}"] {\n` +
+        `${componentSelector(id)} {\n` +
         "  outline: calc(2px / var(--wf-zoom, 1)) solid #f028f3;\n" +
         "  outline-offset: calc(-2px / var(--wf-zoom, 1));\n}",
     )

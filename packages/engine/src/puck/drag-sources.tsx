@@ -1,6 +1,7 @@
 import { Drawer } from "@puckeditor/core";
 import { type ReactNode, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
+import { DRAWER_ITEM } from "./puck-dom.js";
 
 /** An element outside the canvas that drags a new element of `componentType` onto it (1.13). */
 type DragSource = {
@@ -23,7 +24,7 @@ const STYLE_ATTRIBUTE = "data-webforge-drag-sources";
 const DRAG_SOURCE_CSS = `
 .wf-drag-source { position: absolute; inset: 0; }
 .wf-drag-source div { height: 100%; }
-.wf-drag-source [data-puck-drawer-item] { cursor: grab; }
+.wf-drag-source ${DRAWER_ITEM} { cursor: grab; }
 .wf-drag-source__handle { pointer-events: none; }
 .wf-drag-source__label { display: none; }
 .wf-drag-source [data-dnd-dragging] .wf-drag-source__label {
@@ -54,7 +55,7 @@ function applyDragSourceStyles(document: Document): void {
  * `role` of its own, and this runs first: a child's ref is set before its parent's.
  */
 function hideHandle(handle: HTMLElement | null): void {
-  const item = handle?.closest("[data-puck-drawer-item]");
+  const item = handle?.closest(DRAWER_ITEM);
   if (item) {
     item.setAttribute("tabindex", "-1");
     item.setAttribute("role", "presentation");
