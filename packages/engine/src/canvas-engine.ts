@@ -130,7 +130,7 @@ export type HistoryCommand = "undo" | "redo" | "cancel";
  * Runs a history command. Returns true if it did something with it: an Esc that cancelled
  * nothing is left to the rest of the page (closing a menu, deselecting).
  */
-export type HistoryCommandHandler = (command: HistoryCommand) => boolean | undefined | void;
+export type HistoryCommandHandler = (command: HistoryCommand) => boolean | undefined | undefined;
 
 /**
  * What the user can do to the selected element from the keyboard (1.12): select the element
@@ -262,6 +262,9 @@ export interface CanvasEngine {
    * Scales the canvas (1.15): a factor (1 is real size), or `"fit"` to fit the device view's width
    * into the space the canvas has. The canvas starts fitted, and fits again whenever that space or
    * the view changes. Before the canvas is ready, this does nothing.
+   *
+   * Shaped by Puck (ADR 0004, R8): its canvas zooms in its own store, reached through our patch
+   * (`puck-dom.ts`); another engine would scale its own canvas.
    */
   setZoom(zoom: number | "fit"): void;
   /** Reports the canvas's size and zoom now, if known, and whenever any of them changes. */
@@ -304,6 +307,9 @@ export interface CanvasEngine {
    * Does `action` to the selected element. Edits are reported through {@link onUserEdit} as one
    * step each, like the same action done with the mouse. Returns false if there is nothing to do:
    * no selection, the end of the list, or an action Content mode doesn't allow.
+   *
+   * Shaped by Puck (ADR 0004, R8): the actions are those Puck's own selection and dispatch can do
+   * (`selected-actions.ts`); another engine would map them onto its own.
    */
   perform(action: CanvasAction): boolean;
   /**
@@ -332,24 +338,18 @@ export interface CanvasEngine {
    * reach the element, though a click doesn't focus it (Puck's handle prevents the mouse-down). The
    * handle can't be focused or seen by screen readers: the element keeps its own keyboard use.
    * Until the returned call, which removes the handle.
+   *
+   * Shaped by Puck (ADR 0004, R8): a drag into Puck must start from one of its drawer items, which
+   * the handle is (`drag-sources.tsx`); another engine could take the element's own drag events.
    */
   addDragSource(element: HTMLElement, componentType: string): Unsubscribe;
   /**
    * The canvas iframe's window whenever it changes (`null` when it goes), so the app can handle its
    * keyboard shortcuts there too.
+   *
+   * Shaped by Puck (ADR 0004, R8): Puck draws the page in an iframe of its own; an engine without
+   * one would never call `cb`.
    */
   onFrameWindow(cb: (frameWindow: Window | null) => void): Unsubscribe;
-  /**
-   * `page`'s static HTML, as the export renders it (ADR 0005): the Header and Footer of `layout`
-   * (as the page shows them), then its content, its linked copies shown inline as the shared
-   * sections in `shared`, without hidden elements. `context` resolves links, images and settings;
-   * the editor's, where everything goes nowhere, if left out.
-   */
-  renderStatic(
-    page: PageDoc,
-    layout: LayoutDoc,
-    shared?: SharedSectionsDoc,
-    context?: RenderContext,
-  ): string;
   destroy(): void;
 }

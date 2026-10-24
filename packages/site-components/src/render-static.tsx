@@ -176,8 +176,8 @@ export type RenderedPage = {
 /**
  * Renders a page to static HTML (ADR 0005): its `content`, and the `header` and `footer` it shows
  * (none where its Page Settings hide them), each with {@link renderNodesToHtml}. The one static
- * renderer: the export builds every page with it, and the canvas engine's `renderStatic` gives its
- * HTML, so the two never differ.
+ * renderer: the export builds every page with it, from the same render functions the canvas draws
+ * with, so the two never differ.
  */
 export function renderPage(
   regions: {
