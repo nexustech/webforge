@@ -397,6 +397,9 @@ function SiteSettingsForm({
           {form.formService === "" || form.formService === "netlify" ? null : (
             <TextInput
               label={t(`site.settings.formValue.${form.formService}`)}
+              {...(form.formService === "custom"
+                ? { hint: t("site.settings.formValue.customHint") }
+                : {})}
               error={errors["forms.value"]}
               type={
                 form.formService === "formsubmit"

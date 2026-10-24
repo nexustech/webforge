@@ -135,6 +135,13 @@ export const site = {
   "site.binding.empty.contact.address": "Add your address in Site Settings",
   "site.binding.empty.contact.openingHoursNote": "Add a note on opening hours in Site Settings",
   "site.binding.empty.address.url": "Add the site's web address in Site Settings",
+  // A form with nowhere to send submissions yet (2.8), on the canvas, by why.
+  "site.binding.formHint.noService": "Choose where submissions go in Site Settings",
+  "site.binding.formHint.netlify":
+    "Netlify Forms isn't ready yet: choose another form service in Site Settings for now",
+  "site.binding.formHint.insecure": "The form address must start with https://",
+  "site.binding.formHint.noAddress":
+    "Add the form address your newsletter service gives you, in the Edit panel",
   "site.settings.title": "Site Settings",
   "site.settings.description": "Details that apply to the whole site, wherever they appear.",
   "site.settings.sections": "Site Settings sections",
@@ -216,6 +223,8 @@ export const site = {
   "site.settings.formValue.web3forms": "Web3Forms access key",
   "site.settings.formValue.formsubmit": "Email address for messages",
   "site.settings.formValue.custom": "Address forms send to",
+  "site.settings.formValue.customHint":
+    "It must start with https://, so messages travel encrypted.",
   "site.settings.error.invalid": "Check this value.",
   "site.settings.error.name": "Give the site a name of up to 100 characters.",
   "site.settings.error.description": "Keep the description to 300 characters.",

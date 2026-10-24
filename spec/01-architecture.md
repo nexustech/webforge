@@ -26,7 +26,7 @@ A **paid, closed-source desktop app** (Windows 10/11 x64 + macOS 13+ on Apple Si
 | Publishing | Folder/ZIP · `basic-ftp` · `ssh2-sftp-client` · Netlify REST API | [08](../research/stack/08-publishing.md) |
 | Packaging & updates | **electron-vite** (dev/build) + **electron-builder** (NSIS / DMG) + **electron-updater** ✅ (decided 2026-10-19, no Forge comparison needed) | 01 |
 
-Licensing rule for every dependency: **permissive only** (MIT, BSD, Apache-2.0, ISC); MPL-2.0 OK unmodified; **no GPL/AGPL**, and no paid add-ons (C1). Enforced in CI.
+Licensing rule for every dependency: **permissive only** (MIT, BSD, Apache-2.0, ISC); MPL-2.0 OK unmodified; **no GPL/AGPL**, no paid add-ons, and never GSAP or libraries built on it, whose terms exclude competing builders (C1, PG-6). Enforced in CI.
 
 ## 3. Process model
 
