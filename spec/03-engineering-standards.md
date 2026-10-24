@@ -130,7 +130,8 @@ Coverage is a floor, not a goal. Every bug fix adds a regression test.
 ## 6. Git workflow
 - **Trunk-based:** short-lived branches (`feat/…`, `fix/…`, `chore/…`), PRs into `main`, **squash merge**.
 - **Clean up after merging:** delete the branch locally and on GitHub once its PR is merged, and remove worktrees that are no longer in use, so merged branches don't linger. Keep a merged branch only while another open PR targets it as its base.
-- **`main` is not branch-protected.** Branch protection and rulesets for private repositories need a paid GitHub plan, and the repository is on GitHub Free. "Always work through PRs" is therefore a **team convention**, not a technical guard: never push or merge to `main` directly, and merge only with green CI. Revisit if the plan changes.
+- **`main` is branch-protected** (the repository is public, so GitHub Free includes it): changes arrive only through PRs, and a PR merges only when the "CI passed" check passes on a branch that is up to date with `main`.
+- **Auto-merge:** a PR stays in draft until it's ready (§7), then is marked ready with auto-merge on, and GitHub squash-merges it once CI passes. Marking it ready is the approval to merge. The `Merge queue` workflow brings waiting PRs up to date with `main` one at a time, and the PR's author (its stream) resolves conflicts and fixes CI failures, through PR Auto-fix.
 - **Conventional Commits** (`feat(history): coalesce text sessions`), enforced by commitlint. release-please generates versions and the CHANGELOG.
 - **PR requirements:** green CI, 1 review, description with *what/why/how tested*, screenshots or GIFs for UI changes, ADR link for architectural changes.
 - **Versioning:** SemVer for the app. `format_version` for `.wforge` is independent and bumped with a migration + fixture.
@@ -144,15 +145,18 @@ Coverage is a floor, not a goal. Every bug fix adds a regression test.
 |---|---|---|
 | Install + cache (pnpm, Turborepo) | all | every push/PR |
 | `biome ci` (format + lint), typecheck (`tsc -b`), dependency-cruiser, knip | Linux | every PR |
-| Unit + property + integration tests with coverage gates | Linux (PRs); + Windows, macOS (nightly, `full-ci` PRs) | every PR + nightly |
+| Unit + property + integration tests with coverage gates | Linux, Windows, macOS | every PR + nightly |
 | Licence check (C1 allow-list) + vulnerability audit (`pnpm audit` / OSV) | Linux | every PR + nightly |
 | Golden output + visual regression + a11y | Linux container | PRs that change the editor UI or what its stories render + nightly |
-| E2E app + exported-site compatibility | Linux (PRs); + Windows (nightly, `full-ci` PRs) | every PR except unit-test-only ones (app + Chromium; Firefox and WebKit when the exported site can change) / nightly (full) |
+| E2E app + exported-site compatibility | Linux, Windows, macOS | every PR except unit-test-only ones (app + Chromium; Firefox and WebKit when the exported site can change) / nightly (full) |
+| Packaged app (electron-builder, Fuses, native modules) | Windows + macOS | every PR + nightly |
 | Performance benchmarks | macOS + Windows | nightly; PR when labelled |
 | Release build: sign (Windows code signing, macOS Developer ID + notarisation), publish update feed | Windows + macOS | on release tag |
 
-- **CI cost (GitHub Free, private repository):** every job is billed in whole minutes, Windows minutes count 2× and macOS 10×. **Pull requests run Linux jobs only,** and a `changes` job skips what a PR can't affect (see `.github/workflows/ci.yml`). **`main` is checked by a nightly run** (02:30 UTC, only when it changed), not after every merge; "Run workflow" runs it at once. Windows and macOS jobs, including the packaged-app check, run nightly, from "Run workflow", and on PRs labelled **`full-ci`**. Use the label for packaging, Fuses, native modules and OS-specific code. Docs-only PRs (`docs/`, `spec/`, `research/`, Markdown) and draft PRs skip CI: keep a PR in draft until `pnpm check` passes locally and its review is done, so CI runs once per ready version rather than on every push. A failure from two PRs that pass alone but clash, or a Windows- or macOS-only failure, can therefore first show in the nightly run; fix it with a follow-up PR straight away.
-- **Windows/macOS switch:** those jobs run only while the repository variable `FULL_CI_ENABLED` is `true`. **Paused since 2026-10-20** to stay within the billing cycle; resume with `gh variable set FULL_CI_ENABLED --body true`.
+- **Cost (public repository, since 2026-10-23):** GitHub's standard runners are free for public repositories, Windows and macOS included, so every ready PR runs on all three. The Free plan runs at most 20 jobs at once, 5 of them on macOS, so macOS jobs can queue when several PRs run together. A `changes` job still skips what a PR can't affect (see `.github/workflows/ci.yml`), to keep runs short: docs-only PRs (`docs/`, `spec/`, `research/`, Markdown) run nothing else. Draft PRs don't run CI: keep a PR in draft until `pnpm check` passes locally and its review is done.
+- **The required check:** "CI passed" always runs and fails if any job failed or was cancelled, or if the PR is a draft, so `main` can require one check whatever the `changes` job skipped. With the up-to-date requirement, PRs that pass alone but clash are caught before they merge, not by the nightly run.
+- **Merge queue:** GitHub's own merge queue needs an organisation-owned repository, so `.github/workflows/merge-queue.yml` stands in for it. After each merge (and each finished CI run), it merges `main` into the oldest waiting PR that is behind and starts its CI, one PR at a time; PRs with conflicts or failing CI wait for their author to push a fix.
+- **Windows/macOS switch:** those jobs run only while the repository variable `FULL_CI_ENABLED` is `true` (it is). Unset it to make CI Linux-only if the repository goes private again and minutes are billed (Windows minutes count 2× and macOS 10× on private repositories).
 - **Dependency updates:** Renovate or Dependabot, weekly, grouped. **Electron upgraded at least quarterly** (01).
 - **Secrets** (signing certificates, notarisation credentials) only in CI secret storage, never in the repo.
 
@@ -183,6 +187,6 @@ A change is done when:
 ## 11. Decisions to confirm
 1. ~~ESLint + Prettier vs Biome~~ → ✅ **Decided: Biome** (see §2a for gaps and mitigations).
 2. ~~Turborepo~~ → ✅ **Decided: Turborepo** on pnpm workspaces.
-3. ~~GitHub~~ → ✅ **Decided: GitHub** for the repository, PRs and Actions CI. Private repository on the GitHub Free plan, so no branch protection on `main`; PR-only merges are a team convention (§6).
+3. ~~GitHub~~ → ✅ **Decided: GitHub** for the repository, PRs and Actions CI, on the GitHub Free plan. Public since 2026-10-23 (product owner's decision), which brings free Windows and macOS runners, branch protection on `main` and auto-merge (§6, §7). It may go private again later.
 4. ~~Storybook~~ → ✅ **Decided: Storybook** for site components (every component × themes × Desktop/Tablet/Mobile) and editor UI components. Stories feed visual regression, a11y and interaction tests.
 5. ~~Coverage floors~~ → ✅ **Decided: minimum 80% for every package**; core packages held at 90%/85%.

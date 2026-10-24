@@ -1,5 +1,6 @@
 export type { BuildErrorCode, BuildWarning, BuiltSite } from "./build.js";
 export { BuildError, buildSite } from "./build.js";
+export { type ClassCatalogue, loadClassCatalogue } from "./class-catalogue.js";
 export type { SiteCssOptions, StyleResources } from "./css.js";
 export { buildSiteCss, classCandidates } from "./css.js";
 export { BODY_CLASS } from "./html.js";

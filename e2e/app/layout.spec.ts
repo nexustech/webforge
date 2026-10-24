@@ -13,6 +13,8 @@ async function start(): Promise<void> {
   app = await launchDesktopApp({ userDataDir });
   page = await app.firstWindow();
   await expect(page.getByRole("region", { name: "Left panels" })).toBeVisible();
+  // The canvas takes the focus once its page has loaded, which closes a menu opened before then.
+  await expect(page.frameLocator(".editor__canvas iframe").locator("h1")).toBeVisible();
 }
 
 test.beforeAll(start);
@@ -21,6 +23,16 @@ test.afterAll(async () => {
   await app.close();
   rmSync(userDataDir, { recursive: true, force: true });
 });
+
+/**
+ * Runs a View menu command, once a menu an earlier one closed has gone: while it's still closing,
+ * "View" also matches its items ("Desktop View").
+ */
+async function viewMenu(name: string): Promise<void> {
+  await expect(page.getByRole("menu")).toHaveCount(0);
+  await page.getByRole("menuitem", { name: "View", exact: true }).click();
+  await page.getByRole("menuitem", { name }).click();
+}
 
 const leftWidth = async () =>
   (await page.getByRole("region", { name: "Left panels" }).boundingBox())?.width ?? 0;
@@ -81,8 +93,7 @@ test.describe("window layout", () => {
     await start();
 
     await expect.poll(share).toBeCloseTo(resized, 2);
-    await page.getByRole("menuitem", { name: "View" }).click();
-    await page.getByRole("menuitem", { name: "Reset Panels" }).click();
+    await viewMenu("Reset Panels");
     await expect.poll(share).toBeCloseTo(0.4, 2);
   });
 
@@ -95,8 +106,7 @@ test.describe("window layout", () => {
   });
 
   test("switches to the light theme and remembers it", async () => {
-    await page.getByRole("menuitem", { name: "View" }).click();
-    await page.getByRole("menuitem", { name: "Use Light Theme" }).click();
+    await viewMenu("Use Light Theme");
     await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
     await expect.poll(() => savedPreferences().theme).toBe("light");
 
