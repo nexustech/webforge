@@ -1,4 +1,5 @@
 import { type ElectronApplication, expect, type Locator, type Page, test } from "@playwright/test";
+import { placeCaret } from "./caret.js";
 import { below, boxOf, drag, lowerHalf } from "./drag.js";
 import { launchDesktopApp } from "./launch.js";
 
@@ -149,7 +150,7 @@ test.describe("Puck canvas with Webforge history", () => {
     await expect(field).toHaveAttribute("contenteditable", "plaintext-only");
     await field.click();
     await expect(field).toBeFocused();
-    await page.keyboard.press("End");
+    await placeCaret(field, "end");
     await page.keyboard.type(" today", { delay: 20 });
     // Pause longer than the coalescing window: the next words become a separate chunk.
     await pauseTyping();
@@ -186,7 +187,7 @@ test.describe("Puck canvas with Webforge history", () => {
     await canvas().getByText(STARTER_TEXT).click();
     await editor.click();
     await expect(editor).toBeFocused();
-    await page.keyboard.press("End");
+    await placeCaret(editor, "end");
     await page.keyboard.type(" Really.", { delay: 20 });
     await expect(canvas().locator(".site-text")).toHaveText(`${STARTER_TEXT} Really.`);
 
@@ -206,7 +207,7 @@ test.describe("Puck canvas with Webforge history", () => {
     await canvas().getByText(STARTER_TEXT).click();
     await editor.click();
     await expect(editor).toBeFocused();
-    await page.keyboard.press("End");
+    await placeCaret(editor, "end");
     await page.keyboard.type(" Indeed.", { delay: 20 });
 
     // Still in the editor, before Puck has sent the last keystrokes on: they belong to this step.
@@ -238,7 +239,7 @@ test.describe("Puck canvas with Webforge history", () => {
     await canvas().getByText(STARTER_TEXT).click();
     await editor.click();
     await expect(editor).toBeFocused();
-    await page.keyboard.press("End");
+    await placeCaret(editor, "end");
     await page.keyboard.type(" Indeed.", { delay: 20 });
     await page.keyboard.press("ControlOrMeta+z");
     await page.keyboard.press("ControlOrMeta+z");
