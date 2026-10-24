@@ -77,6 +77,7 @@ import { applySiteStyles, type SiteStyles } from "./site-styles.js";
 import { boxHandleFields } from "./spacing-handles.js";
 import { focusedRichTextId, richTextArrived } from "./stale-rich-text.js";
 import { findNode } from "./tree.js";
+import { typingPauses } from "./typing-pauses.js";
 import { applyViewOptions } from "./view-options.js";
 
 /** Options of {@link createPuckEngine}. */
@@ -199,6 +200,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     RICH_TEXT_FLUSH_TIMEOUT_MS,
   );
   const runCommand = commands.run;
+  const pauses = typingPauses();
 
   const dispatch = (action: PuckAction) => {
     if (getPuck === null) {
@@ -252,7 +254,11 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   };
 
   /** Reports `edit` to the app, as the document store will take it over. */
-  const emitEdit = (edit: EngineEdit) => sync.report(() => edits.emit(edit));
+  const emitEdit = (edit: EngineEdit) =>
+    sync.report(() => {
+      const typingPauseMs = edit.kind === "text" ? pauses.take() : undefined;
+      edits.emit(typingPauseMs === undefined ? edit : { ...edit, typingPauseMs });
+    });
 
   /**
    * Takes over `routed`, where an edit goes (see `routeEdit`): the page, layout and shared sections
@@ -428,6 +434,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
         dragKeys,
         watchClicks,
         runCommand,
+        pauses,
         contextMenu: contextMenus.emit,
         menuEnabled: () => mode === "design",
         selected: () => selection,

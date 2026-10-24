@@ -1,23 +1,55 @@
 diff --git a/dist/Editor-44C53YAG.mjs b/dist/Editor-44C53YAG.mjs
-index b5ac4340ef70383019a220609914aec985eb84cc..ad53ad1f40ba30fc5cc0e2ab79f8b3e68fab060d 100644
+index b5ac4340ef70383019a220609914aec985eb84cc..d2ed1e71e6a199b0220b46a0e14b3994f5ab54f4 100644
 --- a/dist/Editor-44C53YAG.mjs
 +++ b/dist/Editor-44C53YAG.mjs
-@@ -84,8 +84,22 @@ function useSyncedEditor({
+@@ -46,6 +46,11 @@ function useSyncedEditor({
+     maxWait: 200
+   });
+   const syncingRef = useRef(false);
++  // Webforge: the latest onChange, and how many changes the editor has made and sent on (#307).
++  const webforgeOnChange = useRef(onChange);
++  webforgeOnChange.current = onChange;
++  const webforgeChanges = useRef(0);
++  const webforgeDelivered = useRef(0);
+   const lastSyncedRef = useRef("");
+   const editTimer = useRef(null);
+   const isPending = !!editTimer.current;
+@@ -73,7 +78,7 @@ function useSyncedEditor({
+       }
+       const html = editor2.getHTML();
+       const { from, to } = editor2.state.selection;
+-      setDebouncedState({ from, to, html });
++      setDebouncedState({ from, to, html, webforgeChange: ++webforgeChanges.current });
+       resetTimer(html);
+       lastSyncedRef.current = html;
+     }
+@@ -84,12 +89,38 @@ function useSyncedEditor({
        onFocusChange == null ? void 0 : onFocusChange(editor);
      };
      editor.on("focus", handleFocus);
++    // Webforge: sends what the editor hasn't sent on yet now, not through the debounced state,
++    // which reaches onChange only once React has rendered: on a busy computer that can be after
++    // the Undo it was sent for (#307). That includes a change the debounce has passed on already
++    // but React hasn't rendered yet; the debounced state then doesn't send it again.
++    const sendPending = () => {
++      if (webforgeDelivered.current === webforgeChanges.current) return false;
++      setDebouncedState.cancel();
++      webforgeDelivered.current = webforgeChanges.current;
++      const { from, to } = editor.state.selection;
++      const { ui } = appStoreApi.getState().state;
++      webforgeOnChange.current(editor.getHTML(), {
++        field: __spreadProps(__spreadValues({}, ui.field), { metadata: { from, to } })
++      });
++      return true;
++    };
 +    // Webforge: deliver the last keystrokes as the editor loses focus, not up to 200 ms later,
 +    // when the user may already have clicked elsewhere or pressed Undo, and they would be lost.
 +    const handleBlur = () => {
-+      setDebouncedState.flush();
++      sendPending();
 +    };
 +    // Webforge: lets the canvas send the pending change before an Undo or Redo pressed while
 +    // typing (#146), through Puck's API (`__private.flushRichText`).
-+    editor.webforgeFlushPending = () => {
-+      if (!setDebouncedState.isPending()) return false;
-+      setDebouncedState.flush();
-+      return true;
-+    };
++    editor.webforgeFlushPending = sendPending;
 +    editor.on("blur", handleBlur);
      return () => {
        editor.off("focus", handleFocus);
@@ -25,6 +57,12 @@ index b5ac4340ef70383019a220609914aec985eb84cc..ad53ad1f40ba30fc5cc0e2ab79f8b3e6
      };
    }, [editor, onFocusChange]);
    useEffect(() => {
+-    if (debouncedState) {
++    if (debouncedState && debouncedState.webforgeChange > webforgeDelivered.current) {
++      webforgeDelivered.current = debouncedState.webforgeChange;
+       const { ui } = appStoreApi.getState().state;
+       onChange(debouncedState.html, {
+         field: __spreadProps(__spreadValues({}, ui.field), {
 diff --git a/dist/chunk-55V3NZVF.mjs b/dist/chunk-55V3NZVF.mjs
 index 01fc32e03adc11d014291a99cc8dbee1806880f8..47377436078355c09d1d1a785815e0f4cf0469f9 100644
 --- a/dist/chunk-55V3NZVF.mjs
@@ -112,7 +150,7 @@ index 81075c39650a79a9eccf7cefffdc7a65cbd00c97..8aa13a1baf0ca0ad724ca2b5a2377b79
            fields: __spreadProps(__spreadValues({}, s.fields), { fields: defaultFields, id })
          }));
 diff --git a/dist/index.js b/dist/index.js
-index aebc9c0e4d4eed1a407ea72d0d1469d16544d834..c0db30a71d28661f8cf5f192aed1ae0a6ab1dadd 100644
+index aebc9c0e4d4eed1a407ea72d0d1469d16544d834..cbb889f0a50ae425c6754db235789a4bd4813cf2 100644
 --- a/dist/index.js
 +++ b/dist/index.js
 @@ -3084,7 +3084,7 @@ var init_permissions = __esm({
@@ -133,22 +171,54 @@ index aebc9c0e4d4eed1a407ea72d0d1469d16544d834..c0db30a71d28661f8cf5f192aed1ae0a
              appStore.setState((s) => ({
                fields: __spreadProps(__spreadValues({}, s.fields), { fields: defaultFields2, id })
              }));
-@@ -5511,8 +5511,22 @@ function useSyncedEditor({
+@@ -5473,6 +5473,11 @@ function useSyncedEditor({
+     maxWait: 200
+   });
+   const syncingRef = (0, import_react40.useRef)(false);
++  // Webforge: the latest onChange, and how many changes the editor has made and sent on (#307).
++  const webforgeOnChange = (0, import_react40.useRef)(onChange);
++  webforgeOnChange.current = onChange;
++  const webforgeChanges = (0, import_react40.useRef)(0);
++  const webforgeDelivered = (0, import_react40.useRef)(0);
+   const lastSyncedRef = (0, import_react40.useRef)("");
+   const editTimer = (0, import_react40.useRef)(null);
+   const isPending = !!editTimer.current;
+@@ -5500,7 +5505,7 @@ function useSyncedEditor({
+       }
+       const html = editor2.getHTML();
+       const { from, to } = editor2.state.selection;
+-      setDebouncedState({ from, to, html });
++      setDebouncedState({ from, to, html, webforgeChange: ++webforgeChanges.current });
+       resetTimer(html);
+       lastSyncedRef.current = html;
+     }
+@@ -5511,12 +5516,38 @@ function useSyncedEditor({
        onFocusChange == null ? void 0 : onFocusChange(editor);
      };
      editor.on("focus", handleFocus);
++    // Webforge: sends what the editor hasn't sent on yet now, not through the debounced state,
++    // which reaches onChange only once React has rendered: on a busy computer that can be after
++    // the Undo it was sent for (#307). That includes a change the debounce has passed on already
++    // but React hasn't rendered yet; the debounced state then doesn't send it again.
++    const sendPending = () => {
++      if (webforgeDelivered.current === webforgeChanges.current) return false;
++      setDebouncedState.cancel();
++      webforgeDelivered.current = webforgeChanges.current;
++      const { from, to } = editor.state.selection;
++      const { ui } = appStoreApi.getState().state;
++      webforgeOnChange.current(editor.getHTML(), {
++        field: __spreadProps(__spreadValues({}, ui.field), { metadata: { from, to } })
++      });
++      return true;
++    };
 +    // Webforge: deliver the last keystrokes as the editor loses focus, not up to 200 ms later,
 +    // when the user may already have clicked elsewhere or pressed Undo, and they would be lost.
 +    const handleBlur = () => {
-+      setDebouncedState.flush();
++      sendPending();
 +    };
 +    // Webforge: lets the canvas send the pending change before an Undo or Redo pressed while
 +    // typing (#146), through Puck's API (`__private.flushRichText`).
-+    editor.webforgeFlushPending = () => {
-+      if (!setDebouncedState.isPending()) return false;
-+      setDebouncedState.flush();
-+      return true;
-+    };
++    editor.webforgeFlushPending = sendPending;
 +    editor.on("blur", handleBlur);
      return () => {
        editor.off("focus", handleFocus);
@@ -156,7 +226,13 @@ index aebc9c0e4d4eed1a407ea72d0d1469d16544d834..c0db30a71d28661f8cf5f192aed1ae0a
      };
    }, [editor, onFocusChange]);
    (0, import_react40.useEffect)(() => {
-@@ -10143,11 +10157,12 @@ init_react_import();
+-    if (debouncedState) {
++    if (debouncedState && debouncedState.webforgeChange > webforgeDelivered.current) {
++      webforgeDelivered.current = debouncedState.webforgeChange;
+       const { ui } = appStoreApi.getState().state;
+       onChange(debouncedState.html, {
+         field: __spreadProps(__spreadValues({}, ui.field), {
+@@ -10143,11 +10174,12 @@ init_react_import();
  var import_react66 = require("react");
  init_store();
  var import_jsx_runtime65 = require("react/jsx-runtime");
@@ -174,7 +250,7 @@ index aebc9c0e4d4eed1a407ea72d0d1469d16544d834..c0db30a71d28661f8cf5f192aed1ae0a
  var RichTextRender3 = (0, import_react66.lazy)(
    () => Promise.resolve().then(() => (init_Render(), Render_exports)).then((m) => ({
      default: m.RichTextRender
-@@ -17919,7 +17934,16 @@ var generateUsePuck = (store, getState) => {
+@@ -17919,7 +17951,16 @@ var generateUsePuck = (store, getState) => {
      dictionary: store.dictionary
    };
    storeData.__private = {
@@ -192,7 +268,7 @@ index aebc9c0e4d4eed1a407ea72d0d1469d16544d834..c0db30a71d28661f8cf5f192aed1ae0a
    };
    return storeData;
  };
-@@ -18741,10 +18765,18 @@ var Canvas = () => {
+@@ -18741,10 +18782,18 @@ var Canvas = () => {
    }, [viewports.current.width, viewports]);
    (0, import_react102.useEffect)(() => {
      if (!frameRef.current) return;
@@ -215,7 +291,7 @@ index aebc9c0e4d4eed1a407ea72d0d1469d16544d834..c0db30a71d28661f8cf5f192aed1ae0a
      resizeObserver.observe(frameRef.current);
      return () => {
 diff --git a/dist/no-external.js b/dist/no-external.js
-index af3fa6755f42679605e6805aa46fdeb90df48281..057708ea0c48df5921e4672be367b84e49e8d08d 100644
+index af3fa6755f42679605e6805aa46fdeb90df48281..8575394d9177239a38c560941df452427176d1ad 100644
 --- a/dist/no-external.js
 +++ b/dist/no-external.js
 @@ -3084,7 +3084,7 @@ var init_permissions = __esm({
@@ -236,22 +312,54 @@ index af3fa6755f42679605e6805aa46fdeb90df48281..057708ea0c48df5921e4672be367b84e
              appStore.setState((s) => ({
                fields: __spreadProps(__spreadValues({}, s.fields), { fields: defaultFields2, id })
              }));
-@@ -5511,8 +5511,22 @@ function useSyncedEditor({
+@@ -5473,6 +5473,11 @@ function useSyncedEditor({
+     maxWait: 200
+   });
+   const syncingRef = (0, import_react40.useRef)(false);
++  // Webforge: the latest onChange, and how many changes the editor has made and sent on (#307).
++  const webforgeOnChange = (0, import_react40.useRef)(onChange);
++  webforgeOnChange.current = onChange;
++  const webforgeChanges = (0, import_react40.useRef)(0);
++  const webforgeDelivered = (0, import_react40.useRef)(0);
+   const lastSyncedRef = (0, import_react40.useRef)("");
+   const editTimer = (0, import_react40.useRef)(null);
+   const isPending = !!editTimer.current;
+@@ -5500,7 +5505,7 @@ function useSyncedEditor({
+       }
+       const html = editor2.getHTML();
+       const { from, to } = editor2.state.selection;
+-      setDebouncedState({ from, to, html });
++      setDebouncedState({ from, to, html, webforgeChange: ++webforgeChanges.current });
+       resetTimer(html);
+       lastSyncedRef.current = html;
+     }
+@@ -5511,12 +5516,38 @@ function useSyncedEditor({
        onFocusChange == null ? void 0 : onFocusChange(editor);
      };
      editor.on("focus", handleFocus);
++    // Webforge: sends what the editor hasn't sent on yet now, not through the debounced state,
++    // which reaches onChange only once React has rendered: on a busy computer that can be after
++    // the Undo it was sent for (#307). That includes a change the debounce has passed on already
++    // but React hasn't rendered yet; the debounced state then doesn't send it again.
++    const sendPending = () => {
++      if (webforgeDelivered.current === webforgeChanges.current) return false;
++      setDebouncedState.cancel();
++      webforgeDelivered.current = webforgeChanges.current;
++      const { from, to } = editor.state.selection;
++      const { ui } = appStoreApi.getState().state;
++      webforgeOnChange.current(editor.getHTML(), {
++        field: __spreadProps(__spreadValues({}, ui.field), { metadata: { from, to } })
++      });
++      return true;
++    };
 +    // Webforge: deliver the last keystrokes as the editor loses focus, not up to 200 ms later,
 +    // when the user may already have clicked elsewhere or pressed Undo, and they would be lost.
 +    const handleBlur = () => {
-+      setDebouncedState.flush();
++      sendPending();
 +    };
 +    // Webforge: lets the canvas send the pending change before an Undo or Redo pressed while
 +    // typing (#146), through Puck's API (`__private.flushRichText`).
-+    editor.webforgeFlushPending = () => {
-+      if (!setDebouncedState.isPending()) return false;
-+      setDebouncedState.flush();
-+      return true;
-+    };
++    editor.webforgeFlushPending = sendPending;
 +    editor.on("blur", handleBlur);
      return () => {
        editor.off("focus", handleFocus);
@@ -259,7 +367,13 @@ index af3fa6755f42679605e6805aa46fdeb90df48281..057708ea0c48df5921e4672be367b84e
      };
    }, [editor, onFocusChange]);
    (0, import_react40.useEffect)(() => {
-@@ -10143,11 +10157,12 @@ init_react_import();
+-    if (debouncedState) {
++    if (debouncedState && debouncedState.webforgeChange > webforgeDelivered.current) {
++      webforgeDelivered.current = debouncedState.webforgeChange;
+       const { ui } = appStoreApi.getState().state;
+       onChange(debouncedState.html, {
+         field: __spreadProps(__spreadValues({}, ui.field), {
+@@ -10143,11 +10174,12 @@ init_react_import();
  var import_react66 = require("react");
  init_store();
  var import_jsx_runtime65 = require("react/jsx-runtime");
@@ -277,7 +391,7 @@ index af3fa6755f42679605e6805aa46fdeb90df48281..057708ea0c48df5921e4672be367b84e
  var RichTextRender3 = (0, import_react66.lazy)(
    () => Promise.resolve().then(() => (init_Render(), Render_exports)).then((m) => ({
      default: m.RichTextRender
-@@ -17919,7 +17934,16 @@ var generateUsePuck = (store, getState) => {
+@@ -17919,7 +17951,16 @@ var generateUsePuck = (store, getState) => {
      dictionary: store.dictionary
    };
    storeData.__private = {
@@ -295,7 +409,7 @@ index af3fa6755f42679605e6805aa46fdeb90df48281..057708ea0c48df5921e4672be367b84e
    };
    return storeData;
  };
-@@ -18741,10 +18765,18 @@ var Canvas = () => {
+@@ -18741,10 +18782,18 @@ var Canvas = () => {
    }, [viewports.current.width, viewports]);
    (0, import_react102.useEffect)(() => {
      if (!frameRef.current) return;
