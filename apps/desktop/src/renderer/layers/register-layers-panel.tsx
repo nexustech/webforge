@@ -2,7 +2,8 @@ import { t } from "@webforge/i18n";
 import { LayersIcon } from "lucide-react";
 import { useSyncExternalStore } from "react";
 import type { EditorSession } from "../editor/editor-session.js";
-import { selectElements, toggleSelected } from "../editor/selection.js";
+import { sameValue } from "../editor/same-value.js";
+import { useUi } from "../editor/use-document.js";
 import { ElementMenu } from "../element-menu/ElementMenu.js";
 import { useCommand, useCommandRegistry } from "../shell/command-context.js";
 import type { PanelRegistry } from "../shell/panels.js";
@@ -50,10 +51,9 @@ export function registerLayersPanel(
   // The tree as last shown, for the page content and shared sections it was made from: rebuilt
   // only when they change, and kept (same object) when the rebuilt tree is the same, e.g. after
   // typing.
-  let shown: { content: unknown; shared: unknown; key: string; layers: Layer[] } = {
+  let shown: { content: unknown; shared: unknown; layers: Layer[] } = {
     content: undefined,
     shared: undefined,
-    key: "",
     layers: [],
   };
   const currentLayers = () => {
@@ -64,8 +64,9 @@ export function registerLayersPanel(
       return shown.layers;
     }
     const layers = content === undefined ? [] : layersOf(content, library, shared);
-    const key = JSON.stringify(layers);
-    shown = key === shown.key ? { ...shown, content, shared } : { content, shared, key, layers };
+    shown = sameValue(layers, shown.layers)
+      ? { ...shown, content, shared }
+      : { content, shared, layers };
     return shown.layers;
   };
 
@@ -78,16 +79,10 @@ export function registerLayersPanel(
     };
   };
 
-  const othersOf = () => ui.getState().others ?? NO_OTHERS;
-
   function Layers() {
     const layers = useSyncExternalStore(subscribe, currentLayers, currentLayers);
-    const selectedId = useSyncExternalStore(
-      ui.subscribe,
-      () => ui.getState().nodeId,
-      () => ui.getState().nodeId,
-    );
-    const alsoSelected = useSyncExternalStore(ui.subscribe, othersOf, othersOf);
+    const selectedId = useUi(session, (state) => state.nodeId);
+    const alsoSelected = useUi(session, (state) => state.others ?? NO_OTHERS);
     return (
       <LayersPanel
         layers={layers}
@@ -96,9 +91,9 @@ export function registerLayersPanel(
         layoutLocked={layoutLocked}
         menu={ElementMenu}
         actions={{
-          select: (id) => ui.setState({ nodeId: id }),
-          toggle: (id) => toggleSelected(ui, id),
-          selectMany: (ids) => selectElements(ui, ids),
+          select: (id) => session.select(id),
+          toggle: (id) => session.toggleSelected(id),
+          selectMany: (ids) => session.selectElements(ids),
           rename: (id, name) => renameLayer(session, id, name),
           setHidden: (id, hidden) => setLayerHidden(session, id, hidden),
           // A dragged layer moves or is copied alone, and is selected alone after: the panel

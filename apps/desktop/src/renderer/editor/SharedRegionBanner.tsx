@@ -1,9 +1,9 @@
 import { t } from "@webforge/i18n";
 import type { PageId, SiteDoc } from "@webforge/model";
-import { useSyncExternalStore } from "react";
 import { copySelection, reachOf } from "../shared-sections/shared-sections.js";
 import type { EditorSession } from "./editor-session.js";
 import { pagesShowing, sharedRegionOf, shownLayout } from "./shared-layout.js";
+import { useDocument, useUi } from "./use-document.js";
 
 /** The banner's text while an element of a linked copy is selected, if it is (F-ED-23). */
 function copyBanner(site: SiteDoc, pageId: PageId, nodeId: string | null): string | undefined {
@@ -22,19 +22,20 @@ function copyBanner(site: SiteDoc, pageId: PageId, nodeId: string | null): strin
  * pages". Editing a shared region doesn't ask for confirmation on every change; this says, for as
  * long as it lasts, how far a change reaches.
  */
-export function SharedRegionBanner({ session }: { readonly session: EditorSession }) {
-  const { history, ui } = session;
-  const site = useSyncExternalStore(history.document.subscribe, history.document.getState);
-  const { pageId, nodeId } = useSyncExternalStore(ui.subscribe, ui.getState);
+/** What the banner says for the element `nodeId` of page `pageId`, if it's in a shared place. */
+function bannerText(site: SiteDoc, pageId: PageId, nodeId: string | null): string | undefined {
   const region = nodeId === null ? undefined : sharedRegionOf(shownLayout(site, pageId), nodeId);
-  let text: string | undefined;
-  if (region !== undefined) {
-    const count = pagesShowing(site, region);
-    const reach = count === 1 ? "one" : count === Object.keys(site.pages).length ? "all" : "some";
-    text = t(`canvas.sharedBanner.${reach}`, { region: t(`canvas.sharedRegion.${region}`), count });
-  } else {
-    text = copyBanner(site, pageId, nodeId);
-  }
+  if (region === undefined) return copyBanner(site, pageId, nodeId);
+  const count = pagesShowing(site, region);
+  const reach = count === 1 ? "one" : count === Object.keys(site.pages).length ? "all" : "some";
+  return t(`canvas.sharedBanner.${reach}`, { region: t(`canvas.sharedRegion.${region}`), count });
+}
+
+export function SharedRegionBanner({ session }: { readonly session: EditorSession }) {
+  const pageId = useUi(session, (ui) => ui.pageId);
+  const nodeId = useUi(session, (ui) => ui.nodeId);
+  // The banner's text is its slice: it redraws only when what it says changes (R9).
+  const text = useDocument(session, (site) => bannerText(site, pageId, nodeId));
   if (text === undefined) {
     return null;
   }

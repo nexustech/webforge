@@ -10,7 +10,7 @@ import {
 } from "../ui/context-menu.js";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs.js";
 import { BoxField } from "./box-field.js";
-import { type FieldRenderer, type FieldSpec, fieldRenderer } from "./field-registry.js";
+import { type FieldRenderer, type FieldSpec, useFieldRenderers } from "./field-registry.js";
 import { ListField } from "./list-field.js";
 import { PLAIN_RENDERERS } from "./plain-renderers.js";
 import { fieldControlClass } from "./text-field.js";
@@ -142,7 +142,8 @@ const BUILT_IN: Readonly<Record<string, FieldRenderer>> = {
   box: BoxField,
 };
 
-const rendererFor = (kind: string) => fieldRenderer(kind) ?? BUILT_IN[kind];
+const rendererFor = (registered: ReadonlyMap<string, FieldRenderer>, kind: string) =>
+  registered.get(kind) ?? BUILT_IN[kind];
 
 /** The groups of fields that name none (UX-13), by kind; each id is its translation key's. */
 type FallbackGroup =
@@ -341,7 +342,8 @@ function FieldRow({
   readonly onReset: EditPanelProps["onReset"] | undefined;
   readonly onResetToDefault: EditPanelProps["onResetToDefault"] | undefined;
 }) {
-  const Renderer = rendererFor(field.kind) as FieldRenderer;
+  const registered = useFieldRenderers();
+  const Renderer = rendererFor(registered, field.kind) as FieldRenderer;
   const id = `${idPrefix}-${field.name}`;
   const labelId = `${id}-label`;
   const resetField =
@@ -424,6 +426,9 @@ export function EditPanel({
         ? [...closed, ...keys]
         : closed.filter((key) => !keys.includes(key)),
     );
+  // A renderer registered after the panel was drawn (the app's image, link and colour fields)
+  // redraws it, whatever else changes or doesn't.
+  const registered = useFieldRenderers();
   if (heading === undefined) {
     return (
       <p className="flex h-full items-center justify-center p-4 text-center text-xs text-muted-foreground">
@@ -434,7 +439,7 @@ export function EditPanel({
   const wanted = query.trim().toLocaleLowerCase();
   const shown = fields.filter(
     (field) =>
-      rendererFor(field.kind) !== undefined &&
+      rendererFor(registered, field.kind) !== undefined &&
       (wanted === "" || field.label.toLocaleLowerCase().includes(wanted)),
   );
   const content = shown.filter((field) => field.group === "content");

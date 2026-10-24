@@ -1,8 +1,8 @@
 import { t } from "@webforge/i18n";
 import type { SiteDoc } from "@webforge/model";
 import { FilesIcon } from "lucide-react";
-import { useSyncExternalStore } from "react";
 import type { EditorSession } from "../editor/editor-session.js";
+import { useDocument, useUi } from "../editor/use-document.js";
 import { linkTargets } from "../links/link-targets.js";
 import { MenuPanel, type MenuPanelActions } from "../menu/MenuPanel.js";
 import {
@@ -127,24 +127,11 @@ export function registerSitePanel(
     const site = session.history.document.getState();
     return { site, targets: linkTargets(site, session.library) };
   };
-  const { document } = session.history;
-  // The site as the panel last showed it, kept while only page content changes, so typing on the
-  // canvas doesn't re-render the panel.
-  let shownSite = document.getState();
-  const pagesSite = () => {
-    const site = document.getState();
-    if (!samePageList(shownSite, site)) {
-      shownSite = site;
-    }
-    return shownSite;
-  };
   function SitePanel() {
-    const site = useSyncExternalStore(document.subscribe, pagesSite, pagesSite);
-    const shownPageId = useSyncExternalStore(
-      session.ui.subscribe,
-      () => session.ui.getState().pageId,
-      () => session.ui.getState().pageId,
-    );
+    // The site as the panel last showed it, kept while only page content changes, so typing on
+    // the canvas doesn't re-render the panel.
+    const site = useDocument(session, (current) => current, samePageList);
+    const shownPageId = useUi(session, (ui) => ui.pageId);
     return (
       <div className="flex h-full flex-col">
         <div className="min-h-0 flex-1">

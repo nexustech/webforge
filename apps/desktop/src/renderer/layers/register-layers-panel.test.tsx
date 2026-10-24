@@ -20,7 +20,7 @@ import {
 import { siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createEditorSession, currentPage } from "../editor/editor-session.js";
-import { selectElements, selectedIds } from "../editor/selection.js";
+import { selectedIds } from "../editor/selection.js";
 import { starterSite } from "../editor/starter-site.js";
 import { CommandRegistryProvider } from "../shell/command-context.js";
 import { createCommandRegistry, isMac } from "../shell/commands.js";
@@ -73,7 +73,7 @@ describe("registerLayersPanel", () => {
     await userEvent.click(rows()[1] as HTMLElement);
     expect(session.ui.getState().nodeId).toBe("heading-1");
 
-    act(() => session.ui.setState({ nodeId: "text-1" }));
+    act(() => session.select("text-1"));
     expect(rows()[2]?.getAttribute("aria-selected")).toBe("true");
   });
 
@@ -85,7 +85,7 @@ describe("registerLayersPanel", () => {
         (node) => node.props.id,
       );
     const before = order();
-    act(() => selectElements(session.ui, ["heading-1", "text-1"]));
+    act(() => session.selectElements(["heading-1", "text-1"]));
 
     fireEvent.keyDown(screen.getAllByRole("treeitem")[1] as HTMLElement, {
       key: "ArrowDown",
@@ -119,14 +119,14 @@ describe("registerLayersPanel", () => {
       fireEvent(target, withKeys(createEvent.drop(target, { dataTransfer })));
       fireEvent.dragEnd(rows[from] as HTMLElement, { dataTransfer });
     };
-    act(() => selectElements(session.ui, ["section-1", "heading-1"]));
+    act(() => session.selectElements(["section-1", "heading-1"]));
 
     // The Text, not selected, dragged before the Heading.
     drag(2, 1);
     expect(order()).toEqual(["text-1", "heading-1"]);
     expect(selectedIds(session.ui.getState())).toEqual(["text-1"]);
 
-    act(() => selectElements(session.ui, ["section-1", "text-1"]));
+    act(() => session.selectElements(["section-1", "text-1"]));
     drag(2, 1, true);
     expect(order()).toHaveLength(3);
     expect(selectedIds(session.ui.getState())).toHaveLength(1);
@@ -142,7 +142,7 @@ describe("registerLayersPanel", () => {
     commands.register({ id: "edit.duplicate", label: "Duplicate", run });
     commands.register({ id: "edit.delete", label: "Delete", enabled: false, run: vi.fn() });
 
-    act(() => session.ui.setState({ nodeId: "heading-1" }));
+    act(() => session.select("heading-1"));
     const toolbar = () => within(screen.getByRole("toolbar", { name: "Layer actions" }));
     await userEvent.click(toolbar().getByRole("button", { name: "Hide Heading" }));
     expect(toolbar().getByRole("button", { name: "Show Heading" })).toBeTruthy();
@@ -184,10 +184,10 @@ describe("registerLayersPanel", () => {
     const copy = screen.getByRole("treeitem", { name: /Linked copy of 'Opening hours'/ });
     expect(copy.textContent).toContain("Opening hours Section");
 
-    act(() => session.ui.setState({ nodeId: copiedNodeId("c1", "s") }));
+    act(() => session.select(copiedNodeId("c1", "s")));
     expect(copy.getAttribute("aria-selected")).toBe("true");
     // Layers' actions act on the selection: an element inside the copy isn't the copy.
-    act(() => session.ui.setState({ nodeId: copiedNodeId("c1", "t") }));
+    act(() => session.select(copiedNodeId("c1", "t")));
     expect(copy.getAttribute("aria-selected")).toBe("false");
   });
 

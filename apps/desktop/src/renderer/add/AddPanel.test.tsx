@@ -213,7 +213,7 @@ describe("registerAddPanel", () => {
     act(() => addPanel.openAt({ index: 0 }));
     const other = session.history.document.getState().pageOrder[1];
     if (other === undefined) throw new Error("no second page");
-    act(() => session.ui.setState({ pageId: other }));
+    act(() => session.showPage(other));
 
     expect(screen.queryByRole("status")).toBeNull();
   });
@@ -381,7 +381,7 @@ describe("registerAddPanel", () => {
     const session = createEditorSession(siteLibrary, starterSite());
     const registry = createCommandRegistry();
     registerAddPanel(createPanelRegistry(), session, { commands: registry });
-    session.ui.setState({ nodeId: "section-1" });
+    session.select("section-1");
     saveAsSharedSection(session, "Welcome");
     const [id] = Object.keys(session.history.document.getState().sharedSections);
 

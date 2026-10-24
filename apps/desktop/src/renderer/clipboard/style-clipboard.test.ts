@@ -19,7 +19,7 @@ function sessionOn(content: NodeDoc[]) {
   if (home === undefined) throw new Error("no home page");
   home.doc.content = content;
   const session = createEditorSession(siteLibrary, site);
-  const select = (nodeId: string) => session.ui.setState({ nodeId });
+  const select = (nodeId: string) => session.select(nodeId);
   const top = (id: string) =>
     currentPage(session)?.doc.content.find((each) => each.props.id === id)?.props;
   const labels = () => session.history.entries().map((entry) => entry.label);
@@ -48,7 +48,7 @@ function setUp() {
     },
   ];
   const session = createEditorSession(siteLibrary, site);
-  const select = (nodeId: string) => session.ui.setState({ nodeId });
+  const select = (nodeId: string) => session.select(nodeId);
   const node = (id: string) =>
     ((currentPage(session)?.doc.content[0]?.props.content ?? []) as NodeDoc[]).find(
       (each) => each.props.id === id,

@@ -1,12 +1,6 @@
-import type { SiteDoc } from "@webforge/model";
 import type { EditorSession } from "../editor/editor-session.js";
+import { type PageListEntry, pageListOf } from "../editor/use-document.js";
 import type { CommandRegistry } from "../shell/commands.js";
-
-/** The page list as the palette shows it: each page's id, title and file name, in order. */
-const listOf = (site: SiteDoc) =>
-  JSON.stringify(
-    site.pageOrder.map((id) => [id, site.pages[id]?.title ?? "", site.pages[id]?.slug ?? ""]),
-  );
 
 /**
  * The command palette's *Go to page* group (F-ED-26, UX-11): one command for each of the site's
@@ -19,28 +13,22 @@ export function registerPageCommands(
   session: Pick<EditorSession, "history" | "showPage">,
 ): () => void {
   const { document } = session.history;
-  let shown = "";
+  let shown: readonly PageListEntry[] | undefined;
   let removers: (() => void)[] = [];
   const update = () => {
-    const site = document.getState();
-    const list = listOf(site);
+    const list = pageListOf(document.getState());
     if (list === shown) return;
     shown = list;
     for (const remove of removers) remove();
-    removers = site.pageOrder.flatMap((id) => {
-      const page = site.pages[id];
-      return page === undefined
-        ? []
-        : [
-            registry.register({
-              id: `page.goto.${id}`,
-              label: page.title,
-              palette: "pages",
-              keywords: [page.slug],
-              run: () => session.showPage(id),
-            }),
-          ];
-    });
+    removers = list.map((page) =>
+      registry.register({
+        id: `page.goto.${page.id}`,
+        label: page.title,
+        palette: "pages",
+        keywords: [page.slug],
+        run: () => session.showPage(page.id),
+      }),
+    );
   };
   update();
   const stop = document.subscribe(update);

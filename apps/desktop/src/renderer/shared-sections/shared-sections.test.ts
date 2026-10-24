@@ -29,7 +29,7 @@ const content = (session: EditorSession) => currentPage(session)?.doc.content ??
 const labels = (session: EditorSession) =>
   session.history.state.getState().entries.map((entry) => entry.label);
 const site = (session: EditorSession) => session.history.document.getState();
-const select = (session: EditorSession, nodeId: string | null) => session.ui.setState({ nodeId });
+const select = (session: EditorSession, nodeId: string | null) => session.select(nodeId);
 
 /** The starter site with its section anchored `hours`, saved as the shared section "Hours". */
 function savedSession(): EditorSession {
@@ -278,7 +278,8 @@ describe("shared sections in the editor (1.29, F-ED-23)", () => {
     const other = createEditorSession(siteLibrary, before);
     const notFound = Object.values(before.pages).find((page) => page.kind === "not-found");
     if (notFound === undefined) throw new Error("no 'Page not found' page");
-    other.ui.setState({ pageId: notFound.id, nodeId: notFound.doc.content[0]?.props.id ?? null });
+    other.showPage(notFound.id);
+    other.select(notFound.doc.content[0]?.props.id ?? null);
     expect(saveAsSharedSection(other, "HOURS")).toBe(false);
     expect(other.history.entries()).toEqual([]);
     expect(saveAsSharedSection(other, "Team")).toBe(true);

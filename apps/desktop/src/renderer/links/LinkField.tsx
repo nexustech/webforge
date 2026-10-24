@@ -3,16 +3,22 @@ import { t } from "@webforge/i18n";
 import type { SiteDoc } from "@webforge/model";
 import { linkValue } from "@webforge/site-components";
 import { LinkIcon } from "lucide-react";
-import { useState, useSyncExternalStore } from "react";
+import { useState } from "react";
 import type { EditorSession } from "../editor/editor-session.js";
+import { sameValue } from "../editor/same-value.js";
+import { useDocument } from "../editor/use-document.js";
 import { LinkDialog } from "./LinkDialog.js";
 import type { LinkFieldChange } from "./link-change.js";
-import { describeLink, linkTargets } from "./link-targets.js";
+import { describeLink, linkTargets, type PageTarget } from "./link-targets.js";
 
 /** Props of {@link LinkField}, besides the renderer's own. */
 type LinkFieldContext = {
-  readonly site: SiteDoc;
-  readonly library: EditorSession["library"];
+  /** The pages and sections a link can go to. */
+  readonly targets: readonly PageTarget[];
+  /** The site's Media, for links to documents. */
+  readonly media: SiteDoc["media"];
+  /** The site as it is now, for the dialog, which reads it as it opens. */
+  readonly currentSite: () => SiteDoc;
 };
 
 /**
@@ -24,16 +30,17 @@ function LinkField({
   value,
   onChange,
   onCommit,
-  site,
-  library,
+  targets,
+  media,
+  currentSite,
 }: FieldRendererProps & LinkFieldContext) {
-  const [open, setOpen] = useState(false);
+  // The dialog, and the site as it was when it opened: it reads the site then, not as it draws.
+  const [dialog, setDialog] = useState(() => ({ open: false, site: currentSite() }));
+  const close = () => setDialog((shown) => ({ ...shown, open: false }));
   const link = linkValue(value);
-  const targets = linkTargets(site, library);
   // A page path or address typed as text before link fields: shown as it is, until replaced.
   const text = typeof value === "string" ? value.trim() : "";
-  const summary =
-    link === undefined && text !== "" ? text : describeLink(link, targets, site.media);
+  const summary = link === undefined && text !== "" ? text : describeLink(link, targets, media);
   const report = (change: LinkFieldChange) => {
     onChange(change);
     onCommit();
@@ -48,7 +55,11 @@ function LinkField({
         </span>
       </div>
       <div className="flex gap-1">
-        <Button size="sm" variant="secondary" onClick={() => setOpen(true)}>
+        <Button
+          size="sm"
+          variant="secondary"
+          onClick={() => setDialog({ open: true, site: currentSite() })}
+        >
           {link === undefined && text === "" ? t("link.add") : t("link.edit")}
         </Button>
         {(link !== undefined || text !== "") && (
@@ -58,15 +69,15 @@ function LinkField({
         )}
       </div>
       <LinkDialog
-        open={open}
+        open={dialog.open}
         link={link}
-        site={site}
+        site={dialog.site}
         targets={targets}
         onSave={(change) => {
-          setOpen(false);
+          close();
           report(change);
         }}
-        onCancel={() => setOpen(false)}
+        onCancel={close}
       />
     </div>
   );
@@ -77,10 +88,22 @@ function LinkField({
  * that puts the previous renderer back.
  */
 export function registerLinkField({ session }: { readonly session: EditorSession }): () => void {
-  const { document } = session.history;
   function SessionLinkField(props: FieldRendererProps) {
-    const site = useSyncExternalStore(document.subscribe, document.getState, document.getState);
-    return <LinkField {...props} site={site} library={session.library} />;
+    // What the field shows: the pages and sections it can name, and the documents (R9). Typing on
+    // the canvas changes neither, so it doesn't redraw the field.
+    const { targets, media } = useDocument(
+      session,
+      (site) => ({ targets: linkTargets(site, session.library), media: site.media }),
+      (a, b) => a.media === b.media && sameValue(a.targets, b.targets),
+    );
+    return (
+      <LinkField
+        {...props}
+        targets={targets}
+        media={media}
+        currentSite={() => session.history.document.getState()}
+      />
+    );
   }
   return registerFieldRenderer("link", SessionLinkField);
 }

@@ -3,7 +3,7 @@ import type { EditorMode } from "@webforge/engine";
 import { t } from "@webforge/i18n";
 import { siteLibrary } from "@webforge/site-components";
 import { PanelBottomIcon, PanelLeftIcon, PanelRightIcon } from "lucide-react";
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState } from "react";
 import { applyPreferencesChange } from "../shared/ipc/prefs.js";
 import type { ExportRequest } from "../shared/ipc/site.js";
 import type {
@@ -17,6 +17,7 @@ import type {
 import { Editor, type EditorProps, type UndoTo } from "./editor/Editor.js";
 import { createEditorSession, type EditorSession } from "./editor/editor-session.js";
 import { starterSite } from "./editor/starter-site.js";
+import { useDocument } from "./editor/use-document.js";
 import { registerExportCommand } from "./export/export-command.js";
 import { exportRequestFor } from "./export/export-request.js";
 import { registerLayersPanel } from "./layers/register-layers-panel.js";
@@ -110,14 +111,8 @@ export function App({
   const [undoTo, setUndoTo] = useState<UndoTo | null>(null);
   // The latest preferences, for changes made before React re-renders (several groups at once).
   const latest = useRef(preferences);
-  const siteName = useSyncExternalStore(
-    session.history.document.subscribe,
-    () => session.history.document.getState().settings.general.name,
-  );
-  const siteLanguage = useSyncExternalStore(
-    session.history.document.subscribe,
-    () => session.history.document.getState().settings.general.language,
-  );
+  const siteName = useDocument(session, (site) => site.settings.general.name);
+  const siteLanguage = useDocument(session, (site) => site.settings.general.language);
   // Spelling is checked in the site's language, including after Site Settings changes it (1.22).
   useEffect(() => {
     setSpellCheckLanguage(siteLanguage).catch((error: unknown) => {
@@ -163,7 +158,7 @@ export function App({
   useEffect(() => registerCrashReportsCommand(registry), [registry]);
   // View → Zoom In/Out, Actual Size, Zoom to Fit and the device views (F-ED-27).
   useEffect(
-    () => registerViewCommands(registry, session.ui, canvasView),
+    () => registerViewCommands(registry, session, canvasView),
     [registry, session, canvasView],
   );
 

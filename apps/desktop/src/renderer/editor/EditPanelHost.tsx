@@ -11,7 +11,7 @@ import {
   SPACING_TOKENS,
 } from "@webforge/model";
 import type { FieldDef } from "@webforge/site-components";
-import { useEffect, useRef, useSyncExternalStore } from "react";
+import { useEffect, useRef } from "react";
 import { applyAnchor, asLinkFieldChange } from "../links/link-change.js";
 import { anchorsTakenInSection } from "../shared-sections/shared-sections.js";
 import {
@@ -29,7 +29,7 @@ import {
 } from "./advanced-fields.js";
 import type { EditorSession } from "./editor-session.js";
 import { fieldGroupOf } from "./field-group.js";
-import { fieldTarget } from "./field-target.js";
+import { type FieldTarget, fieldTarget } from "./field-target.js";
 import { changedLabel, labelFor, resetGroupLabel, resetLabel } from "./labels.js";
 import {
   applyListChange,
@@ -47,7 +47,9 @@ import {
   withoutOverride,
   withValueAt,
 } from "./responsive-value.js";
+import { sameValue } from "./same-value.js";
 import { shownLayout } from "./shared-layout.js";
+import { useDocument, useUi } from "./use-document.js";
 
 /** The Edit panel's renderer kind for a field, or undefined for fields edited elsewhere. */
 function rendererKind(field: FieldDef): string | undefined {
@@ -160,6 +162,53 @@ type Run = {
   readonly cancel?: () => void;
 };
 
+/**
+ * The anchors other elements use (Advanced tab, F-ED-11): in a copy, those its shared section's
+ * anchors may not repeat; else the page's own, including the shared Header and Footer, and for an
+ * element of the Header or Footer, every page that shows it.
+ */
+function takenAnchors(site: SiteDoc, target: FieldTarget): string[] {
+  if (target.inCopy !== undefined) {
+    return anchorsTakenInSection(site, target.inCopy.shared.id, target.inCopy.node.props.id);
+  }
+  const taken: string[] = [];
+  const { region } = target;
+  const pages =
+    region === undefined
+      ? [target.page]
+      : Object.values(site.pages)
+          .filter((other) => shownLayout(site, other.id)[region].length > 0)
+          .map((other) => other.doc);
+  const nodes = pages.flatMap((other) => other.content);
+  findNode([...site.layout.header, ...nodes, ...site.layout.footer], (other) => {
+    const anchor = other.props.advanced?.anchorId;
+    if (anchor !== undefined && other.props.id !== target.id) taken.push(anchor);
+    return false;
+  });
+  return taken;
+}
+
+/** What the panel draws of the site: the selected element, and in Advanced mode the anchors taken. */
+type PanelSlice = { readonly target: FieldTarget | undefined; readonly anchors: string[] };
+
+/**
+ * Whether the panel would draw the same: the same element, with the same values, in the same place
+ * (R9). Anything else in the document, such as typing in another element, leaves it as it is.
+ */
+function sameSlice(a: PanelSlice, b: PanelSlice): boolean {
+  const x = a.target;
+  const y = b.target;
+  if (x === undefined || y === undefined) return x === y && sameValue(a.anchors, b.anchors);
+  return (
+    x.id === y.id &&
+    x.component === y.component &&
+    x.region === y.region &&
+    x.copyLabel === y.copyLabel &&
+    (x.node === y.node || sameValue(x.node, y.node)) &&
+    sameValue(a.anchors, b.anchors)
+  );
+}
+
 /** Props of {@link EditPanelHost}. */
 export type EditPanelHostProps = {
   readonly session: EditorSession;
@@ -194,10 +243,16 @@ export function EditPanelHost({
   closedGroups,
   onClosedGroupsChange,
 }: EditPanelHostProps) {
-  const { history, ui, library } = session;
-  const site = useSyncExternalStore(history.document.subscribe, history.document.getState);
-  const { pageId, nodeId, viewport, others = [] } = useSyncExternalStore(ui.subscribe, ui.getState);
-  const target = fieldTarget(site, library, pageId, nodeId);
+  const { history, library } = session;
+  const { pageId, nodeId, viewport, others = [] } = useUi(session, (ui) => ui);
+  const { target, anchors } = useDocument(
+    session,
+    (site): PanelSlice => {
+      const found = fieldTarget(site, library, pageId, nodeId);
+      return { target: found, anchors: advanced && found ? takenAnchors(site, found) : [] };
+    },
+    sameSlice,
+  );
   const selectedId = target?.id;
   const breakpoint = breakpointOf(viewport);
   const device = t(`device.${breakpoint}`);
@@ -242,10 +297,17 @@ export function EditPanelHost({
   if (target === undefined) {
     return <EditPanel fields={[]} onChange={() => undefined} onCommit={() => undefined} />;
   }
-  const { page, node, component, id, region, inCopy, copyLabel, storedOr, editOf, write, recipe } =
-    target;
+  const { node, component, id, storedOr } = target;
+  // A change is written to the element as the document has it now, never as an older drawing of
+  // the panel found it: the panel only redraws when its own element changes (R9).
+  const now = (): FieldTarget =>
+    fieldTarget(history.document.getState(), library, pageId, nodeId) ?? target;
+  const write: FieldTarget["write"] = (draft, name, next) => now().write(draft, name, next);
+  const recipe: FieldTarget["recipe"] = (name, next) => now().recipe(name, next);
+  const editOf: FieldTarget["editOf"] = (kind, field) => now().editOf(kind, field);
+  const copyLabelNow = () => now().copyLabel;
   const labelOf = (name: string, field: FieldDef, reset = false) =>
-    target.labelOf(name, field, breakpoint, reset);
+    now().labelOf(name, field, breakpoint, reset);
 
   const fields = Object.entries(component.fields).flatMap(([name, field]): EditPanelField[] => {
     const list = editableList(field, library);
@@ -277,27 +339,8 @@ export function EditPanelHost({
     ]);
   });
 
-  if (advanced && inCopy !== undefined) {
-    // An anchor of a shared section shows in every copy, on every page with one.
-    const taken = anchorsTakenInSection(site, inCopy.shared.id, inCopy.node.props.id);
-    fields.push(...advancedFields(node.props.advanced, taken));
-  } else if (advanced) {
-    // Anchors other elements use on this page, including the shared Header and Footer; for an
-    // element of the Header or Footer, on every page that shows it.
-    const takenAnchors: string[] = [];
-    const pages =
-      region === undefined
-        ? [page]
-        : Object.values(site.pages)
-            .filter((other) => shownLayout(site, other.id)[region].length > 0)
-            .map((other) => other.doc);
-    const nodes = pages.flatMap((other) => other.content);
-    findNode([...site.layout.header, ...nodes, ...site.layout.footer], (other) => {
-      const anchor = other.props.advanced?.anchorId;
-      if (anchor !== undefined && other.props.id !== id) takenAnchors.push(anchor);
-      return false;
-    });
-    fields.push(...advancedFields(node.props.advanced, takenAnchors));
+  if (advanced) {
+    fields.push(...advancedFields(node.props.advanced, anchors));
   }
 
   const selectionAfter = { pageId, viewport, nodeId: id };
@@ -307,7 +350,7 @@ export function EditPanelHost({
     endRun();
     flush();
     const label =
-      copyLabel ?? changedLabel(editOf("props", name), library, advancedFieldLabel(name));
+      copyLabelNow() ?? changedLabel(editOf("props", name), library, advancedFieldLabel(name));
     session.edit(
       "props",
       label,
@@ -326,7 +369,7 @@ export function EditPanelHost({
     flush();
     session.edit(
       "props",
-      copyLabel ?? bindingLabel(component.label, value),
+      copyLabelNow() ?? bindingLabel(component.label, value),
       recipe("bindings", (stored) => withBinding(stored, name, value)),
       { selectionAfter },
     );
@@ -348,7 +391,9 @@ export function EditPanelHost({
       labelOf(name, field),
       (draft) => {
         write(draft, name, () => linkChange.link);
-        if (linkChange.anchor !== undefined) applyAnchor(draft, site, linkChange.anchor);
+        if (linkChange.anchor !== undefined) {
+          applyAnchor(draft, history.document.getState(), linkChange.anchor);
+        }
       },
       { selectionAfter },
     );
@@ -456,7 +501,7 @@ export function EditPanelHost({
       );
     session.edit(
       text ? "text" : "props",
-      copyLabel ?? listChangeLabel(change, list, textLabel),
+      copyLabelNow() ?? listChangeLabel(change, list, textLabel),
       (draft) =>
         write(draft, name, (stored) => {
           // A list never set starts from (a copy of) the component's default.
@@ -513,7 +558,7 @@ export function EditPanelHost({
     const forDevice =
       breakpoint !== "desktop" && known.some((name) => component.fields[name]?.responsive === true);
     const label =
-      copyLabel ??
+      copyLabelNow() ??
       (group !== undefined
         ? resetGroupLabel(editOf("props", first), library, group, forDevice ? device : undefined)
         : firstField.responsive === true && breakpoint !== "desktop"

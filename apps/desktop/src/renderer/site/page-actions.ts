@@ -110,8 +110,7 @@ function editShowing(
   const current = session.ui.getState();
   const selectionAfter: EditorSelection =
     pageId === current.pageId ? current : { ...current, pageId, nodeId: null };
-  session.edit(kind, label, recipe, { selectionAfter });
-  session.ui.setState(selectionAfter, true);
+  session.edit(kind, label, recipe, { selectionAfter, apply: true });
 }
 
 /** Adds an empty page called `name` and shows it. Returns its id, or null for an empty name. */
