@@ -521,14 +521,14 @@ Media also takes PDF, Word, Excel, PowerPoint, OpenDocument, plain text and CSV 
 - [ ] Deleting a linked file warns first and is undoable
 
 **1.29 Shared sections** (added 22 Oct 2026, GA6)  
-`sharedSections` in SiteDoc (with a migration) and linked-copy nodes. `CanvasEngine.loadPage` and `renderStatic` take the shared sections (architecture §6, stack/04 C5). *Save as shared section* (not Header/Footer); the Add panel lists shared sections; a page may hold several copies, each with anchor IDs made unique per copy; editing a copy edits them all, with the shared-region banner from 1.20 ("N copies on M pages"); *Detach* makes a normal section; deleting a shared section confirms with its impact (D7) and turns copies into normal sections. No nesting. Pasting within the site places another linked copy; pasting into another site gives a normal section. Content mode allows content edits in copies but not saving, detaching or deleting. Layers marks linked copies. Model, history and engine work stays in stream C; the Add panel and Layers changes are small PRs on stream A's panels, agreed with stream A.
+`sharedSections` in SiteDoc (with a migration) and linked-copy nodes. `CanvasEngine.loadPage` takes the shared sections, and so did `renderStatic` until R8 dropped it for `renderPage` (architecture §6, stack/04 C5). *Save as shared section* (not Header/Footer); the Add panel lists shared sections; a page may hold several copies, each with anchor IDs made unique per copy; editing a copy edits them all, with the shared-region banner from 1.20 ("N copies on M pages"); *Detach* makes a normal section; deleting a shared section confirms with its impact (D7) and turns copies into normal sections. No nesting. Pasting within the site places another linked copy; pasting into another site gives a normal section. Content mode allows content edits in copies but not saving, detaching or deleting. Layers marks linked copies. Model, history and engine work stays in stream C; the Add panel and Layers changes are small PRs on stream A's panels, agreed with stream A.
 
 - [ ] Editing one copy updates every copy in one undo step
 - [ ] Detach and delete keep all content; both undoable
 - [ ] Delete confirms with the number of pages affected (D7)
 - [ ] Two copies on one page keep unique anchor IDs, and links to them work
 - [ ] fast-check undo-all/redo-all covers the shared-section actions
-- [ ] `renderStatic` renders copies inline (unit test); export checks in 3.3 and 3.10
+- [ ] Copies render inline in static HTML (unit test; `renderPage` since R8); export checks in 3.3 and 3.10
 
 **1.30 Selection tools, breadcrumbs and keyboard navigation** (added 22 Oct 2026, UI2/UI3)  
 Selection chip gains *Select parent*, *Edit* (text editing, or the image/icon picker) and *Hide*. Breadcrumb bar under the canvas toolbar (Page › Section › … › Element): click selects, hover outlines. Keyboard per F-ED-27: Mod + ↑/↓ parent/child, Mod + ←/→ siblings, Mod + Alt + ↑/↓ move, Enter edits text, Backspace empties and edits, F2 rename, Mod + / hide. On an element with no text of its own, Backspace deletes it (the Mac's delete key sends Backspace), and Mod + Backspace deletes any selected element (decided 23 Oct 2026). Hide is offered only for elements that are layers. Ctrl/Cmd-drag copies; Ctrl/Cmd + Shift-drag places another linked copy of a shared section (after 1.29).
@@ -691,7 +691,7 @@ Section option to use the theme's light or dark variant (daisyUI nested themes).
 - [ ] Nested theme renders correctly in canvas and export
 
 **2.5 Component framework: tokens, variants, stories, behaviours**  
-Conventions for site components: design-token style fields, layout variants, per-breakpoint options, display names (D2), static render contract, webforge.js behaviour modules (tree-shaken, classic script), Storybook story template × themes × devices. CanvasEngine.renderStatic delegates to renderNodesToHtml so canvas and export share one renderer (ADR 0005).
+Conventions for site components: design-token style fields, layout variants, per-breakpoint options, display names (D2), static render contract, webforge.js behaviour modules (tree-shaken, classic script), Storybook story template × themes × devices. Canvas and export share one renderer (ADR 0005): each component's `render`, which the canvas calls through Puck and the export through `renderPage` (`renderNodesToHtml`). R8 dropped `CanvasEngine.renderStatic`, which only wrapped `renderPage`.
 
 - [ ] Template component + stories documented
 - [ ] webforge.js only includes behaviours used on the page
