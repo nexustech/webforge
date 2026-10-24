@@ -56,6 +56,8 @@
   --selection-outline: #f028f3;
   --destructive: #c83b3d;
   --destructive-foreground: #ffffff;
+  /* --destructive is a fill (2.5:1 on panels as text); errors under fields use this lighter red. */
+  --destructive-text: #ff7a7c;
   --success: #28c174;
   --warning: #fba929;
   --info: #3bc0f7;
@@ -101,6 +103,7 @@
   --selection-outline: #f028f3;
   --destructive: #c42f31;
   --destructive-foreground: #ffffff;
+  --destructive-text: #c42f31;
   --success: #1b7f49;
   --warning: #9a5b00;
   --info: #0a6f96;
@@ -140,6 +143,7 @@
   --color-selection-outline: var(--selection-outline);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-text: var(--destructive-text);
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-info: var(--info);

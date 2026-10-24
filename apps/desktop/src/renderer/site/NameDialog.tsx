@@ -104,7 +104,9 @@ function NameForm({
           <p
             id={hintId}
             className={
-              issue === undefined ? "text-xs text-muted-foreground" : "text-xs text-destructive"
+              issue === undefined
+                ? "text-xs text-muted-foreground"
+                : "text-xs text-destructive-text"
             }
           >
             {hint}

@@ -73,7 +73,7 @@ export function ErrorText({
   readonly message?: string | undefined;
 }) {
   return message === undefined ? null : (
-    <p id={id} className="m-0 text-xs text-destructive">
+    <p id={id} className="m-0 text-xs text-destructive-text">
       {message}
     </p>
   );

@@ -361,7 +361,10 @@ function LinkForm({
 
       <p
         role="status"
-        className={cn("min-h-4 text-xs text-destructive", !typed && !labelTouched && "invisible")}
+        className={cn(
+          "min-h-4 text-xs text-destructive-text",
+          !typed && !labelTouched && "invisible",
+        )}
       >
         {"error" in result && typed
           ? result.error

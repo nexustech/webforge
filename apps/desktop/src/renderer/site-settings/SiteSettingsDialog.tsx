@@ -413,7 +413,7 @@ function SiteSettingsForm({
       </Tabs>
 
       {Object.keys(errors).length === 0 ? null : (
-        <p role="alert" className="m-0 text-xs text-destructive">
+        <p role="alert" className="m-0 text-xs text-destructive-text">
           {t("site.settings.fixErrors")}
         </p>
       )}
