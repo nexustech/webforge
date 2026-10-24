@@ -27,6 +27,18 @@ export type PickerItem = {
 };
 
 /** Props of {@link Picker}. */
+/**
+ * A grid's columns, as whole class names so Tailwind finds them (R11): the picker has no inline
+ * styles.
+ */
+const GRID_COLUMNS = {
+  2: "grid-cols-2",
+  3: "grid-cols-3",
+  4: "grid-cols-4",
+  5: "grid-cols-5",
+  6: "grid-cols-6",
+} as const;
+
 export type PickerProps<Item extends PickerItem> = {
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
@@ -38,7 +50,7 @@ export type PickerProps<Item extends PickerItem> = {
   readonly categories?: readonly string[];
   /** Tiles in `columns` columns (images, icons), or one item per row (fonts). */
   readonly layout?: "grid" | "list";
-  readonly columns?: number;
+  readonly columns?: keyof typeof GRID_COLUMNS;
   /** An item's tile, beside or above its name; the name itself is drawn by the picker. */
   readonly renderItem: (item: Item) => ReactNode;
   /** A larger look at the item the person is on (a font's sample text, a photo); none when left out. */
@@ -261,14 +273,11 @@ export function Picker<Item extends PickerItem>({
               aria-label={title}
               className={cn(
                 "p-1.5",
-                layout === "grid" ? "grid gap-1.5" : "flex flex-col gap-0.5",
+                layout === "grid"
+                  ? ["grid gap-1.5", GRID_COLUMNS[columns]]
+                  : "flex flex-col gap-0.5",
                 shown.length === 0 && "hidden",
               )}
-              style={
-                layout === "grid"
-                  ? { gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }
-                  : undefined
-              }
             >
               {shown.map((item) => {
                 const isActive = item.id === active?.id;

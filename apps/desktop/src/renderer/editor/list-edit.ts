@@ -1,4 +1,4 @@
-import type { ListChange, ListItemValue } from "@webforge/editor-ui";
+import type { ListChange } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { isNodeDoc, type NodeDoc, newId } from "@webforge/model";
 import type {
@@ -63,17 +63,15 @@ export function editableList(field: FieldDef, library: ComponentLibrary): Editab
 
 const asItems = (stored: unknown): unknown[] => (Array.isArray(stored) ? stored : []);
 
-/** An item's key and values, from a `list` item or an element. */
-function itemValue(item: unknown, list: EditableList): ListItemValue | undefined {
-  if (list.holds === "elements") {
-    return isNodeDoc(item) ? { key: item.props.id, values: item.props } : undefined;
-  }
+/** An item's id and values, from a `list` item or an element (its props). */
+function itemValue(item: unknown, list: EditableList): ListItem | undefined {
+  if (list.holds === "elements") return isNodeDoc(item) ? item.props : undefined;
   const values = item as Partial<ListItem> | null;
-  return typeof values?.id === "string" ? { key: values.id, values } : undefined;
+  return typeof values?.id === "string" ? (values as ListItem) : undefined;
 }
 
 /** The items of a list's stored value, as the Edit panel shows them. */
-export function listItems(stored: unknown, list: EditableList): ListItemValue[] {
+export function listItems(stored: unknown, list: EditableList): ListItem[] {
   return asItems(stored).flatMap((item) => {
     const value = itemValue(item, list);
     return value === undefined ? [] : [value];
@@ -96,7 +94,7 @@ export function applyListChange(items: unknown[], change: ListChange, list: Edit
     );
     return true;
   }
-  const index = items.findIndex((item) => itemValue(item, list)?.key === change.key);
+  const index = items.findIndex((item) => itemValue(item, list)?.id === change.id);
   const item = items[index];
   if (item === undefined) {
     return false;
@@ -144,7 +142,7 @@ export function listChangeLabel(
     case "edit": {
       const field = list.fields[change.name];
       if (field?.kind === "text" && list.holds === "elements") {
-        return textLabel(change.key, change.name);
+        return textLabel(change.id, change.name);
       }
       return t(field?.kind === "text" ? "history.editedField" : "history.changed", {
         item,

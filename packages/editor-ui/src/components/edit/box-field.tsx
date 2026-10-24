@@ -1,7 +1,7 @@
 import { t } from "@webforge/i18n";
 import { useState } from "react";
 import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group.js";
-import type { FieldRendererProps } from "./field-registry.js";
+import type { FieldRendererProps } from "./field-spec.js";
 import { ToggleField } from "./toggle-field.js";
 
 /** The choice that leaves a side unset, so it takes the element's own spacing. */
@@ -32,9 +32,16 @@ function withSides(box: Box, sides: readonly string[], token: string): Box {
  * Padding or margin per side (1.32): a size for each side, or one for every side at once. Each
  * choice is one change. Turning "Same on every side" on or off changes nothing by itself.
  */
-export function BoxField({ id, labelId, field, value, onChange, onCommit }: FieldRendererProps) {
+export function BoxField({
+  id,
+  labelId,
+  field,
+  value,
+  onChange,
+  onCommit,
+}: FieldRendererProps<"box">) {
   const box = boxOf(value);
-  const sides = field.sides ?? [];
+  const { sides } = field;
   const sizesOf = (of: Box) => sides.map((side) => of[side.value] ?? DEFAULT);
   const sizes = sizesOf(box);
   const allSame = sizes.every((size) => size === sizes[0]);
@@ -52,7 +59,7 @@ export function BoxField({ id, labelId, field, value, onChange, onCommit }: Fiel
     setMode({ same, shown: sizesOf(next).join(" ") });
     onChange(next);
   };
-  const options = [{ label: t("editPanel.box.default"), value: DEFAULT }, ...(field.options ?? [])];
+  const options = [{ label: t("editPanel.box.default"), value: DEFAULT }, ...field.options];
 
   const choices = (
     choiceId: string,

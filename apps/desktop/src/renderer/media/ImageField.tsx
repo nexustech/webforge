@@ -1,9 +1,9 @@
 import {
   Button,
+  type FieldRenderer,
   type FieldRendererProps,
   fieldControlClass,
   Picker,
-  registerFieldRenderer,
   toast,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
@@ -46,7 +46,7 @@ export function ImageField({
   notify = toast,
   imageUrl = mediaImageUrl,
   picks,
-}: FieldRendererProps & ImageFieldContext) {
+}: FieldRendererProps<"image"> & ImageFieldContext) {
   const items = useDocument(session, (site) => site.media);
   const [picking, setPicking] = useState(false);
   // *Edit* on the selected element's image (F-ED-25): its picker opens, focus on its button.
@@ -203,12 +203,11 @@ export function ImageField({
 }
 
 /**
- * Makes the Edit panel draw image fields (`media` fields, as the `image` kind) with
- * {@link ImageField} for `session`. Returns the function that puts the previous renderer back.
+ * The Edit panel's renderer for image fields (`media` fields, as the `image` kind) in `session`
+ * (R11): {@link ImageField}.
  */
-export function registerImageField(context: ImageFieldContext): () => void {
-  function SessionImageField(props: FieldRendererProps) {
+export function imageFieldRenderer(context: ImageFieldContext): FieldRenderer<"image"> {
+  return function SessionImageField(props: FieldRendererProps<"image">) {
     return <ImageField {...props} {...context} />;
-  }
-  return registerFieldRenderer("image", SessionImageField);
+  };
 }

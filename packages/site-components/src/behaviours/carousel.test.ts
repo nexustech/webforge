@@ -171,22 +171,174 @@ describe("the carousel behaviour (2.10)", () => {
     expect(root.dataset.current).toBe("0");
   });
 
-  it("follows a swipe at once after a move that had nowhere to scroll", () => {
+  it("follows a swipe once the strip comes to rest", () => {
+    const { root, track, document, window } = page({}, 3);
+    const slides = [...document.querySelectorAll<HTMLElement>(".site-carousel-slide")];
+    slides.forEach((slide, index) => {
+      Object.defineProperty(slide, "offsetLeft", { value: index * 100 });
+    });
+    const scrollTo = (left: number) => {
+      track.scrollLeft = left;
+      track.dispatchEvent(new window.Event("scroll"));
+    };
+
+    scrollTo(40);
+    scrollTo(90);
+    expect(root.dataset.current).toBeUndefined();
+    vi.advanceTimersByTime(150);
+    expect(root.dataset.current).toBe("1");
+  });
+
+  it("counts a quick run of presses as they add up, whatever the strip passes meanwhile (#330)", () => {
+    const { root, track, document, window, button, status } = page({}, 3);
+    const slides = [...document.querySelectorAll<HTMLElement>(".site-carousel-slide")];
+    slides.forEach((slide, index) => {
+      Object.defineProperty(slide, "offsetLeft", { value: index * 100 });
+    });
+    const scrollTo = (left: number) => {
+      track.scrollLeft = left;
+      track.dispatchEvent(new window.Event("scroll"));
+    };
+
+    button("next").click();
+    scrollTo(30);
+    button("previous").click();
+    // Next's smooth scroll carries on past slide 2 for a moment (Firefox), then turns back.
+    scrollTo(10);
+    scrollTo(100);
+    button("previous").click();
+
+    expect(root.dataset.current).toBe("2");
+    expect(status()?.textContent).toBe("3 of 3");
+    scrollTo(200);
+    vi.advanceTimersByTime(150);
+    expect(root.dataset.current).toBe("2");
+  });
+
+  it("takes no pause on the way to where a press sends it for a rest (WebKit, #334)", () => {
+    const { root, track, document, window, button, status } = page({}, 3);
+    const slides = [...document.querySelectorAll<HTMLElement>(".site-carousel-slide")];
+    slides.forEach((slide, index) => {
+      Object.defineProperty(slide, "offsetLeft", { value: index * 100 });
+    });
+    const scrollTo = (left: number) => {
+      track.scrollLeft = left;
+      track.dispatchEvent(new window.Event("scroll"));
+    };
+
+    // WebKit's smooth scroll: an event just after it starts, then none for over a second.
+    button("next").click();
+    scrollTo(3);
+    vi.advanceTimersByTime(1_000);
+    expect(root.dataset.current).toBe("1");
+    scrollTo(100);
+    vi.advanceTimersByTime(150);
+    button("previous").click();
+    scrollTo(50);
+    vi.advanceTimersByTime(1_000);
+    button("previous").click();
+
+    expect(root.dataset.current).toBe("2");
+    expect(status()?.textContent).toBe("3 of 3");
+  });
+
+  it.each([
+    ["a swipe", "pointerdown"],
+    ["a touch", "touchstart"],
+    ["the wheel", "wheel"],
+  ])("follows %s that takes over from a press's scroll", (_name, type) => {
     const { root, track, document, window, button } = page({}, 3);
     const slides = [...document.querySelectorAll<HTMLElement>(".site-carousel-slide")];
     slides.forEach((slide, index) => {
       Object.defineProperty(slide, "offsetLeft", { value: index * 100 });
     });
 
-    // Round to the last slide, then back to the first: where the strip still is (left 0, as the
-    // test's strip doesn't scroll), so no scroll will say it arrived.
-    button("previous").click();
     button("next").click();
-    expect(root.dataset.current).toBe("0");
-    // A swipe to the second slide counts at once, though the last move was a moment ago.
+    track.dispatchEvent(new window.Event(type));
+    track.scrollLeft = 190;
+    track.dispatchEvent(new window.Event("scroll"));
+    vi.advanceTimersByTime(150);
+
+    expect(root.dataset.current).toBe("2");
+  });
+
+  it("follows a scroll after a press that had nowhere to scroll", () => {
+    const { root, track, document, window, button } = page({}, 3);
+    const slides = [...document.querySelectorAll<HTMLElement>(".site-carousel-slide")];
+    slides.forEach((slide, index) => {
+      Object.defineProperty(slide, "offsetLeft", { value: index * 100 });
+    });
+
+    // The strip is at slide 2 already (its scroll events not yet fired): nothing to wait for.
+    track.scrollLeft = 100;
+    button("next").click();
+    // Then it's scrolled on without a pointer (momentum, the scroll bar's arrows).
+    track.scrollLeft = 190;
+    track.dispatchEvent(new window.Event("scroll"));
+    vi.advanceTimersByTime(150);
+
+    expect(root.dataset.current).toBe("2");
+  });
+
+  it("puts the strip back at the current slide if a press's scroll stops short, then counts its rests", () => {
+    const { root, track, document, window, button, scrolled } = page({}, 3);
+    const slides = [...document.querySelectorAll<HTMLElement>(".site-carousel-slide")];
+    slides.forEach((slide, index) => {
+      Object.defineProperty(slide, "offsetLeft", { value: index * 100 });
+    });
+    const scrollTo = (left: number) => {
+      track.scrollLeft = left;
+      track.dispatchEvent(new window.Event("scroll"));
+    };
+
+    // Next's scroll stops at 30 px (WebKit dropping a smooth scroll, or a resize): never arrives.
+    button("next").click();
+    scrollTo(30);
+    vi.advanceTimersByTime(2_000);
+    expect(root.dataset.current).toBe("1");
+    scrolled.mockClear();
+    vi.advanceTimersByTime(1_000);
+    expect(scrolled).toHaveBeenCalledWith({ left: 100 });
+    // From then on, where the strip rests counts again.
+    scrollTo(190);
+    vi.advanceTimersByTime(150);
+
+    expect(root.dataset.current).toBe("2");
+  });
+
+  it("leaves a strip that arrived where it is", () => {
+    const { track, document, window, button, scrolled } = page({}, 3);
+    const slides = [...document.querySelectorAll<HTMLElement>(".site-carousel-slide")];
+    slides.forEach((slide, index) => {
+      Object.defineProperty(slide, "offsetLeft", { value: index * 100 });
+    });
+
+    button("next").click();
     track.scrollLeft = 100;
     track.dispatchEvent(new window.Event("scroll"));
-    expect(root.dataset.current).toBe("1");
+    scrolled.mockClear();
+    vi.advanceTimersByTime(5_000);
+
+    expect(scrolled).not.toHaveBeenCalled();
+  });
+
+  it("lets a press decide, not a scroll before it that hadn't yet come to rest (#330)", () => {
+    const { root, track, document, window, button } = page({}, 3);
+    const slides = [...document.querySelectorAll<HTMLElement>(".site-carousel-slide")];
+    slides.forEach((slide, index) => {
+      Object.defineProperty(slide, "offsetLeft", { value: index * 100 });
+    });
+
+    button("next").click();
+    track.scrollLeft = 100;
+    track.dispatchEvent(new window.Event("scroll"));
+    // Pressed before that scroll counted as at rest, with the strip still at slide 2.
+    vi.advanceTimersByTime(100);
+    button("previous").click();
+    vi.advanceTimersByTime(100);
+    expect(root.dataset.current).toBe("0");
+    button("previous").click();
+    expect(root.dataset.current).toBe("2");
   });
 
   describe("playing automatically", () => {
