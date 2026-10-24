@@ -66,14 +66,18 @@ describe("createEngineHost (2.20, B1)", () => {
     expect(engine.connection.flush).toHaveBeenCalledOnce();
   });
 
-  it("ignores a detach of an engine already replaced", () => {
+  it("detaches an engine still attached when another attaches, and ignores its late detach", () => {
     const host = createEngineHost();
+    const disconnect = vi.fn();
+    host.whileMounted(() => disconnect);
     const detachFirst = host.attach(mounted());
     const second = mounted();
-    host.attach(second);
 
+    host.attach(second);
+    expect(disconnect).toHaveBeenCalledOnce();
     detachFirst();
 
+    expect(disconnect).toHaveBeenCalledOnce();
     expect(host.current()).toBe(second);
   });
 });

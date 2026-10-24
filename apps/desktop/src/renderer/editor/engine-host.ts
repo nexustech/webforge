@@ -38,6 +38,7 @@ export function createEngineHost(): EngineHost {
     disconnect: (() => void) | undefined;
   };
   const waiting: Waiting[] = [];
+  let detachCurrent: (() => void) | undefined;
   return {
     current: () => current,
     flush: () => current?.connection.flush(),
@@ -55,9 +56,7 @@ export function createEngineHost(): EngineHost {
       };
     },
     attach: (mounted) => {
-      current = mounted;
-      for (const entry of [...waiting]) entry.disconnect = entry.connect(mounted);
-      return () => {
+      const detach = () => {
         if (current !== mounted) return;
         // Gone before what it was connected to stops, so nothing reaches it while that happens.
         current = null;
@@ -66,6 +65,12 @@ export function createEngineHost(): EngineHost {
           entry.disconnect = undefined;
         }
       };
+      // An engine still attached is detached first, so nothing stays connected to it.
+      detachCurrent?.();
+      current = mounted;
+      detachCurrent = detach;
+      for (const entry of [...waiting]) entry.disconnect = entry.connect(mounted);
+      return detach;
     },
   };
 }
