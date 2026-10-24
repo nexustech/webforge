@@ -673,14 +673,10 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     setLinkPicker: richText.setLinkPicker,
 
     setSettings(bindings) {
-      // Replaces every binding: a hint or the hours left out of `bindings` go.
-      const {
-        setting: _setting,
-        emptySetting: _empty,
-        openingHours: _hours,
-        ...rest
-      } = renderContext;
-      renderContext = { ...rest, ...bindings };
+      // Replaces every binding: one left out of `bindings` goes. The context's other parts are named,
+      // so a part added to RenderContext fails to compile here rather than being dropped.
+      const { navigation, link, href, image } = renderContext;
+      renderContext = { navigation, link, href, image, ...bindings };
       redraw();
     },
 

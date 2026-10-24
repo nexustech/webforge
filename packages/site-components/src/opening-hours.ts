@@ -5,9 +5,29 @@ import { DAYS, type Day, type OpeningHours } from "@webforge/model";
 export type OpeningHoursLine = {
   /** The days, read as a visitor says them: "Tuesday to Friday", "Saturday and Sunday". */
   readonly days: string;
+  /** When it opens and closes, as stored (`HH:MM`): for `<time datetime>`. */
   readonly opens: string;
   readonly closes: string;
+  /** The same, as the site's language writes a time: "09:00" in en-GB, "9:00 AM" in en-US. */
+  readonly opensText: string;
+  readonly closesText: string;
 };
+
+/**
+ * `time` (`HH:MM`) as `language` writes a time of day, hour and minutes. As stored when there is
+ * no language, or one the browser or Node doesn't know.
+ */
+export function timeText(time: string, language: string | undefined): string {
+  const [hours, minutes] = time.split(":").map(Number);
+  if (language === undefined || hours === undefined || minutes === undefined) return time;
+  try {
+    return new Intl.DateTimeFormat(language, { hour: "numeric", minute: "2-digit" }).format(
+      new Date(2000, 0, 1, hours, minutes),
+    );
+  } catch {
+    return time;
+  }
+}
 
 /** Each day's name: "Monday". */
 const dayName = (day: Day) => t(`siteText.day.${day}`);
@@ -42,11 +62,19 @@ export function daysText(days: readonly Day[]): string {
   return parts.length === 0 ? last : t("siteText.days.and", { first: parts.join(", "), last });
 }
 
-/** Site Settings' opening hours as the lines a page lists, in the order they were entered. */
-export function openingHoursLines(hours: readonly OpeningHours[]): OpeningHoursLine[] {
+/**
+ * Site Settings' opening hours as the lines a page lists, in the order they were entered, their
+ * times written as `language` writes them.
+ */
+export function openingHoursLines(
+  hours: readonly OpeningHours[],
+  language?: string,
+): OpeningHoursLine[] {
   return hours.map((entry) => ({
     days: daysText(entry.days),
     opens: entry.opens,
     closes: entry.closes,
+    opensText: timeText(entry.opens, language),
+    closesText: timeText(entry.closes, language),
   }));
 }

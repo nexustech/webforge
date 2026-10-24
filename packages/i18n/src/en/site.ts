@@ -135,6 +135,8 @@ export const site = {
   "site.binding.empty.contact.address": "Add your address in Site Settings",
   "site.binding.empty.contact.openingHoursNote": "Add a note on opening hours in Site Settings",
   "site.binding.empty.address.url": "Add the site's web address in Site Settings",
+  // A form with nowhere to send submissions yet (2.8), on the canvas.
+  "site.binding.empty.formService": "Choose where submissions go in Site Settings",
   "site.settings.title": "Site Settings",
   "site.settings.description": "Details that apply to the whole site, wherever they appear.",
   "site.settings.sections": "Site Settings sections",

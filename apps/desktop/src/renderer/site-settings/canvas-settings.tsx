@@ -10,9 +10,12 @@ type Unsubscribe = () => void;
  * classes; the export shows nothing there.
  */
 function emptySettingHint(key: BindableSetting) {
-  return (
-    <span style={{ opacity: 0.6, fontStyle: "italic" }}>{t(`site.binding.empty.${key}`)}</span>
-  );
+  return hint(t(`site.binding.empty.${key}`));
+}
+
+/** A faint hint on the canvas, saying what to fill in where. */
+function hint(text: string) {
+  return <span style={{ opacity: 0.6, fontStyle: "italic" }}>{text}</span>;
 }
 
 /**
@@ -37,6 +40,9 @@ export function connectCanvasSettings(
       setting: (key) => values[key],
       emptySetting: emptySettingHint,
       openingHours: shown.contact.openingHours,
+      language: shown.general.language,
+      ...(shown.forms.service === undefined ? {} : { formService: shown.forms.service }),
+      emptyFormService: hint(t("site.binding.empty.formService")),
     });
   };
   show();

@@ -14,8 +14,13 @@ function drawn(node: ReactElement) {
   return host;
 }
 
-const attributes = (element: Element | null) =>
-  Object.fromEntries([...(element?.attributes ?? [])].map(({ name, value }) => [name, value]));
+/** An element's attributes by name (happy-dom's elements, typed by what's read). */
+const attributes = (
+  element:
+    | { readonly attributes: Iterable<{ name: string; value: string | null }> }
+    | null
+    | undefined,
+) => Object.fromEntries([...(element?.attributes ?? [])].map(({ name, value }) => [name, value]));
 
 describe("form fields (2.8, shared with 2.11)", () => {
   it("labels each field, and asks the browser for the right kind of value", () => {
