@@ -102,6 +102,8 @@ test.describe("window layout", () => {
 
   test("hides and shows the left panels from the title bar", async () => {
     const toggle = page.getByRole("button", { name: "Show or Hide Left Panels" });
+    // The last test's View menu gone first: a click while it closes only dismisses it.
+    await expect(page.getByRole("menu")).toHaveCount(0);
     await toggle.click();
     await expect.poll(leftWidth).toBeLessThan(2);
     await toggle.click();
