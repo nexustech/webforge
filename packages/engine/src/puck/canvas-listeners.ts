@@ -4,6 +4,7 @@ import { installMenuKeys } from "../menu-keys.js";
 import { installContextMenu } from "./context-menu.js";
 import { hidePuckDeleteKeys } from "./delete-keys.js";
 import { type DragKeys, trackDragKeys } from "./drag-copies.js";
+import { type TypingPauses, timeKeystrokes } from "./typing-pauses.js";
 
 /** What the canvas's keys, clicks and menus report to, and ask, in a window. */
 export type CanvasListenerOptions = {
@@ -17,6 +18,8 @@ export type CanvasListenerOptions = {
 export type FrameListenerOptions = CanvasListenerOptions & {
   /** Runs Undo, Redo and Esc's cancel (see `installHistoryKeys`). */
   readonly runCommand: HistoryCommandHandler;
+  /** Times the keys typed on the canvas, which splits typing into undo chunks (#307). */
+  readonly pauses: TypingPauses;
   /** Reports the element menu asked for on the canvas (1.35). */
   readonly contextMenu: (menu: CanvasContextMenu) => void;
   /** Whether the element menu opens: not in Content mode, where right-clicks get the browser's. */
@@ -44,12 +47,14 @@ export function listenInEditor(target: Window, options: CanvasListenerOptions): 
 /**
  * Listens in the canvas iframe's window `frame`: as in the editor window, plus Undo and Redo from
  * the keyboard (taken before Puck's own hotkeys, ADR 0004), and the element menu from a right-click
- * or the keyboard, Shift+F10 on macOS too (#287). Returns what stops it.
+ * or the keyboard, Shift+F10 on macOS too (#287), and the time of each key typed (#307). Returns
+ * what stops it.
  */
 export function listenInFrame(frame: Window, options: FrameListenerOptions): () => void {
   const stops = [
     listenInEditor(frame, options),
     installHistoryKeys(frame, options.runCommand),
+    timeKeystrokes(frame, options.pauses),
     installContextMenu(frame.document, options.contextMenu, {
       enabled: options.menuEnabled,
       selected: options.selected,

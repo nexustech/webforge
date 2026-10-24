@@ -226,6 +226,19 @@ describe("presets (2.1)", () => {
     const preset = themePreset("high-contrast-rounded");
     expect(preset === undefined ? ["missing"] : contrastIssues(preset)).toEqual([]);
   });
+
+  it("report the pairs each one has below AA, without failing (#312)", async ({ annotate }) => {
+    // Contrast is a guideline the site owner may override (product owner, #312): the presets aim
+    // to pass, and the Theme panel warns about what doesn't, but nothing blocks on it.
+    for (const preset of THEME_PRESETS) {
+      const issues = contrastIssues(preset);
+      if (issues.length > 0) {
+        await annotate(
+          `${preset.preset}: ${issues.map((issue) => `${issue.palette} ${issue.foreground} on ${issue.background} ${issue.ratio}:1`).join("; ")}`,
+        );
+      }
+    }
+  });
 });
 
 describe("themeCss (2.1)", () => {
