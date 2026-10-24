@@ -4,6 +4,8 @@ import { createLibrary } from "../define.js";
 import type { ComponentLibrary } from "../library.js";
 import { basicComponents } from "./basic.js";
 import { carouselComponents } from "./carousel.js";
+import { embedsComponents } from "./embeds.js";
+import { galleryComponents } from "./gallery.js";
 import { layoutComponents } from "./layout.js";
 import { sectionsComponents } from "./sections.js";
 
@@ -17,7 +19,9 @@ export const siteLibrary: ComponentLibrary = createLibrary(
   layoutComponents,
   basicComponents,
   sectionsComponents,
+  galleryComponents,
   carouselComponents,
+  embedsComponents,
 );
 
 /** The page a new site starts with. */

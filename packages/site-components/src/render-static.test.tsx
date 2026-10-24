@@ -827,6 +827,87 @@ describe("renderNodesToHtml", () => {
     });
   });
 
+  describe("the Gallery (2.7a)", () => {
+    const galleryHtml = (props: Record<string, unknown> = {}) =>
+      renderNodesToHtml(
+        [
+          {
+            type: "Gallery",
+            props: {
+              id: "gallery",
+              title: "Our work",
+              images: [
+                {
+                  type: "GalleryImage",
+                  props: { id: "g1", image: { mediaId: "hero" }, caption: "The shop" },
+                },
+                { type: "GalleryImage", props: { id: "g2", caption: "" } },
+              ],
+              ...props,
+            },
+          },
+        ],
+        siteLibrary,
+        context,
+      );
+
+    it("holds its images in an element of their own, laid out as its layout says", () => {
+      // The slot's own element, as Puck's drop zone holds them on the canvas.
+      expect(galleryHtml()).toMatch(
+        /<div class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 [^"]*"><figure class="site-gallery-image/,
+      );
+      expect(galleryHtml({ variant: "masonry" })).toContain(
+        '<div class="columns-2 gap-4 md:columns-3 [&amp;&gt;*]:mb-4 [&amp;&gt;*]:break-inside-avoid">',
+      );
+      expect(galleryHtml({ variant: "featured" })).toContain("[&amp;&gt;*:first-child]:col-span-2");
+    });
+
+    it("links each image to its largest file, named for what it opens", () => {
+      const html = galleryHtml();
+
+      expect(html).toContain(
+        '<a href="assets/img/hero-640.jpg" class="block" aria-label="Open larger: Our bakery" data-wf-lightbox-item="">',
+      );
+      expect(html).toContain('<figcaption class="text-sm empty:hidden">The shop</figcaption>');
+      // An image not chosen yet: a placeholder, no link.
+      expect(html.match(/data-wf-lightbox-item/g)).toHaveLength(1);
+    });
+
+    it("names an image's link by its caption, else as an image, when its alt text is empty", () => {
+      const named = (props: Record<string, unknown>) =>
+        renderNodesToHtml(
+          [
+            {
+              type: "GalleryImage",
+              props: { id: "i", image: { mediaId: "hero", alt: "" }, ...props },
+            },
+          ],
+          siteLibrary,
+          context,
+        );
+
+      // A decorative image (empty alt) inside a link would leave the link nameless.
+      expect(named({ caption: "Our oven" })).toContain('aria-label="Open larger: Our oven"');
+      expect(named({ caption: "" })).toContain('aria-label="Open larger: image"');
+      expect(named({ caption: "" })).toContain('alt=""');
+    });
+
+    it("always has its lightbox and its script: every image opens larger", () => {
+      const html = galleryHtml();
+
+      expect(html).toMatch(
+        /^<section class="site-gallery bg-base-100 px-4 py-16" data-wf-gallery="">/,
+      );
+      expect(html).toContain('<dialog class="modal" aria-label="Image viewer" data-wf-lightbox=""');
+      expect(html).toContain('<picture data-wf-lightbox-picture="">');
+      expect(html).toContain("touch-pan-y");
+      expect(html).toContain('aria-label="Close"');
+      expect(behavioursUsedBy([{ type: "Gallery", props: { id: "g" } }], siteLibrary)).toEqual([
+        "lightbox",
+      ]);
+    });
+  });
+
   it("throws for an unknown component type, even inside a slot", () => {
     const nodes: NodeDoc[] = [
       {

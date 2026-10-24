@@ -282,6 +282,95 @@ test.describe("exported site from disk", () => {
     });
   });
 
+  test.describe("gallery lightbox (2.7a)", () => {
+    test("opens an image large, keeps the focus in it, moves with the keys and closes with Esc", async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 1280, height: 800 });
+      await open(page, "about.html");
+      const images = page.locator("a[data-wf-lightbox-item]");
+      const viewer = page.getByRole("dialog", { name: "Image viewer" });
+      const status = viewer.locator("[data-wf-lightbox-status]");
+
+      await images.nth(1).click();
+      await expect(viewer).toBeVisible();
+      await expect(status).toHaveText("2 of 3");
+      await expect(viewer.getByRole("img")).toHaveAttribute("alt", "Hills at noon");
+      await expect(viewer.getByRole("img")).toHaveAttribute("src", /^assets\/img\//);
+      await expect
+        .poll(() =>
+          viewer.getByRole("img").evaluate((image) => (image as HTMLImageElement).naturalWidth),
+        )
+        .toBeGreaterThan(0);
+
+      // A modal: the page behind it is out of reach, so the focus can't leave it. Checked by
+      // focus(), not Tab: on macOS, WebKit doesn't tab to buttons, the lightbox's only stops.
+      expect(await viewer.evaluate((dialog) => dialog.matches(":modal"))).toBe(true);
+      await images.first().evaluate((link) => (link as HTMLElement).focus());
+      await expect(images.first()).not.toBeFocused();
+
+      await page.keyboard.press("ArrowRight");
+      await expect(status).toHaveText("3 of 3");
+      await page.keyboard.press("ArrowRight");
+      await expect(status).toHaveText("1 of 3");
+      await expect(viewer.locator("[data-wf-lightbox-caption]")).toHaveText(
+        "Where our wheat grows",
+      );
+      await viewer.getByRole("button", { name: "Previous image" }).click();
+      await expect(status).toHaveText("3 of 3");
+
+      await page.keyboard.press("Escape");
+      await expect(viewer).toBeHidden();
+      await expect(images.nth(1)).toBeFocused();
+    });
+
+    test("goes to the first and last image with Home and End, keeps the page still and closes with a click beside it", async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 1280, height: 800 });
+      await open(page, "about.html");
+      const images = page.locator("a[data-wf-lightbox-item]");
+      const viewer = page.getByRole("dialog", { name: "Image viewer" });
+      const status = viewer.locator("[data-wf-lightbox-status]");
+      const overflow = () =>
+        page.evaluate(() => getComputedStyle(document.documentElement).overflow);
+      const before = await overflow();
+
+      await images.nth(1).click();
+      await expect(viewer).toBeVisible();
+      await page.keyboard.press("End");
+      await expect(status).toHaveText("3 of 3");
+      await page.keyboard.press("Home");
+      await expect(status).toHaveText("1 of 3");
+      // The page behind doesn't scroll while the lightbox is open.
+      expect(await overflow()).toBe("hidden");
+
+      // A click beside the image, on the dimmed page, closes it.
+      await viewer.click({ position: { x: 10, y: 10 } });
+      await expect(viewer).toBeHidden();
+      await expect(images.nth(1)).toBeFocused();
+      expect(await overflow()).toBe(before);
+    });
+
+    test("passes axe with the lightbox open", async ({ page }) => {
+      await open(page, "about.html");
+      await page.locator("a[data-wf-lightbox-item]").first().click();
+      const viewer = page.getByRole("dialog", { name: "Image viewer" });
+      await expect(viewer).toBeVisible();
+      // Once it has faded in: halfway, axe measures the colours' contrast faded too (macOS).
+      await viewer.evaluate((dialog) =>
+        Promise.all(
+          dialog.getAnimations({ subtree: true }).map((animation) => animation.finished),
+        ).then(() => undefined),
+      );
+
+      const results = await new AxeBuilder({ page }).include("dialog").analyze();
+      expect(results.violations.map((violation) => `${violation.id}: ${violation.help}`)).toEqual(
+        [],
+      );
+    });
+  });
+
   test.describe("carousel (2.10)", () => {
     test("names its slides and moves with its buttons and the arrow keys, round past the end", async ({
       page,
@@ -356,6 +445,33 @@ test.describe("exported site from disk", () => {
   test.describe("without JavaScript", () => {
     test.use({ javaScriptEnabled: false });
 
+    test("opens a gallery image's full-size file, from disk", async ({ page }) => {
+      await open(page, "about.html");
+
+      await page.locator("a[data-wf-lightbox-item]").first().click();
+
+      await expect(page).toHaveURL(/\/assets\/img\/[^/]+\.(jpg|png|webp)$/);
+    });
+
+    test("links a video and a map to their own sites, with no button that does nothing (2.8)", async ({
+      page,
+    }) => {
+      await open(page, "about.html");
+
+      for (const section of [page.locator(".site-video"), page.locator(".site-map")]) {
+        await expect(section.getByRole("button")).toHaveCount(0);
+      }
+      await expect(page.getByRole("link", { name: "Watch on YouTube" })).toHaveAttribute(
+        "href",
+        "https://www.youtube.com/watch?v=aqz-KE-bpKQ",
+      );
+      await expect(page.getByRole("link", { name: "Open in Google Maps" })).toHaveAttribute(
+        "target",
+        "_blank",
+      );
+      await expect(page.locator("iframe")).toHaveCount(0);
+    });
+
     test("shows the carousel as a strip the keyboard scrolls, without buttons that do nothing", async ({
       page,
     }) => {
@@ -413,6 +529,47 @@ test.describe("exported site from disk", () => {
         .poll(async () => (await page.locator("#questions").boundingBox())?.y ?? 0)
         .toBeGreaterThanOrEqual(height - 1);
     });
+  });
+
+  test("loads a video only when the visitor plays it, and a map only when asked (F-CM-4, 2.8)", async ({
+    page,
+  }) => {
+    await open(page, "about.html");
+    const video = page.locator(".site-video");
+    const map = page.locator(".site-map");
+    await expect(video.getByText("YouTube may set cookies once it loads.")).toBeVisible();
+    await expect(page.locator("iframe")).toHaveCount(0);
+    expect(externalRequests).toEqual([]);
+
+    await video.getByRole("button", { name: "Play the video from YouTube" }).click();
+
+    const player = video.locator("iframe");
+    await expect(player).toHaveAttribute(
+      "src",
+      "https://www.youtube-nocookie.com/embed/aqz-KE-bpKQ?autoplay=1",
+    );
+    await expect(player).toHaveAttribute("title", "A morning at the bakery");
+    await expect(player).toBeFocused();
+    // The click is the one request that leaves the computer, to the privacy-enhanced player.
+    await expect
+      .poll(() => externalRequests.map((url) => new URL(url).origin))
+      .toContain("https://www.youtube-nocookie.com");
+    expect(
+      externalRequests.every((url) => url.startsWith("https://www.youtube-nocookie.com/")),
+    ).toBe(true);
+    await expect(map.locator("iframe")).toHaveCount(0);
+    externalRequests = [];
+
+    await map.getByRole("button", { name: "Show the map from Google Maps" }).click();
+    await expect(map.locator("iframe")).toHaveAttribute(
+      "src",
+      /^https:\/\/www\.google\.com\/maps\?q=1%20High%20Street/,
+    );
+    await expect.poll(() => externalRequests.length).toBeGreaterThan(0);
+    expect(externalRequests.every((url) => url.startsWith("https://www.google.com/maps"))).toBe(
+      true,
+    );
+    externalRequests = [];
   });
 
   test("opens an FAQ answer with the keyboard", async ({ page }) => {

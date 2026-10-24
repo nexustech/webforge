@@ -6,7 +6,12 @@ import type { FieldRendererProps } from "./field-spec.js";
 export const fieldControlClass = cn(
   "h-7 w-full min-w-0 rounded-sm border border-border bg-input px-2 text-sm text-foreground",
   "outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:text-disabled",
+  "aria-invalid:border-destructive",
 );
+
+/** A control's `aria-describedby`: the ids given (its error, then its help), or none. */
+export const describedBy = (...ids: readonly (string | undefined)[]): string | undefined =>
+  ids.filter((id) => id !== undefined).join(" ") || undefined;
 
 /**
  * A one-line text field. Every keystroke is a change; leaving the field ends the run.
@@ -18,6 +23,8 @@ export const fieldControlClass = cn(
 export function TextField({
   id,
   helpId,
+  errorId,
+  disabled = false,
   field,
   value,
   onChange,
@@ -35,6 +42,9 @@ export function TextField({
         className={fieldControlClass}
         value={stored}
         placeholder={field.placeholder}
+        disabled={disabled}
+        aria-invalid={errorId !== undefined}
+        aria-describedby={describedBy(errorId, helpId)}
         onChange={(event) => onChange(event.target.value)}
         onBlur={onCommit}
       />
@@ -61,20 +71,20 @@ export function TextField({
     onChange(draft);
     onCommit();
   };
-  const errorId = `${id}-error`;
+  // Its own check's message, before the one the panel shows (`errorId`).
+  const checkId = `${id}-check`;
   return (
     <>
       <input
         id={id}
         type="text"
-        className={cn(fieldControlClass, error !== null && "border-destructive")}
+        className={fieldControlClass}
         value={draft ?? stored}
         placeholder={field.placeholder}
         spellCheck={false}
-        aria-invalid={error !== null}
-        aria-describedby={
-          [error === null ? undefined : errorId, helpId].filter(Boolean).join(" ") || undefined
-        }
+        disabled={disabled}
+        aria-invalid={error !== null || errorId !== undefined}
+        aria-describedby={describedBy(error === null ? undefined : checkId, errorId, helpId)}
         onChange={(event) => {
           setDraft(event.target.value);
           setError(null);
@@ -90,7 +100,7 @@ export function TextField({
         }}
       />
       {error === null ? null : (
-        <p id={errorId} className="text-2xs text-destructive-text">
+        <p id={checkId} className="text-2xs text-destructive-text">
           {error}
         </p>
       )}

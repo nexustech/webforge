@@ -2,6 +2,7 @@ import { t } from "@webforge/i18n";
 import { useState } from "react";
 import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group.js";
 import type { FieldRendererProps } from "./field-spec.js";
+import { describedBy } from "./text-field.js";
 import { ToggleField } from "./toggle-field.js";
 
 /** The choice that leaves a side unset, so it takes the element's own spacing. */
@@ -35,6 +36,9 @@ function withSides(box: Box, sides: readonly string[], token: string): Box {
 export function BoxField({
   id,
   labelId,
+  helpId,
+  errorId,
+  disabled = false,
   field,
   value,
   onChange,
@@ -71,6 +75,9 @@ export function BoxField({
       id={choiceId}
       type="single"
       aria-labelledby={labelledBy}
+      aria-invalid={errorId !== undefined}
+      aria-describedby={describedBy(errorId, helpId)}
+      disabled={disabled}
       className="flex w-full flex-wrap"
       value={chosen}
       onValueChange={(next) => {
@@ -98,6 +105,7 @@ export function BoxField({
             labelId={`${labelId} ${sameId}-label`}
             field={{ kind: "toggle", label: t("editPanel.box.same") }}
             value={same}
+            disabled={disabled}
             onChange={(next) => setMode({ same: next === true, shown })}
             onCommit={() => undefined}
           />
