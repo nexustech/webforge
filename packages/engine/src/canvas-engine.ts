@@ -9,6 +9,7 @@ import type {
 } from "@webforge/model";
 import type {
   ComponentLibrary,
+  EditPreviews,
   RenderContext,
   ResolvedImage,
   SiteBindings,
@@ -311,6 +312,12 @@ export interface CanvasEngine {
   setMode(mode: EditorMode): void;
   /** Shows the View menu's options on the canvas (F-ED-25); none until called. */
   setViewOptions(options: ViewOptions): void;
+  /**
+   * Shows the edit-only previews on the canvas (UX-26): the Header's small-screen menu open, for
+   * one. View state, never an undo step (U6), and never in the export. None until called; the page
+   * is drawn again.
+   */
+  setPreviews(previews: EditPreviews): void;
   /**
    * Does `action` to the selected element. Edits are reported through {@link onUserEdit} as one
    * step each, like the same action done with the mouse. Returns false if there is nothing to do:

@@ -375,6 +375,11 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
 
     setViewOptions: frame.setViewOptions,
 
+    setPreviews(previews) {
+      renderContext = { ...renderContext, previews };
+      redraw();
+    },
+
     destroy() {
       // An Undo still waiting for its rich-text edit goes with the canvas.
       commands.dispose();

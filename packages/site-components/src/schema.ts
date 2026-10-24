@@ -14,6 +14,7 @@ import type {
   Responsive,
 } from "@webforge/model";
 import type { ComponentType, ReactNode } from "react";
+import type { EditPreviews } from "./previews.js";
 
 /** A choice offered by a field: its translated label and the stored value. */
 export type FieldOption = { readonly label: string; readonly value: string };
@@ -213,6 +214,8 @@ export type RenderContext = SiteBindings & {
   readonly href: (link: LinkValue) => string;
   /** The image for a media id, or `null` if there is none (yet). */
   readonly image: (mediaId: string) => ResolvedImage | null;
+  /** The canvas's edit-only previews (UX-26); the export renders without them. */
+  readonly previews?: EditPreviews;
 };
 
 /**
