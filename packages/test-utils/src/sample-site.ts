@@ -22,10 +22,10 @@ export function priceList(): Uint8Array {
 /**
  * A small two-page site: Header and Footer, a home page with a Hero (with photo), text, a Carousel
  * of customers' quotes (2.10), an FAQ and a Call to action, and an About page with a text-only Hero
- * linking to a price list (a document), a Text section, a Text + Image section (2.6), and a Video
- * and a Map that load only when clicked (2.8). Its menu has both pages, a "Visit us" dropdown (a
- * link to the FAQ section and a web address in a new tab) and an "Order a cake" button. Used by
- * pipeline tests and the export E2E tests.
+ * linking to a price list (a document), a Text section, a Text + Image section (2.6), a Gallery
+ * with its lightbox (2.7a), and a Video and a Map that load only when clicked (2.8). Its menu has
+ * both pages, a "Visit us" dropdown (a link to the FAQ section and a web address in a new tab) and
+ * an "Order a cake" button. Used by pipeline tests and the export E2E tests.
  */
 export function sampleSite(): SiteSnapshot {
   return {
@@ -222,6 +222,32 @@ export function sampleSite(): SiteSnapshot {
                 text: "<p>Sourdough, rye and cakes to order.</p>",
                 image: { mediaId: "hero-photo", alt: "Hills where our wheat grows" },
                 variant: "imageLeft",
+              },
+            },
+            {
+              // Opens each image larger in its lightbox (2.7a).
+              type: "Gallery",
+              props: {
+                id: "work",
+                title: "Our work",
+                images: [
+                  {
+                    type: "GalleryImage",
+                    props: {
+                      id: "work-1",
+                      image: { mediaId: "hero-photo", alt: "Hills at sunrise" },
+                      caption: "Where our wheat grows",
+                    },
+                  },
+                  {
+                    type: "GalleryImage",
+                    props: { id: "work-2", image: { mediaId: "hero-photo", alt: "Hills at noon" } },
+                  },
+                  {
+                    type: "GalleryImage",
+                    props: { id: "work-3", image: { mediaId: "hero-photo", alt: "Hills at dusk" } },
+                  },
+                ],
               },
             },
             {
