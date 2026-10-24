@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_PREFERENCES } from "../../shared/ipc/prefs.js";
 import { setFailureLog } from "../log.js";
-import { createPreferencesStore } from "./preferences-store.js";
+import { createPreferencesStore, followLayoutLock } from "./preferences-store.js";
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -66,5 +66,21 @@ describe("createPreferencesStore (R9)", () => {
       ["editor-mode.save", "TypeError"],
     ]);
     setFailureLog(undefined);
+  });
+});
+
+describe("followLayoutLock (2.20, B1)", () => {
+  it("says whether the mode locks the layout, now and as that changes", () => {
+    const store = createPreferencesStore();
+    const locked: boolean[] = [];
+
+    const stop = followLayoutLock(store, (next) => locked.push(next));
+    store.changeMode("content");
+    store.change({ theme: "dark" });
+    store.changeMode("design");
+    stop();
+    store.changeMode("content");
+
+    expect(locked).toEqual([false, true, false]);
   });
 });

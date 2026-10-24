@@ -12,13 +12,12 @@ import type {
   SiteUiState,
   UiStateResult,
 } from "../shared/ipc-contract.js";
+import { EDITOR_AREAS, WINDOW_AREAS } from "./areas.js";
+import { connectAreas } from "./editor/areas.js";
 import { Editor, type EditorProps } from "./editor/Editor.js";
 import { createEditorSession, type EditorSession } from "./editor/editor-session.js";
 import { starterSite } from "./editor/starter-site.js";
 import { useDocument } from "./editor/use-document.js";
-import { registerExportCommand } from "./export/export-command.js";
-import { exportRequestFor } from "./export/export-request.js";
-import { registerLayersPanel } from "./layers/register-layers-panel.js";
 import { reportFailure } from "./log.js";
 import { AboutDialog } from "./shell/AboutDialog.js";
 import { CanvasToolbarHost } from "./shell/CanvasToolbarHost.js";
@@ -42,13 +41,9 @@ import { ShellLayout } from "./shell/ShellLayout.js";
 import { ShortcutSheet } from "./shell/ShortcutSheet.js";
 import { TitleBar } from "./shell/TitleBar.js";
 import { UndoStepsMenu } from "./shell/UndoStepsMenu.js";
-import { registerViewCommands } from "./shell/view-commands.js";
-import { registerPageCommands } from "./site/page-commands.js";
-import { registerSitePanel } from "./site/SitePanel.js";
 import { SiteSettingsHost } from "./site-settings/SiteSettingsHost.js";
 import { SiteCommands } from "./start/SiteCommands.js";
 import { AutosaveStatus } from "./storage/AutosaveStatus.js";
-import { registerCrashReportsCommand } from "./storage/crash-reports-command.js";
 import type { LoadedSite } from "./storage/load-site.js";
 import { siteSession } from "./storage/site-session.js";
 
@@ -133,28 +128,21 @@ export function App({
 
   useEffect(() => installCommandShortcuts(window, registry), [registry]);
   useEffect(() => pauseCommandsWhileAsking(siteWide, registry), [siteWide, registry]);
-  useEffect(() => registerSitePanel(panels, session, siteWide), [panels, session, siteWide]);
-  // The command palette's Go to page (1.34, F-ED-26).
-  useEffect(() => registerPageCommands(registry, session), [registry, session]);
-  // Content mode locks the layout in Layers too (M3). Registered once, so switching modes keeps
-  // what the panel shows: its collapsed layers and filter.
-  useEffect(
-    () => registerLayersPanel(panels, session, { preferences }),
-    [panels, session, preferences],
-  );
-  useEffect(() => registerCrashReportsCommand(registry), [registry]);
-  // View → Zoom In/Out, Actual Size, Zoom to Fit and the device views (F-ED-27).
-  useEffect(
-    () => registerViewCommands(registry, session, canvasView),
-    [registry, session, canvasView],
-  );
-
+  // The window's areas (2.20, B1): the Site and Layers panels, Go to page, Open Crash Reports,
+  // the View menu's zoom and device views, and Export, after the shell's own commands.
   useEffect(
     () =>
-      registerExportCommand(registry, () =>
-        exportSite(exportRequestFor(session.history.document.getState(), siteLibrary)),
-      ),
-    [registry, session, exportSite],
+      connectAreas(WINDOW_AREAS, {
+        session,
+        commands: registry,
+        panels,
+        toolbars,
+        preferences,
+        siteWide,
+        canvasView,
+        exportSite,
+      }),
+    [session, registry, panels, toolbars, preferences, siteWide, canvasView, exportSite],
   );
 
   // View → Use Light/Dark Theme, labelled for the theme shown; it reads that when it runs.
@@ -261,6 +249,7 @@ export function App({
                       <div className="min-h-0 flex-1">
                         <Editor
                           session={session}
+                          areas={EDITOR_AREAS}
                           {...(createEngine === undefined ? {} : { createEngine })}
                           {...(compileCss === undefined ? {} : { compileCss })}
                           preferences={preferences}
