@@ -75,6 +75,9 @@ function removedImage(): ResolvedImage {
   };
 }
 
+/** What an Image element without its image shows on the canvas (2.9): where to choose one. */
+const emptyImageHint = () => t("site.media.emptyImage");
+
 /** The canvas's image resolver for `media`. */
 function resolverFor(media: SiteDoc["media"]) {
   return (mediaId: string) => {
@@ -107,14 +110,14 @@ export function connectCanvasImages(
 ): Unsubscribe {
   let shown = session.history.document.getState().media;
   let timer: ReturnType<typeof setTimeout> | undefined;
-  engine.setImages(resolverFor(shown));
+  engine.setImages(resolverFor(shown), emptyImageHint);
   const unsubscribe = session.history.document.subscribe(() => {
     clearTimeout(timer);
     timer = setTimeout(() => {
       const media = session.history.document.getState().media;
       if (media !== shown) {
         shown = media;
-        engine.setImages(resolverFor(shown));
+        engine.setImages(resolverFor(shown), emptyImageHint);
       }
     }, delayMs);
   });

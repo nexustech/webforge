@@ -47,9 +47,15 @@ export const shared = {
   "colour.opacityStep": "{step}%",
   "field.color.lowContrast":
     "Hard to read on the page: contrast {ratio}:1, less than the {needed}:1 this text needs.",
+  // Where an element or a section's content sits across it.
+  "field.alignment": "Alignment",
+  "field.alignment.left": "Left",
+  "field.alignment.centre": "Centre",
+  "field.alignment.right": "Right",
   "field.buttonLabel": "Button text",
   "field.buttonLink": "Button link",
   "field.image": "Image",
+  "field.caption": "Caption",
   "starter.heading": "Welcome to our business",
   "starter.text": "Tell visitors what you do and why they will love it.",
   "starter.notFoundHeading": "Sorry, this page doesn't exist",

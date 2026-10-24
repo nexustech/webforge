@@ -227,6 +227,8 @@ export type RenderContext = SiteBindings & {
   readonly href: (link: LinkValue) => string;
   /** The image for a media id, or `null` if there is none (yet). */
   readonly image: (mediaId: string) => ResolvedImage | null;
+  /** What an Image without its image shows instead (2.9): a hint on the canvas; nothing in the export. */
+  readonly emptyImage?: () => ReactNode;
 };
 
 /**

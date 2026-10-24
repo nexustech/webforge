@@ -9,7 +9,6 @@ export const gallery = {
   "field.galleryLayout.masonry": "Natural shapes",
   "field.galleryLayout.featured": "First image large",
   "field.images": "Images",
-  "field.caption": "Caption",
   "starter.galleryTitle": "Our work",
   // A gallery's lightbox on an exported site (2.7a). "{n} of {total}": "3 of 8".
   "siteText.lightbox": "Image viewer",
