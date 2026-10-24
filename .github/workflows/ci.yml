@@ -188,9 +188,6 @@ jobs:
         # Windows and macOS while FULL_CI_ENABLED is true (see the notes above).
         os: ${{ fromJSON(vars.FULL_CI_ENABLED == 'true' && '["ubuntu-latest", "windows-latest", "macos-latest"]' || '["ubuntu-latest"]') }}
     runs-on: ${{ matrix.os }}
-    # Temporary: macOS E2E reports on every PR but doesn't fail "CI passed" until its first-run
-    # failures are fixed (#287, product owner's decision of 23 Oct 2026). Remove this line then.
-    continue-on-error: ${{ matrix.os == 'macos-latest' }}
     # macOS runners take about 15 minutes for the tests alone, plus setup.
     timeout-minutes: 30
     env:
@@ -225,6 +222,30 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: Set-DisplayResolution -Width 1920 -Height 1080 -Force
+
+      - name: Screen size (macOS)
+        # macOS runners start at 1024 × 768 too: the 1280 × 800 window filled the screen, the canvas
+        # zoomed out and clicks near its edges missed (#287). displayplacer switches the screen: a
+        # pinned release, checked against its SHA-256, so a new one can't break every macOS run.
+        # The Apple Silicon build: macos-latest runners are arm64.
+        if: runner.os == 'macOS'
+        env:
+          DISPLAYPLACER_URL: https://github.com/jakehilborn/displayplacer/releases/download/v1.4.0/displayplacer-apple-v140
+          DISPLAYPLACER_SHA256: 0572c3d2918e47c7e0b9d7723907864e2ea2b53b9d3b02379769fffcf44f7ea0
+        run: |
+          bin="$RUNNER_TEMP/displayplacer"
+          curl -fsSL --retry 3 "$DISPLAYPLACER_URL" -o "$bin"
+          shasum -a 256 "$bin"
+          echo "$DISPLAYPLACER_SHA256  $bin" | shasum -a 256 -c -
+          chmod +x "$bin"
+          displayplacer() { "$bin" "$@"; }
+          # displayplacer exits with 1 even when it works, so the screen it leaves is checked instead.
+          screens=$(displayplacer list || true)
+          id=$(awk '/^Persistent screen id:/ { print $4; exit }' <<< "$screens")
+          displayplacer "id:$id res:1920x1080 hz:60 color_depth:7 enabled:true scaling:off origin:(0,0) degree:0" || true
+          screens=$(displayplacer list || true)
+          grep '^Resolution:' <<< "$screens"
+          grep -q '^Resolution: 1920x1080' <<< "$screens"
 
       - name: Allow the Chromium sandbox (Linux)
         # Ubuntu 24.04 restricts unprivileged user namespaces, which Electron's sandbox needs.

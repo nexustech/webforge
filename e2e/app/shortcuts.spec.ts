@@ -1,4 +1,5 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { placeCaret } from "./caret.js";
 import { launchDesktopApp } from "./launch.js";
 
 // The keyboard shortcut standard (1.38, F-ED-27): the sheet from the Help menu and `?`, the view
@@ -90,7 +91,7 @@ test("leaves keys to a text field being typed in, except the app's own Mod keys"
   await selectHeading();
   const field = panel().getByLabel("Text", { exact: true });
   await field.click();
-  await page.keyboard.press("End");
+  await placeCaret(field, "end");
 
   // ?, Backspace and the arrows are the field's.
   await page.keyboard.type(" now?", { delay: 20 });
@@ -112,7 +113,7 @@ test("leaves ? to rich text edited on the canvas, where Mod+K links", async () =
   // Clicking the text edits it (F-ED-3).
   await text.click();
   await editor.click();
-  await page.keyboard.press("End");
+  await placeCaret(editor, "end");
 
   await page.keyboard.type("?", { delay: 20 });
   await page.keyboard.press("ControlOrMeta+k");
@@ -129,7 +130,7 @@ test("in rich text: Mod+K links, Shift+Space types a non-breaking space, Alt+Ent
   await editor.click();
 
   // Mod+K with a word selected asks for the link, as the toolbar's Link… does.
-  await page.keyboard.press("End");
+  await placeCaret(editor, "end");
   await page.keyboard.press("Shift+ControlOrMeta+ArrowLeft");
   // Once the editor has the selection: the toolbar's Link… turns on with it.
   await expect(
@@ -142,7 +143,7 @@ test("in rich text: Mod+K links, Shift+Space types a non-breaking space, Alt+Ent
   await expect(link).toHaveCount(0);
 
   await editor.click();
-  await page.keyboard.press("Home");
+  await placeCaret(editor, "start");
   await page.keyboard.type("Open", { delay: 20 });
   await page.keyboard.press("Shift+Space");
   await expect(editor).toContainText("Open Tell visitors");

@@ -223,6 +223,11 @@ test("keeps what Layers shows, its collapsed layers and filter, when the mode sw
 test("in Content mode, leaves the canvas's right-clicks alone and Layers' menu to Rename", async () => {
   await showLayers();
   await page.getByRole("radio", { name: "Content", exact: true }).click();
+  // The canvas's right-click gets the browser's own menu (Cut, Copy, Paste): not shown, as a
+  // native menu left open on macOS stops the app from closing (#287).
+  await app.evaluate(({ Menu }) => {
+    Menu.prototype.popup = () => undefined;
+  });
 
   await canvas().locator("h1").click({ button: "right" });
   await expect(menu()).toHaveCount(0);

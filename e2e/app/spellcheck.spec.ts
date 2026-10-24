@@ -1,4 +1,5 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { placeCaret } from "./caret.js";
 import { launchDesktopApp } from "./launch.js";
 
 // Spell check (1.22, F-ED-19): the system's checker underlines misspellings while editing, and a
@@ -140,7 +141,7 @@ test("offers spelling suggestions inside rich text on the canvas (1.23)", async 
   await canvas.getByText("Tell visitors what you do and why they will love it.").click();
   await editor.click();
   await expect(editor).toBeFocused();
-  await page.keyboard.press("End");
+  await placeCaret(editor, "end");
   await page.keyboard.type(" Fresh bakkery ", { delay: 20 });
   // Electron's checker only looks at an editable that doesn't turn it off.
   await expect(editor).not.toHaveAttribute("spellcheck", "false");
@@ -158,10 +159,16 @@ test("offers spelling suggestions inside rich text on the canvas (1.23)", async 
             range.setStart(node, index + 2);
             range.setEnd(node, index + 3);
             const box = range.getBoundingClientRect();
-            const frame = element.ownerDocument.defaultView?.frameElement?.getBoundingClientRect();
+            const frame = element.ownerDocument.defaultView?.frameElement as HTMLElement | null;
+            const place = frame?.getBoundingClientRect();
+            // The canvas is zoomed (to fit a small screen, #287): its points are scaled.
+            const scale =
+              frame !== null && frame !== undefined && place !== undefined && frame.offsetWidth > 0
+                ? place.width / frame.offsetWidth
+                : 1;
             return {
-              x: (frame?.x ?? 0) + box.x + box.width / 2,
-              y: (frame?.y ?? 0) + box.y + box.height / 2,
+              x: (place?.x ?? 0) + (box.x + box.width / 2) * scale,
+              y: (place?.y ?? 0) + (box.y + box.height / 2) * scale,
             };
           }
           return null;
