@@ -42,20 +42,7 @@ export function stampContent(db: Database.Database): void {
 
 const corrupt = (message: string) => new ProjectFileError("corrupt", message);
 
-const manifestHashesSchema = z.object({
-  documents: z.array(z.object({ hash: z.string() })),
-});
-
 const documentBlobsSchema = z.array(z.tuple([z.string(), z.instanceof(Uint8Array)]));
-
-/** `text` as JSON, or `undefined` if it isn't JSON. */
-function parseJson(text: string): unknown {
-  try {
-    return JSON.parse(text);
-  } catch {
-    return undefined;
-  }
-}
 
 /**
  * Checks that a project's content is whole, after SQLite's own check (#295). Throws a `corrupt`
@@ -80,12 +67,29 @@ export function checkContent(db: Database.Database): void {
   if (missing !== 0) {
     throw corrupt("A document or asset refers to a missing blob");
   }
-  const has = db.prepare("SELECT 1 FROM blobs WHERE hash = ?").pluck();
-  for (const manifest of db.prepare("SELECT manifest FROM versions").pluck().all()) {
-    const parsed = manifestHashesSchema.safeParse(parseJson(String(manifest)));
-    if (!parsed.success || parsed.data.documents.some(({ hash }) => has.get(hash) === undefined)) {
-      throw corrupt("A version refers to a missing blob");
-    }
+  // One query for every version: looking each manifest's hashes up one by one from JavaScript
+  // took 2.4 s for 300 versions of 40 pages, this takes about 30 ms (test/open-time.test.ts).
+  const badManifests = db
+    .prepare(
+      `SELECT count(*) FROM versions
+       WHERE NOT json_valid(manifest) OR json_type(manifest, '$.documents') IS NOT 'array'`,
+    )
+    .pluck()
+    .get();
+  if (badManifests !== 0) {
+    throw corrupt("A version's manifest is not a list of documents");
+  }
+  // Only once every manifest is valid JSON: json_each fails on one that isn't.
+  const missingInVersions = db
+    .prepare(
+      `SELECT count(*) FROM versions, json_each(versions.manifest, '$.documents') AS entry
+       LEFT JOIN blobs ON blobs.hash = json_extract(entry.value, '$.hash')
+       WHERE blobs.hash IS NULL`,
+    )
+    .pluck()
+    .get();
+  if (missingInVersions !== 0) {
+    throw corrupt("A version refers to a missing blob");
   }
   const documentBlobs = documentBlobsSchema.parse(
     db

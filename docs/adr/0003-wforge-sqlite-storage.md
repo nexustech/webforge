@@ -92,6 +92,10 @@ The spike adds a minimal `ProjectStore` in `packages/storage` and wires it throu
   | zod-validated metadata and version manifests; JSON blobs parsed with `z.json()` | `unexpected-schema` / `corrupt` |
   | **Content (#295, 24 Oct 2026):** the header's `user_version` holds a fingerprint of every document's and asset's row and the version ids, written in the same transaction as any change to them; it must match the rows. Every document, asset and version refers to a blob the file has, and each document blob is the bytes its hash names. `user_version` 0 (files from before) skips the fingerprint only | `corrupt` |
 
+  **Cost:** opening a project of 40 large pages and 300 versions takes about 70 ms, `quick_check` included (`packages/storage/test/open-time.test.ts`). Every write goes through `ProjectStore`'s one write helper, which records the fingerprint in the same transaction, and `test/write-paths.test.ts` fails if a new method writes without it.
+
+  **The format stays at 1, so a build from before #303 must not write a fingerprinted file.** Such a build changes the rows without updating `user_version`, so the next build that opens the file reads it as `corrupt`. That only concerns development builds from before 24 Oct 2026: no release predates the fingerprint, so the format doesn't need a bump at release. If a build without the fingerprint ever reaches users first, bump the format with the release that adds it, so older builds open such files read-only.
+
   **Why the content check:** a copy of the `.wforge` alone, taken while a commit writes it, can hold some of the commit's pages and the old version of the rest, since the rollback journal that would undo it isn't copied. `quick_check` only sees the b-trees, which can be whole on both sides (macOS CI, #295). `packages/storage/test/torn-copy.test.ts` builds every such copy from two real commits, page by page.
 
 - **Over IPC.** Errors are a typed `ProjectFileError` with a code. The IPC returns `{ status: "failed", reason }`, and logs only the code, never paths or content. The renderer never sends a path: native dialogs run in the main process.
