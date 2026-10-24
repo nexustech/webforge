@@ -4,7 +4,7 @@ import type { SharedSectionId } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { userEvent, within } from "storybook/test";
 import { AddPanel } from "./AddPanel.js";
-import { addItems, withFavourites } from "./add-items.js";
+import { addItems, suggestedItems, withFavourites } from "./add-items.js";
 
 const noop = () => undefined;
 const anywhere = (_type: string): boolean => true;
@@ -56,6 +56,14 @@ export const AtThePlus: Story = { args: { point: { after: "Hero" } } };
 
 /** Elements, which go into the selected section. */
 export const Elements: Story = { args: { tab: "elements" } };
+
+/** A List selected: its items first, under Suggested (SP-12). */
+export const Suggested: Story = {
+  args: {
+    tab: "elements",
+    elements: [...suggestedItems(siteLibrary, ["ListItem"]), ...addItems(siteLibrary, "elements")],
+  },
+};
 
 /** Elements on a page with no section to take them. */
 export const NoSection: Story = { args: { tab: "elements", canAdd: () => false } };

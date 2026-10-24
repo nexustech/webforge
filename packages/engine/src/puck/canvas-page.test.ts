@@ -1,5 +1,6 @@
-import type { PuckAction } from "@puckeditor/core";
+import type { AppState, PuckAction } from "@puckeditor/core";
 import type { LayoutDoc, NodeDoc, PageDoc } from "@webforge/model";
+import type { ComponentLibrary } from "@webforge/site-components";
 import { describe, expect, it, vi } from "vitest";
 import { createCanvasPage } from "./canvas-page.js";
 import { createCanvasSelection } from "./canvas-selection.js";
@@ -12,7 +13,7 @@ const pageOf = (...content: NodeDoc[]): PageDoc => ({ root: { props: {} }, conte
 const NO_LAYOUT: LayoutDoc = { header: [], footer: [] };
 
 /** A canvas page on a Puck that records what is dispatched to it, ready unless `ready` is false. */
-function canvasPage(ready = true) {
+function canvasPage(ready = true, library: ComponentLibrary | null = null) {
   const sync = createCanvasSync();
   const dispatched: PuckAction[] = [];
   const puck = { current: ready };
@@ -30,7 +31,7 @@ function canvasPage(ready = true) {
     // Only its presence is used here: Puck is ready.
     puck: () => (puck.current ? ({} as PuckApi) : null),
     dispatch,
-    library: () => null,
+    library: () => library,
     slotsOf: () => [],
     selection,
     commands: { edited: vi.fn() },
@@ -119,5 +120,50 @@ describe("CanvasPage (R8)", () => {
     page.show();
     expect(dispatched.map((action) => action.type)).toEqual(["setData"]);
     expect(sync.isShown()).toBe(true);
+  });
+
+  it("refuses a drop that puts more in a slot than it holds, reporting nothing (2.9)", async () => {
+    const item = (id: string): NodeDoc => ({ type: "Item", props: { id } });
+    const row = (...items: NodeDoc[]): NodeDoc => ({ type: "Row", props: { id: "row", items } });
+    // A Row holds one Item at most, as a Columns holds four Columns.
+    const library: ComponentLibrary = {
+      components: {
+        Row: {
+          label: "Row",
+          fields: { items: { kind: "slot", label: "Items", allow: ["Item"], max: 1 } },
+          defaults: { items: [] },
+          render: () => null,
+        },
+        Item: { label: "Item", place: "child", fields: {}, defaults: {}, render: () => null },
+      },
+    };
+    const { page, dispatched } = canvasPage(true, library);
+    page.load({ page: pageOf(row(item("one")), item("two")), layout: NO_LAYOUT, shared: {} });
+    const edits: unknown[] = [];
+    page.onEdit((edit) => edits.push(edit));
+    dispatched.length = 0;
+    const state = (content: NodeDoc[]) =>
+      ({
+        data: { root: { props: {} }, content },
+        ui: { isDragging: false },
+      }) as unknown as AppState;
+    const move = {
+      type: "move",
+      sourceZone: "root:default-zone",
+      sourceIndex: 1,
+      destinationZone: "row:items",
+      destinationIndex: 1,
+    } as PuckAction;
+
+    page.handleAction(
+      move,
+      state([row(item("one"), item("two"))]),
+      state([row(item("one")), item("two")]),
+    );
+    await Promise.resolve();
+
+    expect(edits).toEqual([]);
+    // Puck's view is put back as the page has it.
+    expect(dispatched.length).toBeGreaterThan(0);
   });
 });

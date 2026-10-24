@@ -19,6 +19,8 @@ import {
   addSharedCopy,
   addTargetFor,
   sharedSectionItems,
+  suggestedItems,
+  suggestedTypes,
   withFavourites,
 } from "./add-items.js";
 
@@ -151,6 +153,22 @@ export function registerAddPanel(
     }
     return listed;
   };
+  // The Elements tab led by what fits inside the selection (SP-12), rebuilt only when that changes.
+  let suggested:
+    | { key: string; from: readonly AddItem[]; elements: readonly AddItem[] }
+    | undefined;
+  const withSuggested = (elements: readonly AddItem[]) => {
+    const types = suggestedTypes(library, content(), ui.getState().nodeId);
+    const key = types.join(",");
+    if (suggested?.key !== key || suggested.from !== elements) {
+      suggested = {
+        key,
+        from: elements,
+        elements: types.length === 0 ? elements : [...suggestedItems(library, types), ...elements],
+      };
+    }
+    return suggested.elements;
+  };
   /** Whether a click on `item` has somewhere to add it now (at the + button's place, if any). */
   const canAdd = (item: AddItem, point?: InsertPoint) =>
     // A shared section goes wherever a section does: anywhere on a page.
@@ -162,7 +180,8 @@ export function registerAddPanel(
   const getView = (): AddView => {
     const point = insertPoint(state.point);
     const after = state.point?.after ?? null;
-    const shown = items();
+    const listed = items();
+    const shown = { ...listed, elements: withSuggested(listed.elements) };
     const next: AddView = {
       tab: state.tab,
       sections: shown.sections,

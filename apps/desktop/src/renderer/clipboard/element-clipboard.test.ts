@@ -7,7 +7,7 @@ import {
   type NodeDoc,
   SHARED_COPY_TYPE,
 } from "@webforge/model";
-import { type ComponentLibrary, siteLibrary } from "@webforge/site-components";
+import { type ComponentLibrary, MAX_COLUMNS, siteLibrary } from "@webforge/site-components";
 import { describe, expect, it, vi } from "vitest";
 import type { ClipboardReadResult } from "../../shared/ipc/clipboard.js";
 
@@ -247,6 +247,34 @@ describe("copy and paste (1.25)", () => {
     expect(pasteTarget(siteLibrary, page, [], null)).toBeUndefined();
   });
 
+  it("pastes no more columns than a Columns holds (2.9)", () => {
+    const column = (id: string): NodeDoc => ({ type: "Column", props: { id, content: [] } });
+    const columns = (id: string, count: number): NodeDoc => ({
+      type: "Columns",
+      props: {
+        id,
+        columns: Array.from({ length: count }, (_, index) => column(`${id}${index}`)),
+      },
+    });
+    const page: NodeDoc[] = [
+      {
+        type: "Section",
+        props: { id: "s", content: [columns("full", MAX_COLUMNS), columns("room", 1)] },
+      },
+    ];
+
+    expect(pasteTarget(siteLibrary, page, [column("new")], "full1")).toBeUndefined();
+    expect(pasteTarget(siteLibrary, page, [column("new")], "room0")).toEqual({
+      parentId: "room",
+      slot: "columns",
+      index: 1,
+    });
+    // Four into one with room for three: none of them.
+    expect(
+      pasteTarget(siteLibrary, page, ["a", "b", "c", "d"].map(column), "room0"),
+    ).toBeUndefined();
+  });
+
   it("cuts past elements whose list fields hold plain items, not elements", async () => {
     const session = sessionWith();
     session.edit("insert", "Added a list", (draft) => {
@@ -295,18 +323,40 @@ describe("copy and paste (1.25)", () => {
       expect(site(session).media).toEqual({});
     });
 
-    it("adds to Media, and says so, when nothing selected takes an image", async () => {
+    it("puts one image in an Image element of its own when nothing selected takes one (2.9)", async () => {
       const session = sessionWith();
       const notify = vi.fn();
       select(session, "heading-1");
 
-      await pasteElements(session, media([photo]), notify);
+      expect(await pasteElements(session, media([photo]), notify)).toBe(true);
+
+      const placed = sectionContent(session)[1];
+      expect(sectionContent(session).map((node) => node.type)).toEqual([
+        "Heading",
+        "Image",
+        "Text",
+      ]);
+      expect(placed?.props.image).toEqual({ mediaId: photo.id });
+      expect(site(session).media[photo.id]).toMatchObject({ fileName: "shop.jpg" });
+      expect(session.ui.getState().nodeId).toBe(placed?.props.id);
+      expect(labels(session).at(-1)).toBe("Pasted image 'shop.jpg'");
+      expect(notify).not.toHaveBeenCalled();
+
+      session.history.undo();
+      expect(sectionContent(session).map((node) => node.type)).toEqual(["Heading", "Text"]);
+      expect(site(session).media).toEqual({});
+    });
+
+    it("adds several images and files to Media, and says so", async () => {
+      const session = sessionWith();
+      const notify = vi.fn();
+      select(session, "heading-1");
+
       await pasteElements(session, media([{ ...photo, id: "two" as MediaId }, prices]), notify);
 
-      expect(Object.keys(site(session).media)).toEqual(["photo", "two", "prices"]);
+      expect(Object.keys(site(session).media)).toEqual(["two", "prices"]);
       expect(sectionContent(session).map((node) => node.type)).toEqual(["Heading", "Text"]);
       expect(notify.mock.calls.map(([message]) => message)).toEqual([
-        "Added 'shop.jpg' to Media",
         "Added 2 images and files to Media",
       ]);
     });

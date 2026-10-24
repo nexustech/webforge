@@ -14,6 +14,7 @@ import {
   type ColumnLayout,
   ColumnsLayoutContext,
   imageSizes,
+  MAX_COLUMNS,
 } from "./column-layouts.js";
 
 const ALIGNMENTS = ["left", "centre", "right"] as const;
@@ -239,7 +240,7 @@ const columns = defineComponent({
   label: t("element.columns"),
   category: t("category.layout"),
   fields: {
-    columns: { kind: "slot", label: t("field.columns"), allow: ["Column"] },
+    columns: { kind: "slot", label: t("field.columns"), allow: ["Column"], max: MAX_COLUMNS },
     layout: {
       kind: "select",
       label: t("field.columnLayout"),
@@ -348,7 +349,8 @@ const list = defineComponent({
         <Items />
       </ol>
     ) : (
-      <ul className={className}>
+      // Safari and VoiceOver drop a list's semantics once its markers are gone: say it is one.
+      <ul className={className} role={values.style === "plain" ? "list" : undefined}>
         <Items />
       </ul>
     );
