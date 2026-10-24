@@ -7,7 +7,12 @@ import type {
   SharedSectionsDoc,
   Theme,
 } from "@webforge/model";
-import type { ComponentLibrary, RenderContext, ResolvedImage } from "@webforge/site-components";
+import type {
+  ComponentLibrary,
+  RenderContext,
+  ResolvedImage,
+  SiteBindings,
+} from "@webforge/site-components";
 import type { ComponentType, ReactNode } from "react";
 
 /** The rich-text field being edited on the canvas: its element and the field's name. */
@@ -293,14 +298,11 @@ export interface CanvasEngine {
    */
   setLinkPicker(picker: LinkPicker | null): void;
   /**
-   * Shows the site's Site Settings values in elements bound to them (1.17): `setting` gives a
-   * value, `emptySetting` what an empty one shows instead (a hint). Called again when Site
+   * Shows the site's Site Settings on the canvas (1.17, 2.8): the values elements are bound to,
+   * what an empty one shows instead (a hint), and the opening hours. Called again when Site
    * Settings change; the page is drawn again.
    */
-  setSettings(
-    setting: RenderContext["setting"],
-    emptySetting?: RenderContext["emptySetting"],
-  ): void;
+  setSettings(bindings: SiteBindings): void;
   /**
    * Shows the site's navigation menu in the Header on the canvas (1.21), as the export draws it.
    * Called again when the menu, the pages or the page shown change; the page is drawn again.

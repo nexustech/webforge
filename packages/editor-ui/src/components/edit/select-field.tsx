@@ -1,10 +1,12 @@
 import type { FieldRendererProps } from "./field-spec.js";
-import { fieldControlClass } from "./text-field.js";
+import { describedBy, fieldControlClass } from "./text-field.js";
 
 /** A choice from a short list, as a native select (keyboard and screen readers for free). */
 export function SelectField({
   id,
   helpId,
+  errorId,
+  disabled = false,
   field,
   value,
   onChange,
@@ -16,7 +18,9 @@ export function SelectField({
     <select
       id={id}
       className={fieldControlClass}
-      aria-describedby={helpId}
+      disabled={disabled}
+      aria-invalid={errorId !== undefined}
+      aria-describedby={describedBy(errorId, helpId)}
       value={selected}
       onChange={(event) => {
         onChange(event.target.value);

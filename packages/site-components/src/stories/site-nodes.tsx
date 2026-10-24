@@ -1,4 +1,4 @@
-import type { NodeDoc } from "@webforge/model";
+import type { BindableSetting, NodeDoc } from "@webforge/model";
 import { siteLibrary } from "../catalogue/index.js";
 import { EDITOR_RENDER_CONTEXT } from "../library.js";
 import { renderNodesToHtml } from "../render-static.js";
@@ -23,6 +23,15 @@ const photo: ResolvedImage = {
   alt: "Green hills under a morning sun",
 };
 
+/** The Site Settings values stories show (1.17). */
+const STORY_SETTINGS: Partial<Record<BindableSetting, string>> = {
+  "general.name": "Rosa's Bakery",
+  "contact.address": "1 High Street\nHightown\nHT1 2AB",
+  "contact.phone": "+44 1234 567890",
+  "contact.email": "hello@rosas-bakery.example",
+  "contact.openingHoursNote": "Closed on bank holidays.",
+};
+
 /** What stories render with: the export's context, with a navigation, a photo and settings. */
 const storyContext: RenderContext = {
   ...EDITOR_RENDER_CONTEXT,
@@ -33,7 +42,11 @@ const storyContext: RenderContext = {
   ],
   link: () => "#",
   image: (id) => (id === "photo" ? photo : null),
-  setting: (key) => (key === "general.name" ? "Rosa's Bakery" : undefined),
+  setting: (key) => STORY_SETTINGS[key],
+  openingHours: [
+    { days: ["tue", "wed", "thu", "fri"], opens: "07:00", closes: "15:00" },
+    { days: ["sat", "sun"], opens: "08:00", closes: "13:00" },
+  ],
 };
 
 /**

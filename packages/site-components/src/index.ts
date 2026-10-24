@@ -51,6 +51,7 @@ export type {
   RenderContext,
   RenderPropsOf,
   ResolvedImage,
+  SiteBindings,
   SlotComponent,
   SlotNames,
   StoredValue,

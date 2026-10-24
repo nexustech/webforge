@@ -94,6 +94,13 @@ export type FieldRendererProps<K extends FieldKind = FieldKind> = {
   readonly labelId: string;
   /** The DOM id of the field's help text, if it has one: the control's `aria-describedby`. */
   readonly helpId?: string;
+  /**
+   * The DOM id of the message saying why the field's value isn't acceptable, if there is one: the
+   * control is marked invalid (`aria-invalid`) and described by it.
+   */
+  readonly errorId?: string;
+  /** The field can't be changed now: its controls are shown greyed out, and Tab skips them. */
+  readonly disabled?: boolean;
   readonly field: FieldSpec<K>;
   readonly value: unknown;
   /**

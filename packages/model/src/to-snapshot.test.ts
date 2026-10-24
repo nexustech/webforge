@@ -20,6 +20,7 @@ function bakery(): SiteDoc {
     theme: { ...DEFAULT_THEME, preset: "cupcake" },
   });
   site.settings.general.description = "Fresh bread in Hightown";
+  site.settings.contact.openingHours = [{ days: ["tue", "wed"], opens: "07:00", closes: "15:00" }];
   const cakes = "cakes" as PageId;
   site.pages[cakes] = {
     id: cakes,
@@ -101,6 +102,12 @@ describe("siteToSnapshot", () => {
   it("includes images whose bytes are available, and no files", () => {
     expect(snapshot.media).toEqual([
       { id: "hero", name: "hero", mimeType: "image/jpeg", data: bytes, alt: expect.any(String) },
+    ]);
+  });
+
+  it("carries the opening hours, for the Opening hours and contact section (2.8)", () => {
+    expect(snapshot.openingHours).toEqual([
+      { days: ["tue", "wed"], opens: "07:00", closes: "15:00" },
     ]);
   });
 

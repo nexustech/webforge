@@ -240,6 +240,226 @@
   }
 })();
 
+// Click-to-load embeds (F-CM-4, B7, C8): a video or map from another site loads only when the
+// visitor asks. Until then the page shows a placeholder and asks nothing of YouTube, Vimeo or the
+// map's site; the click is the visitor's consent for that one embed. This script shows each
+// placeholder's button and, on a click, puts the player or map in its place. Without it, the
+// placeholder's link opens the video or map on its own site.
+//
+// A visitor who accepted everything in the consent banner (B7, 3.8) gets every embed at once. The
+// banner marks the page with data-wf-consent-all on <html> (for a visitor who accepted before)
+// and fires "webforge:consent-all" on the document when they accept now.
+(() => {
+  // The only addresses an embed may load: how each player's or map's starts (EMBED_SOURCES in
+  // embed.ts; a test keeps them alike), so a changed page can't make this script load another
+  // site, or another page of these.
+  const SOURCES = [
+    "https://www.youtube-nocookie.com/embed/",
+    "https://player.vimeo.com/video/",
+    "https://www.google.com/maps?",
+    "https://www.openstreetmap.org/export/embed.html?",
+  ];
+  const PLAYERS = ["www.youtube-nocookie.com", "player.vimeo.com"];
+
+  /**
+   * @param {HTMLElement} embed
+   * @param {boolean} play Whether the visitor pressed play, rather than accepted all embeds.
+   */
+  const load = (embed, play) => {
+    const placeholder = embed.querySelector("[data-wf-embed-placeholder]");
+    if (placeholder === null) {
+      return;
+    }
+    let url;
+    try {
+      url = new URL(embed.dataset.src ?? "");
+    } catch {
+      return;
+    }
+    const href = url.href;
+    if (!SOURCES.some((source) => href.startsWith(source))) {
+      return;
+    }
+    // The visitor pressed play: start it, rather than ask for a second click.
+    if (play && PLAYERS.includes(url.hostname)) {
+      url.searchParams.set("autoplay", "1");
+    }
+    const frame = document.createElement("iframe");
+    frame.src = url.href;
+    frame.title = embed.dataset.title ?? "";
+    frame.allow = "autoplay; encrypted-media; fullscreen; picture-in-picture";
+    frame.allowFullscreen = true;
+    // YouTube's player needs to know which site embeds it; nothing more of the address is sent.
+    frame.referrerPolicy = "strict-origin-when-cross-origin";
+    // Accepted with the rest, not asked for: a player or map below the fold waits until the
+    // visitor scrolls to it, rather than all of them loading at once.
+    if (!play) {
+      frame.loading = "lazy";
+    }
+    // Inline: the site's stylesheet holds only the classes its pages use.
+    frame.style.cssText = "position:absolute;inset:0;width:100%;height:100%;border:0";
+    placeholder.replaceWith(frame);
+    embed.toggleAttribute("data-loaded", true);
+    if (play) {
+      frame.focus();
+    }
+  };
+
+  const embeds = [...document.querySelectorAll("[data-wf-embed]")].filter(
+    (embed) => embed instanceof HTMLElement,
+  );
+  const loadAll = () => {
+    for (const embed of embeds) {
+      load(/** @type {HTMLElement} */ (embed), false);
+    }
+  };
+
+  for (const embed of embeds) {
+    const controls = embed.querySelector("[data-wf-embed-controls]");
+    const button = embed.querySelector("[data-wf-embed-load]");
+    if (!(controls instanceof HTMLElement) || button === null) {
+      continue;
+    }
+    controls.hidden = false;
+    button.addEventListener("click", () => load(/** @type {HTMLElement} */ (embed), true));
+  }
+
+  document.addEventListener("webforge:consent-all", loadAll);
+  if (document.documentElement.hasAttribute("data-wf-consent-all")) {
+    loadAll();
+  }
+})();
+
+// Gallery lightboxes (2.7a, G10). Without the script each image links to its full-size file. The
+// script opens it large in the gallery's <dialog> instead, as a modal: the focus stays in it and
+// the page behind is out of reach, Esc, its close button or a click beside it close it, and the
+// focus goes back to the image clicked. The previous and next buttons, the arrow keys (Home and
+// End for the first and last) and a swipe go through the gallery's images, round past either end;
+// each move says which image shows ("3 of 8"). The large image has the image's own sources, as
+// wide as the screen, so a phone loads a file its size; only the image shown is loaded.
+(() => {
+  /** A horizontal swipe at least this long, in CSS pixels, moves to the next or previous image. */
+  const SWIPE = 50;
+
+  for (const gallery of document.querySelectorAll("[data-wf-gallery]")) {
+    const dialog = gallery.querySelector("dialog[data-wf-lightbox]");
+    const image = gallery.querySelector("[data-wf-lightbox-image]");
+    const picture = gallery.querySelector("[data-wf-lightbox-picture]");
+    const caption = gallery.querySelector("[data-wf-lightbox-caption]");
+    const status = gallery.querySelector("[data-wf-lightbox-status]");
+    if (!(dialog instanceof HTMLDialogElement) || !(image instanceof HTMLImageElement)) {
+      continue;
+    }
+    const items = [...gallery.querySelectorAll("a[data-wf-lightbox-item]")].filter(
+      (item) => item instanceof HTMLAnchorElement,
+    );
+    const total = items.length;
+    let current = 0;
+    /** The image clicked, which gets the focus back when the lightbox closes. */
+    /** @type {HTMLElement | null} */
+    let opener = null;
+
+    // With one image there's nowhere to go.
+    for (const button of dialog.querySelectorAll(
+      "[data-wf-lightbox-previous], [data-wf-lightbox-next]",
+    )) {
+      if (button instanceof HTMLElement) button.hidden = total < 2;
+    }
+
+    /** Shows image `index` (round past either end). */
+    const show = (/** @type {number} */ index) => {
+      current = (index + total) % total;
+      const item = items[current];
+      if (item === undefined) return;
+      const thumbnail = item.querySelector("img");
+      // The image's own sources (WebP, then JPEG or PNG), as wide as the screen.
+      if (picture !== null) {
+        for (const old of picture.querySelectorAll("source")) old.remove();
+        for (const source of item.querySelectorAll("source")) {
+          const copy = source.cloneNode();
+          if (copy instanceof HTMLElement) copy.setAttribute("sizes", "100vw");
+          picture.insertBefore(copy, image);
+        }
+      }
+      image.srcset = thumbnail?.getAttribute("srcset") ?? "";
+      image.sizes = "100vw";
+      // The link as written: relative to the page, as the export writes every path.
+      image.src = item.getAttribute("href") ?? item.href;
+      image.alt = thumbnail?.alt ?? "";
+      if (caption !== null) {
+        caption.textContent =
+          item.closest("figure")?.querySelector("figcaption")?.textContent ?? "";
+      }
+      if (status !== null) {
+        status.textContent = (dialog.dataset.imageOf ?? "{n} of {total}")
+          .replace("{n}", String(current + 1))
+          .replace("{total}", String(total));
+      }
+    };
+
+    items.forEach((item, index) => {
+      item.addEventListener("click", (event) => {
+        // A click with a modifier opens the file in a new tab or window, as a link does.
+        if (
+          event.button !== 0 ||
+          event.ctrlKey ||
+          event.metaKey ||
+          event.shiftKey ||
+          event.altKey
+        ) {
+          return;
+        }
+        event.preventDefault();
+        opener = item;
+        show(index);
+        if (!dialog.open) dialog.showModal();
+      });
+    });
+    dialog.querySelector("[data-wf-lightbox-previous]")?.addEventListener("click", () => {
+      show(current - 1);
+    });
+    dialog.querySelector("[data-wf-lightbox-next]")?.addEventListener("click", () => {
+      show(current + 1);
+    });
+    /** Where each key goes from image `from`. */
+    /** @type {Readonly<Record<string, (from: number) => number>>} */
+    const KEYS = {
+      ArrowLeft: (from) => from - 1,
+      ArrowRight: (from) => from + 1,
+      Home: () => 0,
+      End: () => total - 1,
+    };
+    // On the document: after a click Safari leaves the focus on the page, not in the dialog.
+    document.addEventListener("keydown", (event) => {
+      const to = KEYS[event.key];
+      if (!dialog.open || to === undefined) return;
+      // With a modifier the keys are the browser's or the system's (Alt+Left goes back).
+      if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      event.preventDefault();
+      show(to(current));
+    });
+
+    // A swipe on a touch screen (or a drag with a pen): left for the next image, right for the
+    // previous.
+    let start = Number.NaN;
+    dialog.addEventListener("pointerdown", (event) => {
+      start = event.pointerType === "mouse" ? Number.NaN : event.clientX;
+    });
+    dialog.addEventListener("pointerup", (event) => {
+      const distance = event.clientX - start;
+      start = Number.NaN;
+      if (Math.abs(distance) >= SWIPE) show(current + (distance < 0 ? 1 : -1));
+    });
+
+    dialog.addEventListener("close", () => {
+      image.removeAttribute("src");
+      image.removeAttribute("srcset");
+      opener?.focus();
+      opener = null;
+    });
+  }
+})();
+
 // The Header's menu on small screens, and the dropdowns in its navigation: each a <details>, which
 // opens and closes with its <summary> without the script too (and with a tap on iOS), and which
 // screen readers announce as expanded or collapsed. The script adds what <details> doesn't do:
