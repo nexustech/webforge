@@ -106,22 +106,27 @@ describe("the carousel behaviour (2.10)", () => {
     expect(status()?.textContent).toBe("3 of 3");
   });
 
-  it("jumps without smooth scrolling for a visitor who prefers reduced motion", () => {
-    const { button, scrolled } = page({}, 3, true);
+  it("leaves how it scrolls to the strip's CSS: smooth, or at once under reduced motion", () => {
+    const { button, scrolled, track } = page({}, 3, true);
 
     button("next").click();
-    expect(scrolled).toHaveBeenLastCalledWith(expect.objectContaining({ behavior: "auto" }));
+    // No `behavior`, which would override the CSS's `motion-reduce:scroll-auto`.
+    expect(scrolled).toHaveBeenLastCalledWith({ left: 0 });
+    expect(track.className).toContain("scroll-smooth");
+    expect(track.className).toContain("motion-reduce:scroll-auto");
   });
 
   it("moves logos a page of what's in view at a time, the last page full", () => {
     const { root, track, document, button, status, scrolled } = page({ variant: "logos" }, 10);
-    // Four in view: slides 100 px apart (84 px and a 16 px gap) in a 400 px strip.
+    // Four in view: slides 100 px apart (84 px and a 16 px gap) in a 384 px strip, 984 px long,
+    // which scrolls 600 px at most: slide 7 is the last a page can start at.
     const slides = [...document.querySelectorAll<HTMLElement>(".site-carousel-slide")];
     slides.forEach((slide, index) => {
       Object.defineProperty(slide, "offsetLeft", { value: index * 100 });
       Object.defineProperty(slide, "offsetWidth", { value: 84 });
     });
-    Object.defineProperty(track, "clientWidth", { value: 400 });
+    Object.defineProperty(track, "clientWidth", { value: 384 });
+    Object.defineProperty(track, "scrollWidth", { value: 984 });
 
     button("next").click();
     expect(root.dataset.current).toBe("4");
@@ -133,17 +138,55 @@ describe("the carousel behaviour (2.10)", () => {
     expect(scrolled).toHaveBeenLastCalledWith(expect.objectContaining({ left: 600 }));
     button("next").click();
     expect(root.dataset.current).toBe("0");
+    // Round the other way too: to the last full page, not slide 10 alone.
     button("previous").click();
     expect(root.dataset.current).toBe("6");
+    expect(status()?.textContent).toBe("7 to 10 of 10");
+    button("previous").click();
+    expect(root.dataset.current).toBe("2");
+    expect(status()?.textContent).toBe("3 to 6 of 10");
   });
 
-  it("moves with the arrow keys while the focus is in it", () => {
+  it("moves with the arrow keys while the focus is in it, not with a modifier held", () => {
     const { root, window, track } = page();
+    const press = (key: string, init: KeyboardEventInit = {}) => {
+      const event = new window.KeyboardEvent("keydown", {
+        key,
+        bubbles: true,
+        cancelable: true,
+        ...init,
+      });
+      track.dispatchEvent(event);
+      return event.defaultPrevented;
+    };
 
-    track.dispatchEvent(new window.KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+    expect(press("ArrowRight")).toBe(true);
     expect(root.dataset.current).toBe("1");
-    track.dispatchEvent(new window.KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true }));
+    expect(press("ArrowLeft")).toBe(true);
     expect(root.dataset.current).toBe("0");
+    // Alt+Left is the browser's Back; Shift+Arrow selects text.
+    for (const modifier of ["altKey", "ctrlKey", "metaKey", "shiftKey"]) {
+      expect(press("ArrowRight", { [modifier]: true }), modifier).toBe(false);
+    }
+    expect(root.dataset.current).toBe("0");
+  });
+
+  it("follows a swipe at once after a move that had nowhere to scroll", () => {
+    const { root, track, document, window, button } = page({}, 3);
+    const slides = [...document.querySelectorAll<HTMLElement>(".site-carousel-slide")];
+    slides.forEach((slide, index) => {
+      Object.defineProperty(slide, "offsetLeft", { value: index * 100 });
+    });
+
+    // Round to the last slide, then back to the first: where the strip still is (left 0, as the
+    // test's strip doesn't scroll), so no scroll will say it arrived.
+    button("previous").click();
+    button("next").click();
+    expect(root.dataset.current).toBe("0");
+    // A swipe to the second slide counts at once, though the last move was a moment ago.
+    track.scrollLeft = 100;
+    track.dispatchEvent(new window.Event("scroll"));
+    expect(root.dataset.current).toBe("1");
   });
 
   describe("playing automatically", () => {

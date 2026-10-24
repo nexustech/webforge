@@ -32,13 +32,16 @@
       const gap = step - first.offsetWidth;
       return step > 0 ? Math.max(1, Math.round((track.clientWidth + gap) / step)) : 1;
     };
-    /** What shows from slide `index`: "2 of 5", or "5 to 8 of 10" when several do. */
-    const showing = (/** @type {number} */ index) => {
+    /**
+     * What shows from slide `index`: "2 of 5", or "5 to 8 of 10" when several do; from the last
+     * place the strip can stop, everything to the end.
+     */
+    const showing = (/** @type {number} */ index, /** @type {boolean} */ atEnd) => {
       const count = inView();
       if (count === 1) return position(index);
       return (root.dataset.slidesOf ?? "{from} to {to} of {total}")
         .replace("{from}", String(index + 1))
-        .replace("{to}", String(Math.min(index + count, total)))
+        .replace("{to}", String(atEnd ? total : Math.min(index + count, total)))
         .replace("{total}", String(total));
     };
     slides.forEach((slide, index) => {
@@ -53,6 +56,21 @@
       controls.hidden = false;
     }
 
+    /**
+     * The last slide a move can start at: the last whose place the strip can scroll to, so the
+     * last page is full (several logos at once). Every slide when the strip can't tell (no layout).
+     */
+    const lastStart = () => {
+      const first = slides[0];
+      if (first === undefined) return 0;
+      const furthest = track.scrollWidth - track.clientWidth;
+      let last = 0;
+      slides.forEach((slide, index) => {
+        if (slide.offsetLeft - first.offsetLeft <= furthest + 1) last = index;
+      });
+      return furthest <= 0 && track.scrollWidth === 0 ? total - 1 : last;
+    };
+
     let current = 0;
     /** The slide the script is scrolling to, and since when: its own scrolling moves nothing. */
     let aim = { index: -1, since: 0 };
@@ -62,7 +80,7 @@
      */
     const move = (/** @type {number} */ pages, /** @type {boolean} */ announce) => {
       const count = inView();
-      const last = Math.max(0, total - count);
+      const last = lastStart();
       let target = current + pages * count;
       if (target > last) target = current >= last ? 0 : last;
       if (target < 0) target = current <= 0 ? last : 0;
@@ -70,15 +88,18 @@
       const first = slides[0];
       const slide = slides[current];
       if (first !== undefined && slide !== undefined) {
-        aim = { index: current, since: Date.now() };
-        track.scrollTo({
-          left: slide.offsetLeft - first.offsetLeft,
-          behavior: reducedMotion ? "auto" : "smooth",
-        });
+        const left = slide.offsetLeft - first.offsetLeft;
+        // Already there (the strip's end, or a strip that all fits): no scroll will say it arrived.
+        aim =
+          Math.abs(left - track.scrollLeft) < 1
+            ? { index: -1, since: 0 }
+            : { index: current, since: Date.now() };
+        // The strip's CSS sets how: smoothly, or at once for a visitor who prefers less motion.
+        track.scrollTo({ left });
       }
       root.dataset.current = String(current);
       if (announce && status !== null) {
-        status.textContent = showing(current);
+        status.textContent = showing(current, current === last);
       }
     };
     // A swipe or a scroll by hand moves the current slide too: the one nearest the start.
@@ -113,6 +134,8 @@
     });
     root.addEventListener("keydown", (event) => {
       if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+      // With a modifier the keys are the browser's or the system's (Alt+Left goes back).
+      if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
       event.preventDefault();
       move(event.key === "ArrowLeft" ? -1 : 1, true);
     });

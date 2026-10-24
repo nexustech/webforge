@@ -593,6 +593,10 @@ describe("renderNodesToHtml", () => {
       expect(playing).toContain('data-label-start="Play the slides"');
     });
 
+    it("is named even with its name left empty: a nameless region is no landmark", () => {
+      expect(carouselHtml({ label: "  " })).toContain('aria-label="Highlights"');
+    });
+
     it("gives the script the words it names slides with", () => {
       const html = carouselHtml();
 

@@ -73,7 +73,8 @@ const carousel = defineComponent({
       <section
         className={`site-carousel group/carousel space-y-3${marginClasses(values.margin)}`}
         aria-roledescription={t("siteText.carousel")}
-        aria-label={values.label}
+        // Named even with its name left empty: a nameless region is no landmark (axe).
+        aria-label={values.label.trim() === "" ? t("starter.carouselLabel") : values.label}
         data-layout={values.variant}
         data-wf-carousel=""
         data-slide-label={t("siteText.slide")}
