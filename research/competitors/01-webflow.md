@@ -32,7 +32,7 @@ Webflow is the designer-focused hosted builder that sets expectations for intera
 - **Canvas** in the middle with a top bar: breakpoints, mode switch, preview, publish.
 - **Right side**: Style (S), Element Settings (D), Style Manager (G) and Interactions (H) tabs. (*Unverified* for the current UI: the lessons that describe this say they show an older Designer.)
 - **Three modes** since 2026: **Design** (everything), **Build** (assemble pages from components, for marketers), **Edit** (in-context content editing, the successor of the legacy Editor). Webflow's Edit mode is the same idea as Webforge's Content mode (F-ED-10).
-- **Shortcuts:** single letters open panels (A Add, Z Navigator, P Pages, S Style, D Settings, G Style manager, H Interactions); Shift+/ lists them all; Alt/Option-click resets a style. Webforge already uses single-letter panel shortcuts in the Bootstrap Studio style (F-ED-27).
+- **Shortcuts:** single letters open panels (A Add, Z Navigator, P Pages, S Style, D Settings, G Style manager, H Interactions); Shift+/ lists them all; Alt/Option-click resets a style. Webforge follows Bootstrap Studio's modifier-based key map instead (F-ED-27); single-letter shortcuts clash with typing into fields, which our users do more than Webflow's.
 - **Breakpoint canvas** (Conf 2026, Sep 2026): every breakpoint shown side by side on one canvas, in all three modes.
 
 ### 3.2 The style model, and why it is hard for our users
