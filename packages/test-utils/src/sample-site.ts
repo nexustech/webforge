@@ -22,10 +22,10 @@ export function priceList(): Uint8Array {
 /**
  * A small two-page site: Header and Footer, a home page with a Hero (with photo), text, a Carousel
  * of customers' quotes (2.10), an FAQ and a Call to action, and an About page with a text-only Hero
- * linking to a price list (a document), a Text section and a Text + Image section (2.6). Its menu
- * has both pages, a "Visit us"
- * dropdown (a link to the FAQ section and a web address in a new tab) and an "Order a cake"
- * button. Used by pipeline tests and the export E2E tests.
+ * linking to a price list (a document), a Text section, a Text + Image section (2.6), and a Video
+ * and a Map that load only when clicked (2.8). Its menu has both pages, a "Visit us" dropdown (a
+ * link to the FAQ section and a web address in a new tab) and an "Order a cake" button. Used by
+ * pipeline tests and the export E2E tests.
  */
 export function sampleSite(): SiteSnapshot {
   return {
@@ -222,6 +222,26 @@ export function sampleSite(): SiteSnapshot {
                 text: "<p>Sourdough, rye and cakes to order.</p>",
                 image: { mediaId: "hero-photo", alt: "Hills where our wheat grows" },
                 variant: "imageLeft",
+              },
+            },
+            {
+              // A video and a map that load only when the visitor clicks (F-CM-4, 2.8).
+              type: "Video",
+              props: {
+                id: "baking",
+                title: "A morning at the bakery",
+                text: "<p>From the first dough to the first customer.</p>",
+                address: "https://youtu.be/aqz-KE-bpKQ",
+              },
+            },
+            {
+              type: "Map",
+              props: {
+                id: "find-us",
+                title: "Find us",
+                text: "<p>On the high street, opposite the library.</p>",
+                address: "1 High Street\nHightown\nHT1 2AB",
+                variant: "split",
               },
             },
           ],
