@@ -118,7 +118,7 @@ const OUTLINES = "outlines";
  * Add and Remove; its layout on the device shown, from the presets that fit that number; and
  * *Show column outlines*, an edit-only preview.
  */
-export function ColumnsTools({
+function ColumnsTools({
   count,
   layout,
   device,
