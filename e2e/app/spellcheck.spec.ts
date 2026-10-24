@@ -1,4 +1,5 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { placeCaret } from "./caret.js";
 import { launchDesktopApp } from "./launch.js";
 
 // Spell check (1.22, F-ED-19): the system's checker underlines misspellings while editing, and a
@@ -9,10 +10,80 @@ test.skip(process.platform === "linux", "spell check uses the system's checker (
 
 let app: ElectronApplication;
 let page: Page;
+/** Whether this computer's spell checker checks English at all; asked once (see below). */
+let checksEnglish: boolean | undefined;
+
+/**
+ * Whether the system's spell checker flags a misspelt English word. A computer without an English
+ * dictionary flags nothing: GitHub's Windows Server runners have none, and Windows spell check is the
+ * system's. Asked in a see-through window with a session of its own, so none of Webforge's settings
+ * play a part: where the system can check, a Webforge spell check that broke still fails these tests.
+ */
+async function systemChecksEnglish(electronApp: ElectronApplication): Promise<boolean> {
+  return electronApp.evaluate(async ({ BrowserWindow, session }) => {
+    const partition = "spellcheck-probe";
+    if (process.platform === "win32") {
+      session.fromPartition(partition).setSpellCheckerLanguages(["en-US"]);
+    }
+    // Shown but see-through: a hidden window's text isn't checked.
+    const probe = new BrowserWindow({
+      width: 400,
+      height: 120,
+      opacity: 0,
+      skipTaskbar: true,
+      webPreferences: { partition, spellcheck: true },
+    });
+    try {
+      await probe.loadURL("about:blank");
+      await probe.webContents.executeJavaScript(`
+        const field = document.createElement("textarea");
+        field.style.cssText = "position: fixed; inset: 0; font: 16px sans-serif";
+        document.body.append(field);
+        field.focus();
+      `);
+      // Typed, not set: the checker looks at what's typed.
+      probe.webContents.insertText("Our bakkery ");
+      // The checker works in the background. A right-click puts the caret in the word, and a word
+      // being typed in isn't flagged, so let it look first; then right-click until it has.
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        const word = await new Promise<string>((resolve) => {
+          const onMenu = (_event: unknown, params: { misspelledWord: string }) => {
+            clearTimeout(timer);
+            resolve(params.misspelledWord);
+          };
+          const timer = setTimeout(() => {
+            probe.webContents.off("context-menu", onMenu);
+            resolve("");
+          }, 500);
+          probe.webContents.once("context-menu", onMenu);
+          for (const type of ["mouseDown", "mouseUp"] as const) {
+            probe.webContents.sendInputEvent({
+              type,
+              x: 60,
+              y: 10,
+              button: "right",
+              clickCount: 1,
+            });
+          }
+        });
+        if (word !== "") return true;
+      }
+      return false;
+    } finally {
+      probe.destroy();
+    }
+  });
+}
 
 test.beforeEach(async () => {
   app = await launchDesktopApp();
   page = await app.firstWindow();
+  checksEnglish ??= await systemChecksEnglish(app);
+  test.skip(
+    !checksEnglish,
+    "this computer's spell checker has no English dictionary (GitHub's Windows runners)",
+  );
   await expect(page.getByRole("region", { name: "Right panels" })).toBeVisible();
   // Record the context menu instead of showing a native one the test can't close.
   await app.evaluate(({ Menu }) => {
@@ -70,7 +141,7 @@ test("offers spelling suggestions inside rich text on the canvas (1.23)", async 
   await canvas.getByText("Tell visitors what you do and why they will love it.").click();
   await editor.click();
   await expect(editor).toBeFocused();
-  await page.keyboard.press("End");
+  await placeCaret(editor, "end");
   await page.keyboard.type(" Fresh bakkery ", { delay: 20 });
   // Electron's checker only looks at an editable that doesn't turn it off.
   await expect(editor).not.toHaveAttribute("spellcheck", "false");
@@ -88,10 +159,16 @@ test("offers spelling suggestions inside rich text on the canvas (1.23)", async 
             range.setStart(node, index + 2);
             range.setEnd(node, index + 3);
             const box = range.getBoundingClientRect();
-            const frame = element.ownerDocument.defaultView?.frameElement?.getBoundingClientRect();
+            const frame = element.ownerDocument.defaultView?.frameElement as HTMLElement | null;
+            const place = frame?.getBoundingClientRect();
+            // The canvas is zoomed (to fit a small screen, #287): its points are scaled.
+            const scale =
+              frame !== null && frame !== undefined && place !== undefined && frame.offsetWidth > 0
+                ? place.width / frame.offsetWidth
+                : 1;
             return {
-              x: (frame?.x ?? 0) + box.x + box.width / 2,
-              y: (frame?.y ?? 0) + box.y + box.height / 2,
+              x: (place?.x ?? 0) + (box.x + box.width / 2) * scale,
+              y: (place?.y ?? 0) + (box.y + box.height / 2) * scale,
             };
           }
           return null;

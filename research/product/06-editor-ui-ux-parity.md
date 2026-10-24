@@ -67,7 +67,7 @@ Effort: **S** ≤ 1 day · **M** 2–4 days. Estimates are ideal days, as in the
 ### 3.3 Not proposed from Bootstrap Studio
 | Bootstrap Studio | Reason |
 |---|---|
-| Editor panel (HTML view, Styles/CSS block editor, Style Target Editor, Attributes table), Appearance tab of raw CSS properties | Developer features. Webforge uses design-token controls; Advanced mode has classes, attributes and Custom Code |
+| Editor panel (HTML view, Styles/CSS block editor, Style Target Editor, Attributes table), Appearance tab of raw CSS properties | Developer features. Webforge uses design-token controls; Advanced mode has classes, attributes and Custom Code. **Deferred, not dropped (product owner, 2026-10-24):** per-element CSS editing and an HTML view are listed as *Later* in the MVP spec §5 |
 | Custom Options editor, Emmet `add row>col*3`, export scripts, external editors, JS include order | Developer features |
 | Online component library, team sharing, `.bscomp` export | Out of scope (GA4 long-term; single-user product) |
 | Several designs open as tabs (Ctrl/Cmd + 1–9) | One site per window in the MVP (UI1) |

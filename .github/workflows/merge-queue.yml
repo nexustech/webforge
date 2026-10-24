@@ -1,0 +1,139 @@
+name: Merge queue
+
+# Stands in for GitHub's merge queue, which needs an organisation-owned repository (spec/03 §7).
+# `main` requires "CI passed" on a branch that is up to date with `main`, and pull requests merge
+# themselves with auto-merge. GitHub doesn't update a branch that has fallen behind, so this does,
+# one pull request at a time, oldest auto-merge first:
+# - The first queued PR that is behind `main`, and hasn't failed CI, gets `main` merged in and a
+#   fresh CI run. Nothing else is touched until it merges or fails.
+# - A PR whose CI is running, or that is up to date and passing, is in flight: wait for it.
+# - PRs with conflicts or failing CI are skipped. Their stream's Auto-fix resolves the conflict or
+#   fixes CI and pushes, which puts them back in the queue.
+# It runs after every push to `main` (a merge), every finished CI run, when auto-merge is turned
+# on, and every 15 minutes as a safety net.
+on:
+  push:
+    branches: [main]
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+  pull_request:
+    types: [auto_merge_enabled]
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: Only say what would happen
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+concurrency:
+  # One at a time, and none dropped: each run looks at the queue afresh.
+  group: merge-queue
+  cancel-in-progress: false
+
+jobs:
+  next:
+    name: Bring the next pull request up to date
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Find and update the next pull request
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          DRY_RUN: ${{ inputs.dry-run == true }}
+        run: |
+          set -euo pipefail
+          # Only a pull request's own CI runs count for its required "CI passed": "Run workflow"
+          # runs aren't linked to it. When this workflow updates a branch, GitHub starts the PR's CI
+          # run but holds it for approval, as the push comes from a bot (the approval rule for
+          # outside contributors), so this approves it.
+          #
+          # The latest pull-request CI run on a commit, as "id state": state is NONE, WAITING
+          # (held for approval), RUNNING, SUCCESS or the failure's conclusion.
+          ci_of() {
+            gh run list --workflow ci.yml --commit "$1" --event pull_request \
+              --json databaseId,status,conclusion,createdAt \
+              --jq 'sort_by(.createdAt) | last
+                | if . == null then "0 NONE"
+                  elif .conclusion == "action_required" then "\(.databaseId) WAITING"
+                  elif .status != "completed" then "\(.databaseId) RUNNING"
+                  else "\(.databaseId) \(.conclusion | ascii_upcase)" end'
+          }
+          # Approves the PR's CI run held on commit `$1`, once it appears.
+          approve_ci() {
+            if [ "$DRY_RUN" = true ]; then return; fi
+            for _ in $(seq 30); do
+              read -r id state <<< "$(ci_of "$1")"
+              if [ "$state" = WAITING ]; then
+                gh api -X POST "repos/$GH_REPO/actions/runs/$id/approve" > /dev/null
+                echo "Approved CI run $id."
+                return
+              fi
+              [ "$state" = NONE ] || return
+              sleep 2
+            done
+            echo "::warning::No CI run appeared for $1: push to the branch to start one."
+          }
+          # Open, ready PRs into main from this repository with auto-merge on, oldest first, as
+          # "number branch head mergeState". "CI passed" appears only when every other job has
+          # finished, so a running CI is found from the runs on the head commit.
+          queue=$(gh pr list --base main --state open --limit 100 \
+            --json number,isDraft,isCrossRepository,headRefName,headRefOid,mergeStateStatus,autoMergeRequest \
+            --jq '[.[] | select(.autoMergeRequest != null and (.isDraft | not) and (.isCrossRepository | not))]
+              | sort_by(.autoMergeRequest.enabledAt) | .[]
+              | "\(.number) \(.headRefName) \(.headRefOid) \(.mergeStateStatus)"')
+          if [ -z "$queue" ]; then
+            echo "No pull requests are waiting to auto-merge."
+            exit 0
+          fi
+          echo "$queue"
+          while read -r number branch head state; do
+            read -r _ ci <<< "$(ci_of "$head")"
+            if [ "$state" = DIRTY ]; then
+              echo "#$number has conflicts with main: its stream resolves them."
+              continue
+            fi
+            if [ "$state" = BEHIND ]; then
+              echo "#$number is behind main: merging main into $branch and running CI."
+              if [ "$DRY_RUN" = true ]; then exit 0; fi
+              gh api -X PUT "repos/$GH_REPO/pulls/$number/update-branch" -f expected_head_sha="$head" > /dev/null
+              # GitHub updates the branch in the background: approve its CI once the new head is there.
+              new="$head"
+              for _ in $(seq 30); do
+                new=$(gh api "repos/$GH_REPO/pulls/$number" --jq .head.sha)
+                [ "$new" != "$head" ] && break
+                sleep 2
+              done
+              approve_ci "$new"
+              exit 0
+            fi
+            case "$ci" in
+              WAITING)
+                echo "#$number's CI is held for approval: approving it."
+                approve_ci "$head"
+                exit 0
+                ;;
+              RUNNING | NONE)
+                # NONE: just pushed, and GitHub hasn't started its CI yet.
+                echo "#$number is in flight ($ci): waiting for its CI."
+                exit 0
+                ;;
+              SUCCESS)
+                echo "#$number passed CI and is up to date ($state): waiting for auto-merge."
+                exit 0
+                ;;
+              *)
+                echo "#$number failed CI ($ci): its stream fixes it."
+                ;;
+            esac
+          done <<< "$queue"
+          echo "Nothing to update: every queued pull request is waiting on its stream."

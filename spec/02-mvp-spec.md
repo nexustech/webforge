@@ -25,6 +25,7 @@ The result is a fast, accessible, self-contained static website they fully own.
   - **No Intel Mac build at launch.** Apple has confirmed macOS 26 Tahoe is the last major release for Intel Macs, and Electron 44 needs macOS 13+.
   - A **universal** (Apple Silicon + Intel) build stays possible as a fallback: one electron-builder setting, with better-sqlite3 merged into a universal binary. It would roughly double the macOS download, so add it only if beta users need it.
 - Installer with auto-update: Windows NSIS per-user (no admin), macOS signed + notarised DMG. `.wforge` file association.
+- **Closing the window quits Webforge, on macOS too** (decided 2026-10-23, #287). The Mac convention is to keep an app running in the Dock with no window. But Webforge has one window and one site, and to the non-technical people it's for, an app in the Dock with no window looks broken. The windowless paths (a Dock click, or a site double-clicked in Finder while no window is open) also couldn't be tested without a Mac. Easy to reverse if beta users ask for the Mac convention.
 
 ## 2. MVP feature list
 
@@ -201,6 +202,7 @@ All components must:
 | Site search, multilingual | v1.2+ (M4) |
 | A library of saved sections shared across sites (shared sections within a site are MVP, F-ED-23) | v1.x (C5, GA6) |
 | Cloudflare, GitHub Pages, S3 publishing; custom-domain automation | Later (08) |
+| **CSS editing per element and an HTML view of the page** (Bootstrap Studio's Styles editor and HTML panel) | **Later** (product owner, 2026-10-24: deferred, worth having at some point). The MVP covers the Advanced user with CSS classes and the class browser (F-ED-11, 2.18), Custom Code with a site stylesheet and script (F-ED-15) and developer files in the export (F-EX-4) |
 | Webforge Hosting / form relay | Deferred business decision (B2) |
 | AVIF, clean URLs, Export as Astro project | Later / on demand (X2, X1, X6) |
 | Importing existing websites | Out of scope (C3) |

@@ -1,4 +1,5 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { placeCaret } from "./caret.js";
 import { launchDesktopApp } from "./launch.js";
 
 // Selection chrome on the canvas (1.12): magenta outlines and the selected element's quick
@@ -132,7 +133,7 @@ test.describe("keyboard and floating add", () => {
     const field = canvas().locator("h1 [contenteditable]");
     await field.hover();
     await field.click();
-    await page.keyboard.press("End");
+    await placeCaret(field, "end");
     await page.keyboard.press("Backspace");
     await page.keyboard.press("ArrowLeft");
     await page.keyboard.press("Delete");
@@ -194,7 +195,7 @@ test.describe("keyboard and floating add", () => {
     await canvas().getByText(STARTER_TEXT).click();
     await editor.click();
     await expect(editor).toBeFocused();
-    await page.keyboard.press("End");
+    await placeCaret(editor, "end");
 
     // Backspace deletes a letter, Mod+Backspace a word (on macOS, to the line's start), Delete
     // nothing at the end: all of them the text's.

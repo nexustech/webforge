@@ -1,5 +1,6 @@
-import { themeSchema } from "@webforge/model";
+import { type Theme, themeSchema } from "@webforge/model";
 import { z } from "zod";
+import { classNameSchema, MAX_CLASS_CSS } from "../export-worker-protocol.js";
 
 /** The classes the site uses and its theme: what the canvas styles are compiled from. */
 const canvasCssRequestSchema = z.strictObject({
@@ -27,6 +28,35 @@ const canvasCssResultSchema = z.discriminatedUnion("status", [
 export type CanvasCssResult = z.infer<typeof canvasCssResultSchema>;
 
 /**
+ * Every class the site's styles support (#276): Tailwind's and daisyUI's, with the theme's colours,
+ * and the variants that go before them (`md`, `hover`). A failure leaves the field without
+ * suggestions; anything can still be typed.
+ */
+const classCatalogueResultSchema = z.discriminatedUnion("status", [
+  z.strictObject({
+    status: z.literal("loaded"),
+    classes: z.array(classNameSchema).max(100_000),
+    variants: z.array(classNameSchema).max(1_000),
+  }),
+  z.strictObject({ status: z.literal("failed") }),
+]);
+
+/** Every class the site's styles support. */
+export type ClassCatalogueResult = z.infer<typeof classCatalogueResultSchema>;
+
+/** The CSS each class produces, in the order asked; `null` for a class that produces none. */
+const classCssResultSchema = z.discriminatedUnion("status", [
+  z.strictObject({
+    status: z.literal("css"),
+    css: z.array(z.string().max(100_000).nullable()).max(MAX_CLASS_CSS),
+  }),
+  z.strictObject({ status: z.literal("failed") }),
+]);
+
+/** The CSS each class produces. */
+export type ClassCssResult = z.infer<typeof classCssResultSchema>;
+
+/**
  * Where compiled canvas CSS points for its fonts (2.2): the main process serves the installer's
  * font files through this scheme, as it serves Media images through `webforge-media:`.
  */
@@ -40,10 +70,26 @@ export const canvasChannels = {
     request: z.tuple([canvasCssRequestSchema]),
     response: canvasCssResultSchema,
   },
+  /** Lists every class the site's styles support, for the CSS classes field (#276). */
+  classCatalogue: {
+    channel: "canvas:class-catalogue",
+    request: z.tuple([themeSchema]),
+    response: classCatalogueResultSchema,
+  },
+  /** The CSS some classes produce: previews in the class browser, and unknown-class warnings. */
+  classCss: {
+    channel: "canvas:class-css",
+    request: z.tuple([themeSchema, z.array(classNameSchema).max(MAX_CLASS_CSS)]),
+    response: classCssResultSchema,
+  },
 } as const;
 
 /** `window.webforge.canvas`. */
 export interface CanvasApi {
   /** Compiles the site CSS the canvas shows the page with. */
   compileCss(request: CanvasCssRequest): Promise<CanvasCssResult>;
+  /** Lists every class a site with `theme` supports. */
+  classCatalogue(theme: Theme): Promise<ClassCatalogueResult>;
+  /** The CSS each of `classes` produces with `theme` (at most 200 at once). */
+  classCss(theme: Theme, classes: readonly string[]): Promise<ClassCssResult>;
 }

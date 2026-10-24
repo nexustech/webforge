@@ -28,7 +28,7 @@ import { openFailureMessage } from "../shared/open-failure.js";
 import { applicationMenu } from "./app-menu.js";
 import { createBackupSchedule } from "./backup-schedule.js";
 import { createBackups } from "./backups.js";
-import { createCanvasCssCompiler, registerCanvasHandlers } from "./canvas-css.js";
+import { createCanvasStyles, registerCanvasHandlers } from "./canvas-css.js";
 import { createElementClipboard, systemClipboard } from "./clipboard.js";
 import { registerClipboardHandlers } from "./clipboard-ipc.js";
 import { startCrashReports } from "./crash-wiring.js";
@@ -386,8 +386,9 @@ const mediaDialogs: MediaDialogs = {
   },
 };
 
-// The canvas compiles its site CSS in one long-lived worker, started when first needed (1.12).
-const compileCanvasCss = createCanvasCssCompiler(
+// The canvas compiles its site CSS, and lists the classes the site supports (#276), in one
+// long-lived worker, started when first needed (1.12).
+const canvasStyles = createCanvasStyles(
   () =>
     crashReports.watchWorker(
       utilityProcess.fork(exportWorkerScript, [], { serviceName: "Webforge canvas styles" }),
@@ -523,7 +524,7 @@ async function start(): Promise<void> {
       beforeSwitch: () => siteSwitch.leaveSite(),
     },
   );
-  registerCanvasHandlers(ipcMain, (senderUrl) => isAppUrl(senderUrl, appUrl), compileCanvasCss);
+  registerCanvasHandlers(ipcMain, (senderUrl) => isAppUrl(senderUrl, appUrl), canvasStyles);
   registerFontHandlers(ipcMain, (senderUrl) => isAppUrl(senderUrl, appUrl), downloadedFonts());
   registerSpellCheckHandlers(
     ipcMain,
@@ -571,6 +572,8 @@ async function start(): Promise<void> {
   createMainWindow(preferences);
   void crashReports.noticeAfterLaunch();
 
+  // macOS: a click on the Dock icon while no window is open. Webforge quits when its window closes
+  // (spec/02 §1), so that is only between the last window closing and the app quitting.
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createMainWindow(preferences);
@@ -602,10 +605,10 @@ app.on("will-quit", () => {
   projectSession.close();
 });
 
+// Webforge quits when its window closes, on macOS too (spec/02 §1, #287): it's a one-window app,
+// and one left in the Dock with no window looks broken to the people it's for.
 app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") {
-    app.quit();
-  }
+  app.quit();
 });
 
 // No top-level await: Electron emits "ready" only after the ESM entry module has finished

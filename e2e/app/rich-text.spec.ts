@@ -1,4 +1,5 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { placeCaret, selectText } from "./caret.js";
 import { launchDesktopApp } from "./launch.js";
 
 // Rich text on the canvas (1.23, F-ED-3): the format toolbar offers only the formatting a site
@@ -50,6 +51,8 @@ test("keeps every keystroke typed straight after the first click into rich text 
   // A smoke test: no waiting for the editor. The engine test (rich-text-eager.test.tsx) checks
   // that Puck's fallback, which lost what was typed while the editor loaded, never mounts.
   await canvas().getByText(STARTER_TEXT).click();
+  // End, not placeCaret, which would wait for the editor. On macOS End leaves the caret where the
+  // click put it, which is past the text's end.
   await page.keyboard.press("End");
   await page.keyboard.type(" Open daily.", { delay: 5 });
 
@@ -115,8 +118,7 @@ test("keeps only the site's formatting in text pasted from Word or a web page", 
 
 test("links selected text through the link dialog, as part of the text's one step", async () => {
   await editText();
-  await page.keyboard.press("Home");
-  await page.keyboard.press("Shift+End");
+  await selectText(editor());
   const toolbar = canvas().locator("[data-puck-rte-menu]");
   await toolbar.getByRole("button", { name: "Link…" }).click();
 
@@ -154,8 +156,7 @@ test("links selected text through the link dialog, as part of the text's one ste
 
 test("removes a link from the toolbar", async () => {
   await editText();
-  await page.keyboard.press("Home");
-  await page.keyboard.press("Shift+End");
+  await selectText(editor());
   const toolbar = canvas().locator("[data-puck-rte-menu]");
   await toolbar.getByRole("button", { name: "Link…" }).click();
   const dialog = page.getByRole("dialog", { name: "Link" });
@@ -176,8 +177,7 @@ test("links text and removes links in Content mode, which keeps text and links e
   // In Content mode the first click puts the caret in the text.
   await canvas().getByText(STARTER_TEXT).click();
   await expect(editor()).toBeFocused();
-  await page.keyboard.press("Home");
-  await page.keyboard.press("Shift+End");
+  await selectText(editor());
   const toolbar = canvas().locator("[data-puck-rte-menu]");
   const dialog = page.getByRole("dialog", { name: "Link" });
 
@@ -194,16 +194,14 @@ test("links text and removes links in Content mode, which keeps text and links e
   // The caret into the link, from the keyboard: in Content mode dnd-kit marks each element
   // `aria-disabled`, so a test's click inside one waits for it to be enabled (1.26 removes that).
   // The dialog hands the focus back and Tiptap restores the selection a frame later; keys pressed
-  // before that can lose the caret's move. Move it again until the toolbar shows it in the link.
+  // before that can lose the caret's move. Move it again until Remove link, which shows while the
+  // caret is in the link, can be clicked.
   await expect(editor()).toBeFocused();
   await expect(async () => {
-    await page.keyboard.press("Home");
+    await placeCaret(editor(), "start");
     await page.keyboard.press("ArrowRight");
-    await expect(toolbar.getByRole("button", { name: "Remove link" })).toBeVisible({
-      timeout: 1_000,
-    });
+    await toolbar.getByRole("button", { name: "Remove link" }).click({ timeout: 1_000 });
   }).toPass();
-  await toolbar.getByRole("button", { name: "Remove link" }).click();
   await expect(editor().locator("a")).toHaveCount(0);
   await leaveText();
   await expect(steps()).toHaveText(["Edited Text text", "Opened page"]);
