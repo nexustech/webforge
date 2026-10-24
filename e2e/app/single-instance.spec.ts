@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { ProjectStore } from "@webforge/storage";
 import { placeCaret } from "./caret.js";
-import { launchDesktopApp, launchSecondInstance } from "./launch.js";
+import { launchDesktopApp, launchSecondInstance, waitForCanvas } from "./launch.js";
 import type { RendererWindow } from "./sites.js";
 
 // One Webforge at a time (1.8, P1): a .wforge double-clicked while Webforge runs opens in the
@@ -35,9 +35,7 @@ const canvas = (page: Page) => page.frameLocator(".editor__canvas iframe");
 async function openBakery(): Promise<Page> {
   app = await launchDesktopApp({ args: [bakery], userDataDir: userData });
   const page = await app.firstWindow();
-  await expect(canvas(page).locator("style[data-webforge-site-css]")).toHaveCount(1, {
-    timeout: 30_000,
-  });
+  await waitForCanvas(page);
   await expect(page.getByRole("banner").getByRole("status")).toHaveText("Saved");
   return page;
 }

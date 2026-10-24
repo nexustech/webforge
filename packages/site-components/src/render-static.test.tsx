@@ -6,7 +6,7 @@ import {
 } from "@webforge/model";
 import { describe, expect, it } from "vitest";
 import { siteLibrary, starterLayout, starterPage } from "./catalogue/index.js";
-import { EDITOR_RENDER_CONTEXT, type RenderContext, type ResolvedImage } from "./library.js";
+import { EDITOR_RENDER_CONTEXT } from "./library.js";
 import {
   behavioursUsedBy,
   documentsLinkedBy,
@@ -15,6 +15,7 @@ import {
   UnknownComponentError,
   walkNodes,
 } from "./render-static.js";
+import type { RenderContext, ResolvedImage } from "./schema.js";
 
 const heroImage: ResolvedImage = {
   sources: [{ type: "image/webp", srcset: "assets/img/hero-640.webp 640w" }],

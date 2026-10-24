@@ -1,17 +1,11 @@
-import type { BehaviourName } from "./library.js";
-
-/** Every file of `behaviours/`, as its text, by path ("./behaviours/menu.js"). */
-const FILES = import.meta.glob("./behaviours/*.js", {
-  query: "?raw",
-  import: "default",
-  eager: true,
-});
+import { BEHAVIOUR_FILES } from "./behaviours/index.js";
+import type { BehaviourName } from "./schema.js";
 
 /**
  * The source of each `webforge.js` behaviour, by name: one plain, readable classic script per file
  * of `behaviours/` (decisions X1, X4), named after the file. Each is a self-contained IIFE, so the
- * pipeline can concatenate the ones a site needs; adding a behaviour is adding its file.
+ * pipeline can concatenate the ones a site needs. Adding a behaviour is adding its file and running
+ * `pnpm behaviours`, which writes `behaviours/index.ts` (R7): plain strings, so the package loads
+ * without Vite, in Node too.
  */
-export const BEHAVIOUR_SCRIPTS: Readonly<Record<BehaviourName, string>> = Object.fromEntries(
-  Object.entries(FILES).map(([path, script]) => [path.replace(/^.*\/|\.js$/g, ""), script]),
-);
+export const BEHAVIOUR_SCRIPTS: Readonly<Record<BehaviourName, string>> = BEHAVIOUR_FILES;

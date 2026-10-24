@@ -13,12 +13,20 @@ This page is the template for adding one (2.5). The rules come from the engineer
 
 ## Defining it
 
-Wrap the definition in `defineComponent`. It checks the conventions as the module loads, so a mistake fails every test that uses the library instead of reaching a site.
+Wrap the definition in `defineComponent`.
+- **Typed by its fields (R7):** `fields` type the rest. A default for a field the component doesn't have, or a choice a field doesn't offer, is a type error. `render` gets `values` and `slots` typed by them, so it reads `values.variant` as `"two" | "three"`, with no narrowing of its own.
+- **Read from whatever the document holds:** a site file can hold anything. `defineComponent` gives `render` each value in its field's form:
+  - a choice not offered becomes the default, else the first choice;
+  - a toggle becomes `false`;
+  - text becomes something to render;
+  - an invalid image or link is left out;
+  - an empty slot renders nothing.
+- **Checked as the module loads:** `defineComponent` checks the conventions as the module loads, so a mistake fails every test that uses the library instead of reaching a site.
 
 ```tsx
 import { t } from "@webforge/i18n";
 import { defineComponent } from "../define.js";
-import { boxClasses, optionValue, slotComponent, textValue } from "../library.js";
+import { boxClasses } from "../library.js";
 import { MARGIN_FIELD, marginClasses, PADDING_FIELD, SECTION_PADDING } from "./basic.js";
 
 const COLUMNS = ["two", "three"] as const;
@@ -49,17 +57,15 @@ const cards = defineComponent({
     margin: MARGIN_FIELD,
   },
   defaults: { title: t("starter.cardsTitle"), gap: "medium", items: [] },
-  render: (props) => {
-    const Items = slotComponent(props, "items");
-    const columns = optionValue(props.values.variant, COLUMNS);
+  // `values` and `slots` are typed by `fields`: `values.variant` is "two" | "three".
+  render: ({ values, slots }) => {
+    const Items = slots.items;
     // Each side its token, or a section's own spacing (`px-4 py-16`) where it isn't set.
-    const padding = boxClasses(props.values.padding, "padding", SECTION_PADDING);
+    const padding = boxClasses(values.padding, "padding", SECTION_PADDING);
     return (
-      <section
-        className={`site-cards mx-auto max-w-6xl ${padding}${marginClasses(props.values.margin)}`}
-      >
-        <h2 className="text-3xl font-bold">{textValue(props.values.title)}</h2>
-        <div className={columns === "two" ? "grid gap-6 md:grid-cols-2" : "grid gap-6 md:grid-cols-3"}>
+      <section className={`site-cards mx-auto max-w-6xl ${padding}${marginClasses(values.margin)}`}>
+        <h2 className="text-3xl font-bold">{values.title}</h2>
+        <div className={values.variant === "two" ? "grid gap-6 md:grid-cols-2" : "grid gap-6 md:grid-cols-3"}>
           <Items />
         </div>
       </section>
@@ -70,17 +76,21 @@ const cards = defineComponent({
 
 ### What `defineComponent` refuses
 
+As it types (R7), and again as the module loads for specs typed loosely:
+- **A default for nothing:** every default is for a field.
+- **A default that isn't a choice:** a `select`, `spacing` or `slider` default must be one of its choices.
+
+As the module loads:
 - **No display name (D2):** every component has a label, already translated.
 - **A free value as a style (C4):** a field in the Style group, given or by its kind, must be a design token. That means `select`, `toggle`, `slider`, `color`, `spacing` or `box`; never a typed value.
 - **A free value per device (F-ED-4):** only design tokens may be `responsive`.
 - **Broken choices:** a `select`, `color`, `spacing` or `slider` field must offer choices, each once, and its default must be one of them.
-- **A default for nothing:** every default is for a field.
 - **A missing behaviour:** each name in `behaviours` must be a file in `src/behaviours/`.
 - **A clash with variants:** with `variants`, no field of its own may be named `variant`.
 
 ### Fields
 
-`FieldDef` in `src/library.ts` lists the kinds:
+`FieldDef` in `src/schema.ts` lists the kinds. `FieldValue` says what `render` gets for each, and `StoredValue` what a site file stores. A field shared by several components is a constant with `as const satisfies FieldDef` (like `PADDING_FIELD`), so it keeps its kind and the components' values stay typed.
 
 - **Content:** `text` and `richtext`, which can be edited on the canvas with `inline`. `text` can also be bound to a Site Settings value with `bindable`.
 - **Media and links:** `media` (an image from Media, rendered with `Picture`) and `link` (rendered with `linkAttributes`).
@@ -107,8 +117,15 @@ const cards = defineComponent({
   - `boxClasses` is the one exception: its classes are listed for the Storybook (`@source inline` in `.storybook/preview.css`, which a test keeps complete).
 - **Static HTML that works without JavaScript:** an FAQ is a `<details>`, and a menu shows on focus until its script runs.
 - **Behaviours:** a component that needs a script names it in `behaviours`. Each is a plain, readable classic script in `src/behaviours/<name>.js`, a self-contained IIFE (decisions X1, X4). The export's `webforge.js` includes only the behaviours its pages use.
+  - **Type-checked as written (R7):** `tsconfig.behaviours.json` checks each file with the DOM's types (`checkJs`), with no `@ts-check` line, so sites get the script as it is. Give the types TypeScript can't work out in JSDoc (`/** @param {boolean} open */`).
+  - **Unit-tested:** `src/behaviours/<name>.test.ts` renders the component with the export's renderer into a happy-dom page of its own, runs the script on it, and checks what it does: `aria-expanded`, the focus, Escape.
+  - **After adding or changing one, run `pnpm behaviours`.** It writes `src/behaviours/index.ts`, the scripts as strings, so the package loads without Vite. A test fails while it's out of date.
 - **No external requests (C8):** icons are inline SVG, and fonts and images come with the site.
 - **Context:** `props.context` resolves links, images and settings. On the canvas they go nowhere; in the export they're the site's.
+
+## The schema entry
+
+`@webforge/site-components/schema` (`src/schema.ts`) has the package's types only: `FieldDef`, `RenderContext`, `ComponentPlace`, the value types. It loads without React or Vite, in plain Node too, for tools that need what a component's fields are. A test in `tools/` imports it in Node and fails if anything from React or Vite comes with it, so keep it to types.
 
 ## Stories
 
@@ -140,4 +157,5 @@ export const Cards: Story = {
 - [ ] **`defineComponent`:** the label and field labels go through `t()`, with English text in `packages/i18n/src/en/components.ts`.
 - [ ] **Stories:** for its variants, passing axe in every theme on Desktop and Mobile.
 - [ ] **Tests:** unit tests for anything its render works out. The export's golden files change only on purpose.
+- [ ] **Behaviours:** a new or changed script type-checks, has its unit test, and `pnpm behaviours` has been run.
 - [ ] **Edit panel:** each field shows in the Edit panel with a meaningful undo label ("Changed Cards layout").

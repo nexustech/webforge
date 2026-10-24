@@ -1,6 +1,6 @@
 import { rmSync } from "node:fs";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
-import { launchDesktopApp, newUserDataDir } from "./launch.js";
+import { launchDesktopApp, newUserDataDir, waitForCanvas } from "./launch.js";
 
 // Command palette and Add panel favourites (1.34, F-ED-26, UX-10, UX-11): Ctrl/Cmd+P finds
 // commands, pages to go to and things to add; an Add from it is one undo step; the person's
@@ -21,7 +21,7 @@ const groups = () =>
 async function launch(userDataDir?: string) {
   app = await launchDesktopApp(userDataDir === undefined ? {} : { userDataDir });
   page = await app.firstWindow();
-  await expect(canvas().locator("style[data-webforge-site-css]")).toHaveCount(1);
+  await waitForCanvas(page);
 }
 
 test.describe("command palette", () => {

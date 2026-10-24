@@ -1,7 +1,8 @@
 import type { NodeDoc } from "@webforge/model";
 import { siteLibrary } from "../catalogue/index.js";
-import { EDITOR_RENDER_CONTEXT, type RenderContext, type ResolvedImage } from "../library.js";
+import { EDITOR_RENDER_CONTEXT } from "../library.js";
 import { renderNodesToHtml } from "../render-static.js";
+import type { RenderContext, ResolvedImage } from "../schema.js";
 
 /**
  * A picture for stories: 640 × 427 of a warm plain colour, inline, as stories make no network

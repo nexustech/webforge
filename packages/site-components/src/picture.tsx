@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import type { ResolvedImage } from "./library.js";
+import type { ResolvedImage } from "./schema.js";
 
 /** The inline style that keeps the focal point in view and, on the canvas, shows the crop. */
 function pictureStyle(image: ResolvedImage): CSSProperties | undefined {
