@@ -3,7 +3,7 @@ import type { Extensions } from "@tiptap/core";
 import { t } from "@webforge/i18n";
 import { RICH_TEXT_FILE_LINK, RICH_TEXT_PAGE_LINK } from "@webforge/model";
 import { LinkIcon, UnlinkIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEditorState } from "./editor-state.js";
 import { type PickLink, pickLinkInto } from "./text-keys.js";
 
 /** Puck's rich-text field, with the options and menus it takes. */
@@ -47,22 +47,6 @@ export const RICH_TEXT_OPTIONS: NonNullable<RichtextField["options"]> = {
 };
 
 /**
- * Draws the toolbar again on every change of `editor`'s content or selection, so the link buttons
- * follow the caret: Puck draws its menu again only for the formatting it tracks itself.
- */
-function useRedrawOnChange(editor: ToolbarProps["editor"]): void {
-  const [, setChanges] = useState(0);
-  useEffect(() => {
-    if (editor === null) return;
-    const redraw = () => setChanges((count) => count + 1);
-    editor.on("transaction", redraw);
-    return () => {
-      editor.off("transaction", redraw);
-    };
-  }, [editor]);
-}
-
-/**
  * The link button: asks the app for a link (through `pick`) and sets it on the selected text, or
  * changes the link at the caret. Without text selected or a link to change, there's nothing to link.
  */
@@ -89,7 +73,8 @@ function LinkControl({ editor, pick }: { editor: ToolbarProps["editor"]; pick: P
  */
 export function createFormatToolbar(picker: () => PickLink | null) {
   return function FormatToolbar({ editor }: ToolbarProps) {
-    useRedrawOnChange(editor);
+    // Drawn again on every change of the content or selection, so the link buttons follow it.
+    useEditorState(editor);
     const pick = picker();
     return (
       <RichTextMenu>

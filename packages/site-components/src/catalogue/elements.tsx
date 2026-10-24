@@ -5,6 +5,7 @@ import { defineComponent } from "../define.js";
 import { MARGIN_FIELD, marginClasses } from "../frame.js";
 import { type ComponentDef, linkAttributes, responsiveClasses } from "../library.js";
 import { Picture } from "../picture.js";
+import { PREVIEW_ATTRIBUTE } from "../previews.js";
 import type { FieldDef, ResolvedImage } from "../schema.js";
 import { BODY_TEXT_CLASSES, BUTTON_CLASSES } from "../typography.js";
 import {
@@ -295,11 +296,16 @@ const column = defineComponent({
     content: { kind: "slot", label: t("field.content"), accepts: "element" },
   },
   defaults: { content: [] },
-  // `site-column` is what 2.17's column outlines find on the canvas.
-  render: ({ slots }) => {
+  // Marked for the canvas's *Show column outlines* preview (2.17), which outlines its edges.
+  render: ({ slots, context }) => {
     const Content = slots.content;
     return (
-      <div className="site-column min-w-0">
+      <div
+        className="site-column min-w-0"
+        {...(context.previews?.columnOutlines === true
+          ? { [PREVIEW_ATTRIBUTE]: "column-outline" }
+          : {})}
+      >
         <Content className="flex flex-col gap-4" />
       </div>
     );

@@ -1100,7 +1100,7 @@ describe("tree helpers", () => {
 
 describe("edit-only previews (UX-26)", () => {
   /** Every preview there is, on: a new one fails to compile here until this test covers it. */
-  const ALL_PREVIEWS: Required<EditPreviews> = { mobileMenu: true };
+  const ALL_PREVIEWS: Required<EditPreviews> = { mobileMenu: true, columnOutlines: true };
   const previewing: RenderContext = { ...context, previews: ALL_PREVIEWS };
 
   it("shows the Header's small screens' menu open on the canvas, marked as a preview", () => {
@@ -1122,6 +1122,27 @@ describe("edit-only previews (UX-26)", () => {
       `<details class="site-menu md:hidden" data-wf-menu="" open="" ${PREVIEW_ATTRIBUTE}="mobile-menu">`,
     );
     expect(draw({})).toContain('<details class="site-menu md:hidden" data-wf-menu="">');
+  });
+
+  it("outlines each Column on the canvas while column outlines are previewed (2.17)", () => {
+    const column = siteLibrary.components.Column;
+    if (column === undefined) throw new Error("No Column");
+    const draw = (previews: EditPreviews) =>
+      renderToStaticMarkup(
+        <>
+          {column.render({
+            id: "column",
+            values: column.defaults,
+            slots: { content: () => null },
+            context: { ...context, previews },
+          })}
+        </>,
+      );
+
+    expect(draw({ columnOutlines: true })).toContain(
+      `<div class="site-column min-w-0" ${PREVIEW_ATTRIBUTE}="column-outline">`,
+    );
+    expect(draw({})).toContain('<div class="site-column min-w-0">');
   });
 
   it("never reaches the export: every component renders the same with every preview on", () => {
