@@ -575,6 +575,39 @@ describe("createPuckEngine", () => {
     expect(open()).toBe(false);
   });
 
+  it("keeps an Image's hint, the previews and the navigation when Site Settings change (#367)", async () => {
+    const pic = () => element.querySelector(".t-pic")?.textContent;
+    const open = () => element.querySelector<HTMLDetailsElement>(".t-menu")?.open;
+    const nav = () => [...element.querySelectorAll(".t-nav li")].map((item) => item.textContent);
+    await act(async () => {
+      engine.setImages(
+        () => null,
+        () => "Choose one",
+      );
+      engine.setPreviews({ mobileMenu: true });
+      engine.setNavigation([{ label: "Home", href: "#", current: true }]);
+      engine.applyChange({
+        page: {
+          ...page,
+          content: [
+            { type: "Pic", props: { id: "p" } },
+            { type: "Menu", props: { id: "m" } },
+            { type: "Nav", props: { id: "n" } },
+          ],
+        },
+      });
+    });
+    await settle();
+
+    // As when the editor opens, and on every change of Site Settings.
+    await act(async () => engine.setSettings({ setting: () => "Rosa's Bakery" }));
+    await settle();
+
+    expect(pic()).toBe("Choose one");
+    expect(open()).toBe(true);
+    expect(nav()).toEqual(["Home"]);
+  });
+
   it("shows the site's navigation, drawing the page again when it changes (1.21)", async () => {
     const nav = () => [...element.querySelectorAll(".t-nav li")].map((item) => item.textContent);
     await act(async () =>
