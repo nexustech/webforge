@@ -37,7 +37,6 @@ import {
   checkSettings,
   DAYS,
   FORM_SERVICES,
-  type FormServiceKind,
   type SettingsForm,
   toSettingsForm,
 } from "./settings-form.js";
@@ -130,7 +129,10 @@ function SiteSettingsForm({
         <DialogDescription>{t("site.settings.description")}</DialogDescription>
       </DialogHeader>
 
-      <Tabs value={section} onValueChange={(value) => setSection(value as Section)}>
+      <Tabs
+        value={section}
+        onValueChange={(value) => setSection(SECTIONS.find((name) => name === value) ?? section)}
+      >
         <TabsList
           aria-label={t("site.settings.sections")}
           // Seven sections wrap onto a second row in a narrow window; each row keeps the tabs' height.
@@ -245,11 +247,11 @@ function SiteSettingsForm({
                       aria-label={t("site.settings.network")}
                       className={cn(fieldControlClass, "w-32")}
                       value={profile.network}
-                      onChange={(event) =>
-                        replace({
-                          network: event.currentTarget.value as (typeof SOCIAL_NETWORKS)[number],
-                        })
-                      }
+                      onChange={(event) => {
+                        const { value } = event.currentTarget;
+                        const network = SOCIAL_NETWORKS.find((name) => name === value);
+                        if (network !== undefined) replace({ network });
+                      }}
                     >
                       {SOCIAL_NETWORKS.map((network) => (
                         <option key={network} value={network}>
@@ -411,12 +413,11 @@ function SiteSettingsForm({
                 className={cn(fieldControlClass, "w-48")}
                 value={form.formService}
                 aria-describedby={hintId}
-                onChange={(event) =>
-                  change({
-                    formService: event.currentTarget.value as FormServiceKind,
-                    formValue: "",
-                  })
-                }
+                onChange={(event) => {
+                  const { value } = event.currentTarget;
+                  const formService = FORM_SERVICES.find((service) => service === value);
+                  if (formService !== undefined) change({ formService, formValue: "" });
+                }}
               >
                 {FORM_SERVICES.map((service) => (
                   <option key={service} value={service}>

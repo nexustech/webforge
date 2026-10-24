@@ -3,6 +3,7 @@ import {
   copiedNodeId,
   MAX_COPIED_NODES,
   type MediaMeta,
+  mediaItem,
   type NodeDoc,
   newSharedCopy,
   pageAnchors,
@@ -76,7 +77,7 @@ function selectedNode(
 function mediaOf(session: ClipboardSession, nodes: readonly NodeDoc[]): MediaMeta[] {
   const { media } = session.history.document.getState();
   return [...mediaUsedBy(nodes, session.library)].flatMap((id) => {
-    const item = Object.hasOwn(media, id) ? media[id as keyof typeof media] : undefined;
+    const item = mediaItem(media, id);
     return item === undefined ? [] : [item];
   });
 }

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { menuItemIdSchema, pageIdSchema } from "./ids.js";
+import { type MediaId, menuItemIdSchema, pageIdSchema } from "./ids.js";
 import { anchorIdSchema, linkValueSchema, pageLinkSchema } from "./link.js";
 
 /** The longest label a menu item can have, in the menu or as a page's navigation label (S5). */
@@ -87,3 +87,17 @@ export const menuDocSchema = z.strictObject({
 
 /** See {@link menuDocSchema}. */
 export type MenuDoc = z.infer<typeof menuDocSchema>;
+
+/**
+ * The Media files the navigation menu links to, from its items and dropdowns, hidden items
+ * included: the export ships them, and Media counts them as used on every page.
+ */
+export function menuFileLinks(menu: MenuDoc): MediaId[] {
+  return menu.items
+    .flatMap((item) => (item.kind === "group" ? item.children : [item]))
+    .flatMap((item) =>
+      (item.kind === "link" || item.kind === "button") && item.link.kind === "file"
+        ? [item.link.mediaId]
+        : [],
+    );
+}

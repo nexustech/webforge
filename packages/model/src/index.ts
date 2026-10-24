@@ -72,12 +72,13 @@ export {
   IMAGE_MIME_TYPES,
   imageValueSchema,
   isImageMeta,
+  mediaItem,
   mediaMetaSchema,
   mediaNameFor,
   mediaNameSchema,
 } from "./media.js";
 export type { MenuDoc, MenuItem, MenuLeaf } from "./menu.js";
-export { MENU_LABEL_MAX, menuDocSchema, menuItemSchema } from "./menu.js";
+export { MENU_LABEL_MAX, menuDocSchema, menuFileLinks, menuItemSchema } from "./menu.js";
 export { syncMenuWithPages } from "./menu-sync.js";
 export type {
   MigrateOptions,

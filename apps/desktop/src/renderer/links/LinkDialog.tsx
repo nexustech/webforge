@@ -240,7 +240,8 @@ function LinkForm({
                 className={fieldControlClass}
                 value={pageId ?? ""}
                 onChange={(event) => {
-                  setPageId(event.currentTarget.value as PageId);
+                  const { value } = event.currentTarget;
+                  setPageId(targets.find((target) => target.id === value)?.id);
                   setSection("");
                 }}
               >

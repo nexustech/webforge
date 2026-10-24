@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { mediaIdSchema } from "./ids.js";
+import { type MediaId, mediaIdSchema } from "./ids.js";
 
 /** Image types Media accepts; the export makes WebP plus a fallback in the original type (X2). */
 export const IMAGE_MIME_TYPES = ["image/jpeg", "image/png"] as const;
@@ -115,6 +115,17 @@ export const mediaMetaSchema = z.discriminatedUnion("kind", [imageMetaSchema, fi
 
 /** See {@link mediaMetaSchema}. */
 export type MediaMeta = z.infer<typeof mediaMetaSchema>;
+
+/**
+ * The item `id` of a site's `media`, if it has one: never a property every object has, such as
+ * `constructor`, for an id read from a page or a file.
+ */
+export function mediaItem(
+  media: Readonly<Record<MediaId, MediaMeta>>,
+  id: string,
+): MediaMeta | undefined {
+  return Object.hasOwn(media, id) ? media[id as MediaId] : undefined;
+}
 /** An image in Media. */
 export type ImageMeta = z.infer<typeof imageMetaSchema>;
 /** A downloadable file in Media. */
