@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { createSite, type PageId } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
+import { placeCaret } from "./caret.js";
 import { launchDesktopApp } from "./launch.js";
 
 // Site-wide confirmations (1.26, D7, F-ED-14): deleting a page, or an element of the shared Footer,
@@ -100,7 +101,7 @@ test("deleting an element of the shared Footer asks first; undo waits for the an
   const field = open.locator("[contenteditable]");
   await field.hover();
   await field.click();
-  await page.keyboard.press("End");
+  await placeCaret(field, "end");
   await page.keyboard.type(" 8-6", { delay: 20 });
   await expect(open).toHaveText("Open daily 8-6");
 
