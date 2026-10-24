@@ -1,6 +1,7 @@
-import type { HistoryEntry, HistoryManager } from "@webforge/history";
+import type { HistoryEntry } from "@webforge/history";
 import { t } from "@webforge/i18n";
 import type { EditKind } from "./editor-session.js";
+import { isApplied, type UndoableHistory, undoEntry } from "./undo-entry.js";
 
 /** How long a toast offers Undo before it goes; Undo stays in the title bar and Ctrl/Cmd+Z. */
 export const UNDO_TOAST_DURATION_MS = 6_000;
@@ -25,9 +26,6 @@ export type Toasts = {
   dismiss(id: ToastId): void;
 };
 
-/** The history operations Undo from a toast needs. */
-type UndoableHistory = Pick<HistoryManager<unknown, unknown>, "undo" | "jumpTo" | "state">;
-
 /** What the toasts need of an editor session: its history and its new-entry notifications. */
 type ToastSession = {
   readonly history: UndoableHistory;
@@ -35,31 +33,6 @@ type ToastSession = {
     listener: (entry: Pick<HistoryEntry<unknown>, "id" | "label">, kind: EditKind) => void,
   ): () => void;
 };
-
-/** Whether the step `entryId` is still applied (exists and is at or before the current one). */
-function isApplied(history: UndoableHistory, entryId: string): boolean {
-  const { entries, cursor } = history.state.getState();
-  const index = entries.findIndex((entry) => entry.id === entryId);
-  return index !== -1 && index < cursor;
-}
-
-/**
- * Undoes the step `entryId` from its toast (D4). While it is still the current step, that is a
- * plain Undo. After later edits, it jumps to just before it, undoing those too (they stay
- * redoable in Undo History). If the step was undone, or then discarded by a new edit, nothing
- * happens. Returns whether anything changed (nothing does while a gesture is in progress).
- */
-export function undoEntry(history: UndoableHistory, entryId: string): boolean {
-  if (!isApplied(history, entryId)) {
-    return false;
-  }
-  const { entries, cursor } = history.state.getState();
-  const index = entries.findIndex((entry) => entry.id === entryId);
-  if (index === cursor - 1) {
-    return history.undo();
-  }
-  return history.jumpTo(entries[index - 1]?.id ?? null);
-}
 
 /**
  * Shows "Deleted Heading · Undo" after each delete (D4). `flush` ends a text edit in progress

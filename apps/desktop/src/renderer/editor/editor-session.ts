@@ -27,7 +27,7 @@ import {
   toggleSelected,
 } from "./selection.js";
 import { shownLayout } from "./shared-layout.js";
-import { undoEntry } from "./undo-toasts.js";
+import { undoEntry } from "./undo-entry.js";
 
 export type { EditorSelection } from "./selection.js";
 
