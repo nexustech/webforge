@@ -32,7 +32,7 @@ export function largePage(options: LargePageOptions = {}): PageDoc {
       type: "Section",
       props: {
         id: `s${s}`,
-        padding: "medium",
+        padding: { top: "m", bottom: "m" },
         content: [
           { type: "Heading", props: { id: `s${s}-heading`, text: `Section ${s}`, size: "medium" } },
           {

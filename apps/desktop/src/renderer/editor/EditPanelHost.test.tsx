@@ -488,13 +488,18 @@ describe("EditPanelHost", () => {
       expect(labels()).toEqual(["Changed Section padding on Tablet", "Changed Section padding"]);
     });
 
-    it("writes a padding saved before 1.32 in the new form, every side at once (1.32)", async () => {
+    it("sets every side at once of a padding set on some sides only (1.32)", async () => {
       const { session, labels, section, user } = setup("section-1");
       act(() =>
-        session.edit("props", "Old padding", (draft) => {
+        session.edit("props", "Top and bottom padding", (draft) => {
           const old = draft.pages[draft.homePageId]?.doc.content[0];
           if (old !== undefined) {
-            old.props.padding = { $responsive: { desktop: "large", mobile: "small" } };
+            old.props.padding = {
+              $responsive: {
+                desktop: { top: "l", bottom: "l" },
+                mobile: { top: "s", bottom: "s" },
+              },
+            };
           }
         }),
       );

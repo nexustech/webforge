@@ -12,6 +12,7 @@ import {
   ProjectStore,
   ReadOnlyProjectError,
 } from "../src/index.js";
+import { hardenConnection } from "../src/project-store.js";
 
 const tempDir = tempDirFactory();
 
@@ -406,6 +407,19 @@ describe("ProjectStore.open with untrusted files", () => {
     expect(() => db.exec("UPDATE sqlite_schema SET sql = 'CREATE TABLE t (y)'")).toThrow(
       /may not be modified/,
     );
+    db.close();
+  });
+
+  it("turns foreign keys on itself, whatever better-sqlite3's default is (R14)", () => {
+    const db = new Database(":memory:");
+    db.pragma("foreign_keys = OFF");
+
+    hardenConnection(db);
+
+    expect(db.pragma("foreign_keys", { simple: true })).toBe(1);
+    db.exec("CREATE TABLE blobs (hash TEXT PRIMARY KEY)");
+    db.exec("CREATE TABLE documents (blob_hash TEXT NOT NULL REFERENCES blobs (hash))");
+    expect(() => db.exec("INSERT INTO documents VALUES ('missing')")).toThrow(/FOREIGN KEY/);
     db.close();
   });
 });

@@ -121,7 +121,7 @@ Site (.wforge)
 
 - **Element tree:** Puck data (sections and elements with typed props). Every node has a stable `id` and a friendly display label (D2).
 - **Styling props** map to Tailwind/daisyUI classes through **design-token fields** (e.g. Padding: Medium → `py-12`), per breakpoint (Desktop · Tablet · Mobile).
-- **Format versioning:** `format_version` integer with a migration chain; old versions are migrated lazily (06).
+- **Format versioning:** `format_version` integer with a migration chain; old versions are migrated lazily (06). Any change to a stored shape bumps the format ([ADR 0012](../docs/adr/0012-site-format-migrations.md)).
 
 ## 6. Key interfaces
 

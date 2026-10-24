@@ -5,6 +5,7 @@ import {
   migrateSite,
   pageDocumentId,
   type SiteDoc,
+  type SiteDocumentChange,
   siteDocuments,
   siteFromDocuments,
 } from "@webforge/model";
@@ -29,17 +30,11 @@ export type StoredDocument = {
 };
 
 /**
- * A change to the working copy. One {@link ProjectStore.commit} applies a list of them atomically.
- * Put content is stored as JSON; `undefined` properties are dropped, as `JSON.stringify` does.
+ * A change to the working copy, of a kind `@webforge/model` defines. One
+ * {@link ProjectStore.commit} applies a list of them atomically. Put content is stored as JSON;
+ * `undefined` properties are dropped, as `JSON.stringify` does.
  */
-export type DocumentChange =
-  | {
-      readonly type: "put";
-      readonly id: string;
-      readonly kind: string;
-      readonly content: unknown;
-    }
-  | { readonly type: "delete"; readonly id: string };
+export type DocumentChange = SiteDocumentChange;
 
 /** A binary blob, such as an image, stored once under the SHA-256 hash of its bytes. */
 export type StoredBlob = {
@@ -197,12 +192,17 @@ function toAssetInfo(row: unknown): AssetInfo {
  * so garbage collection can only ever keep too much, never remove a blob something uses.
  */
 function collectHashes(value: JsonValue, into: Set<string>): void {
-  if (typeof value === "string") {
-    if (HASH.test(value)) into.add(value);
-  } else if (Array.isArray(value)) {
-    for (const item of value) collectHashes(item, into);
-  } else if (typeof value === "object" && value !== null) {
-    for (const item of Object.values(value)) collectHashes(item, into);
+  // Iterative: a document nested very deeply (a crafted file) can't overflow the stack (R14).
+  const pending: JsonValue[] = [value];
+  while (pending.length > 0) {
+    const item = pending.pop();
+    if (typeof item === "string") {
+      if (HASH.test(item)) into.add(item);
+    } else if (Array.isArray(item)) {
+      for (const each of item) pending.push(each);
+    } else if (typeof item === "object" && item !== null) {
+      for (const each of Object.values(item)) pending.push(each);
+    }
   }
 }
 
@@ -271,13 +271,16 @@ function toProjectFileError(error: unknown): unknown {
  * turns on `SQLITE_DBCONFIG_DEFENSIVE`, which blocks `writable_schema`, `journal_mode=OFF` and
  * other ways to corrupt the file from SQL.
  */
-function hardenConnection(db: Database.Database): void {
+export function hardenConnection(db: Database.Database): void {
   // Functions with side effects may not run from views or triggers stored in the file.
   db.pragma("trusted_schema = OFF");
   // Catch malformed b-tree cells early instead of reading past them.
   db.pragma("cell_size_check = ON");
   // Never memory-map the file: an I/O error would then crash the process instead of failing a call.
   db.pragma("mmap_size = 0");
+  // A document or asset can't name a blob the file doesn't have. better-sqlite3 turns this on by
+  // default; set here so a change of default can't turn it off (R14, a test checks).
+  db.pragma("foreign_keys = ON");
 }
 
 /**
@@ -395,6 +398,11 @@ export class ProjectStore {
   readonly #info: ProjectInfo;
   /** Prepared statements by SQL text, compiled once per connection. */
   readonly #statements = new Map<string, Database.Statement>();
+  /**
+   * An older format's site as {@link readSite} migrated it, not written yet: reading never changes
+   * the file (R14), so a site opened and closed unedited stays as it was. The first write saves it.
+   */
+  #unsavedMigration: SiteDoc | undefined;
 
   private constructor(db: Database.Database, info: ProjectInfo) {
     this.#db = db;
@@ -510,18 +518,19 @@ export class ProjectStore {
   }
 
   /**
-   * The site in the working copy, migrated to the current site format and validated. A site saved
-   * in an older format is written back in the new one straight away (unless the project is
-   * read-only), so its documents never mix formats. Throws `SiteFormatError` from
+   * The site in the working copy, migrated to the current site format and validated. Reading never
+   * writes: a site saved in an older format stays as it is on disk until the next commit, which
+   * writes the migrated site with its changes, so opening and closing an old site leaves its file
+   * unchanged and its documents never mix formats. Throws `SiteFormatError` from
    * `@webforge/model` for an invalid site or a newer site format.
    */
   readSite(): SiteDoc {
     const raw = siteFromDocuments(this.readDocuments());
     const site = migrateSite(raw);
     const storedVersion = (raw as { formatVersion?: unknown }).formatVersion;
-    if (storedVersion !== site.formatVersion && !this.#info.readOnly) {
-      this.saveSite(site);
-    }
+    // Migrated in memory only: the next commit writes it, with its changes (see #unsavedMigration).
+    this.#unsavedMigration =
+      storedVersion !== site.formatVersion && !this.#info.readOnly ? site : undefined;
     return site;
   }
 
@@ -531,23 +540,42 @@ export class ProjectStore {
    */
   saveSite(site: SiteDoc): void {
     this.#assertWritable();
+    // A whole site replaces whatever migration was waiting to be written.
+    this.#unsavedMigration = undefined;
+    this.commit(this.#siteChanges(site));
+  }
+
+  /** The changes that make the working copy `site`: its documents, without pages it no longer has. */
+  #siteChanges(site: SiteDoc): DocumentChange[] {
     const keep = new Set(site.pageOrder.map(pageDocumentId));
     const stalePages = this.#prepare("SELECT id FROM documents WHERE kind = 'page'")
       .pluck()
       .all()
       .map(String)
       .filter((id) => !keep.has(id));
-    this.commit([
+    return [
       ...siteDocuments(site).map((document) => ({ type: "put" as const, ...document })),
       ...stalePages.map((id) => ({ type: "delete" as const, id })),
-    ]);
+    ];
   }
 
   /**
    * Applies `changes` to the working copy in one transaction: after a crash the file holds either
-   * all of them or none. When this returns, the changes are on disk.
+   * all of them or none. When this returns, the changes are on disk. The first commit after
+   * {@link readSite} migrated an older format writes the migrated site too, in the same
+   * transaction, so the file never holds documents of two formats.
    */
   commit(changes: readonly DocumentChange[]): void {
+    const migrated = this.#unsavedMigration;
+    if (migrated !== undefined) {
+      this.#commit([...this.#siteChanges(migrated), ...changes]);
+      this.#unsavedMigration = undefined;
+      return;
+    }
+    this.#commit(changes);
+  }
+
+  #commit(changes: readonly DocumentChange[]): void {
     const upsert = this.#prepare(
       `INSERT INTO documents (id, kind, blob_hash) VALUES (?, ?, ?)
        ON CONFLICT (id) DO UPDATE SET kind = excluded.kind, blob_hash = excluded.blob_hash`,
