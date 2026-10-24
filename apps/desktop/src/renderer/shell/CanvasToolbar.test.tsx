@@ -397,6 +397,24 @@ describe("Heading level toolbar (SP-4)", () => {
     expect(document.activeElement).toBe(within(row).getByRole("radio", { name: "Title" }));
   });
 
+  it("shows no Heading level in Content mode, which locks the design (R9)", () => {
+    const session = createEditorSession(siteLibrary, starterSite());
+    const toolbars = createContextualToolbars();
+    toolbars.register(headingToolbar({ session, flush: vi.fn() }));
+    const preferences = createPreferencesStore();
+    preferences.changeMode("content");
+    render(
+      <ContextualToolbarsProvider registry={toolbars}>
+        <CanvasToolbarHost session={session} view={createCanvasView()} preferences={preferences} />
+      </ContextualToolbarsProvider>,
+    );
+    act(() => session.select("heading-1"));
+
+    expect(screen.getByRole("toolbar", { name: "Selected element" }).childElementCount).toBe(0);
+    act(() => preferences.changeMode("design"));
+    expect(screen.getByRole("radiogroup", { name: "Heading level" })).toBeTruthy();
+  });
+
   it("offers a Heading's sizes as its levels", () => {
     const sizes = siteLibrary.components.Heading?.fields.size;
     expect(sizes?.kind === "select" ? sizes.options.map((option) => option.value) : []).toEqual(

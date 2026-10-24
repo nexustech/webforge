@@ -12,6 +12,11 @@ export type ContextualToolbar = {
   readonly id: string;
   /** The element types it is shown for (`Heading`). */
   readonly types: readonly string[];
+  /**
+   * Shown in Content mode too: it changes only what an element says (a List's items). Others
+   * change the design, which Content mode locks (R9), so they show in Design mode only.
+   */
+  readonly inContentMode?: boolean;
   /** Its controls for the selected element `nodeId`; it reads and changes the element itself. */
   readonly component: ComponentType<{ readonly nodeId: string }>;
 };
