@@ -4,7 +4,12 @@ import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { type ElectronApplication, _electron as electron } from "@playwright/test";
+import {
+  type ElectronApplication,
+  _electron as electron,
+  expect,
+  type Page,
+} from "@playwright/test";
 import { ProjectStore } from "@webforge/storage";
 
 /** The desktop app's folder; its production build is in `out/`. */
@@ -111,4 +116,22 @@ export async function launchDesktopApp(
     });
   }
   return app;
+}
+
+/**
+ * How long the app may take from its window opening to a canvas showing the site with its CSS: the
+ * renderer loads, the canvas mounts, and the canvas styles worker compiles the site's Tailwind CSS
+ * for the first time. That is a few seconds on the developer's computer, but the first compile on a
+ * cold, busy CI runner went past Playwright's 5 s default (#296, Windows). The one place to tune it.
+ */
+export const CANVAS_START_TIMEOUT_MS = 30_000;
+
+/**
+ * Waits until `page`'s canvas shows the site with its compiled CSS (1.12). The CSS changes the
+ * layout when it arrives, so clicks, drags and measurements wait for it.
+ */
+export async function waitForCanvas(page: Page): Promise<void> {
+  await expect(
+    page.frameLocator(".editor__canvas iframe").locator("style[data-webforge-site-css]"),
+  ).toHaveCount(1, { timeout: CANVAS_START_TIMEOUT_MS });
 }

@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { createSite } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
-import { launchDesktopApp } from "./launch.js";
+import { launchDesktopApp, waitForCanvas } from "./launch.js";
 
 // Repeating lists in the Edit panel (F-ED-6): a FAQ's questions are added, moved and deleted there,
 // one labelled undo step each.
@@ -43,7 +43,7 @@ test.beforeEach(async () => {
     .getByRole("region", { name: "Left panels" })
     .getByRole("tab", { name: "Undo History" })
     .click();
-  await expect(canvas().locator("style[data-webforge-site-css]")).toHaveCount(1);
+  await waitForCanvas(page);
 });
 
 test.afterEach(async () => {

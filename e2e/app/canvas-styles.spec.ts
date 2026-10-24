@@ -1,5 +1,5 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
-import { launchDesktopApp } from "./launch.js";
+import { launchDesktopApp, waitForCanvas } from "./launch.js";
 
 // The canvas shows the page with the site's own CSS (1.12): Tailwind and daisyUI compiled by the
 // export pipeline, injected into the canvas iframe, and nothing from the editor's own styles.
@@ -26,7 +26,7 @@ const canvasFrame = () => {
 
 test.describe("site CSS on the canvas", () => {
   test("styles the page with the site's Tailwind classes and fonts", async () => {
-    await expect(canvas().locator("style[data-webforge-site-css]")).toHaveCount(1);
+    await waitForCanvas(page);
     const heading = canvas().locator(".site-heading");
 
     // text-4xl, and md:text-5xl at the Desktop width.
