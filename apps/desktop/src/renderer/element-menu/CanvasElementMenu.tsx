@@ -3,8 +3,8 @@ import { t } from "@webforge/i18n";
 import { LAYER_NAME_MAX } from "@webforge/model";
 import { useEffect, useRef, useState } from "react";
 import type { EditorSession } from "../editor/editor-session.js";
-import { type Layer, layerItem, renameLayer, shownLayer } from "../layers/layers.js";
-import { NameDialog } from "../site/NameDialog.js";
+import { type Layer, layerItem, renameLayer, shownLayer } from "../editor/layers.js";
+import { NameDialog } from "../shell/NameDialog.js";
 import { ElementMenu, type MenuPoint } from "./ElementMenu.js";
 
 /** The selected element's layer on the shown page, if it is one (not the Header or Footer). */

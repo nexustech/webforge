@@ -17,21 +17,16 @@ import type {
   ClipboardWriteResult,
 } from "../../shared/ipc/clipboard.js";
 import type { MediaImportResult } from "../../shared/ipc-contract.js";
-import { type AddTarget, addTarget, insertAt } from "../add/add-items.js";
+import { type AddTarget, addTarget, insertAt } from "../add/index.js";
 import { currentPage, type EditorSession } from "../editor/editor-session.js";
 import { quotedElementName } from "../editor/labels.js";
 import { findNode, removeNode } from "../editor/nodes.js";
 import type { SharedPlace } from "../editor/shared-confirmations.js";
 import { type SharedRegion, sharedRegionOf, shownLayout } from "../editor/shared-layout.js";
 import { reportFailure } from "../log.js";
-import { importMessages } from "../media/import-media.js";
-import { addMedia, putInMedia } from "../media/media-commands.js";
-import {
-  type CopySelection,
-  copySelection,
-  updateSectionField,
-} from "../shared-sections/shared-sections.js";
-import { siteSession } from "../storage/site-session.js";
+import { addMedia, importMessages, putInMedia } from "../media/index.js";
+import { type CopySelection, copySelection, updateSectionField } from "../shared-sections/index.js";
+import { siteSession } from "../storage/index.js";
 
 /**
  * Copy, Cut and Paste of sections and elements (1.25, F-ED-16): within a page, between pages and

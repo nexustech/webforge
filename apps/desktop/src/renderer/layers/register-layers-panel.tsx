@@ -3,9 +3,17 @@ import { t } from "@webforge/i18n";
 import { LayersIcon } from "lucide-react";
 import { useSyncExternalStore } from "react";
 import type { EditorSession } from "../editor/editor-session.js";
+import {
+  copyLayer,
+  type Layer,
+  layersOf,
+  moveLayer,
+  renameLayer,
+  setLayerHidden,
+} from "../editor/layers.js";
 import { sameValue } from "../editor/same-value.js";
 import { useUi } from "../editor/use-document.js";
-import { ElementMenu } from "../element-menu/ElementMenu.js";
+import { ElementMenu } from "../element-menu/index.js";
 import { useCommand, useCommandRegistry } from "../shell/command-context.js";
 import type { PanelRegistry } from "../shell/panels.js";
 import {
@@ -14,14 +22,6 @@ import {
   usePreferences,
 } from "../shell/preferences-store.js";
 import { LayersPanel } from "./LayersPanel.js";
-import {
-  copyLayer,
-  type Layer,
-  layersOf,
-  moveLayer,
-  renameLayer,
-  setLayerHidden,
-} from "./layers.js";
 
 /** No other selected layers. */
 const NO_OTHERS: readonly string[] = [];

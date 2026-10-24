@@ -22,7 +22,6 @@ import { registerStyleCommands } from "../clipboard/style-clipboard.js";
 import { CanvasElementMenu } from "../element-menu/CanvasElementMenu.js";
 import { createErrorReporter, type ReportError } from "../error-reporting.js";
 import { deleteSelected, duplicateSelected, moveSelected } from "../layers/bulk-layers.js";
-import type { Layer } from "../layers/layers.js";
 import { linkFieldRenderer } from "../links/LinkField.js";
 import { RichTextLinkHost } from "../links/RichTextLinkHost.js";
 import { connectCanvasImages } from "../media/canvas-images.js";
@@ -58,6 +57,7 @@ import { CanvasResizeHandles } from "./CanvasResizeHandles.js";
 import { colourFieldRenderer } from "./ColourField.js";
 import { type BulkCanvasAction, registerCanvasCommands } from "./canvas-commands.js";
 import { EditPanelHost, type EditPanelHostProps } from "./EditPanelHost.js";
+import { canvasPreviews, createPreviewStore } from "./edit-previews.js";
 import {
   connectEngine,
   currentPage,
@@ -68,8 +68,10 @@ import {
 import { registerElementCommands } from "./element-commands.js";
 import { connectFieldDrags } from "./field-drag.js";
 import { fieldTarget } from "./field-target.js";
+import { headerToolbar } from "./HeaderToolbar.js";
 import { headingToolbar } from "./HeadingToolbar.js";
 import { listToolbar } from "./ListToolbar.js";
+import type { Layer } from "./layers.js";
 import { SharedRegionBanner } from "./SharedRegionBanner.js";
 import { confirmSharedRemovals, sharedCutConfirmation } from "./shared-confirmations.js";
 import { shownLayout } from "./shared-layout.js";
@@ -231,6 +233,8 @@ export function Editor({
   const mode = usePreferences(preferences, (state) => state.mode);
   const devices = usePreferences(preferences, (state) => state.preferences.canvas.devices);
   const viewOptions = usePreferences(preferences, viewOptionsOf, shallow);
+  /** The edit-only previews the user turned on (UX-26), for this window. */
+  const [editPreviews] = useState(() => createPreviewStore());
   const connectionRef = useRef<EngineConnection | null>(null);
   const clipboardCommandsRef = useRef<ReturnType<typeof registerClipboardCommands> | null>(null);
   const styleCommandsRef = useRef<ReturnType<typeof registerStyleCommands> | null>(null);
@@ -441,6 +445,22 @@ export function Editor({
     engine?.setViewOptions(viewOptions);
   }, [engine, viewOptions]);
 
+  // The edit-only previews (UX-26), at the canvas's width: view state too, never in the export.
+  // Followed outside React, so a view change doesn't draw the editor again; the engine draws the
+  // page again only when what it previews changes.
+  useEffect(() => {
+    if (engine === null) return;
+    const show = () =>
+      engine.setPreviews(canvasPreviews(editPreviews.getState(), session.ui.getState().viewport));
+    show();
+    const stopChoices = editPreviews.subscribe(show);
+    const stopViewport = session.ui.subscribe(show);
+    return () => {
+      stopChoices();
+      stopViewport();
+    };
+  }, [engine, editPreviews, session]);
+
   useEffect(() => {
     engine?.setMode(mode);
     clipboardCommandsRef.current?.setLayoutLocked(mode !== "design");
@@ -582,6 +602,10 @@ export function Editor({
       removeList();
     };
   }, [toolbars, session]);
+  useEffect(
+    () => toolbars.register(headerToolbar({ session, previews: editPreviews })),
+    [toolbars, session, editPreviews],
+  );
 
   return (
     <div className="editor">

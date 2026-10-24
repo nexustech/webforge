@@ -20,12 +20,11 @@ import {
   PlusIcon,
 } from "lucide-react";
 import { type KeyboardEvent, useRef, useState } from "react";
-import { LinkDialog } from "../links/LinkDialog.js";
-import type { LinkFieldChange } from "../links/link-change.js";
-import type { PageTarget } from "../links/link-targets.js";
+import type { LinkFieldChange, PageTarget } from "../links/index.js";
+import { LinkDialog } from "../links/index.js";
+import { NameDialog } from "../shell/NameDialog.js";
 import { useMenuDialog } from "../shell/use-menu-dialog.js";
 import { useRowDrag } from "../shell/use-row-drag.js";
-import { NameDialog } from "../site/NameDialog.js";
 import { itemLabel, type MenuPosition, type NewMenuItem } from "./menu-actions.js";
 
 /** What the menu editor can do; the host binds them to the editor session. */
@@ -174,7 +173,6 @@ export function MenuPanel({ site, linkContext, actions }: MenuPanelProps) {
       item.kind === "page" && site.pages[item.pageId]?.settings.hideFromNavigation === true;
     const hidden = item.hidden || pageHidden;
     const group = row.group === null ? undefined : menu.items.find((i) => i.id === row.group);
-    const where = group === undefined ? {} : { group: itemLabel(site, group) };
     return (
       <li
         key={item.id}
@@ -196,7 +194,7 @@ export function MenuPanel({ site, linkContext, actions }: MenuPanelProps) {
                     : item.hidden
                       ? "menu.rowInGroupHidden"
                       : "menu.rowInGroup",
-                  { name, kind, ...where },
+                  { name, kind, group: itemLabel(site, group) },
                 )
           }
           className={cn(

@@ -1,4 +1,4 @@
-import { t } from "@webforge/i18n";
+import { plural, t } from "@webforge/i18n";
 import { SearchIcon } from "lucide-react";
 import { type KeyboardEvent, type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { cn } from "../../lib/cn.js";
@@ -256,9 +256,7 @@ export function Picker<Item extends PickerItem>({
               ? ""
               : shown.length === 0
                 ? t("ui.picker.noMatch", { query: query.trim() })
-                : shown.length === 1
-                  ? t("ui.picker.matchOne")
-                  : t("ui.picker.matchMany", { count: shown.length })}
+                : plural("ui.picker.match", shown.length)}
           </p>
           <ScrollArea className="min-h-0 flex-1 rounded-md border border-border">
             {items.length === 0 || shown.length === 0 ? (

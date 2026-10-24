@@ -10,7 +10,7 @@ import {
   syncMenuWithPages,
 } from "@webforge/model";
 import type { EditKind, EditorSession } from "../editor/editor-session.js";
-import { applyAnchor, type LinkFieldChange } from "../links/link-change.js";
+import { applyAnchor, type LinkFieldChange } from "../links/index.js";
 
 /**
  * The menu editor's changes (F-ED-17): each one undo step named after its item ("Added menu item

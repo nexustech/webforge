@@ -8,8 +8,7 @@ import { createEditorSession } from "../editor/editor-session.js";
 import { starterSite } from "../editor/starter-site.js";
 import { openedDialog } from "../shell/opened-dialog.test-helper.js";
 import { createPanelRegistry } from "../shell/panels.js";
-import { addPage, setHiddenFromNavigation } from "../site/page-actions.js";
-import { registerSitePanel } from "../site/SitePanel.js";
+import { addPage, registerSitePanel, setHiddenFromNavigation } from "../site/index.js";
 import { addMenuItem } from "./menu-actions.js";
 
 afterEach(cleanup);

@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { userEvent, within } from "storybook/test";
+import type { Layer } from "../editor/layers.js";
 import { LayersPanel, type LayersPanelActions } from "./LayersPanel.js";
-import type { Layer } from "./layers.js";
 
 const layer = (id: string, kind: string, extra: Partial<Layer> = {}): Layer => ({
   id,
