@@ -1,4 +1,11 @@
 export { BEHAVIOUR_SCRIPTS } from "./behaviours.js";
+export type { ColumnLayout } from "./catalogue/column-layouts.js";
+export {
+  COLUMN_LAYOUTS,
+  columnLayoutsFor,
+  MAX_COLUMNS,
+  MIN_COLUMNS,
+} from "./catalogue/column-layouts.js";
 export { siteLibrary, starterLayout, starterNotFoundPage, starterPage } from "./catalogue/index.js";
 export type { ComponentSpec } from "./define.js";
 export { createLibrary, defineComponent } from "./define.js";

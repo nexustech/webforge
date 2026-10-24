@@ -58,7 +58,7 @@ function listOf(
  * where the Edit panel writes the List's items: the page, the shared Header or Footer, or a linked
  * copy's shared section. `flush` ends a canvas text session first.
  */
-export function addListItem(
+function addListItem(
   session: EditorSession,
   flush: () => void,
   nodeId: string,
