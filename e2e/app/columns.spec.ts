@@ -92,7 +92,7 @@ test("lays columns out from the toolbar: add one, widen the first, outlines on t
       const [first, second] = await Promise.all(
         [0, 1].map(async (index) => (await columns.nth(index).boundingBox())?.width ?? 0),
       );
-      return first > second * 1.8;
+      return (first ?? 0) > (second ?? 0) * 1.8;
     })
     .toBe(true);
 
