@@ -14,6 +14,7 @@ import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vites
 import type { CanvasEngine, CanvasSize, EngineEdit, Unsubscribe } from "../canvas-engine.js";
 import { pageActions } from "./page-actions.js";
 import { createPuckEngine } from "./puck-engine.js";
+import { RENDER_CONTEXT_SOURCES } from "./render-context-sources.js";
 
 vi.mock("./page-actions.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./page-actions.js")>();
@@ -70,6 +71,20 @@ const library: ComponentLibrary = {
         <details className="t-menu" open={context.previews?.mobileMenu === true}>
           <summary>Menu</summary>
         </details>
+      ),
+    },
+    Keys: {
+      label: "Keys",
+      fields: {},
+      defaults: {},
+      // Which parts of the render context it was drawn with.
+      render: ({ context }) => (
+        <p className="t-keys">
+          {Object.keys(context)
+            .filter((key) => context[key as keyof typeof context] !== undefined)
+            .sort()
+            .join(" ")}
+        </p>
       ),
     },
     Pic: {
@@ -606,6 +621,43 @@ describe("createPuckEngine", () => {
     expect(pic()).toBe("Choose one");
     expect(open()).toBe(true);
     expect(nav()).toEqual(["Home"]);
+  });
+
+  it("keeps every part of the render context not from Site Settings when they change (#367)", async () => {
+    const keys = () => element.querySelector(".t-keys")?.textContent?.split(" ") ?? [];
+    const notSettings = Object.entries(RENDER_CONTEXT_SOURCES)
+      .filter(([, source]) => source !== "setSettings")
+      .map(([key]) => key);
+    // Every part from somewhere else than Site Settings, set.
+    await act(async () => {
+      engine.setImages(
+        () => null,
+        () => "Choose one",
+      );
+      engine.setPreviews({ mobileMenu: true });
+      engine.setNavigation([{ label: "Home", href: "#", current: true }]);
+      engine.applyChange({ page: { ...page, content: [{ type: "Keys", props: { id: "k" } }] } });
+    });
+    await settle();
+    expect(keys()).toEqual(expect.arrayContaining(notSettings));
+
+    await act(async () =>
+      engine.setSettings({
+        setting: () => undefined,
+        emptySetting: () => "Add it",
+        openingHours: [],
+        language: "en-GB",
+      }),
+    );
+    await settle();
+    expect(keys().sort()).toEqual(
+      [...notSettings, "setting", "emptySetting", "openingHours", "language"].sort(),
+    );
+
+    // Settings without some bindings leave none of them from before, and nothing else goes.
+    await act(async () => engine.setSettings({ setting: () => undefined }));
+    await settle();
+    expect(keys().sort()).toEqual([...notSettings, "setting"].sort());
   });
 
   it("shows the site's navigation, drawing the page again when it changes (1.21)", async () => {

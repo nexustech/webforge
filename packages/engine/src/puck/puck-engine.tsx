@@ -99,7 +99,8 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   };
   /**
    * Site Settings' values (`setSettings`), kept apart from the other parts so that replacing them
-   * replaces nothing else (#367).
+   * replaces nothing else (#367). Which method gives each part is listed, and checked, in
+   * `render-context-sources.ts`.
    */
   let bindings: SiteBindings = { setting: EDITOR_RENDER_CONTEXT.setting };
   /** The two together: what the canvas's components render with. */
