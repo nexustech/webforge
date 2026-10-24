@@ -24,6 +24,7 @@ export {
   textValue,
   withAdvanced,
 } from "./library.js";
+export { type EditPreviews, PREVIEW_ATTRIBUTE, samePreviews } from "./previews.js";
 export type { RenderedPage } from "./render-static.js";
 export {
   behavioursUsedBy,

@@ -2,6 +2,7 @@ import { t } from "@webforge/i18n";
 import { defineComponent } from "../define.js";
 import { isDocumentPath } from "../document-path.js";
 import { boundText, type ComponentDef } from "../library.js";
+import { PREVIEW_ATTRIBUTE } from "../previews.js";
 import type { NavItem, NavLink } from "../schema.js";
 import { BUTTON_CLASSES } from "../typography.js";
 
@@ -94,12 +95,15 @@ function NavItems({ items }: { readonly items: readonly NavItem[] }) {
 function HeaderNavigation({
   items,
   menuItems,
+  menuOpen,
   className,
 }: {
   /** The items in the row on wide screens. */
   readonly items: readonly NavItem[];
   /** The items in the menu on small screens. */
   readonly menuItems: readonly NavItem[];
+  /** Shows the small screens' menu open: the canvas's *Show mobile menu* preview (UX-26). */
+  readonly menuOpen: boolean;
   readonly className?: string;
 }) {
   return (
@@ -107,7 +111,11 @@ function HeaderNavigation({
       <ul className="menu menu-horizontal hidden p-0 md:flex">
         <NavItems items={items} />
       </ul>
-      <details className="site-menu md:hidden" data-wf-menu="">
+      <details
+        className="site-menu md:hidden"
+        data-wf-menu=""
+        {...(menuOpen ? { open: true, [PREVIEW_ATTRIBUTE]: "mobile-menu" } : {})}
+      >
         <summary className={`${BUTTON_CLASSES.menu} list-none [&::-webkit-details-marker]:hidden`}>
           <MenuIcon />
           <span className="sr-only">{t("siteText.menu")}</span>
@@ -210,6 +218,7 @@ const header = defineComponent({
         <HeaderNavigation
           items={row}
           menuItems={items}
+          menuOpen={context.previews?.mobileMenu === true}
           {...(layout === "left" ? {} : { className: "md:flex md:flex-1 md:justify-center" })}
         />
         {button === null ? null : (

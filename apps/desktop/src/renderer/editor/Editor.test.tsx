@@ -574,6 +574,42 @@ describe("Editor", () => {
     expect(engine.mount).toHaveBeenCalledTimes(mounted);
   });
 
+  it("previews the Header's mobile menu on the canvas only at small widths (UX-26)", async () => {
+    const toolbars = createContextualToolbars();
+    await act(async () =>
+      root.render(
+        <CommandRegistryProvider registry={registry}>
+          <PanelRegistryProvider registry={panels}>
+            <ContextualToolbarsProvider registry={toolbars}>
+              <Editor session={session} createEngine={createEngine} compileCss={compileCss} />
+            </ContextualToolbarsProvider>
+          </PanelRegistryProvider>
+        </CommandRegistryProvider>,
+      ),
+    );
+    const HeaderPreview = toolbars.forType("Header")?.component;
+    if (HeaderPreview === undefined) throw new Error("No Header toolbar");
+    const host = document.createElement("div");
+    document.body.append(host);
+    const toolbarRoot = createRoot(host);
+    await act(async () => session.setViewport("mobile"));
+    await act(async () => toolbarRoot.render(<HeaderPreview nodeId="header" />));
+    expect(engine.setPreviews).toHaveBeenLastCalledWith({ mobileMenu: false });
+
+    await act(async () =>
+      host
+        .querySelector<HTMLButtonElement>("button")
+        ?.dispatchEvent(new MouseEvent("click", { bubbles: true })),
+    );
+    expect(engine.setPreviews).toHaveBeenLastCalledWith({ mobileMenu: true });
+    // Wide screens show no small-screen menu to preview.
+    await act(async () => session.setViewport("desktop"));
+    expect(engine.setPreviews).toHaveBeenLastCalledWith({ mobileMenu: false });
+
+    await act(async () => toolbarRoot.unmount());
+    host.remove();
+  });
+
   it("styles the canvas with the site's compiled CSS", () => {
     expect(compileCss).toHaveBeenCalledWith(
       expect.objectContaining({ theme: session.history.document.getState().theme }),

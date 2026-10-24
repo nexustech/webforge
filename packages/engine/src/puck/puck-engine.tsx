@@ -5,6 +5,7 @@ import {
   type ComponentLibrary,
   EDITOR_RENDER_CONTEXT,
   type RenderContext,
+  samePreviews,
 } from "@webforge/site-components";
 import type { ComponentType, ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -372,6 +373,13 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     },
 
     setViewOptions: frame.setViewOptions,
+
+    setPreviews(previews) {
+      // Drawing the page again is only worth it when what it previews changes.
+      if (samePreviews(renderContext.previews ?? {}, previews)) return;
+      renderContext = { ...renderContext, previews };
+      redraw();
+    },
 
     destroy() {
       // An Undo still waiting for its rich-text edit goes with the canvas.
