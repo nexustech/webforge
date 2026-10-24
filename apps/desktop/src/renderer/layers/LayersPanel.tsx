@@ -561,7 +561,7 @@ export function LayersPanel({
       </ScrollArea>
 
       {/* While a layer is over a row it can't go to, why: browsers show no tooltips in a drag. */}
-      <p role="status" className="shrink-0 px-2 text-xs text-destructive empty:hidden">
+      <p role="status" className="shrink-0 px-2 text-xs text-destructive-text empty:hidden">
         {dragging !== null && drop?.allowed === false
           ? t("layers.dropNotAllowed", { item: layerItem(dragging.layer) })
           : ""}

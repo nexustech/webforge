@@ -344,7 +344,7 @@ export function connectEngine(engine: CanvasEngine, session: EditorSession): Eng
       session.edit(
         edit.kind,
         sharedName === undefined
-          ? labelFor(edit, library, page)
+          ? labelFor(edit, library, page, history.document.getState().sharedSections)
           : copyOf === undefined
             ? t("history.editedSharedSection", { name: named })
             : t("history.addedSharedCopy", { name: named }),

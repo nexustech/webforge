@@ -83,7 +83,7 @@ export function TextField({ id, helpId, field, value, onChange, onCommit }: Fiel
         }}
       />
       {error === null ? null : (
-        <p id={errorId} className="text-2xs text-destructive">
+        <p id={errorId} className="text-2xs text-destructive-text">
           {error}
         </p>
       )}
