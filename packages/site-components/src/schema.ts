@@ -13,6 +13,7 @@ import type {
   NodeDoc,
   OpeningHours,
   Responsive,
+  SocialProfile,
 } from "@webforge/model";
 import type { ComponentType, ReactNode } from "react";
 import type { EditPreviews } from "./previews.js";
@@ -216,6 +217,10 @@ export type SiteBindings = {
   readonly emptySetting?: (key: BindableSetting) => ReactNode;
   /** Site Settings' opening hours (2.8), for the Opening hours and contact section; none if left out. */
   readonly openingHours?: readonly OpeningHours[];
+  /** Site Settings' social profiles, for the Social links element (2.9b); none if left out. */
+  readonly socialProfiles?: readonly SocialProfile[];
+  /** What Social links show without any profiles: a hint on the canvas; nothing in the export. */
+  readonly socialHint?: () => ReactNode;
   /** The site's language (`en-GB`), for times and dates in its own format (2.8). */
   readonly language?: string;
   /** Where Site Settings send form submissions (F-CM-1, 2.8), if a service is chosen. */

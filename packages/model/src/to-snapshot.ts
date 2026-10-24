@@ -66,6 +66,7 @@ export function siteToSnapshot(
     media,
     settings: settingValues(site.settings),
     openingHours: site.settings.contact.openingHours,
+    socialProfiles: site.settings.social.profiles,
     formService: site.settings.forms.service,
     backToTop: site.settings.general.backToTop,
     menu: site.menu,

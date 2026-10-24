@@ -21,6 +21,9 @@ function bakery(): SiteDoc {
   });
   site.settings.general.description = "Fresh bread in Hightown";
   site.settings.contact.openingHours = [{ days: ["tue", "wed"], opens: "07:00", closes: "15:00" }];
+  site.settings.social.profiles = [
+    { network: "instagram", url: "https://instagram.com/ourbakery" },
+  ];
   site.settings.forms.service = { kind: "formspree", formId: "xyzAbc12" };
   const cakes = "cakes" as PageId;
   site.pages[cakes] = {
@@ -125,6 +128,12 @@ describe("siteToSnapshot", () => {
   it("carries the opening hours, for the Opening hours and contact section (2.8)", () => {
     expect(snapshot.openingHours).toEqual([
       { days: ["tue", "wed"], opens: "07:00", closes: "15:00" },
+    ]);
+  });
+
+  it("carries the social profiles, for Social links (2.9b)", () => {
+    expect(snapshot.socialProfiles).toEqual([
+      { network: "instagram", url: "https://instagram.com/ourbakery" },
     ]);
   });
 

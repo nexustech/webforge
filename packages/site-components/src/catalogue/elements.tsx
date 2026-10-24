@@ -8,6 +8,7 @@ import { type ComponentDef, colorClass, linkAttributes, responsiveClasses } from
 import { Picture } from "../picture.js";
 import { PREVIEW_ATTRIBUTE } from "../previews.js";
 import type { FieldDef, ResolvedImage } from "../schema.js";
+import { SocialLogo, socialName } from "../social-icons.js";
 import { BODY_TEXT_CLASSES, BUTTON_CLASSES } from "../typography.js";
 import {
   COLUMN_LAYOUT_CLASS,
@@ -451,7 +452,58 @@ const icon = defineComponent({
   },
 });
 
-/** The basic elements (2.9): Image, Button, Spacer, Divider, Columns, List and Icon. */
+const SOCIAL_SIZES = ["small", "medium", "large"] as const;
+const SOCIAL_SIZE_CLASS = { small: "size-5", medium: "size-6", large: "size-8" } as const;
+
+/**
+ * Links to the site's pages on social networks, each by its logo (PH2-4), from Site Settings →
+ * Social & sharing: a profile added there shows on every page at once. Nothing in the export
+ * without any.
+ */
+const socialLinks = defineComponent({
+  label: t("element.socialLinks"),
+  category: t("category.basic"),
+  fields: {
+    size: {
+      kind: "slider",
+      label: t("field.size"),
+      steps: SOCIAL_SIZES.map((value) => ({ label: t(`field.iconSize.${value}`), value })),
+    },
+    color: {
+      kind: "color",
+      label: t("field.color"),
+      help: t("field.socialColor.help"),
+      options: ICON_COLOURS.map((value) => ({ label: t(`field.color.${value}`), value })),
+    },
+    alignment: ALIGNMENT_FIELD,
+    margin: MARGIN_FIELD,
+  },
+  defaults: { size: "medium", color: "default", alignment: "left" },
+  render: ({ values, context }) => {
+    const profiles = context.socialProfiles ?? [];
+    const className = `site-social flex flex-wrap gap-3 ${BUTTON_ALIGN_CLASS[values.alignment]}${marginClasses(values.margin)}`;
+    if (profiles.length === 0) {
+      const hint = context.socialHint?.();
+      return hint === undefined ? null : <div className={className}>{hint}</div>;
+    }
+    const logo = `${SOCIAL_SIZE_CLASS[values.size]} ${colorClass("text", values.color)}`.trim();
+    return (
+      // biome-ignore lint/a11y/noRedundantRoles: Safari and VoiceOver drop a list's semantics without markers.
+      <ul className={`${className} m-0 list-none p-0`} role="list">
+        {profiles.map((profile, index) => (
+          // Profiles have no ids, and render in the order Site Settings keep them.
+          <li key={index}>
+            <a href={profile.url} aria-label={socialName(profile)} title={socialName(profile)}>
+              <SocialLogo network={profile.network} className={logo} />
+            </a>
+          </li>
+        ))}
+      </ul>
+    );
+  },
+});
+
+/** The basic elements (2.9): Image, Button, Spacer, Divider, Columns, List, Icon and Social links. */
 export const elementsComponents: Readonly<Record<string, ComponentDef>> = {
   Image: image,
   Button: button,
@@ -462,4 +514,5 @@ export const elementsComponents: Readonly<Record<string, ComponentDef>> = {
   List: list,
   ListItem: listItem,
   Icon: icon,
+  SocialLinks: socialLinks,
 };

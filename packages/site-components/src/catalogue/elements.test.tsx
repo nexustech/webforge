@@ -280,3 +280,44 @@ describe("icons (2.9b, F-ED-22)", () => {
     expect(html).toContain("<span>Bread</span>");
   });
 });
+
+describe("Social links (2.9b, PH2-4)", () => {
+  const profiles: RenderContext["socialProfiles"] = [
+    { network: "facebook", url: "https://www.facebook.com/ourbakery" },
+    { network: "linkedin", url: "https://www.linkedin.com/company/ourbakery" },
+    { network: "custom", url: "https://www.mastodon.social/@ourbakery" },
+  ];
+
+  it("links to each Site Settings profile by its logo, named for screen readers", () => {
+    const html = render(
+      "SocialLinks",
+      { color: "primary" },
+      { ...context, socialProfiles: profiles },
+    );
+
+    expect(html).toMatch(
+      /^<ul class="site-social flex flex-wrap gap-3 justify-start [^"]*" role="list">/,
+    );
+    expect(html).toContain(
+      '<a href="https://www.facebook.com/ourbakery" aria-label="Facebook" title="Facebook"><svg',
+    );
+    expect(html).toContain(
+      'fill="currentColor" class="size-6 text-primary" aria-hidden="true"><path d="M9.101',
+    );
+    // LinkedIn has no logo in Simple Icons, nor has any other site: a globe, named by the network or host.
+    expect(html).toContain('aria-label="LinkedIn"');
+    expect(html).toContain('aria-label="mastodon.social"');
+    expect(html.match(/<li>/g)).toHaveLength(3);
+    expect(html).not.toMatch(/<link|<img|@font-face|<use /);
+  });
+
+  it("shows nothing in the export without profiles, and the canvas's hint there", () => {
+    expect(render("SocialLinks", {}, { ...context, socialProfiles: [] })).toBe("");
+    expect(render("SocialLinks", {})).toBe("");
+    expect(
+      render("SocialLinks", {}, { ...context, socialHint: () => "Add your social profiles" }),
+    ).toBe(
+      '<div class="site-social flex flex-wrap gap-3 justify-start">Add your social profiles</div>',
+    );
+  });
+});

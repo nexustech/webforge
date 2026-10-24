@@ -40,7 +40,10 @@ export const PATCHABLE_LICENCES: ReadonlySet<string> = new Set(
   [...ALLOWED_LICENCES].filter((licence) => licence !== "MPL-2.0"),
 );
 
-/** A package allowed despite a licence outside {@link ALLOWED_LICENCES}, with the reason. */
+/**
+ * A package allowed despite a licence outside {@link ALLOWED_LICENCES}, or one whose use was
+ * reviewed anyway (brand logos), with the reason.
+ */
 export type LicenceException = {
   /** The exact licence string the exception was reviewed for; a different licence is re-checked. */
   readonly licence: string;
@@ -61,6 +64,14 @@ export const LICENCE_EXCEPTIONS: ReadonlyMap<string, LicenceException> = new Map
     {
       licence: "CC-BY-4.0",
       reason: "Browser support data used at build time (browserslist); not shipped in the app.",
+    },
+  ],
+  [
+    "simple-icons",
+    {
+      licence: "CC0-1.0",
+      reason:
+        "CC0-1.0, public-domain dedication, decided as P4 / PH2-4. Social links copy six logos (site-components/src/social-icons.tsx); each is its brand's trademark, used only to link to the site's own page there, as the brands' guidelines allow.",
     },
   ],
   [
