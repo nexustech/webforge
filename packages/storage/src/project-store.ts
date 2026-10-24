@@ -5,6 +5,7 @@ import {
   migrateSite,
   pageDocumentId,
   type SiteDoc,
+  type SiteDocumentChange,
   siteDocuments,
   siteFromDocuments,
 } from "@webforge/model";
@@ -29,17 +30,11 @@ export type StoredDocument = {
 };
 
 /**
- * A change to the working copy. One {@link ProjectStore.commit} applies a list of them atomically.
- * Put content is stored as JSON; `undefined` properties are dropped, as `JSON.stringify` does.
+ * A change to the working copy, of a kind `@webforge/model` defines. One
+ * {@link ProjectStore.commit} applies a list of them atomically. Put content is stored as JSON;
+ * `undefined` properties are dropped, as `JSON.stringify` does.
  */
-export type DocumentChange =
-  | {
-      readonly type: "put";
-      readonly id: string;
-      readonly kind: string;
-      readonly content: unknown;
-    }
-  | { readonly type: "delete"; readonly id: string };
+export type DocumentChange = SiteDocumentChange;
 
 /** A binary blob, such as an image, stored once under the SHA-256 hash of its bytes. */
 export type StoredBlob = {

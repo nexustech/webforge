@@ -14,6 +14,7 @@ import {
   applySiteChanges,
   changedDocuments,
   pageDocumentId,
+  siteDocumentChangeSchema,
   siteDocuments,
   siteFromDocuments,
 } from "./site-documents.js";
@@ -92,6 +93,33 @@ describe("siteDocuments and siteFromDocuments", () => {
 
     expect(({} as Record<string, unknown>).polluted).toBeUndefined();
     expect(Object.keys(raw.pages)).toEqual(["__proto__"]);
+  });
+});
+
+describe("siteDocumentChangeSchema", () => {
+  it("accepts every change changedDocuments makes", () => {
+    fc.assert(
+      fc.property(siteDocArbitrary, (site) => {
+        for (const change of changedDocuments(undefined, site)) {
+          expect(siteDocumentChangeSchema.safeParse(change).success).toBe(true);
+        }
+      }),
+      { numRuns: 50 },
+    );
+  });
+
+  it("refuses documents a site is not made of", () => {
+    const refused = [
+      { type: "put", id: "theme", kind: "page", content: {} },
+      { type: "put", id: "page:home", kind: "theme", content: {} },
+      { type: "put", id: "progress", kind: "progress", content: {} },
+      { type: "delete", id: "theme" },
+    ];
+    for (const change of refused) {
+      expect(siteDocumentChangeSchema.safeParse(change).success, JSON.stringify(change)).toBe(
+        false,
+      );
+    }
   });
 });
 
