@@ -103,11 +103,12 @@ export {
   richTextLinkValue,
   richTextPageLinks,
 } from "./rich-text-links.js";
-export type { Day, OpeningHours, SiteSettings } from "./settings.js";
+export type { Day, FormService, OpeningHours, SiteSettings } from "./settings.js";
 export {
   BUSINESS_NAME_MAX,
   DAYS,
   defaultSiteSettings,
+  formServiceSchema,
   languageTagSchema,
   MEASUREMENT_ID_MAX,
   OPENING_HOURS_NOTE_MAX,

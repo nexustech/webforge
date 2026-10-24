@@ -6,6 +6,7 @@ import { basicComponents } from "./basic.js";
 import { carouselComponents } from "./carousel.js";
 import { contactDetailsComponents } from "./contact-details.js";
 import { embedsComponents } from "./embeds.js";
+import { formsComponents } from "./forms.js";
 import { galleryComponents } from "./gallery.js";
 import { layoutComponents } from "./layout.js";
 import { sectionsComponents } from "./sections.js";
@@ -24,6 +25,7 @@ export const siteLibrary: ComponentLibrary = createLibrary(
   carouselComponents,
   embedsComponents,
   contactDetailsComponents,
+  formsComponents,
 );
 
 /** The page a new site starts with. */
