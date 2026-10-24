@@ -82,7 +82,7 @@ Effort: **S** ≈ days · **M** ≈ 1–2 weeks · **L** ≈ several weeks.
 ### 5.1 Proposed for the MVP (small, fits existing items)
 | # | Proposal | Why | Effort | Where |
 |---|---|---|---|---|
-| PG-2 | **Palette from an image** in the Theme panel: pick a photo or logo from Media and Webforge proposes brand colours from it (with the contrast check already planned for F-DS-2) | Owners have a logo, not a colour theory. Pinegrow's Design panel and Canva both offer it; a small k-means or median-cut pass on a downscaled bitmap runs locally | S | Theme panel (2.3) or Theme Studio (F-DS-7) |
+| PG-2 | **Palette from an image** in Theme Studio: pick a photo or logo from Media and Webforge proposes brand colours from it, through the palette rows (with the contrast check already planned for F-DS-2) | Owners have a logo, not a colour theory. Pinegrow's Design panel and Canva both offer it; a small k-means or median-cut pass on a downscaled bitmap runs locally | S | Theme Studio (F-DS-7, item 2.3b) |
 | PG-3 | **Example sites on the start screen**: one or two complete sample sites (a café, a plumber) that open as a new site, so the first five minutes show a finished result to edit rather than a blank template | Pinegrow 10.1's playground sites and first-launch guide; Bootstrap Studio's templates play the same role. We have 8 templates (S2); this makes one of them pre-filled with sample content and surfaced as *Try an example* | S | Start screen (1.8, 2.14) |
 
 ### 5.2 Proposed for v1.1

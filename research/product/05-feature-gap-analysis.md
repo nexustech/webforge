@@ -171,7 +171,7 @@ Before 3.0 it already had Global Templates (reusable linked blocks) and a Resour
 
 The [Bootstrap Studio 9.0 review](../bootstrap-studio/06-bootstrap-studio-9.md) (2026-10-22, BS9-1 – BS9-10) adds two small MVP items (sticky header, back-to-top button), puts the v1.1 Blog on a general collections engine, adds six small v1.1 items, and details the v1.1 AI assistant (BS9-10, extends GA9).
 
-The [Webflow](../competitors/01-webflow.md) and [Pinegrow 10.1](../competitors/02-pinegrow.md) reviews (2026-10-24) propose two small MVP items (PG-2 palette from an image, PG-3 example sites), side-by-side device views and two more v1.1 items (WF-1/PG-1, PG-4, PG-5), the AI approve-before-apply design (WF-2) and a GSAP licence rule (PG-6). **Decided 2026-10-24**, all adopted: PG-2 and PG-3 join the MVP (F-DS-7, F-SITE-1; +2 days), the rest is v1.1 or an engineering rule.
+The [Webflow](../competitors/01-webflow.md) and [Pinegrow 10.1](../competitors/02-pinegrow.md) reviews (2026-10-24, WF-1…6 and PG-1…9, all adopted) add two small MVP items (PG-2 palette from an image in Theme Studio, PG-3 example sites on the start screen; F-DS-7, F-SITE-1, +2 days), put side-by-side device views and two more items in v1.1 (WF-1/PG-1, PG-4, PG-5), add approve-before-apply to the v1.1 AI assistant design (WF-2) and record that GSAP is never a licence exception (PG-6).
 
 v1.1 and later items stay as listed in §4.
 
