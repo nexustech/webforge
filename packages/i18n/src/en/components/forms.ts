@@ -5,7 +5,6 @@
 export const forms = {
   "section.contactForm": "Contact form",
   "section.newsletter": "Newsletter signup",
-  "field.buttonLabel": "Button text",
   "field.askPhone": "Ask for a phone number",
   "field.askName": "Ask for a name",
   "field.formAddress": "Form address",
