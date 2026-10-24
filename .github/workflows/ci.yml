@@ -231,7 +231,7 @@ jobs:
         if: runner.os == 'macOS'
         env:
           DISPLAYPLACER_URL: https://github.com/jakehilborn/displayplacer/releases/download/v1.4.0/displayplacer-apple-v140
-          DISPLAYPLACER_SHA256: "0000000000000000000000000000000000000000000000000000000000000000"
+          DISPLAYPLACER_SHA256: 0572c3d2918e47c7e0b9d7723907864e2ea2b53b9d3b02379769fffcf44f7ea0
         run: |
           bin="$RUNNER_TEMP/displayplacer"
           curl -fsSL --retry 3 "$DISPLAYPLACER_URL" -o "$bin"
