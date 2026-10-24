@@ -1,4 +1,4 @@
-import { t } from "@webforge/i18n";
+import { t, template } from "@webforge/i18n";
 import { defineComponent } from "../define.js";
 import { MARGIN_FIELD, marginClasses } from "../frame.js";
 import type { ComponentDef } from "../library.js";
@@ -79,8 +79,8 @@ const carousel = defineComponent({
         data-layout={values.variant}
         data-wf-carousel=""
         data-slide-label={t("siteText.slide")}
-        data-slide-of={t("siteText.slideOf")}
-        data-slides-of={t("siteText.slidesOf")}
+        data-slide-of={template("siteText.slideOf")}
+        data-slides-of={template("siteText.slidesOf")}
         {...(values.autoplay ? { "data-interval": `${Number(values.interval) * 1000}` } : {})}
       >
         {/* Shown by the script, which makes them work; the rotation button comes first (APG). */}
