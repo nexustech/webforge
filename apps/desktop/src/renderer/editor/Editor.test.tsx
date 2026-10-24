@@ -6,6 +6,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_PREFERENCES } from "../../shared/ipc/prefs.js";
+import { EDITOR_AREAS } from "../areas.js";
 import { saveAsSharedSection } from "../shared-sections/shared-sections.js";
 import { CommandRegistryProvider } from "../shell/command-context.js";
 import { type CommandRegistry, createCommandRegistry } from "../shell/commands.js";
@@ -60,7 +61,12 @@ describe("Editor", () => {
         <CommandRegistryProvider registry={registry}>
           <PanelRegistryProvider registry={panels}>
             <ContextualToolbarsProvider registry={createContextualToolbars()}>
-              <Editor session={session} createEngine={createEngine} compileCss={compileCss} />
+              <Editor
+                session={session}
+                areas={EDITOR_AREAS}
+                createEngine={createEngine}
+                compileCss={compileCss}
+              />
               <PanelHost id="undoHistory" />
               <PanelHost id="add" />
             </ContextualToolbarsProvider>
@@ -158,6 +164,7 @@ describe("Editor", () => {
           <PanelRegistryProvider registry={panels}>
             <ContextualToolbarsProvider registry={createContextualToolbars()}>
               <Editor
+                areas={EDITOR_AREAS}
                 session={session}
                 createEngine={createEngine}
                 compileCss={compileCss}
@@ -224,6 +231,7 @@ describe("Editor", () => {
           <PanelRegistryProvider registry={panels}>
             <ContextualToolbarsProvider registry={createContextualToolbars()}>
               <Editor
+                areas={EDITOR_AREAS}
                 session={session}
                 createEngine={createEngine}
                 compileCss={compileCss}
@@ -352,6 +360,7 @@ describe("Editor", () => {
           <PanelRegistryProvider registry={panels}>
             <ContextualToolbarsProvider registry={createContextualToolbars()}>
               <Editor
+                areas={EDITOR_AREAS}
                 session={session}
                 createEngine={createEngine}
                 compileCss={compileCss}
@@ -385,7 +394,12 @@ describe("Editor", () => {
         <CommandRegistryProvider registry={registry}>
           <PanelRegistryProvider registry={panels}>
             <ContextualToolbarsProvider registry={createContextualToolbars()}>
-              <Editor session={session} createEngine={createEngine} compileCss={compileCss} />
+              <Editor
+                session={session}
+                areas={EDITOR_AREAS}
+                createEngine={createEngine}
+                compileCss={compileCss}
+              />
             </ContextualToolbarsProvider>
           </PanelRegistryProvider>
         </CommandRegistryProvider>,
@@ -442,6 +456,7 @@ describe("Editor", () => {
           <PanelRegistryProvider registry={panels}>
             <ContextualToolbarsProvider registry={createContextualToolbars()}>
               <Editor
+                areas={EDITOR_AREAS}
                 session={session}
                 createEngine={createEngine}
                 compileCss={compileCss}
@@ -492,6 +507,7 @@ describe("Editor", () => {
           <PanelRegistryProvider registry={createPanelRegistry()}>
             <ContextualToolbarsProvider registry={createContextualToolbars()}>
               <Editor
+                areas={EDITOR_AREAS}
                 session={session}
                 createEngine={() => content}
                 compileCss={compileCss}
@@ -514,6 +530,7 @@ describe("Editor", () => {
           <PanelRegistryProvider registry={panels}>
             <ContextualToolbarsProvider registry={createContextualToolbars()}>
               <Editor
+                areas={EDITOR_AREAS}
                 session={session}
                 createEngine={createEngine}
                 compileCss={compileCss}
@@ -541,6 +558,7 @@ describe("Editor", () => {
           <PanelRegistryProvider registry={panels}>
             <ContextualToolbarsProvider registry={createContextualToolbars()}>
               <Editor
+                areas={EDITOR_AREAS}
                 session={session}
                 createEngine={createEngine}
                 compileCss={compileCss}
@@ -581,7 +599,12 @@ describe("Editor", () => {
         <CommandRegistryProvider registry={registry}>
           <PanelRegistryProvider registry={panels}>
             <ContextualToolbarsProvider registry={toolbars}>
-              <Editor session={session} createEngine={createEngine} compileCss={compileCss} />
+              <Editor
+                session={session}
+                areas={EDITOR_AREAS}
+                createEngine={createEngine}
+                compileCss={compileCss}
+              />
             </ContextualToolbarsProvider>
           </PanelRegistryProvider>
         </CommandRegistryProvider>,
@@ -678,6 +701,7 @@ describe("Editor", () => {
           <PanelRegistryProvider registry={panels}>
             <ContextualToolbarsProvider registry={createContextualToolbars()}>
               <Editor
+                areas={EDITOR_AREAS}
                 session={session}
                 createEngine={createEngine}
                 compileCss={compileCss}
