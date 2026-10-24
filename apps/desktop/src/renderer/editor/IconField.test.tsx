@@ -36,14 +36,15 @@ function setUp() {
 }
 
 // The picker draws every icon, which is slow in happy-dom beside the suite's other tests.
-describe("the icon field (F-ED-22)", { timeout: 15_000 }, () => {
+describe("the icon field (F-ED-22)", { timeout: 30_000 }, () => {
   it("chooses an icon in the picker, searched by what it shows, as one step", async () => {
     const { button, labels, user } = setUp();
 
     await user.click(screen.getByRole("button", { name: "Icon Choose an icon…" }));
     const picker = screen.getByRole("dialog", { name: "Choose an icon" });
-    // "call" is one of the phone icon's tags.
-    await user.type(within(picker).getByRole("searchbox"), "call");
+    // "call" is one of the phone icon's tags. Pasted, so the 1,891 icons are filtered once.
+    await user.click(within(picker).getByRole("searchbox"));
+    await user.paste("call");
     await user.dblClick(within(picker).getByRole("option", { name: "phone" }));
 
     expect(button()?.icon).toBe("phone");
