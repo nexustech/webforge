@@ -147,6 +147,12 @@ export const shell = {
   "canvasToolbar.view.extraSpace": "Extra space at the bottom",
   "canvasToolbar.devices": "Devices",
   "canvasToolbar.rotate": "Rotate",
+  // The selected element's toolbar, in the row under the canvas toolbar (SP-4): a Heading's level.
+  "elementToolbar.label": "Selected element",
+  "headingToolbar.level": "Heading level",
+  "headingToolbar.title": "Title",
+  "headingToolbar.heading": "Heading",
+  "headingToolbar.subheading": "Subheading",
   // The canvas frame's edges, dragged to set its width (1.33, F-ED-25).
   "canvasResize.left": "Canvas width, left edge",
   "canvasResize.right": "Canvas width, right edge",

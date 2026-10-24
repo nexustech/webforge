@@ -68,6 +68,18 @@ const library: ComponentLibrary = {
       defaults: {},
       render: ({ context }) => <p className="t-pic">{context.emptyImage?.() ?? "none"}</p>,
     },
+    Hours: {
+      label: "Hours",
+      fields: {},
+      defaults: {},
+      render: ({ context }) => (
+        <ul className="t-hours">
+          {(context.openingHours ?? []).map((hours) => (
+            <li key={hours.opens}>{`${hours.days.join(" ")} ${hours.opens}`}</li>
+          ))}
+        </ul>
+      ),
+    },
   },
 };
 
@@ -477,10 +489,7 @@ describe("createPuckEngine", () => {
       content: [{ type: "Bound", props: { id: "b", text: "Own", ...(bindings && { bindings }) } }],
     });
     await act(async () => {
-      engine.setSettings(
-        () => undefined,
-        (key) => `Add ${key}`,
-      );
+      engine.setSettings({ setting: () => undefined, emptySetting: (key) => `Add ${key}` });
       engine.applyChange({ page: bound() });
     });
     await settle();
@@ -492,7 +501,7 @@ describe("createPuckEngine", () => {
     expect(headings()).toEqual(["Add contact.phone"]);
 
     await act(async () =>
-      engine.setSettings((key) => (key === "contact.phone" ? "0123" : undefined)),
+      engine.setSettings({ setting: (key) => (key === "contact.phone" ? "0123" : undefined) }),
     );
     await settle();
     expect(headings()).toEqual(["0123"]);
@@ -513,6 +522,30 @@ describe("createPuckEngine", () => {
     await act(async () => engine.setImages(() => null));
     await settle();
     expect(pic()).toBe("none");
+  });
+
+  it("shows the site's opening hours, drawing the page again when they change (2.8)", async () => {
+    const hours = () =>
+      [...element.querySelectorAll(".t-hours li")].map((item) => item.textContent);
+    await act(async () =>
+      engine.applyChange({ page: { ...page, content: [{ type: "Hours", props: { id: "h" } }] } }),
+    );
+    await settle();
+    expect(hours()).toEqual([]);
+
+    await act(async () =>
+      engine.setSettings({
+        setting: () => undefined,
+        openingHours: [{ days: ["sat", "sun"], opens: "08:00", closes: "13:00" }],
+      }),
+    );
+    await settle();
+    expect(hours()).toEqual(["sat sun 08:00"]);
+
+    // Settings without hours leave none from before.
+    await act(async () => engine.setSettings({ setting: () => undefined }));
+    await settle();
+    expect(hours()).toEqual([]);
   });
 
   it("shows the site's navigation, drawing the page again when it changes (1.21)", async () => {
@@ -801,7 +834,7 @@ describe("createPuckEngine with a shared Header and Footer (F-ED-7)", () => {
       props: { id: "hb", text: "Own", bindings: { text: "contact.phone" } },
     };
     await act(async () => {
-      engine.setSettings((key) => (key === "contact.phone" ? "0123" : undefined));
+      engine.setSettings({ setting: (key) => (key === "contact.phone" ? "0123" : undefined) });
       engine.loadPage(page, { ...layout, header: [bound] });
     });
     await settle();

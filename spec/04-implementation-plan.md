@@ -728,10 +728,10 @@ Opening hours & contact details (bound to Site Settings), Contact form section, 
 - [ ] No external requests until the visitor clicks an embed
 
 **2.9 Elements: basic set and icon picker**  
-Heading, Text, Image (focal point), Button, Columns, Spacer, Divider, List, Icon with the searchable Lucide icon picker (also the icon field control, used by Icon, Button and List per F-ED-22), Social links bound to Site Settings → Social, with Simple Icons (CC0-1.0) for the brand icons. Back-to-top button (F-CM-9, added 22 Oct 2026): a Site Settings option with a per-page switch; appears after scrolling, keyboard accessible, respects reduced motion. **Added 23 Oct 2026 (UI5, +1 day):** contextual toolbars in the canvas toolbar's centre for a selected Heading (level: Title, Heading, Subheading) and List (add an item before, after or at the end) (SP-4); a *Suggested* group at the top of the Add panel with the elements that fit inside the selected section or element (SP-12).
+Heading, Text, Image (focal point), Button, Columns, Spacer, Divider, List, Icon with the searchable Lucide icon picker (also the icon field control, used by Icon, Button and List per F-ED-22), Social links bound to Site Settings → Social, with Simple Icons (CC0-1.0) for the brand icons. Back-to-top button (F-CM-9, added 22 Oct 2026): a Site Settings option with a per-page switch; appears after scrolling, keyboard accessible, respects reduced motion. **Added 23 Oct 2026 (UI5, +1 day):** contextual toolbars in a row under the canvas toolbar (UI5a, 24 Oct 2026: not its centre) for a selected Heading (level: Title, Heading, Subheading) and List (add an item before, after or at the end) (SP-4); a *Suggested* group at the top of the Add panel with the elements that fit inside the selected section or element (SP-12).
 
 - [ ] Icons inlined as SVG at export
-- [ ] The Heading and List toolbars sit in the canvas toolbar's centre and are one undo step per change
+- [ ] The Heading and List toolbars sit in the row under the canvas toolbar, reachable by Tab after it, and are one undo step per change
 - [ ] Columns stack responsively
 - [ ] Social links update from Site Settings
 - [ ] Back-to-top button: appears after scrolling, keyboard and screen-reader accessible, moves focus to the top (F-CM-9), no smooth scroll with reduced motion
@@ -784,7 +784,7 @@ Screenshot baselines for every component × 3 themes × Desktop/Mobile (PR; the 
 - [ ] Nightly full-theme run configured
 
 **2.17 Columns toolbar, image resize handles and edit-only previews** (added 22 Oct 2026, UI2)  
-Columns toolbar on a selected Columns element, in the canvas toolbar's centre rather than floating on the canvas (SP-4, 23 Oct 2026): add/remove a column, layout presets (½·½, ⅓·⅔, ⅓·⅓·⅓…), per-device stacking. Image width handles snap to size tokens. Edit-only previews: column outlines on Columns, and *Show mobile menu* on the Header while the Mobile view is active.
+Columns toolbar on a selected Columns element, in the row under the canvas toolbar rather than floating on the canvas (SP-4, 23 Oct 2026; amended by UI5a, 24 Oct 2026): add/remove a column, layout presets (½·½, ⅓·⅔, ⅓·⅓·⅓…), per-device stacking. Image width handles snap to size tokens. Edit-only previews: column outlines on Columns, and *Show mobile menu* on the Header while the Mobile view is active.
 
 - [ ] Column changes are one undo step and per device
 - [ ] Edit-only previews never reach the export

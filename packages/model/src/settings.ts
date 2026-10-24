@@ -46,15 +46,23 @@ const socialProfileSchema = z.strictObject({
   url: webUrlSchema,
 });
 
-const DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
+/** The days of the week, Monday first, as opening hours store them. */
+export const DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
+
+/** A day of the week, as opening hours store it. */
+export type Day = (typeof DAYS)[number];
+
 const time = z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/);
 
 /** Days that share the same hours, e.g. Tuesday to Friday, 07:00–15:00. */
-const openingHoursSchema = z.strictObject({
+export const openingHoursSchema = z.strictObject({
   days: z.array(z.enum(DAYS)).min(1),
   opens: time,
   closes: time,
 });
+
+/** See {@link openingHoursSchema}. */
+export type OpeningHours = z.infer<typeof openingHoursSchema>;
 
 /**
  * Where forms send submissions by default (B3, B6). None of these values is a secret: each one

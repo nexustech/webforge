@@ -282,6 +282,95 @@ test.describe("exported site from disk", () => {
     });
   });
 
+  test.describe("gallery lightbox (2.7a)", () => {
+    test("opens an image large, keeps the focus in it, moves with the keys and closes with Esc", async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 1280, height: 800 });
+      await open(page, "about.html");
+      const images = page.locator("a[data-wf-lightbox-item]");
+      const viewer = page.getByRole("dialog", { name: "Image viewer" });
+      const status = viewer.locator("[data-wf-lightbox-status]");
+
+      await images.nth(1).click();
+      await expect(viewer).toBeVisible();
+      await expect(status).toHaveText("2 of 3");
+      await expect(viewer.getByRole("img")).toHaveAttribute("alt", "Hills at noon");
+      await expect(viewer.getByRole("img")).toHaveAttribute("src", /^assets\/img\//);
+      await expect
+        .poll(() =>
+          viewer.getByRole("img").evaluate((image) => (image as HTMLImageElement).naturalWidth),
+        )
+        .toBeGreaterThan(0);
+
+      // A modal: the page behind it is out of reach, so the focus can't leave it. Checked by
+      // focus(), not Tab: on macOS, WebKit doesn't tab to buttons, the lightbox's only stops.
+      expect(await viewer.evaluate((dialog) => dialog.matches(":modal"))).toBe(true);
+      await images.first().evaluate((link) => (link as HTMLElement).focus());
+      await expect(images.first()).not.toBeFocused();
+
+      await page.keyboard.press("ArrowRight");
+      await expect(status).toHaveText("3 of 3");
+      await page.keyboard.press("ArrowRight");
+      await expect(status).toHaveText("1 of 3");
+      await expect(viewer.locator("[data-wf-lightbox-caption]")).toHaveText(
+        "Where our wheat grows",
+      );
+      await viewer.getByRole("button", { name: "Previous image" }).click();
+      await expect(status).toHaveText("3 of 3");
+
+      await page.keyboard.press("Escape");
+      await expect(viewer).toBeHidden();
+      await expect(images.nth(1)).toBeFocused();
+    });
+
+    test("goes to the first and last image with Home and End, keeps the page still and closes with a click beside it", async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 1280, height: 800 });
+      await open(page, "about.html");
+      const images = page.locator("a[data-wf-lightbox-item]");
+      const viewer = page.getByRole("dialog", { name: "Image viewer" });
+      const status = viewer.locator("[data-wf-lightbox-status]");
+      const overflow = () =>
+        page.evaluate(() => getComputedStyle(document.documentElement).overflow);
+      const before = await overflow();
+
+      await images.nth(1).click();
+      await expect(viewer).toBeVisible();
+      await page.keyboard.press("End");
+      await expect(status).toHaveText("3 of 3");
+      await page.keyboard.press("Home");
+      await expect(status).toHaveText("1 of 3");
+      // The page behind doesn't scroll while the lightbox is open.
+      expect(await overflow()).toBe("hidden");
+
+      // A click beside the image, on the dimmed page, closes it.
+      await viewer.click({ position: { x: 10, y: 10 } });
+      await expect(viewer).toBeHidden();
+      await expect(images.nth(1)).toBeFocused();
+      expect(await overflow()).toBe(before);
+    });
+
+    test("passes axe with the lightbox open", async ({ page }) => {
+      await open(page, "about.html");
+      await page.locator("a[data-wf-lightbox-item]").first().click();
+      const viewer = page.getByRole("dialog", { name: "Image viewer" });
+      await expect(viewer).toBeVisible();
+      // Once it has faded in: halfway, axe measures the colours' contrast faded too (macOS).
+      await viewer.evaluate((dialog) =>
+        Promise.all(
+          dialog.getAnimations({ subtree: true }).map((animation) => animation.finished),
+        ).then(() => undefined),
+      );
+
+      const results = await new AxeBuilder({ page }).include("dialog").analyze();
+      expect(results.violations.map((violation) => `${violation.id}: ${violation.help}`)).toEqual(
+        [],
+      );
+    });
+  });
+
   test.describe("carousel (2.10)", () => {
     test("names its slides and moves with its buttons and the arrow keys, round past the end", async ({
       page,
@@ -355,6 +444,14 @@ test.describe("exported site from disk", () => {
 
   test.describe("without JavaScript", () => {
     test.use({ javaScriptEnabled: false });
+
+    test("opens a gallery image's full-size file, from disk", async ({ page }) => {
+      await open(page, "about.html");
+
+      await page.locator("a[data-wf-lightbox-item]").first().click();
+
+      await expect(page).toHaveURL(/\/assets\/img\/[^/]+\.(jpg|png|webp)$/);
+    });
 
     test("links a video and a map to their own sites, with no button that does nothing (2.8)", async ({
       page,

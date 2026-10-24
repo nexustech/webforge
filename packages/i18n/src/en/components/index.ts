@@ -1,7 +1,9 @@
 import { basic } from "./basic.js";
 import { carousel } from "./carousel.js";
+import { contactDetails } from "./contactDetails.js";
 import { elements } from "./elements.js";
 import { embeds } from "./embeds.js";
+import { gallery } from "./gallery.js";
 import { layout } from "./layout.js";
 import { sections } from "./sections.js";
 import { shared } from "./shared.js";
@@ -19,6 +21,8 @@ export const componentFamilies = {
   sections,
   carousel,
   embeds,
+  contactDetails,
+  gallery,
 } as const;
 
 /** Site components: element names, their fields, exported-site text and the starter page. */
@@ -30,4 +34,6 @@ export const components = {
   ...sections,
   ...carousel,
   ...embeds,
+  ...contactDetails,
+  ...gallery,
 } as const;

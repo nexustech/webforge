@@ -20,7 +20,7 @@ What it writes passes `pnpm check` and renders in Storybook as it is; then make 
 
 ## Where it goes
 
-- **One module per family:** components live in `src/catalogue/`, one file per family: `basic.tsx` (Section, Heading, Text), `layout.tsx` (Header, Footer), `sections.tsx` (Hero, Text, Text + Image, Call to action, FAQ), `carousel.tsx` (Carousel) and `embeds.tsx` (Video, Map).
+- **One module per family:** components live in `src/catalogue/`, one file per family: `basic.tsx` (Section, Heading, Text), `layout.tsx` (Header, Footer), `sections.tsx` (Hero, Text, Text + Image, Call to action, FAQ), `carousel.tsx` (Carousel), `embeds.tsx` (Video, Map) and `gallery.tsx` (Gallery).
 - **A new family:** add a module and list it in `createLibrary` in `src/catalogue/index.ts` (`pnpm new-component` does both). Streams adding components in parallel then never edit the same file.
 - **Its strings:** in a file of its own, `packages/i18n/src/en/components/<family>.ts`, listed in that folder's `index.ts` (2.19). Strings several families use (`field.title`, the spacing and colour choices, the starter page) are in `shared.ts`. A test fails on a key in two files.
 - **Each module ends with its family:** a record from component type to definition, e.g. `export const basicComponents = { Section: section, Heading: heading, Text: text }`.
@@ -145,6 +145,7 @@ As the module loads:
   - The export and the canvas compile the classes in the rendered HTML, so they don't need it.
   - `boxClasses` is the one exception: its classes are listed for the Storybook (`@source inline` in `.storybook/preview.css`, which a test keeps complete).
 - **Static HTML that works without JavaScript:** an FAQ is a `<details>`, and a menu shows on focus until its script runs.
+- **Reading order is the document's order:** the keyboard and screen readers follow the HTML, not where the layout puts things. CSS columns (the Gallery's "Natural shapes") fill down each column, so its items read down the first column, then the next; a grid reads along each row. Prefer a grid where the order matters, and say so in the component's description where it doesn't.
 - **Behaviours:** a component that needs a script names it in `behaviours`. Each is a plain, readable classic script in `src/behaviours/<name>.js`, a self-contained IIFE (decisions X1, X4). The export's `webforge.js` includes only the behaviours its pages use.
   - **Type-checked as written (R7):** `tsconfig.behaviours.json` checks each file with the DOM's types (`checkJs`), with no `@ts-check` line, so sites get the script as it is. Give the types TypeScript can't work out in JSDoc (`/** @param {boolean} open */`).
   - **Unit-tested:** `src/behaviours/<name>.test.ts` renders the component with the export's renderer into a happy-dom page of its own, runs the script on it, and checks what it does: `aria-expanded`, the focus, Escape.

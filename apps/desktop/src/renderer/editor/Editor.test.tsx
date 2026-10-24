@@ -9,6 +9,8 @@ import { saveAsSharedSection } from "../shared-sections/shared-sections.js";
 import { CommandRegistryProvider } from "../shell/command-context.js";
 import { type CommandRegistry, createCommandRegistry } from "../shell/commands.js";
 import { createSiteWideConfirm } from "../shell/confirm-site-wide.js";
+import { ContextualToolbarsProvider } from "../shell/contextual-toolbar-context.js";
+import { createContextualToolbars } from "../shell/contextual-toolbars.js";
 import { CanvasErrorBoundary } from "../shell/error-boundaries.js";
 import { PanelRegistryProvider, usePanels } from "../shell/panel-context.js";
 import { createPanelRegistry, type PanelRegistry } from "../shell/panels.js";
@@ -57,9 +59,11 @@ describe("Editor", () => {
       root.render(
         <CommandRegistryProvider registry={registry}>
           <PanelRegistryProvider registry={panels}>
-            <Editor session={session} createEngine={createEngine} compileCss={compileCss} />
-            <PanelHost id="undoHistory" />
-            <PanelHost id="add" />
+            <ContextualToolbarsProvider registry={createContextualToolbars()}>
+              <Editor session={session} createEngine={createEngine} compileCss={compileCss} />
+              <PanelHost id="undoHistory" />
+              <PanelHost id="add" />
+            </ContextualToolbarsProvider>
           </PanelRegistryProvider>
         </CommandRegistryProvider>,
       ),
@@ -152,12 +156,14 @@ describe("Editor", () => {
       root.render(
         <CommandRegistryProvider registry={registry}>
           <PanelRegistryProvider registry={panels}>
-            <Editor
-              session={session}
-              createEngine={createEngine}
-              compileCss={compileCss}
-              siteWide={siteWide}
-            />
+            <ContextualToolbarsProvider registry={createContextualToolbars()}>
+              <Editor
+                session={session}
+                createEngine={createEngine}
+                compileCss={compileCss}
+                siteWide={siteWide}
+              />
+            </ContextualToolbarsProvider>
           </PanelRegistryProvider>
         </CommandRegistryProvider>,
       ),
@@ -216,12 +222,14 @@ describe("Editor", () => {
       root.render(
         <CommandRegistryProvider registry={registry}>
           <PanelRegistryProvider registry={panels}>
-            <Editor
-              session={session}
-              createEngine={createEngine}
-              compileCss={compileCss}
-              preferences={createPreferencesStore({ mode: "content" })}
-            />
+            <ContextualToolbarsProvider registry={createContextualToolbars()}>
+              <Editor
+                session={session}
+                createEngine={createEngine}
+                compileCss={compileCss}
+                preferences={createPreferencesStore({ mode: "content" })}
+              />
+            </ContextualToolbarsProvider>
           </PanelRegistryProvider>
         </CommandRegistryProvider>,
       ),
@@ -342,13 +350,15 @@ describe("Editor", () => {
       root.render(
         <CommandRegistryProvider registry={registry}>
           <PanelRegistryProvider registry={panels}>
-            <Editor
-              session={session}
-              createEngine={createEngine}
-              compileCss={compileCss}
-              preferences={preferences}
-            />
-            <PanelHost id="add" />
+            <ContextualToolbarsProvider registry={createContextualToolbars()}>
+              <Editor
+                session={session}
+                createEngine={createEngine}
+                compileCss={compileCss}
+                preferences={preferences}
+              />
+              <PanelHost id="add" />
+            </ContextualToolbarsProvider>
           </PanelRegistryProvider>
         </CommandRegistryProvider>,
       ),
@@ -374,7 +384,9 @@ describe("Editor", () => {
       root.render(
         <CommandRegistryProvider registry={registry}>
           <PanelRegistryProvider registry={panels}>
-            <Editor session={session} createEngine={createEngine} compileCss={compileCss} />
+            <ContextualToolbarsProvider registry={createContextualToolbars()}>
+              <Editor session={session} createEngine={createEngine} compileCss={compileCss} />
+            </ContextualToolbarsProvider>
           </PanelRegistryProvider>
         </CommandRegistryProvider>,
       ),
@@ -428,12 +440,14 @@ describe("Editor", () => {
       root.render(
         <CommandRegistryProvider registry={registry}>
           <PanelRegistryProvider registry={panels}>
-            <Editor
-              session={session}
-              createEngine={createEngine}
-              compileCss={compileCss}
-              preferences={createPreferencesStore({ mode: "content" })}
-            />
+            <ContextualToolbarsProvider registry={createContextualToolbars()}>
+              <Editor
+                session={session}
+                createEngine={createEngine}
+                compileCss={compileCss}
+                preferences={createPreferencesStore({ mode: "content" })}
+              />
+            </ContextualToolbarsProvider>
           </PanelRegistryProvider>
         </CommandRegistryProvider>,
       ),
@@ -476,12 +490,14 @@ describe("Editor", () => {
       root.render(
         <CommandRegistryProvider registry={createCommandRegistry()}>
           <PanelRegistryProvider registry={createPanelRegistry()}>
-            <Editor
-              session={session}
-              createEngine={() => content}
-              compileCss={compileCss}
-              preferences={createPreferencesStore({ mode: "content" })}
-            />
+            <ContextualToolbarsProvider registry={createContextualToolbars()}>
+              <Editor
+                session={session}
+                createEngine={() => content}
+                compileCss={compileCss}
+                preferences={createPreferencesStore({ mode: "content" })}
+              />
+            </ContextualToolbarsProvider>
           </PanelRegistryProvider>
         </CommandRegistryProvider>,
       ),
@@ -496,12 +512,14 @@ describe("Editor", () => {
       root.render(
         <CommandRegistryProvider registry={registry}>
           <PanelRegistryProvider registry={panels}>
-            <Editor
-              session={session}
-              createEngine={createEngine}
-              compileCss={compileCss}
-              preferences={preferences}
-            />
+            <ContextualToolbarsProvider registry={createContextualToolbars()}>
+              <Editor
+                session={session}
+                createEngine={createEngine}
+                compileCss={compileCss}
+                preferences={preferences}
+              />
+            </ContextualToolbarsProvider>
           </PanelRegistryProvider>
         </CommandRegistryProvider>,
       ),
@@ -521,12 +539,14 @@ describe("Editor", () => {
       root.render(
         <CommandRegistryProvider registry={registry}>
           <PanelRegistryProvider registry={panels}>
-            <Editor
-              session={session}
-              createEngine={createEngine}
-              compileCss={compileCss}
-              preferences={preferences}
-            />
+            <ContextualToolbarsProvider registry={createContextualToolbars()}>
+              <Editor
+                session={session}
+                createEngine={createEngine}
+                compileCss={compileCss}
+                preferences={preferences}
+              />
+            </ContextualToolbarsProvider>
           </PanelRegistryProvider>
         </CommandRegistryProvider>,
       ),
@@ -614,14 +634,16 @@ describe("Editor", () => {
       root.render(
         <CommandRegistryProvider registry={registry}>
           <PanelRegistryProvider registry={panels}>
-            <Editor
-              session={session}
-              createEngine={createEngine}
-              compileCss={compileCss}
-              preferences={createPreferencesStore({
-                preferences: { ...DEFAULT_PREFERENCES, editorLevel: "advanced" },
-              })}
-            />
+            <ContextualToolbarsProvider registry={createContextualToolbars()}>
+              <Editor
+                session={session}
+                createEngine={createEngine}
+                compileCss={compileCss}
+                preferences={createPreferencesStore({
+                  preferences: { ...DEFAULT_PREFERENCES, editorLevel: "advanced" },
+                })}
+              />
+            </ContextualToolbarsProvider>
           </PanelRegistryProvider>
         </CommandRegistryProvider>,
       ),
