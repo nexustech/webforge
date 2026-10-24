@@ -72,6 +72,16 @@ function sourcesIn(folder: string): string[] {
     .map((entry) => readFileSync(join(entry.parentPath, entry.name), "utf8"));
 }
 
+/** The areas under `renderer` and the cycles between them, from their files on disk. */
+export function areaCyclesIn(renderer: string): { areas: number; cycles: string[][] } {
+  const areas = new Map(
+    readdirSync(renderer, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory() && !BASE.has(entry.name))
+      .map((entry) => [entry.name, sourcesIn(join(renderer, entry.name))] as const),
+  );
+  return { areas: areas.size, cycles: areaCycles(areaGraph(areas)) };
+}
+
 function main(): void {
   const [renderer] = process.argv.slice(2);
   if (renderer === undefined) {
@@ -79,12 +89,7 @@ function main(): void {
     process.exitCode = 2;
     return;
   }
-  const areas = new Map(
-    readdirSync(renderer, { withFileTypes: true })
-      .filter((entry) => entry.isDirectory() && !BASE.has(entry.name))
-      .map((entry) => [entry.name, sourcesIn(join(renderer, entry.name))] as const),
-  );
-  const cycles = areaCycles(areaGraph(areas));
+  const { areas, cycles } = areaCyclesIn(renderer);
   if (cycles.length > 0) {
     console.error(
       [
@@ -95,7 +100,7 @@ function main(): void {
     process.exitCode = 1;
     return;
   }
-  console.log(`No cycles between the ${areas.size} renderer areas.`);
+  console.log(`No cycles between the ${areas} renderer areas.`);
 }
 
 if (import.meta.main) {

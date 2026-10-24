@@ -1,5 +1,24 @@
-import { describe, expect, it } from "vitest";
-import { areaCycles, areaGraph } from "./check-area-cycles.js";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, describe, expect, it } from "vitest";
+import { areaCycles, areaCyclesIn, areaGraph } from "./check-area-cycles.js";
+
+const folders: string[] = [];
+afterEach(() => {
+  for (const folder of folders.splice(0)) rmSync(folder, { recursive: true, force: true });
+});
+
+/** A renderer folder on disk with `files` (path → text). */
+function renderer(files: Record<string, string>): string {
+  const root = mkdtempSync(join(tmpdir(), "webforge-areas-"));
+  folders.push(root);
+  for (const [path, text] of Object.entries(files)) {
+    mkdirSync(join(root, path, ".."), { recursive: true });
+    writeFileSync(join(root, path), text);
+  }
+  return root;
+}
 
 /** Areas from their files' import lines. */
 const graphOf = (areas: Record<string, readonly string[]>) =>
@@ -48,5 +67,32 @@ describe("check-area-cycles (2.20, B2)", () => {
         }),
       ),
     ).toEqual([]);
+  });
+});
+
+describe("areaCyclesIn", () => {
+  it("reads the areas from disk, leaving out shell/, editor/, tests and stories", () => {
+    const folder = renderer({
+      "site/SitePanel.tsx": 'import { MenuPanel } from "../menu/index.js";',
+      "menu/MenuPanel.tsx": 'import { LinkDialog } from "../links/index.js";',
+      "links/index.ts": 'export { LinkDialog } from "./LinkDialog.js";',
+      // A test may bring two areas together; it makes no cycle.
+      "menu/MenuPanel.test.tsx": 'import { SitePanel } from "../site/index.js";',
+      "menu/MenuPanel.stories.tsx": 'import { SitePanel } from "../site/index.js";',
+      "editor/Editor.tsx": 'import { SitePanel } from "../site/index.js";',
+      "shell/Shell.tsx": 'import { MenuPanel } from "../menu/index.js";',
+    });
+
+    expect(areaCyclesIn(folder)).toEqual({ areas: 3, cycles: [] });
+  });
+
+  it("finds a cycle in production code", () => {
+    const folder = renderer({
+      "site/SitePanel.tsx": 'import { MenuPanel } from "../menu/index.js";',
+      "menu/nested/MenuPanel.tsx": 'import { NameDialog } from "../../site/index.js";',
+      "menu/menu-actions.ts": 'import { addPage } from "../site/index.js";',
+    });
+
+    expect(areaCyclesIn(folder).cycles).toEqual([["menu", "site", "menu"]]);
   });
 });
