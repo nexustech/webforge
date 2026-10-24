@@ -54,6 +54,28 @@ const quotes = (page: Page) => {
   };
 };
 
+/**
+ * Scrolls the page down `by` pixels with the mouse wheel, and waits for the scroll to end: macOS
+ * animates it, and a jump made before it ends is overtaken by the rest of it (#347). It has ended
+ * once the page has moved and two reads in a row agree. Reads the page's layout, not its scripts,
+ * so it works without JavaScript too.
+ */
+async function wheelDown(page: Page, by: number): Promise<void> {
+  const main = page.getByRole("main");
+  const top = async () => (await main.boundingBox())?.y ?? 0;
+  const start = await top();
+  await page.mouse.wheel(0, by);
+  let last = Number.NaN;
+  await expect
+    .poll(async () => {
+      const now = await top();
+      const ended = now < start && now === last;
+      last = now;
+      return ended;
+    })
+    .toBe(true);
+}
+
 async function open(page: Page, name: string): Promise<void> {
   await blockNetwork(page.context());
   await page.goto(exportedPageUrl(name));
@@ -235,7 +257,7 @@ test.describe("exported site from disk", () => {
       const header = page.locator("header.site-header");
 
       await expect(header).not.toHaveAttribute("data-scrolled");
-      await page.mouse.wheel(0, 400);
+      await wheelDown(page, 400);
       await expect(header).toHaveAttribute("data-scrolled", "");
       expect(Math.round((await header.boundingBox())?.y ?? -1)).toBe(0);
       await expect
@@ -383,8 +405,8 @@ test.describe("exported site from disk", () => {
       await open(page, "index.html");
       const header = page.locator("header.site-header");
 
-      await page.mouse.wheel(0, 400);
-      await expect.poll(async () => Math.round((await header.boundingBox())?.y ?? -1)).toBe(0);
+      await wheelDown(page, 400);
+      expect(Math.round((await header.boundingBox())?.y ?? -1)).toBe(0);
       await page.goto(`${exportedPageUrl("index.html")}#questions`);
       const height = (await header.boundingBox())?.height ?? 0;
       await expect
