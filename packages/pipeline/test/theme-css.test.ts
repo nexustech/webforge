@@ -83,7 +83,7 @@ describe("themeCss in the site's stylesheet (2.1)", () => {
   it("gives sections that invert the page a theme of their own", async () => {
     const compiled = await css(DEFAULT_THEME);
 
-    const dark = themeVariables(compiled, "light-inverse");
+    const dark = themeVariables(compiled, "wf_inverse");
     expect(dark["color-scheme"]).toBe("dark");
     expect(Object.keys(dark).filter((key) => key.startsWith("--color-"))).toHaveLength(
       COLOR_ROLES.length,
@@ -131,7 +131,7 @@ describe("themeCss in the site's stylesheet (2.1)", () => {
     // A role's shade is read where it is used, so it follows inverse sections.
     const shade = compiled.slice(compiled.indexOf(".bg-primary-300\\/80 {"));
     expect(shade.slice(0, shade.indexOf("}"))).toContain("var(--wf-color-primary-300)");
-    expect(compiled).toMatch(/\[data-theme="light-inverse"\] \{[^}]*--wf-color-primary-300: /);
+    expect(compiled).toMatch(/\[data-theme="wf_inverse"\] \{[^}]*--wf-color-primary-300: /);
     // A field's own hex colour is an arbitrary class, the same in every theme.
     expect(compiled).toMatch(/\.text-\\\[\\#1f6feb\\\]\\\/50 \{[^}]*#1f6feb/);
     expect(compiled).toContain(

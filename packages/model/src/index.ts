@@ -174,6 +174,7 @@ export {
   copyTheme,
   DEFAULT_THEME,
   fontRefSchema,
+  INVERSE_THEME,
   OPACITY_STEPS,
   oklchSchema,
   RADIUS_TOKENS,

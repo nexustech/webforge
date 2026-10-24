@@ -1,4 +1,5 @@
 import { t } from "@webforge/i18n";
+import { INVERSE_THEME } from "@webforge/model";
 import type { ReactNode } from "react";
 import { type ComponentSpec, defineFramedSection } from "./define.js";
 import { boxClasses, type ComponentDef } from "./library.js";
@@ -33,8 +34,30 @@ export function marginClasses(value: unknown): string {
   return classes === "" ? "" : ` ${classes}`;
 }
 
+/**
+ * A section's colours (2.4, F-DS-3): the page's, or the theme's reversed ones, a dark band on a
+ * light theme and a light one on a dark theme. A reversed section is daisyUI's nested theme
+ * (`data-theme`, {@link INVERSE_THEME}), so everything inside it takes the reversed colours.
+ */
+export const COLORS_FIELD = {
+  kind: "select",
+  label: t("field.sectionColors"),
+  help: t("field.sectionColors.help"),
+  options: [
+    { label: t("field.sectionColors.page"), value: "page" },
+    { label: t("field.sectionColors.inverse"), value: "inverse" },
+  ],
+} as const satisfies FieldDef;
+
 /** The fields every section has, which {@link defineSection} adds. */
-type FrameFields = { readonly padding: typeof PADDING_FIELD; readonly margin: typeof MARGIN_FIELD };
+type FrameFields = {
+  readonly colors: typeof COLORS_FIELD;
+  readonly padding: typeof PADDING_FIELD;
+  readonly margin: typeof MARGIN_FIELD;
+};
+
+/** The names of {@link FrameFields}, which a section can't give a field of its own. */
+const FRAME_FIELDS = ["colors", "padding", "margin"] as const;
 
 /** The fields of a section: its own, and its frame's. */
 type Fields = Readonly<Record<string, FieldDef>>;
@@ -44,8 +67,12 @@ export type SectionSpec<F extends Fields, Variant extends string = never> = Omit
   ComponentSpec<F & FrameFields, Variant>,
   "place" | "fields" | "render"
 > & {
-  /** Its own fields; its padding and margin are added (a field of either name is refused). */
-  readonly fields: F & { readonly padding?: never; readonly margin?: never };
+  /** Its own fields; its colours, padding and margin are added (a field of those names is refused). */
+  readonly fields: F & {
+    readonly colors?: never;
+    readonly padding?: never;
+    readonly margin?: never;
+  };
   /** Its name in the `site-<name>` class every exported page and test finds it by: "hero". */
   readonly name: string;
   /** The frame's classes from its values: its background and layout ("hero bg-base-200"). */
@@ -60,16 +87,17 @@ export type SectionSpec<F extends Fields, Variant extends string = never> = Omit
 
 /**
  * A section (2.19): {@link defineComponent} for a page band, which adds what every section has.
- * It gets a padding (from {@link SECTION_PADDING} for the sides left unset) and a margin, and is
- * drawn in one frame: `<section class="site-<name> <its frame's classes> <padding> <margin>">`,
- * holding what `render` draws. `defineComponent` refuses a section, so every section has the
- * same frame and the same spacing fields.
+ * It gets its colours ({@link COLORS_FIELD}), a padding (from {@link SECTION_PADDING} for the sides
+ * left unset) and a margin, and is drawn in one frame: `<section class="site-<name> <its frame's
+ * classes> <padding> <margin>">`, with `data-theme` when its colours are reversed, holding what
+ * `render` draws. `defineComponent` refuses a section, so every section has the same frame and
+ * the same frame fields.
  */
 export function defineSection<const F extends Fields, const Variant extends string = never>(
   spec: SectionSpec<F, Variant> & { readonly defaults: NoInfer<DefaultsOf<F & FrameFields>> },
 ): ComponentDef {
   const { name, frame, frameAttributes, render, fields, ...rest } = spec;
-  for (const own of ["padding", "margin"]) {
+  for (const own of FRAME_FIELDS) {
     if (Object.hasOwn(fields, own)) {
       throw new Error(`'${spec.label}' declares its own "${own}": defineSection adds it`);
     }
@@ -77,18 +105,21 @@ export function defineSection<const F extends Fields, const Variant extends stri
   return defineFramedSection<F & FrameFields, Variant>({
     ...rest,
     place: "section",
-    fields: { ...fields, padding: PADDING_FIELD, margin: MARGIN_FIELD },
+    fields: { ...fields, colors: COLORS_FIELD, padding: PADDING_FIELD, margin: MARGIN_FIELD },
+    // A new section has the page's colours, as one with no value has: choosing them is no change.
+    defaults: { colors: "page", ...rest.defaults },
     render: (props) => {
       const { values } = props;
-      // Every section's values have these two, which generic types can't see through.
+      // Every section's values have the frame's fields, which generic types can't see through.
       const stored: Readonly<Record<string, unknown>> = values;
       const classes = [
         `site-${name}`,
         frame?.(values) ?? "",
         `${boxClasses(stored.padding, "padding", SECTION_PADDING)}${marginClasses(stored.margin)}`,
       ].filter((part) => part !== "");
+      const theme = stored.colors === "inverse" ? { "data-theme": INVERSE_THEME } : {};
       return (
-        <section className={classes.join(" ")} {...(frameAttributes?.(values) ?? {})}>
+        <section className={classes.join(" ")} {...(frameAttributes?.(values) ?? {})} {...theme}>
           {render(props)}
         </section>
       );
