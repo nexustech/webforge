@@ -617,6 +617,21 @@ describe("renderNodesToHtml", () => {
     );
   });
 
+  it("renders a Section on reversed colours as a band across the page, its column inside (2.4)", () => {
+    const section = (props: Record<string, unknown>): NodeDoc => ({
+      type: "Section",
+      props: { id: "s", colors: "inverse", content: [], ...props },
+    });
+
+    expect(renderNodesToHtml([section({})], siteLibrary, context)).toBe(
+      '<section class="site-section px-4 py-16" data-theme="wf_inverse"><div class="mx-auto max-w-4xl space-y-6"></div></section>',
+    );
+    // Full width: no column at all, as on the page's colours.
+    expect(renderNodesToHtml([section({ fullWidth: true })], siteLibrary, context)).toBe(
+      '<section class="site-section mx-auto space-y-6 px-4 py-16" data-theme="wf_inverse"></section>',
+    );
+  });
+
   it("renders a section's per-device padding and gap, mobile first, and its full width", () => {
     const html = renderNodesToHtml(
       [

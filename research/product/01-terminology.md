@@ -56,6 +56,7 @@
 | **Pair** (an AI app) | Connect an AI app to Webforge with a one-time code (F-AI-1) | Plain English | Authorise, register client |
 | **Template** | A ready-made starting site chosen at "New Site" | Universal | Starter, Kit |
 | **Theme** | Site-wide colours, fonts, corner style (daisyUI theme) | Google Sites, Adobe Express, Bootstrap Studio | Design tokens, Variables, Style guide |
+| **Colours: Page colours · Reversed** | A section's colours (F-DS-3, 2.4): the page's, or the theme's light and dark colours swapped, a dark band on a light page (daisyUI's nested theme) | Plain English, says what happens on either theme | Inverse, Invert, Dark mode, Variant, Nested theme |
 | **Add** panel (tabs **Sections** / **Elements**) | Component palette | Wix "Add Elements / Add Section", Squarespace "Add Block/Section" | Components, Library, Insert |
 | **Layers** | Structure tree (Puck outline) | Wix, Canva, Figma, Photoshop | Overview, Navigator, DOM tree |
 | **Edit panel** with tabs **Content · Style · Advanced** | Puck fields / inspector for the selected item | Common in builders (Squarespace Content/Design, Elementor-style tabs) | Properties, Options, Inspector |

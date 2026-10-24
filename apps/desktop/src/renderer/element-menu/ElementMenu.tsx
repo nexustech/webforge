@@ -9,6 +9,7 @@ import {
 import { t } from "@webforge/i18n";
 import { useCommand, useCommandRegistry } from "../shell/command-context.js";
 import { type Command, formatShortcut } from "../shell/commands.js";
+import { useMenuDialog } from "../shell/use-menu-dialog.js";
 
 /** Where a menu opens, in the editor window's coordinates. */
 export type MenuPoint = { readonly x: number; readonly y: number };
@@ -36,11 +37,15 @@ export type ElementMenuProps = {
   /** Where the menu is open; closed while null. */
   readonly at: MenuPoint | null;
   readonly onClose: () => void;
-  /** Renames the selected element, or undefined where it has no name to give (not a layer). */
+  /**
+   * Opens the rename dialog for the selected element, or undefined where it has no name to give
+   * (not a layer). It is called once the menu has closed ({@link useMenuDialog}), so the dialog's
+   * field keeps the focus; the menu keeps the function chosen, whatever it draws after closing.
+   */
   readonly onRename: (() => void) | undefined;
   /**
    * Puts the focus back where the menu was opened from (a row of Layers, the canvas) once it
-   * closes; the point it opens from can't take it.
+   * closes without opening a dialog; the point it opens from can't take it.
    */
   readonly onCloseFocus?: () => void;
 };
@@ -53,6 +58,8 @@ export type ElementMenuProps = {
  */
 export function ElementMenu({ at, onClose, onRename, onCloseFocus }: ElementMenuProps) {
   const registry = useCommandRegistry();
+  // Rename opens its dialog as the other menus open theirs: once the menu has closed.
+  const renameDialog = useMenuDialog<() => void>((rename) => rename());
   const duplicate = useCommand(ELEMENT_MENU_COMMANDS.duplicate);
   const save = useCommand(ELEMENT_MENU_COMMANDS.saveShared);
   const detach = useCommand(ELEMENT_MENU_COMMANDS.detachShared);
@@ -103,11 +110,18 @@ export function ElementMenu({ at, onClose, onRename, onCloseFocus }: ElementMenu
         aria-label={t("elementMenu.label")}
         aria-labelledby={undefined}
         onCloseAutoFocus={(event) => {
+          renameDialog.onCloseAutoFocus(event);
+          if (event.defaultPrevented) return;
           event.preventDefault();
           onCloseFocus?.();
         }}
       >
-        <DropdownMenuItem disabled={onRename === undefined} onSelect={onRename}>
+        <DropdownMenuItem
+          disabled={onRename === undefined}
+          onSelect={() => {
+            if (onRename !== undefined) renameDialog.choose(onRename);
+          }}
+        >
           {t("layers.rename")}
         </DropdownMenuItem>
         {item(duplicate)}
