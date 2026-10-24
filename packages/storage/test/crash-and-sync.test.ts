@@ -43,7 +43,7 @@ describe("crash safety", () => {
       }
 
       const store = ProjectStore.open(path);
-      const seq = seqOf(store, "progress");
+      const seq = seqOf(store, "menu");
       // Every commit the writer saw return is on disk; the one in flight may or may not be.
       expect(seq).toBeGreaterThanOrEqual(writer.lastAcknowledged());
       expect(seq).toBeLessThanOrEqual(writer.lastAcknowledged() + 1);
@@ -54,7 +54,7 @@ describe("crash safety", () => {
       expect(asset === undefined ? undefined : store.readBlob(asset.hash)).toBeDefined();
       // A kill before the journal header was finished leaves a journal SQLite ignores (not
       // "hot"); the next write transaction removes it.
-      store.commit([{ type: "put", id: "after-crash", kind: "test", content: true }]);
+      store.commit([{ type: "put", id: "code", kind: "code", content: true }]);
       store.close();
       expect(existsSync(`${path}-journal`)).toBe(false);
     }
@@ -90,14 +90,14 @@ describe("cloud-synced folders", () => {
         expect(error).toBeInstanceOf(ProjectFileError);
         continue;
       }
-      expect(seqOf(store, "page:home")).toBe(seqOf(store, "progress"));
+      expect(seqOf(store, "page:home")).toBe(seqOf(store, "menu"));
       store.close();
       opened += 1;
     }
     expect(opened).toBeGreaterThan(0);
     // The project itself is unharmed.
     const store = ProjectStore.open(path);
-    expect(seqOf(store, "progress")).toBeGreaterThanOrEqual(writer.lastAcknowledged());
+    expect(seqOf(store, "menu")).toBeGreaterThanOrEqual(writer.lastAcknowledged());
     store.close();
     // 60 copies, each opened and integrity-checked: about 80 s on CI's macOS runners.
   }, 120_000);

@@ -214,8 +214,8 @@ describe("spacing handles (1.32)", () => {
     root = createRoot(host);
   });
 
-  it("reads the value of the device the canvas shows, and an old padding as top and bottom", () => {
-    show({ $responsive: { desktop: "large", mobile: { top: "s" } } });
+  it("reads the value of the device the canvas shows", () => {
+    show({ $responsive: { desktop: { top: "l", bottom: "l" }, mobile: { top: "s" } } });
 
     press(grip("padding", "left"), 0, { altKey: true });
 

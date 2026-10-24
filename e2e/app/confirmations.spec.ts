@@ -40,7 +40,7 @@ test.beforeEach(async () => {
     type: "Section",
     props: {
       id: "footer-section",
-      padding: "medium",
+      padding: { top: "m", bottom: "m" },
       gap: "medium",
       fullWidth: false,
       content: [heading("footer-hours", "Opening hours"), heading("footer-open", "Open daily")],

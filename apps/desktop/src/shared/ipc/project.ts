@@ -1,4 +1,4 @@
-import { type SiteDocumentChange, siteDocSchema } from "@webforge/model";
+import { type SiteDocumentChange, siteDocSchema, siteDocumentChangeSchema } from "@webforge/model";
 import { z } from "zod";
 
 /**
@@ -63,36 +63,6 @@ const readSiteResultSchema = z.discriminatedUnion("status", [
 
 /** Outcome of reading the open site's documents. */
 export type ReadSiteResult = z.infer<typeof readSiteResultSchema>;
-
-/**
- * A change to one of the site's documents (`SiteDocumentChange` of `@webforge/model`). Content is
- * checked in the main process as part of the whole site the changes produce.
- */
-const siteDocumentChangeSchema = z.discriminatedUnion("type", [
-  z
-    .strictObject({
-      type: z.literal("put"),
-      id: z.string().min(1).max(100),
-      kind: z.enum([
-        "site",
-        "settings",
-        "theme",
-        "layout",
-        "media",
-        "code",
-        "menu",
-        "sharedSections",
-        "page",
-      ]),
-      content: z.unknown(),
-    })
-    // Only documents a site is made of: `page:<id>` pages, every other part under its own name.
-    // Anything else would be stored but never read back.
-    .refine((change) =>
-      change.kind === "page" ? change.id.startsWith("page:") : change.id === change.kind,
-    ),
-  z.strictObject({ type: z.literal("delete"), id: z.string().regex(/^page:/) }),
-]);
 
 /** Outcome of saving changes to the open site. */
 const commitResultSchema = z.discriminatedUnion("status", [
