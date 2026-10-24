@@ -196,7 +196,8 @@ jobs:
     # Linux runs the E2E tests in one job, which `export-browsers` waits for (it opens the site
     # this job exports), so it starts without waiting for Windows and macOS. The steps are shared
     # with `e2e` through the `e2e-steps` anchor.
-    name: E2E (ubuntu-latest)
+    # The name uses the matrix, so GitHub doesn't add the matrix values to it.
+    name: E2E (${{ matrix.os }})
     needs: changes
     if: needs.changes.outputs.e2e == 'true'
     strategy:
