@@ -10,6 +10,7 @@ import type {
   ImageValue,
   LinkValue,
   NodeDoc,
+  OpeningHours,
   Responsive,
 } from "@webforge/model";
 import type { ComponentType, ReactNode } from "react";
@@ -201,6 +202,8 @@ export type RenderContext = {
   readonly setting: (key: BindableSetting) => string | undefined;
   /** What an empty binding shows instead: a hint on the canvas; nothing in the export. */
   readonly emptySetting?: (key: BindableSetting) => ReactNode;
+  /** Site Settings' opening hours (2.8), for the Opening hours and contact section; none if left out. */
+  readonly openingHours?: readonly OpeningHours[];
 };
 
 /**

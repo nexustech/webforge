@@ -19,7 +19,7 @@ import {
   type ImageCrop,
 } from "./media.js";
 import { type MenuDoc, menuDocSchema } from "./menu.js";
-import { languageTagSchema } from "./settings.js";
+import { languageTagSchema, type OpeningHours, openingHoursSchema } from "./settings.js";
 
 /**
  * A page's place in the exported site, without extension: `index`, `about`, `services/web-design`
@@ -94,6 +94,8 @@ export type SiteSnapshot = {
   readonly documents?: readonly DocumentItem[] | undefined;
   /** The Site Settings values elements can be bound to (1.17); empty ones are left out. */
   readonly settings?: Readonly<Partial<Record<BindableSetting, string>>> | undefined;
+  /** Site Settings' opening hours, which the Opening hours and contact section lists (2.8). */
+  readonly openingHours?: readonly OpeningHours[] | undefined;
   /**
    * The navigation menu (F-ED-17), which the Header renders. Without one, the navigation lists the
    * pages in order.
@@ -145,6 +147,7 @@ export const siteSnapshotSchema: z.ZodType<SiteSnapshot> = withoutUnsafeKeys(
       media: z.array(mediaItemSchema),
       documents: z.array(documentItemSchema).optional(),
       settings: z.partialRecord(bindableSettingSchema, z.string()).optional(),
+      openingHours: z.array(openingHoursSchema).optional(),
       menu: menuDocSchema.optional(),
     })
     .superRefine((site, ctx) => {
