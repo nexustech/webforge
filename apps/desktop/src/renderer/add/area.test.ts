@@ -14,6 +14,7 @@ function setUp() {
     session: sessionWith(),
     engine,
     compileCss: async () => ({ status: "failed" }),
+    sectionPreviews: () => null,
     editPreviews: createPreviewStore(),
     dialogs: { nameSharedSection: vi.fn(), rename: vi.fn(), pickImage: vi.fn() },
   };
@@ -60,7 +61,21 @@ describe("addPanelArea (2.20, B1)", () => {
 
     detach();
     mount();
-    expect(register).toHaveBeenCalledTimes(4);
+    expect(register).toHaveBeenCalledTimes(3);
+  });
+
+  it("goes with its engine, and isn't registered again until the next one", () => {
+    const { ctx, registries, mount, ids } = setUp();
+    const { detach } = mount();
+    addPanelArea.register(ctx);
+    const adds = () => registries.commands.list().filter((command) => command.palette === "add");
+
+    detach();
+    expect(ids()).toEqual([]);
+    expect(adds()).toEqual([]);
+
+    mount();
+    expect(ids()).toEqual(["add"]);
   });
 
   it("opens its Sections at the canvas's floating +", () => {

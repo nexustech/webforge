@@ -12,12 +12,14 @@ import { HistoryIcon, SlidersHorizontalIcon } from "lucide-react";
 import { type RefObject, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { shallow } from "zustand/shallow";
 import type { CustomDevice, EditPanelPreferences } from "../../shared/ipc/prefs.js";
+import { createSectionPreviews } from "../add/index.js";
 import { CanvasElementMenu } from "../element-menu/CanvasElementMenu.js";
 import { createErrorReporter, type ReportError } from "../error-reporting.js";
 import { linkFieldRenderer } from "../links/LinkField.js";
 import { RichTextLinkHost } from "../links/RichTextLinkHost.js";
 import { imageFieldRenderer } from "../media/ImageField.js";
 import { createImagePickRequests } from "../media/image-picks.js";
+import { sharedSection } from "../shared-sections/index.js";
 import {
   SharedSectionNameDialog,
   type SharedSectionNaming,
@@ -221,6 +223,16 @@ export function Editor({
   const viewOptions = usePreferences(preferences, viewOptionsOf, shallow);
   /** The edit-only previews the user turned on (UX-26), for this window. */
   const [editPreviews] = useState(() => createPreviewStore());
+  // The sections' larger previews in the Add panel (UX-10), drawn with the site's theme. Made once
+  // for the editor's session, so the drawings they keep outlive the areas registering again.
+  const [sectionPreviews] = useState(() =>
+    createSectionPreviews({
+      library: session.library,
+      theme: () => session.history.document.getState().theme,
+      sharedSection: (id) => sharedSection(session.history.document.getState(), id)?.section,
+      compileCss,
+    }),
+  );
   // The canvas engine as the areas see it, while one is mounted (2.20, B1).
   const [host] = useState(createEngineHost);
   const panels = usePanelRegistry();
@@ -473,6 +485,7 @@ export function Editor({
         engine: host,
         ...(siteWide === undefined ? {} : { siteWide }),
         compileCss,
+        sectionPreviews,
         editPreviews,
         dialogs,
       }),
@@ -486,6 +499,7 @@ export function Editor({
       host,
       siteWide,
       compileCss,
+      sectionPreviews,
       editPreviews,
       dialogs,
     ],

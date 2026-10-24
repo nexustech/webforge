@@ -3,7 +3,6 @@ import type { Area, EditorContext } from "../editor/areas.js";
 import { removeSharedSection, sharedSection } from "../shared-sections/index.js";
 import { followLayoutLock } from "../shell/preferences-store.js";
 import { type AddPanelRegistration, registerAddPanel } from "./register-add-panel.js";
-import { createSectionPreviews } from "./section-preview.js";
 
 /**
  * The Add panel (1.13), hidden in Content mode (M3), and the palette's Add commands with it
@@ -12,15 +11,16 @@ import { createSectionPreviews } from "./section-preview.js";
  */
 export const addPanelArea: Area<EditorContext> = {
   id: "addPanel",
-  register: ({ session, panels, commands, preferences, engine, siteWide, compileCss, dialogs }) => {
-    // The sections' larger previews (UX-10), drawn with the site's theme. Made once for the area,
-    // so the drawings they keep outlive switches of mode.
-    const preview = createSectionPreviews({
-      library: session.library,
-      theme: () => session.history.document.getState().theme,
-      sharedSection: (id) => sharedSection(session.history.document.getState(), id)?.section,
-      compileCss,
-    });
+  register: ({
+    session,
+    panels,
+    commands,
+    preferences,
+    engine,
+    siteWide,
+    sectionPreviews,
+    dialogs,
+  }) => {
     let locked = true;
     let registration: AddPanelRegistration | null = null;
     /** The engine the registration's items drag onto: null for none, undefined when not shown. */
@@ -50,7 +50,7 @@ export const addPanelArea: Area<EditorContext> = {
         // tab and + place stay).
         preferences,
         commands,
-        preview,
+        preview: sectionPreviews,
       });
     };
     const stopLock = followLayoutLock(preferences, (next) => {
@@ -62,7 +62,11 @@ export const addPanelArea: Area<EditorContext> = {
       const stopAdd = canvas.onAddRequest((at) => registration?.openAt(at));
       return () => {
         stopAdd();
-        update();
+        // Removed with its engine, not registered again without one: the next engine, or the
+        // next switch of mode, registers it again.
+        registration?.remove();
+        registration = null;
+        shownWith = undefined;
       };
     });
     return () => {
