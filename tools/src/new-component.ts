@@ -13,6 +13,7 @@
 
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 
 /** Where a component goes: see `ComponentPlace` in site-components. */
 export type Place = "section" | "element" | "child";
@@ -249,8 +250,11 @@ export function registerInStrings(index: string, names: Names): string {
 const CATALOGUE = "packages/site-components/src/catalogue";
 const STRINGS = "packages/i18n/src/en/components";
 
-/** Writes the family of component `type` at `place`, and returns the files it wrote. */
-export function newComponent(type: string, place: Place): string[] {
+/**
+ * Writes the family of component `type` at `place` in the repository at `root`, and returns the
+ * files it wrote; `format` runs Biome on them, as the repository formats its files.
+ */
+export function newComponent(type: string, place: Place, root = ".", format = true): string[] {
   const names = namesOf(type);
   if (typeof names === "string") throw new Error(names);
   const files: Record<string, string> = {
@@ -260,19 +264,24 @@ export function newComponent(type: string, place: Place): string[] {
     [`${STRINGS}/${names.camel}.ts`]: stringsFile(names, place),
   };
   for (const path of Object.keys(files)) {
-    if (existsSync(path)) throw new Error(`${path} exists already: pick another name`);
+    if (existsSync(join(root, path))) throw new Error(`${path} exists already: pick another name`);
   }
-  for (const [path, text] of Object.entries(files)) writeFileSync(path, text);
+  for (const [path, text] of Object.entries(files)) writeFileSync(join(root, path), text);
   const catalogue = `${CATALOGUE}/index.ts`;
-  writeFileSync(catalogue, registerInCatalogue(readFileSync(catalogue, "utf8"), names));
+  const catalogueIndex = readFileSync(join(root, catalogue), "utf8");
+  writeFileSync(join(root, catalogue), registerInCatalogue(catalogueIndex, names));
   const strings = `${STRINGS}/index.ts`;
-  writeFileSync(strings, registerInStrings(readFileSync(strings, "utf8"), names));
+  const stringsIndex = readFileSync(join(root, strings), "utf8");
+  writeFileSync(join(root, strings), registerInStrings(stringsIndex, names));
   const written = [...Object.keys(files), catalogue, strings];
-  // As the repository formats them: imports sorted, long lines wrapped.
-  spawnSync("pnpm", ["exec", "biome", "check", "--write", ...written], {
-    stdio: "ignore",
-    shell: true,
-  });
+  if (format) {
+    // As the repository formats them: imports sorted, long lines wrapped.
+    spawnSync("pnpm", ["exec", "biome", "check", "--write", ...written], {
+      cwd: root,
+      stdio: "ignore",
+      shell: true,
+    });
+  }
   return written;
 }
 
