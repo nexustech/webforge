@@ -299,6 +299,14 @@ export type ValuesOf<
     readonly bindings?: unknown;
   };
 
+/**
+ * A slot field as `render` gets it: a component that shows the slot's elements. Its `className`
+ * goes on the element that holds them, Puck's drop zone on the canvas and a `<div>` in the export,
+ * so a layout set there (a grid) lays out the slot's elements alike in both. Without one, the
+ * export adds no element: the elements are the component's own children.
+ */
+export type SlotComponent = ComponentType<{ readonly className?: string }>;
+
 /** What a component's `render` gets, from `defineComponent`'s fields. */
 export type RenderPropsOf<
   Fields extends Readonly<Record<string, FieldDef>>,
@@ -307,6 +315,6 @@ export type RenderPropsOf<
   readonly id: string;
   readonly values: ValuesOf<Fields, Variant>;
   /** Each slot field, as a component that shows its content. */
-  readonly slots: { readonly [Name in SlotNames<Fields>]: ComponentType };
+  readonly slots: { readonly [Name in SlotNames<Fields>]: SlotComponent };
   readonly context: RenderContext;
 };

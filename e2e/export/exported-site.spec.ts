@@ -209,8 +209,69 @@ test.describe("exported site from disk", () => {
     });
   });
 
+  test.describe("gallery lightbox (2.7a)", () => {
+    test("opens an image large, keeps the focus in it, moves with the keys and closes with Esc", async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 1280, height: 800 });
+      await open(page, "about.html");
+      const images = page.locator("a[data-wf-lightbox-item]");
+      const viewer = page.getByRole("dialog", { name: "Image viewer" });
+      const status = viewer.locator("[data-wf-lightbox-status]");
+
+      await images.nth(1).click();
+      await expect(viewer).toBeVisible();
+      await expect(status).toHaveText("2 of 3");
+      await expect(viewer.getByRole("img")).toHaveAttribute("alt", "Hills at noon");
+      await expect(viewer.getByRole("img")).toHaveAttribute("src", /^assets\/img\//);
+      await expect
+        .poll(() =>
+          viewer.getByRole("img").evaluate((image) => (image as HTMLImageElement).naturalWidth),
+        )
+        .toBeGreaterThan(0);
+
+      // A modal: the focus stays in it, however far it is tabbed (by focus(): WebKit doesn't tab to
+      // buttons by default).
+      for (let step = 0; step < 6; step++) await page.keyboard.press("Tab");
+      expect(await viewer.evaluate((dialog) => dialog.contains(document.activeElement))).toBe(true);
+
+      await page.keyboard.press("ArrowRight");
+      await expect(status).toHaveText("3 of 3");
+      await page.keyboard.press("ArrowRight");
+      await expect(status).toHaveText("1 of 3");
+      await expect(viewer.locator("[data-wf-lightbox-caption]")).toHaveText(
+        "Where our wheat grows",
+      );
+      await viewer.getByRole("button", { name: "Previous image" }).click();
+      await expect(status).toHaveText("3 of 3");
+
+      await page.keyboard.press("Escape");
+      await expect(viewer).toBeHidden();
+      await expect(images.nth(1)).toBeFocused();
+    });
+
+    test("passes axe with the lightbox open", async ({ page }) => {
+      await open(page, "about.html");
+      await page.locator("a[data-wf-lightbox-item]").first().click();
+      await expect(page.getByRole("dialog", { name: "Image viewer" })).toBeVisible();
+
+      const results = await new AxeBuilder({ page }).include("dialog").analyze();
+      expect(results.violations.map((violation) => `${violation.id}: ${violation.help}`)).toEqual(
+        [],
+      );
+    });
+  });
+
   test.describe("without JavaScript", () => {
     test.use({ javaScriptEnabled: false });
+
+    test("opens a gallery image's full-size file, from disk", async ({ page }) => {
+      await open(page, "about.html");
+
+      await page.locator("a[data-wf-lightbox-item]").first().click();
+
+      await expect(page).toHaveURL(/\/assets\/img\/[^/]+\.(jpg|png|webp)$/);
+    });
 
     test("opens and closes the mobile menu with its button, a <details> (2.6)", async ({
       page,

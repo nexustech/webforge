@@ -715,6 +715,70 @@ describe("renderNodesToHtml", () => {
     expect(html).toContain('<div class="site-faq space-y-4 my-4">');
   });
 
+  describe("the Gallery (2.7a)", () => {
+    const galleryHtml = (props: Record<string, unknown> = {}) =>
+      renderNodesToHtml(
+        [
+          {
+            type: "Gallery",
+            props: {
+              id: "gallery",
+              title: "Our work",
+              images: [
+                {
+                  type: "GalleryImage",
+                  props: { id: "g1", image: { mediaId: "hero" }, caption: "The shop" },
+                },
+                { type: "GalleryImage", props: { id: "g2", caption: "" } },
+              ],
+              ...props,
+            },
+          },
+        ],
+        siteLibrary,
+        context,
+      );
+
+    it("holds its images in an element of their own, laid out as its layout says", () => {
+      // The slot's own element, as Puck's drop zone holds them on the canvas.
+      expect(galleryHtml()).toMatch(
+        /<div class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 [^"]*"><figure class="site-gallery-image/,
+      );
+      expect(galleryHtml({ variant: "masonry" })).toContain(
+        '<div class="columns-2 gap-4 md:columns-3 [&amp;&gt;*]:mb-4 [&amp;&gt;*]:break-inside-avoid">',
+      );
+      expect(galleryHtml({ variant: "featured" })).toContain("[&amp;&gt;*:first-child]:col-span-2");
+    });
+
+    it("links each image to its full-size file, which opens without the script too", () => {
+      const html = galleryHtml();
+
+      expect(html).toContain(
+        '<a href="assets/img/hero-640.jpg" class="block" data-wf-lightbox-item="">',
+      );
+      expect(html).toContain('<figcaption class="text-sm">The shop</figcaption>');
+      // An image not chosen yet: a placeholder, no link.
+      expect(html.match(/data-wf-lightbox-item/g)).toHaveLength(1);
+    });
+
+    it("has a lightbox only when it opens images larger", () => {
+      const html = galleryHtml();
+      const plain = galleryHtml({ lightbox: false });
+
+      expect(html).toContain('<dialog class="modal" aria-label="Image viewer" data-wf-lightbox=""');
+      expect(html).toContain('data-wf-gallery=""');
+      expect(html).toContain('aria-label="Close"');
+      expect(plain).not.toContain("<dialog");
+      expect(plain).not.toContain("data-wf-gallery");
+      expect(behavioursUsedBy([{ type: "Gallery", props: { id: "g" } }], siteLibrary)).toEqual([
+        "lightbox",
+      ]);
+      expect(
+        behavioursUsedBy([{ type: "Gallery", props: { id: "g", lightbox: false } }], siteLibrary),
+      ).toEqual([]);
+    });
+  });
+
   it("throws for an unknown component type, even inside a slot", () => {
     const nodes: NodeDoc[] = [
       {
