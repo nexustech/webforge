@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { WebforgeError } from "@webforge/errors";
 import {
   DOCUMENT_EXTENSIONS,
   type NodeDoc,
@@ -29,13 +30,11 @@ import type { PipelineResources } from "./resources.js";
 export type BuildErrorCode = "invalid-site" | "unknown-component" | "missing-font";
 
 /** A build that cannot produce a working site. */
-export class BuildError extends Error {
-  readonly code: BuildErrorCode;
+export class BuildError extends WebforgeError<BuildErrorCode> {
+  override readonly name = "BuildError";
 
-  constructor(code: BuildErrorCode, message: string) {
-    super(message);
-    this.name = "BuildError";
-    this.code = code;
+  constructor(code: BuildErrorCode, message: string, options?: ErrorOptions) {
+    super(code, "export.failed.buildFailed", message, options);
   }
 }
 
@@ -214,7 +213,7 @@ export async function buildSite(
       // An empty binding has no emptySetting here: the export leaves it out (1.17).
       setting: (key) => site.settings?.[key],
     };
-    // The same renderer as the canvas engine's renderStatic (ADR 0005).
+    // The one static renderer (ADR 0005), whose render functions the canvas draws with too.
     const regions = {
       header: page.hideHeader === true ? [] : site.layout.header,
       content: page.doc.content,

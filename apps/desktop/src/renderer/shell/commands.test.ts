@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { setFailureLog } from "../log.js";
 import {
   createCommandRegistry,
   formatShortcut,
@@ -135,16 +136,19 @@ describe("createCommandRegistry", () => {
     });
   });
 
-  it("reports a failed asynchronous command without throwing", async () => {
-    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+  it("logs a failed asynchronous command by its code, without throwing (R12)", async () => {
+    const failures = vi.fn(async () => null);
+    setFailureLog(failures);
     const registry = createCommandRegistry();
-    registry.register({ id: "a", label: "A", run: () => Promise.reject(new Error("boom")) });
+    registry.register({
+      id: "a",
+      label: "A",
+      run: () => Promise.reject(new TypeError("boom")),
+    });
 
     expect(registry.run("a")).toBe(true);
-    await vi.waitFor(() =>
-      expect(error).toHaveBeenCalledWith('Command "a" failed', expect.any(Error)),
-    );
-    error.mockRestore();
+    await vi.waitFor(() => expect(failures).toHaveBeenCalledWith("command.a", "TypeError"));
+    setFailureLog(undefined);
   });
 });
 

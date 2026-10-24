@@ -2,7 +2,7 @@
 // Run with `pnpm deps`. Paths are relative to the repository root.
 
 /** Packages that hold core logic and stay framework-free. */
-const CORE = "^packages/(model|history|storage|pipeline|publish)/";
+const CORE = "^packages/(errors|model|history|storage|pipeline|publish)/";
 
 /** Code that runs in a renderer (or must render without Node): no Node built-ins, no Electron. */
 const RENDERER_SAFE = [
@@ -41,7 +41,8 @@ export default {
     {
       name: "core-no-react-or-electron",
       severity: "error",
-      comment: "model, history, storage, pipeline and publish are framework-free (standards §3).",
+      comment:
+        "errors, model, history, storage, pipeline and publish are framework-free (standards §3).",
       from: { path: CORE },
       to: { path: [REACT, ELECTRON] },
     },

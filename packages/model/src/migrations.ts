@@ -1,3 +1,4 @@
+import { WebforgeError } from "@webforge/errors";
 import { FORMAT_5_DAISYUI_THEMES } from "./format-5-themes.js";
 import { SITE_FORMAT_VERSION, type SiteDoc, siteDocSchema } from "./site-doc.js";
 
@@ -8,16 +9,14 @@ import { SITE_FORMAT_VERSION, type SiteDoc, siteDocSchema } from "./site-doc.js"
  */
 export type SiteFormatErrorCode = "invalid" | "newer-format";
 
-/** A site document that cannot be loaded. The message is for logs; show the user `code`. */
-export class SiteFormatError extends Error {
+/** A site document that cannot be loaded. The message is for developers; `code` says what. */
+export class SiteFormatError extends WebforgeError<SiteFormatErrorCode> {
   override readonly name = "SiteFormatError";
-  readonly code: SiteFormatErrorCode;
   /** The document's format version, when it had a readable one. */
   readonly formatVersion: number | undefined;
 
   constructor(code: SiteFormatErrorCode, message: string, formatVersion?: number) {
-    super(message);
-    this.code = code;
+    super(code, code === "invalid" ? "site.openFailed.damaged" : "site.openFailed.newer", message);
     this.formatVersion = formatVersion;
   }
 }

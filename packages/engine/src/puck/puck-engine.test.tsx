@@ -541,13 +541,6 @@ describe("createPuckEngine", () => {
     expect(item.querySelector(".wf-drag-source")).toBeNull();
     item.remove();
   });
-
-  it("renders a page to static HTML", () => {
-    const html = engine.renderStatic(page, NO_LAYOUT);
-
-    expect(html).toContain(">First</p>");
-    expect(html).toContain(">Second</p>");
-  });
 });
 
 describe("createPuckEngine canvas size and zoom (1.15)", () => {
@@ -952,19 +945,9 @@ describe("createPuckEngine with linked copies of a shared section (F-ED-23)", ()
 
     expect(headings()).toEqual(["First", "Closed", "Closed"]);
   });
-
-  it("renders copies inline in static HTML", () => {
-    const html = engine.renderStatic(withCopies, NO_LAYOUT, shared);
-
-    expect(html.match(/Hours/g)).toHaveLength(2);
-  });
 });
 
 describe("createPuckEngine before mount", () => {
-  it("cannot render static HTML without a library", () => {
-    expect(() => createPuckEngine().renderStatic(page, NO_LAYOUT)).toThrow(/Mount/);
-  });
-
   it("accepts calls that need Puck before Puck is ready", () => {
     const engine = createPuckEngine();
 

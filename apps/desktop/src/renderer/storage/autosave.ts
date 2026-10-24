@@ -2,6 +2,7 @@ import type { ReadonlyStore } from "@webforge/history";
 import { changedDocuments, type SiteDoc, type SiteDocumentChange } from "@webforge/model";
 import { createStore, type StoreApi } from "zustand/vanilla";
 import type { CommitResult } from "../../shared/ipc-contract.js";
+import { reportFailure } from "../log.js";
 
 /**
  * What the title bar shows (P2): `saved` once every change is in the file, `unsaved` while a save
@@ -94,7 +95,8 @@ export function createAutosave(options: AutosaveOptions): Autosave {
     let result: CommitResult;
     try {
       result = await options.commit(changes);
-    } catch {
+    } catch (error) {
+      reportFailure("autosave.commit", error);
       result = { status: "failed", reason: "unknown" };
     }
     if (disposed) {

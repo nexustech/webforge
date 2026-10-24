@@ -28,6 +28,7 @@
     "vitest": "catalog:"
   },
   "dependencies": {
+    "@webforge/errors": "workspace:*",
     "@webforge/i18n": "workspace:*",
     "@webforge/model": "workspace:*",
     "react": "catalog:",

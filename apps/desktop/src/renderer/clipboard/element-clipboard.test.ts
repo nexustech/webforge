@@ -16,6 +16,7 @@ type RejectedFile = Extract<ClipboardReadResult, { status: "media" }>["rejected"
 
 import { createEditorSession, currentPage, type EditorSession } from "../editor/editor-session.js";
 import { starterSite } from "../editor/starter-site.js";
+import { setFailureLog } from "../log.js";
 import { addMedia } from "../media/media-commands.js";
 import { saveAsSharedSection } from "../shared-sections/shared-sections.js";
 import { copySelected, pasteElements, pasteTarget } from "./element-clipboard.js";
@@ -201,6 +202,17 @@ describe("copy and paste (1.25)", () => {
       "This site is read-only, so nothing can be pasted into it.",
       "Webforge couldn't paste that.",
     ]);
+  });
+
+  it("logs a paste that failed by the error's code (R12)", async () => {
+    const session = createEditorSession(siteLibrary, starterSite());
+    const failures = vi.fn(async () => null);
+    setFailureLog(failures);
+
+    await pasteElements(session, { read: vi.fn().mockRejectedValue(new Error("gone")) }, vi.fn());
+
+    expect(failures).toHaveBeenCalledExactlyOnceWith("clipboard.paste", "Error");
+    setFailureLog(undefined);
   });
 
   it("copies nothing without a selection, and says when a copy failed", async () => {

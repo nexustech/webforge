@@ -1,3 +1,5 @@
+import { ensureStyle } from "./styles.js";
+
 /** Marks the one `<style>` element that holds the site's CSS in the canvas document. */
 const SITE_STYLE_ATTRIBUTE = "data-webforge-site-css";
 
@@ -13,16 +15,8 @@ const appliedBodyClasses = new WeakMap<Document, readonly string[]>();
  * from the editor window is copied in (`syncHostStyles` stays off).
  */
 export function applySiteStyles(document: Document, styles: SiteStyles): void {
-  let element = document.head.querySelector<HTMLStyleElement>(`style[${SITE_STYLE_ATTRIBUTE}]`);
-  if (element === null) {
-    element = document.createElement("style");
-    element.setAttribute(SITE_STYLE_ATTRIBUTE, "");
-    // First, so Puck's own canvas styles (added later) still win where they overlap.
-    document.head.prepend(element);
-  }
-  if (element.textContent !== styles.css) {
-    element.textContent = styles.css;
-  }
+  // First, so Puck's own canvas styles (added later) still win where they overlap.
+  ensureStyle(document, SITE_STYLE_ATTRIBUTE, styles.css, "start");
   const classes = styles.bodyClass.split(/\s+/).filter((name) => name !== "");
   document.body.classList.remove(...(appliedBodyClasses.get(document) ?? []));
   document.body.classList.add(...classes);

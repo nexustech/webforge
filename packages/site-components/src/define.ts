@@ -39,6 +39,12 @@ const TOKEN_KINDS: ReadonlySet<FieldDef["kind"]> = new Set([
   "box",
 ]);
 
+/** The longest name an option group may have (UX-13), in characters. */
+const MAX_OPTION_GROUP = 40;
+
+/** An option group's id: lower camel case, at most 40 characters ("typography", "textStyle"). */
+const OPTION_GROUP_ID = /^[a-z][a-zA-Z0-9]{0,39}$/;
+
 /** The field a component's layout variants are stored in. */
 const VARIANT_FIELD = "variant";
 
@@ -169,6 +175,7 @@ const EmptySlot: ComponentType = () => null;
  * - style fields, and fields that may differ per device (F-ED-4), are design tokens only (C4);
  * - every choice field offers choices, each once, and its default is one of them;
  * - every default is for a field;
+ * - an option group's name, if given, is a short name (1 to 40 characters);
  * - the `webforge.js` behaviours it needs exist (see `behaviours/`).
  *
  * `variants` add the layout choice described at {@link ComponentSpec}.
@@ -208,6 +215,15 @@ export function defineComponent<const F extends Fields, const Variant extends st
     }
     if (field.responsive === true && !TOKEN_KINDS.has(field.kind)) {
       fail(`sets "${fieldName}", a ${field.kind} field, per device: only design tokens can be`);
+    }
+    if (field.optionGroup !== undefined) {
+      const length = field.optionGroup.label.trim().length;
+      if (length === 0 || length > MAX_OPTION_GROUP) {
+        fail(`puts "${fieldName}" in an option group without a short name`);
+      }
+      if (!OPTION_GROUP_ID.test(field.optionGroup.id)) {
+        fail(`puts "${fieldName}" in an option group without an id such as "typography"`);
+      }
     }
     const choices = choicesOf(field);
     if (choices !== undefined) {

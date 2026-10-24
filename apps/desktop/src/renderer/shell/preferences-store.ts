@@ -4,6 +4,7 @@ import { useStoreWithEqualityFn } from "zustand/traditional";
 import { createStore } from "zustand/vanilla";
 import { applyPreferencesChange, DEFAULT_PREFERENCES } from "../../shared/ipc/prefs.js";
 import type { Preferences, PreferencesChange } from "../../shared/ipc-contract.js";
+import { reportFailure } from "../log.js";
 
 /** The person's preferences (theme, panels, canvas, Add panel) and the open site's editor mode. */
 export type EditorPreferences = {
@@ -47,7 +48,7 @@ export function createPreferencesStore(
       const { preferences } = store.getState();
       store.setState({ preferences: applyPreferencesChange(preferences, update) });
       save.preferences?.(update).catch((error: unknown) => {
-        console.error("Webforge could not save the preferences", error);
+        reportFailure("preferences.save", error);
       });
     },
     changeMode(mode) {
@@ -55,7 +56,7 @@ export function createPreferencesStore(
       store.setState({ mode });
       // Without an open site (the starter site) the mode lasts until the window closes.
       save.mode?.(mode).catch((error: unknown) => {
-        console.error("Webforge could not remember the editor mode", error);
+        reportFailure("editor-mode.save", error);
       });
     },
   };
