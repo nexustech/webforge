@@ -213,7 +213,7 @@ export async function buildSite(
       // An empty binding has no emptySetting here: the export leaves it out (1.17).
       setting: (key) => site.settings?.[key],
     };
-    // The same renderer as the canvas engine's renderStatic (ADR 0005).
+    // The one static renderer (ADR 0005), whose render functions the canvas draws with too.
     const regions = {
       header: page.hideHeader === true ? [] : site.layout.header,
       content: page.doc.content,

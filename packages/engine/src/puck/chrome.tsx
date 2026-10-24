@@ -8,8 +8,10 @@ import { HIDDEN_ATTRIBUTE } from "./config.js";
 /** Marks the element outlined from outside the canvas (`CanvasEngine.outline`). */
 export const OUTLINED_ATTRIBUTE = "data-wf-outlined";
 
+import { componentSelector, OVERLAY } from "./puck-dom.js";
 import { canPerform, performOnSelected } from "./selected-actions.js";
 import { type BoxHandleField, SPACING_HANDLES_CSS, SpacingHandles } from "./spacing-handles.js";
+import { ensureStyle } from "./styles.js";
 import { ROOT_ZONE } from "./tree.js";
 
 const usePuck = createUsePuck();
@@ -27,8 +29,6 @@ const CHROME_CSS = `
   position: absolute;
   inset: 0;
   pointer-events: none;
-  /* The editor's --selection-outline token; the canvas document doesn't have the editor's tokens. */
-  --wf-outline-color: #f028f3;
 }
 .wf-outline[data-state="hover"] {
   outline: calc(1px / var(--wf-zoom, 1)) solid var(--wf-outline-color);
@@ -36,7 +36,7 @@ const CHROME_CSS = `
 .wf-outline[data-state="selected"] {
   outline: calc(2px / var(--wf-zoom, 1)) solid var(--wf-outline-color);
 }
-/* The floating + (UI1): the editor's --primary blue, 24 px on screen. */
+/* The floating + (UI1): the editor's primary colour, 24 px on screen. */
 .wf-add {
   position: absolute;
   left: 50%;
@@ -47,8 +47,8 @@ const CHROME_CSS = `
   padding: 0;
   border: 0;
   border-radius: 50%;
-  background: #0a6fb7;
-  color: #fff;
+  background: var(--wf-primary);
+  color: var(--wf-primary-foreground);
   font: 600 18px/24px system-ui, sans-serif;
   text-align: center;
   cursor: pointer;
@@ -57,7 +57,7 @@ const CHROME_CSS = `
 }
 /* An element outlined from outside the canvas (a breadcrumb under the pointer): as on hover. */
 [${OUTLINED_ATTRIBUTE}] {
-  outline: calc(1px / var(--wf-zoom, 1)) solid #f028f3;
+  outline: calc(1px / var(--wf-zoom, 1)) solid var(--wf-outline-color);
   outline-offset: calc(-1px / var(--wf-zoom, 1));
 }
 /* A hidden element (Layers' Hide): dimmed, still there to select and show again. */
@@ -70,14 +70,59 @@ const CHROME_CSS = `
 }
 ${SPACING_HANDLES_CSS}`;
 
-/** Adds the chrome's styles to the canvas document once. */
-export function applyChromeStyles(document: Document): void {
-  if (document.head.querySelector(`style[${CHROME_STYLE_ATTRIBUTE}]`) === null) {
-    const element = document.createElement("style");
-    element.setAttribute(CHROME_STYLE_ATTRIBUTE, "");
-    element.textContent = CHROME_CSS;
-    document.head.append(element);
-  }
+/** The editor's colours the chrome is drawn in (UI1), from its theme's tokens. */
+export type ChromeTokens = {
+  /** `--selection-outline`: outlines, the other selected elements, the spacing grips. */
+  readonly outline: string;
+  /** `--primary` and `--primary-foreground`: the floating +. */
+  readonly primary: string;
+  readonly primaryForeground: string;
+};
+
+/** The light theme's colours, where the editor document has no tokens (a test without its CSS). */
+const DEFAULT_TOKENS: ChromeTokens = {
+  outline: "#f028f3",
+  primary: "#0a6fb7",
+  primaryForeground: "#ffffff",
+};
+
+/** The chrome's colours in `editor`, the editor window's document, as its theme sets them now. */
+export function chromeTokens(editor: Document): ChromeTokens {
+  const style = editor.defaultView?.getComputedStyle(editor.documentElement);
+  const read = (name: string, fallback: string) => style?.getPropertyValue(name).trim() || fallback;
+  return {
+    outline: read("--selection-outline", DEFAULT_TOKENS.outline),
+    primary: read("--primary", DEFAULT_TOKENS.primary),
+    primaryForeground: read("--primary-foreground", DEFAULT_TOKENS.primaryForeground),
+  };
+}
+
+/** Marks the stylesheet that gives the canvas document the editor's colours. */
+const CHROME_TOKENS_ATTRIBUTE = "data-webforge-chrome-tokens";
+
+/**
+ * Adds the chrome's styles to the canvas document `document` once, in the editor's colours
+ * (`editor`, the editor window's document), and follows its theme as it switches: the canvas
+ * iframe doesn't have the editor's tokens. Returns what stops following it.
+ */
+export function applyChromeStyles(document: Document, editor: Document): () => void {
+  ensureStyle(document, CHROME_STYLE_ATTRIBUTE, CHROME_CSS);
+  const apply = () => {
+    const tokens = chromeTokens(editor);
+    ensureStyle(
+      document,
+      CHROME_TOKENS_ATTRIBUTE,
+      `:root {\n  --wf-outline-color: ${tokens.outline};\n  --wf-primary: ${tokens.primary};\n` +
+        `  --wf-primary-foreground: ${tokens.primaryForeground};\n}`,
+    );
+  };
+  apply();
+  const Observer = editor.defaultView?.MutationObserver;
+  if (Observer === undefined) return () => undefined;
+  // The theme is the editor root's `data-theme` (light or dark).
+  const observer = new Observer(apply);
+  observer.observe(editor.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  return () => observer.disconnect();
 }
 
 /** How much smaller than its real size Puck shows the canvas iframe (1 when not zoomed). */
@@ -211,7 +256,7 @@ type QuickActionBarProps = ActionBarProps & {
  * the outline is the canvas iframe's, whose `HTMLElement` isn't this window's.
  */
 function barElementId(marker: Element | null): string | null {
-  const outline = marker?.closest("[data-puck-overlay]")?.querySelector(".wf-outline");
+  const outline = marker?.closest(OVERLAY)?.querySelector(".wf-outline");
   return outline?.getAttribute("data-wf-id") ?? null;
 }
 
@@ -302,7 +347,7 @@ function keepInFrame(bar: HTMLElement, selected: boolean): (() => void) | undefi
   }
   const place = () => {
     bar.style.transform = "";
-    const element = bar.closest("[data-puck-overlay]");
+    const element = bar.closest(OVERLAY);
     if (element === null || !selected) {
       return;
     }
@@ -367,4 +412,16 @@ export function QuickActionBar({
       </ActionBar>
     </div>
   );
+}
+
+/**
+ * Outlines the element `nodeId` in `doc`, the canvas document, as on hover: from outside the
+ * canvas (a breadcrumb under the pointer). `null` takes the outline away.
+ */
+export function outlineElement(doc: Document | undefined, nodeId: string | null): void {
+  for (const element of doc?.querySelectorAll(`[${OUTLINED_ATTRIBUTE}]`) ?? []) {
+    element.removeAttribute(OUTLINED_ATTRIBUTE);
+  }
+  if (nodeId === null) return;
+  doc?.querySelector(componentSelector(nodeId))?.setAttribute(OUTLINED_ATTRIBUTE, "");
 }

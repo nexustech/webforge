@@ -96,7 +96,6 @@ export function createFakeEngine(): FakeEngine {
     setLinkPicker: vi.fn(),
     onFrameWindow: frames.add,
     setMode: vi.fn(),
-    renderStatic: vi.fn(() => ""),
     destroy: vi.fn(),
     edit: (edit) =>
       edits.emit({ nodeId: null, componentType: null, field: null, selection: null, ...edit }),
