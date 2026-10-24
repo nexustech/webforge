@@ -159,6 +159,7 @@ Coverage is a floor, not a goal. Every bug fix adds a regression test.
 - **Run length:** a full PR run takes about 7.5 minutes, down from 13–15 (measured 24 Oct 2026, #328). Windows and macOS run E2E in two shards each, the Firefox and WebKit export tests wait only for Linux's E2E, and the static checks run on Linux only. A run uses 4 macOS jobs of the Free plan's 5.
 - **Windows/macOS switch:** those jobs run only while the repository variable `FULL_CI_ENABLED` is `true` (it is). Unset it to make CI Linux-only if the repository goes private again and minutes are billed (Windows minutes count 2× and macOS 10× on private repositories).
 - **Dependency updates:** Renovate or Dependabot, weekly, grouped. **Electron upgraded at least quarterly** (01).
+- **Vulnerability check:** Dependabot alerts, plus CI's "Dependency audit" job (`pnpm audit --audit-level=high`) on every PR that changes a manifest, the lockfile or `pnpm-workspace.yaml`, and nightly; it fails on a high or critical finding. Dependabot reads versions from the manifests, so it can't see packages taken from the pnpm catalog (`"catalog:"`); the audit reads the lockfile and covers them. A package with an open advisory is pinned in each manifest until it is fixed, so Dependabot can close its alert (happy-dom, #332).
 - **Secrets** (signing certificates, notarisation credentials) only in CI secret storage, never in the repo.
 
 ## 8. Definition of Done
