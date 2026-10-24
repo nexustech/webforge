@@ -1,6 +1,6 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { placeCaret } from "./caret.js";
-import { launchDesktopApp, newUserDataDir } from "./launch.js";
+import { launchDesktopApp, newUserDataDir, waitForCanvas } from "./launch.js";
 
 // The Edit panel (1.14): the selected element's fields, each change one labelled undo step.
 
@@ -15,7 +15,7 @@ test.beforeEach(async () => {
     .getByRole("region", { name: "Left panels" })
     .getByRole("tab", { name: "Undo History" })
     .click();
-  await expect(canvas().locator("style[data-webforge-site-css]")).toHaveCount(1);
+  await waitForCanvas(page);
 });
 
 test.afterEach(async () => {

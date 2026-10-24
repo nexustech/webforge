@@ -2,23 +2,17 @@ import { toast } from "@webforge/editor-ui";
 import {
   type CanvasEngine,
   createPuckEngine,
-  type EditorMode,
   type HistoryCommand,
   installHistoryKeys,
   type ViewOptions,
 } from "@webforge/engine";
+import type { ReadonlyStore } from "@webforge/history";
 import { t } from "@webforge/i18n";
 import { textStylesOf } from "@webforge/site-components";
 import { HistoryIcon, SlidersHorizontalIcon } from "lucide-react";
 import { type RefObject, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import type { StoreApi } from "zustand/vanilla";
-import {
-  type AddPreferences,
-  type CustomDevice,
-  DEFAULT_PREFERENCES,
-  type EditPanelPreferences,
-} from "../../shared/ipc/prefs.js";
-import type { Preferences } from "../../shared/ipc-contract.js";
+import { shallow } from "zustand/shallow";
+import type { CustomDevice, EditPanelPreferences } from "../../shared/ipc/prefs.js";
 import { type AddPanelRegistration, registerAddPanel } from "../add/register-add-panel.js";
 import { createSectionPreviews } from "../add/section-preview.js";
 import {
@@ -52,6 +46,12 @@ import { installCommandShortcuts } from "../shell/commands.js";
 import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
 import { CanvasErrorBoundary } from "../shell/error-boundaries.js";
 import { usePanelRegistry } from "../shell/panel-context.js";
+import {
+  createPreferencesStore,
+  type EditorPreferences,
+  type PreferencesStore,
+  usePreferences,
+} from "../shell/preferences-store.js";
 import { connectCanvasSettings } from "../site-settings/canvas-settings.js";
 import { CanvasBreadcrumbs } from "./CanvasBreadcrumbs.js";
 import { CanvasResizeHandles } from "./CanvasResizeHandles.js";
@@ -73,12 +73,8 @@ import { confirmSharedRemovals, sharedCutConfirmation } from "./shared-confirmat
 import { shownLayout } from "./shared-layout.js";
 import { type CompileCanvasCss, connectSiteCss } from "./site-css.js";
 import { UndoHistoryPanel, type UndoHistoryPanelProps } from "./UndoHistoryPanel.js";
-import { installUndoToasts, undoEntry } from "./undo-toasts.js";
+import { installUndoToasts } from "./undo-toasts.js";
 import { useUi } from "./use-document.js";
-import { usePreferenceStore } from "./use-preference-store.js";
-
-/** How the title bar's list of steps undoes back to one (UX-16): false if the step is gone. */
-export type UndoTo = { readonly run: (entryId: string) => boolean };
 
 /** `preferences` with `closed` as the option groups closed for component `type` (UX-13). */
 function withClosedGroups(
@@ -103,35 +99,29 @@ export type EditorProps = {
   readonly compileCss?: CompileCanvasCss;
   /** Reports an error in the canvas as a local crash report (R3); injectable for tests. */
   readonly reportError?: ReportError;
-  /** Design or Content mode (M3, 1.10): passed to the engine, which locks the layout in Content. */
-  readonly mode?: EditorMode;
+  /**
+   * The person's preferences and the editor mode (R9): Design or Content (M3, 1.10), which the
+   * engine locks the layout in; Simple or Advanced (F-ED-11), which adds the Edit panel's Advanced
+   * tab; the View menu's options and the person's own devices (F-ED-25); the Add panel's
+   * favourites and recently used items (F-ED-26). The defaults, in Design mode, unless given.
+   */
+  readonly preferences?: PreferencesStore;
   /** The canvas toolbar's zoom and size readout (1.15), kept in step with the engine. */
   readonly canvasView?: CanvasView;
-  /** Simple or Advanced mode (F-ED-11): Advanced adds the Edit panel's Advanced tab. */
-  readonly editorLevel?: Preferences["editorLevel"];
   /**
    * Asks before what changes more than the page shown (D7): deleting or cutting an element of the
    * shared Header or Footer. Undo and Redo wait while it asks. Without it, they happen at once.
    */
   readonly siteWide?: Pick<SiteWideConfirm, "confirmSiteWide" | "current">;
-  /** The person's own devices, which dragging the canvas's edges snaps to (F-ED-25). */
-  readonly devices?: readonly CustomDevice[];
-  /** What the canvas shows besides the page: the View menu's options (F-ED-25). */
-  readonly viewOptions?: ViewOptions;
-  /** The Add panel's favourites and recently used items (F-ED-26), from the person's preferences. */
-  readonly addPreferences?: AddPreferences;
-  /** Saves them when the person changes their favourites or adds something. */
-  readonly onAddPreferencesChange?: (next: AddPreferences) => void;
-  /** The Edit panel's closed option groups, remembered per person (UX-13). */
-  readonly editPanelPreferences?: EditPanelPreferences;
-  /** Saves the Edit panel's closed option groups. */
-  readonly onEditPanelPreferencesChange?: (next: EditPanelPreferences) => void;
-  /**
-   * Hands over how to undo back to a step (UX-16, the title bar's list of steps), and `null` once
-   * this editor is gone. Called again only when the session changes, so a state setter will do.
-   */
-  readonly onUndoTo?: (undoTo: UndoTo | null) => void;
 };
+
+/** The View menu's options as the canvas takes them (F-ED-25). */
+const viewOptionsOf = ({ preferences: { canvas } }: EditorPreferences): ViewOptions => ({
+  outlines: canvas.showOutlines,
+  spacingOnHover: canvas.spacingOnHover,
+  elementNames: canvas.elementNames,
+  extraBottomSpace: canvas.extraBottomSpace,
+});
 
 const compileWithPreload: CompileCanvasCss = (request) =>
   window.webforge.canvas.compileCss(request);
@@ -155,33 +145,40 @@ function undoHistoryPanel(
 }
 
 /**
- * The Edit panel as a panel component (1.14): the selected element's fields, with the option
- * groups the person closed from `store`, which keeps them in the preferences (UX-13).
+ * The Edit panel as the preferences have it: with the Advanced tab in Advanced mode, the Content
+ * tab only in Content mode (R9), and the option groups the person closed (UX-13).
  */
-function editPanel({
-  session,
-  flush,
-  advanced,
-  contentOnly,
-  store,
-}: Pick<EditPanelHostProps, "session" | "flush" | "advanced" | "contentOnly"> & {
-  readonly store: StoreApi<EditPanelPreferences>;
+function PreferredEditPanel({
+  preferences,
+  ...props
+}: Omit<
+  EditPanelHostProps,
+  "advanced" | "contentOnly" | "closedGroups" | "onClosedGroupsChange"
+> & {
+  readonly preferences: PreferencesStore;
 }) {
-  return function Edit() {
-    const { closedGroups } = useSyncExternalStore(store.subscribe, store.getState);
-    return (
-      <EditPanelHost
-        session={session}
-        flush={flush}
-        {...(advanced === undefined ? {} : { advanced })}
-        {...(contentOnly === undefined ? {} : { contentOnly })}
-        closedGroups={closedGroups}
-        onClosedGroupsChange={(type, closed) =>
-          store.setState(withClosedGroups(store.getState(), type, closed))
-        }
-      />
-    );
-  };
+  const advanced = usePreferences(
+    preferences,
+    (state) => state.preferences.editorLevel === "advanced",
+  );
+  const contentOnly = usePreferences(preferences, (state) => state.mode !== "design");
+  const closedGroups = usePreferences(
+    preferences,
+    (state) => state.preferences.editPanel.closedGroups,
+  );
+  return (
+    <EditPanelHost
+      {...props}
+      advanced={advanced}
+      contentOnly={contentOnly}
+      closedGroups={closedGroups}
+      onClosedGroupsChange={(type, closed) =>
+        preferences.change({
+          editPanel: withClosedGroups(preferences.getState().preferences.editPanel, type, closed),
+        })
+      }
+    />
+  );
 }
 
 /**
@@ -221,25 +218,17 @@ export function Editor({
   createEngine = createPuckEngine,
   compileCss = compileWithPreload,
   reportError = reportWithPreload,
-  mode = "design",
+  preferences: givenPreferences,
   canvasView,
-  editorLevel = "simple",
   siteWide,
-  devices = [],
-  viewOptions,
-  addPreferences = DEFAULT_PREFERENCES.add,
-  onAddPreferencesChange,
-  editPanelPreferences = DEFAULT_PREFERENCES.editPanel,
-  onEditPanelPreferencesChange,
-  onUndoTo,
 }: EditorProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [engine, setEngine] = useState<CanvasEngine | null>(null);
-  // The mode at mount time, so a site opened in Content mode is never unlocked for a moment.
-  const modeRef = useRef(mode);
-  useEffect(() => {
-    modeRef.current = mode;
-  });
+  const [defaultPreferences] = useState(() => createPreferencesStore());
+  const preferences = givenPreferences ?? defaultPreferences;
+  const mode = usePreferences(preferences, (state) => state.mode);
+  const devices = usePreferences(preferences, (state) => state.preferences.canvas.devices);
+  const viewOptions = usePreferences(preferences, viewOptionsOf, shallow);
   const connectionRef = useRef<EngineConnection | null>(null);
   const clipboardCommandsRef = useRef<ReturnType<typeof registerClipboardCommands> | null>(null);
   const styleCommandsRef = useRef<ReturnType<typeof registerStyleCommands> | null>(null);
@@ -303,6 +292,8 @@ export function Editor({
     if (container === null) {
       return;
     }
+    // The mode as the canvas mounts: a site opened in Content mode is never unlocked for a moment.
+    const mountMode = preferences.getState().mode;
     // A fresh element per mount, so React's StrictMode remount never reuses an unmounting root.
     const element = document.createElement("div");
     element.className = "editor__canvas-root";
@@ -317,8 +308,8 @@ export function Editor({
       errorBoundary: CanvasErrorBoundary,
       onError: (error, caught) => reportError(caught ? "render-error" : "uncaught-error", error),
     });
-    if (modeRef.current !== "design") {
-      engine.setMode(modeRef.current);
+    if (mountMode !== "design") {
+      engine.setMode(mountMode);
     }
     const page = currentPage(session);
     if (page !== undefined) {
@@ -353,11 +344,11 @@ export function Editor({
       (message) => toast(message),
       siteWide === undefined ? undefined : sharedCutConfirmation(session, siteWide),
     );
-    clipboardCommands.setLayoutLocked(modeRef.current !== "design");
+    clipboardCommands.setLayoutLocked(mountMode !== "design");
     clipboardCommandsRef.current = clipboardCommands;
     // Copy Style and Paste Style (1.37), after them.
     const styleCommands = registerStyleCommands(registry, session, connection.flush);
-    styleCommands.setLayoutLocked(modeRef.current !== "design");
+    styleCommands.setLayoutLocked(mountMode !== "design");
     styleCommandsRef.current = styleCommands;
     // While several elements are selected, the canvas's edits act on all of them (1.31).
     const bulk = (action: BulkCanvasAction) => {
@@ -379,9 +370,9 @@ export function Editor({
       setNaming,
       siteWide,
     );
-    sharedCommands.setLayoutLocked(modeRef.current !== "design");
+    sharedCommands.setLayoutLocked(mountMode !== "design");
     sharedCommandsRef.current = sharedCommands;
-    canvasCommands.setLayoutLocked(modeRef.current !== "design");
+    canvasCommands.setLayoutLocked(mountMode !== "design");
     canvasCommandsRef.current = canvasCommands;
     // Hide or show (Mod + /), and the chip's Hide and Edit on an image (1.30).
     const elementCommands = registerElementCommands(
@@ -393,7 +384,7 @@ export function Editor({
       setRenaming,
       (message) => toast(message),
     );
-    elementCommands.setLayoutLocked(modeRef.current !== "design");
+    elementCommands.setLayoutLocked(mountMode !== "design");
     elementCommandsRef.current = elementCommands;
     const stopSelectionWatch = session.ui.subscribe((ui) => {
       // Several selected elements (1.31): the edits that act on one are off until they act on all.
@@ -440,11 +431,11 @@ export function Editor({
       engine.destroy();
       element.remove();
     };
-  }, [session, history, createEngine, compileCss, reportError, registry, siteWide]);
+  }, [session, history, createEngine, compileCss, reportError, registry, siteWide, preferences]);
 
   // The View menu's options (F-ED-25): view state, never an undo step (U6).
   useEffect(() => {
-    if (viewOptions !== undefined) engine?.setViewOptions(viewOptions);
+    engine?.setViewOptions(viewOptions);
   }, [engine, viewOptions]);
 
   useEffect(() => {
@@ -475,20 +466,6 @@ export function Editor({
     [session],
   );
 
-  // Undoing back to a step from the title bar (UX-16): one jump, as Undo History and the Undo
-  // toasts make, after the canvas's pending edit; a gesture in progress is dropped first, as
-  // Ctrl/Cmd+Z drops it, so the jump lands where it was asked to.
-  useEffect(() => {
-    onUndoTo?.({
-      run: (entryId) => {
-        connectionRef.current?.flush();
-        session.cancelGesture();
-        return undoEntry(history, entryId);
-      },
-    });
-    return () => onUndoTo?.(null);
-  }, [onUndoTo, session, history]);
-
   // Undo History goes in the left column's bottom (UI1).
   useEffect(
     () =>
@@ -505,31 +482,27 @@ export function Editor({
     [panels, history],
   );
 
-  // The Edit panel's closed option groups (UX-13), in step with the preferences.
-  const editPanelStore = usePreferenceStore(editPanelPreferences, onEditPanelPreferencesChange);
+  // The Edit panel replaces Puck's own fields (1.14). Registered once: it follows the editor level
+  // and the mode (Content shows its Content tab only) itself, so a switch redraws it alone (R9).
+  useEffect(() => {
+    function Edit() {
+      return (
+        <PreferredEditPanel
+          session={session}
+          preferences={preferences}
+          flush={() => connectionRef.current?.flush()}
+        />
+      );
+    }
+    return panels.register({
+      id: "edit",
+      slot: "right.top",
+      title: t("editPanel.title"),
+      icon: SlidersHorizontalIcon,
+      component: Edit,
+    });
+  }, [panels, session, preferences]);
 
-  // The Edit panel replaces Puck's own fields (1.14). Registered on its own, so that changing the
-  // editor level or mode (Content shows its Content tab only) redraws it alone.
-  useEffect(
-    () =>
-      panels.register({
-        id: "edit",
-        slot: "right.top",
-        title: t("editPanel.title"),
-        icon: SlidersHorizontalIcon,
-        component: editPanel({
-          session,
-          flush: () => connectionRef.current?.flush(),
-          advanced: editorLevel === "advanced",
-          contentOnly: mode !== "design",
-          store: editPanelStore,
-        }),
-      }),
-    [panels, session, editorLevel, mode, editPanelStore],
-  );
-
-  // The Add panel's favourites and recents (1.34), in step with the preferences; its + place stays.
-  const addStore = usePreferenceStore(addPreferences, onAddPreferencesChange);
   // The sections' larger previews in the Add panel (UX-10), drawn with the site's theme. Made once
   // for the editor's session, so the drawings they keep outlive switches of mode.
   const [previews] = useState(() =>
@@ -559,7 +532,9 @@ export function Editor({
         },
         remove: (id) => removeSharedSection(session, id, siteWide),
       },
-      preferences: addStore,
+      // Its favourites and recents (1.34), which it follows without being registered again (its
+      // tab and + place stay).
+      preferences,
       commands: registry,
       preview: previews,
     });
@@ -568,7 +543,7 @@ export function Editor({
       addPanelRef.current = null;
       addPanel.remove();
     };
-  }, [panels, session, mode, engine, siteWide, addStore, registry, previews]);
+  }, [panels, session, mode, engine, siteWide, preferences, registry, previews]);
   useEffect(() => registerMediaPanel(panels, session), [panels, session]);
   useEffect(() => registerImageField({ session, picks: imagePicks }), [session, imagePicks]);
   // Colour fields show the theme's own colours and warn about low contrast (1.37, UX-25).
@@ -576,7 +551,7 @@ export function Editor({
     () =>
       registerColourField({
         session,
-        advanced: editorLevel === "advanced",
+        preferences,
         // The selected element's text styles, wherever it is (the page, the shared Header or
         // Footer, a linked copy), as the Edit panel finds it.
         textStyles: () => {
@@ -590,7 +565,7 @@ export function Editor({
           return target === undefined ? [] : textStylesOf(target.node, session.library);
         },
       }),
-    [session, editorLevel],
+    [session, preferences],
   );
   useEffect(() => registerLinkField({ session }), [session]);
 

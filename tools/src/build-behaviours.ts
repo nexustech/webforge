@@ -14,17 +14,25 @@ import { join } from "node:path";
 /** The folder of the behaviours, from the repository root. */
 export const BEHAVIOURS_FOLDER = "packages/site-components/src/behaviours";
 
-/** The module that holds `files` (each behaviour's text, by name), by name order. */
+/**
+ * The module that holds `files` (each behaviour's text, by name), by name order, and their names
+ * as a type: a component that names a behaviour without a file is then a type error.
+ */
 export function behavioursModule(files: Readonly<Record<string, string>>): string {
-  const entries = Object.entries(files)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([name, text]) => `  ${JSON.stringify(name)}: ${JSON.stringify(text)},`);
+  const sorted = Object.entries(files).sort(([a], [b]) => a.localeCompare(b));
+  const names = sorted.map(([name]) => JSON.stringify(name)).join(" | ") || "never";
+  const entries = sorted.map(
+    ([name, text]) => `  ${JSON.stringify(name)}: ${JSON.stringify(text)},`,
+  );
   return [
     "// Generated from this folder's .js files by `pnpm behaviours` (tools/src/build-behaviours.ts):",
     "// don't edit it by hand. A test checks that it matches them.",
     "",
-    "/** The text of each `webforge.js` behaviour, by its file's name without `.js`. */",
-    "export const BEHAVIOUR_FILES: Readonly<Record<string, string>> = {",
+    "/** The name of a `webforge.js` behaviour: its file's name without `.js`. */",
+    `export type BehaviourName = ${names};`,
+    "",
+    "/** The text of each `webforge.js` behaviour, by name. */",
+    "export const BEHAVIOUR_FILES: Readonly<Record<BehaviourName, string>> = {",
     ...entries,
     "};",
     "",

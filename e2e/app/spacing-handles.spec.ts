@@ -1,5 +1,5 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
-import { launchDesktopApp } from "./launch.js";
+import { launchDesktopApp, waitForCanvas } from "./launch.js";
 
 // Spacing handles on the canvas (1.32, F-ED-25): grips on the selected element's edges set its
 // padding and margin, each drag one labelled undo step; Esc cancels a drag.
@@ -14,7 +14,7 @@ test.beforeEach(async () => {
     .getByRole("region", { name: "Left panels" })
     .getByRole("tab", { name: "Undo History" })
     .click();
-  await expect(canvas().locator("style[data-webforge-site-css]")).toHaveCount(1);
+  await waitForCanvas(page);
 });
 
 test.afterEach(async () => {

@@ -118,13 +118,15 @@ describe("defineComponent (2.5)", () => {
       },
       `'Card' puts "title" in an option group without an id such as "typography"`,
     ],
-    [
-      "a behaviour that isn't in behaviours/",
-      { behaviours: ["carousel"] },
-      `'Card' needs the behaviour "carousel"`,
-    ],
   ] satisfies [string, Partial<LooseSpec>, string][])("refuses %s", (_name, change, message) => {
     expect(() => defineComponent({ ...base, ...change })).toThrow(message);
+  });
+
+  it("refuses a behaviour that isn't in behaviours/, as it types and as the module loads", () => {
+    expect(() =>
+      // @ts-expect-error: no behaviours/carousel.js.
+      defineComponent({ ...base, behaviours: ["carousel"] }),
+    ).toThrow(`'Card' needs the behaviour "carousel"`);
   });
 
   it("accepts a default set per device, each device's value one of the choices", () => {

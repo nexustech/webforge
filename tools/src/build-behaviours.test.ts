@@ -8,15 +8,20 @@ describe("the behaviours module (R7)", () => {
   it("holds each behaviour's text by name, in name order, as plain string constants", () => {
     const module = behavioursModule({ tabs: 'say("tabs");\n', menu: "(() => {})();\n" });
 
+    expect(module).toContain('export type BehaviourName = "menu" | "tabs";');
     expect(module).toContain(
       [
-        "export const BEHAVIOUR_FILES: Readonly<Record<string, string>> = {",
+        "export const BEHAVIOUR_FILES: Readonly<Record<BehaviourName, string>> = {",
         '  "menu": "(() => {})();\\n",',
         '  "tabs": "say(\\"tabs\\");\\n",',
         "};",
       ].join("\n"),
     );
     expect(module).toContain("don't edit it by hand");
+  });
+
+  it("names no behaviour when there are none", () => {
+    expect(behavioursModule({})).toContain("export type BehaviourName = never;");
   });
 
   it("reads the .js files of a folder, by name without .js", () => {

@@ -3,11 +3,11 @@ import { t } from "@webforge/i18n";
 import { isSharedCopy, type SharedSectionsDoc } from "@webforge/model";
 import { SquarePlusIcon } from "lucide-react";
 import { type ReactNode, useSyncExternalStore } from "react";
-import type { StoreApi } from "zustand/vanilla";
 import { type AddPreferences, MAX_FAVOURITES, MAX_RECENT } from "../../shared/ipc/prefs.js";
 import { currentPage } from "../editor/editor-session.js";
 import type { CommandRegistry } from "../shell/commands.js";
 import type { PanelRegistry } from "../shell/panels.js";
+import type { PreferencesStore } from "../shell/preferences-store.js";
 import { AddPanel, type AddPanelProps, type SharedSectionActions } from "./AddPanel.js";
 import {
   type AddItem,
@@ -69,7 +69,7 @@ type AddPanelOptions = {
   /** Rename and Delete for the shared sections listed (1.29). */
   readonly sharedActions?: SharedSectionActions;
   /** The person's favourites and recently added items (1.34, F-ED-26), saved in preferences. */
-  readonly preferences?: StoreApi<AddPreferences>;
+  readonly preferences?: Pick<PreferencesStore, "getState" | "subscribe" | "change">;
   /** The command palette, which gets an *Add ‹item›* command for each item (UX-11). */
   readonly commands?: CommandRegistry;
   /** A section's larger preview, shown on hover or focus (UX-10). */
@@ -133,7 +133,7 @@ export function registerAddPanel(
       : (library.components[node.type]?.label ?? node.type);
   };
   const noPreferences: AddPreferences = { favourites: [], recent: [] };
-  const prefs = () => preferences?.getState() ?? noPreferences;
+  const prefs = () => preferences?.getState().preferences.add ?? noPreferences;
   // Both tabs' items, rebuilt only when the shared sections or the favourites change.
   let listed:
     | {
@@ -217,19 +217,19 @@ export function registerAddPanel(
         ? addComponent(session, item.type, point)
         : addSharedCopy(session, item.sharedSectionId, point);
     if (added && preferences !== undefined) {
-      const { favourites, recent } = preferences.getState();
+      const { favourites, recent } = prefs();
       const next = [item.type, ...recent.filter((key) => key !== item.type)];
-      preferences.setState({ favourites, recent: next.slice(0, MAX_RECENT) }, true);
+      preferences.change({ add: { favourites, recent: next.slice(0, MAX_RECENT) } });
     }
     return added;
   };
   const toggleFavourite = (type: string) => {
     if (preferences === undefined) return;
-    const { favourites, recent } = preferences.getState();
+    const { favourites, recent } = prefs();
     const next = favourites.includes(type)
       ? favourites.filter((key) => key !== type)
       : [...favourites, type].slice(-MAX_FAVOURITES);
-    preferences.setState({ favourites: next, recent }, true);
+    preferences.change({ add: { favourites: next, recent } });
   };
 
   function Add() {

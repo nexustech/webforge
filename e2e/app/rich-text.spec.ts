@@ -1,6 +1,6 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { placeCaret, selectText } from "./caret.js";
-import { launchDesktopApp } from "./launch.js";
+import { launchDesktopApp, waitForCanvas } from "./launch.js";
 
 // Rich text on the canvas (1.23, F-ED-3): the format toolbar offers only the formatting a site
 // may have, and text pasted from Word or a web page keeps only that formatting.
@@ -13,7 +13,7 @@ let page: Page;
 test.beforeEach(async () => {
   app = await launchDesktopApp();
   page = await app.firstWindow();
-  await expect(canvas().locator("style[data-webforge-site-css]")).toHaveCount(1);
+  await waitForCanvas(page);
   // Undo History is the left column's second tab, after Add.
   await page
     .getByRole("region", { name: "Left panels" })
