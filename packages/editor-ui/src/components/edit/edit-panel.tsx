@@ -146,6 +146,9 @@ function DeviceDot({
  */
 const BUILT_IN: FieldRenderers = { ...PLAIN_RENDERERS, list: ListField, box: BoxField };
 
+/** A field the person can reset to its default: changed, and not disabled (R11). */
+const resettable = (field: EditPanelField) => field.changed === true && field.disabled !== true;
+
 /** The groups of fields that name none (UX-13), by kind; each id is its translation key's. */
 type FallbackGroup =
   | "advanced"
@@ -244,7 +247,7 @@ function FieldList({
       {groups.map(({ key, label: name, fields: inGroup }, index) => {
         // Searching shows every group with a match open.
         const open = query !== "" || !closed.includes(key);
-        const changed = inGroup.filter((field) => field.changed === true);
+        const changed = inGroup.filter(resettable);
         const resetGroup =
           changed.length > 0 && onResetToDefault !== undefined
             ? () =>
@@ -354,7 +357,7 @@ function FieldRow({
   const helpId = field.help === undefined ? undefined : `${id}-help`;
   const errorId = field.error === undefined ? undefined : `${id}-error`;
   const resetField =
-    field.changed === true && onResetToDefault !== undefined
+    resettable(field) && onResetToDefault !== undefined
       ? () => onResetToDefault([field.name])
       : undefined;
   return (
@@ -371,7 +374,11 @@ function FieldRow({
                 label={field.label}
                 device={device ?? ""}
                 overridden={field.overridden === true}
-                onClear={onReset === undefined ? undefined : () => onReset(field.name)}
+                onClear={
+                  onReset === undefined || field.disabled === true
+                    ? undefined
+                    : () => onReset(field.name)
+                }
               />
             ) : null}
           </div>
@@ -476,7 +483,7 @@ export function EditPanel({
       return;
     }
     const name = (event.target as Element).closest("[data-field]")?.getAttribute("data-field");
-    if (groupFields.some((field) => field.name === name && field.changed === true) && name) {
+    if (groupFields.some((field) => field.name === name && resettable(field)) && name) {
       event.preventDefault();
       event.stopPropagation();
       onResetToDefault([name]);

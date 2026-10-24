@@ -298,6 +298,45 @@ describe("disabled fields and fields with an error (R11)", () => {
     }
   });
 
+  it("resets no disabled field, from its menu, its group or its device dot", async () => {
+    const onResetToDefault = vi.fn();
+    const onReset = vi.fn();
+    render(
+      <EditPanel
+        heading="Section"
+        device="Mobile"
+        fields={[
+          {
+            name: "align",
+            kind: "select",
+            label: "Alignment",
+            group: "style",
+            value: "large",
+            options: sizes,
+            changed: true,
+            overridden: true,
+            disabled: true,
+          },
+        ]}
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+        onReset={onReset}
+        onResetToDefault={onResetToDefault}
+      />,
+    );
+
+    fireEvent.contextMenu(screen.getByText("Alignment"));
+    expect(
+      screen
+        .getByRole("menuitem", { name: t("editPanel.resetField") })
+        .hasAttribute("data-disabled"),
+    ).toBe(true);
+    // The dot says the value is Mobile's own, but doesn't offer to clear it.
+    expect(screen.queryByRole("button", { name: /Mobile/ })).toBeNull();
+    expect(onReset).not.toHaveBeenCalled();
+    expect(onResetToDefault).not.toHaveBeenCalled();
+  });
+
   it("opens a disabled list's item to show its fields, disabled too", async () => {
     draw({ disabled: true });
 
