@@ -11,9 +11,9 @@
 | **RapidWeaver Elements** | Desktop (macOS 13+), **Tailwind-based**, subscription | Closest *Tailwind* desktop rival |
 | **Blocs 6.4** | Desktop (Mac), Bootstrap 5 | Strong DIY-friendly desktop builder |
 | **Mobirise** | Desktop (Win/Mac), free + paid extensions | Popular free offline builder |
-| **Pinegrow** | Desktop (Win/Mac/Linux), pro HTML/Tailwind editor | Developer-leaning Tailwind visual editor |
+| **Pinegrow** | Desktop (Win/Mac/Linux), pro HTML/Tailwind editor | Developer-leaning Tailwind visual editor. Own review: [competitors/02](../competitors/02-pinegrow.md) (2026-10-24, PG-1…9) |
 | **Wix, Squarespace** | Hosted SaaS | What DIY small-business users already know |
-| **Webflow, Framer** | Hosted SaaS, designer-focused | Set expectations for interactions, CMS and AI |
+| **Webflow, Framer** | Hosted SaaS, designer-focused | Set expectations for interactions, CMS and AI. Webflow's own review: [competitors/01](../competitors/01-webflow.md) (2026-10-24, WF-1…6) |
 
 ## 2. What Webforge already covers well
 Many competitor features are already in the plan, sometimes stronger than competitors:
@@ -171,6 +171,8 @@ Before 3.0 it already had Global Templates (reusable linked blocks) and a Resour
 
 The [Bootstrap Studio 9.0 review](../bootstrap-studio/06-bootstrap-studio-9.md) (2026-10-22, BS9-1 – BS9-10) adds two small MVP items (sticky header, back-to-top button), puts the v1.1 Blog on a general collections engine, adds six small v1.1 items, and details the v1.1 AI assistant (BS9-10, extends GA9).
 
+The [Webflow](../competitors/01-webflow.md) and [Pinegrow 10.1](../competitors/02-pinegrow.md) reviews (2026-10-24, WF-1…6 and PG-1…9, all adopted) add two small MVP items (PG-2 palette from an image in Theme Studio, PG-3 example sites on the start screen; F-DS-7, F-SITE-1, +2 days), put side-by-side device views and two more items in v1.1 (WF-1/PG-1, PG-4, PG-5), add approve-before-apply to the v1.1 AI assistant design (WF-2) and record that GSAP is never a licence exception (PG-6).
+
 v1.1 and later items stay as listed in §4.
 
 ## Open questions
@@ -183,8 +185,8 @@ v1.1 and later items stay as listed in §4.
 - RapidWeaver Elements: [features](https://realmacsoftware.com/elements/) · [docs](https://docs.realmacsoftware.com/rapidweaver-elements-docs/)
 - Blocs: [6.3 release (AI tools, find & replace, global alt tags)](https://alternativeto.net/news/2025/11/blocs-6-3-for-mac-adds-ai-tools-global-find-and-replace-new-interaction-manager-and-more) · [6.4 release (carousels, form security, paste, QR preview)](https://alternativeto.net/news/2026/3/blocs-6-4-for-mac-enhances-carousels-forms-copy-and-paste-link-icons-and-preview-mode) · [6.2 release](https://alternativeto.net/news/2025/6/blocs-6-2-for-mac-adds-stacked-containers-enhanced-preview-mode-and-ftp-manager-updates)
 - Mobirise: [Toolradar overview](https://toolradar.com/tools/mobirise)
-- Pinegrow: [Tailwind Visual Editor docs](https://docs.pinegrow.com/docs/tailwind/) · [Pinegrow 9.2 release notes](https://pinegrow.com/release_notes/pinegrow-web-editor-9-2/)
+- Pinegrow: [Tailwind Visual Editor docs](https://docs.pinegrow.com/docs/tailwind/) · [Pinegrow 9.2 release notes](https://pinegrow.com/release_notes/pinegrow-web-editor-9-2/) · full review in [competitors/02](../competitors/02-pinegrow.md)
 - Wix vs Squarespace (Apr 2026): [Website Builder Expert](https://www.websitebuilderexpert.com/website-builders/wix-vs-squarespace/)
-- Webflow vs Framer (Jan 2026): [The Alien Design](https://www.thealien.design/insights/webflow-vs-framer)
+- Webflow vs Framer (Jan 2026): [The Alien Design](https://www.thealien.design/insights/webflow-vs-framer) · Webflow review in [competitors/01](../competitors/01-webflow.md)
 - AI builder features: [TechRadar (Sept 2024)](https://techradar.com/pro/website-building/ai-website-building-tools-that-every-small-business-should-be-using)
 - Bootstrap Studio: [../bootstrap-studio/04-key-features.md](../bootstrap-studio/04-key-features.md)
