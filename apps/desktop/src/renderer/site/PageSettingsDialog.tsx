@@ -10,7 +10,15 @@ import {
   fieldControlClass,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
-import { isImageMeta, type MediaId, type PageEntry, type SiteDoc } from "@webforge/model";
+import {
+  isImageMeta,
+  type MediaId,
+  PAGE_DESCRIPTION_MAX,
+  PAGE_SLUG_MAX,
+  PAGE_TITLE_MAX,
+  type PageEntry,
+  type SiteDoc,
+} from "@webforge/model";
 import { type ReactNode, useId, useState } from "react";
 import { MEDIA_SCHEME } from "../../shared/ipc/media.js";
 import { fileNameFor, type PageSettingsChange } from "./page-actions.js";
@@ -154,7 +162,7 @@ function PageSettingsForm({
             id={id}
             className={fieldControlClass}
             value={title}
-            maxLength={200}
+            maxLength={PAGE_TITLE_MAX}
             required
             onChange={(event) => setTitle(event.currentTarget.value)}
           />
@@ -175,7 +183,7 @@ function PageSettingsForm({
             id={id}
             className={fieldControlClass}
             value={fixedFile === undefined ? slug : fileNameFor(site, slug, undefined, page.id)}
-            maxLength={80}
+            maxLength={PAGE_SLUG_MAX}
             disabled={fixedFile !== undefined}
             aria-describedby={hintId}
             onChange={(event) => setSlug(event.currentTarget.value)}
@@ -189,7 +197,7 @@ function PageSettingsForm({
             id={id}
             className={cn(fieldControlClass, "h-16 resize-none py-1")}
             value={description}
-            maxLength={300}
+            maxLength={PAGE_DESCRIPTION_MAX}
             placeholder={site.settings.general.description}
             aria-describedby={hintId}
             onChange={(event) => setDescription(event.currentTarget.value)}

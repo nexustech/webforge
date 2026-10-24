@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { menuDocSchema } from "./menu.js";
+import { type MenuDoc, menuDocSchema, menuFileLinks } from "./menu.js";
 
 const book = {
   id: "book",
@@ -71,5 +71,33 @@ describe("menuDocSchema", () => {
 
   it("rejects an unknown mode", () => {
     expect(menuDocSchema.safeParse({ follows: "auto", items: [] }).success).toBe(false);
+  });
+});
+
+describe("menuFileLinks (R10)", () => {
+  it("lists the files the menu links to, in dropdowns and hidden items too", () => {
+    const file = (id: string, mediaId: string, hidden = false) => ({
+      id,
+      kind: "link" as const,
+      label: id,
+      link: { kind: "file" as const, mediaId },
+      hidden,
+    });
+    const menu = menuDocSchema.parse({
+      follows: "custom",
+      items: [
+        book,
+        file("prices", "price-list"),
+        {
+          id: "more",
+          kind: "group",
+          label: "More",
+          hidden: false,
+          children: [file("menu", "menu-pdf", true), { ...book, id: "call" }],
+        },
+      ],
+    }) satisfies MenuDoc;
+
+    expect(menuFileLinks(menu)).toEqual(["price-list", "menu-pdf"]);
   });
 });

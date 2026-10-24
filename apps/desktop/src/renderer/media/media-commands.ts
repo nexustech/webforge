@@ -30,6 +30,9 @@ export type CropPreset = (typeof CROP_PRESETS)[number]["key"];
 
 const quoted = (name: string) => t("history.namedItem", { name });
 
+/** How undo labels name a Media item: its file name, in quotes ("'shop.jpg'"). */
+export const quotedFileName = (item: Pick<MediaMeta, "fileName">) => quoted(item.fileName);
+
 /**
  * Adds imported items to the site's Media as one undo step ("Added image 'shop.jpg'"). Each gets a
  * name no other item has, since exported files are named after it.
@@ -126,15 +129,19 @@ export function cropMedia(session: MediaSession, id: MediaId, preset: CropPreset
     return;
   }
   const crop = aspect === undefined ? undefined : cropForAspect(item, aspect);
-  session.edit("props", t("site.media.history.cropped"), (draft) => {
-    const image = draft.media[id];
-    if (image?.kind !== "image") return;
-    if (crop === undefined) {
-      delete image.crop;
-    } else {
-      image.crop = crop;
-    }
-  });
+  session.edit(
+    "props",
+    t("site.media.history.cropped", { name: quotedFileName(item) }),
+    (draft) => {
+      const image = draft.media[id];
+      if (image?.kind !== "image") return;
+      if (crop === undefined) {
+        delete image.crop;
+      } else {
+        image.crop = crop;
+      }
+    },
+  );
 }
 
 /** The preset an image's crop matches, if any. */
@@ -175,7 +182,7 @@ export function setFocalPoint(
         );
   session.edit(
     "props",
-    t("site.media.history.focal"),
+    t("site.media.history.focal", { name: quotedFileName(item) }),
     (draft) => {
       const image = draft.media[id];
       if (image?.kind !== "image") return;

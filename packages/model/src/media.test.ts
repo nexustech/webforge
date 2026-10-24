@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
+import type { MediaId } from "./ids.js";
 import {
   altTextFor,
   cropForAspect,
   type ImageMeta,
   imageValueSchema,
   isImageMeta,
+  type MediaMeta,
+  mediaItem,
   mediaMetaSchema,
   mediaNameFor,
   mediaNameSchema,
@@ -144,5 +147,18 @@ describe("cropForAspect", () => {
         expect(mediaMetaSchema.safeParse({ ...image, crop }).success).toBe(true);
       }
     }
+  });
+});
+
+describe("mediaItem (R10)", () => {
+  const media = { shop: image, menu: pdf } as unknown as Readonly<Record<MediaId, MediaMeta>>;
+
+  it("finds a site's own Media items by id, and nothing else", () => {
+    expect(mediaItem(media, "shop")).toBe(image);
+    expect(mediaItem(media, "menu")?.kind).toBe("file");
+    expect(mediaItem(media, "gone")).toBeUndefined();
+    // An id read from a page or a file is never one of the properties every object has.
+    expect(mediaItem(media, "constructor")).toBeUndefined();
+    expect(mediaItem(media, "__proto__")).toBeUndefined();
   });
 });

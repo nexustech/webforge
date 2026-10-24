@@ -15,12 +15,19 @@ import {
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import {
+  BUSINESS_NAME_MAX,
   type ImageMeta,
   isImageMeta,
+  MEASUREMENT_ID_MAX,
   type MediaId,
+  OPENING_HOURS_NOTE_MAX,
+  POSTAL_ADDRESS_MAX,
+  SITE_DESCRIPTION_MAX,
+  SITE_NAME_MAX,
   type SiteDoc,
   type SiteSettings,
   SOCIAL_NETWORKS,
+  X_HANDLE_MAX,
 } from "@webforge/model";
 import { PlusIcon, XIcon } from "lucide-react";
 import { type ReactNode, useState } from "react";
@@ -30,22 +37,11 @@ import {
   checkSettings,
   DAYS,
   FORM_SERVICES,
-  type FormServiceKind,
+  SECTIONS,
+  type Section,
   type SettingsForm,
   toSettingsForm,
 } from "./settings-form.js";
-
-/** The dialog's sections, in order (F-SET-1); each field's first path part names its section. */
-const SECTIONS = [
-  "general",
-  "address",
-  "social",
-  "contact",
-  "search",
-  "analytics",
-  "forms",
-] as const;
-type Section = (typeof SECTIONS)[number];
 
 /** Props of {@link SiteSettingsDialog}. */
 export type SiteSettingsDialogProps = {
@@ -123,7 +119,10 @@ function SiteSettingsForm({
         <DialogDescription>{t("site.settings.description")}</DialogDescription>
       </DialogHeader>
 
-      <Tabs value={section} onValueChange={(value) => setSection(value as Section)}>
+      <Tabs
+        value={section}
+        onValueChange={(value) => setSection(SECTIONS.find((name) => name === value) ?? section)}
+      >
         <TabsList
           aria-label={t("site.settings.sections")}
           // Seven sections wrap onto a second row in a narrow window; each row keeps the tabs' height.
@@ -147,7 +146,7 @@ function SiteSettingsForm({
                   id={id}
                   className={fieldControlClass}
                   value={form.name}
-                  maxLength={100}
+                  maxLength={SITE_NAME_MAX}
                   onChange={(event) => change({ name: event.currentTarget.value })}
                   {...invalid("general.name")}
                 />
@@ -164,7 +163,7 @@ function SiteSettingsForm({
                 id={id}
                 className={cn(fieldControlClass, "h-16 resize-none py-1")}
                 value={form.description}
-                maxLength={300}
+                maxLength={SITE_DESCRIPTION_MAX}
                 onChange={(event) => change({ description: event.currentTarget.value })}
                 {...invalid("general.description", hintId)}
               />
@@ -238,11 +237,11 @@ function SiteSettingsForm({
                       aria-label={t("site.settings.network")}
                       className={cn(fieldControlClass, "w-32")}
                       value={profile.network}
-                      onChange={(event) =>
-                        replace({
-                          network: event.currentTarget.value as (typeof SOCIAL_NETWORKS)[number],
-                        })
-                      }
+                      onChange={(event) => {
+                        const { value } = event.currentTarget;
+                        const network = SOCIAL_NETWORKS.find((name) => name === value);
+                        if (network !== undefined) replace({ network });
+                      }}
                     >
                       {SOCIAL_NETWORKS.map((network) => (
                         <option key={network} value={network}>
@@ -307,7 +306,7 @@ function SiteSettingsForm({
                   className={cn(fieldControlClass, "w-48")}
                   placeholder="@"
                   value={form.xHandle}
-                  maxLength={16}
+                  maxLength={X_HANDLE_MAX}
                   onChange={(event) => change({ xHandle: event.currentTarget.value })}
                   {...invalid("social.xHandle")}
                 />
@@ -322,7 +321,7 @@ function SiteSettingsForm({
             label={t("site.settings.businessName")}
             field="contact.businessName"
             value={form.businessName}
-            maxLength={200}
+            maxLength={BUSINESS_NAME_MAX}
             errors={errors}
             onChange={(businessName) => change({ businessName })}
           />
@@ -348,7 +347,7 @@ function SiteSettingsForm({
                 id={id}
                 className={cn(fieldControlClass, "h-16 resize-none py-1")}
                 value={form.address}
-                maxLength={500}
+                maxLength={POSTAL_ADDRESS_MAX}
                 onChange={(event) => change({ address: event.currentTarget.value })}
                 {...invalid("contact.address")}
               />
@@ -360,7 +359,7 @@ function SiteSettingsForm({
             hint={t("site.settings.openingHoursNoteHint")}
             field="contact.openingHoursNote"
             value={form.openingHoursNote}
-            maxLength={300}
+            maxLength={OPENING_HOURS_NOTE_MAX}
             errors={errors}
             onChange={(openingHoursNote) => change({ openingHoursNote })}
           />
@@ -385,7 +384,7 @@ function SiteSettingsForm({
             hint={t("site.settings.measurementIdHint")}
             field="analytics.measurementId"
             value={form.measurementId}
-            maxLength={14}
+            maxLength={MEASUREMENT_ID_MAX}
             errors={errors}
             onChange={(measurementId) => change({ measurementId })}
           />
@@ -404,12 +403,11 @@ function SiteSettingsForm({
                 className={cn(fieldControlClass, "w-48")}
                 value={form.formService}
                 aria-describedby={hintId}
-                onChange={(event) =>
-                  change({
-                    formService: event.currentTarget.value as FormServiceKind,
-                    formValue: "",
-                  })
-                }
+                onChange={(event) => {
+                  const { value } = event.currentTarget;
+                  const formService = FORM_SERVICES.find((service) => service === value);
+                  if (formService !== undefined) change({ formService, formValue: "" });
+                }}
               >
                 {FORM_SERVICES.map((service) => (
                   <option key={service} value={service}>

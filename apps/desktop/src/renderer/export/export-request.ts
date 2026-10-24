@@ -1,4 +1,10 @@
-import { expandSharedCopies, isImageMeta, type SiteDoc, siteToSnapshot } from "@webforge/model";
+import {
+  expandSharedCopies,
+  isImageMeta,
+  menuFileLinks,
+  type SiteDoc,
+  siteToSnapshot,
+} from "@webforge/model";
 import { type ComponentLibrary, documentsLinkedBy, mediaUsedBy } from "@webforge/site-components";
 import type { ExportRequest } from "../../shared/ipc/site.js";
 
@@ -20,13 +26,7 @@ export function exportRequestFor(site: SiteDoc, library: ComponentLibrary): Expo
   const used = mediaUsedBy(nodes, library);
   // Documents elements link to, and those the navigation menu links to.
   const linked = documentsLinkedBy(nodes, library);
-  for (const item of site.menu.items.flatMap((entry) =>
-    entry.kind === "group" ? entry.children : [entry],
-  )) {
-    if ((item.kind === "link" || item.kind === "button") && item.link.kind === "file") {
-      linked.add(item.link.mediaId);
-    }
-  }
+  for (const id of menuFileLinks(site.menu)) linked.add(id);
   return {
     snapshot: siteToSnapshot(site, new Map()),
     media: Object.values(site.media)

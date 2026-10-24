@@ -1,5 +1,6 @@
 import { Button, cn, fieldControlClass, ScrollArea } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
+import { LAYER_NAME_MAX } from "@webforge/model";
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -693,7 +694,7 @@ function RenameField({
       placeholder={layer.kind}
       // biome-ignore lint/a11y/noAutofocus: renaming starts by typing the name.
       autoFocus
-      maxLength={100}
+      maxLength={LAYER_NAME_MAX}
       value={value}
       className={cn(fieldControlClass, "h-5 flex-1 px-1 text-xs")}
       onFocus={(event) => event.currentTarget.select()}

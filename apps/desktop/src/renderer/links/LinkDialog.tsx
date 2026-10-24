@@ -12,7 +12,14 @@ import {
   ToggleGroupItem,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
-import { type LinkValue, linkValueSchema, type PageId, type SiteDoc } from "@webforge/model";
+import {
+  EMAIL_SUBJECT_MAX,
+  type LinkValue,
+  linkValueSchema,
+  MENU_LABEL_MAX,
+  type PageId,
+  type SiteDoc,
+} from "@webforge/model";
 import { type ReactNode, useId, useState } from "react";
 import type { LinkFieldChange } from "./link-change.js";
 import { type PageTarget, sectionAnchor } from "./link-targets.js";
@@ -197,7 +204,7 @@ function LinkForm({
               id={id}
               className={fieldControlClass}
               value={labelText}
-              maxLength={100}
+              maxLength={MENU_LABEL_MAX}
               onChange={(event) => {
                 setLabelText(event.currentTarget.value);
                 setLabelTouched(true);
@@ -233,7 +240,8 @@ function LinkForm({
                 className={fieldControlClass}
                 value={pageId ?? ""}
                 onChange={(event) => {
-                  setPageId(event.currentTarget.value as PageId);
+                  const { value } = event.currentTarget;
+                  setPageId(targets.find((target) => target.id === value)?.id);
                   setSection("");
                 }}
               >
@@ -284,7 +292,7 @@ function LinkForm({
                 id={id}
                 className={fieldControlClass}
                 value={subject}
-                maxLength={200}
+                maxLength={EMAIL_SUBJECT_MAX}
                 onChange={(event) => setSubject(event.currentTarget.value)}
               />
             )}
