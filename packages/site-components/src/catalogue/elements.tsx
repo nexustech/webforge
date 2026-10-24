@@ -13,6 +13,7 @@ import {
   type ColumnLayout,
   ColumnsLayoutContext,
   imageSizes,
+  MAX_COLUMNS,
 } from "./column-layouts.js";
 
 const ALIGNMENTS = ["left", "centre", "right"] as const;
@@ -238,7 +239,7 @@ const columns = defineComponent({
   label: t("element.columns"),
   category: t("category.layout"),
   fields: {
-    columns: { kind: "slot", label: t("field.columns"), allow: ["Column"] },
+    columns: { kind: "slot", label: t("field.columns"), allow: ["Column"], max: MAX_COLUMNS },
     layout: {
       kind: "select",
       label: t("field.columnLayout"),
