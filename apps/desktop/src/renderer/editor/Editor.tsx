@@ -69,6 +69,7 @@ import { registerElementCommands } from "./element-commands.js";
 import { connectFieldDrags } from "./field-drag.js";
 import { fieldTarget } from "./field-target.js";
 import { headingToolbar } from "./HeadingToolbar.js";
+import { listToolbar } from "./ListToolbar.js";
 import { SharedRegionBanner } from "./SharedRegionBanner.js";
 import { confirmSharedRemovals, sharedCutConfirmation } from "./shared-confirmations.js";
 import { shownLayout } from "./shared-layout.js";
@@ -572,11 +573,15 @@ export function Editor({
   }, [panels, session, mode, engine, siteWide, preferences, registry, previews]);
   useEffect(() => registerMediaPanel(panels, session), [panels, session]);
   // The selected element's own toolbar, in the row under the canvas toolbar (SP-4).
-  useEffect(
-    () =>
-      toolbars.register(headingToolbar({ session, flush: () => connectionRef.current?.flush() })),
-    [toolbars, session],
-  );
+  useEffect(() => {
+    const flush = () => connectionRef.current?.flush();
+    const removeHeading = toolbars.register(headingToolbar({ session, flush }));
+    const removeList = toolbars.register(listToolbar({ session, flush }));
+    return () => {
+      removeHeading();
+      removeList();
+    };
+  }, [toolbars, session]);
 
   return (
     <div className="editor">

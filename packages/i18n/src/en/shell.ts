@@ -153,6 +153,13 @@ export const shell = {
   "headingToolbar.title": "Title",
   "headingToolbar.heading": "Heading",
   "headingToolbar.subheading": "Subheading",
+  "listToolbar.addItem": "Add item",
+  "listToolbar.before": "Before",
+  "listToolbar.after": "After",
+  "listToolbar.end": "At the end",
+  "listToolbar.beforeName": "Add item before",
+  "listToolbar.afterName": "Add item after",
+  "listToolbar.endName": "Add item at the end",
   // The canvas frame's edges, dragged to set its width (1.33, F-ED-25).
   "canvasResize.left": "Canvas width, left edge",
   "canvasResize.right": "Canvas width, right edge",
