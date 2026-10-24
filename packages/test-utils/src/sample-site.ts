@@ -20,7 +20,8 @@ export function priceList(): Uint8Array {
 }
 
 /**
- * A small two-page site: Header and Footer, a home page with a Hero (with photo), text and an FAQ,
+ * A small two-page site: Header and Footer, a home page with a Hero (with photo), text, a Carousel
+ * of customers' quotes (2.10) and an FAQ,
  * and an About page linking to a price list (a document). Its menu has both pages, a "Visit us"
  * dropdown (a link to the FAQ section and a web address in a new tab) and an "Order a cake"
  * button. Used by pipeline tests and the export E2E tests.
@@ -81,6 +82,40 @@ export function sampleSite(): SiteSnapshot {
                     props: {
                       id: "intro-text",
                       text: '<p>We have baked in Hightown since 1998.</p><p>Find us on <a href="https://example.com/map">the map</a>.</p>',
+                    },
+                  },
+                  {
+                    // Customers' quotes, playing by themselves every 5 seconds (2.10).
+                    type: "Carousel",
+                    props: {
+                      id: "quotes",
+                      label: "What customers say",
+                      variant: "testimonials",
+                      autoplay: true,
+                      interval: "5",
+                      slides: [
+                        {
+                          type: "CarouselSlide",
+                          props: {
+                            id: "quote-sam",
+                            text: "The best sourdough in Hightown.",
+                            name: "Sam",
+                            image: { mediaId: "hero-photo", alt: "" },
+                          },
+                        },
+                        {
+                          type: "CarouselSlide",
+                          props: {
+                            id: "quote-ana",
+                            text: "Our wedding cake was perfect.",
+                            name: "Ana",
+                          },
+                        },
+                        {
+                          type: "CarouselSlide",
+                          props: { id: "quote-lee", text: "Worth the queue.", name: "Lee" },
+                        },
+                      ],
                     },
                   },
                   {

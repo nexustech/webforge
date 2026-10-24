@@ -41,7 +41,7 @@ describe("runExport", () => {
       ...site,
       pages: [{ ...site.pages[1], path: "index" } as (typeof site.pages)[number]],
       media: [],
-      layout: { header: [{ type: "Carousel", props: { id: "c" } }], footer: [] },
+      layout: { header: [{ type: "NoSuchComponent", props: { id: "c" } }], footer: [] },
     };
 
     const outcome = await runExport(await job(broken, destination), loadNodeResources);
