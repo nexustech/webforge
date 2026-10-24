@@ -4,6 +4,8 @@ import {
   findBrokenLinks,
   type MediaId,
   newId,
+  PAGE_DESCRIPTION_MAX,
+  PAGE_TITLE_MAX,
   type PageEntry,
   type PageId,
   type SiteDoc,
@@ -24,11 +26,8 @@ import type { EditKind, EditorSelection, EditorSession } from "../editor/editor-
 /** The parts of an editor session the actions use. */
 export type PagesSession = Pick<EditorSession, "history" | "ui" | "edit">;
 
-/** The longest page title `pageEntrySchema` accepts. */
-const MAX_TITLE_LENGTH = 200;
-
 /** A name as a page title: trimmed, and short enough to save. */
-const titleOf = (name: string) => name.trim().slice(0, MAX_TITLE_LENGTH).trim();
+const titleOf = (name: string) => name.trim().slice(0, PAGE_TITLE_MAX).trim();
 
 /** "page 'About'", for the history's "Added {item}" labels. */
 const pageItem = (name: string) => t("pages.item", { name });
@@ -369,9 +368,6 @@ export type PageSettingsChange = {
   readonly hideFromNavigation: boolean;
 };
 
-/** The longest description `pageEntrySchema` accepts. */
-const MAX_DESCRIPTION_LENGTH = 300;
-
 /**
  * Applies Page Settings as one undo step, "Changed page settings", or nothing when nothing
  * changed. An empty title keeps the old one; "Page not found" stays out of navigation.
@@ -392,7 +388,7 @@ export function changePageSettings(
     change.slug.trim() === "" || slugify(change.slug) === page.slug
       ? page.slug
       : slugFor(site, change.slug, page.folder, pageId);
-  const description = change.description.trim().slice(0, MAX_DESCRIPTION_LENGTH);
+  const description = change.description.trim().slice(0, PAGE_DESCRIPTION_MAX);
   const shareImage =
     change.shareImage !== undefined && site.media[change.shareImage]?.kind === "image"
       ? change.shareImage

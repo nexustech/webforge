@@ -3,10 +3,9 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
-import { changedDocuments, createSite, type PageId, type SiteDoc } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
-import { countNodes, largePage } from "@webforge/test-utils";
 import { placeCaret } from "./caret.js";
+import { largeSiteEdits } from "./large-site.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
 import type { RendererWindow } from "./sites.js";
 
@@ -14,17 +13,6 @@ import type { RendererWindow } from "./sites.js";
 // window closes, so a crash loses at most the last few seconds.
 
 const STARTER_HEADING = "Welcome to our business";
-
-/**
- * How long committing one changed page of a large site may take: 50 ms (architecture §10, ADR
- * 0003), checked as it is on the developer's computer and on Linux CI. GitHub's shared Windows and
- * macOS runners have slow, uneven disks, and each commit waits for an fsync: there the same code
- * took a median of 22–58 ms from run to run, so they get twice the budget. That still catches a
- * real slowdown, which takes many times longer, without failing on a busy runner.
- */
-// `CI` is "true" on GitHub's runners; an empty or "false" value isn't CI.
-const onCi = process.env.CI !== undefined && !["", "0", "false"].includes(process.env.CI);
-const COMMIT_BUDGET_MS = onCi && process.platform !== "linux" ? 100 : 50;
 
 let dir: string;
 let sitePath: string;
@@ -149,57 +137,35 @@ test.describe("autosave", () => {
     await expect(saveStatus(page)).toHaveText("Saved", { timeout: 1_500 });
   });
 
-  test("commits one changed page of a 225-node site within its time budget", async () => {
-    // Measured from the renderer: IPC, the main process's check of the whole site, and the
-    // SQLite transaction with fsync (budget from architecture §10, ADR 0003).
-    const doc = largePage();
-    expect(countNodes(doc)).toBeGreaterThanOrEqual(225);
-    const base = createSite({
-      name: "Large",
-      language: "en",
-      homeTitle: "Home",
-      notFoundTitle: "Page not found",
-      homeDoc: doc,
-    });
-    const edits: SiteDoc[] = Array.from({ length: 7 }, (_, index) => {
-      const home = base.pages[base.homePageId];
-      if (home === undefined) throw new Error("no home page");
-      return {
-        ...base,
-        pages: { ...base.pages, [base.homePageId as PageId]: { ...home, title: `Home ${index}` } },
-      };
-    });
-    const changeLists = edits.map((site, index) =>
-      changedDocuments(index === 0 ? base : edits[index - 1], site),
-    );
+  test("commits one changed page of a 225-node site at a time, each one saved", async () => {
+    // How long such a commit takes is measured by `pnpm e2e:perf` (perf/commit.perf.ts, ADR 0007),
+    // not here: on a shared runner, the first commits after the site opens wait for the renderer
+    // drawing the page and the canvas CSS compiling, up to 480 ms against a few ms after (#338).
+    const { site, changeLists, lastTitle } = largeSiteEdits(7);
+    expect(changeLists.map((list) => list.length)).toEqual(changeLists.map(() => 1));
     const store = ProjectStore.open(sitePath);
-    store.saveSite(base);
+    store.saveSite(site);
     store.close();
     const page = await openSite();
     await expect(saveStatus(page)).toHaveText("Saved");
 
-    const durations = await page.evaluate(
+    const statuses = await page.evaluate(
       async ({ changes }) => {
         const { project } = (window as unknown as RendererWindow).webforge;
         const sessionId = (await project.getCurrent())?.sessionId ?? "";
-        const times: number[] = [];
+        const results: string[] = [];
         for (const list of changes) {
-          const start = performance.now();
-          const result = await project.commit(sessionId, list);
-          times.push(performance.now() - start);
-          if ((result as { status: string }).status !== "saved") throw new Error("not saved");
+          results.push(((await project.commit(sessionId, list)) as { status: string }).status);
         }
-        return times;
+        return results;
       },
       { changes: changeLists },
     );
+    expect(statuses).toEqual(changeLists.map(() => "saved"));
 
-    const sorted = [...durations].sort((a, b) => a - b);
-    const median = sorted[Math.floor(sorted.length / 2)] ?? Number.POSITIVE_INFINITY;
-    console.log(
-      `Commit of one 225-node page: median ${median.toFixed(1)} ms (budget ${COMMIT_BUDGET_MS} ms)`,
-      durations,
-    );
-    expect(median).toBeLessThan(COMMIT_BUDGET_MS);
+    await closeWindow();
+    const saved = ProjectStore.open(sitePath, { readOnly: true });
+    expect(saved.readSite().pages[site.homePageId]?.title).toBe(lastTitle);
+    saved.close();
   });
 });

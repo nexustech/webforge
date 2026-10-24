@@ -71,9 +71,9 @@ export const site = {
   "site.media.history.replacedFile": "Replaced file {name}",
   "site.media.history.deletedImage": "Deleted image {name}",
   "site.media.history.deletedFile": "Deleted file {name}",
-  "site.media.history.cropped": "Cropped image",
-  "site.media.history.focal": "Changed focal point",
-  "site.media.history.alt": "Edited alt text",
+  "site.media.history.cropped": "Cropped image {name}",
+  "site.media.history.focal": "Changed focal point of {name}",
+  "site.media.history.alt": "Edited alt text of {name}",
   "site.media.rejected.notText":
     "{name} isn't plain text, so it wasn't added. It may be another kind of file renamed.",
   "site.media.rejected.unsupported":
@@ -141,6 +141,7 @@ export const site = {
   "site.settings.save": "Save",
   "site.settings.cancel": "Cancel",
   "site.settings.history": "Changed Site Settings",
+  "site.settings.historySections": "Changed Site Settings: {sections}",
   "site.settings.fixErrors": "Some values need fixing before they can be saved.",
   "site.settings.section.general": "General",
   "site.settings.section.address": "Web address",

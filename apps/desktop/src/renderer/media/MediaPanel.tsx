@@ -32,6 +32,7 @@ import {
   cropMedia,
   cropPresetOf,
   deleteMedia,
+  quotedFileName,
   replaceMedia,
   setFocalPoint,
 } from "./media-commands.js";
@@ -322,7 +323,11 @@ type ImageDetailsProps = {
 /** An image's focal point, size, alt text and crop. */
 function ImageDetails({ image, session, imageUrl }: ImageDetailsProps) {
   const ids = { alt: useId(), altHint: useId(), focalHint: useId(), crop: useId() };
-  const alt = useGesture(session, "props", t("site.media.history.alt"));
+  const alt = useGesture(
+    session,
+    "props",
+    t("site.media.history.alt", { name: quotedFileName(image) }),
+  );
   const focal = image.focal ?? { x: 0.5, y: 0.5 };
   const focalText = t("site.media.focalValue", {
     x: Math.round(focal.x * 100),

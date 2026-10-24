@@ -19,6 +19,7 @@ Item 0.4 measures editing a page with 200+ elements against architecture §10 ("
   - long tasks (> 50 ms) on the main thread;
   - canvas DOM change + next frame after clicking Undo/Redo or a step in the Undo History panel;
   - memory from `performance.memory` and `app.getAppMetrics()`.
+  - since #338 (24 Oct 2026), the commit of one changed page of a site with this page, against architecture §10's 50 ms (`e2e/perf/commit.perf.ts`). It was a `pnpm e2e` check until then, but on shared runners the first commits after the site opens wait for the page being drawn and the canvas CSS compiling.
 - **Machine:** Windows 11, Intel Core i7-8750H (2018, 6 cores / 12 threads), 16 GB. That's mid-range today, roughly the "mid-range laptop" of §10. Four runs; the ranges are across runs.
 
 ## Results

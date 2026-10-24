@@ -4,6 +4,7 @@ import {
   isNodeDoc,
   isSharedCopy,
   linkValueSchema,
+  menuFileLinks,
   type NodeDoc,
   richTextFileLinks,
   type SiteDoc,
@@ -47,12 +48,7 @@ function usedSiteWide(site: SiteDoc): Set<string> {
   const { shareImage } = site.settings.social;
   if (icon !== undefined) used.add(icon);
   if (shareImage !== undefined) used.add(shareImage);
-  const items = site.menu.items.flatMap((item) => (item.kind === "group" ? item.children : [item]));
-  for (const item of items) {
-    if ((item.kind === "link" || item.kind === "button") && item.link.kind === "file") {
-      used.add(item.link.mediaId);
-    }
-  }
+  for (const id of menuFileLinks(site.menu)) used.add(id);
   return used;
 }
 
