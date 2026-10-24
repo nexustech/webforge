@@ -1,5 +1,5 @@
 import type { CanvasEngine } from "@webforge/engine";
-import { type MediaId, pagePath, type SiteDoc } from "@webforge/model";
+import { mediaItem, pagePath, type SiteDoc } from "@webforge/model";
 // The export's own navigation, through a subpath that must stay free of Node imports, as it runs
 // in the renderer (the pipeline-navigation-no-node rule in .dependency-cruiser.mjs checks it).
 import { type NavigationPage, navigationFor } from "@webforge/pipeline/navigation";
@@ -51,8 +51,7 @@ export function connectCanvasNavigation(
     const page = pages.find((candidate) => candidate.id === session.ui.getState().pageId);
     if (page === undefined) return;
     // A link to a document shows while the document is in Media; its address is inert here.
-    const inMedia = (id: string) =>
-      Object.hasOwn(site.media, id) && site.media[id as MediaId]?.kind === "file" ? id : undefined;
+    const inMedia = (id: string) => (mediaItem(site.media, id)?.kind === "file" ? id : undefined);
     const items = navigationFor({ pages, menu: site.menu }, page, "", () => undefined, inMedia).map(
       (item): NavItem =>
         "children" in item ? { ...item, children: item.children.map(inert) } : inert(item),

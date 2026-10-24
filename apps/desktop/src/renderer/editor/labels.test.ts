@@ -1,8 +1,20 @@
 import type { EngineEdit, EngineEditKind } from "@webforge/engine";
-import type { PageDoc } from "@webforge/model";
+import {
+  type NodeDoc,
+  type PageDoc,
+  SHARED_COPY_TYPE,
+  type SharedSectionId,
+  type SharedSectionsDoc,
+} from "@webforge/model";
 import { siteLibrary, starterPage } from "@webforge/site-components";
 import { describe, expect, it } from "vitest";
-import { labelFor } from "./labels.js";
+import {
+  elementKind,
+  elementName,
+  givenElementName,
+  labelFor,
+  quotedElementName,
+} from "./labels.js";
 
 const edit = (kind: EngineEdit["kind"], extra: Partial<EngineEdit> = {}): EngineEdit => ({
   kind,
@@ -128,5 +140,47 @@ describe("labelFor", () => {
     for (const label of labels) expect(label).not.toBe("");
     // Only the safety net for unexplained changes uses the generic label.
     expect(labels.filter((label) => label === "Edited page")).toEqual(["Edited page"]);
+  });
+});
+
+describe("element names (R10: one definition for every list, label and message)", () => {
+  const hours = "hours" as SharedSectionId;
+  const shared: SharedSectionsDoc = {
+    [hours]: {
+      id: hours,
+      name: "Opening hours",
+      section: { type: "Section", props: { id: "s", content: [] } },
+    },
+  };
+  const heading: NodeDoc = { type: "Heading", props: { id: "h", text: "Hi" } };
+  const named: NodeDoc = { type: "Heading", props: { id: "h", text: "Hi", layerName: " Hours " } };
+  const copy: NodeDoc = {
+    type: SHARED_COPY_TYPE,
+    props: { id: "c", sharedSectionId: hours },
+  };
+
+  it("names an element by the name given in Layers, trimmed, else by what it is", () => {
+    expect(elementName(named, siteLibrary)).toBe("Hours");
+    expect(quotedElementName(named, siteLibrary)).toBe("'Hours'");
+    expect(elementName(heading, siteLibrary)).toBe("Heading");
+    expect(quotedElementName(heading, siteLibrary)).toBe("Heading");
+    expect(givenElementName({ ...heading, props: { ...heading.props, layerName: "  " } })).toBe(
+      undefined,
+    );
+  });
+
+  it("labels a canvas edit to an unnamed linked copy by its shared section's name (#333 review)", () => {
+    const page: PageDoc = { root: { props: {} }, content: [copy] };
+    const moved = edit("move", { nodeId: "c", componentType: "Section", page });
+    expect(labelFor(moved, siteLibrary, undefined, shared)).toBe("Moved 'Opening hours'");
+    // Without the site's shared sections, all there is to go on is what it is.
+    expect(labelFor(moved, siteLibrary)).toBe("Moved Section");
+  });
+
+  it("names a linked copy by its own name, else its shared section's, as a Section (F-ED-23)", () => {
+    expect(elementKind(copy, siteLibrary, shared)).toBe("Section");
+    expect(quotedElementName(copy, siteLibrary, shared)).toBe("'Opening hours'");
+    const renamed = { ...copy, props: { ...copy.props, layerName: "Hours on Sunday" } };
+    expect(elementName(renamed, siteLibrary, shared)).toBe("Hours on Sunday");
   });
 });

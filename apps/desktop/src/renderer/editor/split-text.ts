@@ -1,7 +1,8 @@
 import type { TextSplit } from "@webforge/engine";
 import { t } from "@webforge/i18n";
 import { pageAnchors, pastedCopies } from "@webforge/model";
-import { type LayersSession, layerItem, placeOf } from "../layers/layers.js";
+import { type LayersSession, placeOf } from "../layers/layers.js";
+import { quotedElementName } from "./labels.js";
 import { shownLayout } from "./shared-layout.js";
 
 /**
@@ -43,9 +44,7 @@ export function splitText(
     ...copy,
     props: { ...copy.props, ...Object.fromEntries(otherTexts), [split.field]: split.after },
   };
-  const kind = session.library.components[node.type]?.label ?? node.type;
-  const name = node.props.layerName;
-  const item = layerItem({ kind, name: typeof name === "string" ? name : undefined });
+  const item = quotedElementName(node, session.library);
   session.edit(
     "insert",
     t("history.splitText", { item }),

@@ -13,7 +13,13 @@ import {
   ScrollArea,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
-import type { PageEntry, PageId, SiteDoc } from "@webforge/model";
+import {
+  PAGE_FOLDER_MAX,
+  PAGE_TITLE_MAX,
+  type PageEntry,
+  type PageId,
+  type SiteDoc,
+} from "@webforge/model";
 import {
   EllipsisIcon,
   EyeOffIcon,
@@ -196,6 +202,7 @@ export function PagesPanel({ site, shownPageId, actions }: PagesPanelProps) {
         open={open && dialog?.kind === "add"}
         title={t("pages.addDialog.title")}
         label={t("pages.nameLabel")}
+        maxLength={PAGE_TITLE_MAX}
         initialValue={t("pages.newPageName")}
         confirm={t("pages.addDialog.confirm")}
         describe={(name) => t("pages.fileName", { path: fileNameFor(site, name, undefined) })}
@@ -209,6 +216,7 @@ export function PagesPanel({ site, shownPageId, actions }: PagesPanelProps) {
         open={open && dialog?.kind === "rename" && dialogPage !== undefined}
         title={t("pages.renameDialog.title")}
         label={t("pages.nameLabel")}
+        maxLength={PAGE_TITLE_MAX}
         initialValue={dialogPage?.title ?? ""}
         confirm={t("pages.renameDialog.confirm")}
         describe={(name) =>
@@ -229,6 +237,7 @@ export function PagesPanel({ site, shownPageId, actions }: PagesPanelProps) {
         title={t("pages.folderDialog.title")}
         description={t("pages.folderDialog.description", { name: dialogPage?.title ?? "" })}
         label={t("pages.folderLabel")}
+        maxLength={PAGE_FOLDER_MAX}
         initialValue=""
         confirm={t("pages.folderDialog.confirm")}
         describe={(name) =>

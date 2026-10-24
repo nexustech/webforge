@@ -1,13 +1,11 @@
 import type { CanvasEngine } from "@webforge/engine";
 import { t } from "@webforge/i18n";
+import { LAYER_NAME_MAX } from "@webforge/model";
 import { useEffect, useRef, useState } from "react";
 import type { EditorSession } from "../editor/editor-session.js";
 import { type Layer, layerItem, renameLayer, shownLayer } from "../layers/layers.js";
 import { NameDialog } from "../site/NameDialog.js";
 import { ElementMenu, type MenuPoint } from "./ElementMenu.js";
-
-/** The longest layer name; as Layers' own name field. */
-const MAX_NAME_LENGTH = 100;
 
 /** The selected element's layer on the shown page, if it is one (not the Header or Footer). */
 function selectedLayer(session: EditorSession): Layer | undefined {
@@ -79,7 +77,7 @@ export function CanvasElementMenu({
         })}
         label={t("layers.nameField", { item: renaming?.kind ?? "" })}
         initialValue={renaming?.name ?? ""}
-        maxLength={MAX_NAME_LENGTH}
+        maxLength={LAYER_NAME_MAX}
         confirm={t("layers.rename")}
         onSubmit={(name) => {
           if (renaming !== null) renameLayer(session, renaming.id, name);

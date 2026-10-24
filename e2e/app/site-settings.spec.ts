@@ -48,7 +48,9 @@ test("edits Site Settings from the File menu, fixing what Save points at, as one
   await expect(dialog).toHaveCount(0);
 
   await page.getByRole("tab", { name: "Undo History" }).click();
-  await expect(page.locator(".undo-history__step").first()).toHaveText("Changed Site Settings");
+  await expect(page.locator(".undo-history__step").first()).toHaveText(
+    "Changed Site Settings: General, Contact & hours",
+  );
   await expect(status).toHaveText("Saved", { timeout: 10_000 });
 
   await app.close();
