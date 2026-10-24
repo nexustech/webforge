@@ -293,6 +293,9 @@ describe("Editor", () => {
 
   it("runs the canvas's shortcuts pressed inside the canvas iframe", async () => {
     const frame = document.createElement("iframe");
+    // A document of its own: happy-dom 21 loads no iframe page by default, and an iframe without
+    // a page has no window; a srcdoc document always gets one.
+    frame.srcdoc = "<!doctype html><body></body>";
     document.body.append(frame);
     const frameWindow = frame.contentWindow;
     if (frameWindow === null) throw new Error("no iframe window");
