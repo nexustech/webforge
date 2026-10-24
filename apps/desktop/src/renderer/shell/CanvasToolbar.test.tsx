@@ -1,17 +1,20 @@
 // @vitest-environment happy-dom
-import { act, cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { CanvasSize } from "@webforge/engine";
 import type { PageId } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { type CanvasPreferences, DEFAULT_PREFERENCES } from "../../shared/ipc/prefs.js";
-import { createEditorSession } from "../editor/editor-session.js";
+import { createEditorSession, currentPage, type EditorSession } from "../editor/editor-session.js";
+import { HEADING_LEVELS, headingToolbar } from "../editor/HeadingToolbar.js";
 import { starterSite } from "../editor/starter-site.js";
 import { CanvasToolbar } from "./CanvasToolbar.js";
 import { CanvasToolbarHost } from "./CanvasToolbarHost.js";
 import { viewportFor, widthOf } from "./canvas-size.js";
 import { type CanvasZoom, connectCanvasView, createCanvasView } from "./canvas-view.js";
+import { ContextualToolbarsProvider } from "./contextual-toolbar-context.js";
+import { type ContextualToolbarRegistry, createContextualToolbars } from "./contextual-toolbars.js";
 import { openedDialog } from "./opened-dialog.test-helper.js";
 import { createPreferencesStore } from "./preferences-store.js";
 
@@ -301,13 +304,25 @@ describe("View menu and devices (F-ED-25)", () => {
   });
 });
 
+/** The canvas toolbar on `session`, with the contextual toolbars `toolbars` has. */
+function host(
+  session: EditorSession,
+  view = createCanvasView(),
+  toolbars: ContextualToolbarRegistry = createContextualToolbars(),
+) {
+  render(
+    <ContextualToolbarsProvider registry={toolbars}>
+      <CanvasToolbarHost session={session} view={view} preferences={createPreferencesStore()} />
+    </ContextualToolbarsProvider>,
+  );
+  return toolbars;
+}
+
 describe("CanvasToolbarHost", () => {
   it("changes the view and the page without an undo step (U6)", async () => {
     const session = createEditorSession(siteLibrary, starterSite());
     const view = createCanvasView();
-    render(
-      <CanvasToolbarHost session={session} view={view} preferences={createPreferencesStore()} />,
-    );
+    host(session, view);
 
     await userEvent.click(screen.getByRole("radio", { name: "Tablet" }));
     await userEvent.selectOptions(
@@ -324,5 +339,111 @@ describe("CanvasToolbarHost", () => {
     act(() => view.setState({ size: { width: 768, height: 1000, zoom: 0.5 } }));
     expect(screen.getByText("768 × 1000 @ 50%")).toBeTruthy();
     expect(session.history.entries()).toEqual([]);
+  });
+
+  it("keeps the row under it, empty, while the selection has no toolbar (SP-4)", () => {
+    host(createEditorSession(siteLibrary, starterSite()));
+    const row = screen.getByRole("toolbar", { name: "Selected element" });
+    expect(row.childElementCount).toBe(0);
+  });
+
+  it("shows the selected element's own toolbar in the row under it, if its type has one (SP-4)", () => {
+    const session = createEditorSession(siteLibrary, starterSite());
+    const toolbars = host(session);
+    act(() => {
+      toolbars.register({
+        id: "text",
+        types: ["Text"],
+        component: ({ nodeId }) => <p>Toolbar for {nodeId}</p>,
+      });
+    });
+
+    expect(screen.queryByText(/Toolbar for/)).toBeNull();
+    act(() => session.select("text-1"));
+    expect(screen.getByText("Toolbar for text-1")).toBeTruthy();
+    // A Heading has no toolbar here.
+    act(() => session.select("heading-1"));
+    expect(screen.queryByText(/Toolbar for/)).toBeNull();
+  });
+});
+
+describe("Heading level toolbar (SP-4)", () => {
+  function setUpHeading() {
+    const session = createEditorSession(siteLibrary, starterSite());
+    const flush = vi.fn();
+    const toolbars = createContextualToolbars();
+    toolbars.register(headingToolbar({ session, flush }));
+    host(session, createCanvasView(), toolbars);
+    act(() => session.select("heading-1"));
+    // The starter page's Heading, in its first Section.
+    const size = () => {
+      const section = currentPage(session)?.doc.content[0];
+      const elements = section?.props.content as { props: { size?: unknown } }[] | undefined;
+      return elements?.[0]?.props.size;
+    };
+    return { session, flush, size };
+  }
+
+  it("is next in the Tab order after the canvas toolbar, in the row under it", async () => {
+    setUpHeading();
+    const row = screen.getByRole("toolbar", { name: "Selected element" });
+    const toolbar = screen.getByRole("toolbar", { name: "Canvas" });
+    const controls = toolbar.querySelectorAll<HTMLElement>("button, select, input");
+    controls[controls.length - 1]?.focus();
+
+    await userEvent.tab();
+
+    // The Heading's own level, the one chosen.
+    expect(document.activeElement).toBe(within(row).getByRole("radio", { name: "Title" }));
+  });
+
+  it("shows no Heading level in Content mode, which locks the design (R9)", () => {
+    const session = createEditorSession(siteLibrary, starterSite());
+    const toolbars = createContextualToolbars();
+    toolbars.register(headingToolbar({ session, flush: vi.fn() }));
+    const preferences = createPreferencesStore();
+    preferences.changeMode("content");
+    render(
+      <ContextualToolbarsProvider registry={toolbars}>
+        <CanvasToolbarHost session={session} view={createCanvasView()} preferences={preferences} />
+      </ContextualToolbarsProvider>,
+    );
+    act(() => session.select("heading-1"));
+
+    expect(screen.getByRole("toolbar", { name: "Selected element" }).childElementCount).toBe(0);
+    act(() => preferences.changeMode("design"));
+    expect(screen.getByRole("radiogroup", { name: "Heading level" })).toBeTruthy();
+  });
+
+  it("offers a Heading's sizes as its levels", () => {
+    const sizes = siteLibrary.components.Heading?.fields.size;
+    expect(sizes?.kind === "select" ? sizes.options.map((option) => option.value) : []).toEqual(
+      HEADING_LEVELS.map((level) => level.value),
+    );
+  });
+
+  it("sets the selected Heading's level as one undo step, named as the Edit panel names it", async () => {
+    const { session, flush, size } = setUpHeading();
+    const checked = (name: string) =>
+      screen.getByRole("radio", { name }).getAttribute("aria-checked") === "true";
+    // The starter page's Heading is its title.
+    expect(screen.getByRole("radiogroup", { name: "Heading level" })).toBeTruthy();
+    expect(checked("Title")).toBe(true);
+
+    await userEvent.click(screen.getByRole("radio", { name: "Subheading" }));
+
+    expect(flush).toHaveBeenCalled();
+    expect(size()).toBe("small");
+    expect(session.history.entries().map((entry) => entry.label)).toEqual(["Changed Heading size"]);
+    expect(checked("Subheading")).toBe(true);
+
+    // The level it has already: nothing to change.
+    await userEvent.click(screen.getByRole("radio", { name: "Subheading" }));
+    expect(session.history.entries()).toHaveLength(1);
+
+    act(() => {
+      session.history.undo();
+    });
+    expect(checked("Title")).toBe(true);
   });
 });
