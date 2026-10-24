@@ -666,7 +666,7 @@ Shared files are split in 2.5 so that streams add files instead of editing the s
 - PH2-1: not written up on the issues; to be recorded by the product owner.
 - PH2-2: template photos are CC0 or public domain only, with Claude drafting the copy for the product owner's review (Q6).
 - PH2-3: the Newsletter section posts to a generic form action; no provider presets in the MVP (Q4).
-- PH2-4: social icons use Simple Icons (CC0-1.0); every other icon uses Lucide (`lucide-static`, ISC). CC0 needs a reviewed entry in `tools/src/check-licences.ts`; the logos themselves are trademarks, so the Social links help text points to each brand's guidelines.
+- PH2-4: social icons use Simple Icons (CC0-1.0); every other icon uses Lucide (`lucide-static`, ISC). CC0 needs a reviewed entry in `tools/src/check-licences.ts`; the logos themselves are trademarks, so the Social links help text points to each brand's guidelines. The icon picker names Lucide's icons by Lucide's own English names and tags, as data like font names rather than UI strings (`packages/i18n/README.md`).
 - PH2-5: Theme Studio is a large in-app dialog, not a separate window.
 - PH2-6: the theme model keeps daisyUI's colour roles; the UI names them Brand (primary), Accent (secondary, accent), Surface (base) and Text (base-content).
 - PH2-7: the type scale is H1–H6, body and small, plus link styles; the theme model also has a shadow scale.
