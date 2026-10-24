@@ -345,6 +345,7 @@ export function EditPanelHost({
         group: fieldGroupOf(field),
         value: responsive ? valueAt(stored, breakpoint) : stored,
         ...(field.optionGroup === undefined ? {} : { optionGroup: field.optionGroup }),
+        ...(field.help === undefined ? {} : { help: field.help }),
         ...(responsive && breakpoint !== "desktop" ? { responsive: true } : {}),
         ...(differsFromDefault(stored, storedOr(name, undefined), responsive, breakpoint)
           ? { changed: true }
