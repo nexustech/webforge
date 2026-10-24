@@ -105,13 +105,13 @@ describe("the Columns toolbar (2.17, SP-4)", () => {
     const { session, columns, labels } = setUp();
     act(() => session.select("right"));
 
-    await userEvent.click(button("Remove column"));
+    await userEvent.click(button("Remove last column"));
 
     expect(columns().map((each) => each.props.id)).toEqual(["left"]);
     expect(labels()).toEqual(["Deleted Column"]);
     // The column selected went: the Columns is selected instead.
     expect(session.ui.getState().nodeId).toBe("columns");
-    expect(button("Remove column")).toHaveProperty("disabled", true);
+    expect(button("Remove last column")).toHaveProperty("disabled", true);
   });
 
   it("adds columns up to four, and offers the widths that fit how many there are", async () => {
