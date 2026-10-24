@@ -96,6 +96,7 @@ export const canvas = {
   "bulk.shared":
     "Elements of the shared Header or Footer, or of a shared section, are changed one at a time.",
   "bulk.first": "{item} is already first: nothing moved.",
+  "bulk.full": "There's no room for another there: a Columns holds at most four columns.",
   "bulk.last": "{item} is already last: nothing moved.",
   "editPanel.noFields": "Nothing to change here",
   // The Edit panel's search field (UX-13): the fields whose name has the text are shown.

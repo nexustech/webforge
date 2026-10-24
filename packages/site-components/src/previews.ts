@@ -6,11 +6,14 @@
 export type EditPreviews = {
   /** The Header's small-screen menu, shown open (*Show mobile menu*, in the Mobile view). */
   readonly mobileMenu?: boolean;
+  /** Each Column's edges outlined, to see where columns go (*Show column outlines*, 2.17). */
+  readonly columnOutlines?: boolean;
 };
 
 /** Whether each preview is on in a set of previews: a new preview fails to compile until it's here. */
 const IS_ON: { readonly [name in keyof EditPreviews]-?: (previews: EditPreviews) => boolean } = {
   mobileMenu: (previews) => previews.mobileMenu === true,
+  columnOutlines: (previews) => previews.columnOutlines === true,
 };
 
 /** Whether `a` and `b` show the same previews (one left out is off). */

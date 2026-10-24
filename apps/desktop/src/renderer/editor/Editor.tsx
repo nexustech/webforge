@@ -55,6 +55,7 @@ import { connectCanvasSettings } from "../site-settings/canvas-settings.js";
 import { CanvasBreadcrumbs } from "./CanvasBreadcrumbs.js";
 import { CanvasResizeHandles } from "./CanvasResizeHandles.js";
 import { colourFieldRenderer } from "./ColourField.js";
+import { columnsToolbar } from "./ColumnsToolbar.js";
 import { type BulkCanvasAction, registerCanvasCommands } from "./canvas-commands.js";
 import { EditPanelHost, type EditPanelHostProps } from "./EditPanelHost.js";
 import { canvasPreviews, createPreviewStore } from "./edit-previews.js";
@@ -308,6 +309,8 @@ export function Editor({
 
     const engine = createEngine();
     const site = history.document.getState();
+    // Before mounting, so the canvas is drawn with them once, not drawn again for them.
+    engine.setPreviews(canvasPreviews(editPreviews.getState(), session.ui.getState().viewport));
     engine.mount(element, {
       library: session.library,
       theme: site.theme,
@@ -438,7 +441,17 @@ export function Editor({
       engine.destroy();
       element.remove();
     };
-  }, [session, history, createEngine, compileCss, reportError, registry, siteWide, preferences]);
+  }, [
+    session,
+    history,
+    createEngine,
+    compileCss,
+    reportError,
+    registry,
+    siteWide,
+    preferences,
+    editPreviews,
+  ]);
 
   // The View menu's options (F-ED-25): view state, never an undo step (U6).
   useEffect(() => {
@@ -604,6 +617,17 @@ export function Editor({
   }, [toolbars, session]);
   useEffect(
     () => toolbars.register(headerToolbar({ session, previews: editPreviews })),
+    [toolbars, session, editPreviews],
+  );
+  useEffect(
+    () =>
+      toolbars.register(
+        columnsToolbar({
+          session,
+          flush: () => connectionRef.current?.flush(),
+          previews: editPreviews,
+        }),
+      ),
     [toolbars, session, editPreviews],
   );
 

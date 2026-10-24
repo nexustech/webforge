@@ -95,6 +95,22 @@ describe("siteToSnapshot", () => {
     });
   });
 
+  it("passes the back-to-top button on: the site's, and a page that leaves it out (2.9)", () => {
+    const withButton = bakery();
+    withButton.settings.general.backToTop = true;
+    const page = withButton.pages["cakes" as PageId];
+    if (page === undefined) throw new Error("no page");
+    page.settings.hideBackToTop = true;
+
+    const shown = siteToSnapshot(withButton, new Map([[HASH, bytes]]));
+
+    expect(shown.backToTop).toBe(true);
+    expect(shown.pages[1]?.hideBackToTop).toBe(true);
+    expect(shown.pages[0]?.hideBackToTop).toBeUndefined();
+    // A site from before it has neither.
+    expect(snapshot.backToTop).toBeUndefined();
+  });
+
   it("falls back to the site description and keeps the 'Page not found' page out of navigation", () => {
     expect(snapshot.pages[0]?.description).toBe("Fresh bread in Hightown");
     expect(snapshot.pages[2]?.hideFromNavigation).toBe(true);

@@ -51,6 +51,8 @@ export type SitePage = {
   readonly hideHeader?: boolean | undefined;
   /** Rendered without the shared Footer. */
   readonly hideFooter?: boolean | undefined;
+  /** Rendered without the site's back-to-top button (F-CM-9, 2.9). */
+  readonly hideBackToTop?: boolean | undefined;
   readonly doc: PageDoc;
 };
 
@@ -104,6 +106,8 @@ export type SiteSnapshot = {
   readonly openingHours?: readonly OpeningHours[] | undefined;
   /** Where Site Settings send form submissions (F-CM-1), for the Contact form (2.8). */
   readonly formService?: FormService | undefined;
+  /** Site Settings' back-to-top button (F-CM-9, 2.9), on pages that don't hide it. */
+  readonly backToTop?: boolean | undefined;
   /**
    * The navigation menu (F-ED-17), which the Header renders. Without one, the navigation lists the
    * pages in order.
@@ -120,6 +124,7 @@ const sitePageSchema = z.object({
   hideFromNavigation: z.boolean().optional(),
   hideHeader: z.boolean().optional(),
   hideFooter: z.boolean().optional(),
+  hideBackToTop: z.boolean().optional(),
   doc: pageDocSchema,
 });
 
@@ -157,6 +162,7 @@ export const siteSnapshotSchema: z.ZodType<SiteSnapshot> = withoutUnsafeKeys(
       settings: z.partialRecord(bindableSettingSchema, z.string()).optional(),
       openingHours: z.array(openingHoursSchema).optional(),
       formService: formServiceSchema.optional(),
+      backToTop: z.boolean().optional(),
       menu: menuDocSchema.optional(),
     })
     .superRefine((site, ctx) => {

@@ -1,5 +1,6 @@
 import { ActionBar, createUsePuck, useGetPuck } from "@puckeditor/core";
 import { t } from "@webforge/i18n";
+import { PREVIEW_ATTRIBUTE } from "@webforge/site-components";
 import { ArrowDownIcon, ArrowUpIcon, EyeIcon, EyeOffIcon, PencilIcon } from "lucide-react";
 import { type ReactNode, useLayoutEffect, useRef, useState } from "react";
 import type { FieldDrag, InsertPoint } from "../canvas-engine.js";
@@ -59,6 +60,11 @@ const CHROME_CSS = `
 /* An element outlined from outside the canvas (a breadcrumb under the pointer): as on hover. */
 [${OUTLINED_ATTRIBUTE}] {
   outline: calc(1px / var(--wf-zoom, 1)) solid var(--wf-outline-color);
+  outline-offset: calc(-1px / var(--wf-zoom, 1));
+}
+/* *Show column outlines* (2.17): each Column's edges, dashed and lighter than a selection. */
+[${PREVIEW_ATTRIBUTE}="column-outline"] {
+  outline: calc(1px / var(--wf-zoom, 1)) dashed color-mix(in srgb, var(--wf-outline-color) 55%, transparent);
   outline-offset: calc(-1px / var(--wf-zoom, 1));
 }
 /* A hidden element (Layers' Hide): dimmed, still there to select and show again. */
