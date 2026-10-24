@@ -17,7 +17,7 @@ import {
   type SiteDoc,
   SPACING_TOKENS,
 } from "@webforge/model";
-import type { ComponentLibrary, FieldDef } from "@webforge/site-components";
+import { type ComponentLibrary, type FieldDef, isIconName } from "@webforge/site-components";
 import { useEffect, useRef } from "react";
 import { applyAnchor, asLinkFieldChange } from "../links/link-change.js";
 import { anchorsTakenInSection } from "../shared-sections/shared-sections.js";
@@ -95,6 +95,9 @@ function specOf(field: FieldDef): FieldSpec | undefined {
     // Where a link goes (1.19): see LinkField.
     case "link":
       return { kind: "link", label };
+    // One of Lucide's icons (F-ED-22): see IconField.
+    case "icon":
+      return { kind: "icon", label };
     case "list":
     case "richtext":
     case "slot":
@@ -150,6 +153,9 @@ function accepts(field: FieldDef, value: unknown): boolean {
     // A link, or none, and maybe the anchor a section needs for it (LinkFieldChange).
     case "link":
       return asLinkFieldChange(value) !== undefined;
+    // One of Lucide's icons, or none to take it away.
+    case "icon":
+      return value === undefined || isIconName(value);
     case "box":
       return boxValueSchema.safeParse(value).success;
     // A colour ref (ADR 0009), or the element's own colour.
