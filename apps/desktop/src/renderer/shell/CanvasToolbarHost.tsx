@@ -2,12 +2,12 @@ import type { Viewport } from "@webforge/engine";
 import { useSyncExternalStore } from "react";
 import type { CanvasPreferences } from "../../shared/ipc/prefs.js";
 import type { EditorSession } from "../editor/editor-session.js";
-import { pageListOf, useDocument, useUi } from "../editor/use-document.js";
+import { pageListOf, samePages, useDocument, useUi } from "../editor/use-document.js";
 import { CanvasToolbar } from "./CanvasToolbar.js";
 import type { CanvasView } from "./canvas-view.js";
 
 /** The page list as the toolbar shows it, kept while only page content changes. */
-const usePageList = (session: EditorSession) => useDocument(session, pageListOf);
+const usePageList = (session: EditorSession) => useDocument(session, pageListOf, samePages);
 
 /**
  * The canvas toolbar on an editor session: it shows the session's page and view, and changes them
