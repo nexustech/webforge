@@ -2,6 +2,7 @@ import type { MediaId, MediaMeta } from "@webforge/model";
 import { describe, expect, it, vi } from "vitest";
 import { MAX_MEDIA_BYTES } from "../../shared/ipc/media.js";
 import type { MediaImportResult } from "../../shared/ipc-contract.js";
+import { setFailureLog } from "../log.js";
 import { type DroppedFileLike, importDroppedFiles, importItems } from "./import-media.js";
 
 const prices: MediaMeta = {
@@ -130,5 +131,17 @@ describe("importItems", () => {
       ["This site is read-only, so nothing can be added to it."],
       ["Webforge couldn't add the files."],
     ]);
+  });
+
+  it("logs an import that failed by the error's code (R12)", async () => {
+    const failures = vi.fn(async () => null);
+    setFailureLog(failures);
+
+    await importItems(async () => {
+      throw new TypeError("Cannot read '/home/ana/photo.jpg'");
+    }, vi.fn());
+
+    expect(failures).toHaveBeenCalledExactlyOnceWith("media.import", "TypeError");
+    setFailureLog(undefined);
   });
 });

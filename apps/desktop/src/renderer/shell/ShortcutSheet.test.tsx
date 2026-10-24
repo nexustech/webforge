@@ -23,7 +23,14 @@ describe("shortcutSheet", () => {
   it("lists the registered commands' keys by group, then the keys handled elsewhere", () => {
     const sheet = shortcutSheet(registryWith(false).list(), false);
 
-    expect(sheet.map(({ group }) => group)).toEqual(["site", "edit", "view", "text", "layers"]);
+    expect(sheet.map(({ group }) => group)).toEqual([
+      "site",
+      "edit",
+      "view",
+      "text",
+      "layers",
+      "editPanel",
+    ]);
     expect(sheet.find(({ group }) => group === "edit")?.rows.slice(0, 2)).toEqual([
       { label: "Undo", keys: ["Ctrl+Z"] },
       { label: "Delete", keys: ["Delete", "Ctrl+Backspace"] },
@@ -79,7 +86,7 @@ describe("ShortcutSheet", () => {
       within(sheet)
         .getAllByRole("heading", { level: 3 })
         .map((heading) => heading.textContent),
-    ).toEqual(["Site", "Editing", "View", "While editing text", "In Layers"]);
+    ).toEqual(["Site", "Editing", "View", "While editing text", "In Layers", "In the Edit panel"]);
     // The sheet lists its own key too.
     const view = within(sheet).getByRole("region", { name: "View" });
     expect(within(view).getByText("Keyboard Shortcuts").nextSibling?.textContent).toBe("?");

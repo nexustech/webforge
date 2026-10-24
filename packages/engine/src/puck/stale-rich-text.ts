@@ -1,5 +1,6 @@
 import type { NodeDoc, PageDoc } from "@webforge/model";
 import type { ComponentLibrary } from "@webforge/site-components";
+import { COMPONENT, COMPONENT_ATTRIBUTE, RICH_TEXT } from "./puck-dom.js";
 import { allNodes } from "./tree.js";
 
 /**
@@ -30,7 +31,7 @@ export function staleRichText(
 
 /** The focused rich-text editor in `frameDocument`: Tiptap keeps it on its element. */
 function focusedEditor(frameDocument: Document | null): { getHTML(): string } | null {
-  const element = frameDocument?.activeElement?.closest(".ProseMirror") as {
+  const element = frameDocument?.activeElement?.closest(RICH_TEXT) as {
     readonly editor?: { getHTML?: unknown };
   } | null;
   const editor = element?.editor;
@@ -71,8 +72,8 @@ export function richTextArrived(
 /** The id of the node whose rich-text editor has the focus in `frameDocument`, if any. */
 export function focusedRichTextId(frameDocument: Document | null): string | null {
   const active = frameDocument?.activeElement;
-  if (active?.closest(".ProseMirror") == null) {
+  if (active?.closest(RICH_TEXT) == null) {
     return null;
   }
-  return active.closest("[data-puck-component]")?.getAttribute("data-puck-component") ?? null;
+  return active.closest(COMPONENT)?.getAttribute(COMPONENT_ATTRIBUTE) ?? null;
 }

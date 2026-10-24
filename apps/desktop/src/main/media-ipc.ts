@@ -4,6 +4,7 @@ import type { IpcMain } from "electron";
 import { MAX_MEDIA_BYTES, MAX_MEDIA_FILES } from "../shared/ipc/media.js";
 import type { MediaImportResult } from "../shared/ipc-contract.js";
 import { registerIpcHandler } from "./ipc.js";
+import { logFailure } from "./log.js";
 import { createMediaImport, type ImportFile, importMediaFiles } from "./media-import.js";
 import type { ProjectSession } from "./project-session.js";
 
@@ -118,8 +119,7 @@ export async function importFilesAt(
     }
     return running.result();
   } catch (error) {
-    const code = error instanceof Error && "code" in error ? String(error.code) : "no code";
-    console.error(`Webforge could not read a chosen file (${code})`);
+    logFailure("Webforge could not read a chosen file", error);
     return { status: "failed", reason: "unknown" };
   }
 }

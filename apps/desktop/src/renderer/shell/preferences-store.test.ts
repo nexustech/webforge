@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_PREFERENCES } from "../../shared/ipc/prefs.js";
+import { setFailureLog } from "../log.js";
 import { createPreferencesStore } from "./preferences-store.js";
 
 afterEach(() => {
@@ -44,24 +45,26 @@ describe("createPreferencesStore (R9)", () => {
     expect(save).toHaveBeenCalledExactlyOnceWith("content");
   });
 
-  it("keeps a change it could not save, and says so in the console only", async () => {
-    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+  it("keeps a change it could not save, and logs only the failure's code (R12)", async () => {
+    const failures = vi.fn(async () => null);
+    setFailureLog(failures);
     const store = createPreferencesStore(
       {},
       {
         preferences: async () => Promise.reject(new Error("disk full")),
-        mode: async () => Promise.reject(new Error("gone")),
+        mode: async () => Promise.reject(new TypeError("gone")),
       },
     );
 
     store.change({ theme: "dark" });
     store.changeMode("content");
-    await vi.waitFor(() => expect(error).toHaveBeenCalledTimes(2));
+    await vi.waitFor(() => expect(failures).toHaveBeenCalledTimes(2));
 
     expect(store.getState()).toMatchObject({ preferences: { theme: "dark" }, mode: "content" });
-    expect(error.mock.calls.map(([message]) => message)).toEqual([
-      "Webforge could not save the preferences",
-      "Webforge could not remember the editor mode",
+    expect(failures.mock.calls).toEqual([
+      ["preferences.save", "Error"],
+      ["editor-mode.save", "TypeError"],
     ]);
+    setFailureLog(undefined);
   });
 });

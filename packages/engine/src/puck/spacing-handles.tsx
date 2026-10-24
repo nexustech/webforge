@@ -13,6 +13,7 @@ import {
 import { boxTokenPixels, type ComponentLibrary } from "@webforge/site-components";
 import { type PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from "react";
 import type { FieldDrag } from "../canvas-engine.js";
+import { componentSelector } from "./puck-dom.js";
 
 /** A `box` field of a component, as its handles need it. */
 export type BoxHandleField = {
@@ -47,7 +48,7 @@ export const SPACING_HANDLES_CSS = `
   padding: 0;
   border: calc(1px / var(--wf-zoom, 1)) solid #fff;
   border-radius: calc(3px / var(--wf-zoom, 1));
-  background: #f028f3;
+  background: var(--wf-outline-color);
   pointer-events: auto;
   touch-action: none;
 }
@@ -169,9 +170,7 @@ export function SpacingHandles({ nodeId, fields, props, onFieldDrag }: SpacingHa
     const grip = event.currentTarget;
     const frame = grip.ownerDocument.defaultView;
     // Puck wraps each element in a `div` of its own: the element is its child.
-    const element = grip.ownerDocument.querySelector(
-      `[data-puck-component="${CSS.escape(nodeId)}"]`,
-    )?.firstElementChild;
+    const element = grip.ownerDocument.querySelector(componentSelector(nodeId))?.firstElementChild;
     if (!frame || element === null || element === undefined) {
       return;
     }

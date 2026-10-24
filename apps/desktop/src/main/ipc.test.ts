@@ -41,7 +41,9 @@ describe("registerIpcHandler", () => {
 
     const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
     await expect(invoke("app:get-info", "https://example.com/")).rejects.toThrow(IPC_FAILED);
-    expect(log).toHaveBeenCalledWith('Webforge refused IPC call "app:get-info" (untrusted frame)');
+    expect(log).toHaveBeenCalledWith(
+      "Webforge refused an IPC call from an untrusted frame (channel=app:get-info)",
+    );
     log.mockRestore();
     expect(impl).not.toHaveBeenCalled();
   });
@@ -56,7 +58,9 @@ describe("registerIpcHandler", () => {
       (error: unknown) => error,
     );
     expect((failure as Error).message).toBe(IPC_FAILED);
-    expect(log).toHaveBeenCalledWith('Webforge refused IPC call "app:get-info" (invalid request)');
+    expect(log).toHaveBeenCalledWith(
+      "Webforge refused an invalid IPC request (channel=app:get-info)",
+    );
     expect(JSON.stringify(log.mock.calls)).not.toContain("/home/rosa");
     log.mockRestore();
   });
@@ -93,7 +97,7 @@ describe("registerIpcHandler's failures (R4, #237)", () => {
     expect((failure as Error).message).toBe(IPC_FAILED);
     expect(String(failure)).not.toContain(PATH);
     expect(log).toHaveBeenCalledExactlyOnceWith(
-      'Webforge IPC call "app:get-info" failed (Error EACCES)',
+      "Webforge IPC call failed (channel=app:get-info, code=Error EACCES)",
     );
     expect(JSON.stringify(log.mock.calls)).not.toContain(PATH);
     log.mockRestore();
@@ -131,7 +135,9 @@ describe("registerIpcHandler's failures (R4, #237)", () => {
     });
 
     await expect(invoke("app:get-info", "http://localhost:5173/")).rejects.toThrow(IPC_FAILED);
-    expect(log).toHaveBeenCalledWith('Webforge IPC call "app:get-info" failed (string)');
+    expect(log).toHaveBeenCalledWith(
+      "Webforge IPC call failed (channel=app:get-info, code=string)",
+    );
     log.mockRestore();
   });
 });

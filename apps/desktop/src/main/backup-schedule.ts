@@ -1,5 +1,6 @@
 import type { ProjectStore } from "@webforge/storage";
 import type { Backups } from "./backups.js";
+import { logFailure } from "./log.js";
 
 /** How often an edited site is backed up again (1.7: every 30 min while editing). */
 const INTERVAL_MS = 30 * 60 * 1_000;
@@ -35,8 +36,7 @@ export function createBackupSchedule(
     } catch (error) {
       // A backup that fails (disk full, site closed meanwhile) never disturbs editing. Only the
       // error's code is logged: never paths or content.
-      const code = error instanceof Error && "code" in error ? String(error.code) : "no code";
-      console.error(`Webforge could not back up the site (${code})`);
+      logFailure("Webforge could not back up the site", error);
     }
   };
 

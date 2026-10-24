@@ -31,6 +31,12 @@ export type FieldOption = { readonly label: string; readonly value: string };
 export type FieldDef = {
   readonly group?: "content" | "style";
   readonly responsive?: boolean;
+  /**
+   * The option group the Edit panel shows it in (UX-13), by its kind if not given. Fields of one
+   * group are reset and opened together. `id` is what the person's closed groups are remembered by,
+   * so it stays the same in every language ("typography"); `label` is translated ("Typography").
+   */
+  readonly optionGroup?: { readonly id: string; readonly label: string };
 } & (
   | {
       readonly kind: "text";

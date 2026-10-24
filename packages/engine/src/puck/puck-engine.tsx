@@ -2,7 +2,6 @@ import {
   type AppState,
   type Config,
   createUsePuck,
-  type Data,
   type Overrides,
   Puck,
   type PuckAction,
@@ -10,97 +9,74 @@ import {
 } from "@puckeditor/core";
 // Puck's default stylesheet loads the Inter font from rsms.me; Webforge makes no external requests.
 import "@puckeditor/core/no-external.css";
-import { t } from "@webforge/i18n";
-import {
-  copiedNodeId,
-  expandSharedCopies,
-  type LayoutDoc,
-  type NodeDoc,
-  newSharedCopy,
-  type PageDoc,
-  pageAnchors,
-  pastedCopies,
-  SHARED_COPY_TYPE,
-  type SharedCopyNode,
-  type SharedSectionsDoc,
+import type {
+  LayoutDoc,
+  NodeDoc,
+  PageDoc,
+  SharedCopyNode,
+  SharedSectionsDoc,
 } from "@webforge/model";
 import {
   type ComponentLibrary,
   EDITOR_RENDER_CONTEXT,
   type RenderContext,
-  renderPage,
 } from "@webforge/site-components";
-import {
-  type ComponentProps,
-  type ComponentType,
-  type ReactNode,
-  useEffect,
-  useSyncExternalStore,
-} from "react";
+import { type ComponentType, type ReactNode, useEffect } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import type {
   CanvasContextMenu,
   CanvasEngine,
-  CanvasSize,
   EditorMode,
   ElementRequest,
   EngineEdit,
   FieldDrag,
   HistoryCommandHandler,
   InsertPoint,
-  LinkPicker,
-  RichTextAt,
   TextSplit,
   ViewOptions,
-  Viewport,
 } from "../canvas-engine.js";
 import { installHistoryKeys } from "../history-keys.js";
-import { installMenuKeys } from "../menu-keys.js";
+import { createActionBar } from "./action-bar.js";
+import { listenInEditor, listenInFrame } from "./canvas-listeners.js";
+import { createCanvasSync } from "./canvas-sync.js";
+import { createCanvasView } from "./canvas-view.js";
 import { preserveCaret, refocusRichText } from "./caret.js";
-import {
-  applyChromeStyles,
-  createSelectionOutline,
-  type ElementActions,
-  OUTLINED_ATTRIBUTE,
-  QuickActionBar,
-} from "./chrome.js";
+import { applyChromeStyles, createSelectionOutline, outlineElement } from "./chrome.js";
 import { toPuckConfig } from "./config.js";
-import { installContextMenu } from "./context-menu.js";
+import { copyDrop, planCopyDrop } from "./copy-drop.js";
 import { deferredCommands } from "./deferred-commands.js";
-import { hidePuckDeleteKeys } from "./delete-keys.js";
 import { puckDictionary } from "./dictionary.js";
-import {
-  copyIndex,
-  type DragKeys,
-  type Drop,
-  insertedAt,
-  takeDragKeys,
-  trackDragKeys,
-} from "./drag-copies.js";
+import type { DragKeys, Drop } from "./drag-copies.js";
 import { createDragSources } from "./drag-sources.js";
 import { editFromAction, selectedNodeId, toPageDoc } from "./edit-from-action.js";
+import { remountStale } from "./editor-revisions.js";
+import { elementNames } from "./element-names.js";
 import { keepElementsEnabled } from "./enabled-elements.js";
+import {
+  CONTENT_MODE_PERMISSIONS,
+  DESIGN_MODE_PERMISSIONS,
+  EMPTY_PAGE,
+  emitter,
+  flushRichText,
+  memoByDocs,
+  NO_VIEW_OPTIONS,
+  NoBoundary,
+  puckViewports,
+  RICH_TEXT_FLUSH_TIMEOUT_MS,
+  toPuckData,
+} from "./engine-support.js";
 import { hidePuckLayout } from "./layout-styles.js";
 import { pageActions, type SlotsOf } from "./page-actions.js";
-import { createFormatToolbar } from "./rich-text.js";
-import { performOnSelected } from "./selected-actions.js";
+import { CANVAS_ROOT } from "./puck-dom.js";
+import { createRichTextTools } from "./rich-text-tools.js";
+import { type CanvasDocs, type RoutedEdit, routeEdit, routeLinkedCopy } from "./route-edit.js";
+import { performOnCanvas } from "./selected-actions.js";
 import { showAlsoSelected, watchAddingClicks } from "./selection-clicks.js";
-import { copiesOn, copyShownBy, foldCopies, shownInCopy } from "./shared-copies.js";
-import {
-  composePage,
-  EMPTY_LAYOUT,
-  isShared,
-  isSharedRegion,
-  sameNodes,
-  sameOrder,
-  splitPage,
-} from "./shared-layout.js";
+import { composePage, EMPTY_LAYOUT, sameOrder } from "./shared-layout.js";
 import { applySiteStyles, type SiteStyles } from "./site-styles.js";
 import { boxHandleFields } from "./spacing-handles.js";
-import { focusedRichTextId, richTextArrived, staleRichText } from "./stale-rich-text.js";
-import { startTextEditing } from "./text-editing.js";
-import { createTextKeys, type PickLink } from "./text-keys.js";
-import { allNodes, findNode, nodeAt, ROOT_ZONE } from "./tree.js";
+import { focusedRichTextId, richTextArrived } from "./stale-rich-text.js";
+import { findNode } from "./tree.js";
 import { applyViewOptions } from "./view-options.js";
 
 /** Options of {@link createPuckEngine}. */
@@ -109,101 +85,9 @@ export type PuckEngineOptions = {
   readonly iframe?: boolean;
 };
 
-/**
- * Asks the focused rich-text editor to send the change Puck still holds back (it sends after a
- * short debounce), through our Puck patch. True if there was one: its edit is then on its way.
- */
-function flushRichText(puck: ReturnType<GetPuck>): boolean {
-  const flush = (puck as { readonly __private?: { readonly flushRichText?: () => boolean } })
-    .__private?.flushRichText;
-  return flush?.() === true;
-}
-
-/** How long Undo or Redo waits at most for a rich-text change it asked Puck to send. */
-const RICH_TEXT_FLUSH_TIMEOUT_MS = 500;
-
-/** Puck's canvas zoom (`zoomConfig`), which its public API leaves out. */
-type ZoomConfig = { readonly zoom: number; readonly autoZoom: number; readonly rootHeight: number };
-
-/** What our Puck patch adds to Puck's API object: its canvas zoom. */
-type ZoomAccess = {
-  readonly getZoomConfig: () => ZoomConfig;
-  readonly setZoomConfig: (zoomConfig: ZoomConfig) => void;
-};
-
-/**
- * The canvas zoom in Puck's store, reached through our Puck patch (see `pnpm-workspace.yaml`), or
- * undefined if the patch is missing, e.g. after a Puck upgrade: zooming then does nothing.
- */
-function zoomAccess(puck: ReturnType<GetPuck>): ZoomAccess | undefined {
-  const internal = (puck as { readonly __private?: Partial<ZoomAccess> }).__private;
-  const get = internal?.getZoomConfig;
-  const set = internal?.setZoomConfig;
-  return get === undefined || set === undefined
-    ? undefined
-    : { getZoomConfig: get, setZoomConfig: set };
-}
-
-const VIEWPORT_WIDTHS = { desktop: 1280, tablet: 768, mobile: 375 } as const;
-
-/** A canvas width as the app names it: a device view, or a custom width. */
-function viewportOf(width: number): Viewport {
-  const named = (Object.keys(VIEWPORT_WIDTHS) as (keyof typeof VIEWPORT_WIDTHS)[]).find(
-    (name) => VIEWPORT_WIDTHS[name] === width,
-  );
-  return named ?? width;
-}
-
-/** The device views Puck's canvas controls offer: Desktop · Tablet · Mobile (until 1.15). */
-const puckViewports = () => [
-  { width: VIEWPORT_WIDTHS.mobile, label: t("device.mobile"), icon: "Smartphone" as const },
-  { width: VIEWPORT_WIDTHS.tablet, label: t("device.tablet"), icon: "Tablet" as const },
-  { width: VIEWPORT_WIDTHS.desktop, label: t("device.desktop"), icon: "Monitor" as const },
-];
-
-/** Content mode: text stays editable, the layout is locked (M3). */
-const CONTENT_MODE_PERMISSIONS = { drag: false, duplicate: false, delete: false, insert: false };
-/**
- * Design mode: everything. Always passed, never left out: Puck merges the permissions it is given
- * into those it has, so leaving them out after Content mode would keep the layout locked.
- */
-const DESIGN_MODE_PERMISSIONS = { drag: true, duplicate: true, delete: true, insert: true };
-
 type GetPuck = ReturnType<typeof useGetPuck>;
 
-/** The View options before the app sets any: nothing shown besides the page. */
-const NO_VIEW_OPTIONS: ViewOptions = {
-  outlines: false,
-  spacingOnHover: false,
-  elementNames: false,
-  extraBottomSpace: false,
-};
-
 const usePuck = createUsePuck();
-
-const EMPTY_PAGE: PageDoc = { root: { props: {} }, content: [] };
-
-function toPuckData(page: PageDoc): Data {
-  // PageDoc is the same tree as Puck's Data (see toPageDoc); only the TypeScript types differ.
-  return page as unknown as Data;
-}
-
-type Emitter<T> = { add(listener: (value: T) => void): () => void; emit(value: T): void };
-
-function emitter<T>(): Emitter<T> {
-  const listeners = new Set<(value: T) => void>();
-  return {
-    add(listener) {
-      listeners.add(listener);
-      return () => {
-        listeners.delete(listener);
-      };
-    },
-    emit(value) {
-      for (const listener of listeners) listener(value);
-    },
-  };
-}
 
 /**
  * The Puck implementation of {@link CanvasEngine}.
@@ -215,11 +99,6 @@ function emitter<T>(): Emitter<T> {
  * - Puck's header (with its Undo/Redo buttons) is replaced, and its Ctrl/Cmd+Z hotkeys never fire
  *   because {@link installHistoryKeys} takes those keys first, in the host and in the iframe.
  */
-/** The canvas without an error boundary: see `MountOptions.errorBoundary`. */
-function NoBoundary({ children }: { readonly children: ReactNode }) {
-  return children;
-}
-
 export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine {
   let root: Root | null = null;
   /** What wraps the canvas (`MountOptions.errorBoundary`); nothing until one is given. */
@@ -238,54 +117,25 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   let layout: LayoutDoc = EMPTY_LAYOUT;
   /** The shared sections the page's linked copies show (F-ED-23). */
   let shared: SharedSectionsDoc = {};
-  /** Bumped whenever the app gives the engine a different page. */
-  let revision = 0;
-  /** The revision Puck shows; behind `revision` while the app's page hasn't reached Puck yet. */
-  let shownRevision = 0;
+  /** Which page Puck shows, and whose change is under way (see `canvas-sync.ts`). */
+  const sync = createCanvasSync();
   let selection: string | null = null;
   let mode: EditorMode = "design";
-  /** True while Puck runs `onAction`, inside its store update: dispatching then would be lost. */
-  let inAction = false;
-  /** True while Webforge itself dispatches to Puck. */
-  let applying = false;
-  /** True while listeners handle an edit: its echo through `applyChange` needs no comparison. */
-  let reporting = false;
   /** The canvas iframe's document, once Puck has created it. */
   let frameDocument: Document | null = null;
   /** Stops keeping the canvas's elements enabled; set in Content mode (see `keepElementsEnabled`). */
   let stopKeepingEnabled: (() => void) | null = null;
-  /** Stops hiding Delete and Backspace from Puck in the editor window (see `delete-keys.ts`). */
-  let stopHidingHostKeys: (() => void) | null = null;
-  /** Stops following the keys held in the editor window during a drag (see `drag-copies.ts`). */
-  let stopTrackingHostKeys: (() => void) | null = null;
-  /** Stops watching clicks that add to the selection in the editor window (iframe-less canvas). */
-  let stopHostClicks: (() => void) | null = null;
+  /** Stops listening in the editor window (see `listenInEditor`). */
+  let stopEditorListeners: (() => void) | null = null;
   const followMode = () => {
     stopKeepingEnabled?.();
     stopKeepingEnabled =
       mode === "content" && frameDocument !== null ? keepElementsEnabled(frameDocument) : null;
   };
   /** The names the View menu's labels show, by id, for the page shown: made once per change. */
-  let names: {
-    readonly page: PageDoc;
-    readonly layout: LayoutDoc;
-    readonly shared: SharedSectionsDoc;
-    readonly byId: ReadonlyMap<string, string>;
-  } | null = null;
+  const names = memoByDocs((docs: CanvasDocs) => elementNames(docs, library));
   /** An element's name for the labels: its Layers name, else its component's. */
-  const nameOf = (id: string): string | undefined => {
-    if (names?.page !== page || names.layout !== layout || names.shared !== shared) {
-      const nodes = allNodes(composePage(page, layout, shared));
-      const byId = new Map(
-        nodes.map((node) => [
-          node.props.id,
-          node.props.layerName?.trim() || (library?.components[node.type]?.label ?? node.type),
-        ]),
-      );
-      names = { page, layout, shared, byId };
-    }
-    return names.byId.get(id);
-  };
+  const nameOf = (id: string) => names({ page, layout, shared }).get(id);
   /** The View menu's options (F-ED-25), shown in the canvas document while there is one. */
   let viewOptions: ViewOptions = NO_VIEW_OPTIONS;
   let stopViewOptions: (() => void) | null = null;
@@ -298,12 +148,6 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   let siteStyles: SiteStyles | null = null;
   /** What the canvas renders with: no navigation or links, and the site's Media images. */
   let renderContext: RenderContext = EDITOR_RENDER_CONTEXT;
-  /** The canvas width Puck shows, or is about to show. */
-  let viewportWidth: number = VIEWPORT_WIDTHS.desktop;
-  /** A width the app gave Puck that Puck doesn't show yet: until it does, no width is reported. */
-  let pendingWidth: number | null = null;
-  /** The size and zoom last reported. */
-  let canvasSize: CanvasSize | null = null;
   /** Per node, bumped to remount its rich-text editors (see toPuckConfig). */
   const editorRevisions = new Map<string, number>();
 
@@ -335,8 +179,6 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
         addingClick = id;
       }
     });
-  const canvasSizes = emitter<CanvasSize>();
-  const viewports = emitter<Viewport>();
   const commandHandlers = new Set<HistoryCommandHandler>();
   /** True if any handler did something with the command (see installHistoryKeys). */
   const runHandlers: HistoryCommandHandler = (command) => {
@@ -362,18 +204,16 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     if (getPuck === null) {
       return; // Not ready yet: the Bridge sends the current page once it is.
     }
-    if (inAction) {
+    if (sync.inAction()) {
       queueMicrotask(() => dispatch(action));
       return;
     }
     const puck = getPuck;
-    applying = true;
-    try {
-      puck().dispatch(action);
-    } finally {
-      applying = false;
-    }
+    sync.apply(() => puck().dispatch(action));
   };
+
+  /** The canvas's width, zoom and size (see `canvas-view.ts`). */
+  const view = createCanvasView(() => getPuck?.() ?? null, dispatch);
 
   /** Sends `page` to Puck, unless Puck isn't ready yet (then the Bridge sends it once it is). */
   const showPage = () => {
@@ -383,80 +223,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
         data: () => toPuckData(composePage(page, layout, shared)),
         recordHistory: false,
       });
-      shownRevision = revision;
-    }
-  };
-
-  /** Shows `viewportWidth` in Puck, if it isn't already (the Bridge calls this once Puck is ready). */
-  const showViewport = () => {
-    if (getPuck === null) {
-      return;
-    }
-    // A width still on its way to Puck counts as shown: a later one must replace it.
-    const shown = pendingWidth ?? getPuck().appState.ui.viewports.current.width;
-    if (shown === viewportWidth) {
-      return;
-    }
-    pendingWidth = viewportWidth;
-    const width = viewportWidth;
-    dispatch({
-      type: "setUi",
-      ui: (ui) => ({ viewports: { ...ui.viewports, current: { width, height: "auto" } } }),
-    });
-  };
-
-  /** Scales Puck's canvas to `zoom`, or to its fitting zoom. Does nothing before Puck is ready. */
-  const applyZoom = (zoom: number | "fit") => {
-    const access = getPuck === null ? undefined : zoomAccess(getPuck());
-    if (access === undefined) {
-      return;
-    }
-    const config = access.getZoomConfig();
-    const next = zoom === "fit" ? config.autoZoom : zoom;
-    if (Number.isFinite(next) && next > 0 && next !== config.zoom) {
-      access.setZoomConfig({ ...config, zoom: next });
-    }
-  };
-
-  /** Reports the canvas's size and zoom if they changed, once Puck has measured the canvas. */
-  const reportSize = () => {
-    sizeFrame = null;
-    const puck = getPuck?.();
-    const config = puck === undefined ? undefined : zoomAccess(puck)?.getZoomConfig();
-    const width = puck?.appState.ui.viewports.current.width;
-    if (config === undefined || typeof width !== "number" || !(config.rootHeight > 0)) {
-      return;
-    }
-    const size = { width, height: Math.round(config.rootHeight), zoom: config.zoom };
-    if (
-      canvasSize === null ||
-      canvasSize.width !== size.width ||
-      canvasSize.height !== size.height ||
-      canvasSize.zoom !== size.zoom
-    ) {
-      canvasSize = size;
-      canvasSizes.emit(size);
-    }
-  };
-
-  /**
-   * Reports the size at the next frame: Puck sets a new zoom and the height that goes with it in
-   * two renders, which then arrive as one change.
-   */
-  let sizeFrame: number | null = null;
-  const scheduleSize = () => {
-    sizeFrame ??= requestAnimationFrame(reportSize);
-  };
-
-  /** Puck shows `width`: the app's own width arriving, or the user's choice in Puck's controls. */
-  const reportViewport = (width: number | "100%") => {
-    if (pendingWidth !== null) {
-      if (width === pendingWidth) pendingWidth = null;
-      return;
-    }
-    if (typeof width === "number" && width !== viewportWidth) {
-      viewportWidth = width;
-      viewports.emit(viewportOf(width));
+      sync.shown();
     }
   };
 
@@ -485,141 +252,29 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   };
 
   /** Reports `edit` to the app, as the document store will take it over. */
-  const emitEdit = (edit: EngineEdit) => {
-    reporting = true;
-    try {
-      edits.emit(edit);
-    } finally {
-      reporting = false;
-    }
-  };
+  const emitEdit = (edit: EngineEdit) => sync.report(() => edits.emit(edit));
 
   /**
-   * Reports an edit Puck made to the page as the canvas shows it, split back into the page, the
-   * shared layout (F-ED-7) and the shared sections its linked copies show (F-ED-23):
-   * - an edit inside the Header or Footer goes to the layout, which every page shows;
-   * - an edit inside a copy goes to its shared section, and so to every copy of it;
-   * - anything else is the page's own, a copy itself included (moved or deleted as a whole).
-   * The Header and Footer themselves can't be moved, duplicated or deleted from the canvas, and an
-   * element can't be moved between them, a copy and the page: Puck's view is put back instead. A
-   * duplicated copy is another linked copy of its section. A page element Puck shows above the
-   * Header or below the Footer belongs to the page, and goes back between them.
+   * Takes over `routed`, where an edit goes (see `routeEdit`): the page, layout and shared sections
+   * with it, the edit reported to the app, and Puck's view put back in step from `shown`.
    */
-  const reportEdit = (edit: EngineEdit, action: PuckAction, prev: AppState) => {
-    const before = toPageDoc(prev.data);
-    const touchedNode =
-      action.type === "duplicate"
-        ? nodeAt(before, action.sourceZone, action.sourceIndex)
-        : action.type === "remove"
-          ? nodeAt(before, action.zone, action.index)
-          : undefined;
-    const touched = touchedNode?.props.id ?? (edit.kind === "move" ? edit.nodeId : null);
-    if (typeof touched === "string" && isSharedRegion(layout, touched)) {
-      putBack(edit.page);
-      return;
-    }
-    const copy =
-      action.type === "duplicate" && touchedNode !== undefined
-        ? copyShownBy(touchedNode, copiesOn(page.content), shared)
-        : undefined;
-    if (copy !== undefined) {
-      const at = page.content.indexOf(copy);
-      const added = newSharedCopy(page.content, copy.props.sharedSectionId, shared, layout);
-      const content = [...page.content];
-      content.splice(at + 1, 0, added);
-      page = { ...page, content };
-      // The new copy selected as the canvas shows it: its section, by the copy's id for it.
-      const root = shared[copy.props.sharedSectionId]?.section.props.id;
-      const shown = root === undefined ? null : copiedNodeId(added.props.id, root);
-      emitEdit({
-        ...edit,
-        nodeId: shown,
-        page,
-        selection: shown,
-        copyOf: copy.props.sharedSectionId,
-      });
-      putBack(edit.page);
-      return;
-    }
-    const split = splitPage(edit.page, layout);
-    const folded = foldCopies(split.page.content, page.content, shared);
-    const id = edit.nodeId;
-    // In the Header or Footer as they were (an edit, a removal) or are now (an element added in one).
-    const inLayout = id !== null && (isShared(layout, id) || isShared(split.layout, id));
-    const layoutChanged = !sameNodes(
-      [...split.layout.header, ...split.layout.footer],
-      [...layout.header, ...layout.footer],
-    );
-    const pageChanged = !sameNodes(folded.content, page.content);
-    const [section, ...others] = folded.sections;
-    const crossed = inLayout
-      ? pageChanged || section !== undefined
-      : section !== undefined
-        ? pageChanged || layoutChanged || others.length > 0 || folded.refused
-        : layoutChanged;
-    if (crossed) {
-      putBack(edit.page);
-      return;
-    }
-    if (inLayout) {
-      layout = split.layout;
-      emitEdit({ ...edit, page, shared: true, layout });
-    } else if (section !== undefined) {
-      const [sectionId, changed] = section;
-      const content = changed.section;
-      const entry = shared[sectionId];
-      if (entry !== undefined) shared = { ...shared, [sectionId]: { ...entry, section: content } };
-      // An element added inside the copy shows under the copy's id for it once put back.
-      const inCopy = (nodeId: string | null) => shownInCopy(changed, nodeId);
-      // A one-field patch names the copy's element; the section is recorded whole instead.
-      const { patch: _patch, ...whole } = edit;
-      emitEdit({
-        ...whole,
-        nodeId: inCopy(edit.nodeId),
-        selection: inCopy(edit.selection),
-        page,
-        sharedSection: { id: sectionId, section: content },
-      });
-      // Every other copy of the section shows the change too.
-      putBack(edit.page);
-      return;
-    } else {
-      page = { root: split.page.root, content: folded.content };
-      emitEdit({ ...edit, page });
-    }
-    putBack(edit.page, true);
+  const follow = (routed: RoutedEdit, shown: PageDoc) => {
+    ({ page, layout, shared } = routed.next);
+    if (routed.emit !== undefined) emitEdit(routed.emit);
+    putBack(shown, routed.putBack === "whenOutOfOrder");
   };
+
+  /** Reports an edit Puck made to the page as the canvas shows it (see `routeEdit`). */
+  const reportEdit = (edit: EngineEdit, action: PuckAction, prev: AppState) =>
+    follow(routeEdit(edit, action, prev, { page, layout, shared }), edit.page);
 
   /** The keys held while dragging on the canvas: Ctrl or Cmd copies (see `drag-copies.ts`). */
   const dragKeys: DragKeys = { copy: false, linked: false, pressed: false };
 
   /**
-   * A drag Puck made a move that Ctrl or Cmd asked to be a copy instead, if `action` is one, and
-   * whether Shift asked for a linked copy: only a drop (Puck is still dragging), never a move from
-   * the keyboard, which holds Ctrl too. Every drop takes the keys held for it.
-   */
-  const copyDrop = (
-    action: PuckAction,
-    prev: AppState,
-  ): { readonly drop: Drop; readonly linked: boolean } | null => {
-    if (prev.ui.isDragging !== true) return null;
-    if (action.type !== "move" && action.type !== "reorder" && action.type !== "insert") {
-      return null;
-    }
-    const held = takeDragKeys(dragKeys);
-    if (!held.copy || action.type === "insert") return null;
-    const drop =
-      action.type === "move" ? action : { ...action, sourceZone: action.destinationZone };
-    return { drop, linked: held.linked };
-  };
-
-  /**
-   * A drag with Ctrl or Cmd held (1.30, UX-4): what was dragged stays, and a copy goes where it was
-   * dropped, as one step ("Duplicated Heading"), its ids and anchors its own as a pasted one's are.
-   * With Shift too, a linked copy of a shared section places another linked copy there (F-ED-23);
-   * without, the copy is of its section, the page's own. An element inside a linked copy is copied
-   * within the shared section, as Duplicate does there; with Shift, nothing happens. Puck has moved
-   * the element by now (`next`), so its view is put right: the original back, the copy shown.
+   * Carries out a drop with Ctrl or Cmd held (see `planCopyDrop`), once Puck has moved what was
+   * dragged (`next`): its view put right, the original back and the copy shown, and the copy
+   * reported as one step.
    */
   const copyOnDrop = (
     action: PuckAction,
@@ -629,91 +284,37 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     linked: boolean,
   ) => {
     if (getPuck === null || library === null) return;
-    const before = toPageDoc(prev.data);
     const shown = toPageDoc(next.data);
-    const node = nodeAt(before, drop.sourceZone, drop.sourceIndex);
-    // The Header and Footer themselves stay where they are, once each (F-ED-7).
-    if (node === undefined || isSharedRegion(layout, node.props.id)) {
+    const plan = planCopyDrop(drop, linked, prev, { page, layout, shared });
+    if (plan.kind === "refuse") {
       putBack(shown);
       return;
     }
-    const copy = linked ? copyShownBy(node, copiesOn(page.content), shared) : undefined;
-    // Shift asks for a linked copy, which only a whole copy makes. An element inside one is
-    // neither the page's own nor the Header's or Footer's: copying it there instead would change
-    // every copy of the section, so nothing happens (#255 review).
-    const ownOrShared =
-      findNode(page, node.props.id) !== undefined || isShared(layout, node.props.id);
-    if (linked && copy === undefined && !ownOrShared) {
-      putBack(shown);
-      return;
-    }
-    if (copy !== undefined) {
-      placeLinkedCopy(copy, drop, shown);
+    if (plan.kind === "linked") {
+      placeLinkedCopy(plan.copy, drop, shown);
     } else {
-      const [clone] = pastedCopies([node], pageAnchors(page.content, shared, layout));
-      if (clone === undefined) return;
-      const after = insertedAt(before, drop.destinationZone, copyIndex(drop), clone);
-      const actions = pageActions(shown, after, slotsOf);
+      const actions = pageActions(shown, plan.after, slotsOf);
       if (actions === null) {
-        dispatch({ type: "setData", data: () => toPuckData(after), recordHistory: false });
+        dispatch({ type: "setData", data: () => toPuckData(plan.after), recordHistory: false });
       } else {
-        for (const action of actions) dispatch({ ...action, recordHistory: false });
+        for (const one of actions) dispatch({ ...one, recordHistory: false });
       }
-      const id = clone.props.id;
-      const edit: EngineEdit = {
-        kind: "duplicate",
-        nodeId: id,
-        componentType: clone.type,
-        field: null,
-        page: after,
-        selection: id,
-      };
-      reportEdit(edit, action, prev);
+      reportEdit(plan.edit, action, prev);
     }
     commands.edited();
   };
 
-  /**
-   * Another linked copy of `copy`'s shared section, where a Ctrl/Cmd+Shift drag of `copy` dropped
-   * (F-ED-23): among the page's sections, between the Header and the Footer. `shown` is what Puck
-   * shows now.
-   */
-  const placeLinkedCopy = (copy: NodeDoc & SharedCopyNode, drop: Drop, shown: PageDoc) => {
-    const header = layout.header.length;
-    const at = page.content.indexOf(copy);
-    // Puck counts the drop without the copy that was dragged; the page still has it.
-    const among = drop.destinationZone === ROOT_ZONE ? drop.destinationIndex - header : Number.NaN;
-    if (Number.isNaN(among)) {
-      putBack(shown);
-      return;
-    }
-    const others = Math.min(Math.max(among, 0), page.content.length - 1);
-    const index = others >= at ? others + 1 : others;
-    const added = newSharedCopy(page.content, copy.props.sharedSectionId, shared, layout);
-    const content = [...page.content];
-    content.splice(index, 0, added);
-    page = { ...page, content };
-    const root = shared[copy.props.sharedSectionId]?.section.props.id;
-    const id = root === undefined ? null : copiedNodeId(added.props.id, root);
-    emitEdit({
-      kind: "duplicate",
-      nodeId: id,
-      componentType: SHARED_COPY_TYPE,
-      field: null,
-      page,
-      selection: id,
-      copyOf: copy.props.sharedSectionId,
-    });
-    putBack(shown);
-  };
+  /** Another linked copy of `copy`'s section where a drag of it dropped (see `routeLinkedCopy`). */
+  const placeLinkedCopy = (copy: NodeDoc & SharedCopyNode, drop: Drop, shown: PageDoc) =>
+    follow(routeLinkedCopy(copy, drop, { page, layout, shared }), shown);
 
-  const handleAction = (action: PuckAction, next: AppState, prev: AppState) => {
-    inAction = true;
-    try {
-      if (applying) {
+  const handleAction = (action: PuckAction, next: AppState, prev: AppState) =>
+    sync.handleAction(() => {
+      // The echo of Webforge's own dispatch: Puck shows what the app has already.
+      if (sync.isEcho()) {
         return;
       }
-      const copying = library === null ? null : copyDrop(action, prev);
+      const copying = library === null ? null : copyDrop(action, prev, dragKeys);
       if (copying !== null) {
         // Made once Puck has finished its own update, where a dispatch would be lost.
         const { drop, linked } = copying;
@@ -730,10 +331,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       }
       // After the edit, so the history records the selection from before it.
       reportSelection(selectedNodeId(next));
-    } finally {
-      inAction = false;
-    }
-  };
+    });
 
   const reportSelection = (id: string | null) => {
     if (id !== selection) {
@@ -753,11 +351,11 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     const width = usePuck((state) => state.appState.ui.viewports.current.width);
     useEffect(() => {
       getPuck = get;
-      if (shownRevision !== revision) {
+      if (!sync.isShown()) {
         showPage();
       }
       // A width set before Puck was ready, or Puck's own starting width.
-      showViewport();
+      view.show();
       // A selection made before Puck was ready. Only when it differs: re-selecting resets Puck's
       // field focus and remounts an open rich-text editor (this effect re-runs on re-renders).
       if ((get().selectedItem?.props.id ?? null) !== selection) {
@@ -765,30 +363,29 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       }
       return () => {
         getPuck = null;
-        pendingWidth = null;
+        view.forgetPending();
         // A remounted Puck starts from whatever `data` it was last rendered with: resend the page.
-        shownRevision = -1;
+        sync.forget();
       };
     }, [get]);
     // After the effect above, so the width it sends to Puck isn't taken for the user's choice.
     useEffect(() => {
-      reportViewport(width);
-      scheduleSize();
+      view.shown(width);
+      view.measure();
     }, [width]);
     // Puck changes the zoom inside its store, where nothing reports it, and shows it on the canvas
     // root's style (its scale and height): watch that.
     useEffect(() => {
-      const canvasRoot = host?.querySelector('[class*="PuckCanvas-root"]');
+      const canvasRoot = host?.querySelector(CANVAS_ROOT);
       if (!canvasRoot) {
         return;
       }
-      scheduleSize();
-      const observer = new MutationObserver(scheduleSize);
+      view.measure();
+      const observer = new MutationObserver(view.measure);
       observer.observe(canvasRoot, { attributes: true, attributeFilter: ["style"] });
       return () => {
         observer.disconnect();
-        if (sizeFrame !== null) cancelAnimationFrame(sizeFrame);
-        sizeFrame = null;
+        view.stopMeasuring();
       };
     }, []);
     return (
@@ -799,89 +396,24 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     );
   }
 
-  /** The fields of component `type`, from the library. */
-  const fieldsOf = (type: string) => Object.values(library?.components[type]?.fields ?? {});
-  /**
-   * *Edit* and *Hide* on the selected element's bar (F-ED-25), for the page as it was shown: the
-   * bar asks them while drawing, so they answer for that page only (R2).
-   */
-  const elementActionsFor = (
-    shownPage: PageDoc,
-    shownLayout: LayoutDoc,
-    shownShared: SharedSectionsDoc,
-  ): ElementActions => ({
-    canEdit: (type) =>
-      fieldsOf(type).some(
-        (field) =>
-          field.kind === "media" ||
-          ((field.kind === "text" || field.kind === "richtext") && field.inline === true),
-      ),
-    edit: (id, type) => {
-      const doc = frameDocument ?? host?.ownerDocument;
-      if (doc !== undefined && startTextEditing(doc, id, false)) return;
-      if (fieldsOf(type).some((field) => field.kind === "media")) {
-        elementRequests.emit({ kind: "pickImage", nodeId: id });
-      }
-    },
-    canHide: (id) => {
-      if (findNode(shownPage, id) !== undefined) return true;
-      // A linked copy is one of the page's own, shown by its section's id.
-      const shown = findNode(composePage(shownPage, shownLayout, shownShared), id);
-      return (
-        shown !== undefined &&
-        copyShownBy(shown, copiesOn(shownPage.content), shownShared) !== undefined
-      );
-    },
-    toggleHidden: (id) => elementRequests.emit({ kind: "toggleHidden", nodeId: id }),
+  /** The quick actions, for the page as it is now (see `action-bar.tsx`). */
+  const SharedAwareActionBar = createActionBar({
+    docs: () => ({ page, layout, shared }),
+    library: () => library,
+    document: () => frameDocument ?? host?.ownerDocument,
+    request: elementRequests.emit,
+    several: { get: () => alsoSelected.length > 0, subscribe: alsoSelectedChanged.add },
   });
-
-  /**
-   * What the bars ask while drawing, made once per change of the page: a new page gives them new
-   * functions, so they ask again (R2). The lock is on the shared Header or Footer itself (F-ED-7).
-   */
-  let barProps: {
-    readonly page: PageDoc;
-    readonly layout: LayoutDoc;
-    readonly shared: SharedSectionsDoc;
-    readonly isLocked: (id: string) => boolean;
-    readonly elementActions: ElementActions;
-  } | null = null;
-  const currentBarProps = () => {
-    if (barProps?.page !== page || barProps.layout !== layout || barProps.shared !== shared) {
-      const shownLayout = layout;
-      barProps = {
-        page,
-        layout,
-        shared,
-        isLocked: (id) => isSharedRegion(shownLayout, id),
-        elementActions: elementActionsFor(page, layout, shared),
-      };
-    }
-    return barProps;
-  };
-
-  /** The quick actions, for the page as it is now. */
-  function SharedAwareActionBar(props: ComponentProps<typeof QuickActionBar>) {
-    // Through Puck's store, which changes with every page Puck shows: never a value kept from an
-    // earlier drawing.
-    const { isLocked, elementActions } = usePuck(currentBarProps);
-    // While several elements are selected, the bar names the one shown: what it would do to one,
-    // the Edit menu does to all (1.31).
-    const several = useSyncExternalStore(alsoSelectedChanged.add, () => alsoSelected.length > 0);
-    return (
-      <QuickActionBar
-        {...props}
-        isLocked={(id) => several || isLocked(id)}
-        elementActions={elementActions}
-      />
-    );
-  }
 
   function CanvasFrame({ children, document }: { children: ReactNode; document?: Document }) {
     useEffect(() => {
       frameDocument = document ?? null;
+      // In the editor's colours, following its theme (see `applyChromeStyles`).
+      const stopColours =
+        document === undefined
+          ? undefined
+          : applyChromeStyles(document, host?.ownerDocument ?? document);
       if (document !== undefined) {
-        applyChromeStyles(document);
         if (siteStyles !== null) applySiteStyles(document, siteStyles);
         showAlsoSelected(document, alsoSelected);
       }
@@ -889,31 +421,24 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       followViewOptions();
       const frameWindow = document?.defaultView;
       if (!frameWindow) {
-        return undefined;
+        return stopColours;
       }
       frameWindows.emit(frameWindow);
-      const removeKeys = installHistoryKeys(frameWindow, runCommand);
-      const showDeleteKeys = hidePuckDeleteKeys(frameWindow);
-      const stopDragKeys = trackDragKeys(frameWindow, dragKeys);
-      // The element menu, but not in Content mode, where right-clicks get the browser's own.
-      const stopClicks = watchClicks(frameWindow);
-      const removeMenu = installContextMenu(frameWindow.document, contextMenus.emit, {
-        enabled: () => mode === "design",
+      const stopListening = listenInFrame(frameWindow, {
+        dragKeys,
+        watchClicks,
+        runCommand,
+        contextMenu: contextMenus.emit,
+        menuEnabled: () => mode === "design",
         selected: () => selection,
       });
-      // Shift+F10 on macOS too (#287).
-      const removeMenuKeys = installMenuKeys(frameWindow.document);
       return () => {
-        showDeleteKeys();
-        stopDragKeys();
-        removeMenu();
-        removeMenuKeys();
-        stopClicks();
+        stopListening();
+        stopColours?.();
         stopKeepingEnabled?.();
         stopKeepingEnabled = null;
         stopViewOptions?.();
         stopViewOptions = null;
-        removeKeys();
         frameWindows.emit(null);
       };
     }, [document]);
@@ -945,39 +470,12 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     actionBar: SharedAwareActionBar,
   };
 
-  /** Picks links in rich text for the format toolbar (F-ED-18); none until the app gives one. */
-  let linkPicker: LinkPicker | null = null;
-  /**
-   * The rich-text field being edited: the selected element, and the inline field Puck has focused
-   * (`text::inline`). Read when the toolbar's Link button is clicked, before the dialog takes focus.
-   */
-  const editingRichText = (): RichTextAt | null => {
-    const state = getPuck?.();
-    const nodeId = state?.selectedItem?.props.id;
-    const focus = state?.appState.ui.field.focus;
-    return typeof nodeId === "string" && typeof focus === "string"
-      ? { nodeId, field: focus.replace(/::inline$/, "") }
-      : null;
-  };
-  const pickLink = (): PickLink | null => {
-    const picker = linkPicker;
-    return picker === null ? null : (current) => picker(current, editingRichText());
-  };
-  const richTextTools = {
-    toolbar: createFormatToolbar(pickLink),
-    // Mod + K, Alt + Enter and Shift + Space in rich text (F-ED-27).
-    extensions: [
-      createTextKeys({
-        pickLink,
-        split: (halves) => {
-          const at = editingRichText();
-          // After the last keystrokes Puck still holds back, so the step before the split has them
-          // and undoing the split gives back all that was typed.
-          if (at !== null) commands.whenSent(() => textSplits.emit({ ...at, ...halves }));
-        },
-      }),
-    ],
-  };
+  /** The format toolbar and text keys of rich text on the canvas (see `rich-text-tools.ts`). */
+  const richText = createRichTextTools(
+    () => getPuck?.() ?? null,
+    textSplits.emit,
+    commands.whenSent,
+  );
 
   /** The Puck config for `library`, rendering with the current editor revisions and context. */
   const configFor = (forLibrary: ComponentLibrary) =>
@@ -985,7 +483,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       forLibrary,
       (id) => editorRevisions.get(id) ?? 0,
       () => renderContext,
-      richTextTools,
+      richText.tools,
     );
 
   /**
@@ -1021,7 +519,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
             rightSideBarVisible: false,
             // Puck starts with the app's width; without one it picks the view nearest the window's.
             viewports: {
-              current: { width: viewportWidth, height: "auto" },
+              current: { width: view.width(), height: "auto" },
               options: [],
               // The canvas toolbar chooses the view and zoom (1.15), not Puck's own controls.
               controlsVisible: false,
@@ -1054,10 +552,9 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       );
       slotsOf = (type) => slots.get(type);
       config = configFor(opts.library);
-      const hostWindow = el.ownerDocument.defaultView;
-      stopHidingHostKeys = hostWindow === null ? null : hidePuckDeleteKeys(hostWindow);
-      stopTrackingHostKeys = hostWindow === null ? null : trackDragKeys(hostWindow, dragKeys);
-      stopHostClicks = hostWindow === null ? null : watchClicks(hostWindow);
+      const editorWindow = el.ownerDocument.defaultView;
+      stopEditorListeners =
+        editorWindow === null ? null : listenInEditor(editorWindow, { dragKeys, watchClicks });
       ErrorBoundary = opts.errorBoundary ?? NoBoundary;
       const { onError } = opts;
       // Each error in the canvas's own React root goes to `onError`; React's defaults otherwise.
@@ -1072,14 +569,14 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       );
       render();
       // Puck starts with the current page.
-      shownRevision = revision;
+      sync.shown();
     },
 
     loadPage(nextPage, nextLayout, nextShared = {}) {
       page = nextPage;
       layout = nextLayout;
       shared = nextShared;
-      revision++;
+      sync.changed();
       editorRevisions.clear();
       reportSelection(null);
       showPage();
@@ -1087,7 +584,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     },
 
     applyChange({ page: nextPage, layout: nextLayout = layout, shared: nextShared = shared }) {
-      if (reporting) {
+      if (sync.isReporting()) {
         // The document store just took over the edit Puck reported: same content, nothing to show.
         page = nextPage;
         layout = nextLayout;
@@ -1100,32 +597,24 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       const before = composePage(page, layout, shared);
       const after = composePage(nextPage, nextLayout, nextShared);
       // The rich-text editor being typed in, if this change remounts it (Undo while typing).
-      let refocus: string | null = null;
-      if (library !== null) {
-        const focused = focusedRichTextId(frameDocument);
-        for (const id of staleRichText(library, before, after)) {
-          editorRevisions.set(id, (editorRevisions.get(id) ?? 0) + 1);
-          if (id === focused) refocus = id;
-        }
-        const ids = new Set(allNodes(after).map((node) => node.props.id));
-        for (const id of editorRevisions.keys()) {
-          if (!ids.has(id)) editorRevisions.delete(id);
-        }
-      }
+      const refocus =
+        library === null
+          ? null
+          : remountStale(editorRevisions, library, before, after, focusedRichTextId(frameDocument));
       // Only what changed, unless Puck shows an older page or the change is too big to translate.
       const actions =
-        getPuck !== null && shownRevision === revision ? pageActions(before, after, slotsOf) : null;
+        getPuck !== null && sync.isShown() ? pageActions(before, after, slotsOf) : null;
       page = nextPage;
       layout = nextLayout;
       shared = nextShared;
-      revision++;
+      sync.changed();
       preserveCaret(frameDocument);
       if (refocus !== null) refocusRichText(frameDocument, refocus);
       if (actions === null) {
         showPage();
       } else {
         for (const action of actions) dispatch({ ...action, recordHistory: false });
-        shownRevision = revision;
+        sync.shown();
       }
       // Puck selects by position; keep the same element selected, or none if it is gone.
       if (selection !== null && findNode(after, selection) === undefined) {
@@ -1151,16 +640,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       };
     },
 
-    outline(nodeId) {
-      const doc = frameDocument ?? host?.ownerDocument;
-      for (const element of doc?.querySelectorAll(`[${OUTLINED_ATTRIBUTE}]`) ?? []) {
-        element.removeAttribute(OUTLINED_ATTRIBUTE);
-      }
-      if (nodeId === null) return;
-      doc
-        ?.querySelector(`[data-puck-component="${CSS.escape(nodeId)}"]`)
-        ?.setAttribute(OUTLINED_ATTRIBUTE, "");
-    },
+    outline: (nodeId) => outlineElement(frameDocument ?? host?.ownerDocument, nodeId),
 
     select(nodeId) {
       if (nodeId === selection) {
@@ -1170,12 +650,8 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       dispatch({ type: "setUi", ui: { itemSelector: selectorFor(nodeId) } });
     },
 
-    setViewport(viewport: Viewport) {
-      viewportWidth = typeof viewport === "number" ? viewport : VIEWPORT_WIDTHS[viewport];
-      showViewport();
-    },
-
-    onViewportChange: viewports.add,
+    setViewport: view.setViewport,
+    onViewportChange: view.onViewport,
 
     setImages(image) {
       renderContext = { ...renderContext, image };
@@ -1187,9 +663,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       redraw();
     },
 
-    setLinkPicker(picker) {
-      linkPicker = picker;
-    },
+    setLinkPicker: richText.setLinkPicker,
 
     setSettings(setting, emptySetting) {
       const { emptySetting: _previous, ...rest } = renderContext;
@@ -1197,14 +671,8 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       redraw();
     },
 
-    setZoom: applyZoom,
-
-    onCanvasSize(cb) {
-      if (canvasSize !== null) {
-        cb(canvasSize);
-      }
-      return canvasSizes.add(cb);
-    },
+    setZoom: view.zoom,
+    onCanvasSize: view.onSize,
 
     setSiteCss(css, bodyClass) {
       siteStyles = { css, bodyClass };
@@ -1213,33 +681,10 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       }
     },
 
-    perform(action) {
-      const puck = getPuck;
-      const doc = frameDocument ?? host?.ownerDocument;
-      if (puck === null || inAction) {
-        return false;
-      }
-      if (action === "editText" || action === "clearText") {
-        // The text of the element selected now, on the canvas (F-ED-27).
-        const id = puck().selectedItem?.props.id;
-        return (
-          typeof id === "string" &&
-          doc !== undefined &&
-          startTextEditing(doc, id, action === "clearText")
-        );
-      }
-      if (!performOnSelected(puck(), action)) {
-        return false;
-      }
-      if (action.startsWith("select")) {
-        // Walking through a long page from the keyboard keeps the selection in view.
-        const id = puck().selectedItem?.props.id;
-        const element =
-          id === undefined ? null : doc?.querySelector(`[data-puck-component="${id}"]`);
-        element?.scrollIntoView?.({ block: "nearest" });
-      }
-      return true;
-    },
+    perform: (action) =>
+      getPuck !== null &&
+      !sync.inAction() &&
+      performOnCanvas(getPuck(), frameDocument ?? host?.ownerDocument, action),
 
     onAddRequest: addRequests.add,
 
@@ -1271,20 +716,6 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       followViewOptions();
     },
 
-    renderStatic(staticPage, staticLayout, staticShared = {}, context = EDITOR_RENDER_CONTEXT) {
-      if (library === null) {
-        throw new Error("Mount the canvas engine before rendering pages");
-      }
-      // The export's renderer (ADR 0005), linked copies inline as their shared sections (F-ED-23).
-      const regions = {
-        header: staticLayout.header,
-        content: expandSharedCopies(staticPage.content, staticShared),
-        footer: staticLayout.footer,
-      };
-      const { header, main, footer } = renderPage(regions, library, context);
-      return `${header}${main}${footer}`;
-    },
-
     destroy() {
       // An Undo still waiting for its rich-text edit goes with the canvas.
       commands.dispose();
@@ -1293,12 +724,8 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       root = null;
       host = null;
       getPuck = null;
-      stopHidingHostKeys?.();
-      stopHidingHostKeys = null;
-      stopTrackingHostKeys?.();
-      stopTrackingHostKeys = null;
-      stopHostClicks?.();
-      stopHostClicks = null;
+      stopEditorListeners?.();
+      stopEditorListeners = null;
       frameDocument = null;
       // Unmount after the current render: the app destroys the engine from an effect cleanup.
       queueMicrotask(() => {

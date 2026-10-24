@@ -31,7 +31,7 @@ import {
 import type { EditorSession } from "./editor-session.js";
 import { fieldGroupOf } from "./field-group.js";
 import { type FieldTarget, fieldTarget } from "./field-target.js";
-import { changedLabel, labelFor } from "./labels.js";
+import { changedLabel, labelFor, resetGroupLabel, resetLabel } from "./labels.js";
 import {
   applyListChange,
   type EditableList,
@@ -42,6 +42,7 @@ import {
 import { findNode } from "./nodes.js";
 import {
   breakpointOf,
+  differsFromDefault,
   isOverridden,
   valueAt,
   withoutOverride,
@@ -239,6 +240,12 @@ export type EditPanelHostProps = {
   readonly advanced?: boolean;
   /** Shows the Content tab only: Content mode locks styles and the Advanced settings (M3). */
   readonly contentOnly?: boolean;
+  /**
+   * The option groups the person closed, by component type (UX-13), and how to change them: UI
+   * state, kept in the preferences, never in the document.
+   */
+  readonly closedGroups?: Readonly<Record<string, readonly string[]>>;
+  readonly onClosedGroupsChange?: (type: string, closed: readonly string[]) => void;
 };
 
 /**
@@ -255,6 +262,8 @@ export function EditPanelHost({
   flush,
   advanced = false,
   contentOnly = false,
+  closedGroups,
+  onClosedGroupsChange,
 }: EditPanelHostProps) {
   const { history, library } = session;
   const { pageId, nodeId, viewport, others = [] } = useUi(session, (ui) => ui);
@@ -335,6 +344,11 @@ export function EditPanelHost({
         label: field.label,
         group: fieldGroupOf(field),
         value: responsive ? valueAt(stored, breakpoint) : stored,
+        ...(field.optionGroup === undefined ? {} : { optionGroup: field.optionGroup }),
+        ...(responsive && breakpoint !== "desktop" ? { responsive: true } : {}),
+        ...(differsFromDefault(stored, storedOr(name, undefined), responsive, breakpoint)
+          ? { changed: true }
+          : {}),
         ...(responsive && isOverridden(stored, breakpoint) ? { overridden: true } : {}),
         ...choicesOf(field),
       },
@@ -545,6 +559,56 @@ export function EditPanelHost({
     );
   };
 
+  /**
+   * Resets fields `names` to the component's defaults as one step (UX-13, UX-18): "Reset Heading
+   * size", or for option group `group` "Reset Spacing on Heading". A field set per device gets its
+   * default for the device shown: on Desktop its own value, elsewhere the Desktop value again, and
+   * the label then names the device ("Reset Heading spacing on Mobile").
+   */
+  const resetToDefault = (names: readonly string[], group?: string) => {
+    const live = now();
+    const known = names.filter((name) => component.fields[name] !== undefined);
+    const [first] = known;
+    const firstField = first === undefined ? undefined : component.fields[first];
+    if (live === undefined || first === undefined || firstField === undefined) {
+      return;
+    }
+    endRun();
+    flush();
+    const forDevice =
+      breakpoint !== "desktop" && known.some((name) => component.fields[name]?.responsive === true);
+    const label =
+      live.copyLabel ??
+      (group !== undefined
+        ? resetGroupLabel(
+            live.editOf("props", first),
+            library,
+            group,
+            forDevice ? device : undefined,
+          )
+        : firstField.responsive === true && breakpoint !== "desktop"
+          ? live.labelOf(first, firstField, breakpoint, true)
+          : resetLabel(live.editOf("props", first), library, firstField.label.toLocaleLowerCase()));
+    session.edit(
+      "props",
+      label,
+      (draft) => {
+        for (const name of known) {
+          const responsive = component.fields[name]?.responsive === true;
+          const initial = component.defaults[name];
+          live.write(draft, name, (stored) =>
+            !responsive
+              ? initial
+              : breakpoint === "desktop"
+                ? withValueAt(stored, "desktop", valueAt(initial, "desktop"))
+                : withoutOverride(stored, breakpoint),
+          );
+        }
+      },
+      { selectionAfter },
+    );
+  };
+
   return (
     <EditPanel
       heading={component.label}
@@ -555,6 +619,14 @@ export function EditPanelHost({
         if (openRun.current?.name === name) endRun();
       }}
       onReset={reset}
+      onResetToDefault={resetToDefault}
+      {...(closedGroups === undefined
+        ? {}
+        : {
+            closedGroups: closedGroups[node.type] ?? [],
+            onClosedGroupsChange: (closed: readonly string[]) =>
+              onClosedGroupsChange?.(node.type, closed),
+          })}
       advanced={advanced}
       contentOnly={contentOnly}
       itemKey={id}

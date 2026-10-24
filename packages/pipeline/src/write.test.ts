@@ -2,6 +2,7 @@ import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tempDirFactory } from "@webforge/test-utils";
 import { describe, expect, it } from "vitest";
+import { BuildError } from "./build.js";
 import { EXPORT_MARKER, WriteError, writeSiteFolder } from "./write.js";
 
 const tempDir = tempDirFactory("webforge-pipeline-");
@@ -114,5 +115,17 @@ describe("writeSiteFolder", { timeout: 15_000 }, () => {
     });
     expect(readFileSync(join(destination, "index.html"), "utf8")).toBe("<p>v1</p>");
     expect(readdirSync(parent)).toEqual(["my-site"]);
+  });
+});
+
+describe("the pipeline's errors (R12)", () => {
+  it("show the export's own message for each code", () => {
+    expect(new WriteError("folder-not-empty", "x").messageKey).toBe("export.failed.folderNotEmpty");
+    expect(new WriteError("write-failed", "x").messageKey).toBe("export.failed.writeFailed");
+    expect(new BuildError("missing-font", "x")).toMatchObject({
+      name: "BuildError",
+      code: "missing-font",
+      messageKey: "export.failed.buildFailed",
+    });
   });
 });

@@ -11,6 +11,7 @@
     "vitest": "catalog:"
   },
   "dependencies": {
+    "@webforge/errors": "workspace:*",
     "immer": "11.1.21",
     "zustand": "5.0.15"
   }
