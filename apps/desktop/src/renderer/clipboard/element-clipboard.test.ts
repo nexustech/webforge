@@ -17,8 +17,8 @@ type RejectedFile = Extract<ClipboardReadResult, { status: "media" }>["rejected"
 import { createEditorSession, currentPage, type EditorSession } from "../editor/editor-session.js";
 import { starterSite } from "../editor/starter-site.js";
 import { setFailureLog } from "../log.js";
-import { addMedia } from "../media/media-commands.js";
-import { saveAsSharedSection } from "../shared-sections/shared-sections.js";
+import { addMedia } from "../media/index.js";
+import { saveAsSharedSection } from "../shared-sections/index.js";
 import { copySelected, pasteElements, pasteTarget } from "./element-clipboard.js";
 
 const prices: MediaMeta = {

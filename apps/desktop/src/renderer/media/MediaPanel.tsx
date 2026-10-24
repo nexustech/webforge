@@ -23,7 +23,7 @@ import { type MediaApi, mediaImageUrl } from "../../shared/ipc/media.js";
 import type { EditorSession } from "../editor/editor-session.js";
 import { useDocument } from "../editor/use-document.js";
 import { useGesture } from "../editor/use-gesture.js";
-import { siteSession } from "../storage/site-session.js";
+import { siteSession } from "../storage/index.js";
 import { documentIcon, documentTypeName, fileSizeLabel } from "./document-types.js";
 import { importDroppedFiles, importItems } from "./import-media.js";
 import {

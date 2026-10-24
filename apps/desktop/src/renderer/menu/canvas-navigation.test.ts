@@ -3,7 +3,7 @@ import { siteLibrary } from "@webforge/site-components";
 import { describe, expect, it, vi } from "vitest";
 import { createEditorSession } from "../editor/editor-session.js";
 import { starterSite } from "../editor/starter-site.js";
-import { addPage } from "../site/page-actions.js";
+import { addPage } from "../site/index.js";
 import { connectCanvasNavigation } from "./canvas-navigation.js";
 import { addMenuItem, renameMenuItem } from "./menu-actions.js";
 

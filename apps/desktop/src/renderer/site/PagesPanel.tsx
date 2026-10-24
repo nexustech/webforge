@@ -30,8 +30,8 @@ import {
   PlusIcon,
 } from "lucide-react";
 import { useState } from "react";
+import { NameDialog } from "../shell/NameDialog.js";
 import { useMenuDialog } from "../shell/use-menu-dialog.js";
-import { NameDialog } from "./NameDialog.js";
 import { PageSettingsDialog } from "./PageSettingsDialog.js";
 import {
   canBeHome,

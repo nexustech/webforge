@@ -1,8 +1,8 @@
 import type { TextSplit } from "@webforge/engine";
 import { t } from "@webforge/i18n";
 import { pageAnchors, pastedCopies } from "@webforge/model";
-import { type LayersSession, placeOf } from "../layers/layers.js";
 import { quotedElementName } from "./labels.js";
+import { type LayersSession, placeOf } from "./layers.js";
 import { shownLayout } from "./shared-layout.js";
 
 /**
