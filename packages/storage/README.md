@@ -5,7 +5,7 @@
 ## Public API
 Import from `@webforge/storage` only.
 
-- `ProjectStore.create(path, { name })` builds a new project under a temporary name and renames it into place; `ProjectStore.open(path, { readOnly? })` validates an untrusted file first (application id, quick check, the exact schema of its format, metadata) and throws `ProjectFileError` with a `code`.
+- `ProjectStore.create(path, { name })` builds a new project under a temporary name and renames it into place; `ProjectStore.open(path, { readOnly? })` validates an untrusted file first (application id, quick check, the exact schema of its format, metadata, and that its content is whole: the commit fingerprint in `user_version`, every blob referred to present, document blobs matching their hashes; #295) and throws `ProjectFileError` with a `code`. Every write that changes documents, assets or versions stamps the fingerprint in the same transaction (`src/content-check.ts`).
 - `readEditorMode()` / `writeEditorMode(mode)`: the editor's Design or Content mode for the site (M3, 1.10), kept as the `editor_mode` key of `meta`. It is UI state, not part of the site: never versioned. An unknown value reads as Design and never stops a file opening.
   - An older format is checked against its own schema (`SCHEMAS`), then migrated in one transaction (`SCHEMA_MIGRATIONS`).
   - A file from a newer Webforge opens read-only with `info.newerFormat`, so the app can show it and ask the user to update. Writes to a read-only store throw `ReadOnlyProjectError`.
