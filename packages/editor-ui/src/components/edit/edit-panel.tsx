@@ -37,6 +37,10 @@ export type EditPanelField = FieldSpec & {
   readonly overridden?: boolean;
   /** The value differs from the element's default, so it can be reset (UX-18). */
   readonly changed?: boolean;
+  /** The field can't be changed now: shown greyed out. */
+  readonly disabled?: boolean;
+  /** Why its value isn't acceptable (translated), shown under its control. */
+  readonly error?: string;
   /**
    * The option group it is shown in (UX-13), by its kind if not given: `id` stays the same in every
    * language and is what closed groups are remembered by, `label` is translated. Not "section":
@@ -348,6 +352,7 @@ function FieldRow({
   const id = `${idPrefix}-${field.name}`;
   const labelId = `${id}-label`;
   const helpId = field.help === undefined ? undefined : `${id}-help`;
+  const errorId = field.error === undefined ? undefined : `${id}-error`;
   const resetField =
     field.changed === true && onResetToDefault !== undefined
       ? () => onResetToDefault([field.name])
@@ -381,11 +386,18 @@ function FieldRow({
         id,
         labelId,
         ...(helpId === undefined ? {} : { helpId }),
+        ...(errorId === undefined ? {} : { errorId }),
+        ...(field.disabled === true ? { disabled: true } : {}),
         field,
         value: field.value,
         onChange: (value) => onChange(field.name, value),
         onCommit: () => onCommit(field.name),
       })}
+      {errorId === undefined ? null : (
+        <p id={errorId} className="text-2xs text-destructive-text">
+          {field.error}
+        </p>
+      )}
       {helpId === undefined ? null : (
         <p id={helpId} className="text-xs text-muted-foreground">
           {field.help}

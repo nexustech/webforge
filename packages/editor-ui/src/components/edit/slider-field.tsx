@@ -1,6 +1,7 @@
 import type { PointerEvent } from "react";
 import { cn } from "../../lib/cn.js";
 import type { FieldRendererProps } from "./field-spec.js";
+import { describedBy } from "./text-field.js";
 
 /** How far the pointer moves for one step when scrubbing, in pixels; with Shift, finer. */
 const SCRUB_STEP = 12;
@@ -14,6 +15,9 @@ const FINE_SCRUB_STEP = 36;
  */
 export function SliderField({
   id,
+  helpId,
+  errorId,
+  disabled = false,
   field,
   value,
   onChange,
@@ -25,7 +29,7 @@ export function SliderField({
     steps.findIndex((step) => step.value === value),
   );
   const scrub = (event: PointerEvent<HTMLOutputElement>) => {
-    if (event.button !== 0 || steps.length < 2) return;
+    if (disabled || event.button !== 0 || steps.length < 2) return;
     event.preventDefault();
     const output = event.currentTarget;
     output.setPointerCapture(event.pointerId);
@@ -65,6 +69,9 @@ export function SliderField({
         step={1}
         value={index}
         aria-valuetext={steps[index]?.label}
+        disabled={disabled}
+        aria-invalid={errorId !== undefined}
+        aria-describedby={describedBy(errorId, helpId)}
         className={cn("h-7 min-w-0 flex-1 accent-primary", "focus-visible:outline-none")}
         onChange={(event) => {
           const step = steps[Number(event.target.value)];
@@ -81,7 +88,10 @@ export function SliderField({
       />
       <output
         htmlFor={id}
-        className="w-16 shrink-0 cursor-ew-resize touch-none text-right text-xs text-muted-foreground select-none"
+        className={cn(
+          "w-16 shrink-0 touch-none text-right text-xs select-none",
+          disabled ? "text-disabled" : "cursor-ew-resize text-muted-foreground",
+        )}
         onPointerDown={scrub}
       >
         {steps[index]?.label}

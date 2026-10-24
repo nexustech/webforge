@@ -12,6 +12,7 @@ import type {
   ListItemFieldSpec,
 } from "./field-spec.js";
 import { PLAIN_RENDERERS } from "./plain-renderers.js";
+import { describedBy } from "./text-field.js";
 
 /** The items of a list's value; anything else is an empty list. */
 function itemsOf(value: unknown): readonly ListItem[] {
@@ -70,6 +71,9 @@ type Open = { readonly id: string } | { readonly added: number } | null;
 export function ListField({
   id,
   labelId,
+  helpId,
+  errorId,
+  disabled = false,
   field,
   value,
   onChange,
@@ -101,6 +105,8 @@ export function ListField({
       ref={root}
       id={id}
       aria-labelledby={labelId}
+      // A group can't be marked invalid; its message describes it.
+      aria-describedby={describedBy(errorId, helpId)}
       className="m-0 flex min-w-0 flex-col gap-1 border-0 p-0"
     >
       {items.length === 0 ? (
@@ -144,14 +150,14 @@ export function ListField({
                     <>
                       <RowAction
                         label={t("editPanel.list.moveUp", { item })}
-                        disabled={index === 0}
+                        disabled={disabled || index === 0}
                         onClick={() => change({ type: "move", id: entry.id, to: index - 1 })}
                       >
                         <ArrowUpIcon className="size-3.5" />
                       </RowAction>
                       <RowAction
                         label={t("editPanel.list.moveDown", { item })}
-                        disabled={index === items.length - 1}
+                        disabled={disabled || index === items.length - 1}
                         onClick={() => change({ type: "move", id: entry.id, to: index + 1 })}
                       >
                         <ArrowDownIcon className="size-3.5" />
@@ -160,6 +166,7 @@ export function ListField({
                   )}
                   <RowAction
                     label={t("editPanel.list.delete", { item })}
+                    disabled={disabled}
                     onClick={() => {
                       const next = items[index + 1] ?? items[index - 1];
                       setFocusAfterDelete(next?.id ?? "");
@@ -187,6 +194,7 @@ export function ListField({
                             id: subId,
                             labelId: `${subId}-label`,
                             field: sub,
+                            disabled,
                             value: entry[sub.name],
                             onChange: (next) =>
                               change({ type: "edit", id: entry.id, name: sub.name, value: next }),
@@ -207,6 +215,7 @@ export function ListField({
         size="sm"
         className="self-start"
         data-list-add
+        disabled={disabled}
         onClick={() => {
           setOpen({ added: items.length });
           change({ type: "add" });

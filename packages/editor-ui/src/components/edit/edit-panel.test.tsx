@@ -231,6 +231,104 @@ describe("EditPanel", () => {
   });
 });
 
+describe("disabled fields and fields with an error (R11)", () => {
+  const sizes = [
+    { label: "Small", value: "small" },
+    { label: "Large", value: "large" },
+  ];
+  const every: EditPanelField[] = [
+    { name: "title", kind: "text", label: "Title", group: "content", value: "Hi" },
+    {
+      name: "align",
+      kind: "select",
+      label: "Alignment",
+      group: "content",
+      value: "small",
+      options: sizes,
+    },
+    { name: "wide", kind: "toggle", label: "Full width", group: "content", value: false },
+    { name: "gap", kind: "slider", label: "Gap", group: "content", value: "small", steps: sizes },
+    {
+      name: "padding",
+      kind: "spacing",
+      label: "Padding",
+      group: "content",
+      value: "small",
+      options: sizes,
+    },
+    {
+      name: "margin",
+      kind: "box",
+      label: "Margin",
+      group: "content",
+      value: {},
+      options: sizes,
+      sides: [{ label: "Top", value: "top" }],
+    },
+    {
+      name: "quotes",
+      kind: "list",
+      label: "Quotes",
+      group: "content",
+      itemLabel: "Quote",
+      itemFields: [{ name: "quote", kind: "text", label: "Words" }],
+      value: [{ id: "a", quote: "Hi" }],
+    },
+  ];
+  const draw = (state: Pick<EditPanelField, "disabled" | "error">) =>
+    render(
+      <EditPanel
+        heading="Section"
+        fields={every.map((field) => ({ ...field, ...state }))}
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+      />,
+    );
+
+  it("disables every control of a disabled field", () => {
+    draw({ disabled: true });
+
+    // The fields' own controls, not the option groups' headers. A list's items still open, so
+    // what they say can be read.
+    const controls = document.querySelectorAll("[data-field] :is(input, select, button)");
+    expect(controls.length).toBeGreaterThan(every.length);
+    for (const control of controls) {
+      const opens = control.hasAttribute("data-list-row");
+      expect(control.matches(":disabled"), control.outerHTML).toBe(!opens);
+    }
+  });
+
+  it("opens a disabled list's item to show its fields, disabled too", async () => {
+    draw({ disabled: true });
+
+    await userEvent.click(screen.getByRole("button", { name: /Hi/ }));
+    expect(screen.getByRole("textbox", { name: "Words" }).matches(":disabled")).toBe(true);
+  });
+
+  it("shows a field's error under it, and marks its control invalid and described by it", () => {
+    draw({ error: "Not like this" });
+
+    expect(screen.getAllByText("Not like this")).toHaveLength(every.length);
+    for (const name of ["Title", "Alignment", "Gap"]) {
+      const control = screen.getByLabelText(name);
+      expect(control.getAttribute("aria-invalid")).toBe("true");
+      expect(control.getAttribute("aria-describedby")).toMatch(/-error$/);
+    }
+    expect(screen.getByRole("switch", { name: "Full width" }).getAttribute("aria-invalid")).toBe(
+      "true",
+    );
+    for (const name of ["Padding", "Margin"]) {
+      const choices = screen.getByRole("radiogroup", { name });
+      expect(choices.getAttribute("aria-invalid")).toBe("true");
+      expect(choices.getAttribute("aria-describedby")).toMatch(/-error$/);
+    }
+    // A list's group can't be invalid; its message describes it.
+    expect(screen.getByRole("group", { name: "Quotes" }).getAttribute("aria-describedby")).toMatch(
+      /-error$/,
+    );
+  });
+});
+
 describe("style field renderers (1.14 part 2)", () => {
   const sizes = [
     { label: "Small", value: "small" },
