@@ -861,6 +861,9 @@ importers:
       '@webforge/model':
         specifier: workspace:*
         version: link:../model
+      lucide-static:
+        specifier: 1.59.0
+        version: 1.59.0
       react:
         specifier: 'catalog:'
         version: 19.3.1
@@ -4979,6 +4982,9 @@ packages:
     peerDependenciesMeta:
       '@types/react':
         optional: true
+
+  lucide-static@1.59.0:
+    resolution: {integrity: sha512-MuHZYaXbHgzN2QO6D3OM19bj09A+8GJiFSdXIMlbnLLEGQQ9+NRH2KaCxuivevD3Y23vM74kV17XBifgtqhfEg==}
 
   lz-string@1.5.0:
     resolution: {integrity: sha512-h5bgJWpxJNswbU7qCrV0tIKQCaS3blPDrqKWx+QxzuzL1zGUzij9XCWLrSLsJPu5t+eWA/ycetzYAO5IOMcWAQ==}
@@ -9722,6 +9728,8 @@ snapshots:
       react: 19.3.1
     optionalDependencies:
       '@types/react': 19.3.0
+
+  lucide-static@1.59.0: {}
 
   lz-string@1.5.0: {}
 

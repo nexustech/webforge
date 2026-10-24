@@ -141,3 +141,41 @@ export const Lists: Story = {
     ),
   },
 };
+
+/** Icons in each size and the theme's colours; a Button with one, and a List with one for markers. */
+export const Icons: Story = {
+  args: {
+    nodes: inSection([
+      ...(["small", "medium", "large", "xlarge"] as const).map(
+        (size, index): NodeDoc => ({
+          type: "Icon",
+          props: {
+            id: `icon-${size}`,
+            icon: ["phone", "mail", "map-pin", "clock"][index],
+            size,
+            color: ["default", "primary", "secondary", "accent"][index],
+          },
+        }),
+      ),
+      {
+        type: "Button",
+        props: {
+          id: "call",
+          label: "Call us",
+          icon: "phone",
+          link: { kind: "url", href: "https://example.com" },
+        },
+      },
+      {
+        type: "List",
+        props: {
+          id: "list",
+          icon: "check",
+          items: ["Baked every morning", "Organic flour", "Free delivery in town"].map(
+            (text, index): NodeDoc => ({ type: "ListItem", props: { id: `tick-${index}`, text } }),
+          ),
+        },
+      },
+    ]),
+  },
+};
