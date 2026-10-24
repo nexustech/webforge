@@ -122,8 +122,8 @@ export function ListItemsToolbar({
           key={place}
           type="button"
           size="sm"
-          variant="ghost"
-          className="h-6 px-2 text-xs"
+          // Bordered, so they read as buttons beside their label.
+          variant="outline"
           // Named in full ("Add item before"), its visible word included.
           aria-label={t(`listToolbar.${place}Name`)}
           disabled={place !== "end" && !itemSelected}
