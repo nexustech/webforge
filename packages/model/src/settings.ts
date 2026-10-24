@@ -118,6 +118,11 @@ export const siteSettingsSchema = z.strictObject({
     language: languageTagSchema,
     /** Source image for the favicon and app icons. */
     icon: mediaIdSchema.optional(),
+    /**
+     * A back-to-top button on every page (F-CM-9, 2.9), shown once the visitor has scrolled down;
+     * a page can leave it out (`hideBackToTop`). Off when absent, as in files from before it.
+     */
+    backToTop: z.boolean().optional(),
   }),
   address: z.strictObject({ url: webAddressSchema.optional() }),
   social: z.strictObject({

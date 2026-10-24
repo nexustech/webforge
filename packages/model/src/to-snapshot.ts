@@ -19,7 +19,8 @@ export function siteToSnapshot(
     if (page === undefined) {
       return [];
     }
-    const { description, hideHeader, hideFooter, hideFromNavigation } = page.settings;
+    const { description, hideHeader, hideFooter, hideFromNavigation, hideBackToTop } =
+      page.settings;
     return [
       {
         id: page.id,
@@ -30,6 +31,7 @@ export function siteToSnapshot(
         hideFromNavigation: hideFromNavigation || page.kind === "not-found",
         hideHeader,
         hideFooter,
+        hideBackToTop,
         // Copies of shared sections are exported inline, as their shared section (F-ED-23).
         doc: { ...page.doc, content: expandSharedCopies(page.doc.content, site.sharedSections) },
       },
@@ -65,6 +67,7 @@ export function siteToSnapshot(
     settings: settingValues(site.settings),
     openingHours: site.settings.contact.openingHours,
     formService: site.settings.forms.service,
+    backToTop: site.settings.general.backToTop,
     menu: site.menu,
   };
 }
