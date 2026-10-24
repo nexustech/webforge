@@ -6,18 +6,18 @@ import {
   type SharedSectionId,
   type SiteDoc,
 } from "@webforge/model";
-import { siteLibrary, starterPage } from "@webforge/site-components";
+import { starterPage } from "@webforge/site-components";
+import { createFakeEngine } from "@webforge/test-utils/renderer";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { sessionWith } from "../testing/fixtures.js";
 import {
   connectEngine,
-  createEditorSession,
   currentPage,
   type EditKind,
   runHistoryCommand,
   TEXT_SESSION_GRACE_MS,
   TYPING_PAUSE_MS,
 } from "./editor-session.js";
-import { createFakeEngine } from "./fake-engine.test-helper.js";
 import { starterSite } from "./starter-site.js";
 
 const withHeadingText = (page: PageDoc, text: string): PageDoc => {
@@ -60,7 +60,7 @@ function siteWithAbout(): { site: SiteDoc; about: PageId } {
 
 function setup() {
   const { site, about } = siteWithAbout();
-  const session = createEditorSession(siteLibrary, site);
+  const session = sessionWith(site);
   const home = site.homePageId;
   const engine = createFakeEngine();
   const connection = connectEngine(engine, session);

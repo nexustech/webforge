@@ -16,6 +16,7 @@ import {
   TEXT_STYLES,
 } from "@webforge/model";
 import { siteLibrary, starterPage } from "@webforge/site-components";
+import { createFakeEngine, type FakeEngine } from "@webforge/test-utils/renderer";
 import fc from "fast-check";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
@@ -42,15 +43,14 @@ import {
   saveAsSharedSection,
   updateSectionField,
 } from "../shared-sections/shared-sections.js";
+import { sessionWith } from "../testing/fixtures.js";
 import {
   connectEngine,
-  createEditorSession,
   type EditorSession,
   type EngineConnection,
   runHistoryCommand,
   TEXT_SESSION_GRACE_MS,
 } from "./editor-session.js";
-import { createFakeEngine, type FakeEngine } from "./fake-engine.test-helper.js";
 import { applyListChange, editableList, listItems } from "./list-edit.js";
 import { withoutOverride, withValueAt } from "./responsive-value.js";
 import { starterSite } from "./starter-site.js";
@@ -113,7 +113,7 @@ function initialSite(): SiteDoc {
 
 function setup(): Ctx {
   const site = initialSite();
-  const session = createEditorSession(siteLibrary, site);
+  const session = sessionWith(site);
   const engine = createFakeEngine();
   let shown: PageDoc | undefined = site.pages[site.homePageId]?.doc;
   vi.mocked(engine.loadPage).mockImplementation((page) => {

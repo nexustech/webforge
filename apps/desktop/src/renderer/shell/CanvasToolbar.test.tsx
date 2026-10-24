@@ -7,10 +7,10 @@ import { siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { type CanvasPreferences, DEFAULT_PREFERENCES } from "../../shared/ipc/prefs.js";
 import { createPreviewStore } from "../editor/edit-previews.js";
-import { createEditorSession, currentPage, type EditorSession } from "../editor/editor-session.js";
+import { currentPage, type EditorSession } from "../editor/editor-session.js";
 import { headerToolbar } from "../editor/HeaderToolbar.js";
 import { HEADING_LEVELS, headingToolbar } from "../editor/HeadingToolbar.js";
-import { starterSite } from "../editor/starter-site.js";
+import { sessionWith } from "../testing/fixtures.js";
 import { CanvasToolbar } from "./CanvasToolbar.js";
 import { CanvasToolbarHost } from "./CanvasToolbarHost.js";
 import { viewportFor, widthOf } from "./canvas-size.js";
@@ -322,7 +322,7 @@ function host(
 
 describe("CanvasToolbarHost", () => {
   it("changes the view and the page without an undo step (U6)", async () => {
-    const session = createEditorSession(siteLibrary, starterSite());
+    const session = sessionWith();
     const view = createCanvasView();
     host(session, view);
 
@@ -344,13 +344,13 @@ describe("CanvasToolbarHost", () => {
   });
 
   it("keeps the row under it, empty, while the selection has no toolbar (SP-4)", () => {
-    host(createEditorSession(siteLibrary, starterSite()));
+    host(sessionWith());
     const row = screen.getByRole("toolbar", { name: "Selected element" });
     expect(row.childElementCount).toBe(0);
   });
 
   it("shows the selected element's own toolbar in the row under it, if its type has one (SP-4)", () => {
-    const session = createEditorSession(siteLibrary, starterSite());
+    const session = sessionWith();
     const toolbars = host(session);
     act(() => {
       toolbars.register({
@@ -371,7 +371,7 @@ describe("CanvasToolbarHost", () => {
 
 describe("Heading level toolbar (SP-4)", () => {
   function setUpHeading() {
-    const session = createEditorSession(siteLibrary, starterSite());
+    const session = sessionWith();
     const flush = vi.fn();
     const toolbars = createContextualToolbars();
     toolbars.register(headingToolbar({ session, flush }));
@@ -400,7 +400,7 @@ describe("Heading level toolbar (SP-4)", () => {
   });
 
   it("shows no Heading level in Content mode, which locks the design (R9)", () => {
-    const session = createEditorSession(siteLibrary, starterSite());
+    const session = sessionWith();
     const toolbars = createContextualToolbars();
     toolbars.register(headingToolbar({ session, flush: vi.fn() }));
     const preferences = createPreferencesStore();
@@ -452,7 +452,7 @@ describe("Heading level toolbar (SP-4)", () => {
 
 describe("Show mobile menu (UX-26)", () => {
   function setUpHeader(mode: "design" | "content" = "design") {
-    const session = createEditorSession(siteLibrary, starterSite());
+    const session = sessionWith();
     const previews = createPreviewStore();
     const toolbars = createContextualToolbars();
     toolbars.register(headerToolbar({ session, previews }));

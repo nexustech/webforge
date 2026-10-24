@@ -1,9 +1,7 @@
 import type { MenuItem, MenuItemId, PageId } from "@webforge/model";
-import { siteLibrary } from "@webforge/site-components";
 import { describe, expect, it } from "vitest";
-import { createEditorSession } from "../editor/editor-session.js";
-import { starterSite } from "../editor/starter-site.js";
 import { addPage } from "../site/page-actions.js";
+import { sessionWith } from "../testing/fixtures.js";
 import {
   addMenuItem,
   editMenuLink,
@@ -17,7 +15,7 @@ import {
 } from "./menu-actions.js";
 
 function setUp() {
-  const session = createEditorSession(siteLibrary, starterSite());
+  const session = sessionWith();
   const site = () => session.history.document.getState();
   const about = addPage(session, "About") as PageId;
   // A section on About to link to.

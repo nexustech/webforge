@@ -1,7 +1,7 @@
+import { createFakeEngine } from "@webforge/test-utils/renderer";
 import { describe, expect, it, vi } from "vitest";
 import { createCommandRegistry, isMac } from "../shell/commands.js";
 import { registerCanvasCommands } from "./canvas-commands.js";
-import { createFakeEngine } from "./fake-engine.test-helper.js";
 
 describe("registerCanvasCommands", () => {
   it("registers the keyboard actions with their shortcuts, the edits in the Edit menu", () => {

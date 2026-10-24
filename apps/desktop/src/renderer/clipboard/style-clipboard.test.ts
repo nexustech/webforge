@@ -1,9 +1,10 @@
 import type { NodeDoc } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { describe, expect, it } from "vitest";
-import { createEditorSession, currentPage } from "../editor/editor-session.js";
+import { currentPage } from "../editor/editor-session.js";
 import { starterSite } from "../editor/starter-site.js";
 import { createCommandRegistry } from "../shell/commands.js";
+import { sessionWith } from "../testing/fixtures.js";
 import {
   canPasteStyle,
   copyStyle,
@@ -18,7 +19,7 @@ function sessionOn(content: NodeDoc[]) {
   const home = site.pages[site.homePageId];
   if (home === undefined) throw new Error("no home page");
   home.doc.content = content;
-  const session = createEditorSession(siteLibrary, site);
+  const session = sessionWith(site);
   const select = (nodeId: string) => session.select(nodeId);
   const top = (id: string) =>
     currentPage(session)?.doc.content.find((each) => each.props.id === id)?.props;
@@ -47,7 +48,7 @@ function setUp() {
       },
     },
   ];
-  const session = createEditorSession(siteLibrary, site);
+  const session = sessionWith(site);
   const select = (nodeId: string) => session.select(nodeId);
   const node = (id: string) =>
     ((currentPage(session)?.doc.content[0]?.props.content ?? []) as NodeDoc[]).find(

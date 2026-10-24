@@ -140,6 +140,8 @@ export default {
           // Declared subpath export: @webforge/themes/font-plan (zod only: no font catalogue, so
           // the preload and the catalogue build under plain Node can take it).
           "^packages/themes/src/fonts/plan\\.ts$",
+          // Declared subpath export: @webforge/test-utils/renderer (the renderer's test kit, B6).
+          "^packages/test-utils/src/renderer\\.ts$",
         ],
       },
     },

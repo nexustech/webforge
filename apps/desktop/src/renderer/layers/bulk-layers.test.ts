@@ -5,11 +5,11 @@ import {
   SHARED_COPY_TYPE,
   type SharedSectionId,
 } from "@webforge/model";
-import { siteLibrary } from "@webforge/site-components";
 import { describe, expect, it } from "vitest";
-import { createEditorSession, currentPage } from "../editor/editor-session.js";
+import { currentPage } from "../editor/editor-session.js";
 import { selectedIds } from "../editor/selection.js";
 import { starterSite } from "../editor/starter-site.js";
+import { sessionWith } from "../testing/fixtures.js";
 import {
   deleteSelected,
   duplicateSelected,
@@ -44,7 +44,7 @@ function setUp() {
     { type: "Section", props: { id: "s2", content: [] } },
     { type: SHARED_COPY_TYPE, props: { id: "c1", sharedSectionId: HOURS } },
   ];
-  const session = createEditorSession(siteLibrary, {
+  const session = sessionWith({
     ...site,
     pages: { ...site.pages, [home.id]: { ...home, doc: { root: { props: {} }, content } } },
     sharedSections: {

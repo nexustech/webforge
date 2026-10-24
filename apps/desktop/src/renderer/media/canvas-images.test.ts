@@ -1,8 +1,6 @@
 import type { ImageMeta, MediaId, MediaMeta } from "@webforge/model";
-import { siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createEditorSession } from "../editor/editor-session.js";
-import { starterSite } from "../editor/starter-site.js";
+import { sessionWith } from "../testing/fixtures.js";
 import { canvasImage, connectCanvasImages } from "./canvas-images.js";
 import { addMedia, cropMedia, setFocalPoint } from "./media-commands.js";
 
@@ -71,7 +69,7 @@ describe("connectCanvasImages", () => {
 
   it("gives the canvas the site's images, again once Media has changed and settled", () => {
     vi.useFakeTimers();
-    const session = createEditorSession(siteLibrary, starterSite());
+    const session = sessionWith();
     const engine = { setImages: vi.fn() };
     const stop = connectCanvasImages(engine, session);
 

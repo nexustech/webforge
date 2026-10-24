@@ -1,9 +1,8 @@
 import { type MediaId, type PageId, pagePath, type SiteDoc, siteDocSchema } from "@webforge/model";
-import { siteLibrary } from "@webforge/site-components";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { createEditorSession, type EditorSession } from "../editor/editor-session.js";
-import { starterSite } from "../editor/starter-site.js";
+import type { EditorSession } from "../editor/editor-session.js";
+import { sessionWith } from "../testing/fixtures.js";
 import {
   addPage,
   canDelete,
@@ -24,7 +23,7 @@ import {
 } from "./page-actions.js";
 
 function setUp() {
-  const session = createEditorSession(siteLibrary, starterSite());
+  const session = sessionWith();
   const site = () => session.history.document.getState();
   const home = site().homePageId;
   const notFound = site().pageOrder.find((id) => site().pages[id]?.kind === "not-found");
@@ -506,7 +505,7 @@ describe("page actions and undo (U8)", () => {
     });
     fc.assert(
       fc.property(fc.array(action, { maxLength: 25 }), (actions) => {
-        const session = createEditorSession(siteLibrary, starterSite());
+        const session = sessionWith();
         const start = session.history.document.getState();
         for (const next of actions) {
           perform(session, next);

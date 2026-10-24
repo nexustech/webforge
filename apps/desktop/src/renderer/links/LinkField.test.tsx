@@ -6,8 +6,9 @@ import type { MediaId, NodeDoc, PageDoc } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it } from "vitest";
 import { EditPanelHost } from "../editor/EditPanelHost.js";
-import { createEditorSession, currentPage } from "../editor/editor-session.js";
+import { currentPage } from "../editor/editor-session.js";
 import { starterSite } from "../editor/starter-site.js";
+import { sessionWith } from "../testing/fixtures.js";
 import { linkFieldRenderer } from "./LinkField.js";
 
 afterEach(cleanup);
@@ -28,7 +29,7 @@ function setUp(buttonLink?: unknown) {
     },
     { type: "Section", props: { id: "times", layerName: "Opening times", content: [] } },
   );
-  const session = createEditorSession(siteLibrary, site);
+  const session = sessionWith(site);
   session.select("hero");
   render(
     <FieldRenderersProvider renderers={{ link: linkFieldRenderer({ session }) }}>

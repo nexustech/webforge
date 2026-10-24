@@ -7,10 +7,10 @@ import {
   type SharedSectionId,
   type SiteDoc,
 } from "@webforge/model";
-import { siteLibrary } from "@webforge/site-components";
 import { describe, expect, it } from "vitest";
-import { createEditorSession, currentPage, type EditorSession } from "../editor/editor-session.js";
+import { currentPage, type EditorSession } from "../editor/editor-session.js";
 import { starterSite } from "../editor/starter-site.js";
+import { sessionWith } from "../testing/fixtures.js";
 import {
   anchorsTakenInSection,
   copySelection,
@@ -37,7 +37,7 @@ function savedSession(): EditorSession {
   const home = start.pages[start.homePageId];
   const section = home?.doc.content[0];
   if (section !== undefined) section.props.advanced = { anchorId: "hours" };
-  const session = createEditorSession(siteLibrary, start);
+  const session = sessionWith(start);
   select(session, "section-1");
   saveAsSharedSection(session, "Hours");
   return session;
@@ -80,7 +80,7 @@ describe("shared sections in the editor (1.29, F-ED-23)", () => {
     const start = starterSite();
     const section = start.pages[start.homePageId]?.doc.content[0];
     if (section !== undefined) Object.assign(section.props, { layerName: "Welcome", hidden: true });
-    const session = createEditorSession(siteLibrary, start);
+    const session = sessionWith(start);
     select(session, "section-1");
 
     saveAsSharedSection(session, "Hours");
@@ -275,7 +275,7 @@ describe("shared sections in the editor (1.29, F-ED-23)", () => {
     expect(nameProblem(before, " hours", shared.id)).toBeUndefined();
 
     // Saving another section under a name in use changes nothing.
-    const other = createEditorSession(siteLibrary, before);
+    const other = sessionWith(before);
     const notFound = Object.values(before.pages).find((page) => page.kind === "not-found");
     if (notFound === undefined) throw new Error("no 'Page not found' page");
     other.showPage(notFound.id);

@@ -9,11 +9,11 @@ import {
   type SiteDoc,
 } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
+import { createFakeEngine } from "@webforge/test-utils/renderer";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { sessionWith } from "../testing/fixtures.js";
 import { selectionPath } from "./breadcrumbs.js";
 import { CanvasBreadcrumbs } from "./CanvasBreadcrumbs.js";
-import { createEditorSession } from "./editor-session.js";
-import { createFakeEngine } from "./fake-engine.test-helper.js";
 import { starterSite } from "./starter-site.js";
 
 const HOURS = "shared-hours" as SharedSectionId;
@@ -107,7 +107,7 @@ describe("CanvasBreadcrumbs", () => {
   afterEach(cleanup);
 
   it("follows the selection, selects on click and outlines on hover", async () => {
-    const session = createEditorSession(siteLibrary, site());
+    const session = sessionWith(site());
     const engine = createFakeEngine();
     render(<CanvasBreadcrumbs session={session} engine={engine} />);
     const crumbs = () => screen.getAllByRole("button").map((button) => button.textContent);
@@ -133,7 +133,7 @@ describe("CanvasBreadcrumbs", () => {
   });
 
   it("takes the outline away when the step under the pointer goes, or the bar (#253 review)", async () => {
-    const session = createEditorSession(siteLibrary, site());
+    const session = sessionWith(site());
     const engine = createFakeEngine();
     session.select("a");
     const { unmount } = render(<CanvasBreadcrumbs session={session} engine={engine} />);

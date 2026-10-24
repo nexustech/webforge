@@ -1,12 +1,11 @@
 // @vitest-environment happy-dom
 import type { SiteDoc } from "@webforge/model";
-import { siteLibrary } from "@webforge/site-components";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { StoreApi } from "zustand/vanilla";
-import { createEditorSession, type EditorSession } from "../editor/editor-session.js";
-import { starterSite } from "../editor/starter-site.js";
+import type { EditorSession } from "../editor/editor-session.js";
+import { sessionWith } from "../testing/fixtures.js";
 import { AutosaveStatus } from "./AutosaveStatus.js";
 import type { SaveStatus as Status } from "./autosave.js";
 import type { LoadedSite } from "./load-site.js";
@@ -38,7 +37,7 @@ beforeEach(() => {
   container = document.createElement("div");
   document.body.append(container);
   root = createRoot(container);
-  session = createEditorSession(siteLibrary, starterSite());
+  session = sessionWith();
   flushRequest = undefined;
   api = {
     project: { commit: vi.fn(async () => ({ status: "saved" as const })) },

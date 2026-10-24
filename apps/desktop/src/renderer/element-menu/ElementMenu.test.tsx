@@ -1,15 +1,14 @@
 // @vitest-environment happy-dom
 import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { siteLibrary } from "@webforge/site-components";
+import { createFakeEngine } from "@webforge/test-utils/renderer";
 import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createEditorSession, currentPage } from "../editor/editor-session.js";
-import { createFakeEngine } from "../editor/fake-engine.test-helper.js";
-import { starterSite } from "../editor/starter-site.js";
+import { currentPage } from "../editor/editor-session.js";
 import type { Layer } from "../layers/layers.js";
 import { CommandRegistryProvider } from "../shell/command-context.js";
 import { createCommandRegistry } from "../shell/commands.js";
+import { sessionWith } from "../testing/fixtures.js";
 import { CanvasElementMenu, type CanvasElementMenuProps } from "./CanvasElementMenu.js";
 import { ELEMENT_MENU_COMMANDS, ElementMenu } from "./ElementMenu.js";
 
@@ -190,7 +189,7 @@ function RenamingMenu(props: Omit<CanvasElementMenuProps, "renaming" | "onRenami
 
 describe("CanvasElementMenu (1.35)", () => {
   function setUp() {
-    const session = createEditorSession(siteLibrary, starterSite());
+    const session = sessionWith();
     const engine = createFakeEngine();
     const { commands } = registry({ save: true, detach: false });
     render(

@@ -7,8 +7,9 @@ import {
 } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { describe, expect, it } from "vitest";
-import { createEditorSession, currentPage } from "../editor/editor-session.js";
+import { currentPage } from "../editor/editor-session.js";
 import { starterSite } from "../editor/starter-site.js";
+import { sessionWith } from "../testing/fixtures.js";
 import {
   layerItem,
   layersOf,
@@ -38,7 +39,7 @@ function setUp() {
     },
     { type: "Section", props: { id: "s2", content: [], hidden: true } },
   ];
-  const session = createEditorSession(siteLibrary, {
+  const session = sessionWith({
     ...site,
     pages: { ...site.pages, [home.id]: { ...home, doc: { root: { props: {} }, content } } },
   });
@@ -215,7 +216,7 @@ describe("linked copies in Layers (F-ED-23)", () => {
   });
 
   it("renames, hides and moves the copy itself, one step each", () => {
-    const session = createEditorSession(siteLibrary, withCopies());
+    const session = sessionWith(withCopies());
     const content = () => currentPage(session)?.doc.content ?? [];
     const copy = (id: string) => content().find((node) => node.props.id === id)?.props;
     const layer = copiedNodeId("c1", "s");

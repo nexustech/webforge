@@ -7,8 +7,9 @@ import {
 } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { describe, expect, it } from "vitest";
-import { createEditorSession, currentPage } from "../editor/editor-session.js";
+import { currentPage } from "../editor/editor-session.js";
 import { starterSite } from "../editor/starter-site.js";
+import { sessionWith } from "../testing/fixtures.js";
 import {
   addComponent,
   addItems,
@@ -119,17 +120,17 @@ describe("addTarget", () => {
 });
 
 /** A session on the starter site, with the home page's content replaced by `content`. */
-function sessionWith(content: NodeDoc[]) {
+function sessionWithContent(content: NodeDoc[]) {
   const site = starterSite();
   const home = site.pages[site.homePageId];
   if (home === undefined) throw new Error("no home page");
   home.doc.content = content;
-  return createEditorSession(siteLibrary, site);
+  return sessionWith(site);
 }
 
 describe("addComponent", () => {
   it("adds with its defaults as one 'Added …' step that selects it, undone in one go", () => {
-    const session = createEditorSession(siteLibrary, starterSite());
+    const session = sessionWith();
     const content = () => currentPage(session)?.doc.content ?? [];
     session.select("heading-1");
 
@@ -150,7 +151,7 @@ describe("addComponent", () => {
   });
 
   it("adds nothing where nothing takes it, or for an unknown component", () => {
-    const session = sessionWith([]);
+    const session = sessionWithContent([]);
 
     expect(addComponent(session, "Text")).toBe(false);
     expect(addComponent(session, "Nothing")).toBe(false);
@@ -158,7 +159,7 @@ describe("addComponent", () => {
   });
 
   it("starts a slot the parent doesn't have yet", () => {
-    const session = sessionWith([{ type: "Section", props: { id: "s" } }]);
+    const session = sessionWithContent([{ type: "Section", props: { id: "s" } }]);
 
     addComponent(session, "Heading");
 
@@ -238,7 +239,7 @@ describe("shared sections in the Add panel (F-ED-23)", () => {
   });
 
   it("places a linked copy after the selected section, as one step that selects it", () => {
-    const session = createEditorSession(siteLibrary, sharedSite());
+    const session = sessionWith(sharedSite());
     const content = () => currentPage(session)?.doc.content ?? [];
     session.select("hero");
 
@@ -257,7 +258,7 @@ describe("shared sections in the Add panel (F-ED-23)", () => {
   });
 
   it("places a copy at the canvas's +, after a copy whose element is selected, or last", () => {
-    const session = createEditorSession(siteLibrary, sharedSite());
+    const session = sessionWith(sharedSite());
     /** The page's top level: each section's type, or the shared section a copy shows. */
     const shown = () =>
       currentPage(session)?.doc.content.map((node) => node.props.sharedSectionId ?? node.type);
@@ -272,7 +273,7 @@ describe("shared sections in the Add panel (F-ED-23)", () => {
   });
 
   it("places nothing for a shared section the site doesn't have", () => {
-    const session = createEditorSession(siteLibrary, sharedSite());
+    const session = sessionWith(sharedSite());
 
     expect(addSharedCopy(session, "shared-gone" as SharedSectionId)).toBe(false);
     expect(session.history.entries()).toEqual([]);
