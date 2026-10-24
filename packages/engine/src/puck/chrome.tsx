@@ -8,7 +8,7 @@ import { HIDDEN_ATTRIBUTE } from "./config.js";
 /** Marks the element outlined from outside the canvas (`CanvasEngine.outline`). */
 export const OUTLINED_ATTRIBUTE = "data-wf-outlined";
 
-import { OVERLAY } from "./puck-dom.js";
+import { componentSelector, OVERLAY } from "./puck-dom.js";
 import { canPerform, performOnSelected } from "./selected-actions.js";
 import { type BoxHandleField, SPACING_HANDLES_CSS, SpacingHandles } from "./spacing-handles.js";
 import { ensureStyle } from "./styles.js";
@@ -412,4 +412,16 @@ export function QuickActionBar({
       </ActionBar>
     </div>
   );
+}
+
+/**
+ * Outlines the element `nodeId` in `doc`, the canvas document, as on hover: from outside the
+ * canvas (a breadcrumb under the pointer). `null` takes the outline away.
+ */
+export function outlineElement(doc: Document | undefined, nodeId: string | null): void {
+  for (const element of doc?.querySelectorAll(`[${OUTLINED_ATTRIBUTE}]`) ?? []) {
+    element.removeAttribute(OUTLINED_ATTRIBUTE);
+  }
+  if (nodeId === null) return;
+  doc?.querySelector(componentSelector(nodeId))?.setAttribute(OUTLINED_ATTRIBUTE, "");
 }

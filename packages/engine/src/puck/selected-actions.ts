@@ -1,6 +1,8 @@
 import type { ComponentData, PuckApi } from "@puckeditor/core";
 import type { CanvasAction } from "../canvas-engine.js";
 import { toPageDoc } from "./edit-from-action.js";
+import { componentSelector } from "./puck-dom.js";
+import { startTextEditing } from "./text-editing.js";
 import { allNodes, ROOT_ZONE } from "./tree.js";
 
 /** Actions that only move the selection through the page's tree (F-ED-27). */
@@ -164,4 +166,33 @@ export function performOnSelected(
       dispatch({ type: "setUi", ui: { itemSelector: null } });
       return true;
   }
+}
+
+/**
+ * Does `action` to the element selected in Puck (`puck`), on the canvas document `doc`: editing or
+ * clearing its text on the canvas (F-ED-27), or one of Puck's own actions. Walking through a long
+ * page from the keyboard keeps the selection in view. False if there was nothing to do.
+ */
+export function performOnCanvas(
+  puck: PuckApi,
+  doc: Document | undefined,
+  action: CanvasAction,
+): boolean {
+  if (action === "editText" || action === "clearText") {
+    const id = puck.selectedItem?.props.id;
+    return (
+      typeof id === "string" &&
+      doc !== undefined &&
+      startTextEditing(doc, id, action === "clearText")
+    );
+  }
+  if (!performOnSelected(puck, action)) {
+    return false;
+  }
+  if (action.startsWith("select")) {
+    const id = puck.selectedItem?.props.id;
+    const element = id === undefined ? null : doc?.querySelector(componentSelector(id));
+    element?.scrollIntoView?.({ block: "nearest" });
+  }
+  return true;
 }

@@ -41,7 +41,7 @@ import { listenInEditor, listenInFrame } from "./canvas-listeners.js";
 import { createCanvasSync } from "./canvas-sync.js";
 import { createCanvasView } from "./canvas-view.js";
 import { preserveCaret, refocusRichText } from "./caret.js";
-import { applyChromeStyles, createSelectionOutline, OUTLINED_ATTRIBUTE } from "./chrome.js";
+import { applyChromeStyles, createSelectionOutline, outlineElement } from "./chrome.js";
 import { toPuckConfig } from "./config.js";
 import { copyDrop, planCopyDrop } from "./copy-drop.js";
 import { deferredCommands } from "./deferred-commands.js";
@@ -49,6 +49,7 @@ import { puckDictionary } from "./dictionary.js";
 import type { DragKeys, Drop } from "./drag-copies.js";
 import { createDragSources } from "./drag-sources.js";
 import { editFromAction, selectedNodeId, toPageDoc } from "./edit-from-action.js";
+import { remountStale } from "./editor-revisions.js";
 import { elementNames } from "./element-names.js";
 import { keepElementsEnabled } from "./enabled-elements.js";
 import {
@@ -66,17 +67,16 @@ import {
 } from "./engine-support.js";
 import { hidePuckLayout } from "./layout-styles.js";
 import { pageActions, type SlotsOf } from "./page-actions.js";
-import { CANVAS_ROOT, componentSelector } from "./puck-dom.js";
+import { CANVAS_ROOT } from "./puck-dom.js";
 import { createRichTextTools } from "./rich-text-tools.js";
 import { type CanvasDocs, type RoutedEdit, routeEdit, routeLinkedCopy } from "./route-edit.js";
-import { performOnSelected } from "./selected-actions.js";
+import { performOnCanvas } from "./selected-actions.js";
 import { showAlsoSelected, watchAddingClicks } from "./selection-clicks.js";
 import { composePage, EMPTY_LAYOUT, sameOrder } from "./shared-layout.js";
 import { applySiteStyles, type SiteStyles } from "./site-styles.js";
 import { boxHandleFields } from "./spacing-handles.js";
-import { focusedRichTextId, richTextArrived, staleRichText } from "./stale-rich-text.js";
-import { startTextEditing } from "./text-editing.js";
-import { allNodes, findNode } from "./tree.js";
+import { focusedRichTextId, richTextArrived } from "./stale-rich-text.js";
+import { findNode } from "./tree.js";
 import { applyViewOptions } from "./view-options.js";
 
 /** Options of {@link createPuckEngine}. */
@@ -597,18 +597,10 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       const before = composePage(page, layout, shared);
       const after = composePage(nextPage, nextLayout, nextShared);
       // The rich-text editor being typed in, if this change remounts it (Undo while typing).
-      let refocus: string | null = null;
-      if (library !== null) {
-        const focused = focusedRichTextId(frameDocument);
-        for (const id of staleRichText(library, before, after)) {
-          editorRevisions.set(id, (editorRevisions.get(id) ?? 0) + 1);
-          if (id === focused) refocus = id;
-        }
-        const ids = new Set(allNodes(after).map((node) => node.props.id));
-        for (const id of editorRevisions.keys()) {
-          if (!ids.has(id)) editorRevisions.delete(id);
-        }
-      }
+      const refocus =
+        library === null
+          ? null
+          : remountStale(editorRevisions, library, before, after, focusedRichTextId(frameDocument));
       // Only what changed, unless Puck shows an older page or the change is too big to translate.
       const actions =
         getPuck !== null && sync.isShown() ? pageActions(before, after, slotsOf) : null;
@@ -648,14 +640,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       };
     },
 
-    outline(nodeId) {
-      const doc = frameDocument ?? host?.ownerDocument;
-      for (const element of doc?.querySelectorAll(`[${OUTLINED_ATTRIBUTE}]`) ?? []) {
-        element.removeAttribute(OUTLINED_ATTRIBUTE);
-      }
-      if (nodeId === null) return;
-      doc?.querySelector(componentSelector(nodeId))?.setAttribute(OUTLINED_ATTRIBUTE, "");
-    },
+    outline: (nodeId) => outlineElement(frameDocument ?? host?.ownerDocument, nodeId),
 
     select(nodeId) {
       if (nodeId === selection) {
@@ -696,32 +681,10 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       }
     },
 
-    perform(action) {
-      const puck = getPuck;
-      const doc = frameDocument ?? host?.ownerDocument;
-      if (puck === null || sync.inAction()) {
-        return false;
-      }
-      if (action === "editText" || action === "clearText") {
-        // The text of the element selected now, on the canvas (F-ED-27).
-        const id = puck().selectedItem?.props.id;
-        return (
-          typeof id === "string" &&
-          doc !== undefined &&
-          startTextEditing(doc, id, action === "clearText")
-        );
-      }
-      if (!performOnSelected(puck(), action)) {
-        return false;
-      }
-      if (action.startsWith("select")) {
-        // Walking through a long page from the keyboard keeps the selection in view.
-        const id = puck().selectedItem?.props.id;
-        const element = id === undefined ? null : doc?.querySelector(componentSelector(id));
-        element?.scrollIntoView?.({ block: "nearest" });
-      }
-      return true;
-    },
+    perform: (action) =>
+      getPuck !== null &&
+      !sync.inAction() &&
+      performOnCanvas(getPuck(), frameDocument ?? host?.ownerDocument, action),
 
     onAddRequest: addRequests.add,
 
