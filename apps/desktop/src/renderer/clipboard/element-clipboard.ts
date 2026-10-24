@@ -5,11 +5,12 @@ import {
   type MediaMeta,
   mediaItem,
   type NodeDoc,
+  newId,
   newSharedCopy,
   pageAnchors,
   pastedCopies,
 } from "@webforge/model";
-import { mediaUsedBy } from "@webforge/site-components";
+import { mediaUsedBy, slotsOverfull } from "@webforge/site-components";
 import type {
   ClipboardApi,
   ClipboardReadResult,
@@ -187,6 +188,10 @@ export function pasteTarget(
   if (first === undefined) return undefined;
   const target = addTarget(library, content, first.type, selectedId);
   if (target === undefined) return undefined;
+  // Not more than the place holds (a Columns' four), all of them counted.
+  const after = structuredClone(content) as NodeDoc[];
+  insertAt(after, target, nodes);
+  if (slotsOverfull(library, after) && !slotsOverfull(library, content)) return undefined;
   const sameTarget = (node: NodeDoc) => {
     const other = addTarget(library, content, node.type, selectedId);
     return (
@@ -313,14 +318,56 @@ export async function pasteElements(
 }
 
 /**
+ * Puts one pasted image in a new Image element (2.9), where the Add panel would place an element,
+ * joining Media in the same step, which selects it. False, changing nothing, for anything but one
+ * image, or a page with nowhere for an element.
+ */
+function pasteAsImage(session: ClipboardSession, items: readonly MediaMeta[]): boolean {
+  const [item] = items;
+  const defaults = session.library.components.Image?.defaults;
+  const page = currentPage(session)?.doc.content;
+  const ui = session.ui.getState();
+  const target =
+    page === undefined ? undefined : addTarget(session.library, page, "Image", ui.nodeId);
+  if (
+    items.length !== 1 ||
+    item?.kind !== "image" ||
+    defaults === undefined ||
+    target === undefined
+  ) {
+    return false;
+  }
+  const id = newId("node");
+  const node: NodeDoc = {
+    type: "Image",
+    props: { ...structuredClone(defaults), id, image: { mediaId: item.id } },
+  };
+  session.edit(
+    "insert",
+    t("site.clipboard.history.pastedImage", {
+      name: t("history.namedItem", { name: item.fileName }),
+    }),
+    (draft) => {
+      const content = draft.pages[ui.pageId]?.doc.content;
+      if (content === undefined) return;
+      putInMedia(draft, [item]);
+      insertAt(content, target, [node]);
+    },
+    { selectionAfter: { ...ui, nodeId: id }, apply: true },
+  );
+  return true;
+}
+
+/**
  * Pastes imported image files or a copied image (F-ED-16): one image goes into the selected
  * element's image field, if it has one ("Pasted image 'shop.png'"), and joins Media in the same
  * step; in the shared Header or Footer, every page shows it ("… into shared Header"), and in a
  * linked copy, the shared section holds it, so every copy does ("Edited shared section …", as the
  * canvas names any edit there, F-ED-23). Anything
- * else is added to Media ("Added image 'shop.png'"), which a message says. Inserting a new element
- * for it comes with Phase 2's Image element. Files Media didn't take are named in a message, as
- * for a drop.
+ * else goes in an Image element of its own (2.9, "Pasted image 'shop.png'"), placed where the Add
+ * panel would place one and selected, in the same step; several files, or a page with nowhere for
+ * an element, are added to Media ("Added image 'shop.png'"), which a message says. Files Media
+ * didn't take are named in a message, as for a drop.
  */
 function pasteMedia(
   session: ClipboardSession,
@@ -342,6 +389,9 @@ function pasteMedia(
       : Object.entries(session.library.components[selected.node.type]?.fields ?? {}).find(
           ([, def]) => def.kind === "media",
         )?.[0];
+  if ((selected === undefined || field === undefined) && pasteAsImage(session, items)) {
+    return true;
+  }
   if (selected === undefined || field === undefined) {
     addMedia(session, items);
     notify(

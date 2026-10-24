@@ -148,7 +148,9 @@ function AddButton({
       {item.label}
     </Button>
   );
-  if (favourites !== undefined) {
+  // A suggested item is offered only under Suggested, so it can't be a favourite.
+  const canFavour = favourites !== undefined && item.suggested !== true;
+  if (canFavour) {
     trigger = <ContextMenuTrigger asChild>{trigger}</ContextMenuTrigger>;
   }
   if (hasCard) {
@@ -164,7 +166,7 @@ function AddButton({
       </HoverCard>
     );
   }
-  if (favourites === undefined) return trigger;
+  if (favourites === undefined || !canFavour) return trigger;
   const favourite = favourites.has(item.type);
   // Right-click, or the keyboard's context-menu key (Shift+F10) on the focused item.
   return (

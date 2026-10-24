@@ -38,6 +38,11 @@ export type AddItem = {
   readonly sharedSectionId?: SharedSectionId;
   /** Set for an item listed again, among the favourites or recently used. */
   readonly repeat?: true;
+  /**
+   * Set for an item under Suggested (SP-12): a List's item, a Columns' column, offered only there,
+   * so it can't be a favourite.
+   */
+  readonly suggested?: true;
 };
 
 /** The components `tab` offers, in library order. */
@@ -117,10 +122,14 @@ export type AddTarget = {
   readonly index: number;
 };
 
-/** Whether `type` may go in the slot `slot` of `parent`. */
+/** Whether `type` may go in the slot `slot` of `parent`, which is not yet full (a Columns' four). */
 function accepts(library: ComponentLibrary, parent: NodeDoc, slot: string, type: string): boolean {
   const field = library.components[parent.type]?.fields[slot];
-  return field?.kind === "slot" && (field.allow === undefined || field.allow.includes(type));
+  return (
+    field?.kind === "slot" &&
+    (field.allow === undefined || field.allow.includes(type)) &&
+    (field.max === undefined || childrenOf(parent, slot).length < field.max)
+  );
 }
 
 /** The slot fields of `node` that take `type`, in field order. */
@@ -309,6 +318,46 @@ export function addComponent(session: AddSession, type: string, point?: InsertPo
     { selectionAfter: { pageId, viewport, nodeId: id }, apply: true },
   );
   return true;
+}
+
+/**
+ * The Add panel's *Suggested* group (SP-12): the types the selected element's slots name as theirs
+ * (a List's items, a Columns' columns, an FAQ's questions), and, for such an item, the types its
+ * parent's slot names, so another can go beside it. A slot that takes any element suggests
+ * nothing: everything fits there. Full slots (a Columns' four) suggest nothing either, nor does
+ * anything in a linked copy, which adding never changes (F-ED-23).
+ */
+export function suggestedTypes(
+  library: ComponentLibrary,
+  content: readonly NodeDoc[],
+  selectedId: string | null,
+): string[] {
+  const id = ownId(content, selectedId);
+  if (id === null || id !== selectedId) return [];
+  const step = pathTo(content, id)?.at(-1);
+  if (step === undefined) return [];
+  const named = (node: NodeDoc, slots: readonly string[]) =>
+    slots.flatMap((slot) => {
+      const field = library.components[node.type]?.fields[slot];
+      if (field?.kind !== "slot" || field.accepts !== undefined || field.allow === undefined) {
+        return [];
+      }
+      return field.allow.filter((type) => accepts(library, node, slot, type));
+    });
+  const own = named(step.node, Object.keys(library.components[step.node.type]?.fields ?? {}));
+  const beside = step.parent === null || step.slot === null ? [] : named(step.parent, [step.slot]);
+  return [...new Set([...own, ...beside])].filter((type) => library.components[type] !== undefined);
+}
+
+/** The Suggested group's items for `types`, listed again under *Suggested* (SP-12). */
+export function suggestedItems(library: ComponentLibrary, types: readonly string[]): AddItem[] {
+  const category = t("add.suggested");
+  return types.flatMap((type) => {
+    const def = library.components[type];
+    return def === undefined
+      ? []
+      : [{ type, label: def.label, category, repeat: true as const, suggested: true as const }];
+  });
 }
 
 /**

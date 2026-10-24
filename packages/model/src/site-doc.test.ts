@@ -117,6 +117,23 @@ describe("siteDocSchema", () => {
     );
   }, 30_000);
 
+  it("reads a file from before the back-to-top button unchanged, and keeps the button's options (2.9)", () => {
+    const before = JSON.stringify(site);
+    const read = JSON.stringify(siteDocSchema.parse(JSON.parse(before)));
+    // As it was, and with neither option added: no format change (ADR 0012).
+    expect(JSON.parse(read)).toEqual(JSON.parse(before));
+    expect(read).not.toMatch(/backToTop|BackToTop/);
+
+    const withButton = JSON.parse(before) as typeof site;
+    withButton.settings.general.backToTop = true;
+    const home = withButton.pages[withButton.homePageId];
+    if (home === undefined) throw new Error("no home page");
+    home.settings.hideBackToTop = true;
+    const kept = siteDocSchema.parse(JSON.parse(JSON.stringify(withButton)));
+    expect(kept.settings.general.backToTop).toBe(true);
+    expect(kept.pages[kept.homePageId]?.settings.hideBackToTop).toBe(true);
+  });
+
   it("rejects copies of shared sections that aren't valid, or aren't at the top of a page", () => {
     const copy = (props: Record<string, unknown>): NodeDoc => ({
       type: SHARED_COPY_TYPE,
