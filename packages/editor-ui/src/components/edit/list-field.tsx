@@ -4,12 +4,7 @@ import { type ReactNode, useEffect, useRef, useState } from "react";
 import { cn } from "../../lib/cn.js";
 import { Button } from "../ui/button.js";
 import { drawField, useFieldRenderers } from "./field-context.js";
-import type {
-  FieldRendererProps,
-  ListChange,
-  ListItem,
-  ListItemFieldSpec,
-} from "./field-registry.js";
+import type { FieldRendererProps, ListChange, ListItem, ListItemFieldSpec } from "./field-spec.js";
 
 /** The items of a list's value; anything else is an empty list. */
 function itemsOf(value: unknown): readonly ListItem[] {

@@ -1,7 +1,7 @@
 import { t } from "@webforge/i18n";
 import { useState } from "react";
 import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group.js";
-import type { FieldRendererProps } from "./field-registry.js";
+import type { FieldRendererProps } from "./field-spec.js";
 import { ToggleField } from "./toggle-field.js";
 
 /** The choice that leaves a side unset, so it takes the element's own spacing. */

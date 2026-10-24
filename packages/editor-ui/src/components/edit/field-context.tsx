@@ -1,10 +1,5 @@
 import { createContext, createElement, type ReactNode, useContext } from "react";
-import type {
-  FieldKind,
-  FieldRenderer,
-  FieldRendererProps,
-  FieldRenderers,
-} from "./field-registry.js";
+import type { FieldKind, FieldRenderer, FieldRendererProps, FieldRenderers } from "./field-spec.js";
 
 const FieldRenderersContext = createContext<FieldRenderers>({});
 

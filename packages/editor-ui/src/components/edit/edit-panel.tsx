@@ -11,7 +11,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs.js";
 import { BoxField } from "./box-field.js";
 import { drawField, FieldRenderersProvider, useFieldRenderers } from "./field-context.js";
-import type { FieldRenderers, FieldSpec } from "./field-registry.js";
+import type { FieldRenderers, FieldSpec } from "./field-spec.js";
 import { ListField } from "./list-field.js";
 import { PLAIN_RENDERERS } from "./plain-renderers.js";
 import { fieldControlClass } from "./text-field.js";

@@ -1,6 +1,6 @@
 import type { PointerEvent } from "react";
 import { cn } from "../../lib/cn.js";
-import type { FieldRendererProps } from "./field-registry.js";
+import type { FieldRendererProps } from "./field-spec.js";
 
 /** How far the pointer moves for one step when scrubbing, in pixels; with Shift, finer. */
 const SCRUB_STEP = 12;

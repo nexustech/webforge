@@ -1,5 +1,5 @@
 import { cn } from "../../lib/cn.js";
-import type { FieldRendererProps } from "./field-registry.js";
+import type { FieldRendererProps } from "./field-spec.js";
 
 /** On or off, as a switch. One click is one change. */
 export function ToggleField({

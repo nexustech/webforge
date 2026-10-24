@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { cn } from "../../lib/cn.js";
-import type { FieldRendererProps } from "./field-registry.js";
+import type { FieldRendererProps } from "./field-spec.js";
 
 /** Styles shared by the Edit panel's single-line controls: compact (28 px), on the input colour. */
 export const fieldControlClass = cn(

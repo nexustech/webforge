@@ -21,7 +21,7 @@ export type {
   ListItem,
   ListItemFieldSpec,
   PlainFieldKind,
-} from "./components/edit/field-registry.js";
+} from "./components/edit/field-spec.js";
 export { ListField } from "./components/edit/list-field.js";
 export { SelectField } from "./components/edit/select-field.js";
 export { SliderField } from "./components/edit/slider-field.js";

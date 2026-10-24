@@ -10,7 +10,7 @@ type Nothing = Readonly<Record<never, never>>;
  * What each kind of field's renderer needs besides its label and help (R11): the app maps its own
  * definitions (`FieldDef`) to these, so a `select` renderer always gets its options.
  */
-export type FieldSpecs = {
+type FieldSpecs = {
   readonly text: {
     /** Shown while the field is empty, already translated. */
     readonly placeholder?: string;

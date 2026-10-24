@@ -1,4 +1,4 @@
-import type { FieldRendererProps } from "./field-registry.js";
+import type { FieldRendererProps } from "./field-spec.js";
 import { fieldControlClass } from "./text-field.js";
 
 /** A choice from a short list, as a native select (keyboard and screen readers for free). */

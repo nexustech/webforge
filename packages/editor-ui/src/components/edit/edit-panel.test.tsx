@@ -4,7 +4,7 @@ import { t } from "@webforge/i18n";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { EditPanel, type EditPanelField } from "./edit-panel.js";
 import { FieldRenderersProvider } from "./field-context.js";
-import type { FieldRendererProps } from "./field-registry.js";
+import type { FieldRendererProps } from "./field-spec.js";
 
 afterEach(cleanup);
 

@@ -1,5 +1,5 @@
 import { ChoiceField } from "./choice-field.js";
-import type { FieldRenderer, PlainFieldKind } from "./field-registry.js";
+import type { FieldRenderer, PlainFieldKind } from "./field-spec.js";
 import { SelectField } from "./select-field.js";
 import { SliderField } from "./slider-field.js";
 import { TextField } from "./text-field.js";

@@ -1,5 +1,5 @@
 import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group.js";
-import type { FieldRendererProps } from "./field-registry.js";
+import type { FieldRendererProps } from "./field-spec.js";
 
 /**
  * A short row of choices (Small · Medium · Large, the theme's colours): one click is one change.
