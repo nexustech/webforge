@@ -109,7 +109,7 @@ describe("dragging from the Add panel", () => {
     const dragSource = vi.fn((element: HTMLElement, type: string) => {
       const stop = vi.fn();
       stops.set(type, stop);
-      expect(element.textContent).toContain(type === "Faq" ? "FAQ" : type);
+      expect(element.textContent).toContain(siteLibrary.components[type]?.label ?? type);
       return stop;
     });
     const props = {
@@ -134,7 +134,13 @@ describe("dragging from the Add panel", () => {
     const view = render(<AddPanel {...props} />);
 
     // Not the FAQ, which has nowhere to go, nor a shared section: copies are placed by a click.
-    expect(dragSource.mock.calls.map(([, type]) => type)).toEqual(["Section", "Hero"]);
+    expect(dragSource.mock.calls.map(([, type]) => type)).toEqual([
+      "Section",
+      "Hero",
+      "TextSection",
+      "TextImage",
+      "CallToAction",
+    ]);
     expect(button("Hero").className).toContain("relative");
     view.unmount();
 

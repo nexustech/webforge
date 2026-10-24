@@ -4,44 +4,92 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>About us | Rosa's Bakery</title>
-  <link rel="stylesheet" href="assets/css/site.b430c6f70d.css">
-  <script defer src="assets/js/webforge.e36729cf85.js"></script>
+  <link rel="stylesheet" href="assets/css/site.5cf09451c4.css">
+  <script defer src="assets/js/webforge.f67641704f.js"></script>
 </head>
 <body class="flex min-h-screen flex-col bg-base-100 font-sans text-base-content">
   <!-- Header (shared) -->
-  <header class="site-header navbar relative bg-base-100 px-4 shadow-sm">
-    <div class="flex-1"><a class="text-xl font-bold" href="index.html">Rosa&#x27;s Bakery</a></div>
-    <nav aria-label="Main navigation" class="[&amp;:not([data-wf-ready]):focus-within&gt;ul]:flex"><button type="button" class="btn btn-square btn-ghost md:hidden" aria-expanded="false" aria-controls="header-menu" data-wf-menu-toggle=""><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-          <path d="M4 6h16M4 12h16M4 18h16"></path>
-        </svg><span class="sr-only">Menu</span></button>
-      <ul id="header-menu" class="menu absolute inset-x-0 top-full z-10 hidden w-full bg-base-100 p-2 shadow data-open:flex md:static md:flex md:w-auto md:menu-horizontal md:p-0 md:shadow-none">
+  <header class="site-header relative z-30 flex items-center justify-between gap-2 px-4 py-3 md:flex-col md:justify-center sticky top-0 bg-base-100 shadow-none transition-shadow data-scrolled:shadow-md [:root:has(&amp;)]:scroll-pt-20 md:[:root:has(&amp;)]:scroll-pt-32" data-wf-sticky=""><a class="text-xl font-bold" href="index.html">Rosa&#x27;s Bakery</a>
+    <nav aria-label="Main navigation" class="md:flex md:flex-1 md:justify-center">
+      <ul class="menu menu-horizontal hidden p-0 md:flex">
         <li><a href="index.html">Home</a></li>
         <li><a href="about.html" aria-current="page">About us</a></li>
-        <li class="site-submenu relative [&amp;:not([data-wf-ready]):focus-within&gt;ul]:block"><button type="button" aria-expanded="false" aria-controls="header-menu-2" data-wf-submenu-toggle="">Visit us<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-              <path d="m6 9 6 6 6-6"></path>
-            </svg></button>
-          <ul id="header-menu-2" class="hidden data-open:block md:absolute md:top-full md:z-20 md:mt-1 md:w-48 md:rounded-box md:bg-base-100 md:p-2 md:shadow">
-            <li><a href="index.html#questions">Questions</a></li>
-            <li><a href="https://example.com/map" target="_blank" rel="noopener">Find us</a></li>
-          </ul>
+        <li>
+          <details class="site-submenu" data-wf-dropdown="">
+            <summary>Visit us</summary>
+            <ul class="md:z-20 md:w-48">
+              <li><a href="index.html#questions">Questions</a></li>
+              <li><a href="https://example.com/map" target="_blank" rel="noopener">Find us</a></li>
+            </ul>
+          </details>
         </li>
         <li><a href="about.html" aria-current="page" class="btn btn-primary btn-sm md:ml-2">Order a cake</a></li>
       </ul>
+      <details class="site-menu md:hidden" data-wf-menu="">
+        <summary class="btn btn-square btn-ghost list-none [&amp;::-webkit-details-marker]:hidden"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <path d="M4 6h16M4 12h16M4 18h16"></path>
+          </svg><span class="sr-only">Menu</span></summary>
+        <ul class="menu absolute inset-x-0 top-full z-10 w-full bg-base-100 p-2 shadow">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="about.html" aria-current="page">About us</a></li>
+          <li>
+            <details class="site-submenu" data-wf-dropdown="">
+              <summary>Visit us</summary>
+              <ul class="md:z-20 md:w-48">
+                <li><a href="index.html#questions">Questions</a></li>
+                <li><a href="https://example.com/map" target="_blank" rel="noopener">Find us</a></li>
+              </ul>
+            </details>
+          </li>
+          <li><a href="about.html" aria-current="page" class="btn btn-primary btn-sm md:ml-2">Order a cake</a></li>
+        </ul>
+      </details>
     </nav>
   </header>
   <main id="main" class="flex-1">
-    <section class="site-hero hero bg-base-200 px-4 py-16">
-      <div class="hero-content max-w-6xl flex-col gap-10 lg:flex-row-reverse text-center">
+    <section class="site-hero bg-base-200 px-4 py-16">
+      <div class="mx-auto max-w-3xl text-center">
         <div class="max-w-xl">
           <h1 class="text-4xl font-bold md:text-5xl">About Rosa&#x27;s Bakery</h1>
           <p class="py-6 text-lg">A family bakery since 1998. Cakes to order, with two days&#x27; notice.</p><a class="btn btn-primary" href="files/price-list.pdf" target="_blank" rel="noopener">Price list (PDF)</a>
         </div>
       </div>
     </section>
+    <section class="site-text-section bg-base-100 px-4 py-16">
+      <div class="mx-auto max-w-3xl">
+        <h2 class="text-3xl font-bold">Our story</h2>
+        <div class="mt-4 text-lg leading-relaxed [&amp;_a]:underline [&amp;_p+p]:mt-4">
+          <div class="contents">
+            <p>Rosa opened the bakery with one oven.</p>
+            <p>We still bake every morning.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="site-text-image bg-base-100 px-4 py-16">
+      <div class="mx-auto grid max-w-6xl items-center gap-10 md:grid-cols-2">
+        <div>
+          <h2 class="text-3xl font-bold">What we bake</h2>
+          <div class="mt-4 text-lg leading-relaxed [&amp;_a]:underline [&amp;_p+p]:mt-4">
+            <div class="contents">
+              <p>Sourdough, rye and cakes to order.</p>
+            </div>
+          </div>
+        </div>
+        <div class="md:order-first">
+          <picture>
+            <source type="image/webp" srcSet="assets/img/hero-640.webp 640w, assets/img/hero-1280.webp 1280w, assets/img/hero-1600.webp 1600w" sizes="(min-width: 768px) 50vw, 100vw" /><img src="assets/img/hero-1600.jpg" srcSet="assets/img/hero-640.jpg 640w, assets/img/hero-1280.jpg 1280w, assets/img/hero-1600.jpg 1600w" sizes="(min-width: 768px) 50vw, 100vw" width="1600" height="1000" alt="Hills where our wheat grows" loading="lazy" decoding="async" class="h-auto w-full rounded-box shadow-lg" />
+          </picture>
+        </div>
+      </div>
+    </section>
   </main>
   <!-- Footer (shared) -->
-  <footer class="site-footer footer footer-center bg-base-200 p-8 text-base-content">
-    <p>© Rosa&#x27;s Bakery, Hightown</p>
+  <footer class="site-footer footer sm:footer-horizontal bg-base-200 p-8 text-base-content">
+    <aside>
+      <p>© Rosa&#x27;s Bakery, Hightown</p>
+    </aside>
+    <nav aria-label="Footer navigation" class="flex flex-col gap-2"><a href="index.html" class="link link-hover">Home</a><a href="about.html" aria-current="page" class="link link-hover">About us</a><a href="index.html#questions" class="link link-hover">Questions</a><a href="https://example.com/map" class="link link-hover" target="_blank" rel="noopener">Find us</a><a href="about.html" aria-current="page" class="link link-hover">Order a cake</a></nav>
   </footer>
 </body>
 </html>

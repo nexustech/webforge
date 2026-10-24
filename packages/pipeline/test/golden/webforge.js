@@ -1,109 +1,289 @@
 /* webforge.js: behaviours for this site's components. Classic script, no modules. */
 
-// Header menu on small screens: the toggle button opens and closes the navigation list. Without
-// the script, CSS shows the list while the navigation has the focus (data-wf-ready turns that off).
-// Sets aria-expanded on the button and data-open on the list (the CSS shows the list when it is
-// set). Escape closes the menu and returns focus to the button; choosing a link closes it.
-// Dropdowns work the same way inside it: their button opens their list, Escape closes the
-// dropdown first, as does a click outside it, and opening one closes the others.
+// Carousels (2.10, G9). Without the script a carousel is a strip of slides that swipes and scrolls
+// by itself, its slides snapping into place. The script shows the previous and next buttons (which
+// go round from the last slide to the first), moves with the arrow keys while the focus is in the
+// carousel, names each slide "2 of 5" for screen readers and says which one shows after a move.
+// Where several slides show at once (logos), the buttons move by what's in view, the last page
+// full rather than one logo alone, and say which slides show ("5 to 8 of 10").
+// One set to play automatically moves on every few seconds, with a button to stop it that comes
+// first (WCAG 2.2.2); it pauses while the pointer or the focus is in it, and never plays when the
+// visitor prefers reduced motion.
 (() => {
-  /**
-   * @typedef {object} Dropdown
-   * @property {HTMLLIElement} item
-   * @property {HTMLElement} toggle
-   * @property {() => boolean} isOpen
-   * @property {(open: boolean) => void} setOpen
-   */
-  /** @type {Dropdown[]} */
-  const dropdowns = [];
-  for (const toggle of document.querySelectorAll("[data-wf-submenu-toggle]")) {
-    const list = document.getElementById(toggle.getAttribute("aria-controls") || "");
-    const item = toggle.closest("li");
-    if (list === null || item === null || !(toggle instanceof HTMLElement)) {
+  const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
+
+  for (const root of document.querySelectorAll("[data-wf-carousel]")) {
+    const track = root.querySelector("[data-wf-carousel-track]");
+    const controls = root.querySelector("[data-wf-carousel-controls]");
+    const status = root.querySelector("[data-wf-carousel-status]");
+    if (!(root instanceof HTMLElement) || !(track instanceof HTMLElement)) {
       continue;
     }
-    // From here on the script opens the dropdown, not the CSS fallback for focus.
-    item.setAttribute("data-wf-ready", "");
-    /** @type {Dropdown} */
-    const dropdown = {
-      item,
-      toggle,
-      isOpen: () => toggle.getAttribute("aria-expanded") === "true",
-      setOpen: (open) => {
-        toggle.setAttribute("aria-expanded", String(open));
-        list.toggleAttribute("data-open", open);
-      },
+    const slides = [...track.children].filter((slide) => slide instanceof HTMLElement);
+    const total = slides.length;
+    /** "2 of 5", from the carousel's own wording. */
+    const position = (/** @type {number} */ index) =>
+      (root.dataset.slideOf ?? "{n} of {total}")
+        .replace("{n}", String(index + 1))
+        .replace("{total}", String(total));
+    /** How many slides show at once: one, or several logos. */
+    const inView = () => {
+      const [first, second] = slides;
+      if (first === undefined || second === undefined) return 1;
+      const step = second.offsetLeft - first.offsetLeft;
+      const gap = step - first.offsetWidth;
+      return step > 0 ? Math.max(1, Math.round((track.clientWidth + gap) / step)) : 1;
     };
-    dropdowns.push(dropdown);
-    // Tabbing on past its links closes it, so it doesn't stay drawn over the page.
-    item.addEventListener("focusout", (event) => {
-      if (!(event.relatedTarget instanceof Node && item.contains(event.relatedTarget))) {
-        dropdown.setOpen(false);
+    /**
+     * What shows from slide `index`: "2 of 5", or "5 to 8 of 10" when several do; from the last
+     * place the strip can stop, everything to the end.
+     */
+    const showing = (/** @type {number} */ index, /** @type {boolean} */ atEnd) => {
+      const count = inView();
+      if (count === 1) return position(index);
+      return (root.dataset.slidesOf ?? "{from} to {to} of {total}")
+        .replace("{from}", String(index + 1))
+        .replace("{to}", String(atEnd ? total : Math.min(index + count, total)))
+        .replace("{total}", String(total));
+    };
+    slides.forEach((slide, index) => {
+      slide.setAttribute("role", "group");
+      slide.setAttribute("aria-roledescription", root.dataset.slideLabel ?? "slide");
+      slide.setAttribute("aria-label", position(index));
+    });
+    if (total < 2) {
+      continue;
+    }
+    if (controls instanceof HTMLElement) {
+      controls.hidden = false;
+    }
+
+    /**
+     * The last slide a move can start at: the last whose place the strip can scroll to, so the
+     * last page is full (several logos at once). Every slide when the strip can't tell (no layout).
+     */
+    const lastStart = () => {
+      const first = slides[0];
+      if (first === undefined) return 0;
+      const furthest = track.scrollWidth - track.clientWidth;
+      let last = 0;
+      slides.forEach((slide, index) => {
+        if (slide.offsetLeft - first.offsetLeft <= furthest + 1) last = index;
+      });
+      return furthest <= 0 && track.scrollWidth === 0 ? total - 1 : last;
+    };
+
+    let current = 0;
+    /** The slide the script is scrolling to, and since when: its own scrolling moves nothing. */
+    let aim = { index: -1, since: 0 };
+    /**
+     * Moves `pages` pages of what's in view on (back if negative): the last page full, and round
+     * past either end. `announce` says what shows if asked.
+     */
+    const move = (/** @type {number} */ pages, /** @type {boolean} */ announce) => {
+      const count = inView();
+      const last = lastStart();
+      let target = current + pages * count;
+      if (target > last) target = current >= last ? 0 : last;
+      if (target < 0) target = current <= 0 ? last : 0;
+      current = target;
+      const first = slides[0];
+      const slide = slides[current];
+      if (first !== undefined && slide !== undefined) {
+        const left = slide.offsetLeft - first.offsetLeft;
+        // Already there (the strip's end, or a strip that all fits): no scroll will say it arrived.
+        aim =
+          Math.abs(left - track.scrollLeft) < 1
+            ? { index: -1, since: 0 }
+            : { index: current, since: Date.now() };
+        // The strip's CSS sets how: smoothly, or at once for a visitor who prefers less motion.
+        track.scrollTo({ left });
+      }
+      root.dataset.current = String(current);
+      if (announce && status !== null) {
+        status.textContent = showing(current, current === last);
+      }
+    };
+    // A swipe or a scroll by hand moves the current slide too: the one nearest the start.
+    track.addEventListener(
+      "scroll",
+      () => {
+        const first = slides[0];
+        if (first === undefined) return;
+        const left = track.scrollLeft;
+        let nearest = 0;
+        slides.forEach((slide, index) => {
+          const offset = slide.offsetLeft - first.offsetLeft;
+          const best = (slides[nearest]?.offsetLeft ?? 0) - first.offsetLeft;
+          if (Math.abs(offset - left) < Math.abs(best - left)) nearest = index;
+        });
+        // On its way to the slide it was sent to (for a second at most, as a swipe can stop it).
+        if (aim.index !== -1 && Date.now() - aim.since < 1000) {
+          if (nearest === aim.index) aim = { index: -1, since: 0 };
+          return;
+        }
+        aim = { index: -1, since: 0 };
+        current = nearest;
+        root.dataset.current = String(current);
+      },
+      { passive: true },
+    );
+    root.querySelector("[data-wf-carousel-previous]")?.addEventListener("click", () => {
+      move(-1, true);
+    });
+    root.querySelector("[data-wf-carousel-next]")?.addEventListener("click", () => {
+      move(1, true);
+    });
+    root.addEventListener("keydown", (event) => {
+      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+      // With a modifier the keys are the browser's or the system's (Alt+Left goes back).
+      if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      event.preventDefault();
+      move(event.key === "ArrowLeft" ? -1 : 1, true);
+    });
+
+    const interval = Number(root.dataset.interval);
+    const play = root.querySelector("[data-wf-carousel-play]");
+    if (!(interval > 0) || !(play instanceof HTMLElement)) {
+      continue;
+    }
+    /** Stopped by its button (or by reduced motion), not just paused while in use. */
+    let stopped = reducedMotion;
+    let hovered = false;
+    let focused = false;
+    /** @type {ReturnType<typeof setInterval> | undefined} */
+    let timer;
+    const update = () => {
+      const playing = !stopped && !hovered && !focused;
+      root.toggleAttribute("data-playing", !stopped);
+      // Moves while playing aren't announced: they'd interrupt whatever is being read.
+      status?.setAttribute("aria-live", playing ? "off" : "polite");
+      play.setAttribute(
+        "aria-label",
+        (stopped ? play.dataset.labelStart : play.dataset.labelStop) ?? "",
+      );
+      if (playing && timer === undefined) {
+        timer = setInterval(() => move(1, false), interval);
+      } else if (!playing && timer !== undefined) {
+        clearInterval(timer);
+        timer = undefined;
+      }
+    };
+    play.addEventListener("click", () => {
+      stopped = !stopped;
+      // Started from its own button, it plays though the focus (and the pointer) is on it (APG).
+      if (!stopped) {
+        focused = false;
+        hovered = false;
+      }
+      update();
+    });
+    root.addEventListener("mouseenter", () => {
+      hovered = true;
+      update();
+    });
+    root.addEventListener("mouseleave", () => {
+      hovered = false;
+      update();
+    });
+    root.addEventListener("focusin", () => {
+      focused = true;
+      update();
+    });
+    root.addEventListener("focusout", (event) => {
+      focused = event.relatedTarget instanceof Node && root.contains(event.relatedTarget);
+      update();
+    });
+    update();
+  }
+})();
+
+// The Header's menu on small screens, and the dropdowns in its navigation: each a <details>, which
+// opens and closes with its <summary> without the script too (and with a tap on iOS), and which
+// screen readers announce as expanded or collapsed. The script adds what <details> doesn't do:
+// one dropdown open at a time; a click outside closes them, as does focus moving on past a
+// dropdown and choosing a link in the menu; Escape closes the innermost one open around the focus
+// (a dropdown before its menu) and gives its <summary> the focus back.
+(() => {
+  /** @type {HTMLDetailsElement[]} */
+  const menus = [...document.querySelectorAll("details[data-wf-menu]")].filter(
+    (element) => element instanceof HTMLDetailsElement,
+  );
+  /** @type {HTMLDetailsElement[]} */
+  const dropdowns = [...document.querySelectorAll("details[data-wf-dropdown]")].filter(
+    (element) => element instanceof HTMLDetailsElement,
+  );
+
+  for (const dropdown of dropdowns) {
+    dropdown.addEventListener("toggle", () => {
+      if (!dropdown.open) return;
+      for (const other of dropdowns) {
+        if (other !== dropdown) other.open = false;
       }
     });
-    toggle.addEventListener("click", () => {
-      const open = !dropdown.isOpen();
-      for (const other of dropdowns) {
-        if (other !== dropdown) other.setOpen(false);
+    // Tabbing on past its links closes it, so it doesn't stay drawn over the page.
+    dropdown.addEventListener("focusout", (event) => {
+      if (!(event.relatedTarget instanceof Node && dropdown.contains(event.relatedTarget))) {
+        dropdown.open = false;
       }
-      dropdown.setOpen(open);
     });
   }
-  // Before the menu's own Escape (capture), so Escape closes an open dropdown first.
-  document.addEventListener(
-    "keydown",
-    (event) => {
-      const open = dropdowns.find((dropdown) => dropdown.isOpen());
-      // Only while focus is in the dropdown (or nowhere): Escape elsewhere is someone else's.
-      const focus = document.activeElement;
-      const here =
-        open !== undefined &&
-        (focus === null || focus === document.body || open.item.contains(focus));
-      if (event.key === "Escape" && open !== undefined && here) {
-        event.preventDefault();
-        event.stopPropagation();
-        open.setOpen(false);
-        open.toggle.focus();
+  for (const menu of menus) {
+    menu.addEventListener("click", (event) => {
+      if (event.target instanceof Element && event.target.closest("a") !== null) {
+        menu.open = false;
       }
-    },
-    true,
-  );
+    });
+  }
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    // Only while the focus is in one (or nowhere): Escape elsewhere is someone else's.
+    const focus = document.activeElement;
+    const nowhere = focus === null || focus === document.body;
+    // In document order, a dropdown comes after the menu it is in: the last one is innermost.
+    const open = [...menus, ...dropdowns]
+      .filter((details) => details.open && (nowhere || details.contains(focus)))
+      .sort((a, b) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1));
+    const innermost = open.at(-1);
+    if (innermost === undefined) return;
+    event.preventDefault();
+    innermost.open = false;
+    innermost.querySelector("summary")?.focus();
+  });
+
   document.addEventListener("click", (event) => {
-    for (const dropdown of dropdowns) {
-      if (
-        dropdown.isOpen() &&
-        !(event.target instanceof Node && dropdown.item.contains(event.target))
-      ) {
-        dropdown.setOpen(false);
+    for (const details of [...menus, ...dropdowns]) {
+      if (details.open && !(event.target instanceof Node && details.contains(event.target))) {
+        details.open = false;
       }
     }
   });
+})();
 
-  for (const toggle of document.querySelectorAll("[data-wf-menu-toggle]")) {
-    const menu = document.getElementById(toggle.getAttribute("aria-controls") || "");
-    if (menu === null || !(toggle instanceof HTMLElement)) {
+// Sticky header (F-DS-6): once the page has scrolled 80 px, the header gets data-scrolled, which
+// its scroll style shows (shrink, a solid background, a shadow). Anchor targets aren't hidden under
+// it: the page's scroll padding follows the header's height as it changes. Without the script the
+// header is simply sticky, and its own class gives the page a fixed scroll padding.
+(() => {
+  const THRESHOLD = 80;
+  for (const header of document.querySelectorAll("[data-wf-sticky]")) {
+    if (!(header instanceof HTMLElement)) {
       continue;
     }
-    // From here on the script opens the menu, not the CSS fallback for focus.
-    toggle.closest("nav")?.setAttribute("data-wf-ready", "");
-    const isOpen = () => toggle.getAttribute("aria-expanded") === "true";
-    /** @param {boolean} open */
-    const setOpen = (open) => {
-      toggle.setAttribute("aria-expanded", String(open));
-      menu.toggleAttribute("data-open", open);
+    const root = document.documentElement;
+    const scrolled = () => {
+      header.toggleAttribute("data-scrolled", window.scrollY > THRESHOLD);
     };
-    toggle.addEventListener("click", () => setOpen(!isOpen()));
-    menu.addEventListener("click", (event) => {
-      if (event.target instanceof Element && event.target.closest("a") !== null) {
-        setOpen(false);
-      }
-    });
-    document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape" && isOpen()) {
-        setOpen(false);
-        toggle.focus();
-      }
-    });
+    const pad = () => {
+      root.style.scrollPaddingTop = `${header.offsetHeight}px`;
+    };
+    window.addEventListener("scroll", scrolled, { passive: true });
+    if (typeof ResizeObserver === "function") {
+      new ResizeObserver(pad).observe(header);
+    }
+    scrolled();
+    pad();
   }
 })();
 

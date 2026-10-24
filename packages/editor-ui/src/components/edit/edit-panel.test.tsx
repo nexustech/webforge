@@ -99,6 +99,29 @@ describe("EditPanel", () => {
     expect(onCommit).toHaveBeenCalledWith("size");
   });
 
+  it("shows a field's help under it, and describes its control by it", async () => {
+    const { user } = setup([
+      {
+        name: "autoplay",
+        kind: "toggle",
+        label: "Play automatically",
+        help: "Never for visitors who prefer less motion.",
+        group: "style",
+        value: false,
+      },
+    ]);
+    await user.click(screen.getByRole("tab", { name: t("editPanel.style") }));
+
+    const control = screen.getByRole("switch", { name: "Play automatically" });
+    const helpId = control.getAttribute("aria-describedby");
+    expect(helpId).not.toBeNull();
+    expect(document.getElementById(helpId ?? "")?.textContent).toBe(
+      "Never for visitors who prefer less motion.",
+    );
+    // A field without help is described by nothing.
+    expect(screen.getByLabelText("Size").getAttribute("aria-describedby")).toBeNull();
+  });
+
   it("starts on Style when the element has only style fields, and says when a tab is empty", () => {
     render(
       <EditPanel

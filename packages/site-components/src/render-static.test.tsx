@@ -182,14 +182,13 @@ describe("renderNodesToHtml", () => {
     const html = renderNodesToHtml(starterLayout("Rosa's Bakery").header, siteLibrary, context);
 
     expect(html).toContain('<a class="text-xl font-bold" href="index.html">Rosa&#x27;s Bakery</a>');
-    expect(html).toContain(
-      '<nav aria-label="Main navigation" class="[&amp;:not([data-wf-ready]):focus-within&gt;ul]:flex">',
-    );
-    expect(html).toContain('aria-controls="header-menu" data-wf-menu-toggle=""');
-    expect(html).toContain('<ul id="header-menu"');
-    expect(html).toContain('<a href="index.html" aria-current="page">Home</a>');
+    expect(html).toContain('<nav aria-label="Main navigation">');
+    // A row on wide screens; on small ones a menu that opens without the script too (2.6).
+    expect(html).toContain('<ul class="menu menu-horizontal hidden p-0 md:flex">');
+    expect(html).toContain('<details class="site-menu md:hidden" data-wf-menu="">');
+    expect(html).toContain('<span class="sr-only">Menu</span></summary>');
+    expect(html.match(/<a href="index.html" aria-current="page">Home<\/a>/g)).toHaveLength(2);
     expect(html).toContain('<a href="about.html">About</a>');
-    expect(html).toContain('<span class="sr-only">Menu</span>');
   });
 
   it("renders the menu's buttons, new tabs and dropdowns (F-ED-17)", () => {
@@ -208,11 +207,10 @@ describe("renderNodesToHtml", () => {
       ],
     });
 
-    // The dropdown: a button that says whether it is open, controlling its own list.
+    // The dropdown: a <details>, which opens and says whether it is open without the script too.
     expect(html).toContain(
-      'aria-expanded="false" aria-controls="header-menu-0" data-wf-submenu-toggle="">Visit us',
+      '<details class="site-submenu" data-wf-dropdown=""><summary>Visit us</summary><ul class="md:z-20 md:w-48"',
     );
-    expect(html).toContain('<ul id="header-menu-0" class="hidden data-open:block');
     expect(html).toContain('<a href="index.html#questions">Questions</a>');
     expect(html).toContain(
       '<a href="https://example.com/map" target="_blank" rel="noopener">Find us</a>',
@@ -220,6 +218,110 @@ describe("renderNodesToHtml", () => {
     expect(html).toContain(
       '<a href="about.html" class="btn btn-primary btn-sm md:ml-2">Order a cake</a>',
     );
+  });
+
+  it("holds the same links in the row on wide screens as in the menu on small ones (2.6)", () => {
+    const [header] = starterLayout("Bakery").header;
+    if (header === undefined) throw new Error("No Header");
+    const navigation: RenderContext["navigation"] = [
+      { label: "Home", href: "index.html", current: true },
+      {
+        label: "Visit us",
+        current: false,
+        children: [
+          { label: "Questions", href: "index.html#questions", current: false },
+          { label: "Find us", href: "https://example.com/map", current: false, newTab: true },
+        ],
+      },
+      { label: "Book now", href: "about.html", current: false, button: true },
+    ];
+    /** The links (their whole tags) between `start` and `end` in `html`, in order. */
+    const linksIn = (html: string, start: string, end: string) => {
+      const from = html.indexOf(start);
+      return html.slice(from, html.indexOf(end, from)).match(/<a [^>]*>[^<]*<\/a>/g) ?? [];
+    };
+
+    for (const variant of ["left", "centred", "split"]) {
+      const html = renderNodesToHtml(
+        [{ ...header, props: { ...header.props, variant } }],
+        siteLibrary,
+        { ...context, navigation },
+      );
+      const row = linksIn(html, '<ul class="menu menu-horizontal', '<details class="site-menu');
+      const menu = linksIn(html, '<details class="site-menu', "</nav>");
+      // The split layout draws its last link as a button beside the row instead.
+      const beside = linksIn(html, "</nav>", "</header>");
+      const plain = (tag: string) => tag.replace(/ class="[^"]*"/, "");
+
+      expect(menu, variant).toHaveLength(4);
+      expect([...row, ...beside].map(plain), variant).toEqual(menu.map(plain));
+    }
+  });
+
+  it("draws the split Header's last link as a button beside the row, still in the menu (2.6)", () => {
+    const [header] = starterLayout("Bakery").header;
+    if (header === undefined) throw new Error("No Header");
+    const split: NodeDoc = { ...header, props: { ...header.props, variant: "split" } };
+
+    const html = renderNodesToHtml([split], siteLibrary, {
+      ...context,
+      navigation: [
+        { label: "Home", href: "index.html", current: false },
+        { label: "Book now", href: "about.html", current: true },
+      ],
+    });
+
+    // The button keeps saying it's the page you're on.
+    expect(html).toContain(
+      '<a href="about.html" aria-current="page" class="btn btn-primary hidden md:inline-flex">Book now</a>',
+    );
+    // Once beside the row and once in the menu on small screens: not in the row as well.
+    expect(html.match(/>Book now<\/a>/g)).toHaveLength(2);
+    expect(html.match(/>Home<\/a>/g)).toHaveLength(2);
+  });
+
+  it("puts the centred Header's site name above its menu, with no wrapper (2.6)", () => {
+    const [header] = starterLayout("Bakery").header;
+    if (header === undefined) throw new Error("No Header");
+
+    const html = renderNodesToHtml(
+      [{ ...header, props: { ...header.props, variant: "centred" } }],
+      siteLibrary,
+      context,
+    );
+
+    expect(html).toContain("md:flex-col md:justify-center");
+    expect(html).toMatch(/<header [^>]*><a class="text-xl font-bold"/);
+    expect(html).not.toContain("btn-primary hidden");
+  });
+
+  it("lists the menu's links, dropdowns' too, in the Footer's columns (2.6)", () => {
+    const html = renderNodesToHtml(
+      [{ type: "Footer", props: { id: "footer", text: "Thanks.", variant: "columns" } }],
+      siteLibrary,
+      {
+        ...context,
+        navigation: [
+          { label: "Home", href: "index.html", current: true },
+          {
+            label: "Visit us",
+            current: false,
+            children: [
+              { label: "Find us", href: "https://example.com/map", current: false, newTab: true },
+            ],
+          },
+        ],
+      },
+    );
+
+    expect(html).toContain('<nav aria-label="Footer navigation"');
+    expect(html).toContain(
+      '<a href="index.html" aria-current="page" class="link link-hover">Home</a>',
+    );
+    expect(html).toContain(
+      '<a href="https://example.com/map" class="link link-hover" target="_blank" rel="noopener">Find us</a>',
+    );
+    expect(html).not.toContain("Visit us");
   });
 
   it("links the site name to the home page, wherever it is in the navigation", () => {
@@ -301,6 +403,154 @@ describe("renderNodesToHtml", () => {
     expect(html).toContain('style="object-position:30% 50%"');
     expect(html).toContain('width="640" height="427"');
     expect(html).toContain('<a class="btn btn-primary" href="about.html">About us</a>');
+  });
+
+  describe("the Hero's layouts (2.6)", () => {
+    const heroIn = (variant: string, props: Record<string, unknown> = {}) =>
+      renderNodesToHtml(
+        [
+          {
+            type: "Hero",
+            props: {
+              id: "hero",
+              title: "Fresh bread",
+              text: "Daily",
+              buttonLabel: "About us",
+              buttonLink: "about",
+              alignment: "left",
+              image: { mediaId: "hero", alt: "Loaves on a shelf" },
+              variant,
+              ...props,
+            },
+          },
+        ],
+        siteLibrary,
+        context,
+      );
+
+    it("centres the text with the image below it, whatever the alignment", () => {
+      const html = heroIn("centred");
+
+      expect(html).toContain('<div class="hero-content max-w-4xl flex-col gap-10 text-center">');
+      expect(html.indexOf("<h1")).toBeLessThan(html.indexOf("<picture>"));
+      expect(html).toContain('sizes="(min-width: 896px) 896px, 100vw"');
+    });
+
+    it("sets the text over the image, which fills the section with its focal point in view", () => {
+      const html = heroIn("background");
+
+      expect(html).toContain(
+        '<section class="site-hero relative flex min-h-[28rem] items-center justify-center',
+      );
+      expect(html).toContain('sizes="100vw"');
+      expect(html).toContain(
+        'class="absolute inset-0 h-full w-full object-cover" style="object-position:30% 50%"',
+      );
+      // The overlay comes after the image, the text after both: drawn in that order.
+      expect(html.indexOf("<picture>")).toBeLessThan(html.indexOf("bg-neutral/70"));
+      expect(html).toContain(
+        '<div class="hero-content relative max-w-6xl text-neutral-content text-left">',
+      );
+    });
+
+    it("shows text only, leaving out an image it was given", () => {
+      const html = heroIn("minimal", { alignment: "centre" });
+
+      expect(html).not.toContain("<picture>");
+      expect(html).toContain('<div class="mx-auto max-w-3xl text-center">');
+      expect(html).toContain('<a class="btn btn-primary" href="about.html">About us</a>');
+    });
+  });
+
+  it("renders a Text section: its title and formatted text in a readable column (2.6)", () => {
+    const html = renderNodesToHtml(
+      [
+        {
+          type: "TextSection",
+          props: { id: "story", title: "Our story", text: "<p>Since 1998.</p><p>In Hightown.</p>" },
+        },
+      ],
+      siteLibrary,
+      context,
+    );
+
+    expect(html).toContain(
+      '<div class="mx-auto max-w-3xl"><h2 class="text-3xl font-bold">Our story</h2>',
+    );
+    expect(html).toContain("<p>Since 1998.</p><p>In Hightown.</p>");
+  });
+
+  it("puts Text + Image's image right or left, its text first in the page either way (2.6)", () => {
+    const textImage = (variant: string) =>
+      renderNodesToHtml(
+        [
+          {
+            type: "TextImage",
+            props: {
+              id: "what",
+              title: "What we bake",
+              text: "<p>Bread.</p>",
+              image: { mediaId: "hero" },
+              variant,
+            },
+          },
+        ],
+        siteLibrary,
+        context,
+      );
+
+    const right = textImage("imageRight");
+    const left = textImage("imageLeft");
+
+    expect(right.indexOf("<h2")).toBeLessThan(right.indexOf("<picture>"));
+    expect(right).not.toContain("md:order-first");
+    expect(left.indexOf("<h2")).toBeLessThan(left.indexOf("<picture>"));
+    expect(left).toContain('<div class="md:order-first"><picture>');
+    // The image's own alt text, as the section doesn't set one.
+    expect(left).toContain('alt="Our bakery" loading="lazy"');
+  });
+
+  it("sets Text + Image's text in one readable column until it has an image (2.6)", () => {
+    const html = renderNodesToHtml(
+      [{ type: "TextImage", props: { id: "what", title: "What we bake", text: "<p>Bread.</p>" } }],
+      siteLibrary,
+      context,
+    );
+
+    expect(html).toContain('<div class="mx-auto max-w-3xl"><div><h2');
+    expect(html).not.toContain("md:grid-cols-2");
+    expect(html).not.toContain("<picture>");
+  });
+
+  it("draws a Call to action as a banner or with its button beside the text (2.6)", () => {
+    const cta = (variant: string, buttonLabel = "Book a table") =>
+      renderNodesToHtml(
+        [
+          {
+            type: "CallToAction",
+            props: {
+              id: "cta",
+              title: "Come and see us",
+              text: "Open every day.",
+              buttonLabel,
+              buttonLink: "about",
+              variant,
+            },
+          },
+        ],
+        siteLibrary,
+        context,
+      );
+
+    expect(cta("banner")).toContain('<section class="site-cta bg-neutral text-neutral-content');
+    expect(cta("banner")).toContain(
+      '<a class="btn btn-primary btn-lg mt-8" href="about.html">Book a table</a>',
+    );
+    expect(cta("split")).toContain("md:flex-row md:items-center md:justify-between");
+    expect(cta("split")).toContain(
+      '<a class="btn btn-primary btn-lg shrink-0" href="about.html">Book a table</a>',
+    );
+    expect(cta("banner", "")).not.toContain("<a ");
   });
 
   it("leaves out the hero's image and button when they are not set", () => {
@@ -465,16 +715,92 @@ describe("renderNodesToHtml", () => {
     expect(html).toContain('<div class="site-faq space-y-4 my-4">');
   });
 
+  describe("the Carousel (2.10)", () => {
+    const carouselHtml = (props: Record<string, unknown> = {}) =>
+      renderNodesToHtml(
+        [
+          {
+            type: "Carousel",
+            props: {
+              id: "carousel",
+              label: "What customers say",
+              slides: [
+                {
+                  type: "CarouselSlide",
+                  props: {
+                    id: "s1",
+                    text: "The best sourdough in town.",
+                    name: "Sam",
+                    image: { mediaId: "hero" },
+                  },
+                },
+                { type: "CarouselSlide", props: { id: "s2", text: "Lovely cakes.", name: "Ana" } },
+              ],
+              ...props,
+            },
+          },
+        ],
+        siteLibrary,
+        context,
+      );
+
+    it("is a named region of slides that scroll and snap without the script", () => {
+      const html = carouselHtml({ variant: "testimonials" });
+
+      expect(html).toContain(
+        'aria-roledescription="carousel" aria-label="What customers say" data-layout="testimonials" data-wf-carousel=""',
+      );
+      expect(html).toMatch(/<section class="site-carousel group\/carousel/);
+      // The keyboard reaches the strip, so it scrolls without the script too.
+      expect(html).toMatch(
+        /class="[^"]*snap-x snap-mandatory[^"]*overflow-x-auto[^"]*" data-wf-carousel-track="" role="group" aria-label="Slides" tabindex="0"/,
+      );
+      expect(html.match(/<figure class="site-carousel-slide/g)).toHaveLength(2);
+      expect(html).toContain("<figcaption");
+      expect(html).toContain("The best sourdough in town.");
+      // The slide's photo, with its own alt text.
+      expect(html).toContain('alt="Our bakery"');
+    });
+
+    it("hides its buttons until the script shows them, with no stop button unless it plays", () => {
+      const still = carouselHtml();
+      const playing = carouselHtml({ autoplay: true, interval: "5" });
+
+      expect(still).toMatch(/data-wf-carousel-controls="" hidden=""/);
+      expect(still).toContain('aria-label="Previous slide"');
+      expect(still).toContain('aria-label="Next slide"');
+      expect(still).not.toContain("data-wf-carousel-play");
+      expect(still).not.toContain("data-interval");
+      expect(playing).toContain('data-interval="5000"');
+      // The stop button comes before the others (APG).
+      expect(playing.indexOf("data-wf-carousel-play")).toBeLessThan(
+        playing.indexOf("data-wf-carousel-previous"),
+      );
+      expect(playing).toContain('data-label-start="Play the slides"');
+    });
+
+    it("is named even with its name left empty: a nameless region is no landmark", () => {
+      expect(carouselHtml({ label: "  " })).toContain('aria-label="Highlights"');
+    });
+
+    it("gives the script the words it names slides with", () => {
+      const html = carouselHtml();
+
+      expect(html).toContain('data-slide-label="slide" data-slide-of="{n} of {total}"');
+      expect(html).toContain('aria-live="polite"');
+    });
+  });
+
   it("throws for an unknown component type, even inside a slot", () => {
     const nodes: NodeDoc[] = [
       {
         type: "Section",
-        props: { id: "s", content: [{ type: "Carousel", props: { id: "c" } }] },
+        props: { id: "s", content: [{ type: "NoSuchComponent", props: { id: "c" } }] },
       },
     ];
 
     expect(() => renderNodesToHtml(nodes, siteLibrary, context)).toThrow(UnknownComponentError);
-    expect(() => renderNodesToHtml(nodes, siteLibrary, context)).toThrow('"Carousel"');
+    expect(() => renderNodesToHtml(nodes, siteLibrary, context)).toThrow('"NoSuchComponent"');
   });
 });
 
@@ -642,7 +968,13 @@ describe("tree helpers", () => {
   });
 
   it("behavioursUsedBy lists the scripts the components need", () => {
-    expect(behavioursUsedBy(starterLayout("x").header, siteLibrary)).toEqual(["menu"]);
+    const [header] = starterLayout("x").header;
+    if (header === undefined) throw new Error("No Header");
+    expect(behavioursUsedBy([header], siteLibrary)).toEqual(["menu"]);
+    // Only a sticky Header needs the sticky script (2.6).
+    expect(
+      behavioursUsedBy([{ ...header, props: { ...header.props, sticky: true } }], siteLibrary),
+    ).toEqual(["menu", "sticky"]);
     expect(behavioursUsedBy(starterPage().content, siteLibrary)).toEqual([]);
   });
 });

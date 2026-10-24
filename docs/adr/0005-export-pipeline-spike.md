@@ -77,7 +77,11 @@ The build has to run off the UI thread, in an Electron `utilityProcess`, and wor
 9. **Licences:** `@fontsource/inter` is OFL-1.1. OFL-1.1 is added to the licence allow-list (ADR 0002), because exported sites bundle Fontsource fonts by design (architecture §8). Everything else is MIT or Apache-2.0, plus MPL-2.0 for `@axe-core/playwright`.
 
 ## Consequences
-- `CanvasEngine.renderStatic` should delegate to `renderNodesToHtml` instead of Puck's `<Render>`, so the canvas and the export share one renderer. Done in 2.5 (#47): both use `renderPage` from `@webforge/site-components`.
+- `CanvasEngine.renderStatic` should delegate to `renderNodesToHtml` instead of Puck's `<Render>`, so the canvas and the export share one renderer. Done in 2.5 (#47): both used `renderPage` from `@webforge/site-components`.
+- **Since R8 (#306):** `renderStatic` is gone; it only wrapped `renderPage`, and only engine tests called it.
+  - **What is still claimed:** the canvas and the export draw each component with the same `render` function. The canvas calls it through Puck (`toPuckConfig`, tested in `config.test.tsx`); the export calls it through `renderPage`. Both use the same values, slots and render context shape.
+  - **What is no longer claimed:** byte-identical markup. On the canvas, Puck wraps every element and puts editors in inline and rich text, so its markup differs by design. A test stripping that chrome would mostly test Puck.
+  - **Where the export's HTML is tested:** site-components' renderer tests (`render-static.test.tsx`: every component, hidden elements, linked copies) and the pipeline's golden files.
 - The pipeline API is the spike's, not yet architecture §6's: no `AsyncIterable` progress events, no preview mode, no `check()`. Phase 3 adds those on top of `buildSite`.
 - **Not covered here (follow-ups):**
   - the preview server with SSE hot-swap (07, spike item 4);

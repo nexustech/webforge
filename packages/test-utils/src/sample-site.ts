@@ -20,8 +20,10 @@ export function priceList(): Uint8Array {
 }
 
 /**
- * A small two-page site: Header and Footer, a home page with a Hero (with photo), text and an FAQ,
- * and an About page linking to a price list (a document). Its menu has both pages, a "Visit us"
+ * A small two-page site: Header and Footer, a home page with a Hero (with photo), text, a Carousel
+ * of customers' quotes (2.10), an FAQ and a Call to action, and an About page with a text-only Hero
+ * linking to a price list (a document), a Text section and a Text + Image section (2.6). Its menu
+ * has both pages, a "Visit us"
  * dropdown (a link to the FAQ section and a web address in a new tab) and an "Order a cake"
  * button. Used by pipeline tests and the export E2E tests.
  */
@@ -31,8 +33,26 @@ export function sampleSite(): SiteSnapshot {
     language: "en-GB",
     theme: { ...DEFAULT_THEME, preset: "cupcake" },
     layout: {
-      header: [{ type: "Header", props: { id: "header", siteName: "Rosa's Bakery" } }],
-      footer: [{ type: "Footer", props: { id: "footer", text: "© Rosa's Bakery, Hightown" } }],
+      // Centred, its menu below the name: the tallest Header, so anchors are tested under it. Sticky,
+      // with a shadow once scrolled (F-DS-6); the Footer in columns, with the menu (2.6).
+      header: [
+        {
+          type: "Header",
+          props: {
+            id: "header",
+            siteName: "Rosa's Bakery",
+            variant: "centred",
+            sticky: true,
+            scrollStyle: "shadow",
+          },
+        },
+      ],
+      footer: [
+        {
+          type: "Footer",
+          props: { id: "footer", text: "© Rosa's Bakery, Hightown", variant: "columns" },
+        },
+      ],
     },
     pages: [
       {
@@ -73,6 +93,40 @@ export function sampleSite(): SiteSnapshot {
                     },
                   },
                   {
+                    // Customers' quotes, playing by themselves every 5 seconds (2.10).
+                    type: "Carousel",
+                    props: {
+                      id: "quotes",
+                      label: "What customers say",
+                      variant: "testimonials",
+                      autoplay: true,
+                      interval: "5",
+                      slides: [
+                        {
+                          type: "CarouselSlide",
+                          props: {
+                            id: "quote-sam",
+                            text: "The best sourdough in Hightown.",
+                            name: "Sam",
+                            image: { mediaId: "hero-photo", alt: "" },
+                          },
+                        },
+                        {
+                          type: "CarouselSlide",
+                          props: {
+                            id: "quote-ana",
+                            text: "Our wedding cake was perfect.",
+                            name: "Ana",
+                          },
+                        },
+                        {
+                          type: "CarouselSlide",
+                          props: { id: "quote-lee", text: "Worth the queue.", name: "Lee" },
+                        },
+                      ],
+                    },
+                  },
+                  {
                     type: "Faq",
                     props: {
                       id: "faq",
@@ -101,6 +155,17 @@ export function sampleSite(): SiteSnapshot {
                 ],
               },
             },
+            {
+              type: "CallToAction",
+              props: {
+                id: "cta",
+                title: "Order a cake",
+                text: "Tell us what you'd like two days ahead.",
+                buttonLabel: "About ordering",
+                buttonLink: "about",
+                variant: "banner",
+              },
+            },
           ],
         },
       },
@@ -120,6 +185,25 @@ export function sampleSite(): SiteSnapshot {
                 text: "A family bakery since 1998. Cakes to order, with two days' notice.",
                 buttonLabel: "Price list (PDF)",
                 buttonLink: { kind: "file", mediaId: "price-list", newTab: true },
+                variant: "minimal",
+              },
+            },
+            {
+              type: "TextSection",
+              props: {
+                id: "story",
+                title: "Our story",
+                text: "<p>Rosa opened the bakery with one oven.</p><p>We still bake every morning.</p>",
+              },
+            },
+            {
+              type: "TextImage",
+              props: {
+                id: "what",
+                title: "What we bake",
+                text: "<p>Sourdough, rye and cakes to order.</p>",
+                image: { mediaId: "hero-photo", alt: "Hills where our wheat grows" },
+                variant: "imageLeft",
               },
             },
           ],

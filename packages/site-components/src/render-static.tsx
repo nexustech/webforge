@@ -128,8 +128,12 @@ export function behavioursUsedBy(
   library: ComponentLibrary,
 ): BehaviourName[] {
   const names = new Set<BehaviourName>();
-  walkNodes(nodes, library, (_node, def) => {
-    for (const name of def.behaviours ?? []) names.add(name);
+  walkNodes(nodes, library, (node, def) => {
+    const needed =
+      typeof def.behaviours === "function"
+        ? def.behaviours({ ...def.defaults, ...node.props })
+        : (def.behaviours ?? []);
+    for (const name of needed) names.add(name);
   });
   return [...names].sort();
 }

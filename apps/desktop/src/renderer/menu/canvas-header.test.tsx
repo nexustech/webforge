@@ -35,12 +35,12 @@ describe("the Header's navigation on the canvas (F-ED-17)", () => {
       }),
     );
 
+    // Once in the row on wide screens, once in the menu on small ones (2.6).
+    const links = ["About", "Our story", "Team", "People"];
     expect(screen.getAllByRole("link").map((link) => link.textContent)).toEqual([
       "Bakery",
-      "About",
-      "Our story",
-      "Team",
-      "People",
+      ...links,
+      ...links,
     ]);
     expect(errors).not.toHaveBeenCalled();
     errors.mockRestore();

@@ -50,8 +50,13 @@ export type ComponentDef = {
   readonly fields: Readonly<Record<string, FieldDef>>;
   readonly defaults: Readonly<Record<string, unknown>>;
   readonly render: (props: ComponentRenderProps) => ReactNode;
-  /** Scripts the exported site must include when this component is used. */
-  readonly behaviours?: readonly BehaviourName[];
+  /**
+   * Scripts the exported site must include when this component is used: always, or as its values
+   * (with its defaults) ask (a Header's `sticky` behaviour only when it is sticky).
+   */
+  readonly behaviours?:
+    | readonly BehaviourName[]
+    | ((values: Readonly<Record<string, unknown>>) => readonly BehaviourName[]);
   /**
    * The theme's text style its text is set in (h1–h6, body, small), from its values with their
    * defaults; none for a component without text of its own. Sets how much contrast a colour on it
