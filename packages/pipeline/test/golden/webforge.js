@@ -13,9 +13,10 @@
   /** How long the strip goes without scrolling before it counts as at rest, in ms. */
   const REST = 150;
   /**
-   * How long a move's scroll may take to get where it's going, in ms. After that the strip's rests
-   * count again, wherever it stopped (a resize moved the slides, or something cut the scroll short).
-   * WebKit took over a second for one slide on a busy machine.
+   * How long a move's scroll may take to get where it's going, in ms. After that the strip is put
+   * back where the current slide starts, if it isn't there (a resize moved the slides, or WebKit
+   * dropped a smooth scroll that another interrupted), and its rests count again. WebKit took over
+   * a second for one slide on a busy machine.
    */
   const ARRIVE = 3000;
   const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
@@ -117,6 +118,8 @@
         if (heading !== null) {
           arriving = setTimeout(() => {
             heading = null;
+            const start = (slides[current]?.offsetLeft ?? 0) - first.offsetLeft;
+            if (Math.abs(track.scrollLeft - start) > 1) track.scrollTo({ left: start });
           }, ARRIVE);
         }
         track.scrollTo({ left });

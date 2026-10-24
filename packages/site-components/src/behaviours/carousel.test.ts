@@ -280,8 +280,8 @@ describe("the carousel behaviour (2.10)", () => {
     expect(root.dataset.current).toBe("2");
   });
 
-  it("counts the strip's rests again once a press's scroll has had 3 seconds to arrive", () => {
-    const { root, track, document, window, button } = page({}, 3);
+  it("puts the strip back at the current slide if a press's scroll stops short, then counts its rests", () => {
+    const { root, track, document, window, button, scrolled } = page({}, 3);
     const slides = [...document.querySelectorAll<HTMLElement>(".site-carousel-slide")];
     slides.forEach((slide, index) => {
       Object.defineProperty(slide, "offsetLeft", { value: index * 100 });
@@ -291,16 +291,35 @@ describe("the carousel behaviour (2.10)", () => {
       track.dispatchEvent(new window.Event("scroll"));
     };
 
-    // Next's scroll cut short at 30 px (a resize, say): it never gets to slide 2.
+    // Next's scroll stops at 30 px (WebKit dropping a smooth scroll, or a resize): never arrives.
     button("next").click();
     scrollTo(30);
     vi.advanceTimersByTime(2_000);
     expect(root.dataset.current).toBe("1");
+    scrolled.mockClear();
     vi.advanceTimersByTime(1_000);
+    expect(scrolled).toHaveBeenCalledWith({ left: 100 });
+    // From then on, where the strip rests counts again.
     scrollTo(190);
     vi.advanceTimersByTime(150);
 
     expect(root.dataset.current).toBe("2");
+  });
+
+  it("leaves a strip that arrived where it is", () => {
+    const { track, document, window, button, scrolled } = page({}, 3);
+    const slides = [...document.querySelectorAll<HTMLElement>(".site-carousel-slide")];
+    slides.forEach((slide, index) => {
+      Object.defineProperty(slide, "offsetLeft", { value: index * 100 });
+    });
+
+    button("next").click();
+    track.scrollLeft = 100;
+    track.dispatchEvent(new window.Event("scroll"));
+    scrolled.mockClear();
+    vi.advanceTimersByTime(5_000);
+
+    expect(scrolled).not.toHaveBeenCalled();
   });
 
   it("lets a press decide, not a scroll before it that hadn't yet come to rest (#330)", () => {
