@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { areaCycles, areaGraph } from "./check-area-cycles.ts";
+import { areaCycles, areaGraph } from "./check-area-cycles.js";
 
 /** Areas from their files' import lines. */
 const graphOf = (areas: Record<string, readonly string[]>) =>

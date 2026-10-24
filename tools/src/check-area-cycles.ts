@@ -21,7 +21,7 @@ const BASE = new Set(["shell", "editor"]);
 /** An import of another area: `from "../menu/index.js"`. */
 const AREA_IMPORT = /from\s+["']\.\.\/([\w-]+)\//g;
 
-/** The areas each area imports, from its files' text (`files`: path within the area → source). */
+/** The areas each area imports, from the text of its files (`areas`: each area's sources). */
 export function areaGraph(areas: ReadonlyMap<string, readonly string[]>): Map<string, Set<string>> {
   const graph = new Map<string, Set<string>>();
   for (const [area, sources] of areas) {
