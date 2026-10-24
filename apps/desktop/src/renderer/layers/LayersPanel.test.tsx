@@ -501,11 +501,9 @@ describe("LayersPanel (F-ED-12)", () => {
         ),
       );
 
-      // Its Rename renames the selected layer in place, and the name field keeps the focus.
-      act(() => {
-        lastMenu()?.onRename();
-        lastMenu()?.onCloseFocus();
-      });
+      // Its Rename, which the menu calls once it has closed (and then nothing else), renames the
+      // selected layer in place, and the name field keeps the focus.
+      act(() => lastMenu()?.onRename());
       const field = screen.getByRole("textbox", { name: "Name for this Heading" });
       await new Promise((resolve) => requestAnimationFrame(resolve));
       expect(document.activeElement).toBe(field);
