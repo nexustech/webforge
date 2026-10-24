@@ -1,56 +1,46 @@
 name: CI
 
-# Cost (GitHub Free, private repository): every job is billed in whole minutes, Windows minutes
-# count twice and macOS ten times. To keep within the plan:
-# - Pull requests run Linux only. Docs-only and draft PRs skip CI, so open PRs as drafts while
-#   iterating and mark them ready once `pnpm check` passes locally.
-# - `main` is checked once a night (02:30 UTC, only if it changed), not after every merge: each
-#   PR has already passed before it merges, and the nightly run catches PRs that pass alone but
-#   clash once both are in. "Run workflow" (`gh workflow run ci.yml --ref main`) runs it at once.
-# - The `changes` job looks at the files a PR changes. Storybook runs only when the editor UI or
-#   what its stories render changed. Firefox and WebKit (exported-site tests) run only when the
-#   exported site can have changed, in Playwright's container (`export-browsers`), so their system
-#   packages never come from the runners' slow Ubuntu mirror; E2E covers the app and Chromium.
-#   E2E is skipped when a PR changes only unit tests, stories, screenshots or tooling.
-# - Windows and macOS run nightly, from "Run workflow", or on a PR labelled `full-ci`
-#   (packaging, Fuses, native modules, OS-specific code).
+# The repository is public, so GitHub's standard runners cost nothing (spec/03 §7).
+# - Every ready pull request runs on Linux, Windows and macOS, including the packaged app. Draft
+#   PRs don't run CI: their "CI passed" check fails, so a draft can't merge, and marking it ready
+#   starts the real run.
+# - "CI passed" is the one required check on `main`, which also requires a branch to be up to
+#   date with `main`. PRs merge themselves with auto-merge once it passes; merge-queue.yml brings
+#   them up to date one at a time.
+# - `main` is also checked once a night (02:30 UTC, only if it changed). "Run workflow"
+#   (`gh workflow run ci.yml --ref <branch>`) runs everything at once.
+# - The `changes` job looks at the files a PR changes, to keep runs short. Docs-only PRs run
+#   nothing but "CI passed". Storybook runs only when the editor UI or what its stories render
+#   changed. Firefox and WebKit (exported-site tests) run only when the exported site can have
+#   changed; on Linux they run in Playwright's container (`export-browsers`), so their system
+#   packages never come from the runners' slow Ubuntu mirror. E2E is skipped when a PR changes only
+#   unit tests, stories, screenshots or tooling.
 #
-# PAUSED: the Windows and macOS jobs run only while the repository variable FULL_CI_ENABLED is
-# `true`; unset (as now, to stay within the billing cycle), CI is Linux-only everywhere.
-# Resume with `gh variable set FULL_CI_ENABLED --body true`. See spec/03 §7.
+# Windows and macOS run only while the repository variable FULL_CI_ENABLED is `true`. Unset it
+# (`gh variable delete FULL_CI_ENABLED`) to make CI Linux-only, e.g. if the repository goes
+# private again and minutes are billed.
 on:
   schedule:
     - cron: "30 2 * * *"
   pull_request:
-    # `labeled`: adding `full-ci` re-runs CI with the Windows and macOS jobs.
     # `ready_for_review`: a draft that becomes ready gets its first run.
-    types: [opened, synchronize, reopened, ready_for_review, labeled]
-    paths-ignore:
-      - "docs/**"
-      - "spec/**"
-      - "research/**"
-      - "**/*.md"
+    types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  # A new push cancels the run it replaces. Other label events (and `full-ci` while paused) get a
-  # group of their own: their jobs all skip, and they must not cancel the real run.
-  group: ci-${{ github.ref }}${{ github.event.action == 'labeled' && (github.event.label.name != 'full-ci' || vars.FULL_CI_ENABLED != 'true') && format('-label-{0}', github.run_id) || '' }}
+  # A new push cancels the run it replaces.
+  group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   changes:
-    # Decides which jobs this run needs from the files changed (see the cost notes above).
+    # Decides which jobs this run needs from the files changed (see the notes above).
     name: Changes
-    # Skip drafts, and label events other than `full-ci` (all label events while paused).
-    if: >-
-      github.event_name != 'pull_request' ||
-      (!github.event.pull_request.draft &&
-      (github.event.action != 'labeled' ||
-      (github.event.label.name == 'full-ci' && vars.FULL_CI_ENABLED == 'true')))
+    # Drafts run nothing; "CI passed" fails for them.
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -98,6 +88,13 @@ jobs:
           printf '%s\n' "$files"
           # Here-strings, not pipes: with pipefail, `printf | grep -q` can fail when grep stops early.
           matches() { grep -Eq "$1" <<< "$files"; }
+          # Docs-only PRs run nothing else: no code, tests or stories can have changed.
+          docs='^(docs|spec|research)/|\.md$'
+          if ! grep -Evq "$docs" <<< "$files"; then
+            echo "Only docs changed."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           # Shared configuration and dependencies can affect every job.
           shared='^(package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|tsconfig[^/]*\.json|patches/.*|\.github/workflows/ci\.yml)$'
           # E2E isn't needed when a PR changes only unit tests, stories, screenshots, the repo's
@@ -123,8 +120,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Windows only nightly, on manual runs and `full-ci` PRs, and only while FULL_CI_ENABLED is true.
-        os: ${{ fromJSON(vars.FULL_CI_ENABLED == 'true' && (github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'full-ci')) && '["ubuntu-latest", "windows-latest"]' || '["ubuntu-latest"]') }}
+        # Windows and macOS while FULL_CI_ENABLED is true (see the notes above).
+        os: ${{ fromJSON(vars.FULL_CI_ENABLED == 'true' && '["ubuntu-latest", "windows-latest", "macos-latest"]' || '["ubuntu-latest"]') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     steps:
@@ -179,7 +176,6 @@ jobs:
           name: coverage
           path: coverage/
           if-no-files-found: ignore
-          # Artifact storage counts against the plan too.
           retention-days: 7
 
   e2e:
@@ -189,13 +185,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Windows only nightly, on manual runs and `full-ci` PRs, and only while FULL_CI_ENABLED is true.
-        os: ${{ fromJSON(vars.FULL_CI_ENABLED == 'true' && (github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'full-ci')) && '["ubuntu-latest", "windows-latest"]' || '["ubuntu-latest"]') }}
+        # Windows and macOS while FULL_CI_ENABLED is true (see the notes above).
+        os: ${{ fromJSON(vars.FULL_CI_ENABLED == 'true' && '["ubuntu-latest", "windows-latest", "macos-latest"]' || '["ubuntu-latest"]') }}
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 20
+    # macOS runners take about 15 minutes for the tests alone, plus setup.
+    timeout-minutes: 30
     env:
       # Firefox and WebKit only when the exported site can have changed (see `changes`). On Linux
-      # they run in `export-browsers` instead; Windows needs no system packages, so it runs them here.
+      # they run in `export-browsers` instead; Windows and macOS need no system packages, so they
+      # run them here.
       BROWSERS: ${{ matrix.os != 'ubuntu-latest' && needs.changes.outputs.all-browsers == 'true' && 'chromium firefox webkit' || 'chromium' }}
       # Downloads go inside the workspace, so the cache steps use one path on every OS.
       PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.ci-cache/ms-playwright
@@ -217,6 +215,37 @@ jobs:
 
       - name: Install
         run: pnpm install --frozen-lockfile
+
+      - name: Screen size (Windows)
+        # Windows runners start at 1024 × 768, smaller than the app's 1280 × 800 window, so the
+        # window shrank and clicks near its edges missed.
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Set-DisplayResolution -Width 1920 -Height 1080 -Force
+
+      - name: Screen size (macOS)
+        # macOS runners start at 1024 × 768 too: the 1280 × 800 window filled the screen, the canvas
+        # zoomed out and clicks near its edges missed (#287). displayplacer switches the screen: a
+        # pinned release, checked against its SHA-256, so a new one can't break every macOS run.
+        # The Apple Silicon build: macos-latest runners are arm64.
+        if: runner.os == 'macOS'
+        env:
+          DISPLAYPLACER_URL: https://github.com/jakehilborn/displayplacer/releases/download/v1.4.0/displayplacer-apple-v140
+          DISPLAYPLACER_SHA256: 0572c3d2918e47c7e0b9d7723907864e2ea2b53b9d3b02379769fffcf44f7ea0
+        run: |
+          bin="$RUNNER_TEMP/displayplacer"
+          curl -fsSL --retry 3 "$DISPLAYPLACER_URL" -o "$bin"
+          shasum -a 256 "$bin"
+          echo "$DISPLAYPLACER_SHA256  $bin" | shasum -a 256 -c -
+          chmod +x "$bin"
+          displayplacer() { "$bin" "$@"; }
+          # displayplacer exits with 1 even when it works, so the screen it leaves is checked instead.
+          screens=$(displayplacer list || true)
+          id=$(awk '/^Persistent screen id:/ { print $4; exit }' <<< "$screens")
+          displayplacer "id:$id res:1920x1080 hz:60 color_depth:7 enabled:true scaling:off origin:(0,0) degree:0" || true
+          screens=$(displayplacer list || true)
+          grep '^Resolution:' <<< "$screens"
+          grep -q '^Resolution: 1920x1080' <<< "$screens"
 
       - name: Allow the Chromium sandbox (Linux)
         # Ubuntu 24.04 restricts unprivileged user namespaces, which Electron's sandbox needs.
@@ -407,8 +436,7 @@ jobs:
     # fonts and anti-aliasing match the committed images (R8). Linux only, always.
     name: Storybook (axe and screenshots)
     needs: changes
-    # Not on `full-ci` label events: the stories don't depend on the OS.
-    if: needs.changes.outputs.storybook == 'true' && github.event.action != 'labeled'
+    if: needs.changes.outputs.storybook == 'true'
     runs-on: ubuntu-latest
     # Keep in step with @playwright/test in e2e/package.json.
     container: mcr.microsoft.com/playwright:v1.64.1-noble
@@ -477,14 +505,9 @@ jobs:
     # checks that the packaged app opens a .wforge (ADR 0003). macOS runs here only: Windows
     # machines can't build or run the macOS app.
     name: Packaged app (${{ matrix.os }})
-    # Windows and macOS only, while FULL_CI_ENABLED is true: nightly, on manual runs and non-draft
-    # `full-ci` PRs.
+    # Windows and macOS only, while FULL_CI_ENABLED is true.
     needs: changes
-    if: >-
-      vars.FULL_CI_ENABLED == 'true' && needs.changes.outputs.run == 'true' &&
-      (github.event_name != 'pull_request' ||
-      (contains(github.event.pull_request.labels.*.name, 'full-ci') &&
-      (github.event.action != 'labeled' || github.event.label.name == 'full-ci')))
+    if: vars.FULL_CI_ENABLED == 'true' && needs.changes.outputs.run == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -507,6 +530,12 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
+      - name: Screen size (Windows)
+        # Windows runners start at 1024 × 768, smaller than the app's 1280 × 800 window.
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Set-DisplayResolution -Width 1920 -Height 1080 -Force
+
       - name: Package (electron-builder --dir) and test the packaged app
         run: pnpm e2e:packaged
 
@@ -518,3 +547,33 @@ jobs:
           path: e2e/playwright-report/
           if-no-files-found: ignore
           retention-days: 7
+
+  passed:
+    # The one required check on `main` (spec/03 §7). Every job above can be skipped, and a skipped
+    # job's check never reports, so `main` requires this instead: it always runs, and fails if any
+    # job failed or was cancelled. A draft PR runs nothing, so it fails here: a draft can't merge,
+    # and an earlier draft run never stands in for the run that starts when it's marked ready.
+    name: CI passed
+    needs: [changes, check, e2e, export-browsers, visual, package]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Every job passed or was skipped
+        shell: bash
+        env:
+          DRAFT: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft }}
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          set -euo pipefail
+          if [ "$DRAFT" = true ]; then
+            echo "::error::Draft pull requests don't run CI. Mark it ready to run CI."
+            exit 1
+          fi
+          failed=$(jq -r 'to_entries[] | select(.value.result == "failure" or .value.result == "cancelled") | "\(.key): \(.value.result)"' <<< "$RESULTS")
+          if [ -n "$failed" ]; then
+            echo "$failed"
+            echo "::error::Some jobs failed or were cancelled."
+            exit 1
+          fi
+          jq -r 'to_entries[] | "\(.key): \(.value.result)"' <<< "$RESULTS"

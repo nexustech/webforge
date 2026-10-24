@@ -1,4 +1,5 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { placeCaret } from "./caret.js";
 import { launchDesktopApp, newUserDataDir } from "./launch.js";
 
 // The Edit panel (1.14): the selected element's fields, each change one labelled undo step.
@@ -122,7 +123,7 @@ test.describe("Edit panel", () => {
     const field = panel().getByLabel("Text", { exact: true });
 
     await field.click();
-    await page.keyboard.press("End");
+    await placeCaret(field, "end");
     await page.keyboard.type(" today", { delay: 20 });
     await expect(canvas().locator(".site-heading")).toHaveText("Welcome to our business today");
     // Leaving the field ends the visit.
@@ -136,7 +137,7 @@ test("undoes with Ctrl/Cmd+Z in a panel field through the site's history (ADR 00
   await selectHeading();
   const field = panel().getByLabel("Text", { exact: true });
   await field.click();
-  await page.keyboard.press("End");
+  await placeCaret(field, "end");
   await page.keyboard.type("!", { delay: 20 });
   await expect(steps().first()).toHaveText("Edited Heading text");
 

@@ -13,6 +13,8 @@ async function start(): Promise<void> {
   app = await launchDesktopApp({ userDataDir });
   page = await app.firstWindow();
   await expect(page.getByRole("region", { name: "Left panels" })).toBeVisible();
+  // The canvas takes the focus once its page has loaded, which closes a menu opened before then.
+  await expect(page.frameLocator(".editor__canvas iframe").locator("h1")).toBeVisible();
 }
 
 test.beforeAll(start);

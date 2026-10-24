@@ -1,4 +1,5 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { placeCaret } from "./caret.js";
 import { launchDesktopApp } from "./launch.js";
 
 // The shared Header and Footer (1.20, F-ED-7, C5): stored once, shown on every page; an edit on one
@@ -41,7 +42,7 @@ test("edits the Footer on one page, shows it on another, and undoes it everywher
   await expect(field).toHaveAttribute("contenteditable", "plaintext-only");
   await field.click();
   await expect(field).toBeFocused();
-  await page.keyboard.press("End");
+  await placeCaret(field, "end");
   await page.keyboard.type(" Come again!", { delay: 20 });
   await expect(footer()).toHaveText("Thanks for visiting. Come again!");
 
