@@ -183,12 +183,33 @@ const EmptySlot: ComponentType = () => null;
 export function defineComponent<const F extends Fields, const Variant extends string = never>(
   spec: ComponentSpec<F, Variant> & { readonly defaults: NoInfer<DefaultsOf<F>> },
 ): ComponentDef {
+  return build(spec, false);
+}
+
+/**
+ * {@link defineComponent} for a section that {@link defineSection} has framed: it adds the
+ * section's padding and margin and draws its `<section>`. For `frame.tsx` only.
+ */
+export function defineFramedSection<const F extends Fields, const Variant extends string = never>(
+  spec: ComponentSpec<F, Variant> & { readonly defaults: NoInfer<DefaultsOf<F>> },
+): ComponentDef {
+  return build(spec, true);
+}
+
+function build<const F extends Fields, const Variant extends string = never>(
+  spec: ComponentSpec<F, Variant>,
+  framed: boolean,
+): ComponentDef {
   const { variants, render, textStyle, behaviours, ...def } = spec;
   const name = def.label.trim() === "" ? "A component" : `'${def.label}'`;
   function fail(problem: string): never {
     throw new Error(`${name} ${problem}`);
   }
   if (def.label.trim() === "") fail("needs a display name");
+  // Every section is drawn in the same frame, with the same padding and margin (2.19).
+  if (def.place === "section" && !framed) {
+    fail("is a section: define it with defineSection, which adds its frame, padding and margin");
+  }
   let fields: Fields = def.fields;
   let defaults: Readonly<Record<string, unknown>> = def.defaults;
   if (variants !== undefined) {
@@ -264,6 +285,7 @@ export function defineComponent<const F extends Fields, const Variant extends st
   };
   return {
     ...def,
+    ...(framed ? { framed: true } : {}),
     fields,
     defaults,
     render: (props: ComponentRenderProps) =>
