@@ -11,6 +11,7 @@
 //
 // This file has no relative imports so Node can run it directly with type stripping.
 
+import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 
 /** Where a component goes: see `ComponentPlace` in site-components. */
@@ -159,6 +160,7 @@ export function storyFile(names: Names): string {
   return [
     'import type { Meta, StoryObj } from "@storybook/react-vite";',
     'import { SiteNodes } from "../stories/site-nodes.js";',
+    'import { siteLibrary } from "./index.js";',
     "",
     "const meta = {",
     `  title: "Site components/${names.label}",`,
@@ -169,7 +171,14 @@ export function storyFile(names: Names): string {
     "",
     `/** The ${names.label} as it starts. Add a story for each of its layouts. */`,
     `export const ${names.type}: Story = {`,
-    `  args: { nodes: [{ type: "${names.type}", props: { id: "${names.file}" } }] },`,
+    "  args: {",
+    "    nodes: [",
+    "      {",
+    `        type: "${names.type}",`,
+    `        props: { id: "${names.file}", ...siteLibrary.components.${names.type}?.defaults },`,
+    "      },",
+    "    ],",
+    "  },",
     "};",
     "",
   ].join("\n");
@@ -185,9 +194,10 @@ export function testFile(names: Names): string {
     'import { siteLibrary } from "./index.js";',
     "",
     `describe("the ${names.label}", () => {`,
-    '  it("renders with its starter text", () => {',
+    '  it("renders with its starter text, as the Add panel places it", () => {',
+    `    const defaults = siteLibrary.components.${names.type}?.defaults;`,
     "    const html = renderNodesToHtml(",
-    `      [{ type: "${names.type}", props: { id: "${names.file}" } }],`,
+    `      [{ type: "${names.type}", props: { id: "${names.file}", ...defaults } }],`,
     "      siteLibrary,",
     "      EDITOR_RENDER_CONTEXT,",
     "    );",
@@ -250,7 +260,13 @@ export function newComponent(type: string, place: Place): string[] {
   writeFileSync(catalogue, registerInCatalogue(readFileSync(catalogue, "utf8"), names));
   const strings = `${STRINGS}/index.ts`;
   writeFileSync(strings, registerInStrings(readFileSync(strings, "utf8"), names));
-  return [...Object.keys(files), catalogue, strings];
+  const written = [...Object.keys(files), catalogue, strings];
+  // As the repository formats them: imports sorted, long lines wrapped.
+  spawnSync("pnpm", ["exec", "biome", "check", "--write", ...written], {
+    stdio: "ignore",
+    shell: true,
+  });
+  return written;
 }
 
 /** `--place`'s value in `args`, if it is one. */

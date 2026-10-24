@@ -42,30 +42,41 @@ const target = (type: string, selected: string | null, point?: { index: number }
 
 describe("addItems (F-ED-1, ADR 0005)", () => {
   it("offers sections and elements, never the Header, Footer or an FAQ's questions", () => {
-    expect(addItems(siteLibrary, "sections").map((item) => item.type)).toEqual([
-      "Section",
-      "Hero",
-      "TextSection",
-      "TextImage",
-      "CallToAction",
-      "Faq",
-    ]);
-    expect(addItems(siteLibrary, "elements")).toEqual([
+    const of = (place: string) =>
+      Object.entries(siteLibrary.components)
+        .filter(([, def]) => (def.place ?? "element") === place)
+        .map(([type]) => type);
+    const sections = addItems(siteLibrary, "sections").map((item) => item.type);
+    const elements = addItems(siteLibrary, "elements");
+
+    // Every section and element in the library's order, a family added later's too.
+    expect(sections).toEqual(of("section"));
+    expect(sections.slice(0, 2)).toEqual(["Section", "Hero"]);
+    expect(elements.map((item) => item.type)).toEqual(of("element"));
+    expect(elements.slice(0, 2)).toEqual([
       { type: "Heading", label: "Heading", category: "Text" },
       { type: "Text", label: "Text", category: "Text" },
-      { type: "Carousel", label: "Carousel", category: "Images and media" },
     ]);
+    for (const left of ["Header", "Footer", "FaqItem", "CarouselSlide"]) {
+      expect([...sections, ...elements.map((item) => item.type)]).not.toContain(left);
+    }
   });
 
   it("finds by name or group, ignoring case, and groups by category", () => {
     const sections = addItems(siteLibrary, "sections");
 
-    expect(groupItems(sections, "")).toEqual([
+    const groups = groupItems(sections, "");
+
+    // In the order their first items come, each holding its category's items in order.
+    expect(groups.map((group) => group.category)).toEqual([
+      ...new Set(sections.map((item) => item.category)),
+    ]);
+    for (const group of groups) {
+      expect(group.items).toEqual(sections.filter((item) => item.category === group.category));
+    }
+    expect(groups.slice(0, 2)).toEqual([
       { category: "Basic", items: [sections[0]] },
       { category: "Heroes", items: [sections[1]] },
-      { category: "Text", items: [sections[2], sections[3]] },
-      { category: "Calls to action", items: [sections[4]] },
-      { category: "Questions and answers", items: [sections[5]] },
     ]);
     expect(groupItems(sections, "  QUESTIONS ").map((group) => group.category)).toEqual([
       "Questions and answers",

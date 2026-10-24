@@ -348,10 +348,11 @@ describe("createLibrary (2.5)", () => {
   it("gives the site library's Section every element, and nothing that isn't one", () => {
     const content = siteLibrary.components.Section?.fields.content;
 
-    expect(content?.kind === "slot" ? content.allow : undefined).toEqual([
-      "Heading",
-      "Text",
-      "Carousel",
-    ]);
+    const elements = Object.entries(siteLibrary.components)
+      .filter(([, def]) => (def.place ?? "element") === "element")
+      .map(([type]) => type);
+
+    expect(elements).toEqual(expect.arrayContaining(["Heading", "Text", "Carousel"]));
+    expect(content?.kind === "slot" ? content.allow : undefined).toEqual(elements);
   });
 });
