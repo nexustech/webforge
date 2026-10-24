@@ -294,12 +294,13 @@ export interface CanvasEngine {
   setLinkPicker(picker: LinkPicker | null): void;
   /**
    * Shows the site's Site Settings values in elements bound to them (1.17): `setting` gives a
-   * value, `emptySetting` what an empty one shows instead (a hint). Called again when Site
-   * Settings change; the page is drawn again.
+   * value, `emptySetting` what an empty one shows instead (a hint), and `openingHours` the
+   * opening hours (2.8). Called again when Site Settings change; the page is drawn again.
    */
   setSettings(
     setting: RenderContext["setting"],
     emptySetting?: RenderContext["emptySetting"],
+    openingHours?: RenderContext["openingHours"],
   ): void;
   /**
    * Shows the site's navigation menu in the Header on the canvas (1.21), as the export draws it.

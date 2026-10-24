@@ -62,6 +62,18 @@ const library: ComponentLibrary = {
         </ul>
       ),
     },
+    Hours: {
+      label: "Hours",
+      fields: {},
+      defaults: {},
+      render: ({ context }) => (
+        <ul className="t-hours">
+          {(context.openingHours ?? []).map((hours) => (
+            <li key={hours.opens}>{`${hours.days.join(" ")} ${hours.opens}`}</li>
+          ))}
+        </ul>
+      ),
+    },
   },
 };
 
@@ -490,6 +502,29 @@ describe("createPuckEngine", () => {
     );
     await settle();
     expect(headings()).toEqual(["0123"]);
+  });
+
+  it("shows the site's opening hours, drawing the page again when they change (2.8)", async () => {
+    const hours = () =>
+      [...element.querySelectorAll(".t-hours li")].map((item) => item.textContent);
+    await act(async () =>
+      engine.applyChange({ page: { ...page, content: [{ type: "Hours", props: { id: "h" } }] } }),
+    );
+    await settle();
+    expect(hours()).toEqual([]);
+
+    await act(async () =>
+      engine.setSettings(() => undefined, undefined, [
+        { days: ["sat", "sun"], opens: "08:00", closes: "13:00" },
+      ]),
+    );
+    await settle();
+    expect(hours()).toEqual(["sat sun 08:00"]);
+
+    // Settings without hours leave none from before.
+    await act(async () => engine.setSettings(() => undefined));
+    await settle();
+    expect(hours()).toEqual([]);
   });
 
   it("shows the site's navigation, drawing the page again when it changes (1.21)", async () => {
