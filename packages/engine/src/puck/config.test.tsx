@@ -3,6 +3,7 @@ import {
   type ComponentDef,
   type ComponentLibrary,
   EDITOR_RENDER_CONTEXT,
+  type FieldDef,
   type RenderContext,
   slotComponent,
   textValue,
@@ -87,6 +88,33 @@ describe("toPuckConfig", () => {
     expect(component("Section").fields).toEqual({
       content: { type: "slot", label: "Content", allow: ["Text"] },
     });
+  });
+
+  it("gives every kind of field a Puck field (2.20, B5)", () => {
+    // One field of each kind: a new kind fails the type check here until it has one, and then
+    // this test until toPuckField maps it.
+    const fields = {
+      text: { kind: "text", label: "Text" },
+      richtext: { kind: "richtext", label: "Rich text" },
+      select: { kind: "select", label: "Select", options: [{ label: "A", value: "a" }] },
+      toggle: { kind: "toggle", label: "Toggle" },
+      slider: { kind: "slider", label: "Slider", steps: [{ label: "A", value: "a" }] },
+      color: { kind: "color", label: "Colour", options: [{ label: "A", value: "a" }] },
+      spacing: { kind: "spacing", label: "Spacing", options: [{ label: "A", value: "a" }] },
+      box: { kind: "box", label: "Padding", property: "padding" },
+      slot: { kind: "slot", label: "Slot" },
+      media: { kind: "media", label: "Image" },
+      link: { kind: "link", label: "Link" },
+      list: { kind: "list", label: "List", itemLabel: "Item", fields: {}, defaults: {} },
+    } satisfies { readonly [K in FieldDef["kind"]]: Extract<FieldDef, { readonly kind: K }> };
+    const every = toPuckConfig({
+      components: {
+        Every: { label: "Every", fields, defaults: {}, render: () => null },
+      },
+    });
+
+    const mapped = (every.components.Every as ComponentConfig).fields ?? {};
+    expect(Object.keys(fields).filter((kind) => mapped[kind]?.type === undefined)).toEqual([]);
   });
 
   it("gives an element with bindable text a field for its bindings, so Puck leaves them as they are", () => {

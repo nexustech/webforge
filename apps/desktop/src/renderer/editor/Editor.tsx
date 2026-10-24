@@ -1,4 +1,4 @@
-import { type FieldRenderers, FieldRenderersProvider, toast } from "@webforge/editor-ui";
+import { FieldRenderersProvider, toast } from "@webforge/editor-ui";
 import {
   type CanvasEngine,
   createPuckEngine,
@@ -7,7 +7,6 @@ import {
   type ViewOptions,
 } from "@webforge/engine";
 import { t } from "@webforge/i18n";
-import { textStylesOf } from "@webforge/site-components";
 import { HistoryIcon, SlidersHorizontalIcon } from "lucide-react";
 import { type RefObject, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { shallow } from "zustand/shallow";
@@ -15,9 +14,8 @@ import type { CustomDevice, EditPanelPreferences } from "../../shared/ipc/prefs.
 import { createSectionPreviews } from "../add/index.js";
 import { CanvasElementMenu } from "../element-menu/CanvasElementMenu.js";
 import { createErrorReporter, type ReportError } from "../error-reporting.js";
-import { linkFieldRenderer } from "../links/LinkField.js";
+import { fieldRenderers } from "../fields/index.js";
 import { RichTextLinkHost } from "../links/RichTextLinkHost.js";
-import { imageFieldRenderer } from "../media/ImageField.js";
 import { createImagePickRequests } from "../media/image-picks.js";
 import { sharedSection } from "../shared-sections/index.js";
 import {
@@ -42,7 +40,6 @@ import {
 import { type Area, connectAreas, type EditorContext, type EditorDialogs } from "./areas.js";
 import { CanvasBreadcrumbs } from "./CanvasBreadcrumbs.js";
 import { CanvasResizeHandles } from "./CanvasResizeHandles.js";
-import { colourFieldRenderer } from "./ColourField.js";
 import { EditPanelHost, type EditPanelHostProps } from "./EditPanelHost.js";
 import { canvasPreviews, createPreviewStore } from "./edit-previews.js";
 import {
@@ -52,7 +49,6 @@ import {
   runHistoryCommand,
 } from "./editor-session.js";
 import { createEngineHost } from "./engine-host.js";
-import { fieldTarget } from "./field-target.js";
 import type { Layer } from "./layers.js";
 import { SharedRegionBanner } from "./SharedRegionBanner.js";
 import { confirmSharedRemovals } from "./shared-confirmations.js";
@@ -432,26 +428,7 @@ export function Editor({
   useEffect(() => {
     // The fields the app draws itself (R11): images, links, and colours with the theme's own
     // colours and a contrast warning (1.37, UX-25).
-    const renderers: FieldRenderers = {
-      image: imageFieldRenderer({ session, picks: imagePicks }),
-      link: linkFieldRenderer({ session }),
-      color: colourFieldRenderer({
-        session,
-        preferences,
-        // The selected element's text styles, wherever it is (the page, the shared Header or
-        // Footer, a linked copy), as the Edit panel finds it.
-        textStyles: () => {
-          const { pageId, nodeId } = session.ui.getState();
-          const target = fieldTarget(
-            session.history.document.getState(),
-            session.library,
-            pageId,
-            nodeId,
-          );
-          return target === undefined ? [] : textStylesOf(target.node, session.library);
-        },
-      }),
-    };
+    const renderers = fieldRenderers({ session, preferences, imagePicks });
     function Edit() {
       return (
         <FieldRenderersProvider renderers={renderers}>

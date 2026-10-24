@@ -5,7 +5,7 @@ import type { FieldSpec } from "@webforge/editor-ui";
 import { DEFAULT_THEME, type TextStyle } from "@webforge/model";
 import { contrastRatio, hexToOklch } from "@webforge/themes";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { sessionWith } from "../testing/fixtures.js";
+import { sessionWith } from "../../testing/fixtures.js";
 import { ColourField, contrastNeeded, shownRatio } from "./ColourField.js";
 
 afterEach(cleanup);
