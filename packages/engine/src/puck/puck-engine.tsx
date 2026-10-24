@@ -38,19 +38,17 @@ import type {
   ViewOptions,
 } from "../canvas-engine.js";
 import { installHistoryKeys } from "../history-keys.js";
-import { installMenuKeys } from "../menu-keys.js";
 import { createActionBar } from "./action-bar.js";
+import { listenInEditor, listenInFrame } from "./canvas-listeners.js";
 import { createCanvasSync } from "./canvas-sync.js";
 import { createCanvasView } from "./canvas-view.js";
 import { preserveCaret, refocusRichText } from "./caret.js";
 import { applyChromeStyles, createSelectionOutline, OUTLINED_ATTRIBUTE } from "./chrome.js";
 import { toPuckConfig } from "./config.js";
-import { installContextMenu } from "./context-menu.js";
 import { copyDrop, planCopyDrop } from "./copy-drop.js";
 import { deferredCommands } from "./deferred-commands.js";
-import { hidePuckDeleteKeys } from "./delete-keys.js";
 import { puckDictionary } from "./dictionary.js";
-import { type DragKeys, type Drop, trackDragKeys } from "./drag-copies.js";
+import type { DragKeys, Drop } from "./drag-copies.js";
 import { createDragSources } from "./drag-sources.js";
 import { editFromAction, selectedNodeId, toPageDoc } from "./edit-from-action.js";
 import { elementNames } from "./element-names.js";
@@ -129,12 +127,8 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   let frameDocument: Document | null = null;
   /** Stops keeping the canvas's elements enabled; set in Content mode (see `keepElementsEnabled`). */
   let stopKeepingEnabled: (() => void) | null = null;
-  /** Stops hiding Delete and Backspace from Puck in the editor window (see `delete-keys.ts`). */
-  let stopHidingHostKeys: (() => void) | null = null;
-  /** Stops following the keys held in the editor window during a drag (see `drag-copies.ts`). */
-  let stopTrackingHostKeys: (() => void) | null = null;
-  /** Stops watching clicks that add to the selection in the editor window (iframe-less canvas). */
-  let stopHostClicks: (() => void) | null = null;
+  /** Stops listening in the editor window (see `listenInEditor`). */
+  let stopEditorListeners: (() => void) | null = null;
   const followMode = () => {
     stopKeepingEnabled?.();
     stopKeepingEnabled =
@@ -428,28 +422,20 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
         return undefined;
       }
       frameWindows.emit(frameWindow);
-      const removeKeys = installHistoryKeys(frameWindow, runCommand);
-      const showDeleteKeys = hidePuckDeleteKeys(frameWindow);
-      const stopDragKeys = trackDragKeys(frameWindow, dragKeys);
-      // The element menu, but not in Content mode, where right-clicks get the browser's own.
-      const stopClicks = watchClicks(frameWindow);
-      const removeMenu = installContextMenu(frameWindow.document, contextMenus.emit, {
-        enabled: () => mode === "design",
+      const stopListening = listenInFrame(frameWindow, {
+        dragKeys,
+        watchClicks,
+        runCommand,
+        contextMenu: contextMenus.emit,
+        menuEnabled: () => mode === "design",
         selected: () => selection,
       });
-      // Shift+F10 on macOS too (#287).
-      const removeMenuKeys = installMenuKeys(frameWindow.document);
       return () => {
-        showDeleteKeys();
-        stopDragKeys();
-        removeMenu();
-        removeMenuKeys();
-        stopClicks();
+        stopListening();
         stopKeepingEnabled?.();
         stopKeepingEnabled = null;
         stopViewOptions?.();
         stopViewOptions = null;
-        removeKeys();
         frameWindows.emit(null);
       };
     }, [document]);
@@ -563,10 +549,9 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       );
       slotsOf = (type) => slots.get(type);
       config = configFor(opts.library);
-      const hostWindow = el.ownerDocument.defaultView;
-      stopHidingHostKeys = hostWindow === null ? null : hidePuckDeleteKeys(hostWindow);
-      stopTrackingHostKeys = hostWindow === null ? null : trackDragKeys(hostWindow, dragKeys);
-      stopHostClicks = hostWindow === null ? null : watchClicks(hostWindow);
+      const editorWindow = el.ownerDocument.defaultView;
+      stopEditorListeners =
+        editorWindow === null ? null : listenInEditor(editorWindow, { dragKeys, watchClicks });
       ErrorBoundary = opts.errorBoundary ?? NoBoundary;
       const { onError } = opts;
       // Each error in the canvas's own React root goes to `onError`; React's defaults otherwise.
@@ -787,12 +772,8 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       root = null;
       host = null;
       getPuck = null;
-      stopHidingHostKeys?.();
-      stopHidingHostKeys = null;
-      stopTrackingHostKeys?.();
-      stopTrackingHostKeys = null;
-      stopHostClicks?.();
-      stopHostClicks = null;
+      stopEditorListeners?.();
+      stopEditorListeners = null;
       frameDocument = null;
       // Unmount after the current render: the app destroys the engine from an effect cleanup.
       queueMicrotask(() => {
