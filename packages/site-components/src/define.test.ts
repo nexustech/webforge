@@ -177,7 +177,7 @@ describe("defineComponent (2.5)", () => {
 
   it("knows the behaviours of behaviours/, by file name", () => {
     expect(Object.keys(BEHAVIOUR_SCRIPTS)).toContain("menu");
-    expect(BEHAVIOUR_SCRIPTS.menu).toContain("Header menu on small screens");
+    expect(BEHAVIOUR_SCRIPTS.menu).toContain("The Header's menu on small screens");
     expect(defineComponent({ ...base, behaviours: ["menu"] }).behaviours).toEqual(["menu"]);
   });
 });

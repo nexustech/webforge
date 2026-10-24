@@ -5,29 +5,47 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Rosa's Bakery</title>
   <meta name="description" content="Fresh bread and cakes, baked every morning in Hightown.">
-  <link rel="stylesheet" href="assets/css/site.b430c6f70d.css">
-  <script defer src="assets/js/webforge.e36729cf85.js"></script>
+  <link rel="stylesheet" href="assets/css/site.c5a5d128e2.css">
+  <script defer src="assets/js/webforge.ceca705b9e.js"></script>
 </head>
 <body class="flex min-h-screen flex-col bg-base-100 font-sans text-base-content">
   <!-- Header (shared) -->
-  <header class="site-header navbar relative bg-base-100 px-4 shadow-sm">
+  <header class="site-header relative z-30 navbar gap-2 px-4 sticky top-0 bg-base-100 shadow-none transition-shadow data-scrolled:shadow-md [:root:has(&amp;)]:scroll-pt-20" data-wf-sticky="">
     <div class="flex-1"><a class="text-xl font-bold" href="index.html">Rosa&#x27;s Bakery</a></div>
-    <nav aria-label="Main navigation" class="[&amp;:not([data-wf-ready]):focus-within&gt;ul]:flex"><button type="button" class="btn btn-square btn-ghost md:hidden" aria-expanded="false" aria-controls="header-menu" data-wf-menu-toggle=""><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-          <path d="M4 6h16M4 12h16M4 18h16"></path>
-        </svg><span class="sr-only">Menu</span></button>
-      <ul id="header-menu" class="menu absolute inset-x-0 top-full z-10 hidden w-full bg-base-100 p-2 shadow data-open:flex md:static md:flex md:w-auto md:menu-horizontal md:p-0 md:shadow-none">
+    <nav aria-label="Main navigation">
+      <ul class="menu menu-horizontal hidden p-0 md:flex">
         <li><a href="index.html" aria-current="page">Home</a></li>
         <li><a href="about.html">About us</a></li>
-        <li class="site-submenu relative [&amp;:not([data-wf-ready]):focus-within&gt;ul]:block"><button type="button" aria-expanded="false" aria-controls="header-menu-2" data-wf-submenu-toggle="">Visit us<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-              <path d="m6 9 6 6 6-6"></path>
-            </svg></button>
-          <ul id="header-menu-2" class="hidden data-open:block md:absolute md:top-full md:z-20 md:mt-1 md:w-48 md:rounded-box md:bg-base-100 md:p-2 md:shadow">
-            <li><a href="index.html#questions">Questions</a></li>
-            <li><a href="https://example.com/map" target="_blank" rel="noopener">Find us</a></li>
-          </ul>
+        <li>
+          <details class="site-submenu" data-wf-dropdown="">
+            <summary>Visit us</summary>
+            <ul class="md:z-20 md:w-48">
+              <li><a href="index.html#questions">Questions</a></li>
+              <li><a href="https://example.com/map" target="_blank" rel="noopener">Find us</a></li>
+            </ul>
+          </details>
         </li>
         <li><a href="about.html" class="btn btn-primary btn-sm md:ml-2">Order a cake</a></li>
       </ul>
+      <details class="site-menu md:hidden" data-wf-menu="">
+        <summary class="btn btn-square btn-ghost list-none [&amp;::-webkit-details-marker]:hidden"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <path d="M4 6h16M4 12h16M4 18h16"></path>
+          </svg><span class="sr-only">Menu</span></summary>
+        <ul class="menu absolute inset-x-0 top-full z-10 w-full bg-base-100 p-2 shadow">
+          <li><a href="index.html" aria-current="page">Home</a></li>
+          <li><a href="about.html">About us</a></li>
+          <li>
+            <details class="site-submenu" data-wf-dropdown="">
+              <summary>Visit us</summary>
+              <ul class="md:z-20 md:w-48">
+                <li><a href="index.html#questions">Questions</a></li>
+                <li><a href="https://example.com/map" target="_blank" rel="noopener">Find us</a></li>
+              </ul>
+            </details>
+          </li>
+          <li><a href="about.html" class="btn btn-primary btn-sm md:ml-2">Order a cake</a></li>
+        </ul>
+      </details>
     </nav>
   </header>
   <main id="main" class="flex-1">
@@ -74,8 +92,11 @@
     </section>
   </main>
   <!-- Footer (shared) -->
-  <footer class="site-footer footer footer-center bg-base-200 p-8 text-base-content">
-    <p>© Rosa&#x27;s Bakery, Hightown</p>
+  <footer class="site-footer footer sm:footer-horizontal bg-base-200 p-8 text-base-content">
+    <aside>
+      <p>© Rosa&#x27;s Bakery, Hightown</p>
+    </aside>
+    <nav aria-label="Footer navigation" class="flex flex-col gap-2"><a href="index.html" aria-current="page" class="link link-hover">Home</a><a href="about.html" class="link link-hover">About us</a><a href="index.html#questions" class="link link-hover">Questions</a><a href="https://example.com/map" class="link link-hover" target="_blank" rel="noopener">Find us</a><a href="about.html" class="link link-hover">Order a cake</a></nav>
   </footer>
 </body>
 </html>

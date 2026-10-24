@@ -18,6 +18,20 @@ async function blockNetwork(context: BrowserContext): Promise<void> {
   });
 }
 
+/** The Header's navigation (the Footer's is another). */
+const mainNavigation = (page: Page) => page.getByRole("navigation", { name: "Main navigation" });
+
+/**
+ * The menu on small screens and the dropdowns in it (2.6): each a <details>, whose <summary> opens
+ * it and which is open or not. `name` is the summary's text.
+ */
+const disclosure = (page: Page, selector: string, name: string) => {
+  const details = page
+    .locator(selector)
+    .filter({ has: page.locator("summary", { hasText: name }) });
+  return { details, summary: details.locator(":scope > summary") };
+};
+
 async function open(page: Page, name: string): Promise<void> {
   await blockNetwork(page.context());
   await page.goto(exportedPageUrl(name));
@@ -57,7 +71,7 @@ test.describe("exported site from disk", () => {
     await expect(image).toHaveJSProperty("complete", true);
     expect(await image.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
     // daisyUI's theme reached the page: the primary button is not the browser default.
-    const button = page.getByRole("link", { name: "About us" }).last();
+    const button = page.getByRole("main").getByRole("link", { name: "About us" }).last();
     expect(await button.evaluate((el) => getComputedStyle(el).backgroundColor)).not.toBe(
       "rgba(0, 0, 0, 0)",
     );
@@ -66,31 +80,33 @@ test.describe("exported site from disk", () => {
   test("navigates between pages with relative links", async ({ page }) => {
     await open(page, "index.html");
 
-    await page.getByRole("navigation").getByRole("link", { name: "About us" }).click();
+    await mainNavigation(page).getByRole("link", { name: "About us" }).click();
 
     await expect(page).toHaveURL(/\/about\.html$/);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("About Rosa's Bakery");
-    await expect(page.getByRole("link", { name: "About us", exact: true })).toHaveAttribute(
-      "aria-current",
-      "page",
-    );
+    // Both menus mark the page you're on: the Header's and the Footer's.
+    for (const name of ["Main navigation", "Footer navigation"]) {
+      await expect(
+        page.getByRole("navigation", { name }).getByRole("link", { name: "About us", exact: true }),
+      ).toHaveAttribute("aria-current", "page");
+    }
   });
 
-  test("opens and closes the mobile menu with the button and Escape", async ({ page }) => {
+  test("opens and closes the mobile menu with its button and Escape", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await open(page, "index.html");
-    const toggle = page.getByRole("button", { name: "Menu" });
-    const home = page.getByRole("navigation").getByRole("link", { name: "Home" });
+    const menu = disclosure(page, "details[data-wf-menu]", "Menu");
+    const home = mainNavigation(page).getByRole("link", { name: "Home" });
 
     await expect(home).toBeHidden();
-    await toggle.click();
-    await expect(toggle).toHaveAttribute("aria-expanded", "true");
+    await menu.summary.click();
+    await expect(menu.details).toHaveAttribute("open", "");
     await expect(home).toBeVisible();
 
     await page.keyboard.press("Escape");
-    await expect(toggle).toHaveAttribute("aria-expanded", "false");
+    await expect(menu.details).not.toHaveAttribute("open");
     await expect(home).toBeHidden();
-    await expect(toggle).toBeFocused();
+    await expect(menu.summary).toBeFocused();
   });
 
   test("opens a dropdown in the mobile menu by keyboard; Escape closes it before the menu", async ({
@@ -98,16 +114,20 @@ test.describe("exported site from disk", () => {
   }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await open(page, "index.html");
-    const menu = page.getByRole("button", { name: "Menu" });
-    const dropdown = page.getByRole("navigation").getByRole("button", { name: "Visit us" });
-    const questions = page.getByRole("navigation").getByRole("link", { name: "Questions" });
+    const menu = disclosure(page, "details[data-wf-menu]", "Menu");
+    const dropdown = disclosure(
+      page,
+      "details[data-wf-menu] details[data-wf-dropdown]",
+      "Visit us",
+    );
+    const questions = mainNavigation(page).getByRole("link", { name: "Questions" });
 
-    await menu.click();
-    await expect(dropdown).toHaveAttribute("aria-expanded", "false");
+    await menu.summary.click();
+    await expect(dropdown.details).not.toHaveAttribute("open");
     await expect(questions).toBeHidden();
-    await dropdown.focus();
+    await dropdown.summary.focus();
     await page.keyboard.press("Enter");
-    await expect(dropdown).toHaveAttribute("aria-expanded", "true");
+    await expect(dropdown.details).toHaveAttribute("open", "");
     await expect(questions).toBeVisible();
 
     // Screen readers get the open menu and dropdown right too.
@@ -115,25 +135,25 @@ test.describe("exported site from disk", () => {
     expect(results.violations.map((violation) => `${violation.id}: ${violation.help}`)).toEqual([]);
 
     await page.keyboard.press("Escape");
-    await expect(dropdown).toHaveAttribute("aria-expanded", "false");
-    await expect(dropdown).toBeFocused();
-    await expect(menu).toHaveAttribute("aria-expanded", "true");
+    await expect(dropdown.details).not.toHaveAttribute("open");
+    await expect(dropdown.summary).toBeFocused();
+    await expect(menu.details).toHaveAttribute("open", "");
     await page.keyboard.press("Escape");
-    await expect(menu).toHaveAttribute("aria-expanded", "false");
-    await expect(menu).toBeFocused();
+    await expect(menu.details).not.toHaveAttribute("open");
+    await expect(menu.summary).toBeFocused();
   });
 
   test("shows the menu's dropdown, button and new-tab link on a wide screen", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await open(page, "index.html");
-    const navigation = page.getByRole("navigation");
-    const dropdown = navigation.getByRole("button", { name: "Visit us" });
+    const navigation = mainNavigation(page);
+    const dropdown = disclosure(page, "nav > ul details[data-wf-dropdown]", "Visit us");
 
     await expect(navigation.getByRole("link", { name: "Order a cake" })).toHaveAttribute(
       "href",
       "about.html",
     );
-    await dropdown.click();
+    await dropdown.summary.click();
     await expect(navigation.getByRole("link", { name: "Find us" })).toHaveAttribute(
       "target",
       "_blank",
@@ -144,39 +164,93 @@ test.describe("exported site from disk", () => {
     );
     // A click elsewhere closes it.
     await page.getByRole("main").click({ position: { x: 5, y: 5 } });
-    await expect(dropdown).toHaveAttribute("aria-expanded", "false");
+    await expect(dropdown.details).not.toHaveAttribute("open");
     await expect(navigation.getByRole("link", { name: "Find us" })).toBeHidden();
 
     // So does focus moving on past it (by focus(): WebKit doesn't tab to links by default).
-    await dropdown.focus();
+    await dropdown.summary.focus();
     await page.keyboard.press("Enter");
-    await expect(dropdown).toHaveAttribute("aria-expanded", "true");
+    await expect(dropdown.details).toHaveAttribute("open", "");
     await navigation.getByRole("link", { name: "Order a cake" }).focus();
-    await expect(dropdown).toHaveAttribute("aria-expanded", "false");
+    await expect(dropdown.details).not.toHaveAttribute("open");
+  });
+
+  test.describe("sticky header (F-DS-6)", () => {
+    test("stays at the top, with its shadow once the page has scrolled past 80 px", async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 1280, height: 600 });
+      await open(page, "index.html");
+      const header = page.locator("header.site-header");
+
+      await expect(header).not.toHaveAttribute("data-scrolled");
+      await page.mouse.wheel(0, 400);
+      await expect(header).toHaveAttribute("data-scrolled", "");
+      expect(Math.round((await header.boundingBox())?.y ?? -1)).toBe(0);
+      await expect
+        .poll(() => header.evaluate((element) => getComputedStyle(element).boxShadow))
+        .not.toBe("none");
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await expect(header).not.toHaveAttribute("data-scrolled");
+    });
+
+    test("keeps an anchor's section in view below it", async ({ page }) => {
+      await page.setViewportSize({ width: 1280, height: 600 });
+      await open(page, "index.html");
+      const header = page.locator("header.site-header");
+
+      await page.goto(`${exportedPageUrl("index.html")}#questions`);
+
+      const height = (await header.boundingBox())?.height ?? 0;
+      const target = page.locator("#questions");
+      await expect
+        .poll(async () => (await target.boundingBox())?.y ?? 0)
+        .toBeGreaterThanOrEqual(height - 1);
+    });
   });
 
   test.describe("without JavaScript", () => {
     test.use({ javaScriptEnabled: false });
 
-    test("opens the mobile menu while its button has the focus", async ({ page }) => {
+    test("opens and closes the mobile menu with its button, a <details> (2.6)", async ({
+      page,
+    }) => {
       await page.setViewportSize({ width: 390, height: 844 });
       await open(page, "index.html");
-      const home = page.getByRole("navigation").getByRole("link", { name: "Home" });
+      const menu = disclosure(page, "details[data-wf-menu]", "Menu");
+      const home = mainNavigation(page).getByRole("link", { name: "Home" });
 
       await expect(home).toBeHidden();
-      await page.getByRole("button", { name: "Menu" }).focus();
+      await menu.summary.click();
       await expect(home).toBeVisible();
+      await menu.summary.click();
+      await expect(home).toBeHidden();
     });
 
-    test("opens a dropdown while it has the focus", async ({ page }) => {
+    test("opens a dropdown with its button, from the keyboard too", async ({ page }) => {
       await page.setViewportSize({ width: 1280, height: 800 });
       await open(page, "index.html");
-      const navigation = page.getByRole("navigation");
-      const questions = navigation.getByRole("link", { name: "Questions" });
+      const dropdown = disclosure(page, "nav > ul details[data-wf-dropdown]", "Visit us");
+      const questions = mainNavigation(page).getByRole("link", { name: "Questions" });
 
       await expect(questions).toBeHidden();
-      await navigation.getByRole("button", { name: "Visit us" }).focus();
+      await dropdown.summary.focus();
+      await page.keyboard.press("Enter");
       await expect(questions).toBeVisible();
+    });
+
+    test("keeps the header at the top, and an anchor's section below it", async ({ page }) => {
+      await page.setViewportSize({ width: 1280, height: 600 });
+      await open(page, "index.html");
+      const header = page.locator("header.site-header");
+
+      await page.mouse.wheel(0, 400);
+      await expect.poll(async () => Math.round((await header.boundingBox())?.y ?? -1)).toBe(0);
+      await page.goto(`${exportedPageUrl("index.html")}#questions`);
+      const height = (await header.boundingBox())?.height ?? 0;
+      await expect
+        .poll(async () => (await page.locator("#questions").boundingBox())?.y ?? 0)
+        .toBeGreaterThanOrEqual(height - 1);
     });
   });
 
