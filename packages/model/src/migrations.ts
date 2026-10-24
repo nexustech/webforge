@@ -252,6 +252,17 @@ export function migrateSiteWith(raw: unknown, options: MigrateOptions): RawSite 
  * migrated lazily, when they are opened, previewed or restored.
  */
 export function migrateSite(raw: unknown): SiteDoc {
+  try {
+    return migrateAndValidate(raw);
+  } catch (error) {
+    // Anything else a malformed file can cause (a RangeError from code that recurses, R14) is
+    // an invalid site too, never a raw error.
+    if (error instanceof SiteFormatError) throw error;
+    throw new SiteFormatError("invalid", "The site could not be read");
+  }
+}
+
+function migrateAndValidate(raw: unknown): SiteDoc {
   const migrated = migrateSiteWith(raw, {
     migrations: MIGRATIONS,
     currentVersion: SITE_FORMAT_VERSION,

@@ -307,6 +307,62 @@ describe("migration 1 → 2: a Hero's image value", () => {
   });
 });
 
+describe("migrateSite with a malformed file (R14)", () => {
+  /** A section nested `depth` times inside itself, built without recursion. */
+  function nested(depth: number) {
+    const top = { type: "Section", props: { id: "s0", content: [] as unknown[] } };
+    let parent = top;
+    for (let level = 1; level < depth; level++) {
+      const child = { type: "Section", props: { id: `s${level}`, content: [] as unknown[] } };
+      parent.props.content.push(child);
+      parent = child;
+    }
+    return top;
+  }
+  const withContent = (site: typeof v5Site, content: unknown[], formatVersion: number) => ({
+    ...site,
+    formatVersion,
+    pages: {
+      ...site.pages,
+      home000000000000: {
+        ...site.pages.home000000000000,
+        doc: { ...site.pages.home000000000000.doc, content },
+      },
+    },
+  });
+
+  it("refuses a site nested 100,000 levels deep as invalid, in any format, never a RangeError", () => {
+    const deep = [nested(100_000)];
+
+    for (const formatVersion of [SITE_FORMAT_VERSION, 1]) {
+      const error = formatError(() => migrateSite(withContent(v5Site, deep, formatVersion)));
+      expect(error.code).toBe("invalid");
+    }
+  });
+
+  it("opens a site nested as deeply as a page plausibly is", () => {
+    const site = migrateSite(withContent(v5Site, [nested(40)], SITE_FORMAT_VERSION));
+
+    expect(site.pages[site.homePageId]?.doc.content).toHaveLength(1);
+  });
+
+  it("refuses an invalid node inside a slot, at any depth", () => {
+    const broken = { type: 5, props: null };
+    const inSection = { type: "Section", props: { id: "s", content: [broken] } };
+    const deeper = { type: "Section", props: { id: "t", content: [inSection] } };
+
+    for (const content of [[inSection], [deeper]]) {
+      const error = formatError(() =>
+        migrateSite(withContent(v5Site, content, SITE_FORMAT_VERSION)),
+      );
+      expect(error.code).toBe("invalid");
+    }
+    // A plain list of values that aren't nodes is no slot: it stays the component's to check.
+    const list = { type: "Faq", props: { id: "f", items: [{ question: "Open?" }] } };
+    expect(() => migrateSite(withContent(v5Site, [list], SITE_FORMAT_VERSION))).not.toThrow();
+  });
+});
+
 // Down and up (standards §5): a site of the current format, taken back to an older one by hand-
 // written inverses of each step, migrates up to the same site. The inverses only go where each
 // step's input could be: format 4 named a daisyUI theme, format 1 had Hero images as a media id
