@@ -24,9 +24,21 @@ const classesOfList = new WeakMap<readonly NodeDoc[], readonly string[]>();
 export function classesOfHtml(html: string): string[] {
   const found: string[] = [];
   for (const match of html.matchAll(/\sclass="([^"]*)"/g)) {
-    // React escapes `&` in attributes; Tailwind needs the raw class name. The same rule as the
-    // export pipeline's classCandidates, which the renderer can't import.
-    found.push(...(match[1] ?? "").split(/\s+/).map((name) => name.replaceAll("&amp;", "&")));
+    // React escapes `&`, `<`, `>` and quotes in attributes; Tailwind needs the raw class name
+    // (`[&>*:first-child]:col-span-2`). The same rule as the export pipeline's classCandidates,
+    // which the renderer can't import: `&amp;` last, so `&amp;gt;` stays `&gt;`.
+    found.push(
+      ...(match[1] ?? "")
+        .split(/\s+/)
+        .map((name) =>
+          name
+            .replaceAll("&lt;", "<")
+            .replaceAll("&gt;", ">")
+            .replaceAll("&quot;", '"')
+            .replaceAll("&#x27;", "'")
+            .replaceAll("&amp;", "&"),
+        ),
+    );
   }
   return found.filter((name) => name !== "");
 }

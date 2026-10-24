@@ -154,6 +154,13 @@ export const shell = {
   "headingToolbar.title": "Title",
   "headingToolbar.heading": "Heading",
   "headingToolbar.subheading": "Subheading",
+  "listToolbar.addItem": "Add item",
+  "listToolbar.before": "Before",
+  "listToolbar.after": "After",
+  "listToolbar.end": "At the end",
+  "listToolbar.beforeName": "Add item before",
+  "listToolbar.afterName": "Add item after",
+  "listToolbar.endName": "Add item at the end",
   // The selected Header's toolbar in the Mobile view (UX-26): shows its menu open on the canvas only.
   "headerToolbar.label": "Header preview",
   "headerToolbar.showMobileMenu": "Show mobile menu",

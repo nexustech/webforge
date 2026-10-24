@@ -1,5 +1,6 @@
 import {
   copiedNodeId,
+  isNodeDoc,
   type NodeDoc,
   SHARED_COPY_TYPE,
   type SharedSectionId,
@@ -147,6 +148,29 @@ describe("addComponent", () => {
     expect(session.ui.getState().nodeId).toBe(hero?.props.id);
     session.history.undo();
     expect(content()).toHaveLength(1);
+  });
+
+  it("gives every element in what it adds an id of its own, each time (2.9)", () => {
+    const session = createEditorSession(siteLibrary, starterSite());
+    session.select("heading-1");
+
+    expect(addComponent(session, "Columns")).toBe(true);
+    expect(addComponent(session, "Columns")).toBe(true);
+
+    const ids: string[] = [];
+    const walk = (nodes: readonly NodeDoc[]) => {
+      for (const node of nodes) {
+        ids.push(node.props.id);
+        for (const value of Object.values(node.props)) {
+          if (Array.isArray(value) && value.every(isNodeDoc)) walk(value);
+        }
+      }
+    };
+    walk(currentPage(session)?.doc.content ?? []);
+    // Two Columns, two columns each, a Text in each column.
+    expect(ids.filter((id) => !["section-1", "heading-1", "text-1"].includes(id))).toHaveLength(10);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(ids).not.toContain("column-0");
   });
 
   it("adds nothing where nothing takes it, or for an unknown component", () => {

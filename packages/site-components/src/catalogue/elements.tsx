@@ -1,10 +1,19 @@
 import { t } from "@webforge/i18n";
+import { type Breakpoint, type Responsive, resolveResponsive } from "@webforge/model";
+import { useContext } from "react";
 import { defineComponent } from "../define.js";
 import { MARGIN_FIELD, marginClasses } from "../frame.js";
 import { type ComponentDef, linkAttributes, responsiveClasses } from "../library.js";
 import { Picture } from "../picture.js";
-import type { FieldDef } from "../schema.js";
-import { BUTTON_CLASSES } from "../typography.js";
+import type { FieldDef, ResolvedImage } from "../schema.js";
+import { BODY_TEXT_CLASSES, BUTTON_CLASSES } from "../typography.js";
+import {
+  COLUMN_LAYOUT_CLASS,
+  COLUMN_LAYOUTS,
+  type ColumnLayout,
+  ColumnsLayoutContext,
+  imageSizes,
+} from "./column-layouts.js";
 
 const ALIGNMENTS = ["left", "centre", "right"] as const;
 /** Where an element sits across its section: Left, Centre or Right. */
@@ -25,8 +34,38 @@ const IMAGE_WIDTH_CLASS = {
   large: "max-w-2xl",
   full: "max-w-none",
 } as const;
+/** How wide each width token lets an Image be, in pixels (`max-w-xs` is 20rem); full has no cap. */
+const IMAGE_WIDTH_PX = { small: 320, medium: 448, large: 672, full: undefined } as const;
 /** An Image across its section, by its alignment. */
 const IMAGE_ALIGN_CLASS = { left: "mr-auto", centre: "mx-auto", right: "ml-auto" } as const;
+
+/**
+ * An Image's picture, asking for a file no wider than it shows (X2): its width token on each
+ * device, and in Columns the widest its column can be. A component, so it can read the Columns
+ * it is in on the canvas as in the export.
+ */
+function ImagePicture({
+  image,
+  alt,
+  width,
+  rounded,
+}: {
+  readonly image: ResolvedImage;
+  readonly alt: string;
+  readonly width: Responsive<(typeof IMAGE_WIDTHS)[number]>;
+  readonly rounded: boolean;
+}) {
+  const layout = useContext(ColumnsLayoutContext);
+  const maxPx = (breakpoint: Breakpoint) => IMAGE_WIDTH_PX[resolveResponsive(width, breakpoint)];
+  return (
+    <Picture
+      image={image}
+      alt={alt}
+      sizes={imageSizes(maxPx, layout)}
+      className={rounded ? "h-auto w-full rounded-box" : "h-auto w-full"}
+    />
+  );
+}
 
 /**
  * An image from Media (F-ED-5), as wide as its width token lets it, with its focal point kept in
@@ -68,12 +107,11 @@ const image = defineComponent({
     const caption = values.caption.trim();
     return (
       <figure className={frame}>
-        <Picture
+        <ImagePicture
           image={resolved}
           alt={placed?.alt ?? resolved.alt}
-          // At most a section's column (max-w-4xl), whatever its width token.
-          sizes="(min-width: 896px) 896px, 100vw"
-          className={values.rounded ? "h-auto w-full rounded-box" : "h-auto w-full"}
+          width={values.width}
+          rounded={values.rounded}
         />
         {caption === "" ? null : (
           <figcaption className="mt-2 text-center text-sm">{caption}</figcaption>
@@ -188,10 +226,148 @@ const divider = defineComponent({
   },
 });
 
-/** The basic elements (2.9): an Image, a Button, a Spacer and a Divider. */
+const COLUMN_GAPS = ["small", "medium", "large"] as const;
+const COLUMN_GAP_CLASS = { small: "gap-4", medium: "gap-8", large: "gap-12" } as const;
+
+/**
+ * Columns side by side (T3): one to four Column elements, each holding elements, laid out per
+ * device: equal widths, one wide column, or stacked one under another, as they are on Mobile at
+ * first. 2.17's toolbar adds, removes and lays them out.
+ */
+const columns = defineComponent({
+  label: t("element.columns"),
+  category: t("category.layout"),
+  fields: {
+    columns: { kind: "slot", label: t("field.columns"), allow: ["Column"] },
+    layout: {
+      kind: "select",
+      label: t("field.columnLayout"),
+      responsive: true,
+      options: COLUMN_LAYOUTS.map((value) => ({ label: t(`field.columnLayout.${value}`), value })),
+    },
+    gap: {
+      kind: "slider",
+      label: t("field.columnGap"),
+      responsive: true,
+      steps: COLUMN_GAPS.map((value) => ({ label: t(`field.columnGap.${value}`), value })),
+    },
+    margin: MARGIN_FIELD,
+  },
+  defaults: {
+    columns: [0, 1].map((index) => ({
+      type: "Column",
+      props: {
+        // Placing a Columns gives every element in it an id of its own.
+        id: `column-${index}`,
+        content: [
+          {
+            type: "Text",
+            props: { id: `column-${index}-text`, text: `<p>${t("starter.columnText")}</p>` },
+          },
+        ],
+      },
+    })),
+    layout: { $responsive: { desktop: "equal", mobile: "stacked" } },
+    gap: "medium",
+  },
+  render: ({ values, slots }) => {
+    const Columns = slots.columns;
+    const layout: Responsive<ColumnLayout> = values.layout;
+    const placing = responsiveClasses(layout, (value) => COLUMN_LAYOUT_CLASS[value]);
+    const gap = responsiveClasses(values.gap, (value) => COLUMN_GAP_CLASS[value]);
+    return (
+      <div className={`site-columns${marginClasses(values.margin)}`}>
+        <ColumnsLayoutContext value={layout}>
+          {/* The grid is the slot's own element, so the canvas lays them out as the export does. */}
+          <Columns className={`grid ${placing} ${gap}`} />
+        </ColumnsLayoutContext>
+      </div>
+    );
+  },
+});
+
+/** One column of a Columns element: elements one under another. */
+const column = defineComponent({
+  label: t("element.column"),
+  place: "child",
+  fields: {
+    content: { kind: "slot", label: t("field.content"), accepts: "element" },
+  },
+  defaults: { content: [] },
+  // `site-column` is what 2.17's column outlines find on the canvas.
+  render: ({ slots }) => {
+    const Content = slots.content;
+    return (
+      <div className="site-column min-w-0">
+        <Content className="flex flex-col gap-4" />
+      </div>
+    );
+  },
+});
+
+const LIST_STYLES = ["bullets", "numbers", "plain"] as const;
+/** A List's markers, and the space between its items. */
+const LIST_CLASS = {
+  bullets: "list-disc space-y-2 pl-6",
+  numbers: "list-decimal space-y-2 pl-6",
+  plain: "list-none space-y-2",
+} as const;
+
+/** A list of short texts: bullets, numbers or none, each item edited on the canvas. */
+const list = defineComponent({
+  label: t("element.list"),
+  category: t("category.text"),
+  fields: {
+    items: { kind: "slot", label: t("field.listItems"), allow: ["ListItem"] },
+    style: {
+      kind: "select",
+      label: t("field.listStyle"),
+      options: LIST_STYLES.map((value) => ({ label: t(`field.listStyle.${value}`), value })),
+    },
+    margin: MARGIN_FIELD,
+  },
+  defaults: {
+    items: [0, 1, 2].map((index) => ({
+      type: "ListItem",
+      props: { id: `list-item-${index}`, text: t("starter.listItem") },
+    })),
+    style: "bullets",
+  },
+  render: ({ values, slots }) => {
+    const Items = slots.items;
+    const className = `site-list ${BODY_TEXT_CLASSES} ${LIST_CLASS[values.style]}${marginClasses(values.margin)}`;
+    // Without a class the slot adds no element, so its items are the list's own <li>s.
+    return values.style === "numbers" ? (
+      <ol className={className}>
+        <Items />
+      </ol>
+    ) : (
+      <ul className={className}>
+        <Items />
+      </ul>
+    );
+  },
+});
+
+/** One item of a List. */
+const listItem = defineComponent({
+  label: t("element.listItem"),
+  place: "child",
+  fields: {
+    text: { kind: "text", label: t("field.text"), inline: true },
+  },
+  defaults: { text: t("starter.listItem") },
+  render: ({ values }) => <li className="site-list-item">{values.text}</li>,
+});
+
+/** The basic elements (2.9): Image, Button, Spacer, Divider, Columns and List. */
 export const elementsComponents: Readonly<Record<string, ComponentDef>> = {
   Image: image,
   Button: button,
   Spacer: spacer,
   Divider: divider,
+  Columns: columns,
+  Column: column,
+  List: list,
+  ListItem: listItem,
 };
