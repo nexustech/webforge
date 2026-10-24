@@ -43,6 +43,8 @@ type FieldSpecs = {
   readonly link: Nothing;
   /** Drawn by the app: a Media image and its alt text (1.16). */
   readonly image: Nothing;
+  /** Drawn by the app: one of Lucide's icons, chosen in the icon picker (F-ED-22). */
+  readonly icon: Nothing;
 };
 
 /** A kind of field: the renderer that draws it. */

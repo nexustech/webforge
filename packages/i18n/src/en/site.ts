@@ -83,6 +83,13 @@ export const site = {
     "{name} is too large. Media takes files up to 50 MB and images up to 50 megapixels.",
   "site.media.failed.readOnly": "This site is read-only, so nothing can be added to it.",
   "site.media.failed.unknown": "Webforge couldn't add the files.",
+  // The icon field and its picker (F-ED-22).
+  "site.icon.choose": "Choose an icon…",
+  "site.icon.change": "Change icon ({name})…",
+  "site.icon.remove": "Remove icon",
+  "site.icon.picker.title": "Choose an icon",
+  "site.icon.picker.description": "Double-click an icon, or press Enter, to use it here.",
+  "site.icon.picker.none": "No icon matches.",
   "site.media.field.choose": "Choose an image…",
   "site.media.field.change": "Change image…",
   "site.media.field.remove": "Remove image",

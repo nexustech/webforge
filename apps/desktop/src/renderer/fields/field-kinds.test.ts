@@ -32,7 +32,7 @@ describe("field kinds (2.20, B5)", () => {
     expect(missing).toEqual([]);
   });
 
-  it("draws images, links and colours the app's way", () => {
-    expect(Object.keys(appRenderers).toSorted()).toEqual(["color", "image", "link"]);
+  it("draws images, links, icons and colours the app's way", () => {
+    expect(Object.keys(appRenderers).toSorted()).toEqual(["color", "icon", "image", "link"]);
   });
 });

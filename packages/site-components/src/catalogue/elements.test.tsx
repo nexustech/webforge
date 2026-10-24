@@ -235,3 +235,48 @@ describe("the List element (2.9)", () => {
     expect(render("List", { items })).not.toContain('role="list"');
   });
 });
+
+describe("icons (2.9b, F-ED-22)", () => {
+  it("draws an Icon as inline SVG, with no icon font or request (C8)", () => {
+    const html = render("Icon", { icon: "phone", size: "large", color: "primary" });
+
+    expect(html).toMatch(
+      /^<div class="site-icon flex justify-start"><svg xmlns="http:\/\/www.w3.org\/2000\/svg" viewBox="0 0 24 24"/,
+    );
+    expect(html).toContain('class="size-12 text-primary" aria-hidden="true"><path d="');
+    expect(html).not.toMatch(/<link|<img|@font-face|<use /);
+  });
+
+  it("names an Icon for screen readers only when it has a label", () => {
+    expect(render("Icon", { icon: "phone", label: " Phone " })).toContain(
+      'role="img" aria-label="Phone"',
+    );
+    expect(render("Icon", { icon: "phone" })).toContain('aria-hidden="true"');
+  });
+
+  it("draws an Icon's own icon for a name Lucide doesn't have, and no icon on a Button", () => {
+    // As any field reads what it can't use: the Icon's default, a star.
+    expect(render("Icon", { icon: "not-an-icon" })).toBe(render("Icon", { icon: "star" }));
+    expect(render("Button", { label: "Call", icon: "not-an-icon" })).not.toContain("<svg");
+  });
+
+  it("puts a Button's icon before its text", () => {
+    const html = render("Button", { label: "Call us", icon: "phone" });
+
+    expect(html).toContain('<a class="btn btn-primary"');
+    expect(html).toContain('class="size-[1em]" aria-hidden="true">');
+    expect(html).toMatch(/<\/svg>Call us<\/a><\/div>$/);
+  });
+
+  it("shows a List's icon before each item instead of its markers", () => {
+    const items = ["Bread", "Cakes"].map((text, index) => ({
+      type: "ListItem",
+      props: { id: `i${index}`, text },
+    }));
+    const html = render("List", { items, style: "numbers", icon: "check" });
+
+    expect(html).toMatch(/^<ul class="site-list [^"]*list-none space-y-2" role="list">/);
+    expect(html.match(/<li class="site-list-item flex items-start gap-2"><svg/g)).toHaveLength(2);
+    expect(html).toContain("<span>Bread</span>");
+  });
+});

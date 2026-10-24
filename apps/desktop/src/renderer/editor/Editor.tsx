@@ -426,8 +426,8 @@ export function Editor({
   // The Edit panel replaces Puck's own fields (1.14). Registered once: it follows the editor level
   // and the mode (Content shows its Content tab only) itself, so a switch redraws it alone (R9).
   useEffect(() => {
-    // The fields the app draws itself (R11): images, links, and colours with the theme's own
-    // colours and a contrast warning (1.37, UX-25).
+    // The fields the app draws itself (R11, fields/): images, links, icons, and colours with the
+    // theme's own colours and a contrast warning (1.37, UX-25).
     const renderers = fieldRenderers({ session, preferences, imagePicks });
     function Edit() {
       return (

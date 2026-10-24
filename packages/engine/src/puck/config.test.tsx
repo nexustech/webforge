@@ -105,6 +105,7 @@ describe("toPuckConfig", () => {
       slot: { kind: "slot", label: "Slot" },
       media: { kind: "media", label: "Image" },
       link: { kind: "link", label: "Link" },
+      icon: { kind: "icon", label: "Icon" },
       list: { kind: "list", label: "List", itemLabel: "Item", fields: {}, defaults: {} },
     } satisfies { readonly [K in FieldDef["kind"]]: Extract<FieldDef, { readonly kind: K }> };
     const every = toPuckConfig({
