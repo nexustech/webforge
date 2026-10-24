@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // The behaviours run in the exported site's browser: classic scripts, type-checked as they are
+    // (R7), without a `@ts-check` line in what sites get. Their tests drive them in happy-dom.
+    "lib": ["es2024", "dom", "dom.iterable"],
+    "jsx": "react-jsx",
+    "allowJs": true,
+    "checkJs": true,
+    "outDir": "${configDir}/dist/behaviours"
+  },
+  "include": ["src/behaviours/*.js", "src/behaviours/*.test.ts"],
+  "references": [{ "path": "." }]
+}

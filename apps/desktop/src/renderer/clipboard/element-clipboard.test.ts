@@ -62,7 +62,7 @@ const sectionContent = (session: EditorSession) =>
   (content(session)[0]?.props.content ?? []) as NodeDoc[];
 const labels = (session: EditorSession) =>
   session.history.state.getState().entries.map((entry) => entry.label);
-const select = (session: EditorSession, nodeId: string | null) => session.ui.setState({ nodeId });
+const select = (session: EditorSession, nodeId: string | null) => session.select(nodeId);
 
 describe("copy and paste (1.25)", () => {
   it("pastes a copy after the selected element with new ids, as one step that selects it", async () => {

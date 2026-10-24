@@ -1,7 +1,7 @@
 import { type ElectronApplication, expect, type Locator, type Page, test } from "@playwright/test";
 import { placeCaret } from "./caret.js";
 import { below, boxOf, drag, lowerHalf } from "./drag.js";
-import { launchDesktopApp } from "./launch.js";
+import { launchDesktopApp, waitForCanvas } from "./launch.js";
 
 // Phase 0 spike (spec/02-mvp-spec.md §6, ADR 0004): Puck runs on the canvas, but every change goes
 // through Webforge's HistoryManager. Puck's own undo history must never act.
@@ -28,7 +28,7 @@ test.beforeEach(async () => {
   });
   await expect(canvas().locator("h1")).toHaveText(STARTER_HEADING);
   // The site CSS changes the layout when it arrives; drags and clicks need the final positions.
-  await expect(canvas().locator("style[data-webforge-site-css]")).toHaveCount(1);
+  await waitForCanvas(page);
 });
 
 test.afterEach(async () => {

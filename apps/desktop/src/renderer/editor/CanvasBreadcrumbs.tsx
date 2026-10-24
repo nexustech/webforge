@@ -2,9 +2,11 @@ import { cn } from "@webforge/editor-ui";
 import type { CanvasEngine } from "@webforge/engine";
 import { t } from "@webforge/i18n";
 import { ChevronRightIcon } from "lucide-react";
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect } from "react";
 import { selectionPath } from "./breadcrumbs.js";
 import type { EditorSession } from "./editor-session.js";
+import { sameValue } from "./same-value.js";
+import { useDocument, useUi } from "./use-document.js";
 
 /** Props of {@link CanvasBreadcrumbs}. */
 export type CanvasBreadcrumbsProps = {
@@ -18,10 +20,14 @@ export type CanvasBreadcrumbsProps = {
  * focus on one outlines it on the canvas.
  */
 export function CanvasBreadcrumbs({ session, engine }: CanvasBreadcrumbsProps) {
-  const { history, ui, library } = session;
-  const site = useSyncExternalStore(history.document.subscribe, history.document.getState);
-  const { pageId, nodeId } = useSyncExternalStore(ui.subscribe, ui.getState);
-  const crumbs = selectionPath(site, pageId, nodeId, library);
+  const pageId = useUi(session, (ui) => ui.pageId);
+  const nodeId = useUi(session, (ui) => ui.nodeId);
+  // Redrawn when a step's title changes, not on every keystroke in the page.
+  const crumbs = useDocument(
+    session,
+    (site) => selectionPath(site, pageId, nodeId, session.library),
+    sameValue,
+  );
   const outline = (id: string | null) => engine?.outline(id);
   // A step under the pointer can go without the pointer leaving it (Esc, Delete or Undo while it
   // is there): its outline goes with the selection or page it belonged to, or with the bar.
@@ -49,7 +55,7 @@ export function CanvasBreadcrumbs({ session, engine }: CanvasBreadcrumbsProps) {
                   "hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring",
                   last ? "font-medium text-foreground" : "text-muted-foreground",
                 )}
-                onClick={() => ui.setState({ nodeId: crumb.id })}
+                onClick={() => session.select(crumb.id)}
                 onPointerEnter={() => outline(crumb.id)}
                 onPointerLeave={() => outline(null)}
                 onFocus={() => outline(crumb.id)}

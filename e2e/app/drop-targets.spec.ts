@@ -1,5 +1,5 @@
 import { type ElectronApplication, expect, type Locator, type Page, test } from "@playwright/test";
-import { launchDesktopApp } from "./launch.js";
+import { launchDesktopApp, waitForCanvas } from "./launch.js";
 
 // Valid drop targets only (1.13, F-ED-1): the page's top level takes sections, so an element
 // dragged there is refused and goes to the nearest place that accepts it instead.
@@ -19,7 +19,7 @@ test.beforeEach(async () => {
     .click();
   await expect(canvas().locator("h1")).toHaveText(STARTER_HEADING);
   // The site CSS changes the layout when it arrives; drags need the final positions.
-  await expect(canvas().locator("style[data-webforge-site-css]")).toHaveCount(1);
+  await waitForCanvas(page);
 });
 
 test.afterEach(async () => {

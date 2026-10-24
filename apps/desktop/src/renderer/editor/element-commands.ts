@@ -3,7 +3,7 @@ import { t } from "@webforge/i18n";
 import { similarTo, toggleSelectedHidden } from "../layers/bulk-layers.js";
 import { type Layer, type LayersSession, shownLayer, toggleLayerHidden } from "../layers/layers.js";
 import type { CommandRegistry } from "../shell/commands.js";
-import { selectElements } from "./selection.js";
+import type { EditorSession } from "./editor-session.js";
 import { splitText } from "./split-text.js";
 
 /**
@@ -20,7 +20,7 @@ import { splitText } from "./split-text.js";
  */
 export function registerElementCommands(
   registry: CommandRegistry,
-  session: LayersSession,
+  session: LayersSession & Pick<EditorSession, "selectElements">,
   engine: CanvasEngine,
   beforeAction: () => void,
   pickImage: (nodeId: string) => void,
@@ -85,7 +85,7 @@ export function registerElementCommands(
     enabled: false,
     run: () => {
       const ids = similar();
-      if (ids !== undefined) selectElements(session.ui, ids);
+      if (ids !== undefined) session.selectElements(ids);
     },
   });
   const stopRequests = engine.onElementRequest((request) => {

@@ -9,9 +9,10 @@ import {
 import { t } from "@webforge/i18n";
 import { type ImageMeta, type ImageValue, imageValueSchema, isImageMeta } from "@webforge/model";
 import { ImagePlusIcon } from "lucide-react";
-import { useEffect, useId, useState, useSyncExternalStore } from "react";
+import { useEffect, useId, useState } from "react";
 import { type MediaApi, mediaImageUrl } from "../../shared/ipc/media.js";
 import type { EditorSession } from "../editor/editor-session.js";
+import { useDocument } from "../editor/use-document.js";
 import { siteSession } from "../storage/site-session.js";
 import type { ImagePickRequests } from "./image-picks.js";
 import { importItems } from "./import-media.js";
@@ -46,10 +47,7 @@ export function ImageField({
   imageUrl = mediaImageUrl,
   picks,
 }: FieldRendererProps & ImageFieldContext) {
-  const items = useSyncExternalStore(
-    session.history.document.subscribe,
-    () => session.history.document.getState().media,
-  );
+  const items = useDocument(session, (site) => site.media);
   const [picking, setPicking] = useState(false);
   // *Edit* on the selected element's image (F-ED-25): its picker opens, focus on its button.
   useEffect(() => {

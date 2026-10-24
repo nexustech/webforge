@@ -1,21 +1,13 @@
 import type { Viewport } from "@webforge/engine";
-import type { SiteDoc } from "@webforge/model";
 import { useSyncExternalStore } from "react";
-import type { CanvasPreferences } from "../../shared/ipc/prefs.js";
 import type { EditorSession } from "../editor/editor-session.js";
+import { pageListOf, samePages, useDocument, useUi } from "../editor/use-document.js";
 import { CanvasToolbar } from "./CanvasToolbar.js";
 import type { CanvasView } from "./canvas-view.js";
+import { type PreferencesStore, usePreferences } from "./preferences-store.js";
 
 /** The page list as the toolbar shows it, kept while only page content changes. */
-function usePageList(session: EditorSession) {
-  const { document } = session.history;
-  const key = (site: SiteDoc) =>
-    JSON.stringify(site.pageOrder.map((id) => [id, site.pages[id]?.title ?? ""]));
-  const serialised = useSyncExternalStore(document.subscribe, () => key(document.getState()));
-  return (JSON.parse(serialised) as [SiteDoc["pageOrder"][number], string][]).map(
-    ([id, title]) => ({ id, title }),
-  );
-}
+const usePageList = (session: EditorSession) => useDocument(session, pageListOf, samePages);
 
 /**
  * The canvas toolbar on an editor session: it shows the session's page and view, and changes them
@@ -25,33 +17,31 @@ function usePageList(session: EditorSession) {
 export function CanvasToolbarHost({
   session,
   view,
-  canvas,
-  onCanvasChange,
+  preferences,
 }: {
   readonly session: EditorSession;
   /** The canvas's zoom and size, which the editor keeps in step with the canvas engine. */
   readonly view: CanvasView;
-  /** The View menu's options and the person's own devices, from their preferences. */
-  readonly canvas: CanvasPreferences;
-  readonly onCanvasChange: (canvas: CanvasPreferences) => void;
+  /** The person's preferences: the View menu's options and their own devices, which it changes. */
+  readonly preferences: PreferencesStore;
 }) {
-  const { ui } = session;
+  const canvas = usePreferences(preferences, (state) => state.preferences.canvas);
   const zoom = useSyncExternalStore(view.subscribe, () => view.getState().zoom);
   const size = useSyncExternalStore(view.subscribe, () => view.getState().size);
-  const pageId = useSyncExternalStore(ui.subscribe, () => ui.getState().pageId);
-  const viewport = useSyncExternalStore(ui.subscribe, () => ui.getState().viewport);
+  const pageId = useUi(session, (state) => state.pageId);
+  const viewport = useUi(session, (state) => state.viewport);
   return (
     <CanvasToolbar
       pages={usePageList(session)}
       shownPageId={pageId}
       onShowPage={(id) => session.showPage(id)}
       viewport={viewport}
-      onViewportChange={(next: Viewport) => ui.setState({ viewport: next })}
+      onViewportChange={(next: Viewport) => session.setViewport(next)}
       zoom={zoom}
       onZoomChange={(next) => view.setState({ zoom: next })}
       size={size}
       canvas={canvas}
-      onCanvasChange={onCanvasChange}
+      onCanvasChange={(next) => preferences.change({ canvas: next })}
     />
   );
 }

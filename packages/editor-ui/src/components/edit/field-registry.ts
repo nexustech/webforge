@@ -1,4 +1,4 @@
-import type { ComponentType } from "react";
+import { type ComponentType, useSyncExternalStore } from "react";
 
 /** What a field renderer needs to know about its field; the app maps its own definitions to this. */
 export type FieldSpec = {
@@ -69,24 +69,58 @@ export type FieldRendererProps = {
 /** A field renderer: draws one field's control. */
 export type FieldRenderer = ComponentType<FieldRendererProps>;
 
-const renderers = new Map<string, FieldRenderer>();
+/** One registration of a renderer. */
+type Registration = { readonly renderer: FieldRenderer };
+/** Each kind's registrations, the latest last: it draws the kind's fields. */
+const entries = new Map<string, readonly Registration[]>();
+/**
+ * The renderer drawing each kind: a new map on every change, so an Edit panel drawn before a
+ * renderer was registered draws with it ({@link useFieldRenderers}), memoized or not.
+ */
+let renderers: ReadonlyMap<string, FieldRenderer> = new Map();
+const listeners = new Set<() => void>();
+const changed = () => {
+  renderers = new Map(
+    [...entries].flatMap(([kind, stack]) => {
+      const top = stack.at(-1);
+      return top === undefined ? [] : [[kind, top.renderer] as const];
+    }),
+  );
+  for (const listener of listeners) listener();
+};
+
+/** Calls `listener` when a renderer is registered or removed; returns a function that stops. */
+function subscribe(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+const current = () => renderers;
+
+/** The registered renderers, by kind; a component using it redraws when they change. */
+export function useFieldRenderers(): ReadonlyMap<string, FieldRenderer> {
+  return useSyncExternalStore(subscribe, current, current);
+}
 
 /**
  * Makes `renderer` draw every field of `kind` in the Edit panel (1.14). Later registrations of a
- * kind replace earlier ones; the returned function puts the previous renderer back.
+ * kind replace earlier ones; the returned function takes this one away, and the latest of the
+ * others still registered draws the kind again.
  */
 export function registerFieldRenderer(kind: string, renderer: FieldRenderer): () => void {
-  const previous = renderers.get(kind);
-  renderers.set(kind, renderer);
+  // An object of its own, so the same renderer registered twice is taken away once each time.
+  const entry: Registration = { renderer };
+  entries.set(kind, [...(entries.get(kind) ?? []), entry]);
+  changed();
   return () => {
-    if (renderers.get(kind) !== renderer) {
-      return;
-    }
-    if (previous === undefined) {
-      renderers.delete(kind);
-    } else {
-      renderers.set(kind, previous);
-    }
+    const stack = entries.get(kind) ?? [];
+    if (!stack.includes(entry)) return;
+    const rest = stack.filter((each) => each !== entry);
+    if (rest.length === 0) entries.delete(kind);
+    else entries.set(kind, rest);
+    changed();
   };
 }
 

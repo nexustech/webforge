@@ -13,6 +13,7 @@ import {
   slugify,
 } from "@webforge/model";
 import type { ComponentLibrary } from "@webforge/site-components";
+import { sameValue } from "../editor/same-value.js";
 
 /**
  * A section a link can go to: a top-level element of a page, or the section a copy of a shared
@@ -58,6 +59,26 @@ export function linkTargets(site: SiteDoc, library: ComponentLibrary): PageTarge
     });
     return [{ id, title: page.title, sections }];
   });
+}
+
+/**
+ * {@link linkTargets} for the documents of one open site (R9): worked out once per document, and
+ * the same list (by reference) while the pages and sections it names read the same, so the link
+ * fields showing it redraw only when one of those changes. Make one for each editor session.
+ */
+export function createLinkTargets(
+  library: ComponentLibrary,
+): (site: SiteDoc) => readonly PageTarget[] {
+  const lists = new WeakMap<SiteDoc, readonly PageTarget[]>();
+  let last: readonly PageTarget[] = [];
+  return (site) => {
+    const known = lists.get(site);
+    if (known !== undefined) return known;
+    const next = linkTargets(site, library);
+    last = sameValue(next, last) ? last : next;
+    lists.set(site, last);
+    return last;
+  };
 }
 
 /**

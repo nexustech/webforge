@@ -6,7 +6,7 @@ import { createSite, type MediaId } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
 import { heroPhoto } from "@webforge/test-utils";
 import { placeCaret } from "./caret.js";
-import { launchDesktopApp } from "./launch.js";
+import { launchDesktopApp, waitForCanvas } from "./launch.js";
 
 // Design | Content (M3, 1.10): switching is instant, locks the layout in Content mode and is
 // remembered with the site. Simple | Advanced is a per-person preference.
@@ -31,9 +31,7 @@ test.afterEach(async () => {
 async function openSite(): Promise<Page> {
   app = await launchDesktopApp({ args: [sitePath] });
   const page = await app.firstWindow();
-  await expect(canvas(page).locator("style[data-webforge-site-css]")).toHaveCount(1, {
-    timeout: 30_000,
-  });
+  await waitForCanvas(page);
   return page;
 }
 

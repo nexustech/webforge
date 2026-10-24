@@ -1,6 +1,5 @@
 import type { Viewport } from "@webforge/engine";
 import { t } from "@webforge/i18n";
-import type { StoreApi } from "zustand/vanilla";
 import { type CanvasView, zoomStep } from "./canvas-view.js";
 import { COMMAND_IDS } from "./command-ids.js";
 import type { CommandRegistry } from "./commands.js";
@@ -13,7 +12,7 @@ import type { CommandRegistry } from "./commands.js";
  */
 export function registerViewCommands(
   registry: CommandRegistry,
-  ui: Pick<StoreApi<{ readonly viewport: Viewport }>, "setState">,
+  session: { setViewport(viewport: Viewport): void },
   view: CanvasView,
 ): () => void {
   const shownScale = () => {
@@ -21,7 +20,7 @@ export function registerViewCommands(
     return typeof zoom === "number" ? zoom : (size?.zoom ?? 1);
   };
   const zoomTo = (zoom: number | "fit") => () => view.setState({ zoom });
-  const show = (viewport: Viewport) => () => ui.setState({ viewport });
+  const show = (viewport: Viewport) => () => session.setViewport(viewport);
   const removers = [
     registry.register({
       id: COMMAND_IDS.zoomIn,

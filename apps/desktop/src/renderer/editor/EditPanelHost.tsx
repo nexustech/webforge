@@ -7,11 +7,12 @@ import {
   colorRefSchema,
   imageValueSchema,
   type NodeAdvanced,
+  type NodeDoc,
   type SiteDoc,
   SPACING_TOKENS,
 } from "@webforge/model";
-import type { FieldDef } from "@webforge/site-components";
-import { useEffect, useRef, useSyncExternalStore } from "react";
+import type { ComponentLibrary, FieldDef } from "@webforge/site-components";
+import { useEffect, useRef } from "react";
 import { applyAnchor, asLinkFieldChange } from "../links/link-change.js";
 import { anchorsTakenInSection } from "../shared-sections/shared-sections.js";
 import {
@@ -29,7 +30,7 @@ import {
 } from "./advanced-fields.js";
 import type { EditorSession } from "./editor-session.js";
 import { fieldGroupOf } from "./field-group.js";
-import { fieldTarget } from "./field-target.js";
+import { type FieldTarget, fieldTarget } from "./field-target.js";
 import { changedLabel, labelFor } from "./labels.js";
 import {
   applyListChange,
@@ -46,7 +47,9 @@ import {
   withoutOverride,
   withValueAt,
 } from "./responsive-value.js";
+import { sameValue } from "./same-value.js";
 import { shownLayout } from "./shared-layout.js";
+import { useDocument, useUi } from "./use-document.js";
 
 /** The Edit panel's renderer kind for a field, or undefined for fields edited elsewhere. */
 function rendererKind(field: FieldDef): string | undefined {
@@ -159,6 +162,74 @@ type Run = {
   readonly cancel?: () => void;
 };
 
+/**
+ * The anchors other elements use (Advanced tab, F-ED-11): in a copy, those its shared section's
+ * anchors may not repeat; else the page's own, including the shared Header and Footer, and for an
+ * element of the Header or Footer, every page that shows it.
+ */
+function takenAnchors(site: SiteDoc, target: FieldTarget): string[] {
+  if (target.inCopy !== undefined) {
+    return anchorsTakenInSection(site, target.inCopy.shared.id, target.inCopy.node.props.id);
+  }
+  const taken: string[] = [];
+  const { region } = target;
+  const pages =
+    region === undefined
+      ? [target.page]
+      : Object.values(site.pages)
+          .filter((other) => shownLayout(site, other.id)[region].length > 0)
+          .map((other) => other.doc);
+  const nodes = pages.flatMap((other) => other.content);
+  findNode([...site.layout.header, ...nodes, ...site.layout.footer], (other) => {
+    const anchor = other.props.advanced?.anchorId;
+    if (anchor !== undefined && other.props.id !== target.id) taken.push(anchor);
+    return false;
+  });
+  return taken;
+}
+
+/** What the panel draws of the site: the selected element, and in Advanced mode the anchors taken. */
+type PanelSlice = { readonly target: FieldTarget | undefined; readonly anchors: string[] };
+
+/**
+ * Whether `a` and `b`, two states of the element of component `component`, look the same in the
+ * panel: the same values, besides the elements in its slots, which the panel doesn't show (unless
+ * it edits them as a list). Typing in a Section's Heading leaves the Section's panel as it is.
+ */
+function samePanelValues(
+  a: NodeDoc,
+  b: NodeDoc,
+  component: FieldTarget["component"],
+  library: ComponentLibrary,
+): boolean {
+  if (a === b) return true;
+  const names = new Set([...Object.keys(a.props), ...Object.keys(b.props)]);
+  for (const name of names) {
+    const field = component.fields[name];
+    const shown = field?.kind !== "slot" || editableList(field, library) !== undefined;
+    if (shown && !sameValue(a.props[name], b.props[name])) return false;
+  }
+  return true;
+}
+
+/**
+ * Whether the panel would draw the same: the same element, with the same values, in the same place
+ * (R9). Anything else in the document, such as typing in another element, leaves it as it is.
+ */
+function sameSlice(a: PanelSlice, b: PanelSlice, library: ComponentLibrary): boolean {
+  const x = a.target;
+  const y = b.target;
+  if (x === undefined || y === undefined) return x === y && sameValue(a.anchors, b.anchors);
+  return (
+    x.id === y.id &&
+    x.component === y.component &&
+    x.region === y.region &&
+    x.copyLabel === y.copyLabel &&
+    samePanelValues(x.node, y.node, x.component, library) &&
+    sameValue(a.anchors, b.anchors)
+  );
+}
+
 /** Props of {@link EditPanelHost}. */
 export type EditPanelHostProps = {
   readonly session: EditorSession;
@@ -185,10 +256,16 @@ export function EditPanelHost({
   advanced = false,
   contentOnly = false,
 }: EditPanelHostProps) {
-  const { history, ui, library } = session;
-  const site = useSyncExternalStore(history.document.subscribe, history.document.getState);
-  const { pageId, nodeId, viewport, others = [] } = useSyncExternalStore(ui.subscribe, ui.getState);
-  const target = fieldTarget(site, library, pageId, nodeId);
+  const { history, library } = session;
+  const { pageId, nodeId, viewport, others = [] } = useUi(session, (ui) => ui);
+  const { target, anchors } = useDocument(
+    session,
+    (site): PanelSlice => {
+      const found = fieldTarget(site, library, pageId, nodeId);
+      return { target: found, anchors: advanced && found ? takenAnchors(site, found) : [] };
+    },
+    (a, b) => sameSlice(a, b, library),
+  );
   const selectedId = target?.id;
   const breakpoint = breakpointOf(viewport);
   const device = t(`device.${breakpoint}`);
@@ -233,10 +310,11 @@ export function EditPanelHost({
   if (target === undefined) {
     return <EditPanel fields={[]} onChange={() => undefined} onCommit={() => undefined} />;
   }
-  const { page, node, component, id, region, inCopy, copyLabel, storedOr, editOf, write, recipe } =
-    target;
-  const labelOf = (name: string, field: FieldDef, reset = false) =>
-    target.labelOf(name, field, breakpoint, reset);
+  const { node, component, id, storedOr } = target;
+  // A change is written to the element as the document has it now, never as an older drawing of
+  // the panel found it, since the panel only redraws when its own element changes (R9). Once the
+  // element has gone, a change still on its way does nothing.
+  const now = () => fieldTarget(history.document.getState(), library, pageId, nodeId);
 
   const fields = Object.entries(component.fields).flatMap(([name, field]): EditPanelField[] => {
     const list = editableList(field, library);
@@ -263,42 +341,23 @@ export function EditPanelHost({
     ]);
   });
 
-  if (advanced && inCopy !== undefined) {
-    // An anchor of a shared section shows in every copy, on every page with one.
-    const taken = anchorsTakenInSection(site, inCopy.shared.id, inCopy.node.props.id);
-    fields.push(...advancedFields(node.props.advanced, taken));
-  } else if (advanced) {
-    // Anchors other elements use on this page, including the shared Header and Footer; for an
-    // element of the Header or Footer, on every page that shows it.
-    const takenAnchors: string[] = [];
-    const pages =
-      region === undefined
-        ? [page]
-        : Object.values(site.pages)
-            .filter((other) => shownLayout(site, other.id)[region].length > 0)
-            .map((other) => other.doc);
-    const nodes = pages.flatMap((other) => other.content);
-    findNode([...site.layout.header, ...nodes, ...site.layout.footer], (other) => {
-      const anchor = other.props.advanced?.anchorId;
-      if (anchor !== undefined && other.props.id !== id) takenAnchors.push(anchor);
-      return false;
-    });
-    fields.push(...advancedFields(node.props.advanced, takenAnchors));
+  if (advanced) {
+    fields.push(...advancedFields(node.props.advanced, anchors));
   }
 
   const selectionAfter = { pageId, viewport, nodeId: id };
 
   /** A change on the Advanced tab: one step, "Changed Heading CSS classes". */
-  const changeAdvanced = (name: string, value: unknown) => {
+  const changeAdvanced = (live: FieldTarget, name: string, value: unknown) => {
     endRun();
     flush();
     const label =
-      copyLabel ?? changedLabel(editOf("props", name), library, advancedFieldLabel(name));
+      live.copyLabel ?? changedLabel(live.editOf("props", name), library, advancedFieldLabel(name));
     session.edit(
       "props",
       label,
       (draft) =>
-        write(draft, "advanced", (stored) =>
+        live.write(draft, "advanced", (stored) =>
           withAdvancedChange(stored as NodeAdvanced | undefined, name, value),
         ),
       { selectionAfter },
@@ -306,14 +365,14 @@ export function EditPanelHost({
   };
 
   /** What a text field shows: its own text or a Site Settings value; one step (1.17). */
-  const changeBinding = (name: string, value: unknown) => {
+  const changeBinding = (live: FieldTarget, name: string, value: unknown) => {
     if (component.fields[name] === undefined) return;
     endRun();
     flush();
     session.edit(
       "props",
-      copyLabel ?? bindingLabel(component.label, value),
-      recipe("bindings", (stored) => withBinding(stored, name, value)),
+      live.copyLabel ?? bindingLabel(component.label, value),
+      live.recipe("bindings", (stored) => withBinding(stored, name, value)),
       { selectionAfter },
     );
   };
@@ -322,7 +381,7 @@ export function EditPanelHost({
    * A new link (1.19): one step, "Changed Hero Button link", which also gives the target section
    * its anchor when the link is the first to it.
    */
-  const changeLink = (name: string, field: FieldDef, value: unknown) => {
+  const changeLink = (live: FieldTarget, name: string, field: FieldDef, value: unknown) => {
     const linkChange = asLinkFieldChange(value);
     if (linkChange === undefined) {
       return;
@@ -331,35 +390,39 @@ export function EditPanelHost({
     flush();
     session.edit(
       "props",
-      labelOf(name, field),
+      live.labelOf(name, field, breakpoint),
       (draft) => {
-        write(draft, name, () => linkChange.link);
-        if (linkChange.anchor !== undefined) applyAnchor(draft, site, linkChange.anchor);
+        live.write(draft, name, () => linkChange.link);
+        if (linkChange.anchor !== undefined) {
+          applyAnchor(draft, history.document.getState(), linkChange.anchor);
+        }
       },
       { selectionAfter },
     );
   };
 
   const change = (name: string, value: unknown) => {
+    const live = now();
+    if (live === undefined) return;
     if (isAdvancedField(name)) {
-      changeAdvanced(name, value);
+      changeAdvanced(live, name, value);
       return;
     }
     if (isBindingField(name)) {
-      changeBinding(boundFieldOf(name), value);
+      changeBinding(live, boundFieldOf(name), value);
       return;
     }
     const field = component.fields[name];
     const list = field === undefined ? undefined : editableList(field, library);
     if (list !== undefined) {
-      changeList(name, list, value as ListChange);
+      changeList(live, name, list, value as ListChange);
       return;
     }
     if (field === undefined || !accepts(field, value)) {
       return;
     }
     if (field.kind === "link") {
-      changeLink(name, field, value);
+      changeLink(live, name, field, value);
       return;
     }
     const next = (stored: unknown) =>
@@ -368,12 +431,12 @@ export function EditPanelHost({
       // A drag is one step, shown live as it goes (U2).
       const run = openRun.current;
       if (run?.update !== undefined && run.key === name && run.nodeId === id && run.active()) {
-        run.update(recipe(name, next));
+        run.update(live.recipe(name, next));
         return;
       }
       endRun();
       flush();
-      const gesture = session.begin("props", labelOf(name, field));
+      const gesture = session.begin("props", live.labelOf(name, field, breakpoint));
       openRun.current = {
         nodeId: id,
         name,
@@ -388,7 +451,7 @@ export function EditPanelHost({
           if (gesture.active) gesture.cancel();
         },
       };
-      gesture.update(recipe(name, next));
+      gesture.update(live.recipe(name, next));
       return;
     }
     if (openRun.current?.key !== name) {
@@ -401,8 +464,8 @@ export function EditPanelHost({
     const typed = field.kind === "text" || field.kind === "media";
     session.edit(
       field.kind === "text" ? "text" : "props",
-      labelOf(name, field),
-      recipe(name, next),
+      live.labelOf(name, field, breakpoint),
+      live.recipe(name, next),
       { selectionAfter, ...(typed ? { coalesceKey: textKey } : {}) },
     );
     if (typed) {
@@ -421,7 +484,7 @@ export function EditPanelHost({
    * One change to a list (F-ED-6), as one step: "Added Question". Typing in an item's text field
    * is one step per visit, like any text field, and so is a drag of an item's slider.
    */
-  const changeList = (name: string, list: EditableList, change: ListChange) => {
+  const changeList = (live: FieldTarget, name: string, list: EditableList, change: ListChange) => {
     const itemKind = change.type === "edit" ? list.fields[change.name]?.kind : undefined;
     const text = itemKind === "text";
     const merged = text || itemKind === "slider";
@@ -434,7 +497,7 @@ export function EditPanelHost({
     const textLabel = (key: string, field: string) =>
       labelFor(
         {
-          ...editOf("text", field),
+          ...live.editOf("text", field),
           nodeId: key,
           componentType: list.holds === "elements" ? list.type : null,
         },
@@ -442,9 +505,9 @@ export function EditPanelHost({
       );
     session.edit(
       text ? "text" : "props",
-      copyLabel ?? listChangeLabel(change, list, textLabel),
+      live.copyLabel ?? listChangeLabel(change, list, textLabel),
       (draft) =>
-        write(draft, name, (stored) => {
+        live.write(draft, name, (stored) => {
           // A list never set starts from (a copy of) the component's default.
           const items = Array.isArray(stored)
             ? stored
@@ -467,16 +530,17 @@ export function EditPanelHost({
   };
 
   const reset = (name: string) => {
+    const live = now();
     const field = component.fields[name];
-    if (field === undefined) {
+    if (live === undefined || field === undefined) {
       return;
     }
     endRun();
     flush();
     session.edit(
       "props",
-      labelOf(name, field, true),
-      recipe(name, (stored) => withoutOverride(stored, breakpoint)),
+      live.labelOf(name, field, breakpoint, true),
+      live.recipe(name, (stored) => withoutOverride(stored, breakpoint)),
       { selectionAfter },
     );
   };

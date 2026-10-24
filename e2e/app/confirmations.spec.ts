@@ -5,7 +5,7 @@ import { type ElectronApplication, expect, type Page, test } from "@playwright/t
 import { createSite, type PageId } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
 import { placeCaret } from "./caret.js";
-import { launchDesktopApp } from "./launch.js";
+import { launchDesktopApp, waitForCanvas } from "./launch.js";
 
 // Site-wide confirmations (1.26, D7, F-ED-14): deleting a page, or an element of the shared Footer,
 // says how many pages it changes first, and stays one undo step. Nothing else changes the site
@@ -51,7 +51,7 @@ test.beforeEach(async () => {
   store.close();
   app = await launchDesktopApp({ args: [sitePath] });
   page = await app.firstWindow();
-  await expect(canvas().locator("style[data-webforge-site-css]")).toHaveCount(1);
+  await waitForCanvas(page);
 });
 
 test.afterEach(async () => {

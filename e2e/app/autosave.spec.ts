@@ -7,7 +7,7 @@ import { changedDocuments, createSite, type PageId, type SiteDoc } from "@webfor
 import { ProjectStore } from "@webforge/storage";
 import { countNodes, largePage } from "@webforge/test-utils";
 import { placeCaret } from "./caret.js";
-import { launchDesktopApp } from "./launch.js";
+import { launchDesktopApp, waitForCanvas } from "./launch.js";
 import type { RendererWindow } from "./sites.js";
 
 // Periodic autosave (P2, F-SITE-3): the site is saved about 2 s after editing pauses and when the
@@ -75,9 +75,7 @@ async function openSite(): Promise<Page> {
   const page = await app.firstWindow();
   // The first canvas render after a killed run can take a while on a busy machine. The site CSS
   // changes the layout when it arrives; clicks need the final positions.
-  await expect(canvas(page).locator("style[data-webforge-site-css]")).toHaveCount(1, {
-    timeout: 30_000,
-  });
+  await waitForCanvas(page);
   return page;
 }
 

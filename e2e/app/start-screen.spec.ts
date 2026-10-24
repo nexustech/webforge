@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { placeCaret } from "./caret.js";
-import { launchDesktopApp } from "./launch.js";
+import { launchDesktopApp, waitForCanvas } from "./launch.js";
 import { stubFileDialogs } from "./sites.js";
 
 // The start screen (F-SITE-1, F-SITE-2): new → edit → quit → reopen from the Recent list.
@@ -58,9 +58,7 @@ test("creates a blank site, keeps an edit and reopens it from the Recent list", 
   const sitePath = join(dir, "Rosa's Bakery.wforge");
   await stubFileDialogs(running(), sitePath);
   await page.getByRole("button", { name: "Blank site" }).click();
-  await expect(canvas(page).locator("style[data-webforge-site-css]")).toHaveCount(1, {
-    timeout: 30_000,
-  });
+  await waitForCanvas(page);
   await expect(page.getByRole("banner").getByRole("status")).toHaveText("Saved");
 
   const heading = canvas(page).locator("h1 [contenteditable]");

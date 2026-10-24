@@ -10,6 +10,7 @@ import {
   createHistoryManager,
   type HistoryEntry,
   type HistoryManager,
+  type ReadonlyStore,
   type Recipe,
   type RunOptions,
   syncDraft,
@@ -17,11 +18,16 @@ import {
 import { t } from "@webforge/i18n";
 import type { PageDoc, PageEntry, PageId, SiteDoc } from "@webforge/model";
 import type { ComponentLibrary } from "@webforge/site-components";
-import type { StoreApi } from "zustand/vanilla";
 import { applyPatch } from "./apply-patch.js";
 import { labelFor } from "./labels.js";
-import { createSelectionStore, type EditorSelection, toggleSelected } from "./selection.js";
+import {
+  createSelectionStore,
+  type EditorSelection,
+  selectElements,
+  toggleSelected,
+} from "./selection.js";
 import { shownLayout } from "./shared-layout.js";
+import { undoEntry } from "./undo-entry.js";
 
 export type { EditorSelection } from "./selection.js";
 
@@ -42,25 +48,58 @@ export type Gesture = {
   cancel(): void;
 };
 
-/** Everything one open site needs: its history (which owns the document) and the UI store. */
+/**
+ * Options of {@link EditorSession.edit}: the history's, and `apply` to show `selectionAfter` now
+ * (the element the change made or moved), as undo and redo will show it again.
+ */
+type EditOptions = RunOptions<EditorSelection> & { readonly apply?: boolean };
+
+/**
+ * Everything one open site needs: its history (which owns the document) and the UI store. The UI
+ * store is read-only to the rest of the editor: the selection, the page and the device view change
+ * through {@link EditorSession.select}, {@link EditorSession.showPage},
+ * {@link EditorSession.setViewport} and `edit`'s `apply`, which never show a page the site doesn't
+ * have (R9).
+ */
 export type EditorSession = {
   readonly history: HistoryManager<SiteDoc, EditorSelection>;
-  readonly ui: StoreApi<EditorSelection>;
+  readonly ui: ReadonlyStore<EditorSelection>;
   readonly library: ComponentLibrary;
   /** Changes the document as one labelled undo step and tells {@link onEntryAdded} listeners. */
-  edit(
-    kind: EditKind,
-    label: string,
-    recipe: Recipe<SiteDoc>,
-    options?: RunOptions<EditorSelection>,
-  ): void;
+  edit(kind: EditKind, label: string, recipe: Recipe<SiteDoc>, options?: EditOptions): void;
   /** Starts a gesture. A gesture still open from before is committed first. */
   begin(kind: EditKind, label: string): Gesture;
   /** Cancels the gesture in progress; false if there is none. */
   cancelGesture(): boolean;
   onEntryAdded(listener: EntryListener): Unsubscribe;
-  /** Shows another page; not an undo step. */
+  /** Shows another page, with nothing selected; not an undo step (U6). */
   showPage(pageId: PageId): void;
+  /** Selects `nodeId` (or nothing) alone, on the page shown; not an undo step (U6). */
+  select(nodeId: string | null): void;
+  /** Selects the elements `ids`, the first the one shown, as *Select similar* does (1.31, 1.35). */
+  selectElements(ids: readonly string[]): void;
+  /** Adds element `id` to the selection, or takes it out (Ctrl/Cmd- or Shift-click, 1.31). */
+  toggleSelected(id: string): void;
+  /**
+   * Shows a whole selection again (the page, the elements, the view), if its page is still there,
+   * as what an action leaves selected; not an undo step (U6).
+   */
+  restoreSelection(selection: EditorSelection): void;
+  /** Shows the canvas as `viewport` would (F-ED-4); not an undo step (U6). */
+  setViewport(viewport: Viewport): void;
+  /**
+   * Ends the canvas's edit in progress (typing, while its grace period runs), so what comes next
+   * acts on what the person sees. Does nothing without a canvas.
+   */
+  flush(): void;
+  /** How the canvas ends its edit in progress on {@link flush} ({@link connectEngine}). */
+  onFlush(flush: () => void): Unsubscribe;
+  /**
+   * Undoes back to step `entryId`, that step included, in one jump (UX-16: the title bar's list
+   * of steps), after the canvas's edit in progress; a gesture in progress is dropped first, as
+   * Ctrl/Cmd+Z drops it. False if the step is gone.
+   */
+  undoTo(entryId: string): boolean;
 };
 
 /**
@@ -104,7 +143,21 @@ export function createEditorSession(
       for (const listener of listeners) listener(entry, kind);
     }
   };
+  /**
+   * Shows `next`, if its page is one the site has: the one way the UI store changes.
+   */
+  const setSelection = (next: EditorSelection) => {
+    if (history.document.getState().pages[next.pageId] !== undefined) ui.setState(next, true);
+  };
+  /** `selection` with no other selected elements (1.31), left as it is when it has none. */
+  const alone = (selection: EditorSelection): EditorSelection =>
+    (selection.others ?? []).length > 0 ? { ...selection, others: [] } : selection;
   let gesture: Gesture | null = null;
+  /** How the canvas, once there is one, ends its edit in progress. */
+  const flushes = new Set<() => void>();
+  const flushCanvas = () => {
+    for (const flush of flushes) flush();
+  };
   /** A canvas edit or another gesture can't wait for a gesture to end: it ends it as it is. */
   const commitGesture = () => {
     if (gesture?.active === true) {
@@ -117,7 +170,11 @@ export function createEditorSession(
     library,
     edit(kind, label, recipe, options) {
       commitGesture();
-      reporting(kind, () => history.run(label, recipe, options));
+      const { apply, ...runOptions } = options ?? {};
+      reporting(kind, () => history.run(label, recipe, runOptions));
+      if (apply === true && runOptions.selectionAfter !== undefined) {
+        setSelection(runOptions.selectionAfter);
+      }
     },
     begin(kind, label) {
       commitGesture();
@@ -147,9 +204,37 @@ export function createEditorSession(
       };
     },
     showPage(next) {
-      if (next !== ui.getState().pageId && history.document.getState().pages[next] !== undefined) {
-        ui.setState({ pageId: next, nodeId: null });
-      }
+      if (next !== ui.getState().pageId)
+        setSelection({ ...alone(ui.getState()), pageId: next, nodeId: null });
+    },
+    select(nodeId) {
+      // Selecting one element alone also ends a multi-selection (1.31).
+      const { nodeId: shown, others = [] } = ui.getState();
+      if (nodeId !== shown || others.length > 0) setSelection({ ...alone(ui.getState()), nodeId });
+    },
+    selectElements(ids) {
+      selectElements(ui, ids);
+    },
+    toggleSelected(id) {
+      toggleSelected(ui, id);
+    },
+    restoreSelection(selection) {
+      setSelection(selection);
+    },
+    setViewport(viewport) {
+      if (viewport !== ui.getState().viewport) setSelection({ ...ui.getState(), viewport });
+    },
+    flush: flushCanvas,
+    onFlush(flush) {
+      flushes.add(flush);
+      return () => {
+        flushes.delete(flush);
+      };
+    },
+    undoTo(entryId) {
+      flushCanvas();
+      if (gesture?.active === true) gesture.cancel();
+      return undoEntry(history, entryId);
     },
   };
 }
@@ -221,6 +306,7 @@ export function connectEngine(engine: CanvasEngine, session: EditorSession): Eng
   const pageDoc = (site: SiteDoc, pageId: PageId): PageDoc | undefined => site.pages[pageId]?.doc;
 
   const unsubscribers = [
+    session.onFlush(() => flush()),
     engine.onUserEdit((edit) => {
       const { pageId, viewport } = ui.getState();
       const page = pageDoc(history.document.getState(), pageId);
@@ -290,11 +376,11 @@ export function connectEngine(engine: CanvasEngine, session: EditorSession): Eng
         pendingEnd = setTimeout(endTextSession, TEXT_SESSION_GRACE_MS);
       }
       // Ctrl/Cmd- or Shift-click: one more selected element, or one fewer (1.31).
-      if (adding && nodeId !== null) toggleSelected(ui, nodeId);
-      else ui.setState({ nodeId });
+      if (adding && nodeId !== null) session.toggleSelected(nodeId);
+      else session.select(nodeId);
     }),
     // A device view chosen on the canvas; not a history step (U6).
-    engine.onViewportChange((viewport) => ui.setState({ viewport })),
+    engine.onViewportChange((viewport) => session.setViewport(viewport)),
     engine.onHistoryCommand((command) => {
       flush();
       return runHistoryCommand(session, command);

@@ -1,10 +1,17 @@
+import type { ReadonlyStore } from "@webforge/history";
 import { t } from "@webforge/i18n";
 import { useSyncExternalStore } from "react";
 import type { EditorSession } from "../editor/editor-session.js";
-import { selectElements, toggleSelected } from "../editor/selection.js";
+import { sameValue } from "../editor/same-value.js";
+import { useUi } from "../editor/use-document.js";
 import { ElementMenu } from "../element-menu/ElementMenu.js";
 import { useCommand, useCommandRegistry } from "../shell/command-context.js";
 import type { PanelRegistry } from "../shell/panels.js";
+import {
+  createPreferencesStore,
+  type EditorPreferences,
+  usePreferences,
+} from "../shell/preferences-store.js";
 import { LayersPanel } from "./LayersPanel.js";
 import {
   copyLayer,
@@ -37,22 +44,25 @@ function useCommandAction(id: string): (() => void) | undefined {
  * Adds Layers to the left column's bottom, before Undo History (UI1), in Advanced mode only (T2).
  * The tree follows the shown page and the selection; it is rebuilt only when the page's structure
  * or names change, not on every keystroke. A linked copy's layer is selected while the copy is,
- * not an element inside it: Layers' actions act on what is selected (F-ED-23). With `layoutLocked` (Content mode, M3) nothing can be
- * dragged, moved or hidden. Returns a function that removes the panel.
+ * not an element inside it: Layers' actions act on what is selected (F-ED-23). In Content mode
+ * (M3, from `preferences`) nothing can be dragged, moved or hidden; the panel follows the mode
+ * without being registered again, so what it shows (collapsed layers, the filter) stays (R9).
+ * Returns a function that removes the panel.
  */
 export function registerLayersPanel(
   panels: PanelRegistry,
   session: EditorSession,
-  { layoutLocked = false }: { readonly layoutLocked?: boolean } = {},
+  {
+    preferences = createPreferencesStore(),
+  }: { readonly preferences?: ReadonlyStore<EditorPreferences> } = {},
 ): () => void {
   const { history, ui, library } = session;
   // The tree as last shown, for the page content and shared sections it was made from: rebuilt
   // only when they change, and kept (same object) when the rebuilt tree is the same, e.g. after
   // typing.
-  let shown: { content: unknown; shared: unknown; key: string; layers: Layer[] } = {
+  let shown: { content: unknown; shared: unknown; layers: Layer[] } = {
     content: undefined,
     shared: undefined,
-    key: "",
     layers: [],
   };
   const currentLayers = () => {
@@ -63,8 +73,9 @@ export function registerLayersPanel(
       return shown.layers;
     }
     const layers = content === undefined ? [] : layersOf(content, library, shared);
-    const key = JSON.stringify(layers);
-    shown = key === shown.key ? { ...shown, content, shared } : { content, shared, key, layers };
+    shown = sameValue(layers, shown.layers)
+      ? { ...shown, content, shared }
+      : { content, shared, layers };
     return shown.layers;
   };
 
@@ -77,16 +88,11 @@ export function registerLayersPanel(
     };
   };
 
-  const othersOf = () => ui.getState().others ?? NO_OTHERS;
-
   function Layers() {
     const layers = useSyncExternalStore(subscribe, currentLayers, currentLayers);
-    const selectedId = useSyncExternalStore(
-      ui.subscribe,
-      () => ui.getState().nodeId,
-      () => ui.getState().nodeId,
-    );
-    const alsoSelected = useSyncExternalStore(ui.subscribe, othersOf, othersOf);
+    const selectedId = useUi(session, (state) => state.nodeId);
+    const alsoSelected = useUi(session, (state) => state.others ?? NO_OTHERS);
+    const layoutLocked = usePreferences(preferences, (state) => state.mode !== "design");
     return (
       <LayersPanel
         layers={layers}
@@ -95,9 +101,9 @@ export function registerLayersPanel(
         layoutLocked={layoutLocked}
         menu={ElementMenu}
         actions={{
-          select: (id) => ui.setState({ nodeId: id }),
-          toggle: (id) => toggleSelected(ui, id),
-          selectMany: (ids) => selectElements(ui, ids),
+          select: (id) => session.select(id),
+          toggle: (id) => session.toggleSelected(id),
+          selectMany: (ids) => session.selectElements(ids),
           rename: (id, name) => renameLayer(session, id, name),
           setHidden: (id, hidden) => setLayerHidden(session, id, hidden),
           // A dragged layer moves or is copied alone, and is selected alone after: the panel
