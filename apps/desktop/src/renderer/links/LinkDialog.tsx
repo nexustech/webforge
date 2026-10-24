@@ -7,6 +7,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  Field,
   fieldControlClass,
   ToggleGroup,
   ToggleGroupItem,
@@ -20,7 +21,7 @@ import {
   type PageId,
   type SiteDoc,
 } from "@webforge/model";
-import { type ReactNode, useId, useState } from "react";
+import { useState } from "react";
 import type { LinkFieldChange } from "./link-change.js";
 import { type PageTarget, sectionAnchor } from "./link-targets.js";
 
@@ -66,25 +67,6 @@ export function LinkDialog({ open, onCancel, ...form }: LinkDialogProps) {
         <LinkForm {...form} onCancel={onCancel} />
       </DialogContent>
     </Dialog>
-  );
-}
-
-/** A labelled control. */
-function Field({
-  label,
-  children,
-}: {
-  readonly label: string;
-  readonly children: (id: string) => ReactNode;
-}) {
-  const id = useId();
-  return (
-    <div className="grid gap-1">
-      <label htmlFor={id} className="text-xs text-muted-foreground">
-        {label}
-      </label>
-      {children(id)}
-    </div>
   );
 }
 
@@ -199,9 +181,9 @@ function LinkForm({
 
       {label !== undefined && (
         <Field label={t("link.label")}>
-          {(id) => (
+          {(control) => (
             <input
-              id={id}
+              {...control}
               className={fieldControlClass}
               value={labelText}
               maxLength={MENU_LABEL_MAX}
@@ -234,9 +216,9 @@ function LinkForm({
       {kind === "page" && (
         <>
           <Field label={t("link.page")}>
-            {(id) => (
+            {(control) => (
               <select
-                id={id}
+                {...control}
                 className={fieldControlClass}
                 value={pageId ?? ""}
                 onChange={(event) => {
@@ -254,9 +236,9 @@ function LinkForm({
             )}
           </Field>
           <Field label={t("link.section")}>
-            {(id) => (
+            {(control) => (
               <select
-                id={id}
+                {...control}
                 className={fieldControlClass}
                 value={section}
                 onChange={(event) => setSection(event.currentTarget.value)}
@@ -275,9 +257,9 @@ function LinkForm({
       {kind === "email" && (
         <>
           <Field label={t("link.address")}>
-            {(id) => (
+            {(control) => (
               <input
-                id={id}
+                {...control}
                 type="email"
                 className={fieldControlClass}
                 value={address}
@@ -287,9 +269,9 @@ function LinkForm({
             )}
           </Field>
           <Field label={t("link.subject")}>
-            {(id) => (
+            {(control) => (
               <input
-                id={id}
+                {...control}
                 className={fieldControlClass}
                 value={subject}
                 maxLength={EMAIL_SUBJECT_MAX}
@@ -301,9 +283,9 @@ function LinkForm({
       )}
       {kind === "phone" && (
         <Field label={t("link.number")}>
-          {(id) => (
+          {(control) => (
             <input
-              id={id}
+              {...control}
               type="tel"
               className={fieldControlClass}
               value={number}
@@ -315,9 +297,9 @@ function LinkForm({
       )}
       {kind === "url" && (
         <Field label={t("link.url")}>
-          {(id) => (
+          {(control) => (
             <input
-              id={id}
+              {...control}
               type="url"
               className={fieldControlClass}
               value={href}
@@ -330,9 +312,9 @@ function LinkForm({
       {kind === "file" && documents.length > 0 && (
         <>
           <Field label={t("link.document")}>
-            {(id) => (
+            {(control) => (
               <select
-                id={id}
+                {...control}
                 className={fieldControlClass}
                 value={fileId ?? ""}
                 onChange={(event) => setFileId(event.currentTarget.value)}
