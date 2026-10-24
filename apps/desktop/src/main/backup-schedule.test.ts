@@ -57,7 +57,9 @@ describe("createBackupSchedule", () => {
 
     await expect(schedule.opened(store, "/sites/a.wforge")).resolves.toBeUndefined();
 
-    expect(console.error).toHaveBeenCalledWith("Webforge could not back up the site (ENOSPC)");
+    expect(console.error).toHaveBeenCalledWith(
+      "Webforge could not back up the site (code=Error ENOSPC)",
+    );
   });
 
   it("does nothing on the timer when no site is open", async () => {

@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { WebforgeError } from "@webforge/errors";
 import { fontRefSchema } from "@webforge/model";
 import {
   allowedLicence,
@@ -31,6 +32,7 @@ import type {
 } from "../shared/ipc/fonts.js";
 import { createFontReader, type ExpectedFont, type FontReader } from "./fonts.js";
 import { registerIpcHandler } from "./ipc.js";
+import { log, logFailure } from "./log.js";
 
 /** Where fonts are downloaded from: Fontsource's API, and jsDelivr's copies of its packages. */
 export type FontSources = {
@@ -88,9 +90,11 @@ const FALLBACKS: Partial<Record<FontCategory, FontFallback>> = {
 /** Why a download or the list failed, as the IPC answer says it. */
 type Reason = "offline" | "not-allowed" | "damaged" | "unknown";
 
-class FontSourceError extends Error {
-  constructor(readonly reason: Reason) {
-    super(reason);
+class FontSourceError extends WebforgeError<Reason> {
+  override readonly name = "FontSourceError";
+
+  constructor(reason: Reason) {
+    super(reason, "errors.fontDownload", `Font download failed: ${reason}`);
   }
 }
 
@@ -214,7 +218,7 @@ export function createFontLibrary({
       }
     } catch (error) {
       if ((error as { code?: unknown }).code !== "ENOENT") {
-        console.error("Webforge ignored an unreadable list of downloaded fonts");
+        logFailure("Webforge ignored an unreadable list of downloaded fonts", error);
       }
     }
     families ??= read;
@@ -346,8 +350,8 @@ export function createFontLibrary({
       await keep(family, data);
       return { status: "downloaded", font: installed(family, "downloaded") };
     } catch (error) {
-      const reason = error instanceof FontSourceError ? error.reason : "unknown";
-      console.error(`Webforge could not download a font (${reason})`);
+      const reason = error instanceof FontSourceError ? error.code : "unknown";
+      log.error("Webforge could not download a font", { reason });
       return { status: "failed", reason };
     }
   };
@@ -396,10 +400,10 @@ export function createFontLibrary({
           current = await fetchList();
           list = current;
         } catch (error) {
-          const reason = error instanceof FontSourceError ? error.reason : "unknown";
+          const reason = error instanceof FontSourceError ? error.code : "unknown";
           // Offline, an older list still serves.
           if (kept === undefined) {
-            console.error(`Webforge could not list the fonts to download (${reason})`);
+            log.error("Webforge could not list the fonts to download", { reason });
             return { status: "failed", reason: reason === "offline" ? "offline" : "unknown" };
           }
         }

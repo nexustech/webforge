@@ -189,7 +189,9 @@ describe("createFontLibrary: downloads (2.2, PH2-8)", () => {
     expect(await library.download("comic-neue")).toEqual({ status: "failed", reason: "damaged" });
     expect(await library.downloaded()).toEqual([]);
     expect(existsSync(join(dir, "comic-neue-latin-400-normal.woff2"))).toBe(false);
-    expect(console.error).toHaveBeenCalledWith("Webforge could not download a font (damaged)");
+    expect(console.error).toHaveBeenCalledWith(
+      "Webforge could not download a font (reason=damaged)",
+    );
   });
 
   it("refuses a licence C1 doesn't allow, and a font without Latin, before fetching any file", async () => {
@@ -286,7 +288,7 @@ describe("createFontLibrary: downloads (2.2, PH2-8)", () => {
 
     expect(await library.downloaded()).toEqual([]);
     expect(console.error).toHaveBeenCalledWith(
-      "Webforge ignored an unreadable list of downloaded fonts",
+      "Webforge ignored an unreadable list of downloaded fonts (code=SyntaxError)",
     );
   });
 });

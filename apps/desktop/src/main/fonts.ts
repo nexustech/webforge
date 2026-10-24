@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { FONT_CATALOGUE, type FontFace } from "@webforge/themes";
+import { log } from "./log.js";
 
 /** The scheme the canvas loads fonts through (2.2): `webforge-font://fonts/<file>`. */
 export const FONT_SCHEME = "webforge-font";
@@ -48,7 +49,7 @@ export function createFontReader(dir: string): FontReader {
       const sha256 = createHash("sha256").update(data).digest("hex");
       if (data.byteLength !== face.bytes || sha256 !== face.sha256) {
         // The file's name only: never a path.
-        console.error(`Webforge refused a damaged font file (${face.file})`);
+        log.error("Webforge refused a damaged font file", { file: face.file });
         return undefined;
       }
       verified.set(key, data);

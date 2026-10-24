@@ -5,6 +5,7 @@ import {
   type CrashProcess,
   type CrashReports,
 } from "./crash-reports.js";
+import { logFailure } from "./log.js";
 
 /** `render-process-gone` / `child-process-gone` details, as Electron reports them. */
 type GoneDetails = { readonly reason: string; readonly exitCode: number; readonly type?: string };
@@ -89,8 +90,7 @@ export function installCrashHandlers(
     } catch (error) {
       // A report that can't be written (disk full) must not cause a second crash. Only the
       // error's code is logged, never paths.
-      const code = error instanceof Error && "code" in error ? String(error.code) : "no code";
-      console.error(`Webforge could not write a crash report (${code})`);
+      logFailure("Webforge could not write a crash report", error);
     }
   };
 

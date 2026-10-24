@@ -1,3 +1,4 @@
+import { WebforgeError } from "@webforge/errors";
 /** The files to publish: a build's output, by relative path (`index.html`, `assets/css/…`). */
 export type BuildOutput = {
   readonly files: ReadonlyMap<string, Uint8Array>;
@@ -21,13 +22,16 @@ export type PublishErrorCode =
   | "failed";
 
 /** A publish that did not complete. Messages never contain credentials or site content. */
-export class PublishError extends Error {
-  readonly code: PublishErrorCode;
+export class PublishError extends WebforgeError<PublishErrorCode> {
+  override readonly name = "PublishError";
 
   constructor(code: PublishErrorCode, message: string, options?: ErrorOptions) {
-    super(message, options);
-    this.name = "PublishError";
-    this.code = code;
+    super(
+      code,
+      code === "cancelled" ? "errors.publishCancelled" : "errors.publishFailed",
+      message,
+      options,
+    );
   }
 }
 
