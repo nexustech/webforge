@@ -75,12 +75,12 @@ describe("Check and TimeInput (R10)", () => {
     expect(onChange).toHaveBeenCalledWith(true);
   });
 
-  it("describes a time by its error", () => {
-    const { container } = render(
+  it("describes a time by its error, which is no part of its name", () => {
+    render(
       <TimeInput label="Opens" value="" error="Use a time such as 09:00." onChange={() => {}} />,
     );
-    const input = container.querySelector("input");
-    if (input === null) throw new Error("no input");
+    // Named by its label alone (#335 review): a screen reader says the error once, not twice.
+    const input = screen.getByLabelText("Opens", { exact: true });
 
     expect(input.getAttribute("aria-invalid")).toBe("true");
     expect(description(input)).toEqual(["Use a time such as 09:00."]);
