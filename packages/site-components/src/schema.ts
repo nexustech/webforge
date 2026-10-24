@@ -90,7 +90,10 @@ export type FieldDef = {
        * them in `allow`, so a new element goes into sections without each slot naming it.
        */
       readonly accepts?: ComponentPlace;
-      /** The most elements it holds (a Columns' four); the Add panel adds no more. */
+      /**
+       * The most elements it holds (a Columns' four): nothing adds more, by the Add panel, paste,
+       * duplicate or a drop (`slotsOverfull`).
+       */
       readonly max?: number;
     }
   /**

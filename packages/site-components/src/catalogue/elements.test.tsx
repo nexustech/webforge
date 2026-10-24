@@ -1,5 +1,6 @@
 import type { NodeDoc } from "@webforge/model";
 import { describe, expect, it } from "vitest";
+import { slotsOverfull } from "../library.js";
 import { renderNodesToHtml } from "../render-static.js";
 import type { RenderContext, ResolvedImage } from "../schema.js";
 import { columnLayoutsFor, MAX_COLUMNS, MIN_COLUMNS } from "./column-layouts.js";
@@ -175,6 +176,25 @@ describe("the Columns element (2.9)", () => {
     const columns = defaults?.columns as NodeDoc[] | undefined;
     expect(columns?.map((node) => node.type)).toEqual(["Column", "Column"]);
     expect(columns?.[0]?.props.content).toEqual([expect.objectContaining({ type: "Text" })]);
+  });
+
+  it("holds four columns at most, wherever it is (2.9)", () => {
+    const columns = (count: number): NodeDoc => ({
+      type: "Columns",
+      props: {
+        id: `cols-${count}`,
+        columns: Array.from({ length: count }, (_, index) => ({
+          type: "Column",
+          props: { id: `${count}-${index}`, content: [] },
+        })),
+      },
+    });
+    const inSection = (node: NodeDoc): NodeDoc[] => [
+      { type: "Section", props: { id: "s", content: [node] } },
+    ];
+
+    expect(slotsOverfull(siteLibrary, inSection(columns(MAX_COLUMNS)))).toBe(false);
+    expect(slotsOverfull(siteLibrary, inSection(columns(MAX_COLUMNS + 1)))).toBe(true);
   });
 
   it("offers 2.17's presets for each number of columns", () => {

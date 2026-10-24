@@ -336,6 +336,24 @@ export function boxClasses(
   return parts.join(" ");
 }
 
+/**
+ * Whether a slot in `nodes`, or in the elements in their slots, holds more elements than its `max`
+ * (a Columns' four columns). Every way of adding or moving elements refuses a change that makes it
+ * so: the Add panel, paste, duplicate, and drops on the canvas and in Layers.
+ */
+export function slotsOverfull(library: ComponentLibrary, nodes: readonly NodeDoc[]): boolean {
+  return nodes.some((node) =>
+    Object.entries(library.components[node.type]?.fields ?? {}).some(([name, field]) => {
+      if (field.kind !== "slot") return false;
+      const value = node.props[name];
+      const children = Array.isArray(value) ? (value as NodeDoc[]) : [];
+      return (
+        (field.max !== undefined && children.length > field.max) || slotsOverfull(library, children)
+      );
+    }),
+  );
+}
+
 const EmptySlot: SlotComponent = () => null;
 
 /** The slot component for `name`, or one that renders nothing. */

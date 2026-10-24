@@ -10,7 +10,7 @@ import {
   pageAnchors,
   pastedCopies,
 } from "@webforge/model";
-import { mediaUsedBy } from "@webforge/site-components";
+import { mediaUsedBy, slotsOverfull } from "@webforge/site-components";
 import type {
   ClipboardApi,
   ClipboardReadResult,
@@ -188,6 +188,10 @@ export function pasteTarget(
   if (first === undefined) return undefined;
   const target = addTarget(library, content, first.type, selectedId);
   if (target === undefined) return undefined;
+  // Not more than the place holds (a Columns' four), all of them counted.
+  const after = structuredClone(content) as NodeDoc[];
+  insertAt(after, target, nodes);
+  if (slotsOverfull(library, after) && !slotsOverfull(library, content)) return undefined;
   const sameTarget = (node: NodeDoc) => {
     const other = addTarget(library, content, node.type, selectedId);
     return (

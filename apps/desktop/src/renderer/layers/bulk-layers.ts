@@ -8,6 +8,7 @@ import {
   pageAnchors,
   pastedCopies,
 } from "@webforge/model";
+import { slotsOverfull } from "@webforge/site-components";
 import {
   type Layer,
   type LayersSession,
@@ -136,6 +137,15 @@ export function duplicateSelected(session: LayersSession): BulkResult {
       const [copy] = pastedCopies([node], pageAnchors(soFar, site.sharedSections, layout));
       if (copy !== undefined) copies.push({ after: own, copy, shown: copy.props.id });
     }
+  }
+  // No more than a slot holds (a Columns' four): tried on a copy of the page first.
+  const after = structuredClone(content) as NodeDoc[];
+  for (const { after: original, copy } of copies) {
+    const place = placeOf(after, original, session.library);
+    place?.list.splice(place.index + 1, 0, copy);
+  }
+  if (slotsOverfull(session.library, after) && !slotsOverfull(session.library, content)) {
+    return { refused: t("bulk.full") };
   }
   const shownIds = copies.map((each) => each.shown);
   const copiesSelected = { ...current, nodeId: shownIds[0] ?? null, others: shownIds.slice(1) };

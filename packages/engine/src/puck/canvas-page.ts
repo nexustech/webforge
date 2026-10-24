@@ -1,6 +1,6 @@
 import type { AppState, PuckAction } from "@puckeditor/core";
 import type { NodeDoc, PageDoc, SharedCopyNode } from "@webforge/model";
-import type { ComponentLibrary } from "@webforge/site-components";
+import { type ComponentLibrary, slotsOverfull } from "@webforge/site-components";
 import type { EngineEdit, Unsubscribe } from "../canvas-engine.js";
 import type { CanvasSelection } from "./canvas-selection.js";
 import type { CanvasSync } from "./canvas-sync.js";
@@ -121,6 +121,13 @@ export function createCanvasPage(options: CanvasPageOptions): CanvasPage {
     putBack(shown, routed.putBack === "whenOutOfOrder");
   };
 
+  /**
+   * Whether `next`, a page Puck made from `before` by adding or moving elements, holds more in a
+   * slot than it may (a Columns' four columns): such a drop is refused, nothing changed.
+   */
+  const overfills = (components: ComponentLibrary, next: PageDoc, before: PageDoc) =>
+    slotsOverfull(components, next.content) && !slotsOverfull(components, before.content);
+
   /** Reports an edit Puck made to the page as the canvas shows it (see `routeEdit`). */
   const reportEdit = (edit: EngineEdit, action: PuckAction, prev: AppState) =>
     follow(routeEdit(edit, action, prev, docs), edit.page);
@@ -143,8 +150,14 @@ export function createCanvasPage(options: CanvasPageOptions): CanvasPage {
   ) => {
     if (puck() === null || library() === null) return;
     const shown = toPageDoc(next.data);
+    const components = library();
     const plan = planCopyDrop(drop, linked, prev, docs);
-    if (plan.kind === "refuse") {
+    if (
+      plan.kind === "refuse" ||
+      (plan.kind === "copy" &&
+        components !== null &&
+        overfills(components, plan.after, toPageDoc(prev.data)))
+    ) {
       putBack(shown);
       return;
     }
@@ -177,6 +190,14 @@ export function createCanvasPage(options: CanvasPageOptions): CanvasPage {
           // Made once Puck has finished its own update, where a dispatch would be lost.
           const { drop, linked } = copying;
           queueMicrotask(() => copyOnDrop(action, drop, next, prev, linked));
+          return;
+        }
+        if (
+          components !== null &&
+          (action.type === "insert" || action.type === "move" || action.type === "duplicate") &&
+          overfills(components, toPageDoc(next.data), toPageDoc(prev.data))
+        ) {
+          putBack(toPageDoc(next.data));
           return;
         }
         if (components !== null) {

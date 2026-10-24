@@ -26,6 +26,7 @@ export {
   optionValue,
   responsiveClasses,
   slotComponent,
+  slotsOverfull,
   stringValue,
   textStylesOf,
   textValue,

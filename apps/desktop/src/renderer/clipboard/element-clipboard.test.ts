@@ -7,7 +7,7 @@ import {
   type NodeDoc,
   SHARED_COPY_TYPE,
 } from "@webforge/model";
-import { type ComponentLibrary, siteLibrary } from "@webforge/site-components";
+import { type ComponentLibrary, MAX_COLUMNS, siteLibrary } from "@webforge/site-components";
 import { describe, expect, it, vi } from "vitest";
 import type { ClipboardReadResult } from "../../shared/ipc/clipboard.js";
 
@@ -245,6 +245,34 @@ describe("copy and paste (1.25)", () => {
     });
     expect(pasteTarget(siteLibrary, page, [heading, section], "heading-1")).toBeUndefined();
     expect(pasteTarget(siteLibrary, page, [], null)).toBeUndefined();
+  });
+
+  it("pastes no more columns than a Columns holds (2.9)", () => {
+    const column = (id: string): NodeDoc => ({ type: "Column", props: { id, content: [] } });
+    const columns = (id: string, count: number): NodeDoc => ({
+      type: "Columns",
+      props: {
+        id,
+        columns: Array.from({ length: count }, (_, index) => column(`${id}${index}`)),
+      },
+    });
+    const page: NodeDoc[] = [
+      {
+        type: "Section",
+        props: { id: "s", content: [columns("full", MAX_COLUMNS), columns("room", 1)] },
+      },
+    ];
+
+    expect(pasteTarget(siteLibrary, page, [column("new")], "full1")).toBeUndefined();
+    expect(pasteTarget(siteLibrary, page, [column("new")], "room0")).toEqual({
+      parentId: "room",
+      slot: "columns",
+      index: 1,
+    });
+    // Four into one with room for three: none of them.
+    expect(
+      pasteTarget(siteLibrary, page, ["a", "b", "c", "d"].map(column), "room0"),
+    ).toBeUndefined();
   });
 
   it("cuts past elements whose list fields hold plain items, not elements", async () => {
