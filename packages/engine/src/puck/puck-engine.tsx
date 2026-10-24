@@ -14,8 +14,6 @@ import {
   type LayoutDoc,
   type NodeDoc,
   type PageDoc,
-  pageAnchors,
-  pastedCopies,
   type SharedCopyNode,
   type SharedSectionsDoc,
 } from "@webforge/model";
@@ -61,17 +59,11 @@ import {
 } from "./chrome.js";
 import { toPuckConfig } from "./config.js";
 import { installContextMenu } from "./context-menu.js";
+import { copyDrop, planCopyDrop } from "./copy-drop.js";
 import { deferredCommands } from "./deferred-commands.js";
 import { hidePuckDeleteKeys } from "./delete-keys.js";
 import { puckDictionary } from "./dictionary.js";
-import {
-  copyIndex,
-  type DragKeys,
-  type Drop,
-  insertedAt,
-  takeDragKeys,
-  trackDragKeys,
-} from "./drag-copies.js";
+import { type DragKeys, type Drop, trackDragKeys } from "./drag-copies.js";
 import { createDragSources } from "./drag-sources.js";
 import { editFromAction, selectedNodeId, toPageDoc } from "./edit-from-action.js";
 import { keepElementsEnabled } from "./enabled-elements.js";
@@ -95,13 +87,13 @@ import { type RoutedEdit, routeEdit, routeLinkedCopy } from "./route-edit.js";
 import { performOnSelected } from "./selected-actions.js";
 import { showAlsoSelected, watchAddingClicks } from "./selection-clicks.js";
 import { copiesOn, copyShownBy } from "./shared-copies.js";
-import { composePage, EMPTY_LAYOUT, isShared, isSharedRegion, sameOrder } from "./shared-layout.js";
+import { composePage, EMPTY_LAYOUT, isSharedRegion, sameOrder } from "./shared-layout.js";
 import { applySiteStyles, type SiteStyles } from "./site-styles.js";
 import { boxHandleFields } from "./spacing-handles.js";
 import { focusedRichTextId, richTextArrived, staleRichText } from "./stale-rich-text.js";
 import { startTextEditing } from "./text-editing.js";
 import { createTextKeys, type PickLink } from "./text-keys.js";
-import { allNodes, findNode, nodeAt } from "./tree.js";
+import { allNodes, findNode } from "./tree.js";
 import { applyViewOptions } from "./view-options.js";
 
 /** Options of {@link createPuckEngine}. */
@@ -318,32 +310,9 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   const dragKeys: DragKeys = { copy: false, linked: false, pressed: false };
 
   /**
-   * A drag Puck made a move that Ctrl or Cmd asked to be a copy instead, if `action` is one, and
-   * whether Shift asked for a linked copy: only a drop (Puck is still dragging), never a move from
-   * the keyboard, which holds Ctrl too. Every drop takes the keys held for it.
-   */
-  const copyDrop = (
-    action: PuckAction,
-    prev: AppState,
-  ): { readonly drop: Drop; readonly linked: boolean } | null => {
-    if (prev.ui.isDragging !== true) return null;
-    if (action.type !== "move" && action.type !== "reorder" && action.type !== "insert") {
-      return null;
-    }
-    const held = takeDragKeys(dragKeys);
-    if (!held.copy || action.type === "insert") return null;
-    const drop =
-      action.type === "move" ? action : { ...action, sourceZone: action.destinationZone };
-    return { drop, linked: held.linked };
-  };
-
-  /**
-   * A drag with Ctrl or Cmd held (1.30, UX-4): what was dragged stays, and a copy goes where it was
-   * dropped, as one step ("Duplicated Heading"), its ids and anchors its own as a pasted one's are.
-   * With Shift too, a linked copy of a shared section places another linked copy there (F-ED-23);
-   * without, the copy is of its section, the page's own. An element inside a linked copy is copied
-   * within the shared section, as Duplicate does there; with Shift, nothing happens. Puck has moved
-   * the element by now (`next`), so its view is put right: the original back, the copy shown.
+   * Carries out a drop with Ctrl or Cmd held (see `planCopyDrop`), once Puck has moved what was
+   * dragged (`next`): its view put right, the original back and the copy shown, and the copy
+   * reported as one step.
    */
   const copyOnDrop = (
     action: PuckAction,
@@ -353,46 +322,22 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     linked: boolean,
   ) => {
     if (getPuck === null || library === null) return;
-    const before = toPageDoc(prev.data);
     const shown = toPageDoc(next.data);
-    const node = nodeAt(before, drop.sourceZone, drop.sourceIndex);
-    // The Header and Footer themselves stay where they are, once each (F-ED-7).
-    if (node === undefined || isSharedRegion(layout, node.props.id)) {
+    const plan = planCopyDrop(drop, linked, prev, { page, layout, shared });
+    if (plan.kind === "refuse") {
       putBack(shown);
       return;
     }
-    const copy = linked ? copyShownBy(node, copiesOn(page.content), shared) : undefined;
-    // Shift asks for a linked copy, which only a whole copy makes. An element inside one is
-    // neither the page's own nor the Header's or Footer's: copying it there instead would change
-    // every copy of the section, so nothing happens (#255 review).
-    const ownOrShared =
-      findNode(page, node.props.id) !== undefined || isShared(layout, node.props.id);
-    if (linked && copy === undefined && !ownOrShared) {
-      putBack(shown);
-      return;
-    }
-    if (copy !== undefined) {
-      placeLinkedCopy(copy, drop, shown);
+    if (plan.kind === "linked") {
+      placeLinkedCopy(plan.copy, drop, shown);
     } else {
-      const [clone] = pastedCopies([node], pageAnchors(page.content, shared, layout));
-      if (clone === undefined) return;
-      const after = insertedAt(before, drop.destinationZone, copyIndex(drop), clone);
-      const actions = pageActions(shown, after, slotsOf);
+      const actions = pageActions(shown, plan.after, slotsOf);
       if (actions === null) {
-        dispatch({ type: "setData", data: () => toPuckData(after), recordHistory: false });
+        dispatch({ type: "setData", data: () => toPuckData(plan.after), recordHistory: false });
       } else {
-        for (const action of actions) dispatch({ ...action, recordHistory: false });
+        for (const one of actions) dispatch({ ...one, recordHistory: false });
       }
-      const id = clone.props.id;
-      const edit: EngineEdit = {
-        kind: "duplicate",
-        nodeId: id,
-        componentType: clone.type,
-        field: null,
-        page: after,
-        selection: id,
-      };
-      reportEdit(edit, action, prev);
+      reportEdit(plan.edit, action, prev);
     }
     commands.edited();
   };
@@ -407,7 +352,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       if (sync.isEcho()) {
         return;
       }
-      const copying = library === null ? null : copyDrop(action, prev);
+      const copying = library === null ? null : copyDrop(action, prev, dragKeys);
       if (copying !== null) {
         // Made once Puck has finished its own update, where a dispatch would be lost.
         const { drop, linked } = copying;
