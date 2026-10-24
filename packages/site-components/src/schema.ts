@@ -117,6 +117,11 @@ export type FieldDef = {
    */
   | { readonly kind: "link"; readonly label: string }
   /**
+   * One of Lucide's icons by name ("arrow-right", F-ED-22), chosen in the icon picker and drawn as
+   * inline SVG; none when not set.
+   */
+  | { readonly kind: "icon"; readonly label: string }
+  /**
    * A repeating list (F-ED-6), such as testimonials or opening hours, stored as an array of
    * {@link ListItem}s. Items are added, reordered and removed in the Edit panel.
    */
@@ -284,11 +289,13 @@ type StoredOne<Field extends FieldDef> = Field extends { readonly kind: "text" |
               ? ImageValue
               : Field extends { readonly kind: "link" }
                 ? LinkValue
-                : Field extends { readonly kind: "list" }
-                  ? readonly Readonly<Record<string, unknown>>[]
-                  : Field extends { readonly kind: "slot" }
-                    ? readonly NodeDoc[]
-                    : never;
+                : Field extends { readonly kind: "icon" }
+                  ? string
+                  : Field extends { readonly kind: "list" }
+                    ? readonly Readonly<Record<string, unknown>>[]
+                    : Field extends { readonly kind: "slot" }
+                      ? readonly NodeDoc[]
+                      : never;
 
 /** What a field stores: per device too, for a field set per device (F-ED-4). */
 export type StoredValue<Field extends FieldDef> = Field extends { readonly responsive: true }
@@ -322,9 +329,11 @@ type ValueOne<Field extends FieldDef> = Field extends {
         : Field extends { readonly kind: "link" }
           ? // A page path or web address typed as text before link fields (older sites).
             LinkValue | string | undefined
-          : Field extends { readonly kind: "list" }
-            ? readonly ListItem[]
-            : StoredOne<Field>;
+          : Field extends { readonly kind: "icon" }
+            ? string | undefined
+            : Field extends { readonly kind: "list" }
+              ? readonly ListItem[]
+              : StoredOne<Field>;
 
 /** What `render` gets for a field: per device too, for a field set per device (F-ED-4). */
 export type FieldValue<Field extends FieldDef> = Field extends { readonly responsive: true }

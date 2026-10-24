@@ -51,6 +51,7 @@ import {
 } from "./editor-session.js";
 import { createEngineHost } from "./engine-host.js";
 import { fieldTarget } from "./field-target.js";
+import { IconField } from "./IconField.js";
 import type { Layer } from "./layers.js";
 import { SharedRegionBanner } from "./SharedRegionBanner.js";
 import { confirmSharedRemovals } from "./shared-confirmations.js";
@@ -418,11 +419,12 @@ export function Editor({
   // The Edit panel replaces Puck's own fields (1.14). Registered once: it follows the editor level
   // and the mode (Content shows its Content tab only) itself, so a switch redraws it alone (R9).
   useEffect(() => {
-    // The fields the app draws itself (R11): images, links, and colours with the theme's own
+    // The fields the app draws itself (R11): images, links, icons, and colours with the theme's own
     // colours and a contrast warning (1.37, UX-25).
     const renderers: FieldRenderers = {
       image: imageFieldRenderer({ session, picks: imagePicks }),
       link: linkFieldRenderer({ session }),
+      icon: IconField,
       color: colourFieldRenderer({
         session,
         preferences,

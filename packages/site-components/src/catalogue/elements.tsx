@@ -1,9 +1,10 @@
 import { t } from "@webforge/i18n";
 import { type Breakpoint, type Responsive, resolveResponsive } from "@webforge/model";
-import { useContext } from "react";
+import { createContext, type ReactNode, useContext } from "react";
 import { defineComponent } from "../define.js";
 import { MARGIN_FIELD, marginClasses } from "../frame.js";
-import { type ComponentDef, linkAttributes, responsiveClasses } from "../library.js";
+import { LucideIcon } from "../icons.js";
+import { type ComponentDef, colorClass, linkAttributes, responsiveClasses } from "../library.js";
 import { Picture } from "../picture.js";
 import { PREVIEW_ATTRIBUTE } from "../previews.js";
 import type { FieldDef, ResolvedImage } from "../schema.js";
@@ -149,6 +150,8 @@ const button = defineComponent({
   fields: {
     label: { kind: "text", label: t("field.buttonLabel") },
     link: { kind: "link", label: t("field.buttonLink") },
+    // Before its text (F-ED-22), in the text's size and colour.
+    icon: { kind: "icon", label: t("field.icon") },
     style: {
       kind: "select",
       label: t("field.buttonStyle"),
@@ -179,6 +182,7 @@ const button = defineComponent({
             className={BUTTON_CLASSES[BUTTON_KIND[values.style][values.size]]}
             {...linkAttributes(values.link, context)}
           >
+            {values.icon === undefined ? null : <LucideIcon name={values.icon} />}
             {label}
           </a>
         )}
@@ -324,7 +328,22 @@ const LIST_CLASS = {
   plain: "list-none space-y-2",
 } as const;
 
-/** A list of short texts: bullets, numbers or none, each item edited on the canvas. */
+/** The icon a List shows before each item instead of its markers (F-ED-22); none for markers. */
+const ListIconContext = createContext<string | undefined>(undefined);
+
+/** A List item's row: its List's icon, if it has one, then its text. */
+function ListItemRow({ text }: { readonly text: ReactNode }) {
+  const icon = useContext(ListIconContext);
+  if (icon === undefined) return <li className="site-list-item">{text}</li>;
+  return (
+    <li className="site-list-item flex items-start gap-2">
+      <LucideIcon name={icon} className="mt-[0.3em] size-[1em] shrink-0 text-primary" />
+      <span>{text}</span>
+    </li>
+  );
+}
+
+/** A list of short texts: bullets, numbers, an icon or none, each item edited on the canvas. */
 const list = defineComponent({
   label: t("element.list"),
   category: t("category.text"),
@@ -335,6 +354,8 @@ const list = defineComponent({
       label: t("field.listStyle"),
       options: LIST_STYLES.map((value) => ({ label: t(`field.listStyle.${value}`), value })),
     },
+    // Before each item instead of its markers (F-ED-22).
+    icon: { kind: "icon", label: t("field.listIcon"), help: t("field.listIcon.help") },
     margin: MARGIN_FIELD,
   },
   defaults: {
@@ -346,17 +367,23 @@ const list = defineComponent({
   },
   render: ({ values, slots }) => {
     const Items = slots.items;
-    const className = `site-list ${BODY_TEXT_CLASSES} ${LIST_CLASS[values.style]}${marginClasses(values.margin)}`;
+    // An icon replaces the markers: a plain list with it before each item.
+    const style = values.icon === undefined ? values.style : "plain";
+    const className = `site-list ${BODY_TEXT_CLASSES} ${LIST_CLASS[style]}${marginClasses(values.margin)}`;
     // Without a class the slot adds no element, so its items are the list's own <li>s.
-    return values.style === "numbers" ? (
-      <ol className={className}>
-        <Items />
-      </ol>
-    ) : (
-      // Safari and VoiceOver drop a list's semantics once its markers are gone: say it is one.
-      <ul className={className} role={values.style === "plain" ? "list" : undefined}>
-        <Items />
-      </ul>
+    return (
+      <ListIconContext value={values.icon}>
+        {style === "numbers" ? (
+          <ol className={className}>
+            <Items />
+          </ol>
+        ) : (
+          // Safari and VoiceOver drop a list's semantics once its markers are gone: say it is one.
+          <ul className={className} role={style === "plain" ? "list" : undefined}>
+            <Items />
+          </ul>
+        )}
+      </ListIconContext>
     );
   },
 });
@@ -369,10 +396,63 @@ const listItem = defineComponent({
     text: { kind: "text", label: t("field.text"), inline: true },
   },
   defaults: { text: t("starter.listItem") },
-  render: ({ values }) => <li className="site-list-item">{values.text}</li>,
+  render: ({ values }) => <ListItemRow text={values.text} />,
 });
 
-/** The basic elements (2.9): Image, Button, Spacer, Divider, Columns and List. */
+const ICON_SIZES = ["small", "medium", "large", "xlarge"] as const;
+const ICON_SIZE_CLASS = {
+  small: "size-6",
+  medium: "size-8",
+  large: "size-12",
+  xlarge: "size-16",
+} as const;
+const ICON_COLOURS = ["default", "primary", "secondary", "accent"] as const;
+
+/**
+ * One of Lucide's icons on its own (F-ED-22), drawn as inline SVG. Decorative unless it has a
+ * label, which names it for screen readers ("Phone").
+ */
+const icon = defineComponent({
+  label: t("element.icon"),
+  category: t("category.basic"),
+  fields: {
+    icon: { kind: "icon", label: t("field.icon") },
+    label: { kind: "text", label: t("field.iconLabel"), help: t("field.iconLabel.help") },
+    size: {
+      kind: "slider",
+      label: t("field.size"),
+      responsive: true,
+      steps: ICON_SIZES.map((value) => ({ label: t(`field.iconSize.${value}`), value })),
+    },
+    color: {
+      kind: "color",
+      label: t("field.color"),
+      options: ICON_COLOURS.map((value) => ({ label: t(`field.color.${value}`), value })),
+    },
+    alignment: ALIGNMENT_FIELD,
+    margin: MARGIN_FIELD,
+  },
+  defaults: { icon: "star", label: "", size: "medium", color: "primary", alignment: "left" },
+  render: ({ values }) => {
+    const size = responsiveClasses(values.size, (value) => ICON_SIZE_CLASS[value]);
+    const colour = colorClass("text", values.color);
+    return (
+      <div
+        className={`site-icon flex ${BUTTON_ALIGN_CLASS[values.alignment]}${marginClasses(values.margin)}`}
+      >
+        {values.icon === undefined ? null : (
+          <LucideIcon
+            name={values.icon}
+            className={colour === "" ? size : `${size} ${colour}`}
+            label={values.label}
+          />
+        )}
+      </div>
+    );
+  },
+});
+
+/** The basic elements (2.9): Image, Button, Spacer, Divider, Columns, List and Icon. */
 export const elementsComponents: Readonly<Record<string, ComponentDef>> = {
   Image: image,
   Button: button,
@@ -382,4 +462,5 @@ export const elementsComponents: Readonly<Record<string, ComponentDef>> = {
   Column: column,
   List: list,
   ListItem: listItem,
+  Icon: icon,
 };

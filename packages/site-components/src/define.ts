@@ -9,6 +9,7 @@ import {
 } from "@webforge/model";
 import type { ComponentType, ReactNode } from "react";
 import { BEHAVIOUR_SCRIPTS } from "./behaviours.js";
+import { isIconName } from "./icons.js";
 import {
   type ComponentDef,
   type ComponentLibrary,
@@ -147,6 +148,9 @@ function valueReader(field: FieldDef, initial: unknown): (value: unknown) => unk
         const image = imageValueSchema.safeParse(value);
         return image.success ? image.data : undefined;
       }
+      // A name Lucide doesn't have (a file from elsewhere) draws no icon.
+      case "icon":
+        return isIconName(value) ? value : isIconName(fallback) ? fallback : undefined;
       case "link": {
         const link = linkValueSchema.safeParse(value);
         if (link.success) return link.data;
