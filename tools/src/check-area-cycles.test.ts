@@ -1,8 +1,8 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
-import { areaCycles, areaCyclesIn, areaGraph } from "./check-area-cycles.js";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { areaCycles, areaCyclesIn, areaGraph, main } from "./check-area-cycles.js";
 
 const folders: string[] = [];
 afterEach(() => {
@@ -94,5 +94,34 @@ describe("areaCyclesIn", () => {
     });
 
     expect(areaCyclesIn(folder).cycles).toEqual([["menu", "site", "menu"]]);
+  });
+});
+
+describe("the command", () => {
+  afterEach(() => {
+    process.exitCode = undefined;
+    vi.restoreAllMocks();
+  });
+
+  it("fails with the cycles' areas, passes without, and asks for a folder", () => {
+    const errors = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const logs = vi.spyOn(console, "log").mockImplementation(() => undefined);
+
+    main([
+      renderer({
+        "site/SitePanel.tsx": 'import { MenuPanel } from "../menu/index.js";',
+        "menu/MenuPanel.tsx": 'import { NameDialog } from "../site/index.js";',
+      }),
+    ]);
+    expect(process.exitCode).toBe(1);
+    expect(errors.mock.calls.flat().join(" ")).toContain("menu → site → menu");
+
+    process.exitCode = undefined;
+    main([renderer({ "site/SitePanel.tsx": "" })]);
+    expect(process.exitCode).toBeUndefined();
+    expect(logs).toHaveBeenCalledWith("No cycles between the 1 renderer areas.");
+
+    main([]);
+    expect(process.exitCode).toBe(2);
   });
 });

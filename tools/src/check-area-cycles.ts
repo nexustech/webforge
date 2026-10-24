@@ -82,8 +82,9 @@ export function areaCyclesIn(renderer: string): { areas: number; cycles: string[
   return { areas: areas.size, cycles: areaCycles(areaGraph(areas)) };
 }
 
-function main(): void {
-  const [renderer] = process.argv.slice(2);
+/** The command: checks the renderer folder in `args`, setting the exit code when it fails. */
+export function main(args: readonly string[] = process.argv.slice(2)): void {
+  const [renderer] = args;
   if (renderer === undefined) {
     console.error("Usage: node tools/src/check-area-cycles.ts <renderer folder>");
     process.exitCode = 2;
