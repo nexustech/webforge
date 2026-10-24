@@ -3,7 +3,7 @@ import { cpus, totalmem } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, type Locator, type Page, test } from "@playwright/test";
 import { countNodes, largePage } from "@webforge/test-utils";
-import { launchDesktopApp } from "../app/launch.js";
+import { launchDesktopApp, waitForCanvas } from "../app/launch.js";
 
 // Large-page performance check (spec/04 item 0.4, ADR 0007). Runs against a `--mode perf` build:
 // `pnpm e2e:perf` from the repository root. Budgets: architecture §10 (keystroke and drag to canvas
@@ -204,7 +204,7 @@ test("a page with 200+ elements against the editing budgets", async () => {
 
   await test.step("baseline: typing on the small starter page", async () => {
     // The site CSS changes the layout when it arrives (1.12); measure with the final one.
-    await expect(canvasFrame().locator("style[data-webforge-site-css]")).toHaveCount(1);
+    await waitForCanvas(page);
     await startObservers();
     results.typingStarterPage = await typeInto(
       canvasFrame().locator(".site-heading [contenteditable]").first(),

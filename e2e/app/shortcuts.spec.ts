@@ -1,6 +1,6 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { placeCaret } from "./caret.js";
-import { launchDesktopApp } from "./launch.js";
+import { launchDesktopApp, waitForCanvas } from "./launch.js";
 
 // The keyboard shortcut standard (1.38, F-ED-27): the sheet from the Help menu and `?`, the view
 // keys, Electron's own zoom keys gone, and no shortcut taking keys from text being typed.
@@ -11,7 +11,7 @@ let page: Page;
 test.beforeEach(async () => {
   app = await launchDesktopApp();
   page = await app.firstWindow();
-  await expect(canvas().locator("style[data-webforge-site-css]")).toHaveCount(1);
+  await waitForCanvas(page);
 });
 
 test.afterEach(async () => {

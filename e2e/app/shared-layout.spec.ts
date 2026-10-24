@@ -1,6 +1,6 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { placeCaret } from "./caret.js";
-import { launchDesktopApp } from "./launch.js";
+import { launchDesktopApp, waitForCanvas } from "./launch.js";
 
 // The shared Header and Footer (1.20, F-ED-7, C5): stored once, shown on every page; an edit on one
 // page shows on all of them, and one undo reverts it everywhere.
@@ -16,7 +16,7 @@ test.beforeEach(async () => {
     .getByRole("region", { name: "Left panels" })
     .getByRole("tab", { name: "Undo History" })
     .click();
-  await expect(canvas().locator("style[data-webforge-site-css]")).toHaveCount(1);
+  await waitForCanvas(page);
 });
 
 test.afterEach(async () => {

@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { createSite, type PageId } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
-import { launchDesktopApp } from "./launch.js";
+import { launchDesktopApp, waitForCanvas } from "./launch.js";
 import { stubFileDialogs } from "./sites.js";
 
 // Links (1.19, F-ED-18): a button links to a section on another page; renaming that page keeps
@@ -48,7 +48,7 @@ test.beforeEach(async () => {
   store.close();
   app = await launchDesktopApp({ args: [sitePath] });
   page = await app.firstWindow();
-  await expect(canvas().locator("style[data-webforge-site-css]")).toHaveCount(1);
+  await waitForCanvas(page);
 });
 
 test.afterEach(async () => {
@@ -56,7 +56,6 @@ test.afterEach(async () => {
   rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
 });
 
-const canvas = () => page.frameLocator(".editor__canvas iframe");
 const right = () => page.getByRole("region", { name: "Right panels" });
 
 test("links a button to a section, and the exported link follows a renamed page", async () => {

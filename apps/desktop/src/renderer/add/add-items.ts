@@ -299,9 +299,8 @@ export function addComponent(session: AddSession, type: string, point?: InsertPo
       const node: NodeDoc = { type, props: { ...structuredClone(definition.defaults), id } };
       insertAt(content, target, [node]);
     },
-    { selectionAfter: { pageId, viewport, nodeId: id } },
+    { selectionAfter: { pageId, viewport, nodeId: id }, apply: true },
   );
-  session.ui.setState({ nodeId: id });
   return true;
 }
 
@@ -333,8 +332,7 @@ export function addSharedCopy(
       const content = draft.pages[pageId]?.doc.content;
       if (content !== undefined) insertAt(content, target, [copy]);
     },
-    { selectionAfter: { pageId, viewport, nodeId } },
+    { selectionAfter: { pageId, viewport, nodeId }, apply: true },
   );
-  session.ui.setState({ nodeId });
   return true;
 }

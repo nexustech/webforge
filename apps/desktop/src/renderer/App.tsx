@@ -1,10 +1,8 @@
 import { type ResizableLayout, Toaster, TooltipProvider } from "@webforge/editor-ui";
-import type { EditorMode } from "@webforge/engine";
 import { t } from "@webforge/i18n";
 import { siteLibrary } from "@webforge/site-components";
 import { PanelBottomIcon, PanelLeftIcon, PanelRightIcon } from "lucide-react";
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { applyPreferencesChange } from "../shared/ipc/prefs.js";
+import { useEffect, useState } from "react";
 import type { ExportRequest } from "../shared/ipc/site.js";
 import type {
   AppInfo,
@@ -14,9 +12,10 @@ import type {
   SiteUiState,
   UiStateResult,
 } from "../shared/ipc-contract.js";
-import { Editor, type EditorProps, type UndoTo } from "./editor/Editor.js";
+import { Editor, type EditorProps } from "./editor/Editor.js";
 import { createEditorSession, type EditorSession } from "./editor/editor-session.js";
 import { starterSite } from "./editor/starter-site.js";
+import { useDocument } from "./editor/use-document.js";
 import { registerExportCommand } from "./export/export-command.js";
 import { exportRequestFor } from "./export/export-request.js";
 import { registerLayersPanel } from "./layers/register-layers-panel.js";
@@ -35,6 +34,7 @@ import {
 import { ModeToggle } from "./shell/ModeToggle.js";
 import { PanelRegistryProvider } from "./shell/panel-context.js";
 import { createPanelRegistry } from "./shell/panels.js";
+import { createPreferencesStore, usePreferences } from "./shell/preferences-store.js";
 import { ShellLayout } from "./shell/ShellLayout.js";
 import { ShortcutSheet } from "./shell/ShortcutSheet.js";
 import { TitleBar } from "./shell/TitleBar.js";
@@ -103,21 +103,19 @@ export function App({
   const [canvasView] = useState(createCanvasView);
   // Actions that change more than the page shown ask first (D7); one dialog for the window.
   const [siteWide] = useState(createSiteWideConfirm);
-  const [preferences, setPreferences] = useState(initialPreferences);
-  // Design or Content (M3): remembered with the open site, never an undo step.
-  const [mode, setMode] = useState<EditorMode>(uiState?.editorMode ?? "design");
-  // How the title bar's list of steps undoes back to one, which the editor hands over (UX-16).
-  const [undoTo, setUndoTo] = useState<UndoTo | null>(null);
-  // The latest preferences, for changes made before React re-renders (several groups at once).
-  const latest = useRef(preferences);
-  const siteName = useSyncExternalStore(
-    session.history.document.subscribe,
-    () => session.history.document.getState().settings.general.name,
+  // The person's preferences, and Design or Content mode (M3) remembered with the open site (R9).
+  const [preferences] = useState(() =>
+    createPreferencesStore(
+      { preferences: initialPreferences, mode: uiState?.editorMode ?? "design" },
+      { preferences: savePreferences, mode: (editorMode) => saveUiState({ editorMode }) },
+    ),
   );
-  const siteLanguage = useSyncExternalStore(
-    session.history.document.subscribe,
-    () => session.history.document.getState().settings.general.language,
-  );
+  const mode = usePreferences(preferences, (state) => state.mode);
+  const theme = usePreferences(preferences, (state) => state.preferences.theme);
+  const editorLevel = usePreferences(preferences, (state) => state.preferences.editorLevel);
+  const panelLayout = usePreferences(preferences, (state) => state.preferences.panelLayout);
+  const siteName = useDocument(session, (site) => site.settings.general.name);
+  const siteLanguage = useDocument(session, (site) => site.settings.general.language);
   // Spelling is checked in the site's language, including after Site Settings changes it (1.22).
   useEffect(() => {
     setSpellCheckLanguage(siteLanguage).catch((error: unknown) => {
@@ -125,27 +123,6 @@ export function App({
     });
   }, [setSpellCheckLanguage, siteLanguage]);
 
-  const change = (update: PreferencesChange) => {
-    latest.current = applyPreferencesChange(latest.current, update);
-    setPreferences(latest.current);
-    savePreferences(update).catch((error: unknown) => {
-      console.error("Webforge could not save the preferences", error);
-    });
-  };
-
-  const changeMode = (next: EditorMode) => {
-    setMode(next);
-    // Without an open site (the starter site) the mode lasts until the window closes.
-    saveUiState({ editorMode: next }).catch((error: unknown) => {
-      console.error("Webforge could not remember the editor mode", error);
-    });
-  };
-
-  const { theme, editorLevel } = preferences;
-  // The View menu's options as the canvas takes them (the compiler keeps the object until one
-  // changes; without it, the canvas is just told the same options again).
-  const { showOutlines, spacingOnHover, elementNames, extraBottomSpace } = preferences.canvas;
-  const viewOptions = { outlines: showOutlines, spacingOnHover, elementNames, extraBottomSpace };
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
@@ -155,15 +132,16 @@ export function App({
   useEffect(() => registerSitePanel(panels, session, siteWide), [panels, session, siteWide]);
   // The command palette's Go to page (1.34, F-ED-26).
   useEffect(() => registerPageCommands(registry, session), [registry, session]);
-  // Content mode locks the layout in Layers too (M3).
+  // Content mode locks the layout in Layers too (M3). Registered once, so switching modes keeps
+  // what the panel shows: its collapsed layers and filter.
   useEffect(
-    () => registerLayersPanel(panels, session, { layoutLocked: mode !== "design" }),
-    [panels, session, mode],
+    () => registerLayersPanel(panels, session, { preferences }),
+    [panels, session, preferences],
   );
   useEffect(() => registerCrashReportsCommand(registry), [registry]);
   // View → Zoom In/Out, Actual Size, Zoom to Fit and the device views (F-ED-27).
   useEffect(
-    () => registerViewCommands(registry, session.ui, canvasView),
+    () => registerViewCommands(registry, session, canvasView),
     [registry, session, canvasView],
   );
 
@@ -175,36 +153,32 @@ export function App({
     [registry, session, exportSite],
   );
 
-  // View → Use Light/Dark Theme. `change` is recreated each render; the ref keeps it current.
-  const changeRef = useRef(change);
-  useEffect(() => {
-    changeRef.current = change;
-  });
+  // View → Use Light/Dark Theme, labelled for the theme shown; it reads that when it runs.
   useEffect(
     () =>
       registry.register({
         id: COMMAND_IDS.theme,
         label: theme === "dark" ? t("command.lightTheme") : t("command.darkTheme"),
         menu: "view",
-        run: () => changeRef.current({ theme: theme === "dark" ? "light" : "dark" }),
+        run: () => {
+          const shown = preferences.getState().preferences.theme;
+          preferences.change({ theme: shown === "dark" ? "light" : "dark" });
+        },
       }),
-    [registry, theme],
+    [registry, preferences, theme],
   );
 
   // View → Switch to Design/Content Mode, and Use Simple/Advanced Mode (T2: per person).
-  const changeModeRef = useRef(changeMode);
-  useEffect(() => {
-    changeModeRef.current = changeMode;
-  });
   useEffect(
     () =>
       registry.register({
         id: COMMAND_IDS.editorMode,
         label: mode === "design" ? t("command.contentMode") : t("command.designMode"),
         menu: "view",
-        run: () => changeModeRef.current(mode === "design" ? "content" : "design"),
+        run: () =>
+          preferences.changeMode(preferences.getState().mode === "design" ? "content" : "design"),
       }),
-    [registry, mode],
+    [registry, preferences, mode],
   );
   useEffect(
     () =>
@@ -212,10 +186,12 @@ export function App({
         id: COMMAND_IDS.editorLevel,
         label: editorLevel === "simple" ? t("command.advancedMode") : t("command.simpleMode"),
         menu: "view",
-        run: () =>
-          changeRef.current({ editorLevel: editorLevel === "simple" ? "advanced" : "simple" }),
+        run: () => {
+          const shown = preferences.getState().preferences.editorLevel;
+          preferences.change({ editorLevel: shown === "simple" ? "advanced" : "simple" });
+        },
       }),
-    [registry, editorLevel],
+    [registry, preferences, editorLevel],
   );
 
   useEffect(() => {
@@ -224,7 +200,9 @@ export function App({
   }, [session]);
 
   const rememberLayout = (groupId: string, layout: ResizableLayout) =>
-    change({ panelLayout: { ...latest.current.panelLayout, [groupId]: layout } });
+    preferences.change({
+      panelLayout: { ...preferences.getState().preferences.panelLayout, [groupId]: layout },
+    });
 
   return (
     <CommandRegistryProvider registry={registry}>
@@ -234,10 +212,15 @@ export function App({
             <TitleBar
               siteName={siteName}
               saveStatus={<AutosaveStatus session={session} loaded={loaded} />}
-              undoSteps={<UndoStepsMenu state={session.history.state} undoTo={undoTo?.run} />}
+              undoSteps={
+                <UndoStepsMenu
+                  state={session.history.state}
+                  undoTo={(entryId) => session.undoTo(entryId)}
+                />
+              }
               tools={
                 <>
-                  <ModeToggle mode={mode} onModeChange={changeMode} />
+                  <ModeToggle mode={mode} onModeChange={(next) => preferences.changeMode(next)} />
                   <div className="mx-1 h-5 w-px bg-border" aria-hidden />
                   <CommandButton
                     commandId={COMMAND_IDS.toggleLeftPanels}
@@ -260,7 +243,7 @@ export function App({
             />
             <main className="min-h-0 flex-1">
               <ShellLayout
-                layout={preferences.panelLayout}
+                layout={panelLayout}
                 onLayoutChange={rememberLayout}
                 editorLevel={editorLevel}
                 center={
@@ -268,23 +251,16 @@ export function App({
                     <CanvasToolbarHost
                       session={session}
                       view={canvasView}
-                      canvas={preferences.canvas}
-                      onCanvasChange={(canvas) => change({ canvas })}
+                      preferences={preferences}
                     />
                     <div className="min-h-0 flex-1">
                       <Editor
                         session={session}
                         {...(createEngine === undefined ? {} : { createEngine })}
                         {...(compileCss === undefined ? {} : { compileCss })}
-                        mode={mode}
+                        preferences={preferences}
                         siteWide={siteWide}
                         canvasView={canvasView}
-                        editorLevel={editorLevel}
-                        devices={preferences.canvas.devices}
-                        viewOptions={viewOptions}
-                        addPreferences={preferences.add}
-                        onAddPreferencesChange={(add) => change({ add })}
-                        onUndoTo={setUndoTo}
                       />
                     </div>
                   </div>

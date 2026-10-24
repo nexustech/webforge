@@ -96,9 +96,8 @@ export function deleteSelected(session: LayersSession): BulkResult {
         place?.list.splice(place.index, 1);
       }
     },
-    { selectionAfter: { ...current, nodeId: null, others: [] } },
+    { selectionAfter: { ...current, nodeId: null, others: [] }, apply: true },
   );
-  session.ui.setState({ ...current, nodeId: null, others: [] }, true);
   return {};
 }
 
@@ -148,9 +147,8 @@ export function duplicateSelected(session: LayersSession): BulkResult {
         place?.list.splice(place.index + 1, 0, copy);
       }
     },
-    { selectionAfter: copiesSelected },
+    { selectionAfter: copiesSelected, apply: true },
   );
-  session.ui.setState(copiesSelected, true);
   return {};
 }
 

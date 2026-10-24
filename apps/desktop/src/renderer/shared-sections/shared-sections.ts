@@ -201,9 +201,8 @@ export function saveAsSharedSection(session: SharedSectionSession, name: string)
       draft.sharedSections[id] = { id, name, section: stored };
       content[index] = copy;
     },
-    { selectionAfter: { ...ui, nodeId: selected } },
+    { selectionAfter: { ...ui, nodeId: selected }, apply: true },
   );
-  session.ui.setState({ nodeId: selected });
   return true;
 }
 
@@ -229,9 +228,8 @@ export function detachCopy(session: SharedSectionSession): boolean {
       const index = content?.findIndex((node) => node.props.id === copy.props.id) ?? -1;
       if (content !== undefined && index !== -1) content[index] = section;
     },
-    { selectionAfter: { ...ui, nodeId: section.props.id } },
+    { selectionAfter: { ...ui, nodeId: section.props.id }, apply: true },
   );
-  session.ui.setState({ nodeId: section.props.id });
   return true;
 }
 
@@ -314,8 +312,7 @@ export function deleteSharedSection(session: SharedSectionSession, id: SharedSec
       }
       delete draft.sharedSections[id];
     },
-    { selectionAfter: { ...ui, nodeId } },
+    { selectionAfter: { ...ui, nodeId }, apply: true },
   );
-  if (nodeId !== ui.nodeId) session.ui.setState({ nodeId });
   return true;
 }

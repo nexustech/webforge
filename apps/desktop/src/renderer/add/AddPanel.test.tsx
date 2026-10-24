@@ -9,14 +9,14 @@ import {
 } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createStore } from "zustand/vanilla";
-import type { AddPreferences } from "../../shared/ipc/prefs.js";
+import { DEFAULT_PREFERENCES } from "../../shared/ipc/prefs.js";
 import { createEditorSession, currentPage } from "../editor/editor-session.js";
 import { starterSite } from "../editor/starter-site.js";
 import { saveAsSharedSection } from "../shared-sections/shared-sections.js";
 import { createCommandRegistry } from "../shell/commands.js";
 import { PanelRegistryProvider, usePanels } from "../shell/panel-context.js";
 import { createPanelRegistry, type PanelRegistry } from "../shell/panels.js";
+import { createPreferencesStore } from "../shell/preferences-store.js";
 import { AddPanel } from "./AddPanel.js";
 import { addComponent, addItems } from "./add-items.js";
 import { registerAddPanel } from "./register-add-panel.js";
@@ -213,7 +213,7 @@ describe("registerAddPanel", () => {
     act(() => addPanel.openAt({ index: 0 }));
     const other = session.history.document.getState().pageOrder[1];
     if (other === undefined) throw new Error("no second page");
-    act(() => session.ui.setState({ pageId: other }));
+    act(() => session.showPage(other));
 
     expect(screen.queryByRole("status")).toBeNull();
   });
@@ -284,7 +284,9 @@ describe("registerAddPanel", () => {
   });
 
   const preferencesWith = (favourites: string[] = [], recent: string[] = []) =>
-    createStore<AddPreferences>()(() => ({ favourites, recent }));
+    createPreferencesStore({
+      preferences: { ...DEFAULT_PREFERENCES, add: { favourites, recent } },
+    });
   const groups = () =>
     screen.getAllByRole("list").map((list) => list.getAttribute("aria-label") ?? "");
 
@@ -302,7 +304,7 @@ describe("registerAddPanel", () => {
     });
     fireEvent.contextMenu(hero);
     await userEvent.click(await screen.findByRole("menuitem", { name: "Add to Favourites" }));
-    expect(preferences.getState().favourites).toEqual(["Faq", "Hero"]);
+    expect(preferences.getState().preferences.add.favourites).toEqual(["Faq", "Hero"]);
     expect(
       within(screen.getByRole("list", { name: "Favourites" }))
         .getAllByRole("button")
@@ -311,7 +313,7 @@ describe("registerAddPanel", () => {
 
     fireEvent.contextMenu(hero);
     await userEvent.click(await screen.findByRole("menuitem", { name: "Remove from Favourites" }));
-    expect(preferences.getState().favourites).toEqual(["Faq"]);
+    expect(preferences.getState().preferences.add.favourites).toEqual(["Faq"]);
   });
 
   it("shows a section's preview while the pointer rests on it, through the canvas's drag handle", () => {
@@ -354,7 +356,7 @@ describe("registerAddPanel", () => {
       within(screen.getByRole("list", { name: "Heroes" })).getByRole("button", { name: "Hero" }),
     );
 
-    expect(preferences.getState().recent).toEqual(["Hero", "Faq"]);
+    expect(preferences.getState().preferences.add.recent).toEqual(["Hero", "Faq"]);
     expect(groups().slice(0, 1)).toEqual(["Recently used"]);
   });
 
@@ -372,7 +374,7 @@ describe("registerAddPanel", () => {
 
     expect(currentPage(session)?.doc.content.map((node) => node.type)).toContain("Hero");
     expect(session.history.entries().map((entry) => entry.label)).toEqual(["Added Hero"]);
-    expect(preferences.getState().recent).toEqual(["Hero"]);
+    expect(preferences.getState().preferences.add.recent).toEqual(["Hero"]);
     addPanel.remove();
     expect(registry.list().filter((command) => command.palette === "add")).toEqual([]);
   });
@@ -381,7 +383,7 @@ describe("registerAddPanel", () => {
     const session = createEditorSession(siteLibrary, starterSite());
     const registry = createCommandRegistry();
     registerAddPanel(createPanelRegistry(), session, { commands: registry });
-    session.ui.setState({ nodeId: "section-1" });
+    session.select("section-1");
     saveAsSharedSection(session, "Welcome");
     const [id] = Object.keys(session.history.document.getState().sharedSections);
 

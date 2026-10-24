@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, test } from "@playwright/test";
 import { ProjectStore } from "@webforge/storage";
-import { launchDesktopApp } from "./launch.js";
+import { launchDesktopApp, waitForCanvas } from "./launch.js";
 import { stubFileDialogs } from "./sites.js";
 
 // Site Settings (1.17, F-SET-1): opened from the File menu, checked on Save, saved as one undo
@@ -69,7 +69,7 @@ test("shows Site Settings values in bound elements, on the canvas and in the exp
   const page = await app.firstWindow();
   const canvas = page.frameLocator(".editor__canvas iframe");
   const panel = page.getByRole("region", { name: "Right panels" });
-  await expect(canvas.locator("style[data-webforge-site-css]")).toHaveCount(1);
+  await waitForCanvas(page);
   // Undo History is the left column's second tab, after Add.
   await page
     .getByRole("region", { name: "Left panels" })

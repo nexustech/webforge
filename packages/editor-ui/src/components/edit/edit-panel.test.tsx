@@ -131,16 +131,23 @@ describe("EditPanel", () => {
     expect(fieldRenderer("shout")).toBeUndefined();
   });
 
-  it("puts back the renderer a registration replaced", () => {
+  it("puts back the renderer a registration replaced, unless it was taken away", () => {
     const first = vi.fn(() => null);
     const second = vi.fn(() => null);
     const removeFirst = registerFieldRenderer("thing", first);
     const removeSecond = registerFieldRenderer("thing", second);
-
-    removeFirst();
-    expect(fieldRenderer("thing")).toBe(second);
     removeSecond();
     expect(fieldRenderer("thing")).toBe(first);
+    removeFirst();
+    expect(fieldRenderer("thing")).toBeUndefined();
+
+    // Taken away out of order (#296 review): the first one's owner removed it, so it stays gone.
+    const removeAgain = registerFieldRenderer("thing", first);
+    const removeLater = registerFieldRenderer("thing", second);
+    removeAgain();
+    expect(fieldRenderer("thing")).toBe(second);
+    removeLater();
+    expect(fieldRenderer("thing")).toBeUndefined();
   });
 
   it("says when a tab has nothing to change", async () => {

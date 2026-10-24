@@ -183,9 +183,8 @@ function editNode(
         change(node, place);
       }
     },
-    { selectionAfter },
+    { selectionAfter, apply: true },
   );
-  session.ui.setState(selectionAfter, true);
 }
 
 /**
@@ -351,7 +350,6 @@ export function copyLayer(
       const at = list === undefined ? undefined : placeOf(list, found.own, session.library);
       at?.list.splice(index, 0, added);
     },
-    { selectionAfter },
+    { selectionAfter, apply: true },
   );
-  session.ui.setState(selectionAfter, true);
 }

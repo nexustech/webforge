@@ -13,7 +13,13 @@ import { siteLibrary } from "@webforge/site-components";
 import { describe, expect, it } from "vitest";
 import { starterSite } from "../editor/starter-site.js";
 import { applyAnchor, asLinkFieldChange } from "./link-change.js";
-import { describeLink, linkTargets, newAnchorFor, sectionAnchor } from "./link-targets.js";
+import {
+  createLinkTargets,
+  describeLink,
+  linkTargets,
+  newAnchorFor,
+  sectionAnchor,
+} from "./link-targets.js";
 
 /**
  * The starter site, its home page holding `content` and its "Page not found" page `other`, with
@@ -188,5 +194,34 @@ describe("link changes", () => {
     const content = draft.pages[pageId]?.doc.content;
     expect(content?.[1]?.props.advanced).toEqual({ anchorId: "opening-times" });
     expect(content?.[2]?.props.advanced).toEqual({ anchorId: "our-team" });
+  });
+});
+
+describe("createLinkTargets (R9, #296 review)", () => {
+  it("works out each document once, and keeps the same list while its targets read the same", () => {
+    const targetsOf = createLinkTargets(siteLibrary);
+    const heading: NodeDoc = { type: "Heading", props: { id: "h", text: "Hello" } };
+    const first = site([{ type: "Section", props: { id: "s", content: [heading] } }]);
+    const list = targetsOf(first);
+    expect(targetsOf(first)).toBe(list);
+    /** `first` with its home page's Section changed by `change`. */
+    const changed = (change: (section: NodeDoc) => void) => {
+      const next = structuredClone(first);
+      const section = next.pages[next.homePageId]?.doc.content[0];
+      if (section !== undefined) change(section);
+      return next;
+    };
+
+    // Typing in the Heading: a new document, the same pages and sections.
+    const typed = changed((section) => {
+      section.props.content = [{ ...heading, props: { id: "h", text: "Hi" } }];
+    });
+    expect(targetsOf(typed)).toBe(list);
+
+    const named = changed((section) => {
+      section.props.layerName = "Intro";
+    });
+    expect(targetsOf(named)).not.toBe(list);
+    expect(targetsOf(named)[0]?.sections[0]?.label).toBe("Intro");
   });
 });

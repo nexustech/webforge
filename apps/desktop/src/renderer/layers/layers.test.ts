@@ -82,7 +82,7 @@ describe("layersOf (F-ED-12)", () => {
 describe("Layers changes, one undo step each", () => {
   it("selects a moved layer alone, never listing it twice, and undo selects them all again (#262)", () => {
     const { session, labels } = setUp();
-    session.ui.setState({ nodeId: "a", others: ["b"] });
+    session.selectElements(["a", "b"]);
 
     moveLayer(session, "b", 0);
 
@@ -127,7 +127,7 @@ describe("Layers changes, one undo step each", () => {
 
   it("hides a layer and shows it again, leaving the selection as it is", () => {
     const { session, first, labels } = setUp();
-    session.ui.setState({ nodeId: "a" });
+    session.select("a");
 
     setLayerHidden(session, "b", true);
     setLayerHidden(session, "b", true);

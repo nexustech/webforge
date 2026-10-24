@@ -5,7 +5,7 @@ import { type ElectronApplication, expect, type Page, test } from "@playwright/t
 import { createSite, type MediaId } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
 import { heroPhoto, minimalDocx } from "@webforge/test-utils";
-import { launchDesktopApp } from "./launch.js";
+import { launchDesktopApp, waitForCanvas } from "./launch.js";
 import { stubFileDialogs } from "./sites.js";
 
 // Media import (1.16): files go into the site file unmodified, and the editor shows them through
@@ -288,7 +288,7 @@ test("places a Media image on the Hero from the Edit panel, shows it on the canv
 
   const page = await openSite();
   const canvas = page.frameLocator(".editor__canvas iframe");
-  await expect(canvas.locator("style[data-webforge-site-css]")).toHaveCount(1, { timeout: 30_000 });
+  await waitForCanvas(page);
   await canvas.locator("h1").click();
 
   // The picker dialog (UX-15): found by its alt text, chosen with Enter, focus back on the field.
