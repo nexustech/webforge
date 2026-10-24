@@ -13,6 +13,7 @@ import {
 } from "@webforge/model";
 import type { ComponentLibrary } from "@webforge/site-components";
 import type { EditorSession } from "../editor/editor-session.js";
+import { elementKind, givenElementName, quotedName } from "../editor/labels.js";
 import { findNode } from "../editor/nodes.js";
 import { shownLayout } from "../editor/shared-layout.js";
 
@@ -74,16 +75,16 @@ export function layersOf(
   shared: SharedSectionsDoc = {},
 ): Layer[] {
   return nodes.flatMap((node): Layer[] => {
-    const name = node.props.layerName?.trim() || undefined;
+    const kind = elementKind(node, library, shared);
+    const name = givenElementName(node, shared);
     if (isSharedCopy(node)) {
       const entry = sectionOf(shared, node);
       if (entry === undefined) return [];
-      const { section } = entry;
       return [
         {
-          id: copiedNodeId(node.props.id, section.props.id),
-          kind: library.components[section.type]?.label ?? section.type,
-          name: name ?? entry.name,
+          id: copiedNodeId(node.props.id, entry.section.props.id),
+          kind,
+          name,
           hidden: node.props.hidden === true,
           children: [],
           sharedSection: entry.name,
@@ -93,7 +94,7 @@ export function layersOf(
     return [
       {
         id: node.props.id,
-        kind: library.components[node.type]?.label ?? node.type,
+        kind,
         name,
         hidden: node.props.hidden === true,
         children: slotsOf(node, library).flatMap((list) => layersOf(list, library, shared)),
@@ -104,7 +105,7 @@ export function layersOf(
 
 /** How undo labels name a layer: its own name in quotes, else its component ("Heading"). */
 export const layerItem = (layer: Pick<Layer, "kind" | "name">) =>
-  layer.name === undefined ? layer.kind : t("history.namedItem", { name: layer.name });
+  quotedName(layer.kind, layer.name);
 
 /** The node list holding the node `id`, and its index there, searching slots too. */
 export function placeOf(

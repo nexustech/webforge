@@ -13,6 +13,7 @@ import {
   slugify,
 } from "@webforge/model";
 import type { ComponentLibrary } from "@webforge/site-components";
+import { elementName } from "../editor/labels.js";
 import { sameValue } from "../editor/same-value.js";
 
 /**
@@ -44,19 +45,14 @@ export function linkTargets(site: SiteDoc, library: ComponentLibrary): PageTarge
   return site.pageOrder.flatMap((id) => {
     const page = site.pages[id];
     if (page === undefined) return [];
-    const sections = page.doc.content.flatMap((node) => {
-      const shared = isSharedCopy(node)
-        ? site.sharedSections[node.props.sharedSectionId]
-        : undefined;
-      return expandSharedCopies([node], site.sharedSections).map((shown) => ({
+    const sections = page.doc.content.flatMap((node) =>
+      // A copy is named as Layers names it: its own name, else its shared section's (F-ED-23).
+      expandSharedCopies([node], site.sharedSections).map((shown) => ({
         nodeId: shown.props.id,
-        label:
-          shown.props.layerName?.trim() ||
-          shared?.name ||
-          (library.components[shown.type]?.label ?? shown.type),
+        label: elementName(node, library, site.sharedSections),
         anchorId: anchorOf(shown),
-      }));
-    });
+      })),
+    );
     return [{ id, title: page.title, sections }];
   });
 }
