@@ -1,6 +1,6 @@
 import { type ElectronApplication, expect, type Locator, type Page, test } from "@playwright/test";
 import { type Box, below, boxOf, drag } from "./drag.js";
-import { launchDesktopApp } from "./launch.js";
+import { launchDesktopApp, waitForCanvas } from "./launch.js";
 
 // Shared sections (1.29, F-ED-23): a section saved once and placed as linked copies; editing any
 // copy changes them all in one undo step, and Detach makes one copy a normal section again.
@@ -16,7 +16,7 @@ test.beforeEach(async () => {
     .getByRole("region", { name: "Left panels" })
     .getByRole("tab", { name: "Undo History" })
     .click();
-  await expect(canvas().locator("style[data-webforge-site-css]")).toHaveCount(1);
+  await waitForCanvas(page);
 });
 
 test.afterEach(async () => {

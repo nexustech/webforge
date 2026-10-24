@@ -6,7 +6,7 @@ import { type ElectronApplication, expect, type Page, test } from "@playwright/t
 import { changedDocuments, createSite } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
 import { FONTSOURCE_API, PACKAGE_FILES, PACKAGE_LISTINGS } from "@webforge/themes/font-plan";
-import { desktopDir, launchDesktopApp } from "./launch.js";
+import { desktopDir, launchDesktopApp, waitForCanvas } from "./launch.js";
 import { stubFileDialogs } from "./sites.js";
 
 // A font downloaded on demand (2.2, S4, PH2-8) works offline. It comes once from a stand-in for
@@ -105,12 +105,6 @@ function createSiteInTestScript(path: string): void {
 }
 
 const canvas = (page: Page) => page.frameLocator(".editor__canvas iframe");
-
-async function waitForCanvas(page: Page): Promise<void> {
-  await expect(canvas(page).locator("style[data-webforge-site-css]")).toHaveCount(1, {
-    timeout: 30_000,
-  });
-}
 
 /** Whether the canvas loaded Test Script, through the main process's `webforge-font:` scheme. */
 const testScriptLoaded = (page: Page) =>

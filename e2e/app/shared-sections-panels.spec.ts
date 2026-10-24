@@ -1,5 +1,5 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
-import { launchDesktopApp } from "./launch.js";
+import { launchDesktopApp, waitForCanvas } from "./launch.js";
 
 // Shared sections in the panels (1.29, F-ED-23): the Add panel places linked copies, Layers marks
 // them, and deleting inside a copy asks first, as it changes every copy (D7).
@@ -12,7 +12,7 @@ test.beforeEach(async () => {
   page = await app.firstWindow();
   // Undo History is the left column's second tab, after Add.
   await left().getByRole("tab", { name: "Undo History" }).click();
-  await expect(canvas().locator("style[data-webforge-site-css]")).toHaveCount(1);
+  await waitForCanvas(page);
 });
 
 test.afterEach(async () => {

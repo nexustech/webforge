@@ -1,5 +1,5 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
-import { launchDesktopApp } from "./launch.js";
+import { launchDesktopApp, waitForCanvas } from "./launch.js";
 
 // The Edit panel's Advanced tab (Advanced mode, F-ED-11): CSS classes, attributes and the anchor
 // go onto the element's own HTML on the canvas, each change one labelled undo step.
@@ -10,7 +10,7 @@ let page: Page;
 test.beforeEach(async () => {
   app = await launchDesktopApp();
   page = await app.firstWindow();
-  await expect(canvas().locator("style[data-webforge-site-css]")).toHaveCount(1);
+  await waitForCanvas(page);
 });
 
 test.afterEach(async () => {
