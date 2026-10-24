@@ -32,6 +32,28 @@ const disclosure = (page: Page, selector: string, name: string) => {
   return { details, summary: details.locator(":scope > summary") };
 };
 
+/** The fixture's Carousel of customers' quotes (2.10), its strip and its buttons. */
+const quotes = (page: Page) => {
+  const carousel = page.getByRole("region", { name: "What customers say" });
+  return {
+    carousel,
+    track: carousel.locator("[data-wf-carousel-track]"),
+    button: (name: string) => carousel.getByRole("button", { name }),
+    scrollLeft: () =>
+      carousel.locator("[data-wf-carousel-track]").evaluate((track) => track.scrollLeft),
+    /** How far the strip must scroll to show slide `index`. */
+    slideAt: (index: number) =>
+      carousel
+        .locator("[data-wf-carousel-track]")
+        .evaluate(
+          (track, at) =>
+            ((track.children[at] as HTMLElement | undefined)?.offsetLeft ?? 0) -
+            ((track.children[0] as HTMLElement | undefined)?.offsetLeft ?? 0),
+          index,
+        ),
+  };
+};
+
 async function open(page: Page, name: string): Promise<void> {
   await blockNetwork(page.context());
   await page.goto(exportedPageUrl(name));
@@ -209,8 +231,90 @@ test.describe("exported site from disk", () => {
     });
   });
 
+  test.describe("carousel (2.10)", () => {
+    test("names its slides and moves with its buttons and the arrow keys, round past the end", async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 1280, height: 800 });
+      await open(page, "index.html");
+      const { carousel, track, button, scrollLeft } = quotes(page);
+      // Stopped first, so only the buttons move it.
+      await button("Stop the slides").click();
+      await expect(button("Play the slides")).toBeVisible();
+
+      // The slides, inside the strip (a group too, named "Slides").
+      const slides = carousel.getByRole("group", { name: /^\d of 3$/ });
+      await expect(slides).toHaveCount(3);
+      await expect(slides.first()).toHaveAccessibleName("1 of 3");
+      await button("Next slide").click();
+      await expect(carousel.locator("[data-wf-carousel-status]")).toHaveText("2 of 3");
+      await expect.poll(scrollLeft).toBeGreaterThan(0);
+      await button("Previous slide").click();
+      await button("Previous slide").click();
+      await expect(carousel.locator("[data-wf-carousel-status]")).toHaveText("3 of 3");
+
+      await track.focus();
+      await page.keyboard.press("ArrowRight");
+      await expect(carousel.locator("[data-wf-carousel-status]")).toHaveText("1 of 3");
+      await expect.poll(scrollLeft).toBe(0);
+    });
+
+    test("plays every 5 seconds, its stop button first, and pauses while in use", async ({
+      page,
+    }) => {
+      await page.clock.install();
+      await open(page, "index.html");
+      const { carousel, button, scrollLeft, slideAt } = quotes(page);
+      const current = () => carousel.getAttribute("data-current");
+
+      // The stop button comes before the slides and the other buttons (APG).
+      await expect(carousel.getByRole("button").first()).toHaveAccessibleName("Stop the slides");
+      await page.clock.runFor(5_000);
+      await expect.poll(current).toBe("1");
+      // Arrived, before the clock jumps on (its scrolling runs on real time).
+      const second = await slideAt(1);
+      await expect.poll(scrollLeft).toBe(second);
+
+      await carousel.hover();
+      await page.clock.runFor(10_000);
+      expect(await current()).toBe("1");
+      await page.mouse.move(0, 0);
+      await button("Stop the slides").focus();
+      await page.clock.runFor(10_000);
+      expect(await current()).toBe("1");
+    });
+
+    test("never plays for a visitor who prefers reduced motion", async ({ page }) => {
+      await page.emulateMedia({ reducedMotion: "reduce" });
+      await page.clock.install();
+      await open(page, "index.html");
+      const { carousel, button } = quotes(page);
+
+      await expect(button("Play the slides")).toBeVisible();
+      await page.clock.runFor(20_000);
+      expect(await carousel.getAttribute("data-current")).toBeNull();
+    });
+  });
+
   test.describe("without JavaScript", () => {
     test.use({ javaScriptEnabled: false });
+
+    test("shows the carousel as a strip the keyboard scrolls, without buttons that do nothing", async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 1280, height: 800 });
+      await open(page, "index.html");
+      const { carousel, track, scrollLeft } = quotes(page);
+
+      await expect(carousel.getByRole("button")).toHaveCount(0);
+      // Reached and scrolled by the keyboard alone: a named group in the tab order.
+      await expect(track).toHaveAccessibleName("Slides");
+      await expect(track).toHaveAttribute("tabindex", "0");
+      await track.focus();
+      await expect(track).toBeFocused();
+      await page.keyboard.press("ArrowRight");
+      await expect.poll(scrollLeft).toBeGreaterThan(0);
+    });
 
     test("opens and closes the mobile menu with its button, a <details> (2.6)", async ({
       page,

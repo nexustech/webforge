@@ -2,13 +2,14 @@ import type { FieldRendererProps } from "./field-registry.js";
 import { fieldControlClass } from "./text-field.js";
 
 /** A choice from a short list, as a native select (keyboard and screen readers for free). */
-export function SelectField({ id, field, value, onChange, onCommit }: FieldRendererProps) {
+export function SelectField({ id, helpId, field, value, onChange, onCommit }: FieldRendererProps) {
   const options = field.options ?? [];
   const selected = options.some((option) => option.value === value) ? (value as string) : "";
   return (
     <select
       id={id}
       className={fieldControlClass}
+      aria-describedby={helpId}
       value={selected}
       onChange={(event) => {
         onChange(event.target.value);

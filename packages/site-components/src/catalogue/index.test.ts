@@ -20,6 +20,8 @@ describe("siteLibrary", () => {
       FaqItem: "Question",
       Heading: "Heading",
       Text: "Text",
+      Carousel: "Carousel",
+      CarouselSlide: "Slide",
     });
   });
 
@@ -52,6 +54,8 @@ describe("siteLibrary", () => {
       FaqItem: "child",
       Heading: "element",
       Text: "element",
+      Carousel: "element",
+      CarouselSlide: "child",
     });
     for (const def of Object.values(siteLibrary.components)) {
       const offered = def.place === undefined || def.place === "section" || def.place === "element";
