@@ -6,6 +6,7 @@ import {
   installHistoryKeys,
   type ViewOptions,
 } from "@webforge/engine";
+import type { ReadonlyStore } from "@webforge/history";
 import { t } from "@webforge/i18n";
 import { textStylesOf } from "@webforge/site-components";
 import { type RefObject, useEffect, useRef, useState, useSyncExternalStore } from "react";
@@ -55,7 +56,7 @@ import { CanvasBreadcrumbs } from "./CanvasBreadcrumbs.js";
 import { CanvasResizeHandles } from "./CanvasResizeHandles.js";
 import { registerColourField } from "./ColourField.js";
 import { type BulkCanvasAction, registerCanvasCommands } from "./canvas-commands.js";
-import { EditPanelHost } from "./EditPanelHost.js";
+import { EditPanelHost, type EditPanelHostProps } from "./EditPanelHost.js";
 import {
   connectEngine,
   currentPage,
@@ -126,6 +127,24 @@ function undoHistoryPanel(
     );
     return <UndoHistoryPanel history={{ jumpTo }} state={state} />;
   };
+}
+
+/**
+ * The Edit panel as the preferences have it: with the Advanced tab in Advanced mode, the Content
+ * tab only in Content mode (R9).
+ */
+function PreferredEditPanel({
+  preferences,
+  ...props
+}: Omit<EditPanelHostProps, "advanced" | "contentOnly"> & {
+  readonly preferences: ReadonlyStore<EditorPreferences>;
+}) {
+  const advanced = usePreferences(
+    preferences,
+    (state) => state.preferences.editorLevel === "advanced",
+  );
+  const contentOnly = usePreferences(preferences, (state) => state.mode !== "design");
+  return <EditPanelHost {...props} advanced={advanced} contentOnly={contentOnly} />;
 }
 
 /**
@@ -432,17 +451,11 @@ export function Editor({
   // and the mode (Content shows its Content tab only) itself, so a switch redraws it alone (R9).
   useEffect(() => {
     function Edit() {
-      const advanced = usePreferences(
-        preferences,
-        (state) => state.preferences.editorLevel === "advanced",
-      );
-      const contentOnly = usePreferences(preferences, (state) => state.mode !== "design");
       return (
-        <EditPanelHost
+        <PreferredEditPanel
           session={session}
+          preferences={preferences}
           flush={() => connectionRef.current?.flush()}
-          advanced={advanced}
-          contentOnly={contentOnly}
         />
       );
     }
