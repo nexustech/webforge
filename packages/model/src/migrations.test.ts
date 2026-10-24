@@ -1,9 +1,12 @@
+import fc from "fast-check";
 import { describe, expect, it } from "vitest";
+import { siteDocArbitrary } from "../test/arbitraries.js";
 import v1Site from "../test/fixtures/v1/site.json" with { type: "json" };
 import v2Site from "../test/fixtures/v2/site.json" with { type: "json" };
 import v3Site from "../test/fixtures/v3/site.json" with { type: "json" };
 import v4Site from "../test/fixtures/v4/site.json" with { type: "json" };
 import v5Site from "../test/fixtures/v5/site.json" with { type: "json" };
+import { FORMAT_5_DAISYUI_THEMES } from "./format-5-themes.js";
 import {
   MIGRATIONS,
   migrateSite,
@@ -12,7 +15,7 @@ import {
   SiteFormatError,
   type SiteMigration,
 } from "./migrations.js";
-import { createSite, SITE_FORMAT_VERSION } from "./site-doc.js";
+import { createSite, SITE_FORMAT_VERSION, type SiteDoc } from "./site-doc.js";
 
 function formatError(run: () => unknown): SiteFormatError {
   try {
@@ -60,8 +63,23 @@ describe("migrateSite", () => {
     expect(migrateSite({ ...v4Site, theme: undefined }).theme.preset).toBe("light");
   });
 
-  it("opens the format 3 fixture as format 5, with its shared section and linked copy", () => {
-    expect(migrateSite(v3Site)).toEqual({ ...v3Site, formatVersion: 5, theme: cupcakeTokens });
+  it("opens the format 3 fixture as format 5, its shared sections' names made unique (3 → 4)", () => {
+    const site = migrateSite(v3Site);
+
+    // The fixture's second shared section repeats the first's name, as format 3 allowed.
+    expect(v3Site.sharedSections["shared-hours-weekend"].name).toBe(" opening HOURS ");
+    expect(site).toEqual({
+      ...v3Site,
+      formatVersion: 5,
+      theme: cupcakeTokens,
+      sharedSections: {
+        ...v3Site.sharedSections,
+        "shared-hours-weekend": {
+          ...v3Site.sharedSections["shared-hours-weekend"],
+          name: "opening HOURS 2",
+        },
+      },
+    });
   });
 
   it("gives format 3 shared sections that share a name names of their own (1.29)", () => {
@@ -100,15 +118,20 @@ describe("migrateSite", () => {
     });
   });
 
-  it("opens the format 1 fixture as format 5", () => {
+  it("opens the format 1 fixture as format 5, its Hero image one value with its alt text (1 → 2)", () => {
     // Fixtures of released formats are never deleted: every old site must keep opening. This one
-    // already has its Hero image in the format 2 shape.
-    expect(migrateSite(v1Site)).toEqual({
-      ...v1Site,
-      formatVersion: 5,
-      sharedSections: {},
-      theme: cupcakeTokens,
+    // has its Hero image in the format 1 shape: a media id, and its alt text apart.
+    const site = migrateSite(v1Site);
+    const hero = Object.values(site.pages)
+      .flatMap((page) => page.doc.content)
+      .find((node) => node.type === "Hero");
+
+    expect(hero?.props.image).toEqual({
+      mediaId: "hero000000000000",
+      alt: "Fresh loaves on the counter",
     });
+    expect(hero?.props).not.toHaveProperty("imageDescription");
+    expect(site).toMatchObject({ formatVersion: 5, sharedSections: {}, theme: cupcakeTokens });
   });
 
   it("opens a new site after a JSON round trip", () => {
@@ -281,5 +304,118 @@ describe("migration 1 → 2: a Hero's image value", () => {
     expect(heroes(site)[0]).toMatchObject({
       image: { mediaId: "hero000000000000", alt: "Our shop" },
     });
+  });
+});
+
+// Down and up (standards §5): a site of the current format, taken back to an older one by hand-
+// written inverses of each step, migrates up to the same site. The inverses only go where each
+// step's input could be: format 4 named a daisyUI theme, format 1 had Hero images as a media id
+// with their alt text apart.
+
+type Raw = Record<string, unknown> & { formatVersion: number };
+const records = (value: unknown): Record<string, unknown>[] =>
+  Array.isArray(value)
+    ? value.filter(
+        (each): each is Record<string, unknown> => typeof each === "object" && each !== null,
+      )
+    : [];
+
+/** Each step's inverse, keyed by the version it goes down *to*. */
+const DOWN: Readonly<Record<number, (site: Raw) => Raw>> = {
+  // 5 → 4: the theme was a daisyUI theme's name.
+  4: (site) => ({
+    ...site,
+    theme: { name: (site.theme as { preset: string }).preset },
+    formatVersion: 4,
+  }),
+  // 4 → 3: names were already unique, so nothing to undo.
+  3: (site) => ({ ...site, formatVersion: 3 }),
+  // 3 → 2: no shared sections yet; a site that had none didn't say so.
+  2: (site) => {
+    const { sharedSections, ...rest } = site;
+    return Object.keys(sharedSections as object).length === 0
+      ? { ...rest, formatVersion: 2 }
+      : { ...site, formatVersion: 2 };
+  },
+  // 2 → 1: a Hero's image was its media id, its alt text a prop of its own.
+  1: (site) => {
+    for (const page of Object.values(site.pages as Record<string, { doc: { content: unknown } }>)) {
+      for (const node of records(page.doc.content)) {
+        const props = node.props as Record<string, unknown>;
+        if (node.type !== "Hero") continue;
+        const image = props.image as { mediaId: string; alt?: string } | undefined;
+        props.image = image?.mediaId ?? "";
+        if (image?.alt !== undefined) props.imageDescription = image.alt;
+      }
+    }
+    return { ...site, formatVersion: 1 };
+  },
+};
+
+/** `site` taken down to format `version`. */
+function downTo(site: SiteDoc, version: number): Raw {
+  let raw = JSON.parse(JSON.stringify(site)) as Raw;
+  for (let to = SITE_FORMAT_VERSION - 1; to >= version; to--) {
+    const step = DOWN[to];
+    if (step === undefined) throw new Error(`No inverse to format ${to}`);
+    raw = step(raw);
+  }
+  return raw;
+}
+
+/** Format 4 → 5: what it makes of a daisyUI theme name is what a format 5 site can have had. */
+const themeTokens =
+  MIGRATIONS[4] ??
+  ((): never => {
+    throw new Error("No migration from format 4");
+  });
+
+/** Sites a format 1 file could have become: a Hero, a daisyUI theme, shared sections or none. */
+const migratableSite = fc
+  .record({
+    site: siteDocArbitrary,
+    preset: fc.constantFrom(...Object.keys(FORMAT_5_DAISYUI_THEMES)),
+    alt: fc.option(fc.string({ minLength: 1, maxLength: 20 }), { nil: undefined }),
+    withImage: fc.boolean(),
+    shared: fc.boolean(),
+  })
+  .map(({ site, preset, alt, withImage, shared }): SiteDoc => {
+    const theme = themeTokens({ formatVersion: 4, theme: { name: preset } })
+      .theme as SiteDoc["theme"];
+    const home = site.pages[site.homePageId];
+    if (home === undefined) throw new Error("no home page");
+    const hero = {
+      type: "Hero",
+      props: {
+        id: "hero",
+        title: "Welcome",
+        ...(withImage
+          ? { image: { mediaId: "photo", ...(alt === undefined ? {} : { alt }) } }
+          : {}),
+      },
+    };
+    return {
+      ...site,
+      theme,
+      sharedSections: shared ? site.sharedSections : {},
+      pages: {
+        ...site.pages,
+        [site.homePageId]: { ...home, doc: { ...home.doc, content: [hero, ...home.doc.content] } },
+      },
+    };
+  });
+
+describe("migrations, down and up (standards §5)", () => {
+  it("brings a site taken down to any older format back to the same site", () => {
+    fc.assert(
+      fc.property(
+        migratableSite,
+        fc.integer({ min: 1, max: SITE_FORMAT_VERSION }),
+        (site, version) => {
+          expect(migrateSite(downTo(site, version))).toEqual(site);
+        },
+      ),
+      { numRuns: 200 },
+    );
   });
 });
