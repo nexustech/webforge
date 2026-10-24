@@ -1,4 +1,5 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { placeCaret } from "./caret.js";
 import { launchDesktopApp } from "./launch.js";
 
 // The keyboard shortcut standard (1.38, F-ED-27): the sheet from the Help menu and `?`, the view
@@ -142,7 +143,7 @@ test("in rich text: Mod+K links, Shift+Space types a non-breaking space, Alt+Ent
   await expect(link).toHaveCount(0);
 
   await editor.click();
-  await page.keyboard.press("Home");
+  await placeCaret(editor, "start");
   await page.keyboard.type("Open", { delay: 20 });
   await page.keyboard.press("Shift+Space");
   await expect(editor).toContainText("Open Tell visitors");
