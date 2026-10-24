@@ -142,7 +142,7 @@ export const Lists: Story = {
   },
 };
 
-/** Icons in each size and the theme's colours; a Button with one, and a List with one for markers. */
+/** Icons in each size, in the text's colour or primary; a Button with one, and a List with one for markers. */
 export const Icons: Story = {
   args: {
     nodes: inSection([
@@ -153,7 +153,9 @@ export const Icons: Story = {
             id: `icon-${size}`,
             icon: ["phone", "mail", "map-pin", "clock"][index],
             size,
-            color: ["default", "primary", "secondary", "accent"][index],
+            // Text colour and primary only: the Storybook's CSS has no other theme colour
+            // classes, which the export compiles from the page (see the Headings story).
+            color: index % 2 === 0 ? "default" : "primary",
           },
         }),
       ),
