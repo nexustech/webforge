@@ -5,6 +5,7 @@ import { type ElectronApplication, expect, type Page, test } from "@playwright/t
 import { createSite, type MediaId } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
 import { heroPhoto } from "@webforge/test-utils";
+import { placeCaret } from "./caret.js";
 import { launchDesktopApp } from "./launch.js";
 
 // Design | Content (M3, 1.10): switching is instant, locks the layout in Content mode and is
@@ -169,7 +170,7 @@ test.describe("editor modes", () => {
     // formatting).
     const text = frame.locator(".site-text");
     await text.getByText("We bake every day.").click();
-    await page.keyboard.press("End");
+    await placeCaret(text.locator(".ProseMirror"), "end");
     await page.keyboard.type(" Fresh");
     await app?.evaluate(({ clipboard }) => clipboard.writeText(" every morning."));
     await page.keyboard.press("ControlOrMeta+v");

@@ -102,6 +102,8 @@ export function installCrashHandlers(
     write({ process: "main", kind: "unhandled-rejection", error });
   });
   sources.app.on("render-process-gone", (_event, _contents, details) => {
+    // Any reason but a clean exit is a crash of the editor's window, "killed" too: macOS reports a
+    // crashed renderer that way where Windows says "crashed" (#287).
     if (details.reason !== "clean-exit") {
       write({ process: "renderer", kind: details.reason, exitCode: details.exitCode });
     }

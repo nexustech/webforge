@@ -2,6 +2,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { placeCaret } from "./caret.js";
 import { launchDesktopApp } from "./launch.js";
 import { stubFileDialogs } from "./sites.js";
 
@@ -65,7 +66,7 @@ test("creates a blank site, keeps an edit and reopens it from the Recent list", 
   const heading = canvas(page).locator("h1 [contenteditable]");
   await heading.hover();
   await heading.click();
-  await page.keyboard.press("End");
+  await placeCaret(heading, "end");
   await page.keyboard.type(" today", { delay: 20 });
   await expect(canvas(page).locator("h1")).toHaveText(`${STARTER_HEADING} today`);
   await closeWindow();

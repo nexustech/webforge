@@ -565,6 +565,8 @@ async function start(): Promise<void> {
   createMainWindow(preferences);
   void crashReports.noticeAfterLaunch();
 
+  // macOS: a click on the Dock icon while no window is open. Webforge quits when its window closes
+  // (spec/02 §1), so that is only between the last window closing and the app quitting.
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createMainWindow(preferences);
