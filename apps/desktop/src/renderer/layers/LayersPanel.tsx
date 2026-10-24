@@ -28,6 +28,7 @@ import {
 } from "react";
 import type { MenuPoint } from "../element-menu/ElementMenu.js";
 import { isMac } from "../shell/commands.js";
+import { useRowDrag } from "../shell/use-row-drag.js";
 import { type Layer, layerItem } from "./layers.js";
 
 /** What the Layers panel can do; the host binds them to the editor session and its commands. */
@@ -191,16 +192,9 @@ export function LayersPanel({
     );
   }, [selectedId]);
   const [renaming, setRenaming] = useState<string | null>(null);
-  // Set when the menu's Rename was chosen: renaming starts once the menu has closed, so the name
-  // field gets the focus and keeps it.
-  const renamedFromMenu = useRef(false);
   // Where a Shift-click range starts: the last row clicked without Shift, as in file managers.
   const anchor = useRef<string | null>(null);
   const [menuAt, setMenuAt] = useState<MenuPoint | null>(null);
-  const [drop, setDrop] = useState<{ id: string; after: boolean; allowed: boolean } | null>(null);
-  // The row being dragged, in state too, so the rows it can't go to are marked while it moves.
-  const [dragging, setDragging] = useState<Row | null>(null);
-  const dragged = useRef<Row | null>(null);
   const treeRef = useRef<HTMLDivElement>(null);
   const selectedRow = rows.find((row) => row.layer.id === selectedId);
 
@@ -223,7 +217,6 @@ export function LayersPanel({
   /** Opens the element menu for `id` at `at`, selecting it first so the menu acts on it. */
   const openMenu = (id: string, at: MenuPoint) => {
     actions.select(id);
-    renamedFromMenu.current = false;
     setMenuAt(at);
   };
 
@@ -297,12 +290,6 @@ export function LayersPanel({
     }
   };
 
-  /** Whether the pointer is over the lower half of the row: the drop goes after it. */
-  const isAfter = (event: DragEvent) => {
-    const box = event.currentTarget.getBoundingClientRect();
-    return event.clientY > box.top + box.height / 2;
-  };
-
   /** Whether the dragged layer can go next to `row`: only among its own siblings. */
   const canDropAt = (from: Row, row: Row) => from.parent === row.parent;
 
@@ -310,40 +297,26 @@ export function LayersPanel({
   const copying = (event: DragEvent) =>
     actions.copy !== undefined && (event.ctrlKey || event.metaKey);
 
-  const onDragOver = (event: DragEvent, row: Row) => {
-    const from = dragged.current;
+  const rowDrag = useRowDrag<Row>({
+    type: DRAG_TYPE,
+    keyOf: (row) => row.layer.id,
     // A copy may go next to the layer it copies; a move to its own place changes nothing.
-    if (from === null || (from.layer.id === row.layer.id && !copying(event))) {
-      return;
-    }
-    const allowed = canDropAt(from, row);
-    const after = isAfter(event);
-    if (allowed) {
-      event.preventDefault();
-      event.dataTransfer.dropEffect = copying(event) ? "copy" : "move";
-    } else {
-      // Not a drop target: the pointer shows it can't go here, before anything is dropped.
-      event.dataTransfer.dropEffect = "none";
-    }
-    if (drop?.id !== row.layer.id || drop.after !== after || drop.allowed !== allowed) {
-      setDrop({ id: row.layer.id, after, allowed });
-    }
-  };
-
-  const onDrop = (event: DragEvent, row: Row) => {
-    const from = dragged.current;
-    event.preventDefault();
-    setDrop(null);
-    if (from === null || !canDropAt(from, row)) {
-      return;
-    }
-    if (copying(event)) {
-      // Next to the row it was dropped on, counted with the original still there.
-      actions.copy?.(from.layer.id, row.index + (isAfter(event) ? 1 : 0), event.shiftKey === true);
-    } else if (from.layer.id !== row.layer.id) {
-      actions.move(from.layer.id, dropIndex(from.index, row.index, isAfter(event)));
-    }
-  };
+    place: (from, row, y, event) =>
+      from.layer.id === row.layer.id && !copying(event) ? null : y > 0.5 ? "after" : "before",
+    allowed: canDropAt,
+    copies: actions.copy !== undefined,
+    copying,
+    onDrop: (from, row, place, event) => {
+      const after = place === "after";
+      if (copying(event)) {
+        // Next to the row it was dropped on, counted with the original still there.
+        actions.copy?.(from.layer.id, row.index + (after ? 1 : 0), event.shiftKey === true);
+      } else if (from.layer.id !== row.layer.id) {
+        actions.move(from.layer.id, dropIndex(from.index, row.index, after));
+      }
+    },
+  });
+  const { dragging } = rowDrag;
 
   if (layers.length === 0) {
     return (
@@ -395,21 +368,19 @@ export function LayersPanel({
                 tabIndex={focusable ? 0 : -1}
                 // One drag moving several selected layers is for later (1.31): until then a
                 // selected row can't be dragged while others are selected too.
-                draggable={
-                  !layoutLocked && renaming !== layer.id && !(isSelected && alsoSelected.length > 0)
-                }
+                {...rowDrag.rowProps(
+                  row,
+                  !layoutLocked &&
+                    renaming !== layer.id &&
+                    !(isSelected && alsoSelected.length > 0),
+                )}
                 className={cn(
                   "group relative flex h-6 items-center gap-1 rounded-sm pr-1 text-xs outline-none",
                   "hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
                   isSelected && "bg-accent text-accent-foreground",
                   layer.hidden && !isSelected && "text-muted-foreground",
                   notAllowed && "cursor-not-allowed opacity-50",
-                  drop?.id === layer.id &&
-                    (!drop.allowed
-                      ? "shadow-[inset_0_0_0_1px_var(--destructive)]"
-                      : drop.after
-                        ? "shadow-[inset_0_-2px_0_var(--ring)]"
-                        : "shadow-[inset_0_2px_0_var(--ring)]"),
+                  rowDrag.indicatorClass(row),
                 )}
                 style={{ paddingLeft: `${(row.depth - 1) * 12 + 4}px` }}
                 onClick={(event) => {
@@ -448,26 +419,6 @@ export function LayersPanel({
                   );
                 }}
                 onKeyDown={(event) => onKeyDown(event, row)}
-                onDragStart={(event) => {
-                  dragged.current = row;
-                  setDragging(row);
-                  event.dataTransfer.effectAllowed =
-                    actions.copy === undefined ? "move" : "copyMove";
-                  event.dataTransfer.setData(DRAG_TYPE, layer.id);
-                }}
-                onDragEnd={() => {
-                  dragged.current = null;
-                  setDragging(null);
-                  setDrop(null);
-                }}
-                onDragOver={(event) => onDragOver(event, row)}
-                onDragLeave={(event) => {
-                  // Moving onto the row's own label or button isn't leaving it.
-                  if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
-                    setDrop(null);
-                  }
-                }}
-                onDrop={(event) => onDrop(event, row)}
               >
                 {hasChildren ? (
                   // For the mouse: the row itself expands and collapses with →/←, and says
@@ -562,7 +513,7 @@ export function LayersPanel({
 
       {/* While a layer is over a row it can't go to, why: browsers show no tooltips in a drag. */}
       <p role="status" className="shrink-0 px-2 text-xs text-destructive-text empty:hidden">
-        {dragging !== null && drop?.allowed === false
+        {dragging !== null && rowDrag.drop?.allowed === false
           ? t("layers.dropNotAllowed", { item: layerItem(dragging.layer) })
           : ""}
       </p>
@@ -635,13 +586,10 @@ export function LayersPanel({
           at={menuAt}
           onClose={() => setMenuAt(null)}
           onRename={() => {
-            renamedFromMenu.current = true;
-          }}
-          onCloseFocus={() => {
             const id = latest.current.selectedId;
-            if (renamedFromMenu.current && id !== null) setRenaming(id);
-            else focusSelected();
+            if (id !== null) setRenaming(id);
           }}
+          onCloseFocus={focusSelected}
         />
       )}
     </div>

@@ -194,7 +194,7 @@ export function defineComponent<const F extends Fields, const Variant extends st
 
 /**
  * {@link defineComponent} for a section that {@link defineSection} has framed: it adds the
- * section's padding and margin and draws its `<section>`. For `frame.tsx` only.
+ * section's colours, padding and margin and draws its `<section>`. For `frame.tsx` only.
  */
 export function defineFramedSection<const F extends Fields, const Variant extends string = never>(
   spec: ComponentSpec<F, Variant> & { readonly defaults: NoInfer<DefaultsOf<F>> },
@@ -212,7 +212,7 @@ function build<const F extends Fields, const Variant extends string = never>(
     throw new Error(`${name} ${problem}`);
   }
   if (def.label.trim() === "") fail("needs a display name");
-  // Every section is drawn in the same frame, with the same padding and margin (2.19).
+  // Every section is drawn in the same frame, with the same colours, padding and margin (2.19).
   if (def.place === "section" && !framed) {
     fail("is a section: define it with defineSection, which adds its frame, padding and margin");
   }
