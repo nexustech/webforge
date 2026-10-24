@@ -1,6 +1,6 @@
 import type { CanvasEngine } from "@webforge/engine";
 import { t } from "@webforge/i18n";
-import { type ImageMeta, isImageMeta, type SiteDoc } from "@webforge/model";
+import { type ImageMeta, isImageMeta, mediaItem, type SiteDoc } from "@webforge/model";
 import type { ResolvedImage } from "@webforge/site-components";
 import { mediaImageUrl } from "../../shared/ipc/media.js";
 
@@ -78,7 +78,7 @@ function removedImage(): ResolvedImage {
 /** The canvas's image resolver for `media`. */
 function resolverFor(media: SiteDoc["media"]) {
   return (mediaId: string) => {
-    const item = media[mediaId as keyof typeof media];
+    const item = mediaItem(media, mediaId);
     if (item === undefined) return removedImage();
     return isImageMeta(item) ? canvasImage(item) : null;
   };

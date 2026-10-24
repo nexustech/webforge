@@ -3,6 +3,7 @@ import {
   copiedNodeId,
   MAX_COPIED_NODES,
   type MediaMeta,
+  mediaItem,
   type NodeDoc,
   newSharedCopy,
   pageAnchors,
@@ -17,10 +18,10 @@ import type {
 import type { MediaImportResult } from "../../shared/ipc-contract.js";
 import { type AddTarget, addTarget, insertAt } from "../add/add-items.js";
 import { currentPage, type EditorSession } from "../editor/editor-session.js";
+import { quotedElementName } from "../editor/labels.js";
 import { findNode, removeNode } from "../editor/nodes.js";
 import type { SharedPlace } from "../editor/shared-confirmations.js";
 import { type SharedRegion, sharedRegionOf, shownLayout } from "../editor/shared-layout.js";
-import { layerItem } from "../layers/layers.js";
 import { reportFailure } from "../log.js";
 import { importMessages } from "../media/import-media.js";
 import { addMedia, putInMedia } from "../media/media-commands.js";
@@ -44,13 +45,8 @@ export type ClipboardSession = Pick<
 >;
 
 /** How undo labels and messages name an element: its Layers name, else its component's name. */
-function itemName(session: ClipboardSession, node: NodeDoc): string {
-  const name = node.props.layerName?.trim();
-  return layerItem({
-    kind: session.library.components[node.type]?.label ?? node.type,
-    name: name === "" ? undefined : name,
-  });
-}
+const itemName = (session: ClipboardSession, node: NodeDoc) =>
+  quotedElementName(node, session.library);
 
 /**
  * The selected element: on the shown page, in the shared Header or Footer (`region`, F-ED-7),
@@ -81,7 +77,7 @@ function selectedNode(
 function mediaOf(session: ClipboardSession, nodes: readonly NodeDoc[]): MediaMeta[] {
   const { media } = session.history.document.getState();
   return [...mediaUsedBy(nodes, session.library)].flatMap((id) => {
-    const item = Object.hasOwn(media, id) ? media[id as keyof typeof media] : undefined;
+    const item = mediaItem(media, id);
     return item === undefined ? [] : [item];
   });
 }

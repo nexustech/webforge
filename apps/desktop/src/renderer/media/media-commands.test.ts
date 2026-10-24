@@ -151,7 +151,7 @@ describe("cropMedia", () => {
     const session = sessionWith({ ...photo, focal: { x: 0, y: 0.5 } });
 
     cropMedia(session, photo.id, "square");
-    expect(lastLabel(session)).toBe("Cropped image");
+    expect(lastLabel(session)).toBe("Cropped image 'shop.jpg'");
     const cropped = media(session)[photo.id];
     expect(cropped?.kind === "image" && cropped.crop).toEqual({
       x: 0,
@@ -189,7 +189,7 @@ describe("setFocalPoint", () => {
 
     setFocalPoint(session, photo.id, { x: 1.4, y: 0.33333 });
 
-    expect(lastLabel(session)).toBe("Changed focal point");
+    expect(lastLabel(session)).toBe("Changed focal point of 'shop.jpg'");
     expect(media(session)[photo.id]).toMatchObject({
       focal: { x: 1, y: 0.333 },
       crop: { x: 0.375, y: 0, width: 0.625, height: 1 },
@@ -204,7 +204,7 @@ describe("setFocalPoint", () => {
 
     expect(session.history.state.getState().entries.map((entry) => entry.label)).toEqual([
       "Added image 'shop.jpg'",
-      "Changed focal point",
+      "Changed focal point of 'shop.jpg'",
     ]);
     expect(media(session)[photo.id]).toMatchObject({ focal: { x: 0.6, y: 0.5 } });
   });

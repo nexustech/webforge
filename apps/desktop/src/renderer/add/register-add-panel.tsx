@@ -1,10 +1,11 @@
 import type { InsertPoint } from "@webforge/engine";
 import { t } from "@webforge/i18n";
-import { isSharedCopy, type SharedSectionsDoc } from "@webforge/model";
+import type { SharedSectionsDoc } from "@webforge/model";
 import { SquarePlusIcon } from "lucide-react";
 import { type ReactNode, useSyncExternalStore } from "react";
 import { type AddPreferences, MAX_FAVOURITES, MAX_RECENT } from "../../shared/ipc/prefs.js";
 import { currentPage } from "../editor/editor-session.js";
+import { quotedElementName } from "../editor/labels.js";
 import type { CommandRegistry } from "../shell/commands.js";
 import type { PanelRegistry } from "../shell/panels.js";
 import type { PreferencesStore } from "../shell/preferences-store.js";
@@ -122,15 +123,7 @@ export function registerAddPanel(
   const nameOf = (id: string): string | null => {
     const node = content().find((candidate) => candidate.props.id === id);
     if (node === undefined) return null;
-    const shared = history.document.getState().sharedSections;
-    const name =
-      node.props.layerName?.trim() ||
-      (isSharedCopy(node) && Object.hasOwn(shared, node.props.sharedSectionId)
-        ? shared[node.props.sharedSectionId]?.name
-        : undefined);
-    return name
-      ? t("history.namedItem", { name })
-      : (library.components[node.type]?.label ?? node.type);
+    return quotedElementName(node, library, history.document.getState().sharedSections);
   };
   const noPreferences: AddPreferences = { favourites: [], recent: [] };
   const prefs = () => preferences?.getState().preferences.add ?? noPreferences;
