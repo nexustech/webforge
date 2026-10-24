@@ -4,19 +4,19 @@
 // Usage (part of the root "deps" script):
 //   node tools/src/check-area-cycles.ts <renderer folder>
 //
-// An area is a folder under the renderer (`site/`, `menu/`); `shell/` and `editor/` are what every
-// area builds on, not areas. dependency-cruiser keeps each area to the others' index.ts (rule
-// "renderer-areas-through-index"); its own cycle check sees modules, and two areas can depend on
-// each other without a module cycle, so this checks the areas as a graph. Tests and stories are
-// left out: one may bring two areas together to test them.
+// An area is a folder under the renderer (`site/`, `menu/`); `shell/`, `editor/` and `testing/`
+// are what every area builds on, not areas. dependency-cruiser keeps each area to the others'
+// index.ts (rule "renderer-areas-through-index"); its own cycle check sees modules, and two areas
+// can depend on each other without a module cycle, so this checks the areas as a graph. Tests and
+// stories are left out: one may bring two areas together to test them.
 //
 // This file has no relative imports so Node can run it directly with type stripping.
 
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-/** Folders under the renderer that every area builds on, rather than areas. */
-const BASE = new Set(["shell", "editor"]);
+/** Folders every area builds on (`testing/`: for its tests and stories), rather than areas. */
+const BASE = new Set(["shell", "editor", "testing"]);
 
 /** An import of another area: `from "../menu/index.js"`. */
 const AREA_IMPORT = /from\s+["']\.\.\/([\w-]+)\//g;

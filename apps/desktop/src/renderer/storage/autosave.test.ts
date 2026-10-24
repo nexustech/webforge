@@ -1,9 +1,8 @@
 import type { SiteDoc, SiteDocumentChange } from "@webforge/model";
-import { siteLibrary } from "@webforge/site-components";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CommitResult } from "../../shared/ipc-contract.js";
-import { createEditorSession, type EditorSession } from "../editor/editor-session.js";
-import { starterSite } from "../editor/starter-site.js";
+import type { EditorSession } from "../editor/editor-session.js";
+import { sessionWith } from "../testing/fixtures.js";
 import { type Autosave, createAutosave } from "./autosave.js";
 
 const setName = (name: string) => (draft: SiteDoc) => {
@@ -32,7 +31,7 @@ const status = () => autosave.status.getState().status;
 
 beforeEach(() => {
   vi.useFakeTimers();
-  session = createEditorSession(siteLibrary, starterSite());
+  session = sessionWith();
   commits = [];
   commit = vi.fn(async (changes: readonly SiteDocumentChange[]): Promise<CommitResult> => {
     commits.push([...changes]);

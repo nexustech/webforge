@@ -1,11 +1,11 @@
 // @vitest-environment happy-dom
-import { siteLibrary, starterPage } from "@webforge/site-components";
+import { starterPage } from "@webforge/site-components";
 import { describe, expect, it } from "vitest";
-import { createEditorSession, currentPage } from "../editor/editor-session.js";
-import { starterSite } from "../editor/starter-site.js";
+import { currentPage } from "../editor/editor-session.js";
+import { sessionWith } from "../testing/fixtures.js";
 import { createPerfHooks, installPerfHooks } from "./perf-hooks.js";
 
-const newSession = () => createEditorSession(siteLibrary, starterSite());
+const newSession = () => sessionWith();
 
 describe("perf hooks", () => {
   it("loads a validated page and starts with an empty history", () => {

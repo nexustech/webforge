@@ -1,13 +1,11 @@
 // @vitest-environment happy-dom
 import { act, cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it } from "vitest";
-import { createEditorSession } from "../editor/editor-session.js";
-import { starterSite } from "../editor/starter-site.js";
 import { CommandRegistryProvider } from "../shell/command-context.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { createCommandRegistry } from "../shell/commands.js";
+import { sessionWith } from "../testing/fixtures.js";
 import { SiteSettingsHost } from "./SiteSettingsHost.js";
 
 afterEach(cleanup);
@@ -20,7 +18,7 @@ describe("SiteSettingsHost", () => {
     "opens Site Settings from the File menu command and saves them as one undo step",
     async () => {
       const registry = createCommandRegistry();
-      const session = createEditorSession(siteLibrary, starterSite());
+      const session = sessionWith();
       render(
         <CommandRegistryProvider registry={registry}>
           <SiteSettingsHost session={session} />

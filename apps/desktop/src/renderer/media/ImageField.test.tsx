@@ -1,12 +1,11 @@
 // @vitest-environment happy-dom
 import type { ImageMeta, MediaId } from "@webforge/model";
-import { siteLibrary } from "@webforge/site-components";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { MediaImportResult } from "../../shared/ipc-contract.js";
-import { createEditorSession, type EditorSession } from "../editor/editor-session.js";
-import { starterSite } from "../editor/starter-site.js";
+import type { EditorSession } from "../editor/editor-session.js";
+import { sessionWith } from "../testing/fixtures.js";
 import { ImageField } from "./ImageField.js";
 import { createImagePickRequests, type ImagePickRequests } from "./image-picks.js";
 import { addMedia } from "./media-commands.js";
@@ -38,7 +37,7 @@ beforeEach(() => {
   container = document.createElement("div");
   document.body.append(container);
   root = createRoot(container);
-  session = createEditorSession(siteLibrary, starterSite());
+  session = sessionWith();
   addMedia(session, [shop, cakes]);
 });
 

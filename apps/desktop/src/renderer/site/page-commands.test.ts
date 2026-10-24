@@ -1,13 +1,11 @@
-import { siteLibrary } from "@webforge/site-components";
 import { describe, expect, it, vi } from "vitest";
-import { createEditorSession } from "../editor/editor-session.js";
-import { starterSite } from "../editor/starter-site.js";
 import { createCommandRegistry } from "../shell/commands.js";
+import { sessionWith } from "../testing/fixtures.js";
 import { addPage, renamePage } from "./page-actions.js";
 import { registerPageCommands } from "./page-commands.js";
 
 function setUp() {
-  const session = createEditorSession(siteLibrary, starterSite());
+  const session = sessionWith();
   const registry = createCommandRegistry();
   const stop = registerPageCommands(registry, session);
   const pages = () =>
