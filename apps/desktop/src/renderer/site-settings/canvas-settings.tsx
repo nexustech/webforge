@@ -33,7 +33,11 @@ export function connectCanvasSettings(
   let shown = session.history.document.getState().settings;
   const show = () => {
     const values = settingValues(shown);
-    engine.setSettings((key) => values[key], emptySettingHint);
+    engine.setSettings({
+      setting: (key) => values[key],
+      emptySetting: emptySettingHint,
+      openingHours: shown.contact.openingHours,
+    });
   };
   show();
   return session.history.document.subscribe((site) => {

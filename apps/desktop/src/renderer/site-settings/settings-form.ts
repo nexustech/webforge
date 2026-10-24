@@ -1,5 +1,7 @@
 import { t } from "@webforge/i18n";
 import {
+  DAYS,
+  type Day,
   type MediaId,
   type SiteSettings,
   type SOCIAL_NETWORKS,
@@ -7,11 +9,8 @@ import {
 } from "@webforge/model";
 import type { EditorSession } from "../editor/editor-session.js";
 
-/** The days of the week, in the order the dialog shows them. */
-export const DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
-
-/** A day of the week. */
-type Day = (typeof DAYS)[number];
+/** The days of the week, in the order the dialog shows them: the model's, Monday first. */
+export { DAYS };
 
 /** Where forms send submissions by default (B3, B6); `""` is none chosen yet. */
 export const FORM_SERVICES = [

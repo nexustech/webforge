@@ -212,6 +212,7 @@ export async function buildSite(
       },
       // An empty binding has no emptySetting here: the export leaves it out (1.17).
       setting: (key) => site.settings?.[key],
+      openingHours: site.openingHours ?? [],
     };
     // The one static renderer (ADR 0005), whose render functions the canvas draws with too.
     const regions = {

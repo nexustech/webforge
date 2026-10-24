@@ -89,6 +89,8 @@ describe("the embed behaviour (F-CM-4, B7)", () => {
     );
     expect(frame?.title).toBe("Our bakery");
     expect(frame?.referrerPolicy).toBe("strict-origin-when-cross-origin");
+    // Asked for: it loads now.
+    expect(frame?.getAttribute("loading")).toBeNull();
     expect(first?.hasAttribute("data-loaded")).toBe(true);
     expect(first?.querySelector("[data-wf-embed-placeholder]")).toBeNull();
     expect(document.activeElement).toBe(frame);
@@ -121,6 +123,8 @@ describe("the embed behaviour (F-CM-4, B7)", () => {
     ]);
     // Nothing starts playing, and the focus stays where the visitor left it.
     expect(document.activeElement).toBe(focused);
+    // Each loads when the visitor scrolls to it, not all at once.
+    for (const embed of embeds) expect(embed.querySelector("iframe")?.loading).toBe("lazy");
     // Accepting again loads nothing twice.
     document.dispatchEvent(new window.Event("webforge:consent-all"));
     expect(document.querySelectorAll("iframe")).toHaveLength(2);

@@ -7,6 +7,13 @@ import { starterSite } from "../editor/starter-site.js";
 import { connectCanvasSettings } from "./canvas-settings.js";
 import { saveSiteSettings } from "./settings-form.js";
 
+/** What the canvas was given in its `index`th call of `setSettings`. */
+function bindingsGiven(setSettings: ReturnType<typeof vi.fn>, index: number) {
+  const args = setSettings.mock.calls[index];
+  if (args === undefined) throw new Error(`No call ${index} of setSettings`);
+  return args[0];
+}
+
 describe("connectCanvasSettings", () => {
   it("gives the canvas Site Settings values, again whenever they change, and hints for empty ones", () => {
     const session = createEditorSession(siteLibrary, starterSite());
@@ -14,7 +21,7 @@ describe("connectCanvasSettings", () => {
     const stop = connectCanvasSettings(engine, session);
 
     expect(engine.setSettings).toHaveBeenCalledTimes(1);
-    const [setting, empty] = engine.setSettings.mock.calls[0] ?? [];
+    const { setting, emptySetting: empty } = bindingsGiven(engine.setSettings, 0);
     expect(setting("general.name")).toBe("My site");
     expect(setting("contact.phone")).toBeUndefined();
     const hint = empty("contact.phone");
@@ -25,7 +32,7 @@ describe("connectCanvasSettings", () => {
     const settings = session.history.document.getState().settings;
     saveSiteSettings(session, { ...settings, contact: { ...settings.contact, phone: "+44 1" } });
     expect(engine.setSettings).toHaveBeenCalledTimes(2);
-    expect(engine.setSettings.mock.calls[1]?.[0]("contact.phone")).toBe("+44 1");
+    expect(bindingsGiven(engine.setSettings, 1).setting("contact.phone")).toBe("+44 1");
 
     // Other changes don't draw the page again.
     session.edit("page", "Renamed page", (draft) => {
@@ -37,5 +44,18 @@ describe("connectCanvasSettings", () => {
     stop();
     saveSiteSettings(session, { ...settings, contact: { ...settings.contact, phone: "+44 2" } });
     expect(engine.setSettings).toHaveBeenCalledTimes(2);
+  });
+
+  it("gives the canvas the opening hours too, again when they change (2.8)", () => {
+    const session = createEditorSession(siteLibrary, starterSite());
+    const engine = { setSettings: vi.fn() };
+    connectCanvasSettings(engine, session);
+    expect(bindingsGiven(engine.setSettings, 0).openingHours).toEqual([]);
+
+    const settings = session.history.document.getState().settings;
+    const openingHours = [{ days: ["sat" as const], opens: "08:00", closes: "13:00" }];
+    saveSiteSettings(session, { ...settings, contact: { ...settings.contact, openingHours } });
+
+    expect(bindingsGiven(engine.setSettings, 1).openingHours).toEqual(openingHours);
   });
 });

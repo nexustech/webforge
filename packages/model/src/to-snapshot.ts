@@ -63,6 +63,7 @@ export function siteToSnapshot(
     pages,
     media,
     settings: settingValues(site.settings),
+    openingHours: site.settings.contact.openingHours,
     menu: site.menu,
   };
 }

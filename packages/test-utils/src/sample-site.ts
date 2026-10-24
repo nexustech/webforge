@@ -23,9 +23,10 @@ export function priceList(): Uint8Array {
  * A small two-page site: Header and Footer, a home page with a Hero (with photo), text, a Carousel
  * of customers' quotes (2.10), an FAQ and a Call to action, and an About page with a text-only Hero
  * linking to a price list (a document), a Text section, a Text + Image section (2.6), a Gallery
- * with its lightbox (2.7a), and a Video and a Map that load only when clicked (2.8). Its menu has
- * both pages, a "Visit us" dropdown (a link to the FAQ section and a web address in a new tab) and
- * an "Order a cake" button. Used by pipeline tests and the export E2E tests.
+ * with its lightbox (2.7a), Opening hours and contact from Site Settings, and a Video and a Map
+ * that load only when clicked (2.8). Its menu has both pages, a "Visit us" dropdown (a link to
+ * the FAQ section and a web address in a new tab) and an "Order a cake" button. Used by pipeline
+ * tests and the export E2E tests.
  */
 export function sampleSite(): SiteSnapshot {
   return {
@@ -261,6 +262,11 @@ export function sampleSite(): SiteSnapshot {
               },
             },
             {
+              // Opening hours and contact details from Site Settings (2.8).
+              type: "ContactDetails",
+              props: { id: "visit", title: "Visit us", text: "<p>Pop in, or call ahead.</p>" },
+            },
+            {
               type: "Map",
               props: {
                 id: "find-us",
@@ -273,6 +279,16 @@ export function sampleSite(): SiteSnapshot {
           ],
         },
       },
+    ],
+    settings: {
+      "contact.address": "1 High Street\nHightown\nHT1 2AB",
+      "contact.phone": "+44 1234 567890",
+      "contact.email": "hello@rosas-bakery.example",
+      "contact.openingHoursNote": "Closed on bank holidays.",
+    },
+    openingHours: [
+      { days: ["tue", "wed", "thu", "fri"], opens: "07:00", closes: "15:00" },
+      { days: ["sat", "sun"], opens: "08:00", closes: "13:00" },
     ],
     media: [{ id: "hero-photo", name: "hero", mimeType: "image/jpeg", data: heroPhoto() }],
     documents: [

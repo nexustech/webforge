@@ -10,6 +10,7 @@ import type {
   ImageValue,
   LinkValue,
   NodeDoc,
+  OpeningHours,
   Responsive,
 } from "@webforge/model";
 import type { ComponentType, ReactNode } from "react";
@@ -184,8 +185,23 @@ export type ResolvedImage = {
   readonly aspectRatio?: string;
 };
 
+/**
+ * What elements show of Site Settings (1.17): the values text fields can be bound to, and the
+ * structured ones sections list (2.8). The canvas gets them again whenever Site Settings change
+ * (`CanvasEngine.setSettings`); the export from the site's snapshot. A structured setting to come
+ * (social links, the logo) is a field here.
+ */
+export type SiteBindings = {
+  /** A Site Settings value a field is bound to (1.17), or `undefined` while it is empty. */
+  readonly setting: (key: BindableSetting) => string | undefined;
+  /** What an empty binding shows instead: a hint on the canvas; nothing in the export. */
+  readonly emptySetting?: (key: BindableSetting) => ReactNode;
+  /** Site Settings' opening hours (2.8), for the Opening hours and contact section; none if left out. */
+  readonly openingHours?: readonly OpeningHours[];
+};
+
 /** What a component may need from outside its own props while rendering. */
-export type RenderContext = {
+export type RenderContext = SiteBindings & {
   /** The site's pages, for navigation. Empty on the canvas. */
   readonly navigation: readonly NavItem[];
   /** The relative URL of a page path (`about`) or the link itself if it is external. */
@@ -197,10 +213,6 @@ export type RenderContext = {
   readonly href: (link: LinkValue) => string;
   /** The image for a media id, or `null` if there is none (yet). */
   readonly image: (mediaId: string) => ResolvedImage | null;
-  /** A Site Settings value a field is bound to (1.17), or `undefined` while it is empty. */
-  readonly setting: (key: BindableSetting) => string | undefined;
-  /** What an empty binding shows instead: a hint on the canvas; nothing in the export. */
-  readonly emptySetting?: (key: BindableSetting) => ReactNode;
 };
 
 /**

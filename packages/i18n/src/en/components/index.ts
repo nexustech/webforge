@@ -1,5 +1,6 @@
 import { basic } from "./basic.js";
 import { carousel } from "./carousel.js";
+import { contactDetails } from "./contactDetails.js";
 import { embeds } from "./embeds.js";
 import { gallery } from "./gallery.js";
 import { layout } from "./layout.js";
@@ -18,6 +19,7 @@ export const componentFamilies = {
   sections,
   carousel,
   embeds,
+  contactDetails,
   gallery,
 } as const;
 
@@ -29,5 +31,6 @@ export const components = {
   ...sections,
   ...carousel,
   ...embeds,
+  ...contactDetails,
   ...gallery,
 } as const;
