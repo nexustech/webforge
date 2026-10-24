@@ -88,9 +88,10 @@ export function SliderField({
       />
       <output
         htmlFor={id}
+        // Readable while disabled too: the step's name, not a control.
         className={cn(
-          "w-16 shrink-0 touch-none text-right text-xs select-none",
-          disabled ? "text-disabled" : "cursor-ew-resize text-muted-foreground",
+          "w-16 shrink-0 touch-none text-right text-xs text-muted-foreground select-none",
+          !disabled && "cursor-ew-resize",
         )}
         onPointerDown={scrub}
       >

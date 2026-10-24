@@ -6,7 +6,8 @@ const tokens = ["None", "S", "M", "L", "XL"].map((label) => ({
   label,
   value: label.toLowerCase(),
 }));
-const sides = ["Top", "Right", "Bottom", "Left"].map((label) => ({
+// Above and below only, so the field and its message fit the frame.
+const sides = ["Top", "Bottom"].map((label) => ({
   label,
   value: label.toLowerCase(),
 }));
@@ -17,7 +18,7 @@ const field = {
   kind: "box",
   label: "Padding",
   group: "style",
-  value: { top: "l", bottom: "l" },
+  value: { top: "l", bottom: "s" },
   options: tokens,
   sides,
 } satisfies EditPanelField;
@@ -31,7 +32,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** Two sides set, so a row per side. */
+/** Different sizes above and below, so a row per side. */
 export const Default: Story = {};
 
 /** Can't be changed now: shown greyed out, and Tab skips it. */
