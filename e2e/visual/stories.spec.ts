@@ -6,7 +6,9 @@ import { z } from "zod";
 
 // Every story of the editor UI in both themes, and of the site components in each theme on Desktop
 // and Mobile (standards §5): no serious or critical axe violations, and (in CI's Linux container)
-// a screenshot that matches the committed one.
+// a screenshot that matches the committed one. The site components' colour contrast is reported,
+// not enforced: their colours come from the site's theme, which the site owner controls, and
+// contrast is a warning they may override (product owner, #312). The editor's own UI stays strict.
 
 const indexSchema = z.object({
   entries: z.record(
@@ -31,11 +33,19 @@ type Build = {
   readonly themes: readonly string[];
   /** The widths to test at; the config's viewport when there are none. */
   readonly devices: readonly Device[];
+  /** Whether axe's colour contrast is only reported (the site's theme decides it), not enforced. */
+  readonly contrastReported: boolean;
 };
 
 /** Keep the ports in step with playwright.visual.config.ts. */
 const BUILDS: readonly Build[] = [
-  { package: "editor-ui", port: 6107, themes: ["dark", "light"], devices: [] },
+  {
+    package: "editor-ui",
+    port: 6107,
+    themes: ["dark", "light"],
+    devices: [],
+    contrastReported: false,
+  },
   {
     package: "site-components",
     port: 6108,
@@ -44,6 +54,7 @@ const BUILDS: readonly Build[] = [
       { name: "desktop", width: 1280, height: 800 },
       { name: "mobile", width: 375, height: 812 },
     ],
+    contrastReported: true,
   },
 ];
 
@@ -103,15 +114,21 @@ for (const build of BUILDS) {
           const results = await new AxeBuilder({ page })
             .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
             .analyze();
-          const serious = results.violations
-            .filter(
-              (violation) => violation.impact === "serious" || violation.impact === "critical",
-            )
-            .map(
-              (violation) =>
-                `${violation.id}: ${violation.nodes.map((node) => node.target).join(", ")}`,
-            );
-          expect(serious).toEqual([]);
+          const describe = (violation: (typeof results.violations)[number]) =>
+            `${violation.id}: ${violation.nodes.map((node) => node.target).join(", ")}`;
+          const serious = results.violations.filter(
+            (violation) => violation.impact === "serious" || violation.impact === "critical",
+          );
+          const reported = build.contrastReported
+            ? serious.filter((violation) => violation.id === "color-contrast")
+            : [];
+          for (const violation of reported) {
+            test.info().annotations.push({ type: "contrast", description: describe(violation) });
+            console.warn(`Contrast in ${story.id} (${theme}): ${describe(violation)}`);
+          }
+          expect(
+            serious.filter((violation) => !reported.includes(violation)).map(describe),
+          ).toEqual([]);
           expect(errors).toEqual([]);
 
           if (SCREENSHOTS) {
