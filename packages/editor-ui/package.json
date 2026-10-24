@@ -39,7 +39,7 @@
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "6.1.2",
     "babel-plugin-react-compiler": "catalog:",
-    "happy-dom": "catalog:",
+    "happy-dom": "21.0.4",
     "storybook": "10.6.2",
     "vite": "8.3.4",
     "vitest": "catalog:"

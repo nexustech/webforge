@@ -53,7 +53,7 @@
     "electron-builder": "26.15.3",
     "electron-vite": "6.0.0",
     "fast-check": "4.10.2",
-    "happy-dom": "catalog:",
+    "happy-dom": "21.0.4",
     "lucide-react": "1.59.0",
     "react": "catalog:",
     "react-dom": "catalog:",
