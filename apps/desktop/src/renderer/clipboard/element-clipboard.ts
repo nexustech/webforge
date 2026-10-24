@@ -21,6 +21,7 @@ import { findNode, removeNode } from "../editor/nodes.js";
 import type { SharedPlace } from "../editor/shared-confirmations.js";
 import { type SharedRegion, sharedRegionOf, shownLayout } from "../editor/shared-layout.js";
 import { layerItem } from "../layers/layers.js";
+import { reportFailure } from "../log.js";
 import { importMessages } from "../media/import-media.js";
 import { addMedia, putInMedia } from "../media/media-commands.js";
 import {
@@ -135,7 +136,8 @@ export async function copySelected(
       media: mediaOf(session, [node]),
       ...(whole ? { sharedSectionId: copy.shared.id } : {}),
     });
-  } catch {
+  } catch (error) {
+    reportFailure(cut ? "clipboard.cut" : "clipboard.copy", error);
     result = { status: "failed", reason: "unknown" };
   }
   if (result.status !== "copied") {
@@ -231,7 +233,8 @@ export async function pasteElements(
   let result: ClipboardReadResult;
   try {
     result = await clipboard.read(siteSession());
-  } catch {
+  } catch (error) {
+    reportFailure("clipboard.paste", error);
     result = { status: "failed", reason: "unknown" };
   }
   if (result.status === "elements" || result.status === "media") {

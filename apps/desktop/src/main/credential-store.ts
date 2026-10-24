@@ -1,5 +1,6 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
+import { WebforgeError } from "@webforge/errors";
 import { z } from "zod";
 
 // Publish credentials (Netlify tokens, FTP passwords): never in the `.wforge` file, which may be
@@ -18,13 +19,11 @@ export type SecretCipher = {
 type CredentialErrorCode = "encryption-unavailable" | "read-failed" | "write-failed";
 
 /** Saving a secret failed; nothing was stored in plain text. */
-export class CredentialError extends Error {
-  readonly code: CredentialErrorCode;
+export class CredentialError extends WebforgeError<CredentialErrorCode> {
+  override readonly name = "CredentialError";
 
   constructor(code: CredentialErrorCode, message: string, options?: ErrorOptions) {
-    super(message, options);
-    this.name = "CredentialError";
-    this.code = code;
+    super(code, "errors.credentials", message, options);
   }
 }
 

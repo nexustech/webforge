@@ -2,7 +2,7 @@
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { copiedNodeId, type MediaId, type PageDoc } from "@webforge/model";
-import { type ComponentLibrary, siteLibrary } from "@webforge/site-components";
+import { type ComponentLibrary, type FieldDef, siteLibrary } from "@webforge/site-components";
 import { Profiler } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { registerLinkField } from "../links/LinkField.js";
@@ -202,6 +202,27 @@ describe("EditPanelHost", () => {
     expect(session.history.entries()[0]?.selectionAfter.nodeId).toBe("heading-1");
   });
 
+  it("resets a changed field to its default as one step, and then offers no reset (UX-13)", async () => {
+    const { session, labels, heading, user } = setup();
+    await user.click(screen.getByRole("tab", { name: "Style" }));
+    const size = screen.getByLabelText("Size");
+    await user.selectOptions(size, "small");
+
+    fireEvent.contextMenu(screen.getByText("Size", { selector: "label" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Reset to Default" }));
+
+    expect(labels()).toEqual(["Changed Heading size", "Reset Heading size"]);
+    // The Heading's own default, not the starter site's value.
+    expect(heading()?.size).toBe(siteLibrary.components.Heading?.defaults.size);
+    expect(session.history.entries()[1]?.selectionAfter.nodeId).toBe("heading-1");
+    fireEvent.contextMenu(screen.getByText("Size", { selector: "label" }));
+    expect(
+      (await screen.findByRole("menuitem", { name: "Reset to Default" })).getAttribute(
+        "aria-disabled",
+      ),
+    ).toBe("true");
+  });
+
   it("makes one step of a visit to a text field, however much is typed", async () => {
     const { session, labels, heading, user } = setup();
     const input = screen.getByLabelText("Text");
@@ -340,21 +361,114 @@ describe("EditPanelHost", () => {
       expect(section()?.padding).toEqual({
         $responsive: { desktop: { top: "m", bottom: "m" }, mobile: { top: "s", bottom: "m" } },
       });
-      expect(screen.getByText("Mobile only")).toBeDefined();
+      // Its dot is the accent colour on Mobile; Desktop shows no dots (UX-19).
+      expect(screen.getByRole("button", { name: /^Padding: set for Mobile only/ })).toBeDefined();
       act(() => session.setViewport("desktop"));
-      expect(screen.queryByText("Mobile only")).toBeNull();
+      expect(document.querySelectorAll("[data-device-dot]")).toHaveLength(0);
       expect(
         side("Padding Top").getByRole("radio", { name: "M" }).getAttribute("aria-checked"),
       ).toBe("true");
 
       act(() => session.setViewport("mobile"));
-      await user.click(screen.getByRole("button", { name: "Use Desktop value" }));
+      await user.click(screen.getByRole("button", { name: /^Padding: set for Mobile only/ }));
 
       expect(section()?.padding).toEqual({ top: "m", bottom: "m" });
       expect(labels()).toEqual([
         "Changed Section padding on Mobile",
         "Reset Section padding on Mobile",
       ]);
+      // Back to Desktop's value: the dot is grey again.
+      expect(
+        screen.getByRole("img", { name: /^Padding: same as Desktop on Mobile/ }),
+      ).toBeDefined();
+    });
+
+    it("resets a changed group to its defaults as one step, named by the group (UX-13)", async () => {
+      const { labels, section, user } = setup("section-1");
+      await user.click(side("Padding Top").getByRole("radio", { name: "S" }));
+      const spacing = screen.getByRole("button", { name: "Spacing" });
+      expect(spacing.hasAttribute("data-changed")).toBe(true);
+
+      fireEvent.contextMenu(spacing);
+      await user.click(await screen.findByRole("menuitem", { name: "Reset Group to Defaults" }));
+
+      expect(labels()).toEqual(["Changed Section padding", "Reset Spacing on Section"]);
+      expect(section()?.padding).toEqual(siteLibrary.components.Section?.defaults.padding);
+      expect(screen.getByRole("button", { name: "Spacing" }).hasAttribute("data-changed")).toBe(
+        false,
+      );
+    });
+
+    it("on Mobile, resets only the group's Mobile values, and says so (F-ED-4)", async () => {
+      const { session, labels, section, user } = setup("section-1");
+      act(() => session.setViewport("mobile"));
+      await user.click(side("Padding Top").getByRole("radio", { name: "S" }));
+
+      fireEvent.contextMenu(screen.getByRole("button", { name: "Spacing" }));
+      await user.click(await screen.findByRole("menuitem", { name: "Reset Group to Defaults" }));
+
+      expect(labels()).toEqual([
+        "Changed Section padding on Mobile",
+        "Reset Section spacing on Mobile",
+      ]);
+      expect(section()?.padding).toEqual({ top: "m", bottom: "m" });
+    });
+
+    it("shows the groups closed for the element's type, and reports closing another (UX-13)", async () => {
+      const session = createEditorSession(siteLibrary, siteWithHero());
+      session.select("section-1");
+      const onClosedGroupsChange = vi.fn();
+      render(
+        <EditPanelHost
+          session={session}
+          flush={vi.fn()}
+          closedGroups={{ Section: ["style:spacing"], Heading: ["style:appearance"] }}
+          onClosedGroupsChange={onClosedGroupsChange}
+        />,
+      );
+      const user = userEvent.setup({ delay: null });
+      await user.click(screen.getByRole("tab", { name: "Style" }));
+
+      expect(screen.getByRole("button", { name: "Spacing" }).getAttribute("aria-expanded")).toBe(
+        "false",
+      );
+      expect(screen.getByRole("button", { name: "Appearance" }).getAttribute("aria-expanded")).toBe(
+        "true",
+      );
+      await user.click(screen.getByRole("button", { name: "Appearance" }));
+
+      expect(onClosedGroupsChange).toHaveBeenCalledWith("Section", [
+        "style:spacing",
+        "style:appearance",
+      ]);
+      // Nothing in the document: no undo step.
+      expect(session.history.entries()).toEqual([]);
+    });
+
+    it("shows a field in the option group its definition names (UX-13)", async () => {
+      const library: ComponentLibrary = {
+        components: {
+          ...siteLibrary.components,
+          Heading: {
+            ...(siteLibrary.components.Heading as NonNullable<
+              (typeof siteLibrary.components)["Heading"]
+            >),
+            fields: {
+              ...siteLibrary.components.Heading?.fields,
+              size: {
+                ...(siteLibrary.components.Heading?.fields.size as FieldDef),
+                optionGroup: { id: "typography", label: "Typography" },
+              } as FieldDef,
+            },
+          },
+        },
+      };
+      const session = createEditorSession(library, siteWithHero());
+      session.select("heading-1");
+      render(<EditPanelHost session={session} flush={vi.fn()} />);
+      await userEvent.setup({ delay: null }).click(screen.getByRole("tab", { name: "Style" }));
+
+      expect(screen.getByRole("button", { name: "Typography" })).toBeDefined();
     });
 
     it("sets Desktop's value as the plain value, keeping other devices' own", async () => {
@@ -461,6 +575,25 @@ describe("EditPanelHost", () => {
       expect(section()?.gap).toBe("small");
       fireEvent.pointerUp(slider);
 
+      expect(labels()).toEqual(["Changed Section space between elements"]);
+      act(() => {
+        session.history.undo();
+      });
+      expect(section()?.gap).toBeUndefined();
+    });
+
+    it("makes one step of scrubbing a slider's step name (UX-20)", () => {
+      const { session, labels, section } = setup("section-1");
+      const slider = screen.getByLabelText("Space between elements");
+      const output = slider.parentElement?.querySelector("output");
+      if (output == null) throw new Error("no step name");
+
+      fireEvent.pointerDown(output, { button: 0, pointerId: 1 });
+      output.dispatchEvent(new PointerEvent("pointermove", { movementX: 12 }));
+      output.dispatchEvent(new PointerEvent("pointermove", { movementX: -24 }));
+      output.dispatchEvent(new PointerEvent("pointerup"));
+
+      expect(section()?.gap).toBe("small");
       expect(labels()).toEqual(["Changed Section space between elements"]);
       act(() => {
         session.history.undo();

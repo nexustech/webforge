@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { mkdir, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { basename, dirname, join, relative, sep } from "node:path";
+import { WebforgeError } from "@webforge/errors";
 import { z } from "zod";
 
 /**
@@ -42,13 +43,16 @@ async function holdsOnlyAnEarlierExport(folder: string): Promise<boolean> {
 export type WriteErrorCode = "folder-not-empty" | "write-failed";
 
 /** Writing the export to disk failed; the destination is left as it was. */
-export class WriteError extends Error {
-  readonly code: WriteErrorCode;
+export class WriteError extends WebforgeError<WriteErrorCode> {
+  override readonly name = "WriteError";
 
   constructor(code: WriteErrorCode, message: string, options?: ErrorOptions) {
-    super(message, options);
-    this.name = "WriteError";
-    this.code = code;
+    super(
+      code,
+      code === "folder-not-empty" ? "export.failed.folderNotEmpty" : "export.failed.writeFailed",
+      message,
+      options,
+    );
   }
 }
 

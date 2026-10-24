@@ -1,3 +1,4 @@
+import { WebforgeError } from "@webforge/errors";
 import {
   applyPatches,
   type Draft,
@@ -155,14 +156,12 @@ export type HistoryManagerOptions<D, S> = BaseOptions<D> &
 /** Error codes of {@link HistoryError}. */
 export type HistoryErrorCode = "transaction-open" | "transaction-closed" | "reentrant";
 
-/** A programming error in the use of the history (not shown to users). */
-export class HistoryError extends Error {
-  readonly code: HistoryErrorCode;
+/** A programming error in the use of the history: people only ever see that something went wrong. */
+export class HistoryError extends WebforgeError<HistoryErrorCode> {
+  override readonly name = "HistoryError";
 
   constructor(code: HistoryErrorCode, message: string) {
-    super(message);
-    this.name = "HistoryError";
-    this.code = code;
+    super(code, "errors.unexpected", message);
   }
 }
 

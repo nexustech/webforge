@@ -22,7 +22,9 @@ const STARTER_HEADING = "Welcome to our business";
  * took a median of 22–58 ms from run to run, so they get twice the budget. That still catches a
  * real slowdown, which takes many times longer, without failing on a busy runner.
  */
-const COMMIT_BUDGET_MS = process.env.CI !== undefined && process.platform !== "linux" ? 100 : 50;
+// `CI` is "true" on GitHub's runners; an empty or "false" value isn't CI.
+const onCi = process.env.CI !== undefined && !["", "0", "false"].includes(process.env.CI);
+const COMMIT_BUDGET_MS = onCi && process.platform !== "linux" ? 100 : 50;
 
 let dir: string;
 let sitePath: string;
