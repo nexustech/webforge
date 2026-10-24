@@ -101,7 +101,6 @@ for (const build of BUILDS) {
           await page.goto(
             `http://127.0.0.1:${build.port}/iframe.html?id=${story.id}&viewMode=story&globals=theme:${theme}`,
           );
-          await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
           // Wait until Storybook has rendered the story and run its play function (the ContextMenu
           // story opens its menu there); dialogs render outside #storybook-root, so don't look there.
           await page.waitForFunction(
@@ -109,6 +108,12 @@ for (const build of BUILDS) {
               (window as { __STORYBOOK_PREVIEW__?: { currentRender?: { phase?: string } } })
                 .__STORYBOOK_PREVIEW__?.currentRender?.phase === "finished",
           );
+          // A story that draws after it renders says so until it has (the app's panelStory():
+          // its panels register in an effect), so a slow story is waited for, not failed (#365).
+          await page.waitForFunction(
+            () => document.querySelector('[data-story-state="drawing"]') === null,
+          );
+          await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
           await page.evaluate(() => document.fonts.ready);
 
           const results = await new AxeBuilder({ page })
