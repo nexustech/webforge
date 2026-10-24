@@ -174,7 +174,6 @@ export function Editor({
   const [defaultPreferences] = useState(() => createPreferencesStore());
   const preferences = givenPreferences ?? defaultPreferences;
   const mode = usePreferences(preferences, (state) => state.mode);
-  const editorLevel = usePreferences(preferences, (state) => state.preferences.editorLevel);
   const devices = usePreferences(preferences, (state) => state.preferences.canvas.devices);
   const viewOptions = usePreferences(preferences, viewOptionsOf, shallow);
   const connectionRef = useRef<EngineConnection | null>(null);
@@ -429,16 +428,21 @@ export function Editor({
     [panels, history],
   );
 
-  // The Edit panel replaces Puck's own fields (1.14). Registered on its own, so that changing the
-  // editor level or mode (Content shows its Content tab only) redraws it alone.
+  // The Edit panel replaces Puck's own fields (1.14). Registered once: it follows the editor level
+  // and the mode (Content shows its Content tab only) itself, so a switch redraws it alone (R9).
   useEffect(() => {
     function Edit() {
+      const advanced = usePreferences(
+        preferences,
+        (state) => state.preferences.editorLevel === "advanced",
+      );
+      const contentOnly = usePreferences(preferences, (state) => state.mode !== "design");
       return (
         <EditPanelHost
           session={session}
           flush={() => connectionRef.current?.flush()}
-          advanced={editorLevel === "advanced"}
-          contentOnly={mode !== "design"}
+          advanced={advanced}
+          contentOnly={contentOnly}
         />
       );
     }
@@ -448,7 +452,7 @@ export function Editor({
       title: t("editPanel.title"),
       component: Edit,
     });
-  }, [panels, session, editorLevel, mode]);
+  }, [panels, session, preferences]);
 
   // The sections' larger previews in the Add panel (UX-10), drawn with the site's theme. Made once
   // for the editor's session, so the drawings they keep outlive switches of mode.
@@ -498,7 +502,7 @@ export function Editor({
     () =>
       registerColourField({
         session,
-        advanced: editorLevel === "advanced",
+        preferences,
         // The selected element's text styles, wherever it is (the page, the shared Header or
         // Footer, a linked copy), as the Edit panel finds it.
         textStyles: () => {
@@ -512,7 +516,7 @@ export function Editor({
           return target === undefined ? [] : textStylesOf(target.node, session.library);
         },
       }),
-    [session, editorLevel],
+    [session, preferences],
   );
   useEffect(() => registerLinkField({ session }), [session]);
 
