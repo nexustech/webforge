@@ -1,10 +1,10 @@
 import { type DragEvent, useRef, useState } from "react";
 
 /** Where a dragged row lands on another: before it, after it, or into it (a dropdown). */
-export type RowDropPlace = "before" | "after" | "into";
+type RowDropPlace = "before" | "after" | "into";
 
 /** Where the dragged row would land now, and whether it may: shown on the row it is over. */
-export type RowDrop = {
+type RowDrop = {
   readonly key: string;
   readonly place: RowDropPlace;
   readonly allowed: boolean;
