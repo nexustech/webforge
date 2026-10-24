@@ -2,6 +2,7 @@ import { Drawer } from "@puckeditor/core";
 import { type ReactNode, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { DRAWER_ITEM } from "./puck-dom.js";
+import { ensureStyle } from "./styles.js";
 
 /** An element outside the canvas that drags a new element of `componentType` onto it (1.13). */
 type DragSource = {
@@ -31,8 +32,8 @@ const DRAG_SOURCE_CSS = `
   display: inline-block;
   padding: 4px 8px;
   border-radius: 4px;
-  background: var(--primary, #0a6fb7);
-  color: var(--primary-foreground, #ffffff);
+  background: var(--primary);
+  color: var(--primary-foreground);
   font: 500 12px/1.4 system-ui, sans-serif;
   white-space: nowrap;
 }
@@ -40,12 +41,7 @@ const DRAG_SOURCE_CSS = `
 
 /** Adds {@link DRAG_SOURCE_CSS} to `document` once. */
 function applyDragSourceStyles(document: Document): void {
-  if (document.head.querySelector(`style[${STYLE_ATTRIBUTE}]`) === null) {
-    const style = document.createElement("style");
-    style.setAttribute(STYLE_ATTRIBUTE, "");
-    style.textContent = DRAG_SOURCE_CSS;
-    document.head.append(style);
-  }
+  ensureStyle(document, STYLE_ATTRIBUTE, DRAG_SOURCE_CSS);
 }
 
 /**

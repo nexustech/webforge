@@ -408,8 +408,12 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   function CanvasFrame({ children, document }: { children: ReactNode; document?: Document }) {
     useEffect(() => {
       frameDocument = document ?? null;
+      // In the editor's colours, following its theme (see `applyChromeStyles`).
+      const stopColours =
+        document === undefined
+          ? undefined
+          : applyChromeStyles(document, host?.ownerDocument ?? document);
       if (document !== undefined) {
-        applyChromeStyles(document);
         if (siteStyles !== null) applySiteStyles(document, siteStyles);
         showAlsoSelected(document, alsoSelected);
       }
@@ -417,7 +421,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       followViewOptions();
       const frameWindow = document?.defaultView;
       if (!frameWindow) {
-        return undefined;
+        return stopColours;
       }
       frameWindows.emit(frameWindow);
       const stopListening = listenInFrame(frameWindow, {
@@ -430,6 +434,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       });
       return () => {
         stopListening();
+        stopColours?.();
         stopKeepingEnabled?.();
         stopKeepingEnabled = null;
         stopViewOptions?.();

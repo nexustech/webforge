@@ -1,5 +1,6 @@
 import type { Unsubscribe } from "../canvas-engine.js";
 import { COMPONENT, COMPONENT_ATTRIBUTE, componentSelector, OVERLAY } from "./puck-dom.js";
+import { ensureStyle } from "./styles.js";
 
 /** Marks the stylesheet that outlines the other selected elements (see {@link showAlsoSelected}). */
 const ALSO_SELECTED_STYLE = "data-webforge-also-selected";
@@ -62,18 +63,13 @@ export function watchAddingClicks(
  * stylesheet rather than marks on the elements, so they stay through Puck's re-renders.
  */
 export function showAlsoSelected(doc: Document, ids: readonly string[]): void {
-  let style = doc.head.querySelector(`style[${ALSO_SELECTED_STYLE}]`);
-  if (style === null) {
-    style = doc.createElement("style");
-    style.setAttribute(ALSO_SELECTED_STYLE, "");
-    doc.head.append(style);
-  }
-  style.textContent = ids
+  const css = ids
     .map(
       (id) =>
         `${componentSelector(id)} {\n` +
-        "  outline: calc(2px / var(--wf-zoom, 1)) solid #f028f3;\n" +
+        "  outline: calc(2px / var(--wf-zoom, 1)) solid var(--wf-outline-color);\n" +
         "  outline-offset: calc(-2px / var(--wf-zoom, 1));\n}",
     )
     .join("\n");
+  ensureStyle(doc, ALSO_SELECTED_STYLE, css);
 }

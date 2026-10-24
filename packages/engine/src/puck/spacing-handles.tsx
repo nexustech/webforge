@@ -48,7 +48,7 @@ export const SPACING_HANDLES_CSS = `
   padding: 0;
   border: calc(1px / var(--wf-zoom, 1)) solid #fff;
   border-radius: calc(3px / var(--wf-zoom, 1));
-  background: #f028f3;
+  background: var(--wf-outline-color);
   pointer-events: auto;
   touch-action: none;
 }

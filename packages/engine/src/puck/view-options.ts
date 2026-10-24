@@ -1,6 +1,7 @@
 import type { ViewOptions } from "../canvas-engine.js";
 import { canvasZoom } from "./chrome.js";
 import { COMPONENT, COMPONENT_ATTRIBUTE, OVERLAY, ROOT_DROP_ZONE } from "./puck-dom.js";
+import { ensureStyle } from "./styles.js";
 
 /**
  * The canvas's View options (F-ED-25, UX-7): outlines around every element, an element's margins
@@ -283,12 +284,7 @@ export function applyViewOptions(
   const view = document.defaultView;
   const root = document.documentElement;
   if (view === null) return () => undefined;
-  if (document.head.querySelector(`style[${VIEW_STYLE_ATTRIBUTE}]`) === null) {
-    const style = document.createElement("style");
-    style.setAttribute(VIEW_STYLE_ATTRIBUTE, "");
-    style.textContent = VIEW_CSS;
-    document.head.append(style);
-  }
+  ensureStyle(document, VIEW_STYLE_ATTRIBUTE, VIEW_CSS);
   for (const [option, attribute] of Object.entries(OPTION_ATTRIBUTES)) {
     root.toggleAttribute(attribute, options[option as keyof ViewOptions]);
   }

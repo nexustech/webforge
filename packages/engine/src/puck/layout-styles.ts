@@ -1,4 +1,5 @@
 import { LAYOUT } from "./puck-dom.js";
+import { ensureStyle } from "./styles.js";
 
 /** Marks the element the canvas is mounted in, which {@link PUCK_LAYOUT_CSS} is scoped to. */
 export const CANVAS_HOST_ATTRIBUTE = "data-webforge-canvas";
@@ -30,11 +31,5 @@ const PUCK_LAYOUT_CSS = `
 /** Marks `host` as the canvas's and adds {@link PUCK_LAYOUT_CSS} to its document once. */
 export function hidePuckLayout(host: HTMLElement): void {
   host.setAttribute(CANVAS_HOST_ATTRIBUTE, "");
-  const document = host.ownerDocument;
-  if (document.head.querySelector(`style[${STYLE_ATTRIBUTE}]`) === null) {
-    const style = document.createElement("style");
-    style.setAttribute(STYLE_ATTRIBUTE, "");
-    style.textContent = PUCK_LAYOUT_CSS;
-    document.head.append(style);
-  }
+  ensureStyle(host.ownerDocument, STYLE_ATTRIBUTE, PUCK_LAYOUT_CSS);
 }
