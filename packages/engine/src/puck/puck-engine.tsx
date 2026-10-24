@@ -23,13 +23,7 @@ import {
   type RenderContext,
   renderPage,
 } from "@webforge/site-components";
-import {
-  type ComponentProps,
-  type ComponentType,
-  type ReactNode,
-  useEffect,
-  useSyncExternalStore,
-} from "react";
+import { type ComponentType, type ReactNode, useEffect } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import type {
   CanvasContextMenu,
@@ -47,16 +41,11 @@ import type {
 } from "../canvas-engine.js";
 import { installHistoryKeys } from "../history-keys.js";
 import { installMenuKeys } from "../menu-keys.js";
+import { createActionBar } from "./action-bar.js";
 import { createCanvasSync } from "./canvas-sync.js";
 import { createCanvasView } from "./canvas-view.js";
 import { preserveCaret, refocusRichText } from "./caret.js";
-import {
-  applyChromeStyles,
-  createSelectionOutline,
-  type ElementActions,
-  OUTLINED_ATTRIBUTE,
-  QuickActionBar,
-} from "./chrome.js";
+import { applyChromeStyles, createSelectionOutline, OUTLINED_ATTRIBUTE } from "./chrome.js";
 import { toPuckConfig } from "./config.js";
 import { installContextMenu } from "./context-menu.js";
 import { copyDrop, planCopyDrop } from "./copy-drop.js";
@@ -66,6 +55,7 @@ import { puckDictionary } from "./dictionary.js";
 import { type DragKeys, type Drop, trackDragKeys } from "./drag-copies.js";
 import { createDragSources } from "./drag-sources.js";
 import { editFromAction, selectedNodeId, toPageDoc } from "./edit-from-action.js";
+import { elementNames } from "./element-names.js";
 import { keepElementsEnabled } from "./enabled-elements.js";
 import {
   CONTENT_MODE_PERMISSIONS,
@@ -73,6 +63,7 @@ import {
   EMPTY_PAGE,
   emitter,
   flushRichText,
+  memoByDocs,
   NO_VIEW_OPTIONS,
   NoBoundary,
   puckViewports,
@@ -83,11 +74,10 @@ import { hidePuckLayout } from "./layout-styles.js";
 import { pageActions, type SlotsOf } from "./page-actions.js";
 import { CANVAS_ROOT, componentSelector } from "./puck-dom.js";
 import { createFormatToolbar } from "./rich-text.js";
-import { type RoutedEdit, routeEdit, routeLinkedCopy } from "./route-edit.js";
+import { type CanvasDocs, type RoutedEdit, routeEdit, routeLinkedCopy } from "./route-edit.js";
 import { performOnSelected } from "./selected-actions.js";
 import { showAlsoSelected, watchAddingClicks } from "./selection-clicks.js";
-import { copiesOn, copyShownBy } from "./shared-copies.js";
-import { composePage, EMPTY_LAYOUT, isSharedRegion, sameOrder } from "./shared-layout.js";
+import { composePage, EMPTY_LAYOUT, sameOrder } from "./shared-layout.js";
 import { applySiteStyles, type SiteStyles } from "./site-styles.js";
 import { boxHandleFields } from "./spacing-handles.js";
 import { focusedRichTextId, richTextArrived, staleRichText } from "./stale-rich-text.js";
@@ -154,26 +144,9 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       mode === "content" && frameDocument !== null ? keepElementsEnabled(frameDocument) : null;
   };
   /** The names the View menu's labels show, by id, for the page shown: made once per change. */
-  let names: {
-    readonly page: PageDoc;
-    readonly layout: LayoutDoc;
-    readonly shared: SharedSectionsDoc;
-    readonly byId: ReadonlyMap<string, string>;
-  } | null = null;
+  const names = memoByDocs((docs: CanvasDocs) => elementNames(docs, library));
   /** An element's name for the labels: its Layers name, else its component's. */
-  const nameOf = (id: string): string | undefined => {
-    if (names?.page !== page || names.layout !== layout || names.shared !== shared) {
-      const nodes = allNodes(composePage(page, layout, shared));
-      const byId = new Map(
-        nodes.map((node) => [
-          node.props.id,
-          node.props.layerName?.trim() || (library?.components[node.type]?.label ?? node.type),
-        ]),
-      );
-      names = { page, layout, shared, byId };
-    }
-    return names.byId.get(id);
-  };
+  const nameOf = (id: string) => names({ page, layout, shared }).get(id);
   /** The View menu's options (F-ED-25), shown in the canvas document while there is one. */
   let viewOptions: ViewOptions = NO_VIEW_OPTIONS;
   let stopViewOptions: (() => void) | null = null;
@@ -434,83 +407,14 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     );
   }
 
-  /** The fields of component `type`, from the library. */
-  const fieldsOf = (type: string) => Object.values(library?.components[type]?.fields ?? {});
-  /**
-   * *Edit* and *Hide* on the selected element's bar (F-ED-25), for the page as it was shown: the
-   * bar asks them while drawing, so they answer for that page only (R2).
-   */
-  const elementActionsFor = (
-    shownPage: PageDoc,
-    shownLayout: LayoutDoc,
-    shownShared: SharedSectionsDoc,
-  ): ElementActions => ({
-    canEdit: (type) =>
-      fieldsOf(type).some(
-        (field) =>
-          field.kind === "media" ||
-          ((field.kind === "text" || field.kind === "richtext") && field.inline === true),
-      ),
-    edit: (id, type) => {
-      const doc = frameDocument ?? host?.ownerDocument;
-      if (doc !== undefined && startTextEditing(doc, id, false)) return;
-      if (fieldsOf(type).some((field) => field.kind === "media")) {
-        elementRequests.emit({ kind: "pickImage", nodeId: id });
-      }
-    },
-    canHide: (id) => {
-      if (findNode(shownPage, id) !== undefined) return true;
-      // A linked copy is one of the page's own, shown by its section's id.
-      const shown = findNode(composePage(shownPage, shownLayout, shownShared), id);
-      return (
-        shown !== undefined &&
-        copyShownBy(shown, copiesOn(shownPage.content), shownShared) !== undefined
-      );
-    },
-    toggleHidden: (id) => elementRequests.emit({ kind: "toggleHidden", nodeId: id }),
+  /** The quick actions, for the page as it is now (see `action-bar.tsx`). */
+  const SharedAwareActionBar = createActionBar({
+    docs: () => ({ page, layout, shared }),
+    library: () => library,
+    document: () => frameDocument ?? host?.ownerDocument,
+    request: elementRequests.emit,
+    several: { get: () => alsoSelected.length > 0, subscribe: alsoSelectedChanged.add },
   });
-
-  /**
-   * What the bars ask while drawing, made once per change of the page: a new page gives them new
-   * functions, so they ask again (R2). The lock is on the shared Header or Footer itself (F-ED-7).
-   */
-  let barProps: {
-    readonly page: PageDoc;
-    readonly layout: LayoutDoc;
-    readonly shared: SharedSectionsDoc;
-    readonly isLocked: (id: string) => boolean;
-    readonly elementActions: ElementActions;
-  } | null = null;
-  const currentBarProps = () => {
-    if (barProps?.page !== page || barProps.layout !== layout || barProps.shared !== shared) {
-      const shownLayout = layout;
-      barProps = {
-        page,
-        layout,
-        shared,
-        isLocked: (id) => isSharedRegion(shownLayout, id),
-        elementActions: elementActionsFor(page, layout, shared),
-      };
-    }
-    return barProps;
-  };
-
-  /** The quick actions, for the page as it is now. */
-  function SharedAwareActionBar(props: ComponentProps<typeof QuickActionBar>) {
-    // Through Puck's store, which changes with every page Puck shows: never a value kept from an
-    // earlier drawing.
-    const { isLocked, elementActions } = usePuck(currentBarProps);
-    // While several elements are selected, the bar names the one shown: what it would do to one,
-    // the Edit menu does to all (1.31).
-    const several = useSyncExternalStore(alsoSelectedChanged.add, () => alsoSelected.length > 0);
-    return (
-      <QuickActionBar
-        {...props}
-        isLocked={(id) => several || isLocked(id)}
-        elementActions={elementActions}
-      />
-    );
-  }
 
   function CanvasFrame({ children, document }: { children: ReactNode; document?: Document }) {
     useEffect(() => {

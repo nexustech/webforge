@@ -97,3 +97,29 @@ export function emitter<T>(): Emitter<T> {
 export function NoBoundary({ children }: { readonly children: ReactNode }) {
   return children;
 }
+
+/** The page, layout and shared sections the canvas shows, as `memoByDocs` compares them. */
+type Docs = {
+  readonly page: unknown;
+  readonly layout: unknown;
+  readonly shared: unknown;
+};
+
+/**
+ * `make`, made again only when the page, layout or shared sections it was made for change (by
+ * reference): what the canvas works out from them once per change rather than per drawing.
+ */
+export function memoByDocs<D extends Docs, T>(make: (docs: D) => T): (docs: D) => T {
+  let made: { readonly docs: D; readonly value: T } | null = null;
+  return (docs) => {
+    if (
+      made === null ||
+      made.docs.page !== docs.page ||
+      made.docs.layout !== docs.layout ||
+      made.docs.shared !== docs.shared
+    ) {
+      made = { docs, value: make(docs) };
+    }
+    return made.value;
+  };
+}
