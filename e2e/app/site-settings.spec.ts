@@ -114,3 +114,44 @@ test("shows Site Settings values in bound elements, on the canvas and in the exp
   expect(index).not.toContain("Welcome to our business");
   expect(index).not.toContain("Site Settings");
 });
+
+test("lists Site Settings' opening hours and contact details, on the canvas and in the export (2.8)", async () => {
+  app = await launchDesktopApp();
+  const page = await app.firstWindow();
+  const canvas = page.frameLocator(".editor__canvas iframe");
+  await waitForCanvas(page);
+  await page
+    .getByRole("region", { name: "Left panels" })
+    .getByRole("button", { name: "Opening hours and contact", exact: true })
+    .click();
+  const section = canvas.locator(".site-contact");
+  // Until Site Settings have them, the canvas says where to add them.
+  await expect(section).toContainText("Add your phone number in Site Settings");
+
+  await page.getByRole("menuitem", { name: "File" }).click();
+  await page.getByRole("menuitem", { name: "Site Settings…" }).click();
+  const dialog = page.getByRole("dialog", { name: "Site Settings" });
+  await dialog.getByRole("tab", { name: "Contact & hours" }).click();
+  await dialog.getByLabel("Phone number").fill("+44 1234 567890");
+  await dialog.getByRole("button", { name: "Add opening hours" }).click();
+  await dialog.getByRole("checkbox", { name: "Sat" }).check();
+  await dialog.getByRole("checkbox", { name: "Sun" }).check();
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(dialog).toHaveCount(0);
+
+  // The section follows Site Settings at once: the hours, and the phone number as a link.
+  await expect(section.locator("dt")).toHaveText(["Saturday and Sunday"]);
+  await expect(section.locator("dd")).toHaveText(["09:00–17:00"]);
+  await expect(section.getByRole("link", { name: "+44 1234 567890" })).toBeVisible();
+
+  const folder = join(dir, "export");
+  await stubFileDialogs(app, folder);
+  await page.getByRole("button", { name: "Export", exact: true }).click();
+  await expect(page.getByText(/Site exported to/)).toBeVisible({ timeout: 30_000 });
+  const index = readFileSync(join(folder, "index.html"), "utf8");
+  expect(index).toContain('<dt class="font-medium">Saturday and Sunday</dt>');
+  expect(index).toContain('href="tel:+441234567890"');
+  // An empty email address leaves its line out, and no hint reaches the site.
+  expect(index).not.toContain("Email:");
+  expect(index).not.toContain("Site Settings");
+});
