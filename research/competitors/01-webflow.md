@@ -1,6 +1,6 @@
 # Webflow: Competitor Review
 
-**Status:** ⏳ Proposed 2026-10-24, awaiting the product owner's decision ([§7](#7-decisions))
+**Status:** ✅ Decided 2026-10-24: all proposals adopted ([§7](#7-decisions))
 **Date:** 2026-10-24
 **Question:** What does Webflow offer in October 2026, how does its editor work, and which of it should Webforge copy, avoid or learn from?
 
@@ -98,13 +98,13 @@ Effort: **S** ≈ days · **M** ≈ 1–2 weeks · **L** ≈ several weeks.
 Webflow's export is a courtesy copy of a site that lives on Webflow; everything dynamic stays behind. Webforge's export **is** the site (X1), which is why features here are judged by whether they work from a folder on disk. When a Webflow feature looks attractive, the first question is the same as for C8: does it need a server? If so it is out, as Optimize, Analyze, forms handling and search are above.
 
 ## 7. Decisions
-Awaiting the product owner.
+Product owner, 2026-10-24: all proposals adopted as written.
 
-| # | Proposed decision |
+| # | Decision |
 |---|---|
-| WF-1 | **v1.1:** all devices side by side on the canvas, after a spike on rendering several Puck frames (shared with PG-1) |
-| WF-2 | **v1.1 AI assistant design:** approve-before-apply with the change highlighted on the canvas (extends GA9 and BS9-10) |
-| WF-3 – WF-6 | **Design lessons, no scope change:** fewer layout primitives; keep the editing surface stable; native HTML over JavaScript in components; the licence and the complete export as selling points |
+| WF-1 | ✅ **v1.1:** all devices side by side on the canvas, after a spike on rendering several Puck frames (shared with PG-1) |
+| WF-2 | ✅ **v1.1 AI assistant design:** approve-before-apply with the change highlighted on the canvas (extends GA9 and BS9-10) |
+| WF-3 – WF-6 | ✅ **Design lessons, no scope change:** fewer layout primitives; keep the editing surface stable; native HTML over JavaScript in components; the licence and the complete export as selling points |
 
 ## Sources
 Official pages were read through search summaries and a release-feed mirror (see §1).

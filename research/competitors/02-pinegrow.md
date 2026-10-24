@@ -1,6 +1,6 @@
 # Pinegrow Web Editor: Competitor Review
 
-**Status:** ⏳ Proposed 2026-10-24, awaiting the product owner's decision ([§7](#7-decisions))
+**Status:** ✅ Decided 2026-10-24: all proposals adopted ([§7](#7-decisions))
 **Date:** 2026-10-24
 **Question:** What does Pinegrow 10.1 offer, how does its editor work, and which of it should Webforge copy, avoid or learn from?
 
@@ -112,15 +112,15 @@ Effort: **S** ≈ days · **M** ≈ 1–2 weeks · **L** ≈ several weeks.
 Pinegrow has shipped on NW.js for a decade, which shows a Chromium shell with full file access can carry a mature editor. It changes nothing for Webforge: Electron was chosen for its security model (`contextIsolation`, `sandbox`, a typed preload) and packaging tooling, and Pinegrow's needs (writing arbitrary files in a project folder) are the opposite of ours (one project file, nothing written outside it).
 
 ## 7. Decisions
-Awaiting the product owner.
+Product owner, 2026-10-24: all proposals adopted as written.
 
-| # | Proposed decision |
+| # | Decision |
 |---|---|
-| PG-2 | **MVP:** palette from an image in the Theme panel (+1 day on 2.3) |
-| PG-3 | **MVP:** example sites on the start screen (+1 day on 2.14 or 2.15) |
-| PG-1, PG-4, PG-5 | **v1.1:** all devices side by side (with WF-1), before/after in Version History, light and dark side by side |
-| PG-6 | **Engineering rule:** GSAP and libraries built on it are never an exception to the licence rule (C1); the reason is recorded in spec/03 |
-| PG-7 – PG-9 | **Design lessons, no scope change:** one layout; preflight coupled to publishing; Content mode first-class |
+| PG-2 | ✅ **MVP:** palette from an image in Theme Studio. Spec F-DS-7; plan item 2.3 (2.3b, +1 day) |
+| PG-3 | ✅ **MVP:** example sites on the start screen (*Try an example*). Spec F-SITE-1; plan item 2.14 (+1 day) |
+| PG-1, PG-4, PG-5 | ✅ **v1.1:** all devices side by side (with WF-1), before/after in Version History, light and dark side by side |
+| PG-6 | ✅ **Engineering rule:** GSAP and libraries built on it are never an exception to the licence rule (C1); the reason is recorded in spec/03 |
+| PG-7 – PG-9 | ✅ **Design lessons, no scope change:** one layout; preflight coupled to publishing; Content mode first-class |
 
 ## Sources
 - Pinegrow: [home](https://pinegrow.com/) · [FAQ](https://pinegrow.com/faq/) · [subscriptions](https://pinegrow.com/subscribe) · [team plans](https://pinegrow.com/team-plans.html)

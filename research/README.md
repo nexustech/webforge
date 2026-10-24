@@ -6,7 +6,7 @@ Research supporting [`ideas.md`](../ideas.md).
 
 ## Prior art
 - [Bootstrap Studio](bootstrap-studio/README.md): internals, tech stack, file format, features, lessons for Webforge, the [9.0 competitor review](bootstrap-studio/06-bootstrap-studio-9.md) (decisions BS9-1…10) and the [9.0.1 editor screenshot pass](bootstrap-studio/07-editor-screenshot-pass.md) (SP-1…13 adopted as UI5, with screenshots)
-- [Competitor reviews](competitors/): [Webflow](competitors/01-webflow.md) (WF-1…6: side-by-side devices and approve-before-apply AI proposed for v1.1, four design lessons) and [Pinegrow 10.1](competitors/02-pinegrow.md) (PG-1…9: palette from an image and example sites proposed for the MVP, three v1.1 items, the GSAP licence rule). Both **proposed 2026-10-24, awaiting decision**. Other competitors are covered in the [gap analysis](product/05-feature-gap-analysis.md) and the [editor parity note](product/06-editor-ui-ux-parity.md)
+- [Competitor reviews](competitors/): [Webflow](competitors/01-webflow.md) (WF-1…6: side-by-side devices and approve-before-apply AI proposed for v1.1, four design lessons) and [Pinegrow 10.1](competitors/02-pinegrow.md) (PG-1…9: palette from an image and example sites proposed for the MVP, three v1.1 items, the GSAP licence rule). Both **decided 2026-10-24**: PG-2 and PG-3 join the MVP (+2 days), the rest is v1.1 or a rule. Other competitors are covered in the [gap analysis](product/05-feature-gap-analysis.md) and the [editor parity note](product/06-editor-ui-ux-parity.md)
 
 ## Stack decisions
 | # | Question | Status | Outcome |
