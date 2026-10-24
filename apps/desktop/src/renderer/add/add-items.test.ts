@@ -49,6 +49,7 @@ describe("addItems (F-ED-1, ADR 0005)", () => {
       "TextImage",
       "CallToAction",
       "Faq",
+      "Gallery",
     ]);
     expect(addItems(siteLibrary, "elements")).toEqual([
       { type: "Heading", label: "Heading", category: "Text" },
@@ -65,6 +66,7 @@ describe("addItems (F-ED-1, ADR 0005)", () => {
       { category: "Text", items: [sections[2], sections[3]] },
       { category: "Calls to action", items: [sections[4]] },
       { category: "Questions and answers", items: [sections[5]] },
+      { category: "Galleries", items: [sections[6]] },
     ]);
     expect(groupItems(sections, "  QUESTIONS ").map((group) => group.category)).toEqual([
       "Questions and answers",

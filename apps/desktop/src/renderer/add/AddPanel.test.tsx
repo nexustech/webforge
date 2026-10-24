@@ -140,6 +140,7 @@ describe("dragging from the Add panel", () => {
       "TextSection",
       "TextImage",
       "CallToAction",
+      "Gallery",
     ]);
     expect(button("Hero").className).toContain("relative");
     view.unmount();
