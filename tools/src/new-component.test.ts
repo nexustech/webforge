@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -148,7 +148,7 @@ describe("newComponent", () => {
   it("writes the family's four files and registers it, then refuses to write it again", () => {
     const at = repository();
 
-    const written = newComponent("PriceList", "section", at, false);
+    const { written } = newComponent("PriceList", "section", at, false);
 
     expect(written).toEqual([
       "packages/site-components/src/catalogue/price-list.tsx",
@@ -164,7 +164,55 @@ describe("newComponent", () => {
       "priceListComponents,",
     );
     expect(read("packages/i18n/src/en/components/index.ts")).toContain("...priceList,");
-    expect(() => newComponent("PriceList", "section", at, false)).toThrow("exists already");
+    expect(() => newComponent("PriceList", "section", at, false)).toThrow("already");
+  });
+
+  it("refuses a type another family defines, writing nothing", () => {
+    const at = repository();
+    writeFileSync(
+      join(at, "packages/site-components/src/catalogue/sections.tsx"),
+      "export const sectionsComponents: Readonly<Record<string, ComponentDef>> = {\n  Hero: hero,\n  Faq: faq,\n};\n",
+    );
+    const before = readFileSync(
+      join(at, "packages/site-components/src/catalogue/index.ts"),
+      "utf8",
+    );
+
+    expect(() => newComponent("Hero", "section", at, false)).toThrow(
+      "The catalogue has a Hero already",
+    );
+    expect(existsSync(join(at, "packages/site-components/src/catalogue/hero.tsx"))).toBe(false);
+    expect(readFileSync(join(at, "packages/site-components/src/catalogue/index.ts"), "utf8")).toBe(
+      before,
+    );
+  });
+
+  it("writes nothing when an index can't take the family", () => {
+    const at = repository();
+    writeFileSync(
+      join(at, "packages/site-components/src/catalogue/index.ts"),
+      'import { basicComponents } from "./basic.js";\n',
+    );
+
+    expect(() => newComponent("PriceList", "section", at, false)).toThrow("createLibrary");
+    expect(existsSync(join(at, "packages/site-components/src/catalogue/price-list.tsx"))).toBe(
+      false,
+    );
+    expect(existsSync(join(at, "packages/i18n/src/en/components/priceList.ts"))).toBe(false);
+  });
+
+  it("says whether what it wrote was formatted", () => {
+    const failing = newComponent("PriceList", "section", repository(), () => false);
+    const formats: (readonly string[])[] = [];
+    const formatted = newComponent("Badge", "element", repository(), (files) => {
+      formats.push(files);
+      return true;
+    });
+
+    expect(failing.formatted).toBe(false);
+    expect(formatted.formatted).toBe(true);
+    // Every file it wrote, the indexes too.
+    expect(formats).toEqual([formatted.written]);
   });
 
   it("refuses a name that isn't a component type", () => {

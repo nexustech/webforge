@@ -12,7 +12,7 @@
 // This file has no relative imports so Node can run it directly with type stripping.
 
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 /** Where a component goes: see `ComponentPlace` in site-components. */
@@ -251,12 +251,55 @@ const CATALOGUE = "packages/site-components/src/catalogue";
 const STRINGS = "packages/i18n/src/en/components";
 
 /**
- * Writes the family of component `type` at `place` in the repository at `root`, and returns the
- * files it wrote; `format` runs Biome on them, as the repository formats its files.
+ * The component types the catalogue's modules at `root` define: the keys of each family's record
+ * (`export const sectionsComponents … = { Hero: hero, … }`).
  */
-export function newComponent(type: string, place: Place, root = ".", format = true): string[] {
+export function catalogueTypes(root: string): Set<string> {
+  const types = new Set<string>();
+  const folder = join(root, CATALOGUE);
+  for (const file of readdirSync(folder)) {
+    if (!file.endsWith(".tsx") || /\.(test|stories)\.tsx$/.test(file)) continue;
+    const text = readFileSync(join(folder, file), "utf8");
+    for (const record of text.matchAll(/export const \w+Components\b[^=]*=\s*\{([^}]*)\}/g)) {
+      for (const key of (record[1] ?? "").matchAll(/(\w+)\s*:/g)) {
+        if (key[1] !== undefined) types.add(key[1]);
+      }
+    }
+  }
+  return types;
+}
+
+/** What {@link newComponent} did: the files it wrote, and whether Biome formatted them. */
+export type NewComponentResult = { readonly written: string[]; readonly formatted: boolean };
+
+/** Formats `files` in the repository at `root` with Biome; false if it couldn't. */
+function formatWithBiome(files: readonly string[], root: string): boolean {
+  const biome = spawnSync("pnpm", ["exec", "biome", "check", "--write", ...files], {
+    cwd: root,
+    stdio: "ignore",
+    shell: true,
+  });
+  return biome.status === 0;
+}
+
+/**
+ * Writes the family of component `type` at `place` in the repository at `root`, then formats what
+ * it wrote as the repository formats its files (`format`, Biome unless given; `false` not at all).
+ * Everything is worked out before anything is written, so a refusal leaves nothing behind.
+ */
+export function newComponent(
+  type: string,
+  place: Place,
+  root = ".",
+  format: ((files: readonly string[], root: string) => boolean) | false = formatWithBiome,
+): NewComponentResult {
   const names = namesOf(type);
   if (typeof names === "string") throw new Error(names);
+  if (catalogueTypes(root).has(names.type)) {
+    throw new Error(`The catalogue has a ${names.type} already: pick another name`);
+  }
+  const catalogue = `${CATALOGUE}/index.ts`;
+  const strings = `${STRINGS}/index.ts`;
   const files: Record<string, string> = {
     [`${CATALOGUE}/${names.file}.tsx`]: moduleFile(names, place),
     [`${CATALOGUE}/${names.file}.stories.tsx`]: storyFile(names),
@@ -266,23 +309,13 @@ export function newComponent(type: string, place: Place, root = ".", format = tr
   for (const path of Object.keys(files)) {
     if (existsSync(join(root, path))) throw new Error(`${path} exists already: pick another name`);
   }
+  // The indexes too, before anything is written.
+  files[catalogue] = registerInCatalogue(readFileSync(join(root, catalogue), "utf8"), names);
+  files[strings] = registerInStrings(readFileSync(join(root, strings), "utf8"), names);
   for (const [path, text] of Object.entries(files)) writeFileSync(join(root, path), text);
-  const catalogue = `${CATALOGUE}/index.ts`;
-  const catalogueIndex = readFileSync(join(root, catalogue), "utf8");
-  writeFileSync(join(root, catalogue), registerInCatalogue(catalogueIndex, names));
-  const strings = `${STRINGS}/index.ts`;
-  const stringsIndex = readFileSync(join(root, strings), "utf8");
-  writeFileSync(join(root, strings), registerInStrings(stringsIndex, names));
-  const written = [...Object.keys(files), catalogue, strings];
-  if (format) {
-    // As the repository formats them: imports sorted, long lines wrapped.
-    spawnSync("pnpm", ["exec", "biome", "check", "--write", ...written], {
-      cwd: root,
-      stdio: "ignore",
-      shell: true,
-    });
-  }
-  return written;
+  const written = Object.keys(files);
+  // As the repository formats them: imports sorted, long lines wrapped.
+  return { written, formatted: format !== false && format(written, root) };
 }
 
 /** `--place`'s value in `args`, if it is one. */
@@ -300,8 +333,14 @@ if (import.meta.main) {
     process.exit(1);
   }
   try {
-    for (const path of newComponent(type, place)) process.stdout.write(`wrote ${path}\n`);
-    process.stdout.write("Next: fill it in (docs/components.md), then pnpm check.\n");
+    const { written, formatted } = newComponent(type, place);
+    for (const path of written) process.stdout.write(`wrote ${path}\n`);
+    if (formatted) {
+      process.stdout.write("Next: fill it in (docs/components.md), then pnpm check.\n");
+    } else {
+      process.stderr.write("formatting failed: run pnpm format\n");
+      process.exitCode = 1;
+    }
   } catch (error) {
     process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
     process.exit(1);
