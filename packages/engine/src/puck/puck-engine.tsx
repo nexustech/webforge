@@ -12,15 +12,12 @@ import {
 import "@puckeditor/core/no-external.css";
 import { t } from "@webforge/i18n";
 import {
-  copiedNodeId,
   expandSharedCopies,
   type LayoutDoc,
   type NodeDoc,
-  newSharedCopy,
   type PageDoc,
   pageAnchors,
   pastedCopies,
-  SHARED_COPY_TYPE,
   type SharedCopyNode,
   type SharedSectionsDoc,
 } from "@webforge/model";
@@ -56,6 +53,7 @@ import type {
 } from "../canvas-engine.js";
 import { installHistoryKeys } from "../history-keys.js";
 import { installMenuKeys } from "../menu-keys.js";
+import { createCanvasSync } from "./canvas-sync.js";
 import { preserveCaret, refocusRichText } from "./caret.js";
 import {
   applyChromeStyles,
@@ -84,24 +82,17 @@ import { hidePuckLayout } from "./layout-styles.js";
 import { pageActions, type SlotsOf } from "./page-actions.js";
 import { CANVAS_ROOT, componentSelector, puckPrivateApi } from "./puck-dom.js";
 import { createFormatToolbar } from "./rich-text.js";
+import { type RoutedEdit, routeEdit, routeLinkedCopy } from "./route-edit.js";
 import { performOnSelected } from "./selected-actions.js";
 import { showAlsoSelected, watchAddingClicks } from "./selection-clicks.js";
-import { copiesOn, copyShownBy, foldCopies, shownInCopy } from "./shared-copies.js";
-import {
-  composePage,
-  EMPTY_LAYOUT,
-  isShared,
-  isSharedRegion,
-  sameNodes,
-  sameOrder,
-  splitPage,
-} from "./shared-layout.js";
+import { copiesOn, copyShownBy } from "./shared-copies.js";
+import { composePage, EMPTY_LAYOUT, isShared, isSharedRegion, sameOrder } from "./shared-layout.js";
 import { applySiteStyles, type SiteStyles } from "./site-styles.js";
 import { boxHandleFields } from "./spacing-handles.js";
 import { focusedRichTextId, richTextArrived, staleRichText } from "./stale-rich-text.js";
 import { startTextEditing } from "./text-editing.js";
 import { createTextKeys, type PickLink } from "./text-keys.js";
-import { allNodes, findNode, nodeAt, ROOT_ZONE } from "./tree.js";
+import { allNodes, findNode, nodeAt } from "./tree.js";
 import { applyViewOptions } from "./view-options.js";
 
 /** Options of {@link createPuckEngine}. */
@@ -221,18 +212,10 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   let layout: LayoutDoc = EMPTY_LAYOUT;
   /** The shared sections the page's linked copies show (F-ED-23). */
   let shared: SharedSectionsDoc = {};
-  /** Bumped whenever the app gives the engine a different page. */
-  let revision = 0;
-  /** The revision Puck shows; behind `revision` while the app's page hasn't reached Puck yet. */
-  let shownRevision = 0;
+  /** Which page Puck shows, and whose change is under way (see `canvas-sync.ts`). */
+  const sync = createCanvasSync();
   let selection: string | null = null;
   let mode: EditorMode = "design";
-  /** True while Puck runs `onAction`, inside its store update: dispatching then would be lost. */
-  let inAction = false;
-  /** True while Webforge itself dispatches to Puck. */
-  let applying = false;
-  /** True while listeners handle an edit: its echo through `applyChange` needs no comparison. */
-  let reporting = false;
   /** The canvas iframe's document, once Puck has created it. */
   let frameDocument: Document | null = null;
   /** Stops keeping the canvas's elements enabled; set in Content mode (see `keepElementsEnabled`). */
@@ -345,17 +328,12 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     if (getPuck === null) {
       return; // Not ready yet: the Bridge sends the current page once it is.
     }
-    if (inAction) {
+    if (sync.inAction()) {
       queueMicrotask(() => dispatch(action));
       return;
     }
     const puck = getPuck;
-    applying = true;
-    try {
-      puck().dispatch(action);
-    } finally {
-      applying = false;
-    }
+    sync.apply(() => puck().dispatch(action));
   };
 
   /** Sends `page` to Puck, unless Puck isn't ready yet (then the Bridge sends it once it is). */
@@ -366,7 +344,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
         data: () => toPuckData(composePage(page, layout, shared)),
         recordHistory: false,
       });
-      shownRevision = revision;
+      sync.shown();
     }
   };
 
@@ -468,110 +446,21 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   };
 
   /** Reports `edit` to the app, as the document store will take it over. */
-  const emitEdit = (edit: EngineEdit) => {
-    reporting = true;
-    try {
-      edits.emit(edit);
-    } finally {
-      reporting = false;
-    }
-  };
+  const emitEdit = (edit: EngineEdit) => sync.report(() => edits.emit(edit));
 
   /**
-   * Reports an edit Puck made to the page as the canvas shows it, split back into the page, the
-   * shared layout (F-ED-7) and the shared sections its linked copies show (F-ED-23):
-   * - an edit inside the Header or Footer goes to the layout, which every page shows;
-   * - an edit inside a copy goes to its shared section, and so to every copy of it;
-   * - anything else is the page's own, a copy itself included (moved or deleted as a whole).
-   * The Header and Footer themselves can't be moved, duplicated or deleted from the canvas, and an
-   * element can't be moved between them, a copy and the page: Puck's view is put back instead. A
-   * duplicated copy is another linked copy of its section. A page element Puck shows above the
-   * Header or below the Footer belongs to the page, and goes back between them.
+   * Takes over `routed`, where an edit goes (see `routeEdit`): the page, layout and shared sections
+   * with it, the edit reported to the app, and Puck's view put back in step from `shown`.
    */
-  const reportEdit = (edit: EngineEdit, action: PuckAction, prev: AppState) => {
-    const before = toPageDoc(prev.data);
-    const touchedNode =
-      action.type === "duplicate"
-        ? nodeAt(before, action.sourceZone, action.sourceIndex)
-        : action.type === "remove"
-          ? nodeAt(before, action.zone, action.index)
-          : undefined;
-    const touched = touchedNode?.props.id ?? (edit.kind === "move" ? edit.nodeId : null);
-    if (typeof touched === "string" && isSharedRegion(layout, touched)) {
-      putBack(edit.page);
-      return;
-    }
-    const copy =
-      action.type === "duplicate" && touchedNode !== undefined
-        ? copyShownBy(touchedNode, copiesOn(page.content), shared)
-        : undefined;
-    if (copy !== undefined) {
-      const at = page.content.indexOf(copy);
-      const added = newSharedCopy(page.content, copy.props.sharedSectionId, shared, layout);
-      const content = [...page.content];
-      content.splice(at + 1, 0, added);
-      page = { ...page, content };
-      // The new copy selected as the canvas shows it: its section, by the copy's id for it.
-      const root = shared[copy.props.sharedSectionId]?.section.props.id;
-      const shown = root === undefined ? null : copiedNodeId(added.props.id, root);
-      emitEdit({
-        ...edit,
-        nodeId: shown,
-        page,
-        selection: shown,
-        copyOf: copy.props.sharedSectionId,
-      });
-      putBack(edit.page);
-      return;
-    }
-    const split = splitPage(edit.page, layout);
-    const folded = foldCopies(split.page.content, page.content, shared);
-    const id = edit.nodeId;
-    // In the Header or Footer as they were (an edit, a removal) or are now (an element added in one).
-    const inLayout = id !== null && (isShared(layout, id) || isShared(split.layout, id));
-    const layoutChanged = !sameNodes(
-      [...split.layout.header, ...split.layout.footer],
-      [...layout.header, ...layout.footer],
-    );
-    const pageChanged = !sameNodes(folded.content, page.content);
-    const [section, ...others] = folded.sections;
-    const crossed = inLayout
-      ? pageChanged || section !== undefined
-      : section !== undefined
-        ? pageChanged || layoutChanged || others.length > 0 || folded.refused
-        : layoutChanged;
-    if (crossed) {
-      putBack(edit.page);
-      return;
-    }
-    if (inLayout) {
-      layout = split.layout;
-      emitEdit({ ...edit, page, shared: true, layout });
-    } else if (section !== undefined) {
-      const [sectionId, changed] = section;
-      const content = changed.section;
-      const entry = shared[sectionId];
-      if (entry !== undefined) shared = { ...shared, [sectionId]: { ...entry, section: content } };
-      // An element added inside the copy shows under the copy's id for it once put back.
-      const inCopy = (nodeId: string | null) => shownInCopy(changed, nodeId);
-      // A one-field patch names the copy's element; the section is recorded whole instead.
-      const { patch: _patch, ...whole } = edit;
-      emitEdit({
-        ...whole,
-        nodeId: inCopy(edit.nodeId),
-        selection: inCopy(edit.selection),
-        page,
-        sharedSection: { id: sectionId, section: content },
-      });
-      // Every other copy of the section shows the change too.
-      putBack(edit.page);
-      return;
-    } else {
-      page = { root: split.page.root, content: folded.content };
-      emitEdit({ ...edit, page });
-    }
-    putBack(edit.page, true);
+  const follow = (routed: RoutedEdit, shown: PageDoc) => {
+    ({ page, layout, shared } = routed.next);
+    if (routed.emit !== undefined) emitEdit(routed.emit);
+    putBack(shown, routed.putBack === "whenOutOfOrder");
   };
+
+  /** Reports an edit Puck made to the page as the canvas shows it (see `routeEdit`). */
+  const reportEdit = (edit: EngineEdit, action: PuckAction, prev: AppState) =>
+    follow(routeEdit(edit, action, prev, { page, layout, shared }), edit.page);
 
   /** The keys held while dragging on the canvas: Ctrl or Cmd copies (see `drag-copies.ts`). */
   const dragKeys: DragKeys = { copy: false, linked: false, pressed: false };
@@ -656,44 +545,14 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     commands.edited();
   };
 
-  /**
-   * Another linked copy of `copy`'s shared section, where a Ctrl/Cmd+Shift drag of `copy` dropped
-   * (F-ED-23): among the page's sections, between the Header and the Footer. `shown` is what Puck
-   * shows now.
-   */
-  const placeLinkedCopy = (copy: NodeDoc & SharedCopyNode, drop: Drop, shown: PageDoc) => {
-    const header = layout.header.length;
-    const at = page.content.indexOf(copy);
-    // Puck counts the drop without the copy that was dragged; the page still has it.
-    const among = drop.destinationZone === ROOT_ZONE ? drop.destinationIndex - header : Number.NaN;
-    if (Number.isNaN(among)) {
-      putBack(shown);
-      return;
-    }
-    const others = Math.min(Math.max(among, 0), page.content.length - 1);
-    const index = others >= at ? others + 1 : others;
-    const added = newSharedCopy(page.content, copy.props.sharedSectionId, shared, layout);
-    const content = [...page.content];
-    content.splice(index, 0, added);
-    page = { ...page, content };
-    const root = shared[copy.props.sharedSectionId]?.section.props.id;
-    const id = root === undefined ? null : copiedNodeId(added.props.id, root);
-    emitEdit({
-      kind: "duplicate",
-      nodeId: id,
-      componentType: SHARED_COPY_TYPE,
-      field: null,
-      page,
-      selection: id,
-      copyOf: copy.props.sharedSectionId,
-    });
-    putBack(shown);
-  };
+  /** Another linked copy of `copy`'s section where a drag of it dropped (see `routeLinkedCopy`). */
+  const placeLinkedCopy = (copy: NodeDoc & SharedCopyNode, drop: Drop, shown: PageDoc) =>
+    follow(routeLinkedCopy(copy, drop, { page, layout, shared }), shown);
 
-  const handleAction = (action: PuckAction, next: AppState, prev: AppState) => {
-    inAction = true;
-    try {
-      if (applying) {
+  const handleAction = (action: PuckAction, next: AppState, prev: AppState) =>
+    sync.handleAction(() => {
+      // The echo of Webforge's own dispatch: Puck shows what the app has already.
+      if (sync.isEcho()) {
         return;
       }
       const copying = library === null ? null : copyDrop(action, prev);
@@ -713,10 +572,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       }
       // After the edit, so the history records the selection from before it.
       reportSelection(selectedNodeId(next));
-    } finally {
-      inAction = false;
-    }
-  };
+    });
 
   const reportSelection = (id: string | null) => {
     if (id !== selection) {
@@ -736,7 +592,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     const width = usePuck((state) => state.appState.ui.viewports.current.width);
     useEffect(() => {
       getPuck = get;
-      if (shownRevision !== revision) {
+      if (!sync.isShown()) {
         showPage();
       }
       // A width set before Puck was ready, or Puck's own starting width.
@@ -750,7 +606,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
         getPuck = null;
         pendingWidth = null;
         // A remounted Puck starts from whatever `data` it was last rendered with: resend the page.
-        shownRevision = -1;
+        sync.forget();
       };
     }, [get]);
     // After the effect above, so the width it sends to Puck isn't taken for the user's choice.
@@ -1055,14 +911,14 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       );
       render();
       // Puck starts with the current page.
-      shownRevision = revision;
+      sync.shown();
     },
 
     loadPage(nextPage, nextLayout, nextShared = {}) {
       page = nextPage;
       layout = nextLayout;
       shared = nextShared;
-      revision++;
+      sync.changed();
       editorRevisions.clear();
       reportSelection(null);
       showPage();
@@ -1070,7 +926,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     },
 
     applyChange({ page: nextPage, layout: nextLayout = layout, shared: nextShared = shared }) {
-      if (reporting) {
+      if (sync.isReporting()) {
         // The document store just took over the edit Puck reported: same content, nothing to show.
         page = nextPage;
         layout = nextLayout;
@@ -1097,18 +953,18 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       }
       // Only what changed, unless Puck shows an older page or the change is too big to translate.
       const actions =
-        getPuck !== null && shownRevision === revision ? pageActions(before, after, slotsOf) : null;
+        getPuck !== null && sync.isShown() ? pageActions(before, after, slotsOf) : null;
       page = nextPage;
       layout = nextLayout;
       shared = nextShared;
-      revision++;
+      sync.changed();
       preserveCaret(frameDocument);
       if (refocus !== null) refocusRichText(frameDocument, refocus);
       if (actions === null) {
         showPage();
       } else {
         for (const action of actions) dispatch({ ...action, recordHistory: false });
-        shownRevision = revision;
+        sync.shown();
       }
       // Puck selects by position; keep the same element selected, or none if it is gone.
       if (selection !== null && findNode(after, selection) === undefined) {
@@ -1197,7 +1053,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     perform(action) {
       const puck = getPuck;
       const doc = frameDocument ?? host?.ownerDocument;
-      if (puck === null || inAction) {
+      if (puck === null || sync.inAction()) {
         return false;
       }
       if (action === "editText" || action === "clearText") {
