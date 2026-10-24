@@ -34,7 +34,8 @@ describe("the Image element (2.9)", () => {
       rounded: true,
     });
 
-    expect(html).toContain('<figure class="site-image w-full mx-auto">');
+    expect(html).toContain('<figure class="site-image w-full mx-auto max-w-none">');
+    expect(html).toContain('sizes="(min-width: 896px) 896px, 100vw"');
     expect(html).toContain('alt="The window"');
     expect(html).toContain('style="object-position:30% 50%"');
     expect(html).toContain('class="h-auto w-full rounded-box"');
@@ -51,9 +52,18 @@ describe("the Image element (2.9)", () => {
     });
 
     // Mobile first: full width on Mobile, at most medium from Tablet up.
-    expect(html).toContain('<figure class="site-image w-full ml-auto md:max-w-md">');
+    expect(html).toContain('<figure class="site-image w-full ml-auto max-w-none md:max-w-md">');
     expect(html).toContain('alt="Our shop"');
     expect(html).not.toContain("<figcaption");
+  });
+
+  it("is full width above a device where it is narrower", () => {
+    const html = render("Image", {
+      image: { mediaId: "shop" },
+      width: { $responsive: { desktop: "full", mobile: "small" } },
+    });
+
+    expect(html).toContain('<figure class="site-image w-full mx-auto max-w-xs md:max-w-none">');
   });
 
   it("shows a hint on the canvas without its image, and nothing in the export", () => {
@@ -96,7 +106,7 @@ describe("the Spacer and Divider elements (2.9)", () => {
   });
 
   it("is a thematic break, or daisyUI's divider with its word read out", () => {
-    expect(render("Divider", {})).toBe('<hr class="site-divider my-4 border-base-300"/>');
+    expect(render("Divider", {})).toBe('<hr class="site-divider my-4 border-base-content/10"/>');
     expect(render("Divider", { text: "or" })).toBe('<div class="site-divider divider">or</div>');
   });
 });

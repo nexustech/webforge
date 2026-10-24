@@ -15,12 +15,15 @@ const ALIGNMENT_FIELD = {
 } as const satisfies FieldDef;
 
 const IMAGE_WIDTHS = ["small", "medium", "large", "full"] as const;
-/** An Image's width tokens (2.17's handles snap to them): at most this wide, never wider than its column. */
+/**
+ * An Image's width tokens (2.17's handles snap to them): at most this wide, never wider than its
+ * column. Full width says so, so a narrower width on a smaller device doesn't carry on above it.
+ */
 const IMAGE_WIDTH_CLASS = {
   small: "max-w-xs",
   medium: "max-w-md",
   large: "max-w-2xl",
-  full: "",
+  full: "max-w-none",
 } as const;
 /** An Image across its section, by its alignment. */
 const IMAGE_ALIGN_CLASS = { left: "mr-auto", centre: "mx-auto", right: "ml-auto" } as const;
@@ -51,7 +54,7 @@ const image = defineComponent({
     const placed = values.image;
     const resolved = placed === undefined ? null : context.image(placed.mediaId);
     const width = responsiveClasses(values.width, (value) => IMAGE_WIDTH_CLASS[value]);
-    const frame = `site-image w-full ${IMAGE_ALIGN_CLASS[values.alignment]}${width === "" ? "" : ` ${width}`}${marginClasses(values.margin)}`;
+    const frame = `site-image w-full ${IMAGE_ALIGN_CLASS[values.alignment]} ${width}${marginClasses(values.margin)}`;
     if (resolved === null) {
       const hint = context.emptyImage?.();
       return hint === undefined ? null : (
@@ -68,7 +71,8 @@ const image = defineComponent({
         <Picture
           image={resolved}
           alt={placed?.alt ?? resolved.alt}
-          sizes="(min-width: 768px) 50vw, 100vw"
+          // At most a section's column (max-w-4xl), whatever its width token.
+          sizes="(min-width: 896px) 896px, 100vw"
           className={values.rounded ? "h-auto w-full rounded-box" : "h-auto w-full"}
         />
         {caption === "" ? null : (
@@ -177,7 +181,7 @@ const divider = defineComponent({
     const margin = marginClasses(values.margin);
     // A plain line is a thematic break; one with a word is daisyUI's divider, its word read out.
     return text === "" ? (
-      <hr className={`site-divider my-4 border-base-300${margin}`} />
+      <hr className={`site-divider my-4 border-base-content/10${margin}`} />
     ) : (
       <div className={`site-divider divider${margin}`}>{text}</div>
     );
