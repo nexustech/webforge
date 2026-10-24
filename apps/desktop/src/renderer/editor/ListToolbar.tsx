@@ -3,6 +3,7 @@ import { t } from "@webforge/i18n";
 import { isNodeDoc, type NodeDoc, newId, type PageId, type SiteDoc } from "@webforge/model";
 import type { ContextualToolbar } from "../shell/contextual-toolbars.js";
 import type { EditorSession } from "./editor-session.js";
+import { holderOf } from "./element-holder.js";
 import { fieldTarget } from "./field-target.js";
 import { labelFor } from "./labels.js";
 import { useDocument } from "./use-document.js";
@@ -10,22 +11,9 @@ import { useDocument } from "./use-document.js";
 /** Where the toolbar adds a List item: before or after the one selected, or at the List's end. */
 export type ListItemPlace = "before" | "after" | "end";
 
-/** The List element holding `itemId`, among `nodes` and the elements in their slots. */
-function listHolding(nodes: readonly NodeDoc[], itemId: string): NodeDoc | undefined {
-  for (const node of nodes) {
-    for (const value of Object.values(node.props)) {
-      if (!Array.isArray(value) || !value.every(isNodeDoc)) continue;
-      if (node.type === "List" && value.some((item) => item.props.id === itemId)) return node;
-      const found = listHolding(value, itemId);
-      if (found !== undefined) return found;
-    }
-  }
-  return undefined;
-}
-
 /**
  * The List `nodeId` is, or the List holding it if it is a List item, by the id the canvas shows it
- * by: on the page, in the shared Header or Footer, or in a linked copy (`copy~id`, F-ED-23).
+ * by (see `holderOf`).
  */
 function listOf(
   site: SiteDoc,
@@ -33,23 +21,8 @@ function listOf(
   pageId: PageId,
   nodeId: string,
 ): { readonly listId: string; readonly itemId: string | undefined } | undefined {
-  const node = fieldTarget(site, session.library, pageId, nodeId)?.node;
-  if (node?.type === "List") return { listId: nodeId, itemId: undefined };
-  if (node?.type !== "ListItem") return undefined;
-  const split = nodeId.lastIndexOf("~");
-  const prefix = nodeId.slice(0, split + 1);
-  const own = nodeId.slice(split + 1);
-  const trees = [
-    site.pages[pageId]?.doc.content ?? [],
-    site.layout.header,
-    site.layout.footer,
-    ...Object.values(site.sharedSections).map((shared) => [shared.section]),
-  ];
-  for (const tree of trees) {
-    const list = listHolding(tree, own);
-    if (list !== undefined) return { listId: `${prefix}${list.props.id}`, itemId: own };
-  }
-  return undefined;
+  const found = holderOf(site, session, pageId, nodeId, "List", "ListItem");
+  return found === undefined ? undefined : { listId: found.holderId, itemId: found.childId };
 }
 
 /**

@@ -18,6 +18,8 @@ import {
   addTarget,
   groupItems,
   sharedSectionItems,
+  suggestedItems,
+  suggestedTypes,
   withFavourites,
 } from "./add-items.js";
 
@@ -332,5 +334,63 @@ describe("withFavourites (F-ED-26, UX-10)", () => {
         .map((group) => group.category)
         .slice(0, 2),
     ).toEqual(["Favourites", "Recently used"]);
+  });
+});
+
+describe("the Suggested group (SP-12)", () => {
+  const column = (id: string): NodeDoc => ({ type: "Column", props: { id, content: [] } });
+  const content: NodeDoc[] = [
+    {
+      type: "Section",
+      props: {
+        id: "s",
+        content: [
+          { type: "Heading", props: { id: "h", text: "Hi" } },
+          {
+            type: "List",
+            props: { id: "list", items: [{ type: "ListItem", props: { id: "li", text: "One" } }] },
+          },
+          { type: "Columns", props: { id: "two", columns: [column("c1"), column("c2")] } },
+          {
+            type: "Columns",
+            props: { id: "four", columns: ["d1", "d2", "d3", "d4"].map(column) },
+          },
+        ],
+      },
+    },
+  ];
+  const suggested = (id: string | null) => suggestedTypes(siteLibrary, content, id);
+
+  it("suggests what a selected element's slots name as theirs, and what goes beside an item", () => {
+    expect(suggested("list")).toEqual(["ListItem"]);
+    expect(suggested("li")).toEqual(["ListItem"]);
+    expect(suggested("two")).toEqual(["Column"]);
+    expect(suggested("c1")).toEqual(["Column"]);
+    expect(suggestedItems(siteLibrary, ["ListItem"])).toEqual([
+      {
+        type: "ListItem",
+        label: "List item",
+        category: "Suggested",
+        repeat: true,
+        suggested: true,
+      },
+    ]);
+  });
+
+  it("suggests nothing where anything fits, a slot is full, or nothing is selected", () => {
+    expect(suggested("s")).toEqual([]);
+    expect(suggested("h")).toEqual([]);
+    expect(suggested("four")).toEqual([]);
+    expect(suggested("d1")).toEqual([]);
+    expect(suggested(null)).toEqual([]);
+  });
+
+  it("adds no fifth column, and a Column into Columns with room", () => {
+    expect(addTarget(siteLibrary, content, "Column", "four")).toBeUndefined();
+    expect(addTarget(siteLibrary, content, "Column", "c1")).toEqual({
+      parentId: "two",
+      slot: "columns",
+      index: 1,
+    });
   });
 });

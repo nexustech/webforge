@@ -164,6 +164,14 @@ export const shell = {
   // The selected Header's toolbar in the Mobile view (UX-26): shows its menu open on the canvas only.
   "headerToolbar.label": "Header preview",
   "headerToolbar.showMobileMenu": "Show mobile menu",
+  // The selected Columns' toolbar (2.17): its columns, its layout on the device shown, and outlines.
+  "columnsToolbar.columns": "Columns",
+  "columnsToolbar.addColumn": "Add column",
+  "columnsToolbar.removeColumn": "Remove column",
+  // {device} is a device view: "Column widths on Mobile", as the Edit panel calls the field.
+  "columnsToolbar.layoutOn": "Column widths on {device}",
+  "columnsToolbar.previewLabel": "Columns preview",
+  "columnsToolbar.showOutlines": "Show column outlines",
   // The canvas frame's edges, dragged to set its width (1.33, F-ED-25).
   "canvasResize.left": "Canvas width, left edge",
   "canvasResize.right": "Canvas width, right edge",

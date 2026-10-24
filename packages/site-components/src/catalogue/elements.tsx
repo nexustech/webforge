@@ -5,6 +5,7 @@ import { defineComponent } from "../define.js";
 import { MARGIN_FIELD, marginClasses } from "../frame.js";
 import { type ComponentDef, linkAttributes, responsiveClasses } from "../library.js";
 import { Picture } from "../picture.js";
+import { PREVIEW_ATTRIBUTE } from "../previews.js";
 import type { FieldDef, ResolvedImage } from "../schema.js";
 import { BODY_TEXT_CLASSES, BUTTON_CLASSES } from "../typography.js";
 import {
@@ -13,6 +14,7 @@ import {
   type ColumnLayout,
   ColumnsLayoutContext,
   imageSizes,
+  MAX_COLUMNS,
 } from "./column-layouts.js";
 
 const ALIGNMENTS = ["left", "centre", "right"] as const;
@@ -238,7 +240,7 @@ const columns = defineComponent({
   label: t("element.columns"),
   category: t("category.layout"),
   fields: {
-    columns: { kind: "slot", label: t("field.columns"), allow: ["Column"] },
+    columns: { kind: "slot", label: t("field.columns"), allow: ["Column"], max: MAX_COLUMNS },
     layout: {
       kind: "select",
       label: t("field.columnLayout"),
@@ -294,11 +296,16 @@ const column = defineComponent({
     content: { kind: "slot", label: t("field.content"), accepts: "element" },
   },
   defaults: { content: [] },
-  // `site-column` is what 2.17's column outlines find on the canvas.
-  render: ({ slots }) => {
+  // Marked for the canvas's *Show column outlines* preview (2.17), which outlines its edges.
+  render: ({ slots, context }) => {
     const Content = slots.content;
     return (
-      <div className="site-column min-w-0">
+      <div
+        className="site-column min-w-0"
+        {...(context.previews?.columnOutlines === true
+          ? { [PREVIEW_ATTRIBUTE]: "column-outline" }
+          : {})}
+      >
         <Content className="flex flex-col gap-4" />
       </div>
     );
@@ -342,7 +349,8 @@ const list = defineComponent({
         <Items />
       </ol>
     ) : (
-      <ul className={className}>
+      // Safari and VoiceOver drop a list's semantics once its markers are gone: say it is one.
+      <ul className={className} role={values.style === "plain" ? "list" : undefined}>
         <Items />
       </ul>
     );

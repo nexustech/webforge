@@ -69,6 +69,8 @@ export const panels = {
   // The site's shared sections, listed first under Sections (1.29, F-ED-23).
   "add.sharedSections": "Shared sections",
   // The person's favourites and recently added items, first in each tab (1.34, F-ED-26).
+  // What fits inside the selection (SP-12): a List's items, a Columns' columns.
+  "add.suggested": "Suggested",
   "add.favourites": "Favourites",
   "add.recent": "Recently used",
   "add.favourite.add": "Add to Favourites",

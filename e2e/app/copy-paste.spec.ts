@@ -220,7 +220,7 @@ test("pastes a copied image into the selected Hero, as one step with its Media i
   expect(hero?.props.image).toEqual({ mediaId: pasted?.id });
 });
 
-test("adds image files copied in the file manager to Media", async () => {
+test("places an image file copied in the file manager in an Image element of its own, and in Media (2.9)", async () => {
   app = await launchDesktopApp({ args: [florist], userDataDir: userData });
   const page = await app.firstWindow();
   await waitForCanvas(page);
@@ -234,7 +234,14 @@ test("adds image files copied in the file manager to Media", async () => {
 
   await page.keyboard.press("ControlOrMeta+v");
 
-  await expect(page.getByText("Added 'Shop front.jpg' to Media")).toBeVisible();
+  // Nothing selected takes an image: it goes in a new Image element, where Add would put one.
+  const canvas = page.frameLocator(".editor__canvas iframe");
+  await expect(canvas.locator(".site-image img")).toHaveCount(1);
   await page.getByRole("tab", { name: "Media" }).click();
   await expect(page.getByRole("button", { name: "Shop front.jpg" })).toBeVisible();
+
+  // One step, undone in one go: the element and its place in Media.
+  await page.keyboard.press("ControlOrMeta+z");
+  await expect(canvas.locator(".site-image")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Shop front.jpg" })).toHaveCount(0);
 });
