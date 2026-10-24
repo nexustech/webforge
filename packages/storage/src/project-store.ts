@@ -10,6 +10,7 @@ import {
 } from "@webforge/model";
 import Database from "better-sqlite3";
 import { z } from "zod";
+import { checkContent, stampContent } from "./content-check.js";
 import { ProjectFileError, ReadOnlyProjectError } from "./errors.js";
 import { APPLICATION_ID, FORMAT_VERSION, SCHEMA, SCHEMA_MIGRATIONS, SCHEMAS } from "./schema.js";
 
@@ -347,6 +348,10 @@ function validateProject(db: Database.Database): ValidatedProject {
       cause: meta.error,
     });
   }
+  // A torn copy can pass quick_check (#295). A newer format's tables are its own to check.
+  if (!newerFormat) {
+    checkContent(db);
+  }
   return {
     projectId: meta.data.project_id,
     name: meta.data.name,
@@ -374,6 +379,7 @@ function migrateSchema(db: Database.Database, from: number): void {
     db.prepare("UPDATE meta SET value = ? WHERE key = 'format_version'").run(
       String(FORMAT_VERSION),
     );
+    stampContent(db);
   })();
 }
 
@@ -421,6 +427,7 @@ export class ProjectStore {
           for (const [key, value] of Object.entries(meta)) {
             insert.run(key, value);
           }
+          stampContent(db);
         })();
       } finally {
         db.close();
@@ -541,13 +548,12 @@ export class ProjectStore {
    * all of them or none. When this returns, the changes are on disk.
    */
   commit(changes: readonly DocumentChange[]): void {
-    this.#assertWritable();
     const upsert = this.#prepare(
       `INSERT INTO documents (id, kind, blob_hash) VALUES (?, ?, ?)
        ON CONFLICT (id) DO UPDATE SET kind = excluded.kind, blob_hash = excluded.blob_hash`,
     );
     const remove = this.#prepare("DELETE FROM documents WHERE id = ?");
-    this.#db.transaction(() => {
+    this.#write(() => {
       for (const change of changes) {
         if (change.type === "put") {
           const json = JSON.stringify(change.content);
@@ -560,7 +566,7 @@ export class ProjectStore {
           remove.run(change.id);
         }
       }
-    })();
+    });
   }
 
   /**
@@ -568,8 +574,7 @@ export class ProjectStore {
    * again reuses the existing blob.
    */
   putBlob(data: Uint8Array, mime: string): string {
-    this.#assertWritable();
-    return this.#db.transaction(() => this.#insertBlob(data, mime))();
+    return this.#write(() => this.#insertBlob(data, mime));
   }
 
   /** Whether a blob is stored under `hash`, without reading it. */
@@ -588,7 +593,6 @@ export class ProjectStore {
    * and with each other, so saving one only writes a small manifest.
    */
   saveVersion(name: string, kind: VersionKind): VersionInfo {
-    this.#assertWritable();
     const documents: Manifest["documents"] = this.#prepare(
       "SELECT id, kind, blob_hash AS hash FROM documents ORDER BY id",
     )
@@ -600,17 +604,19 @@ export class ProjectStore {
       kind,
       createdAt: new Date().toISOString(),
     };
-    this.#prepare(
-      `INSERT INTO versions (id, name, kind, created_at, format_version, manifest)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-    ).run(
-      version.id,
-      version.name,
-      version.kind,
-      version.createdAt,
-      FORMAT_VERSION,
-      JSON.stringify({ documents }),
-    );
+    this.#write(() => {
+      this.#prepare(
+        `INSERT INTO versions (id, name, kind, created_at, format_version, manifest)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+      ).run(
+        version.id,
+        version.name,
+        version.kind,
+        version.createdAt,
+        FORMAT_VERSION,
+        JSON.stringify({ documents }),
+      );
+    });
     return version;
   }
 
@@ -644,8 +650,7 @@ export class ProjectStore {
    * row points at it. Replacing an item's file gives its `mediaId` a new blob.
    */
   putAsset(asset: NewAsset): AssetInfo {
-    this.#assertWritable();
-    return this.#db.transaction(() => {
+    return this.#write(() => {
       const hash = this.#insertBlob(asset.data, asset.mime);
       this.#prepare(
         `INSERT INTO assets (media_id, blob_hash, mime, width, height, original_name)
@@ -669,7 +674,7 @@ export class ProjectStore {
         height: asset.height,
         originalName: asset.originalName,
       };
-    })();
+    });
   }
 
   /** The asset of a Media item, or `undefined` if none was imported under this id. */
@@ -693,8 +698,7 @@ export class ProjectStore {
    * until then. Freed pages are reused by later writes; the file does not shrink until a VACUUM.
    */
   collectGarbage(): GarbageReport {
-    this.#assertWritable();
-    return this.#db.transaction(() => {
+    return this.#write(() => {
       const documentHashes = new Set(
         this.#prepare("SELECT blob_hash FROM documents").pluck().all().map(String),
       );
@@ -723,7 +727,7 @@ export class ProjectStore {
         bytes += blob.size;
       }
       return { blobs: unreferenced.length, bytes, assets };
-    })();
+    });
   }
 
   /**
@@ -761,16 +765,32 @@ export class ProjectStore {
 
   /** Remembers the editor's mode for this site. */
   writeEditorMode(mode: SiteEditorMode): void {
-    this.#assertWritable();
-    this.#prepare(
-      `INSERT INTO meta (key, value) VALUES ('editor_mode', ?)
-       ON CONFLICT (key) DO UPDATE SET value = excluded.value`,
-    ).run(siteEditorModeSchema.parse(mode));
+    this.#write(() => {
+      this.#prepare(
+        `INSERT INTO meta (key, value) VALUES ('editor_mode', ?)
+         ON CONFLICT (key) DO UPDATE SET value = excluded.value`,
+      ).run(siteEditorModeSchema.parse(mode));
+    });
   }
 
   /** Closes the file. With the rollback journal, no side files are left next to it. */
   close(): void {
     this.#db.close();
+  }
+
+  /**
+   * Runs `change` as one write: refused on a read-only project, in one transaction, which records
+   * the content fingerprint (#295) before it commits. Every write goes through here, so none can
+   * leave a fingerprint that no longer matches its rows and make a healthy file open as corrupt;
+   * `test/write-paths.test.ts` keeps it that way.
+   */
+  #write<T>(change: () => T): T {
+    this.#assertWritable();
+    return this.#db.transaction(() => {
+      const result = change();
+      stampContent(this.#db);
+      return result;
+    })();
   }
 
   #assertWritable(): void {
