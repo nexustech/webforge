@@ -208,6 +208,24 @@ describe("registerAddPanel", () => {
     expect(items()).toBe(4);
   });
 
+  it("offers no Favourites on a suggested item, which is listed only there (SP-12)", async () => {
+    const session = createEditorSession(siteLibrary, starterSite());
+    const panels = createPanelRegistry();
+    registerAddPanel(panels, session, { preferences: createPreferencesStore() });
+    render(<Host panels={panels} />);
+    await userEvent.click(screen.getByRole("tab", { name: "Elements" }));
+    act(() => {
+      addComponent(session, "List");
+    });
+    const list = currentPage(session)?.doc.content[0]?.props.content as NodeDoc[] | undefined;
+    act(() => session.select(list?.find((node) => node.type === "List")?.props.id ?? null));
+
+    fireEvent.contextMenu(button("List item"));
+    expect(screen.queryByRole("menuitem")).toBeNull();
+    fireEvent.contextMenu(button("Heading"));
+    expect(await screen.findByRole("menuitem", { name: "Add to Favourites" })).toBeTruthy();
+  });
+
   it("keeps the + button's place with its section while the page changes, and drops it once gone", async () => {
     const session = createEditorSession(siteLibrary, starterSite());
     const panels = createPanelRegistry();

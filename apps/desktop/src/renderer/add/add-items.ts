@@ -38,6 +38,11 @@ export type AddItem = {
   readonly sharedSectionId?: SharedSectionId;
   /** Set for an item listed again, among the favourites or recently used. */
   readonly repeat?: true;
+  /**
+   * Set for an item under Suggested (SP-12): a List's item, a Columns' column, offered only there,
+   * so it can't be a favourite.
+   */
+  readonly suggested?: true;
 };
 
 /** The components `tab` offers, in library order. */
@@ -349,7 +354,9 @@ export function suggestedItems(library: ComponentLibrary, types: readonly string
   const category = t("add.suggested");
   return types.flatMap((type) => {
     const def = library.components[type];
-    return def === undefined ? [] : [{ type, label: def.label, category, repeat: true as const }];
+    return def === undefined
+      ? []
+      : [{ type, label: def.label, category, repeat: true as const, suggested: true as const }];
   });
 }
 

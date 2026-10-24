@@ -366,7 +366,13 @@ describe("the Suggested group (SP-12)", () => {
     expect(suggested("two")).toEqual(["Column"]);
     expect(suggested("c1")).toEqual(["Column"]);
     expect(suggestedItems(siteLibrary, ["ListItem"])).toEqual([
-      { type: "ListItem", label: "List item", category: "Suggested", repeat: true },
+      {
+        type: "ListItem",
+        label: "List item",
+        category: "Suggested",
+        repeat: true,
+        suggested: true,
+      },
     ]);
   });
 
