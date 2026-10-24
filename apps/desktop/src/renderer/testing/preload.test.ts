@@ -22,4 +22,11 @@ describe("fakePreloadApi (2.20, B6)", () => {
     expect(api.app.onFlushRequest).toBe(api.app.onFlushRequest);
     expect(api.app.onFlushRequest).toHaveBeenCalledOnce();
   });
+
+  it("can be awaited like a plain object, without faking then()", async () => {
+    const api = fakePreloadApi();
+
+    await expect(Promise.resolve(api.project)).resolves.toBe(api.project);
+    expect("then" in api.project).toBe(false);
+  });
 });

@@ -7,6 +7,12 @@ export type PreloadOverrides = {
 };
 
 /**
+ * What `await` and Vitest's matchers look for on any object; never faked, so awaiting a domain or
+ * printing one in a failed check works as for a plain object.
+ */
+const NOT_CALLS = new Set(["then", "toJSON", "asymmetricMatch", "$$typeof", "nodeType"]);
+
+/**
  * The preload API (`window.webforge`) for a renderer test (2.20, B6), without Electron. A call the
  * test gives in `overrides` does what it says; any other is a `vi.fn()`: a subscription (`on…`)
  * returns its unsubscribe, every other call resolves to nothing. Each domain keeps its fakes, so a
@@ -20,9 +26,9 @@ export function fakePreloadApi(overrides: PreloadOverrides = {}): WebforgeApi {
       const given: Record<string, unknown> = { ...(overrides as Record<string, object>)[name] };
       calls = new Proxy(given, {
         get(target, call) {
-          if (typeof call !== "string") return undefined;
+          if (typeof call !== "string" || NOT_CALLS.has(call)) return target[call as string];
           if (!(call in target)) {
-            target[call] = call.startsWith("on")
+            target[call] = /^on[A-Z]/.test(call)
               ? vi.fn(() => () => undefined)
               : vi.fn(async () => undefined);
           }
