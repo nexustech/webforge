@@ -230,6 +230,8 @@ export type RenderContext = SiteBindings & {
   readonly image: (mediaId: string) => ResolvedImage | null;
   /** The canvas's edit-only previews (UX-26); the export renders without them. */
   readonly previews?: EditPreviews;
+  /** What an Image without its image shows instead (2.9): a hint on the canvas; nothing in the export. */
+  readonly emptyImage?: () => ReactNode;
 };
 
 /**

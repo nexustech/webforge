@@ -318,8 +318,9 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     setViewport: view.setViewport,
     onViewportChange: view.onViewport,
 
-    setImages(image) {
-      renderContext = { ...renderContext, image };
+    setImages(image, emptyImage) {
+      const { emptyImage: _previous, ...rest } = renderContext;
+      renderContext = { ...rest, image, ...(emptyImage === undefined ? {} : { emptyImage }) };
       redraw();
     },
 
