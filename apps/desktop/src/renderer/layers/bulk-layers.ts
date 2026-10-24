@@ -8,10 +8,17 @@ import {
   pageAnchors,
   pastedCopies,
 } from "@webforge/model";
+import {
+  type Layer,
+  type LayersSession,
+  layerItem,
+  ownId,
+  placeOf,
+  shownLayer,
+} from "../editor/layers.js";
 import { findNode } from "../editor/nodes.js";
 import { selectedIds } from "../editor/selection.js";
 import { shownLayout } from "../editor/shared-layout.js";
-import { type Layer, type LayersSession, layerItem, ownId, placeOf, shownLayer } from "./layers.js";
 
 /**
  * Move, duplicate, delete and hide for several selected elements at once (1.31, UX-3): each one

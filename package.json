@@ -20,7 +20,7 @@
     "lint": "biome ci .",
     "format": "biome check --write .",
     "typecheck": "tsc -b",
-    "deps": "depcruise apps packages e2e tools",
+    "deps": "depcruise apps packages e2e tools && node tools/src/check-area-cycles.ts apps/desktop/src/renderer",
     "knip": "knip",
     "licence-check": "pnpm licenses list -r --json | node tools/src/check-licences.ts",
     "behaviours": "node tools/src/build-behaviours.ts && biome format --write packages/site-components/src/behaviours/index.ts",
