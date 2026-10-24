@@ -6,6 +6,7 @@ import {
 } from "@webforge/site-components";
 import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { type CompileCanvasCss, classesOfHtml } from "../editor/site-css.js";
+import { reportFailure } from "../log.js";
 import type { AddItem } from "./add-items.js";
 
 /** How wide a section is drawn for its preview, in CSS pixels, before it is scaled down. */
@@ -188,7 +189,11 @@ export function createSectionPreviews(source: PreviewSource): (item: AddItem) =>
         const theme = source.theme();
         const kept = drawings.get(item.type);
         if (kept !== undefined && kept.node === node && kept.theme === theme) return kept.drawing;
-        const drawing = draw(node, theme).catch(() => undefined);
+        const drawing = draw(node, theme).catch((error: unknown) => {
+          // No preview: the Add panel shows the section's name alone.
+          reportFailure("add.preview", error);
+          return undefined;
+        });
         drawings.set(item.type, { node, theme, drawing });
         return drawing;
       };

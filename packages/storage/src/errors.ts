@@ -1,3 +1,5 @@
+import { WebforgeError } from "@webforge/errors";
+
 /**
  * Why a file could not be opened as a Webforge project.
  * - `not-found`: no file at the path.
@@ -15,22 +17,29 @@ export type ProjectFileErrorCode =
   | "unexpected-schema"
   | "newer-format";
 
-/** A `.wforge` file that cannot be opened. The message is for logs; show the user `code`. */
-export class ProjectFileError extends Error {
+/** What the person is told for each {@link ProjectFileErrorCode}. */
+const PROJECT_FILE_MESSAGES = {
+  "not-found": "site.openFailed.missing",
+  "not-a-project": "site.openFailed.notASite",
+  corrupt: "site.openFailed.damaged",
+  "unexpected-schema": "site.openFailed.notASite",
+  "newer-format": "site.openFailed.newer",
+} as const satisfies Record<ProjectFileErrorCode, string>;
+
+/** A `.wforge` file that cannot be opened. The message is for developers; `code` says what. */
+export class ProjectFileError extends WebforgeError<ProjectFileErrorCode> {
   override readonly name = "ProjectFileError";
-  readonly code: ProjectFileErrorCode;
 
   constructor(code: ProjectFileErrorCode, message: string, options?: ErrorOptions) {
-    super(message, options);
-    this.code = code;
+    super(code, PROJECT_FILE_MESSAGES[code], message, options);
   }
 }
 
 /** A write to a project opened read-only: on request, or because a newer Webforge saved it. */
-export class ReadOnlyProjectError extends Error {
+export class ReadOnlyProjectError extends WebforgeError<"read-only"> {
   override readonly name = "ReadOnlyProjectError";
 
   constructor() {
-    super("The project is open read-only");
+    super("read-only", "errors.readOnly", "The project is open read-only");
   }
 }

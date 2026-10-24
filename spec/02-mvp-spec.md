@@ -75,7 +75,7 @@ The result is a fast, accessible, self-contained static website they fully own.
 | ID | Feature | Acceptance criteria |
 |---|---|---|
 | F-DS-1 | **Theme picker** (05, S3) | **10–12 curated themes** (light + dark), visibly distinct (no "house look"). Changing theme confirms (D7), restyles everything instantly, and is undoable |
-| F-DS-2 | **Brand colours, fonts, roundness** | Primary/secondary/accent colours; **~50 bundled font families with 12–15 tested pairings** (Fontsource, offline) plus **Browse all fonts** (on-demand Fontsource catalogue, cached locally; S4); corner style; spacing scale. Contrast warnings below WCAG AA |
+| F-DS-2 | **Brand colours, fonts, roundness** | Primary/secondary/accent colours; **~50 bundled font families with 12–15 tested pairings** (Fontsource, offline) plus **Browse all fonts** (on-demand Fontsource catalogue, cached locally; S4); corner style; spacing scale. Contrast warnings below WCAG AA: a guideline the site owner can override, never a block on saving, export or publishing, nor on merging Webforge's own changes (product owner, 24 Oct 2026). The editor's own interface still meets AA (standards §4) |
 | F-DS-3 | **Section themes** | A section can use the light/dark variant of the theme (daisyUI nested themes) |
 | F-DS-4 | **Text and button styles** (G11) | Theme defines a type scale (H1–H6, body, small) and button styles (shape, size, filled/outline/ghost), editable in the Theme panel and applied site-wide (D7 confirm) |
 | F-DS-5 | **Animations** (G8) | Per section/element *Entrance animation* (None, Fade, Slide up/left/right, Zoom) with delay; *Hover effect* for buttons/cards (Lift, Grow, Shadow). CSS + a tiny observer in `webforge.js`; disabled automatically for visitors with *prefers-reduced-motion*; works from disk. **Content is visible by default:** elements are only hidden for their entrance once `webforge.js` has marked the page, so nothing stays invisible without JavaScript, in print or for search engines |
@@ -87,7 +87,7 @@ The result is a fast, accessible, self-contained static website they fully own.
 |---|---|---|
 | F-SET-1 | **Site Settings** (X3) | General, Web address, Social & sharing, Contact details & opening hours, Search engines, Analytics (GA4 ID, B4), Form defaults. Bound values update all elements; saving is one undo step |
 | F-SET-2 | **Page Settings** | Title, description, share image, slug, hide header/footer, hide from navigation |
-| F-CHK-1 | **Site Check** panel (X5) | Live, background checks grouped **Must fix · Should fix · Tips**; click to jump; Fix buttons; Ignore per item. Export blocks only on *Must fix*; Publish also blocks on broken links, missing web address, placeholder text, unconfigured forms, missing titles |
+| F-CHK-1 | **Site Check** panel (X5) | Live, background checks grouped **Must fix · Should fix · Tips**; click to jump; Fix buttons; Ignore per item. Export blocks only on *Must fix*; Publish also blocks on broken links, missing web address, placeholder text, unconfigured forms, missing titles. Colour contrast is at most *Should fix*, never *Must fix* |
 
 ### 2.5 Preview, export, publish
 | ID | Feature | Acceptance criteria |

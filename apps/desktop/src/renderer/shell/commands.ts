@@ -1,4 +1,5 @@
 import { t } from "@webforge/i18n";
+import { reportFailure } from "../log.js";
 import { COMMAND_SHORTCUTS, type StandardShortcut } from "./shortcut-standard.js";
 
 /**
@@ -170,7 +171,7 @@ export function createCommandRegistry({
       const result = command.run();
       if (result instanceof Promise) {
         result.catch((error: unknown) => {
-          console.error(`Command "${id}" failed`, error);
+          reportFailure(`command.${id}`, error);
         });
       }
       return true;

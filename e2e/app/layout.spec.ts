@@ -34,8 +34,13 @@ async function viewMenu(name: string): Promise<void> {
   await page.getByRole("menuitem", { name }).click();
 }
 
-const leftWidth = async () =>
-  (await page.getByRole("region", { name: "Left panels" }).boundingBox())?.width ?? 0;
+/** The left column's width; a collapsed one hides its panels (it shows a strip of icons). */
+const leftWidth = async () => {
+  const left = page.getByRole("region", { name: "Left panels" });
+  if (!(await left.isVisible())) return 0;
+  // Hidden just after the check, as the column collapses: don't wait for it to come back.
+  return (await left.boundingBox({ timeout: 250 }).catch(() => null))?.width ?? 0;
+};
 
 const savedPreferences = (): { panelLayout?: Record<string, unknown>; theme?: string } => {
   const file = join(userDataDir, "preferences.json");
@@ -102,6 +107,26 @@ test.describe("window layout", () => {
     await toggle.click();
     await expect.poll(leftWidth).toBeLessThan(2);
     await toggle.click();
+    await expect.poll(leftWidth).toBeGreaterThan(150);
+  });
+
+  test("leaves a strip of panel icons when a column is collapsed, which opens it at a panel (UX-13)", async () => {
+    const toggle = page.getByRole("button", { name: "Show or Hide Left Panels" });
+    await toggle.click();
+    const strip = page.getByRole("navigation", { name: "Left panels, collapsed" });
+    // Layers too, from the column's lower pane (ADR 0011).
+    await expect(strip.getByRole("button")).toHaveText(["", "", ""]);
+    await expect(strip.getByRole("button", { name: "Add" })).toBeVisible();
+    await expect(strip.getByRole("button", { name: "Layers" })).toBeVisible();
+
+    await strip.getByRole("button", { name: "Undo History" }).click();
+
+    await expect(strip).toHaveCount(0);
+    const left = page.getByRole("region", { name: "Left panels" });
+    await expect(left.getByRole("tab", { name: "Undo History" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
     await expect.poll(leftWidth).toBeGreaterThan(150);
   });
 

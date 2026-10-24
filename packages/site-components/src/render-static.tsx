@@ -1,3 +1,4 @@
+import { WebforgeError } from "@webforge/errors";
 import {
   imageValueSchema,
   isNodeDoc,
@@ -13,12 +14,16 @@ import { RichText } from "./rich-text.js";
 import type { BehaviourName, RenderContext } from "./schema.js";
 
 /** A node uses a component type the library does not have (a build failure, X5). */
-export class UnknownComponentError extends Error {
+export class UnknownComponentError extends WebforgeError<"unknown-component"> {
+  override readonly name = "UnknownComponentError";
   readonly componentType: string;
 
   constructor(componentType: string) {
-    super(`Unknown component type "${componentType}"`);
-    this.name = "UnknownComponentError";
+    super(
+      "unknown-component",
+      "export.failed.buildFailed",
+      `Unknown component type "${componentType}"`,
+    );
     this.componentType = componentType;
   }
 }
@@ -123,8 +128,12 @@ export function behavioursUsedBy(
   library: ComponentLibrary,
 ): BehaviourName[] {
   const names = new Set<BehaviourName>();
-  walkNodes(nodes, library, (_node, def) => {
-    for (const name of def.behaviours ?? []) names.add(name);
+  walkNodes(nodes, library, (node, def) => {
+    const needed =
+      typeof def.behaviours === "function"
+        ? def.behaviours({ ...def.defaults, ...node.props })
+        : (def.behaviours ?? []);
+    for (const name of needed) names.add(name);
   });
   return [...names].sort();
 }

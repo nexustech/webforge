@@ -1,6 +1,7 @@
 import { t } from "@webforge/i18n";
 import type { ProjectResult } from "../../shared/ipc-contract.js";
 import { openFailureMessage } from "../../shared/open-failure.js";
+import { reportFailure } from "../log.js";
 
 /**
  * Runs a create or open request (the main process shows the dialog and saves the open site first)
@@ -15,7 +16,8 @@ export async function openSiteWith(
   let result: ProjectResult;
   try {
     result = await request();
-  } catch {
+  } catch (error) {
+    reportFailure("site.open", error);
     return t("site.openFailed.unknown");
   }
   if (result.status === "opened") {

@@ -1,6 +1,7 @@
 import { toast } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import type { ExportResult } from "../../shared/ipc-contract.js";
+import { reportFailure } from "../log.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import type { CommandRegistry } from "../shell/commands.js";
 
@@ -45,7 +46,8 @@ export function registerExportCommand(
     let message: ReturnType<typeof exportMessage>;
     try {
       message = exportMessage(await onExport());
-    } catch {
+    } catch (error) {
+      reportFailure("export", error);
       message = { kind: "error", text: t("export.failed.buildFailed") };
     } finally {
       registry.update(EXPORT_COMMAND_ID, { enabled: true });

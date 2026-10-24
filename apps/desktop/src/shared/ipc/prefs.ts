@@ -78,6 +78,23 @@ const addPreferencesSchema = z.strictObject({
 /** The Add panel's favourites and recently used items. */
 export type AddPreferences = z.infer<typeof addPreferencesSchema>;
 
+/** The most component types whose closed option groups are remembered. */
+const MAX_CLOSED_GROUP_TYPES = 200;
+
+/**
+ * The Edit panel's option groups the person closed (UX-13), by component type, each as `tab:id`
+ * ("style:spacing"), so they're kept in any language: UI state, never in the document nor an undo
+ * step. Every group is open until closed.
+ */
+const editPanelPreferencesSchema = z.strictObject({
+  closedGroups: z
+    .record(z.string().min(1).max(64), z.array(z.string().min(1).max(64)).max(20))
+    .refine((byType) => Object.keys(byType).length <= MAX_CLOSED_GROUP_TYPES),
+});
+
+/** The Edit panel's remembered option groups. */
+export type EditPanelPreferences = z.infer<typeof editPanelPreferencesSchema>;
+
 /**
  * One person's editor preferences (per user, not per site; T2). Stored by main in
  * `<userData>/preferences.json`.
@@ -93,6 +110,7 @@ export const preferencesSchema = z.strictObject({
   window: windowStateSchema.nullable(),
   canvas: canvasPreferencesSchema,
   add: addPreferencesSchema,
+  editPanel: editPanelPreferencesSchema,
 });
 
 /** One person's editor preferences. */
@@ -112,6 +130,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
     devices: [],
   },
   add: { favourites: [], recent: [] },
+  editPanel: { closedGroups: {} },
 };
 
 /** A change to some preferences; the rest stay as they are. */
@@ -132,6 +151,7 @@ export function applyPreferencesChange(
     window: change.window === undefined ? preferences.window : change.window,
     canvas: change.canvas ?? preferences.canvas,
     add: change.add ?? preferences.add,
+    editPanel: change.editPanel ?? preferences.editPanel,
   };
 }
 

@@ -16,6 +16,7 @@ import {
   textValue,
 } from "./library.js";
 import type {
+  BehaviourName,
   ComponentPlace,
   DefaultsOf,
   FieldDef,
@@ -38,6 +39,12 @@ const TOKEN_KINDS: ReadonlySet<FieldDef["kind"]> = new Set([
   "box",
 ]);
 
+/** The longest name an option group may have (UX-13), in characters. */
+const MAX_OPTION_GROUP = 40;
+
+/** An option group's id: lower camel case, at most 40 characters ("typography", "textStyle"). */
+const OPTION_GROUP_ID = /^[a-z][a-zA-Z0-9]{0,39}$/;
+
 /** The field a component's layout variants are stored in. */
 const VARIANT_FIELD = "variant";
 
@@ -52,7 +59,7 @@ type Fields = Readonly<Record<string, FieldDef>>;
  */
 export type ComponentSpec<F extends Fields, Variant extends string = never> = Omit<
   ComponentDef,
-  "fields" | "defaults" | "render" | "textStyle"
+  "fields" | "defaults" | "render" | "textStyle" | "behaviours"
 > & {
   readonly fields: F;
   readonly defaults: DefaultsOf<F>;
@@ -64,6 +71,13 @@ export type ComponentSpec<F extends Fields, Variant extends string = never> = Om
    * large text, 1.37).
    */
   readonly textStyle?: (values: ValuesOf<F, Variant>) => TextStyle | undefined;
+  /**
+   * The `webforge.js` behaviours it needs on the exported site: always, or as its values ask
+   * (`(values) => values.sticky ? ["menu", "sticky"] : ["menu"]`).
+   */
+  readonly behaviours?:
+    | readonly BehaviourName[]
+    | ((values: ValuesOf<F, Variant>) => readonly BehaviourName[]);
 };
 
 /** The choices of a field with a fixed set of them, if it has one. */
@@ -161,6 +175,7 @@ const EmptySlot: ComponentType = () => null;
  * - style fields, and fields that may differ per device (F-ED-4), are design tokens only (C4);
  * - every choice field offers choices, each once, and its default is one of them;
  * - every default is for a field;
+ * - an option group's name, if given, is a short name (1 to 40 characters);
  * - the `webforge.js` behaviours it needs exist (see `behaviours/`).
  *
  * `variants` add the layout choice described at {@link ComponentSpec}.
@@ -168,7 +183,7 @@ const EmptySlot: ComponentType = () => null;
 export function defineComponent<const F extends Fields, const Variant extends string = never>(
   spec: ComponentSpec<F, Variant> & { readonly defaults: NoInfer<DefaultsOf<F>> },
 ): ComponentDef {
-  const { variants, render, textStyle, ...def } = spec;
+  const { variants, render, textStyle, behaviours, ...def } = spec;
   const name = def.label.trim() === "" ? "A component" : `'${def.label}'`;
   function fail(problem: string): never {
     throw new Error(`${name} ${problem}`);
@@ -201,6 +216,15 @@ export function defineComponent<const F extends Fields, const Variant extends st
     if (field.responsive === true && !TOKEN_KINDS.has(field.kind)) {
       fail(`sets "${fieldName}", a ${field.kind} field, per device: only design tokens can be`);
     }
+    if (field.optionGroup !== undefined) {
+      const length = field.optionGroup.label.trim().length;
+      if (length === 0 || length > MAX_OPTION_GROUP) {
+        fail(`puts "${fieldName}" in an option group without a short name`);
+      }
+      if (!OPTION_GROUP_ID.test(field.optionGroup.id)) {
+        fail(`puts "${fieldName}" in an option group without an id such as "typography"`);
+      }
+    }
     const choices = choicesOf(field);
     if (choices !== undefined) {
       const values = choices.map((choice) => choice.value);
@@ -219,7 +243,8 @@ export function defineComponent<const F extends Fields, const Variant extends st
   for (const key of Object.keys(defaults)) {
     if (!Object.hasOwn(fields, key)) fail(`has a default for "${key}", which isn't a field`);
   }
-  for (const behaviour of def.behaviours ?? []) {
+  // Those named by a function are checked by their type (`BehaviourName`).
+  for (const behaviour of typeof behaviours === "function" ? [] : (behaviours ?? [])) {
     if (!Object.hasOwn(BEHAVIOUR_SCRIPTS, behaviour)) {
       fail(`needs the behaviour "${behaviour}", which isn't in behaviours/`);
     }
@@ -251,6 +276,14 @@ export function defineComponent<const F extends Fields, const Variant extends st
         context: props.context,
       }),
     ...(textStyle === undefined ? {} : { textStyle: (stored) => textStyle(valuesOf(stored)) }),
+    ...(behaviours === undefined
+      ? {}
+      : {
+          behaviours:
+            typeof behaviours === "function"
+              ? (stored: Readonly<Record<string, unknown>>) => behaviours(valuesOf(stored))
+              : behaviours,
+        }),
   };
 }
 

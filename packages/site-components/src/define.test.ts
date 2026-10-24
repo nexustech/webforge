@@ -88,6 +88,36 @@ describe("defineComponent (2.5)", () => {
       { defaults: { ...base.defaults, colour: "red" } },
       `'Card' has a default for "colour"`,
     ],
+    [
+      "an option group without a name (UX-13)",
+      {
+        fields: {
+          ...base.fields,
+          title: { kind: "text", label: "Title", optionGroup: { id: "title", label: " " } },
+        },
+      },
+      `'Card' puts "title" in an option group without a short name`,
+    ],
+    [
+      "an option group with a name too long to show",
+      {
+        fields: {
+          ...base.fields,
+          title: { kind: "text", label: "Title", optionGroup: { id: "x", label: "x".repeat(41) } },
+        },
+      },
+      `'Card' puts "title" in an option group without a short name`,
+    ],
+    [
+      "an option group without a stable id, which closed groups are remembered by",
+      {
+        fields: {
+          ...base.fields,
+          title: { kind: "text", label: "Title", optionGroup: { id: "Text style", label: "Text" } },
+        },
+      },
+      `'Card' puts "title" in an option group without an id such as "typography"`,
+    ],
   ] satisfies [string, Partial<LooseSpec>, string][])("refuses %s", (_name, change, message) => {
     expect(() => defineComponent({ ...base, ...change })).toThrow(message);
   });
@@ -147,7 +177,7 @@ describe("defineComponent (2.5)", () => {
 
   it("knows the behaviours of behaviours/, by file name", () => {
     expect(Object.keys(BEHAVIOUR_SCRIPTS)).toContain("menu");
-    expect(BEHAVIOUR_SCRIPTS.menu).toContain("Header menu on small screens");
+    expect(BEHAVIOUR_SCRIPTS.menu).toContain("The Header's menu on small screens");
     expect(defineComponent({ ...base, behaviours: ["menu"] }).behaviours).toEqual(["menu"]);
   });
 });

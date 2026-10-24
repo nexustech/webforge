@@ -67,7 +67,10 @@ const sizes = [
   { label: "Large", value: "large" },
 ];
 
-/** A Section seen on Mobile: a padding set for Mobile only, a slider, a switch. */
+/**
+ * A Section seen on Mobile: a padding set for Mobile only (its dot in the accent colour, its group
+ * changed), a slider using Desktop's value (a grey dot), a switch the same on every device.
+ */
 export const StyleFields: Story = {
   render: () => {
     const [fields, setFields] = useState<EditPanelField[]>([
@@ -78,7 +81,9 @@ export const StyleFields: Story = {
         group: "style",
         value: "small",
         options: sizes,
+        responsive: true,
         overridden: true,
+        changed: true,
       },
       {
         name: "gap",
@@ -87,6 +92,7 @@ export const StyleFields: Story = {
         group: "style",
         value: "medium",
         steps: sizes,
+        responsive: true,
       },
       { name: "fullWidth", kind: "toggle", label: "Full width", group: "style", value: false },
     ]);
@@ -99,9 +105,13 @@ export const StyleFields: Story = {
         heading="Section"
         device="Mobile"
         fields={fields}
-        onChange={(name, value) => set(name, { value, overridden: true })}
+        onChange={(name, value) => set(name, { value, overridden: true, changed: true })}
         onCommit={() => undefined}
-        onReset={(name) => set(name, { value: "medium", overridden: false })}
+        onReset={(name) => set(name, { value: "medium", overridden: false, changed: false })}
+        onResetToDefault={(names) => {
+          for (const name of names)
+            set(name, { value: "medium", overridden: false, changed: false });
+        }}
       />
     );
   },

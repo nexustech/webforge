@@ -19,6 +19,7 @@ import { useDocument } from "./editor/use-document.js";
 import { registerExportCommand } from "./export/export-command.js";
 import { exportRequestFor } from "./export/export-request.js";
 import { registerLayersPanel } from "./layers/register-layers-panel.js";
+import { reportFailure } from "./log.js";
 import { AboutDialog } from "./shell/AboutDialog.js";
 import { CanvasToolbarHost } from "./shell/CanvasToolbarHost.js";
 import { CommandButton } from "./shell/CommandButton.js";
@@ -119,7 +120,7 @@ export function App({
   // Spelling is checked in the site's language, including after Site Settings changes it (1.22).
   useEffect(() => {
     setSpellCheckLanguage(siteLanguage).catch((error: unknown) => {
-      console.error("Webforge could not set the spell-check language", error);
+      reportFailure("spellcheck.language", error);
     });
   }, [setSpellCheckLanguage, siteLanguage]);
 

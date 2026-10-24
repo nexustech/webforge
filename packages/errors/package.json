@@ -1,0 +1,15 @@
+{
+  "name": "@webforge/errors",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "devDependencies": {
+    "vitest": "catalog:"
+  },
+  "dependencies": {
+    "@webforge/i18n": "workspace:*"
+  }
+}

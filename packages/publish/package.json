@@ -12,6 +12,7 @@
     "vitest": "catalog:"
   },
   "dependencies": {
+    "@webforge/errors": "workspace:*",
     "zod": "catalog:"
   }
 }

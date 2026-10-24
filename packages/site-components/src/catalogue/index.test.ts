@@ -13,6 +13,9 @@ describe("siteLibrary", () => {
       Footer: "Footer",
       Section: "Section",
       Hero: "Hero",
+      TextSection: "Text",
+      TextImage: "Text + Image",
+      CallToAction: "Call to action",
       Faq: "FAQ",
       FaqItem: "Question",
       Heading: "Heading",
@@ -42,6 +45,9 @@ describe("siteLibrary", () => {
       Footer: "layout",
       Section: "section",
       Hero: "section",
+      TextSection: "section",
+      TextImage: "section",
+      CallToAction: "section",
       Faq: "section",
       FaqItem: "child",
       Heading: "element",
@@ -55,7 +61,12 @@ describe("siteLibrary", () => {
 
   it("has a script for every behaviour a component declares", () => {
     for (const def of Object.values(siteLibrary.components)) {
-      for (const name of def.behaviours ?? []) {
+      // As its defaults ask, for one that asks by its values (their names are typed by the files).
+      const declared =
+        typeof def.behaviours === "function"
+          ? def.behaviours(def.defaults)
+          : (def.behaviours ?? []);
+      for (const name of declared) {
         expect(BEHAVIOUR_SCRIPTS[name]).toContain("(() => {");
       }
     }
