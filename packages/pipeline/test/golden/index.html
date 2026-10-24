@@ -5,14 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Rosa's Bakery</title>
   <meta name="description" content="Fresh bread and cakes, baked every morning in Hightown.">
-  <link rel="stylesheet" href="assets/css/site.c5a5d128e2.css">
+  <link rel="stylesheet" href="assets/css/site.64d19a08b7.css">
   <script defer src="assets/js/webforge.ceca705b9e.js"></script>
 </head>
 <body class="flex min-h-screen flex-col bg-base-100 font-sans text-base-content">
   <!-- Header (shared) -->
-  <header class="site-header relative z-30 navbar gap-2 px-4 sticky top-0 bg-base-100 shadow-none transition-shadow data-scrolled:shadow-md [:root:has(&amp;)]:scroll-pt-20" data-wf-sticky="">
-    <div class="flex-1"><a class="text-xl font-bold" href="index.html">Rosa&#x27;s Bakery</a></div>
-    <nav aria-label="Main navigation">
+  <header class="site-header relative z-30 flex items-center justify-between gap-2 px-4 py-3 md:flex-col md:justify-center sticky top-0 bg-base-100 shadow-none transition-shadow data-scrolled:shadow-md [:root:has(&amp;)]:scroll-pt-20 md:[:root:has(&amp;)]:scroll-pt-32" data-wf-sticky=""><a class="text-xl font-bold" href="index.html">Rosa&#x27;s Bakery</a>
+    <nav aria-label="Main navigation" class="md:flex md:flex-1 md:justify-center">
       <ul class="menu menu-horizontal hidden p-0 md:flex">
         <li><a href="index.html" aria-current="page">Home</a></li>
         <li><a href="about.html">About us</a></li>
@@ -88,6 +87,14 @@
             </div>
           </details>
         </div>
+      </div>
+    </section>
+    <section class="site-cta bg-primary text-primary-content px-4 py-16">
+      <div class="mx-auto max-w-3xl text-center">
+        <div>
+          <h2 class="text-3xl font-bold">Order a cake</h2>
+          <p class="mt-4 text-lg">Tell us what you&#x27;d like two days ahead.</p>
+        </div><a class="btn btn-lg mt-8" href="about.html">About ordering</a>
       </div>
     </section>
   </main>
