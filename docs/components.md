@@ -4,10 +4,25 @@ Site components are what people place on their pages: sections such as a Hero, a
 
 This page is the template for adding one (2.5). The rules come from the engineering standards (§5), the MVP spec (§3) and the decisions they name.
 
+## Starting one: `pnpm new-component`
+
+```bash
+pnpm new-component PriceList --place section
+```
+
+It writes a new family for the component, from the primitives below, and registers it:
+- `src/catalogue/price-list.tsx`: the component, with `defineSection` (or `defineComponent` for `--place element` or `child`);
+- `src/catalogue/price-list.stories.tsx` and `price-list.test.tsx`: a story and a test that render it with its defaults;
+- `packages/i18n/src/en/components/priceList.ts`: its strings;
+- the family's lines in `src/catalogue/index.ts` and in the strings' `components/index.ts`.
+
+What it writes passes `pnpm check` and renders in Storybook as it is; then make it the component. The type (`PriceList`) is stored in every site file, so choose it with care. A child (`--place child`) is an item of another component's repeating list: add its type to that slot's `allow`.
+
 ## Where it goes
 
 - **One module per family:** components live in `src/catalogue/`, one file per family: `basic.tsx` (Section, Heading, Text), `layout.tsx` (Header, Footer), `sections.tsx` (Hero, Text, Text + Image, Call to action, FAQ) and `carousel.tsx` (Carousel).
-- **A new family:** add a module and list it in `createLibrary` in `src/catalogue/index.ts`. Streams adding components in parallel then never edit the same file.
+- **A new family:** add a module and list it in `createLibrary` in `src/catalogue/index.ts` (`pnpm new-component` does both). Streams adding components in parallel then never edit the same file.
+- **Its strings:** in a file of its own, `packages/i18n/src/en/components/<family>.ts`, listed in that folder's `index.ts` (2.19). Strings several families use (`field.title`, the spacing and colour choices, the starter page) are in `shared.ts`. A test fails on a key in two files.
 - **Each module ends with its family:** a record from component type to definition, e.g. `export const basicComponents = { Section: section, Heading: heading, Text: text }`.
 - **Component types** (`Hero`, `Faq`) are stored in every site file, so never rename one; add a migration if one must change.
 
@@ -114,8 +129,8 @@ As the module loads:
 
 ### Repeating items: a `list` or child elements
 
-- **Child elements:** use these when an item has an image, a link, its own spacing, or text people should edit on the canvas. Examples are a testimonial with a photo, a gallery image, or an FAQ question.
-  - The items are components of their own with `place: "child"`.
+- **Child elements (slot plus child):** use these when an item has an image, a link, its own spacing, or text people should edit on the canvas. Examples are an FAQ question, a Carousel's slide (2.10), a testimonial with a photo or a gallery image.
+  - The items are components of their own with `place: "child"` (`pnpm new-component <Name> --place child`).
   - The parent holds them in a slot that `allow`s just that type.
   - The Edit panel still edits them as a list, and each one gets a row in Layers.
 - **A `list` field:** use this for short plain values, such as opening hours or a price list's lines.
@@ -134,6 +149,16 @@ As the module loads:
   - **After adding or changing one, run `pnpm behaviours`.** It writes `src/behaviours/index.ts`, the scripts as strings, so the package loads without Vite. A test fails while it's out of date.
 - **No external requests (C8):** icons are inline SVG, and fonts and images come with the site.
 - **Context:** `props.context` resolves links, images and settings. On the canvas they go nowhere; in the export they're the site's.
+
+### A new field kind
+
+The field kinds are a closed vocabulary. A component almost always fits the kinds there are, or slot plus child for repeating items with fields of their own. A new kind costs a change in each of:
+- **The schema:** `FieldDef` and the value types in `src/schema.ts`, and how `defineComponent` reads its value (`define.ts`); `render-static.tsx` if it renders specially.
+- **The engine:** its Puck field in `packages/engine/src/puck/config.tsx` (`toPuckField`), and the action bar if it acts on the canvas.
+- **The editor UI:** a field renderer in `packages/editor-ui/src/components/edit/`, registered by kind, with its story.
+- **The desktop app:** `EditPanelHost.tsx` and `field-group.ts` (its Edit panel tab and group); copy and paste (`element-clipboard.ts`) and Media's usage (`media-usage.ts`) if it holds a file.
+- **The model:** a zod schema for its stored value if it isn't a plain one, and a migration if old documents hold it another way.
+- **Strings:** its labels, and any wording the renderer shows.
 
 ## The schema entry
 
@@ -166,7 +191,7 @@ export const Cards: Story = {
 ## Checklist
 
 - [ ] **Module:** a module in `src/catalogue/` (or added to its family's), and its family listed in `index.ts`.
-- [ ] **`defineComponent`:** the label and field labels go through `t()`, with English text in `packages/i18n/src/en/components.ts`.
+- [ ] **`defineSection` or `defineComponent`:** a section has its frame; titles, text and buttons come from the primitives; the label and field labels go through `t()`, with English text in its family's `packages/i18n/src/en/components/<family>.ts`.
 - [ ] **Stories:** for its variants, passing axe in every theme on Desktop and Mobile.
 - [ ] **Tests:** unit tests for anything its render works out. The export's golden files change only on purpose.
 - [ ] **Behaviours:** a new or changed script type-checks, has its unit test, and `pnpm behaviours` has been run.
