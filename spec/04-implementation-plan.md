@@ -674,6 +674,7 @@ Shared files are split in 2.5 so that streams add files instead of editing the s
 - PH2-9: one `embed` behaviour (click-to-load, privacy mode) is built in 2.8 and reused by 2.11.
 - PH2-10: the Booking button is a Button preset (a plain link), so the element count stays 17. There is no product card in the MVP.
 - PH2-11: not written up on the issues; to be recorded by the product owner.
+- PH2-12 (2026-10-25): no LinkedIn mark until a permissively licensed one exists. Simple Icons removed LinkedIn's logo at LinkedIn's request and Lucide has no brand icons, so Social links show Lucide's globe for LinkedIn, as for other sites, named "LinkedIn" for screen readers and in its tooltip. No "in" lettermark: a rounded "in" badge imitates LinkedIn's trademark. Pending the product owner's confirmation.
 
 <details><summary>Scope and acceptance criteria</summary>
 
