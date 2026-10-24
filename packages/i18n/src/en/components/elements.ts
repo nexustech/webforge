@@ -1,5 +1,6 @@
 /**
- * The elements family (`catalogue/elements.tsx`): the Image, Button, Spacer and Divider elements.
+ * The elements family (`catalogue/elements.tsx`): Image, Button, Spacer, Divider, Columns and
+ * List.
  */
 export const elements = {
   "element.image": "Image",
@@ -22,5 +23,28 @@ export const elements = {
   "field.spacerHeight.large": "Large",
   "field.spacerHeight.xlarge": "Extra large",
   "field.dividerText": "Text on the line",
+  "element.columns": "Columns",
+  "element.column": "Column",
+  "element.list": "List",
+  "element.listItem": "List item",
+  "category.layout": "Layout",
+  "field.columns": "Columns",
+  "field.columnLayout": "Column widths",
+  "field.columnLayout.equal": "Equal",
+  "field.columnLayout.wideFirst": "First one wider",
+  "field.columnLayout.wideLast": "Last one wider",
+  "field.columnLayout.wideMiddle": "Middle one wider",
+  "field.columnLayout.stacked": "One under another",
+  "field.columnGap": "Space between columns",
+  "field.columnGap.small": "Small",
+  "field.columnGap.medium": "Medium",
+  "field.columnGap.large": "Large",
+  "field.listItems": "Items",
+  "field.listStyle": "Style",
+  "field.listStyle.bullets": "Bullets",
+  "field.listStyle.numbers": "Numbers",
+  "field.listStyle.plain": "No markers",
   "starter.buttonLabel": "Find out more",
+  "starter.columnText": "Write something for this column.",
+  "starter.listItem": "List item",
 } as const;

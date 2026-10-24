@@ -1,5 +1,6 @@
 import type { ComponentConfig } from "@puckeditor/core";
 import {
+  type ComponentDef,
   type ComponentLibrary,
   EDITOR_RENDER_CONTEXT,
   type RenderContext,
@@ -50,6 +51,25 @@ const library: ComponentLibrary = {
 describe("toPuckConfig", () => {
   const config = toPuckConfig(library);
   const component = (type: string) => config.components[type] as ComponentConfig;
+
+  it("leaves the elements in a component's defaults without ids, so Puck gives each copy its own (2.9)", () => {
+    const withChildren = toPuckConfig({
+      components: {
+        ...library.components,
+        Pair: {
+          ...(library.components.Section as ComponentDef),
+          place: "element",
+          defaults: {
+            content: [{ type: "Text", props: { id: "default-text", title: "One" } }],
+          },
+        },
+      },
+    });
+
+    expect((withChildren.components.Pair as ComponentConfig).defaultProps).toEqual({
+      content: [{ type: "Text", props: { title: "One" } }],
+    });
+  });
 
   it("maps every field kind to a Puck field", () => {
     expect(component("Text").fields).toEqual({

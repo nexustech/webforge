@@ -7,6 +7,7 @@ import {
   type NodeDoc,
   newId,
   newSharedCopy,
+  pastedCopies,
   type SharedSectionId,
   type SiteDoc,
 } from "@webforge/model";
@@ -296,8 +297,14 @@ export function addComponent(session: AddSession, type: string, point?: InsertPo
     (draft) => {
       const content = draft.pages[pageId]?.doc.content;
       if (content === undefined) return;
-      const node: NodeDoc = { type, props: { ...structuredClone(definition.defaults), id } };
-      insertAt(content, target, [node]);
+      // Every element in its defaults (a Columns' columns) gets an id of its own too.
+      const ids = [id];
+      const [node] = pastedCopies(
+        [{ type, props: { ...definition.defaults, id } } as NodeDoc],
+        new Set(),
+        () => ids.shift() ?? newId("node"),
+      );
+      if (node !== undefined) insertAt(content, target, [node]);
     },
     { selectionAfter: { pageId, viewport, nodeId: id }, apply: true },
   );
