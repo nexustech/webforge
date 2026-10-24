@@ -8,7 +8,7 @@ import v4Site from "../test/fixtures/v4/site.json" with { type: "json" };
 import v5Site from "../test/fixtures/v5/site.json" with { type: "json" };
 import v6Site from "../test/fixtures/v6/site.json" with { type: "json" };
 import { FORMAT_5_DAISYUI_THEMES } from "./format-5-themes.js";
-import type { SharedSectionId } from "./ids.js";
+import type { PageId, SharedSectionId } from "./ids.js";
 import {
   MIGRATIONS,
   migrateSite,
@@ -65,7 +65,8 @@ describe("migrateSite", () => {
     });
     expect(site).toEqual(v6Site);
     const padding = (id: string) =>
-      site.pages.home000000000000?.doc.content.find((node) => node.props.id === id)?.props.padding;
+      site.pages["home000000000000" as PageId]?.doc.content.find((node) => node.props.id === id)
+        ?.props.padding;
     expect(padding("hours")).toEqual({ top: "m", bottom: "m" });
     expect(site.sharedSections["shared-hours" as SharedSectionId]?.section.props.padding).toEqual({
       $responsive: { desktop: { top: "l", bottom: "l" }, mobile: { top: "s", bottom: "s" } },
@@ -437,8 +438,12 @@ const records = (value: unknown): Record<string, unknown>[] =>
 function eachNode(site: Raw, visit: (node: Record<string, unknown>) => void): void {
   const walk = (nodes: unknown): void => {
     for (const node of records(nodes)) {
+      // List items (an Faq's questions) are records too, but no nodes.
+      if (typeof node.type !== "string" || typeof node.props !== "object" || node.props === null) {
+        continue;
+      }
       visit(node);
-      for (const value of Object.values(node.props as Record<string, unknown>)) walk(value);
+      for (const value of Object.values(node.props)) walk(value);
     }
   };
   for (const page of Object.values(site.pages as Record<string, { doc: { content: unknown } }>)) {

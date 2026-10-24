@@ -108,7 +108,7 @@ The spike adds a minimal `ProjectStore` in `packages/storage` and wires it throu
 ### 7. Reading an older site format never writes (R14, 24 Oct 2026)
 - **What happens:** `readSite` migrates a site saved in an older site format in memory only. The first `commit` writes the whole migrated site, then that commit's own changes, in one transaction. `saveSite` replaces the pending migration with the site it writes.
 - **Why:**
-  - Opening and closing a site without editing leaves its file byte for byte as it was, so a sync client doesn't upload it again and an older build can still open it.
+  - Opening and closing a site without editing leaves its file byte for byte as it was, so a sync client doesn't upload it again and an older build can still open it. (An older *storage* format, `meta.format_version`, is still upgraded when the file opens: that changes the tables, not the site.)
   - The file never holds documents of two formats: the migrated site and the first edit land together, or neither does.
 - **Before:** `readSite` wrote the migrated site straight away, as a side effect of reading.
 - **Tests:** `packages/storage/test/site-and-safety.test.ts`.

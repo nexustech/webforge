@@ -120,7 +120,7 @@ const UNSAFE_KEYS: ReadonlySet<string> = new Set(["__proto__", "constructor", "p
  * takes three levels: itself, its props and a slot), and shallow enough that the code walking a
  * tree, which recurses, never overflows the stack.
  */
-export const MAX_DOCUMENT_DEPTH = 200;
+const MAX_DOCUMENT_DEPTH = 200;
 
 /**
  * What makes `value` unsafe to take in: a key in {@link UNSAFE_KEYS} at any depth, or nesting
