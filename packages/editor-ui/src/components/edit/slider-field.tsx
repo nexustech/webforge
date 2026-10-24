@@ -12,8 +12,14 @@ const FINE_SCRUB_STEP = 36;
  * name can be dragged left and right too (UX-20), a step per 12 pixels or, with Shift, per 36: a
  * scrub is one change too, ended when the pointer is let go.
  */
-export function SliderField({ id, field, value, onChange, onCommit }: FieldRendererProps) {
-  const steps = field.steps ?? [];
+export function SliderField({
+  id,
+  field,
+  value,
+  onChange,
+  onCommit,
+}: FieldRendererProps<"slider">) {
+  const { steps } = field;
   const index = Math.max(
     0,
     steps.findIndex((step) => step.value === value),

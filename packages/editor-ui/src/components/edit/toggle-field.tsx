@@ -9,7 +9,7 @@ export function ToggleField({
   value,
   onChange,
   onCommit,
-}: FieldRendererProps) {
+}: FieldRendererProps<"toggle">) {
   const on = value === true;
   return (
     <button

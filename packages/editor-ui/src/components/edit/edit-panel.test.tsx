@@ -3,7 +3,8 @@ import userEvent from "@testing-library/user-event";
 import { t } from "@webforge/i18n";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { EditPanel, type EditPanelField } from "./edit-panel.js";
-import { type FieldRendererProps, fieldRenderer, registerFieldRenderer } from "./field-registry.js";
+import { FieldRenderersProvider } from "./field-context.js";
+import type { FieldRendererProps } from "./field-registry.js";
 
 afterEach(cleanup);
 
@@ -138,39 +139,57 @@ describe("EditPanel", () => {
     );
   });
 
-  it("draws registered kinds with their renderer and leaves out kinds nobody draws", () => {
-    function Shout({ id, value }: FieldRendererProps) {
+  it("draws the kinds it is given renderers for, and leaves out kinds nobody draws (R11)", () => {
+    function Shout({ id, value }: FieldRendererProps<"link">) {
       return <output id={id}>{String(value).toUpperCase()}</output>;
     }
-    const remove = registerFieldRenderer("shout", Shout);
-    setup([
-      { name: "loud", kind: "shout", label: "Loud", group: "content", value: "hi" },
-      { name: "nope", kind: "unknown", label: "Nope", group: "content", value: 1 },
-    ]);
+    render(
+      <FieldRenderersProvider renderers={{ link: Shout }}>
+        <EditPanel
+          heading="Button"
+          fields={[
+            { name: "loud", kind: "link", label: "Loud", group: "content", value: "hi" },
+            { name: "nope", kind: "image", label: "Nope", group: "content", value: 1 },
+          ]}
+          onChange={vi.fn()}
+          onCommit={vi.fn()}
+        />
+      </FieldRenderersProvider>,
+    );
 
     expect(screen.getByText("HI")).toBeDefined();
     expect(screen.queryByText("Nope")).toBeNull();
-    remove();
-    expect(fieldRenderer("shout")).toBeUndefined();
   });
 
-  it("puts back the renderer a registration replaced, unless it was taken away", () => {
-    const first = vi.fn(() => null);
-    const second = vi.fn(() => null);
-    const removeFirst = registerFieldRenderer("thing", first);
-    const removeSecond = registerFieldRenderer("thing", second);
-    removeSecond();
-    expect(fieldRenderer("thing")).toBe(first);
-    removeFirst();
-    expect(fieldRenderer("thing")).toBeUndefined();
+  it("lets two panels draw a kind with different renderers, and replace a built-in one (R11)", () => {
+    const draw = (word: string) =>
+      function Word({ id }: FieldRendererProps<"text">) {
+        return <output id={id}>{word}</output>;
+      };
+    const panel = (heading: string) => (
+      <EditPanel
+        heading={heading}
+        fields={[{ name: "title", kind: "text", label: "Title", group: "content", value: "" }]}
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+      />
+    );
+    render(
+      <>
+        <FieldRenderersProvider renderers={{ text: draw("first") }}>
+          {panel("One")}
+        </FieldRenderersProvider>
+        <FieldRenderersProvider renderers={{ text: draw("second") }}>
+          {panel("Two")}
+        </FieldRenderersProvider>
+        {panel("Three")}
+      </>,
+    );
 
-    // Taken away out of order (#296 review): the first one's owner removed it, so it stays gone.
-    const removeAgain = registerFieldRenderer("thing", first);
-    const removeLater = registerFieldRenderer("thing", second);
-    removeAgain();
-    expect(fieldRenderer("thing")).toBe(second);
-    removeLater();
-    expect(fieldRenderer("thing")).toBeUndefined();
+    expect(screen.getByText("first")).toBeDefined();
+    expect(screen.getByText("second")).toBeDefined();
+    // Without renderers of its own, a panel draws text with its built-in field.
+    expect(screen.getAllByRole("textbox", { name: "Title" })).toHaveLength(1);
   });
 
   it("says when a tab has nothing to change", async () => {
@@ -209,7 +228,9 @@ describe("style field renderers (1.14 part 2)", () => {
     { name: "fullWidth", kind: "toggle", label: "Full width", group: "style", value: false },
   ];
 
-  function renderStyle(overrides: Partial<EditPanelField> = {}) {
+  function renderStyle(
+    overrides: Partial<Pick<EditPanelField, "changed" | "responsive" | "overridden">> = {},
+  ) {
     const onChange = vi.fn();
     const onCommit = vi.fn();
     const onReset = vi.fn();
@@ -643,8 +664,8 @@ describe("list renderer (F-ED-6)", () => {
     itemLabel: "Testimonial",
     itemFields: [{ name: "quote", kind: "text", label: "Quote" }],
     value: [
-      { key: "a", values: { quote: "Lovely bread" } },
-      { key: "b", values: { quote: "" } },
+      { id: "a", quote: "Lovely bread" },
+      { id: "b", quote: "" },
     ],
   };
 
@@ -688,8 +709,8 @@ describe("list renderer (F-ED-6)", () => {
     await user.click(screen.getByRole("button", { name: "Add Testimonial" }));
 
     expect(onChange.mock.calls).toEqual([
-      ["testimonials", { type: "move", key: "a", to: 1 }],
-      ["testimonials", { type: "remove", key: "b" }],
+      ["testimonials", { type: "move", id: "a", to: 1 }],
+      ["testimonials", { type: "remove", id: "b" }],
       ["testimonials", { type: "add" }],
     ]);
   });
@@ -705,7 +726,7 @@ describe("list renderer (F-ED-6)", () => {
 
     expect(onChange).toHaveBeenCalledWith("testimonials", {
       type: "edit",
-      key: "a",
+      id: "a",
       name: "quote",
       value: "Lovely buns",
     });
@@ -719,7 +740,7 @@ describe("list renderer (F-ED-6)", () => {
     view.rerender(
       <EditPanel
         heading="Testimonials"
-        fields={[{ ...testimonials, value: [{ key: "b", values: { quote: "" } }] }]}
+        fields={[{ ...testimonials, value: [{ id: "b", quote: "" }] }]}
         onChange={vi.fn()}
         onCommit={vi.fn()}
       />,
@@ -746,7 +767,7 @@ describe("list renderer (F-ED-6)", () => {
     view.rerender(
       <EditPanel
         heading="Testimonials"
-        fields={[{ ...testimonials, value: [{ key: "new", values: { quote: "" } }] }]}
+        fields={[{ ...testimonials, value: [{ id: "new", quote: "" }] }]}
         onChange={vi.fn()}
         onCommit={vi.fn()}
       />,
@@ -855,8 +876,8 @@ describe("Advanced tab and checked text fields (F-ED-11)", () => {
             orderless: true,
             itemFields: [{ name: "name", kind: "text", label: "Name" }],
             value: [
-              { key: "0", values: { name: "role" } },
-              { key: "1", values: { name: "title" } },
+              { id: "0", name: "role" },
+              { id: "1", name: "title" },
             ],
           },
         ]}

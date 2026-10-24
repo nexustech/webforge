@@ -1,3 +1,4 @@
+import type { EditPanelField, FieldSpec } from "@webforge/editor-ui";
 import { describe, expect, it } from "vitest";
 import {
   ADVANCED_FIELDS,
@@ -7,11 +8,19 @@ import {
   withAdvancedChange,
 } from "./advanced-fields.js";
 
-const fieldNamed = (name: string, advanced = {}) => {
-  const field = advancedFields(advanced).find((candidate) => candidate.name === name);
-  if (field === undefined) throw new Error(`no ${name}`);
+/** The Advanced field named `name`, of kind `kind`. */
+function fieldNamed<K extends EditPanelField["kind"]>(name: string, kind: K, advanced = {}) {
+  const field = advancedFields(advanced).find(
+    (candidate): candidate is Extract<EditPanelField, { kind: K }> =>
+      candidate.name === name && candidate.kind === kind,
+  );
+  if (field === undefined) throw new Error(`no ${kind} field ${name}`);
   return field;
-};
+}
+
+/** A text field's check, if `spec` is one. */
+const validateOf = (spec: FieldSpec | undefined) =>
+  spec?.kind === "text" ? spec.validate : undefined;
 
 describe("advancedFields", () => {
   it("shows a node's classes, anchor and attributes on the Advanced tab", () => {
@@ -28,8 +37,8 @@ describe("advancedFields", () => {
         ADVANCED_FIELDS.attributes,
         "advanced",
         [
-          { key: "0", values: { name: "data-track", value: "hero" } },
-          { key: "1", values: { name: "role", value: "note" } },
+          { id: "0", name: "data-track", value: "hero" },
+          { id: "1", name: "role", value: "note" },
         ],
       ],
     ]);
@@ -37,12 +46,11 @@ describe("advancedFields", () => {
   });
 
   it("accepts only what a site file accepts", () => {
-    const classes = fieldNamed(ADVANCED_FIELDS.className).validate;
-    const anchor = fieldNamed(ADVANCED_FIELDS.anchorId).validate;
-    const [name, value] =
-      fieldNamed(ADVANCED_FIELDS.attributes, {
-        attributes: { "data-a": "1" },
-      }).itemFields ?? [];
+    const classes = fieldNamed(ADVANCED_FIELDS.className, "text").validate;
+    const anchor = fieldNamed(ADVANCED_FIELDS.anchorId, "text").validate;
+    const [name, value] = fieldNamed(ADVANCED_FIELDS.attributes, "list", {
+      attributes: { "data-a": "1" },
+    }).itemFields.map(validateOf);
 
     expect(classes?.("  shadow-lg   md:p-4 ")).toBeUndefined();
     expect(classes?.('bad"class')).toBe("Use class names separated by spaces");
@@ -50,23 +58,23 @@ describe("advancedFields", () => {
     expect(anchor?.("opening-times")).toBeUndefined();
     expect(anchor?.("Opening times")).toMatch(/lowercase letters/);
     expect(anchor?.("my-")).toMatch(/lowercase letters/);
-    expect(name?.validate?.("data-track")).toBeUndefined();
-    expect(name?.validate?.("onclick")).toMatch(/data-…/);
-    expect(name?.validate?.("style")).toMatch(/data-…/);
-    expect(name?.validate?.("data-a")).toBe("This element already has this attribute");
-    expect(value?.validate?.("x".repeat(1000))).toBeUndefined();
-    expect(value?.validate?.("x".repeat(1001))).toBe("Use at most 1000 characters");
+    expect(name?.("data-track")).toBeUndefined();
+    expect(name?.("onclick")).toMatch(/data-…/);
+    expect(name?.("style")).toMatch(/data-…/);
+    expect(name?.("data-a")).toBe("This element already has this attribute");
+    expect(value?.("x".repeat(1000))).toBeUndefined();
+    expect(value?.("x".repeat(1001))).toBe("Use at most 1000 characters");
   });
 
   it("refuses an anchor another element on the page uses", () => {
-    const anchor = advancedFields(undefined, ["prices"]).find(
-      (field) => field.name === ADVANCED_FIELDS.anchorId,
+    const anchor = validateOf(
+      advancedFields(undefined, ["prices"]).find(
+        (field) => field.name === ADVANCED_FIELDS.anchorId,
+      ),
     );
 
-    expect(anchor?.validate?.("prices")).toBe(
-      "Another element on this page already uses this anchor",
-    );
-    expect(anchor?.validate?.("opening-times")).toBeUndefined();
+    expect(anchor?.("prices")).toBe("Another element on this page already uses this anchor");
+    expect(anchor?.("opening-times")).toBeUndefined();
   });
 
   it("names its fields for undo labels", () => {
@@ -99,30 +107,30 @@ describe("withAdvancedChange", () => {
     expect(Object.keys(advanced?.attributes ?? {})).toEqual(["data-attribute", "data-attribute-2"]);
     advanced = withAdvancedChange(advanced, ADVANCED_FIELDS.attributes, {
       type: "edit",
-      key: "1",
+      id: "1",
       name: "name",
       value: "role",
     });
     advanced = withAdvancedChange(advanced, ADVANCED_FIELDS.attributes, {
       type: "edit",
-      key: "1",
+      id: "1",
       name: "value",
       value: "note",
     });
     advanced = withAdvancedChange(advanced, ADVANCED_FIELDS.attributes, {
       type: "move",
-      key: "1",
+      id: "1",
       to: 0,
     });
     expect(advanced).toEqual({ attributes: { role: "note", "data-attribute": "" } });
 
     advanced = withAdvancedChange(advanced, ADVANCED_FIELDS.attributes, {
       type: "remove",
-      key: "0",
+      id: "0",
     });
     advanced = withAdvancedChange(advanced, ADVANCED_FIELDS.attributes, {
       type: "remove",
-      key: "0",
+      id: "0",
     });
     expect(advanced).toBeUndefined();
   });
@@ -134,7 +142,7 @@ describe("withAdvancedChange", () => {
     expect(
       withAdvancedChange(advanced, ADVANCED_FIELDS.attributes, {
         type: "edit",
-        key: "0",
+        id: "0",
         name: "name",
         value: "onclick",
       }),

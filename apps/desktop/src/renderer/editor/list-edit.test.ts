@@ -59,10 +59,10 @@ describe("list items and changes", () => {
 
   it("shows items by their ids, skipping anything that isn't one", () => {
     expect(listItems([{ id: "a", quote: "Hi" }, "junk", { quote: "no id" }], plain)).toEqual([
-      { key: "a", values: { id: "a", quote: "Hi" } },
+      { id: "a", quote: "Hi" },
     ]);
     expect(listItems([faqItem("q1", "Open?"), { id: "x" }], elements)).toEqual([
-      { key: "q1", values: { id: "q1", question: "Open?", answer: "<p>Yes</p>" } },
+      { id: "q1", question: "Open?", answer: "<p>Yes</p>" },
     ]);
     expect(listItems(undefined, plain)).toEqual([]);
   });
@@ -83,46 +83,44 @@ describe("list items and changes", () => {
     ]);
   });
 
-  it("moves, edits and removes an item by its key", () => {
+  it("moves, edits and removes an item by its id", () => {
     const nodes: unknown[] = [faqItem("a", "A?"), faqItem("b", "B?"), faqItem("c", "C?")];
 
-    expect(applyListChange(nodes, { type: "move", key: "a", to: 2 }, elements)).toBe(true);
-    expect(listItems(nodes, elements).map((item) => item.key)).toEqual(["b", "c", "a"]);
-    applyListChange(nodes, { type: "edit", key: "c", name: "question", value: "See?" }, elements);
+    expect(applyListChange(nodes, { type: "move", id: "a", to: 2 }, elements)).toBe(true);
+    expect(listItems(nodes, elements).map((item) => item.id)).toEqual(["b", "c", "a"]);
+    applyListChange(nodes, { type: "edit", id: "c", name: "question", value: "See?" }, elements);
     expect((nodes[1] as NodeDoc).props.question).toBe("See?");
-    applyListChange(nodes, { type: "remove", key: "b" }, elements);
+    applyListChange(nodes, { type: "remove", id: "b" }, elements);
 
-    expect(listItems(nodes, elements).map((item) => item.key)).toEqual(["c", "a"]);
+    expect(listItems(nodes, elements).map((item) => item.id)).toEqual(["c", "a"]);
   });
 
   it("changes nothing for a gone item or a move out of the list", () => {
     const items: unknown[] = [{ id: "a" }, { id: "b" }];
 
-    expect(applyListChange(items, { type: "remove", key: "zz" }, plain)).toBe(false);
-    expect(applyListChange(items, { type: "move", key: "a", to: -1 }, plain)).toBe(false);
-    expect(applyListChange(items, { type: "move", key: "b", to: 2 }, plain)).toBe(false);
-    expect(applyListChange(items, { type: "move", key: "b", to: 1 }, plain)).toBe(false);
+    expect(applyListChange(items, { type: "remove", id: "zz" }, plain)).toBe(false);
+    expect(applyListChange(items, { type: "move", id: "a", to: -1 }, plain)).toBe(false);
+    expect(applyListChange(items, { type: "move", id: "b", to: 2 }, plain)).toBe(false);
+    expect(applyListChange(items, { type: "move", id: "b", to: 1 }, plain)).toBe(false);
     expect(items).toEqual([{ id: "a" }, { id: "b" }]);
   });
 
   it("labels each change by the item's name (D2)", () => {
     expect(listChangeLabel({ type: "add" }, elements, noText)).toBe("Added Question");
-    expect(listChangeLabel({ type: "move", key: "a", to: 1 }, plain, noText)).toBe(
+    expect(listChangeLabel({ type: "move", id: "a", to: 1 }, plain, noText)).toBe(
       "Moved Testimonial",
     );
-    expect(listChangeLabel({ type: "remove", key: "a" }, plain, noText)).toBe(
-      "Deleted Testimonial",
-    );
+    expect(listChangeLabel({ type: "remove", id: "a" }, plain, noText)).toBe("Deleted Testimonial");
     expect(
-      listChangeLabel({ type: "edit", key: "a", name: "quote", value: "x" }, plain, noText),
+      listChangeLabel({ type: "edit", id: "a", name: "quote", value: "x" }, plain, noText),
     ).toBe("Edited Testimonial quote");
     expect(
-      listChangeLabel({ type: "edit", key: "a", name: "rating", value: "5" }, plain, noText),
+      listChangeLabel({ type: "edit", id: "a", name: "rating", value: "5" }, plain, noText),
     ).toBe("Changed Testimonial rating");
     // An element's text is named as the canvas names it.
     expect(
       listChangeLabel(
-        { type: "edit", key: "q1", name: "question", value: "x" },
+        { type: "edit", id: "q1", name: "question", value: "x" },
         elements,
         (key, field) => `${key}/${field}`,
       ),

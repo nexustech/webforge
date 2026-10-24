@@ -15,7 +15,14 @@ export const fieldControlClass = cn(
  * may pass through invalid text on the way to valid text. Leaving the field or pressing Enter
  * reports the text if it is valid, else shows why not and keeps it; Esc goes back to the value.
  */
-export function TextField({ id, helpId, field, value, onChange, onCommit }: FieldRendererProps) {
+export function TextField({
+  id,
+  helpId,
+  field,
+  value,
+  onChange,
+  onCommit,
+}: FieldRendererProps<"text">) {
   const stored = typeof value === "string" ? value : "";
   const [draft, setDraft] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);

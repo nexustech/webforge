@@ -5,8 +5,15 @@ import type { FieldRendererProps } from "./field-registry.js";
  * A short row of choices (Small · Medium · Large, the theme's colours): one click is one change.
  * Clicking the chosen one again keeps it, so the field always has a value.
  */
-export function ChoiceField({ id, labelId, field, value, onChange, onCommit }: FieldRendererProps) {
-  const options = field.options ?? [];
+export function ChoiceField({
+  id,
+  labelId,
+  field,
+  value,
+  onChange,
+  onCommit,
+}: FieldRendererProps<"color" | "spacing">) {
+  const { options } = field;
   return (
     <ToggleGroup
       id={id}

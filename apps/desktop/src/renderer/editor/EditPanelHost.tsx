@@ -1,4 +1,10 @@
-import { EditPanel, type EditPanelField, type ListChange } from "@webforge/editor-ui";
+import {
+  EditPanel,
+  type EditPanelField,
+  type FieldSpec,
+  type ListChange,
+  type PlainFieldKind,
+} from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import {
   BOX_SIDES,
@@ -52,52 +58,63 @@ import { sameValue } from "./same-value.js";
 import { shownLayout } from "./shared-layout.js";
 import { useDocument, useUi } from "./use-document.js";
 
-/** The Edit panel's renderer kind for a field, or undefined for fields edited elsewhere. */
-function rendererKind(field: FieldDef): string | undefined {
+/**
+ * The Edit panel's spec for a field (R11): its kind with everything its renderer needs, or undefined
+ * for fields edited elsewhere. Rich text is edited on the canvas (1.23), slots by dragging elements
+ * in, and a slot of one type is a list (see editableList).
+ */
+function specOf(field: FieldDef): FieldSpec | undefined {
+  const { label } = field;
   switch (field.kind) {
     case "text":
-    case "select":
+      return { kind: "text", label };
     case "toggle":
-    case "slider":
-    case "color":
-    case "spacing":
-    case "box":
-    case "list":
-      return field.kind;
-    // A Media image, with alt text for this placement (1.16): see ImageField.
-    case "media":
-      return "image";
-    // Where a link goes (1.19): see LinkField.
-    case "link":
-      return "link";
-    // Rich text is edited on the canvas (1.23), slots by dragging elements in (a slot of one type
-    // is a list: see editableList).
-    case "richtext":
-    case "slot":
-      return undefined;
-  }
-}
-
-/** The choices or steps a field offers, for its renderer. */
-function choicesOf(field: FieldDef): Pick<EditPanelField, "options" | "steps" | "sides"> {
-  switch (field.kind) {
+      return { kind: "toggle", label };
     case "select":
+      return { kind: "select", label, options: field.options };
     case "color":
+      return { kind: "color", label, options: field.options };
     case "spacing":
-      return { options: field.options };
+      return { kind: "spacing", label, options: field.options };
     case "slider":
-      return { steps: field.steps };
+      return { kind: "slider", label, steps: field.steps };
     // Padding or margin per side (1.32): a spacing token for each side.
     case "box":
       return {
+        kind: "box",
+        label,
         options: SPACING_TOKENS.map((value) => ({ label: t(`field.spacing.${value}`), value })),
         sides: (field.sides ?? BOX_SIDES).map((value) => ({
           label: t(`field.side.${value}`),
           value,
         })),
       };
+    // A Media image, with alt text for this placement (1.16): see ImageField.
+    case "media":
+      return { kind: "image", label };
+    // Where a link goes (1.19): see LinkField.
+    case "link":
+      return { kind: "link", label };
+    case "list":
+    case "richtext":
+    case "slot":
+      return undefined;
+  }
+}
+
+/** The spec of a field an item of a list can have: a plain value. */
+function itemSpecOf(field: FieldDef): FieldSpec<PlainFieldKind> | undefined {
+  const spec = specOf(field);
+  switch (spec?.kind) {
+    case "text":
+    case "select":
+    case "toggle":
+    case "slider":
+    case "color":
+    case "spacing":
+      return spec;
     default:
-      return {};
+      return undefined;
   }
 }
 
@@ -116,10 +133,8 @@ function listField(
     value: listItems(stored, list),
     itemLabel: list.itemLabel,
     itemFields: Object.entries(list.fields).flatMap(([itemName, def]) => {
-      const kind = rendererKind(def);
-      return kind === undefined
-        ? []
-        : [{ name: itemName, kind, label: def.label, ...choicesOf(def) }];
+      const spec = itemSpecOf(def);
+      return spec === undefined ? [] : [{ ...spec, name: itemName }];
     }),
   };
 }
@@ -330,8 +345,8 @@ export function EditPanelHost({
     if (list !== undefined) {
       return [listField(name, field, list, node.props[name])];
     }
-    const kind = rendererKind(field);
-    if (kind === undefined) {
+    const spec = specOf(field);
+    if (spec === undefined) {
       return [];
     }
     const stored = storedOr(name, node.props[name]);
@@ -339,9 +354,8 @@ export function EditPanelHost({
     // A text field that can show a Site Settings value gets a choice of what it shows (1.17).
     return withBindingChoice(name, field, node.props.bindings, [
       {
+        ...spec,
         name,
-        kind,
-        label: field.label,
         group: fieldGroupOf(field),
         value: responsive ? valueAt(stored, breakpoint) : stored,
         ...(field.optionGroup === undefined ? {} : { optionGroup: field.optionGroup }),
@@ -351,7 +365,6 @@ export function EditPanelHost({
           ? { changed: true }
           : {}),
         ...(responsive && isOverridden(stored, breakpoint) ? { overridden: true } : {}),
-        ...choicesOf(field),
       },
     ]);
   });
@@ -503,7 +516,7 @@ export function EditPanelHost({
     const itemKind = change.type === "edit" ? list.fields[change.name]?.kind : undefined;
     const text = itemKind === "text";
     const merged = text || itemKind === "slider";
-    const runKey = change.type === "edit" ? `${name}:${change.key}:${change.name}` : name;
+    const runKey = change.type === "edit" ? `${name}:${change.id}:${change.name}` : name;
     if (openRun.current?.key !== runKey) {
       endRun();
     }
