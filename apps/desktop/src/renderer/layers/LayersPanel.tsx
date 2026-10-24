@@ -191,9 +191,6 @@ export function LayersPanel({
     );
   }, [selectedId]);
   const [renaming, setRenaming] = useState<string | null>(null);
-  // Set when the menu's Rename was chosen: renaming starts once the menu has closed, so the name
-  // field gets the focus and keeps it.
-  const renamedFromMenu = useRef(false);
   // Where a Shift-click range starts: the last row clicked without Shift, as in file managers.
   const anchor = useRef<string | null>(null);
   const [menuAt, setMenuAt] = useState<MenuPoint | null>(null);
@@ -223,7 +220,6 @@ export function LayersPanel({
   /** Opens the element menu for `id` at `at`, selecting it first so the menu acts on it. */
   const openMenu = (id: string, at: MenuPoint) => {
     actions.select(id);
-    renamedFromMenu.current = false;
     setMenuAt(at);
   };
 
@@ -635,13 +631,10 @@ export function LayersPanel({
           at={menuAt}
           onClose={() => setMenuAt(null)}
           onRename={() => {
-            renamedFromMenu.current = true;
-          }}
-          onCloseFocus={() => {
             const id = latest.current.selectedId;
-            if (renamedFromMenu.current && id !== null) setRenaming(id);
-            else focusSelected();
+            if (id !== null) setRenaming(id);
           }}
+          onCloseFocus={focusSelected}
         />
       )}
     </div>
