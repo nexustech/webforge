@@ -6,7 +6,9 @@ import type { PageId } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { type CanvasPreferences, DEFAULT_PREFERENCES } from "../../shared/ipc/prefs.js";
+import { createPreviewStore } from "../editor/edit-previews.js";
 import { createEditorSession, currentPage, type EditorSession } from "../editor/editor-session.js";
+import { headerToolbar } from "../editor/HeaderToolbar.js";
 import { HEADING_LEVELS, headingToolbar } from "../editor/HeadingToolbar.js";
 import { starterSite } from "../editor/starter-site.js";
 import { CanvasToolbar } from "./CanvasToolbar.js";
@@ -445,5 +447,58 @@ describe("Heading level toolbar (SP-4)", () => {
       session.history.undo();
     });
     expect(checked("Title")).toBe(true);
+  });
+});
+
+describe("Show mobile menu (UX-26)", () => {
+  function setUpHeader(mode: "design" | "content" = "design") {
+    const session = createEditorSession(siteLibrary, starterSite());
+    const previews = createPreviewStore();
+    const toolbars = createContextualToolbars();
+    toolbars.register(headerToolbar({ session, previews }));
+    const preferences = createPreferencesStore();
+    preferences.changeMode(mode);
+    render(
+      <ContextualToolbarsProvider registry={toolbars}>
+        <CanvasToolbarHost session={session} view={createCanvasView()} preferences={preferences} />
+      </ContextualToolbarsProvider>,
+    );
+    act(() => session.select("header"));
+    const toggle = () => screen.queryByRole("button", { name: "Show mobile menu" });
+    return { session, previews, toggle };
+  }
+
+  it("is offered on the Header only while the canvas shows small screens", () => {
+    const { session, toggle } = setUpHeader();
+    expect(toggle()).toBeNull();
+
+    act(() => session.setViewport("mobile"));
+    expect(toggle()).not.toBeNull();
+    // A custom width below the site's wide layout shows its small-screen menu too.
+    act(() => session.setViewport(700));
+    expect(toggle()).not.toBeNull();
+    act(() => session.setViewport("tablet"));
+    expect(toggle()).toBeNull();
+  });
+
+  it("turns the preview on and off without changing the site: no undo step (U6)", async () => {
+    const { session, previews, toggle } = setUpHeader();
+    act(() => session.setViewport("mobile"));
+
+    await userEvent.click(toggle() as HTMLElement);
+    expect(previews.getState().mobileMenu).toBe(true);
+    expect(toggle()?.getAttribute("aria-pressed")).toBe("true");
+    await userEvent.click(toggle() as HTMLElement);
+
+    expect(previews.getState().mobileMenu).toBe(false);
+    expect(session.history.entries()).toEqual([]);
+  });
+
+  it("is offered in Content mode too, as it changes nothing", () => {
+    const { session, toggle } = setUpHeader("content");
+
+    act(() => session.setViewport("mobile"));
+
+    expect(toggle()).not.toBeNull();
   });
 });

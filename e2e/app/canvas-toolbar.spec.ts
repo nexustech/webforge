@@ -178,3 +178,26 @@ test("keeps a device the person added, after a restart (F-ED-25)", async () => {
     rmSync(userData, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
   }
 });
+
+test("shows the Header's mobile menu open in the Mobile view, as a preview only (UX-26)", async () => {
+  const menu = canvas().locator("details[data-wf-menu]");
+  const selected = page.getByRole("toolbar", { name: "Selected element" });
+  // The shared Header isn't in Layers: it's selected on the canvas, where Puck's overlay takes the click.
+  await canvas()
+    .locator(".site-header")
+    .click({ force: true, position: { x: 400, y: 10 } });
+  // Wide screens have no small-screen menu to preview.
+  await expect(selected.getByRole("button", { name: "Show mobile menu" })).toHaveCount(0);
+
+  await toolbar().getByRole("radio", { name: "Mobile" }).click();
+  await selected.getByRole("button", { name: "Show mobile menu" }).click();
+  await expect(menu).toHaveAttribute("open", "");
+  await expect(menu).toHaveAttribute("data-webforge-preview", "mobile-menu");
+  // Its links show, to see and select them.
+  await expect(menu.getByRole("link").first()).toBeVisible();
+
+  await selected.getByRole("button", { name: "Show mobile menu" }).click();
+  await expect(menu).not.toHaveAttribute("open");
+  // A view aid, never a change to the site.
+  await expect(steps()).toHaveText(["Opened page"]);
+});

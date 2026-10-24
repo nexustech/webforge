@@ -8,6 +8,16 @@ export type EditPreviews = {
   readonly mobileMenu?: boolean;
 };
 
+/** Whether each preview is on in a set of previews: a new preview fails to compile until it's here. */
+const IS_ON: { readonly [name in keyof EditPreviews]-?: (previews: EditPreviews) => boolean } = {
+  mobileMenu: (previews) => previews.mobileMenu === true,
+};
+
+/** Whether `a` and `b` show the same previews (one left out is off). */
+export function samePreviews(a: EditPreviews, b: EditPreviews): boolean {
+  return Object.values(IS_ON).every((isOn) => isOn(a) === isOn(b));
+}
+
 /**
  * Marks markup a component draws only for an edit-only preview, with the preview's name as its
  * value (`data-webforge-preview="mobile-menu"`): the canvas's CSS and tests find it by this, and a

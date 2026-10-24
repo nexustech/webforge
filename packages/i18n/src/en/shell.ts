@@ -153,6 +153,9 @@ export const shell = {
   "headingToolbar.title": "Title",
   "headingToolbar.heading": "Heading",
   "headingToolbar.subheading": "Subheading",
+  // The selected Header's toolbar in the Mobile view (UX-26): shows its menu open on the canvas only.
+  "headerToolbar.label": "Header preview",
+  "headerToolbar.showMobileMenu": "Show mobile menu",
   // The canvas frame's edges, dragged to set its width (1.33, F-ED-25).
   "canvasResize.left": "Canvas width, left edge",
   "canvasResize.right": "Canvas width, right edge",

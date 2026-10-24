@@ -10,6 +10,7 @@ import { t } from "@webforge/i18n";
 import { textStylesOf } from "@webforge/site-components";
 import { HistoryIcon, SlidersHorizontalIcon } from "lucide-react";
 import { type RefObject, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useStore } from "zustand";
 import { shallow } from "zustand/shallow";
 import type { CustomDevice, EditPanelPreferences } from "../../shared/ipc/prefs.js";
 import { type AddPanelRegistration, registerAddPanel } from "../add/register-add-panel.js";
@@ -58,6 +59,7 @@ import { CanvasResizeHandles } from "./CanvasResizeHandles.js";
 import { colourFieldRenderer } from "./ColourField.js";
 import { type BulkCanvasAction, registerCanvasCommands } from "./canvas-commands.js";
 import { EditPanelHost, type EditPanelHostProps } from "./EditPanelHost.js";
+import { canvasPreviews, createPreviewStore } from "./edit-previews.js";
 import {
   connectEngine,
   currentPage,
@@ -68,6 +70,7 @@ import {
 import { registerElementCommands } from "./element-commands.js";
 import { connectFieldDrags } from "./field-drag.js";
 import { fieldTarget } from "./field-target.js";
+import { headerToolbar } from "./HeaderToolbar.js";
 import { headingToolbar } from "./HeadingToolbar.js";
 import { SharedRegionBanner } from "./SharedRegionBanner.js";
 import { confirmSharedRemovals, sharedCutConfirmation } from "./shared-confirmations.js";
@@ -230,6 +233,10 @@ export function Editor({
   const mode = usePreferences(preferences, (state) => state.mode);
   const devices = usePreferences(preferences, (state) => state.preferences.canvas.devices);
   const viewOptions = usePreferences(preferences, viewOptionsOf, shallow);
+  /** The edit-only previews the user turned on (UX-26), for this window. */
+  const [editPreviews] = useState(() => createPreviewStore());
+  const previewChoices = useStore(editPreviews);
+  const viewport = useUi(session, (ui) => ui.viewport);
   const connectionRef = useRef<EngineConnection | null>(null);
   const clipboardCommandsRef = useRef<ReturnType<typeof registerClipboardCommands> | null>(null);
   const styleCommandsRef = useRef<ReturnType<typeof registerStyleCommands> | null>(null);
@@ -440,6 +447,11 @@ export function Editor({
     engine?.setViewOptions(viewOptions);
   }, [engine, viewOptions]);
 
+  // The edit-only previews (UX-26), at the canvas's width: view state too, never in the export.
+  useEffect(() => {
+    engine?.setPreviews(canvasPreviews(previewChoices, viewport));
+  }, [engine, previewChoices, viewport]);
+
   useEffect(() => {
     engine?.setMode(mode);
     clipboardCommandsRef.current?.setLayoutLocked(mode !== "design");
@@ -576,6 +588,10 @@ export function Editor({
     () =>
       toolbars.register(headingToolbar({ session, flush: () => connectionRef.current?.flush() })),
     [toolbars, session],
+  );
+  useEffect(
+    () => toolbars.register(headerToolbar({ session, previews: editPreviews })),
+    [toolbars, session, editPreviews],
   );
 
   return (

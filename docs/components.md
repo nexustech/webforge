@@ -153,6 +153,7 @@ As the module loads:
 - **No external requests (C8):** icons are inline SVG, and fonts and images come with the site.
   - **Embeds** (a video or map from another site, F-CM-4) draw `<EmbedFrame>` (`src/embed-frame.tsx`) with an address from `videoEmbed` or `mapEmbed` (`src/embed.ts`), and name the `embed` behaviour. The page shows a placeholder and asks nothing of the other site until the visitor clicks; the behaviour then loads the player or map, from the addresses `EMBED_SOURCES` starts only. Without JavaScript the placeholder's link opens it on its own site.
 - **Context:** `props.context` resolves links, images and settings. On the canvas they go nowhere; in the export they're the site's.
+- **Edit-only previews (UX-26):** what the canvas can show that a site never shows by itself, such as the Header's small-screen menu open (*Show mobile menu*). A component reads `context.previews` and marks what it draws for one with `PREVIEW_ATTRIBUTE` (`data-webforge-preview="mobile-menu"`). `renderNodesToHtml` renders without previews, so none reaches a site; a test renders every component with every preview on and checks the export doesn't change. A new preview adds its flag to `EditPreviews` (`previews.ts`), which fails to compile until `samePreviews` and that test cover it.
 
 ### A new field kind
 
