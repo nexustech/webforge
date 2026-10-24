@@ -2,6 +2,9 @@ import { z } from "zod";
 import { anchorIdSchema } from "./link.js";
 import { type ThemeTokens, themeTokensSchema } from "./theme.js";
 
+/** The longest name an element can be given in Layers (F-ED-26). */
+export const LAYER_NAME_MAX = 100;
+
 /**
  * Advanced-mode options of a node (F-ED-11): extra CSS classes, HTML attributes and the anchor that
  * section links point at.
@@ -89,7 +92,7 @@ export const nodeDocSchema: z.ZodType<NodeDoc> = z.object({
   props: z
     .looseObject({
       id: z.string().min(1),
-      layerName: z.string().max(100).optional(),
+      layerName: z.string().max(LAYER_NAME_MAX).optional(),
       hidden: z.boolean().optional(),
       advanced: nodeAdvancedSchema.optional(),
     })

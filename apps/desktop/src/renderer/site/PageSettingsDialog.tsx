@@ -1,17 +1,26 @@
 import {
   Button,
-  cn,
+  Check,
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  fieldControlClass,
+  ImageChoice,
+  TextInput,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
-import { isImageMeta, type MediaId, type PageEntry, type SiteDoc } from "@webforge/model";
-import { type ReactNode, useId, useState } from "react";
+import {
+  isImageMeta,
+  type MediaId,
+  PAGE_DESCRIPTION_MAX,
+  PAGE_SLUG_MAX,
+  PAGE_TITLE_MAX,
+  type PageEntry,
+  type SiteDoc,
+} from "@webforge/model";
+import { useState } from "react";
 import { MEDIA_SCHEME } from "../../shared/ipc/media.js";
 import { fileNameFor, type PageSettingsChange } from "./page-actions.js";
 
@@ -56,56 +65,6 @@ export function PageSettingsDialog({
   );
 }
 
-/** A labelled field; `hint` goes under it and describes it. Site Settings uses it too. */
-export function Field({
-  label,
-  hint,
-  children,
-}: {
-  readonly label: string;
-  readonly hint?: string;
-  readonly children: (ids: { id: string; hintId: string | undefined }) => ReactNode;
-}) {
-  const id = useId();
-  const hintId = useId();
-  return (
-    <div className="grid gap-1">
-      <label htmlFor={id} className="text-xs text-muted-foreground">
-        {label}
-      </label>
-      {children({ id, hintId: hint === undefined ? undefined : hintId })}
-      {hint !== undefined && (
-        <p id={hintId} className="text-xs text-muted-foreground">
-          {hint}
-        </p>
-      )}
-    </div>
-  );
-}
-
-/** A checkbox with its label to the right. */
-export function Check({
-  label,
-  checked,
-  onChange,
-}: {
-  readonly label: string;
-  readonly checked: boolean;
-  readonly onChange: (checked: boolean) => void;
-}) {
-  return (
-    <label className="flex items-center gap-2 text-sm">
-      <input
-        type="checkbox"
-        className="size-4 accent-primary"
-        checked={checked}
-        onChange={(event) => onChange(event.currentTarget.checked)}
-      />
-      {label}
-    </label>
-  );
-}
-
 function PageSettingsForm({
   site,
   page,
@@ -130,6 +89,8 @@ function PageSettingsForm({
   return (
     <form
       className="grid gap-3"
+      // Save says what's missing in the editor's own words, never the browser's bubble.
+      noValidate
       onSubmit={(event) => {
         event.preventDefault();
         onSave({
@@ -148,20 +109,15 @@ function PageSettingsForm({
         <DialogDescription>{t("pageSettings.description")}</DialogDescription>
       </DialogHeader>
 
-      <Field label={t("pageSettings.pageTitle")}>
-        {({ id }) => (
-          <input
-            id={id}
-            className={fieldControlClass}
-            value={title}
-            maxLength={200}
-            required
-            onChange={(event) => setTitle(event.currentTarget.value)}
-          />
-        )}
-      </Field>
+      <TextInput
+        label={t("pageSettings.pageTitle")}
+        value={title}
+        maxLength={PAGE_TITLE_MAX}
+        required
+        onChange={setTitle}
+      />
 
-      <Field
+      <TextInput
         label={t("pageSettings.fileName")}
         hint={
           fixedFile ??
@@ -169,33 +125,23 @@ function PageSettingsForm({
             path: fileNameFor(site, slug.trim() === "" ? page.slug : slug, page.folder, page.id),
           })
         }
-      >
-        {({ id, hintId }) => (
-          <input
-            id={id}
-            className={fieldControlClass}
-            value={fixedFile === undefined ? slug : fileNameFor(site, slug, undefined, page.id)}
-            maxLength={80}
-            disabled={fixedFile !== undefined}
-            aria-describedby={hintId}
-            onChange={(event) => setSlug(event.currentTarget.value)}
-          />
-        )}
-      </Field>
+        value={fixedFile === undefined ? slug : fileNameFor(site, slug, undefined, page.id)}
+        maxLength={PAGE_SLUG_MAX}
+        disabled={fixedFile !== undefined}
+        onChange={setSlug}
+      />
 
-      <Field label={t("pageSettings.metaDescription")} hint={t("pageSettings.metaDescriptionHint")}>
-        {({ id, hintId }) => (
-          <textarea
-            id={id}
-            className={cn(fieldControlClass, "h-16 resize-none py-1")}
-            value={description}
-            maxLength={300}
-            placeholder={site.settings.general.description}
-            aria-describedby={hintId}
-            onChange={(event) => setDescription(event.currentTarget.value)}
-          />
-        )}
-      </Field>
+      <TextInput
+        label={t("pageSettings.metaDescription")}
+        hint={t("pageSettings.metaDescriptionHint")}
+        multiline
+        value={description}
+        maxLength={PAGE_DESCRIPTION_MAX}
+        {...(site.settings.general.description === undefined
+          ? {}
+          : { placeholder: site.settings.general.description })}
+        onChange={setDescription}
+      />
 
       <fieldset className="grid gap-1">
         <legend className="mb-1 text-xs text-muted-foreground">
@@ -203,6 +149,7 @@ function PageSettingsForm({
         </legend>
         <div className="flex flex-wrap gap-2">
           <ImageChoice
+            name="share-image"
             label={t("pageSettings.siteShareImage")}
             selected={shareImage === undefined}
             onSelect={() => setShareImage(undefined)}
@@ -210,6 +157,7 @@ function PageSettingsForm({
           {images.map((image) => (
             <ImageChoice
               key={image.id}
+              name="share-image"
               label={image.name}
               thumbnail={`${MEDIA_SCHEME}://thumbnail/${image.hash}`}
               selected={shareImage === image.id}
@@ -243,44 +191,5 @@ function PageSettingsForm({
         </Button>
       </DialogFooter>
     </form>
-  );
-}
-
-/**
- * One choice of image: a radio button showing the image, or the default. `name` groups the
- * choices of one picker, so a form can have several.
- */
-export function ImageChoice({
-  label,
-  thumbnail,
-  selected,
-  onSelect,
-  name = "share-image",
-}: {
-  readonly label: string;
-  readonly thumbnail?: string;
-  readonly selected: boolean;
-  readonly onSelect: () => void;
-  readonly name?: string;
-}) {
-  return (
-    <label
-      className={cn(
-        "flex w-20 cursor-pointer flex-col items-center gap-1 rounded-sm border border-border p-1 text-center text-xs",
-        "has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring",
-        selected && "border-primary bg-accent text-accent-foreground",
-      )}
-    >
-      <input type="radio" name={name} className="sr-only" checked={selected} onChange={onSelect} />
-      {thumbnail === undefined ? (
-        <span
-          className="flex size-12 items-center justify-center rounded-sm bg-input"
-          aria-hidden
-        />
-      ) : (
-        <img src={thumbnail} alt="" className="size-12 rounded-sm object-cover" />
-      )}
-      <span className="line-clamp-2 break-all">{label}</span>
-    </label>
   );
 }

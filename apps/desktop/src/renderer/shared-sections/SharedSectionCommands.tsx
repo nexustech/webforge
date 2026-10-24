@@ -1,6 +1,7 @@
 import { t } from "@webforge/i18n";
 import { SHARED_SECTION_NAME_MAX, type SharedSectionId } from "@webforge/model";
 import type { EditorSession } from "../editor/editor-session.js";
+import { elementName } from "../editor/labels.js";
 import type { CommandRegistry } from "../shell/commands.js";
 import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
 import { NameDialog } from "../site/NameDialog.js";
@@ -94,9 +95,7 @@ export function registerSharedSectionCommands(
         const { pageId, nodeId } = session.ui.getState();
         const section = savableSection(session.history.document.getState(), pageId, nodeId);
         if (section === undefined) return;
-        const name =
-          section.props.layerName?.trim() ||
-          (session.library.components[section.type]?.label ?? section.type);
+        const name = elementName(section, session.library);
         askName({ kind: "save", suggested: name.slice(0, SHARED_SECTION_NAME_MAX) });
       },
     }),

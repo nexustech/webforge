@@ -42,7 +42,7 @@ describe("SiteSettingsHost", () => {
 
       expect(session.history.document.getState().settings.general.name).toBe("Rosa's");
       expect(session.history.state.getState().entries.map((entry) => entry.label)).toEqual([
-        "Changed Site Settings",
+        "Changed Site Settings: General",
       ]);
       expect(screen.queryByRole("dialog")).toBeNull();
     },
