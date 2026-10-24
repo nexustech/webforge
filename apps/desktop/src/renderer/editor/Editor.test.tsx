@@ -4,6 +4,7 @@ import { siteLibrary, starterPage } from "@webforge/site-components";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { DEFAULT_PREFERENCES } from "../../shared/ipc/prefs.js";
 import { saveAsSharedSection } from "../shared-sections/shared-sections.js";
 import { CommandRegistryProvider } from "../shell/command-context.js";
 import { type CommandRegistry, createCommandRegistry } from "../shell/commands.js";
@@ -11,6 +12,7 @@ import { createSiteWideConfirm } from "../shell/confirm-site-wide.js";
 import { CanvasErrorBoundary } from "../shell/error-boundaries.js";
 import { PanelRegistryProvider, usePanels } from "../shell/panel-context.js";
 import { createPanelRegistry, type PanelRegistry } from "../shell/panels.js";
+import { createPreferencesStore } from "../shell/preferences-store.js";
 import { Editor } from "./Editor.js";
 import { createEditorSession, type EditorSession } from "./editor-session.js";
 import { createFakeEngine, type FakeEngine } from "./fake-engine.test-helper.js";
@@ -218,7 +220,7 @@ describe("Editor", () => {
               session={session}
               createEngine={createEngine}
               compileCss={compileCss}
-              mode="content"
+              preferences={createPreferencesStore({ mode: "content" })}
             />
           </PanelRegistryProvider>
         </CommandRegistryProvider>,
@@ -328,41 +330,11 @@ describe("Editor", () => {
   });
 
   it("shows the favourites it is given, and saves what the Add panel changes, once (1.34)", async () => {
-    const save = vi.fn();
-    const renderWith = (add: { favourites: string[]; recent: string[] }) =>
-      act(async () =>
-        root.render(
-          <CommandRegistryProvider registry={registry}>
-            <PanelRegistryProvider registry={panels}>
-              <Editor
-                session={session}
-                createEngine={createEngine}
-                compileCss={compileCss}
-                addPreferences={add}
-                onAddPreferencesChange={save}
-              />
-              <PanelHost id="add" />
-            </PanelRegistryProvider>
-          </CommandRegistryProvider>,
-        ),
-      );
-    const firstGroup = () => container.querySelector("ul[aria-label]")?.getAttribute("aria-label");
-
-    await renderWith({ favourites: ["Faq"], recent: [] });
-    expect(firstGroup()).toBe("Favourites");
-    expect(save).not.toHaveBeenCalled();
-
-    await act(async () => registry.run("add.item.Hero"));
-    expect(save).toHaveBeenCalledExactlyOnceWith({ favourites: ["Faq"], recent: ["Hero"] });
-
-    // Preferences changed elsewhere are shown, not saved back.
-    await renderWith({ favourites: [], recent: ["Faq"] });
-    expect(firstGroup()).toBe("Recently used");
-    expect(save).toHaveBeenCalledOnce();
-  });
-
-  it("undoes back to a step from the title bar in one jump, a gesture in progress dropped first (UX-16)", async () => {
-    let undoTo: ((entryId: string) => boolean) | undefined;
+    const save = vi.fn(async () => undefined);
+    const preferences = createPreferencesStore(
+      { preferences: { ...DEFAULT_PREFERENCES, add: { favourites: ["Faq"], recent: [] } } },
+      { preferences: save },
+    );
     await act(async () =>
       root.render(
         <CommandRegistryProvider registry={registry}>
@@ -371,10 +343,35 @@ describe("Editor", () => {
               session={session}
               createEngine={createEngine}
               compileCss={compileCss}
-              onUndoTo={(next) => {
-                undoTo = next?.run;
-              }}
+              preferences={preferences}
             />
+            <PanelHost id="add" />
+          </PanelRegistryProvider>
+        </CommandRegistryProvider>,
+      ),
+    );
+    const firstGroup = () => container.querySelector("ul[aria-label]")?.getAttribute("aria-label");
+    expect(firstGroup()).toBe("Favourites");
+    expect(save).not.toHaveBeenCalled();
+
+    await act(async () => registry.run("add.item.Hero"));
+    expect(save).toHaveBeenCalledExactlyOnceWith({
+      add: { favourites: ["Faq"], recent: ["Hero"] },
+    });
+
+    // Preferences changed elsewhere are shown, and saved once, by what changed them.
+    await act(async () => preferences.change({ add: { favourites: [], recent: ["Faq"] } }));
+    expect(firstGroup()).toBe("Recently used");
+    expect(save).toHaveBeenCalledTimes(2);
+  });
+
+  it("undoes back to a step from the title bar in one jump, a gesture in progress dropped first (UX-16)", async () => {
+    const undoTo = (entryId: string) => session.undoTo(entryId);
+    await act(async () =>
+      root.render(
+        <CommandRegistryProvider registry={registry}>
+          <PanelRegistryProvider registry={panels}>
+            <Editor session={session} createEngine={createEngine} compileCss={compileCss} />
           </PanelRegistryProvider>
         </CommandRegistryProvider>,
       ),
@@ -392,7 +389,7 @@ describe("Editor", () => {
     // Steps 5 and 6 at once: one jump, so the canvas is brought up to date once, not per step.
     const updates = engine.applied.length;
     await act(async () => {
-      expect(undoTo?.(fifth?.id ?? "")).toBe(true);
+      expect(undoTo(fifth?.id ?? "")).toBe(true);
     });
     expect(name()).toBe("Name 4");
     expect(engine.applied.length - updates).toBe(1);
@@ -404,7 +401,7 @@ describe("Editor", () => {
       draft.settings.general.name = "Dragging";
     });
     await act(async () => {
-      expect(undoTo?.(second?.id ?? "")).toBe(true);
+      expect(undoTo(second?.id ?? "")).toBe(true);
     });
     expect(gesture.active).toBe(false);
     expect(name()).toBe("Name 1");
@@ -412,13 +409,9 @@ describe("Editor", () => {
 
     // A step already undone can't be undone back to: nothing moves forward.
     await act(async () => {
-      expect(undoTo?.(fifth?.id ?? "")).toBe(false);
+      expect(undoTo(fifth?.id ?? "")).toBe(false);
     });
     expect(session.history.state.getState().cursor).toBe(1);
-
-    await act(async () => root.render(<></>));
-    expect(undoTo).toBeUndefined();
-    root = createRoot(container);
   });
 
   it("lets the Add panel's items be dragged onto the canvas", () => {
@@ -436,7 +429,7 @@ describe("Editor", () => {
               session={session}
               createEngine={createEngine}
               compileCss={compileCss}
-              mode="content"
+              preferences={createPreferencesStore({ mode: "content" })}
             />
           </PanelRegistryProvider>
         </CommandRegistryProvider>,
@@ -484,7 +477,7 @@ describe("Editor", () => {
               session={session}
               createEngine={() => content}
               compileCss={compileCss}
-              mode="content"
+              preferences={createPreferencesStore({ mode: "content" })}
             />
           </PanelRegistryProvider>
         </CommandRegistryProvider>,
@@ -495,8 +488,7 @@ describe("Editor", () => {
   });
 
   it("passes Design or Content mode to the engine, without remounting it", async () => {
-    expect(engine.setMode).toHaveBeenLastCalledWith("design");
-
+    const preferences = createPreferencesStore();
     await act(async () =>
       root.render(
         <CommandRegistryProvider registry={registry}>
@@ -505,43 +497,58 @@ describe("Editor", () => {
               session={session}
               createEngine={createEngine}
               compileCss={compileCss}
-              mode="content"
+              preferences={preferences}
             />
           </PanelRegistryProvider>
         </CommandRegistryProvider>,
       ),
     );
+    expect(engine.setMode).toHaveBeenLastCalledWith("design");
+    const mounted = vi.mocked(engine.mount).mock.calls.length;
+
+    await act(async () => preferences.changeMode("content"));
 
     expect(engine.setMode).toHaveBeenLastCalledWith("content");
-    expect(engine.mount).toHaveBeenCalledOnce();
+    expect(engine.mount).toHaveBeenCalledTimes(mounted);
   });
 
   it("passes the View menu's options to the engine, without remounting it (F-ED-25)", async () => {
-    expect(engine.setViewOptions).not.toHaveBeenCalled();
-    const options = {
+    const preferences = createPreferencesStore();
+    await act(async () =>
+      root.render(
+        <CommandRegistryProvider registry={registry}>
+          <PanelRegistryProvider registry={panels}>
+            <Editor
+              session={session}
+              createEngine={createEngine}
+              compileCss={compileCss}
+              preferences={preferences}
+            />
+          </PanelRegistryProvider>
+        </CommandRegistryProvider>,
+      ),
+    );
+    const mounted = vi.mocked(engine.mount).mock.calls.length;
+
+    await act(async () =>
+      preferences.change({
+        canvas: {
+          ...DEFAULT_PREFERENCES.canvas,
+          showOutlines: true,
+          spacingOnHover: false,
+          elementNames: true,
+          extraBottomSpace: false,
+        },
+      }),
+    );
+
+    expect(engine.setViewOptions).toHaveBeenLastCalledWith({
       outlines: true,
       spacingOnHover: false,
       elementNames: true,
       extraBottomSpace: false,
-    };
-
-    await act(async () =>
-      root.render(
-        <CommandRegistryProvider registry={registry}>
-          <PanelRegistryProvider registry={panels}>
-            <Editor
-              session={session}
-              createEngine={createEngine}
-              compileCss={compileCss}
-              viewOptions={options}
-            />
-          </PanelRegistryProvider>
-        </CommandRegistryProvider>,
-      ),
-    );
-
-    expect(engine.setViewOptions).toHaveBeenLastCalledWith(options);
-    expect(engine.mount).toHaveBeenCalledOnce();
+    });
+    expect(engine.mount).toHaveBeenCalledTimes(mounted);
   });
 
   it("styles the canvas with the site's compiled CSS", () => {
@@ -608,7 +615,9 @@ describe("Editor", () => {
               session={session}
               createEngine={createEngine}
               compileCss={compileCss}
-              editorLevel="advanced"
+              preferences={createPreferencesStore({
+                preferences: { ...DEFAULT_PREFERENCES, editorLevel: "advanced" },
+              })}
             />
           </PanelRegistryProvider>
         </CommandRegistryProvider>,

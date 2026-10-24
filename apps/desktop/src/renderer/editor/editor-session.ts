@@ -27,6 +27,7 @@ import {
   toggleSelected,
 } from "./selection.js";
 import { shownLayout } from "./shared-layout.js";
+import { undoEntry } from "./undo-toasts.js";
 
 export type { EditorSelection } from "./selection.js";
 
@@ -86,6 +87,19 @@ export type EditorSession = {
   restoreSelection(selection: EditorSelection): void;
   /** Shows the canvas as `viewport` would (F-ED-4); not an undo step (U6). */
   setViewport(viewport: Viewport): void;
+  /**
+   * Ends the canvas's edit in progress (typing, while its grace period runs), so what comes next
+   * acts on what the person sees. Does nothing without a canvas.
+   */
+  flush(): void;
+  /** How the canvas ends its edit in progress on {@link flush} ({@link connectEngine}). */
+  onFlush(flush: () => void): Unsubscribe;
+  /**
+   * Undoes back to step `entryId`, that step included, in one jump (UX-16: the title bar's list
+   * of steps), after the canvas's edit in progress; a gesture in progress is dropped first, as
+   * Ctrl/Cmd+Z drops it. False if the step is gone.
+   */
+  undoTo(entryId: string): boolean;
 };
 
 /**
@@ -139,6 +153,11 @@ export function createEditorSession(
   const alone = (selection: EditorSelection): EditorSelection =>
     (selection.others ?? []).length > 0 ? { ...selection, others: [] } : selection;
   let gesture: Gesture | null = null;
+  /** How the canvas, once there is one, ends its edit in progress. */
+  const flushes = new Set<() => void>();
+  const flushCanvas = () => {
+    for (const flush of flushes) flush();
+  };
   /** A canvas edit or another gesture can't wait for a gesture to end: it ends it as it is. */
   const commitGesture = () => {
     if (gesture?.active === true) {
@@ -204,6 +223,18 @@ export function createEditorSession(
     },
     setViewport(viewport) {
       if (viewport !== ui.getState().viewport) setSelection({ ...ui.getState(), viewport });
+    },
+    flush: flushCanvas,
+    onFlush(flush) {
+      flushes.add(flush);
+      return () => {
+        flushes.delete(flush);
+      };
+    },
+    undoTo(entryId) {
+      flushCanvas();
+      if (gesture?.active === true) gesture.cancel();
+      return undoEntry(history, entryId);
     },
   };
 }
@@ -275,6 +306,7 @@ export function connectEngine(engine: CanvasEngine, session: EditorSession): Eng
   const pageDoc = (site: SiteDoc, pageId: PageId): PageDoc | undefined => site.pages[pageId]?.doc;
 
   const unsubscribers = [
+    session.onFlush(() => flush()),
     engine.onUserEdit((edit) => {
       const { pageId, viewport } = ui.getState();
       const page = pageDoc(history.document.getState(), pageId);

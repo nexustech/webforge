@@ -13,6 +13,7 @@ import { CanvasToolbarHost } from "./CanvasToolbarHost.js";
 import { viewportFor, widthOf } from "./canvas-size.js";
 import { type CanvasZoom, connectCanvasView, createCanvasView } from "./canvas-view.js";
 import { openedDialog } from "./opened-dialog.test-helper.js";
+import { createPreferencesStore } from "./preferences-store.js";
 
 afterEach(cleanup);
 
@@ -305,12 +306,7 @@ describe("CanvasToolbarHost", () => {
     const session = createEditorSession(siteLibrary, starterSite());
     const view = createCanvasView();
     render(
-      <CanvasToolbarHost
-        session={session}
-        view={view}
-        canvas={DEFAULT_PREFERENCES.canvas}
-        onCanvasChange={vi.fn()}
-      />,
+      <CanvasToolbarHost session={session} view={view} preferences={createPreferencesStore()} />,
     );
 
     await userEvent.click(screen.getByRole("radio", { name: "Tablet" }));

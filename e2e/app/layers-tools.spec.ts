@@ -201,6 +201,25 @@ test("filters Layers and collapses or expands the whole tree", async () => {
   await expect(row("Heading")).toBeVisible();
 });
 
+test("keeps what Layers shows, its collapsed layers and filter, when the mode switches (R9)", async () => {
+  await showLayers();
+  const mode = (name: "Design" | "Content") => page.getByRole("radio", { name, exact: true });
+  const filter = () => left().getByRole("searchbox", { name: "Filter layers" });
+
+  await left().getByRole("button", { name: "Collapse all" }).click();
+  await expect(row("Section")).toHaveAttribute("aria-expanded", "false");
+  await mode("Content").click();
+  await expect(mode("Content")).toHaveAttribute("data-state", "on");
+  await expect(row("Section")).toHaveAttribute("aria-expanded", "false");
+  await expect(row("Heading")).toHaveCount(0);
+
+  await filter().fill("text");
+  await mode("Design").click();
+  await expect(mode("Design")).toHaveAttribute("data-state", "on");
+  await expect(filter()).toHaveValue("text");
+  await expect(tree().getByRole("treeitem")).toHaveCount(2);
+});
+
 test("in Content mode, leaves the canvas's right-clicks alone and Layers' menu to Rename", async () => {
   await showLayers();
   await page.getByRole("radio", { name: "Content", exact: true }).click();
