@@ -62,6 +62,24 @@ export function createPreferencesStore(
   };
 }
 
+/**
+ * Calls `setLocked` with whether the mode locks the layout (Content mode, M3): now, and again each
+ * time that changes. Returns how to stop following it.
+ */
+export function followLayoutLock(
+  store: ReadonlyStore<EditorPreferences>,
+  setLocked: (locked: boolean) => void,
+): () => void {
+  let locked = store.getState().mode !== "design";
+  setLocked(locked);
+  return store.subscribe((state) => {
+    const next = state.mode !== "design";
+    if (next === locked) return;
+    locked = next;
+    setLocked(next);
+  });
+}
+
 /** The part of the preferences a component draws: it redraws only when that part changes. */
 export function usePreferences<T>(
   store: ReadonlyStore<EditorPreferences>,

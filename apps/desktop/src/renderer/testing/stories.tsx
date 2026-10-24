@@ -75,7 +75,12 @@ function PanelHost({
   );
   return (
     <AppProviders registries={registries}>
-      <div className="flex h-[640px] gap-3 bg-background p-3 text-foreground">
+      {/* "drawing" until the panels, registered in an effect after the first render, are on the
+          page: the visual tests wait for "ready" (#365). */}
+      <div
+        className="flex h-[640px] gap-3 bg-background p-3 text-foreground"
+        data-story-state={panels.length === 0 ? "drawing" : "ready"}
+      >
         {panels.map(({ id, title, component: Panel }) => (
           <section
             key={id}
