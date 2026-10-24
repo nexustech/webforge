@@ -25,6 +25,7 @@ const GROUP_LABELS: Readonly<Record<ShortcutGroup, MessageKey>> = {
   view: "shortcuts.group.view",
   text: "shortcuts.group.text",
   layers: "shortcuts.group.layers",
+  editPanel: "shortcuts.group.editPanel",
 };
 
 /** One line of the sheet: what the keys do, and the keys (any of them), as people read them. */

@@ -93,6 +93,7 @@ export const shell = {
   "shortcuts.group.view": "View",
   "shortcuts.group.text": "While editing text",
   "shortcuts.group.layers": "In Layers",
+  "shortcuts.group.editPanel": "In the Edit panel",
   "shortcuts.saveNow": "Save now",
   "shortcuts.cancelDrag": "Cancel a drag",
   "shortcuts.bold": "Bold",
@@ -112,6 +113,8 @@ export const shell = {
     "Place a linked copy of a shared section: hold while dragging, adding Shift once it moves",
   "shortcuts.layersRename": "Rename",
   "shortcuts.layersDelete": "Delete",
+  "shortcuts.toggleGroups": "Open or close all option groups",
+  "shortcuts.resetOption": "Reset an option or group to its default",
 
   // The text context menu: spelling (F-ED-19) and editing.
   "spellcheck.noSuggestions": "No Suggestions",

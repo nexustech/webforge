@@ -88,6 +88,36 @@ describe("defineComponent (2.5)", () => {
       { defaults: { ...base.defaults, colour: "red" } },
       `'Card' has a default for "colour"`,
     ],
+    [
+      "an option group without a name (UX-13)",
+      {
+        fields: {
+          ...base.fields,
+          title: { kind: "text", label: "Title", optionGroup: { id: "title", label: " " } },
+        },
+      },
+      `'Card' puts "title" in an option group without a short name`,
+    ],
+    [
+      "an option group with a name too long to show",
+      {
+        fields: {
+          ...base.fields,
+          title: { kind: "text", label: "Title", optionGroup: { id: "x", label: "x".repeat(41) } },
+        },
+      },
+      `'Card' puts "title" in an option group without a short name`,
+    ],
+    [
+      "an option group without a stable id, which closed groups are remembered by",
+      {
+        fields: {
+          ...base.fields,
+          title: { kind: "text", label: "Title", optionGroup: { id: "Text style", label: "Text" } },
+        },
+      },
+      `'Card' puts "title" in an option group without an id such as "typography"`,
+    ],
   ] satisfies [string, Partial<LooseSpec>, string][])("refuses %s", (_name, change, message) => {
     expect(() => defineComponent({ ...base, ...change })).toThrow(message);
   });

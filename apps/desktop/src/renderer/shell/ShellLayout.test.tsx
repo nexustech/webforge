@@ -367,6 +367,18 @@ describe("ShellLayout", () => {
     expect(commands.list()).toEqual([]);
   });
 
+  it("starts a column left collapsed as its strip of panel icons, not its squeezed tabs", () => {
+    // 2% of the window: the 36 px strip, as saved when the column was collapsed.
+    const width = (36 / window.innerWidth) * 100;
+    renderLayout({
+      layout: { [PANEL_GROUPS.columns]: { left: width, center: 100 - width - 20, right: 20 } },
+    });
+
+    expect(screen.getByRole("navigation", { name: "Left panels, collapsed" })).toBeTruthy();
+    expect(screen.queryByRole("region", { name: "Left panels" })).toBeNull();
+    expect(screen.queryByRole("navigation", { name: "Right panels, collapsed" })).toBeNull();
+  });
+
   it("starts from the remembered sizes and doesn't save them again unchanged", () => {
     const onLayoutChange = vi.fn();
     renderLayout({
