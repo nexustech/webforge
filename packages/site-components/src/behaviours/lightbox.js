@@ -97,9 +97,10 @@
       Home: () => 0,
       End: () => total - 1,
     };
-    dialog.addEventListener("keydown", (event) => {
+    // On the document: after a click Safari leaves the focus on the page, not in the dialog.
+    document.addEventListener("keydown", (event) => {
       const to = KEYS[event.key];
-      if (to === undefined) return;
+      if (!dialog.open || to === undefined) return;
       // With a modifier the keys are the browser's or the system's (Alt+Left goes back).
       if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
       event.preventDefault();

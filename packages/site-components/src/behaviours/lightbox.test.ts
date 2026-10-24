@@ -185,13 +185,20 @@ describe("the lightbox behaviour (2.7a)", () => {
     expect(picture?.querySelectorAll("source")).toHaveLength(1);
   });
 
-  it("goes to the first and last image with Home and End", () => {
-    const { items, text, dialog, window } = page();
+  it("goes to the first and last image with Home and End, with the focus left on the page too", () => {
+    const { items, text, dialog, document, window } = page();
+    const press = (key: string) =>
+      document.body.dispatchEvent(new window.KeyboardEvent("keydown", { key, bubbles: true }));
     items[1]?.click();
 
-    dialog?.dispatchEvent(new window.KeyboardEvent("keydown", { key: "End", bubbles: true }));
+    // After a click Safari leaves the focus on the page, not in the dialog.
+    press("End");
     expect(text("[data-wf-lightbox-status]")).toBe("3 of 3");
-    dialog?.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Home", bubbles: true }));
+    press("Home");
+    expect(text("[data-wf-lightbox-status]")).toBe("1 of 3");
+    // Closed, the keys are the page's again.
+    dialog?.close();
+    press("End");
     expect(text("[data-wf-lightbox-status]")).toBe("1 of 3");
   });
 });

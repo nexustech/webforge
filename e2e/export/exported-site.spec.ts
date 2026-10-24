@@ -272,6 +272,34 @@ test.describe("exported site from disk", () => {
       await expect(images.nth(1)).toBeFocused();
     });
 
+    test("goes to the first and last image with Home and End, keeps the page still and closes with a click beside it", async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 1280, height: 800 });
+      await open(page, "about.html");
+      const images = page.locator("a[data-wf-lightbox-item]");
+      const viewer = page.getByRole("dialog", { name: "Image viewer" });
+      const status = viewer.locator("[data-wf-lightbox-status]");
+      const overflow = () =>
+        page.evaluate(() => getComputedStyle(document.documentElement).overflow);
+      const before = await overflow();
+
+      await images.nth(1).click();
+      await expect(viewer).toBeVisible();
+      await page.keyboard.press("End");
+      await expect(status).toHaveText("3 of 3");
+      await page.keyboard.press("Home");
+      await expect(status).toHaveText("1 of 3");
+      // The page behind doesn't scroll while the lightbox is open.
+      expect(await overflow()).toBe("hidden");
+
+      // A click beside the image, on the dimmed page, closes it.
+      await viewer.click({ position: { x: 10, y: 10 } });
+      await expect(viewer).toBeHidden();
+      await expect(images.nth(1)).toBeFocused();
+      expect(await overflow()).toBe(before);
+    });
+
     test("passes axe with the lightbox open", async ({ page }) => {
       await open(page, "about.html");
       await page.locator("a[data-wf-lightbox-item]").first().click();
