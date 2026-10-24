@@ -40,6 +40,7 @@ export const MIGRATIONS: Readonly<Record<number, SiteMigration>> = {
   2: sharedSections,
   3: uniqueSharedSectionNames,
   4: themeTokens,
+  5: sectionPaddingBoxes,
 };
 
 type RawNode = { type: string; props: Record<string, unknown> };
@@ -62,7 +63,10 @@ function walkNodes(nodes: unknown, visit: (node: RawNode) => void): void {
   }
 }
 
-/** Every node of a raw site: its pages' content, then the shared Header and Footer. */
+/**
+ * Every node of a raw site: its pages' content, the shared Header and Footer, then the shared
+ * sections' (from format 3).
+ */
 function walkSite(site: RawSite, visit: (node: RawNode) => void): void {
   if (isRecord(site.pages)) {
     for (const page of Object.values(site.pages)) {
@@ -72,6 +76,11 @@ function walkSite(site: RawSite, visit: (node: RawNode) => void): void {
   if (isRecord(site.layout)) {
     walkNodes(site.layout.header, visit);
     walkNodes(site.layout.footer, visit);
+  }
+  if (isRecord(site.sharedSections)) {
+    for (const entry of Object.values(site.sharedSections)) {
+      if (isRecord(entry)) walkNodes([entry.section], visit);
+    }
   }
 }
 
@@ -179,6 +188,41 @@ function themeTokens(site: RawSite): RawSite {
     typeof name === "string" && Object.hasOwn(FORMAT_5_DAISYUI_THEMES, name) ? name : "light";
   const theme = { preset, ...FORMAT_5_DAISYUI_THEMES[preset], ...FORMAT_5_DEFAULTS };
   return { ...site, theme: JSON.parse(JSON.stringify(theme)), formatVersion: 5 };
+}
+
+/** The spacing token each of a Section's format 5 padding sizes gives its top and bottom. */
+const FORMAT_5_PADDING = new Map([
+  ["small", "s"],
+  ["medium", "m"],
+  ["large", "l"],
+]);
+
+const DEVICES = ["desktop", "tablet", "mobile"] as const;
+
+/**
+ * Format 5 → 6 (R14): a Section's padding is a box, a spacing token per side, instead of one size
+ * ("small", "medium" or "large") for its top and bottom. 1.32 made it a box without bumping the
+ * format, and read the old sizes when it drew a Section; this step moves that into the chain
+ * (ADR 0012). Per device too; any other value is left for validation.
+ */
+function sectionPaddingBoxes(site: RawSite): RawSite {
+  const box = (value: unknown): unknown => {
+    const token = typeof value === "string" ? FORMAT_5_PADDING.get(value) : undefined;
+    return token === undefined ? value : { top: token, bottom: token };
+  };
+  walkSite(site, (node) => {
+    if (node.type !== "Section" || !Object.hasOwn(node.props, "padding")) return;
+    const { padding } = node.props;
+    if (isRecord(padding) && isRecord(padding.$responsive)) {
+      const devices = padding.$responsive;
+      for (const device of DEVICES) {
+        if (Object.hasOwn(devices, device)) devices[device] = box(devices[device]);
+      }
+    } else {
+      node.props.padding = box(padding);
+    }
+  });
+  return { ...site, formatVersion: 6 };
 }
 
 /** Options of {@link migrateSiteWith}; the defaults are this build's chain and version. */

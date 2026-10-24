@@ -80,6 +80,7 @@ The spike adds a minimal `ProjectStore` in `packages/storage` and wires it throu
 - **Connection settings:**
   - **Defensive mode** (`SQLITE_DBCONFIG_DEFENSIVE`) is on by default in better-sqlite3 (`src/objects/database.cpp`); a test guards against an upgrade changing that.
   - `trusted_schema=OFF`, `cell_size_check=ON`, `mmap_size=0`.
+  - `foreign_keys=ON` (R14): better-sqlite3 turns it on by default, but `hardenConnection` sets it too, so a change of default can't turn it off. A test checks it.
   - Extensions are never loaded.
 - **Checks, before anything is written** (failures leave the file untouched):
 
@@ -103,6 +104,15 @@ The spike adds a minimal `ProjectStore` in `packages/storage` and wires it throu
 ### 6. Storage API shape
 - **Synchronous, like better-sqlite3.** `create`, `open`, `commit(changes)` (one transaction), `putBlob`/`readBlob` (SHA-256 content addressing), `saveVersion`/`listVersions`/`readVersion` (manifests of document hashes) and `close`. Each call is one short transaction in the main process. Architecture §6 sketches a Promise API; it can wrap this later, or move into a `utilityProcess` if commits outgrow the budget.
 - **Format version 1 is provisional** until Phase 1 adds the first fixture (`packages/test-utils/fixtures/`).
+
+### 7. Reading an older site format never writes (R14, 24 Oct 2026)
+- **What happens:** `readSite` migrates a site saved in an older site format in memory only. The first `commit` writes the whole migrated site, then that commit's own changes, in one transaction. `saveSite` replaces the pending migration with the site it writes.
+- **Why:**
+  - Opening and closing a site without editing leaves its file byte for byte as it was, so a sync client doesn't upload it again and an older build can still open it.
+  - The file never holds documents of two formats: the migrated site and the first edit land together, or neither does.
+- **Before:** `readSite` wrote the migrated site straight away, as a side effect of reading.
+- **Tests:** `packages/storage/test/site-and-safety.test.ts`.
+- **The migration rule:** [ADR 0012](0012-site-format-migrations.md).
 
 ## Consequences
 - The native-module risk is low: no rebuild step and no per-Electron-upgrade work while better-sqlite3 ships Node-API prebuilds. Watch for that on upgrades.

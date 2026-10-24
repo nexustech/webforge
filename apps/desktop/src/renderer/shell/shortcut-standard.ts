@@ -9,8 +9,12 @@ import { COMMAND_IDS } from "./command-ids.js";
  * (Preview, Publish, Save version, Paste as linked copy) are kept for them here.
  *
  * A key is `Mod+Alt+Shift+Name`, the name being `KeyboardEvent.key` (`ArrowUp`, `Backspace`, `/`)
- * or `Plus` for `+` and `Space` for a space. Symbols match whichever Shift their keyboard layout needs (`?`, `Mod+0` on
- * AZERTY).
+ * or `Plus` for `+` and `Space` for a space. Symbols match whichever Shift their keyboard layout
+ * needs (`?`, `Mod+0` on AZERTY).
+ *
+ * New `Mod+Alt` shortcuts: avoid letters whose key moves on other layouts, A, Q, Z and W on AZERTY,
+ * Y and Z on QWERTZ. Keys match by `KeyboardEvent.key`, so such a shortcut moves across the
+ * keyboard on those layouts, away from where a guide written for QWERTY says it is.
  */
 
 /** Where the sheet lists a shortcut. */
