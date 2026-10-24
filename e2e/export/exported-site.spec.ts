@@ -265,11 +265,17 @@ test.describe("exported site from disk", () => {
       page,
     }) => {
       await page.setViewportSize({ width: 1280, height: 800 });
+      // Its clock held until it's stopped: on a slow machine loading the page and reaching the
+      // carousel can take its 5 seconds, and the slides would move on before the first press.
+      const start = Date.now();
+      await page.clock.install({ time: start });
+      await page.clock.pauseAt(start + 1_000);
       await open(page, "index.html");
       const { carousel, track, button, scrollLeft } = quotes(page);
-      // Stopped first, so only the buttons move it.
+      // Stopped first, so only the buttons move it; then the strip's rests run on real time.
       await button("Stop the slides").click();
       await expect(button("Play the slides")).toBeVisible();
+      await page.clock.resume();
 
       // The slides, inside the strip (a group too, named "Slides").
       const slides = carousel.getByRole("group", { name: /^\d of 3$/ });

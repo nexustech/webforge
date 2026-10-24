@@ -1,10 +1,10 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { keepLinksOnCanvas } from "./canvas-links.js";
+import { keepCanvasOnPage } from "./canvas-navigation.js";
 
 // That it works on the canvas iframe's elements, which are another realm's (as happy-dom's windows
 // aren't), is checked by e2e/app/links.spec.ts.
-describe("keepLinksOnCanvas", () => {
+describe("keepCanvasOnPage", () => {
   const stops: (() => void)[] = [];
   afterEach(() => {
     for (const stop of stops.splice(0)) stop();
@@ -22,7 +22,7 @@ describe("keepLinksOnCanvas", () => {
     document.body.innerHTML = '<a href="webforge-media://original/abc"><img alt="Shop"></a>';
     const selected = vi.fn();
     document.body.addEventListener("click", selected);
-    stops.push(keepLinksOnCanvas(document));
+    stops.push(keepCanvasOnPage(document));
 
     expect(click(document.querySelector("a") as Element)).toBe(true);
     expect(click(document.querySelector("img") as Element)).toBe(true);
@@ -30,12 +30,27 @@ describe("keepLinksOnCanvas", () => {
     expect(selected).toHaveBeenCalledTimes(2);
   });
 
+  it("submits no form on the canvas, from Enter in a field or its button", () => {
+    document.body.innerHTML =
+      '<form action="https://example.com/subscribe"><input name="email"><button>Sign up</button></form>';
+    stops.push(keepCanvasOnPage(document));
+    const event = new SubmitEvent("submit", { bubbles: true, cancelable: true });
+
+    document.querySelector("form")?.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(true);
+  });
+
   it("leaves other clicks alone, and stops when asked", () => {
-    document.body.innerHTML = '<button type="button">Next</button><a href="#top">Top</a>';
-    const stop = keepLinksOnCanvas(document);
+    document.body.innerHTML =
+      '<button type="button">Next</button><a href="#top">Top</a><form action="/x"></form>';
+    const stop = keepCanvasOnPage(document);
 
     expect(click(document.querySelector("button") as Element)).toBe(false);
     stop();
     expect(click(document.querySelector("a") as Element)).toBe(false);
+    const submit = new SubmitEvent("submit", { bubbles: true, cancelable: true });
+    document.querySelector("form")?.dispatchEvent(submit);
+    expect(submit.defaultPrevented).toBe(false);
   });
 });
