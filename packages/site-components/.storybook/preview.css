@@ -13,3 +13,12 @@
  * (src/storybook-css.test.ts) checks every class boxClasses can give is here.
  */
 @source inline("{,md:,lg:,max-md:,md:max-lg:,max-lg:}{p,m}{x,y,t,r,b,l}-{0,4,8,16,24,32}");
+/*
+ * The Columns layouts per device (2.9), which responsiveClasses prefixes with md: and lg:; a test
+ * (src/storybook-css.test.ts) checks every class it can give is here.
+ */
+@source inline("{,md:,lg:}{grid-flow-col,grid-flow-row,auto-cols-fr}");
+@source inline("{,md:,lg:}[&>*:first-child:nth-last-child(-n+3)]:col-span-{1,2}");
+@source inline("{,md:,lg:}[&>*:last-child:nth-child(-n+3)]:col-span-{1,2}");
+@source inline("{,md:,lg:}[&>*:nth-child(2):nth-last-child(2)]:col-span-{1,2}");
+@source inline("{,md:,lg:}gap-{4,8,12}");

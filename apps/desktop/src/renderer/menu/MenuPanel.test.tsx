@@ -5,8 +5,7 @@ import { MENU_LABEL_MAX } from "@webforge/model";
 import { afterEach, describe, expect, it } from "vitest";
 import { openedDialog } from "../shell/opened-dialog.test-helper.js";
 import { createPanelRegistry } from "../shell/panels.js";
-import { addPage, setHiddenFromNavigation } from "../site/page-actions.js";
-import { registerSitePanel } from "../site/SitePanel.js";
+import { addPage, registerSitePanel, setHiddenFromNavigation } from "../site/index.js";
 import { sessionWith } from "../testing/fixtures.js";
 import { addMenuItem } from "./menu-actions.js";
 

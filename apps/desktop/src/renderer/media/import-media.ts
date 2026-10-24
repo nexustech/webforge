@@ -8,7 +8,7 @@ import {
 } from "../../shared/ipc/media.js";
 import type { MediaImportResult } from "../../shared/ipc-contract.js";
 import { reportFailure } from "../log.js";
-import { siteSession } from "../storage/site-session.js";
+import { siteSession } from "../storage/index.js";
 
 /** The parts of a dropped `File` the import reads. */
 export type DroppedFileLike = Pick<File, "name" | "size" | "arrayBuffer">;

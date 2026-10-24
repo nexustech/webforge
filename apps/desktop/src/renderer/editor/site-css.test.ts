@@ -4,7 +4,7 @@ import { createFakeEngine } from "@webforge/test-utils/renderer";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CanvasCssRequest, CanvasCssResult } from "../../shared/ipc/canvas.js";
 import { sessionWith } from "../testing/fixtures.js";
-import { connectSiteCss, SITE_CSS_DEBOUNCE_MS, siteClasses } from "./site-css.js";
+import { classesOfHtml, connectSiteCss, SITE_CSS_DEBOUNCE_MS, siteClasses } from "./site-css.js";
 import { starterSite } from "./starter-site.js";
 
 function setup(
@@ -42,6 +42,16 @@ const firstHeading = (draft: SiteDoc) => {
   const section = home?.doc.content[0];
   return (section?.props.content as { props: Record<string, unknown> }[] | undefined)?.[0]?.props;
 };
+
+describe("classesOfHtml", () => {
+  it("reads class names as React escapes them, as the export does (2.9)", () => {
+    expect(
+      classesOfHtml(
+        '<div class="grid [&amp;&gt;*:first-child]:col-span-2 [&amp;_p+p]:mt-4 [content:&quot;a&quot;]">',
+      ),
+    ).toEqual(["grid", "[&>*:first-child]:col-span-2", "[&_p+p]:mt-4", '[content:"a"]']);
+  });
+});
 
 describe("siteClasses", () => {
   it("collects the classes of every page, the Header and the Footer", () => {

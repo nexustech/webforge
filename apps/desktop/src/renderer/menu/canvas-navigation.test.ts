@@ -1,6 +1,6 @@
 import type { NavItem } from "@webforge/site-components";
 import { describe, expect, it, vi } from "vitest";
-import { addPage } from "../site/page-actions.js";
+import { addPage } from "../site/index.js";
 import { sessionWith } from "../testing/fixtures.js";
 import { connectCanvasNavigation } from "./canvas-navigation.js";
 import { addMenuItem, renameMenuItem } from "./menu-actions.js";

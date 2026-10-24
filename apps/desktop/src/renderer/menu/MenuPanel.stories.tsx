@@ -3,7 +3,7 @@ import type { MenuItemId, PageId, SiteDoc } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { userEvent, within } from "storybook/test";
 import { starterSite } from "../editor/starter-site.js";
-import { linkTargets } from "../links/link-targets.js";
+import { linkTargets } from "../links/index.js";
 import { MenuPanel, type MenuPanelActions } from "./MenuPanel.js";
 
 const noop = () => undefined;

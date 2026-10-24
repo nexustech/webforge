@@ -1,5 +1,6 @@
 import type { ComponentConfig, Config, Field, PuckContext } from "@puckeditor/core";
 import type { Extensions } from "@tiptap/core";
+import { isNodeDoc, type NodeDoc } from "@webforge/model";
 import {
   type ComponentDef,
   type ComponentLibrary,
@@ -82,7 +83,7 @@ function toPuckComponent(
   return {
     label: def.label,
     fields,
-    defaultProps: { ...def.defaults },
+    defaultProps: withoutChildIds(def.defaults),
     render: (props: Record<string, unknown>) => {
       const { puck: _puck, id: rawId, ...values } = props;
       const id = typeof rawId === "string" ? rawId : "";
@@ -117,6 +118,27 @@ function markedHidden(output: ReactNode): ReactNode {
   return isValidElement(output) && typeof output.type === "string"
     ? cloneElement(output, { [HIDDEN_ATTRIBUTE]: "" } as Record<string, unknown>)
     : output;
+}
+
+/** `node` and the elements in its slots without their ids. */
+function withoutIds(node: NodeDoc): Omit<NodeDoc, "props"> & { props: Record<string, unknown> } {
+  const { id: _id, ...props } = node.props;
+  return { type: node.type, props: withoutChildIds(props) };
+}
+
+/**
+ * A component's defaults with the elements in its slots (a Columns' columns, a List's items) left
+ * without ids, so Puck gives each placed copy ids of its own: it keeps an id a default has.
+ */
+function withoutChildIds(defaults: Readonly<Record<string, unknown>>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(defaults).map(([name, value]) => [
+      name,
+      Array.isArray(value) && value.length > 0 && value.every(isNodeDoc)
+        ? value.map(withoutIds)
+        : value,
+    ]),
+  );
 }
 
 /**

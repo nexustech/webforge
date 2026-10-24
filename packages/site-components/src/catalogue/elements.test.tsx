@@ -2,6 +2,7 @@ import type { NodeDoc } from "@webforge/model";
 import { describe, expect, it } from "vitest";
 import { renderNodesToHtml } from "../render-static.js";
 import type { RenderContext, ResolvedImage } from "../schema.js";
+import { columnLayoutsFor, MAX_COLUMNS, MIN_COLUMNS } from "./column-layouts.js";
 import { siteLibrary } from "./index.js";
 
 const shop: ResolvedImage = {
@@ -35,7 +36,8 @@ describe("the Image element (2.9)", () => {
     });
 
     expect(html).toContain('<figure class="site-image w-full mx-auto max-w-none">');
-    expect(html).toContain('sizes="(min-width: 896px) 896px, 100vw"');
+    // As wide as a section's column on Desktop, the window below (X2).
+    expect(html).toContain('sizes="(min-width: 1024px) 896px, (min-width: 768px) 100vw, 100vw"');
     expect(html).toContain('alt="The window"');
     expect(html).toContain('style="object-position:30% 50%"');
     expect(html).toContain('class="h-auto w-full rounded-box"');
@@ -76,6 +78,42 @@ describe("the Image element (2.9)", () => {
   });
 });
 
+describe("an Image's sizes (2.9, X2)", () => {
+  it("asks for no wider a file than its width token", () => {
+    expect(render("Image", { image: { mediaId: "shop" }, width: "small" })).toContain(
+      'sizes="(min-width: 1024px) 320px, (min-width: 768px) min(320px, 100vw), min(320px, 100vw)"',
+    );
+  });
+
+  it("asks for no wider a file than its column, side by side or stacked", () => {
+    const inColumns = (layout: unknown, width = "full") =>
+      render("Columns", {
+        layout,
+        columns: [
+          {
+            type: "Column",
+            props: {
+              id: "c1",
+              content: [{ type: "Image", props: { id: "i", image: { mediaId: "shop" }, width } }],
+            },
+          },
+        ],
+      });
+
+    // Half the section on Tablet and Desktop, the window on Mobile, where they stack.
+    expect(inColumns({ $responsive: { desktop: "equal", mobile: "stacked" } })).toContain(
+      'sizes="(min-width: 1024px) 448px, (min-width: 768px) 50vw, 100vw"',
+    );
+    // A wide column is two thirds; a small image never more than its width token.
+    expect(inColumns("wideFirst")).toContain(
+      'sizes="(min-width: 1024px) 597px, (min-width: 768px) 67vw, 67vw"',
+    );
+    expect(inColumns("wideFirst", "small")).toContain(
+      'sizes="(min-width: 1024px) 320px, (min-width: 768px) min(320px, 67vw), min(320px, 67vw)"',
+    );
+  });
+});
+
 describe("the Button element (2.9)", () => {
   it("draws its link with the button classes of its style and size", () => {
     expect(render("Button", { label: "Order", link: "about" })).toBe(
@@ -108,5 +146,67 @@ describe("the Spacer and Divider elements (2.9)", () => {
   it("is a thematic break, or daisyUI's divider with its word read out", () => {
     expect(render("Divider", {})).toBe('<hr class="site-divider my-4 border-base-content/10"/>');
     expect(render("Divider", { text: "or" })).toBe('<div class="site-divider divider">or</div>');
+  });
+});
+
+describe("the Columns element (2.9)", () => {
+  const twoColumns = [0, 1].map((index) => ({
+    type: "Column",
+    props: {
+      id: `c${index}`,
+      content: [{ type: "Text", props: { id: `t${index}`, text: "<p>Hi</p>" } }],
+    },
+  }));
+
+  it("lays its columns out in a grid of its own, stacked on Mobile at first", () => {
+    const defaults = siteLibrary.components.Columns?.defaults;
+    const html = render("Columns", { ...defaults, columns: twoColumns });
+
+    expect(html).toMatch(/^<div class="site-columns"><div class="grid grid-flow-row /);
+    expect(html).toContain(" md:grid-flow-col md:auto-cols-fr ");
+    expect(html).toContain(" gap-8");
+    expect(
+      html.match(/<div class="site-column min-w-0"><div class="flex flex-col gap-4">/g),
+    ).toHaveLength(2);
+  });
+
+  it("starts with two columns, each with a text, whose ids a placed copy replaces", () => {
+    const defaults = siteLibrary.components.Columns?.defaults;
+    const columns = defaults?.columns as NodeDoc[] | undefined;
+    expect(columns?.map((node) => node.type)).toEqual(["Column", "Column"]);
+    expect(columns?.[0]?.props.content).toEqual([expect.objectContaining({ type: "Text" })]);
+  });
+
+  it("offers 2.17's presets for each number of columns", () => {
+    expect(columnLayoutsFor(1)).toEqual(["equal", "stacked"]);
+    expect(columnLayoutsFor(2)).toEqual(["equal", "wideFirst", "wideLast", "stacked"]);
+    expect(columnLayoutsFor(3)).toEqual([
+      "equal",
+      "wideFirst",
+      "wideMiddle",
+      "wideLast",
+      "stacked",
+    ]);
+    expect(columnLayoutsFor(MAX_COLUMNS)).toEqual(["equal", "stacked"]);
+    expect([MIN_COLUMNS, MAX_COLUMNS]).toEqual([1, 4]);
+  });
+});
+
+describe("the List element (2.9)", () => {
+  const items = ["Bread", "Cakes"].map((text, index) => ({
+    type: "ListItem",
+    props: { id: `i${index}`, text },
+  }));
+
+  it("is a list of its items, with no element between them", () => {
+    const html = render("List", { items });
+    expect(html).toMatch(/^<ul class="site-list [^"]*list-disc space-y-2 pl-6">/);
+    expect(html).toMatch(
+      /"><li class="site-list-item">Bread<\/li><li class="site-list-item">Cakes<\/li><\/ul>$/,
+    );
+    expect(render("List", { items, style: "numbers" })).toMatch(
+      /^<ol class="site-list [^"]* list-decimal/,
+    );
+    expect(render("List", { items, style: "plain" })).toContain("list-none space-y-2");
   });
 });

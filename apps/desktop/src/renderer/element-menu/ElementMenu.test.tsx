@@ -5,7 +5,7 @@ import { createFakeEngine } from "@webforge/test-utils/renderer";
 import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { currentPage } from "../editor/editor-session.js";
-import type { Layer } from "../layers/layers.js";
+import type { Layer } from "../editor/layers.js";
 import { CommandRegistryProvider } from "../shell/command-context.js";
 import { createCommandRegistry } from "../shell/commands.js";
 import { sessionWith } from "../testing/fixtures.js";

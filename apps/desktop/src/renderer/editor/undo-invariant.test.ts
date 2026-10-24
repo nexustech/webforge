@@ -26,7 +26,6 @@ import {
   similarTo,
   toggleSelectedHidden,
 } from "../layers/bulk-layers.js";
-import { copyLayer } from "../layers/layers.js";
 import {
   addMenuItem,
   editMenuLink,
@@ -51,6 +50,7 @@ import {
   runHistoryCommand,
   TEXT_SESSION_GRACE_MS,
 } from "./editor-session.js";
+import { copyLayer } from "./layers.js";
 import { applyListChange, editableList, listItems } from "./list-edit.js";
 import { withoutOverride, withValueAt } from "./responsive-value.js";
 import { starterSite } from "./starter-site.js";

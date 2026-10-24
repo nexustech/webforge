@@ -1,6 +1,6 @@
 import type { MenuItem, MenuItemId, PageId } from "@webforge/model";
 import { describe, expect, it } from "vitest";
-import { addPage } from "../site/page-actions.js";
+import { addPage } from "../site/index.js";
 import { sessionWith } from "../testing/fixtures.js";
 import {
   addMenuItem,

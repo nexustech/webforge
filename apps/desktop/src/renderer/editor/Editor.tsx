@@ -22,7 +22,6 @@ import { registerStyleCommands } from "../clipboard/style-clipboard.js";
 import { CanvasElementMenu } from "../element-menu/CanvasElementMenu.js";
 import { createErrorReporter, type ReportError } from "../error-reporting.js";
 import { deleteSelected, duplicateSelected, moveSelected } from "../layers/bulk-layers.js";
-import type { Layer } from "../layers/layers.js";
 import { linkFieldRenderer } from "../links/LinkField.js";
 import { RichTextLinkHost } from "../links/RichTextLinkHost.js";
 import { connectCanvasImages } from "../media/canvas-images.js";
@@ -71,6 +70,8 @@ import { connectFieldDrags } from "./field-drag.js";
 import { fieldTarget } from "./field-target.js";
 import { headerToolbar } from "./HeaderToolbar.js";
 import { headingToolbar } from "./HeadingToolbar.js";
+import { listToolbar } from "./ListToolbar.js";
+import type { Layer } from "./layers.js";
 import { SharedRegionBanner } from "./SharedRegionBanner.js";
 import { confirmSharedRemovals, sharedCutConfirmation } from "./shared-confirmations.js";
 import { shownLayout } from "./shared-layout.js";
@@ -592,11 +593,15 @@ export function Editor({
   }, [panels, session, mode, engine, siteWide, preferences, registry, previews]);
   useEffect(() => registerMediaPanel(panels, session), [panels, session]);
   // The selected element's own toolbar, in the row under the canvas toolbar (SP-4).
-  useEffect(
-    () =>
-      toolbars.register(headingToolbar({ session, flush: () => connectionRef.current?.flush() })),
-    [toolbars, session],
-  );
+  useEffect(() => {
+    const flush = () => connectionRef.current?.flush();
+    const removeHeading = toolbars.register(headingToolbar({ session, flush }));
+    const removeList = toolbars.register(listToolbar({ session, flush }));
+    return () => {
+      removeHeading();
+      removeList();
+    };
+  }, [toolbars, session]);
   useEffect(
     () => toolbars.register(headerToolbar({ session, previews: editPreviews })),
     [toolbars, session, editPreviews],
