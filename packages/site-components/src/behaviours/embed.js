@@ -49,6 +49,11 @@
     frame.allowFullscreen = true;
     // YouTube's player needs to know which site embeds it; nothing more of the address is sent.
     frame.referrerPolicy = "strict-origin-when-cross-origin";
+    // Accepted with the rest, not asked for: a player or map below the fold waits until the
+    // visitor scrolls to it, rather than all of them loading at once.
+    if (!play) {
+      frame.loading = "lazy";
+    }
     // Inline: the site's stylesheet holds only the classes its pages use.
     frame.style.cssText = "position:absolute;inset:0;width:100%;height:100%;border:0";
     placeholder.replaceWith(frame);
