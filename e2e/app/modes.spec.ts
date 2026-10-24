@@ -211,10 +211,10 @@ test.describe("editor modes", () => {
   test("turns Advanced mode on from the View menu", async () => {
     const page = await openSite();
 
-    await page.getByRole("menuitem", { name: "View" }).click();
+    await page.getByRole("menuitem", { name: "View", exact: true }).click();
     await page.getByRole("menuitem", { name: "Use Advanced Mode" }).click();
     await expect(page.getByRole("menu")).toHaveCount(0);
-    await page.getByRole("menuitem", { name: "View" }).click();
+    await page.getByRole("menuitem", { name: "View", exact: true }).click();
 
     await expect(page.getByRole("menuitem", { name: "Use Simple Mode" })).toBeVisible();
   });

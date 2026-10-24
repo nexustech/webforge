@@ -36,7 +36,7 @@ test("sets an element's anchor and classes on the Advanced tab, in Advanced mode
   await selectHeading();
   await expect(panel().getByRole("tab", { name: "Advanced" })).toHaveCount(0);
 
-  await page.getByRole("menuitem", { name: "View" }).click();
+  await page.getByRole("menuitem", { name: "View", exact: true }).click();
   await page.getByRole("menuitem", { name: "Use Advanced Mode" }).click();
   await selectHeading();
   await panel().getByRole("tab", { name: "Advanced" }).click();
