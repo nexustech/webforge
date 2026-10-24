@@ -54,6 +54,28 @@ const quotes = (page: Page) => {
   };
 };
 
+/**
+ * Scrolls the page down `by` pixels with the mouse wheel, and waits for the scroll to end: macOS
+ * animates it, and a jump made before it ends is overtaken by the rest of it (#347). It has ended
+ * once the page has moved and two reads in a row agree. Reads the page's layout, not its scripts,
+ * so it works without JavaScript too.
+ */
+async function wheelDown(page: Page, by: number): Promise<void> {
+  const main = page.getByRole("main");
+  const top = async () => (await main.boundingBox())?.y ?? 0;
+  const start = await top();
+  await page.mouse.wheel(0, by);
+  let last = Number.NaN;
+  await expect
+    .poll(async () => {
+      const now = await top();
+      const ended = now < start && now === last;
+      last = now;
+      return ended;
+    })
+    .toBe(true);
+}
+
 async function open(page: Page, name: string): Promise<void> {
   await blockNetwork(page.context());
   await page.goto(exportedPageUrl(name));
@@ -235,7 +257,7 @@ test.describe("exported site from disk", () => {
       const header = page.locator("header.site-header");
 
       await expect(header).not.toHaveAttribute("data-scrolled");
-      await page.mouse.wheel(0, 400);
+      await wheelDown(page, 400);
       await expect(header).toHaveAttribute("data-scrolled", "");
       expect(Math.round((await header.boundingBox())?.y ?? -1)).toBe(0);
       await expect
@@ -281,10 +303,11 @@ test.describe("exported site from disk", () => {
         )
         .toBeGreaterThan(0);
 
-      // A modal: the focus stays in it, however far it is tabbed (by focus(): WebKit doesn't tab to
-      // buttons by default).
-      for (let step = 0; step < 6; step++) await page.keyboard.press("Tab");
-      expect(await viewer.evaluate((dialog) => dialog.contains(document.activeElement))).toBe(true);
+      // A modal: the page behind it is out of reach, so the focus can't leave it. Checked by
+      // focus(), not Tab: on macOS, WebKit doesn't tab to buttons, the lightbox's only stops.
+      expect(await viewer.evaluate((dialog) => dialog.matches(":modal"))).toBe(true);
+      await images.first().evaluate((link) => (link as HTMLElement).focus());
+      await expect(images.first()).not.toBeFocused();
 
       await page.keyboard.press("ArrowRight");
       await expect(status).toHaveText("3 of 3");
@@ -332,7 +355,14 @@ test.describe("exported site from disk", () => {
     test("passes axe with the lightbox open", async ({ page }) => {
       await open(page, "about.html");
       await page.locator("a[data-wf-lightbox-item]").first().click();
-      await expect(page.getByRole("dialog", { name: "Image viewer" })).toBeVisible();
+      const viewer = page.getByRole("dialog", { name: "Image viewer" });
+      await expect(viewer).toBeVisible();
+      // Once it has faded in: halfway, axe measures the colours' contrast faded too (macOS).
+      await viewer.evaluate((dialog) =>
+        Promise.all(
+          dialog.getAnimations({ subtree: true }).map((animation) => animation.finished),
+        ).then(() => undefined),
+      );
 
       const results = await new AxeBuilder({ page }).include("dialog").analyze();
       expect(results.violations.map((violation) => `${violation.id}: ${violation.help}`)).toEqual(
@@ -423,6 +453,25 @@ test.describe("exported site from disk", () => {
       await expect(page).toHaveURL(/\/assets\/img\/[^/]+\.(jpg|png|webp)$/);
     });
 
+    test("links a video and a map to their own sites, with no button that does nothing (2.8)", async ({
+      page,
+    }) => {
+      await open(page, "about.html");
+
+      for (const section of [page.locator(".site-video"), page.locator(".site-map")]) {
+        await expect(section.getByRole("button")).toHaveCount(0);
+      }
+      await expect(page.getByRole("link", { name: "Watch on YouTube" })).toHaveAttribute(
+        "href",
+        "https://www.youtube.com/watch?v=aqz-KE-bpKQ",
+      );
+      await expect(page.getByRole("link", { name: "Open in Google Maps" })).toHaveAttribute(
+        "target",
+        "_blank",
+      );
+      await expect(page.locator("iframe")).toHaveCount(0);
+    });
+
     test("shows the carousel as a strip the keyboard scrolls, without buttons that do nothing", async ({
       page,
     }) => {
@@ -472,14 +521,55 @@ test.describe("exported site from disk", () => {
       await open(page, "index.html");
       const header = page.locator("header.site-header");
 
-      await page.mouse.wheel(0, 400);
-      await expect.poll(async () => Math.round((await header.boundingBox())?.y ?? -1)).toBe(0);
+      await wheelDown(page, 400);
+      expect(Math.round((await header.boundingBox())?.y ?? -1)).toBe(0);
       await page.goto(`${exportedPageUrl("index.html")}#questions`);
       const height = (await header.boundingBox())?.height ?? 0;
       await expect
         .poll(async () => (await page.locator("#questions").boundingBox())?.y ?? 0)
         .toBeGreaterThanOrEqual(height - 1);
     });
+  });
+
+  test("loads a video only when the visitor plays it, and a map only when asked (F-CM-4, 2.8)", async ({
+    page,
+  }) => {
+    await open(page, "about.html");
+    const video = page.locator(".site-video");
+    const map = page.locator(".site-map");
+    await expect(video.getByText("YouTube may set cookies once it loads.")).toBeVisible();
+    await expect(page.locator("iframe")).toHaveCount(0);
+    expect(externalRequests).toEqual([]);
+
+    await video.getByRole("button", { name: "Play the video from YouTube" }).click();
+
+    const player = video.locator("iframe");
+    await expect(player).toHaveAttribute(
+      "src",
+      "https://www.youtube-nocookie.com/embed/aqz-KE-bpKQ?autoplay=1",
+    );
+    await expect(player).toHaveAttribute("title", "A morning at the bakery");
+    await expect(player).toBeFocused();
+    // The click is the one request that leaves the computer, to the privacy-enhanced player.
+    await expect
+      .poll(() => externalRequests.map((url) => new URL(url).origin))
+      .toContain("https://www.youtube-nocookie.com");
+    expect(
+      externalRequests.every((url) => url.startsWith("https://www.youtube-nocookie.com/")),
+    ).toBe(true);
+    await expect(map.locator("iframe")).toHaveCount(0);
+    externalRequests = [];
+
+    await map.getByRole("button", { name: "Show the map from Google Maps" }).click();
+    await expect(map.locator("iframe")).toHaveAttribute(
+      "src",
+      /^https:\/\/www\.google\.com\/maps\?q=1%20High%20Street/,
+    );
+    await expect.poll(() => externalRequests.length).toBeGreaterThan(0);
+    expect(externalRequests.every((url) => url.startsWith("https://www.google.com/maps"))).toBe(
+      true,
+    );
+    externalRequests = [];
   });
 
   test("opens an FAQ answer with the keyboard", async ({ page }) => {
