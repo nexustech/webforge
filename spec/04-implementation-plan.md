@@ -44,7 +44,7 @@ Still open in Phase 0: publishing spikes (Netlify, FTP/SFTP), signed installers 
 Current code size (approx. lines): desktop 2.7k · engine 1.6k · history 1.6k · pipeline 1.1k · site-components 1.0k · storage 0.6k · model 0.3k. `editor-ui`, `publish` and `themes` are placeholders.
 
 ## 3. Timeline
-**Total: 350 working days** (≈ 70 weeks of effort; 335 before the 22–24 Oct additions) including the 4-week beta. Baseline v1.0 (sequential, for the original 277 days, before the Phase 1 re-plan) at 100% of estimates: **19 Nov 2027**; with +25% contingency: **25 Feb 2028**.
+**Total: 361 working days** (≈ 72 weeks of effort; 335 before the 22–24 Oct additions) including the 4-week beta. Baseline v1.0 (sequential, for the original 277 days, before the Phase 1 re-plan) at 100% of estimates: **19 Nov 2027**; with +25% contingency: **25 Feb 2028**.
 
 **Re-plan, 20 Oct 2026:** Phase 1 runs in three concurrent streams (82 days of effort in about 28 working days, see [Phase 1](#phase-1-editor-core)). Phase 2–5 dates and the v1.0 date are re-planned at the Phase 1 exit review.
 
@@ -60,7 +60,9 @@ Current code size (approx. lines): desktop 2.7k · engine 1.6k · history 1.6k �
 
 **Scope change, 24 Oct 2026 (component primitives):** +3 days for 2.19 ([#320](https://github.com/nexustech/webforge/issues/320)), next on stream C, before 2.7a (the Gallery, paused and written on the new frame afterwards; stream B's next sections, 2.8 and 2.7b, come after it in its queue anyway): a section frame primitive, shared typography and button primitives, per-family string files and a `pnpm new-component` scaffold, so the remaining 13 sections and 15 elements are written once against shared primitives rather than copying Hero's frame; FAQ is brought back in line. Decided by the product owner after a review of the component package (no runtime plugin loader: the hard rules argue against one, and the library is already a registry). Stream C's queue grows by 3 raw days, about 1.5 working days at the plan's pace, so Phase 2's code-complete moves from about 26 Nov to about **30 Nov 2026** (8 Dec with +25%), still inside the milestone's 11 Dec.
 
-**Re-plan, 23 Oct 2026 (Phase 2):** Phase 2 was planned ahead of the Phase 1 exit so each stream can continue straight into it: three streams, items over 5 days split into sub-issues, Phase 1's actual pace (0.39 of estimates) applied as 0.5 for engineering and 0.7 for content. Code-complete about **26 Nov 2026** (4 Dec with +25%) after the plan review's levelling below (1 Dec and 9 Dec before it); milestone due 11 Dec 2026. See [Phase 2](#phase-2-design--components). The table below and the Gantt chart still show the baseline dates for Phases 2–5.
+**Scope change, 24 Oct 2026 (editor building blocks):** +11 days from the [extensibility review](../docs/reviews/2026-10-24-extensibility-review.md): 2.20 ([#322](https://github.com/nexustech/webforge/issues/322), 6 days, stream B after 2.8) for area modules and a declarative composition root, an area boundary rule, a field-kind guard, a shared renderer test kit and story harness, scaffolds and an extension-points guide; and 2.21 ([#323](https://github.com/nexustech/webforge/issues/323), 5 days, stream A after 1.39 and R11, before 2.3) for one form engine and a form dialog that the Edit panel, Site Settings, Page Settings and the dialogs to come share. The queues become 43–45 raw days; code-complete about 28 Nov at pace, 5 Dec with +25%, leaving about four working days before 11 Dec; §11's template and theme cuts are the lever if a batch runs slow.
+
+**Re-plan, 23 Oct 2026 (Phase 2):** Phase 2 was planned ahead of the Phase 1 exit so each stream can continue straight into it: three streams, items over 5 days split into sub-issues, Phase 1's actual pace (0.39 of estimates) applied as 0.5 for engineering and 0.7 for content. Code-complete about **28 Nov 2026** (5 Dec with +25%) after the plan review's levelling below and the 24 Oct building-block items (26 Nov and 4 Dec before them); milestone due 11 Dec 2026. See [Phase 2](#phase-2-design--components). The table below and the Gantt chart still show the baseline dates for Phases 2–5.
 
 **Re-plan, 23 Oct 2026 (plan review, C1–C7):** the [plan review](../docs/reviews/2026-10-23-plan-review.md) corrected the effort totals, sequenced the architecture review's R7–R14 in the Phase 2 queues, levelled the streams (2.11 to B, 2.7a and 2.12 to C, 2.14 earlier in B, stream A starting with 2.9 and taking 1.39 before 2.3), moved the start screen's card grid (LF-10) from 1.39 to 2.14, added 2.18 for the CSS class browser (#276) and recomputed the critical path.
 
@@ -68,7 +70,7 @@ Current code size (approx. lines): desktop 2.7k · engine 1.6k · history 1.6k �
 |---|---|---|---|---|---|
 | [Phase 0: Prototype (finish)](#phase-0-prototype-finish) | 11 | 26 Oct 2026 | 18 Nov 2026 | 24 Nov 2026 | Netlify and SFTP/FTPS publish spikes meet the spike criteria in research/stack/08<br>Signed NSIS and DMG builds install, and auto-update from a test feed on both OSes<br>A large page (200+ elements) stays within the editing performance budget<br>ADRs written; architecture §6 interfaces updated |
 | [Phase 1: Editor core](#phase-1-editor-core) | 128 | 22 Oct 2026 | 17 Dec 2026 | 5 Jan 2027 | Build a 3-page site from blank, close, reopen: everything restored<br>Undo-all property tests green; every edit has a meaningful label<br>Shell matches UI1 as amended by UI6 in dark and light (Storybook screenshots) |
-| [Phase 2: Design & components](#phase-2-design--components) | 111 | 2 Mar 2027 | 14 Jul 2027 | 16 Sep 2027 | Every component has stories × 3 themes × Desktop/Mobile, axe-clean (colour contrast in site themes reported, not blocking)<br>New Site from each of the 8 templates works and looks distinct<br>Theme changes restyle every component; contrast warnings work |
+| [Phase 2: Design & components](#phase-2-design--components) | 122 | 2 Mar 2027 | 14 Jul 2027 | 16 Sep 2027 | Every component has stories × 3 themes × Desktop/Mobile, axe-clean (colour contrast in site themes reported, not blocking)<br>New Site from each of the 8 templates works and looks distinct<br>Theme changes restyle every component; contrast warnings work |
 | [Phase 3: Output](#phase-3-output) | 32 | 15 Jul 2027 | 26 Aug 2027 | 10 Nov 2027 | Exported templates open from disk in Chromium, Firefox, WebKit (+ Edge on Windows) with no external requests<br>Site Check blocks only Must-fix issues on export<br>Preview CSS hot-swap < 100 ms; phone preview via QR works |
 | [Phase 4: Publish & versions](#phase-4-publish--versions) | 30 | 27 Aug 2027 | 28 Sep 2027 | 17 Dec 2027 | Publish + rollback on all targets in E2E tests (mock Netlify, local FTP/SFTP)<br>A paired AI app's edits are undoable, and the MCP server can't be reached from another computer<br>Version History: save, auto-retention, preview, restore, open as new site, republish |
 | [Phase 5: Beta hardening](#phase-5-beta-hardening) | 38 | 29 Sep 2027 | 19 Nov 2027 | 25 Feb 2028 | All performance budgets met on Windows and macOS<br>Signed, notarised builds auto-update from the production feed<br>Beta running with 10–20 users; no open Must-fix bugs |
@@ -148,6 +150,8 @@ gantt
     2.17 Columns toolbar and edit-only previews :t2_17, after t2_16, 4d
     2.18 CSS class autocomplete and browser :t2_18, after t2_3, 3d
     2.19 Component primitives and scaffolding :t2_19, after t2_6, 3d
+    2.20 Editor building blocks :t2_20, after t2_8, 6d
+    2.21 One form engine :t2_21, after t1_39, 5d
     section Phase 3
     3.1 Pipeline API – progress events, worker, caches :crit, t3_1, 2027-07-15, 4d
     3.2 Preview server with live reload and phone prev… :t3_2, 2027-07-21, 3d
@@ -615,8 +619,8 @@ Close the visible gap to Bootstrap Studio 9.0.1 within the IP rule ([product/07]
 
 ### Phase 2: Design & components
 **Goal:** The full component catalogue (19 sections with ~45 layout variants, 17 elements), 10–12 curated themes, fonts and the 8 templates, all accessible and visually tested.  
-**Effort:** 111 days · **Scheduled:** 2 Mar 2027 → 14 Jul 2027 (baseline; 22 Oct 2026: 2.6 and 2.9 +1 day each, 2.3 +2, 2.14 +1, 2.17 added; 23 Oct: 2.9 +1, 2.14 +2, 2.18 added; 24 Oct: 2.19 added)  
-**Re-plan, 23 Oct 2026:** three streams, each starting as soon as its queue allows, Phase 1 items included (stream A takes 2.9 before 1.39). Phase 1's actuals run at 0.39 of the estimates; this plan uses 0.5 for engineering items and 0.7 for content (2.13, 2.15; risk R4). Code-complete about **26 Nov 2026** (4 Dec with +25%) after the plan review's levelling; Phase 1's exit review about 9 Nov 2026.
+**Effort:** 122 days · **Scheduled:** 2 Mar 2027 → 14 Jul 2027 (baseline; 22 Oct 2026: 2.6 and 2.9 +1 day each, 2.3 +2, 2.14 +1, 2.17 added; 23 Oct: 2.9 +1, 2.14 +2, 2.18 added; 24 Oct: 2.19–2.21 added)  
+**Re-plan, 23 Oct 2026:** three streams, each starting as soon as its queue allows, Phase 1 items included (stream A takes 2.9 before 1.39). Phase 1's actuals run at 0.39 of the estimates; this plan uses 0.5 for engineering items and 0.7 for content (2.13, 2.15; risk R4). Code-complete about **28 Nov 2026** (5 Dec with +25%) after the plan review's levelling and the 24 Oct building-block items; Phase 1's exit review about 9 Nov 2026.
 
 | ID | Item | Issue | Area | Refs | Est | Depends on |
 |---|---|---|---|---|---|---|
@@ -639,16 +643,18 @@ Close the visible gap to Bootstrap Studio 9.0.1 within the IP rule ([product/07]
 | 2.17 | Columns toolbar, image resize handles and edit-only previews | [#187](https://github.com/nexustech/webforge/issues/187) | components | F-ED-25, UI2, UI5, UX-6, UX-26 | 4 | 2.9, 2.6, 1.32 |
 | 2.18 | Advanced mode: CSS class autocomplete and browser | [#276](https://github.com/nexustech/webforge/issues/276) | shell | F-ED-11, UX-15 | 3 | 1.37 |
 | 2.19 | Component primitives and scaffolding: section frame, typography, buttons, per-family strings, new-component command | [#320](https://github.com/nexustech/webforge/issues/320) | components | standards §5, ADR 0005, R7, R10 | 3 | 2.5, 2.6 |
+| 2.20 | Editor building blocks: area modules, boundaries, test kit, scaffolds, extension-points guide | [#322](https://github.com/nexustech/webforge/issues/322) | shell | extensibility review E1, E2, E4, E6–E8, standards §4, §5 | 6 | 2.19, R11 |
+| 2.21 | One form engine for the Edit panel and dialogs | [#323](https://github.com/nexustech/webforge/issues/323) | shell | extensibility review E3, E5, E12, F-SET-1, F-ED-26 | 5 | R11, 1.36, 1.39 |
 
 **Streams (plan of 23 Oct 2026, product owner approved).** The Phase 1 stream rules carry over. PRs open as drafts and are marked ready only once `pnpm check` (and `pnpm e2e` or `pnpm visual` where needed) and the code review pass; marking a PR ready leads to its merge review and auto-merge (CLAUDE.md, spec/03 §6). Items over 5 days are split into sub-issues on GitHub.
 
 | Stream | Items, in order (after its Phase 1 items) |
 |---|---|
-| A: Shell & panels | R9 → R10 → 2.9 → 1.39 → 2.3 (with R11) → 2.18 → 2.13a (themes 1–4) → 2.15a (Café/Restaurant, Salon/Beauty, Trades) |
-| B: Data & site | ~~2.1 → 2.2~~ → R12 → R14 → 2.4 → 2.8 → 2.7b → 2.11 → R13 → 2.14 → 2.13b (themes 5–8) → 2.15b (Consultant, Photographer/Portfolio, Shop) |
+| A: Shell & panels | R9 → R10 → 2.9 → 1.39 → R11 → 2.21 → 2.3 → 2.18 → 2.13a (themes 1–4) → 2.15a (Café/Restaurant, Salon/Beauty, Trades) |
+| B: Data & site | ~~2.1 → 2.2~~ → R12 → R14 → 2.4 → 2.8 → 2.20 → 2.7b → 2.11 → R13 → 2.14 → 2.13b (themes 5–8) → 2.15b (Consultant, Photographer/Portfolio, Shop) |
 | C: History & canvas | ~~2.5 (before 1.30) → R7~~ → R8 (part 2 before 2.17) → ~~2.6 → 2.10~~ → 2.19 → 2.7a → 2.17 → 2.12 → 2.13c (themes 9–12) → 2.16 → 2.15c (Personal/CV, Blank) |
 
-**Re-plan, 23 Oct 2026 (plan review C2, C7).** The architecture review's Phase 2 items R7–R14 ([#240](https://github.com/nexustech/webforge/issues/240)–[#247](https://github.com/nexustech/webforge/issues/247), 14 days, from contingency per §10.6) are sequenced where their *blocks* links say: R7 and R8 before 2.6, R9 and R10 before 2.9, R11 with 2.3. 2.11 moved to B (it extends 2.8's form-field module and `embed` behaviour), 2.7a (Gallery and lightbox) and 2.12 to C, 2.14 earlier in B so the templates' sync point comes sooner, and stream A starts with 2.9 (its dependencies are met) and takes 1.39 before 2.3, so the Theme panel is built on the two-column field rows. The queues are then 39–40 raw days each: at the plan's pace (0.5 engineering, 0.7 content) about 22–23 working days, so code-complete about **26 Nov 2026**, about **4 Dec** with +25%, against the milestone's 11 Dec (30 Nov and 8 Dec after 2.19 was added on 24 Oct). The lever if the first component batch runs slower than 0.5 is §11's template and theme cuts.
+**Re-plan, 23 Oct 2026 (plan review C2, C7).** The architecture review's Phase 2 items R7–R14 ([#240](https://github.com/nexustech/webforge/issues/240)–[#247](https://github.com/nexustech/webforge/issues/247), 14 days, from contingency per §10.6) are sequenced where their *blocks* links say: R7 and R8 before 2.6, R9 and R10 before 2.9, R11 with 2.3. 2.11 moved to B (it extends 2.8's form-field module and `embed` behaviour), 2.7a (Gallery and lightbox) and 2.12 to C, 2.14 earlier in B so the templates' sync point comes sooner, and stream A starts with 2.9 (its dependencies are met) and takes 1.39 before 2.3, so the Theme panel is built on the two-column field rows. With the 24 Oct building-block items the queues are 43–45 raw days each: at the plan's pace (0.5 engineering, 0.7 content) about 24–25 working days, so code-complete about **28 Nov 2026**, about **5 Dec** with +25%, against the milestone's 11 Dec.19 was added on 24 Oct). The lever if the first component batch runs slower than 0.5 is §11's template and theme cuts.
 
 Review of 23 Oct 2026 (product owner decisions): stream A starts with 2.9, whose dependencies are met, instead of waiting for stream B's 2.1 and 2.2; stream C does 2.16 after its theme batch, because 2.16 depends on all themes; 2.14 depends on the theme model (2.1), not on the curated themes; each template waits only for the theme it uses (its own stream's batch unless it picks another); and themes 5–12 are drafted in parallel with themes 1–4, the product owner's review of the first four feeding corrections into all three batches rather than gating them.
 
@@ -799,6 +805,22 @@ The library is a registry of self-describing definitions already (`defineCompone
 - [ ] Strings per family; the i18n one-area test passes
 - [ ] `pnpm new-component` output passes `pnpm check` and renders in Storybook unchanged
 - [ ] FAQ renders as a `<section>` with padding; its screenshot updated with the PR
+
+**2.20 Editor building blocks: area modules, boundaries, test kit, scaffolds, extension-points guide** (added 24 Oct 2026, [extensibility review](../docs/reviews/2026-10-24-extensibility-review.md))  
+The editor's seven registries (site components, behaviours, panels, commands and shortcuts, field renderers, IPC domains, strings) get the building blocks around them. Each renderer area exports `{ id, register(ctx) }` and `connectEditor(areas, ctx)` registers them from one list, replacing `Editor.tsx`'s hand-placed calls, refs and mode fan-out (B1). A dependency-cruiser rule lets an area import `shell/`, `editor/`, `shared/` and another area's `index.ts` only, with no cycles; the `site` ↔ `menu` ↔ `links` cycle is broken by moving their shared helpers into `editor/` or the model (B2). `renderer/fields/<kind>/` co-locates a field kind's renderer, reader and story, and a test guards that every kind has all three (B5). `@webforge/test-utils/renderer` holds the fake engine, a fake preload API and session fixtures, with `panelStory` and `dialogStory` harnesses and a test that every panel has a story (B6). `pnpm scaffold area|panel|commands|field-kind|ipc-domain` extends 2.19's command (B7). `docs/extending.md` lists each registry with its recipe, linked from CLAUDE.md (B8).
+
+- [ ] Areas register from one list; no area-specific refs or mode fan-out in `Editor.tsx` or `App.tsx`
+- [ ] `pnpm deps` fails on an area importing another's internals or on a cycle; the existing cycle is gone
+- [ ] A test fails when a field kind lacks a renderer, a Puck mapping or a story; every `register*Panel` has a story
+- [ ] `pnpm scaffold panel Notes` passes `pnpm check` and shows in Storybook
+
+**2.21 One form engine for the Edit panel and dialogs** (added 24 Oct 2026, [extensibility review](../docs/reviews/2026-10-24-extensibility-review.md))  
+A field is described three ways today (`FieldDef`, editor-ui's loose `FieldSpec`, and hand-written dialog forms: Site Settings is 713 lines, and Page Settings and the link dialog each carry their own `Field`). `FormSpec` in editor-ui lists fields in `FieldDef`'s kinds (after R11) with groups and layout; a `Form` component draws them through the field registry; values are validated by the model's zod schemas, so limits and messages come from one place (B3). `FormDialog` adds the title, Save and Cancel, the undo label and `useMenuDialog` as the one way a menu opens a dialog (B4). Site Settings, Page Settings, Device and Name move onto it; Theme Studio (2.3b), the merged Settings dialog (LF-12) and Publish destinations (4.4) are written on it, and Settings sections become entries an area registers.
+
+- [ ] The four existing dialogs are `FormSpec`s; no dialog defines its own `Field` or `Check`
+- [ ] A value the schema rejects shows the schema's message; no `maxLength` literal remains in a dialog
+- [ ] Saving a form is one labelled undo step; one way to open a dialog from a menu
+- [ ] Stories for `Form` with every field kind and for `FormDialog`'s states
 
 </details>
 
