@@ -7,7 +7,7 @@ import { BUTTON_CLASSES } from "./typography.js";
  * The kinds of field a form can ask for (S1's form fields): a line of text, an email address, a
  * phone number, a message, a tick box, or a choice from a list.
  */
-export type FormFieldKind = "text" | "email" | "phone" | "message" | "checkbox" | "select";
+type FormFieldKind = "text" | "email" | "phone" | "message" | "checkbox" | "select";
 
 /** What each kind asks the browser for: its input type, and what it may fill in. */
 const INPUT: Readonly<
@@ -122,7 +122,7 @@ export const HONEYPOT_NAME = "_gotcha";
  * The honeypot (B6): a field hidden from visitors, screen readers and the keyboard, which robots
  * that fill in every field fill in too.
  */
-export function Honeypot() {
+function Honeypot() {
   return (
     <div hidden>
       <label>

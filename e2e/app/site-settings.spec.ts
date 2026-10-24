@@ -144,7 +144,8 @@ test("lists Site Settings' opening hours and contact details, on the canvas and 
 
   // The section follows Site Settings at once: the hours, and the phone number as a link.
   await expect(section.locator("dt")).toHaveText(["Saturday and Sunday"]);
-  await expect(section.locator("dd")).toHaveText(["09:00–17:00"]);
+  // In the site's language: a new site is in English (en), so 12-hour times.
+  await expect(section.locator("dd")).toHaveText([/^9:00\sAM–5:00\sPM$/]);
   await expect(section.getByRole("link", { name: "+44 1234 567890" })).toBeVisible();
 
   const folder = join(dir, "export");
