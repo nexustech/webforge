@@ -81,11 +81,8 @@ describe("library helpers", () => {
     );
   });
 
-  it("boxClasses reads a padding saved before 1.32 as before", () => {
-    expect(boxClasses("large", "padding", SECTION)).toBe("px-4 py-24");
-    expect(
-      boxClasses({ $responsive: { desktop: "large", mobile: "small" } }, "padding", SECTION),
-    ).toBe("px-4 py-8 md:py-24");
+  it("boxClasses gives a value that is no box the defaults (format 6 migrates old sizes)", () => {
+    expect(boxClasses("large", "padding", SECTION)).toBe("px-4 py-16");
   });
 
   it("boxClasses gives a margin its own scale, and no class for sides never set", () => {

@@ -182,9 +182,10 @@ export function TimeInput({
   readonly onChange: (value: string) => void;
 }) {
   const errorId = useId();
+  // The error sits beside the label, not in it: it describes the time, and is no part of its name.
   return (
-    <label className="flex flex-col gap-0.5 text-muted-foreground">
-      <span className="flex items-center gap-1.5">
+    <div className="flex flex-col gap-0.5 text-muted-foreground">
+      <label className="flex items-center gap-1.5">
         {label}
         <input
           type="time"
@@ -194,9 +195,9 @@ export function TimeInput({
           {...(error === undefined ? {} : { "aria-invalid": true, "aria-describedby": errorId })}
           onChange={(event) => onChange(event.currentTarget.value)}
         />
-      </span>
+      </label>
       <ErrorText id={errorId} message={error} />
-    </label>
+    </div>
   );
 }
 

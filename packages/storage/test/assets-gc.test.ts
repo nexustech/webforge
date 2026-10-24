@@ -4,7 +4,7 @@ import { tempDirFactory } from "@webforge/test-utils";
 import Database from "better-sqlite3";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { ProjectFileError, ProjectStore } from "../src/index.js";
+import { type DocumentChange, ProjectFileError, ProjectStore } from "../src/index.js";
 
 const tempDir = tempDirFactory();
 
@@ -17,9 +17,9 @@ const sha = (data: Uint8Array) => createHash("sha256").update(data).digest("hex"
 const bytes = (...values: number[]) => new Uint8Array(values);
 
 /** The site's media document as the editor stores it: metadata naming each original's hash. */
-function mediaDocument(hashes: readonly string[]) {
+function mediaDocument(hashes: readonly string[]): DocumentChange {
   return {
-    type: "put" as const,
+    type: "put",
     id: "media",
     kind: "media",
     content: Object.fromEntries(hashes.map((hash, index) => [`m${index}`, { hash }])),

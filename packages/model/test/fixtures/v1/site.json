@@ -81,7 +81,8 @@
               "text": "Sourdough, cakes and pastries from our oven to your table.",
               "buttonLabel": "Our cakes",
               "buttonLink": { "kind": "page", "pageId": "cakes00000000000" },
-              "image": { "mediaId": "hero000000000000" },
+              "image": "hero000000000000",
+              "imageDescription": "Fresh loaves on the counter",
               "alignment": { "$responsive": { "desktop": "left", "mobile": "center" } }
             }
           },

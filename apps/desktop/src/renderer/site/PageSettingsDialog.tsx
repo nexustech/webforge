@@ -89,6 +89,8 @@ function PageSettingsForm({
   return (
     <form
       className="grid gap-3"
+      // Save says what's missing in the editor's own words, never the browser's bubble.
+      noValidate
       onSubmit={(event) => {
         event.preventDefault();
         onSave({
