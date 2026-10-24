@@ -212,8 +212,8 @@ export function renderPage(
 
 /**
  * Renders a list of nodes (a page's content, or the Header or Footer) to static HTML, without any
- * editor wrappers or edit-only previews, and without hidden nodes unless `options.includeHidden`. Throws
- * {@link UnknownComponentError} for component types the library lacks.
+ * editor wrappers or edit-only previews, and without hidden nodes unless `options.includeHidden`.
+ * Throws {@link UnknownComponentError} for component types the library lacks.
  */
 export function renderNodesToHtml(
   nodes: readonly NodeDoc[],

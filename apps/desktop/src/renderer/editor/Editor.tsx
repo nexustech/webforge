@@ -10,7 +10,6 @@ import { t } from "@webforge/i18n";
 import { textStylesOf } from "@webforge/site-components";
 import { HistoryIcon, SlidersHorizontalIcon } from "lucide-react";
 import { type RefObject, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { useStore } from "zustand";
 import { shallow } from "zustand/shallow";
 import type { CustomDevice, EditPanelPreferences } from "../../shared/ipc/prefs.js";
 import { type AddPanelRegistration, registerAddPanel } from "../add/register-add-panel.js";
@@ -235,8 +234,6 @@ export function Editor({
   const viewOptions = usePreferences(preferences, viewOptionsOf, shallow);
   /** The edit-only previews the user turned on (UX-26), for this window. */
   const [editPreviews] = useState(() => createPreviewStore());
-  const previewChoices = useStore(editPreviews);
-  const viewport = useUi(session, (ui) => ui.viewport);
   const connectionRef = useRef<EngineConnection | null>(null);
   const clipboardCommandsRef = useRef<ReturnType<typeof registerClipboardCommands> | null>(null);
   const styleCommandsRef = useRef<ReturnType<typeof registerStyleCommands> | null>(null);
@@ -448,9 +445,20 @@ export function Editor({
   }, [engine, viewOptions]);
 
   // The edit-only previews (UX-26), at the canvas's width: view state too, never in the export.
+  // Followed outside React, so a view change doesn't draw the editor again; the engine draws the
+  // page again only when what it previews changes.
   useEffect(() => {
-    engine?.setPreviews(canvasPreviews(previewChoices, viewport));
-  }, [engine, previewChoices, viewport]);
+    if (engine === null) return;
+    const show = () =>
+      engine.setPreviews(canvasPreviews(editPreviews.getState(), session.ui.getState().viewport));
+    show();
+    const stopChoices = editPreviews.subscribe(show);
+    const stopViewport = session.ui.subscribe(show);
+    return () => {
+      stopChoices();
+      stopViewport();
+    };
+  }, [engine, editPreviews, session]);
 
   useEffect(() => {
     engine?.setMode(mode);
