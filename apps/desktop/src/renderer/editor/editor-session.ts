@@ -266,6 +266,13 @@ export function runHistoryCommand(session: EditorSession, command: HistoryComman
  */
 export const TEXT_SESSION_GRACE_MS = 300;
 
+/**
+ * A pause in typing on the canvas that starts a new undo chunk of the text session, as long as the
+ * history's coalescing window. Timed by the keystrokes (the engine's `typingPauseMs`), as Puck's
+ * text can arrive much later than it was typed on a busy computer (#307).
+ */
+export const TYPING_PAUSE_MS = 1000;
+
 /** A canvas engine connected to an {@link EditorSession}; see {@link connectEngine}. */
 export type EngineConnection = {
   /** Ends a text session whose grace period is still running, before undo, redo or a jump. */
@@ -320,6 +327,9 @@ export function connectEngine(engine: CanvasEngine, session: EditorSession): Eng
       if (key !== textSession) {
         endTextSession();
       }
+      // Typing chunked by the user's own pauses, whenever the edit arrives.
+      const pause = key === null ? undefined : edit.typingPauseMs;
+      if (pause !== undefined && pause > TYPING_PAUSE_MS) history.breakCoalescing();
       const { patch, sharedSection, copyOf } = edit;
       // An edit inside a copy, or another copy placed (F-ED-23): named by its shared section.
       const sharedOf = sharedSection?.id ?? copyOf;
@@ -364,6 +374,7 @@ export function connectEngine(engine: CanvasEngine, session: EditorSession): Eng
           // A text edit shows its own element, even when it arrives after the user clicked away.
           selectionAfter: { pageId, viewport, nodeId: key === null ? edit.selection : edit.nodeId },
           ...(key === null ? {} : { coalesceKey: key }),
+          ...(pause === undefined ? {} : { coalesceWindowMs: Number.POSITIVE_INFINITY }),
         },
       );
       textSession = key;

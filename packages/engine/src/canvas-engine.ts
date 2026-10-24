@@ -116,6 +116,12 @@ export type EngineEdit = {
   readonly copyOf?: SharedSectionId;
   /** Set when the edit changed nothing but one field of one element to a plain value. */
   readonly patch?: EnginePatch;
+  /**
+   * For a `text` edit typed on the canvas: the longest pause in ms before or between the keystrokes
+   * it holds, timed by the keys themselves. The app splits typing into undo chunks by it, not by
+   * when edits arrive, which on a busy computer can be late (#307). Unset if no key was pressed.
+   */
+  readonly typingPauseMs?: number;
   /** The selection after the edit. */
   readonly selection: string | null;
 };

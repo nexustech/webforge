@@ -101,6 +101,7 @@ import { focusedRichTextId, richTextArrived, staleRichText } from "./stale-rich-
 import { startTextEditing } from "./text-editing.js";
 import { createTextKeys, type PickLink } from "./text-keys.js";
 import { allNodes, findNode, nodeAt, ROOT_ZONE } from "./tree.js";
+import { timeKeystrokes, typingPauses } from "./typing-pauses.js";
 import { applyViewOptions } from "./view-options.js";
 
 /** Options of {@link createPuckEngine}. */
@@ -357,6 +358,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     RICH_TEXT_FLUSH_TIMEOUT_MS,
   );
   const runCommand = commands.run;
+  const pauses = typingPauses();
 
   const dispatch = (action: PuckAction) => {
     if (getPuck === null) {
@@ -488,7 +490,8 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   const emitEdit = (edit: EngineEdit) => {
     reporting = true;
     try {
-      edits.emit(edit);
+      const typingPauseMs = edit.kind === "text" ? pauses.take() : undefined;
+      edits.emit(typingPauseMs === undefined ? edit : { ...edit, typingPauseMs });
     } finally {
       reporting = false;
     }
@@ -893,6 +896,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       }
       frameWindows.emit(frameWindow);
       const removeKeys = installHistoryKeys(frameWindow, runCommand);
+      const stopTiming = timeKeystrokes(frameWindow, pauses);
       const showDeleteKeys = hidePuckDeleteKeys(frameWindow);
       const stopDragKeys = trackDragKeys(frameWindow, dragKeys);
       // The element menu, but not in Content mode, where right-clicks get the browser's own.
@@ -904,6 +908,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       // Shift+F10 on macOS too (#287).
       const removeMenuKeys = installMenuKeys(frameWindow.document);
       return () => {
+        stopTiming();
         showDeleteKeys();
         stopDragKeys();
         removeMenu();
