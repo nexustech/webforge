@@ -48,6 +48,7 @@ import {
 import { hidePuckLayout } from "./layout-styles.js";
 import type { SlotsOf } from "./page-actions.js";
 import { createPuckOverrides } from "./puck-overrides.js";
+import { type CanvasParts, splitRenderContext } from "./render-context-sources.js";
 import { createRichTextTools } from "./rich-text-tools.js";
 import type { CanvasDocs } from "./route-edit.js";
 import { performOnCanvas } from "./selected-actions.js";
@@ -87,26 +88,23 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   const sync = createCanvasSync();
   /** Stops listening in the editor window (see `listenInEditor`). */
   let stopEditorListeners: (() => void) | null = null;
+  // The editor's defaults, each on the side `render-context-sources.ts` says it comes from.
+  const initial = splitRenderContext(EDITOR_RENDER_CONTEXT);
   /**
    * What the canvas renders with besides Site Settings: no navigation or links, the site's Media
    * images and what an Image without one shows, and the edit-only previews.
    */
-  let parts: Omit<RenderContext, keyof SiteBindings> = {
-    navigation: EDITOR_RENDER_CONTEXT.navigation,
-    link: EDITOR_RENDER_CONTEXT.link,
-    href: EDITOR_RENDER_CONTEXT.href,
-    image: EDITOR_RENDER_CONTEXT.image,
-  };
+  let parts: CanvasParts = initial.parts;
   /**
    * Site Settings' values (`setSettings`), kept apart from the other parts so that replacing them
    * replaces nothing else (#367). Which method gives each part is listed, and checked, in
    * `render-context-sources.ts`.
    */
-  let bindings: SiteBindings = { setting: EDITOR_RENDER_CONTEXT.setting };
+  let bindings: SiteBindings = initial.bindings;
   /** The two together: what the canvas's components render with. */
   let renderContext: RenderContext = { ...parts, ...bindings };
   /** Takes `next` parts or bindings, and draws the page again with them. */
-  const changeContext = (next: { parts: typeof parts } | { bindings: SiteBindings }) => {
+  const changeContext = (next: { parts: CanvasParts } | { bindings: SiteBindings }) => {
     if ("parts" in next) parts = next.parts;
     else bindings = next.bindings;
     renderContext = { ...parts, ...bindings };

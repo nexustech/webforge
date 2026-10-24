@@ -1,5 +1,6 @@
 import { ActionBar, createUsePuck, useGetPuck } from "@puckeditor/core";
 import { t } from "@webforge/i18n";
+import type { Breakpoint } from "@webforge/model";
 import { PREVIEW_ATTRIBUTE } from "@webforge/site-components";
 import { ArrowDownIcon, ArrowUpIcon, EyeIcon, EyeOffIcon, PencilIcon } from "lucide-react";
 import { type ReactNode, useLayoutEffect, useRef, useState } from "react";
@@ -14,6 +15,7 @@ import { canPerform, performOnSelected } from "./selected-actions.js";
 import { type BoxHandleField, SPACING_HANDLES_CSS, SpacingHandles } from "./spacing-handles.js";
 import { ensureStyle } from "./styles.js";
 import { ROOT_ZONE } from "./tree.js";
+import { WIDTH_HANDLES_CSS, type WidthHandleField, WidthHandles } from "./width-handles.js";
 
 const usePuck = createUsePuck();
 
@@ -74,7 +76,7 @@ const CHROME_CSS = `
   outline: 2px solid #fff;
   outline-offset: 1px;
 }
-${SPACING_HANDLES_CSS}`;
+${SPACING_HANDLES_CSS}${WIDTH_HANDLES_CSS}`;
 
 /** The editor's colours the chrome is drawn in (UI1), from its theme's tokens. */
 export type ChromeTokens = {
@@ -150,10 +152,14 @@ type OverlayProps = {
   readonly componentType: string;
 };
 
-/** What the selected element's spacing handles need (1.32). */
+/** What the selected element's spacing handles (1.32) and width handles (2.17) need. */
 export type SpacingHandleOptions = {
   /** The `box` fields of a component type. */
   readonly fieldsOf: (componentType: string) => readonly BoxHandleField[];
+  /** The field that sets how wide an element of a component type is, if it has one. */
+  readonly widthFieldOf?: (componentType: string) => WidthHandleField | undefined;
+  /** The device view the canvas shows, whose values the handles change. */
+  readonly breakpoint: () => Breakpoint;
   readonly onFieldDrag: (drag: FieldDrag) => void;
 };
 
@@ -161,8 +167,8 @@ export type SpacingHandleOptions = {
  * The outline over an element on the canvas: 1 px magenta on hover, 2 px when selected. A hovered
  * or selected top-level section also gets the floating + on its bottom edge, which asks `onAdd` to
  * add a section after it (UI1: "opens the Add panel at the insertion point"); not where adding is
- * locked (Content mode). The selected element also gets its spacing handles (1.32), except in
- * Content mode.
+ * locked (Content mode). The selected element also gets its spacing handles (1.32), and its width
+ * handles if a field sets its width (2.17), except in Content mode.
  */
 export function createSelectionOutline(
   onAdd: (at: InsertPoint) => void,
@@ -193,6 +199,7 @@ export function createSelectionOutline(
     const state = isSelected ? "selected" : hover ? "hover" : "none";
     const showAdd = state !== "none" && topLevelIndex >= 0 && canInsert;
     const boxFields = isSelected && canInsert ? (spacing?.fieldsOf(componentType) ?? []) : [];
+    const widthField = isSelected && canInsert ? spacing?.widthFieldOf?.(componentType) : undefined;
     return (
       <div ref={ref} className="wf-outline" data-state={state} data-wf-id={componentId}>
         {showAdd ? (
@@ -216,6 +223,16 @@ export function createSelectionOutline(
             nodeId={componentId}
             fields={boxFields}
             props={props}
+            breakpoint={spacing.breakpoint}
+            onFieldDrag={spacing.onFieldDrag}
+          />
+        ) : null}
+        {spacing !== undefined && widthField !== undefined ? (
+          <WidthHandles
+            nodeId={componentId}
+            field={widthField}
+            props={props}
+            breakpoint={spacing.breakpoint}
             onFieldDrag={spacing.onFieldDrag}
           />
         ) : null}
