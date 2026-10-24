@@ -212,8 +212,8 @@ export function renderPage(
 
 /**
  * Renders a list of nodes (a page's content, or the Header or Footer) to static HTML, without any
- * editor wrappers, and without hidden nodes unless `options.includeHidden`. Throws
- * {@link UnknownComponentError} for component types the library lacks.
+ * editor wrappers or edit-only previews, and without hidden nodes unless `options.includeHidden`.
+ * Throws {@link UnknownComponentError} for component types the library lacks.
  */
 export function renderNodesToHtml(
   nodes: readonly NodeDoc[],
@@ -223,6 +223,8 @@ export function renderNodesToHtml(
 ): string {
   // Check every type first so an unknown one fails before React swallows it in a render.
   walkNodes(nodes, library, () => {}, options);
-  const rendering: Rendering = { library, context, keep: keeps(options, library) };
+  // Edit-only previews are the canvas's: a site never shows one (UX-26).
+  const { previews: _previews, ...exported } = context;
+  const rendering: Rendering = { library, context: exported, keep: keeps(options, library) };
   return renderToStaticMarkup(<>{renderNodes(nodes, rendering)}</>);
 }

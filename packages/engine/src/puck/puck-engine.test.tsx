@@ -62,6 +62,16 @@ const library: ComponentLibrary = {
         </ul>
       ),
     },
+    Menu: {
+      label: "Menu",
+      fields: {},
+      defaults: {},
+      render: ({ context }) => (
+        <details className="t-menu" open={context.previews?.mobileMenu === true}>
+          <summary>Menu</summary>
+        </details>
+      ),
+    },
     Pic: {
       label: "Pic",
       fields: {},
@@ -546,6 +556,23 @@ describe("createPuckEngine", () => {
     await act(async () => engine.setSettings({ setting: () => undefined }));
     await settle();
     expect(hours()).toEqual([]);
+  });
+
+  it("shows the edit-only previews, drawing the page again when they change (UX-26)", async () => {
+    const open = () => element.querySelector<HTMLDetailsElement>(".t-menu")?.open;
+    await act(async () =>
+      engine.applyChange({ page: { ...page, content: [{ type: "Menu", props: { id: "m" } }] } }),
+    );
+    await settle();
+    expect(open()).toBe(false);
+
+    await act(async () => engine.setPreviews({ mobileMenu: true }));
+    await settle();
+    expect(open()).toBe(true);
+
+    await act(async () => engine.setPreviews({}));
+    await settle();
+    expect(open()).toBe(false);
   });
 
   it("shows the site's navigation, drawing the page again when it changes (1.21)", async () => {

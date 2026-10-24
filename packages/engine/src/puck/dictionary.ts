@@ -1,5 +1,5 @@
 import type { Dictionary } from "@puckeditor/core";
-import { type MessageKey, t } from "@webforge/i18n";
+import { type MessageKey, template } from "@webforge/i18n";
 
 /**
  * Puck's UI strings (keys of Puck 0.23's `defaultDictionary`) and the i18n keys that replace them.
@@ -87,6 +87,6 @@ export const PUCK_MESSAGES = {
  */
 export function puckDictionary(): Dictionary {
   return Object.fromEntries(
-    Object.entries(PUCK_MESSAGES).map(([puckKey, key]) => [puckKey, t(key)]),
+    Object.entries(PUCK_MESSAGES).map(([puckKey, key]) => [puckKey, template(key)]),
   );
 }

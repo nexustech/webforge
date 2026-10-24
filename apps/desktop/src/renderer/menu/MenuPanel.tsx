@@ -173,7 +173,6 @@ export function MenuPanel({ site, linkContext, actions }: MenuPanelProps) {
       item.kind === "page" && site.pages[item.pageId]?.settings.hideFromNavigation === true;
     const hidden = item.hidden || pageHidden;
     const group = row.group === null ? undefined : menu.items.find((i) => i.id === row.group);
-    const where = group === undefined ? {} : { group: itemLabel(site, group) };
     return (
       <li
         key={item.id}
@@ -195,7 +194,7 @@ export function MenuPanel({ site, linkContext, actions }: MenuPanelProps) {
                     : item.hidden
                       ? "menu.rowInGroupHidden"
                       : "menu.rowInGroup",
-                  { name, kind, ...where },
+                  { name, kind, group: itemLabel(site, group) },
                 )
           }
           className={cn(

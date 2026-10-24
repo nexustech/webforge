@@ -14,8 +14,9 @@ export const shell = {
   "ui.picker.categories": "Categories",
   "ui.picker.all": "All",
   "ui.picker.noMatch": "Nothing matches '{query}'.",
-  "ui.picker.matchOne": "1 match",
-  "ui.picker.matchMany": "{count} matches",
+  // A count: plural("ui.picker.match", n) picks one or other (B10).
+  "ui.picker.match.one": "{count} match",
+  "ui.picker.match.other": "{count} matches",
   "ui.picker.choose": "Choose",
   "ui.picker.cancel": "Cancel",
 
@@ -153,6 +154,9 @@ export const shell = {
   "headingToolbar.title": "Title",
   "headingToolbar.heading": "Heading",
   "headingToolbar.subheading": "Subheading",
+  // The selected Header's toolbar in the Mobile view (UX-26): shows its menu open on the canvas only.
+  "headerToolbar.label": "Header preview",
+  "headerToolbar.showMobileMenu": "Show mobile menu",
   // The canvas frame's edges, dragged to set its width (1.33, F-ED-25).
   "canvasResize.left": "Canvas width, left edge",
   "canvasResize.right": "Canvas width, right edge",
