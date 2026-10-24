@@ -20,7 +20,7 @@ What it writes passes `pnpm check` and renders in Storybook as it is; then make 
 
 ## Where it goes
 
-- **One module per family:** components live in `src/catalogue/`, one file per family: `basic.tsx` (Section, Heading, Text), `layout.tsx` (Header, Footer), `sections.tsx` (Hero, Text, Text + Image, Call to action, FAQ) and `carousel.tsx` (Carousel).
+- **One module per family:** components live in `src/catalogue/`, one file per family: `basic.tsx` (Section, Heading, Text), `layout.tsx` (Header, Footer), `sections.tsx` (Hero, Text, Text + Image, Call to action, FAQ), `carousel.tsx` (Carousel) and `embeds.tsx` (Video, Map).
 - **A new family:** add a module and list it in `createLibrary` in `src/catalogue/index.ts` (`pnpm new-component` does both). Streams adding components in parallel then never edit the same file.
 - **Its strings:** in a file of its own, `packages/i18n/src/en/components/<family>.ts`, listed in that folder's `index.ts` (2.19). Strings several families use (`field.title`, the spacing and colour choices, the starter page) are in `shared.ts`. A test fails on a key in two files.
 - **Each module ends with its family:** a record from component type to definition, e.g. `export const basicComponents = { Section: section, Heading: heading, Text: text }`.
@@ -148,6 +148,7 @@ As the module loads:
   - **Unit-tested:** `src/behaviours/<name>.test.ts` renders the component with the export's renderer into a happy-dom page of its own, runs the script on it, and checks what it does: `aria-expanded`, the focus, Escape.
   - **After adding or changing one, run `pnpm behaviours`.** It writes `src/behaviours/index.ts`, the scripts as strings, so the package loads without Vite. A test fails while it's out of date.
 - **No external requests (C8):** icons are inline SVG, and fonts and images come with the site.
+  - **Embeds** (a video or map from another site, F-CM-4) draw `<EmbedFrame>` (`src/embed-frame.tsx`) with an address from `videoEmbed` or `mapEmbed` (`src/embed.ts`), and name the `embed` behaviour. The page shows a placeholder and asks nothing of the other site until the visitor clicks; the behaviour then loads the player or map, from the hosts in `EMBED_HOSTS` only. Without JavaScript the placeholder's link opens it on its own site.
 - **Context:** `props.context` resolves links, images and settings. On the canvas they go nowhere; in the export they're the site's.
 
 ### A new field kind

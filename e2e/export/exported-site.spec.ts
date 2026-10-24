@@ -299,6 +299,25 @@ test.describe("exported site from disk", () => {
   test.describe("without JavaScript", () => {
     test.use({ javaScriptEnabled: false });
 
+    test("links a video and a map to their own sites, with no button that does nothing (2.8)", async ({
+      page,
+    }) => {
+      await open(page, "about.html");
+
+      for (const section of [page.locator(".site-video"), page.locator(".site-map")]) {
+        await expect(section.getByRole("button")).toHaveCount(0);
+      }
+      await expect(page.getByRole("link", { name: "Watch on YouTube" })).toHaveAttribute(
+        "href",
+        "https://www.youtube.com/watch?v=aqz-KE-bpKQ",
+      );
+      await expect(page.getByRole("link", { name: "Open in Google Maps" })).toHaveAttribute(
+        "target",
+        "_blank",
+      );
+      await expect(page.locator("iframe")).toHaveCount(0);
+    });
+
     test("shows the carousel as a strip the keyboard scrolls, without buttons that do nothing", async ({
       page,
     }) => {
@@ -356,6 +375,49 @@ test.describe("exported site from disk", () => {
         .poll(async () => (await page.locator("#questions").boundingBox())?.y ?? 0)
         .toBeGreaterThanOrEqual(height - 1);
     });
+  });
+
+  test("loads a video only when the visitor plays it, and a map only when asked (F-CM-4, 2.8)", async ({
+    page,
+  }) => {
+    await open(page, "about.html");
+    const video = page.locator(".site-video");
+    const map = page.locator(".site-map");
+    await expect(
+      video.getByText("This loads it from YouTube, which may set cookies."),
+    ).toBeVisible();
+    await expect(page.locator("iframe")).toHaveCount(0);
+    expect(externalRequests).toEqual([]);
+
+    await video.getByRole("button", { name: "Play video" }).click();
+
+    const player = video.locator("iframe");
+    await expect(player).toHaveAttribute(
+      "src",
+      "https://www.youtube-nocookie.com/embed/aqz-KE-bpKQ?autoplay=1",
+    );
+    await expect(player).toHaveAttribute("title", "A morning at the bakery");
+    await expect(player).toBeFocused();
+    // The click is the one request that leaves the computer, to the privacy-enhanced player.
+    await expect
+      .poll(() => externalRequests.map((url) => new URL(url).origin))
+      .toContain("https://www.youtube-nocookie.com");
+    expect(
+      externalRequests.every((url) => url.startsWith("https://www.youtube-nocookie.com/")),
+    ).toBe(true);
+    await expect(map.locator("iframe")).toHaveCount(0);
+    externalRequests = [];
+
+    await map.getByRole("button", { name: "Show map" }).click();
+    await expect(map.locator("iframe")).toHaveAttribute(
+      "src",
+      /^https:\/\/www\.google\.com\/maps\?q=1%20High%20Street/,
+    );
+    await expect.poll(() => externalRequests.length).toBeGreaterThan(0);
+    expect(externalRequests.every((url) => url.startsWith("https://www.google.com/maps"))).toBe(
+      true,
+    );
+    externalRequests = [];
   });
 
   test("opens an FAQ answer with the keyboard", async ({ page }) => {
