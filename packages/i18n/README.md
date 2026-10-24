@@ -28,7 +28,7 @@ The English catalogue is split by area: one file per area under `src/en/`, assem
 | `storage` | `en/storage.ts` | Saving, backups, recovery |
 | `canvas` | `en/canvas.ts` | The page canvas |
 | `history` | `en/history.ts` | Undo step labels (D2) |
-| `components` | `en/components.ts` | Site components, exported-site text, the starter page |
+| `components` | `en/components/<family>.ts` | Site components, a file per family (2.19): their names and fields, exported-site text, the starter page |
 | `export` | `en/export.ts` | Exporting to a folder |
 | `puck` | `en/puck.ts` | Text inside the Puck editor, mapped by `puckDictionary()` in `@webforge/engine` |
 
