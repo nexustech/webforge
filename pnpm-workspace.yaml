@@ -4,7 +4,9 @@ packages:
   - e2e
   - tools
 
-# Versions shared by several workspaces; reference them as "catalog:".
+# Versions shared by several workspaces; reference them as "catalog:". GitHub's dependency graph
+# reads "catalog:" as written, so Dependabot can't match these against advisories; a package with an
+# open advisory is pinned in each manifest instead until it is fixed (happy-dom, see `overrides`).
 catalog:
   # React Compiler (ADR 0010) through Babel. The compiler is built against Babel 7.
   "@babel/core": 7.29.7
@@ -21,8 +23,6 @@ catalog:
   babel-plugin-react-compiler: 1.0.0
   better-sqlite3: 13.0.3
   daisyui: 5.7.50
-  # DOM for Vitest in the workspaces that test React; 21.0.4 fixes CVE-2026-33943 (Dependabot 2–5).
-  happy-dom: 21.0.4
   react: 19.3.1
   react-dom: 19.3.1
   tailwindcss: 4.3.3
@@ -47,7 +47,14 @@ allowBuilds:
 patchedDependencies:
   '@puckeditor/core@0.23.0': patches/@puckeditor__core@0.23.0.patch
 
-# Vitest's optional peer resolves happy-dom in workspaces that don't use it too; the override keeps
-# every copy at the catalog's patched version (CVE-2026-33943), so no old one stays in the lockfile.
+# happy-dom, the DOM for Vitest, is pinned to 21.0.4 in each workspace that tests React
+# (CVE-2026-33943, Dependabot alerts 2–5), not in the catalog: the dependency graph reads a
+# "catalog:" range as it is written and can't match it against an advisory. Puck
+# (@puckeditor/core 0.23.0) depends on happy-dom ^20 itself, and @tiptap/html has it as a peer
+# (^20.8.9), which kept the vulnerable 20.14.6 in the lockfile; the override moves them to 21.0.4,
+# outside their declared range. That is safe: Puck reaches happy-dom only through @tiptap/html's
+# Node entry (`./server`), and the renderer, built by Vite, takes its browser entry, so the app
+# never runs it. Keep the override at the pinned version, and drop it once a Puck release accepts
+# happy-dom 21; the Puck upgrade test (ADR 0004) is where to check.
 overrides:
-  happy-dom: "catalog:"
+  happy-dom: 21.0.4
