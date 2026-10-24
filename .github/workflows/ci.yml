@@ -225,13 +225,20 @@ jobs:
 
       - name: Screen size (macOS)
         # macOS runners start at 1024 × 768 too: the 1280 × 800 window filled the screen, the canvas
-        # zoomed out and clicks near its edges missed (#287). displayplacer switches the screen.
+        # zoomed out and clicks near its edges missed (#287). displayplacer switches the screen: a
+        # pinned release, checked against its SHA-256, so a new one can't break every macOS run.
+        # The Apple Silicon build: macos-latest runners are arm64.
         if: runner.os == 'macOS'
         env:
-          HOMEBREW_NO_AUTO_UPDATE: "1"
-          HOMEBREW_NO_INSTALL_CLEANUP: "1"
+          DISPLAYPLACER_URL: https://github.com/jakehilborn/displayplacer/releases/download/v1.4.0/displayplacer-apple-v140
+          DISPLAYPLACER_SHA256: "0000000000000000000000000000000000000000000000000000000000000000"
         run: |
-          brew install displayplacer > /dev/null
+          bin="$RUNNER_TEMP/displayplacer"
+          curl -fsSL --retry 3 "$DISPLAYPLACER_URL" -o "$bin"
+          shasum -a 256 "$bin"
+          echo "$DISPLAYPLACER_SHA256  $bin" | shasum -a 256 -c -
+          chmod +x "$bin"
+          displayplacer() { "$bin" "$@"; }
           # displayplacer exits with 1 even when it works, so the screen it leaves is checked instead.
           screens=$(displayplacer list || true)
           id=$(awk '/^Persistent screen id:/ { print $4; exit }' <<< "$screens")
