@@ -26,6 +26,10 @@ export const canvas = {
   "canvas.addSection": "Add a section here",
   "canvas.spacing.handle": "Drag to change the {field} ({side})",
   "canvas.spacing.readout": "{field} {side}: {size}",
+  // The width handles on a selected Image's edges (2.17): their tooltip, and the readout while one
+  // is dragged ("Width: Medium").
+  "canvas.width.handle": "Drag to change the {field}",
+  "canvas.width.readout": "{field}: {size}",
   // The rich-text toolbar's links (1.23, F-ED-3).
   "canvas.richText.link": "Link…",
   "canvas.richText.removeLink": "Remove link",

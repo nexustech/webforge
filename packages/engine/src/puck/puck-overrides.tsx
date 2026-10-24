@@ -14,6 +14,7 @@ import type { DragSources } from "./drag-sources.js";
 import type { Emitter } from "./engine-support.js";
 import { CANVAS_ROOT } from "./puck-dom.js";
 import { boxHandleFields } from "./spacing-handles.js";
+import { widthHandleField } from "./width-handles.js";
 
 type GetPuck = ReturnType<typeof useGetPuck>;
 
@@ -149,6 +150,7 @@ export function createPuckOverrides(options: PuckOverridesOptions): Partial<Over
       },
       {
         fieldsOf: (componentType) => boxHandleFields(options.library(), componentType),
+        widthFieldOf: (componentType) => widthHandleField(options.library(), componentType),
         onFieldDrag: options.fieldDrag,
       },
     ),
