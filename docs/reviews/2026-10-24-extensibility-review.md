@@ -66,15 +66,15 @@ Ordered by payoff per day. Everything is a build-time building block inside the 
 | B7 | **Scaffolds** extending 2.19's command: `pnpm scaffold area\|panel\|commands\|field-kind\|ipc-domain <Name>` writing the module, strings, story and test from templates and registering it | E7 | 1 day |
 | B8 | **`docs/extending.md`**: the registries of §1, each with its recipe, linked from CLAUDE.md's reading list | E8 | 0.5 day |
 | B9 | **Settings sections as a registry**, done inside 1.39's LF-12 | E10 | 0 (in 1.39) |
-| B10 | **Typed `t()` params and a `plural()` helper** | E11 | 1 day, any time |
+| B10 | **Typed `t()` params and a `plural()` helper** | E11 | 1 day |
 
 ## 5. Where it lands
 Two plan items, so the work is visible and sized against the Phase 2 date:
 
-- **2.20 Editor building blocks: area modules, boundaries, test kit, scaffolds, extension-points guide** (B1, B2, B5, B6, B7, B8): **6 days**, stream A or C right after 2.19, before 2.7 and 2.8 add thirteen sections and the Phase 2 panels and dialogs grow. It depends on 2.19 (the scaffold) and R11.
-- **2.21 One form engine for the Edit panel and dialogs** (B3, B4): **4.5 days**, before the first large dialog it would save: Theme Studio (2.3b) and LF-12 in 1.39. It depends on R11 and 1.36 (merged).
-- B9 goes into 1.39's scope; B10 is a chore for any stream.
+- **2.20 Editor building blocks: area modules, boundaries, test kit, scaffolds, extension-points guide** (B1, B2, B5, B6, B7, B8, B10): **7 days**, on stream B after 2.4 and before 2.8 (product owner, 24 Oct), so the panels and dialogs Phase 2 adds are built on it. It depends on 2.19 (the scaffold) and R11, which moves up stream A's queue to just after R10.
+- **2.21 One form engine for the Edit panel and dialogs** (B3, B4): **5 days** (4.5, plus adopting R10's form primitives and exported limits rather than duplicating them), on stream A after 2.9 and before the first large dialog it would save: LF-12 in 1.39, then Theme Studio (2.3b). It depends on R10, R11 and 1.36 (merged).
+- B9 goes into 1.39's scope; B10 goes into 2.20.
 
-That is about **10.5 days** on top of a Phase 2 that has two or three days of slack ([plan review](2026-10-23-plan-review.md)). The honest trade: either the milestone moves a week, or §11's cuts (four templates, six themes) pay for it. What the days buy is that the remaining 28 components, four large dialogs and three settings sections are written against building blocks rather than copied, which is the only way the Phase 3 and 4 work (Site Check, publishers, Version History, the Settings dialog) stays at Phase 1's pace.
+That is **12 days** in the plan (7 and 5) on top of a Phase 2 that has two or three days of slack ([plan review](2026-10-23-plan-review.md)). The honest trade: either the milestone moves a week, or §11's cuts (four templates, six themes) pay for it. What the days buy is that the remaining 28 components, four large dialogs and three settings sections are written against building blocks rather than copied, which is the only way the Phase 3 and 4 work (Site Check, publishers, Version History, the Settings dialog) stays at Phase 1's pace.
 
 **Not proposed:** a runtime plugin loader or a public plugin API (gap analysis: long-term); replacing Puck now (ADR 0004 stands; R8 keeps the exit open); a generic "widget" layer over shadcn (editor-ui already is that layer).
