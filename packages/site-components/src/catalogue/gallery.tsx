@@ -1,4 +1,4 @@
-import { t } from "@webforge/i18n";
+import { t, template } from "@webforge/i18n";
 import { defineComponent } from "../define.js";
 import { defineSection } from "../frame.js";
 import type { ComponentDef } from "../library.js";
@@ -54,7 +54,7 @@ function Lightbox() {
       className="modal"
       aria-label={t("siteText.lightbox")}
       data-wf-lightbox=""
-      data-image-of={t("siteText.imageOf")}
+      data-image-of={template("siteText.imageOf")}
     >
       <div className="modal-box flex max-w-5xl flex-col items-center gap-3 p-4">
         <form method="dialog" className="self-end">
