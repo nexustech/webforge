@@ -7,11 +7,11 @@ import {
   rewriteRichTextLinks,
   richTextFileLinks,
 } from "@webforge/model";
-import type { ComponentType, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { type ComponentDef, type ComponentLibrary, withAdvanced } from "./library.js";
 import { RichText } from "./rich-text.js";
-import type { BehaviourName, RenderContext } from "./schema.js";
+import type { BehaviourName, RenderContext, SlotComponent } from "./schema.js";
 
 /** A node uses a component type the library does not have (a build failure, X5). */
 export class UnknownComponentError extends WebforgeError<"unknown-component"> {
@@ -150,7 +150,7 @@ function renderNode(node: NodeDoc, rendering: Rendering): ReactNode {
   const def = definitionOf(library, node);
   const { id, ...props } = node.props;
   const values: Record<string, unknown> = { ...props };
-  const slots: Record<string, ComponentType> = {};
+  const slots: Record<string, SlotComponent> = {};
   for (const [name, field] of Object.entries(def.fields)) {
     const value = props[name];
     if (field.kind === "richtext" && typeof value === "string") {
@@ -159,7 +159,13 @@ function renderNode(node: NodeDoc, rendering: Rendering): ReactNode {
       values[name] = <RichText html={rewriteRichTextLinks(value, context.href)} />;
     } else if (field.kind === "slot") {
       const children = childrenIn(value);
-      slots[name] = () => <>{renderNodes(children, rendering)}</>;
+      // As Puck's drop zone holds them on the canvas: in an element of their own, if it is styled.
+      slots[name] = ({ className }) =>
+        className === undefined ? (
+          <>{renderNodes(children, rendering)}</>
+        ) : (
+          <div className={className}>{renderNodes(children, rendering)}</div>
+        );
     }
   }
   return withAdvanced(def.render({ id, values, slots, context }), props.advanced);

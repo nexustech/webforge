@@ -51,6 +51,7 @@ export type {
   RenderContext,
   RenderPropsOf,
   ResolvedImage,
+  SlotComponent,
   SlotNames,
   StoredValue,
   ValuesOf,

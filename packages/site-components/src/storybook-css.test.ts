@@ -2,7 +2,7 @@ import { BOX_SIDES, SPACING_TOKENS } from "@webforge/model";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import previewCss from "../.storybook/preview.css?raw";
-import { SECTION_PADDING } from "./catalogue/basic.js";
+import { SECTION_PADDING } from "./frame.js";
 import { boxClasses } from "./library.js";
 
 /** Every class an `@source inline("…")` pattern stands for, its `{a,b}` groups expanded. */
