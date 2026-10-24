@@ -346,6 +346,8 @@ export function EditPanelHost({
   // element has gone, a change still on its way does nothing.
   const now = () => fieldTarget(history.document.getState(), library, pageId, nodeId);
 
+  // What a field's `unavailable` is asked about: the element's values, with its defaults.
+  const values = { ...component.defaults, ...node.props };
   const fields = Object.entries(component.fields).flatMap(([name, field]): EditPanelField[] => {
     const list = editableList(field, library);
     if (list !== undefined) {
@@ -357,6 +359,8 @@ export function EditPanelHost({
     }
     const stored = storedOr(name, node.props[name]);
     const responsive = field.responsive === true;
+    const unavailable = field.unavailable?.(values);
+    const help = unavailable ?? field.help;
     // A text field that can show a Site Settings value gets a choice of what it shows (1.17).
     return withBindingChoice(name, field, node.props.bindings, [
       {
@@ -365,7 +369,8 @@ export function EditPanelHost({
         group: fieldGroupOf(field),
         value: responsive ? valueAt(stored, breakpoint) : stored,
         ...(field.optionGroup === undefined ? {} : { optionGroup: field.optionGroup }),
-        ...(field.help === undefined ? {} : { help: field.help }),
+        ...(help === undefined ? {} : { help }),
+        ...(unavailable === undefined ? {} : { disabled: true }),
         ...(responsive && breakpoint !== "desktop" ? { responsive: true } : {}),
         ...(differsFromDefault(stored, storedOr(name, undefined), responsive, breakpoint)
           ? { changed: true }

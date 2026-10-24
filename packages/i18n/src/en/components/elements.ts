@@ -44,6 +44,8 @@ export const elements = {
   "field.listStyle.bullets": "Bullets",
   "field.listStyle.numbers": "Numbers",
   "field.listStyle.plain": "No markers",
+  "field.listStyle.unavailable":
+    "The list's icon takes the place of its markers. Remove the icon to choose a style.",
   "element.icon": "Icon",
   "field.icon": "Icon",
   "field.iconLabel": "Name for screen readers",

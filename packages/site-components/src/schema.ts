@@ -38,6 +38,12 @@ export type FieldDef = {
    * label can't say ("Visitors who prefer less motion never see it move").
    */
   readonly help?: string;
+  /**
+   * Why the field can't be used while the element has `values` (with its defaults), already
+   * translated, or none when it can. The Edit panel then shows it disabled, with that sentence
+   * as its help: a List's style while an icon takes the place of its markers.
+   */
+  readonly unavailable?: (values: Readonly<Record<string, unknown>>) => string | undefined;
   readonly responsive?: boolean;
   /**
    * The option group the Edit panel shows it in (UX-13), by its kind if not given. Fields of one

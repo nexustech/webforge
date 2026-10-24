@@ -349,6 +349,9 @@ const list = defineComponent({
       kind: "select",
       label: t("field.listStyle"),
       options: LIST_STYLES.map((value) => ({ label: t(`field.listStyle.${value}`), value })),
+      // An icon takes the markers' place, so no style would change anything.
+      unavailable: (values) =>
+        typeof values.icon === "string" ? t("field.listStyle.unavailable") : undefined,
     },
     // Before each item instead of its markers (F-ED-22).
     icon: { kind: "icon", label: t("field.listIcon"), help: t("field.listIcon.help") },

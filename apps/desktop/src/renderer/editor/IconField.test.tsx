@@ -67,3 +67,39 @@ describe("the icon field (F-ED-22)", { timeout: 15_000 }, () => {
     expect(labels().at(-1)).toBe("Changed Button icon");
   });
 });
+
+describe("a List's icon (F-ED-22)", { timeout: 15_000 }, () => {
+  it("makes its style unavailable, saying why, until the icon is removed", async () => {
+    const site = starterSite();
+    const section = site.pages[site.homePageId]?.doc.content[0];
+    (section?.props.content as NodeDoc[] | undefined)?.push({
+      type: "List",
+      props: { id: "list", icon: "check", items: [] },
+    });
+    const session = sessionWith(site);
+    session.select("list");
+    render(
+      <FieldRenderersProvider renderers={{ icon: IconField }}>
+        <EditPanelHost session={session} flush={vi.fn()} />
+      </FieldRenderersProvider>,
+    );
+    const user = userEvent.setup({ delay: null });
+    // The style is on the Style tab, the icon on the Content tab.
+    const style = async () => {
+      await user.click(screen.getByRole("tab", { name: "Style" }));
+      return screen.getByRole<HTMLSelectElement>("combobox", { name: "Style" });
+    };
+
+    expect((await style()).disabled).toBe(true);
+    expect(
+      screen.getByText(
+        "The list's icon takes the place of its markers. Remove the icon to choose a style.",
+      ),
+    ).toBeTruthy();
+
+    await user.click(screen.getByRole("tab", { name: "Content" }));
+    await user.click(screen.getByRole("button", { name: "Remove icon" }));
+
+    expect((await style()).disabled).toBe(false);
+  });
+});
