@@ -52,19 +52,36 @@ jobs:
           DRY_RUN: ${{ inputs.dry-run == true }}
         run: |
           set -euo pipefail
-          # Starts CI on a branch. A push or update made with this workflow's token doesn't start
-          # CI by itself, but a "Run workflow" request does; its checks count for the PR's head.
-          run_ci() {
-            if [ "$DRY_RUN" = true ]; then return; fi
-            gh workflow run ci.yml --ref "$1"
-          }
-          # The latest "CI passed" result on a commit: NONE, SUCCESS, FAILURE, IN_PROGRESS, … Read from
-          # the commit's check runs, not the PR's check list, which leaves out the runs this
-          # workflow starts ("Run workflow" runs aren't linked to a PR, though their checks count).
+          # Only a pull request's own CI runs count for its required "CI passed": "Run workflow"
+          # runs aren't linked to it. When this workflow updates a branch, GitHub starts the PR's CI
+          # run but holds it for approval, as the push comes from a bot (the approval rule for
+          # outside contributors), so this approves it.
+          #
+          # The latest pull-request CI run on a commit, as "id state": state is NONE, WAITING
+          # (held for approval), RUNNING, SUCCESS or the failure's conclusion.
           ci_of() {
-            gh api "repos/$GH_REPO/commits/$1/check-runs?check_name=CI%20passed" \
-              --jq '[.check_runs[]] | sort_by(.started_at) | last
-                | if . == null then "NONE" else ((.conclusion // .status) | ascii_upcase) end'
+            gh run list --workflow ci.yml --commit "$1" --event pull_request \
+              --json databaseId,status,conclusion,createdAt \
+              --jq 'sort_by(.createdAt) | last
+                | if . == null then "0 NONE"
+                  elif .conclusion == "action_required" then "\(.databaseId) WAITING"
+                  elif .status != "completed" then "\(.databaseId) RUNNING"
+                  else "\(.databaseId) \(.conclusion | ascii_upcase)" end'
+          }
+          # Approves the PR's CI run held on commit `$1`, once it appears.
+          approve_ci() {
+            if [ "$DRY_RUN" = true ]; then return; fi
+            for _ in $(seq 30); do
+              read -r id state <<< "$(ci_of "$1")"
+              if [ "$state" = WAITING ]; then
+                gh api -X POST "repos/$GH_REPO/actions/runs/$id/approve" > /dev/null
+                echo "Approved CI run $id."
+                return
+              fi
+              [ "$state" = NONE ] || return
+              sleep 2
+            done
+            echo "::warning::No CI run appeared for $1: push to the branch to start one."
           }
           # Open, ready PRs into main from this repository with auto-merge on, oldest first, as
           # "number branch head mergeState". "CI passed" appears only when every other job has
@@ -80,7 +97,7 @@ jobs:
           fi
           echo "$queue"
           while read -r number branch head state; do
-            ci=$(ci_of "$head")
+            read -r _ ci <<< "$(ci_of "$head")"
             if [ "$state" = DIRTY ]; then
               echo "#$number has conflicts with main: its stream resolves them."
               continue
@@ -89,28 +106,29 @@ jobs:
               echo "#$number is behind main: merging main into $branch and running CI."
               if [ "$DRY_RUN" = true ]; then exit 0; fi
               gh api -X PUT "repos/$GH_REPO/pulls/$number/update-branch" -f expected_head_sha="$head" > /dev/null
-              # GitHub updates the branch in the background: start CI once the new head is there.
+              # GitHub updates the branch in the background: approve its CI once the new head is there.
+              new="$head"
               for _ in $(seq 30); do
-                [ "$(gh api "repos/$GH_REPO/pulls/$number" --jq .head.sha)" != "$head" ] && break
+                new=$(gh api "repos/$GH_REPO/pulls/$number" --jq .head.sha)
+                [ "$new" != "$head" ] && break
                 sleep 2
               done
-              run_ci "$branch"
-              exit 0
-            fi
-            running=$(gh run list --workflow ci.yml --commit "$head" --json status \
-              --jq '[.[] | select(.status != "completed")] | length')
-            if [ "$running" -gt 0 ]; then
-              echo "#$number is in flight: CI is running on its latest commit."
+              approve_ci "$new"
               exit 0
             fi
             case "$ci" in
-              SUCCESS)
-                echo "#$number passed CI and is up to date ($state): waiting for auto-merge."
+              WAITING)
+                echo "#$number's CI is held for approval: approving it."
+                approve_ci "$head"
                 exit 0
                 ;;
-              NONE)
-                echo "#$number has no CI run on its latest commit: running CI."
-                run_ci "$branch"
+              RUNNING | NONE)
+                # NONE: just pushed, and GitHub hasn't started its CI yet.
+                echo "#$number is in flight ($ci): waiting for its CI."
+                exit 0
+                ;;
+              SUCCESS)
+                echo "#$number passed CI and is up to date ($state): waiting for auto-merge."
                 exit 0
                 ;;
               *)
