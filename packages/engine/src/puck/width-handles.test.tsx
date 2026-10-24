@@ -134,6 +134,43 @@ describe("width handles (2.17)", () => {
     expect([grips.style.left, grips.style.right]).toEqual(["240px", "240px"]);
   });
 
+  it("follows the element when it's replaced, an Image given its picture (2.17)", () => {
+    // A stand-in for the frame's ResizeObserver, which happy-dom doesn't lay out for.
+    const observed = new Set<Element>();
+    let notify: () => void = () => undefined;
+    class FakeObserver {
+      constructor(callback: () => void) {
+        notify = callback;
+      }
+      observe(target: Element) {
+        observed.add(target);
+      }
+      unobserve(target: Element) {
+        observed.delete(target);
+      }
+      disconnect() {
+        observed.clear();
+      }
+    }
+    const real = window.ResizeObserver;
+    window.ResizeObserver = FakeObserver as unknown as typeof ResizeObserver;
+    try {
+      show("small");
+      const wrapper = document.querySelector("[data-puck-component]");
+      const picture = document.createElement("figure");
+      picture.getBoundingClientRect = () => new DOMRect(0, 0, 320, 200);
+      wrapper?.replaceChildren(picture);
+      act(() => notify());
+
+      const grips = host.querySelector(".wf-width-grips");
+      if (!(grips instanceof HTMLElement)) throw new Error("no grips");
+      expect([grips.style.left, grips.style.right]).toEqual(["0px", "480px"]);
+      expect(observed.has(picture)).toBe(true);
+    } finally {
+      window.ResizeObserver = real;
+    }
+  });
+
   it("cancels a drag with Esc, back to the width before it", () => {
     show({ $responsive: { desktop: "large" } });
     const left = grip("left");

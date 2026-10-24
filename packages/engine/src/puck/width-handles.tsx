@@ -154,23 +154,31 @@ export function WidthHandles({ nodeId, field, props, onFieldDrag }: WidthHandles
   useLayoutEffect(() => {
     const grips = gripsBox.current;
     const outline = grips?.parentElement;
-    const element = grips === null ? undefined : elementOf(grips.ownerDocument, nodeId);
-    if (!outline || !element) return;
+    const wrapper = grips?.ownerDocument.querySelector(componentSelector(nodeId));
+    if (!outline || !wrapper) return;
+    const Observer = grips?.ownerDocument.defaultView?.ResizeObserver;
+    // It moves as its width changes, mid-drag too, and as the column does. Puck keeps its wrapper,
+    // but the element in it can change (an Image given its picture), so it is found each time.
+    const observer = Observer === undefined ? undefined : new Observer(() => measure());
+    let element: Element | null = null;
     const measure = () => {
+      const now = wrapper.firstElementChild;
+      if (now !== element) {
+        if (element !== null) observer?.unobserve(element);
+        if (now !== null) observer?.observe(now);
+        element = now;
+      }
+      if (element === null) return;
       const shown = element.getBoundingClientRect();
       const around = outline.getBoundingClientRect();
       const left = Math.round(shown.left - around.left);
       const right = Math.round(around.right - shown.right);
-      setEdges((now) => (now.left === left && now.right === right ? now : { left, right }));
+      setEdges((edges) => (edges.left === left && edges.right === right ? edges : { left, right }));
     };
+    observer?.observe(wrapper);
+    observer?.observe(outline);
     measure();
-    // It moves as its width changes, mid-drag too, and as the column does.
-    const Observer = grips?.ownerDocument.defaultView?.ResizeObserver;
-    if (Observer === undefined) return;
-    const observer = new Observer(measure);
-    observer.observe(element);
-    observer.observe(outline);
-    return () => observer.disconnect();
+    return () => observer?.disconnect();
   }, [nodeId]);
   // Cancels the drag going on, if any: grips that go mid-drag leave no listeners behind.
   const cancelDrag = useRef<(() => void) | null>(null);
