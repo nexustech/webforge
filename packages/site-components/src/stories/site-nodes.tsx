@@ -43,6 +43,8 @@ const storyContext: RenderContext = {
   link: () => "#",
   image: (id) => (id === "photo" ? photo : null),
   setting: (key) => STORY_SETTINGS[key],
+  language: "en-GB",
+  formService: { kind: "formspree", formId: "xyzAbc12" },
   openingHours: [
     { days: ["tue", "wed", "thu", "fri"], opens: "07:00", closes: "15:00" },
     { days: ["sat", "sun"], opens: "08:00", closes: "13:00" },

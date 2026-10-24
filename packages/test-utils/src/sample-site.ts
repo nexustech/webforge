@@ -23,10 +23,10 @@ export function priceList(): Uint8Array {
  * A small two-page site: Header and Footer, a home page with a Hero (with photo), text, a Carousel
  * of customers' quotes (2.10), an FAQ and a Call to action, and an About page with a text-only Hero
  * linking to a price list (a document), a Text section, a Text + Image section (2.6), a Gallery
- * with its lightbox (2.7a), Opening hours and contact from Site Settings, and a Video and a Map
- * that load only when clicked (2.8). Its menu has both pages, a "Visit us" dropdown (a link to
- * the FAQ section and a web address in a new tab) and an "Order a cake" button. Used by pipeline
- * tests and the export E2E tests.
+ * with its lightbox (2.7a), Opening hours and contact from Site Settings, a Video and a Map that
+ * load only when clicked, and a Contact form and a Newsletter signup (2.8). Its menu has both
+ * pages, a "Visit us" dropdown (a link to the FAQ section and a web address in a new tab) and an
+ * "Order a cake" button. Used by pipeline tests and the export E2E tests.
  */
 export function sampleSite(): SiteSnapshot {
   return {
@@ -276,6 +276,24 @@ export function sampleSite(): SiteSnapshot {
                 variant: "split",
               },
             },
+            {
+              // A contact form posting to Formspree, and a newsletter signup (2.8).
+              type: "ContactForm",
+              props: { id: "write", title: "Write to us", askPhone: true },
+            },
+            {
+              type: "Newsletter",
+              props: {
+                id: "news",
+                title: "Our newsletter",
+                action: "https://example.com/newsletter/signup",
+              },
+            },
+            {
+              // A signup whose form address isn't set yet: it draws, but can't send (2.8).
+              type: "Newsletter",
+              props: { id: "news-unset", title: "Cake club", action: "" },
+            },
           ],
         },
       },
@@ -286,6 +304,8 @@ export function sampleSite(): SiteSnapshot {
       "contact.email": "hello@rosas-bakery.example",
       "contact.openingHoursNote": "Closed on bank holidays.",
     },
+    // Where the Contact form sends its messages (F-CM-1).
+    formService: { kind: "formspree", formId: "xyzAbc12" },
     openingHours: [
       { days: ["tue", "wed", "thu", "fri"], opens: "07:00", closes: "15:00" },
       { days: ["sat", "sun"], opens: "08:00", closes: "13:00" },
