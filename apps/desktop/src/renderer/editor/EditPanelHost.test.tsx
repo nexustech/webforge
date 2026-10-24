@@ -1,9 +1,11 @@
 // @vitest-environment happy-dom
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { copiedNodeId, type MediaId, type PageDoc, type PageId } from "@webforge/model";
+import { copiedNodeId, type MediaId, type PageDoc } from "@webforge/model";
 import { type ComponentLibrary, siteLibrary } from "@webforge/site-components";
+import { Profiler } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { registerLinkField } from "../links/LinkField.js";
 import { registerImageField } from "../media/ImageField.js";
 import { addMedia } from "../media/media-commands.js";
 import { saveAsSharedSection } from "../shared-sections/shared-sections.js";
@@ -43,7 +45,7 @@ function siteWithHero() {
 
 function setup(nodeId: string | null = "heading-1") {
   const session = createEditorSession(siteLibrary, siteWithHero());
-  session.ui.setState({ nodeId });
+  session.select(nodeId);
   const flush = vi.fn();
   render(<EditPanelHost session={session} flush={flush} />);
   const labels = () => session.history.entries().map((entry) => entry.label);
@@ -69,10 +71,51 @@ function setup(nodeId: string | null = "heading-1") {
   };
 }
 
+describe("EditPanelHost redraws (R9)", () => {
+  it("draws nothing again, its link field included, while typing changes another element", () => {
+    const session = createEditorSession(siteLibrary, siteWithHero());
+    session.select("hero");
+    const unregister = registerLinkField({ session });
+    let commits = 0;
+    try {
+      render(
+        <Profiler id="panel" onRender={() => (commits += 1)}>
+          <EditPanelHost session={session} flush={vi.fn()} />
+        </Profiler>,
+      );
+      expect(screen.getByRole("textbox", { name: "Title" })).toBeTruthy();
+      const drawn = commits;
+      // Typing on the canvas, in the Heading: a new document, the same Hero.
+      for (const text of ["W", "We", "Wel"]) {
+        act(() =>
+          session.edit("text", "Edited Heading text", (draft) => {
+            const section = draft.pages[draft.homePageId]?.doc.content[0];
+            const heading = (section?.props.content as PageDoc["content"] | undefined)?.[0];
+            if (heading !== undefined) heading.props.text = text;
+          }),
+        );
+      }
+      expect(commits).toBe(drawn);
+
+      // A change to the Hero itself is drawn.
+      act(() =>
+        session.edit("text", "Edited Hero title", (draft) => {
+          const hero = draft.pages[draft.homePageId]?.doc.content[1];
+          if (hero !== undefined) hero.props.title = "Fresh bread";
+        }),
+      );
+      expect(commits).toBeGreaterThan(drawn);
+      expect(screen.getByRole("textbox", { name: "Title" })).toHaveProperty("value", "Fresh bread");
+    } finally {
+      unregister();
+    }
+  });
+});
+
 describe("EditPanelHost in Content mode (M3)", () => {
   it("keeps texts, links and list items, and leaves styles out", async () => {
     const session = createEditorSession(siteLibrary, siteWithHero());
-    session.ui.setState({ nodeId: "hero" });
+    session.select("hero");
     const view = render(<EditPanelHost session={session} flush={vi.fn()} contentOnly />);
 
     expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["Content"]);
@@ -80,7 +123,7 @@ describe("EditPanelHost in Content mode (M3)", () => {
     expect(screen.getByRole("textbox", { name: "Button text" })).toBeTruthy();
     expect(screen.queryByText("Alignment")).toBeNull();
     // A list's items stay editable.
-    act(() => session.ui.setState({ nodeId: "faq" }));
+    act(() => session.select("faq"));
     view.rerender(<EditPanelHost session={session} flush={vi.fn()} contentOnly />);
     expect(screen.getByRole("button", { name: /Add Question/ })).toBeTruthy();
   });
@@ -95,7 +138,7 @@ describe("EditPanelHost", () => {
 
   it("says how many elements are selected while several are (1.31)", () => {
     const { session } = setup();
-    act(() => session.ui.setState({ nodeId: "heading-1", others: ["text-1", "hero-1"] }));
+    act(() => session.selectElements(["heading-1", "text-1", "hero-1"]));
 
     expect(screen.getByRole("status").textContent).toBe("3 elements selected");
   });
@@ -142,8 +185,8 @@ describe("EditPanelHost", () => {
     const input = screen.getByLabelText("Text");
     await user.type(input, "!");
 
-    act(() => session.ui.setState({ nodeId: "hero" }));
-    act(() => session.ui.setState({ nodeId: "heading-1" }));
+    act(() => session.select("hero"));
+    act(() => session.select("heading-1"));
     await user.type(screen.getByLabelText("Text"), "?");
 
     expect(labels()).toEqual(["Edited Heading text", "Edited Heading text"]);
@@ -167,7 +210,7 @@ describe("EditPanelHost", () => {
         const home = draft.pages[draft.homePageId]?.doc.content[0];
         if (home !== undefined) home.props.content = [];
       });
-      session.ui.setState({ nodeId: null });
+      session.select(null);
     });
     fireEvent.blur(input);
 
@@ -180,7 +223,12 @@ describe("EditPanelHost", () => {
   it("shows the empty state for a selection on another page", () => {
     const { session } = setup();
 
-    act(() => session.ui.setState({ pageId: "page-gone" as PageId }));
+    // The page shown is taken away under the editor; nothing can show a page that isn't there.
+    act(() =>
+      session.edit("props", "Removed the page shown", (draft) => {
+        delete draft.pages[session.ui.getState().pageId];
+      }),
+    );
 
     expect(screen.getByText("Select an element to edit it")).toBeDefined();
   });
@@ -193,7 +241,7 @@ describe("EditPanelHost", () => {
     const [shared] = Object.values(session.history.document.getState().sharedSections);
     if (shared === undefined) throw new Error("not saved");
     const copyId = currentPage(session)?.doc.content[0]?.props.id ?? "";
-    act(() => session.ui.setState({ nodeId: copiedNodeId(copyId, "heading-1") }));
+    act(() => session.select(copiedNodeId(copyId, "heading-1")));
     const sharedHeading = () =>
       (
         session.history.document.getState().sharedSections[shared.id]?.section.props.content as
@@ -247,7 +295,7 @@ describe("EditPanelHost", () => {
 
     it("sets a value for the device being viewed, marks it and drops it again", async () => {
       const { session, labels, section, user } = setup("section-1");
-      act(() => session.ui.setState({ viewport: "mobile" }));
+      act(() => session.setViewport("mobile"));
 
       await user.click(side("Padding Top").getByRole("radio", { name: "S" }));
 
@@ -255,13 +303,13 @@ describe("EditPanelHost", () => {
         $responsive: { desktop: { top: "m", bottom: "m" }, mobile: { top: "s", bottom: "m" } },
       });
       expect(screen.getByText("Mobile only")).toBeDefined();
-      act(() => session.ui.setState({ viewport: "desktop" }));
+      act(() => session.setViewport("desktop"));
       expect(screen.queryByText("Mobile only")).toBeNull();
       expect(
         side("Padding Top").getByRole("radio", { name: "M" }).getAttribute("aria-checked"),
       ).toBe("true");
 
-      act(() => session.ui.setState({ viewport: "mobile" }));
+      act(() => session.setViewport("mobile"));
       await user.click(screen.getByRole("button", { name: "Use Desktop value" }));
 
       expect(section()?.padding).toEqual({ top: "m", bottom: "m" });
@@ -273,9 +321,9 @@ describe("EditPanelHost", () => {
 
     it("sets Desktop's value as the plain value, keeping other devices' own", async () => {
       const { session, labels, section, user } = setup("section-1");
-      act(() => session.ui.setState({ viewport: "tablet" }));
+      act(() => session.setViewport("tablet"));
       await user.click(side("Padding Bottom").getByRole("radio", { name: "L" }));
-      act(() => session.ui.setState({ viewport: "desktop" }));
+      act(() => session.setViewport("desktop"));
 
       await user.click(side("Padding Left").getByRole("radio", { name: "None" }));
 
@@ -336,17 +384,17 @@ describe("EditPanelHost", () => {
       ).toBe("true");
 
       // Every side the same on Mobile: one row for all of them.
-      act(() => session.ui.setState({ viewport: "mobile" }));
+      act(() => session.setViewport("mobile"));
       expect(screen.queryByRole("radiogroup", { name: "Padding Top" })).toBeNull();
-      act(() => session.ui.setState({ viewport: "desktop" }));
+      act(() => session.setViewport("desktop"));
       expect(side("Padding Top")).toBeDefined();
 
-      act(() => session.ui.setState({ nodeId: "section-2" }));
+      act(() => session.select("section-2"));
       expect(screen.queryByRole("radiogroup", { name: "Padding Top" })).toBeNull();
       await user.click(screen.getByRole("switch", { name: "Padding Same on every side" }));
-      act(() => session.ui.setState({ nodeId: "section-1" }));
+      act(() => session.select("section-1"));
       expect(side("Padding Top")).toBeDefined();
-      act(() => session.ui.setState({ nodeId: "section-2" }));
+      act(() => session.select("section-2"));
       expect(
         side("Padding").getByRole("radio", { name: "Default" }).getAttribute("aria-checked"),
       ).toBe("true");
@@ -404,12 +452,12 @@ describe("EditPanelHost", () => {
 
     it("ends a drag when the device view changes, so each step names its device", () => {
       const { session, labels, section } = setup("section-1");
-      act(() => session.ui.setState({ viewport: "mobile" }));
+      act(() => session.setViewport("mobile"));
       const slider = () => screen.getByLabelText("Space between elements");
 
       fireEvent.pointerDown(slider());
       fireEvent.change(slider(), { target: { value: "0" } });
-      act(() => session.ui.setState({ viewport: "desktop" }));
+      act(() => session.setViewport("desktop"));
       fireEvent.change(slider(), { target: { value: "3" } });
       fireEvent.pointerUp(slider());
 
@@ -504,7 +552,7 @@ describe("EditPanelHost", () => {
         props: { id: "ratings", items: [{ id: "r1", stars: "1" }] },
       });
       const session = createEditorSession(library, site);
-      session.ui.setState({ nodeId: "ratings" });
+      session.select("ratings");
       render(<EditPanelHost session={session} flush={vi.fn()} />);
       await userEvent
         .setup({ delay: null })
@@ -543,7 +591,7 @@ describe("EditPanelHost", () => {
   describe("Advanced tab (F-ED-11)", () => {
     function setupAdvanced() {
       const session = createEditorSession(siteLibrary, siteWithHero());
-      session.ui.setState({ nodeId: "heading-1" });
+      session.select("heading-1");
       render(<EditPanelHost session={session} flush={vi.fn()} advanced />);
       const labels = () => session.history.entries().map((entry) => entry.label);
       const advanced = () => {
@@ -579,7 +627,7 @@ describe("EditPanelHost", () => {
 
     it("sets the shared Footer's classes in the site's layout", async () => {
       const { session, labels, user } = setupAdvanced();
-      act(() => session.ui.setState({ nodeId: "footer" }));
+      act(() => session.select("footer"));
       await user.click(screen.getByRole("tab", { name: "Advanced" }));
 
       await user.type(screen.getByLabelText("CSS classes"), "italic{Enter}");
@@ -615,7 +663,7 @@ describe("EditPanelHost", () => {
           const first = notFound?.doc.content[0];
           if (first !== undefined) first.props.advanced = { anchorId: "contact" };
         });
-        session.ui.setState({ nodeId: "footer" });
+        session.select("footer");
       });
       await user.click(screen.getByRole("tab", { name: "Advanced" }));
 

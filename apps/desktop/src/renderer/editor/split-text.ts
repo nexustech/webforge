@@ -57,8 +57,7 @@ export function splitText(
       target.props[split.field] = split.before;
       at.list.splice(at.index + 1, 0, after);
     },
-    { selectionAfter: { ...ui, nodeId: after.props.id } },
+    { selectionAfter: { ...ui, nodeId: after.props.id, others: [] }, apply: true },
   );
-  session.ui.setState({ nodeId: after.props.id });
   return after.props.id;
 }

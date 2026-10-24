@@ -1,5 +1,5 @@
 import { ChoiceField } from "./choice-field.js";
-import { type FieldRenderer, fieldRenderer } from "./field-registry.js";
+import type { FieldRenderer } from "./field-registry.js";
 import { SelectField } from "./select-field.js";
 import { SliderField } from "./slider-field.js";
 import { TextField } from "./text-field.js";
@@ -15,7 +15,13 @@ export const PLAIN_RENDERERS: Readonly<Record<string, FieldRenderer>> = {
   spacing: ChoiceField,
 };
 
-/** The renderer for a plain `kind`: a registered one, else the built-in one, else undefined. */
-export function plainRenderer(kind: string): FieldRenderer | undefined {
-  return fieldRenderer(kind) ?? PLAIN_RENDERERS[kind];
+/**
+ * The renderer for a plain `kind`: one of `registered` ({@link useFieldRenderers}), else the
+ * built-in one, else undefined.
+ */
+export function plainRenderer(
+  registered: ReadonlyMap<string, FieldRenderer>,
+  kind: string,
+): FieldRenderer | undefined {
+  return registered.get(kind) ?? PLAIN_RENDERERS[kind];
 }

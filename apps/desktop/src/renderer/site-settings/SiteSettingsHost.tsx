@@ -1,5 +1,5 @@
 import { t } from "@webforge/i18n";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
 import type { EditorSession } from "../editor/editor-session.js";
 import { useCommandRegistry } from "../shell/command-context.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
@@ -17,11 +17,11 @@ export type SiteSettingsHostProps = {
  */
 export function SiteSettingsHost({ session }: SiteSettingsHostProps) {
   const registry = useCommandRegistry();
-  const [open, setOpen] = useState(false);
-  const site = useSyncExternalStore(
-    session.history.document.subscribe,
-    session.history.document.getState,
-  );
+  // The dialog, and the site as it was when it opened (R9): read then, not as this draws.
+  const [dialog, setDialog] = useState(() => ({
+    open: false,
+    site: session.history.document.getState(),
+  }));
 
   useEffect(
     () =>
@@ -29,20 +29,20 @@ export function SiteSettingsHost({ session }: SiteSettingsHostProps) {
         id: COMMAND_IDS.siteSettings,
         label: t("site.settings.command"),
         menu: "file",
-        run: () => setOpen(true),
+        run: () => setDialog({ open: true, site: session.history.document.getState() }),
       }),
-    [registry],
+    [registry, session],
   );
 
   return (
     <SiteSettingsDialog
-      open={open}
-      site={site}
+      open={dialog.open}
+      site={dialog.site}
       onSave={(settings) => {
         saveSiteSettings(session, settings);
-        setOpen(false);
+        setDialog((shown) => ({ ...shown, open: false }));
       }}
-      onCancel={() => setOpen(false)}
+      onCancel={() => setDialog((shown) => ({ ...shown, open: false }))}
     />
   );
 }

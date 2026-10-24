@@ -42,7 +42,7 @@ function setUp() {
   );
   const session = createEditorSession(library, site);
   // The starter text is being edited.
-  session.ui.setState({ nodeId: "text-1" });
+  session.select("text-1");
   const engine = createFakeEngine();
   render(<RichTextLinkHost session={session} engine={engine} />);
   const picker = vi.mocked(engine.setLinkPicker).mock.calls.at(-1)?.[0] as LinkPicker;
@@ -110,7 +110,7 @@ describe("RichTextLinkHost (F-ED-3, F-ED-18)", () => {
 
   it("joins the session of the field the link is made in, not the element's first", async () => {
     const { session, ask, user } = setUp();
-    session.ui.setState({ nodeId: "columns" });
+    session.select("columns");
 
     const answer = ask(null, { nodeId: "columns", field: "right" });
     const dialog = await openedDialog("Link");
