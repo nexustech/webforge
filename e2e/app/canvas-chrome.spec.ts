@@ -129,6 +129,25 @@ test.describe("keyboard and floating add", () => {
     ]);
   });
 
+  test("Alt+arrows move the selected element on Windows too, one step (#290)", async () => {
+    // Ctrl+Alt+arrows rotate the screen on some PCs, so Windows has Alt+arrows as well.
+    test.skip(process.platform === "darwin", "A Mac has only Cmd+Alt+arrows");
+    await selectHeading();
+    await page.keyboard.press("ArrowDown");
+    await expect(quickAction("Move up")).toBeVisible();
+
+    await page.keyboard.press("Alt+ArrowUp");
+
+    await expect(steps().first()).toHaveText("Moved Text");
+    await expect(canvas().locator(".site-section")).toContainText(
+      `${STARTER_TEXT}${STARTER_HEADING}`,
+    );
+    await page.keyboard.press("ControlOrMeta+z");
+    await expect(canvas().locator(".site-section")).toContainText(
+      `${STARTER_HEADING}${STARTER_TEXT}`,
+    );
+  });
+
   test("leaves arrows and Delete to text being edited", async () => {
     const field = canvas().locator("h1 [contenteditable]");
     await field.hover();
