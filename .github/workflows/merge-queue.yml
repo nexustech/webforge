@@ -58,22 +58,29 @@ jobs:
             if [ "$DRY_RUN" = true ]; then return; fi
             gh workflow run ci.yml --ref "$1"
           }
+          # The latest "CI passed" result on a commit: NONE, SUCCESS, FAILURE, IN_PROGRESS, … Read from
+          # the commit's check runs, not the PR's check list, which leaves out the runs this
+          # workflow starts ("Run workflow" runs aren't linked to a PR, though their checks count).
+          ci_of() {
+            gh api "repos/$GH_REPO/commits/$1/check-runs?check_name=CI%20passed" \
+              --jq '[.check_runs[]] | sort_by(.started_at) | last
+                | if . == null then "NONE" else ((.conclusion // .status) | ascii_upcase) end'
+          }
           # Open, ready PRs into main from this repository with auto-merge on, oldest first, as
-          # "number branch head mergeState ci", where ci is the latest "CI passed" result on the
-          # head commit. That check appears only when every other job has finished, so a running
-          # CI is found from the runs on the head commit instead.
+          # "number branch head mergeState". "CI passed" appears only when every other job has
+          # finished, so a running CI is found from the runs on the head commit.
           queue=$(gh pr list --base main --state open --limit 100 \
-            --json number,isDraft,isCrossRepository,headRefName,headRefOid,mergeStateStatus,autoMergeRequest,statusCheckRollup \
+            --json number,isDraft,isCrossRepository,headRefName,headRefOid,mergeStateStatus,autoMergeRequest \
             --jq '[.[] | select(.autoMergeRequest != null and (.isDraft | not) and (.isCrossRepository | not))]
               | sort_by(.autoMergeRequest.enabledAt) | .[]
-              | ([.statusCheckRollup[] | select(.name == "CI passed")] | sort_by(.startedAt // "") | last) as $ci
-              | "\(.number) \(.headRefName) \(.headRefOid) \(.mergeStateStatus) \(if $ci == null then "NONE" elif ($ci.conclusion // "") == "" then $ci.status else $ci.conclusion end)"')
+              | "\(.number) \(.headRefName) \(.headRefOid) \(.mergeStateStatus)"')
           if [ -z "$queue" ]; then
             echo "No pull requests are waiting to auto-merge."
             exit 0
           fi
           echo "$queue"
-          while read -r number branch head state ci; do
+          while read -r number branch head state; do
+            ci=$(ci_of "$head")
             if [ "$state" = DIRTY ]; then
               echo "#$number has conflicts with main: its stream resolves them."
               continue
