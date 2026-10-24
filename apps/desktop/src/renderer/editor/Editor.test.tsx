@@ -594,17 +594,23 @@ describe("Editor", () => {
     const toolbarRoot = createRoot(host);
     await act(async () => session.setViewport("mobile"));
     await act(async () => toolbarRoot.render(<HeaderPreview nodeId="header" />));
-    expect(engine.setPreviews).toHaveBeenLastCalledWith({ mobileMenu: false });
+    expect(engine.setPreviews).toHaveBeenLastCalledWith({
+      mobileMenu: false,
+      columnOutlines: true,
+    });
 
     await act(async () =>
       host
         .querySelector<HTMLButtonElement>("button")
         ?.dispatchEvent(new MouseEvent("click", { bubbles: true })),
     );
-    expect(engine.setPreviews).toHaveBeenLastCalledWith({ mobileMenu: true });
+    expect(engine.setPreviews).toHaveBeenLastCalledWith({ mobileMenu: true, columnOutlines: true });
     // Wide screens show no small-screen menu to preview.
     await act(async () => session.setViewport("desktop"));
-    expect(engine.setPreviews).toHaveBeenLastCalledWith({ mobileMenu: false });
+    expect(engine.setPreviews).toHaveBeenLastCalledWith({
+      mobileMenu: false,
+      columnOutlines: true,
+    });
 
     await act(async () => toolbarRoot.unmount());
     host.remove();

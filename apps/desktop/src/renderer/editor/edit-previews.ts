@@ -7,11 +7,16 @@ import { widthOf } from "../shell/canvas-size.js";
 export type PreviewChoices = {
   /** *Show mobile menu*: the Header's small-screen menu shown open. */
   readonly mobileMenu: boolean;
+  /** *Show column outlines*: each Column's edges outlined (2.17). */
+  readonly columnOutlines: boolean;
 };
 
-/** A window's preview choices, all off. */
+/**
+ * A window's preview choices: the mobile menu closed, as a site opens, and column outlines shown,
+ * so columns can be told apart while they're being laid out.
+ */
 export function createPreviewStore(): StoreApi<PreviewChoices> {
-  return createStore<PreviewChoices>()(() => ({ mobileMenu: false }));
+  return createStore<PreviewChoices>()(() => ({ mobileMenu: false, columnOutlines: true }));
 }
 
 /** The width from which sites show their wide-screen layout: Tailwind's `md` breakpoint. */
@@ -24,5 +29,8 @@ export function showsSmallScreens(viewport: Viewport): boolean {
 
 /** What the canvas previews at `viewport`: the mobile menu only where the site has one. */
 export function canvasPreviews(choices: PreviewChoices, viewport: Viewport): EditPreviews {
-  return { mobileMenu: choices.mobileMenu && showsSmallScreens(viewport) };
+  return {
+    mobileMenu: choices.mobileMenu && showsSmallScreens(viewport),
+    columnOutlines: choices.columnOutlines,
+  };
 }
