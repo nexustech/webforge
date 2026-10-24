@@ -1,5 +1,6 @@
 import type { ReadonlyStore } from "@webforge/history";
 import { t } from "@webforge/i18n";
+import { LayersIcon } from "lucide-react";
 import { useSyncExternalStore } from "react";
 import type { EditorSession } from "../editor/editor-session.js";
 import { sameValue } from "../editor/same-value.js";
@@ -124,6 +125,7 @@ export function registerLayersPanel(
     // Always shown, under Add and Undo History, in Simple and Advanced mode (ADR 0011).
     slot: "left.lower",
     title: t("layers.title"),
+    icon: LayersIcon,
     component: Layers,
   });
 }

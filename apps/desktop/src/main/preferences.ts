@@ -58,6 +58,7 @@ export function parsePreferences(raw: unknown): Preferences {
     window: field("window"),
     canvas: field("canvas"),
     add: field("add"),
+    editPanel: field("editPanel"),
   };
 }
 

@@ -9,9 +9,10 @@ import {
 import type { ReadonlyStore } from "@webforge/history";
 import { t } from "@webforge/i18n";
 import { textStylesOf } from "@webforge/site-components";
+import { HistoryIcon, SlidersHorizontalIcon } from "lucide-react";
 import { type RefObject, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { shallow } from "zustand/shallow";
-import type { CustomDevice } from "../../shared/ipc/prefs.js";
+import type { CustomDevice, EditPanelPreferences } from "../../shared/ipc/prefs.js";
 import { type AddPanelRegistration, registerAddPanel } from "../add/register-add-panel.js";
 import { createSectionPreviews } from "../add/section-preview.js";
 import {
@@ -75,6 +76,20 @@ import { UndoHistoryPanel, type UndoHistoryPanelProps } from "./UndoHistoryPanel
 import { installUndoToasts } from "./undo-toasts.js";
 import { useUi } from "./use-document.js";
 
+/** `preferences` with `closed` as the option groups closed for component `type` (UX-13). */
+function withClosedGroups(
+  preferences: EditPanelPreferences,
+  type: string,
+  closed: readonly string[],
+): EditPanelPreferences {
+  const others = Object.entries(preferences.closedGroups).filter(([each]) => each !== type);
+  return {
+    closedGroups: Object.fromEntries(
+      closed.length === 0 ? others : [...others, [type, [...closed]]],
+    ),
+  };
+}
+
 /** Props of {@link Editor}. */
 export type EditorProps = {
   readonly session: EditorSession;
@@ -131,20 +146,39 @@ function undoHistoryPanel(
 
 /**
  * The Edit panel as the preferences have it: with the Advanced tab in Advanced mode, the Content
- * tab only in Content mode (R9).
+ * tab only in Content mode (R9), and the option groups the person closed (UX-13).
  */
 function PreferredEditPanel({
   preferences,
   ...props
-}: Omit<EditPanelHostProps, "advanced" | "contentOnly"> & {
-  readonly preferences: ReadonlyStore<EditorPreferences>;
+}: Omit<
+  EditPanelHostProps,
+  "advanced" | "contentOnly" | "closedGroups" | "onClosedGroupsChange"
+> & {
+  readonly preferences: PreferencesStore;
 }) {
   const advanced = usePreferences(
     preferences,
     (state) => state.preferences.editorLevel === "advanced",
   );
   const contentOnly = usePreferences(preferences, (state) => state.mode !== "design");
-  return <EditPanelHost {...props} advanced={advanced} contentOnly={contentOnly} />;
+  const closedGroups = usePreferences(
+    preferences,
+    (state) => state.preferences.editPanel.closedGroups,
+  );
+  return (
+    <EditPanelHost
+      {...props}
+      advanced={advanced}
+      contentOnly={contentOnly}
+      closedGroups={closedGroups}
+      onClosedGroupsChange={(type, closed) =>
+        preferences.change({
+          editPanel: withClosedGroups(preferences.getState().preferences.editPanel, type, closed),
+        })
+      }
+    />
+  );
 }
 
 /**
@@ -439,6 +473,7 @@ export function Editor({
         id: "undoHistory",
         slot: "left.bottom",
         title: t("editor.undoHistory"),
+        icon: HistoryIcon,
         component: undoHistoryPanel(history, (entryId) => {
           connectionRef.current?.flush();
           return history.jumpTo(entryId);
@@ -463,6 +498,7 @@ export function Editor({
       id: "edit",
       slot: "right.top",
       title: t("editPanel.title"),
+      icon: SlidersHorizontalIcon,
       component: Edit,
     });
   }, [panels, session, preferences]);

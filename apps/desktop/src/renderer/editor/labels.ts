@@ -42,6 +42,30 @@ export function changedLabel(edit: EngineEdit, library: ComponentLibrary, field:
   return t("history.changed", { item: itemName(edit, library, [edit.page]), field });
 }
 
+/**
+ * The undo label for resetting fields to their defaults (UX-13): "Reset Heading size", or for a
+ * group of them "Reset Section spacing". `what` is already translated, in lower case.
+ */
+export function resetLabel(edit: EngineEdit, library: ComponentLibrary, what: string): string {
+  return t("history.reset", { item: itemName(edit, library, [edit.page]), field: what });
+}
+
+/**
+ * The undo label for resetting an option group (UX-13): "Reset Spacing on Heading", or with
+ * `device`, when only that device's values go, "Reset Heading spacing on Mobile" (F-ED-4).
+ */
+export function resetGroupLabel(
+  edit: EngineEdit,
+  library: ComponentLibrary,
+  group: string,
+  device?: string,
+): string {
+  const item = itemName(edit, library, [edit.page]);
+  return device === undefined
+    ? t("history.resetGroup", { group, item })
+    : t("history.resetGroupOn", { item, group: group.toLocaleLowerCase(), device });
+}
+
 /** The definition of the field an edit changed, if any. */
 function fieldOf(edit: EngineEdit, library: ComponentLibrary): FieldDef | undefined {
   const component =

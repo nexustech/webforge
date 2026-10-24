@@ -31,6 +31,7 @@ describe("parsePreferences", () => {
       window: null,
       canvas: DEFAULT_PREFERENCES.canvas,
       add: DEFAULT_PREFERENCES.add,
+      editPanel: DEFAULT_PREFERENCES.editPanel,
     });
     expect(parsePreferences({ panelLayout: { group: { panel: 250 } } }).panelLayout).toEqual({});
     // A device too narrow for the canvas makes the canvas preferences the defaults.
@@ -51,6 +52,15 @@ describe("parsePreferences", () => {
     expect(
       parsePreferences({ add: { favourites: [], recent: Array(7).fill("Hero") } }).add,
     ).toEqual(DEFAULT_PREFERENCES.add);
+  });
+
+  it("keeps the Edit panel's closed option groups by component type, or none if invalid (UX-13)", () => {
+    const editPanel = { closedGroups: { Heading: ["style:spacing", "style:appearance"] } };
+    expect(parsePreferences({ editPanel }).editPanel).toEqual(editPanel);
+    expect(parsePreferences({ editPanel: { closedGroups: { Heading: [""] } } }).editPanel).toEqual(
+      DEFAULT_PREFERENCES.editPanel,
+    );
+    expect(parsePreferences({}).editPanel).toEqual({ closedGroups: {} });
   });
 });
 

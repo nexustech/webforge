@@ -20,6 +20,13 @@ export const history = {
   "history.changedOn": "Changed {item} {field} on {device}",
   // The device's own value dropped, so it uses Desktop's again.
   "history.resetOn": "Reset {item} {field} on {device}",
+  // Back to the component's default (UX-13): "Reset Heading size", "Reset Section spacing".
+  "history.reset": "Reset {item} {field}",
+  // An option group's changed fields (UX-13): "Reset Spacing on Heading".
+  "history.resetGroup": "Reset {group} on {item}",
+  // On Tablet or Mobile, the group's values for that device (F-ED-4): "Reset Section spacing on
+  // Mobile".
+  "history.resetGroupOn": "Reset {item} {group} on {device}",
   "history.changedPage": "Changed page settings",
   // The Advanced tab's fields, as {field} names them: "Changed Heading CSS classes".
   "history.field.className": "CSS classes",

@@ -31,8 +31,8 @@ const F_ED_27: readonly (readonly [string, string])[] = [
   ["Mod+2", COMMAND_IDS.tabletView],
   ["Mod+3", COMMAND_IDS.mobileView],
   ["?", COMMAND_IDS.shortcuts],
-  ["Mod+Enter", COMMAND_IDS.toggleGroups],
-  ["Mod+Escape", COMMAND_IDS.resetOption],
+  ["Mod+Enter", "shortcuts.toggleGroups"],
+  ["Mod+Escape", "shortcuts.resetOption"],
   // In text: the rich-text editor's own (part 2).
   ["Mod+K", "shortcuts.link"],
   ["Shift+Enter", "shortcuts.newLine"],

@@ -1,6 +1,6 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { placeCaret } from "./caret.js";
-import { launchDesktopApp, waitForCanvas } from "./launch.js";
+import { launchDesktopApp, newUserDataDir, waitForCanvas } from "./launch.js";
 
 // The Edit panel (1.14): the selected element's fields, each change one labelled undo step.
 
@@ -170,7 +170,7 @@ async function selectSection(): Promise<void> {
   await expect(panel().getByRole("heading", { name: "Section", exact: true })).toBeVisible();
 }
 
-test("sets a padding for the Mobile view only, marked in the panel (F-ED-4)", async () => {
+test("sets a padding for the Mobile view only, shown and cleared with its dot (F-ED-4, UX-19)", async () => {
   const section = canvas().locator(".site-section");
   await deviceView("Mobile").click();
   await selectSection();
@@ -180,13 +180,14 @@ test("sets a padding for the Mobile view only, marked in the panel (F-ED-4)", as
   await top.getByRole("radio", { name: "S", exact: true }).click();
 
   await expect(steps().first()).toHaveText("Changed Section padding on Mobile");
-  await expect(panel().getByText("Mobile only")).toBeVisible();
+  const dot = panel().getByRole("button", { name: /^Padding: set for Mobile only/ });
+  await expect(dot).toBeVisible();
   await expect(section).toHaveClass(/(^| )px-4 pt-8 pb-16 md:py-16( |$)/);
 
   // The canvas toolbar keeps the selection when the view changes (U3): the panel shows Desktop's.
   await deviceView("Desktop").click();
   await expect(panel().getByRole("heading", { name: "Section", exact: true })).toBeVisible();
-  await expect(panel().getByText("Mobile only")).toHaveCount(0);
+  await expect(panel().locator("[data-device-dot]")).toHaveCount(0);
   await expect(top.getByRole("radio", { name: "M", exact: true })).toHaveAttribute(
     "aria-checked",
     "true",
@@ -197,4 +198,40 @@ test("sets a padding for the Mobile view only, marked in the panel (F-ED-4)", as
   await page.getByRole("radio", { name: "Content", exact: true }).click();
   await expect(deviceView("Mobile")).toHaveAttribute("aria-checked", "true");
   await expect(section).toHaveCSS("padding-top", "32px");
+
+  // The accent dot clears Mobile's own value, as one step: the dot turns grey.
+  await page.getByRole("radio", { name: "Design", exact: true }).click();
+  await selectSection();
+  await dot.click();
+  await expect(steps().first()).toHaveText("Reset Section padding on Mobile");
+  await expect(
+    panel()
+      .getByRole("img", { name: /^Padding: same as Desktop on Mobile/ })
+      .first(),
+  ).toBeVisible();
+  await expect(section).toHaveCSS("padding-top", "64px");
+});
+
+test("remembers the option groups closed for a kind of element, after a restart (UX-13)", async () => {
+  const userDataDir = newUserDataDir();
+  const reopen = async () => {
+    await app.close();
+    app = await launchDesktopApp({ userDataDir });
+    page = await app.firstWindow();
+    await expect(canvas().locator("style[data-webforge-site-css]")).toHaveCount(1);
+  };
+  await reopen();
+  await selectHeading();
+  await panel().getByRole("tab", { name: "Style" }).click();
+  const appearance = panel().getByRole("button", { name: "Appearance" });
+  await appearance.click();
+  await expect(appearance).toHaveAttribute("aria-expanded", "false");
+
+  await reopen();
+  await selectHeading();
+  await panel().getByRole("tab", { name: "Style" }).click();
+  await expect(panel().getByRole("button", { name: "Appearance" })).toHaveAttribute(
+    "aria-expanded",
+    "false",
+  );
 });
