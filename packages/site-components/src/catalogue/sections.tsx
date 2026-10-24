@@ -85,10 +85,11 @@ const hero = defineComponent({
     );
     if (layout === "background") {
       // The image fills the whole section, its padding too, behind a dark overlay; the text is set
-      // on the overlay.
+      // on the overlay. Not daisyUI's `hero` grid, whose grid areas would keep the overlay inside
+      // the padding.
       return (
         <section
-          className={`site-hero hero relative min-h-[28rem] overflow-hidden bg-neutral ${sectionBox(values)}`}
+          className={`site-hero relative flex min-h-[28rem] items-center justify-center overflow-hidden bg-neutral ${sectionBox(values)}`}
         >
           {image !== null && (
             <Picture
