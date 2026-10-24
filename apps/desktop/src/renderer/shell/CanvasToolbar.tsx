@@ -21,7 +21,7 @@ import {
   SmartphoneIcon,
   TabletIcon,
 } from "lucide-react";
-import { useId, useState } from "react";
+import { type ReactNode, useId, useState } from "react";
 import { type CanvasPreferences, DEVICE_SIZE, MAX_DEVICES } from "../../shared/ipc/prefs.js";
 import {
   DEVICE_WIDTHS,
@@ -55,6 +55,8 @@ export type CanvasToolbarProps = {
   /** The View menu's options and the person's own devices (F-ED-25). */
   readonly canvas: CanvasPreferences;
   readonly onCanvasChange: (canvas: CanvasPreferences) => void;
+  /** The selected element's own toolbar (SP-4), in the centre: a Heading's level. */
+  readonly center?: ReactNode;
 };
 
 /** The View menu's options, in menu order. */
@@ -85,6 +87,7 @@ export function CanvasToolbar({
   size,
   canvas,
   onCanvasChange,
+  center,
 }: CanvasToolbarProps) {
   const pageId = useId();
   const zoomId = useId();
@@ -145,6 +148,9 @@ export function CanvasToolbar({
         devices={canvas.devices}
         onViewportChange={onViewportChange}
       />
+
+      {/* The centre: the selected element's toolbar; the view's zoom and size go to the right. */}
+      <div className="flex min-w-0 flex-1 justify-center">{center}</div>
 
       <label htmlFor={zoomId} className="sr-only">
         {t("canvasToolbar.zoom")}

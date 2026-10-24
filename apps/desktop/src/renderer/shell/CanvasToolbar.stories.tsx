@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { PageId } from "@webforge/model";
 import { DEFAULT_PREFERENCES } from "../../shared/ipc/prefs.js";
+import { HeadingLevelToolbar } from "../editor/HeadingToolbar.js";
 import { CanvasToolbar } from "./CanvasToolbar.js";
 
 const noop = () => undefined;
@@ -45,3 +46,8 @@ export const CustomWidth: Story = {
 
 /** Before the canvas has shown the page: no size yet. */
 export const SizeUnknown: Story = { args: { size: null } };
+
+/** A Heading selected: its level in the centre (SP-4), the view's zoom and size at the right. */
+export const HeadingSelected: Story = {
+  args: { center: <HeadingLevelToolbar value="medium" onChange={noop} /> },
+};

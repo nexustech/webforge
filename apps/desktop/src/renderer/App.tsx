@@ -32,6 +32,8 @@ import {
   pauseCommandsWhileAsking,
   SiteWideConfirmDialog,
 } from "./shell/confirm-site-wide.js";
+import { ContextualToolbarsProvider } from "./shell/contextual-toolbar-context.js";
+import { createContextualToolbars } from "./shell/contextual-toolbars.js";
 import { ModeToggle } from "./shell/ModeToggle.js";
 import { PanelRegistryProvider } from "./shell/panel-context.js";
 import { createPanelRegistry } from "./shell/panels.js";
@@ -101,6 +103,7 @@ export function App({
   const [session] = useState(() => createEditorSession(siteLibrary, loaded?.site ?? starterSite()));
   const [registry] = useState(createCommandRegistry);
   const [panels] = useState(createPanelRegistry);
+  const [toolbars] = useState(createContextualToolbars);
   const [canvasView] = useState(createCanvasView);
   // Actions that change more than the page shown ask first (D7); one dialog for the window.
   const [siteWide] = useState(createSiteWideConfirm);
@@ -208,74 +211,76 @@ export function App({
   return (
     <CommandRegistryProvider registry={registry}>
       <PanelRegistryProvider registry={panels}>
-        <TooltipProvider>
-          <div className="flex h-full flex-col">
-            <TitleBar
-              siteName={siteName}
-              saveStatus={<AutosaveStatus session={session} loaded={loaded} />}
-              undoSteps={
-                <UndoStepsMenu
-                  state={session.history.state}
-                  undoTo={(entryId) => session.undoTo(entryId)}
-                />
-              }
-              tools={
-                <>
-                  <ModeToggle mode={mode} onModeChange={(next) => preferences.changeMode(next)} />
-                  <div className="mx-1 h-5 w-px bg-border" aria-hidden />
-                  <CommandButton
-                    commandId={COMMAND_IDS.toggleLeftPanels}
-                    icon={<PanelLeftIcon />}
-                    label={t("command.toggleLeftPanels")}
+        <ContextualToolbarsProvider registry={toolbars}>
+          <TooltipProvider>
+            <div className="flex h-full flex-col">
+              <TitleBar
+                siteName={siteName}
+                saveStatus={<AutosaveStatus session={session} loaded={loaded} />}
+                undoSteps={
+                  <UndoStepsMenu
+                    state={session.history.state}
+                    undoTo={(entryId) => session.undoTo(entryId)}
                   />
-                  <CommandButton
-                    commandId={COMMAND_IDS.toggleDrawer}
-                    icon={<PanelBottomIcon />}
-                    label={t("command.toggleDrawer")}
-                  />
-                  <CommandButton
-                    commandId={COMMAND_IDS.toggleRightPanels}
-                    icon={<PanelRightIcon />}
-                    label={t("command.toggleRightPanels")}
-                  />
-                  <div className="mx-1 h-5 w-px bg-border" aria-hidden />
-                </>
-              }
-            />
-            <main className="min-h-0 flex-1">
-              <ShellLayout
-                layout={panelLayout}
-                onLayoutChange={rememberLayout}
-                editorLevel={editorLevel}
-                center={
-                  <div className="flex h-full flex-col">
-                    <CanvasToolbarHost
-                      session={session}
-                      view={canvasView}
-                      preferences={preferences}
+                }
+                tools={
+                  <>
+                    <ModeToggle mode={mode} onModeChange={(next) => preferences.changeMode(next)} />
+                    <div className="mx-1 h-5 w-px bg-border" aria-hidden />
+                    <CommandButton
+                      commandId={COMMAND_IDS.toggleLeftPanels}
+                      icon={<PanelLeftIcon />}
+                      label={t("command.toggleLeftPanels")}
                     />
-                    <div className="min-h-0 flex-1">
-                      <Editor
-                        session={session}
-                        {...(createEngine === undefined ? {} : { createEngine })}
-                        {...(compileCss === undefined ? {} : { compileCss })}
-                        preferences={preferences}
-                        siteWide={siteWide}
-                        canvasView={canvasView}
-                      />
-                    </div>
-                  </div>
+                    <CommandButton
+                      commandId={COMMAND_IDS.toggleDrawer}
+                      icon={<PanelBottomIcon />}
+                      label={t("command.toggleDrawer")}
+                    />
+                    <CommandButton
+                      commandId={COMMAND_IDS.toggleRightPanels}
+                      icon={<PanelRightIcon />}
+                      label={t("command.toggleRightPanels")}
+                    />
+                    <div className="mx-1 h-5 w-px bg-border" aria-hidden />
+                  </>
                 }
               />
-            </main>
-          </div>
-          <AboutDialog info={info} />
-          <ShortcutSheet />
-          <SiteCommands />
-          <SiteSettingsHost session={session} />
-          <SiteWideConfirmDialog confirm={siteWide} />
-          <Toaster theme={theme} />
-        </TooltipProvider>
+              <main className="min-h-0 flex-1">
+                <ShellLayout
+                  layout={panelLayout}
+                  onLayoutChange={rememberLayout}
+                  editorLevel={editorLevel}
+                  center={
+                    <div className="flex h-full flex-col">
+                      <CanvasToolbarHost
+                        session={session}
+                        view={canvasView}
+                        preferences={preferences}
+                      />
+                      <div className="min-h-0 flex-1">
+                        <Editor
+                          session={session}
+                          {...(createEngine === undefined ? {} : { createEngine })}
+                          {...(compileCss === undefined ? {} : { compileCss })}
+                          preferences={preferences}
+                          siteWide={siteWide}
+                          canvasView={canvasView}
+                        />
+                      </div>
+                    </div>
+                  }
+                />
+              </main>
+            </div>
+            <AboutDialog info={info} />
+            <ShortcutSheet />
+            <SiteCommands />
+            <SiteSettingsHost session={session} />
+            <SiteWideConfirmDialog confirm={siteWide} />
+            <Toaster theme={theme} />
+          </TooltipProvider>
+        </ContextualToolbarsProvider>
       </PanelRegistryProvider>
     </CommandRegistryProvider>
   );

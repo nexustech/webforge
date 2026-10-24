@@ -43,6 +43,7 @@ import { useCommandRegistry } from "../shell/command-context.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { installCommandShortcuts } from "../shell/commands.js";
 import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
+import { useContextualToolbars } from "../shell/contextual-toolbar-context.js";
 import { CanvasErrorBoundary } from "../shell/error-boundaries.js";
 import { usePanelRegistry } from "../shell/panel-context.js";
 import {
@@ -67,6 +68,7 @@ import {
 import { registerElementCommands } from "./element-commands.js";
 import { connectFieldDrags } from "./field-drag.js";
 import { fieldTarget } from "./field-target.js";
+import { headingToolbar } from "./HeadingToolbar.js";
 import { SharedRegionBanner } from "./SharedRegionBanner.js";
 import { confirmSharedRemovals, sharedCutConfirmation } from "./shared-confirmations.js";
 import { shownLayout } from "./shared-layout.js";
@@ -235,6 +237,7 @@ export function Editor({
   const canvasCommandsRef = useRef<ReturnType<typeof registerCanvasCommands> | null>(null);
   const elementCommandsRef = useRef<ReturnType<typeof registerElementCommands> | null>(null);
   const panels = usePanelRegistry();
+  const toolbars = useContextualToolbars();
   // *Edit* on an image (F-ED-25) opens the Edit panel's image picker: the panel shows, and the
   // field opens it once it is drawn.
   const [imagePicks] = useState(createImagePickRequests);
@@ -568,6 +571,12 @@ export function Editor({
     };
   }, [panels, session, mode, engine, siteWide, preferences, registry, previews]);
   useEffect(() => registerMediaPanel(panels, session), [panels, session]);
+  // The selected element's own toolbar in the canvas toolbar's centre (SP-4).
+  useEffect(
+    () =>
+      toolbars.register(headingToolbar({ session, flush: () => connectionRef.current?.flush() })),
+    [toolbars, session],
+  );
 
   return (
     <div className="editor">

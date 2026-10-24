@@ -1,13 +1,31 @@
 import type { Viewport } from "@webforge/engine";
 import { useSyncExternalStore } from "react";
 import type { EditorSession } from "../editor/editor-session.js";
+import { fieldTarget } from "../editor/field-target.js";
 import { pageListOf, samePages, useDocument, useUi } from "../editor/use-document.js";
 import { CanvasToolbar } from "./CanvasToolbar.js";
 import type { CanvasView } from "./canvas-view.js";
+import { useContextualToolbar } from "./contextual-toolbar-context.js";
 import { type PreferencesStore, usePreferences } from "./preferences-store.js";
 
 /** The page list as the toolbar shows it, kept while only page content changes. */
 const usePageList = (session: EditorSession) => useDocument(session, pageListOf, samePages);
+
+/** The selected element's toolbar (SP-4), if its type has one. */
+function SelectedElementToolbar({ session }: { readonly session: EditorSession }) {
+  const pageId = useUi(session, (state) => state.pageId);
+  const nodeId = useUi(session, (state) => state.nodeId);
+  // Wherever it is: the page, the shared Header or Footer, a linked copy.
+  const type = useDocument(
+    session,
+    (site) => fieldTarget(site, session.library, pageId, nodeId)?.node.type,
+  );
+  const toolbar = useContextualToolbar(type);
+  if (toolbar === undefined || nodeId === null) return null;
+  const Toolbar = toolbar.component;
+  // Keyed by the element, so another element of the type starts afresh.
+  return <Toolbar key={nodeId} nodeId={nodeId} />;
+}
 
 /**
  * The canvas toolbar on an editor session: it shows the session's page and view, and changes them
@@ -42,6 +60,7 @@ export function CanvasToolbarHost({
       size={size}
       canvas={canvas}
       onCanvasChange={(next) => preferences.change({ canvas: next })}
+      center={<SelectedElementToolbar session={session} />}
     />
   );
 }
