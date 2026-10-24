@@ -20,8 +20,12 @@ export type FieldProps = {
   readonly hint?: string | undefined;
   /** What to fix, if anything (already translated): shown under the control, which it describes. */
   readonly error?: string | undefined;
-  /** Draws the control, spreading `control` on it so the label, hint and error belong to it. */
-  readonly children: (control: FieldControlProps) => ReactNode;
+  /**
+   * Draws the control, spreading `control` on it so the label, hint and error belong to it. A
+   * group of controls (radios, a field renderer of the Edit panel) is named by `labelId` instead,
+   * with `aria-labelledby`.
+   */
+  readonly children: (control: FieldControlProps, ids: { readonly labelId: string }) => ReactNode;
 };
 
 /**
@@ -30,6 +34,7 @@ export type FieldProps = {
  */
 export function Field({ label, hint, error, children }: FieldProps) {
   const id = useId();
+  const labelId = useId();
   const hintId = useId();
   const errorId = useId();
   const describedBy = [
@@ -38,14 +43,17 @@ export function Field({ label, hint, error, children }: FieldProps) {
   ].filter((part) => part !== undefined);
   return (
     <div className="grid gap-1">
-      <label htmlFor={id} className="text-xs text-muted-foreground">
+      <label id={labelId} htmlFor={id} className="text-xs text-muted-foreground">
         {label}
       </label>
-      {children({
-        id,
-        ...(describedBy.length === 0 ? {} : { "aria-describedby": describedBy.join(" ") }),
-        ...(error === undefined ? {} : { "aria-invalid": true }),
-      })}
+      {children(
+        {
+          id,
+          ...(describedBy.length === 0 ? {} : { "aria-describedby": describedBy.join(" ") }),
+          ...(error === undefined ? {} : { "aria-invalid": true }),
+        },
+        { labelId },
+      )}
       <ErrorText id={errorId} message={error} />
       {hint !== undefined && (
         <p id={hintId} className="m-0 text-xs text-muted-foreground">

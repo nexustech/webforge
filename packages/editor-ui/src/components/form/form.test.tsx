@@ -25,6 +25,19 @@ describe("Field (R10)", () => {
     expect(description(input)).toEqual(["Where the site is published.", "Use only the address."]);
   });
 
+  it("names a group of controls by its label, for aria-labelledby", () => {
+    render(
+      <Field label="Alignment">
+        {(_control, { labelId }) => (
+          <div role="radiogroup" aria-labelledby={labelId}>
+            <input type="radio" aria-label="Left" />
+          </div>
+        )}
+      </Field>,
+    );
+    expect(screen.getByRole("radiogroup", { name: "Alignment" })).toBeTruthy();
+  });
+
   it("marks nothing invalid and describes nothing without a hint or an error", () => {
     render(<Field label="Name">{(control) => <input {...control} />}</Field>);
     const input = screen.getByRole("textbox", { name: "Name" });
