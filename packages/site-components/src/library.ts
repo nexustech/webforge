@@ -16,7 +16,7 @@ import {
   type SpacingToken,
   type TextStyle,
 } from "@webforge/model";
-import { type ComponentType, cloneElement, isValidElement, type ReactNode } from "react";
+import { cloneElement, isValidElement, type ReactNode } from "react";
 import { isDocumentPath } from "./document-path.js";
 import type {
   BehaviourName,
@@ -53,6 +53,8 @@ export type ComponentDef = {
   readonly place?: ComponentPlace;
   /** Its group in the Add panel, already translated ("Heroes", "Text"). */
   readonly category?: string;
+  /** Set on a section {@link defineSection} framed: every section is (2.19). */
+  readonly framed?: true;
   readonly fields: Readonly<Record<string, FieldDef>>;
   readonly defaults: Readonly<Record<string, unknown>>;
   readonly render: (props: ComponentRenderProps) => ReactNode;

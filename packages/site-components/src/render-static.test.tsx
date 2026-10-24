@@ -712,7 +712,84 @@ describe("renderNodesToHtml", () => {
     expect(html).toContain(
       '<div class="site-text text-lg leading-relaxed [&amp;_a]:underline [&amp;_p+p]:mt-4 mb-8">',
     );
-    expect(html).toContain('<div class="site-faq space-y-4 my-4">');
+    // An FAQ is a section like the others (2.19): its own padding, its margin set.
+    expect(html).toContain('<section class="site-faq bg-base-100 px-4 py-16 my-4">');
+  });
+
+  describe("the Carousel (2.10)", () => {
+    const carouselHtml = (props: Record<string, unknown> = {}) =>
+      renderNodesToHtml(
+        [
+          {
+            type: "Carousel",
+            props: {
+              id: "carousel",
+              label: "What customers say",
+              slides: [
+                {
+                  type: "CarouselSlide",
+                  props: {
+                    id: "s1",
+                    text: "The best sourdough in town.",
+                    name: "Sam",
+                    image: { mediaId: "hero" },
+                  },
+                },
+                { type: "CarouselSlide", props: { id: "s2", text: "Lovely cakes.", name: "Ana" } },
+              ],
+              ...props,
+            },
+          },
+        ],
+        siteLibrary,
+        context,
+      );
+
+    it("is a named region of slides that scroll and snap without the script", () => {
+      const html = carouselHtml({ variant: "testimonials" });
+
+      expect(html).toContain(
+        'aria-roledescription="carousel" aria-label="What customers say" data-layout="testimonials" data-wf-carousel=""',
+      );
+      expect(html).toMatch(/<section class="site-carousel group\/carousel/);
+      // The keyboard reaches the strip, so it scrolls without the script too.
+      expect(html).toMatch(
+        /class="[^"]*snap-x snap-mandatory[^"]*overflow-x-auto[^"]*" data-wf-carousel-track="" role="group" aria-label="Slides" tabindex="0"/,
+      );
+      expect(html.match(/<figure class="site-carousel-slide/g)).toHaveLength(2);
+      expect(html).toContain("<figcaption");
+      expect(html).toContain("The best sourdough in town.");
+      // The slide's photo, with its own alt text.
+      expect(html).toContain('alt="Our bakery"');
+    });
+
+    it("hides its buttons until the script shows them, with no stop button unless it plays", () => {
+      const still = carouselHtml();
+      const playing = carouselHtml({ autoplay: true, interval: "5" });
+
+      expect(still).toMatch(/data-wf-carousel-controls="" hidden=""/);
+      expect(still).toContain('aria-label="Previous slide"');
+      expect(still).toContain('aria-label="Next slide"');
+      expect(still).not.toContain("data-wf-carousel-play");
+      expect(still).not.toContain("data-interval");
+      expect(playing).toContain('data-interval="5000"');
+      // The stop button comes before the others (APG).
+      expect(playing.indexOf("data-wf-carousel-play")).toBeLessThan(
+        playing.indexOf("data-wf-carousel-previous"),
+      );
+      expect(playing).toContain('data-label-start="Play the slides"');
+    });
+
+    it("is named even with its name left empty: a nameless region is no landmark", () => {
+      expect(carouselHtml({ label: "  " })).toContain('aria-label="Highlights"');
+    });
+
+    it("gives the script the words it names slides with", () => {
+      const html = carouselHtml();
+
+      expect(html).toContain('data-slide-label="slide" data-slide-of="{n} of {total}"');
+      expect(html).toContain('aria-live="polite"');
+    });
   });
 
   describe("the Gallery (2.7a)", () => {
@@ -783,12 +860,12 @@ describe("renderNodesToHtml", () => {
     const nodes: NodeDoc[] = [
       {
         type: "Section",
-        props: { id: "s", content: [{ type: "Carousel", props: { id: "c" } }] },
+        props: { id: "s", content: [{ type: "NoSuchComponent", props: { id: "c" } }] },
       },
     ];
 
     expect(() => renderNodesToHtml(nodes, siteLibrary, context)).toThrow(UnknownComponentError);
-    expect(() => renderNodesToHtml(nodes, siteLibrary, context)).toThrow('"Carousel"');
+    expect(() => renderNodesToHtml(nodes, siteLibrary, context)).toThrow('"NoSuchComponent"');
   });
 });
 

@@ -47,7 +47,7 @@ describe("editableList", () => {
     expect(editableList({ kind: "text", label: "Text" }, siteLibrary)).toBeUndefined();
     expect(editableList(content, siteLibrary)).toBeUndefined();
     expect(
-      editableList({ kind: "slot", label: "Things", allow: ["Carousel"] }, siteLibrary),
+      editableList({ kind: "slot", label: "Things", allow: ["NoSuchComponent"] }, siteLibrary),
     ).toBeUndefined();
   });
 });

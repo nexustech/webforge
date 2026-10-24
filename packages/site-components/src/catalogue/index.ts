@@ -3,6 +3,7 @@ import type { LayoutDoc, PageDoc } from "@webforge/model";
 import { createLibrary } from "../define.js";
 import type { ComponentLibrary } from "../library.js";
 import { basicComponents } from "./basic.js";
+import { carouselComponents } from "./carousel.js";
 import { galleryComponents } from "./gallery.js";
 import { layoutComponents } from "./layout.js";
 import { sectionsComponents } from "./sections.js";
@@ -18,6 +19,7 @@ export const siteLibrary: ComponentLibrary = createLibrary(
   basicComponents,
   sectionsComponents,
   galleryComponents,
+  carouselComponents,
 );
 
 /** The page a new site starts with. */

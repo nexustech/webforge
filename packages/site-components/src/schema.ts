@@ -30,6 +30,11 @@ export type FieldOption = { readonly label: string; readonly value: string };
  */
 export type FieldDef = {
   readonly group?: "content" | "style";
+  /**
+   * A sentence the Edit panel shows under the field, already translated: what it does that its
+   * label can't say ("Visitors who prefer less motion never see it move").
+   */
+  readonly help?: string;
   readonly responsive?: boolean;
   /**
    * The option group the Edit panel shows it in (UX-13), by its kind if not given. Fields of one

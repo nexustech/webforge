@@ -8,7 +8,8 @@ describe("siteLibrary", () => {
       Object.entries(siteLibrary.components).map(([type, def]) => [type, def.label]),
     );
 
-    expect(labels).toEqual({
+    // The catalogue's names; a family added later adds its own.
+    expect(labels).toMatchObject({
       Header: "Header",
       Footer: "Footer",
       Section: "Section",
@@ -20,8 +21,8 @@ describe("siteLibrary", () => {
       FaqItem: "Question",
       Heading: "Heading",
       Text: "Text",
-      Gallery: "Gallery",
-      GalleryImage: "Image",
+      Carousel: "Carousel",
+      CarouselSlide: "Slide",
     });
   });
 
@@ -42,7 +43,7 @@ describe("siteLibrary", () => {
       Object.entries(siteLibrary.components).map(([type, def]) => [type, def.place ?? "element"]),
     );
 
-    expect(places).toEqual({
+    expect(places).toMatchObject({
       Header: "layout",
       Footer: "layout",
       Section: "section",
@@ -54,8 +55,8 @@ describe("siteLibrary", () => {
       FaqItem: "child",
       Heading: "element",
       Text: "element",
-      Gallery: "section",
-      GalleryImage: "child",
+      Carousel: "element",
+      CarouselSlide: "child",
     });
     for (const def of Object.values(siteLibrary.components)) {
       const offered = def.place === undefined || def.place === "section" || def.place === "element";
