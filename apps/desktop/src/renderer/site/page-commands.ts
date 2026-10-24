@@ -1,5 +1,5 @@
 import type { EditorSession } from "../editor/editor-session.js";
-import { type PageListEntry, pageListOf } from "../editor/use-document.js";
+import { type PageListEntry, pageListOf, samePages } from "../editor/use-document.js";
 import type { CommandRegistry } from "../shell/commands.js";
 
 /**
@@ -17,7 +17,7 @@ export function registerPageCommands(
   let removers: (() => void)[] = [];
   const update = () => {
     const list = pageListOf(document.getState());
-    if (list === shown) return;
+    if (shown !== undefined && samePages(list, shown)) return;
     shown = list;
     for (const remove of removers) remove();
     removers = list.map((page) =>

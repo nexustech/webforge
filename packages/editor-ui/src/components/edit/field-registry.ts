@@ -69,17 +69,23 @@ export type FieldRendererProps = {
 /** A field renderer: draws one field's control. */
 export type FieldRenderer = ComponentType<FieldRendererProps>;
 
+/** One registration of a renderer. */
+type Registration = { readonly renderer: FieldRenderer };
+/** Each kind's registrations, the latest last: it draws the kind's fields. */
+const entries = new Map<string, readonly Registration[]>();
 /**
- * The registered renderers: a new map on every change, so an Edit panel drawn before a renderer
- * was registered draws with it ({@link useFieldRenderers}), memoized or not.
+ * The renderer drawing each kind: a new map on every change, so an Edit panel drawn before a
+ * renderer was registered draws with it ({@link useFieldRenderers}), memoized or not.
  */
 let renderers: ReadonlyMap<string, FieldRenderer> = new Map();
 const listeners = new Set<() => void>();
-const change = (kind: string, renderer: FieldRenderer | undefined) => {
-  const next = new Map(renderers);
-  if (renderer === undefined) next.delete(kind);
-  else next.set(kind, renderer);
-  renderers = next;
+const changed = () => {
+  renderers = new Map(
+    [...entries].flatMap(([kind, stack]) => {
+      const top = stack.at(-1);
+      return top === undefined ? [] : [[kind, top.renderer] as const];
+    }),
+  );
   for (const listener of listeners) listener();
 };
 
@@ -100,13 +106,21 @@ export function useFieldRenderers(): ReadonlyMap<string, FieldRenderer> {
 
 /**
  * Makes `renderer` draw every field of `kind` in the Edit panel (1.14). Later registrations of a
- * kind replace earlier ones; the returned function puts the previous renderer back.
+ * kind replace earlier ones; the returned function takes this one away, and the latest of the
+ * others still registered draws the kind again.
  */
 export function registerFieldRenderer(kind: string, renderer: FieldRenderer): () => void {
-  const previous = renderers.get(kind);
-  change(kind, renderer);
+  // An object of its own, so the same renderer registered twice is taken away once each time.
+  const entry: Registration = { renderer };
+  entries.set(kind, [...(entries.get(kind) ?? []), entry]);
+  changed();
   return () => {
-    if (renderers.get(kind) === renderer) change(kind, previous);
+    const stack = entries.get(kind) ?? [];
+    if (!stack.includes(entry)) return;
+    const rest = stack.filter((each) => each !== entry);
+    if (rest.length === 0) entries.delete(kind);
+    else entries.set(kind, rest);
+    changed();
   };
 }
 

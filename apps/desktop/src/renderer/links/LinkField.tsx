@@ -5,11 +5,10 @@ import { linkValue } from "@webforge/site-components";
 import { LinkIcon } from "lucide-react";
 import { useState } from "react";
 import type { EditorSession } from "../editor/editor-session.js";
-import { sameValue } from "../editor/same-value.js";
 import { useDocument } from "../editor/use-document.js";
 import { LinkDialog } from "./LinkDialog.js";
 import type { LinkFieldChange } from "./link-change.js";
-import { describeLink, linkTargets, type PageTarget } from "./link-targets.js";
+import { createLinkTargets, describeLink, type PageTarget } from "./link-targets.js";
 
 /** Props of {@link LinkField}, besides the renderer's own. */
 type LinkFieldContext = {
@@ -88,13 +87,14 @@ function LinkField({
  * that puts the previous renderer back.
  */
 export function registerLinkField({ session }: { readonly session: EditorSession }): () => void {
+  const targetsOf = createLinkTargets(session.library);
   function SessionLinkField(props: FieldRendererProps) {
     // What the field shows: the pages and sections it can name, and the documents (R9). Typing on
     // the canvas changes neither, so it doesn't redraw the field.
     const { targets, media } = useDocument(
       session,
-      (site) => ({ targets: linkTargets(site, session.library), media: site.media }),
-      (a, b) => a.media === b.media && sameValue(a.targets, b.targets),
+      (site) => ({ targets: targetsOf(site), media: site.media }),
+      (a, b) => a.media === b.media && a.targets === b.targets,
     );
     return (
       <LinkField

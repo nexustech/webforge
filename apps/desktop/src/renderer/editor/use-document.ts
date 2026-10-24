@@ -40,30 +40,26 @@ export type PageListEntry = {
 
 /** Each document's page list, worked out once. */
 const pageLists = new WeakMap<SiteDoc, readonly PageListEntry[]>();
-/** The list last handed out, which stays the same list while the pages it names don't change. */
-let lastPageList: readonly PageListEntry[] = [];
+
+/** The site's pages in their order, by id, title, file name and kind (R9); once per document. */
+export function pageListOf(site: SiteDoc): readonly PageListEntry[] {
+  const known = pageLists.get(site);
+  if (known !== undefined) return known;
+  const list = site.pageOrder.flatMap((id) => {
+    const page = site.pages[id];
+    return page === undefined ? [] : [{ id, title: page.title, slug: page.slug, kind: page.kind }];
+  });
+  pageLists.set(site, list);
+  return list;
+}
 
 const samePage = (a: PageListEntry, b: PageListEntry | undefined) =>
   b !== undefined && a.id === b.id && a.title === b.title && a.slug === b.slug && a.kind === b.kind;
 
 /**
- * The site's pages in their order, by id, title, file name and kind (R9): the same list (by
- * reference) for every document whose pages read the same, so a list redraws when a page is
+ * Whether two page lists name the same pages, in the same order: a list redraws when a page is
  * added, renamed or moved, and not when one's content changes.
  */
-export function pageListOf(site: SiteDoc): readonly PageListEntry[] {
-  const known = pageLists.get(site);
-  if (known !== undefined) return known;
-  const next = site.pageOrder.flatMap((id) => {
-    const page = site.pages[id];
-    return page === undefined ? [] : [{ id, title: page.title, slug: page.slug, kind: page.kind }];
-  });
-  const list =
-    next.length === lastPageList.length &&
-    next.every((entry, index) => samePage(entry, lastPageList[index]))
-      ? lastPageList
-      : next;
-  pageLists.set(site, list);
-  lastPageList = list;
-  return list;
+export function samePages(a: readonly PageListEntry[], b: readonly PageListEntry[]): boolean {
+  return a === b || (a.length === b.length && a.every((page, index) => samePage(page, b[index])));
 }
