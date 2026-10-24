@@ -6,6 +6,7 @@ import type { ExportOutcome } from "../shared/export-worker-protocol.js";
 import type { ExportRequest } from "../shared/ipc/site.js";
 import type { ExportResult } from "../shared/ipc-contract.js";
 import { registerIpcHandler } from "./ipc.js";
+import { log } from "./log.js";
 
 /** Native dialogs, injected so the handler can be tested without Electron. */
 export type ExportDialogs = {
@@ -20,7 +21,7 @@ export type RunExport = (snapshot: SiteSnapshot, destination: string) => Promise
 export function toExportResult(outcome: ExportOutcome, destination: string): ExportResult {
   if (outcome.type === "failed") {
     // Codes only: never paths or site content (standards §4).
-    console.error(`Webforge could not export a site (${outcome.code}: ${outcome.detail})`);
+    log.error("Webforge could not export a site", { code: outcome.code, detail: outcome.detail });
     return { status: "failed", reason: outcome.code };
   }
   return {

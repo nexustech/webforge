@@ -7,6 +7,7 @@ import { createErrorReporter, installErrorReporting, rootErrorOptions } from "./
 import { StartScreen } from "./start/StartScreen.js";
 import { loadSite } from "./storage/load-site.js";
 import "./styles.css";
+import { setFailureLog, showInDevConsole } from "./log.js";
 
 // Bootstrap only; App is unit-tested and E2E tests cover this file.
 
@@ -18,6 +19,8 @@ if (container === null) {
 // Errors become local crash reports (R3), from the first moment: names and frames, no messages.
 const reportError = createErrorReporter(window.webforge.app.reportError);
 installErrorReporting(window, reportError);
+// Failures the editor handles go into the app's log, by code (R12).
+setFailureLog(window.webforge.app.logFailure);
 
 document.title = t("app.name");
 const [info, preferences, loaded, uiState] = await Promise.all([
@@ -34,7 +37,7 @@ document.documentElement.dataset.theme = preferences.theme;
 // While developing, React's errors also show in the console, as they would without these options.
 createRoot(
   container,
-  rootErrorOptions(reportError, import.meta.env.DEV ? (error) => console.error(error) : undefined),
+  rootErrorOptions(reportError, import.meta.env.DEV ? showInDevConsole : undefined),
 ).render(
   <StrictMode>
     {loaded.kind === "file" ? (

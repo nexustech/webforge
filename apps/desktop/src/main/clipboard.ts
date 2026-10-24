@@ -15,6 +15,7 @@ import { type CopiedElements, copiedElementsSchema, type MediaMeta } from "@webf
 import type { ClipboardReadResult, ClipboardWriteResult } from "../shared/ipc/clipboard.js";
 import { MAX_MEDIA_BYTES } from "../shared/ipc/media.js";
 import type { MediaImportResult } from "../shared/ipc-contract.js";
+import { logFailure } from "./log.js";
 import type { ImportFile } from "./media-import.js";
 import type { ProjectSession } from "./project-session.js";
 
@@ -128,9 +129,9 @@ export type ClipboardSite = Pick<ProjectSession, "current" | "readMedia" | "stor
 
 const sha256 = (data: Uint8Array) => createHash("sha256").update(data).digest("hex");
 
-function logFailure(action: string, error: unknown): void {
-  const code = error instanceof Error && "code" in error ? String(error.code) : "no code";
-  console.error(`Webforge could not ${action} (${code})`);
+/** Logs that `action` (a fixed phrase: "copy the elements") failed, with the error's code only. */
+function failed(action: string, error: unknown): void {
+  logFailure(`Webforge could not ${action}`, error);
 }
 
 /**
@@ -195,7 +196,7 @@ export function createElementClipboard(system: SystemClipboard, dir: string) {
         await system.writeElements(JSON.stringify({ nodes, media, sharedSectionId }));
         return { status: "copied" };
       } catch (error) {
-        logFailure("copy elements", error);
+        failed("copy elements", error);
         return { status: "failed", reason: "unknown" };
       }
     },
@@ -249,7 +250,7 @@ export function createElementClipboard(system: SystemClipboard, dir: string) {
         const shared = sharedSectionId === undefined ? {} : { sharedSectionId };
         return { status: "elements", elements: { nodes, media, ...shared } };
       } catch (error) {
-        logFailure("paste elements", error);
+        failed("paste elements", error);
         return { status: "failed", reason: "unknown" };
       }
     },

@@ -17,7 +17,8 @@
     "build:perf": "electron-vite build --mode perf"
   },
   "dependencies": {
-    "better-sqlite3": "catalog:"
+    "better-sqlite3": "catalog:",
+    "electron-log": "5.4.4"
   },
   "devDependencies": {
     "@babel/core": "catalog:",
@@ -36,6 +37,7 @@
     "@vitejs/plugin-react": "6.1.2",
     "@webforge/editor-ui": "workspace:*",
     "@webforge/engine": "workspace:*",
+    "@webforge/errors": "workspace:*",
     "@webforge/history": "workspace:*",
     "@webforge/i18n": "workspace:*",
     "@webforge/model": "workspace:*",

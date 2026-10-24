@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ExportResult } from "../../shared/ipc-contract.js";
+import { setFailureLog } from "../log.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { createCommandRegistry } from "../shell/commands.js";
 import { exportMessage, registerExportCommand } from "./export-command.js";
@@ -90,8 +91,14 @@ describe("registerExportCommand", () => {
     expect(registry.get(EXPORT_COMMAND_ID)?.enabled).toBe(true);
   });
 
-  it("treats a rejected export as a failed build", async () => {
+  it("treats a rejected export as a failed build, and logs it by its code (R12)", async () => {
+    const failures = vi.fn(async () => null);
+    setFailureLog(failures);
+
     await runExport(() => Promise.reject(new Error("IPC failed")));
+
+    expect(failures).toHaveBeenCalledExactlyOnceWith("export", "Error");
+    setFailureLog(undefined);
 
     expect(toast.error).toHaveBeenCalledWith(
       expect.stringContaining("Your site could not be built."),

@@ -163,7 +163,7 @@ describe("toExportResult", () => {
 
     expect(result).toEqual({ status: "failed", reason: "folder-not-empty" });
     expect(error).toHaveBeenCalledWith(
-      "Webforge could not export a site (folder-not-empty: folder-not-empty)",
+      "Webforge could not export a site (code=folder-not-empty, detail=folder-not-empty)",
     );
     expect(JSON.stringify(error.mock.calls)).not.toContain("Users");
   });

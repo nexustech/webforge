@@ -17,6 +17,16 @@ The Webforge Electron app: main process, preload script and renderer, built with
 - Every IPC channel is declared in `src/shared/ipc-contract.ts`; the main process checks the sender frame and validates requests and responses with zod.
 - Packaged builds set Electron Fuses (no `RunAsNode`, ASAR integrity, cookie encryption).
 
+## Errors and logs (standards §4, R12)
+- **Errors:** errors thrown on purpose are `WebforgeError`s (`@webforge/errors`) with a `code` and the i18n `messageKey` of what the person sees.
+- **Main process:** logs through `src/main/log.ts`:
+  - `log.info/warn/error(event, context)`, where the event is a fixed sentence and the context holds codes and counts only;
+  - `logFailure(event, error)`, which adds the error's name and code (`errorCode`), never its message;
+  - context strings that aren't short plain tokens (paths, URLs, text) are written as `[redacted]`.
+- **Log file:** `src/main/log-file.ts` sends lines to electron-log's file: `main.log` in the OS's log folder for the app, at most 1 MB plus one older copy.
+- **Renderer:** reports a failure it handled with `reportFailure(context, error)` (`src/renderer/log.ts`). That sends only a context (`clipboard.paste`) and the code over `app:log-failure`. Unhandled errors become local crash reports (R3).
+- **No console calls elsewhere:** `src/logging.test.ts` fails on any `console` call outside the two `log.ts` files.
+
 ## Commands
 Run from the repository root (`pnpm dev`) or here:
 

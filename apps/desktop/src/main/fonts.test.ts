@@ -56,7 +56,7 @@ describe("createFontReader (2.2)", () => {
     writeFileSync(join(dir, face.file), new Uint8Array([...bytes, 0]));
     expect(reader.read(face)).toBeUndefined();
 
-    expect(log).toHaveBeenCalledWith(`Webforge refused a damaged font file (${face.file})`);
+    expect(log).toHaveBeenCalledWith(`Webforge refused a damaged font file (file=${face.file})`);
     expect(JSON.stringify(log.mock.calls)).not.toContain(dir);
   });
 });

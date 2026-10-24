@@ -301,7 +301,7 @@ describe("ProjectSession editor mode", () => {
       reason: "unknown",
     });
     expect(console.error).toHaveBeenCalledWith(
-      "Webforge could not remember the editor mode (SQLITE_FULL)",
+      "Webforge could not remember the editor mode (code=Error SQLITE_FULL)",
     );
   });
 });

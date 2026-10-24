@@ -35,6 +35,7 @@ import { startCrashReports } from "./crash-wiring.js";
 import type { E2eDialog } from "./e2e-dialogs.js";
 import { type ExportDialogs, registerExportHandlers } from "./export-ipc.js";
 import { runExportInWorker } from "./export-worker-client.js";
+import { registerFailureLog } from "./failure-ipc.js";
 import { createFlushOnClose } from "./flush-on-close.js";
 import { createFontLibrary, type FontLibrary, registerFontHandlers } from "./font-library.js";
 import {
@@ -46,6 +47,8 @@ import {
 } from "./fonts.js";
 import { createHandOff } from "./hand-off.js";
 import { registerIpcHandler } from "./ipc.js";
+import { logFailure, setLogSink } from "./log.js";
+import { fileLogSink } from "./log-file.js";
 import { type MediaDialogs, registerMediaHandlers } from "./media-ipc.js";
 import { createMediaResponder } from "./media-protocol.js";
 import {
@@ -80,6 +83,9 @@ import {
 import { createWorkerRequests } from "./worker-requests.js";
 
 // Process wiring only; the logic lives in tested modules and E2E tests cover this file.
+
+// From the first moment, logs go to the app's log file (standards §4): codes only, never content.
+setLogSink(fileLogSink(app.isPackaged));
 
 const rendererHtml = join(import.meta.dirname, "../renderer/index.html");
 const preloadScript = join(import.meta.dirname, "../preload/index.cjs");
@@ -428,7 +434,7 @@ function createMainWindow(preferences: PreferencesStore): void {
     devServerUrl === undefined ? window.loadFile(rendererHtml) : window.loadURL(devServerUrl);
   // A failed or aborted load (e.g. a reload while loading) is not fatal; the window stays open.
   load.catch((error: unknown) => {
-    console.error("Webforge could not load the editor window", error);
+    logFailure("Webforge could not load the editor window", error);
   });
 }
 
@@ -454,7 +460,7 @@ function rememberWindowState(window: BrowserWindow, preferences: PreferencesStor
     // Full screen (macOS's green button) counts as maximised.
     const state = { maximized: window.isMaximized() || window.isFullScreen(), bounds };
     preferences.set({ window: state }).catch((error: unknown) => {
-      console.error("Webforge could not remember the window size", error);
+      logFailure("Webforge could not remember the window size", error);
     });
   };
   // On macOS "moved" fires all through a drag, so moves and resizes are saved once they stop.
@@ -542,6 +548,7 @@ async function start(): Promise<void> {
     projectSession,
   );
   crashReports.registerHandlers(ipcMain, (senderUrl) => isAppUrl(senderUrl, appUrl));
+  registerFailureLog(ipcMain, (senderUrl) => isAppUrl(senderUrl, appUrl));
   flushOnClose = createFlushOnClose(ipcMain, (senderUrl) => isAppUrl(senderUrl, appUrl), {
     // The flush has just run; capture the canvas for the Recent list before the window goes.
     beforeClose: () => siteSwitch.leaveSite(),
@@ -606,6 +613,6 @@ app.on("window-all-closed", () => {
 // never starts: it is quitting.
 const started = primaryInstance ? start() : new Promise<void>(() => undefined);
 started.catch((error: unknown) => {
-  console.error("Webforge failed to start", error);
+  logFailure("Webforge failed to start", error);
   app.exit(1);
 });

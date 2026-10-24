@@ -17,6 +17,12 @@ const appInfoSchema = z.object({
 export type AppInfo = z.infer<typeof appInfoSchema>;
 
 /** IPC channels of the `app` domain (`app:*`). */
+/** Where a handled failure happened, by area and action: `clipboard.paste`, `command.edit.undo`. */
+const failureContextSchema = z.string().regex(/^[a-z][a-zA-Z0-9.-]{0,63}$/);
+
+/** An error as `errorCode` gives it: a name, and maybe a code (`Error ENOENT`), or a type. */
+const failureCodeSchema = z.string().regex(/^[A-Za-z0-9_.:-]{1,64}(?: [A-Za-z0-9_.:-]{1,64})?$/);
+
 export const appChannels = {
   getAppInfo: {
     channel: "app:get-info",
@@ -36,6 +42,15 @@ export const appChannels = {
   reportError: {
     channel: "app:report-error",
     request: z.tuple([rendererErrorKindSchema, errorDetailsSchema]),
+    response: z.null(),
+  },
+  /**
+   * Logs a failure the renderer handled (R12): where it happened and the error's name and code,
+   * never its message (`errorCode`). Both are short plain tokens.
+   */
+  logFailure: {
+    channel: "app:log-failure",
+    request: z.tuple([failureContextSchema, failureCodeSchema]),
     response: z.null(),
   },
   /** Spell checks text in the site's language (F-ED-19); Windows only, macOS chooses itself. */
@@ -66,6 +81,8 @@ export interface AppApi {
   openCrashReports(): Promise<null>;
   /** Writes a local crash report of a renderer error: its name and frames only. */
   reportError(kind: RendererErrorKind, error: ErrorDetails): Promise<null>;
+  /** Logs a handled failure: where (`clipboard.paste`) and the error's name and code only. */
+  logFailure(context: string, code: string): Promise<null>;
   /** Spell checks text in `language`, the site's (a language tag such as `en-GB`). */
   setSpellCheckLanguage(language: string): Promise<null>;
   /**

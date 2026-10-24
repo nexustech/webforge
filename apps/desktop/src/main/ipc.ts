@@ -5,6 +5,7 @@ import {
   type IpcResponse,
   ipcContract,
 } from "../shared/ipc-contract.js";
+import { log, logFailure } from "./log.js";
 
 type IpcHandlerImpl<N extends IpcName> = (
   ...args: IpcRequest<N>
@@ -19,13 +20,6 @@ export const IPC_FAILED = "ipc-failed";
 
 /** The failed answers a contract may have for an unexpected error, most specific first. */
 const FAILED_ANSWERS = [{ status: "failed", reason: "unknown" }, { status: "failed" }] as const;
-
-/** The error's kind and code, which logs may hold; never its message, which may hold a path. */
-function errorKind(error: unknown): string {
-  if (!(error instanceof Error)) return typeof error;
-  const { code } = error as { code?: unknown };
-  return typeof code === "string" ? `${error.name} ${code}` : error.name;
-}
 
 /**
  * Registers the main-process implementation of one IPC contract entry.
@@ -48,19 +42,19 @@ export function registerIpcHandler<N extends IpcName>(
     // message as any failure: the reason is logged here, never passed on.
     const senderUrl = event.senderFrame?.url ?? "";
     if (!isTrustedSender(senderUrl)) {
-      console.error(`Webforge refused IPC call "${entry.channel}" (untrusted frame)`);
+      log.error("Webforge refused an IPC call from an untrusted frame", { channel: entry.channel });
       throw new Error(IPC_FAILED);
     }
     const request = entry.request.safeParse(rawArgs);
     if (!request.success) {
-      console.error(`Webforge refused IPC call "${entry.channel}" (invalid request)`);
+      log.error("Webforge refused an invalid IPC request", { channel: entry.channel });
       throw new Error(IPC_FAILED);
     }
     const args = request.data as IpcRequest<N>;
     try {
       return entry.response.parse(await impl(...args));
     } catch (error) {
-      console.error(`Webforge IPC call "${entry.channel}" failed (${errorKind(error)})`);
+      logFailure("Webforge IPC call failed", error, { channel: entry.channel });
       for (const answer of FAILED_ANSWERS) {
         const failed = entry.response.safeParse(answer);
         if (failed.success) return failed.data;

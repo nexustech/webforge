@@ -7,6 +7,7 @@ import {
   type MediaApi,
 } from "../../shared/ipc/media.js";
 import type { MediaImportResult } from "../../shared/ipc-contract.js";
+import { reportFailure } from "../log.js";
 import { siteSession } from "../storage/site-session.js";
 
 /** The parts of a dropped `File` the import reads. */
@@ -110,7 +111,8 @@ export async function importItems(
   let result: MediaImportResult;
   try {
     result = await request();
-  } catch {
+  } catch (error) {
+    reportFailure("media.import", error);
     result = { status: "failed", reason: "unknown" };
   }
   for (const message of importMessages(result)) notify(message);

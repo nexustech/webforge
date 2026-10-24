@@ -6,6 +6,7 @@ export const appApi = (call: Call, subscribe: Subscribe): AppApi => ({
   getInfo: () => call("getAppInfo"),
   openCrashReports: () => call("openCrashReports"),
   reportError: (kind, error) => call("reportError", kind, error),
+  logFailure: (context, code) => call("logFailure", context, code),
   setSpellCheckLanguage: (language) => call("setSpellCheckLanguage", language),
   onFlushRequest: (save) =>
     subscribe(appEvents.flushRequest.channel, (...args) => {

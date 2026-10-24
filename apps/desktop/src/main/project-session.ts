@@ -29,6 +29,7 @@ import type {
   SiteUiState,
   UiStateResult,
 } from "../shared/ipc-contract.js";
+import { log, logFailure } from "./log.js";
 
 /** The blob types a Media item's file can have; documents (JSON) are never served as media. */
 const MEDIA_MIME_TYPES: ReadonlySet<string> = new Set([...IMAGE_MIME_TYPES, ...FILE_MIME_TYPES]);
@@ -97,14 +98,12 @@ function summarise(store: ProjectStore, path: string, sessionId: string): Projec
 }
 
 function failure(error: unknown): ProjectResult {
-  if (error instanceof ProjectFileError) {
-    // The code says what went wrong; paths and file contents are never logged.
-    console.error(`Webforge could not create or open a site (${error.code})`);
-    return { status: "failed", reason: FAILURE_REASONS[error.code] };
-  }
-  const code = error instanceof Error && "code" in error ? String(error.code) : "no code";
-  console.error(`Webforge could not open or create a site (${code})`);
-  return { status: "failed", reason: "unknown" };
+  // The error's name and code say what went wrong; paths and file contents are never logged.
+  logFailure("Webforge could not create or open a site", error);
+  return {
+    status: "failed",
+    reason: error instanceof ProjectFileError ? FAILURE_REASONS[error.code] : "unknown",
+  };
 }
 
 /** What a {@link ProjectSession} tells others, e.g. the backup schedule. */
@@ -235,13 +234,12 @@ export class ProjectSession {
       return { status: "ok", site: this.#site };
     } catch (error) {
       // Paths and site content stay out of the log; the code says enough.
-      if (error instanceof SiteFormatError) {
-        console.error(`Webforge could not read the site (${error.code})`);
-        return { status: "failed", reason: error.code };
-      }
-      if (error instanceof ProjectFileError) {
-        console.error(`Webforge could not read the site (${error.code})`);
-        return { status: "failed", reason: "invalid" };
+      if (error instanceof SiteFormatError || error instanceof ProjectFileError) {
+        logFailure("Webforge could not read the site", error);
+        return {
+          status: "failed",
+          reason: error instanceof SiteFormatError ? error.code : "invalid",
+        };
       }
       throw error;
     }
@@ -264,7 +262,7 @@ export class ProjectSession {
     }
     const next = siteDocSchema.safeParse(applySiteChanges(this.#site, changes));
     if (!next.success) {
-      console.error("Webforge refused changes that would break the site");
+      log.error("Webforge refused changes that would break the site");
       return { status: "failed", reason: "invalid" };
     }
     try {
@@ -273,8 +271,7 @@ export class ProjectSession {
       if (error instanceof ReadOnlyProjectError) {
         return { status: "failed", reason: "read-only" };
       }
-      const code = error instanceof Error && "code" in error ? String(error.code) : "no code";
-      console.error(`Webforge could not save the site (${code})`);
+      logFailure("Webforge could not save the site", error);
       return { status: "failed", reason: "unknown" };
     }
     this.#site = next.data;
@@ -298,8 +295,7 @@ export class ProjectSession {
       if (error instanceof ReadOnlyProjectError) {
         return { status: "failed", reason: "read-only" };
       }
-      const code = error instanceof Error && "code" in error ? String(error.code) : "no code";
-      console.error(`Webforge could not store an imported file (${code})`);
+      logFailure("Webforge could not store an imported file", error);
       return { status: "failed", reason: "unknown" };
     }
   }
@@ -346,8 +342,7 @@ export class ProjectSession {
       if (error instanceof ReadOnlyProjectError) {
         return { status: "failed", reason: "read-only" };
       }
-      const code = error instanceof Error && "code" in error ? String(error.code) : "no code";
-      console.error(`Webforge could not store a pasted file (${code})`);
+      logFailure("Webforge could not store a pasted file", error);
       return { status: "failed", reason: "unknown" };
     }
   }
@@ -376,8 +371,7 @@ export class ProjectSession {
       if (error instanceof ReadOnlyProjectError) {
         return { status: "failed", reason: "read-only" };
       }
-      const code = error instanceof Error && "code" in error ? String(error.code) : "no code";
-      console.error(`Webforge could not remember the editor mode (${code})`);
+      logFailure("Webforge could not remember the editor mode", error);
       return { status: "failed", reason: "unknown" };
     }
   }
