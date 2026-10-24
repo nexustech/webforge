@@ -3,7 +3,7 @@ import { Window } from "happy-dom";
 import { afterEach, describe, expect, it } from "vitest";
 import { BEHAVIOUR_SCRIPTS } from "../behaviours.js";
 import { siteLibrary } from "../catalogue/index.js";
-import { EMBED_HOSTS } from "../embed.js";
+import { EMBED_SOURCES } from "../embed.js";
 import { EDITOR_RENDER_CONTEXT } from "../library.js";
 import { renderNodesToHtml } from "../render-static.js";
 
@@ -134,6 +134,9 @@ describe("the embed behaviour (F-CM-4, B7)", () => {
 
   it.each([
     "https://example.com/embed",
+    "https://www.google.com/search?q=bakery",
+    "https://www.youtube-nocookie.com/watch?v=aqz-KE-bpKQ",
+    "https://www.youtube-nocookie.com.example.com/embed/aqz-KE-bpKQ",
     "http://www.youtube-nocookie.com/embed/aqz-KE-bpKQ",
     "javascript:alert(1)",
     "not a url",
@@ -148,12 +151,12 @@ describe("the embed behaviour (F-CM-4, B7)", () => {
     expect(embed?.querySelector("[data-wf-embed-placeholder]")).not.toBeNull();
   });
 
-  it("loads only from the hosts the components build addresses for", () => {
+  it("loads only from the sources the components build addresses for", () => {
     const script = BEHAVIOUR_SCRIPTS.embed ?? "";
-    const hosts = /const HOSTS = \[([^\]]*)\]/.exec(script)?.[1] ?? "";
+    const sources = /const SOURCES = \[([^\]]*)\]/.exec(script)?.[1] ?? "";
 
-    expect([...hosts.matchAll(/"([^"]+)"/g)].map((match) => match[1]).sort()).toEqual(
-      Object.values(EMBED_HOSTS).sort(),
+    expect([...sources.matchAll(/"([^"]+)"/g)].map((match) => match[1]).sort()).toEqual(
+      Object.values(EMBED_SOURCES).sort(),
     );
   });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { EMBED_HOSTS, mapEmbed, videoEmbed } from "./embed.js";
+import { EMBED_SOURCES, mapEmbed, videoEmbed } from "./embed.js";
 
 describe("videoEmbed (F-CM-4)", () => {
   it.each([
@@ -109,15 +109,18 @@ describe("mapEmbed (F-CM-4)", () => {
     expect(mapEmbed(" \n ")).toBeNull();
   });
 
-  it("only ever points to the embed hosts", () => {
+  it("only ever points to the embed sources", () => {
     for (const embed of [
       videoEmbed("https://youtu.be/aqz-KE-bpKQ"),
       videoEmbed("https://vimeo.com/76979871"),
       mapEmbed("Hightown"),
       mapEmbed("https://www.openstreetmap.org/#map=17/51.5/-0.12"),
     ]) {
-      const host = new URL(embed?.src ?? "").hostname;
-      expect(Object.values(EMBED_HOSTS)).toContain(host);
+      const src = embed?.src ?? "";
+      expect(
+        Object.values(EMBED_SOURCES).some((source) => src.startsWith(source)),
+        src,
+      ).toBe(true);
     }
   });
 });

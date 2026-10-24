@@ -15,14 +15,15 @@ export type Embed = {
 export type EmbedProvider = "youtube" | "vimeo" | "googleMaps" | "openStreetMap";
 
 /**
- * The hosts an embed's player or map may come from. The `embed` behaviour loads nothing else, so
- * a changed file can't make a page load another site.
+ * Where an embed's player or map may come from: the start of its address. The `embed` behaviour
+ * loads nothing else, so a changed file can't make a page load another site, or another page of
+ * these.
  */
-export const EMBED_HOSTS: Readonly<Record<EmbedProvider, string>> = {
-  youtube: "www.youtube-nocookie.com",
-  vimeo: "player.vimeo.com",
-  googleMaps: "www.google.com",
-  openStreetMap: "www.openstreetmap.org",
+export const EMBED_SOURCES: Readonly<Record<EmbedProvider, string>> = {
+  youtube: "https://www.youtube-nocookie.com/embed/",
+  vimeo: "https://player.vimeo.com/video/",
+  googleMaps: "https://www.google.com/maps?",
+  openStreetMap: "https://www.openstreetmap.org/export/embed.html?",
 };
 
 const YOUTUBE_ID = /^[A-Za-z0-9_-]{11}$/;
@@ -78,7 +79,7 @@ export function videoEmbed(address: string): Embed | null {
   if (youtube !== undefined) {
     return {
       provider: "youtube",
-      src: `https://${EMBED_HOSTS.youtube}/embed/${youtube}`,
+      src: `${EMBED_SOURCES.youtube}${youtube}`,
       link: `https://www.youtube.com/watch?v=${youtube}`,
     };
   }
@@ -99,7 +100,7 @@ export function videoEmbed(address: string): Embed | null {
   const unlisted = hash !== undefined && VIMEO_HASH.test(hash) ? hash : undefined;
   return {
     provider: "vimeo",
-    src: `https://${EMBED_HOSTS.vimeo}/video/${id}?dnt=1${unlisted === undefined ? "" : `&h=${unlisted}`}`,
+    src: `${EMBED_SOURCES.vimeo}${id}?dnt=1${unlisted === undefined ? "" : `&h=${unlisted}`}`,
     link: `https://vimeo.com/${id}${unlisted === undefined ? "" : `/${unlisted}`}`,
   };
 }
@@ -147,7 +148,7 @@ export function mapEmbed(address: string): Embed | null {
     const marker = `${degrees(point.lat)},${degrees(point.lon)}`;
     return {
       provider: "openStreetMap",
-      src: `https://${EMBED_HOSTS.openStreetMap}/export/embed.html?bbox=${box.join("%2C")}&layer=mapnik&marker=${marker.replace(",", "%2C")}`,
+      src: `${EMBED_SOURCES.openStreetMap}bbox=${box.join("%2C")}&layer=mapnik&marker=${marker.replace(",", "%2C")}`,
       link: `https://www.openstreetmap.org/?mlat=${degrees(point.lat)}&mlon=${degrees(point.lon)}#map=${point.zoom}/${degrees(point.lat)}/${degrees(point.lon)}`,
     };
   }
@@ -160,7 +161,7 @@ export function mapEmbed(address: string): Embed | null {
   const encoded = encodeURIComponent(query);
   return {
     provider: "googleMaps",
-    src: `https://${EMBED_HOSTS.googleMaps}/maps?q=${encoded}&output=embed`,
+    src: `${EMBED_SOURCES.googleMaps}q=${encoded}&output=embed`,
     link: `https://www.google.com/maps/search/?api=1&query=${encoded}`,
   };
 }

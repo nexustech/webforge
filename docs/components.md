@@ -88,6 +88,7 @@ const cards = defineSection({
 
 Every section is defined with `defineSection` (`src/frame.tsx`), and `defineComponent` refuses `place: "section"`, so every section has the same frame and the same frame fields:
 - **Its colours:** `COLORS_FIELD` (2.4, F-DS-3), *Page colours* or *Reversed*. A reversed section gets `data-theme="wf_inverse"` (`INVERSE_THEME` from `@webforge/model`), daisyUI's nested theme of the theme's inverse colours, so its background, text and every colour class inside it take those. A section declaring a `colors` field is refused.
+  - **A reversed Section** (not *Full width*) is a band across the page, with its `max-w-4xl` column on the slot inside it. With page colours that column is the `<section>` itself, padding included; reversed, it sits inside the band's padding, so its content is about 32 px wider. Accepted for now (#344).
 - **Its padding and margin:** `PADDING_FIELD` and `MARGIN_FIELD` (1.32), added after its own fields. A section declaring either is refused. The canvas's spacing handles and the Edit panel's spacing fields work on every section alike.
 - **Its frame:** `<section class="site-<name> <frame classes> <padding> <margin>">` (with `data-theme` when reversed), with the padding from `SECTION_PADDING` (`px-4 py-16`) for the sides left unset. `frame` gives its background and layout classes from its values ("hero bg-base-200"); `frameAttributes` gives attributes its behaviour needs.
 - **Its inside:** `render` draws what goes in the frame.
@@ -149,7 +150,7 @@ As the module loads:
   - **Unit-tested:** `src/behaviours/<name>.test.ts` renders the component with the export's renderer into a happy-dom page of its own, runs the script on it, and checks what it does: `aria-expanded`, the focus, Escape.
   - **After adding or changing one, run `pnpm behaviours`.** It writes `src/behaviours/index.ts`, the scripts as strings, so the package loads without Vite. A test fails while it's out of date.
 - **No external requests (C8):** icons are inline SVG, and fonts and images come with the site.
-  - **Embeds** (a video or map from another site, F-CM-4) draw `<EmbedFrame>` (`src/embed-frame.tsx`) with an address from `videoEmbed` or `mapEmbed` (`src/embed.ts`), and name the `embed` behaviour. The page shows a placeholder and asks nothing of the other site until the visitor clicks; the behaviour then loads the player or map, from the hosts in `EMBED_HOSTS` only. Without JavaScript the placeholder's link opens it on its own site.
+  - **Embeds** (a video or map from another site, F-CM-4) draw `<EmbedFrame>` (`src/embed-frame.tsx`) with an address from `videoEmbed` or `mapEmbed` (`src/embed.ts`), and name the `embed` behaviour. The page shows a placeholder and asks nothing of the other site until the visitor clicks; the behaviour then loads the player or map, from the addresses `EMBED_SOURCES` starts only. Without JavaScript the placeholder's link opens it on its own site.
 - **Context:** `props.context` resolves links, images and settings. On the canvas they go nowhere; in the export they're the site's.
 
 ### A new field kind

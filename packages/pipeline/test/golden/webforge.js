@@ -208,13 +208,14 @@
 // banner marks the page with data-wf-consent-all on <html> (for a visitor who accepted before)
 // and fires "webforge:consent-all" on the document when they accept now.
 (() => {
-  // The only sites an embed may load from (EMBED_HOSTS in embed.ts; a test keeps them alike), so
-  // a changed page can't make this script load another one.
-  const HOSTS = [
-    "www.youtube-nocookie.com",
-    "player.vimeo.com",
-    "www.google.com",
-    "www.openstreetmap.org",
+  // The only addresses an embed may load: how each player's or map's starts (EMBED_SOURCES in
+  // embed.ts; a test keeps them alike), so a changed page can't make this script load another
+  // site, or another page of these.
+  const SOURCES = [
+    "https://www.youtube-nocookie.com/embed/",
+    "https://player.vimeo.com/video/",
+    "https://www.google.com/maps?",
+    "https://www.openstreetmap.org/export/embed.html?",
   ];
   const PLAYERS = ["www.youtube-nocookie.com", "player.vimeo.com"];
 
@@ -233,7 +234,8 @@
     } catch {
       return;
     }
-    if (url.protocol !== "https:" || !HOSTS.includes(url.hostname)) {
+    const href = url.href;
+    if (!SOURCES.some((source) => href.startsWith(source))) {
       return;
     }
     // The visitor pressed play: start it, rather than ask for a second click.
