@@ -215,6 +215,49 @@ describe("the carousel behaviour (2.10)", () => {
     expect(root.dataset.current).toBe("2");
   });
 
+  it("takes no pause on the way to where a press sends it for a rest (WebKit, #334)", () => {
+    const { root, track, document, window, button, status } = page({}, 3);
+    const slides = [...document.querySelectorAll<HTMLElement>(".site-carousel-slide")];
+    slides.forEach((slide, index) => {
+      Object.defineProperty(slide, "offsetLeft", { value: index * 100 });
+    });
+    const scrollTo = (left: number) => {
+      track.scrollLeft = left;
+      track.dispatchEvent(new window.Event("scroll"));
+    };
+
+    // WebKit's smooth scroll: an event just after it starts, then none for over a second.
+    button("next").click();
+    scrollTo(3);
+    vi.advanceTimersByTime(1_000);
+    expect(root.dataset.current).toBe("1");
+    scrollTo(100);
+    vi.advanceTimersByTime(150);
+    button("previous").click();
+    scrollTo(50);
+    vi.advanceTimersByTime(1_000);
+    button("previous").click();
+
+    expect(root.dataset.current).toBe("2");
+    expect(status()?.textContent).toBe("3 of 3");
+  });
+
+  it("follows a swipe that takes over from a press's scroll", () => {
+    const { root, track, document, window, button } = page({}, 3);
+    const slides = [...document.querySelectorAll<HTMLElement>(".site-carousel-slide")];
+    slides.forEach((slide, index) => {
+      Object.defineProperty(slide, "offsetLeft", { value: index * 100 });
+    });
+
+    button("next").click();
+    track.dispatchEvent(new window.PointerEvent("pointerdown"));
+    track.scrollLeft = 190;
+    track.dispatchEvent(new window.Event("scroll"));
+    vi.advanceTimersByTime(150);
+
+    expect(root.dataset.current).toBe("2");
+  });
+
   it("lets a press decide, not a scroll before it that hadn't yet come to rest (#330)", () => {
     const { root, track, document, window, button } = page({}, 3);
     const slides = [...document.querySelectorAll<HTMLElement>(".site-carousel-slide")];

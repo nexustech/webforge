@@ -77,6 +77,9 @@
     /** Set while the strip is scrolling: it then says where it came to rest (see below). */
     /** @type {ReturnType<typeof setTimeout> | undefined} */
     let resting;
+    /** Where a move is scrolling the strip to, until it gets there or is scrolled by hand. */
+    /** @type {number | null} */
+    let heading = null;
     /**
      * Moves `pages` pages of what's in view on (back if negative): the last page full, and round
      * past either end. `announce` says what shows if asked.
@@ -94,7 +97,8 @@
       const slide = slides[current];
       if (first !== undefined && slide !== undefined) {
         // The strip's CSS sets how: smoothly, or at once for a visitor who prefers less motion.
-        track.scrollTo({ left: slide.offsetLeft - first.offsetLeft });
+        heading = slide.offsetLeft - first.offsetLeft;
+        track.scrollTo({ left: heading });
       }
       root.dataset.current = String(current);
       if (announce && status !== null) {
@@ -104,7 +108,8 @@
     // A swipe or a scroll by hand moves the current slide too: the one nearest the start, once the
     // strip has come to rest. Not while it moves: a smooth scroll the buttons started may still be
     // passing other slides, as a quick run of presses would leave it (in Firefox, #330), and the
-    // buttons' own moves already say where it is going.
+    // buttons' own moves already say where it is going. Nor on the way to where a move sends it:
+    // WebKit fires a smooth scroll's events far apart, so a pause in them isn't a rest (#334).
     track.addEventListener(
       "scroll",
       () => {
@@ -113,6 +118,11 @@
           const first = slides[0];
           if (first === undefined) return;
           const left = track.scrollLeft;
+          if (heading !== null) {
+            // Arrived, the current slide is the move's already.
+            if (Math.abs(left - heading) <= 1) heading = null;
+            return;
+          }
           let nearest = 0;
           slides.forEach((slide, index) => {
             const offset = slide.offsetLeft - first.offsetLeft;
@@ -125,6 +135,17 @@
       },
       { passive: true },
     );
+    // Scrolled by hand (a swipe, the wheel, the scroll bar, the keyboard, or the focus moving to a
+    // slide's link), the strip goes where it's taken, not where the last move was sending it.
+    for (const type of ["pointerdown", "wheel", "touchstart", "keydown", "focusin"]) {
+      track.addEventListener(
+        type,
+        () => {
+          heading = null;
+        },
+        { passive: true },
+      );
+    }
     root.querySelector("[data-wf-carousel-previous]")?.addEventListener("click", () => {
       move(-1, true);
     });
