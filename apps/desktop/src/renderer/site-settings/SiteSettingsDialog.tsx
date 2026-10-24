@@ -37,21 +37,11 @@ import {
   checkSettings,
   DAYS,
   FORM_SERVICES,
+  SECTIONS,
+  type Section,
   type SettingsForm,
   toSettingsForm,
 } from "./settings-form.js";
-
-/** The dialog's sections, in order (F-SET-1); each field's first path part names its section. */
-const SECTIONS = [
-  "general",
-  "address",
-  "social",
-  "contact",
-  "search",
-  "analytics",
-  "forms",
-] as const;
-type Section = (typeof SECTIONS)[number];
 
 /** Props of {@link SiteSettingsDialog}. */
 export type SiteSettingsDialogProps = {

@@ -251,8 +251,44 @@ function sameJson(a: unknown, b: unknown): boolean {
 }
 
 /**
- * Saves Site Settings as one undo step, "Changed Site Settings" (F-SET-1). Nothing happens when
- * nothing changed, even if the dialog built the same settings with their keys in another order.
+ * Site Settings' sections, in the dialog's order (F-SET-1); each is a group of the settings, and
+ * each field's first path part names its section.
+ */
+export const SECTIONS = [
+  "general",
+  "address",
+  "social",
+  "contact",
+  "search",
+  "analytics",
+  "forms",
+] as const;
+/** One of {@link SECTIONS}. */
+export type Section = (typeof SECTIONS)[number];
+
+/**
+ * The undo label for a change from `before` to `after`: the sections it changed, as the dialog
+ * names them ("Changed Site Settings: Contact & hours"), or the plain label for a change outside
+ * them.
+ */
+function savedLabel(before: SiteSettings, after: SiteSettings): string {
+  const sections = SECTIONS.filter((section) => !sameJson(before[section], after[section]));
+  const earlier: Readonly<Record<string, unknown>> = before;
+  const outside = Object.entries(after).some(
+    ([key, value]) =>
+      !SECTIONS.some((section) => section === key) && !sameJson(earlier[key], value),
+  );
+  return sections.length === 0 || outside
+    ? t("site.settings.history")
+    : t("site.settings.historySections", {
+        sections: sections.map((section) => t(`site.settings.section.${section}`)).join(", "),
+      });
+}
+
+/**
+ * Saves Site Settings as one undo step, named for the sections it changed (F-SET-1). Nothing
+ * happens when nothing changed, even if the dialog built the same settings with their keys in
+ * another order.
  */
 export function saveSiteSettings(
   session: Pick<EditorSession, "edit"> & {
@@ -264,7 +300,7 @@ export function saveSiteSettings(
   if (sameJson(current, settings)) {
     return false;
   }
-  session.edit("props", t("site.settings.history"), (draft) => {
+  session.edit("props", savedLabel(current, settings), (draft) => {
     draft.settings = settings;
   });
   return true;

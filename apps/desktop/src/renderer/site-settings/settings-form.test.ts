@@ -126,6 +126,26 @@ describe("settings form", () => {
 });
 
 describe("saveSiteSettings", () => {
+  it("names every section a save changed, and none for a change outside them (R10)", () => {
+    const session = createEditorSession(siteLibrary, starterSite());
+    const before = session.history.document.getState().settings;
+    const labels = () => session.history.state.getState().entries.map((entry) => entry.label);
+
+    saveSiteSettings(session, {
+      ...before,
+      general: { ...before.general, name: "Rosa's" },
+      analytics: { ...before.analytics, measurementId: "G-ABC123DEF4" },
+    });
+    expect(labels()).toEqual(["Changed Site Settings: General, Analytics"]);
+
+    // Allowed external addresses are set elsewhere (C8), not in a section of the dialog.
+    saveSiteSettings(session, {
+      ...session.history.document.getState().settings,
+      allowedExternalUrls: ["https://maps.example.com"],
+    });
+    expect(labels().at(-1)).toBe("Changed Site Settings");
+  });
+
   it("saves as one labelled undo step, and does nothing when nothing changed", () => {
     const session = createEditorSession(siteLibrary, starterSite());
     const before = session.history.document.getState().settings;
@@ -144,7 +164,8 @@ describe("saveSiteSettings", () => {
     ).toBe(true);
 
     const { entries } = session.history.state.getState();
-    expect(entries.map((entry) => entry.label)).toEqual(["Changed Site Settings"]);
+    // Named for the section it changed (R10), as the dialog names it.
+    expect(entries.map((entry) => entry.label)).toEqual(["Changed Site Settings: Contact & hours"]);
     expect(session.history.document.getState().settings.contact.phone).toBe("+44 1");
     session.history.undo();
     expect(session.history.document.getState().settings).toEqual(before);
