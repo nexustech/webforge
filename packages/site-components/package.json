@@ -21,7 +21,7 @@
     "@types/sanitize-html": "2.16.2",
     "daisyui": "catalog:",
     "fast-check": "4.10.2",
-    "happy-dom": "20.14.6",
+    "happy-dom": "21.0.4",
     "storybook": "10.6.2",
     "tailwindcss": "catalog:",
     "vite": "8.3.4",
