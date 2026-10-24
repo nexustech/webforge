@@ -3,11 +3,12 @@ import { ArrowDownIcon, ArrowUpIcon, ChevronRightIcon, PlusIcon, Trash2Icon } fr
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { cn } from "../../lib/cn.js";
 import { Button } from "../ui/button.js";
-import type {
-  FieldRendererProps,
-  ListChange,
-  ListItemFieldSpec,
-  ListItemValue,
+import {
+  type FieldRendererProps,
+  type ListChange,
+  type ListItemFieldSpec,
+  type ListItemValue,
+  useFieldRenderers,
 } from "./field-registry.js";
 import { plainRenderer } from "./plain-renderers.js";
 
@@ -64,6 +65,7 @@ export function ListField({ id, labelId, field, value, onChange, onCommit }: Fie
   const items = itemsOf(value);
   const item = field.itemLabel ?? "";
   const fields = field.itemFields ?? [];
+  const registered = useFieldRenderers();
   const [open, setOpen] = useState<Open>(null);
   // Where focus goes once a deleted item's row (and its focused Delete button) has gone: the row
   // that took its place, else the one before, else Add.
@@ -157,7 +159,7 @@ export function ListField({ id, labelId, field, value, onChange, onCommit }: Fie
                 {expanded ? (
                   <div id={contentId} className="flex flex-col gap-2 px-2 pt-1 pb-2">
                     {fields.map((sub) => {
-                      const Renderer = plainRenderer(sub.kind);
+                      const Renderer = plainRenderer(registered, sub.kind);
                       if (Renderer === undefined) {
                         return null;
                       }

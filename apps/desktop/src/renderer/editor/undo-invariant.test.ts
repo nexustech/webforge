@@ -53,7 +53,6 @@ import {
 import { createFakeEngine, type FakeEngine } from "./fake-engine.test-helper.js";
 import { applyListChange, editableList, listItems } from "./list-edit.js";
 import { withoutOverride, withValueAt } from "./responsive-value.js";
-import { selectElements } from "./selection.js";
 import { starterSite } from "./starter-site.js";
 
 // Undo invariant (U8) over the editor as wired: canvas edits of every kind on any page, page
@@ -545,7 +544,7 @@ const commands: fc.Arbitrary<Command>[] = [
       const { pageId } = ctx.session.ui.getState();
       const content = ctx.session.history.document.getState().pages[pageId]?.doc.content ?? [];
       const node = content[at % Math.max(content.length, 1)];
-      ctx.session.ui.setState({ nodeId: node?.props.id ?? null });
+      ctx.session.select(node?.props.id ?? null);
       saveAsSharedSection(ctx.session, name);
     },
   })),
@@ -563,7 +562,7 @@ const commands: fc.Arbitrary<Command>[] = [
         ? (section.props.content as NodeDoc[])
         : [];
       const id = inside && first !== undefined ? first.props.id : section.props.id;
-      ctx.session.ui.setState({ nodeId: copiedNodeId(copy.props.id, id) });
+      ctx.session.select(copiedNodeId(copy.props.id, id));
       detachCopy(ctx.session);
     },
   })),
@@ -672,7 +671,7 @@ const commands: fc.Arbitrary<Command>[] = [
         // A linked copy is selected by the id the canvas shows its section by.
         return [isSharedCopy(node) ? copiedNodeId(node.props.id, "hours") : node.props.id];
       });
-      selectElements(ctx.session.ui, ids);
+      ctx.session.selectElements(ids);
     },
   })),
   fc
@@ -696,7 +695,7 @@ const commands: fc.Arbitrary<Command>[] = [
     run: (ctx) => {
       const { nodeId } = ctx.session.ui.getState();
       const ids = nodeId === null ? undefined : similarTo(ctx.session, nodeId);
-      if (ids !== undefined) selectElements(ctx.session.ui, ids);
+      if (ids !== undefined) ctx.session.selectElements(ids);
     },
   }),
   fc.record({ at: fc.nat({ max: 6 }), linked: fc.boolean() }).map(({ at, linked }) => ({

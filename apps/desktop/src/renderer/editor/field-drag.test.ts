@@ -65,7 +65,7 @@ describe("connectFieldDrags (1.32)", () => {
 
   it("sets the value of the device the canvas shows, named in the label", () => {
     const { session, labels, section, drag } = setup();
-    session.ui.setState({ viewport: "mobile" });
+    session.setViewport("mobile");
 
     drag("section-1", "padding", [{ top: "s", bottom: "m" }]);
 
@@ -115,7 +115,7 @@ describe("connectFieldDrags (1.32)", () => {
 
   it("changes an element of a linked copy in its shared section (F-ED-23)", () => {
     const { session, labels, drag } = setup();
-    session.ui.setState({ nodeId: "section-1" });
+    session.select("section-1");
     saveAsSharedSection(session, "Welcome");
     const [shared] = Object.values(session.history.document.getState().sharedSections);
     if (shared === undefined) throw new Error("not saved");

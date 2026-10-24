@@ -30,8 +30,9 @@ import {
   oklchToSrgb,
   resolveColorRef,
 } from "@webforge/themes";
-import { type CSSProperties, useId, useSyncExternalStore } from "react";
+import { type CSSProperties, useId } from "react";
 import type { EditorSession } from "./editor-session.js";
+import { useDocument } from "./use-document.js";
 
 /** Tailwind's text sizes in CSS pixels, as the type scale names them. */
 const TEXT_PX: Readonly<Record<ThemeTokens["typeScale"][TextStyle]["size"], number>> = {
@@ -168,10 +169,7 @@ export function ColourField({
   advanced = false,
   textStyles,
 }: FieldRendererProps & ColourFieldContext) {
-  const theme = useSyncExternalStore(
-    session.history.document.subscribe,
-    () => session.history.document.getState().theme,
-  );
+  const theme = useDocument(session, (site) => site.theme);
   const shadeLabelId = useId();
   const opacityId = useId();
   const customId = useId();

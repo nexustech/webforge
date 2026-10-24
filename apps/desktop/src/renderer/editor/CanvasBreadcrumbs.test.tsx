@@ -114,7 +114,7 @@ describe("CanvasBreadcrumbs", () => {
 
     expect(screen.getByRole("navigation", { name: "Where the selection is" })).toBeDefined();
     expect(crumbs()).toEqual(["Home"]);
-    act(() => session.ui.setState({ nodeId: "a" }));
+    act(() => session.select("a"));
     expect(crumbs()).toEqual(["Home", "Section", "Intro"]);
     expect(screen.getByRole("button", { name: "Intro" }).getAttribute("aria-current")).toBe(
       "location",
@@ -135,16 +135,16 @@ describe("CanvasBreadcrumbs", () => {
   it("takes the outline away when the step under the pointer goes, or the bar (#253 review)", async () => {
     const session = createEditorSession(siteLibrary, site());
     const engine = createFakeEngine();
-    session.ui.setState({ nodeId: "a" });
+    session.select("a");
     const { unmount } = render(<CanvasBreadcrumbs session={session} engine={engine} />);
 
     await userEvent.hover(screen.getByRole("button", { name: "Intro" }));
     expect(engine.outline).toHaveBeenLastCalledWith("a");
     // Esc or Delete while the pointer is on it: the step goes, and the pointer never leaves it.
-    act(() => session.ui.setState({ nodeId: null }));
+    act(() => session.select(null));
     expect(engine.outline).toHaveBeenLastCalledWith(null);
 
-    act(() => session.ui.setState({ nodeId: "a" }));
+    act(() => session.select("a"));
     await userEvent.hover(screen.getByRole("button", { name: "Section" }));
     vi.mocked(engine.outline).mockClear();
     unmount();
