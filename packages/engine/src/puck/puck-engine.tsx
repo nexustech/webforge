@@ -2,7 +2,6 @@ import {
   type AppState,
   type Config,
   createUsePuck,
-  type Data,
   type Overrides,
   Puck,
   type PuckAction,
@@ -10,7 +9,6 @@ import {
 } from "@puckeditor/core";
 // Puck's default stylesheet loads the Inter font from rsms.me; Webforge makes no external requests.
 import "@puckeditor/core/no-external.css";
-import { t } from "@webforge/i18n";
 import {
   expandSharedCopies,
   type LayoutDoc,
@@ -38,7 +36,6 @@ import { createRoot, type Root } from "react-dom/client";
 import type {
   CanvasContextMenu,
   CanvasEngine,
-  CanvasSize,
   EditorMode,
   ElementRequest,
   EngineEdit,
@@ -49,11 +46,11 @@ import type {
   RichTextAt,
   TextSplit,
   ViewOptions,
-  Viewport,
 } from "../canvas-engine.js";
 import { installHistoryKeys } from "../history-keys.js";
 import { installMenuKeys } from "../menu-keys.js";
 import { createCanvasSync } from "./canvas-sync.js";
+import { createCanvasView } from "./canvas-view.js";
 import { preserveCaret, refocusRichText } from "./caret.js";
 import {
   applyChromeStyles,
@@ -78,9 +75,21 @@ import {
 import { createDragSources } from "./drag-sources.js";
 import { editFromAction, selectedNodeId, toPageDoc } from "./edit-from-action.js";
 import { keepElementsEnabled } from "./enabled-elements.js";
+import {
+  CONTENT_MODE_PERMISSIONS,
+  DESIGN_MODE_PERMISSIONS,
+  EMPTY_PAGE,
+  emitter,
+  flushRichText,
+  NO_VIEW_OPTIONS,
+  NoBoundary,
+  puckViewports,
+  RICH_TEXT_FLUSH_TIMEOUT_MS,
+  toPuckData,
+} from "./engine-support.js";
 import { hidePuckLayout } from "./layout-styles.js";
 import { pageActions, type SlotsOf } from "./page-actions.js";
-import { CANVAS_ROOT, componentSelector, puckPrivateApi } from "./puck-dom.js";
+import { CANVAS_ROOT, componentSelector } from "./puck-dom.js";
 import { createFormatToolbar } from "./rich-text.js";
 import { type RoutedEdit, routeEdit, routeLinkedCopy } from "./route-edit.js";
 import { performOnSelected } from "./selected-actions.js";
@@ -101,83 +110,9 @@ export type PuckEngineOptions = {
   readonly iframe?: boolean;
 };
 
-/**
- * Asks the focused rich-text editor to send the change Puck still holds back (it sends after a
- * short debounce), through our Puck patch. True if there was one: its edit is then on its way.
- */
-function flushRichText(puck: ReturnType<GetPuck>): boolean {
-  return puckPrivateApi(puck)?.flushRichText() === true;
-}
-
-/** How long Undo or Redo waits at most for a rich-text change it asked Puck to send. */
-const RICH_TEXT_FLUSH_TIMEOUT_MS = 500;
-
-/**
- * The canvas zoom in Puck's store, reached through our Puck patch, or undefined if the patch is
- * missing, e.g. after a Puck upgrade: zooming then does nothing.
- */
-const zoomAccess = (puck: ReturnType<GetPuck>) => puckPrivateApi(puck);
-
-const VIEWPORT_WIDTHS = { desktop: 1280, tablet: 768, mobile: 375 } as const;
-
-/** A canvas width as the app names it: a device view, or a custom width. */
-function viewportOf(width: number): Viewport {
-  const named = (Object.keys(VIEWPORT_WIDTHS) as (keyof typeof VIEWPORT_WIDTHS)[]).find(
-    (name) => VIEWPORT_WIDTHS[name] === width,
-  );
-  return named ?? width;
-}
-
-/** The device views Puck's canvas controls offer: Desktop · Tablet · Mobile (until 1.15). */
-const puckViewports = () => [
-  { width: VIEWPORT_WIDTHS.mobile, label: t("device.mobile"), icon: "Smartphone" as const },
-  { width: VIEWPORT_WIDTHS.tablet, label: t("device.tablet"), icon: "Tablet" as const },
-  { width: VIEWPORT_WIDTHS.desktop, label: t("device.desktop"), icon: "Monitor" as const },
-];
-
-/** Content mode: text stays editable, the layout is locked (M3). */
-const CONTENT_MODE_PERMISSIONS = { drag: false, duplicate: false, delete: false, insert: false };
-/**
- * Design mode: everything. Always passed, never left out: Puck merges the permissions it is given
- * into those it has, so leaving them out after Content mode would keep the layout locked.
- */
-const DESIGN_MODE_PERMISSIONS = { drag: true, duplicate: true, delete: true, insert: true };
-
 type GetPuck = ReturnType<typeof useGetPuck>;
 
-/** The View options before the app sets any: nothing shown besides the page. */
-const NO_VIEW_OPTIONS: ViewOptions = {
-  outlines: false,
-  spacingOnHover: false,
-  elementNames: false,
-  extraBottomSpace: false,
-};
-
 const usePuck = createUsePuck();
-
-const EMPTY_PAGE: PageDoc = { root: { props: {} }, content: [] };
-
-function toPuckData(page: PageDoc): Data {
-  // PageDoc is the same tree as Puck's Data (see toPageDoc); only the TypeScript types differ.
-  return page as unknown as Data;
-}
-
-type Emitter<T> = { add(listener: (value: T) => void): () => void; emit(value: T): void };
-
-function emitter<T>(): Emitter<T> {
-  const listeners = new Set<(value: T) => void>();
-  return {
-    add(listener) {
-      listeners.add(listener);
-      return () => {
-        listeners.delete(listener);
-      };
-    },
-    emit(value) {
-      for (const listener of listeners) listener(value);
-    },
-  };
-}
 
 /**
  * The Puck implementation of {@link CanvasEngine}.
@@ -189,11 +124,6 @@ function emitter<T>(): Emitter<T> {
  * - Puck's header (with its Undo/Redo buttons) is replaced, and its Ctrl/Cmd+Z hotkeys never fire
  *   because {@link installHistoryKeys} takes those keys first, in the host and in the iframe.
  */
-/** The canvas without an error boundary: see `MountOptions.errorBoundary`. */
-function NoBoundary({ children }: { readonly children: ReactNode }) {
-  return children;
-}
-
 export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine {
   let root: Root | null = null;
   /** What wraps the canvas (`MountOptions.errorBoundary`); nothing until one is given. */
@@ -264,12 +194,6 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   let siteStyles: SiteStyles | null = null;
   /** What the canvas renders with: no navigation or links, and the site's Media images. */
   let renderContext: RenderContext = EDITOR_RENDER_CONTEXT;
-  /** The canvas width Puck shows, or is about to show. */
-  let viewportWidth: number = VIEWPORT_WIDTHS.desktop;
-  /** A width the app gave Puck that Puck doesn't show yet: until it does, no width is reported. */
-  let pendingWidth: number | null = null;
-  /** The size and zoom last reported. */
-  let canvasSize: CanvasSize | null = null;
   /** Per node, bumped to remount its rich-text editors (see toPuckConfig). */
   const editorRevisions = new Map<string, number>();
 
@@ -301,8 +225,6 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
         addingClick = id;
       }
     });
-  const canvasSizes = emitter<CanvasSize>();
-  const viewports = emitter<Viewport>();
   const commandHandlers = new Set<HistoryCommandHandler>();
   /** True if any handler did something with the command (see installHistoryKeys). */
   const runHandlers: HistoryCommandHandler = (command) => {
@@ -336,6 +258,9 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     sync.apply(() => puck().dispatch(action));
   };
 
+  /** The canvas's width, zoom and size (see `canvas-view.ts`). */
+  const view = createCanvasView(() => getPuck?.() ?? null, dispatch);
+
   /** Sends `page` to Puck, unless Puck isn't ready yet (then the Bridge sends it once it is). */
   const showPage = () => {
     if (getPuck !== null) {
@@ -345,79 +270,6 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
         recordHistory: false,
       });
       sync.shown();
-    }
-  };
-
-  /** Shows `viewportWidth` in Puck, if it isn't already (the Bridge calls this once Puck is ready). */
-  const showViewport = () => {
-    if (getPuck === null) {
-      return;
-    }
-    // A width still on its way to Puck counts as shown: a later one must replace it.
-    const shown = pendingWidth ?? getPuck().appState.ui.viewports.current.width;
-    if (shown === viewportWidth) {
-      return;
-    }
-    pendingWidth = viewportWidth;
-    const width = viewportWidth;
-    dispatch({
-      type: "setUi",
-      ui: (ui) => ({ viewports: { ...ui.viewports, current: { width, height: "auto" } } }),
-    });
-  };
-
-  /** Scales Puck's canvas to `zoom`, or to its fitting zoom. Does nothing before Puck is ready. */
-  const applyZoom = (zoom: number | "fit") => {
-    const access = getPuck === null ? undefined : zoomAccess(getPuck());
-    if (access === undefined) {
-      return;
-    }
-    const config = access.getZoomConfig();
-    const next = zoom === "fit" ? config.autoZoom : zoom;
-    if (Number.isFinite(next) && next > 0 && next !== config.zoom) {
-      access.setZoomConfig({ ...config, zoom: next });
-    }
-  };
-
-  /** Reports the canvas's size and zoom if they changed, once Puck has measured the canvas. */
-  const reportSize = () => {
-    sizeFrame = null;
-    const puck = getPuck?.();
-    const config = puck === undefined ? undefined : zoomAccess(puck)?.getZoomConfig();
-    const width = puck?.appState.ui.viewports.current.width;
-    if (config === undefined || typeof width !== "number" || !(config.rootHeight > 0)) {
-      return;
-    }
-    const size = { width, height: Math.round(config.rootHeight), zoom: config.zoom };
-    if (
-      canvasSize === null ||
-      canvasSize.width !== size.width ||
-      canvasSize.height !== size.height ||
-      canvasSize.zoom !== size.zoom
-    ) {
-      canvasSize = size;
-      canvasSizes.emit(size);
-    }
-  };
-
-  /**
-   * Reports the size at the next frame: Puck sets a new zoom and the height that goes with it in
-   * two renders, which then arrive as one change.
-   */
-  let sizeFrame: number | null = null;
-  const scheduleSize = () => {
-    sizeFrame ??= requestAnimationFrame(reportSize);
-  };
-
-  /** Puck shows `width`: the app's own width arriving, or the user's choice in Puck's controls. */
-  const reportViewport = (width: number | "100%") => {
-    if (pendingWidth !== null) {
-      if (width === pendingWidth) pendingWidth = null;
-      return;
-    }
-    if (typeof width === "number" && width !== viewportWidth) {
-      viewportWidth = width;
-      viewports.emit(viewportOf(width));
     }
   };
 
@@ -596,7 +448,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
         showPage();
       }
       // A width set before Puck was ready, or Puck's own starting width.
-      showViewport();
+      view.show();
       // A selection made before Puck was ready. Only when it differs: re-selecting resets Puck's
       // field focus and remounts an open rich-text editor (this effect re-runs on re-renders).
       if ((get().selectedItem?.props.id ?? null) !== selection) {
@@ -604,15 +456,15 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       }
       return () => {
         getPuck = null;
-        pendingWidth = null;
+        view.forgetPending();
         // A remounted Puck starts from whatever `data` it was last rendered with: resend the page.
         sync.forget();
       };
     }, [get]);
     // After the effect above, so the width it sends to Puck isn't taken for the user's choice.
     useEffect(() => {
-      reportViewport(width);
-      scheduleSize();
+      view.shown(width);
+      view.measure();
     }, [width]);
     // Puck changes the zoom inside its store, where nothing reports it, and shows it on the canvas
     // root's style (its scale and height): watch that.
@@ -621,13 +473,12 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       if (!canvasRoot) {
         return;
       }
-      scheduleSize();
-      const observer = new MutationObserver(scheduleSize);
+      view.measure();
+      const observer = new MutationObserver(view.measure);
       observer.observe(canvasRoot, { attributes: true, attributeFilter: ["style"] });
       return () => {
         observer.disconnect();
-        if (sizeFrame !== null) cancelAnimationFrame(sizeFrame);
-        sizeFrame = null;
+        view.stopMeasuring();
       };
     }, []);
     return (
@@ -860,7 +711,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
             rightSideBarVisible: false,
             // Puck starts with the app's width; without one it picks the view nearest the window's.
             viewports: {
-              current: { width: viewportWidth, height: "auto" },
+              current: { width: view.width(), height: "auto" },
               options: [],
               // The canvas toolbar chooses the view and zoom (1.15), not Puck's own controls.
               controlsVisible: false,
@@ -1007,12 +858,8 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       dispatch({ type: "setUi", ui: { itemSelector: selectorFor(nodeId) } });
     },
 
-    setViewport(viewport: Viewport) {
-      viewportWidth = typeof viewport === "number" ? viewport : VIEWPORT_WIDTHS[viewport];
-      showViewport();
-    },
-
-    onViewportChange: viewports.add,
+    setViewport: view.setViewport,
+    onViewportChange: view.onViewport,
 
     setImages(image) {
       renderContext = { ...renderContext, image };
@@ -1034,14 +881,8 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       redraw();
     },
 
-    setZoom: applyZoom,
-
-    onCanvasSize(cb) {
-      if (canvasSize !== null) {
-        cb(canvasSize);
-      }
-      return canvasSizes.add(cb);
-    },
+    setZoom: view.zoom,
+    onCanvasSize: view.onSize,
 
     setSiteCss(css, bodyClass) {
       siteStyles = { css, bodyClass };
