@@ -543,7 +543,13 @@
                 "text": "Opening hours"
               }
             }
-          ]
+          ],
+          "padding": {
+            "$responsive": {
+              "desktop": "large",
+              "mobile": "small"
+            }
+          }
         }
       }
     }

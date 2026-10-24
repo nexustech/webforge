@@ -29,25 +29,12 @@ export const boxValueSchema = z.strictObject({
 /** See {@link boxValueSchema}. */
 export type BoxValue = z.infer<typeof boxValueSchema>;
 
-/** A Section's padding before 1.32: one size for the top and the bottom. */
-const LEGACY_PADDING = { small: "s", medium: "m", large: "l" } as const;
-
 /**
- * A stored box: a {@link BoxValue}, or a padding size saved before 1.32 ("small", "medium",
- * "large"), read as the top and the bottom. Saved sites keep the old form until the field is next
- * changed; every change writes the new one.
+ * The box a stored value holds; nothing set (every side its default) for anything else. A
+ * Section's padding saved before 1.32 as one size is migrated by format 6 (`MIGRATIONS[5]`).
  */
-const storedBoxSchema = z.union([
-  boxValueSchema,
-  z.enum(["small", "medium", "large"]).transform((size): BoxValue => {
-    const token = LEGACY_PADDING[size];
-    return { top: token, bottom: token };
-  }),
-]);
-
-/** The box a stored value holds; nothing set (every side its default) for anything else. */
 export function boxValueOf(value: unknown): BoxValue {
-  const parsed = storedBoxSchema.safeParse(value);
+  const parsed = boxValueSchema.safeParse(value);
   return parsed.success ? parsed.data : {};
 }
 
