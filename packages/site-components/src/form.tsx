@@ -1,4 +1,5 @@
 import { t } from "@webforge/i18n";
+import type { FormService } from "@webforge/model";
 import type { ReactNode } from "react";
 import { BUTTON_CLASSES } from "./typography.js";
 
@@ -132,36 +133,77 @@ export function Honeypot() {
   );
 }
 
+/** Where a form sends what the visitor types: a service's address, and fields it needs. */
+export type FormTarget = {
+  readonly action: string;
+  /** Fields the service needs that the visitor never sees, such as an access key. */
+  readonly hidden: Readonly<Record<string, string>>;
+};
+
 /**
- * A form that posts its fields to `action`, a form service's address (F-CM-1, F-CM-6): plain HTML,
- * no script, the honeypot included. Without an address it still draws, posting nowhere, so the
- * person sees it while choosing a service; the export's checks (3.7) say it isn't set up yet.
+ * Where Site Settings' form service takes a form's submissions (F-CM-1, B3): a plain HTML POST to
+ * its address, with any field it needs. `undefined` without a service, or for Netlify Forms, which
+ * the Netlify publisher adds (3.7, 4.2). 3.7 extends this with each service's own honeypot name and
+ * its thank-you page.
+ *
+ * FormSubmit's address is the owner's email address, which is then in the page for anyone to read;
+ * FormSubmit gives a random alias instead once the address is confirmed, which Site Check (3.7)
+ * suggests using.
+ */
+export function formAction(service: FormService | undefined): FormTarget | undefined {
+  switch (service?.kind) {
+    case "formspree":
+      return { action: `https://formspree.io/f/${service.formId}`, hidden: {} };
+    case "web3forms":
+      // Web3Forms' access key is public by design: it only lets the form send to the owner.
+      return {
+        action: "https://api.web3forms.com/submit",
+        hidden: { access_key: service.accessKey },
+      };
+    case "formsubmit":
+      return { action: `https://formsubmit.co/${encodeURIComponent(service.email)}`, hidden: {} };
+    case "custom":
+      return { action: service.url, hidden: {} };
+    default:
+      return undefined;
+  }
+}
+
+/**
+ * A form that posts its fields to `target`, a form service (F-CM-1, F-CM-6): plain HTML, no
+ * script, the honeypot included. Without one it still draws, so the person sees it while choosing
+ * a service, but has no `action` (it would post to the page itself) and is marked
+ * `data-wf-form-unset`, for Site Check (3.7); `unsetHint` says on the canvas what to do.
  */
 export function SiteForm({
-  action,
+  target,
   label,
   submitLabel,
-  hidden = {},
+  unsetHint,
   children,
   className,
 }: {
-  readonly action: string | undefined;
+  readonly target: FormTarget | undefined;
   /** What the form is for, for screen readers ("Contact form"). */
   readonly label: string;
   readonly submitLabel: string;
-  /** Fields a service needs that the visitor never sees, such as an access key. */
-  readonly hidden?: Readonly<Record<string, string>>;
+  /** What the form shows without a target: a hint on the canvas, nothing in the export. */
+  readonly unsetHint?: ReactNode;
   readonly children: ReactNode;
   readonly className?: string;
 }) {
+  const hidden = target?.hidden ?? {};
   return (
     <form
       className={`site-form space-y-4${className === undefined ? "" : ` ${className}`}`}
       method="post"
       acceptCharset="UTF-8"
       aria-label={label}
-      {...(action === undefined ? {} : { action })}
+      {...(target === undefined ? { "data-wf-form-unset": "" } : { action: target.action })}
     >
+      {target === undefined && unsetHint !== undefined && unsetHint !== null && (
+        <p className="text-sm">{unsetHint}</p>
+      )}
       {Object.entries(hidden).map(([name, value]) => (
         <input key={name} type="hidden" name={name} value={value} />
       ))}

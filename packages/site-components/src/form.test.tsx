@@ -2,7 +2,7 @@ import { Window } from "happy-dom";
 import type { ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterAll, describe, expect, it } from "vitest";
-import { FormField, HONEYPOT_NAME, SiteForm } from "./form.js";
+import { FormField, formAction, HONEYPOT_NAME, SiteForm } from "./form.js";
 
 const happy = new Window();
 afterAll(() => happy.happyDOM.close());
@@ -68,9 +68,13 @@ describe("form fields (2.8, shared with 2.11)", () => {
 });
 
 describe("SiteForm (F-CM-1, F-CM-6, B6)", () => {
-  it("posts plainly to its address, with the honeypot hidden from people", () => {
+  it("posts plainly to its service, with the honeypot hidden from people", () => {
     const host = drawn(
-      <SiteForm action="https://formspree.io/f/abcd" label="Contact form" submitLabel="Send">
+      <SiteForm
+        target={{ action: "https://formspree.io/f/abcd", hidden: {} }}
+        label="Contact form"
+        submitLabel="Send"
+      >
         <FormField kind="text" name="name" label="Name" id="n" />
       </SiteForm>,
     );
@@ -82,6 +86,7 @@ describe("SiteForm (F-CM-1, F-CM-6, B6)", () => {
       "accept-charset": "UTF-8",
       "aria-label": "Contact form",
     });
+    expect(form?.hasAttribute("data-wf-form-unset")).toBe(false);
     const honeypot = form?.querySelector(`input[name="${HONEYPOT_NAME}"]`);
     expect(honeypot?.closest("[hidden]")).not.toBeNull();
     expect(honeypot?.getAttribute("tabindex")).toBe("-1");
@@ -90,18 +95,69 @@ describe("SiteForm (F-CM-1, F-CM-6, B6)", () => {
     expect(host.querySelector("script")).toBeNull();
   });
 
-  it("adds the hidden fields a service needs, and draws without an address", () => {
+  it("adds the hidden fields a service needs", () => {
     const form = drawn(
-      <SiteForm action={undefined} label="Form" submitLabel="Send" hidden={{ access_key: "k" }}>
+      <SiteForm
+        target={{ action: "https://api.web3forms.com/submit", hidden: { access_key: "k" } }}
+        label="Form"
+        submitLabel="Send"
+      >
         {null}
       </SiteForm>,
     ).querySelector("form");
 
-    expect(form?.hasAttribute("action")).toBe(false);
-    expect(attributes(form?.querySelector('input[type="hidden"]') ?? null)).toEqual({
+    expect(attributes(form?.querySelector('input[type="hidden"]'))).toEqual({
       type: "hidden",
       name: "access_key",
       value: "k",
     });
+  });
+
+  it("without a service, posts nowhere, is marked for Site Check, and shows the hint", () => {
+    const form = drawn(
+      <SiteForm target={undefined} label="Form" submitLabel="Send" unsetHint={<em>Choose one</em>}>
+        {null}
+      </SiteForm>,
+    ).querySelector("form");
+
+    // No action: a form without one would post to the page itself.
+    expect(form?.hasAttribute("action")).toBe(false);
+    expect(form?.hasAttribute("data-wf-form-unset")).toBe(true);
+    expect(form?.querySelector("em")?.textContent).toBe("Choose one");
+    // The export has no hint.
+    const exported = drawn(
+      <SiteForm target={undefined} label="Form" submitLabel="Send">
+        {null}
+      </SiteForm>,
+    ).querySelector("form");
+    expect(exported?.querySelector("p")).toBeNull();
+  });
+});
+
+describe("formAction (F-CM-1, B3)", () => {
+  it("sends to each service's own address, with what it needs", () => {
+    expect(formAction({ kind: "formspree", formId: "xyzAbc12" })).toEqual({
+      action: "https://formspree.io/f/xyzAbc12",
+      hidden: {},
+    });
+    expect(
+      formAction({ kind: "web3forms", accessKey: "0f8fad5b-d9cb-469f-a165-70867728950e" }),
+    ).toEqual({
+      action: "https://api.web3forms.com/submit",
+      hidden: { access_key: "0f8fad5b-d9cb-469f-a165-70867728950e" },
+    });
+    expect(formAction({ kind: "formsubmit", email: "rosa+web@example.com" })).toEqual({
+      action: "https://formsubmit.co/rosa%2Bweb%40example.com",
+      hidden: {},
+    });
+    expect(formAction({ kind: "custom", url: "https://forms.example.com/in" })).toEqual({
+      action: "https://forms.example.com/in",
+      hidden: {},
+    });
+  });
+
+  it("has no address without a service, or for Netlify Forms, which its publisher adds (3.7)", () => {
+    expect(formAction(undefined)).toBeUndefined();
+    expect(formAction({ kind: "netlify" })).toBeUndefined();
   });
 });

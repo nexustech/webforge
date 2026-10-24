@@ -90,3 +90,62 @@ describe("Newsletter signup (F-CM-6)", () => {
     expect(drawn(newsletter()).innerHTML).not.toContain("md:grid-cols-2");
   });
 });
+
+const contactForm = (props: Record<string, unknown> = {}): NodeDoc => ({
+  type: "ContactForm",
+  props: { id: "contact-form", ...siteLibrary.components.ContactForm?.defaults, ...props },
+});
+
+describe("Contact form (F-CM-1)", () => {
+  const withService: RenderContext = {
+    ...EDITOR_RENDER_CONTEXT,
+    formService: { kind: "formspree", formId: "xyzAbc12" },
+  };
+
+  it("sends a name, an email address and a message to the service in Site Settings", () => {
+    const host = drawn(contactForm(), withService);
+    const form = host.querySelector("form");
+
+    expect(host.querySelector("section")?.className).toContain("site-contact-form");
+    expect(form?.getAttribute("action")).toBe("https://formspree.io/f/xyzAbc12");
+    expect(form?.getAttribute("aria-label")).toBe(t("siteText.form.contact"));
+    expect(
+      [...(form?.querySelectorAll("input:not([type=hidden]), textarea") ?? [])]
+        .map((field) => field.getAttribute("name"))
+        .filter((name) => name !== HONEYPOT_NAME),
+    ).toEqual(["name", "email", "message"]);
+    for (const name of ["name", "email", "message"]) {
+      expect(form?.querySelector(`[name="${name}"]`)?.hasAttribute("required")).toBe(true);
+    }
+    // Each field's id is unique on the page: the section's id, then the field.
+    expect(form?.querySelector('[name="email"]')?.id).toBe("contact-form-email");
+    expect(form?.querySelector("button")?.textContent).toBe(t("starter.contactFormButton"));
+  });
+
+  it("asks for a phone number, not required, when set to", () => {
+    const phone = drawn(contactForm({ askPhone: true }), withService).querySelector(
+      'input[name="phone"]',
+    );
+
+    expect(phone?.getAttribute("type")).toBe("tel");
+    expect(phone?.hasAttribute("required")).toBe(false);
+  });
+
+  it("without a service, posts nowhere, is marked for Site Check, and shows the canvas's hint", () => {
+    const exported = drawn(contactForm()).querySelector("form");
+    expect(exported?.hasAttribute("action")).toBe(false);
+    expect(exported?.hasAttribute("data-wf-form-unset")).toBe(true);
+
+    const canvas = drawn(contactForm(), {
+      ...EDITOR_RENDER_CONTEXT,
+      emptyFormService: <em>Choose where submissions go</em>,
+    });
+    expect(canvas.querySelector("form em")?.textContent).toBe("Choose where submissions go");
+    // Netlify Forms comes with its publisher (3.7): until then, no service.
+    expect(
+      drawn(contactForm(), { ...EDITOR_RENDER_CONTEXT, formService: { kind: "netlify" } })
+        .querySelector("form")
+        ?.hasAttribute("data-wf-form-unset"),
+    ).toBe(true);
+  });
+});

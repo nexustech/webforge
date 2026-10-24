@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>About us | Rosa's Bakery</title>
-  <link rel="stylesheet" href="assets/css/site.7637dc36a3.css">
+  <link rel="stylesheet" href="assets/css/site.d6e53e7df7.css">
   <script defer src="assets/js/webforge.3e90f702d5.js"></script>
 </head>
 <body class="flex min-h-screen flex-col bg-base-100 font-sans text-base-content">
@@ -206,6 +206,33 @@
             </div><a class="link text-sm" href="https://www.google.com/maps/search/?api=1&amp;query=1%20High%20Street%2C%20Hightown%2C%20HT1%202AB" target="_blank" rel="noopener noreferrer">Open in Google Maps</a>
           </div>
         </div>
+      </div>
+    </section>
+    <section class="site-contact-form bg-base-100 px-4 py-16">
+      <div class="mx-auto max-w-xl space-y-8">
+        <div class="text-center">
+          <h2 class="text-3xl font-bold">Write to us</h2>
+          <div class="mt-4 text-lg leading-relaxed [&amp;_a]:underline [&amp;_p+p]:mt-4"></div>
+        </div>
+        <form class="site-form space-y-4" accept-charset="UTF-8" aria-label="Contact form" action="https://formspree.io/f/xyzAbc12" method="post">
+          <div class="site-form-field space-y-1"><label class="block font-medium" for="write-name">Name<span class="text-error" aria-hidden="true"> *</span></label><input id="write-name" type="text" class="input w-full" required="" autoComplete="name" name="name" /></div>
+          <div class="site-form-field space-y-1"><label class="block font-medium" for="write-email">Email address<span class="text-error" aria-hidden="true"> *</span></label><input id="write-email" type="email" class="input w-full" required="" autoComplete="email" name="email" /></div>
+          <div class="site-form-field space-y-1"><label class="block font-medium" for="write-phone">Phone number</label><input id="write-phone" type="tel" class="input w-full" autoComplete="tel" name="phone" /></div>
+          <div class="site-form-field space-y-1"><label class="block font-medium" for="write-message">Message<span class="text-error" aria-hidden="true"> *</span></label><textarea id="write-message" name="message" rows="5" class="textarea w-full" required=""></textarea></div>
+          <div hidden=""><label>Leave this empty<input type="text" tabindex="-1" autoComplete="off" name="_gotcha" /></label></div><button type="submit" class="btn btn-primary">Send message</button>
+        </form>
+      </div>
+    </section>
+    <section class="site-newsletter bg-base-200 px-4 py-16">
+      <div class="mx-auto max-w-xl space-y-8">
+        <div class="text-center">
+          <h2 class="text-3xl font-bold">Our newsletter</h2>
+          <div class="mt-4 text-lg leading-relaxed [&amp;_a]:underline [&amp;_p+p]:mt-4"></div>
+        </div>
+        <form class="site-form space-y-4" accept-charset="UTF-8" aria-label="Newsletter signup" action="https://example.com/newsletter/signup" method="post">
+          <div class="site-form-field space-y-1"><label class="block font-medium" for="news-email">Email address<span class="text-error" aria-hidden="true"> *</span></label><input id="news-email" type="email" class="input w-full" required="" autoComplete="email" name="email" /></div>
+          <div hidden=""><label>Leave this empty<input type="text" tabindex="-1" autoComplete="off" name="_gotcha" /></label></div><button type="submit" class="btn btn-primary">Sign up</button>
+        </form>
       </div>
     </section>
   </main>
