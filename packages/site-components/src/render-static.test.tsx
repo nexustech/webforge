@@ -510,6 +510,18 @@ describe("renderNodesToHtml", () => {
     expect(left).toContain('alt="Our bakery" loading="lazy"');
   });
 
+  it("sets Text + Image's text in one readable column until it has an image (2.6)", () => {
+    const html = renderNodesToHtml(
+      [{ type: "TextImage", props: { id: "what", title: "What we bake", text: "<p>Bread.</p>" } }],
+      siteLibrary,
+      context,
+    );
+
+    expect(html).toContain('<div class="mx-auto max-w-3xl"><div><h2');
+    expect(html).not.toContain("md:grid-cols-2");
+    expect(html).not.toContain("<picture>");
+  });
+
   it("draws a Call to action as a banner or with its button beside the text (2.6)", () => {
     const cta = (variant: string, buttonLabel = "Book a table") =>
       renderNodesToHtml(

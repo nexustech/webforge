@@ -189,7 +189,14 @@ const textImage = defineComponent({
     const image = placed === undefined ? null : context.image(placed.mediaId);
     return (
       <section className={`site-text-image bg-base-100 ${sectionBox(values)}`}>
-        <div className="mx-auto grid max-w-6xl items-center gap-10 md:grid-cols-2">
+        {/* Without an image yet, the text alone, in the Text section's readable measure. */}
+        <div
+          className={
+            image === null
+              ? "mx-auto max-w-3xl"
+              : "mx-auto grid max-w-6xl items-center gap-10 md:grid-cols-2"
+          }
+        >
           {/* The text comes first, as it is read; on wide screens CSS puts the image left. */}
           <div>
             <h2 className="text-3xl font-bold">{values.title}</h2>
