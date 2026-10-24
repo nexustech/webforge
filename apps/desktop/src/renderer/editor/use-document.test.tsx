@@ -1,18 +1,16 @@
 // @vitest-environment happy-dom
 import { act, cleanup, render } from "@testing-library/react";
 import type { PageId } from "@webforge/model";
-import { siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it } from "vitest";
 import { addPage, renamePage } from "../site/page-actions.js";
-import { createEditorSession } from "./editor-session.js";
-import { starterSite } from "./starter-site.js";
+import { sessionWith } from "../testing/fixtures.js";
 import { pageListOf, samePages, useDocument } from "./use-document.js";
 
 afterEach(cleanup);
 
 describe("pageListOf and samePages (R9)", () => {
   it("lists the same pages while only page content changes, and others when a page does", () => {
-    const session = createEditorSession(siteLibrary, starterSite());
+    const session = sessionWith();
     const site = () => session.history.document.getState();
     const first = pageListOf(site());
 
@@ -35,7 +33,7 @@ describe("pageListOf and samePages (R9)", () => {
 
 describe("useDocument (R9)", () => {
   it("redraws a component only when its slice changes", () => {
-    const session = createEditorSession(siteLibrary, starterSite());
+    const session = sessionWith();
     let renders = 0;
     function Name() {
       renders += 1;
@@ -65,7 +63,7 @@ describe("useDocument (R9)", () => {
 
 describe("the UI store (R9)", () => {
   it("changes only through the session, never to a page the site doesn't have", () => {
-    const session = createEditorSession(siteLibrary, starterSite());
+    const session = sessionWith();
     const ui = () => session.ui.getState();
     const home = ui().pageId;
 

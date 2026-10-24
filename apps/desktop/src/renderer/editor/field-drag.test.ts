@@ -1,14 +1,13 @@
 import { copiedNodeId, type PageDoc } from "@webforge/model";
-import { siteLibrary } from "@webforge/site-components";
+import { createFakeEngine } from "@webforge/test-utils/renderer";
 import { describe, expect, it, vi } from "vitest";
 import { saveAsSharedSection } from "../shared-sections/shared-sections.js";
-import { createEditorSession, currentPage, runHistoryCommand } from "./editor-session.js";
-import { createFakeEngine } from "./fake-engine.test-helper.js";
+import { sessionWith } from "../testing/fixtures.js";
+import { currentPage, runHistoryCommand } from "./editor-session.js";
 import { connectFieldDrags } from "./field-drag.js";
-import { starterSite } from "./starter-site.js";
 
 function setup() {
-  const session = createEditorSession(siteLibrary, starterSite());
+  const session = sessionWith();
   const engine = createFakeEngine();
   const flush = vi.fn();
   const stop = connectFieldDrags(engine, session, flush);

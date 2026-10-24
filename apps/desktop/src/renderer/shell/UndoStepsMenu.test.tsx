@@ -2,11 +2,9 @@
 import { act, cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TooltipProvider } from "@webforge/editor-ui";
-import { siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it } from "vitest";
-import { createEditorSession } from "../editor/editor-session.js";
-import { starterSite } from "../editor/starter-site.js";
 import { undoEntry } from "../editor/undo-entry.js";
+import { sessionWith } from "../testing/fixtures.js";
 import { CommandRegistryProvider } from "./command-context.js";
 import { COMMAND_IDS } from "./command-ids.js";
 import { createCommandRegistry } from "./commands.js";
@@ -16,7 +14,7 @@ afterEach(cleanup);
 
 /** A site with `count` steps ("Step 1" first), Undo registered as the editor registers it. */
 function setUp(count: number) {
-  const session = createEditorSession(siteLibrary, starterSite());
+  const session = sessionWith();
   for (let step = 1; step <= count; step++) {
     session.edit("props", `Step ${step}`, (draft) => {
       draft.settings.general.name = `Name ${step}`;

@@ -1,14 +1,12 @@
 import type { NavItem } from "@webforge/site-components";
-import { siteLibrary } from "@webforge/site-components";
 import { describe, expect, it, vi } from "vitest";
-import { createEditorSession } from "../editor/editor-session.js";
-import { starterSite } from "../editor/starter-site.js";
 import { addPage } from "../site/index.js";
+import { sessionWith } from "../testing/fixtures.js";
 import { connectCanvasNavigation } from "./canvas-navigation.js";
 import { addMenuItem, renameMenuItem } from "./menu-actions.js";
 
 function setUp() {
-  const session = createEditorSession(siteLibrary, starterSite());
+  const session = sessionWith();
   const about = addPage(session, "About");
   if (about === null) throw new Error("not added");
   session.showPage(session.history.document.getState().homePageId);

@@ -1,11 +1,10 @@
 // @vitest-environment happy-dom
 import type { SiteDoc } from "@webforge/model";
-import { siteLibrary } from "@webforge/site-components";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { createEditorSession, type EditorSession, runHistoryCommand } from "./editor-session.js";
-import { starterSite } from "./starter-site.js";
+import { sessionWith } from "../testing/fixtures.js";
+import { type EditorSession, runHistoryCommand } from "./editor-session.js";
 import { type GestureControls, useGesture } from "./use-gesture.js";
 
 declare global {
@@ -33,7 +32,7 @@ describe("useGesture", () => {
     container = document.createElement("div");
     document.body.append(container);
     root = createRoot(container);
-    session = createEditorSession(siteLibrary, starterSite());
+    session = sessionWith();
     await act(async () => root.render(<Slider />));
   });
 

@@ -6,11 +6,12 @@ import {
   type SharedSectionId,
 } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
+import { createFakeEngine } from "@webforge/test-utils/renderer";
 import { describe, expect, it, vi } from "vitest";
 import { createCommandRegistry } from "../shell/commands.js";
-import { createEditorSession, currentPage } from "./editor-session.js";
+import { sessionWith } from "../testing/fixtures.js";
+import { currentPage } from "./editor-session.js";
 import { registerElementCommands } from "./element-commands.js";
-import { createFakeEngine } from "./fake-engine.test-helper.js";
 import { starterSite } from "./starter-site.js";
 
 const HOURS = "shared-hours" as SharedSectionId;
@@ -30,7 +31,7 @@ function setUp() {
     },
     { type: SHARED_COPY_TYPE, props: { id: "c1", sharedSectionId: HOURS } },
   ];
-  const session = createEditorSession(siteLibrary, {
+  const session = sessionWith({
     ...site,
     pages: { ...site.pages, [home.id]: { ...home, doc: { root: { props: {} }, content } } },
     sharedSections: {

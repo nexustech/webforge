@@ -1,8 +1,6 @@
 import { defaultSiteSettings, type SiteSettings } from "@webforge/model";
-import { siteLibrary } from "@webforge/site-components";
 import { describe, expect, it } from "vitest";
-import { createEditorSession } from "../editor/editor-session.js";
-import { starterSite } from "../editor/starter-site.js";
+import { sessionWith } from "../testing/fixtures.js";
 import {
   checkSettings,
   fromSettingsForm,
@@ -127,7 +125,7 @@ describe("settings form", () => {
 
 describe("saveSiteSettings", () => {
   it("names every section a save changed, and none for a change outside them (R10)", () => {
-    const session = createEditorSession(siteLibrary, starterSite());
+    const session = sessionWith();
     const before = session.history.document.getState().settings;
     const labels = () => session.history.state.getState().entries.map((entry) => entry.label);
 
@@ -147,7 +145,7 @@ describe("saveSiteSettings", () => {
   });
 
   it("saves as one labelled undo step, and does nothing when nothing changed", () => {
-    const session = createEditorSession(siteLibrary, starterSite());
+    const session = sessionWith();
     const before = session.history.document.getState().settings;
 
     expect(saveSiteSettings(session, before)).toBe(false);
