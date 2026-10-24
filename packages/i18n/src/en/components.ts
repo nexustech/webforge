@@ -26,6 +26,12 @@ export const components = {
   "field.size.large": "Large",
   "field.size.medium": "Medium",
   "field.size.small": "Small",
+  // A section's colours (2.4, F-DS-3): the page's, or the theme's light and dark ones swapped.
+  "field.sectionColors": "Colours",
+  "field.sectionColors.page": "Page colours",
+  "field.sectionColors.inverse": "Reversed",
+  "field.sectionColors.help":
+    "Reversed swaps the theme's light and dark colours: a dark band on a light page, a light one on a dark page.",
   "field.padding": "Padding",
   "field.margin": "Margin",
   // A component's layout variants (2.5): "Image on the left", "Three columns".
