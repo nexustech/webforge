@@ -22,10 +22,10 @@ export function priceList(): Uint8Array {
 /**
  * A small two-page site: Header and Footer, a home page with a Hero (with photo), text, a Carousel
  * of customers' quotes (2.10), an FAQ and a Call to action, and an About page with a text-only Hero
- * linking to a price list (a document), a Text section, a Text + Image section (2.6), and a Video
- * Opening hours and contact, and a Map that load only when clicked (2.8). Its menu has both pages, a "Visit us" dropdown (a
- * link to the FAQ section and a web address in a new tab) and an "Order a cake" button. Used by
- * pipeline tests and the export E2E tests.
+ * linking to a price list (a document), a Text section, a Text + Image section (2.6), Opening
+ * hours and contact from Site Settings, and a Video and a Map that load only when clicked (2.8).
+ * Its menu has both pages, a "Visit us" dropdown (a link to the FAQ section and a web address in
+ * a new tab) and an "Order a cake" button. Used by pipeline tests and the export E2E tests.
  */
 export function sampleSite(): SiteSnapshot {
   return {
