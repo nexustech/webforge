@@ -10,6 +10,7 @@ import {
 } from "@webforge/model";
 import Database from "better-sqlite3";
 import { z } from "zod";
+import { checkContent, stampContent } from "./content-check.js";
 import { ProjectFileError, ReadOnlyProjectError } from "./errors.js";
 import { APPLICATION_ID, FORMAT_VERSION, SCHEMA, SCHEMA_MIGRATIONS, SCHEMAS } from "./schema.js";
 
@@ -347,6 +348,10 @@ function validateProject(db: Database.Database): ValidatedProject {
       cause: meta.error,
     });
   }
+  // A torn copy can pass quick_check (#295). A newer format's tables are its own to check.
+  if (!newerFormat) {
+    checkContent(db);
+  }
   return {
     projectId: meta.data.project_id,
     name: meta.data.name,
@@ -374,6 +379,7 @@ function migrateSchema(db: Database.Database, from: number): void {
     db.prepare("UPDATE meta SET value = ? WHERE key = 'format_version'").run(
       String(FORMAT_VERSION),
     );
+    stampContent(db);
   })();
 }
 
@@ -421,6 +427,7 @@ export class ProjectStore {
           for (const [key, value] of Object.entries(meta)) {
             insert.run(key, value);
           }
+          stampContent(db);
         })();
       } finally {
         db.close();
@@ -560,6 +567,7 @@ export class ProjectStore {
           remove.run(change.id);
         }
       }
+      stampContent(this.#db);
     })();
   }
 
@@ -600,17 +608,20 @@ export class ProjectStore {
       kind,
       createdAt: new Date().toISOString(),
     };
-    this.#prepare(
-      `INSERT INTO versions (id, name, kind, created_at, format_version, manifest)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-    ).run(
-      version.id,
-      version.name,
-      version.kind,
-      version.createdAt,
-      FORMAT_VERSION,
-      JSON.stringify({ documents }),
-    );
+    this.#db.transaction(() => {
+      this.#prepare(
+        `INSERT INTO versions (id, name, kind, created_at, format_version, manifest)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+      ).run(
+        version.id,
+        version.name,
+        version.kind,
+        version.createdAt,
+        FORMAT_VERSION,
+        JSON.stringify({ documents }),
+      );
+      stampContent(this.#db);
+    })();
     return version;
   }
 
@@ -661,6 +672,7 @@ export class ProjectStore {
         asset.height ?? null,
         asset.originalName,
       );
+      stampContent(this.#db);
       return {
         mediaId: asset.mediaId,
         hash,
@@ -722,6 +734,7 @@ export class ProjectStore {
         removeBlob.run(blob.hash);
         bytes += blob.size;
       }
+      stampContent(this.#db);
       return { blobs: unreferenced.length, bytes, assets };
     })();
   }

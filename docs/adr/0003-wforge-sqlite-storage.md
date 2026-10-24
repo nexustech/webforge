@@ -90,6 +90,9 @@ The spike adds a minimal `ProjectStore` in `packages/storage` and wires it throu
   | `meta.format_version` | `newer-format` if newer |
   | `sqlite_schema` equals the expected schema exactly (extra triggers, views, tables or indexes fail) | `unexpected-schema` |
   | zod-validated metadata and version manifests; JSON blobs parsed with `z.json()` | `unexpected-schema` / `corrupt` |
+  | **Content (#295, 24 Oct 2026):** the header's `user_version` holds a fingerprint of every document's and asset's row and the version ids, written in the same transaction as any change to them; it must match the rows. Every document, asset and version refers to a blob the file has, and each document blob is the bytes its hash names. `user_version` 0 (files from before) skips the fingerprint only | `corrupt` |
+
+  **Why the content check:** a copy of the `.wforge` alone, taken while a commit writes it, can hold some of the commit's pages and the old version of the rest, since the rollback journal that would undo it isn't copied. `quick_check` only sees the b-trees, which can be whole on both sides (macOS CI, #295). `packages/storage/test/torn-copy.test.ts` builds every such copy from two real commits, page by page.
 
 - **Over IPC.** Errors are a typed `ProjectFileError` with a code. The IPC returns `{ status: "failed", reason }`, and logs only the code, never paths or content. The renderer never sends a path: native dialogs run in the main process.
 

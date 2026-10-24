@@ -256,7 +256,7 @@ describe("ProjectStore versions", () => {
     expect(blobCount(path)).toBe(1);
   });
 
-  it("rejects a version whose manifest was tampered with", () => {
+  it("refuses to open a project whose version manifest was tampered with (#295)", () => {
     const path = createProject();
     const store = ProjectStore.open(path);
     const version = store.saveVersion("v", "manual");
@@ -265,9 +265,7 @@ describe("ProjectStore versions", () => {
       db.prepare("UPDATE versions SET manifest = ? WHERE id = ?").run("{}", version.id);
     });
 
-    const reopened = ProjectStore.open(path);
-    expect(() => reopened.readVersion(version.id)).toThrow(ProjectFileError);
-    reopened.close();
+    expect(openResult(path)).toBe("corrupt");
   });
 });
 
@@ -366,15 +364,13 @@ describe("ProjectStore.open with untrusted files", () => {
     expect(openResult(path)).toBe("unexpected-schema");
   });
 
-  it("rejects a document that points to a missing or invalid blob", () => {
+  it("refuses to open a document that points to a missing blob, or to other bytes (#295)", () => {
     const missing = createProject();
     tamper(missing, (db) => {
       db.pragma("foreign_keys = OFF");
       db.prepare("INSERT INTO documents VALUES ('page:home', 'page', ?)").run("f".repeat(64));
     });
-    const store = ProjectStore.open(missing);
-    expect(() => store.readDocuments()).toThrow(ProjectFileError);
-    store.close();
+    expect(openResult(missing)).toBe("corrupt");
 
     const invalid = createProject();
     tamper(invalid, (db) => {
@@ -384,9 +380,7 @@ describe("ProjectStore.open with untrusted files", () => {
       );
       db.prepare("INSERT INTO documents VALUES ('page:home', 'page', ?)").run("e".repeat(64));
     });
-    const invalidStore = ProjectStore.open(invalid);
-    expect(() => invalidStore.readDocument("page:home")).toThrow(ProjectFileError);
-    invalidStore.close();
+    expect(openResult(invalid)).toBe("corrupt");
   });
 
   it("switches a project that another tool put in WAL mode back to the rollback journal", () => {
