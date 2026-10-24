@@ -189,6 +189,12 @@ describe("the section frame (2.19)", () => {
     },
   );
 
+  it("starts every section on the page's colours, as one with no value has", () => {
+    for (const [type, def] of Object.entries(siteLibrary.components)) {
+      if (def.place === "section") expect(def.defaults.colors, type).toBe("page");
+    }
+  });
+
   it("refuses a section that declares its own colours", () => {
     expect(() =>
       defineSection({

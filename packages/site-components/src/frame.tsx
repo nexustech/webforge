@@ -106,6 +106,8 @@ export function defineSection<const F extends Fields, const Variant extends stri
     ...rest,
     place: "section",
     fields: { ...fields, colors: COLORS_FIELD, padding: PADDING_FIELD, margin: MARGIN_FIELD },
+    // A new section has the page's colours, as one with no value has: choosing them is no change.
+    defaults: { colors: "page", ...rest.defaults },
     render: (props) => {
       const { values } = props;
       // Every section's values have the frame's fields, which generic types can't see through.
