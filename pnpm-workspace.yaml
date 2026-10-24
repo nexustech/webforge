@@ -21,6 +21,8 @@ catalog:
   babel-plugin-react-compiler: 1.0.0
   better-sqlite3: 13.0.3
   daisyui: 5.7.50
+  # DOM for Vitest in the workspaces that test React; 21.0.4 fixes CVE-2026-33943 (Dependabot 2–5).
+  happy-dom: 21.0.4
   react: 19.3.1
   react-dom: 19.3.1
   tailwindcss: 4.3.3
@@ -44,3 +46,8 @@ allowBuilds:
 # needed then.
 patchedDependencies:
   '@puckeditor/core@0.23.0': patches/@puckeditor__core@0.23.0.patch
+
+# Vitest's optional peer resolves happy-dom in workspaces that don't use it too; the override keeps
+# every copy at the catalog's patched version (CVE-2026-33943), so no old one stays in the lockfile.
+overrides:
+  happy-dom: "catalog:"
