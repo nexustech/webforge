@@ -8,7 +8,8 @@ describe("siteLibrary", () => {
       Object.entries(siteLibrary.components).map(([type, def]) => [type, def.label]),
     );
 
-    expect(labels).toEqual({
+    // The catalogue's names; a family added later adds its own.
+    expect(labels).toMatchObject({
       Header: "Header",
       Footer: "Footer",
       Section: "Section",
@@ -42,7 +43,7 @@ describe("siteLibrary", () => {
       Object.entries(siteLibrary.components).map(([type, def]) => [type, def.place ?? "element"]),
     );
 
-    expect(places).toEqual({
+    expect(places).toMatchObject({
       Header: "layout",
       Footer: "layout",
       Section: "section",
