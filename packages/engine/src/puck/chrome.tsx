@@ -1,5 +1,6 @@
 import { ActionBar, createUsePuck, useGetPuck } from "@puckeditor/core";
 import { t } from "@webforge/i18n";
+import type { Breakpoint } from "@webforge/model";
 import { PREVIEW_ATTRIBUTE } from "@webforge/site-components";
 import { ArrowDownIcon, ArrowUpIcon, EyeIcon, EyeOffIcon, PencilIcon } from "lucide-react";
 import { type ReactNode, useLayoutEffect, useRef, useState } from "react";
@@ -157,6 +158,8 @@ export type SpacingHandleOptions = {
   readonly fieldsOf: (componentType: string) => readonly BoxHandleField[];
   /** The field that sets how wide an element of a component type is, if it has one. */
   readonly widthFieldOf?: (componentType: string) => WidthHandleField | undefined;
+  /** The device view the canvas shows, whose values the handles change. */
+  readonly breakpoint: () => Breakpoint;
   readonly onFieldDrag: (drag: FieldDrag) => void;
 };
 
@@ -220,6 +223,7 @@ export function createSelectionOutline(
             nodeId={componentId}
             fields={boxFields}
             props={props}
+            breakpoint={spacing.breakpoint}
             onFieldDrag={spacing.onFieldDrag}
           />
         ) : null}
@@ -228,6 +232,7 @@ export function createSelectionOutline(
             nodeId={componentId}
             field={widthField}
             props={props}
+            breakpoint={spacing.breakpoint}
             onFieldDrag={spacing.onFieldDrag}
           />
         ) : null}

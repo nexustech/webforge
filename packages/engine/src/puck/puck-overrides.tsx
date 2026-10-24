@@ -1,4 +1,5 @@
 import { createUsePuck, type Overrides, useGetPuck } from "@puckeditor/core";
+import { breakpointForWidth } from "@webforge/model";
 import type { ComponentLibrary } from "@webforge/site-components";
 import { type ReactNode, useEffect } from "react";
 import type { ElementRequest, FieldDrag, InsertPoint } from "../canvas-engine.js";
@@ -151,6 +152,8 @@ export function createPuckOverrides(options: PuckOverridesOptions): Partial<Over
       {
         fieldsOf: (componentType) => boxHandleFields(options.library(), componentType),
         widthFieldOf: (componentType) => widthHandleField(options.library(), componentType),
+        // The width the app asked for: its view's breakpoint, as the app writes the drag at.
+        breakpoint: () => breakpointForWidth(view.width()),
         onFieldDrag: options.fieldDrag,
       },
     ),

@@ -1,5 +1,5 @@
 import { t } from "@webforge/i18n";
-import { breakpointForWidth, resolveResponsive } from "@webforge/model";
+import { type Breakpoint, resolveResponsive } from "@webforge/model";
 import type { ComponentLibrary } from "@webforge/site-components";
 import {
   type PointerEvent as ReactPointerEvent,
@@ -75,7 +75,11 @@ export function widthAt(
   return 2 * Math.abs(x - (element.left + element.right) / 2);
 }
 
-/** The step whose width is nearest `width` in a container `containerWidth` wide. */
+/**
+ * The step whose width is nearest `width` in a container `containerWidth` wide. Steps that show as
+ * wide as each other (each capped at the container) tie, and the widest wins: in a narrow column
+ * Large shows as Full does, and dragging to the column's edge must still give Full.
+ */
 export function nearestStep(
   steps: WidthHandleField["steps"],
   width: number,
@@ -87,7 +91,8 @@ export function nearestStep(
     // A step never shows wider than the container.
     const shown = Math.min(step.px ?? containerWidth, containerWidth);
     const gap = Math.abs(shown - width);
-    if (gap < bestGap) {
+    // Narrowest first, so a tie goes to the later, wider step.
+    if (gap <= bestGap) {
       best = step;
       bestGap = gap;
     }
@@ -136,6 +141,11 @@ export type WidthHandlesProps = {
   readonly field: WidthHandleField;
   /** The element's props, for its width and alignment. */
   readonly props: Readonly<Record<string, unknown>> | undefined;
+  /**
+   * The device view the canvas shows, whose value a drag changes: as the app writes it, which a
+   * custom width's frame can't be trusted to say while it resizes.
+   */
+  readonly breakpoint: () => Breakpoint;
   readonly onFieldDrag: (drag: FieldDrag) => void;
 };
 
@@ -146,26 +156,35 @@ export type WidthHandlesProps = {
  * cancels a drag. The grips are for the mouse; the Edit panel's slider sets the same from the
  * keyboard.
  */
-export function WidthHandles({ nodeId, field, props, onFieldDrag }: WidthHandlesProps) {
+export function WidthHandles({
+  nodeId,
+  field,
+  props,
+  breakpoint: shownBreakpoint,
+  onFieldDrag,
+}: WidthHandlesProps) {
   const [readout, setReadout] = useState<string | null>(null);
   // The element's left and right edges, in from the outline's: where the grips go.
   const gripsBox = useRef<HTMLSpanElement>(null);
   const [edges, setEdges] = useState({ left: 0, right: 0 });
+  const remeasure = useRef<(() => void) | null>(null);
   useLayoutEffect(() => {
     const grips = gripsBox.current;
     const outline = grips?.parentElement;
-    const wrapper = grips?.ownerDocument.querySelector(componentSelector(nodeId));
-    if (!outline || !wrapper) return;
-    const Observer = grips?.ownerDocument.defaultView?.ResizeObserver;
-    // It moves as its width changes, mid-drag too, and as the column does. Puck keeps its wrapper,
-    // but the element in it can change (an Image given its picture), so it is found each time.
-    const observer = Observer === undefined ? undefined : new Observer(() => measure());
+    const document = grips?.ownerDocument;
+    const wrapper = document?.querySelector(componentSelector(nodeId));
+    const frame = document?.defaultView;
+    if (!outline || !wrapper || !document || !frame) return;
     let element: Element | null = null;
+    // It changes size as its width does, mid-drag too, and as the column does. Puck keeps its
+    // wrapper, but the element in it can change (an Image given its picture), so it is found each
+    // time.
+    const resizes = new frame.ResizeObserver(() => measure());
     const measure = () => {
       const now = wrapper.firstElementChild;
       if (now !== element) {
-        if (element !== null) observer?.unobserve(element);
-        if (now !== null) observer?.observe(now);
+        if (element !== null) resizes.unobserve(element);
+        if (now !== null) resizes.observe(now);
         element = now;
       }
       if (element === null) return;
@@ -175,11 +194,22 @@ export function WidthHandles({ nodeId, field, props, onFieldDrag }: WidthHandles
       const right = Math.round(around.right - shown.right);
       setEdges((edges) => (edges.left === left && edges.right === right ? edges : { left, right }));
     };
-    observer?.observe(wrapper);
-    observer?.observe(outline);
+    resizes.observe(wrapper);
+    resizes.observe(outline);
+    // It moves without changing size when the site's styles arrive for a class it was just given
+    // (a new alignment): they come after the render, into the frame's head.
+    const styles = new frame.MutationObserver(() => measure());
+    styles.observe(document.head, { childList: true, subtree: true, characterData: true });
+    remeasure.current = measure;
     measure();
-    return () => observer?.disconnect();
+    return () => {
+      resizes.disconnect();
+      styles.disconnect();
+      remeasure.current = null;
+    };
   }, [nodeId]);
+  // And after every render: a change to its alignment or margin moves it without resizing it.
+  useLayoutEffect(() => remeasure.current?.());
   // Cancels the drag going on, if any: grips that go mid-drag leave no listeners behind.
   const cancelDrag = useRef<(() => void) | null>(null);
   useEffect(() => () => cancelDrag.current?.(), []);
@@ -194,8 +224,8 @@ export function WidthHandles({ nodeId, field, props, onFieldDrag }: WidthHandles
     const element = elementOf(grip.ownerDocument, nodeId);
     const container = element?.parentElement;
     if (!frame || element === null || element === undefined || !container) return;
-    // The value for the device the canvas shows: the frame is as wide as that device's view.
-    const breakpoint = breakpointForWidth(frame.innerWidth);
+    // The value for the device the canvas shows.
+    const breakpoint = shownBreakpoint();
     const before = resolveResponsive<unknown>(props?.[field.name], breakpoint);
     const report = (phase: FieldDrag["phase"], value: unknown) =>
       onFieldDrag({ phase, nodeId, field: field.name, value });
