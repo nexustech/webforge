@@ -5,6 +5,7 @@ import {
   type ComponentLibrary,
   EDITOR_RENDER_CONTEXT,
   type RenderContext,
+  type SiteBindings,
   samePreviews,
 } from "@webforge/site-components";
 import type { ComponentType, ReactNode } from "react";
@@ -86,8 +87,31 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
   const sync = createCanvasSync();
   /** Stops listening in the editor window (see `listenInEditor`). */
   let stopEditorListeners: (() => void) | null = null;
-  /** What the canvas renders with: no navigation or links, and the site's Media images. */
-  let renderContext: RenderContext = EDITOR_RENDER_CONTEXT;
+  /**
+   * What the canvas renders with besides Site Settings: no navigation or links, the site's Media
+   * images and what an Image without one shows, and the edit-only previews.
+   */
+  let parts: Omit<RenderContext, keyof SiteBindings> = {
+    navigation: EDITOR_RENDER_CONTEXT.navigation,
+    link: EDITOR_RENDER_CONTEXT.link,
+    href: EDITOR_RENDER_CONTEXT.href,
+    image: EDITOR_RENDER_CONTEXT.image,
+  };
+  /**
+   * Site Settings' values (`setSettings`), kept apart from the other parts so that replacing them
+   * replaces nothing else (#367). Which method gives each part is listed, and checked, in
+   * `render-context-sources.ts`.
+   */
+  let bindings: SiteBindings = { setting: EDITOR_RENDER_CONTEXT.setting };
+  /** The two together: what the canvas's components render with. */
+  let renderContext: RenderContext = { ...parts, ...bindings };
+  /** Takes `next` parts or bindings, and draws the page again with them. */
+  const changeContext = (next: { parts: typeof parts } | { bindings: SiteBindings }) => {
+    if ("parts" in next) parts = next.parts;
+    else bindings = next.bindings;
+    renderContext = { ...parts, ...bindings };
+    redraw();
+  };
   /** Per node, bumped to remount its rich-text editors (see toPuckConfig). */
   const editorRevisions = new Map<string, number>();
 
@@ -319,26 +343,18 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     onViewportChange: view.onViewport,
 
     setImages(image, emptyImage) {
-      const { emptyImage: _previous, ...rest } = renderContext;
-      renderContext = { ...rest, image, ...(emptyImage === undefined ? {} : { emptyImage }) };
-      redraw();
+      const { emptyImage: _previous, ...rest } = parts;
+      changeContext({
+        parts: { ...rest, image, ...(emptyImage === undefined ? {} : { emptyImage }) },
+      });
     },
 
-    setNavigation(navigation) {
-      renderContext = { ...renderContext, navigation };
-      redraw();
-    },
+    setNavigation: (navigation) => changeContext({ parts: { ...parts, navigation } }),
 
     setLinkPicker: richText.setLinkPicker,
 
-    setSettings(bindings) {
-      // Replaces every binding: one left out of `bindings` goes. The context's other parts are named
-      // here; a required part added to RenderContext fails to compile until it's listed, an optional
-      // one would be dropped silently, so list it too.
-      const { navigation, link, href, image } = renderContext;
-      renderContext = { navigation, link, href, image, ...bindings };
-      redraw();
-    },
+    // Replaces every binding: one left out goes. The other parts stay as they are.
+    setSettings: (next) => changeContext({ bindings: next }),
 
     setZoom: view.zoom,
     onCanvasSize: view.onSize,
@@ -376,9 +392,8 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
 
     setPreviews(previews) {
       // Drawing the page again is only worth it when what it previews changes.
-      if (samePreviews(renderContext.previews ?? {}, previews)) return;
-      renderContext = { ...renderContext, previews };
-      redraw();
+      if (samePreviews(parts.previews ?? {}, previews)) return;
+      changeContext({ parts: { ...parts, previews } });
     },
 
     destroy() {

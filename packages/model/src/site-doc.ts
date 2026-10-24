@@ -59,6 +59,11 @@ const pageSettingsSchema = z.strictObject({
   hideHeader: z.boolean(),
   hideFooter: z.boolean(),
   hideFromNavigation: z.boolean(),
+  /**
+   * Leaves the site's back-to-top button off this page (F-CM-9, 2.9). Shown, if the site has it,
+   * when absent, as in files from before it.
+   */
+  hideBackToTop: z.boolean().optional(),
 });
 
 /** See {@link pageSettingsSchema}. */
