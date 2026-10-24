@@ -3,17 +3,18 @@ import type { SiteDoc } from "@webforge/model";
 import { FilesIcon } from "lucide-react";
 import type { EditorSession } from "../editor/editor-session.js";
 import { useDocument, useUi } from "../editor/use-document.js";
-import { linkTargets } from "../links/link-targets.js";
-import { MenuPanel, type MenuPanelActions } from "../menu/MenuPanel.js";
+import { linkTargets } from "../links/index.js";
 import {
   addMenuItem,
   editMenuLink,
   followPages,
+  MenuPanel,
+  type MenuPanelActions,
   moveMenuItem,
   removeMenuItem,
   renameMenuItem,
   setMenuItemHidden,
-} from "../menu/menu-actions.js";
+} from "../menu/index.js";
 import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
 import type { PanelRegistry } from "../shell/panels.js";
 import { PagesPanel, type PagesPanelActions } from "./PagesPanel.js";

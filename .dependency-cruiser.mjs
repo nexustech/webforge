@@ -151,6 +151,25 @@ export default {
       to: { path: "^packages/test-utils/" },
     },
     {
+      name: "renderer-areas-through-index",
+      severity: "error",
+      comment:
+        "A renderer area (renderer/<area>/) uses another only through that area's index.ts (B2): " +
+        "what it offers the others. shell/ and editor/ are what every area builds on. " +
+        "tools/src/check-area-cycles.ts checks there are no cycles between areas.",
+      from: {
+        path: "^apps/desktop/src/renderer/([^/]+)/",
+        pathNot: "^apps/desktop/src/renderer/(shell|editor)/",
+      },
+      to: {
+        path: "^apps/desktop/src/renderer/[^/]+/",
+        pathNot: [
+          "^apps/desktop/src/renderer/(shell|editor|$1)/",
+          "^apps/desktop/src/renderer/[^/]+/index\\.ts$",
+        ],
+      },
+    },
+    {
       name: "no-orphans",
       severity: "warn",
       comment: "A module nothing imports is probably dead code (knip checks this too).",

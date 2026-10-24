@@ -26,10 +26,10 @@ import {
   useRef,
   useState,
 } from "react";
-import type { MenuPoint } from "../element-menu/ElementMenu.js";
+import { type Layer, layerItem } from "../editor/layers.js";
+import type { MenuPoint } from "../element-menu/index.js";
 import { isMac } from "../shell/commands.js";
 import { useRowDrag } from "../shell/use-row-drag.js";
-import { type Layer, layerItem } from "./layers.js";
 
 /** What the Layers panel can do; the host binds them to the editor session and its commands. */
 export type LayersPanelActions = {

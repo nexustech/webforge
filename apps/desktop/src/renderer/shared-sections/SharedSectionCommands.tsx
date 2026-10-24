@@ -4,7 +4,7 @@ import type { EditorSession } from "../editor/editor-session.js";
 import { elementName } from "../editor/labels.js";
 import type { CommandRegistry } from "../shell/commands.js";
 import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
-import { NameDialog } from "../site/NameDialog.js";
+import { NameDialog } from "../shell/NameDialog.js";
 import {
   copySelection,
   deleteSharedSection,

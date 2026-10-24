@@ -11,6 +11,7 @@ import {
 import userEvent from "@testing-library/user-event";
 import type { ComponentProps } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import type { Layer } from "../editor/layers.js";
 import { isMac } from "../shell/commands.js";
 import {
   dropIndex,
@@ -18,7 +19,6 @@ import {
   type LayersPanelActions,
   type LayersPanelProps,
 } from "./LayersPanel.js";
-import type { Layer } from "./layers.js";
 
 /** The platform's Mod key: Ctrl, or Cmd on a Mac. */
 const MOD = isMac() ? { metaKey: true } : { ctrlKey: true };

@@ -8,7 +8,7 @@ import {
 } from "@webforge/model";
 import { z } from "zod";
 import { updateField } from "../editor/apply-patch.js";
-import { copySelection, updateSectionField } from "../shared-sections/shared-sections.js";
+import { copySelection, updateSectionField } from "../shared-sections/index.js";
 
 /**
  * What a link field reports (F-ED-18): its new value, or none to remove the link, and, for a link
