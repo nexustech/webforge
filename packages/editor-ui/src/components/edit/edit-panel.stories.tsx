@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
 import { EditPanel, type EditPanelField } from "./edit-panel.js";
-import type { ListChange } from "./field-registry.js";
+import type { ListChange } from "./field-spec.js";
 
 const meta = {
   title: "Edit/EditPanel",
@@ -96,7 +96,10 @@ export const StyleFields: Story = {
       },
       { name: "fullWidth", kind: "toggle", label: "Full width", group: "style", value: false },
     ]);
-    const set = (name: string, change: Partial<EditPanelField>) =>
+    const set = (
+      name: string,
+      change: Partial<Pick<EditPanelField, "value" | "changed" | "responsive" | "overridden">>,
+    ) =>
       setFields((current) =>
         current.map((field) => (field.name === name ? { ...field, ...change } : field)),
       );
@@ -171,9 +174,9 @@ export const BoxSpacing: Story = {
 export const RepeatingList: Story = {
   render: () => {
     const [items, setItems] = useState([
-      { key: "a", values: { quote: "The best bread in town", author: "Sam" } },
-      { key: "b", values: { quote: "Friendly and fast", author: "Alex" } },
-      { key: "c", values: { quote: "", author: "" } },
+      { id: "a", quote: "The best bread in town", author: "Sam" },
+      { id: "b", quote: "Friendly and fast", author: "Alex" },
+      { id: "c", quote: "", author: "" },
     ]);
     return (
       <EditPanel
@@ -197,23 +200,20 @@ export const RepeatingList: Story = {
           setItems((current) => {
             switch (listChange.type) {
               case "add":
-                return [
-                  ...current,
-                  { key: String(current.length + 1), values: { quote: "", author: "" } },
-                ];
+                return [...current, { id: String(current.length + 1), quote: "", author: "" }];
               case "remove":
-                return current.filter((item) => item.key !== listChange.key);
+                return current.filter((item) => item.id !== listChange.id);
               case "move": {
-                const moved = current.find((item) => item.key === listChange.key);
-                const rest = current.filter((item) => item.key !== listChange.key);
+                const moved = current.find((item) => item.id === listChange.id);
+                const rest = current.filter((item) => item.id !== listChange.id);
                 return moved === undefined
                   ? current
                   : [...rest.slice(0, listChange.to), moved, ...rest.slice(listChange.to)];
               }
               case "edit":
                 return current.map((item) =>
-                  item.key === listChange.key
-                    ? { ...item, values: { ...item.values, [listChange.name]: listChange.value } }
+                  item.id === listChange.id
+                    ? { ...item, [listChange.name]: listChange.value }
                     : item,
                 );
             }
@@ -262,7 +262,7 @@ export const AdvancedTab: Story = {
           { name: "name", kind: "text", label: "Name" },
           { name: "value", kind: "text", label: "Value" },
         ],
-        value: [{ key: "0", values: { name: "data-track", value: "hero" } }],
+        value: [{ id: "0", name: "data-track", value: "hero" }],
       },
     ],
   },

@@ -10,7 +10,8 @@ import {
 } from "../ui/context-menu.js";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs.js";
 import { BoxField } from "./box-field.js";
-import { type FieldRenderer, type FieldSpec, useFieldRenderers } from "./field-registry.js";
+import { drawField, FieldRenderersProvider, useFieldRenderers } from "./field-context.js";
+import type { FieldRenderers, FieldSpec } from "./field-spec.js";
 import { ListField } from "./list-field.js";
 import { PLAIN_RENDERERS } from "./plain-renderers.js";
 import { fieldControlClass } from "./text-field.js";
@@ -135,15 +136,11 @@ function DeviceDot({
   );
 }
 
-/** The renderers every Edit panel has; `registerFieldRenderer` adds kinds or replaces these. */
-const BUILT_IN: Readonly<Record<string, FieldRenderer>> = {
-  ...PLAIN_RENDERERS,
-  list: ListField,
-  box: BoxField,
-};
-
-const rendererFor = (registered: ReadonlyMap<string, FieldRenderer>, kind: string) =>
-  registered.get(kind) ?? BUILT_IN[kind];
+/**
+ * The renderers every Edit panel has; the ones the app gives it ({@link FieldRenderersProvider})
+ * add kinds or replace these.
+ */
+const BUILT_IN: FieldRenderers = { ...PLAIN_RENDERERS, list: ListField, box: BoxField };
 
 /** The groups of fields that name none (UX-13), by kind; each id is its translation key's. */
 type FallbackGroup =
@@ -347,8 +344,7 @@ function FieldRow({
   readonly onReset: EditPanelProps["onReset"] | undefined;
   readonly onResetToDefault: EditPanelProps["onResetToDefault"] | undefined;
 }) {
-  const registered = useFieldRenderers();
-  const Renderer = rendererFor(registered, field.kind) as FieldRenderer;
+  const renderers = useFieldRenderers();
   const id = `${idPrefix}-${field.name}`;
   const labelId = `${id}-label`;
   const helpId = field.help === undefined ? undefined : `${id}-help`;
@@ -381,15 +377,15 @@ function FieldRow({
           </ContextMenuItem>
         </ContextMenuContent>
       </ContextMenu>
-      <Renderer
-        id={id}
-        labelId={labelId}
-        {...(helpId === undefined ? {} : { helpId })}
-        field={field}
-        value={field.value}
-        onChange={(value) => onChange(field.name, value)}
-        onCommit={() => onCommit(field.name)}
-      />
+      {drawField(renderers, field.kind, {
+        id,
+        labelId,
+        ...(helpId === undefined ? {} : { helpId }),
+        field,
+        value: field.value,
+        onChange: (value) => onChange(field.name, value),
+        onCommit: () => onCommit(field.name),
+      })}
       {helpId === undefined ? null : (
         <p id={helpId} className="text-xs text-muted-foreground">
           {field.help}
@@ -438,9 +434,8 @@ export function EditPanel({
         ? [...closed, ...keys]
         : closed.filter((key) => !keys.includes(key)),
     );
-  // A renderer registered after the panel was drawn (the app's image, link and colour fields)
-  // redraws it, whatever else changes or doesn't.
-  const registered = useFieldRenderers();
+  // The app's renderers over the built-in ones, for its fields and its lists' items.
+  const renderers: FieldRenderers = { ...BUILT_IN, ...useFieldRenderers() };
   if (heading === undefined) {
     return (
       <p className="flex h-full items-center justify-center p-4 text-center text-xs text-muted-foreground">
@@ -451,7 +446,7 @@ export function EditPanel({
   const wanted = query.trim().toLocaleLowerCase();
   const shown = fields.filter(
     (field) =>
-      rendererFor(registered, field.kind) !== undefined &&
+      renderers[field.kind] !== undefined &&
       (wanted === "" || field.label.toLocaleLowerCase().includes(wanted)),
   );
   const content = shown.filter((field) => field.group === "content");
@@ -499,50 +494,52 @@ export function EditPanel({
     </TabsContent>
   );
   return (
-    <div className="flex h-full flex-col">
-      <h2 className="truncate px-3 pt-2 text-sm font-semibold text-foreground">{heading}</h2>
-      <div className="px-3 pt-2">
-        <input
-          type="search"
-          aria-label={t("editPanel.search")}
-          placeholder={t("editPanel.searchPlaceholder")}
-          value={query}
-          className={cn(fieldControlClass, "h-7 w-full px-2 text-xs")}
-          onChange={(event) => setQuery(event.currentTarget.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Escape" && query !== "") {
-              event.stopPropagation();
-              setQuery("");
-            }
-          }}
-        />
+    <FieldRenderersProvider renderers={renderers}>
+      <div className="flex h-full flex-col">
+        <h2 className="truncate px-3 pt-2 text-sm font-semibold text-foreground">{heading}</h2>
+        <div className="px-3 pt-2">
+          <input
+            type="search"
+            aria-label={t("editPanel.search")}
+            placeholder={t("editPanel.searchPlaceholder")}
+            value={query}
+            className={cn(fieldControlClass, "h-7 w-full px-2 text-xs")}
+            onChange={(event) => setQuery(event.currentTarget.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Escape" && query !== "") {
+                event.stopPropagation();
+                setQuery("");
+              }
+            }}
+          />
+        </div>
+        <Tabs
+          // Keyed by the element's type: the tab stays while moving between elements of one type, and
+          // another type starts on its first tab with fields.
+          key={`${heading}${contentOnly ? ":content" : ""}`}
+          defaultValue={
+            contentOnly || content.length > 0
+              ? "content"
+              : style.length > 0
+                ? "style"
+                : advanced && advancedFields.length > 0
+                  ? "advanced"
+                  : "content"
+          }
+          className="min-h-0 flex-1"
+        >
+          <TabsList aria-label={t("editPanel.tabs")}>
+            <TabsTrigger value="content">{t("editPanel.content")}</TabsTrigger>
+            {contentOnly ? null : <TabsTrigger value="style">{t("editPanel.style")}</TabsTrigger>}
+            {advanced && !contentOnly ? (
+              <TabsTrigger value="advanced">{t("editPanel.advanced")}</TabsTrigger>
+            ) : null}
+          </TabsList>
+          {list("content", content)}
+          {contentOnly ? null : list("style", style)}
+          {advanced && !contentOnly ? list("advanced", advancedFields) : null}
+        </Tabs>
       </div>
-      <Tabs
-        // Keyed by the element's type: the tab stays while moving between elements of one type, and
-        // another type starts on its first tab with fields.
-        key={`${heading}${contentOnly ? ":content" : ""}`}
-        defaultValue={
-          contentOnly || content.length > 0
-            ? "content"
-            : style.length > 0
-              ? "style"
-              : advanced && advancedFields.length > 0
-                ? "advanced"
-                : "content"
-        }
-        className="min-h-0 flex-1"
-      >
-        <TabsList aria-label={t("editPanel.tabs")}>
-          <TabsTrigger value="content">{t("editPanel.content")}</TabsTrigger>
-          {contentOnly ? null : <TabsTrigger value="style">{t("editPanel.style")}</TabsTrigger>}
-          {advanced && !contentOnly ? (
-            <TabsTrigger value="advanced">{t("editPanel.advanced")}</TabsTrigger>
-          ) : null}
-        </TabsList>
-        {list("content", content)}
-        {contentOnly ? null : list("style", style)}
-        {advanced && !contentOnly ? list("advanced", advancedFields) : null}
-      </Tabs>
-    </div>
+    </FieldRenderersProvider>
   );
 }

@@ -92,6 +92,8 @@ describe("Picker (UX-15)", { timeout: 15_000 }, () => {
   it("moves through the grid with the arrows, Home and End, and chooses with Enter", async () => {
     const { opener, onChoose, focused } = setUp({ value: "bread" });
     await userEvent.click(opener);
+    // Three columns, by class name rather than an inline style (R11).
+    expect(screen.getByRole("listbox").className).toContain("grid-cols-3");
 
     // Down from the search field: the current choice.
     await userEvent.keyboard("{ArrowDown}");

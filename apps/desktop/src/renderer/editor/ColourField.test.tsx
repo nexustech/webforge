@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { FieldSpec } from "@webforge/editor-ui";
 import { DEFAULT_THEME, type TextStyle } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { contrastRatio, hexToOklch } from "@webforge/themes";
@@ -11,7 +12,7 @@ import { starterSite } from "./starter-site.js";
 
 afterEach(cleanup);
 
-const FIELD = {
+const FIELD: FieldSpec<"color"> = {
   kind: "color",
   label: "Colour",
   options: [

@@ -1,4 +1,4 @@
-import { toast } from "@webforge/editor-ui";
+import { type FieldRenderers, FieldRenderersProvider, toast } from "@webforge/editor-ui";
 import {
   type CanvasEngine,
   createPuckEngine,
@@ -6,7 +6,6 @@ import {
   installHistoryKeys,
   type ViewOptions,
 } from "@webforge/engine";
-import type { ReadonlyStore } from "@webforge/history";
 import { t } from "@webforge/i18n";
 import { textStylesOf } from "@webforge/site-components";
 import { HistoryIcon, SlidersHorizontalIcon } from "lucide-react";
@@ -24,10 +23,10 @@ import { CanvasElementMenu } from "../element-menu/CanvasElementMenu.js";
 import { createErrorReporter, type ReportError } from "../error-reporting.js";
 import { deleteSelected, duplicateSelected, moveSelected } from "../layers/bulk-layers.js";
 import type { Layer } from "../layers/layers.js";
-import { registerLinkField } from "../links/LinkField.js";
+import { linkFieldRenderer } from "../links/LinkField.js";
 import { RichTextLinkHost } from "../links/RichTextLinkHost.js";
 import { connectCanvasImages } from "../media/canvas-images.js";
-import { registerImageField } from "../media/ImageField.js";
+import { imageFieldRenderer } from "../media/ImageField.js";
 import { createImagePickRequests } from "../media/image-picks.js";
 import { registerMediaPanel } from "../media/register-media-panel.js";
 import { connectCanvasNavigation } from "../menu/canvas-navigation.js";
@@ -55,7 +54,7 @@ import {
 import { connectCanvasSettings } from "../site-settings/canvas-settings.js";
 import { CanvasBreadcrumbs } from "./CanvasBreadcrumbs.js";
 import { CanvasResizeHandles } from "./CanvasResizeHandles.js";
-import { registerColourField } from "./ColourField.js";
+import { colourFieldRenderer } from "./ColourField.js";
 import { type BulkCanvasAction, registerCanvasCommands } from "./canvas-commands.js";
 import { EditPanelHost, type EditPanelHostProps } from "./EditPanelHost.js";
 import {
@@ -485,13 +484,37 @@ export function Editor({
   // The Edit panel replaces Puck's own fields (1.14). Registered once: it follows the editor level
   // and the mode (Content shows its Content tab only) itself, so a switch redraws it alone (R9).
   useEffect(() => {
+    // The fields the app draws itself (R11): images, links, and colours with the theme's own
+    // colours and a contrast warning (1.37, UX-25).
+    const renderers: FieldRenderers = {
+      image: imageFieldRenderer({ session, picks: imagePicks }),
+      link: linkFieldRenderer({ session }),
+      color: colourFieldRenderer({
+        session,
+        preferences,
+        // The selected element's text styles, wherever it is (the page, the shared Header or
+        // Footer, a linked copy), as the Edit panel finds it.
+        textStyles: () => {
+          const { pageId, nodeId } = session.ui.getState();
+          const target = fieldTarget(
+            session.history.document.getState(),
+            session.library,
+            pageId,
+            nodeId,
+          );
+          return target === undefined ? [] : textStylesOf(target.node, session.library);
+        },
+      }),
+    };
     function Edit() {
       return (
-        <PreferredEditPanel
-          session={session}
-          preferences={preferences}
-          flush={() => connectionRef.current?.flush()}
-        />
+        <FieldRenderersProvider renderers={renderers}>
+          <PreferredEditPanel
+            session={session}
+            preferences={preferences}
+            flush={() => connectionRef.current?.flush()}
+          />
+        </FieldRenderersProvider>
       );
     }
     return panels.register({
@@ -501,7 +524,7 @@ export function Editor({
       icon: SlidersHorizontalIcon,
       component: Edit,
     });
-  }, [panels, session, preferences]);
+  }, [panels, session, preferences, imagePicks]);
 
   // The sections' larger previews in the Add panel (UX-10), drawn with the site's theme. Made once
   // for the editor's session, so the drawings they keep outlive switches of mode.
@@ -545,29 +568,6 @@ export function Editor({
     };
   }, [panels, session, mode, engine, siteWide, preferences, registry, previews]);
   useEffect(() => registerMediaPanel(panels, session), [panels, session]);
-  useEffect(() => registerImageField({ session, picks: imagePicks }), [session, imagePicks]);
-  // Colour fields show the theme's own colours and warn about low contrast (1.37, UX-25).
-  useEffect(
-    () =>
-      registerColourField({
-        session,
-        preferences,
-        // The selected element's text styles, wherever it is (the page, the shared Header or
-        // Footer, a linked copy), as the Edit panel finds it.
-        textStyles: () => {
-          const { pageId, nodeId } = session.ui.getState();
-          const target = fieldTarget(
-            session.history.document.getState(),
-            session.library,
-            pageId,
-            nodeId,
-          );
-          return target === undefined ? [] : textStylesOf(target.node, session.library);
-        },
-      }),
-    [session, preferences],
-  );
-  useEffect(() => registerLinkField({ session }), [session]);
 
   return (
     <div className="editor">

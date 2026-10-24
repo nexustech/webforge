@@ -1,16 +1,22 @@
 // @vitest-environment happy-dom
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { type FieldRenderers, FieldRenderersProvider } from "@webforge/editor-ui";
 import { copiedNodeId, type MediaId, type PageDoc } from "@webforge/model";
 import { type ComponentLibrary, type FieldDef, siteLibrary } from "@webforge/site-components";
 import { Profiler } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { registerLinkField } from "../links/LinkField.js";
-import { registerImageField } from "../media/ImageField.js";
+import { linkFieldRenderer } from "../links/LinkField.js";
+import { imageFieldRenderer } from "../media/ImageField.js";
 import { addMedia } from "../media/media-commands.js";
 import { saveAsSharedSection } from "../shared-sections/shared-sections.js";
 import { EditPanelHost } from "./EditPanelHost.js";
-import { createEditorSession, currentPage, runHistoryCommand } from "./editor-session.js";
+import {
+  createEditorSession,
+  currentPage,
+  type EditorSession,
+  runHistoryCommand,
+} from "./editor-session.js";
 import { starterSite } from "./starter-site.js";
 
 afterEach(cleanup);
@@ -43,11 +49,19 @@ function siteWithHero() {
   return site;
 }
 
-function setup(nodeId: string | null = "heading-1") {
+/** The Edit panel for `nodeId`, with the app's renderers `renderersOf` gives for its session. */
+function setup(
+  nodeId: string | null = "heading-1",
+  renderersOf: (session: EditorSession) => FieldRenderers = () => ({}),
+) {
   const session = createEditorSession(siteLibrary, siteWithHero());
   session.select(nodeId);
   const flush = vi.fn();
-  render(<EditPanelHost session={session} flush={flush} />);
+  render(
+    <FieldRenderersProvider renderers={renderersOf(session)}>
+      <EditPanelHost session={session} flush={flush} />
+    </FieldRenderersProvider>,
+  );
   const labels = () => session.history.entries().map((entry) => entry.label);
   const heading = () => {
     const section = currentPage(session)?.doc.content[0];
@@ -75,40 +89,37 @@ describe("EditPanelHost redraws (R9)", () => {
   it("draws nothing again, its link field included, while typing changes another element", () => {
     const session = createEditorSession(siteLibrary, siteWithHero());
     session.select("hero");
-    const unregister = registerLinkField({ session });
     let commits = 0;
-    try {
-      render(
+    render(
+      <FieldRenderersProvider renderers={{ link: linkFieldRenderer({ session }) }}>
         <Profiler id="panel" onRender={() => (commits += 1)}>
           <EditPanelHost session={session} flush={vi.fn()} />
-        </Profiler>,
-      );
-      expect(screen.getByRole("textbox", { name: "Title" })).toBeTruthy();
-      const drawn = commits;
-      // Typing on the canvas, in the Heading: a new document, the same Hero.
-      for (const text of ["W", "We", "Wel"]) {
-        act(() =>
-          session.edit("text", "Edited Heading text", (draft) => {
-            const section = draft.pages[draft.homePageId]?.doc.content[0];
-            const heading = (section?.props.content as PageDoc["content"] | undefined)?.[0];
-            if (heading !== undefined) heading.props.text = text;
-          }),
-        );
-      }
-      expect(commits).toBe(drawn);
-
-      // A change to the Hero itself is drawn.
+        </Profiler>
+      </FieldRenderersProvider>,
+    );
+    expect(screen.getByRole("textbox", { name: "Title" })).toBeTruthy();
+    const drawn = commits;
+    // Typing on the canvas, in the Heading: a new document, the same Hero.
+    for (const text of ["W", "We", "Wel"]) {
       act(() =>
-        session.edit("text", "Edited Hero title", (draft) => {
-          const hero = draft.pages[draft.homePageId]?.doc.content[1];
-          if (hero !== undefined) hero.props.title = "Fresh bread";
+        session.edit("text", "Edited Heading text", (draft) => {
+          const section = draft.pages[draft.homePageId]?.doc.content[0];
+          const heading = (section?.props.content as PageDoc["content"] | undefined)?.[0];
+          if (heading !== undefined) heading.props.text = text;
         }),
       );
-      expect(commits).toBeGreaterThan(drawn);
-      expect(screen.getByRole("textbox", { name: "Title" })).toHaveProperty("value", "Fresh bread");
-    } finally {
-      unregister();
     }
+    expect(commits).toBe(drawn);
+
+    // A change to the Hero itself is drawn.
+    act(() =>
+      session.edit("text", "Edited Hero title", (draft) => {
+        const hero = draft.pages[draft.homePageId]?.doc.content[1];
+        if (hero !== undefined) hero.props.title = "Fresh bread";
+      }),
+    );
+    expect(commits).toBeGreaterThan(drawn);
+    expect(screen.getByRole("textbox", { name: "Title" })).toHaveProperty("value", "Fresh bread");
   });
 });
 
@@ -901,37 +912,34 @@ describe("EditPanelHost", () => {
     } as const;
 
     it("places a Media image in one step, then types its alt text here as another", async () => {
-      const { session, labels, user } = setup("hero");
-      const unregister = registerImageField({
-        session,
-        media: { choose: async () => ({ status: "canceled" }) },
-        imageUrl: (item) => `test://${item.name}`,
-      });
+      const { session, labels, user } = setup("hero", (session) => ({
+        image: imageFieldRenderer({
+          session,
+          media: { choose: async () => ({ status: "canceled" }) },
+          imageUrl: (item) => `test://${item.name}`,
+        }),
+      }));
       act(() => addMedia(session, [shop]));
       const hero = () => currentPage(session)?.doc.content[1]?.props;
 
-      try {
-        // The image is content, like the Hero's texts.
-        await user.click(screen.getByRole("tab", { name: "Content" }));
-        await user.click(screen.getByRole("button", { name: "Image Choose an image…" }));
-        await user.dblClick(screen.getByRole("option", { name: "shop.jpg" }));
-        const alt = screen.getByLabelText("Alt text here");
-        await user.type(alt, "Fresh");
-        fireEvent.blur(alt);
+      // The image is content, like the Hero's texts.
+      await user.click(screen.getByRole("tab", { name: "Content" }));
+      await user.click(screen.getByRole("button", { name: "Image Choose an image…" }));
+      await user.dblClick(screen.getByRole("option", { name: "shop.jpg" }));
+      const alt = screen.getByLabelText("Alt text here");
+      await user.type(alt, "Fresh");
+      fireEvent.blur(alt);
 
-        expect(hero()?.image).toEqual({ mediaId: "shop", alt: "Fresh" });
-        expect(labels()).toEqual([
-          "Added image 'shop.jpg'",
-          "Changed Hero image",
-          "Changed Hero image",
-        ]);
-        act(() => {
-          session.history.undo();
-        });
-        expect(hero()?.image).toEqual({ mediaId: "shop" });
-      } finally {
-        unregister();
-      }
+      expect(hero()?.image).toEqual({ mediaId: "shop", alt: "Fresh" });
+      expect(labels()).toEqual([
+        "Added image 'shop.jpg'",
+        "Changed Hero image",
+        "Changed Hero image",
+      ]);
+      act(() => {
+        session.history.undo();
+      });
+      expect(hero()?.image).toEqual({ mediaId: "shop" });
     });
   });
 });

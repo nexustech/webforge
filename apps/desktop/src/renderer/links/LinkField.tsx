@@ -1,4 +1,4 @@
-import { Button, type FieldRendererProps, registerFieldRenderer } from "@webforge/editor-ui";
+import { Button, type FieldRenderer, type FieldRendererProps } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import type { SiteDoc } from "@webforge/model";
 import { linkValue } from "@webforge/site-components";
@@ -32,7 +32,7 @@ function LinkField({
   targets,
   media,
   currentSite,
-}: FieldRendererProps & LinkFieldContext) {
+}: FieldRendererProps<"link"> & LinkFieldContext) {
   // The dialog, and the site as it was when it opened: it reads the site then, not as it draws.
   const [dialog, setDialog] = useState(() => ({ open: false, site: currentSite() }));
   const close = () => setDialog((shown) => ({ ...shown, open: false }));
@@ -82,13 +82,14 @@ function LinkField({
   );
 }
 
-/**
- * Makes the Edit panel draw link fields with {@link LinkField} for `session`. Returns the function
- * that puts the previous renderer back.
- */
-export function registerLinkField({ session }: { readonly session: EditorSession }): () => void {
+/** The Edit panel's renderer for link fields in `session` (R11): {@link LinkField}. */
+export function linkFieldRenderer({
+  session,
+}: {
+  readonly session: EditorSession;
+}): FieldRenderer<"link"> {
   const targetsOf = createLinkTargets(session.library);
-  function SessionLinkField(props: FieldRendererProps) {
+  return function SessionLinkField(props: FieldRendererProps<"link">) {
     // What the field shows: the pages and sections it can name, and the documents (R9). Typing on
     // the canvas changes neither, so it doesn't redraw the field.
     const { targets, media } = useDocument(
@@ -104,6 +105,5 @@ export function registerLinkField({ session }: { readonly session: EditorSession
         currentSite={() => session.history.document.getState()}
       />
     );
-  }
-  return registerFieldRenderer("link", SessionLinkField);
+  };
 }
