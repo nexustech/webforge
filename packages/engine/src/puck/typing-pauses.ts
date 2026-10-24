@@ -32,13 +32,26 @@ export function typingPauses(): TypingPauses {
   };
 }
 
+/** Keys with a name of their own that change the text: they count as typing too. */
+const EDITING_KEYS: ReadonlySet<string> = new Set(["Backspace", "Delete", "Enter"]);
+
 /**
- * Times every key pressed in `target` (the canvas iframe's window) into `pauses`, by the time the
- * key was pressed, not when the busy page got round to it. Returns the function that stops it.
+ * Whether `event` types into the text: a character (AltGr's too, which is Ctrl+Alt on Windows) or
+ * Backspace, Delete or Enter. Not arrows, Shift or shortcuts such as Ctrl/Cmd+Z, which don't type.
+ */
+function typesText(event: KeyboardEvent): boolean {
+  const shortcut = (event.ctrlKey || event.metaKey) && !event.altKey;
+  return !shortcut && ([...event.key].length === 1 || EDITING_KEYS.has(event.key));
+}
+
+/**
+ * Times every key typed in `target` (the canvas iframe's window, see {@link typesText}) into
+ * `pauses`, by the time the key was pressed, not when the busy page got round to it. Returns the
+ * function that stops it.
  */
 export function timeKeystrokes(target: Window, pauses: TypingPauses): () => void {
   const onKeyDown = (event: KeyboardEvent) => {
-    pauses.keystroke(target.performance.timeOrigin + event.timeStamp);
+    if (typesText(event)) pauses.keystroke(target.performance.timeOrigin + event.timeStamp);
   };
   target.addEventListener("keydown", onKeyDown, { capture: true });
   return () => target.removeEventListener("keydown", onKeyDown, { capture: true });

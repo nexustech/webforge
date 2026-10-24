@@ -324,11 +324,14 @@ export function connectEngine(engine: CanvasEngine, session: EditorSession): Eng
         edit.kind === "text" && edit.nodeId !== null && edit.field !== null
           ? textSessionKey(pageId, edit.nodeId, edit.field)
           : null;
+      // Typing chunked by the user's own pauses, whenever the edit arrives. One with no keystrokes
+      // of its own (the rest of what was typed, or text put in from a menu) continues an open
+      // session's chunk: when edits arrive says nothing about pauses (#307).
+      const continues = key !== null && key === textSession;
+      const pause = key === null ? undefined : (edit.typingPauseMs ?? (continues ? 0 : undefined));
       if (key !== textSession) {
         endTextSession();
       }
-      // Typing chunked by the user's own pauses, whenever the edit arrives.
-      const pause = key === null ? undefined : edit.typingPauseMs;
       if (pause !== undefined && pause > TYPING_PAUSE_MS) history.breakCoalescing();
       const { patch, sharedSection, copyOf } = edit;
       // An edit inside a copy, or another copy placed (F-ED-23): named by its shared section.
