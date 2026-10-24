@@ -27,7 +27,7 @@ export type Area<Context> = {
 };
 
 /** What every area registers into, and the session and preferences it works on. */
-export type AreaContext = {
+type AreaContext = {
   readonly session: EditorSession;
   readonly commands: CommandRegistry;
   readonly panels: PanelRegistry;

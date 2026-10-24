@@ -2,7 +2,7 @@ import type { CanvasEngine } from "@webforge/engine";
 import type { EngineConnection } from "./editor-session.js";
 
 /** The canvas engine the editor has mounted, and its connection to the editor session. */
-export type MountedEngine = {
+type MountedEngine = {
   readonly engine: CanvasEngine;
   readonly connection: EngineConnection;
 };
