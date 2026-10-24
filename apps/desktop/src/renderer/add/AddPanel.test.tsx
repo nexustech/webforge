@@ -134,13 +134,11 @@ describe("dragging from the Add panel", () => {
     const view = render(<AddPanel {...props} />);
 
     // Not the FAQ, which has nowhere to go, nor a shared section: copies are placed by a click.
-    expect(dragSource.mock.calls.map(([, type]) => type)).toEqual([
-      "Section",
-      "Hero",
-      "TextSection",
-      "TextImage",
-      "CallToAction",
-    ]);
+    expect(dragSource.mock.calls.map(([, type]) => type)).toEqual(
+      addItems(siteLibrary, "sections")
+        .map((item) => item.type)
+        .filter((type) => type !== "Faq"),
+    );
     expect(button("Hero").className).toContain("relative");
     view.unmount();
 
