@@ -1,8 +1,9 @@
 import { t } from "@webforge/i18n";
 import { defineComponent } from "../define.js";
+import { MARGIN_FIELD, marginClasses } from "../frame.js";
 import type { ComponentDef } from "../library.js";
 import { Picture } from "../picture.js";
-import { MARGIN_FIELD, marginClasses } from "./basic.js";
+import { BUTTON_CLASSES } from "../typography.js";
 
 const CAROUSEL_LAYOUTS = ["images", "testimonials", "logos"] as const;
 const INTERVALS = ["5", "7", "10"] as const;
@@ -67,7 +68,7 @@ const carousel = defineComponent({
   behaviours: ["carousel"],
   render: ({ values, slots }) => {
     const Slides = slots.slides;
-    const button = "btn btn-circle btn-sm btn-ghost";
+    const button = BUTTON_CLASSES.iconSmall;
     return (
       // A labelled <section> is a region landmark: the carousel's own, named by its label.
       <section

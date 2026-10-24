@@ -18,7 +18,13 @@ import {
 } from "@webforge/model";
 import { type ComponentType, cloneElement, isValidElement, type ReactNode } from "react";
 import { isDocumentPath } from "./document-path.js";
-import type { BehaviourName, ComponentPlace, FieldDef, RenderContext } from "./schema.js";
+import type {
+  BehaviourName,
+  ComponentPlace,
+  FieldDef,
+  RenderContext,
+  SlotComponent,
+} from "./schema.js";
 
 /** The context on the editor canvas: no site navigation, links go nowhere, no images yet. */
 export const EDITOR_RENDER_CONTEXT: RenderContext = {
@@ -34,8 +40,8 @@ export type ComponentRenderProps = {
   readonly id: string;
   /** Field values by field name. Inline-editable text arrives as a ready-to-render node. */
   readonly values: Readonly<Record<string, unknown>>;
-  /** Slot fields, rendered as components that show their content. */
-  readonly slots: Readonly<Record<string, ComponentType>>;
+  /** Slot fields, rendered as components that show their content (see {@link SlotComponent}). */
+  readonly slots: Readonly<Record<string, SlotComponent>>;
   readonly context: RenderContext;
 };
 
@@ -47,6 +53,8 @@ export type ComponentDef = {
   readonly place?: ComponentPlace;
   /** Its group in the Add panel, already translated ("Heroes", "Text"). */
   readonly category?: string;
+  /** Set on a section {@link defineSection} framed: every section is (2.19). */
+  readonly framed?: true;
   readonly fields: Readonly<Record<string, FieldDef>>;
   readonly defaults: Readonly<Record<string, unknown>>;
   readonly render: (props: ComponentRenderProps) => ReactNode;
@@ -328,10 +336,10 @@ export function boxClasses(
   return parts.join(" ");
 }
 
-const EmptySlot: ComponentType = () => null;
+const EmptySlot: SlotComponent = () => null;
 
 /** The slot component for `name`, or one that renders nothing. */
-export function slotComponent(props: ComponentRenderProps, name: string): ComponentType {
+export function slotComponent(props: ComponentRenderProps, name: string): SlotComponent {
   return props.slots[name] ?? EmptySlot;
 }
 

@@ -1,50 +1,17 @@
 import { t } from "@webforge/i18n";
 import { defineComponent } from "../define.js";
-import {
-  boundText,
-  boxClasses,
-  type ComponentDef,
-  colorClass,
-  responsiveClasses,
-} from "../library.js";
-import type { FieldDef } from "../schema.js";
+import { defineSection, MARGIN_FIELD, marginClasses } from "../frame.js";
+import { boundText, type ComponentDef, colorClass, responsiveClasses } from "../library.js";
+import { BODY_TEXT_CLASSES, TITLE_CLASSES } from "../typography.js";
 
 const SIZES = ["large", "medium", "small"] as const;
 const HEADING_TAG = { large: "h1", medium: "h2", small: "h3" } as const;
+/** A Heading's size, in the catalogue's title sizes (see `typography.tsx`). */
 const HEADING_CLASS = {
-  large: "text-4xl font-bold md:text-5xl",
-  medium: "text-3xl font-bold",
-  small: "text-xl font-semibold",
+  large: TITLE_CLASSES.page,
+  medium: TITLE_CLASSES.section,
+  small: TITLE_CLASSES.small,
 } as const;
-
-/** A section's own padding (`px-4 py-16`), for the sides left unset (1.32). */
-export const SECTION_PADDING = { top: 16, right: 4, bottom: 16, left: 4 } as const;
-
-/** A section's padding, per side and device (1.32). */
-export const PADDING_FIELD = {
-  kind: "box",
-  label: t("field.padding"),
-  property: "padding",
-  responsive: true,
-} as const satisfies FieldDef;
-
-/**
- * A margin above and below, per device (1.32). A section's left and right stay `auto`, centring
- * it, and an element's are its section's padding.
- */
-export const MARGIN_FIELD = {
-  kind: "box",
-  label: t("field.margin"),
-  property: "margin",
-  responsive: true,
-  sides: ["top", "bottom"],
-} as const satisfies FieldDef;
-
-/** The margin classes of a {@link MARGIN_FIELD} value, after a space; nothing when unset. */
-export function marginClasses(value: unknown): string {
-  const classes = boxClasses(value, "margin", {}, ["top", "bottom"]);
-  return classes === "" ? "" : ` ${classes}`;
-}
 
 /** Space between a section's elements, smallest first (the slider's steps). */
 const GAPS = ["none", "small", "medium", "large"] as const;
@@ -60,13 +27,11 @@ const GAP_CLASS = {
 const COLOURS = ["default", "primary", "secondary", "accent"] as const;
 
 /** A page band holding elements. Keeps the `site-section` hook for tests and developers. */
-const section = defineComponent({
+const section = defineSection({
   label: t("section.section"),
-  place: "section",
+  name: "section",
   category: t("category.basic"),
   fields: {
-    padding: PADDING_FIELD,
-    margin: MARGIN_FIELD,
     gap: {
       kind: "slider",
       label: t("field.gap"),
@@ -78,18 +43,13 @@ const section = defineComponent({
     content: { kind: "slot", label: t("field.content"), accepts: "element" },
   },
   defaults: { gap: "medium", fullWidth: false, content: [] },
-  render: ({ values, slots }) => {
-    const Content = slots.content;
-    const padding = boxClasses(values.padding, "padding", SECTION_PADDING);
+  frame: (values) => {
     const gap = responsiveClasses(values.gap, (value) => GAP_CLASS[value]);
-    const width = values.fullWidth ? "" : "max-w-4xl ";
-    return (
-      <section
-        className={`site-section mx-auto ${width}${gap} ${padding}${marginClasses(values.margin)}`}
-      >
-        <Content />
-      </section>
-    );
+    return values.fullWidth ? `mx-auto ${gap}` : `mx-auto max-w-4xl ${gap}`;
+  },
+  render: ({ slots }) => {
+    const Content = slots.content;
+    return <Content />;
   },
 });
 
@@ -154,9 +114,7 @@ const text = defineComponent({
   defaults: { text: `<p>${t("element.text")}</p>` },
   textStyle: () => "body",
   render: ({ values }) => (
-    <div
-      className={`site-text text-lg leading-relaxed [&_a]:underline [&_p+p]:mt-4${marginClasses(values.margin)}`}
-    >
+    <div className={`site-text ${BODY_TEXT_CLASSES}${marginClasses(values.margin)}`}>
       {values.text}
     </div>
   ),

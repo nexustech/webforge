@@ -6,14 +6,14 @@ This page is the template for adding one (2.5). The rules come from the engineer
 
 ## Where it goes
 
-- **One module per family:** components live in `src/catalogue/`, one file per family: `basic.tsx` (Section, Heading, Text), `layout.tsx` (Header, Footer) and `sections.tsx` (Hero, FAQ).
+- **One module per family:** components live in `src/catalogue/`, one file per family: `basic.tsx` (Section, Heading, Text), `layout.tsx` (Header, Footer), `sections.tsx` (Hero, Text, Text + Image, Call to action, FAQ) and `carousel.tsx` (Carousel).
 - **A new family:** add a module and list it in `createLibrary` in `src/catalogue/index.ts`. Streams adding components in parallel then never edit the same file.
 - **Each module ends with its family:** a record from component type to definition, e.g. `export const basicComponents = { Section: section, Heading: heading, Text: text }`.
 - **Component types** (`Hero`, `Faq`) are stored in every site file, so never rename one; add a migration if one must change.
 
 ## Defining it
 
-Wrap the definition in `defineComponent`.
+Wrap an element's definition in `defineComponent`, and a section's in `defineSection` (2.19), which is `defineComponent` with the section's frame added (see [The section frame](#the-section-frame)).
 - **Typed by its fields (R7):** `fields` type the rest. A default for a field the component doesn't have, or a choice a field doesn't offer, is a type error. `render` gets `values` and `slots` typed by them, so it reads `values.variant` as `"two" | "three"`, with no narrowing of its own.
 - **Read from whatever the document holds:** a site file can hold anything. `defineComponent` gives `render` each value in its field's form:
   - a choice not offered becomes the default, else the first choice;
@@ -25,18 +25,17 @@ Wrap the definition in `defineComponent`.
 
 ```tsx
 import { t } from "@webforge/i18n";
-import { defineComponent } from "../define.js";
-import { boxClasses } from "../library.js";
-import { MARGIN_FIELD, marginClasses, PADDING_FIELD, SECTION_PADDING } from "./basic.js";
+import { defineSection } from "../frame.js";
+import { SectionTitle } from "../typography.js";
 
 const COLUMNS = ["two", "three"] as const;
 
 /** Cards side by side: a title over a grid of elements. */
-const cards = defineComponent({
+const cards = defineSection({
   // D2: the display name, from the glossary (research/product/01-terminology.md), via t().
   label: t("section.cards"),
-  // A band of the page; an element (the default) goes inside sections.
-  place: "section",
+  // Its `site-cards` class, which exported pages and tests find it by.
+  name: "cards",
   category: t("category.basic"),
   // Layout variants become a Style choice, "Layout", defaulting to the first.
   variants: COLUMNS.map((value) => ({ label: t(`field.columns.${value}`), value })),
@@ -51,28 +50,39 @@ const cards = defineComponent({
     },
     // Every element of the library, those added later too.
     items: { kind: "slot", label: t("field.content"), accepts: "element" },
-    // Padding and margin per side and device (1.32): the Edit panel's fields, and the canvas's
-    // spacing handles on the selected section. Elements take `margin: MARGIN_FIELD` only.
-    padding: PADDING_FIELD,
-    margin: MARGIN_FIELD,
+    // No padding or margin: defineSection adds them.
   },
   defaults: { title: t("starter.cardsTitle"), gap: "medium", items: [] },
-  // `values` and `slots` are typed by `fields`: `values.variant` is "two" | "three".
+  // The frame's classes: its background and layout.
+  frame: () => "bg-base-100",
+  // The inside of the frame. `values` and `slots` are typed by `fields`.
   render: ({ values, slots }) => {
     const Items = slots.items;
-    // Each side its token, or a section's own spacing (`px-4 py-16`) where it isn't set.
-    const padding = boxClasses(values.padding, "padding", SECTION_PADDING);
     return (
-      <section className={`site-cards mx-auto max-w-6xl ${padding}${marginClasses(values.margin)}`}>
-        <h2 className="text-3xl font-bold">{values.title}</h2>
-        <div className={values.variant === "two" ? "grid gap-6 md:grid-cols-2" : "grid gap-6 md:grid-cols-3"}>
-          <Items />
-        </div>
-      </section>
+      <div className="mx-auto max-w-6xl space-y-8">
+        <SectionTitle>{values.title}</SectionTitle>
+        {/* The slot's class goes on the element that holds its elements: see Slots below. */}
+        <Items className={values.variant === "two" ? "grid gap-6 md:grid-cols-2" : "grid gap-6 md:grid-cols-3"} />
+      </div>
     );
   },
 });
 ```
+
+### The section frame
+
+Every section is defined with `defineSection` (`src/frame.tsx`), and `defineComponent` refuses `place: "section"`, so every section has the same frame and spacing fields:
+- **Its padding and margin:** `PADDING_FIELD` and `MARGIN_FIELD` (1.32), added after its own fields. A section declaring either is refused. The canvas's spacing handles and the Edit panel's spacing fields work on every section alike.
+- **Its frame:** `<section class="site-<name> <frame classes> <padding> <margin>">`, with the padding from `SECTION_PADDING` (`px-4 py-16`) for the sides left unset. `frame` gives its background and layout classes from its values ("hero bg-base-200"); `frameAttributes` gives attributes its behaviour needs.
+- **Its inside:** `render` draws what goes in the frame.
+- **Elements:** an element takes `margin: MARGIN_FIELD` (from `frame.tsx`) and draws `marginClasses(values.margin)` itself.
+
+### Titles, text and buttons
+
+`src/typography.tsx` is the one source of the catalogue's title, body-text and button classes, where the theme's type scale (2.3) lands. A test renders every component in each layout and fails on any other title, running-text or button classes.
+- **Titles:** `<SectionTitle>` (a section's h2), `size="page"` (the Hero's h1) or `size="small"` (h3), from `TITLE_CLASSES`. The Heading element uses the same classes.
+- **Running text:** `<BodyText>` for paragraphs (`BODY_TEXT_CLASSES`), with a placing class if needed (`className="mt-4"`).
+- **Buttons:** `<ButtonLink label link context kind>` for a link drawn as a button (nothing when its label is empty), or `BUTTON_CLASSES` for other buttons: `primary`, `primarySmall`, `primaryLarge`, and the icon buttons `icon`, `iconSmall` and `menu`. Placing classes come after them (`` `${BUTTON_CLASSES.primary} hidden md:inline-flex` ``).
 
 ### What `defineComponent` refuses
 
@@ -87,6 +97,7 @@ As the module loads:
 - **Broken choices:** a `select`, `color`, `spacing` or `slider` field must offer choices, each once, and its default must be one of them.
 - **A missing behaviour:** each name in `behaviours` must be a file in `src/behaviours/`.
 - **A clash with variants:** with `variants`, no field of its own may be named `variant`.
+- **A section without its frame (2.19):** `place: "section"` must come through `defineSection`, which refuses a field of its own named `padding` or `margin`.
 
 ### Fields
 
@@ -96,6 +107,7 @@ As the module loads:
 - **Media and links:** `media` (an image from Media, rendered with `Picture`) and `link` (rendered with `linkAttributes`).
 - **Repeating content:** `list`, for repeating plain values.
 - **Containers:** `slot`, for elements inside. Give a slot `accepts: "element"` to take every element, or `allow` for a fixed set (an FAQ's questions).
+  - **Laying out a slot's elements:** pass a class to the slot (`<Items className="grid md:grid-cols-3" />`). It goes on the element that holds them, Puck's drop zone on the canvas and a `<div>` in the export, so a grid lays them out alike in both. A class on an element around `<Items />` would reach only the drop zone on the canvas.
 - **Spacing:** padding and margin per side use `box`, with `PADDING_FIELD` and `MARGIN_FIELD` from `basic.tsx`, rendered by `boxClasses` and `marginClasses`.
   - Every section takes both.
   - Every element takes `margin: MARGIN_FIELD`, since its sides are its section's.

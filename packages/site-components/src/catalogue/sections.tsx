@@ -1,47 +1,23 @@
 import { t } from "@webforge/i18n";
 import { defineComponent } from "../define.js";
-import { boxClasses, type ComponentDef, linkAttributes } from "../library.js";
+import { defineSection } from "../frame.js";
+import type { ComponentDef } from "../library.js";
 import { Picture } from "../picture.js";
-import type { RenderContext } from "../schema.js";
-import { MARGIN_FIELD, marginClasses, PADDING_FIELD, SECTION_PADDING } from "./basic.js";
+import { BodyText, ButtonLink, SectionTitle } from "../typography.js";
 
 const ALIGNMENTS = ["centre", "left"] as const;
 const HERO_LAYOUTS = ["split", "centred", "background", "minimal"] as const;
 const TEXT_IMAGE_LAYOUTS = ["imageRight", "imageLeft"] as const;
 const CTA_LAYOUTS = ["banner", "split"] as const;
 
-/** A section's own padding and margin classes, its padding from {@link SECTION_PADDING}. */
-const sectionBox = (values: { readonly padding?: unknown; readonly margin?: unknown }) =>
-  `${boxClasses(values.padding, "padding", SECTION_PADDING)}${marginClasses(values.margin)}`;
-
-/** A section's button, if it has a label: a link styled as a button. */
-function SectionButton({
-  label,
-  link,
-  context,
-  className,
-}: {
-  readonly label: string;
-  readonly link: unknown;
-  readonly context: RenderContext;
-  readonly className: string;
-}) {
-  if (label === "") return null;
-  return (
-    <a className={className} {...linkAttributes(link, context)}>
-      {label}
-    </a>
-  );
-}
-
 /**
  * The large opening section of a page: title, short text, a button and an image, in one of four
  * layouts (2.6): the image beside the text (the first, as Heroes were before), the text centred
  * with the image below, the image behind the text (its focal point kept in view), or text only.
  */
-const hero = defineComponent({
+const hero = defineSection({
   label: t("section.hero"),
-  place: "section",
+  name: "hero",
   category: t("category.heroes"),
   variants: HERO_LAYOUTS.map((value) => ({ label: t(`field.heroLayout.${value}`), value })),
   fields: {
@@ -55,8 +31,6 @@ const hero = defineComponent({
       options: ALIGNMENTS.map((value) => ({ label: t(`field.alignment.${value}`), value })),
     },
     image: { kind: "media", label: t("field.image") },
-    padding: PADDING_FIELD,
-    margin: MARGIN_FIELD,
   },
   defaults: {
     title: t("starter.heroTitle"),
@@ -64,6 +38,14 @@ const hero = defineComponent({
     buttonLabel: t("starter.heroButton"),
     alignment: "centre",
   },
+  // The image behind the text fills the whole section, its padding too, behind a dark overlay. It
+  // doesn't use daisyUI's `hero` grid, whose grid areas would keep the overlay inside the padding.
+  frame: (values) =>
+    values.variant === "background"
+      ? "relative flex min-h-[28rem] items-center justify-center overflow-hidden bg-neutral"
+      : values.variant === "minimal"
+        ? "bg-base-200"
+        : "hero bg-base-200",
   render: ({ values, context }) => {
     const layout = values.variant;
     const aligned =
@@ -73,24 +55,15 @@ const hero = defineComponent({
     const alt = placed?.alt ?? image?.alt ?? "";
     const copy = (
       <div className={layout === "centred" ? "mx-auto max-w-2xl" : "max-w-xl"}>
-        <h1 className="text-4xl font-bold md:text-5xl">{values.title}</h1>
+        <SectionTitle size="page">{values.title}</SectionTitle>
         <p className="py-6 text-lg">{values.text}</p>
-        <SectionButton
-          label={values.buttonLabel}
-          link={values.buttonLink}
-          context={context}
-          className="btn btn-primary"
-        />
+        <ButtonLink label={values.buttonLabel} link={values.buttonLink} context={context} />
       </div>
     );
     if (layout === "background") {
-      // The image fills the whole section, its padding too, behind a dark overlay; the text is set
-      // on the overlay. Not daisyUI's `hero` grid, whose grid areas would keep the overlay inside
-      // the padding.
+      // The text is set on the overlay.
       return (
-        <section
-          className={`site-hero relative flex min-h-[28rem] items-center justify-center overflow-hidden bg-neutral ${sectionBox(values)}`}
-        >
+        <>
           {image !== null && (
             <Picture
               image={image}
@@ -104,73 +77,60 @@ const hero = defineComponent({
           <div className={`hero-content relative max-w-6xl text-neutral-content ${aligned}`}>
             {copy}
           </div>
-        </section>
+        </>
       );
     }
     if (layout === "minimal") {
-      return (
-        <section className={`site-hero bg-base-200 ${sectionBox(values)}`}>
-          <div className={`mx-auto max-w-3xl ${aligned}`}>{copy}</div>
-        </section>
-      );
+      return <div className={`mx-auto max-w-3xl ${aligned}`}>{copy}</div>;
     }
     const centred = layout === "centred";
     return (
-      <section className={`site-hero hero bg-base-200 ${sectionBox(values)}`}>
-        <div
-          className={`hero-content ${centred ? "max-w-4xl flex-col gap-10" : "max-w-6xl flex-col gap-10 lg:flex-row-reverse"} ${aligned}`}
-        >
-          {centred ? copy : null}
-          {image !== null && (
-            <Picture
-              image={image}
-              alt={alt}
-              sizes={
-                centred ? "(min-width: 896px) 896px, 100vw" : "(min-width: 1024px) 50vw, 100vw"
-              }
-              eager
-              className={
-                centred
-                  ? "h-auto w-full rounded-box shadow-lg"
-                  : "h-auto w-full max-w-xl rounded-box shadow-lg"
-              }
-            />
-          )}
-          {centred ? null : copy}
-        </div>
-      </section>
+      <div
+        className={`hero-content ${centred ? "max-w-4xl flex-col gap-10" : "max-w-6xl flex-col gap-10 lg:flex-row-reverse"} ${aligned}`}
+      >
+        {centred ? copy : null}
+        {image !== null && (
+          <Picture
+            image={image}
+            alt={alt}
+            sizes={centred ? "(min-width: 896px) 896px, 100vw" : "(min-width: 1024px) 50vw, 100vw"}
+            eager
+            className={
+              centred
+                ? "h-auto w-full rounded-box shadow-lg"
+                : "h-auto w-full max-w-xl rounded-box shadow-lg"
+            }
+          />
+        )}
+        {centred ? null : copy}
+      </div>
     );
   },
 });
 
 /** A section of text: a title and formatted text, set in a readable column. */
-const textSection = defineComponent({
+const textSection = defineSection({
   label: t("section.text"),
-  place: "section",
+  name: "text-section",
   category: t("category.text"),
   fields: {
     title: { kind: "text", label: t("field.title"), inline: true },
     text: { kind: "richtext", label: t("field.text"), inline: true },
-    padding: PADDING_FIELD,
-    margin: MARGIN_FIELD,
   },
   defaults: { title: t("starter.textTitle"), text: `<p>${t("starter.textBody")}</p>` },
+  frame: () => "bg-base-100",
   render: ({ values }) => (
-    <section className={`site-text-section bg-base-100 ${sectionBox(values)}`}>
-      <div className="mx-auto max-w-3xl">
-        <h2 className="text-3xl font-bold">{values.title}</h2>
-        <div className="mt-4 text-lg leading-relaxed [&_a]:underline [&_p+p]:mt-4">
-          {values.text}
-        </div>
-      </div>
-    </section>
+    <div className="mx-auto max-w-3xl">
+      <SectionTitle>{values.title}</SectionTitle>
+      <BodyText className="mt-4">{values.text}</BodyText>
+    </div>
   ),
 });
 
 /** Text beside an image, the image on the right or the left (2.6). */
-const textImage = defineComponent({
+const textImage = defineSection({
   label: t("section.textImage"),
-  place: "section",
+  name: "text-image",
   category: t("category.text"),
   variants: TEXT_IMAGE_LAYOUTS.map((value) => ({
     label: t(`field.textImageLayout.${value}`),
@@ -180,42 +140,37 @@ const textImage = defineComponent({
     title: { kind: "text", label: t("field.title"), inline: true },
     text: { kind: "richtext", label: t("field.text"), inline: true },
     image: { kind: "media", label: t("field.image") },
-    padding: PADDING_FIELD,
-    margin: MARGIN_FIELD,
   },
   defaults: { title: t("starter.textImageTitle"), text: `<p>${t("starter.textImageBody")}</p>` },
+  frame: () => "bg-base-100",
   render: ({ values, context }) => {
     const placed = values.image;
     const image = placed === undefined ? null : context.image(placed.mediaId);
     return (
-      <section className={`site-text-image bg-base-100 ${sectionBox(values)}`}>
-        {/* Without an image yet, the text alone, in the Text section's readable measure. */}
-        <div
-          className={
-            image === null
-              ? "mx-auto max-w-3xl"
-              : "mx-auto grid max-w-6xl items-center gap-10 md:grid-cols-2"
-          }
-        >
-          {/* The text comes first, as it is read; on wide screens CSS puts the image left. */}
-          <div>
-            <h2 className="text-3xl font-bold">{values.title}</h2>
-            <div className="mt-4 text-lg leading-relaxed [&_a]:underline [&_p+p]:mt-4">
-              {values.text}
-            </div>
-          </div>
-          {image !== null && (
-            <div className={values.variant === "imageLeft" ? "md:order-first" : undefined}>
-              <Picture
-                image={image}
-                alt={placed?.alt ?? image.alt}
-                sizes="(min-width: 768px) 50vw, 100vw"
-                className="h-auto w-full rounded-box shadow-lg"
-              />
-            </div>
-          )}
+      // Without an image yet, the text alone, in the Text section's readable measure.
+      <div
+        className={
+          image === null
+            ? "mx-auto max-w-3xl"
+            : "mx-auto grid max-w-6xl items-center gap-10 md:grid-cols-2"
+        }
+      >
+        {/* The text comes first, as it is read; on wide screens CSS puts the image left. */}
+        <div>
+          <SectionTitle>{values.title}</SectionTitle>
+          <BodyText className="mt-4">{values.text}</BodyText>
         </div>
-      </section>
+        {image !== null && (
+          <div className={values.variant === "imageLeft" ? "md:order-first" : undefined}>
+            <Picture
+              image={image}
+              alt={placed?.alt ?? image.alt}
+              sizes="(min-width: 768px) 50vw, 100vw"
+              className="h-auto w-full rounded-box shadow-lg"
+            />
+          </div>
+        )}
+      </div>
     );
   },
 });
@@ -225,9 +180,9 @@ const textImage = defineComponent({
  * text every theme keeps readable, unlike its main colour's), or the text with the button beside
  * it (2.6).
  */
-const callToAction = defineComponent({
+const callToAction = defineSection({
   label: t("section.callToAction"),
-  place: "section",
+  name: "cta",
   category: t("category.callToAction"),
   variants: CTA_LAYOUTS.map((value) => ({ label: t(`field.ctaLayout.${value}`), value })),
   fields: {
@@ -235,59 +190,59 @@ const callToAction = defineComponent({
     text: { kind: "text", label: t("field.text"), inline: true },
     buttonLabel: { kind: "text", label: t("field.buttonLabel") },
     buttonLink: { kind: "link", label: t("field.buttonLink") },
-    padding: PADDING_FIELD,
-    margin: MARGIN_FIELD,
   },
   defaults: {
     title: t("starter.ctaTitle"),
     text: t("starter.ctaText"),
     buttonLabel: t("starter.ctaButton"),
   },
+  frame: (values) =>
+    values.variant === "banner" ? "bg-neutral text-neutral-content" : "bg-base-200",
   render: ({ values, context }) => {
     const banner = values.variant === "banner";
     return (
-      <section
-        className={`site-cta ${banner ? "bg-neutral text-neutral-content" : "bg-base-200"} ${sectionBox(values)}`}
+      <div
+        className={
+          banner
+            ? "mx-auto max-w-3xl text-center"
+            : "mx-auto flex max-w-6xl flex-col items-start gap-6 md:flex-row md:items-center md:justify-between"
+        }
       >
-        <div
-          className={
-            banner
-              ? "mx-auto max-w-3xl text-center"
-              : "mx-auto flex max-w-6xl flex-col items-start gap-6 md:flex-row md:items-center md:justify-between"
-          }
-        >
-          <div>
-            <h2 className="text-3xl font-bold">{values.title}</h2>
-            <p className="mt-4 text-lg">{values.text}</p>
-          </div>
-          <SectionButton
-            label={values.buttonLabel}
-            link={values.buttonLink}
-            context={context}
-            className={banner ? "btn btn-primary btn-lg mt-8" : "btn btn-primary btn-lg shrink-0"}
-          />
+        <div>
+          <SectionTitle>{values.title}</SectionTitle>
+          <p className="mt-4 text-lg">{values.text}</p>
         </div>
-      </section>
+        <ButtonLink
+          label={values.buttonLabel}
+          link={values.buttonLink}
+          context={context}
+          kind="primaryLarge"
+          className={banner ? "mt-8" : "shrink-0"}
+        />
+      </div>
     );
   },
 });
 
-/** Questions and answers. Each item is a native `<details>`, so it works without JavaScript. */
-const faq = defineComponent({
+/**
+ * Questions and answers. Each item is a native `<details>`, so it works without JavaScript. A
+ * section like the others (2.19): its own padding, its questions in a readable column.
+ */
+const faq = defineSection({
   label: t("section.faq"),
-  place: "section",
+  name: "faq",
   category: t("category.questions"),
   fields: {
     title: { kind: "text", label: t("field.title"), inline: true },
     items: { kind: "slot", label: t("field.questions"), allow: ["FaqItem"] },
-    margin: MARGIN_FIELD,
   },
   defaults: { title: t("starter.faqTitle"), items: [] },
+  frame: () => "bg-base-100",
   render: ({ values, slots }) => {
     const Items = slots.items;
     return (
-      <div className={`site-faq space-y-4${marginClasses(values.margin)}`}>
-        <h2 className="text-3xl font-bold">{values.title}</h2>
+      <div className="mx-auto max-w-3xl space-y-4">
+        <SectionTitle>{values.title}</SectionTitle>
         <div className="space-y-2">
           <Items />
         </div>
