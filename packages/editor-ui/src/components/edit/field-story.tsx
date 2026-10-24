@@ -7,9 +7,12 @@ import { EditPanel, type EditPanelField } from "./edit-panel.js";
  * dot drawn as the panel draws them. Changes to its value are kept; a list's changes aren't.
  */
 export function FieldStory({
+  heading,
   field,
   device,
 }: {
+  /** The panel's heading: the element the field is on. */
+  readonly heading: string;
   readonly field: EditPanelField;
   /** The device being viewed, for a field set for one device only. */
   readonly device?: string;
@@ -17,7 +20,7 @@ export function FieldStory({
   const [value, setValue] = useState(field.value);
   return (
     <EditPanel
-      heading="Section"
+      heading={heading}
       device={device}
       fields={[{ ...field, value }]}
       // A list reports a change to the list, not its new value: see the RepeatingList story.

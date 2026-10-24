@@ -14,7 +14,7 @@ const field = {
 const meta = {
   title: "Edit/Fields/Toggle",
   component: FieldStory,
-  args: { field },
+  args: { heading: "Section", field },
   decorators: [fieldStoryFrame],
 } satisfies Meta<typeof FieldStory>;
 export default meta;
