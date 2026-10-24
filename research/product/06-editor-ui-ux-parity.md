@@ -58,7 +58,7 @@ Effort: **S** ≤ 1 day · **M** 2–4 days. Estimates are ideal days, as in the
 | UX-10 | Component panel: **search**, **Add to Favorites** (a group at the top), User library, previews on hover | Add panel:<br>• **Favourites** group (right-click *Add to Favourites*);<br>• **Recently used**;<br>• a **larger thumbnail preview on hover** for sections | S |
 | UX-11 | **Command palette** (Ctrl/Cmd + P): every command, switch pages, `make page`, `add navbar` | Grow the command box into a full palette:<br>• every menu command;<br>• *Go to page…*;<br>• **Add ‹section/element›** by name (as Elements' *Quick Add*);<br>• toggles for modes, themes and panels.<br>No Emmet syntax (developer feature) | M |
 | UX-12 | Overview: drag on the tree, **drop validity shown while dragging**; indicators: lock, linked, animated ★, custom options; right-click *Expand all* | Layers:<br>• **drop-valid/invalid feedback** while dragging;<br>• indicators for shared (linked), hidden, animated and locked;<br>• right-click *Expand/Collapse all*;<br>• **filter field** (as Elements' search at the bottom) | M |
-| UX-13 | Options panel: grouped options; **Ctrl/Cmd + Enter** expands and **Ctrl/Cmd + Esc** resets an option or group; "Search options"; collapse the panel to icons | Edit panel:<br>• **Reset** per field and per group (right-click and Ctrl/Cmd + Esc);<br>• **Expand all / Collapse all**;<br>• a **search field** for options;<br>• collapsing a side column leaves a strip of panel icons | M |
+| UX-13 | Options panel: grouped options; **Ctrl/Cmd + Enter** expands and **Ctrl/Cmd + Esc** resets an option or group; "Search options"; collapse the panel to icons | Edit panel:<br>• **Reset** per field and per group (right-click, and Cmd + Esc on macOS: Ctrl + Esc is Windows' Start menu, #290);<br>• **Expand all / Collapse all**;<br>• a **search field** for options;<br>• collapsing a side column leaves a strip of panel icons | M |
 | UX-14 | **Copy Options / Copy Classes / Copy Attributes** | **Copy style / Paste style** between sections or elements of the same type (one undo step) | S |
 | UX-15 | Image browser (design images, stock tabs), Icon browser (set dropdown, search, double-click to choose), Google Fonts browser (search, categories, editable sample text) | One consistent **picker dialog** pattern for Image (site media; stock photos in v1.1, G26), Icon (search, categories) and Font (search, categories, **editable sample text**, live preview) | S each, inside existing items |
 | UX-16 | Undo/Redo merged into **one control with a history list** (9.0) | A dropdown arrow on the title-bar Undo button lists recent steps (jump), next to the Undo History panel | S |
@@ -113,7 +113,7 @@ Bootstrap Studio's keys, plus a few from Elements, so users of either feel at ho
 | In text: link, new line, split, non-breaking space | Mod + K, Shift + Enter, **Alt + Enter**, **Shift + Space** | BS | Link ✅ |
 | Zoom in / out / reset / fit | Mod + = / Mod + − / Mod + 0 / Mod + 9 | BS (+ fit) | Toolbar only |
 | Device view Desktop / Tablet / Mobile | **Mod + 1 / 2 / 3** | Elements | — |
-| Expand option group / reset option | Mod + Enter / Mod + Esc | BS | — |
+| Expand option group / reset option | Mod + Enter / Mod + Esc (reset: Cmd + Esc on macOS only; on Windows, Ctrl + Esc opens the Start menu, so the right-click menu resets, #290) | BS | — |
 | Next / previous panel | Mod + Tab / Mod + Shift + Tab | BS | — |
 | Show outlines / show element names | Mod + Shift + ' / Mod + Alt + ' | Elements | — |
 
