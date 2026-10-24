@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { act, cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { CanvasSize } from "@webforge/engine";
 import type { PageId } from "@webforge/model";
@@ -341,7 +341,13 @@ describe("CanvasToolbarHost", () => {
     expect(session.history.entries()).toEqual([]);
   });
 
-  it("shows the selected element's own toolbar in its centre, if its type has one (SP-4)", () => {
+  it("keeps the row under it, empty, while the selection has no toolbar (SP-4)", () => {
+    host(createEditorSession(siteLibrary, starterSite()));
+    const row = screen.getByRole("toolbar", { name: "Selected element" });
+    expect(row.childElementCount).toBe(0);
+  });
+
+  it("shows the selected element's own toolbar in the row under it, if its type has one (SP-4)", () => {
     const session = createEditorSession(siteLibrary, starterSite());
     const toolbars = host(session);
     act(() => {
@@ -377,6 +383,19 @@ describe("Heading level toolbar (SP-4)", () => {
     };
     return { session, flush, size };
   }
+
+  it("is next in the Tab order after the canvas toolbar, in the row under it", async () => {
+    setUpHeading();
+    const row = screen.getByRole("toolbar", { name: "Selected element" });
+    const toolbar = screen.getByRole("toolbar", { name: "Canvas" });
+    const controls = toolbar.querySelectorAll<HTMLElement>("button, select, input");
+    controls[controls.length - 1]?.focus();
+
+    await userEvent.tab();
+
+    // The Heading's own level, the one chosen.
+    expect(document.activeElement).toBe(within(row).getByRole("radio", { name: "Title" }));
+  });
 
   it("offers a Heading's sizes as its levels", () => {
     const sizes = siteLibrary.components.Heading?.fields.size;

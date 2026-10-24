@@ -571,7 +571,7 @@ export function Editor({
     };
   }, [panels, session, mode, engine, siteWide, preferences, registry, previews]);
   useEffect(() => registerMediaPanel(panels, session), [panels, session]);
-  // The selected element's own toolbar in the canvas toolbar's centre (SP-4).
+  // The selected element's own toolbar, in the row under the canvas toolbar (SP-4).
   useEffect(
     () =>
       toolbars.register(headingToolbar({ session, flush: () => connectionRef.current?.flush() })),

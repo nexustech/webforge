@@ -1,9 +1,9 @@
 import type { ComponentType } from "react";
 
 /**
- * The contextual toolbars (SP-4): what the canvas toolbar's centre shows for the selected element,
- * such as a Heading's level or a List's *Add item*. Each area registers its elements' toolbars with
- * {@link ContextualToolbarRegistry.register} instead of editing the canvas toolbar.
+ * The contextual toolbars (SP-4): what the row under the canvas toolbar shows for the selected
+ * element, such as a Heading's level or a List's *Add item*. Each area registers its elements'
+ * toolbars with {@link ContextualToolbarRegistry.register} instead of editing the canvas toolbar.
  */
 
 /** One element's toolbar. */

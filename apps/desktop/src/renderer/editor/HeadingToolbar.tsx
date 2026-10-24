@@ -49,7 +49,7 @@ export function HeadingLevelToolbar({
 }
 
 /**
- * The selected Heading's level in the canvas toolbar's centre (SP-4), in `session`: a change is
+ * The selected Heading's level under the canvas toolbar (SP-4), in `session`: a change is
  * one undo step, "Changed Heading size", as from the Edit panel. `flush` ends a canvas text
  * session first.
  */

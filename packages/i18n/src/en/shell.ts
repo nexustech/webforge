@@ -147,7 +147,8 @@ export const shell = {
   "canvasToolbar.view.extraSpace": "Extra space at the bottom",
   "canvasToolbar.devices": "Devices",
   "canvasToolbar.rotate": "Rotate",
-  // The selected element's toolbar in the canvas toolbar's centre (SP-4): a Heading's level.
+  // The selected element's toolbar, in the row under the canvas toolbar (SP-4): a Heading's level.
+  "elementToolbar.label": "Selected element",
   "headingToolbar.level": "Heading level",
   "headingToolbar.title": "Title",
   "headingToolbar.heading": "Heading",

@@ -6,6 +6,7 @@ import { pageListOf, samePages, useDocument, useUi } from "../editor/use-documen
 import { CanvasToolbar } from "./CanvasToolbar.js";
 import type { CanvasView } from "./canvas-view.js";
 import { useContextualToolbar } from "./contextual-toolbar-context.js";
+import { ElementToolbarRow } from "./ElementToolbarRow.js";
 import { type PreferencesStore, usePreferences } from "./preferences-store.js";
 
 /** The page list as the toolbar shows it, kept while only page content changes. */
@@ -28,7 +29,8 @@ function SelectedElementToolbar({ session }: { readonly session: EditorSession }
 }
 
 /**
- * The canvas toolbar on an editor session: it shows the session's page and view, and changes them
+ * The canvas toolbar on an editor session, and the selected element's toolbar in the row under
+ * it (SP-4): it shows the session's page and view, and changes them
  * in its UI store, which undo restores but never records (U3, U6). Zoom and size live in the
  * window's {@link CanvasView}.
  */
@@ -49,18 +51,22 @@ export function CanvasToolbarHost({
   const pageId = useUi(session, (state) => state.pageId);
   const viewport = useUi(session, (state) => state.viewport);
   return (
-    <CanvasToolbar
-      pages={usePageList(session)}
-      shownPageId={pageId}
-      onShowPage={(id) => session.showPage(id)}
-      viewport={viewport}
-      onViewportChange={(next: Viewport) => session.setViewport(next)}
-      zoom={zoom}
-      onZoomChange={(next) => view.setState({ zoom: next })}
-      size={size}
-      canvas={canvas}
-      onCanvasChange={(next) => preferences.change({ canvas: next })}
-      center={<SelectedElementToolbar session={session} />}
-    />
+    <>
+      <CanvasToolbar
+        pages={usePageList(session)}
+        shownPageId={pageId}
+        onShowPage={(id) => session.showPage(id)}
+        viewport={viewport}
+        onViewportChange={(next: Viewport) => session.setViewport(next)}
+        zoom={zoom}
+        onZoomChange={(next) => view.setState({ zoom: next })}
+        size={size}
+        canvas={canvas}
+        onCanvasChange={(next) => preferences.change({ canvas: next })}
+      />
+      <ElementToolbarRow>
+        <SelectedElementToolbar session={session} />
+      </ElementToolbarRow>
+    </>
   );
 }
