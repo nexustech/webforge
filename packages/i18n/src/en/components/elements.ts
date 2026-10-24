@@ -12,7 +12,6 @@ export const elements = {
   "field.imageWidth.large": "Large",
   "field.imageWidth.full": "Full width",
   "field.rounded": "Rounded corners",
-  "field.caption": "Caption",
   "field.buttonStyle": "Style",
   "field.buttonStyle.primary": "Filled",
   "field.buttonStyle.secondary": "Second colour",

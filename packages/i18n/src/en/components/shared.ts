@@ -55,6 +55,7 @@ export const shared = {
   "field.buttonLabel": "Button text",
   "field.buttonLink": "Button link",
   "field.image": "Image",
+  "field.caption": "Caption",
   "starter.heading": "Welcome to our business",
   "starter.text": "Tell visitors what you do and why they will love it.",
   "starter.notFoundHeading": "Sorry, this page doesn't exist",
