@@ -1,4 +1,5 @@
 import type { CanvasContextMenu } from "../canvas-engine.js";
+import { COMPONENT, COMPONENT_ATTRIBUTE, componentSelector } from "./puck-dom.js";
 
 /** Editable text: where the browser's own menu has the spelling suggestions. */
 const EDITABLE = '[contenteditable="true"], input, textarea';
@@ -64,7 +65,7 @@ export function installContextMenu(
       // The keyboard's: the selected element's menu, unless text is being edited.
       const nodeId = options.selected();
       if (editableIn(document.activeElement) !== null || nodeId === null) return;
-      const wrapper = document.querySelector(`[data-puck-component="${CSS.escape(nodeId)}"]`);
+      const wrapper = document.querySelector(componentSelector(nodeId));
       // Puck wraps each element in a `div` of its own: the element is its child.
       const box = (wrapper?.firstElementChild ?? wrapper)?.getBoundingClientRect();
       if (box === undefined) return;
@@ -77,7 +78,7 @@ export function installContextMenu(
     if (text != null && text === press.editing) {
       return;
     }
-    const nodeId = target?.closest?.("[data-puck-component]")?.getAttribute("data-puck-component");
+    const nodeId = target?.closest?.(COMPONENT)?.getAttribute(COMPONENT_ATTRIBUTE);
     if (nodeId === null || nodeId === undefined) {
       return;
     }

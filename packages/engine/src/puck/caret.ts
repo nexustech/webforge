@@ -1,3 +1,5 @@
+import { componentSelector, RICH_TEXT } from "./puck-dom.js";
+
 /** Text offset of the caret inside `element`, or `null` if the selection is elsewhere. */
 function caretOffset(element: HTMLElement): number | null {
   const selection = element.ownerDocument.getSelection();
@@ -50,7 +52,7 @@ export function preserveCaret(doc: Document | null): void {
   const MutationObserverImpl = doc?.defaultView?.MutationObserver;
   if (
     !active?.isContentEditable ||
-    active.closest(".ProseMirror") !== null ||
+    active.closest(RICH_TEXT) !== null ||
     MutationObserverImpl === undefined
   ) {
     return;
@@ -78,7 +80,7 @@ export function refocusRichText(doc: Document | null, id: string): void {
   if (doc == null || MutationObserverImpl === undefined) {
     return;
   }
-  const selector = `[data-puck-component="${CSS.escape(id)}"] .ProseMirror`;
+  const selector = `${componentSelector(id)} ${RICH_TEXT}`;
   const before = doc.querySelector<HTMLElement>(selector);
   const offset = (before === null ? null : caretOffset(before)) ?? Number.MAX_SAFE_INTEGER;
   const observer = new MutationObserverImpl(() => {

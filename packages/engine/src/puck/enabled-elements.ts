@@ -1,5 +1,7 @@
+import { COMPONENT } from "./puck-dom.js";
+
 /** Puck's wrapper around each element on the canvas, which dnd-kit makes its draggable. */
-const ELEMENT = "[data-puck-component]";
+const ELEMENT = COMPONENT;
 
 /** Removes `aria-disabled` from `node` if it is an element's wrapper. */
 function enable(node: Node): void {

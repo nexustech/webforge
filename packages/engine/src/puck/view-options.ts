@@ -1,5 +1,7 @@
 import type { ViewOptions } from "../canvas-engine.js";
 import { canvasZoom } from "./chrome.js";
+import { COMPONENT, COMPONENT_ATTRIBUTE, OVERLAY, ROOT_DROP_ZONE } from "./puck-dom.js";
+import { ensureStyle } from "./styles.js";
 
 /**
  * The canvas's View options (F-ED-25, UX-7): outlines around every element, an element's margins
@@ -20,7 +22,7 @@ const OPTION_ATTRIBUTES: Record<keyof ViewOptions, string> = {
 };
 
 /** Puck's wrapper around each element on the canvas. */
-const ELEMENT = "[data-puck-component]";
+const ELEMENT = COMPONENT;
 
 /** The room *Extra space at the bottom* leaves below the page's last section, in CSS pixels. */
 const EXTRA_SPACE = 320;
@@ -39,7 +41,7 @@ const VIEW_CSS = `
  * fills the canvas (100%), where padding would add nothing: it grows with its content instead,
  * at least the canvas's height, plus a fixed room (not vh, which would grow with the page).
  */
-[${OPTION_ATTRIBUTES.extraBottomSpace}] [data-puck-dropzone="root:default-zone"] {
+[${OPTION_ATTRIBUTES.extraBottomSpace}] ${ROOT_DROP_ZONE} {
   height: auto;
   min-height: 100vh;
   padding-bottom: ${EXTRA_SPACE}px;
@@ -137,9 +139,6 @@ function place(element: HTMLElement, band: Band): void {
   element.style.height = `${band.height}px`;
   element.style.borderWidth = band.sides.map((side) => `${side}px`).join(" ");
 }
-
-/** Puck's overlays (1.12's hover outline and selected bar among them), which move with the pointer. */
-const OVERLAY = "[data-puck-overlay]";
 
 /**
  * Calls `onChange` (once for each batch of changes) when the page in `document` changes in a way
@@ -247,7 +246,7 @@ function showElementNames(
         ?.getAttribute("data-wf-id");
       const labels: HTMLElement[] = [];
       for (const element of document.querySelectorAll<HTMLElement>(ELEMENT)) {
-        const id = element.getAttribute("data-puck-component") ?? "";
+        const id = element.getAttribute(COMPONENT_ATTRIBUTE) ?? "";
         const name = nameOf(id);
         const box = element.getBoundingClientRect();
         if (name === undefined || id === selected || box.width === 0) continue;
@@ -285,12 +284,7 @@ export function applyViewOptions(
   const view = document.defaultView;
   const root = document.documentElement;
   if (view === null) return () => undefined;
-  if (document.head.querySelector(`style[${VIEW_STYLE_ATTRIBUTE}]`) === null) {
-    const style = document.createElement("style");
-    style.setAttribute(VIEW_STYLE_ATTRIBUTE, "");
-    style.textContent = VIEW_CSS;
-    document.head.append(style);
-  }
+  ensureStyle(document, VIEW_STYLE_ATTRIBUTE, VIEW_CSS);
   for (const [option, attribute] of Object.entries(OPTION_ATTRIBUTES)) {
     root.toggleAttribute(attribute, options[option as keyof ViewOptions]);
   }
