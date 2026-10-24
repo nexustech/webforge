@@ -8,6 +8,7 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@webforge/editor-ui";
+import type { ReadonlyStore } from "@webforge/history";
 import { type MessageKey, t } from "@webforge/i18n";
 import {
   COLOR_ROLES,
@@ -31,6 +32,7 @@ import {
   resolveColorRef,
 } from "@webforge/themes";
 import { type CSSProperties, useId } from "react";
+import { type EditorPreferences, usePreferences } from "../shell/preferences-store.js";
 import type { EditorSession } from "./editor-session.js";
 import { useDocument } from "./use-document.js";
 
@@ -347,12 +349,22 @@ export function ColourField({
 }
 
 /**
- * Makes the Edit panel draw colour fields with {@link ColourField}. Returns the function that puts
- * the previous renderer back.
+ * Makes the Edit panel draw colour fields with {@link ColourField}, in Advanced mode while
+ * `preferences` say so: registered once, it follows the editor level (R9). Returns the function
+ * that takes it away.
  */
-export function registerColourField(context: ColourFieldContext): () => void {
+export function registerColourField({
+  preferences,
+  ...context
+}: Omit<ColourFieldContext, "advanced"> & {
+  readonly preferences: ReadonlyStore<EditorPreferences>;
+}): () => void {
   function SessionColourField(props: FieldRendererProps) {
-    return <ColourField {...props} {...context} />;
+    const advanced = usePreferences(
+      preferences,
+      (state) => state.preferences.editorLevel === "advanced",
+    );
+    return <ColourField {...props} {...context} advanced={advanced} />;
   }
   return registerFieldRenderer("color", SessionColourField);
 }

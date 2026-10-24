@@ -112,6 +112,44 @@ describe("EditPanelHost redraws (R9)", () => {
   });
 });
 
+describe("EditPanelHost redraws a Section (R9, #296 review)", () => {
+  it("draws nothing again while typing in an element inside the selected Section", () => {
+    const session = createEditorSession(siteLibrary, siteWithHero());
+    session.select("section-1");
+    let commits = 0;
+    render(
+      <Profiler id="panel" onRender={() => (commits += 1)}>
+        <EditPanelHost session={session} flush={vi.fn()} />
+      </Profiler>,
+    );
+    const drawn = commits;
+    act(() =>
+      session.edit("text", "Edited Heading text", (draft) => {
+        const section = draft.pages[draft.homePageId]?.doc.content[0];
+        const heading = (section?.props.content as PageDoc["content"] | undefined)?.[0];
+        if (heading !== undefined) heading.props.text = "Welcome in";
+      }),
+    );
+    expect(commits).toBe(drawn);
+  });
+});
+
+describe("EditPanelHost changes to an element that has gone (#296 review)", () => {
+  it("does nothing with a change still on its way once the element is deleted", () => {
+    const { session, labels } = setup("hero");
+    const title = screen.getByRole("textbox", { name: "Title" });
+    act(() => {
+      // Deleted, and the panel not drawn again yet: its handlers are the Hero's.
+      session.edit("remove", "Deleted Hero", (draft) => {
+        const content = draft.pages[draft.homePageId]?.doc.content;
+        content?.splice(1, 1);
+      });
+      fireEvent.change(title, { target: { value: "Fresh bread" } });
+    });
+    expect(labels()).toEqual(["Deleted Hero"]);
+  });
+});
+
 describe("EditPanelHost in Content mode (M3)", () => {
   it("keeps texts, links and list items, and leaves styles out", async () => {
     const session = createEditorSession(siteLibrary, siteWithHero());

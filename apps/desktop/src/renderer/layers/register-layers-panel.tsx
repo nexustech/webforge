@@ -1,3 +1,4 @@
+import type { ReadonlyStore } from "@webforge/history";
 import { t } from "@webforge/i18n";
 import { useSyncExternalStore } from "react";
 import type { EditorSession } from "../editor/editor-session.js";
@@ -6,6 +7,11 @@ import { useUi } from "../editor/use-document.js";
 import { ElementMenu } from "../element-menu/ElementMenu.js";
 import { useCommand, useCommandRegistry } from "../shell/command-context.js";
 import type { PanelRegistry } from "../shell/panels.js";
+import {
+  createPreferencesStore,
+  type EditorPreferences,
+  usePreferences,
+} from "../shell/preferences-store.js";
 import { LayersPanel } from "./LayersPanel.js";
 import {
   copyLayer,
@@ -38,13 +44,17 @@ function useCommandAction(id: string): (() => void) | undefined {
  * Adds Layers to the left column's bottom, before Undo History (UI1), in Advanced mode only (T2).
  * The tree follows the shown page and the selection; it is rebuilt only when the page's structure
  * or names change, not on every keystroke. A linked copy's layer is selected while the copy is,
- * not an element inside it: Layers' actions act on what is selected (F-ED-23). With `layoutLocked` (Content mode, M3) nothing can be
- * dragged, moved or hidden. Returns a function that removes the panel.
+ * not an element inside it: Layers' actions act on what is selected (F-ED-23). In Content mode
+ * (M3, from `preferences`) nothing can be dragged, moved or hidden; the panel follows the mode
+ * without being registered again, so what it shows (collapsed layers, the filter) stays (R9).
+ * Returns a function that removes the panel.
  */
 export function registerLayersPanel(
   panels: PanelRegistry,
   session: EditorSession,
-  { layoutLocked = false }: { readonly layoutLocked?: boolean } = {},
+  {
+    preferences = createPreferencesStore(),
+  }: { readonly preferences?: ReadonlyStore<EditorPreferences> } = {},
 ): () => void {
   const { history, ui, library } = session;
   // The tree as last shown, for the page content and shared sections it was made from: rebuilt
@@ -82,6 +92,7 @@ export function registerLayersPanel(
     const layers = useSyncExternalStore(subscribe, currentLayers, currentLayers);
     const selectedId = useUi(session, (state) => state.nodeId);
     const alsoSelected = useUi(session, (state) => state.others ?? NO_OTHERS);
+    const layoutLocked = usePreferences(preferences, (state) => state.mode !== "design");
     return (
       <LayersPanel
         layers={layers}

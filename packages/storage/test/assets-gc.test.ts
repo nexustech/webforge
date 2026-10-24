@@ -171,7 +171,7 @@ describe("ProjectStore.collectGarbage", () => {
     );
   }, 90_000);
 
-  it("removes nothing when a version's manifest is damaged", () => {
+  it("removes nothing when a version's manifest is damaged: the project doesn't even open", () => {
     const { store, path } = newStore();
     const asset = store.putAsset({
       mediaId: "a",
@@ -185,9 +185,9 @@ describe("ProjectStore.collectGarbage", () => {
     db.prepare("UPDATE versions SET manifest = '{'").run();
     db.close();
 
-    const reopened = ProjectStore.open(path);
-    expect(() => reopened.collectGarbage()).toThrow(ProjectFileError);
-    expect(reopened.readBlob(asset.hash)).toBeDefined();
-    reopened.close();
+    expect(() => ProjectStore.open(path)).toThrow(ProjectFileError);
+    const check = new Database(path, { readonly: true });
+    expect(check.prepare("SELECT 1 FROM blobs WHERE hash = ?").get(asset.hash)).toBeDefined();
+    check.close();
   });
 });

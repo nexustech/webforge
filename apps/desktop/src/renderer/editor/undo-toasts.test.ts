@@ -1,7 +1,8 @@
 import { createHistoryManager, type HistoryEntry } from "@webforge/history";
 import { describe, expect, it, vi } from "vitest";
 import type { EditKind } from "./editor-session.js";
-import { installUndoToasts, UNDO_TOAST_DURATION_MS, undoEntry } from "./undo-toasts.js";
+import { undoEntry } from "./undo-entry.js";
+import { installUndoToasts, UNDO_TOAST_DURATION_MS } from "./undo-toasts.js";
 
 type Doc = { items: string[] };
 
