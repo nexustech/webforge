@@ -53,7 +53,7 @@ export function socialName(profile: SocialProfile): string {
 /**
  * A network's logo as inline SVG, in the text's colour, hidden from screen readers (its link is
  * named instead). LinkedIn asked Simple Icons to remove its logo, and other sites have none: they
- * show a globe.
+ * show a globe, never a lettermark imitating a brand's (PH2-12).
  */
 export function SocialLogo({
   network,

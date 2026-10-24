@@ -281,6 +281,20 @@ describe("icons (2.9b, F-ED-22)", () => {
   });
 });
 
+describe("a List's style while it has an icon (2.9b)", () => {
+  const unavailable = (values: Record<string, unknown>) =>
+    siteLibrary.components.List?.fields.style?.unavailable?.(values);
+
+  it("is unavailable while an icon takes the place of its markers, saying why", () => {
+    expect(unavailable({ icon: "check" })).toBe(
+      "The list's icon takes the place of its markers. Remove the icon to choose a style.",
+    );
+    expect(unavailable({})).toBeUndefined();
+    // A name Lucide doesn't have draws no icon, so the markers, and their style, stay.
+    expect(unavailable({ icon: "not-an-icon" })).toBeUndefined();
+  });
+});
+
 describe("Social links (2.9b, PH2-4)", () => {
   const profiles: RenderContext["socialProfiles"] = [
     { network: "facebook", url: "https://www.facebook.com/ourbakery" },
@@ -299,12 +313,12 @@ describe("Social links (2.9b, PH2-4)", () => {
       /^<ul class="site-social flex flex-wrap gap-3 justify-start [^"]*" role="list">/,
     );
     expect(html).toContain(
-      '<a href="https://www.facebook.com/ourbakery" aria-label="Facebook" title="Facebook"><svg',
+      '<a href="https://www.facebook.com/ourbakery" rel="me" aria-label="Facebook" title="Facebook"><svg',
     );
     expect(html).toContain(
       'fill="currentColor" class="size-6 text-primary" aria-hidden="true"><path d="M9.101',
     );
-    // LinkedIn has no logo in Simple Icons, nor has any other site: a globe, named by the network or host.
+    // LinkedIn and other sites have no logo here: a globe, named by the network or host (PH2-12).
     expect(html).toContain('aria-label="LinkedIn"');
     expect(html).toContain('aria-label="mastodon.social"');
     expect(html.match(/<li>/g)).toHaveLength(3);

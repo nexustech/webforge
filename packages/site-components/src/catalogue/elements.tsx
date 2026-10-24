@@ -3,7 +3,7 @@ import { type Breakpoint, type Responsive, resolveResponsive } from "@webforge/m
 import { createContext, type ReactNode, useContext } from "react";
 import { defineComponent } from "../define.js";
 import { MARGIN_FIELD, marginClasses } from "../frame.js";
-import { LucideIcon } from "../icons.js";
+import { isIconName, LucideIcon } from "../icons.js";
 import { type ComponentDef, colorClass, linkAttributes, responsiveClasses } from "../library.js";
 import { Picture } from "../picture.js";
 import { PREVIEW_ATTRIBUTE } from "../previews.js";
@@ -350,9 +350,10 @@ const list = defineComponent({
       kind: "select",
       label: t("field.listStyle"),
       options: LIST_STYLES.map((value) => ({ label: t(`field.listStyle.${value}`), value })),
-      // An icon takes the markers' place, so no style would change anything.
+      // An icon takes the markers' place, so no style would change anything. A name Lucide doesn't
+      // have draws no icon, as the List reads it, so the style still counts then.
       unavailable: (values) =>
-        typeof values.icon === "string" ? t("field.listStyle.unavailable") : undefined,
+        isIconName(values.icon) ? t("field.listStyle.unavailable") : undefined,
     },
     // Before each item instead of its markers (F-ED-22).
     icon: { kind: "icon", label: t("field.listIcon"), help: t("field.listIcon.help") },
@@ -490,14 +491,18 @@ const socialLinks = defineComponent({
     return (
       // biome-ignore lint/a11y/noRedundantRoles: Safari and VoiceOver drop a list's semantics without markers.
       <ul className={`${className} m-0 list-none p-0`} role="list">
-        {profiles.map((profile, index) => (
-          // Profiles have no ids, and render in the order Site Settings keep them.
-          <li key={index}>
-            <a href={profile.url} aria-label={socialName(profile)} title={socialName(profile)}>
-              <SocialLogo network={profile.network} className={logo} />
-            </a>
-          </li>
-        ))}
+        {profiles.map((profile, index) => {
+          const name = socialName(profile);
+          return (
+            // Profiles have no ids, and render in the order Site Settings keep them.
+            <li key={index}>
+              {/* rel="me": the page is the site's own profile there (Mastodon verifies it). */}
+              <a href={profile.url} rel="me" aria-label={name} title={name}>
+                <SocialLogo network={profile.network} className={logo} />
+              </a>
+            </li>
+          );
+        })}
       </ul>
     );
   },
