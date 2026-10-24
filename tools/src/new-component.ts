@@ -231,9 +231,16 @@ export function registerInStrings(index: string, names: Names): string {
   const imports = index.lastIndexOf('from "./');
   const afterImports = index.indexOf("\n", imports) + 1;
   let text = `${index.slice(0, afterImports)}import { ${names.camel} } from "./${names.camel}.js";\n${index.slice(afterImports)}`;
+  // On one line or wrapped by the formatter: rebuilt from its names, with the new one last.
   text = text.replace(
-    /(export const componentFamilies = \{[^}]*?)( \} as const;)/,
-    `$1, ${names.camel}$2`,
+    /export const componentFamilies = \{([^}]*)\} as const;/,
+    (_declaration, inside: string) => {
+      const families = inside
+        .split(",")
+        .map((name) => name.trim())
+        .filter((name) => name !== "");
+      return `export const componentFamilies = { ${[...families, names.camel].join(", ")} } as const;`;
+    },
   );
   const spread = text.lastIndexOf("} as const;");
   return `${text.slice(0, spread)}  ...${names.camel},\n${text.slice(spread)}`;
