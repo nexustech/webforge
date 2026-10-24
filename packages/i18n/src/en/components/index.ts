@@ -1,6 +1,7 @@
 import { basic } from "./basic.js";
 import { carousel } from "./carousel.js";
 import { contactDetails } from "./contactDetails.js";
+import { elements } from "./elements.js";
 import { embeds } from "./embeds.js";
 import { forms } from "./forms.js";
 import { gallery } from "./gallery.js";
@@ -16,6 +17,7 @@ import { shared } from "./shared.js";
 export const componentFamilies = {
   shared,
   basic,
+  elements,
   layout,
   sections,
   carousel,
@@ -29,6 +31,7 @@ export const componentFamilies = {
 export const components = {
   ...shared,
   ...basic,
+  ...elements,
   ...layout,
   ...sections,
   ...carousel,

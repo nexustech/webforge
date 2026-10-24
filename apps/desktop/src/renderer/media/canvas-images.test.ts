@@ -76,6 +76,10 @@ describe("connectCanvasImages", () => {
     const stop = connectCanvasImages(engine, session);
 
     expect(engine.setImages).toHaveBeenCalledTimes(1);
+    // An Image element without its image says where to choose one (2.9).
+    expect(engine.setImages.mock.calls[0]?.[1]?.()).toBe(
+      "No image yet: choose one in the Edit panel",
+    );
     expect(engine.setImages.mock.calls[0]?.[0]("photo")).toMatchObject({
       alt: "Image deleted from Media",
     });

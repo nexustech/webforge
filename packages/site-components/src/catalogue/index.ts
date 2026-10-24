@@ -5,6 +5,7 @@ import type { ComponentLibrary } from "../library.js";
 import { basicComponents } from "./basic.js";
 import { carouselComponents } from "./carousel.js";
 import { contactDetailsComponents } from "./contact-details.js";
+import { elementsComponents } from "./elements.js";
 import { embedsComponents } from "./embeds.js";
 import { formsComponents } from "./forms.js";
 import { galleryComponents } from "./gallery.js";
@@ -20,6 +21,7 @@ import { sectionsComponents } from "./sections.js";
 export const siteLibrary: ComponentLibrary = createLibrary(
   layoutComponents,
   basicComponents,
+  elementsComponents,
   sectionsComponents,
   galleryComponents,
   carouselComponents,
