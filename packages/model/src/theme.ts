@@ -117,6 +117,13 @@ export const SHADED_ROLES = [
   "error",
 ] as const satisfies readonly ColorRole[];
 
+/**
+ * The `data-theme` of a section on the theme's inverse colours (2.4, F-DS-3): the second daisyUI
+ * theme in the site's stylesheet. Fixed, so a section keeps its colours when the preset changes;
+ * the underscore keeps it apart from every preset's name, which can't have one.
+ */
+export const INVERSE_THEME = "wf_inverse";
+
 /** See {@link themeTokensSchema}. */
 export const themeTokensSchema = z.strictObject({
   /** The preset the theme started from ("light"): the name it is listed under. */

@@ -19,11 +19,12 @@ import {
   MousePointerClickIcon,
   PlusIcon,
 } from "lucide-react";
-import { type DragEvent, type KeyboardEvent, useRef, useState } from "react";
+import { type KeyboardEvent, useRef, useState } from "react";
 import { LinkDialog } from "../links/LinkDialog.js";
 import type { LinkFieldChange } from "../links/link-change.js";
 import type { PageTarget } from "../links/link-targets.js";
 import { useMenuDialog } from "../shell/use-menu-dialog.js";
+import { useRowDrag } from "../shell/use-row-drag.js";
 import { NameDialog } from "../site/NameDialog.js";
 import { itemLabel, type MenuPosition, type NewMenuItem } from "./menu-actions.js";
 
@@ -75,9 +76,6 @@ const ICONS = {
   group: ChevronDownIcon,
 } as const;
 
-/** Where a dragged row would land on `row`: before or after it, or into it (a dropdown). */
-type Drop = { readonly id: MenuItemId; readonly where: "before" | "after" | "into" };
-
 /** The MIME type a dragged menu item travels as, so drops from elsewhere are ignored. */
 const DRAG_TYPE = "application/x-webforge-menu-item";
 
@@ -98,8 +96,6 @@ export function MenuPanel({ site, linkContext, actions }: MenuPanelProps) {
   const [dialog, setDialog] = useState<Dialog | null>(null);
   // Kept while a dialog closes, so its text doesn't change during the closing animation.
   const [open, setOpen] = useState(false);
-  const [drop, setDrop] = useState<Drop | null>(null);
-  const dragged = useRef<Row | null>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const openDialog = (next: Dialog) => {
     setDialog(next);
@@ -142,36 +138,31 @@ export function MenuPanel({ site, linkContext, actions }: MenuPanelProps) {
     }
   };
 
-  /** Where `event` is over `row`, or `null` where the dragged row can't go. */
-  const dropAt = (event: DragEvent, row: Row): Drop | null => {
-    const from = dragged.current;
-    if (from === null || from.item.id === row.item.id) return null;
-    const box = event.currentTarget.getBoundingClientRect();
-    const y = (event.clientY - box.top) / box.height;
-    if (row.item.kind === "group" && from.item.kind !== "group" && y > 0.25 && y < 0.75) {
-      return { id: row.item.id, where: "into" };
-    }
-    // Dropdowns hold no dropdowns.
-    if (from.item.kind === "group" && row.group !== null) return null;
-    return { id: row.item.id, where: y < 0.5 ? "before" : "after" };
-  };
-
-  const onDrop = (event: DragEvent, row: Row) => {
-    const from = dragged.current;
-    const at = dropAt(event, row);
-    event.preventDefault();
-    setDrop(null);
-    if (from === null || at === null) return;
-    if (at.where === "into") {
-      const group = row.item.kind === "group" ? row.item : undefined;
-      actions.move(from.item.id, { group: row.item.id, index: group?.children.length ?? 0 });
-      return;
-    }
-    const target = row.index + (at.where === "after" ? 1 : 0);
-    // Counted once the item has left its place, when it moves down its own list.
-    const index = from.group === row.group && from.index < target ? target - 1 : target;
-    actions.move(from.item.id, { group: row.group, index });
-  };
+  const rowDrag = useRowDrag<Row>({
+    type: DRAG_TYPE,
+    keyOf: (row) => row.item.id,
+    // Before or after a row, or into a dropdown from the middle of its row; nowhere else.
+    place: (from, row, y) => {
+      if (from.item.id === row.item.id) return null;
+      if (row.item.kind === "group" && from.item.kind !== "group" && y > 0.25 && y < 0.75) {
+        return "into";
+      }
+      // Dropdowns hold no dropdowns.
+      if (from.item.kind === "group" && row.group !== null) return null;
+      return y < 0.5 ? "before" : "after";
+    },
+    onDrop: (from, row, place) => {
+      if (place === "into") {
+        const group = row.item.kind === "group" ? row.item : undefined;
+        actions.move(from.item.id, { group: row.item.id, index: group?.children.length ?? 0 });
+        return;
+      }
+      const target = row.index + (place === "after" ? 1 : 0);
+      // Counted once the item has left its place, when it moves down its own list.
+      const index = from.group === row.group && from.index < target ? target - 1 : target;
+      actions.move(from.item.id, { group: row.group, index });
+    },
+  });
 
   const itemRow = (row: Row) => {
     const { item } = row;
@@ -182,41 +173,13 @@ export function MenuPanel({ site, linkContext, actions }: MenuPanelProps) {
     const pageHidden =
       item.kind === "page" && site.pages[item.pageId]?.settings.hideFromNavigation === true;
     const hidden = item.hidden || pageHidden;
-    const indicator =
-      drop?.id === item.id
-        ? drop.where === "before"
-          ? "shadow-[inset_0_2px_0_var(--ring)]"
-          : drop.where === "after"
-            ? "shadow-[inset_0_-2px_0_var(--ring)]"
-            : "ring-2 ring-ring ring-inset"
-        : undefined;
     const group = row.group === null ? undefined : menu.items.find((i) => i.id === row.group);
     const where = group === undefined ? {} : { group: itemLabel(site, group) };
     return (
       <li
         key={item.id}
-        className={cn("group relative rounded-sm", indicator)}
-        draggable
-        onDragStart={(event) => {
-          dragged.current = row;
-          event.dataTransfer.effectAllowed = "move";
-          event.dataTransfer.setData(DRAG_TYPE, item.id);
-        }}
-        onDragEnd={() => {
-          dragged.current = null;
-          setDrop(null);
-        }}
-        onDragOver={(event) => {
-          if (!event.dataTransfer.types.includes(DRAG_TYPE)) return;
-          const at = dropAt(event, row);
-          if (at === null) return;
-          event.preventDefault();
-          setDrop(at);
-        }}
-        onDragLeave={(event) => {
-          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDrop(null);
-        }}
-        onDrop={(event) => onDrop(event, row)}
+        className={cn("group relative rounded-sm", rowDrag.indicatorClass(row))}
+        {...rowDrag.rowProps(row)}
       >
         <button
           type="button"
