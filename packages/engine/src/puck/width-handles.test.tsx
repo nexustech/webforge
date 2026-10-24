@@ -71,7 +71,9 @@ describe("width handles (2.17)", () => {
     // Puck's wrapper is the figure's parent, as wide as the column.
     const wrapper = figure.parentElement;
     if (wrapper !== null) wrapper.getBoundingClientRect = () => new DOMRect(0, 0, 800, 200);
+    // The outline the grips are drawn in: as wide as Puck's wrapper.
     host = document.createElement("div");
+    host.getBoundingClientRect = () => new DOMRect(0, 0, 800, 200);
     document.body.append(host);
     root = createRoot(host);
     act(() =>
@@ -122,6 +124,14 @@ describe("width handles (2.17)", () => {
       ["update", "medium"],
       ["commit", "medium"],
     ]);
+  });
+
+  it("puts the grips on the element's edges, not the wider outline's (2.17)", () => {
+    show("small");
+    const grips = host.querySelector(".wf-width-grips");
+    if (!(grips instanceof HTMLElement)) throw new Error("no grips");
+    // A Small Image, 240–560 in an 800 px outline: grabbed at its edge, its width doesn't jump.
+    expect([grips.style.left, grips.style.right]).toEqual(["240px", "240px"]);
   });
 
   it("cancels a drag with Esc, back to the width before it", () => {

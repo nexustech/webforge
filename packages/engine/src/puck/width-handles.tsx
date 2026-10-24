@@ -1,7 +1,13 @@
 import { t } from "@webforge/i18n";
 import { breakpointForWidth, resolveResponsive } from "@webforge/model";
 import type { ComponentLibrary } from "@webforge/site-components";
-import { type PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from "react";
+import {
+  type PointerEvent as ReactPointerEvent,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import type { FieldDrag } from "../canvas-engine.js";
 import { componentSelector } from "./puck-dom.js";
 
@@ -89,12 +95,23 @@ export function nearestStep(
   return best;
 }
 
+/** The element node `nodeId` draws: Puck wraps each element in a `div` of its own. */
+function elementOf(document: Document, nodeId: string): Element | null | undefined {
+  return document.querySelector(componentSelector(nodeId))?.firstElementChild;
+}
+
 /**
  * The handles' styles (2.17): white grips with a magenta edge on the element's left and right
  * edges, taller than the spacing grips, so the two can't be taken for each other; the same size on
- * screen whatever the zoom.
+ * screen whatever the zoom. The outline is as wide as Puck's wrapper, which can be wider than the
+ * element (a Small Image in a wide column), so the grips sit in a box over the element itself.
  */
 export const WIDTH_HANDLES_CSS = `
+.wf-width-grips {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
 .wf-width-grip {
   position: absolute;
   top: calc(50% - 20px / var(--wf-zoom, 1));
@@ -131,6 +148,30 @@ export type WidthHandlesProps = {
  */
 export function WidthHandles({ nodeId, field, props, onFieldDrag }: WidthHandlesProps) {
   const [readout, setReadout] = useState<string | null>(null);
+  // The element's left and right edges, in from the outline's: where the grips go.
+  const gripsBox = useRef<HTMLSpanElement>(null);
+  const [edges, setEdges] = useState({ left: 0, right: 0 });
+  useLayoutEffect(() => {
+    const grips = gripsBox.current;
+    const outline = grips?.parentElement;
+    const element = grips === null ? undefined : elementOf(grips.ownerDocument, nodeId);
+    if (!outline || !element) return;
+    const measure = () => {
+      const shown = element.getBoundingClientRect();
+      const around = outline.getBoundingClientRect();
+      const left = Math.round(shown.left - around.left);
+      const right = Math.round(around.right - shown.right);
+      setEdges((now) => (now.left === left && now.right === right ? now : { left, right }));
+    };
+    measure();
+    // It moves as its width changes, mid-drag too, and as the column does.
+    const Observer = grips?.ownerDocument.defaultView?.ResizeObserver;
+    if (Observer === undefined) return;
+    const observer = new Observer(measure);
+    observer.observe(element);
+    observer.observe(outline);
+    return () => observer.disconnect();
+  }, [nodeId]);
   // Cancels the drag going on, if any: grips that go mid-drag leave no listeners behind.
   const cancelDrag = useRef<(() => void) | null>(null);
   useEffect(() => () => cancelDrag.current?.(), []);
@@ -142,8 +183,7 @@ export function WidthHandles({ nodeId, field, props, onFieldDrag }: WidthHandles
     if (event.button !== 0 || cancelDrag.current !== null) return;
     const grip = event.currentTarget;
     const frame = grip.ownerDocument.defaultView;
-    // Puck wraps each element in a `div` of its own: the element is its child.
-    const element = grip.ownerDocument.querySelector(componentSelector(nodeId))?.firstElementChild;
+    const element = elementOf(grip.ownerDocument, nodeId);
     const container = element?.parentElement;
     if (!frame || element === null || element === undefined || !container) return;
     // The value for the device the canvas shows: the frame is as wide as that device's view.
@@ -212,7 +252,7 @@ export function WidthHandles({ nodeId, field, props, onFieldDrag }: WidthHandles
   };
 
   return (
-    <>
+    <span ref={gripsBox} className="wf-width-grips" style={edges}>
       {(["left", "right"] as const).map((side) => (
         <button
           key={side}
@@ -227,6 +267,6 @@ export function WidthHandles({ nodeId, field, props, onFieldDrag }: WidthHandles
         />
       ))}
       {readout === null ? null : <span className="wf-grip-readout">{readout}</span>}
-    </>
+    </span>
   );
 }
