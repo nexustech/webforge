@@ -86,9 +86,10 @@ const cards = defineSection({
 
 ### The section frame
 
-Every section is defined with `defineSection` (`src/frame.tsx`), and `defineComponent` refuses `place: "section"`, so every section has the same frame and spacing fields:
+Every section is defined with `defineSection` (`src/frame.tsx`), and `defineComponent` refuses `place: "section"`, so every section has the same frame and the same frame fields:
+- **Its colours:** `COLORS_FIELD` (2.4, F-DS-3), *Page colours* or *Reversed*. A reversed section gets `data-theme="wf_inverse"` (`INVERSE_THEME` from `@webforge/model`), daisyUI's nested theme of the theme's inverse colours, so its background, text and every colour class inside it take those. A section declaring a `colors` field is refused.
 - **Its padding and margin:** `PADDING_FIELD` and `MARGIN_FIELD` (1.32), added after its own fields. A section declaring either is refused. The canvas's spacing handles and the Edit panel's spacing fields work on every section alike.
-- **Its frame:** `<section class="site-<name> <frame classes> <padding> <margin>">`, with the padding from `SECTION_PADDING` (`px-4 py-16`) for the sides left unset. `frame` gives its background and layout classes from its values ("hero bg-base-200"); `frameAttributes` gives attributes its behaviour needs.
+- **Its frame:** `<section class="site-<name> <frame classes> <padding> <margin>">` (with `data-theme` when reversed), with the padding from `SECTION_PADDING` (`px-4 py-16`) for the sides left unset. `frame` gives its background and layout classes from its values ("hero bg-base-200"); `frameAttributes` gives attributes its behaviour needs.
 - **Its inside:** `render` draws what goes in the frame.
 - **Elements:** an element takes `margin: MARGIN_FIELD` (from `frame.tsx`) and draws `marginClasses(values.margin)` itself.
 
