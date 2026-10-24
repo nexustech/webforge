@@ -82,7 +82,7 @@ Enforced in CI by dependency-cruiser:
 | Errors | Throw `WebforgeError` subclasses with a `code` and an i18n `messageKey`. Never show raw error text or stack traces to users. Log the details with electron-log |
 | Logging | `log.info/warn/error` with structured context. **Never log** site content, credentials, tokens or personal data |
 | Comments | Explain *why*, not *what*. TSDoc on all exported functions/types of packages |
-| Dependencies | New runtime dependency needs: permissive licence (C1), active maintenance, a size check, and a note in the PR. Prefer small/pure-JS/WASM over native modules |
+| Dependencies | New runtime dependency needs: permissive licence (C1), active maintenance, a size check, and a note in the PR. Prefer small/pure-JS/WASM over native modules. **GSAP and libraries built on it are never a licence exception** (PG-6, 2026-10-24): since Webflow's acquisition its terms exclude competing no-code website builders, and Pinegrow's Interactions licence forbids the same. Site animations stay CSS presets with a small classic script (F-DS-5) |
 | Security | No `eval`/`new Function`; no `shell.openExternal` with untrusted URLs without validation; no remote code loading; sanitise SVG and Custom HTML before canvas injection |
 | Accessibility | Editor: all interactive elements reachable by keyboard, visible focus, labelled controls (Biome a11y rules). Site components: WCAG 2.1 AA (see §5) |
 

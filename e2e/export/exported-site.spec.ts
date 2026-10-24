@@ -572,6 +572,35 @@ test.describe("exported site from disk", () => {
     externalRequests = [];
   });
 
+  test("posts the contact form and the newsletter signup plainly to their services (2.8)", async ({
+    page,
+  }) => {
+    await open(page, "about.html");
+    const contact = page.getByRole("form", { name: "Contact form" });
+    // The fixture has two signups: one with its form address, one without yet.
+    const newsletters = page.getByRole("form", { name: "Newsletter signup" });
+    const newsletter = newsletters.first();
+    const unset = newsletters.last();
+
+    await expect(contact).toHaveAttribute("action", "https://formspree.io/f/xyzAbc12");
+    await expect(contact).toHaveAttribute("method", "post");
+    await expect(newsletter).toHaveAttribute("action", "https://example.com/newsletter/signup");
+    await expect(contact.getByRole("button", { name: "Send message" })).toBeEnabled();
+    await expect(newsletter.getByRole("button", { name: "Sign up" })).toBeEnabled();
+    // Without an address the form would post to this page and lose the message: it can't send.
+    await expect(unset).not.toHaveAttribute("action");
+    await expect(unset).toHaveAttribute("data-wf-form-unset", "noAddress");
+    await expect(unset.getByRole("button", { name: "Sign up" })).toBeDisabled();
+    // Labelled fields; the honeypot is there but hidden from visitors.
+    await expect(contact.getByLabel("Email address")).toHaveAttribute("type", "email");
+    await expect(contact.getByLabel("Phone number")).toHaveAttribute("type", "tel");
+    await expect(contact.locator('input[name="_gotcha"]')).toBeHidden();
+    // The browser checks the required fields itself: an empty form sends nothing.
+    await contact.getByRole("button", { name: "Send message" }).click();
+    await expect(contact.getByLabel("Name")).toBeFocused();
+    expect(externalRequests).toEqual([]);
+  });
+
   test("opens an FAQ answer with the keyboard", async ({ page }) => {
     await open(page, "index.html");
     const question = page.getByText("When are you open?");

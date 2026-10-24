@@ -44,7 +44,7 @@ Still open in Phase 0: publishing spikes (Netlify, FTP/SFTP), signed installers 
 Current code size (approx. lines): desktop 2.7k · engine 1.6k · history 1.6k · pipeline 1.1k · site-components 1.0k · storage 0.6k · model 0.3k. `editor-ui`, `publish` and `themes` are placeholders.
 
 ## 3. Timeline
-**Total: 362 working days** (≈ 72 weeks of effort; 335 before the 22–24 Oct additions) including the 4-week beta. Baseline v1.0 (sequential, for the original 277 days, before the Phase 1 re-plan) at 100% of estimates: **19 Nov 2027**; with +25% contingency: **25 Feb 2028**.
+**Total: 364 working days** (≈ 73 weeks of effort; 335 before the 22–24 Oct additions) including the 4-week beta. Baseline v1.0 (sequential, for the original 277 days, before the Phase 1 re-plan) at 100% of estimates: **19 Nov 2027**; with +25% contingency: **25 Feb 2028**.
 
 **Re-plan, 20 Oct 2026:** Phase 1 runs in three concurrent streams (82 days of effort in about 28 working days, see [Phase 1](#phase-1-editor-core)). Phase 2–5 dates and the v1.0 date are re-planned at the Phase 1 exit review.
 
@@ -62,6 +62,8 @@ Current code size (approx. lines): desktop 2.7k · engine 1.6k · history 1.6k �
 
 **Scope change, 24 Oct 2026 (editor building blocks):** +12 days from the [extensibility review](../docs/reviews/2026-10-24-extensibility-review.md): 2.20 ([#322](https://github.com/nexustech/webforge/issues/322), 7 days, stream B after 2.4 and before 2.8) for area modules and a declarative composition root, an area boundary rule, a field-kind guard, a shared renderer test kit and story harness, scaffolds, an extension-points guide and typed `t()` params (B10); and 2.21 ([#323](https://github.com/nexustech/webforge/issues/323), 5 days, stream A after 2.9, before 1.39, so LF-12's merged Settings dialog is built on it) for one form engine and a form dialog that the Edit panel, Site Settings, Page Settings and the dialogs to come share, on R10's form primitives. R11 moves up stream A's queue to just after R10 (it no longer waits for 2.3a), since 2.20 and 2.21 both need it. The queues become 42–47 raw days (B the longest); about 27 working days at the plan's pace, so code-complete about **1 Dec 2026** (9 Dec with +25%), two working days before 11 Dec; §11's template and theme cuts are the lever if a batch runs slow.
 
+**Scope change, 24 Oct 2026 (Webflow and Pinegrow reviews, WF-1…6, PG-1…9):** +2 days from [competitors/01](../research/competitors/01-webflow.md) and [competitors/02](../research/competitors/02-pinegrow.md): palette from an image in Theme Studio (2.3, in 2.3b, +1 day, PG-2) and *Try an example* on the start screen (2.14, +1 day, PG-3). All devices side by side on the canvas, before/after in Version History, light and dark side by side and approve-before-apply for AI edits are v1.1 (WF-1/PG-1, PG-4, PG-5, WF-2); GSAP is never a licence exception (PG-6, standards §3). The stream queues are unchanged.
+
 **Re-plan, 23 Oct 2026 (Phase 2):** Phase 2 was planned ahead of the Phase 1 exit so each stream can continue straight into it: three streams, items over 5 days split into sub-issues, Phase 1's actual pace (0.39 of estimates) applied as 0.5 for engineering and 0.7 for content. Code-complete about **1 Dec 2026** (9 Dec with +25%) after the plan review's levelling below and the 24 Oct building-block items (26 Nov and 4 Dec before them); milestone due 11 Dec 2026. See [Phase 2](#phase-2-design--components). The table below and the Gantt chart still show the baseline dates for Phases 2–5.
 
 **Re-plan, 23 Oct 2026 (plan review, C1–C7):** the [plan review](../docs/reviews/2026-10-23-plan-review.md) corrected the effort totals, sequenced the architecture review's R7–R14 in the Phase 2 queues, levelled the streams (2.11 to B, 2.7a and 2.12 to C, 2.14 earlier in B, stream A starting with 2.9 and taking 1.39 before 2.3), moved the start screen's card grid (LF-10) from 1.39 to 2.14, added 2.18 for the CSS class browser (#276) and recomputed the critical path.
@@ -70,7 +72,7 @@ Current code size (approx. lines): desktop 2.7k · engine 1.6k · history 1.6k �
 |---|---|---|---|---|---|
 | [Phase 0: Prototype (finish)](#phase-0-prototype-finish) | 11 | 26 Oct 2026 | 18 Nov 2026 | 24 Nov 2026 | Netlify and SFTP/FTPS publish spikes meet the spike criteria in research/stack/08<br>Signed NSIS and DMG builds install, and auto-update from a test feed on both OSes<br>A large page (200+ elements) stays within the editing performance budget<br>ADRs written; architecture §6 interfaces updated |
 | [Phase 1: Editor core](#phase-1-editor-core) | 128 | 22 Oct 2026 | 17 Dec 2026 | 5 Jan 2027 | Build a 3-page site from blank, close, reopen: everything restored<br>Undo-all property tests green; every edit has a meaningful label<br>Shell matches UI1 as amended by UI6 in dark and light (Storybook screenshots) |
-| [Phase 2: Design & components](#phase-2-design--components) | 123 | 2 Mar 2027 | 14 Jul 2027 | 16 Sep 2027 | Every component has stories × 3 themes × Desktop/Mobile, axe-clean (colour contrast in site themes reported, not blocking)<br>New Site from each of the 8 templates works and looks distinct<br>Theme changes restyle every component; contrast warnings work |
+| [Phase 2: Design & components](#phase-2-design--components) | 125 | 2 Mar 2027 | 14 Jul 2027 | 16 Sep 2027 | Every component has stories × 3 themes × Desktop/Mobile, axe-clean (colour contrast in site themes reported, not blocking)<br>New Site from each of the 8 templates works and looks distinct<br>Theme changes restyle every component; contrast warnings work |
 | [Phase 3: Output](#phase-3-output) | 32 | 15 Jul 2027 | 26 Aug 2027 | 10 Nov 2027 | Exported templates open from disk in Chromium, Firefox, WebKit (+ Edge on Windows) with no external requests<br>Site Check blocks only Must-fix issues on export<br>Preview CSS hot-swap < 100 ms; phone preview via QR works |
 | [Phase 4: Publish & versions](#phase-4-publish--versions) | 30 | 27 Aug 2027 | 28 Sep 2027 | 17 Dec 2027 | Publish + rollback on all targets in E2E tests (mock Netlify, local FTP/SFTP)<br>A paired AI app's edits are undoable, and the MCP server can't be reached from another computer<br>Version History: save, auto-retention, preview, restore, open as new site, republish |
 | [Phase 5: Beta hardening](#phase-5-beta-hardening) | 38 | 29 Sep 2027 | 19 Nov 2027 | 25 Feb 2028 | All performance budgets met on Windows and macOS<br>Signed, notarised builds auto-update from the production feed<br>Beta running with 10–20 users; no open Must-fix bugs |
@@ -133,7 +135,7 @@ gantt
     section Phase 2
     2.1 Themes package – theme model → Tailwind/daisyU… :t2_1, 2027-03-02, 4d
     2.2 Fonts – bundled catalogue and on-demand download :t2_2, 2027-03-08, 3d
-    2.3 Theme panel – brand colours, fonts, roundness,… :t2_3, 2027-03-11, 6d
+    2.3 Theme panel – brand colours, fonts, roundness,… :t2_3, 2027-03-11, 7d
     2.4 Section light/dark variants :t2_4, 2027-03-17, 1d
     2.5 Component framework – tokens, variants, storie… :crit, t2_5, 2027-03-18, 3d
     2.6 Sections A – Header, Footer, Hero, Text, Text… :crit, t2_6, 2027-03-23, 8d
@@ -144,7 +146,7 @@ gantt
     2.11 Elements – tabs, commerce, forms, embeds and c… :t2_11, 2027-05-10, 5d
     2.12 Animations and hover effects :t2_12, 2027-05-17, 2d
     2.13 Design 10–12 curated themes :crit, t2_13, 2027-05-19, 14d
-    2.14 Template format and New Site flow :crit, t2_14, 2027-06-09, 6d
+    2.14 Template format and New Site flow :crit, t2_14, 2027-06-09, 7d
     2.15 Templates – 8 starter sites :crit, t2_15, 2027-06-14, 20d
     2.16 Component accessibility and visual regression… :t2_16, 2027-07-12, 3d
     2.17 Columns toolbar and edit-only previews :t2_17, after t2_16, 4d
@@ -619,14 +621,14 @@ Close the visible gap to Bootstrap Studio 9.0.1 within the IP rule ([product/07]
 
 ### Phase 2: Design & components
 **Goal:** The full component catalogue (19 sections with ~45 layout variants, 17 elements), 10–12 curated themes, fonts and the 8 templates, all accessible and visually tested.  
-**Effort:** 123 days · **Scheduled:** 2 Mar 2027 → 14 Jul 2027 (baseline; 22 Oct 2026: 2.6 and 2.9 +1 day each, 2.3 +2, 2.14 +1, 2.17 added; 23 Oct: 2.9 +1, 2.14 +2, 2.18 added; 24 Oct: 2.19–2.21 added)  
+**Effort:** 125 days · **Scheduled:** 2 Mar 2027 → 14 Jul 2027 (baseline; 22 Oct 2026: 2.6 and 2.9 +1 day each, 2.3 +2, 2.14 +1, 2.17 added; 23 Oct: 2.9 +1, 2.14 +2, 2.18 added; 24 Oct: 2.19–2.21 added, 2.3 +1 and 2.14 +1 for PG-2 and PG-3)  
 **Re-plan, 23 Oct 2026:** three streams, each starting as soon as its queue allows, Phase 1 items included (stream A takes 2.9 before 1.39). Phase 1's actuals run at 0.39 of the estimates; this plan uses 0.5 for engineering items and 0.7 for content (2.13, 2.15; risk R4). Code-complete about **1 Dec 2026** (9 Dec with +25%) after the plan review's levelling and the 24 Oct building-block items; Phase 1's exit review about 9 Nov 2026.
 
 | ID | Item | Issue | Area | Refs | Est | Depends on |
 |---|---|---|---|---|---|---|
 | 2.1 | Themes package: theme model → Tailwind/daisyUI CSS | [#43](https://github.com/nexustech/webforge/issues/43) | themes | F-DS-1, S3, [stack/05](../research/stack/05-site-components.md) | 4 | 1.12 |
 | 2.2 | Fonts: bundled catalogue and on-demand download | [#44](https://github.com/nexustech/webforge/issues/44) | themes | S4, C8 | 3 | – |
-| 2.3 | Theme panel: brand colours, fonts, roundness, text and button styles | [#45](https://github.com/nexustech/webforge/issues/45) | themes | F-DS-2, F-DS-4, F-DS-7, D7, UX-21 | 6 | 2.1, 2.2, 1.26, 1.37, 2.21 |
+| 2.3 | Theme panel: brand colours, fonts, roundness, text and button styles | [#45](https://github.com/nexustech/webforge/issues/45) | themes | F-DS-2, F-DS-4, F-DS-7, D7, UX-21, PG-2 | 7 | 2.1, 2.2, 1.26, 1.37, 2.21 |
 | 2.4 | Section light/dark variants | [#46](https://github.com/nexustech/webforge/issues/46) | themes | F-DS-3 | 1 | 2.1 |
 | 2.5 | Component framework: tokens, variants, stories, behaviours | [#47](https://github.com/nexustech/webforge/issues/47) | components | [stack/05](../research/stack/05-site-components.md), S1, standards §5, [ADR 0005](../docs/adr/0005-export-pipeline-spike.md) | 3 | 1.14 |
 | 2.6 | Sections A: Header, Footer, Hero, Text, Text + Image, Call to action | [#48](https://github.com/nexustech/webforge/issues/48) | components | S1, MVP §3, F-DS-6, BS9-1, [ADR 0005](../docs/adr/0005-export-pipeline-spike.md) | 8 | 2.5, 1.21 |
@@ -637,7 +639,7 @@ Close the visible gap to Bootstrap Studio 9.0.1 within the IP rule ([product/07]
 | 2.11 | Elements: tabs, commerce, forms, embeds and custom code | [#53](https://github.com/nexustech/webforge/issues/53) | components | F-CM-2, F-CM-7, F-ED-15, F-ED-16 | 5 | 2.5, 2.8 |
 | 2.12 | Animations and hover effects | [#54](https://github.com/nexustech/webforge/issues/54) | components | F-DS-5, G8 | 2 | 2.5 |
 | 2.13 | Design 10–12 curated themes | [#55](https://github.com/nexustech/webforge/issues/55) | themes | S3, F-DS-1 | 14 | 2.3, 2.6, 2.7, 2.8, 2.9 |
-| 2.14 | Template format and New Site flow | [#56](https://github.com/nexustech/webforge/issues/56) | content | F-SITE-1, S2, S5, UX-29, LF-10, LF-11 | 6 | 1.8, 2.1 |
+| 2.14 | Template format and New Site flow | [#56](https://github.com/nexustech/webforge/issues/56) | content | F-SITE-1, S2, S5, UX-29, LF-10, LF-11, PG-3 | 7 | 1.8, 2.1 |
 | 2.15 | Templates: 8 starter sites | [#57](https://github.com/nexustech/webforge/issues/57) | content | F-SITE-1, S2, S5 | 20 | 2.14, 2.10, 2.11, 2.12, the theme each template uses (2.13) |
 | 2.16 | Component accessibility and visual regression sweep | [#58](https://github.com/nexustech/webforge/issues/58) | components | standards §5, MVP §4 | 3 | 2.6, 2.7, 2.8, 2.9, 2.10, 2.11, 2.12, 2.13 |
 | 2.17 | Columns toolbar, image resize handles and edit-only previews | [#187](https://github.com/nexustech/webforge/issues/187) | components | F-ED-25, UI2, UI5, UX-6, UX-26 | 4 | 2.9, 2.6, 1.32 |
@@ -689,7 +691,7 @@ Bundle ~50 Fontsource families (OFL/Apache/UFL only) with 12–15 pairings; 'Bro
 - [ ] Licence filter enforced in the catalogue build
 
 **2.3 Theme panel: brand colours, fonts, roundness, text and button styles**  
-Theme tab: preset picker, brand colours, font pairing/fonts, roundness, spacing scale, type scale (H1–H6, body), button styles; contrast warnings; site-wide changes confirm (D7) and are undoable. **Theme Studio** (F-DS-7, added 22 Oct 2026, +2 days): *Open Theme Studio* opens a large in-app dialog with theme cards and live mini previews, palette rows with generated shades and roles (Brand, Accent, Surface, Text), text styles per tag, spacing/corner/shadow scales, and light and dark values side by side.
+Theme tab: preset picker, brand colours, font pairing/fonts, roundness, spacing scale, type scale (H1–H6, body), button styles; contrast warnings; site-wide changes confirm (D7) and are undoable. **Theme Studio** (F-DS-7, added 22 Oct 2026, +2 days): *Open Theme Studio* opens a large in-app dialog with theme cards and live mini previews, palette rows with generated shades and roles (Brand, Accent, Surface, Text), text styles per tag, spacing/corner/shadow scales, and light and dark values side by side. **Palette from an image** (PG-2, added 24 Oct 2026, +1 day, in 2.3b): pick a logo or photo from Media and Webforge proposes brand colours from it (a median-cut or k-means pass over a downscaled bitmap, computed locally), applied through the same palette rows with the contrast guideline.
 
 - [ ] Theme switch confirms with impact and is one undo step
 - [ ] All theme edits undoable with labels
@@ -764,7 +766,7 @@ Entrance animation presets (fade, slide, zoom; delay) and hover effects (lift, g
 - [ ] Themes reviewed side by side in Storybook and look distinct
 
 **2.14 Template format and New Site flow**  
-Template package format (pages, theme, sample content, images with an image-licence manifest), start-screen template gallery with thumbnails, New Site asks name + theme, creating a site copies the template into a new .wforge. The gallery can be filtered and sorted (UX-29, added 22 Oct 2026, +1 day). The dialog follows Bootstrap Studio's New Design layout (LF-11, added 23 Oct 2026, +1 day): name and theme on the left, a *Blank* starter row, the template grid with category chips and sort, and a *Details* link per card that opens a preview. The start screen itself follows Bootstrap Studio's (LF-10, moved from 1.39 on 23 Oct 2026, +1 day): two columns, a card grid for recent sites (thumbnail, name, folder, last edited, pin, remove), a *Help* tab and search. The theme choice offers the presets that exist (2.1's development presets first); the curated themes join it as their PRs land.
+Template package format (pages, theme, sample content, images with an image-licence manifest), start-screen template gallery with thumbnails, New Site asks name + theme, creating a site copies the template into a new .wforge. The gallery can be filtered and sorted (UX-29, added 22 Oct 2026, +1 day). The dialog follows Bootstrap Studio's New Design layout (LF-11, added 23 Oct 2026, +1 day): name and theme on the left, a *Blank* starter row, the template grid with category chips and sort, and a *Details* link per card that opens a preview. The start screen itself follows Bootstrap Studio's (LF-10, moved from 1.39 on 23 Oct 2026, +1 day): two columns, a card grid for recent sites (thumbnail, name, folder, last edited, pin, remove), a *Help* tab and search. The theme choice offers the presets that exist (2.1's development presets first); the curated themes join it as their PRs land. **Try an example** (PG-3, added 24 Oct 2026, +1 day): the start screen offers one or two templates pre-filled with complete sample content (the Café and Trades templates from 2.15, which already carry realistic copy), so a first-time user opens a finished site to edit; the format marks a template as an example and the New Site flow skips the empty-content path for it. 2.14 builds the flag and the flow against a development example; the shipped examples are 2.15's Café (2.15a) and Trades (2.15a) templates, marked when they land.
 
 - [ ] Template thumbnails generated in CI
 - [ ] Image manifest validated (source + licence per image)

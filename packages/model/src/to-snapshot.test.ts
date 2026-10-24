@@ -21,6 +21,7 @@ function bakery(): SiteDoc {
   });
   site.settings.general.description = "Fresh bread in Hightown";
   site.settings.contact.openingHours = [{ days: ["tue", "wed"], opens: "07:00", closes: "15:00" }];
+  site.settings.forms.service = { kind: "formspree", formId: "xyzAbc12" };
   const cakes = "cakes" as PageId;
   site.pages[cakes] = {
     id: cakes,
@@ -109,6 +110,10 @@ describe("siteToSnapshot", () => {
     expect(snapshot.openingHours).toEqual([
       { days: ["tue", "wed"], opens: "07:00", closes: "15:00" },
     ]);
+  });
+
+  it("carries the form service, for the Contact form (2.8)", () => {
+    expect(snapshot.formService).toEqual({ kind: "formspree", formId: "xyzAbc12" });
   });
 
   it("carries the menu, for the Header's navigation (F-ED-17)", () => {
