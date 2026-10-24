@@ -29,6 +29,21 @@ test.beforeEach(async () => {
     type: "Hero",
     props: { id: "hero", title: "Fresh bread", text: "Baked daily", buttonLabel: "Visit us" },
   });
+  home.doc.content.push({
+    type: "Section",
+    props: {
+      id: "order",
+      content: [
+        {
+          type: "Text",
+          props: {
+            id: "order-text",
+            text: '<p>Order at <a href="https://example.com/cakes">our cake shop</a>.</p>',
+          },
+        },
+      ],
+    },
+  });
   const about = "page-about" as PageId;
   site.pages[about] = {
     ...structuredClone(home),
@@ -90,4 +105,25 @@ test("links a button to a section, and the exported link follows a renamed page"
     'href="our-story.html#opening-times"',
   );
   expect(readFileSync(join(folder, "our-story.html"), "utf8")).toContain('id="opening-times"');
+});
+
+test("follows no link on the canvas, from a click or Enter: the canvas stays on the page (#337)", async () => {
+  const canvas = page.frameLocator(".editor__canvas iframe");
+  const where = () =>
+    page.evaluate(
+      () =>
+        document.querySelector<HTMLIFrameElement>(".editor__canvas iframe")?.contentWindow?.location
+          .href,
+    );
+  const before = await where();
+
+  for (const name of ["Visit us", "our cake shop"]) {
+    const link = canvas.getByRole("link", { name });
+    // Where a person clicks: on the element, which Puck's overlay covers.
+    await link.click({ force: true });
+    await link.focus();
+    await page.keyboard.press("Enter");
+    expect(await where(), name).toBe(before);
+    await expect(canvas.getByRole("heading", { name: "Fresh bread" })).toBeVisible();
+  }
 });
