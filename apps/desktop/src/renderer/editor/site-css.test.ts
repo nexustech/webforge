@@ -96,6 +96,33 @@ describe("siteClasses", () => {
     );
   });
 
+  it("collects an image's classes with and without it, styled before it changes (#371)", () => {
+    const session = sessionWith();
+    session.history.run("Added Gallery", (draft) => {
+      const content = draft.pages[draft.homePageId]?.doc.content[0]?.props.content;
+      if (!Array.isArray(content)) throw new Error("no section");
+      content.push({
+        type: "Image",
+        props: { id: "placed", image: { mediaId: "photo" }, width: "full", alignment: "centre" },
+      });
+      draft.pages[draft.homePageId]?.doc.content.push({
+        type: "Gallery",
+        props: {
+          id: "gallery",
+          images: [{ type: "GalleryImage", props: { id: "g1", image: { mediaId: "photo" } } }],
+        },
+      });
+    });
+
+    const classes = siteClasses(session.history.document.getState(), session);
+
+    // Only placed images here, yet an empty Image's hint and an empty gallery square are styled
+    // at once when one shows: a picture removed, or a gallery image added.
+    expect(classes).toEqual(
+      expect.arrayContaining(["h-auto", "aspect-video", "block", "bg-base-200"]),
+    );
+  });
+
   it("adds every spacing class a handle can drag to, styled before the next compile (1.32)", () => {
     const session = sessionWith();
 
