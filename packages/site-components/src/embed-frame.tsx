@@ -61,7 +61,9 @@ export function EmbedFrame({
             >
               <path d={kind === "video" ? PLAY_ICON : MAP_ICON} />
             </svg>
-            {kind === "video" ? t("siteText.embed.playVideo") : t("siteText.embed.showMap")}
+            {kind === "video"
+              ? t("siteText.embed.playVideo", { provider })
+              : t("siteText.embed.showMap", { provider })}
           </button>
           <p className="max-w-sm text-sm">{t("siteText.embed.notice", { provider })}</p>
         </div>

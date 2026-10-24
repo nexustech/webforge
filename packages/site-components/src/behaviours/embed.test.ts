@@ -23,8 +23,11 @@ const map: NodeDoc = {
   props: { id: "m", title: "", address: "1 High Street, Hightown" },
 };
 
-/** A page of its own with `nodes`, and `embed.js` run on it unless `script` is false. */
-function page(nodes: NodeDoc[], script = true) {
+/**
+ * A page of its own with `nodes`, and `embed.js` run on it unless `script` is false. `consented`
+ * marks the page as the consent banner does for a visitor who accepted all before (3.8).
+ */
+function page(nodes: NodeDoc[], script = true, consented = false) {
   // No real request from the test: the frame stays empty.
   const happy = new Window({
     width: 1024,
@@ -35,6 +38,7 @@ function page(nodes: NodeDoc[], script = true) {
   const window = happy as unknown as typeof globalThis;
   const { document } = window;
   document.body.innerHTML = renderNodesToHtml(nodes, siteLibrary, EDITOR_RENDER_CONTEXT);
+  document.documentElement.toggleAttribute("data-wf-consent-all", consented);
   if (script) {
     new Function("document", "HTMLElement", BEHAVIOUR_SCRIPTS.embed ?? "")(
       document,
@@ -44,7 +48,7 @@ function page(nodes: NodeDoc[], script = true) {
   const embeds = [...document.querySelectorAll<HTMLElement>("[data-wf-embed]")];
   const button = (embed: HTMLElement | undefined) =>
     embed?.querySelector<HTMLButtonElement>("[data-wf-embed-load]") ?? null;
-  return { document, embeds, button };
+  return { window, document, embeds, button };
 }
 
 describe("the embed behaviour (F-CM-4, B7)", () => {
@@ -103,6 +107,29 @@ describe("the embed behaviour (F-CM-4, B7)", () => {
       "https://www.google.com/maps?q=1%20High%20Street%2C%20Hightown&output=embed",
     );
     expect(frame?.title).toBe("Map");
+  });
+
+  it("loads every embed, without playing, once the visitor accepts all in the consent banner", () => {
+    const { window, document, embeds } = page([video, map]);
+    const focused = document.activeElement;
+
+    document.dispatchEvent(new window.Event("webforge:consent-all"));
+
+    expect(embeds.map((embed) => embed.querySelector("iframe")?.getAttribute("src"))).toEqual([
+      "https://www.youtube-nocookie.com/embed/aqz-KE-bpKQ",
+      "https://www.google.com/maps?q=1%20High%20Street%2C%20Hightown&output=embed",
+    ]);
+    // Nothing starts playing, and the focus stays where the visitor left it.
+    expect(document.activeElement).toBe(focused);
+    // Accepting again loads nothing twice.
+    document.dispatchEvent(new window.Event("webforge:consent-all"));
+    expect(document.querySelectorAll("iframe")).toHaveLength(2);
+  });
+
+  it("loads every embed straight away for a visitor who accepted all before", () => {
+    const { document } = page([video, map], true, true);
+
+    expect(document.querySelectorAll("iframe")).toHaveLength(2);
   });
 
   it.each([

@@ -4,8 +4,9 @@
 // placeholder's button and, on a click, puts the player or map in its place. Without it, the
 // placeholder's link opens the video or map on its own site.
 //
-// The consent banner (B7) will load every embed once a visitor accepts all: it calls load() for
-// each [data-wf-embed] on the page.
+// A visitor who accepted everything in the consent banner (B7, 3.8) gets every embed at once. The
+// banner marks the page with data-wf-consent-all on <html> (for a visitor who accepted before)
+// and fires "webforge:consent-all" on the document when they accept now.
 (() => {
   // The only sites an embed may load from (EMBED_HOSTS in embed.ts; a test keeps them alike), so
   // a changed page can't make this script load another one.
@@ -17,8 +18,11 @@
   ];
   const PLAYERS = ["www.youtube-nocookie.com", "player.vimeo.com"];
 
-  /** @param {HTMLElement} embed */
-  const load = (embed) => {
+  /**
+   * @param {HTMLElement} embed
+   * @param {boolean} play Whether the visitor pressed play, rather than accepted all embeds.
+   */
+  const load = (embed, play) => {
     const placeholder = embed.querySelector("[data-wf-embed-placeholder]");
     if (placeholder === null) {
       return;
@@ -33,7 +37,7 @@
       return;
     }
     // The visitor pressed play: start it, rather than ask for a second click.
-    if (PLAYERS.includes(url.hostname)) {
+    if (play && PLAYERS.includes(url.hostname)) {
       url.searchParams.set("autoplay", "1");
     }
     const frame = document.createElement("iframe");
@@ -47,19 +51,32 @@
     frame.style.cssText = "position:absolute;inset:0;width:100%;height:100%;border:0";
     placeholder.replaceWith(frame);
     embed.toggleAttribute("data-loaded", true);
-    frame.focus();
+    if (play) {
+      frame.focus();
+    }
   };
 
-  for (const embed of document.querySelectorAll("[data-wf-embed]")) {
-    if (!(embed instanceof HTMLElement)) {
-      continue;
+  const embeds = [...document.querySelectorAll("[data-wf-embed]")].filter(
+    (embed) => embed instanceof HTMLElement,
+  );
+  const loadAll = () => {
+    for (const embed of embeds) {
+      load(/** @type {HTMLElement} */ (embed), false);
     }
+  };
+
+  for (const embed of embeds) {
     const controls = embed.querySelector("[data-wf-embed-controls]");
     const button = embed.querySelector("[data-wf-embed-load]");
     if (!(controls instanceof HTMLElement) || button === null) {
       continue;
     }
     controls.hidden = false;
-    button.addEventListener("click", () => load(embed));
+    button.addEventListener("click", () => load(/** @type {HTMLElement} */ (embed), true));
+  }
+
+  document.addEventListener("webforge:consent-all", loadAll);
+  if (document.documentElement.hasAttribute("data-wf-consent-all")) {
+    loadAll();
   }
 })();

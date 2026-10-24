@@ -33,8 +33,8 @@ describe("the Video (F-CM-4)", () => {
 
     expect(drawn).toContain('data-src="https://www.youtube-nocookie.com/embed/aqz-KE-bpKQ"');
     expect(drawn).toContain(`data-title="${t("starter.videoTitle")}"`);
-    expect(drawn).toContain(t("siteText.embed.playVideo"));
-    expect(drawn).toContain(t("siteText.embed.notice", { provider: "YouTube" }));
+    expect(drawn).toContain("Play the video from YouTube");
+    expect(drawn).toContain("YouTube may set cookies once it loads.");
     expect(drawn).toContain(
       '<a class="link text-sm" href="https://www.youtube.com/watch?v=aqz-KE-bpKQ" target="_blank" rel="noopener noreferrer">Watch on YouTube</a>',
     );
@@ -68,7 +68,7 @@ describe("the Map (F-CM-4, 1.17)", () => {
     expect(drawn).toContain(
       'data-src="https://www.google.com/maps?q=1%20High%20Street%2C%20Hightown&amp;output=embed"',
     );
-    expect(drawn).toContain(t("siteText.embed.showMap"));
+    expect(drawn).toContain("Show the map from Google Maps");
     expect(drawn).toContain("Open in Google Maps");
     expect(drawn).not.toMatch(/\ssrc="/);
   });

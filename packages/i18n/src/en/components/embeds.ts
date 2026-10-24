@@ -18,9 +18,9 @@ export const embeds = {
   "starter.mapTitle": "Find us",
   "starter.mapText": "Tell visitors how to get here, and where to park.",
   // An embed's placeholder on an exported site, until the visitor loads it (F-CM-4, B7).
-  "siteText.embed.playVideo": "Play video",
-  "siteText.embed.showMap": "Show map",
-  "siteText.embed.notice": "This loads it from {provider}, which may set cookies.",
+  "siteText.embed.playVideo": "Play the video from {provider}",
+  "siteText.embed.showMap": "Show the map from {provider}",
+  "siteText.embed.notice": "{provider} may set cookies once it loads.",
   "siteText.embed.watchOn": "Watch on {provider}",
   "siteText.embed.openIn": "Open in {provider}",
   "siteText.embed.provider.youtube": "YouTube",

@@ -408,13 +408,11 @@ test.describe("exported site from disk", () => {
     await open(page, "about.html");
     const video = page.locator(".site-video");
     const map = page.locator(".site-map");
-    await expect(
-      video.getByText("This loads it from YouTube, which may set cookies."),
-    ).toBeVisible();
+    await expect(video.getByText("YouTube may set cookies once it loads.")).toBeVisible();
     await expect(page.locator("iframe")).toHaveCount(0);
     expect(externalRequests).toEqual([]);
 
-    await video.getByRole("button", { name: "Play video" }).click();
+    await video.getByRole("button", { name: "Play the video from YouTube" }).click();
 
     const player = video.locator("iframe");
     await expect(player).toHaveAttribute(
@@ -433,7 +431,7 @@ test.describe("exported site from disk", () => {
     await expect(map.locator("iframe")).toHaveCount(0);
     externalRequests = [];
 
-    await map.getByRole("button", { name: "Show map" }).click();
+    await map.getByRole("button", { name: "Show the map from Google Maps" }).click();
     await expect(map.locator("iframe")).toHaveAttribute(
       "src",
       /^https:\/\/www\.google\.com\/maps\?q=1%20High%20Street/,
