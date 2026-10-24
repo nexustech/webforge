@@ -732,7 +732,8 @@ describe("renderNodesToHtml", () => {
     expect(html).toContain(
       '<div class="site-text text-lg leading-relaxed [&amp;_a]:underline [&amp;_p+p]:mt-4 mb-8">',
     );
-    expect(html).toContain('<div class="site-faq space-y-4 my-4">');
+    // An FAQ is a section like the others (2.19): its own padding, its margin set.
+    expect(html).toContain('<section class="site-faq bg-base-100 px-4 py-16 my-4">');
   });
 
   describe("the Carousel (2.10)", () => {

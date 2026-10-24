@@ -3,12 +3,15 @@ name: Merge queue
 # Stands in for GitHub's merge queue, which needs an organisation-owned repository (spec/03 §7).
 # `main` requires "CI passed" on a branch that is up to date with `main`, and pull requests merge
 # themselves with auto-merge. GitHub doesn't update a branch that has fallen behind, so this does,
-# one pull request at a time, oldest auto-merge first:
-# - The first queued PR that is behind `main`, and hasn't failed CI, gets `main` merged in and a
-#   fresh CI run. Nothing else is touched until it merges or fails.
-# - A PR whose CI is running, or that is up to date and passing, is in flight: wait for it.
+# one pull request at a time:
+# - A PR that is up to date with `main` and whose CI is running, or has passed, is in flight: wait
+#   for it. Nothing else is touched until it merges or fails.
+# - Otherwise the next PR that is behind `main`, and whose CI hasn't failed, gets `main` merged in
+#   and a fresh CI run: docs-only PRs first (their CI takes seconds), then the oldest auto-merge.
 # - PRs with conflicts or failing CI are skipped. Their stream's Auto-fix resolves the conflict or
-#   fixes CI and pushes, which puts them back in the queue.
+#   fixes CI and pushes (or re-runs a flaky job), which puts them back in the queue.
+# "Behind" comes from comparing the PR's head with `main`, not from GitHub's merge state, which
+# reads UNKNOWN for a while after every merge.
 # It runs after every push to `main` (a merge), every finished CI run, when auto-merge is turned
 # on, and every 15 minutes as a safety net.
 on:
@@ -83,6 +86,32 @@ jobs:
             done
             echo "::warning::No CI run appeared for $1: push to the branch to start one."
           }
+          # Commits on main that commit `$1` doesn't have: 0 when it's up to date with main.
+          behind_by() {
+            gh api "repos/$GH_REPO/compare/main...$1" --jq .behind_by
+          }
+          # Whether PR `$1` changes docs only, by the rule of ci.yml's `changes` job (keep the two in
+          # step): its CI runs nothing but "CI passed", so it merges within a minute of its update.
+          docs_only() {
+            local files
+            files=$(gh api "repos/$GH_REPO/pulls/$1/files" --paginate --jq '.[].filename')
+            ! grep -Evq '^(docs|spec|research)/|\.md$' <<< "$files"
+          }
+          # Merges main into PR `$1` (branch `$2`, head `$3`) and approves the CI run that starts.
+          # Fails, changing nothing, if GitHub can't merge main in (a conflict).
+          update() {
+            echo "#$1 is behind main: merging main into $2 and running CI."
+            if [ "$DRY_RUN" = true ]; then return 0; fi
+            gh api -X PUT "repos/$GH_REPO/pulls/$1/update-branch" -f expected_head_sha="$3" > /dev/null || return 1
+            # GitHub updates the branch in the background: approve its CI once the new head is there.
+            local new="$3"
+            for _ in $(seq 30); do
+              new=$(gh api "repos/$GH_REPO/pulls/$1" --jq .head.sha)
+              [ "$new" != "$3" ] && break
+              sleep 2
+            done
+            approve_ci "$new"
+          }
           # Open, ready PRs into main from this repository with auto-merge on, oldest first, as
           # "number branch head mergeState". "CI passed" appears only when every other job has
           # finished, so a running CI is found from the runs on the head commit.
@@ -96,25 +125,28 @@ jobs:
             exit 0
           fi
           echo "$queue"
+          # First, a PR in flight: up to date with main, its CI held, running or passed. Behind PRs
+          # that can go next are collected, docs-only ones apart.
+          docs=()
+          others=()
           while read -r number branch head state; do
-            read -r _ ci <<< "$(ci_of "$head")"
             if [ "$state" = DIRTY ]; then
               echo "#$number has conflicts with main: its stream resolves them."
               continue
             fi
-            if [ "$state" = BEHIND ]; then
-              echo "#$number is behind main: merging main into $branch and running CI."
-              if [ "$DRY_RUN" = true ]; then exit 0; fi
-              gh api -X PUT "repos/$GH_REPO/pulls/$number/update-branch" -f expected_head_sha="$head" > /dev/null
-              # GitHub updates the branch in the background: approve its CI once the new head is there.
-              new="$head"
-              for _ in $(seq 30); do
-                new=$(gh api "repos/$GH_REPO/pulls/$number" --jq .head.sha)
-                [ "$new" != "$head" ] && break
-                sleep 2
-              done
-              approve_ci "$new"
-              exit 0
+            behind=$(behind_by "$head")
+            read -r _ ci <<< "$(ci_of "$head")"
+            case "$ci" in
+              FAILURE | TIMED_OUT | STARTUP_FAILURE)
+                echo "#$number failed CI ($ci): its stream fixes it."
+                continue
+                ;;
+            esac
+            if [ "$behind" -gt 0 ]; then
+              # A run on a head that is behind can't merge whatever it finds, so it doesn't count
+              # as in flight: the update replaces it (CI's concurrency group cancels it).
+              if docs_only "$number"; then docs+=("$number $branch $head"); else others+=("$number $branch $head"); fi
+              continue
             fi
             case "$ci" in
               WAITING)
@@ -132,8 +164,16 @@ jobs:
                 exit 0
                 ;;
               *)
-                echo "#$number failed CI ($ci): its stream fixes it."
+                # Cancelled, or another conclusion: run it again once something else moves it on.
+                echo "#$number's CI ended $ci on an up-to-date head: push or re-run to try again."
                 ;;
             esac
           done <<< "$queue"
+          # Nothing in flight: update the next behind PR, docs-only ones first. One GitHub can't
+          # merge main into has a conflict, which its stream resolves; the next one is tried.
+          for entry in "${docs[@]}" "${others[@]}"; do
+            read -r number branch head <<< "$entry"
+            if update "$number" "$branch" "$head"; then exit 0; fi
+            echo "#$number couldn't take main (a conflict): its stream resolves it."
+          done
           echo "Nothing to update: every queued pull request is waiting on its stream."
