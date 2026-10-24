@@ -43,12 +43,19 @@ const section = defineSection({
     content: { kind: "slot", label: t("field.content"), accepts: "element" },
   },
   defaults: { gap: "medium", fullWidth: false, content: [] },
+  // A Section on reversed colours (2.4) is a band across the page: its background takes the full
+  // width, and its column goes inside it.
   frame: (values) => {
     const gap = responsiveClasses(values.gap, (value) => GAP_CLASS[value]);
-    return values.fullWidth ? `mx-auto ${gap}` : `mx-auto max-w-4xl ${gap}`;
+    if (values.fullWidth) return `mx-auto ${gap}`;
+    return values.colors === "inverse" ? "" : `mx-auto max-w-4xl ${gap}`;
   },
-  render: ({ slots }) => {
+  render: ({ values, slots }) => {
     const Content = slots.content;
+    if (values.colors === "inverse" && !values.fullWidth) {
+      const gap = responsiveClasses(values.gap, (value) => GAP_CLASS[value]);
+      return <Content className={`mx-auto max-w-4xl ${gap}`} />;
+    }
     return <Content />;
   },
 });

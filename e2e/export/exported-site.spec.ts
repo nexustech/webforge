@@ -122,6 +122,10 @@ test.describe("exported site from disk", () => {
     expect(reversed.text).not.toBe(onPage.text);
     // Its heading follows the band's text colour, not the page's.
     expect((await colours('section[data-theme="wf_inverse"] h3')).text).toBe(reversed.text);
+    // A band across the page, its text in the page's column (max-w-4xl).
+    const width = await page.evaluate(() => document.documentElement.clientWidth);
+    expect((await band.boundingBox())?.width).toBe(width);
+    expect((await band.getByRole("heading").boundingBox())?.width).toBeLessThanOrEqual(896);
   });
 
   test("navigates between pages with relative links", async ({ page }) => {
