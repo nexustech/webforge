@@ -62,13 +62,24 @@ export function quotedElementName(
  * How undo labels name an element: the name the user gave it in Layers ("'Opening times'"), else
  * its component's display name ("Heading"), as the glossary has it (D2).
  */
-function itemName(edit: EngineEdit, library: ComponentLibrary, pages: readonly PageDoc[]): string {
-  const name = ownName(edit, library, pages);
+function itemName(
+  edit: EngineEdit,
+  library: ComponentLibrary,
+  pages: readonly PageDoc[],
+  shared: SharedSectionsDoc = {},
+): string {
+  const name = ownName(edit, library, pages, shared);
   // An element of the shared Header or Footer: "Edited shared Footer text" (F-ED-7).
   return edit.shared === true ? t("history.sharedItem", { item: name }) : name;
 }
 
-function ownName(edit: EngineEdit, library: ComponentLibrary, pages: readonly PageDoc[]): string {
+/** As {@link itemName}; a linked copy by its shared section's name (`shared`), as Layers names it. */
+function ownName(
+  edit: EngineEdit,
+  library: ComponentLibrary,
+  pages: readonly PageDoc[],
+  shared: SharedSectionsDoc,
+): string {
   const id = edit.nodeId;
   const layout = edit.layout === undefined ? [] : [...edit.layout.header, ...edit.layout.footer];
   const node =
@@ -81,7 +92,7 @@ function ownName(edit: EngineEdit, library: ComponentLibrary, pages: readonly Pa
     edit.componentType === null ? undefined : library.components[edit.componentType];
   return quotedName(
     component?.label ?? edit.componentType ?? "",
-    node === undefined ? undefined : givenElementName(node),
+    node === undefined ? undefined : givenElementName(node, shared),
   );
 }
 
@@ -147,10 +158,21 @@ export function deviceLabelFor(
 
 /**
  * The undo label for a canvas edit (D2), e.g. "Moved Heading", "Edited Heading text" or "Edited
- * 'Opening times' text". `before` is the page as it was, where a removed element is still found.
+ * 'Opening times' text". `before` is the page as it was, where a removed element is still found;
+ * `shared`, the site's shared sections, names a linked copy as Layers does ("Moved 'Opening hours'").
  */
-export function labelFor(edit: EngineEdit, library: ComponentLibrary, before?: PageDoc): string {
-  const item = itemName(edit, library, before === undefined ? [edit.page] : [edit.page, before]);
+export function labelFor(
+  edit: EngineEdit,
+  library: ComponentLibrary,
+  before?: PageDoc,
+  shared: SharedSectionsDoc = {},
+): string {
+  const item = itemName(
+    edit,
+    library,
+    before === undefined ? [edit.page] : [edit.page, before],
+    shared,
+  );
   switch (edit.kind) {
     case "insert":
       return t("history.added", { item });
