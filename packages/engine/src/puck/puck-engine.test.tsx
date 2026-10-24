@@ -483,10 +483,7 @@ describe("createPuckEngine", () => {
       content: [{ type: "Bound", props: { id: "b", text: "Own", ...(bindings && { bindings }) } }],
     });
     await act(async () => {
-      engine.setSettings(
-        () => undefined,
-        (key) => `Add ${key}`,
-      );
+      engine.setSettings({ setting: () => undefined, emptySetting: (key) => `Add ${key}` });
       engine.applyChange({ page: bound() });
     });
     await settle();
@@ -498,7 +495,7 @@ describe("createPuckEngine", () => {
     expect(headings()).toEqual(["Add contact.phone"]);
 
     await act(async () =>
-      engine.setSettings((key) => (key === "contact.phone" ? "0123" : undefined)),
+      engine.setSettings({ setting: (key) => (key === "contact.phone" ? "0123" : undefined) }),
     );
     await settle();
     expect(headings()).toEqual(["0123"]);
@@ -514,15 +511,16 @@ describe("createPuckEngine", () => {
     expect(hours()).toEqual([]);
 
     await act(async () =>
-      engine.setSettings(() => undefined, undefined, [
-        { days: ["sat", "sun"], opens: "08:00", closes: "13:00" },
-      ]),
+      engine.setSettings({
+        setting: () => undefined,
+        openingHours: [{ days: ["sat", "sun"], opens: "08:00", closes: "13:00" }],
+      }),
     );
     await settle();
     expect(hours()).toEqual(["sat sun 08:00"]);
 
     // Settings without hours leave none from before.
-    await act(async () => engine.setSettings(() => undefined));
+    await act(async () => engine.setSettings({ setting: () => undefined }));
     await settle();
     expect(hours()).toEqual([]);
   });
@@ -813,7 +811,7 @@ describe("createPuckEngine with a shared Header and Footer (F-ED-7)", () => {
       props: { id: "hb", text: "Own", bindings: { text: "contact.phone" } },
     };
     await act(async () => {
-      engine.setSettings((key) => (key === "contact.phone" ? "0123" : undefined));
+      engine.setSettings({ setting: (key) => (key === "contact.phone" ? "0123" : undefined) });
       engine.loadPage(page, { ...layout, header: [bound] });
     });
     await settle();

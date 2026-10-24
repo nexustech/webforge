@@ -672,14 +672,15 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
 
     setLinkPicker: richText.setLinkPicker,
 
-    setSettings(setting, emptySetting, openingHours) {
-      const { emptySetting: _empty, openingHours: _hours, ...rest } = renderContext;
-      renderContext = {
-        ...rest,
-        setting,
-        ...(emptySetting === undefined ? {} : { emptySetting }),
-        ...(openingHours === undefined ? {} : { openingHours }),
-      };
+    setSettings(bindings) {
+      // Replaces every binding: a hint or the hours left out of `bindings` go.
+      const {
+        setting: _setting,
+        emptySetting: _empty,
+        openingHours: _hours,
+        ...rest
+      } = renderContext;
+      renderContext = { ...rest, ...bindings };
       redraw();
     },
 
