@@ -215,6 +215,25 @@ describe("the carousel behaviour (2.10)", () => {
     expect(root.dataset.current).toBe("2");
   });
 
+  it("lets a press decide, not a scroll before it that hadn't yet come to rest (#330)", () => {
+    const { root, track, document, window, button } = page({}, 3);
+    const slides = [...document.querySelectorAll<HTMLElement>(".site-carousel-slide")];
+    slides.forEach((slide, index) => {
+      Object.defineProperty(slide, "offsetLeft", { value: index * 100 });
+    });
+
+    button("next").click();
+    track.scrollLeft = 100;
+    track.dispatchEvent(new window.Event("scroll"));
+    // Pressed before that scroll counted as at rest, with the strip still at slide 2.
+    vi.advanceTimersByTime(100);
+    button("previous").click();
+    vi.advanceTimersByTime(100);
+    expect(root.dataset.current).toBe("0");
+    button("previous").click();
+    expect(root.dataset.current).toBe("2");
+  });
+
   describe("playing automatically", () => {
     it("moves on every interval without announcing it, until its button stops it", () => {
       const { root, button, status } = page({ autoplay: true, interval: "5" });

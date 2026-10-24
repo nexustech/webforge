@@ -76,6 +76,9 @@
     };
 
     let current = 0;
+    /** Set while the strip is scrolling: it then says where it came to rest (see below). */
+    /** @type {ReturnType<typeof setTimeout> | undefined} */
+    let resting;
     /**
      * Moves `pages` pages of what's in view on (back if negative): the last page full, and round
      * past either end. `announce` says what shows if asked.
@@ -87,6 +90,8 @@
       if (target > last) target = current >= last ? 0 : last;
       if (target < 0) target = current <= 0 ? last : 0;
       current = target;
+      // A scroll before this move may still be about to say where it rested: this move decides.
+      clearTimeout(resting);
       const first = slides[0];
       const slide = slides[current];
       if (first !== undefined && slide !== undefined) {
@@ -102,8 +107,6 @@
     // strip has come to rest. Not while it moves: a smooth scroll the buttons started may still be
     // passing other slides, as a quick run of presses would leave it (in Firefox, #330), and the
     // buttons' own moves already say where it is going.
-    /** @type {ReturnType<typeof setTimeout> | undefined} */
-    let resting;
     track.addEventListener(
       "scroll",
       () => {
