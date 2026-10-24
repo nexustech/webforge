@@ -3,7 +3,7 @@ import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event";
 import { DEFAULT_THEME, type TextStyle } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
-import { contrastRatio } from "@webforge/themes";
+import { contrastRatio, hexToOklch } from "@webforge/themes";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ColourField, contrastNeeded, shownRatio } from "./ColourField.js";
 import { createEditorSession } from "./editor-session.js";
@@ -133,14 +133,12 @@ describe("ColourField (1.37, UX-25, ADR 0009)", () => {
   });
 
   it("warns when the colour is hard to read on the page, by the text's size", () => {
-    const { colors } = DEFAULT_THEME;
-    const page = colors["base-100"];
-    // A theme colour between 3:1 and 4.5:1 on the page: fine for a large heading only.
-    const middling = (["secondary", "info", "success", "error"] as const).find((role) => {
-      const ratio = contrastRatio(colors[role], page);
-      return ratio >= 3 && ratio < 4.5;
-    });
-    if (middling === undefined) throw new Error("no colour between 3:1 and 4.5:1");
+    // A colour between 3:1 and 4.5:1 on the page: fine for a large heading only. A grey of its
+    // own, since the presets' colours all pass AA for text or fail even for headings (#312).
+    const middling = "[#808080]";
+    const ratio = contrastRatio(hexToOklch("#808080"), DEFAULT_THEME.colors["base-100"]);
+    expect(ratio).toBeGreaterThanOrEqual(3);
+    expect(ratio).toBeLessThan(4.5);
 
     setUp("primary");
     expect(screen.queryByText(/Hard to read/)).toBeNull();

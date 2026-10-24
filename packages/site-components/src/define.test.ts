@@ -118,6 +118,23 @@ describe("defineComponent (2.5)", () => {
       },
       `'Card' puts "title" in an option group without an id such as "typography"`,
     ],
+    ...["id", "type", "props"].map((itemField): [string, Partial<LooseSpec>, string] => [
+      `a list item field named "${itemField}" (R14)`,
+      {
+        fields: {
+          ...base.fields,
+          plans: {
+            kind: "list",
+            label: "Plans",
+            itemLabel: "Plan",
+            fields: { [itemField]: { kind: "text", label: "Kind" } },
+            defaults: {},
+          },
+        },
+        defaults: { ...base.defaults, plans: [] },
+      },
+      `'Card' names a field of "plans"'s items "${itemField}", which items can't have`,
+    ]),
   ] satisfies [string, Partial<LooseSpec>, string][])("refuses %s", (_name, change, message) => {
     expect(() => defineComponent({ ...base, ...change })).toThrow(message);
   });

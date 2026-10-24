@@ -272,6 +272,42 @@ describe("shortcuts", () => {
       expect(event.defaultPrevented).toBe(true);
     });
 
+    it("leaves a character typed with AltGr to the text, but runs Ctrl+Alt shortcuts (#290)", () => {
+      const registry = withKeys({
+        saveVersion: { keys: ["Mod+Alt+S"] },
+        pasteStyle: { keys: ["Mod+Alt+V"] },
+        moveUp: { keys: ["Mod+Alt+ArrowUp"] },
+      });
+      const run = { saveVersion: vi.fn(), pasteStyle: vi.fn(), moveUp: vi.fn() };
+      for (const [id, fn] of Object.entries(run)) registry.register({ id, label: id, run: fn });
+      remove = installCommandShortcuts(window, registry);
+      const ctrl = !isMac();
+      /** A Ctrl+Alt press as Chromium reports it on Windows with an AltGr layout: AltGraph set. */
+      const chromium = (init: { key: string; code: string }) => {
+        const event = key({ ...init, ctrlKey: ctrl, metaKey: !ctrl, altKey: true });
+        Object.defineProperty(event, "getModifierState", {
+          value: (modifier: string) => modifier === "AltGraph",
+        });
+        return event;
+      };
+
+      // Hungarian AltGr+V types @: the text's.
+      const typed = chromium({ key: "@", code: "KeyV" });
+      window.dispatchEvent(typed);
+      // Polish AltGr+S types ś: the text's too.
+      window.dispatchEvent(chromium({ key: "ś", code: "KeyS" }));
+      expect(run.pasteStyle).not.toHaveBeenCalled();
+      expect(run.saveVersion).not.toHaveBeenCalled();
+      expect(typed.defaultPrevented).toBe(false);
+
+      // German Ctrl+Alt+S types nothing (key "s", its own letter): Save version runs. So do the
+      // arrows, which type no character.
+      window.dispatchEvent(chromium({ key: "s", code: "KeyS" }));
+      window.dispatchEvent(chromium({ key: "ArrowUp", code: "ArrowUp" }));
+      expect(run.saveVersion).toHaveBeenCalledOnce();
+      expect(run.moveUp).toHaveBeenCalledOnce();
+    });
+
     it("runs a command from its extra shortcuts too", () => {
       const registry = withKeys({ palette: { keys: ["Mod+P", "Mod+K"] } });
       const run = vi.fn();

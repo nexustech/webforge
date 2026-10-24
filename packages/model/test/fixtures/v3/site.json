@@ -371,6 +371,28 @@
           ]
         }
       }
+    },
+    "shared-hours-weekend": {
+      "id": "shared-hours-weekend",
+      "name": " opening HOURS ",
+      "section": {
+        "type": "Section",
+        "props": {
+          "id": "hours-weekend",
+          "advanced": {
+            "anchorId": "opening-hours"
+          },
+          "content": [
+            {
+              "type": "Heading",
+              "props": {
+                "id": "hours-heading-weekend",
+                "text": "Opening hours"
+              }
+            }
+          ]
+        }
+      }
     }
   }
 }

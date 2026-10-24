@@ -1,5 +1,18 @@
+import { z } from "zod";
 import type { PageId } from "./ids.js";
 import type { SiteDoc } from "./site-doc.js";
+
+/** The parts of a {@link SiteDoc} stored as one document each, under their own name. */
+const PARTS = ["settings", "theme", "layout", "media", "code", "menu", "sharedSections"] as const;
+
+/**
+ * What a {@link SiteDocument} can hold: the one list of document kinds, shared by storage and the
+ * IPC layer.
+ */
+export const SITE_DOCUMENT_KINDS = ["site", ...PARTS, "page"] as const;
+
+/** What a {@link SiteDocument} holds. */
+export type SiteDocumentKind = (typeof SITE_DOCUMENT_KINDS)[number];
 
 /**
  * One document of a site as `.wforge` stores it. A site is split into documents so a save writes
@@ -15,27 +28,30 @@ export type SiteDocument = {
   readonly content: unknown;
 };
 
-/** What a {@link SiteDocument} holds. */
-export type SiteDocumentKind =
-  | "site"
-  | "settings"
-  | "theme"
-  | "layout"
-  | "media"
-  | "code"
-  | "menu"
-  | "sharedSections"
-  | "page";
-
-/** A change to the stored site; structurally a `@webforge/storage` `DocumentChange`. */
-export type SiteDocumentChange =
-  | ({ readonly type: "put" } & SiteDocument)
-  | { readonly type: "delete"; readonly id: string };
-
-/** The parts of a {@link SiteDoc} stored as one document each, under their own name. */
-const PARTS = ["settings", "theme", "layout", "media", "code", "menu", "sharedSections"] as const;
-
 const PAGE_PREFIX = "page:";
+
+/**
+ * A change to one of a site's documents, as the renderer sends it and storage commits it. Content
+ * is checked separately, as part of the whole site the changes produce ({@link applySiteChanges}).
+ */
+export const siteDocumentChangeSchema = z.discriminatedUnion("type", [
+  z
+    .strictObject({
+      type: z.literal("put"),
+      id: z.string().min(1).max(100),
+      kind: z.enum(SITE_DOCUMENT_KINDS),
+      content: z.unknown(),
+    })
+    // Only documents a site is made of: `page:<id>` pages, every other part under its own name.
+    // Anything else would be stored but never read back.
+    .refine((change) =>
+      change.kind === "page" ? change.id.startsWith(PAGE_PREFIX) : change.id === change.kind,
+    ),
+  z.strictObject({ type: z.literal("delete"), id: z.string().startsWith(PAGE_PREFIX) }),
+]);
+
+/** A change to the stored site: a document put under its id, or a page's document deleted. */
+export type SiteDocumentChange = Readonly<z.infer<typeof siteDocumentChangeSchema>>;
 
 /** The id of a page's document. */
 export function pageDocumentId(id: PageId): string {

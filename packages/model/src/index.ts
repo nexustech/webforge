@@ -39,7 +39,6 @@ export type {
   IdKind,
   MediaId,
   MenuItemId,
-  NodeId,
   PageId,
   SharedSectionId,
 } from "./ids.js";
@@ -141,6 +140,8 @@ export {
   applySiteChanges,
   changedDocuments,
   pageDocumentId,
+  SITE_DOCUMENT_KINDS,
+  siteDocumentChangeSchema,
   siteDocuments,
   siteFromDocuments,
 } from "./site-documents.js";

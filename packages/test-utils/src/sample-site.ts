@@ -79,7 +79,7 @@ export function sampleSite(): SiteSnapshot {
               type: "Section",
               props: {
                 id: "intro",
-                padding: "medium",
+                padding: { top: "m", bottom: "m" },
                 content: [
                   {
                     type: "Heading",

@@ -4,6 +4,7 @@ import {
   createSite,
   DEFAULT_THEME,
   type PageId,
+  SITE_FORMAT_VERSION,
   SiteFormatError,
   siteDocuments,
 } from "@webforge/model";
@@ -41,6 +42,32 @@ describe("the format 1 fixture", () => {
     );
     expect(store.listVersions().map((version) => version.name)).toEqual(["First version"]);
     store.close();
+  });
+
+  it("is left unchanged on disk when it is opened, read and closed (R14)", () => {
+    const path = copyWforgeFixture(1, tempDir());
+    const before = readFileSync(path);
+
+    const store = ProjectStore.open(path);
+    expect(store.readSite().formatVersion).toBe(SITE_FORMAT_VERSION);
+    store.close();
+
+    expect(readFileSync(path).equals(before)).toBe(true);
+  });
+
+  it("is written in the current format, with the first change, by the first commit", () => {
+    const path = copyWforgeFixture(1, tempDir());
+    const store = ProjectStore.open(path);
+    const site = store.readSite();
+    store.commit([{ type: "put", id: "code", kind: "code", content: site.code }]);
+    store.close();
+
+    const reopened = ProjectStore.open(path);
+    expect(reopened.readDocument("site")?.content).toMatchObject({
+      formatVersion: SITE_FORMAT_VERSION,
+    });
+    expect(reopened.readSite()).toEqual(site);
+    reopened.close();
   });
 });
 

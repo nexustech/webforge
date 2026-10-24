@@ -219,6 +219,42 @@ test.describe("Puck canvas with Webforge history", () => {
     await expect(canvas().locator(".site-text")).toHaveText(`${STARTER_TEXT} Indeed.`);
   });
 
+  test("undoes and redoes all of the typing on a busy computer too (#307)", async () => {
+    const editor = canvas().locator(".site-text .ProseMirror");
+    await canvas().getByText(STARTER_TEXT).click();
+    await editor.click();
+    await expect(editor).toBeFocused();
+    await placeCaret(editor, "end");
+    // A busy computer (CI on Windows): React gets round to its scheduled work (posted to a
+    // MessagePort) a second late, longer than Undo waits for the keystrokes Puck still holds back
+    // (500 ms). The typing itself keeps its pace.
+    await page.evaluate(() => {
+      const post = MessagePort.prototype.postMessage;
+      const late = function (this: MessagePort, message: unknown) {
+        setTimeout(() => post.call(this, message), 1_000);
+      };
+      MessagePort.prototype.postMessage = late as MessagePort["postMessage"];
+      (window as { restorePostMessage?: () => void }).restorePostMessage = () => {
+        MessagePort.prototype.postMessage = post;
+      };
+    });
+    try {
+      await page.keyboard.type(" Indeed.", { delay: 20 });
+      // Puck has passed the last keystrokes on (after 50 ms), but React hasn't rendered them yet.
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      await page.keyboard.press("ControlOrMeta+z");
+      await expect(canvas().locator(".site-text")).toHaveText(STARTER_TEXT);
+    } finally {
+      await page.evaluate(() =>
+        (window as { restorePostMessage?: () => void }).restorePostMessage?.(),
+      );
+    }
+
+    await expectSteps(["Edited Text text"], "Opened page");
+    await page.keyboard.press("ControlOrMeta+Shift+z");
+    await expect(canvas().locator(".site-text")).toHaveText(`${STARTER_TEXT} Indeed.`);
+  });
+
   test("runs a second Ctrl/Cmd+Z after the first when both follow typing at once", async () => {
     // An earlier step: the heading made smaller in the Edit panel.
     const heading = canvas().locator("h1");

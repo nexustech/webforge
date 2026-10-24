@@ -22,7 +22,7 @@ for (let seq = 1; ; seq += 1) {
   });
   store.commit([
     { type: "put", id: "page:home", kind: "page", content: { seq, body: `${seq} ${FILLER}` } },
-    { type: "put", id: "progress", kind: "test", content: { seq } },
+    { type: "put", id: "menu", kind: "menu", content: { seq } },
   ]);
   // Synchronous write: the parent must see every acknowledgement sent before the kill.
   writeSync(1, `${seq}\n`);
