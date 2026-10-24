@@ -44,7 +44,7 @@ Still open in Phase 0: publishing spikes (Netlify, FTP/SFTP), signed installers 
 Current code size (approx. lines): desktop 2.7k · engine 1.6k · history 1.6k · pipeline 1.1k · site-components 1.0k · storage 0.6k · model 0.3k. `editor-ui`, `publish` and `themes` are placeholders.
 
 ## 3. Timeline
-**Total: 347 working days** (≈ 69 weeks of effort; 335 before the 22–23 Oct additions) including the 4-week beta. Baseline v1.0 (sequential, for the original 277 days, before the Phase 1 re-plan) at 100% of estimates: **19 Nov 2027**; with +25% contingency: **25 Feb 2028**.
+**Total: 350 working days** (≈ 70 weeks of effort; 335 before the 22–24 Oct additions) including the 4-week beta. Baseline v1.0 (sequential, for the original 277 days, before the Phase 1 re-plan) at 100% of estimates: **19 Nov 2027**; with +25% contingency: **25 Feb 2028**.
 
 **Re-plan, 20 Oct 2026:** Phase 1 runs in three concurrent streams (82 days of effort in about 28 working days, see [Phase 1](#phase-1-editor-core)). Phase 2–5 dates and the v1.0 date are re-planned at the Phase 1 exit review.
 
@@ -58,6 +58,8 @@ Current code size (approx. lines): desktop 2.7k · engine 1.6k · history 1.6k �
 
 **Scope change, 23 Oct 2026 (look and feel, UI6):** +6 days to copy Bootstrap Studio 9.0.1's look as far as the IP rule allows ([product/07](../research/product/07-look-and-feel-pass.md), LF-1…LF-13): a new item 1.39 (6 days, stream A after 2.9, including the nine UI5 items moved from 1.35 and 1.36) for blue selection, the flat canvas, the quick-actions bar, toolbar order, tab strips, two-column fields, one Settings dialog and the icon-only title bar; the card-grid start screen and the New Site dialog layout on 2.14 (+2 days).
 
+**Scope change, 24 Oct 2026 (component primitives):** +3 days for 2.19 ([#320](https://github.com/nexustech/webforge/issues/320)), on stream C after 2.6 and before 2.10: a section frame primitive, shared typography and button primitives, per-family string files and a `pnpm new-component` scaffold, so the remaining 13 sections and 15 elements are written once against shared primitives rather than copying Hero's frame; FAQ is brought back in line. Decided by the product owner after a review of the component package (no runtime plugin loader: the hard rules argue against one, and the library is already a registry).
+
 **Re-plan, 23 Oct 2026 (Phase 2):** Phase 2 was planned ahead of the Phase 1 exit so each stream can continue straight into it: three streams, items over 5 days split into sub-issues, Phase 1's actual pace (0.39 of estimates) applied as 0.5 for engineering and 0.7 for content. Code-complete about **26 Nov 2026** (4 Dec with +25%) after the plan review's levelling below (1 Dec and 9 Dec before it); milestone due 11 Dec 2026. See [Phase 2](#phase-2-design--components). The table below and the Gantt chart still show the baseline dates for Phases 2–5.
 
 **Re-plan, 23 Oct 2026 (plan review, C1–C7):** the [plan review](../docs/reviews/2026-10-23-plan-review.md) corrected the effort totals, sequenced the architecture review's R7–R14 in the Phase 2 queues, levelled the streams (2.11 to B, 2.7a and 2.12 to C, 2.14 earlier in B, stream A starting with 2.9 and taking 1.39 before 2.3), moved the start screen's card grid (LF-10) from 1.39 to 2.14, added 2.18 for the CSS class browser (#276) and recomputed the critical path.
@@ -66,7 +68,7 @@ Current code size (approx. lines): desktop 2.7k · engine 1.6k · history 1.6k �
 |---|---|---|---|---|---|
 | [Phase 0: Prototype (finish)](#phase-0-prototype-finish) | 11 | 26 Oct 2026 | 18 Nov 2026 | 24 Nov 2026 | Netlify and SFTP/FTPS publish spikes meet the spike criteria in research/stack/08<br>Signed NSIS and DMG builds install, and auto-update from a test feed on both OSes<br>A large page (200+ elements) stays within the editing performance budget<br>ADRs written; architecture §6 interfaces updated |
 | [Phase 1: Editor core](#phase-1-editor-core) | 128 | 22 Oct 2026 | 17 Dec 2026 | 5 Jan 2027 | Build a 3-page site from blank, close, reopen: everything restored<br>Undo-all property tests green; every edit has a meaningful label<br>Shell matches UI1 as amended by UI6 in dark and light (Storybook screenshots) |
-| [Phase 2: Design & components](#phase-2-design--components) | 108 | 2 Mar 2027 | 14 Jul 2027 | 16 Sep 2027 | Every component has stories × 3 themes × Desktop/Mobile, axe-clean (colour contrast in site themes reported, not blocking)<br>New Site from each of the 8 templates works and looks distinct<br>Theme changes restyle every component; contrast warnings work |
+| [Phase 2: Design & components](#phase-2-design--components) | 111 | 2 Mar 2027 | 14 Jul 2027 | 16 Sep 2027 | Every component has stories × 3 themes × Desktop/Mobile, axe-clean (colour contrast in site themes reported, not blocking)<br>New Site from each of the 8 templates works and looks distinct<br>Theme changes restyle every component; contrast warnings work |
 | [Phase 3: Output](#phase-3-output) | 32 | 15 Jul 2027 | 26 Aug 2027 | 10 Nov 2027 | Exported templates open from disk in Chromium, Firefox, WebKit (+ Edge on Windows) with no external requests<br>Site Check blocks only Must-fix issues on export<br>Preview CSS hot-swap < 100 ms; phone preview via QR works |
 | [Phase 4: Publish & versions](#phase-4-publish--versions) | 30 | 27 Aug 2027 | 28 Sep 2027 | 17 Dec 2027 | Publish + rollback on all targets in E2E tests (mock Netlify, local FTP/SFTP)<br>A paired AI app's edits are undoable, and the MCP server can't be reached from another computer<br>Version History: save, auto-retention, preview, restore, open as new site, republish |
 | [Phase 5: Beta hardening](#phase-5-beta-hardening) | 38 | 29 Sep 2027 | 19 Nov 2027 | 25 Feb 2028 | All performance budgets met on Windows and macOS<br>Signed, notarised builds auto-update from the production feed<br>Beta running with 10–20 users; no open Must-fix bugs |
@@ -145,6 +147,7 @@ gantt
     2.16 Component accessibility and visual regression… :t2_16, 2027-07-12, 3d
     2.17 Columns toolbar and edit-only previews :t2_17, after t2_16, 4d
     2.18 CSS class autocomplete and browser :t2_18, after t2_3, 3d
+    2.19 Component primitives and scaffolding :t2_19, after t2_6, 3d
     section Phase 3
     3.1 Pipeline API – progress events, worker, caches :crit, t3_1, 2027-07-15, 4d
     3.2 Preview server with live reload and phone prev… :t3_2, 2027-07-21, 3d
@@ -612,7 +615,7 @@ Close the visible gap to Bootstrap Studio 9.0.1 within the IP rule ([product/07]
 
 ### Phase 2: Design & components
 **Goal:** The full component catalogue (19 sections with ~45 layout variants, 17 elements), 10–12 curated themes, fonts and the 8 templates, all accessible and visually tested.  
-**Effort:** 108 days · **Scheduled:** 2 Mar 2027 → 14 Jul 2027 (baseline; 22 Oct 2026: 2.6 and 2.9 +1 day each, 2.3 +2, 2.14 +1, 2.17 added; 23 Oct: 2.9 +1, 2.14 +2, 2.18 added)  
+**Effort:** 111 days · **Scheduled:** 2 Mar 2027 → 14 Jul 2027 (baseline; 22 Oct 2026: 2.6 and 2.9 +1 day each, 2.3 +2, 2.14 +1, 2.17 added; 23 Oct: 2.9 +1, 2.14 +2, 2.18 added; 24 Oct: 2.19 added)  
 **Re-plan, 23 Oct 2026:** three streams, each starting as soon as its queue allows, Phase 1 items included (stream A takes 2.9 before 1.39). Phase 1's actuals run at 0.39 of the estimates; this plan uses 0.5 for engineering items and 0.7 for content (2.13, 2.15; risk R4). Code-complete about **26 Nov 2026** (4 Dec with +25%) after the plan review's levelling; Phase 1's exit review about 9 Nov 2026.
 
 | ID | Item | Issue | Area | Refs | Est | Depends on |
@@ -635,6 +638,7 @@ Close the visible gap to Bootstrap Studio 9.0.1 within the IP rule ([product/07]
 | 2.16 | Component accessibility and visual regression sweep | [#58](https://github.com/nexustech/webforge/issues/58) | components | standards §5, MVP §4 | 3 | 2.6, 2.7, 2.8, 2.9, 2.10, 2.11, 2.12, 2.13 |
 | 2.17 | Columns toolbar, image resize handles and edit-only previews | [#187](https://github.com/nexustech/webforge/issues/187) | components | F-ED-25, UI2, UI5, UX-6, UX-26 | 4 | 2.9, 2.6, 1.32 |
 | 2.18 | Advanced mode: CSS class autocomplete and browser | [#276](https://github.com/nexustech/webforge/issues/276) | shell | F-ED-11, UX-15 | 3 | 1.37 |
+| 2.19 | Component primitives and scaffolding: section frame, typography, buttons, per-family strings, new-component command | [#320](https://github.com/nexustech/webforge/issues/320) | components | standards §5, ADR 0005, R7, R10 | 3 | 2.5, 2.6 |
 
 **Streams (plan of 23 Oct 2026, product owner approved).** The Phase 1 stream rules carry over. PRs open as drafts and are marked ready only once `pnpm check` (and `pnpm e2e` or `pnpm visual` where needed) and the code review pass; marking a PR ready leads to its merge review and auto-merge (CLAUDE.md, spec/03 §6). Items over 5 days are split into sub-issues on GitHub.
 
@@ -642,7 +646,7 @@ Close the visible gap to Bootstrap Studio 9.0.1 within the IP rule ([product/07]
 |---|---|
 | A: Shell & panels | R9 → R10 → 2.9 → 1.39 → 2.3 (with R11) → 2.18 → 2.13a (themes 1–4) → 2.15a (Café/Restaurant, Salon/Beauty, Trades) |
 | B: Data & site | ~~2.1 → 2.2~~ → R12 → R14 → 2.4 → 2.8 → 2.7b → 2.11 → R13 → 2.14 → 2.13b (themes 5–8) → 2.15b (Consultant, Photographer/Portfolio, Shop) |
-| C: History & canvas | ~~2.5 (before 1.30)~~ → R7 → R8 → 2.6 → 2.10 → 2.7a → 2.17 → 2.12 → 2.13c (themes 9–12) → 2.16 → 2.15c (Personal/CV, Blank) |
+| C: History & canvas | ~~2.5 (before 1.30)~~ → R7 → R8 → 2.6 → 2.19 → 2.10 → 2.7a → 2.17 → 2.12 → 2.13c (themes 9–12) → 2.16 → 2.15c (Personal/CV, Blank) |
 
 **Re-plan, 23 Oct 2026 (plan review C2, C7).** The architecture review's Phase 2 items R7–R14 ([#240](https://github.com/nexustech/webforge/issues/240)–[#247](https://github.com/nexustech/webforge/issues/247), 14 days, from contingency per §10.6) are sequenced where their *blocks* links say: R7 and R8 before 2.6, R9 and R10 before 2.9, R11 with 2.3. 2.11 moved to B (it extends 2.8's form-field module and `embed` behaviour), 2.7a (Gallery and lightbox) and 2.12 to C, 2.14 earlier in B so the templates' sync point comes sooner, and stream A starts with 2.9 (its dependencies are met) and takes 1.39 before 2.3, so the Theme panel is built on the two-column field rows. The queues are then 39–40 raw days each: at the plan's pace (0.5 engineering, 0.7 content) about 22–23 working days, so code-complete about **26 Nov 2026**, about **4 Dec** with +25%, against the milestone's 11 Dec. The lever if the first component batch runs slower than 0.5 is §11's template and theme cuts.
 
@@ -786,6 +790,15 @@ The Advanced tab's CSS classes field suggests from the site's own class catalogu
 - [ ] Autocomplete offers only classes the site's CSS can produce; Enter or Tab inserts, Esc closes
 - [ ] An unknown class shows a warning, never an error, and still saves
 - [ ] Picking several suggestions is one undo step
+
+**2.19 Component primitives and scaffolding: section frame, typography, buttons, per-family strings, new-component command** (added 24 Oct 2026)  
+The library is a registry of self-describing definitions already (`defineComponent`, one render for canvas, export and stories, behaviours bundled per use); this makes new components cheap to write and hard to write differently. A `defineSection` primitive injects the padding and margin fields and renders the frame (`<section class="site-<name> …">`, background token, `sectionBox`), and Hero, Text, Text + Image, Call to action and FAQ migrate to it (FAQ gains its padding and `<section>`). `SectionTitle`, `BodyText` and `ButtonLink` primitives replace the copied title, body and button classes, giving 2.3's type scale one place to land. Component strings move to `packages/i18n/src/en/components/<family>.ts`, merged into the `components` area. `pnpm new-component <Name> --place …` writes the module, story, test stub and strings file and registers the family. `docs/components.md` records the primitives, the command and the cost of a new field kind (schema, engine, editor-ui, desktop, model, strings), so field kinds stay a deliberate vocabulary; slot-plus-child remains the way to repeat items with fields of their own (the Carousel's slides). No runtime plugin loader: the hard rules argue against one.
+
+- [ ] Every section uses the frame primitive; a test fails on a section that declares its own padding or margin field
+- [ ] One source of section-title, body-text and button classes, checked against the catalogue's rendered HTML
+- [ ] Strings per family; the i18n one-area test passes
+- [ ] `pnpm new-component` output passes `pnpm check` and renders in Storybook unchanged
+- [ ] FAQ renders as a `<section>` with padding; its screenshot updated with the PR
 
 </details>
 
