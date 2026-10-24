@@ -56,16 +56,30 @@ describe("buildSite: self-contained output (X1, C8)", () => {
     expect(index).toMatch(/<link rel="stylesheet" href="assets\/css\/site\.[0-9a-f]{10}\.css">/);
     expect(index).toMatch(/<script defer src="assets\/js\/webforge\.[0-9a-f]{10}\.js"><\/script>/);
     expect(index).toContain('<a href="about.html">About us</a>');
-    // The only absolute URLs are the user's own outbound links: in the menu and in the text.
-    expect(index.match(/(?:src|href|srcSet)="[a-z]+:/gi)).toEqual(['href="https:', 'href="https:']);
+    // The only absolute URLs are the user's own outbound links: in the menu (its row on wide
+    // screens, its menu on small ones and the Footer's columns, 2.6) and in the text.
+    expect(index.match(/(?:src|href|srcSet)="[a-z]+:/gi)).toEqual(Array(4).fill('href="https:'));
     expect(index).not.toContain('type="module"');
   });
 
-  it("styles a dropdown to open on focus without the script (F-ED-17)", () => {
-    const css = text(built, [...built.files.keys()].find((path) => path.endsWith(".css")) ?? "");
+  it("opens the menu and its dropdowns without the script: each a <details> (F-ED-17, 2.6)", () => {
+    const index = text(built, "index.html");
 
-    expect(css).toContain("focus-within");
-    expect(css).toMatch(/data-wf-ready/);
+    expect(index).toContain('<details class="site-menu md:hidden" data-wf-menu="">');
+    expect(index).toContain('<details class="site-submenu" data-wf-dropdown="">');
+    // No CSS fallback for focus is needed any more.
+    expect(text(built, fileNamed(built, /^assets\/css\//))).not.toContain("data-wf-ready");
+  });
+
+  it("keeps the sticky header's anchors in view without the script too (F-DS-6)", () => {
+    const css = text(built, fileNamed(built, /^assets\/css\//));
+
+    expect(text(built, "index.html")).toContain('data-wf-sticky=""');
+    // The header's own class sets the page's scroll padding: `:root:has(<that class>)`.
+    expect(css).toMatch(/:root:has\(\.\S*scroll-pt-20\) \{\n\s*scroll-padding-top:/);
+    expect(css).toContain("scroll-padding-top: calc(var(--spacing) * 20);");
+    expect(css).toContain(".data-scrolled\\:shadow-md");
+    expect(text(built, fileNamed(built, /^assets\/js\//))).toContain("Sticky header (F-DS-6)");
   });
 
   it("compiles readable CSS with daisyUI, the site theme, the fonts and only the classes used", () => {
@@ -74,8 +88,8 @@ describe("buildSite: self-contained output (X1, C8)", () => {
     expect(css).toContain("/*! tailwindcss v4");
     expect(css).toContain('[data-theme="cupcake"]');
     expect(css).toContain('src: url("../fonts/inter-latin-wght-normal.woff2") format("woff2");');
-    expect(css).toContain(".md\\:menu-horizontal");
-    expect(css).toContain(".data-open\\:flex");
+    expect(css).toContain(".menu-horizontal");
+    expect(css).toContain(".md\\:hidden");
     expect(css).toContain(".collapse-arrow");
     expect(css).not.toContain(".carousel");
     expect(css).not.toContain('[data-theme="dracula"]');

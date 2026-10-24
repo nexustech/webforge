@@ -182,14 +182,13 @@ describe("renderNodesToHtml", () => {
     const html = renderNodesToHtml(starterLayout("Rosa's Bakery").header, siteLibrary, context);
 
     expect(html).toContain('<a class="text-xl font-bold" href="index.html">Rosa&#x27;s Bakery</a>');
-    expect(html).toContain(
-      '<nav aria-label="Main navigation" class="[&amp;:not([data-wf-ready]):focus-within&gt;ul]:flex">',
-    );
-    expect(html).toContain('aria-controls="header-menu" data-wf-menu-toggle=""');
-    expect(html).toContain('<ul id="header-menu"');
-    expect(html).toContain('<a href="index.html" aria-current="page">Home</a>');
+    expect(html).toContain('<nav aria-label="Main navigation">');
+    // A row on wide screens; on small ones a menu that opens without the script too (2.6).
+    expect(html).toContain('<ul class="menu menu-horizontal hidden p-0 md:flex">');
+    expect(html).toContain('<details class="site-menu md:hidden" data-wf-menu="">');
+    expect(html).toContain('<span class="sr-only">Menu</span></summary>');
+    expect(html.match(/<a href="index.html" aria-current="page">Home<\/a>/g)).toHaveLength(2);
     expect(html).toContain('<a href="about.html">About</a>');
-    expect(html).toContain('<span class="sr-only">Menu</span>');
   });
 
   it("renders the menu's buttons, new tabs and dropdowns (F-ED-17)", () => {
@@ -208,11 +207,10 @@ describe("renderNodesToHtml", () => {
       ],
     });
 
-    // The dropdown: a button that says whether it is open, controlling its own list.
+    // The dropdown: a <details>, which opens and says whether it is open without the script too.
     expect(html).toContain(
-      'aria-expanded="false" aria-controls="header-menu-0" data-wf-submenu-toggle="">Visit us',
+      '<details class="site-submenu" data-wf-dropdown=""><summary>Visit us</summary><ul class="md:z-20 md:w-48"',
     );
-    expect(html).toContain('<ul id="header-menu-0" class="hidden data-open:block');
     expect(html).toContain('<a href="index.html#questions">Questions</a>');
     expect(html).toContain(
       '<a href="https://example.com/map" target="_blank" rel="noopener">Find us</a>',
@@ -220,6 +218,72 @@ describe("renderNodesToHtml", () => {
     expect(html).toContain(
       '<a href="about.html" class="btn btn-primary btn-sm md:ml-2">Order a cake</a>',
     );
+  });
+
+  it("draws the split Header's last link as a button beside the row, still in the menu (2.6)", () => {
+    const [header] = starterLayout("Bakery").header;
+    if (header === undefined) throw new Error("No Header");
+    const split: NodeDoc = { ...header, props: { ...header.props, variant: "split" } };
+
+    const html = renderNodesToHtml([split], siteLibrary, {
+      ...context,
+      navigation: [
+        { label: "Home", href: "index.html", current: false },
+        { label: "Book now", href: "about.html", current: true },
+      ],
+    });
+
+    // The button keeps saying it's the page you're on.
+    expect(html).toContain(
+      '<a href="about.html" aria-current="page" class="btn btn-primary hidden md:inline-flex">Book now</a>',
+    );
+    // Once beside the row and once in the menu on small screens: not in the row as well.
+    expect(html.match(/>Book now<\/a>/g)).toHaveLength(2);
+    expect(html.match(/>Home<\/a>/g)).toHaveLength(2);
+  });
+
+  it("puts the centred Header's site name above its menu, with no wrapper (2.6)", () => {
+    const [header] = starterLayout("Bakery").header;
+    if (header === undefined) throw new Error("No Header");
+
+    const html = renderNodesToHtml(
+      [{ ...header, props: { ...header.props, variant: "centred" } }],
+      siteLibrary,
+      context,
+    );
+
+    expect(html).toContain("md:flex-col md:justify-center");
+    expect(html).toMatch(/<header [^>]*><a class="text-xl font-bold"/);
+    expect(html).not.toContain("btn-primary hidden");
+  });
+
+  it("lists the menu's links, dropdowns' too, in the Footer's columns (2.6)", () => {
+    const html = renderNodesToHtml(
+      [{ type: "Footer", props: { id: "footer", text: "Thanks.", variant: "columns" } }],
+      siteLibrary,
+      {
+        ...context,
+        navigation: [
+          { label: "Home", href: "index.html", current: true },
+          {
+            label: "Visit us",
+            current: false,
+            children: [
+              { label: "Find us", href: "https://example.com/map", current: false, newTab: true },
+            ],
+          },
+        ],
+      },
+    );
+
+    expect(html).toContain('<nav aria-label="Footer navigation"');
+    expect(html).toContain(
+      '<a href="index.html" aria-current="page" class="link link-hover">Home</a>',
+    );
+    expect(html).toContain(
+      '<a href="https://example.com/map" class="link link-hover" target="_blank" rel="noopener">Find us</a>',
+    );
+    expect(html).not.toContain("Visit us");
   });
 
   it("links the site name to the home page, wherever it is in the navigation", () => {
@@ -642,7 +706,13 @@ describe("tree helpers", () => {
   });
 
   it("behavioursUsedBy lists the scripts the components need", () => {
-    expect(behavioursUsedBy(starterLayout("x").header, siteLibrary)).toEqual(["menu"]);
+    const [header] = starterLayout("x").header;
+    if (header === undefined) throw new Error("No Header");
+    expect(behavioursUsedBy([header], siteLibrary)).toEqual(["menu"]);
+    // Only a sticky Header needs the sticky script (2.6).
+    expect(
+      behavioursUsedBy([{ ...header, props: { ...header.props, sticky: true } }], siteLibrary),
+    ).toEqual(["menu", "sticky"]);
     expect(behavioursUsedBy(starterPage().content, siteLibrary)).toEqual([]);
   });
 });

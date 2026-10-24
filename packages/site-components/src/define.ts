@@ -16,6 +16,7 @@ import {
   textValue,
 } from "./library.js";
 import type {
+  BehaviourName,
   ComponentPlace,
   DefaultsOf,
   FieldDef,
@@ -52,7 +53,7 @@ type Fields = Readonly<Record<string, FieldDef>>;
  */
 export type ComponentSpec<F extends Fields, Variant extends string = never> = Omit<
   ComponentDef,
-  "fields" | "defaults" | "render" | "textStyle"
+  "fields" | "defaults" | "render" | "textStyle" | "behaviours"
 > & {
   readonly fields: F;
   readonly defaults: DefaultsOf<F>;
@@ -64,6 +65,13 @@ export type ComponentSpec<F extends Fields, Variant extends string = never> = Om
    * large text, 1.37).
    */
   readonly textStyle?: (values: ValuesOf<F, Variant>) => TextStyle | undefined;
+  /**
+   * The `webforge.js` behaviours it needs on the exported site: always, or as its values ask
+   * (`(values) => values.sticky ? ["menu", "sticky"] : ["menu"]`).
+   */
+  readonly behaviours?:
+    | readonly BehaviourName[]
+    | ((values: ValuesOf<F, Variant>) => readonly BehaviourName[]);
 };
 
 /** The choices of a field with a fixed set of them, if it has one. */
@@ -168,7 +176,7 @@ const EmptySlot: ComponentType = () => null;
 export function defineComponent<const F extends Fields, const Variant extends string = never>(
   spec: ComponentSpec<F, Variant> & { readonly defaults: NoInfer<DefaultsOf<F>> },
 ): ComponentDef {
-  const { variants, render, textStyle, ...def } = spec;
+  const { variants, render, textStyle, behaviours, ...def } = spec;
   const name = def.label.trim() === "" ? "A component" : `'${def.label}'`;
   function fail(problem: string): never {
     throw new Error(`${name} ${problem}`);
@@ -219,7 +227,8 @@ export function defineComponent<const F extends Fields, const Variant extends st
   for (const key of Object.keys(defaults)) {
     if (!Object.hasOwn(fields, key)) fail(`has a default for "${key}", which isn't a field`);
   }
-  for (const behaviour of def.behaviours ?? []) {
+  // Those named by a function are checked by their type (`BehaviourName`).
+  for (const behaviour of typeof behaviours === "function" ? [] : (behaviours ?? [])) {
     if (!Object.hasOwn(BEHAVIOUR_SCRIPTS, behaviour)) {
       fail(`needs the behaviour "${behaviour}", which isn't in behaviours/`);
     }
@@ -251,6 +260,14 @@ export function defineComponent<const F extends Fields, const Variant extends st
         context: props.context,
       }),
     ...(textStyle === undefined ? {} : { textStyle: (stored) => textStyle(valuesOf(stored)) }),
+    ...(behaviours === undefined
+      ? {}
+      : {
+          behaviours:
+            typeof behaviours === "function"
+              ? (stored: Readonly<Record<string, unknown>>) => behaviours(valuesOf(stored))
+              : behaviours,
+        }),
   };
 }
 

@@ -1,109 +1,91 @@
 /* webforge.js: behaviours for this site's components. Classic script, no modules. */
 
-// Header menu on small screens: the toggle button opens and closes the navigation list. Without
-// the script, CSS shows the list while the navigation has the focus (data-wf-ready turns that off).
-// Sets aria-expanded on the button and data-open on the list (the CSS shows the list when it is
-// set). Escape closes the menu and returns focus to the button; choosing a link closes it.
-// Dropdowns work the same way inside it: their button opens their list, Escape closes the
-// dropdown first, as does a click outside it, and opening one closes the others.
+// The Header's menu on small screens, and the dropdowns in its navigation: each a <details>, which
+// opens and closes with its <summary> without the script too (and with a tap on iOS), and which
+// screen readers announce as expanded or collapsed. The script adds what <details> doesn't do:
+// one dropdown open at a time; a click outside closes them, as does focus moving on past a
+// dropdown and choosing a link in the menu; Escape closes the innermost one open around the focus
+// (a dropdown before its menu) and gives its <summary> the focus back.
 (() => {
-  /**
-   * @typedef {object} Dropdown
-   * @property {HTMLLIElement} item
-   * @property {HTMLElement} toggle
-   * @property {() => boolean} isOpen
-   * @property {(open: boolean) => void} setOpen
-   */
-  /** @type {Dropdown[]} */
-  const dropdowns = [];
-  for (const toggle of document.querySelectorAll("[data-wf-submenu-toggle]")) {
-    const list = document.getElementById(toggle.getAttribute("aria-controls") || "");
-    const item = toggle.closest("li");
-    if (list === null || item === null || !(toggle instanceof HTMLElement)) {
-      continue;
-    }
-    // From here on the script opens the dropdown, not the CSS fallback for focus.
-    item.setAttribute("data-wf-ready", "");
-    /** @type {Dropdown} */
-    const dropdown = {
-      item,
-      toggle,
-      isOpen: () => toggle.getAttribute("aria-expanded") === "true",
-      setOpen: (open) => {
-        toggle.setAttribute("aria-expanded", String(open));
-        list.toggleAttribute("data-open", open);
-      },
-    };
-    dropdowns.push(dropdown);
-    // Tabbing on past its links closes it, so it doesn't stay drawn over the page.
-    item.addEventListener("focusout", (event) => {
-      if (!(event.relatedTarget instanceof Node && item.contains(event.relatedTarget))) {
-        dropdown.setOpen(false);
+  /** @type {HTMLDetailsElement[]} */
+  const menus = [...document.querySelectorAll("details[data-wf-menu]")].filter(
+    (element) => element instanceof HTMLDetailsElement,
+  );
+  /** @type {HTMLDetailsElement[]} */
+  const dropdowns = [...document.querySelectorAll("details[data-wf-dropdown]")].filter(
+    (element) => element instanceof HTMLDetailsElement,
+  );
+
+  for (const dropdown of dropdowns) {
+    dropdown.addEventListener("toggle", () => {
+      if (!dropdown.open) return;
+      for (const other of dropdowns) {
+        if (other !== dropdown) other.open = false;
       }
     });
-    toggle.addEventListener("click", () => {
-      const open = !dropdown.isOpen();
-      for (const other of dropdowns) {
-        if (other !== dropdown) other.setOpen(false);
+    // Tabbing on past its links closes it, so it doesn't stay drawn over the page.
+    dropdown.addEventListener("focusout", (event) => {
+      if (!(event.relatedTarget instanceof Node && dropdown.contains(event.relatedTarget))) {
+        dropdown.open = false;
       }
-      dropdown.setOpen(open);
     });
   }
-  // Before the menu's own Escape (capture), so Escape closes an open dropdown first.
-  document.addEventListener(
-    "keydown",
-    (event) => {
-      const open = dropdowns.find((dropdown) => dropdown.isOpen());
-      // Only while focus is in the dropdown (or nowhere): Escape elsewhere is someone else's.
-      const focus = document.activeElement;
-      const here =
-        open !== undefined &&
-        (focus === null || focus === document.body || open.item.contains(focus));
-      if (event.key === "Escape" && open !== undefined && here) {
-        event.preventDefault();
-        event.stopPropagation();
-        open.setOpen(false);
-        open.toggle.focus();
+  for (const menu of menus) {
+    menu.addEventListener("click", (event) => {
+      if (event.target instanceof Element && event.target.closest("a") !== null) {
+        menu.open = false;
       }
-    },
-    true,
-  );
+    });
+  }
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    // Only while the focus is in one (or nowhere): Escape elsewhere is someone else's.
+    const focus = document.activeElement;
+    const nowhere = focus === null || focus === document.body;
+    // In document order, a dropdown comes after the menu it is in: the last one is innermost.
+    const open = [...menus, ...dropdowns]
+      .filter((details) => details.open && (nowhere || details.contains(focus)))
+      .sort((a, b) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1));
+    const innermost = open.at(-1);
+    if (innermost === undefined) return;
+    event.preventDefault();
+    innermost.open = false;
+    innermost.querySelector("summary")?.focus();
+  });
+
   document.addEventListener("click", (event) => {
-    for (const dropdown of dropdowns) {
-      if (
-        dropdown.isOpen() &&
-        !(event.target instanceof Node && dropdown.item.contains(event.target))
-      ) {
-        dropdown.setOpen(false);
+    for (const details of [...menus, ...dropdowns]) {
+      if (details.open && !(event.target instanceof Node && details.contains(event.target))) {
+        details.open = false;
       }
     }
   });
+})();
 
-  for (const toggle of document.querySelectorAll("[data-wf-menu-toggle]")) {
-    const menu = document.getElementById(toggle.getAttribute("aria-controls") || "");
-    if (menu === null || !(toggle instanceof HTMLElement)) {
+// Sticky header (F-DS-6): once the page has scrolled 80 px, the header gets data-scrolled, which
+// its scroll style shows (shrink, a solid background, a shadow). Anchor targets aren't hidden under
+// it: the page's scroll padding follows the header's height as it changes. Without the script the
+// header is simply sticky, and its own class gives the page a fixed scroll padding.
+(() => {
+  const THRESHOLD = 80;
+  for (const header of document.querySelectorAll("[data-wf-sticky]")) {
+    if (!(header instanceof HTMLElement)) {
       continue;
     }
-    // From here on the script opens the menu, not the CSS fallback for focus.
-    toggle.closest("nav")?.setAttribute("data-wf-ready", "");
-    const isOpen = () => toggle.getAttribute("aria-expanded") === "true";
-    /** @param {boolean} open */
-    const setOpen = (open) => {
-      toggle.setAttribute("aria-expanded", String(open));
-      menu.toggleAttribute("data-open", open);
+    const root = document.documentElement;
+    const scrolled = () => {
+      header.toggleAttribute("data-scrolled", window.scrollY > THRESHOLD);
     };
-    toggle.addEventListener("click", () => setOpen(!isOpen()));
-    menu.addEventListener("click", (event) => {
-      if (event.target instanceof Element && event.target.closest("a") !== null) {
-        setOpen(false);
-      }
-    });
-    document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape" && isOpen()) {
-        setOpen(false);
-        toggle.focus();
-      }
-    });
+    const pad = () => {
+      root.style.scrollPaddingTop = `${header.offsetHeight}px`;
+    };
+    window.addEventListener("scroll", scrolled, { passive: true });
+    if (typeof ResizeObserver === "function") {
+      new ResizeObserver(pad).observe(header);
+    }
+    scrolled();
+    pad();
   }
 })();
 

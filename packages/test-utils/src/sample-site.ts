@@ -31,8 +31,19 @@ export function sampleSite(): SiteSnapshot {
     language: "en-GB",
     theme: { ...DEFAULT_THEME, preset: "cupcake" },
     layout: {
-      header: [{ type: "Header", props: { id: "header", siteName: "Rosa's Bakery" } }],
-      footer: [{ type: "Footer", props: { id: "footer", text: "© Rosa's Bakery, Hightown" } }],
+      // Sticky, with a shadow once scrolled (F-DS-6); the Footer in columns, with the menu (2.6).
+      header: [
+        {
+          type: "Header",
+          props: { id: "header", siteName: "Rosa's Bakery", sticky: true, scrollStyle: "shadow" },
+        },
+      ],
+      footer: [
+        {
+          type: "Footer",
+          props: { id: "footer", text: "© Rosa's Bakery, Hightown", variant: "columns" },
+        },
+      ],
     },
     pages: [
       {
