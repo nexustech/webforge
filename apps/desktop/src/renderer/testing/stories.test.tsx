@@ -7,7 +7,7 @@ import { panelStory } from "./stories.js";
 afterEach(cleanup);
 
 function Hello() {
-  return <p>Hello</p>;
+  return <p>Hello, panel</p>;
 }
 
 describe("panelStory (2.20, B6)", () => {
@@ -17,7 +17,7 @@ describe("panelStory (2.20, B6)", () => {
 
     const { container } = render(panelStory(register).render());
 
-    await screen.findByText("Hello");
+    await screen.findByText("Hello, panel");
     expect(container.querySelector("[data-story-state]")?.getAttribute("data-story-state")).toBe(
       "ready",
     );
