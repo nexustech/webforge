@@ -33,7 +33,7 @@
   --noise: 0;
 }
 @plugin "daisyui/theme" {
-  name: "dark-inverse";
+  name: "wf_inverse";
   default: false;
   color-scheme: light;
   --color-base-100: oklch(100% 0 0);
@@ -279,7 +279,7 @@
   --wf-color-error-900: oklch(31% 0.1455 13.428);
   --wf-color-error-950: oklch(23% 0.1164 13.428);
 }
-[data-theme="dark-inverse"] {
+[data-theme="wf_inverse"] {
   --wf-color-primary-50: oklch(97% 0.06 277.023);
   --wf-color-primary-100: oklch(94% 0.096 277.023);
   --wf-color-primary-200: oklch(88% 0.144 277.023);

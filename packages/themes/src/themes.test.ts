@@ -1,6 +1,7 @@
 import {
   COLOR_ROLES,
   DEFAULT_THEME,
+  INVERSE_THEME,
   type Oklch,
   SHADE_STEPS,
   type ThemeTokens,
@@ -18,7 +19,7 @@ import {
 } from "./colors.js";
 import { AA_LARGE, AA_TEXT, contrastIssues } from "./contrast.js";
 import { THEME_PRESETS, themePreset } from "./presets.js";
-import { inverseThemeName, oklchCss, themeCss } from "./theme-css.js";
+import { oklchCss, themeCss } from "./theme-css.js";
 
 const BLACK: Oklch = { l: 0, c: 0, h: 0 };
 const WHITE: Oklch = { l: 1, c: 0, h: 0 };
@@ -253,11 +254,11 @@ describe("themeCss (2.1)", () => {
       for (const role of COLOR_ROLES) {
         expect(css.split(`--color-${role}:`)).toHaveLength(3);
       }
-      expect(css).toContain(`name: "${inverseThemeName(theme)}";`);
+      expect(css).toContain(`name: "${INVERSE_THEME}";`);
     }
     // The light preset's inverse sections are dark.
     expect(themeCss(DEFAULT_THEME)).toMatch(
-      /name: "light-inverse";\n {2}default: false;\n {2}color-scheme: dark;/,
+      /name: "wf_inverse";\n {2}default: false;\n {2}color-scheme: dark;/,
     );
   });
 
@@ -275,7 +276,7 @@ describe("themeCss (2.1)", () => {
       );
     };
     shadeIn(':root, [data-theme="light"]', "colors");
-    shadeIn('[data-theme="light-inverse"]', "inverse");
+    shadeIn('[data-theme="wf_inverse"]', "inverse");
     expect(css).not.toContain("--color-base-100-300");
   });
 

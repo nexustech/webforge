@@ -2,7 +2,7 @@ import type { NodeDoc } from "@webforge/model";
 import { describe, expect, it } from "vitest";
 import { siteLibrary } from "./catalogue/index.js";
 import { defineComponent } from "./define.js";
-import { defineSection, PADDING_FIELD } from "./frame.js";
+import { COLORS_FIELD, defineSection, PADDING_FIELD } from "./frame.js";
 import { EDITOR_RENDER_CONTEXT } from "./library.js";
 import { renderNodesToHtml } from "./render-static.js";
 import type { RenderContext } from "./schema.js";
@@ -140,10 +140,66 @@ describe("the section frame (2.19)", () => {
       EDITOR_RENDER_CONTEXT,
     );
 
-    expect(Object.keys(band.fields)).toEqual(["padding", "margin"]);
+    expect(Object.keys(band.fields)).toEqual(["colors", "padding", "margin"]);
     expect(html).toBe(
       '<section class="site-band bg-base-200 px-4 py-16 mt-4" data-band=""><p>Inside</p></section>',
     );
+  });
+
+  it("puts a section with reversed colours on the theme's reversed colours (2.4, F-DS-3)", () => {
+    const band = (colors?: string): NodeDoc => ({
+      type: "Section",
+      props: { id: "b", ...(colors === undefined ? {} : { colors }), content: [] },
+    });
+    const html = (node: NodeDoc) => renderNodesToHtml([node], siteLibrary, EDITOR_RENDER_CONTEXT);
+
+    expect(html(band("inverse"))).toMatch(
+      /^<section class="site-section [^"]*" data-theme="wf_inverse">/,
+    );
+    // The page's colours, as every section had before 2.4: no theme of its own.
+    for (const colors of [undefined, "page", "neither"]) {
+      expect(html(band(colors))).not.toContain("data-theme");
+    }
+    // Every section in the catalogue has the option.
+    for (const [type, def] of Object.entries(siteLibrary.components)) {
+      if (def.place === "section") expect(def.fields.colors, type).toBe(COLORS_FIELD);
+    }
+  });
+
+  it.each(["id", "type", "props"])(
+    "refuses a section whose list items have a field named %s, as defineComponent does (R14)",
+    (itemField) => {
+      expect(() =>
+        defineSection({
+          label: "Plans",
+          name: "plans",
+          fields: {
+            plans: {
+              kind: "list",
+              label: "Plans",
+              itemLabel: "Plan",
+              fields: { [itemField]: { kind: "text", label: "Kind" } },
+              defaults: {},
+            },
+          },
+          defaults: { plans: [] },
+          render: () => null,
+        }),
+      ).toThrow(`'Plans' names a field of "plans"'s items "${itemField}", which items can't have`);
+    },
+  );
+
+  it("refuses a section that declares its own colours", () => {
+    expect(() =>
+      defineSection({
+        label: "Band",
+        name: "band",
+        // @ts-expect-error: the frame adds the colours.
+        fields: { colors: COLORS_FIELD },
+        defaults: {},
+        render: () => null,
+      }),
+    ).toThrow(`'Band' declares its own "colors": defineSection adds it`);
   });
 });
 
