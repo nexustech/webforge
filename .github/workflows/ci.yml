@@ -15,6 +15,10 @@ name: CI
 #   changed; on Linux they run in Playwright's container (`export-browsers`), so their system
 #   packages never come from the runners' slow Ubuntu mirror. E2E is skipped when a PR changes only
 #   unit tests, stories, screenshots or tooling.
+# - To keep runs short: E2E runs in two shards each on Windows and macOS; `export-browsers` waits
+#   only for Linux's E2E, whose exported site it opens; and the static checks (lint, typecheck,
+#   boundaries, knip, UI strings, React Compiler) run on Linux only, as they read the same source on
+#   every OS.
 #
 # Windows and macOS run only while the repository variable FULL_CI_ENABLED is `true`. Unset it
 # (`gh variable delete FULL_CI_ENABLED`) to make CI Linux-only, e.g. if the repository goes
@@ -88,7 +92,8 @@ jobs:
           printf '%s\n' "$files"
           # Here-strings, not pipes: with pipefail, `printf | grep -q` can fail when grep stops early.
           matches() { grep -Eq "$1" <<< "$files"; }
-          # Docs-only PRs run nothing else: no code, tests or stories can have changed.
+          # Docs-only PRs run nothing else: no code, tests or stories can have changed. The merge
+          # queue (merge-queue.yml's `docs_only`) uses the same rule to update them first.
           docs='^(docs|spec|research)/|\.md$'
           if ! grep -Evq "$docs" <<< "$files"; then
             echo "Only docs changed."
@@ -141,16 +146,23 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
+      # Static checks read the source, which is the same on every OS, so they run on Linux only.
+      # Windows and macOS run what can differ by OS: the licences of their own binary packages and
+      # the tests.
       - name: Lint and format (biome ci)
+        if: matrix.os == 'ubuntu-latest'
         run: pnpm lint
 
       - name: Typecheck
+        if: matrix.os == 'ubuntu-latest'
         run: pnpm typecheck
 
       - name: Package boundaries (dependency-cruiser)
+        if: matrix.os == 'ubuntu-latest'
         run: pnpm deps
 
       - name: Unused code and dependencies (knip)
+        if: matrix.os == 'ubuntu-latest'
         run: pnpm knip
 
       - name: Dependency licences (C1)
@@ -158,9 +170,11 @@ jobs:
         run: pnpm licence-check
 
       - name: No hard-coded UI strings
+        if: matrix.os == 'ubuntu-latest'
         run: pnpm ui-strings
 
       - name: React Compiler compiles every component (ADR 0010)
+        if: matrix.os == 'ubuntu-latest'
         run: pnpm react-compiler
 
       - name: Tests with coverage
@@ -178,19 +192,20 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-  e2e:
-    name: E2E (${{ matrix.os }})
+  e2e-linux:
+    # Linux runs the E2E tests in one job, which `export-browsers` waits for (it opens the site
+    # this job exports), so it starts without waiting for Windows and macOS. The steps are shared
+    # with `e2e` through the `e2e-steps` anchor.
+    name: E2E (ubuntu-latest)
     needs: changes
     if: needs.changes.outputs.e2e == 'true'
     strategy:
-      fail-fast: false
       matrix:
-        # Windows and macOS while FULL_CI_ENABLED is true (see the notes above).
-        os: ${{ fromJSON(vars.FULL_CI_ENABLED == 'true' && '["ubuntu-latest", "windows-latest", "macos-latest"]' || '["ubuntu-latest"]') }}
+        include:
+          - { os: ubuntu-latest, shard: 1, shards: 1 }
     runs-on: ${{ matrix.os }}
-    # macOS runners take about 15 minutes for the tests alone, plus setup.
     timeout-minutes: 30
-    env:
+    env: &e2e-env
       # Firefox and WebKit only when the exported site can have changed (see `changes`). On Linux
       # they run in `export-browsers` instead; Windows and macOS need no system packages, so they
       # run them here.
@@ -200,7 +215,7 @@ jobs:
       electron_config_cache: ${{ github.workspace }}/.ci-cache/electron
       # Where export.setup.ts exports the fixture site (e2e/export/exported-site.ts).
       WEBFORGE_EXPORTED_SITE_DIR: ${{ github.workspace }}/.ci-cache/exported-site
-    steps:
+    steps: &e2e-steps
       - name: Check out
         uses: actions/checkout@v7
 
@@ -342,13 +357,15 @@ jobs:
             echo "args=--project=app --project=export-setup --project=export-chromium" >> "$GITHUB_OUTPUT"
           fi
 
+      # Playwright splits the tests across the matrix's shards by file (the export setup goes with
+      # the export tests that need it): Linux runs them all in one, Windows and macOS in two.
       - name: Electron E2E tests (Linux, virtual display)
         if: runner.os == 'Linux'
-        run: xvfb-run --auto-servernum pnpm e2e ${{ steps.projects.outputs.args }}
+        run: xvfb-run --auto-servernum pnpm e2e ${{ steps.projects.outputs.args }} --shard=${{ matrix.shard }}/${{ matrix.shards }}
 
       - name: Electron E2E tests
         if: runner.os != 'Linux'
-        run: pnpm e2e ${{ steps.projects.outputs.args }}
+        run: pnpm e2e ${{ steps.projects.outputs.args }} --shard=${{ matrix.shard }}/${{ matrix.shards }}
 
       - name: Save Electron
         # The first app start downloads Electron's binary, so this runs after the tests.
@@ -372,17 +389,34 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: playwright-report-${{ matrix.os }}
+          name: playwright-report-${{ matrix.os }}-${{ matrix.shard }}
           path: e2e/playwright-report/
           if-no-files-found: ignore
           retention-days: 7
+
+  e2e:
+    # Windows and macOS, while FULL_CI_ENABLED is true (see the notes above), each in two shards
+    # that run side by side: macOS took 11–12 minutes in one job, the longest in a run.
+    name: E2E (${{ matrix.os }}, ${{ matrix.shard }}/${{ matrix.shards }})
+    needs: changes
+    if: vars.FULL_CI_ENABLED == 'true' && needs.changes.outputs.e2e == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+        shard: [1, 2]
+        shards: [2]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    env: *e2e-env
+    steps: *e2e-steps
 
   export-browsers:
     # Firefox and WebKit open the site the E2E job exported, from disk with the network blocked
     # (X1, C8). This runs in Playwright's container, which has their system packages, so nothing
     # comes from the runners' Ubuntu mirror. Only when the exported site can have changed.
     name: Exported site (Firefox, WebKit)
-    needs: [changes, e2e]
+    needs: [changes, e2e-linux]
     if: needs.changes.outputs.all-browsers == 'true'
     runs-on: ubuntu-latest
     # Keep in step with @playwright/test in e2e/package.json.
@@ -554,7 +588,7 @@ jobs:
     # job failed or was cancelled. A draft PR runs nothing, so it fails here: a draft can't merge,
     # and an earlier draft run never stands in for the run that starts when it's marked ready.
     name: CI passed
-    needs: [changes, check, e2e, export-browsers, visual, package]
+    needs: [changes, check, e2e-linux, e2e, export-browsers, visual, package]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
