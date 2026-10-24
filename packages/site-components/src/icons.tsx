@@ -1,12 +1,10 @@
 import nodes from "lucide-static/icon-nodes.json" with { type: "json" };
-import tags from "lucide-static/tags.json" with { type: "json" };
 import { createElement } from "react";
 
 /** One drawn part of an icon: an SVG element and its attributes. */
 type IconNode = readonly [tag: string, attributes: Readonly<Record<string, string>>];
 
 const ICON_NODES = nodes as unknown as Readonly<Record<string, readonly IconNode[]>>;
-const ICON_TAGS = tags as unknown as Readonly<Record<string, readonly string[]>>;
 
 /**
  * Lucide's icons (F-ED-22, PH2-4: `lucide-static`, ISC) by name ("arrow-right"), in order. The
@@ -17,10 +15,6 @@ export const ICON_NAMES: readonly string[] = Object.keys(ICON_NODES);
 /** Whether `name` is one of Lucide's icons: anything else in a file draws nothing. */
 export const isIconName = (name: unknown): name is string =>
   typeof name === "string" && Object.hasOwn(ICON_NODES, name);
-
-/** Words people search an icon by ("heart": like, love), besides its name. */
-export const iconTags = (name: string): readonly string[] =>
-  Object.hasOwn(ICON_TAGS, name) ? (ICON_TAGS[name] ?? []) : [];
 
 /**
  * Lucide icon `name` as inline SVG, as wide and high as its text unless `className` sizes it, in

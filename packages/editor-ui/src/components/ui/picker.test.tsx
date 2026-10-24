@@ -16,7 +16,12 @@ const ITEMS: readonly PickerItem[] = [
 
 /** A picker opened by a button, as a field opens it, choosing into `onChoose`. */
 function setUp(
-  props: { value?: string; layout?: "grid" | "list"; items?: readonly PickerItem[] } = {},
+  props: {
+    value?: string;
+    layout?: "grid" | "list";
+    items?: readonly PickerItem[];
+    limit?: number;
+  } = {},
 ) {
   const onChoose = vi.fn();
   function Host() {
@@ -41,6 +46,7 @@ function setUp(
           onChoose={onChoose}
           actions={<button type="button">Add new…</button>}
           emptyText="This site has no images yet."
+          {...(props.limit === undefined ? {} : { limit: props.limit })}
         />
       </>
     );
@@ -196,6 +202,30 @@ describe("Picker (UX-15)", { timeout: 15_000 }, () => {
     expect(status.textContent).toBe("1 match");
     await userEvent.keyboard("zzz");
     expect(status.textContent).toBe("Nothing matches 'cakezzz'.");
+  });
+
+  it("draws only its first matches when limited, and says a search finds the others", async () => {
+    const { opener, options } = setUp({ limit: 2 });
+    await userEvent.click(opener);
+    expect(options()).toEqual(["cake.jpg", "bread.jpg"]);
+    expect(screen.getByText("3 more aren't shown. Search to find them.")).toBeTruthy();
+
+    // End goes to the last one drawn.
+    await userEvent.keyboard("{ArrowDown}{End}");
+    expect(document.activeElement?.textContent).toBe("bread.jpg");
+
+    await userEvent.type(screen.getByRole("searchbox"), "places");
+    expect(options()).toEqual(["shop-front.jpg", "oven.jpg"]);
+    expect(screen.queryByText(/more (isn't|aren't) shown/)).toBeNull();
+  });
+
+  it("still opens on the current choice when the limit would leave it out", async () => {
+    const { opener, options } = setUp({ limit: 2, value: "oven" });
+    await userEvent.click(opener);
+    expect(options()).toEqual(["oven.jpg", "cake.jpg"]);
+    expect(screen.getByRole("option", { name: "oven.jpg" }).getAttribute("aria-selected")).toBe(
+      "true",
+    );
   });
 
   it("scrolls the current choice into view when it opens", async () => {

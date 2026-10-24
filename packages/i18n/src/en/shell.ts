@@ -17,6 +17,9 @@ export const shell = {
   // A count: plural("ui.picker.match", n) picks one or other (B10).
   "ui.picker.match.one": "{count} match",
   "ui.picker.match.other": "{count} matches",
+  // Under a picker that draws only its first matches (icons).
+  "ui.picker.more.one": "{count} more isn't shown. Search to find it.",
+  "ui.picker.more.other": "{count} more aren't shown. Search to find them.",
   "ui.picker.choose": "Choose",
   "ui.picker.cancel": "Cancel",
 
