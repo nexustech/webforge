@@ -127,6 +127,10 @@ describe("ProjectStore.collectGarbage", () => {
     reopened.close();
   });
 
+  // 25 stores, each committing and saving versions with an fsync: under 3 s on the developer's
+  // computer and on CI's Linux and macOS runners, but about 15–28 s on its Windows runners, whose
+  // disks are slow and uneven, and past the 30 s default on a busy one. Three times the slowest
+  // seen still catches a collector that has become many times slower.
   it("never removes a blob the working copy or a version refers to", () => {
     fc.assert(
       fc.property(
@@ -165,7 +169,7 @@ describe("ProjectStore.collectGarbage", () => {
       ),
       { numRuns: 25 },
     );
-  });
+  }, 90_000);
 
   it("removes nothing when a version's manifest is damaged", () => {
     const { store, path } = newStore();

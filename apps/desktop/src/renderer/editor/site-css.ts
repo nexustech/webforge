@@ -70,7 +70,8 @@ export function connectSiteCss(
   session: EditorSession,
   compile: CompileCanvasCss,
 ): Unsubscribe {
-  let requested = "";
+  /** What was last sent to compile: the theme (any token change makes a new one) and the classes. */
+  let requested: { readonly theme: unknown; readonly classes: string } | null = null;
   let timer: ReturnType<typeof setTimeout> | null = null;
   let stopped = false;
 
@@ -85,14 +86,15 @@ export function connectSiteCss(
       return;
     }
     // Any change to the theme's tokens compiles again (2.1), as a change to the classes does.
-    const key = `${JSON.stringify(site.theme)}\n${candidates.join(" ")}`;
-    if (key === requested) {
+    const classes = candidates.join(" ");
+    if (requested?.theme === site.theme && requested.classes === classes) {
       return;
     }
+    const key = { theme: site.theme, classes };
     requested = key;
     const failed = () => {
       // Try again after the next change, even if the classes stay the same.
-      if (key === requested) requested = "";
+      if (key === requested) requested = null;
     };
     compile({ theme: site.theme, candidates }).then((result) => {
       if (result.status === "failed") {

@@ -8,7 +8,7 @@ import {
 import { siteLibrary } from "@webforge/site-components";
 import { describe, expect, it } from "vitest";
 import { createEditorSession, currentPage } from "../editor/editor-session.js";
-import { selectElements, selectedIds } from "../editor/selection.js";
+import { selectedIds } from "../editor/selection.js";
 import { starterSite } from "../editor/starter-site.js";
 import {
   deleteSelected,
@@ -58,7 +58,7 @@ function setUp() {
   const page = () => currentPage(session)?.doc.content ?? [];
   const inS1 = () => ((page()[0]?.props.content ?? []) as NodeDoc[]).map((node) => node.props.id);
   const labels = () => session.history.entries().map((entry) => entry.label);
-  const select = (...ids: string[]) => selectElements(session.ui, ids);
+  const select = (...ids: string[]) => session.selectElements(ids);
   return { session, page, inS1, labels, select };
 }
 

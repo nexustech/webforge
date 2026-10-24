@@ -44,7 +44,7 @@ function setUp() {
       },
     },
   });
-  session.ui.setState({ nodeId: "a" });
+  session.select("a");
   const registry = createCommandRegistry();
   const engine = createFakeEngine();
   const beforeAction = vi.fn();
@@ -115,15 +115,15 @@ describe("registerElementCommands (1.30, F-ED-25, F-ED-27)", () => {
     const { session, engine, enabled, labels } = setUp();
     const copy = copiedNodeId("c1", "s");
 
-    session.ui.setState({ nodeId: copy });
+    session.select(copy);
     expect(enabled()).toBe(true);
     // An element of the copy's shared section, and one of the shared Header.
     for (const id of [copiedNodeId("c1", "t"), "header-logo"]) {
-      session.ui.setState({ nodeId: id });
+      session.select(id);
       expect(enabled()).toBe(false);
       engine.requestFromElement({ kind: "toggleHidden", nodeId: id });
     }
-    session.ui.setState({ nodeId: null });
+    session.select(null);
     expect(enabled()).toBe(false);
 
     expect(labels()).toEqual([]);
@@ -148,7 +148,7 @@ describe("registerElementCommands (1.30, F-ED-25, F-ED-27)", () => {
     const { session, registry, engine, notify, hidden, labels } = setUp();
     const copy = () => currentPage(session)?.doc.content[1]?.props.hidden;
 
-    session.ui.setState({ nodeId: "a", others: [copiedNodeId("c1", "s")] });
+    session.selectElements(["a", copiedNodeId("c1", "s")]);
     expect(registry.get("edit.toggleHidden")?.enabled).toBe(true);
     registry.run("edit.toggleHidden");
     expect([hidden(), copy()]).toEqual([true, true]);
@@ -156,7 +156,7 @@ describe("registerElementCommands (1.30, F-ED-25, F-ED-27)", () => {
     engine.requestFromElement({ kind: "toggleHidden", nodeId: copiedNodeId("c1", "t") });
 
     // With an element of a linked copy among them: nothing, and the reason.
-    session.ui.setState({ nodeId: "a", others: [copiedNodeId("c1", "t")] });
+    session.selectElements(["a", copiedNodeId("c1", "t")]);
     registry.run("edit.toggleHidden");
     expect(notify).toHaveBeenCalledExactlyOnceWith(
       "Elements of the shared Header or Footer, or of a shared section, are changed one at a time.",
@@ -175,10 +175,10 @@ describe("registerElementCommands (1.30, F-ED-25, F-ED-27)", () => {
     expect(rename).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ id: "a" }));
 
     for (const id of [copiedNodeId("c1", "t"), "header-logo", null]) {
-      session.ui.setState({ nodeId: id });
+      session.select(id);
       expect(renameEnabled()).toBe(false);
     }
-    session.ui.setState({ nodeId: copiedNodeId("c1", "s") });
+    session.select(copiedNodeId("c1", "s"));
     expect(renameEnabled()).toBe(true);
   });
 
@@ -206,7 +206,7 @@ describe("registerElementCommands (1.30, F-ED-25, F-ED-27)", () => {
     expect(session.history.entries().map((entry) => entry.label)).toEqual(["Added Heading"]);
 
     for (const id of [copiedNodeId("c1", "t"), "header-logo", null]) {
-      session.ui.setState({ nodeId: id });
+      session.select(id);
       expect(enabled()).toBe(false);
     }
   });
@@ -241,7 +241,7 @@ describe("registerElementCommands (1.30, F-ED-25, F-ED-27)", () => {
         props: { id: "q1", question: "When are you open?", answer: "<p>Daily. Not Sundays.</p>" },
       });
     });
-    session.ui.setState({ nodeId: "q1" });
+    session.select("q1");
 
     engine.splitText({
       nodeId: "q1",
@@ -287,7 +287,7 @@ describe("registerElementCommands (1.30, F-ED-25, F-ED-27)", () => {
 
     commands.remove();
     engine.requestFromElement({ kind: "toggleHidden", nodeId: "a" });
-    session.ui.setState({ nodeId: null });
+    session.select(null);
 
     expect(registry.get("edit.toggleHidden")).toBeUndefined();
     expect(registry.get("edit.rename")).toBeUndefined();

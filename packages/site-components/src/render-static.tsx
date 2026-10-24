@@ -8,14 +8,9 @@ import {
 } from "@webforge/model";
 import type { ComponentType, ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import {
-  type BehaviourName,
-  type ComponentDef,
-  type ComponentLibrary,
-  type RenderContext,
-  withAdvanced,
-} from "./library.js";
+import { type ComponentDef, type ComponentLibrary, withAdvanced } from "./library.js";
 import { RichText } from "./rich-text.js";
+import type { BehaviourName, RenderContext } from "./schema.js";
 
 /** A node uses a component type the library does not have (a build failure, X5). */
 export class UnknownComponentError extends Error {

@@ -72,6 +72,7 @@ import { shownLayout } from "./shared-layout.js";
 import { type CompileCanvasCss, connectSiteCss } from "./site-css.js";
 import { UndoHistoryPanel, type UndoHistoryPanelProps } from "./UndoHistoryPanel.js";
 import { installUndoToasts, undoEntry } from "./undo-toasts.js";
+import { useUi } from "./use-document.js";
 
 /** How the title bar's list of steps undoes back to one (UX-16): false if the step is gone. */
 export type UndoTo = { readonly run: (entryId: string) => boolean };
@@ -147,7 +148,7 @@ function CanvasEdges({
   readonly container: RefObject<HTMLElement | null>;
   readonly devices: readonly CustomDevice[];
 }) {
-  const viewport = useSyncExternalStore(session.ui.subscribe, () => session.ui.getState().viewport);
+  const viewport = useUi(session, (ui) => ui.viewport);
   const zoom = useSyncExternalStore(view.subscribe, () => view.getState().size?.zoom ?? 1);
   return (
     <CanvasResizeHandles
@@ -155,7 +156,7 @@ function CanvasEdges({
       width={widthOf(viewport)}
       zoom={zoom}
       devices={devices}
-      onChange={(next) => session.ui.setState({ viewport: next })}
+      onChange={(next) => session.setViewport(next)}
     />
   );
 }

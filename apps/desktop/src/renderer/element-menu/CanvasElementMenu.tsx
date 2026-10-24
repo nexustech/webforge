@@ -46,7 +46,7 @@ export function CanvasElementMenu({
       engine?.onContextMenu(({ nodeId, x, y }) => {
         opener.current = document.activeElement;
         toRename.current = null;
-        session.ui.setState({ nodeId });
+        session.select(nodeId);
         setAt({ x, y });
       }),
     [engine, session],

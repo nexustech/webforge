@@ -114,7 +114,7 @@ describe("addComponent", () => {
   it("adds with its defaults as one 'Added …' step that selects it, undone in one go", () => {
     const session = createEditorSession(siteLibrary, starterSite());
     const content = () => currentPage(session)?.doc.content ?? [];
-    session.ui.setState({ nodeId: "heading-1" });
+    session.select("heading-1");
 
     expect(addComponent(session, "Text")).toBe(true);
     expect(addComponent(session, "Hero", { index: 0 })).toBe(true);
@@ -223,7 +223,7 @@ describe("shared sections in the Add panel (F-ED-23)", () => {
   it("places a linked copy after the selected section, as one step that selects it", () => {
     const session = createEditorSession(siteLibrary, sharedSite());
     const content = () => currentPage(session)?.doc.content ?? [];
-    session.ui.setState({ nodeId: "hero" });
+    session.select("hero");
 
     expect(addSharedCopy(session, HOURS)).toBe(true);
 
@@ -246,9 +246,9 @@ describe("shared sections in the Add panel (F-ED-23)", () => {
       currentPage(session)?.doc.content.map((node) => node.props.sharedSectionId ?? node.type);
 
     addSharedCopy(session, TEAM, { index: 0 });
-    session.ui.setState({ nodeId: copiedNodeId("c1", "t") });
+    session.select(copiedNodeId("c1", "t"));
     addSharedCopy(session, TEAM);
-    session.ui.setState({ nodeId: null });
+    session.select(null);
     addSharedCopy(session, TEAM);
 
     expect(shown()).toEqual([TEAM, "Hero", "Section", HOURS, TEAM, TEAM]);

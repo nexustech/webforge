@@ -7,15 +7,24 @@
 // Dropdowns work the same way inside it: their button opens their list, Escape closes the
 // dropdown first, as does a click outside it, and opening one closes the others.
 (() => {
+  /**
+   * @typedef {object} Dropdown
+   * @property {HTMLLIElement} item
+   * @property {HTMLElement} toggle
+   * @property {() => boolean} isOpen
+   * @property {(open: boolean) => void} setOpen
+   */
+  /** @type {Dropdown[]} */
   const dropdowns = [];
   for (const toggle of document.querySelectorAll("[data-wf-submenu-toggle]")) {
     const list = document.getElementById(toggle.getAttribute("aria-controls") || "");
     const item = toggle.closest("li");
-    if (list === null || item === null) {
+    if (list === null || item === null || !(toggle instanceof HTMLElement)) {
       continue;
     }
     // From here on the script opens the dropdown, not the CSS fallback for focus.
     item.setAttribute("data-wf-ready", "");
+    /** @type {Dropdown} */
     const dropdown = {
       item,
       toggle,
@@ -72,12 +81,13 @@
 
   for (const toggle of document.querySelectorAll("[data-wf-menu-toggle]")) {
     const menu = document.getElementById(toggle.getAttribute("aria-controls") || "");
-    if (menu === null) {
+    if (menu === null || !(toggle instanceof HTMLElement)) {
       continue;
     }
     // From here on the script opens the menu, not the CSS fallback for focus.
     toggle.closest("nav")?.setAttribute("data-wf-ready", "");
     const isOpen = () => toggle.getAttribute("aria-expanded") === "true";
+    /** @param {boolean} open */
     const setOpen = (open) => {
       toggle.setAttribute("aria-expanded", String(open));
       menu.toggleAttribute("data-open", open);

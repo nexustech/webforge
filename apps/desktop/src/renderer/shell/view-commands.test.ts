@@ -25,7 +25,11 @@ describe("registerViewCommands (F-ED-27)", () => {
     const registry = createCommandRegistry({ mac: false });
     const ui = createStore<{ viewport: Viewport }>()(() => ({ viewport: "desktop" }));
     const view = createCanvasView();
-    const remove = registerViewCommands(registry, ui, view);
+    const remove = registerViewCommands(
+      registry,
+      { setViewport: (viewport) => ui.setState({ viewport }) },
+      view,
+    );
     return { registry, ui, view, remove };
   };
 
