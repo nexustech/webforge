@@ -589,7 +589,7 @@ test.describe("exported site from disk", () => {
     await expect(newsletter.getByRole("button", { name: "Sign up" })).toBeEnabled();
     // Without an address the form would post to this page and lose the message: it can't send.
     await expect(unset).not.toHaveAttribute("action");
-    await expect(unset).toHaveAttribute("data-wf-form-unset", "");
+    await expect(unset).toHaveAttribute("data-wf-form-unset", "noAddress");
     await expect(unset.getByRole("button", { name: "Sign up" })).toBeDisabled();
     // Labelled fields; the honeypot is there but hidden from visitors.
     await expect(contact.getByLabel("Email address")).toHaveAttribute("type", "email");

@@ -1,8 +1,9 @@
 import { t } from "@webforge/i18n";
 import type { ReactNode } from "react";
-import { FormField, type FormTarget, formAction, SiteForm } from "../form.js";
+import { FormField, type FormTarget, formAction, httpsAddress, SiteForm } from "../form.js";
 import { defineSection } from "../frame.js";
 import type { ComponentDef } from "../library.js";
+import type { FormUnset } from "../schema.js";
 import { BodyText, SectionTitle } from "../typography.js";
 
 const FORM_LAYOUTS = ["stacked", "split"] as const;
@@ -52,21 +53,6 @@ function FormSection({
   );
 }
 
-/**
- * A web address a form can post to: `https://` only, so a visitor's details never go unencrypted,
- * and never a `javascript:` address. `undefined` for anything else.
- */
-export function formAddress(value: unknown): string | undefined {
-  const text = plainText(value);
-  if (text === undefined) return undefined;
-  try {
-    const url = new URL(text);
-    return url.protocol === "https:" ? url.href : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
 /** A field name a newsletter service may use (`EMAIL`, `fields[email]`); `email` for any other. */
 export function emailFieldName(value: unknown): string {
   const text = plainText(value);
@@ -74,9 +60,10 @@ export function emailFieldName(value: unknown): string {
 }
 
 /** Where a Newsletter posts: its own form address, if it is an `https://` one. */
-function newsletterTarget(value: unknown): FormTarget | undefined {
-  const action = formAddress(value);
-  return action === undefined ? undefined : { action, hidden: {} };
+function newsletterTarget(value: unknown): FormTarget | FormUnset {
+  const action = httpsAddress(value);
+  if (action !== undefined) return { action, hidden: {} };
+  return plainText(value) === undefined ? "noAddress" : "insecure";
 }
 
 /**
@@ -112,7 +99,7 @@ const contactForm = defineSection({
           target={formAction(context.formService)}
           label={t("siteText.form.contact")}
           submitLabel={plainText(values.buttonLabel) ?? t("starter.contactFormButton")}
-          unsetHint={context.emptyFormService}
+          hint={context.formHint}
         >
           <FormField
             kind="text"
@@ -181,7 +168,7 @@ const newsletter = defineSection({
     emailName: "email",
   },
   frame: () => "bg-base-200",
-  render: ({ id, values }) => (
+  render: ({ id, values, context }) => (
     <FormSection
       layout={values.variant}
       title={values.title}
@@ -189,6 +176,7 @@ const newsletter = defineSection({
       form={
         <SiteForm
           target={newsletterTarget(values.action)}
+          hint={context.formHint}
           label={t("siteText.form.newsletter")}
           submitLabel={plainText(values.buttonLabel) ?? t("starter.newsletterButton")}
         >

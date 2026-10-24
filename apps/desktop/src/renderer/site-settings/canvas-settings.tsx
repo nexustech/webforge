@@ -42,7 +42,7 @@ export function connectCanvasSettings(
       openingHours: shown.contact.openingHours,
       language: shown.general.language,
       ...(shown.forms.service === undefined ? {} : { formService: shown.forms.service }),
-      emptyFormService: hint(t("site.binding.empty.formService")),
+      formHint: (reason) => hint(t(`site.binding.formHint.${reason}`)),
     });
   };
   show();

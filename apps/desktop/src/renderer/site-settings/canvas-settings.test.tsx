@@ -66,9 +66,11 @@ describe("connectCanvasSettings", () => {
     const first = bindingsGiven(engine.setSettings, 0);
     expect(first.language).toBe(session.history.document.getState().settings.general.language);
     expect(first.formService).toBeUndefined();
-    expect(renderToStaticMarkup(first.emptyFormService)).toContain(
+    expect(renderToStaticMarkup(first.formHint("noService"))).toContain(
       "Choose where submissions go in Site Settings",
     );
+    expect(renderToStaticMarkup(first.formHint("insecure"))).toContain("must start with https://");
+    expect(renderToStaticMarkup(first.formHint("netlify"))).toContain("Netlify Forms");
 
     const settings = session.history.document.getState().settings;
     const service = { kind: "formspree" as const, formId: "xyzAbc12" };

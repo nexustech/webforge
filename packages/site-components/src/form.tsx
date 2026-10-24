@@ -1,6 +1,7 @@
 import { t } from "@webforge/i18n";
 import type { FormService } from "@webforge/model";
 import type { ReactNode } from "react";
+import type { FormUnset } from "./schema.js";
 import { BUTTON_CLASSES } from "./typography.js";
 
 /**
@@ -141,16 +142,31 @@ export type FormTarget = {
 };
 
 /**
+ * `value` as an address a form may post to: `https://` only, so a visitor's details never travel
+ * unencrypted, and never a `javascript:` address. `undefined` for anything else. The one check for
+ * the Newsletter's address and a custom form service's.
+ */
+export function httpsAddress(value: unknown): string | undefined {
+  if (typeof value !== "string" || value.trim() === "") return undefined;
+  try {
+    const url = new URL(value.trim());
+    return url.protocol === "https:" ? url.href : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * Where Site Settings' form service takes a form's submissions (F-CM-1, B3): a plain HTML POST to
- * its address, with any field it needs. `undefined` without a service, or for Netlify Forms, which
- * the Netlify publisher adds (3.7, 4.2). 3.7 extends this with each service's own honeypot name and
- * its thank-you page.
+ * its address, with any field it needs, or why there's nowhere to send: no service, Netlify Forms
+ * (which the Netlify publisher adds, 3.7, 4.2), or a custom address that isn't `https://`. 3.7
+ * extends this with each service's own honeypot name and its thank-you page.
  *
  * FormSubmit's address is the owner's email address, which is then in the page for anyone to read;
  * FormSubmit gives a random alias instead once the address is confirmed, which Site Check (3.7)
  * suggests using.
  */
-export function formAction(service: FormService | undefined): FormTarget | undefined {
+export function formAction(service: FormService | undefined): FormTarget | FormUnset {
   switch (service?.kind) {
     case "formspree":
       return { action: `https://formspree.io/f/${service.formId}`, hidden: {} };
@@ -162,49 +178,56 @@ export function formAction(service: FormService | undefined): FormTarget | undef
       };
     case "formsubmit":
       return { action: `https://formsubmit.co/${encodeURIComponent(service.email)}`, hidden: {} };
-    case "custom":
-      return { action: service.url, hidden: {} };
+    case "custom": {
+      const action = httpsAddress(service.url);
+      return action === undefined ? "insecure" : { action, hidden: {} };
+    }
+    case "netlify":
+      return "netlify";
     default:
-      return undefined;
+      return "noService";
   }
 }
 
 /**
  * A form that posts its fields to `target`, a form service (F-CM-1, F-CM-6): plain HTML, no
- * script, the honeypot included. Without one it still draws, so the person sees it while choosing
- * a service, but has no `action` and its button is disabled: it would post to the page itself, and
- * a static host would answer with an error page and lose the visitor's message. It is marked
- * `data-wf-form-unset`, for Site Check (3.7); `unsetHint` says on the canvas what to do.
+ * script, the honeypot included. When `target` says why there's nowhere to send, the form still
+ * draws, so the person sees it while setting it up, but has no `action` and its button is
+ * disabled: it would post to the page itself, and a static host would answer with an error page
+ * and lose the visitor's message. It is marked `data-wf-form-unset` with the reason, for Site
+ * Check (3.7); `hint` says on the canvas what to do.
  */
 export function SiteForm({
   target,
   label,
   submitLabel,
-  unsetHint,
+  hint,
   children,
   className,
 }: {
-  readonly target: FormTarget | undefined;
+  readonly target: FormTarget | FormUnset;
   /** What the form is for, for screen readers ("Contact form"). */
   readonly label: string;
   readonly submitLabel: string;
-  /** What the form shows without a target: a hint on the canvas, nothing in the export. */
-  readonly unsetHint?: ReactNode;
+  /** What a form that can't send shows: a hint on the canvas (`formHint`), nothing in the export. */
+  readonly hint?: ((reason: FormUnset) => ReactNode) | undefined;
   readonly children: ReactNode;
   readonly className?: string;
 }) {
-  const hidden = target?.hidden ?? {};
+  const unset = typeof target === "string" ? target : undefined;
+  const hidden = typeof target === "string" ? {} : target.hidden;
+  const shownHint = unset === undefined ? undefined : hint?.(unset);
   return (
     <form
       className={`site-form space-y-4${className === undefined ? "" : ` ${className}`}`}
       method="post"
       acceptCharset="UTF-8"
       aria-label={label}
-      {...(target === undefined ? { "data-wf-form-unset": "" } : { action: target.action })}
+      {...(typeof target === "string"
+        ? { "data-wf-form-unset": target }
+        : { action: target.action })}
     >
-      {target === undefined && unsetHint !== undefined && unsetHint !== null && (
-        <p className="text-sm">{unsetHint}</p>
-      )}
+      {shownHint !== undefined && shownHint !== null && <p className="text-sm">{shownHint}</p>}
       {Object.entries(hidden).map(([name, value]) => (
         <input key={name} type="hidden" name={name} value={value} />
       ))}
@@ -214,7 +237,7 @@ export function SiteForm({
       <button
         type="submit"
         className={BUTTON_CLASSES.primary}
-        {...(target === undefined ? { disabled: true } : {})}
+        {...(unset === undefined ? {} : { disabled: true })}
       >
         {submitLabel}
       </button>

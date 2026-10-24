@@ -1,12 +1,17 @@
 import { t } from "@webforge/i18n";
-import type { NodeDoc } from "@webforge/model";
+import {
+  expandSharedCopies,
+  type NodeDoc,
+  SHARED_COPY_TYPE,
+  type SharedSectionId,
+} from "@webforge/model";
 import { Window } from "happy-dom";
 import { afterAll, describe, expect, it } from "vitest";
 import { HONEYPOT_NAME } from "../form.js";
 import { EDITOR_RENDER_CONTEXT } from "../library.js";
 import { renderNodesToHtml } from "../render-static.js";
 import type { RenderContext } from "../schema.js";
-import { emailFieldName, formAddress } from "./forms.js";
+import { emailFieldName } from "./forms.js";
 import { siteLibrary } from "./index.js";
 
 const happy = new Window();
@@ -24,22 +29,7 @@ const newsletter = (props: Record<string, unknown> = {}): NodeDoc => ({
   props: { id: "news", ...siteLibrary.components.Newsletter?.defaults, ...props },
 });
 
-describe("formAddress and emailFieldName", () => {
-  it("lets a form post only to an https address", () => {
-    expect(formAddress(" https://example.us1.list-manage.com/subscribe/post?u=1&id=2 ")).toBe(
-      "https://example.us1.list-manage.com/subscribe/post?u=1&id=2",
-    );
-    for (const value of [
-      "",
-      "http://example.com/signup",
-      "javascript:alert(1)",
-      "example.com",
-      5,
-    ]) {
-      expect(formAddress(value)).toBeUndefined();
-    }
-  });
-
+describe("emailFieldName", () => {
   it("keeps a field name a service may use, and falls back to email", () => {
     for (const name of ["EMAIL", "email", "fields[email]", "member.email"]) {
       expect(emailFieldName(name)).toBe(name);
@@ -77,11 +67,21 @@ describe("Newsletter signup (F-CM-6)", () => {
     expect(form?.querySelector("button")?.textContent).toBe("Join");
   });
 
-  it("posts nowhere without an https address", () => {
-    for (const action of ["", "http://example.com/signup", "javascript:alert(1)"]) {
-      expect(drawn(newsletter({ action })).querySelector("form")?.hasAttribute("action")).toBe(
-        false,
-      );
+  it("can't send without an https address, and the canvas says why", () => {
+    const canvas: RenderContext = {
+      ...EDITOR_RENDER_CONTEXT,
+      formHint: (reason) => <em>{`hint:${reason}`}</em>,
+    };
+    for (const [action, reason] of [
+      ["", "noAddress"],
+      ["http://example.com/signup", "insecure"],
+      ["javascript:alert(1)", "insecure"],
+    ]) {
+      const form = drawn(newsletter({ action }), canvas).querySelector("form");
+      expect(form?.hasAttribute("action")).toBe(false);
+      expect(form?.getAttribute("data-wf-form-unset")).toBe(reason);
+      expect(form?.querySelector("button")?.hasAttribute("disabled")).toBe(true);
+      expect(form?.querySelector("em")?.textContent).toBe(`hint:${reason}`);
     }
   });
 
@@ -138,14 +138,52 @@ describe("Contact form (F-CM-1)", () => {
 
     const canvas = drawn(contactForm(), {
       ...EDITOR_RENDER_CONTEXT,
-      emptyFormService: <em>Choose where submissions go</em>,
+      formHint: (reason) => <em>{`hint:${reason}`}</em>,
     });
-    expect(canvas.querySelector("form em")?.textContent).toBe("Choose where submissions go");
-    // Netlify Forms comes with its publisher (3.7): until then, no service.
-    expect(
-      drawn(contactForm(), { ...EDITOR_RENDER_CONTEXT, formService: { kind: "netlify" } })
-        .querySelector("form")
-        ?.hasAttribute("data-wf-form-unset"),
-    ).toBe(true);
+    expect(canvas.querySelector("form em")?.textContent).toBe("hint:noService");
+  });
+
+  it("can't send with Netlify Forms (3.7) or a custom address that isn't https, and says why", () => {
+    const hinted = (formService: NonNullable<RenderContext["formService"]>) =>
+      drawn(contactForm(), {
+        ...EDITOR_RENDER_CONTEXT,
+        formService,
+        formHint: (reason) => <em>{`hint:${reason}`}</em>,
+      }).querySelector("form");
+
+    const netlify = hinted({ kind: "netlify" });
+    expect(netlify?.getAttribute("data-wf-form-unset")).toBe("netlify");
+    expect(netlify?.querySelector("em")?.textContent).toBe("hint:netlify");
+    const insecure = hinted({ kind: "custom", url: "http://forms.example.com/in" });
+    expect(insecure?.hasAttribute("action")).toBe(false);
+    expect(insecure?.getAttribute("data-wf-form-unset")).toBe("insecure");
+    expect(insecure?.querySelector("button")?.hasAttribute("disabled")).toBe(true);
+    expect(insecure?.querySelector("em")?.textContent).toBe("hint:insecure");
+  });
+});
+
+describe("forms in linked copies (F-ED-23)", () => {
+  it("give each copy's fields ids of their own, so two copies on a page don't clash", () => {
+    const shared = {
+      ["shared-contact" as SharedSectionId]: {
+        id: "shared-contact" as SharedSectionId,
+        name: "Contact",
+        section: contactForm(),
+      },
+    };
+    const copy = (id: string): NodeDoc => ({
+      type: SHARED_COPY_TYPE,
+      props: { id, sharedSectionId: "shared-contact" },
+    });
+    const host = happy.document.createElement("div");
+    host.innerHTML = renderNodesToHtml(
+      expandSharedCopies([copy("c1"), copy("c2")], shared),
+      siteLibrary,
+      EDITOR_RENDER_CONTEXT,
+    );
+
+    const ids = [...host.querySelectorAll("[id]")].map((element) => element.id);
+    expect(ids.length).toBeGreaterThan(4);
+    expect(new Set(ids).size).toBe(ids.length);
   });
 });

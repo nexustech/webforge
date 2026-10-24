@@ -203,9 +203,16 @@ export type SiteBindings = {
   readonly language?: string;
   /** Where Site Settings send form submissions (F-CM-1, 2.8), if a service is chosen. */
   readonly formService?: FormService;
-  /** What a form shows without a service: a hint on the canvas; nothing in the export. */
-  readonly emptyFormService?: ReactNode;
+  /** What a form that can't send shows, by why: a hint on the canvas; nothing in the export. */
+  readonly formHint?: (reason: FormUnset) => ReactNode;
 };
+
+/**
+ * Why a form has nowhere to send to (2.8): no form service chosen in Site Settings, Netlify Forms
+ * (which its publisher adds, 3.7), an address that isn't `https://`, or a Newsletter without its
+ * form address.
+ */
+export type FormUnset = "noService" | "netlify" | "insecure" | "noAddress";
 
 /** What a component may need from outside its own props while rendering. */
 export type RenderContext = SiteBindings & {

@@ -8,7 +8,7 @@ export type OpeningHoursLine = {
   /** When it opens and closes, as stored (`HH:MM`): for `<time datetime>`. */
   readonly opens: string;
   readonly closes: string;
-  /** The same, as the site's language writes a time: "09:00" in en-GB, "9:00 AM" in en-US. */
+  /** The same, as the site's language writes a time: "9:00" in en-GB, "9:00 AM" in en-US. */
   readonly opensText: string;
   readonly closesText: string;
 };

@@ -2,7 +2,7 @@ import { Window } from "happy-dom";
 import type { ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterAll, describe, expect, it } from "vitest";
-import { FormField, formAction, HONEYPOT_NAME, SiteForm } from "./form.js";
+import { FormField, formAction, HONEYPOT_NAME, httpsAddress, SiteForm } from "./form.js";
 
 const happy = new Window();
 afterAll(() => happy.happyDOM.close());
@@ -114,22 +114,27 @@ describe("SiteForm (F-CM-1, F-CM-6, B6)", () => {
     });
   });
 
-  it("without a service, posts nowhere, is marked for Site Check, and shows the hint", () => {
+  it("with nowhere to send, posts nowhere, is marked for Site Check, and shows the hint", () => {
     const form = drawn(
-      <SiteForm target={undefined} label="Form" submitLabel="Send" unsetHint={<em>Choose one</em>}>
+      <SiteForm
+        target="noService"
+        label="Form"
+        submitLabel="Send"
+        hint={(reason) => <em>{`Choose one (${reason})`}</em>}
+      >
         {null}
       </SiteForm>,
     ).querySelector("form");
 
     // No action: a form without one would post to the page itself.
     expect(form?.hasAttribute("action")).toBe(false);
-    expect(form?.hasAttribute("data-wf-form-unset")).toBe(true);
+    expect(form?.getAttribute("data-wf-form-unset")).toBe("noService");
     // Nothing to send to: the button can't send the visitor's message into an error page.
     expect(form?.querySelector("button")?.hasAttribute("disabled")).toBe(true);
-    expect(form?.querySelector("em")?.textContent).toBe("Choose one");
+    expect(form?.querySelector("em")?.textContent).toBe("Choose one (noService)");
     // The export has no hint.
     const exported = drawn(
-      <SiteForm target={undefined} label="Form" submitLabel="Send">
+      <SiteForm target="noService" label="Form" submitLabel="Send">
         {null}
       </SiteForm>,
     ).querySelector("form");
@@ -159,8 +164,27 @@ describe("formAction (F-CM-1, B3)", () => {
     });
   });
 
-  it("has no address without a service, or for Netlify Forms, which its publisher adds (3.7)", () => {
-    expect(formAction(undefined)).toBeUndefined();
-    expect(formAction({ kind: "netlify" })).toBeUndefined();
+  it("says why there's nowhere to send: no service, Netlify Forms (3.7), or no https", () => {
+    expect(formAction(undefined)).toBe("noService");
+    expect(formAction({ kind: "netlify" })).toBe("netlify");
+    // A custom address must be https, so a visitor's message never travels unencrypted.
+    expect(formAction({ kind: "custom", url: "http://forms.example.com/in" })).toBe("insecure");
+  });
+});
+
+describe("httpsAddress", () => {
+  it("lets a form post only to an https address", () => {
+    expect(httpsAddress(" https://example.us1.list-manage.com/subscribe/post?u=1&id=2 ")).toBe(
+      "https://example.us1.list-manage.com/subscribe/post?u=1&id=2",
+    );
+    for (const value of [
+      "",
+      "http://example.com/signup",
+      "javascript:alert(1)",
+      "example.com",
+      5,
+    ]) {
+      expect(httpsAddress(value)).toBeUndefined();
+    }
   });
 });
