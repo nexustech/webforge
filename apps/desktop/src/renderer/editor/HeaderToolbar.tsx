@@ -14,7 +14,7 @@ const MOBILE_MENU = "mobileMenu";
  * *Show mobile menu* (UX-26): a toggle that shows the Header's small-screen menu open on the
  * canvas, to see and select what's in it. Only the canvas shows it; the site doesn't change.
  */
-export function MobileMenuToggle({
+function MobileMenuToggle({
   pressed,
   onChange,
 }: {
