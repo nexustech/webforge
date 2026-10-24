@@ -209,4 +209,9 @@ describe("the List element (2.9)", () => {
     );
     expect(render("List", { items, style: "plain" })).toContain("list-none space-y-2");
   });
+
+  it("stays a list for Safari's screen reader without markers", () => {
+    expect(render("List", { items, style: "plain" })).toMatch(/^<ul class="[^"]*" role="list">/);
+    expect(render("List", { items })).not.toContain('role="list"');
+  });
 });

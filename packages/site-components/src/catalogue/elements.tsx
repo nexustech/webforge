@@ -342,7 +342,8 @@ const list = defineComponent({
         <Items />
       </ol>
     ) : (
-      <ul className={className}>
+      // Safari and VoiceOver drop a list's semantics once its markers are gone: say it is one.
+      <ul className={className} role={values.style === "plain" ? "list" : undefined}>
         <Items />
       </ul>
     );

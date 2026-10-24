@@ -294,18 +294,40 @@ describe("copy and paste (1.25)", () => {
       expect(site(session).media).toEqual({});
     });
 
-    it("adds to Media, and says so, when nothing selected takes an image", async () => {
+    it("puts one image in an Image element of its own when nothing selected takes one (2.9)", async () => {
       const session = createEditorSession(siteLibrary, starterSite());
       const notify = vi.fn();
       select(session, "heading-1");
 
-      await pasteElements(session, media([photo]), notify);
+      expect(await pasteElements(session, media([photo]), notify)).toBe(true);
+
+      const placed = sectionContent(session)[1];
+      expect(sectionContent(session).map((node) => node.type)).toEqual([
+        "Heading",
+        "Image",
+        "Text",
+      ]);
+      expect(placed?.props.image).toEqual({ mediaId: photo.id });
+      expect(site(session).media[photo.id]).toMatchObject({ fileName: "shop.jpg" });
+      expect(session.ui.getState().nodeId).toBe(placed?.props.id);
+      expect(labels(session).at(-1)).toBe("Pasted image 'shop.jpg'");
+      expect(notify).not.toHaveBeenCalled();
+
+      session.history.undo();
+      expect(sectionContent(session).map((node) => node.type)).toEqual(["Heading", "Text"]);
+      expect(site(session).media).toEqual({});
+    });
+
+    it("adds several images and files to Media, and says so", async () => {
+      const session = createEditorSession(siteLibrary, starterSite());
+      const notify = vi.fn();
+      select(session, "heading-1");
+
       await pasteElements(session, media([{ ...photo, id: "two" as MediaId }, prices]), notify);
 
-      expect(Object.keys(site(session).media)).toEqual(["photo", "two", "prices"]);
+      expect(Object.keys(site(session).media)).toEqual(["two", "prices"]);
       expect(sectionContent(session).map((node) => node.type)).toEqual(["Heading", "Text"]);
       expect(notify.mock.calls.map(([message]) => message)).toEqual([
-        "Added 'shop.jpg' to Media",
         "Added 2 images and files to Media",
       ]);
     });
