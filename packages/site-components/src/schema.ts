@@ -201,6 +201,8 @@ export type RenderContext = {
   readonly setting: (key: BindableSetting) => string | undefined;
   /** What an empty binding shows instead: a hint on the canvas; nothing in the export. */
   readonly emptySetting?: (key: BindableSetting) => ReactNode;
+  /** What an Image without its image shows instead (2.9): a hint on the canvas; nothing in the export. */
+  readonly emptyImage?: () => ReactNode;
 };
 
 /**

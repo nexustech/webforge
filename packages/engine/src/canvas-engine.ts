@@ -282,9 +282,13 @@ export interface CanvasEngine {
   setSiteCss(css: string, bodyClass: string): void;
   /**
    * Shows the site's Media images on the canvas (1.16): `image` turns a placed image's media id
-   * into an image to show, or `null`. Called again when Media changes; the page is drawn again.
+   * into an image to show, or `null`; `emptyImage` is what an Image element without its image shows
+   * instead (2.9, a hint). Called again when Media changes; the page is drawn again.
    */
-  setImages(image: (mediaId: string) => ResolvedImage | null): void;
+  setImages(
+    image: (mediaId: string) => ResolvedImage | null,
+    emptyImage?: RenderContext["emptyImage"],
+  ): void;
   /**
    * Lets the app pick links in rich text (F-ED-3, F-ED-18): the format toolbar's Link button calls
    * `picker` with the link at the caret, if any, and sets what it resolves to on the selected text

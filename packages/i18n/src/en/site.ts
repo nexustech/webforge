@@ -50,6 +50,7 @@ export const site = {
   "site.media.deleteDialog.cancel": "Cancel",
   "site.media.deleteDialog.confirm": "Delete",
   "site.media.removedImage": "Image deleted from Media",
+  "site.media.emptyImage": "No image yet: choose one in the Edit panel",
   "site.media.pastedImage": "Pasted image",
   "site.media.fileSize": "{width} × {height} px",
   "site.media.documentFacts": "{type}, {size}",

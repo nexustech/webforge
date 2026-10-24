@@ -62,6 +62,12 @@ const library: ComponentLibrary = {
         </ul>
       ),
     },
+    Pic: {
+      label: "Pic",
+      fields: {},
+      defaults: {},
+      render: ({ context }) => <p className="t-pic">{context.emptyImage?.() ?? "none"}</p>,
+    },
   },
 };
 
@@ -490,6 +496,23 @@ describe("createPuckEngine", () => {
     );
     await settle();
     expect(headings()).toEqual(["0123"]);
+  });
+
+  it("shows what an element without its image shows, as the app says (2.9)", async () => {
+    const pic = () => element.querySelector(".t-pic")?.textContent;
+    await act(async () => {
+      engine.setImages(
+        () => null,
+        () => "Choose one",
+      );
+      engine.applyChange({ page: { ...page, content: [{ type: "Pic", props: { id: "p" } }] } });
+    });
+    await settle();
+    expect(pic()).toBe("Choose one");
+
+    await act(async () => engine.setImages(() => null));
+    await settle();
+    expect(pic()).toBe("none");
   });
 
   it("shows the site's navigation, drawing the page again when it changes (1.21)", async () => {
