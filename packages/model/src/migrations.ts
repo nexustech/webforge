@@ -15,8 +15,18 @@ export class SiteFormatError extends WebforgeError<SiteFormatErrorCode> {
   /** The document's format version, when it had a readable one. */
   readonly formatVersion: number | undefined;
 
-  constructor(code: SiteFormatErrorCode, message: string, formatVersion?: number) {
-    super(code, code === "invalid" ? "site.openFailed.damaged" : "site.openFailed.newer", message);
+  constructor(
+    code: SiteFormatErrorCode,
+    message: string,
+    formatVersion?: number,
+    options?: ErrorOptions,
+  ) {
+    super(
+      code,
+      code === "invalid" ? "site.openFailed.damaged" : "site.openFailed.newer",
+      message,
+      options,
+    );
     this.formatVersion = formatVersion;
   }
 }
@@ -264,8 +274,8 @@ export function migrateSiteWith(raw: unknown, options: MigrateOptions): RawSite 
     // A deep copy (site documents are JSON), so migrations may change what they get without
     // touching the caller's data.
     site = JSON.parse(JSON.stringify(raw)) as RawSite;
-  } catch {
-    throw new SiteFormatError("invalid", "The site is not JSON", version);
+  } catch (cause) {
+    throw new SiteFormatError("invalid", "The site is not JSON", version, { cause });
   }
   while (version < options.currentVersion) {
     const step = options.migrations[version];
@@ -274,9 +284,12 @@ export function migrateSiteWith(raw: unknown, options: MigrateOptions): RawSite 
     }
     try {
       site = step(site);
-    } catch {
-      // A step meets data its version should never have had, e.g. a hand-edited file.
-      throw new SiteFormatError("invalid", `Migration from format ${version} failed`, version);
+    } catch (cause) {
+      // A step meets data its version should never have had, e.g. a hand-edited file. The cause
+      // tells that apart from a bug in the step, in the local crash report.
+      throw new SiteFormatError("invalid", `Migration from format ${version} failed`, version, {
+        cause,
+      });
     }
     if (site.formatVersion !== version + 1) {
       throw new SiteFormatError(
@@ -300,9 +313,12 @@ export function migrateSite(raw: unknown): SiteDoc {
     return migrateAndValidate(raw);
   } catch (error) {
     // Anything else a malformed file can cause (a RangeError from code that recurses, R14) is
-    // an invalid site too, never a raw error.
+    // an invalid site too, never a raw error. The cause stays for the local crash report: a bug
+    // in this build reads differently from a bad file there.
     if (error instanceof SiteFormatError) throw error;
-    throw new SiteFormatError("invalid", "The site could not be read");
+    throw new SiteFormatError("invalid", "The site could not be read", undefined, {
+      cause: error,
+    });
   }
 }
 

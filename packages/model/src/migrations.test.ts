@@ -298,14 +298,16 @@ describe("migrateSiteWith", () => {
         migrateSiteWith({ formatVersion: 1 }, { migrations: { 1: stuck }, currentVersion: 2 }),
       ).message,
     ).toBe("Migration from format 1 did not bump it");
+    const bug = new TypeError("site.pages is undefined");
     const failing: SiteMigration = () => {
-      throw new TypeError("site.pages is undefined");
+      throw bug;
     };
-    expect(
-      formatError(() =>
-        migrateSiteWith({ formatVersion: 1 }, { migrations: { 1: failing }, currentVersion: 2 }),
-      ).message,
-    ).toBe("Migration from format 1 failed");
+    const failed = formatError(() =>
+      migrateSiteWith({ formatVersion: 1 }, { migrations: { 1: failing }, currentVersion: 2 }),
+    );
+    expect(failed.message).toBe("Migration from format 1 failed");
+    // What the step threw stays, so a bug in it reads differently from a bad file.
+    expect(failed.cause).toBe(bug);
   });
 });
 
@@ -398,6 +400,24 @@ describe("migrateSite with a malformed file (R14)", () => {
     }
   });
 
+  it("keeps what else went wrong as the cause of an invalid site", () => {
+    // Code that throws while reading a file, here a key list that can't be read.
+    const boom = new RangeError("boom");
+    const unreadable = new Proxy(
+      { formatVersion: SITE_FORMAT_VERSION },
+      {
+        ownKeys() {
+          throw boom;
+        },
+      },
+    );
+
+    const error = formatError(() => migrateSite(unreadable));
+
+    expect(error.code).toBe("invalid");
+    expect(error.cause).toBe(boom);
+  });
+
   it("opens a site nested as deeply as a page plausibly is", () => {
     const site = migrateSite(withContent(v5Site, [nested(40)], SITE_FORMAT_VERSION));
 
@@ -415,9 +435,22 @@ describe("migrateSite with a malformed file (R14)", () => {
       );
       expect(error.code).toBe("invalid");
     }
-    // A plain list of values that aren't nodes is no slot: it stays the component's to check.
-    const list = { type: "Faq", props: { id: "f", items: [{ question: "Open?" }] } };
-    expect(() => migrateSite(withContent(v5Site, [list], SITE_FORMAT_VERSION))).not.toThrow();
+    // A plain list of values that aren't nodes is no slot: it stays the component's to check,
+    // even when an item has a field called `type` (a social link's network, a plan's kind).
+    const lists = [
+      { type: "Faq", props: { id: "f", items: [{ id: "q1", question: "Open?" }] } },
+      {
+        type: "Plans",
+        props: {
+          id: "p",
+          items: [
+            { id: "a", type: "x" },
+            { id: "b", type: 5 },
+          ],
+        },
+      },
+    ];
+    expect(() => migrateSite(withContent(v5Site, lists, SITE_FORMAT_VERSION))).not.toThrow();
   });
 });
 

@@ -70,11 +70,13 @@ export const nodeAdvancedSchema: z.ZodType<NodeAdvanced> = z.strictObject({
 
 /**
  * Whether `value` is a slot: an array in a node's props holding nodes (a Section's `content`). Any
- * object in it with a `type` counts, so a broken node can't pass as a plain list item.
+ * object in it with `props` counts, so a broken node (`{ type: 5, props: null }`) can't pass as a
+ * plain list item. A list field's items never have `props` (`defineComponent` refuses such a
+ * field), so an item with a field called `type` is still a list item.
  */
 const isSlot = (value: unknown): value is readonly unknown[] =>
   Array.isArray(value) &&
-  value.some((item) => typeof item === "object" && item !== null && "type" in item);
+  value.some((item) => typeof item === "object" && item !== null && "props" in item);
 
 /**
  * A node as files and IPC carry it, with every node in its slots at any depth (R14). Props are

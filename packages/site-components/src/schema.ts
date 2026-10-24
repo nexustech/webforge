@@ -107,7 +107,7 @@ export type FieldDef = {
       readonly label: string;
       /** What one item is called, already translated: "Testimonial". */
       readonly itemLabel: string;
-      /** Each item's fields. Never named `id`, `type` or `props`: see {@link ListItem}. */
+      /** Each item's fields, never named `id`, `type` or `props` (`defineComponent` refuses them). */
       readonly fields: Readonly<Record<string, ListItemFieldDef>>;
       /** A new item's values. */
       readonly defaults: Readonly<Record<string, unknown>>;

@@ -180,6 +180,12 @@ const EmptySlot: ComponentType = () => null;
  *
  * `variants` add the layout choice described at {@link ComponentSpec}.
  */
+/**
+ * Names a list field's items can't give a field: `id` is the item's own, and `type` and `props`
+ * would make it look like an element, so a site holding it would no longer open (R14).
+ */
+const RESERVED_ITEM_FIELDS: ReadonlySet<string> = new Set(["id", "type", "props"]);
+
 export function defineComponent<const F extends Fields, const Variant extends string = never>(
   spec: ComponentSpec<F, Variant> & { readonly defaults: NoInfer<DefaultsOf<F>> },
 ): ComponentDef {
@@ -208,6 +214,14 @@ export function defineComponent<const F extends Fields, const Variant extends st
     defaults = { [VARIANT_FIELD]: first.value, ...defaults };
   }
   for (const [fieldName, field] of Object.entries(fields)) {
+    if (field.kind === "list") {
+      // An item with one of these would read as an element, or lose its id (ListItem).
+      for (const itemField of Object.keys(field.fields)) {
+        if (RESERVED_ITEM_FIELDS.has(itemField)) {
+          fail(`names a field of "${fieldName}"'s items "${itemField}", which items can't have`);
+        }
+      }
+    }
     const style =
       field.group === "style" || (field.group === undefined && TOKEN_KINDS.has(field.kind));
     if (style && !TOKEN_KINDS.has(field.kind)) {
