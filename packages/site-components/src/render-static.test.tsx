@@ -439,12 +439,18 @@ describe("renderNodesToHtml", () => {
     it("sets the text over the image, which fills the section with its focal point in view", () => {
       const html = heroIn("background");
 
-      expect(html).toContain('<section class="site-hero hero min-h-[28rem] bg-neutral');
+      expect(html).toContain(
+        '<section class="site-hero hero relative min-h-[28rem] overflow-hidden',
+      );
       expect(html).toContain('sizes="100vw"');
-      expect(html).toContain('class="h-full w-full object-cover" style="object-position:30% 50%"');
+      expect(html).toContain(
+        'class="absolute inset-0 h-full w-full object-cover" style="object-position:30% 50%"',
+      );
       // The overlay comes after the image, the text after both: drawn in that order.
-      expect(html.indexOf("<picture>")).toBeLessThan(html.indexOf("hero-overlay"));
-      expect(html).toContain('<div class="hero-content max-w-6xl text-neutral-content text-left">');
+      expect(html.indexOf("<picture>")).toBeLessThan(html.indexOf("bg-neutral/70"));
+      expect(html).toContain(
+        '<div class="hero-content relative max-w-6xl text-neutral-content text-left">',
+      );
     });
 
     it("shows text only, leaving out an image it was given", () => {

@@ -84,20 +84,25 @@ const hero = defineComponent({
       </div>
     );
     if (layout === "background") {
-      // The image fills the section behind a dark overlay; the text is set on the overlay.
+      // The image fills the whole section, its padding too, behind a dark overlay; the text is set
+      // on the overlay.
       return (
-        <section className={`site-hero hero min-h-[28rem] bg-neutral ${sectionBox(values)}`}>
+        <section
+          className={`site-hero hero relative min-h-[28rem] overflow-hidden bg-neutral ${sectionBox(values)}`}
+        >
           {image !== null && (
             <Picture
               image={image}
               alt={alt}
               sizes="100vw"
               eager
-              className="h-full w-full object-cover"
+              className="absolute inset-0 h-full w-full object-cover"
             />
           )}
-          <div className="hero-overlay bg-neutral/70" />
-          <div className={`hero-content max-w-6xl text-neutral-content ${aligned}`}>{copy}</div>
+          <div className="absolute inset-0 bg-neutral/70" />
+          <div className={`hero-content relative max-w-6xl text-neutral-content ${aligned}`}>
+            {copy}
+          </div>
         </section>
       );
     }
