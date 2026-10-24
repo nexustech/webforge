@@ -192,7 +192,7 @@ export const SocialLinks: Story = {
       { type: "SocialLinks", props: { id: "social" } },
       {
         type: "SocialLinks",
-        props: { id: "social-large", size: "large", color: "primary", alignment: "center" },
+        props: { id: "social-large", size: "large", color: "primary", alignment: "centre" },
       },
     ]),
   },
