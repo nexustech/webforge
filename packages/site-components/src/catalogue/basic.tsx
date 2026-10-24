@@ -5,12 +5,9 @@ import {
   boxClasses,
   type ComponentDef,
   colorClass,
-  type FieldDef,
-  optionValue,
   responsiveClasses,
-  slotComponent,
-  textValue,
 } from "../library.js";
+import type { FieldDef } from "../schema.js";
 
 const SIZES = ["large", "medium", "small"] as const;
 const HEADING_TAG = { large: "h1", medium: "h2", small: "h3" } as const;
@@ -24,24 +21,24 @@ const HEADING_CLASS = {
 export const SECTION_PADDING = { top: 16, right: 4, bottom: 16, left: 4 } as const;
 
 /** A section's padding, per side and device (1.32). */
-export const PADDING_FIELD: FieldDef = {
+export const PADDING_FIELD = {
   kind: "box",
   label: t("field.padding"),
   property: "padding",
   responsive: true,
-};
+} as const satisfies FieldDef;
 
 /**
  * A margin above and below, per device (1.32). A section's left and right stay `auto`, centring
  * it, and an element's are its section's padding.
  */
-export const MARGIN_FIELD: FieldDef = {
+export const MARGIN_FIELD = {
   kind: "box",
   label: t("field.margin"),
   property: "margin",
   responsive: true,
   sides: ["top", "bottom"],
-};
+} as const satisfies FieldDef;
 
 /** The margin classes of a {@link MARGIN_FIELD} value, after a space; nothing when unset. */
 export function marginClasses(value: unknown): string {
@@ -81,17 +78,14 @@ const section = defineComponent({
     content: { kind: "slot", label: t("field.content"), accepts: "element" },
   },
   defaults: { gap: "medium", fullWidth: false, content: [] },
-  render: (props) => {
-    const Content = slotComponent(props, "content");
-    const padding = boxClasses(props.values.padding, "padding", SECTION_PADDING);
-    const gap = responsiveClasses<string>(
-      props.values.gap,
-      (value) => GAP_CLASS[optionValue(value, ["medium", ...GAPS])],
-    );
-    const width = props.values.fullWidth === true ? "" : "max-w-4xl ";
+  render: ({ values, slots }) => {
+    const Content = slots.content;
+    const padding = boxClasses(values.padding, "padding", SECTION_PADDING);
+    const gap = responsiveClasses(values.gap, (value) => GAP_CLASS[value]);
+    const width = values.fullWidth ? "" : "max-w-4xl ";
     return (
       <section
-        className={`site-section mx-auto ${width}${gap} ${padding}${marginClasses(props.values.margin)}`}
+        className={`site-section mx-auto ${width}${gap} ${padding}${marginClasses(values.margin)}`}
       >
         <Content />
       </section>
@@ -131,9 +125,9 @@ const heading = defineComponent({
   },
   defaults: { text: t("element.heading"), size: "medium", color: "default" },
   // Its level, which its size sets.
-  textStyle: (values) => HEADING_TAG[optionValue(values.size, SIZES)],
+  textStyle: (values) => HEADING_TAG[values.size],
   render: ({ values, context }) => {
-    const size = optionValue(values.size, SIZES);
+    const size = values.size;
     const Tag = HEADING_TAG[size];
     const colour = colorClass("text", values.color);
     const content = boundText(values, "text", context);
@@ -163,7 +157,7 @@ const text = defineComponent({
     <div
       className={`site-text text-lg leading-relaxed [&_a]:underline [&_p+p]:mt-4${marginClasses(values.margin)}`}
     >
-      {textValue(values.text)}
+      {values.text}
     </div>
   ),
 });

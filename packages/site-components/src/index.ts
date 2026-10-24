@@ -3,22 +3,10 @@ export { siteLibrary, starterLayout, starterNotFoundPage, starterPage } from "./
 export type { ComponentSpec } from "./define.js";
 export { createLibrary, defineComponent } from "./define.js";
 export type {
-  BehaviourName,
   ComponentDef,
   ComponentLibrary,
-  ComponentPlace,
   ComponentRenderProps,
-  FieldDef,
-  FieldOption,
-  ImageSource,
   LinkAttributes,
-  ListItem,
-  ListItemFieldDef,
-  NavGroup,
-  NavItem,
-  NavLink,
-  RenderContext,
-  ResolvedImage,
 } from "./library.js";
 export {
   BOX_CLASS_SAFELIST,
@@ -47,3 +35,23 @@ export {
   walkNodes,
 } from "./render-static.js";
 export { sanitizeRichText } from "./rich-text.js";
+export type {
+  BehaviourName,
+  ComponentPlace,
+  DefaultsOf,
+  FieldDef,
+  FieldOption,
+  FieldValue,
+  ImageSource,
+  ListItem,
+  ListItemFieldDef,
+  NavGroup,
+  NavItem,
+  NavLink,
+  RenderContext,
+  RenderPropsOf,
+  ResolvedImage,
+  SlotNames,
+  StoredValue,
+  ValuesOf,
+} from "./schema.js";
