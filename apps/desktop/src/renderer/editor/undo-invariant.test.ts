@@ -193,14 +193,14 @@ const faqList = (() => {
 })();
 
 /** Changes the questions of the shown page's first FAQ, as the Edit panel's list does. */
-function faqEdit(ctx: Ctx, change: (keys: readonly string[]) => ListChange) {
+function faqEdit(ctx: Ctx, change: (ids: readonly string[]) => ListChange) {
   const { pageId } = ctx.session.ui.getState();
   ctx.session.edit("props", "Changed FAQ questions", (draft) => {
     const page = draft.pages[pageId]?.doc;
     const faq = page === undefined ? undefined : nodesOf(page).find((x) => x.type === "Faq");
     const items = faq?.props.items;
     if (Array.isArray(items)) {
-      applyListChange(items, change(listItems(items, faqList).map((item) => item.key)), faqList);
+      applyListChange(items, change(listItems(items, faqList).map((item) => item.id)), faqList);
     }
   });
 }
@@ -467,17 +467,17 @@ const commands: fc.Arbitrary<Command>[] = [
     .map(({ op, at, to, text }) => ({
       name: `faq ${op} ${at} ${to} "${text}"`,
       run: (ctx) =>
-        faqEdit(ctx, (keys): ListChange => {
-          const key = keys[at % Math.max(keys.length, 1)] ?? "none";
+        faqEdit(ctx, (ids): ListChange => {
+          const id = ids[at % Math.max(ids.length, 1)] ?? "none";
           switch (op) {
             case "add":
               return { type: "add" };
             case "move":
-              return { type: "move", key, to: to % Math.max(keys.length, 1) };
+              return { type: "move", id, to: to % Math.max(ids.length, 1) };
             case "remove":
-              return { type: "remove", key };
+              return { type: "remove", id };
             default:
-              return { type: "edit", key, name: "question", value: text };
+              return { type: "edit", id, name: "question", value: text };
           }
         }),
     })),

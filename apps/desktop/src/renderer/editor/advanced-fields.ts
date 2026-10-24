@@ -1,4 +1,4 @@
-import type { EditPanelField, ListChange, ListItemValue } from "@webforge/editor-ui";
+import type { EditPanelField, ListChange, ListItem } from "@webforge/editor-ui";
 import { type MessageKey, t } from "@webforge/i18n";
 import {
   anchorIdSchema,
@@ -115,7 +115,7 @@ export function advancedFields(
       ],
       // Keyed by position: an attribute keeps its row while its name is edited.
       value: attributes.map(
-        ([name, value], index): ListItemValue => ({ key: String(index), values: { name, value } }),
+        ([name, value], index): ListItem => ({ id: String(index), name, value }),
       ),
     },
   ];
@@ -127,7 +127,7 @@ function withAttributeChange(
   change: ListChange,
 ): Record<string, string> {
   const entries = Object.entries(attributes ?? {});
-  const index = change.type === "add" ? -1 : Number(change.key);
+  const index = change.type === "add" ? -1 : Number(change.id);
   const entry = entries[index];
   switch (change.type) {
     case "add":

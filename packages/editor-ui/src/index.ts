@@ -9,15 +9,19 @@ export type {
   OptionGroup,
 } from "./components/edit/edit-panel.js";
 export { EditPanel } from "./components/edit/edit-panel.js";
+export { FieldRenderersProvider } from "./components/edit/field-context.js";
 export type {
+  FieldChoice,
+  FieldKind,
   FieldRenderer,
   FieldRendererProps,
+  FieldRenderers,
   FieldSpec,
   ListChange,
+  ListItem,
   ListItemFieldSpec,
-  ListItemValue,
-} from "./components/edit/field-registry.js";
-export { fieldRenderer, registerFieldRenderer } from "./components/edit/field-registry.js";
+  PlainFieldKind,
+} from "./components/edit/field-spec.js";
 export { ListField } from "./components/edit/list-field.js";
 export { SelectField } from "./components/edit/select-field.js";
 export { SliderField } from "./components/edit/slider-field.js";

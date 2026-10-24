@@ -1,0 +1,118 @@
+import type { ComponentType } from "react";
+
+/** One choice a field offers, its label already translated. */
+export type FieldChoice = { readonly label: string; readonly value: string };
+
+/** Nothing besides the label and help: a kind whose renderer needs nothing more. */
+type Nothing = Readonly<Record<never, never>>;
+
+/**
+ * What each kind of field's renderer needs besides its label and help (R11): the app maps its own
+ * definitions (`FieldDef`) to these, so a `select` renderer always gets its options.
+ */
+type FieldSpecs = {
+  readonly text: {
+    /** Shown while the field is empty, already translated. */
+    readonly placeholder?: string;
+    /**
+     * Why a value isn't acceptable (translated), or undefined if it is. The field then reports its
+     * text only when the user is done with it, and only if it is acceptable.
+     */
+    readonly validate?: (value: string) => string | undefined;
+  };
+  readonly select: { readonly options: readonly FieldChoice[] };
+  readonly toggle: Nothing;
+  /** Its steps, smallest first. */
+  readonly slider: { readonly steps: readonly FieldChoice[] };
+  readonly color: { readonly options: readonly FieldChoice[] };
+  readonly spacing: { readonly options: readonly FieldChoice[] };
+  /** The spacing tokens, and the sides it sets in order (top, right, bottom, left). */
+  readonly box: {
+    readonly options: readonly FieldChoice[];
+    readonly sides: readonly FieldChoice[];
+  };
+  readonly list: {
+    /** What one item is called ("Testimonial"), already translated. */
+    readonly itemLabel: string;
+    /** The fields of each item. */
+    readonly itemFields: readonly ListItemFieldSpec[];
+    /** The order of the items means nothing (attributes), so they can't be moved. */
+    readonly orderless?: boolean;
+  };
+  /** Drawn by the app: where a link goes (1.19). */
+  readonly link: Nothing;
+  /** Drawn by the app: a Media image and its alt text (1.16). */
+  readonly image: Nothing;
+};
+
+/** A kind of field: the renderer that draws it. */
+export type FieldKind = keyof FieldSpecs;
+
+/** The kinds an item of a list can have: plain values. */
+export type PlainFieldKind = "text" | "select" | "toggle" | "slider" | "color" | "spacing";
+
+/**
+ * What a field renderer needs to know about its field, by its kind (`FieldSpec<"select">`, or any
+ * kind). The label and help are already translated.
+ */
+export type FieldSpec<K extends FieldKind = FieldKind> = {
+  readonly [P in K]: {
+    readonly kind: P;
+    readonly label: string;
+    /**
+     * A sentence shown under the control: what the field does that its label can't say. The
+     * control is described by it (`aria-describedby`).
+     */
+    readonly help?: string;
+  } & FieldSpecs[P];
+}[K];
+
+/** One field of a list item. */
+export type ListItemFieldSpec = FieldSpec<PlainFieldKind> & { readonly name: string };
+
+/**
+ * One item of a list's value, as the site keeps it (`ListItem`): its id, which stays with it when
+ * the list is reordered, and its values.
+ */
+export type ListItem = { readonly id: string } & Readonly<Record<string, unknown>>;
+
+/**
+ * What a `list` renderer reports through `onChange` (F-ED-6): one change to the list, so the app
+ * can record it as one labelled step ("Added Testimonial").
+ */
+export type ListChange =
+  | { readonly type: "add" }
+  | { readonly type: "move"; readonly id: string; readonly to: number }
+  | { readonly type: "remove"; readonly id: string }
+  | { readonly type: "edit"; readonly id: string; readonly name: string; readonly value: unknown };
+
+/** Props a field renderer gets, for a field of kind `K`. */
+export type FieldRendererProps<K extends FieldKind = FieldKind> = {
+  /** Unique within the panel; the control's DOM id, so its label points at it. */
+  readonly id: string;
+  /** The label's DOM id, for controls a `<label for>` can't name (groups): `aria-labelledby`. */
+  readonly labelId: string;
+  /** The DOM id of the field's help text, if it has one: the control's `aria-describedby`. */
+  readonly helpId?: string;
+  readonly field: FieldSpec<K>;
+  readonly value: unknown;
+  /**
+   * The value changed. Called on every keystroke of a text field and every step of a slider drag,
+   * once per choice elsewhere. A `list` reports a {@link ListChange} instead of the new value.
+   */
+  onChange(value: unknown): void;
+  /**
+   * The user is done with the field: it lost focus, a slider was let go, a choice was made. A run
+   * of changes (typing, a drag) ends here.
+   */
+  onCommit(): void;
+};
+
+/** A field renderer: draws one field's control. */
+export type FieldRenderer<K extends FieldKind = FieldKind> = ComponentType<FieldRendererProps<K>>;
+
+/**
+ * The renderer for each kind (1.14): the Edit panel's built-in ones, and the app's own for the
+ * kinds it draws (link, image) or draws its way (colour). A kind without one isn't shown.
+ */
+export type FieldRenderers = { readonly [K in FieldKind]?: FieldRenderer<K> };

@@ -1,8 +1,8 @@
 import {
   Button,
+  type FieldRenderer,
   type FieldRendererProps,
   fieldControlClass,
-  registerFieldRenderer,
   SwatchField,
   type SwatchOption,
   ToggleGroup,
@@ -170,12 +170,12 @@ export function ColourField({
   session,
   advanced = false,
   textStyles,
-}: FieldRendererProps & ColourFieldContext) {
+}: FieldRendererProps<"color"> & ColourFieldContext) {
   const theme = useDocument(session, (site) => site.theme);
   const shadeLabelId = useId();
   const opacityId = useId();
   const customId = useId();
-  const options = (field.options ?? []).map((option) => option.value);
+  const options = field.options.map((option) => option.value);
   const ref = readRef(value);
   const base = baseKey(ref, options);
   const hex = ref !== undefined && "hex" in ref.base ? ref.base.hex : undefined;
@@ -189,7 +189,7 @@ export function ColourField({
   const withOpacity = (next: ColorRef): ColorRef =>
     ref?.opacity === undefined ? next : { ...next, opacity: ref.opacity };
 
-  const swatches: SwatchOption[] = (field.options ?? []).map((option) => {
+  const swatches: SwatchOption[] = field.options.map((option) => {
     const optionRole = roleOfOption(option.value);
     if (optionRole === undefined) return option;
     const name = ROLE_NAMES[optionRole];
@@ -349,22 +349,20 @@ export function ColourField({
 }
 
 /**
- * Makes the Edit panel draw colour fields with {@link ColourField}, in Advanced mode while
- * `preferences` say so: registered once, it follows the editor level (R9). Returns the function
- * that takes it away.
+ * The Edit panel's renderer for colour fields (R11): {@link ColourField}, in Advanced mode while
+ * `preferences` say so. Made once, it follows the editor level (R9).
  */
-export function registerColourField({
+export function colourFieldRenderer({
   preferences,
   ...context
 }: Omit<ColourFieldContext, "advanced"> & {
   readonly preferences: ReadonlyStore<EditorPreferences>;
-}): () => void {
-  function SessionColourField(props: FieldRendererProps) {
+}): FieldRenderer<"color"> {
+  return function SessionColourField(props: FieldRendererProps<"color">) {
     const advanced = usePreferences(
       preferences,
       (state) => state.preferences.editorLevel === "advanced",
     );
     return <ColourField {...props} {...context} advanced={advanced} />;
-  }
-  return registerFieldRenderer("color", SessionColourField);
+  };
 }
