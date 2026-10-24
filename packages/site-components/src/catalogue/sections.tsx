@@ -1,14 +1,6 @@
 import { t } from "@webforge/i18n";
-import { imageValueSchema } from "@webforge/model";
 import { defineComponent } from "../define.js";
-import {
-  boxClasses,
-  type ComponentDef,
-  linkAttributes,
-  optionValue,
-  slotComponent,
-  textValue,
-} from "../library.js";
+import { boxClasses, type ComponentDef, linkAttributes } from "../library.js";
 import { Picture } from "../picture.js";
 import { MARGIN_FIELD, marginClasses, PADDING_FIELD, SECTION_PADDING } from "./basic.js";
 
@@ -40,10 +32,10 @@ const hero = defineComponent({
     alignment: "centre",
   },
   render: ({ values, context }) => {
-    const centred = optionValue(values.alignment, ALIGNMENTS) === "centre";
-    const placed = imageValueSchema.safeParse(values.image);
-    const image = placed.success ? context.image(placed.data.mediaId) : null;
-    const buttonLabel = textValue(values.buttonLabel);
+    const centred = values.alignment === "centre";
+    const placed = values.image;
+    const image = placed === undefined ? null : context.image(placed.mediaId);
+    const buttonLabel = values.buttonLabel;
     const buttonLink = linkAttributes(values.buttonLink, context);
     return (
       <section
@@ -55,16 +47,16 @@ const hero = defineComponent({
           {image !== null && (
             <Picture
               image={image}
-              alt={placed.data?.alt ?? image.alt}
+              alt={placed?.alt ?? image.alt}
               sizes="(min-width: 1024px) 50vw, 100vw"
               eager
               className="h-auto w-full max-w-xl rounded-box shadow-lg"
             />
           )}
           <div className="max-w-xl">
-            <h1 className="text-4xl font-bold md:text-5xl">{textValue(values.title)}</h1>
-            <p className="py-6 text-lg">{textValue(values.text)}</p>
-            {buttonLabel !== null && buttonLabel !== "" && (
+            <h1 className="text-4xl font-bold md:text-5xl">{values.title}</h1>
+            <p className="py-6 text-lg">{values.text}</p>
+            {buttonLabel !== "" && (
               <a className="btn btn-primary" {...buttonLink}>
                 {buttonLabel}
               </a>
@@ -87,11 +79,11 @@ const faq = defineComponent({
     margin: MARGIN_FIELD,
   },
   defaults: { title: t("starter.faqTitle"), items: [] },
-  render: (props) => {
-    const Items = slotComponent(props, "items");
+  render: ({ values, slots }) => {
+    const Items = slots.items;
     return (
-      <div className={`site-faq space-y-4${marginClasses(props.values.margin)}`}>
-        <h2 className="text-3xl font-bold">{textValue(props.values.title)}</h2>
+      <div className={`site-faq space-y-4${marginClasses(values.margin)}`}>
+        <h2 className="text-3xl font-bold">{values.title}</h2>
         <div className="space-y-2">
           <Items />
         </div>
@@ -111,8 +103,8 @@ const faqItem = defineComponent({
   defaults: { question: t("starter.faqQuestion"), answer: `<p>${t("starter.faqAnswer")}</p>` },
   render: ({ values }) => (
     <details className="site-faq-item collapse-arrow collapse border border-base-300 bg-base-100">
-      <summary className="collapse-title font-semibold">{textValue(values.question)}</summary>
-      <div className="collapse-content [&_p+p]:mt-2">{textValue(values.answer)}</div>
+      <summary className="collapse-title font-semibold">{values.question}</summary>
+      <div className="collapse-content [&_p+p]:mt-2">{values.answer}</div>
     </details>
   ),
 });
