@@ -440,7 +440,7 @@ describe("renderNodesToHtml", () => {
       const html = heroIn("background");
 
       expect(html).toContain(
-        '<section class="site-hero hero relative min-h-[28rem] overflow-hidden',
+        '<section class="site-hero relative flex min-h-[28rem] items-center justify-center',
       );
       expect(html).toContain('sizes="100vw"');
       expect(html).toContain(
