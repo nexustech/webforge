@@ -1,4 +1,4 @@
-import type { ImageMeta, MediaId, SiteDoc } from "@webforge/model";
+import type { SiteDoc } from "@webforge/model";
 import { DEFAULT_THEME } from "@webforge/model";
 import { createFakeEngine } from "@webforge/test-utils/renderer";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -37,18 +37,6 @@ function setup(
   return { session, engine, compile, stop, reply, edit };
 }
 
-const photo: ImageMeta = {
-  id: "photo" as MediaId,
-  hash: "a".repeat(64),
-  name: "shop",
-  fileName: "shop.jpg",
-  kind: "image",
-  mimeType: "image/jpeg",
-  width: 1600,
-  height: 1000,
-  alt: "Our shop",
-};
-
 const firstHeading = (draft: SiteDoc) => {
   const home = draft.pages[draft.homePageId];
   const section = home?.doc.content[0];
@@ -80,7 +68,6 @@ describe("siteClasses", () => {
   it("collects an Image's classes as the canvas shows it, with or without its picture (#371)", () => {
     const session = sessionWith();
     session.history.run("Added Images", (draft) => {
-      draft.media[photo.id] = photo;
       const section = draft.pages[draft.homePageId]?.doc.content[0];
       const content = section?.props.content;
       if (!Array.isArray(content)) throw new Error("no section");
@@ -88,16 +75,24 @@ describe("siteClasses", () => {
         { type: "Image", props: { id: "empty", width: "small", alignment: "centre" } },
         {
           type: "Image",
-          props: { id: "placed", image: { mediaId: photo.id }, width: "large", alignment: "right" },
+          props: { id: "placed", image: { mediaId: "photo" }, width: "large", alignment: "right" },
         },
       );
     });
 
     const classes = siteClasses(session.history.document.getState(), session);
 
-    // The hint's frame and the empty Image's width; the placed Image's width and alignment.
+    // The hint's frame and the empty Image's width; the placed Image's picture, width and
+    // alignment, whatever its image (one not in Media here).
     expect(classes).toEqual(
-      expect.arrayContaining(["site-image", "aspect-video", "max-w-xs", "max-w-2xl", "ml-auto"]),
+      expect.arrayContaining([
+        "site-image",
+        "aspect-video",
+        "max-w-xs",
+        "h-auto",
+        "max-w-2xl",
+        "ml-auto",
+      ]),
     );
   });
 

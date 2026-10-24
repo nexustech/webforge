@@ -3,10 +3,11 @@ import type { NodeDoc, SiteDoc } from "@webforge/model";
 import {
   BOX_CLASS_SAFELIST,
   EDITOR_RENDER_CONTEXT,
+  type RenderContext,
+  type ResolvedImage,
   renderNodesToHtml,
 } from "@webforge/site-components";
 import type { CanvasCssRequest, CanvasCssResult } from "../../shared/ipc/canvas.js";
-import { canvasImageParts } from "../media/canvas-images.js";
 import type { EditorSession } from "./editor-session.js";
 
 /** Compiles canvas CSS; in the app, `window.webforge.canvas.compileCss`. */
@@ -16,14 +17,33 @@ export type CompileCanvasCss = (request: CanvasCssRequest) => Promise<CanvasCssR
 export const SITE_CSS_DEBOUNCE_MS = 300;
 
 /**
- * The classes of each list of nodes rendered so far, with each version of Media. The document
- * shares unchanged lists between versions, so after an edit only the changed page is rendered
- * again; a change to Media can change how an Image shows, so it renders them all again.
+ * The classes of each list of nodes rendered so far. The document shares unchanged lists between
+ * versions, so after an edit only the changed page is rendered again.
  */
-const classesOfList = new WeakMap<
-  SiteDoc["media"],
-  WeakMap<readonly NodeDoc[], readonly string[]>
->();
+const classesOfList = new WeakMap<readonly NodeDoc[], readonly string[]>();
+
+/** The image every placed image renders as while classes are collected: which one never matters. */
+const PLACEHOLDER_IMAGE: ResolvedImage = {
+  sources: [],
+  src: "",
+  fallback: { type: "image/png", srcset: "" },
+  width: 1,
+  height: 1,
+  alt: "",
+};
+
+/**
+ * What classes are collected with: the editor's context, with every placed image resolving and an
+ * Image without one showing its hint, as on the canvas (#371). With the editor's context alone,
+ * images render nothing, so none of their classes were compiled. Only whether an image resolves
+ * changes an element's classes, never which image or its alt text, so a change to Media collects
+ * nothing again.
+ */
+const CLASS_CONTEXT: RenderContext = {
+  ...EDITOR_RENDER_CONTEXT,
+  image: () => PLACEHOLDER_IMAGE,
+  emptyImage: () => "",
+};
 
 /** The class names in static `html`, in order, repeats included. */
 export function classesOfHtml(html: string): string[] {
@@ -48,24 +68,13 @@ export function classesOfHtml(html: string): string[] {
   return found.filter((name) => name !== "");
 }
 
-function listClasses(
-  nodes: readonly NodeDoc[],
-  media: SiteDoc["media"],
-  session: EditorSession,
-): readonly string[] {
-  let lists = classesOfList.get(media);
-  if (lists === undefined) {
-    lists = new WeakMap();
-    classesOfList.set(media, lists);
-  }
-  let classes = lists.get(nodes);
+function listClasses(nodes: readonly NodeDoc[], session: EditorSession): readonly string[] {
+  let classes = classesOfList.get(nodes);
   if (classes === undefined) {
-    // Hidden elements too: the canvas shows them, dimmed, so it needs their styles (#142). Images
-    // as the canvas shows them: with the editor's empty context an Image renders nothing (#371).
-    const context = { ...EDITOR_RENDER_CONTEXT, ...canvasImageParts(media) };
-    const html = renderNodesToHtml(nodes, session.library, context, { includeHidden: true });
+    // Hidden elements too: the canvas shows them, dimmed, so it needs their styles (#142).
+    const html = renderNodesToHtml(nodes, session.library, CLASS_CONTEXT, { includeHidden: true });
     classes = classesOfHtml(html);
-    lists.set(nodes, classes);
+    classesOfList.set(nodes, classes);
   }
   return classes;
 }
@@ -81,10 +90,7 @@ export function siteClasses(site: SiteDoc, session: EditorSession): string[] {
     ...Object.values(site.pages).map((page) => page.doc.content),
   ];
   return [
-    ...new Set([
-      ...lists.flatMap((nodes) => listClasses(nodes, site.media, session)),
-      ...BOX_CLASS_SAFELIST,
-    ]),
+    ...new Set([...lists.flatMap((nodes) => listClasses(nodes, session)), ...BOX_CLASS_SAFELIST]),
   ].sort();
 }
 
