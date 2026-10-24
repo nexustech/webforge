@@ -77,3 +77,67 @@ export const SpacersAndDividers: Story = {
     ]),
   },
 };
+
+const column = (id: string, content: readonly NodeDoc[]): NodeDoc => ({
+  type: "Column",
+  props: { id, content },
+});
+const paragraph = (id: string, text: string): NodeDoc => ({
+  type: "Text",
+  props: { id, text: `<p>${text}</p>` },
+});
+
+/** Two equal columns, then three with the first one wider; one under another on Mobile. */
+export const Columns: Story = {
+  args: {
+    nodes: inSection([
+      {
+        type: "Columns",
+        props: {
+          id: "two",
+          layout: { $responsive: { desktop: "equal", mobile: "stacked" } },
+          columns: [
+            column("a", [paragraph("a-text", "Sourdough, rye and spelt, baked overnight.")]),
+            column("b", [{ type: "Image", props: { id: "b-image", image: { mediaId: "photo" } } }]),
+          ],
+        },
+      },
+      {
+        type: "Columns",
+        props: {
+          id: "three",
+          layout: { $responsive: { desktop: "wideFirst", mobile: "stacked" } },
+          gap: "small",
+          columns: [
+            column("c", [paragraph("c-text", "The wide column: our story in a few lines.")]),
+            column("d", [paragraph("d-text", "Open daily.")]),
+            column("e", [paragraph("e-text", "Mill Street.")]),
+          ],
+        },
+      },
+    ]),
+  },
+};
+
+const items = ["Sourdough", "Cinnamon buns", "Birthday cakes"].map(
+  (text, index): NodeDoc => ({ type: "ListItem", props: { id: `item-${index}`, text } }),
+);
+
+/** The three list styles: bullets, numbers, and no markers. */
+export const Lists: Story = {
+  args: {
+    nodes: inSection(
+      (["bullets", "numbers", "plain"] as const).map((style) => ({
+        type: "List",
+        props: {
+          id: `list-${style}`,
+          style,
+          items: items.map((item) => ({
+            ...item,
+            props: { ...item.props, id: `${style}-${item.props.id}` },
+          })),
+        },
+      })),
+    ),
+  },
+};

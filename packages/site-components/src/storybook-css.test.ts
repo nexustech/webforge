@@ -2,8 +2,9 @@ import { BOX_SIDES, SPACING_TOKENS } from "@webforge/model";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import previewCss from "../.storybook/preview.css?raw";
+import { COLUMN_LAYOUT_CLASS, COLUMN_LAYOUTS } from "./catalogue/column-layouts.js";
 import { SECTION_PADDING } from "./frame.js";
-import { boxClasses } from "./library.js";
+import { boxClasses, responsiveClasses } from "./library.js";
 
 /** Every class an `@source inline("…")` pattern stands for, its `{a,b}` groups expanded. */
 function expand(pattern: string): string[] {
@@ -51,6 +52,26 @@ describe("the site Storybook's CSS", () => {
         for (const name of classes) expect(inline).toContain(name);
       }),
       { numRuns: 500 },
+    );
+  });
+
+  it("compiles every class the Columns layouts can give per device (2.9)", () => {
+    const layout = fc.constantFrom(...COLUMN_LAYOUTS);
+    const stored = fc.oneof(
+      layout,
+      fc.record({
+        $responsive: fc.record(
+          { desktop: layout, tablet: layout, mobile: layout },
+          { requiredKeys: ["desktop"] },
+        ),
+      }),
+    );
+    fc.assert(
+      fc.property(stored, (value) => {
+        const classes = responsiveClasses(value, (each) => COLUMN_LAYOUT_CLASS[each]).split(" ");
+        for (const name of classes) expect(inline).toContain(name);
+      }),
+      { numRuns: 200 },
     );
   });
 });

@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { HeadingLevelToolbar } from "../editor/HeadingToolbar.js";
+import { ListItemsToolbar } from "../editor/ListToolbar.js";
 import { ElementToolbarRow } from "./ElementToolbarRow.js";
 
 const meta = {
@@ -21,4 +22,14 @@ export const Empty: Story = {};
 /** A Heading selected: its level, centred (SP-4). */
 export const HeadingSelected: Story = {
   args: { children: <HeadingLevelToolbar value="medium" onChange={() => undefined} /> },
+};
+
+/** A List item selected: an item before or after it, or at the List's end (SP-4). */
+export const ListItemSelected: Story = {
+  args: { children: <ListItemsToolbar itemSelected onAdd={() => undefined} /> },
+};
+
+/** The List itself selected: an item at its end only. */
+export const ListSelected: Story = {
+  args: { children: <ListItemsToolbar itemSelected={false} onAdd={() => undefined} /> },
 };
