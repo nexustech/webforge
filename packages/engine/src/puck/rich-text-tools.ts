@@ -7,7 +7,7 @@ import { createTextKeys, type PickLink } from "./text-keys.js";
  * The rich-text field being edited in Puck (`puck`): the selected element, and the inline field
  * Puck has focused (`text::inline`).
  */
-export function editingRichText(puck: PuckHandle): RichTextAt | null {
+function editingRichText(puck: PuckHandle): RichTextAt | null {
   const state = puck();
   const nodeId = state?.selectedItem?.props.id;
   const focus = state?.appState.ui.field.focus;
