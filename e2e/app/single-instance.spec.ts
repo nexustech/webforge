@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { ProjectStore } from "@webforge/storage";
+import { placeCaret } from "./caret.js";
 import { launchDesktopApp, launchSecondInstance } from "./launch.js";
 import type { RendererWindow } from "./sites.js";
 
@@ -47,7 +48,7 @@ async function typeIntoHeading(page: Page, text: string): Promise<void> {
   await field.hover();
   await expect(field).toHaveAttribute("contenteditable", "plaintext-only");
   await field.click();
-  await page.keyboard.press("End");
+  await placeCaret(field, "end");
   await page.keyboard.type(text, { delay: 20 });
   await expect(canvas(page).locator("h1")).toHaveText(`${STARTER_HEADING}${text}`);
 }

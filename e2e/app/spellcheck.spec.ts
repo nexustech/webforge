@@ -1,4 +1,5 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { placeCaret } from "./caret.js";
 import { launchDesktopApp } from "./launch.js";
 
 // Spell check (1.22, F-ED-19): the system's checker underlines misspellings while editing, and a
@@ -140,7 +141,7 @@ test("offers spelling suggestions inside rich text on the canvas (1.23)", async 
   await canvas.getByText("Tell visitors what you do and why they will love it.").click();
   await editor.click();
   await expect(editor).toBeFocused();
-  await page.keyboard.press("End");
+  await placeCaret(editor, "end");
   await page.keyboard.type(" Fresh bakkery ", { delay: 20 });
   // Electron's checker only looks at an editable that doesn't turn it off.
   await expect(editor).not.toHaveAttribute("spellcheck", "false");
