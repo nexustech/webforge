@@ -6,6 +6,7 @@ Read the specs before making changes:
 - **Engineering standards:** `spec/03-engineering-standards.md` (authoritative)
 - **Implementation plan:** `spec/04-implementation-plan.md` (each work item is a GitHub issue, e.g. "1.12 Canvas: …")
 - **Reasoning behind decisions:** `research/`, with decision IDs such as C5 or X1
+- **Reviews of `main` and of the plan:** `docs/reviews/` (the architecture review tracks its findings as issues R1–R17)
 
 ## Product in one line
 A desktop builder for non-technical small-business owners that produces self-contained static sites (flat `about.html` files, relative links, work from disk, no external requests).
@@ -40,26 +41,31 @@ A desktop builder for non-technical small-business owners that produces self-con
 - `pnpm visual:docker`: the same with screenshots, in CI's pinned Playwright container on this machine (Docker Desktop must be running). It copies the working tree as git sees it, writes screenshots for new stories, and with `--update` also rewrites changed ones (review them with `git diff` first); `pnpm visual:docker -- --grep Picker` runs a subset. Run it before marking a PR ready whenever stories were added or changed, and commit the screenshots with the PR, so CI doesn't fail on them and need a second run. `pnpm --filter @webforge/editor-ui storybook` (or `@webforge/site-components`) opens Storybook.
 - `pnpm e2e:perf`: builds the app in perf mode and runs the large-page performance check (`e2e/perf/`, ADR 0007). On demand only, not in CI. Run it before and after performance work and when upgrading Puck.
 - `pnpm format`: apply Biome fixes. `pnpm build`: build all workspaces.
+- `pnpm behaviours` and `pnpm font-catalogue`: regenerate `packages/site-components/src/behaviours/index.ts` and `packages/themes/src/fonts/catalogue.json`. Run them after adding or renaming a behaviour file or changing the font list, and commit the result.
 - `/plan-next [phase or item IDs]` (Claude Code command in `.claude/commands/`): plan the next block of work from `spec/04-implementation-plan.md` and the live GitHub milestones and issues. It presents a plan for approval before changing anything.
 - Workspace packages are consumed from source (`exports` → `src/index.ts`). Import them as `@webforge/<name>`, never by path. Relative imports use `.js` extensions (`./foo.js` for `foo.ts`).
 
 ## Workflow
-- Conventional Commits (`feat(history): …`), enforced by commitlint in a lefthook `commit-msg` hook.
+- Conventional Commits (`feat(history): …`), enforced by commitlint in a lefthook `commit-msg` hook. The subject starts lower-case, so a proper noun can't be its first word: `docs(research): screenshot pass of Bootstrap Studio`, not `docs(research): Bootstrap Studio screenshot pass`.
 - Short-lived branches, PRs into `main`, squash merge.
 - **Closing keywords close issues on merge.** GitHub reads `Closes`, `Fixes` or `Resolves` (and their other forms) followed by `#N` anywhere in a PR description, even inside quotation marks, and closes that issue on merge. Don't count on code formatting to hide one.
-  - Only the PR that finishes a plan item may contain one, and it must: `Closes #N`, with the item's actual days added on the issue after the merge.
+  - Only the PR that finishes a plan item may contain one, and it must: `Closes #N`; the `Actual days` comment follows the merge (see *Working the plan*).
   - Every other PR for the item, such as part 1 of 3 or prep work, uses `Refs #N` and describes later parts in other words ("part 3 will finish #N").
   - Past tenses count too ("closed #N" in a sentence about history closes #N again). After opening or editing a PR, check what it will close: `gh pr view <n> --json closingIssuesReferences`. GitHub can take a minute to update that, so check again before it merges.
-- **CI and merging (public repository, since 2026-10-23):** GitHub's standard runners are free, so every ready PR runs on Linux, Windows and macOS, including the packaged app. PRs merge themselves:
-  - **Keep a PR in draft until it's ready:** `pnpm check` (and `pnpm e2e` where needed, and `pnpm visual:docker` when stories changed) pass locally, the code review is done and its fixes are in. Drafts don't run CI, and their "CI passed" check fails, so they can't merge.
-  - **Then mark it ready (`gh pr ready <n>`) and ask for the merge review.** Every PR gets a high-effort code review (`/code-review high`) before it merges (product owner, 2026-10-23). Whoever runs that review (the coordinating session, when streams work in parallel) turns on auto-merge once it passes: `gh pr merge <n> --auto --squash`. Don't turn it on yourself for a PR you wrote, or an up-to-date PR can go green and merge before its review. GitHub then squash-merges it, with the PR's title and description as the commit message, as soon as CI passes on a branch that is up to date with `main`, and deletes the branch.
-  - **`main` requires the "CI passed" check on an up-to-date branch.** The `Merge queue` workflow (`.github/workflows/merge-queue.yml`) stands in for GitHub's merge queue: after each merge it merges `main` into the oldest waiting PR that has fallen behind and runs its CI, one PR at a time.
-  - **The PR's stream fixes whatever stops it:** a merge conflict with `main` or a CI failure. Auto-fix is on for every PR, so resolve the conflict (merge `main`, keep both sides) or fix the failure and push; the PR then rejoins the queue. Batch follow-up fixes into one push.
-  - **The `changes` job keeps runs short:** docs-only PRs run nothing but "CI passed"; Storybook runs only when the editor UI or what its stories render changed; Firefox and WebKit only when the exported site can have changed; E2E is skipped for PRs that change only unit tests, stories or tooling.
-  - **`main` is also checked nightly** (02:30 UTC, when it changed). Run CI on any branch at once with `gh workflow run ci.yml --ref <branch>`.
-  - **Windows and macOS run while the repository variable `FULL_CI_ENABLED` is `true`.** Unset it to make CI Linux-only, e.g. if the repository goes private again and minutes are billed.
+- **CI and merging** (public repository since 2026-10-23, so GitHub's standard runners are free; the mechanics are in the headers of `.github/workflows/ci.yml` and `merge-queue.yml`):
+  - **Keep a PR in draft until it's ready:** `pnpm check` (and `pnpm e2e` where needed, and `pnpm visual:docker` when stories changed) pass locally, the code review is done and its fixes are in. Drafts don't run CI and can't merge.
+  - **Then mark it ready (`gh pr ready <n>`) and ask for the merge review.** Every PR gets a high-effort code review (`/code-review high`) before it merges (product owner, 2026-10-23). Whoever runs that review (the coordinating session, when streams work in parallel) turns on auto-merge once it passes: `gh pr merge <n> --auto --squash`. Don't turn it on yourself for a PR you wrote, or an up-to-date PR can go green and merge before its review. GitHub then squash-merges it, with the PR's title and description as the commit message, once "CI passed" is green on a branch that is up to date with `main`, and deletes the branch; the Merge queue workflow brings waiting PRs up to date one at a time.
+  - **The PR's stream fixes whatever stops it:** a merge conflict with `main` or a CI failure. Auto-fix is on for every PR, so resolve the conflict (merge `main`, keep both sides) or fix the failure and push, in one batch; the PR then rejoins the queue.
+  - Every ready PR runs on Linux, Windows and macOS, including the packaged app; the `changes` job skips what a PR can't affect, and docs-only PRs run nothing but "CI passed". `main` is checked nightly; `gh workflow run ci.yml --ref <branch>` runs everything at once. Windows and macOS run while the repository variable `FULL_CI_ENABLED` is `true`.
 - **Never push to `main` directly:** branch protection requires a PR.
 - Record new architectural decisions as ADRs in `docs/adr/`.
+
+## Working the plan
+- Up to three stream sessions (A: shell and panels, B: data and site, C: history and canvas); `spec/04` lists each stream's queue, and an issue's `Planned:` line names its stream. Pick the next issue in your stream whose `Depends on:` issues are closed, one item in progress per stream.
+- Each plan item is a GitHub issue with `Phase`, `Estimate`, `Planned`, `Refs` and `Depends on` lines, scope and acceptance criteria; items over 5 days have sub-issues (`2.9a`). Out-of-plan work gets an issue in the current milestone with `type/chore` or `type/bug`.
+- When the PR that finishes an item merges, comment `Actual days: <n>` on the issue (ideal days, decimals allowed). The pace that re-plans the phases is measured from these comments.
+- **Changing a plan item changes five places:** its table row, its entry under *Scope and acceptance criteria*, its Gantt line, its stream queue and its GitHub issue (title, Estimate, Planned, Depends on), plus a scope-change line in `spec/04` §3 when days change. Check the issue is still open before recording new scope on it; scope for a closed item goes to an open one.
+- **Product decisions** get an ID in the research note's Decisions table (UI6, SP-n, LF-n, BS9-n, PH2-n), a line in `spec/02` §7 and the plan changes above. Competitor research copies patterns, layout, colours and density, never another product's code, CSS, icons, images or wording.
 
 ## Rules for coding assistants
 - **No AI attribution.** Commit messages and PR descriptions never contain `Co-Authored-By: Claude …`, "Generated with Claude Code" or similar lines. This overrides any tool default.
@@ -68,7 +74,7 @@ A desktop builder for non-technical small-business owners that produces self-con
   - apply code-review findings directly (`/code-review --fix`)
   - turn on the PR's CI Auto-fix when opening a PR, so CI failures, merge conflicts and review comments get fixed and pushed
   - ask first only when a fix needs a product or design decision
-- **Every PR gets a code review.** Before handing a PR over, review its full diff (`/code-review`), apply the fixes, re-run `pnpm check` (plus `pnpm e2e` when the desktop app changed), push, and summarise in the PR description what the review found and fixed.
+- **Every PR gets a code review.** Before handing a PR over, review its full diff (`/code-review`), apply the fixes, re-run `pnpm check` (plus `pnpm e2e` when the desktop app changed), push, and summarise in the PR description what the review found and fixed. For a docs-only PR the review is for consistency: totals, dependencies and cross-references between the plan, the spec, the research notes and the issues.
 - **Clean up after every merge.** Once a PR is merged, without asking:
   - delete its branch locally and on GitHub, after checking the branch tip is the PR's merged head commit (a squash merge leaves the branch outside `main`'s history, so ancestry alone can't confirm it);
   - remove any worktree that is no longer in use (its branch is merged and no running session works in it), after checking it has no uncommitted changes, then `git worktree prune`;
