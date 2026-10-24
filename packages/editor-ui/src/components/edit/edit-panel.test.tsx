@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { EditPanel, type EditPanelField } from "./edit-panel.js";
 import { FieldRenderersProvider } from "./field-context.js";
 import type { FieldRendererProps } from "./field-spec.js";
+import { ListField } from "./list-field.js";
 
 afterEach(cleanup);
 
@@ -159,6 +160,27 @@ describe("EditPanel", () => {
 
     expect(screen.getByText("HI")).toBeDefined();
     expect(screen.queryByText("Nope")).toBeNull();
+  });
+
+  it("draws a list's item fields when the list is drawn on its own (R11 review)", async () => {
+    render(
+      <ListField
+        id="quotes"
+        labelId="quotes-label"
+        field={{
+          kind: "list",
+          label: "Quotes",
+          itemLabel: "Quote",
+          itemFields: [{ name: "quote", kind: "text", label: "Words" }],
+        }}
+        value={[{ id: "a", quote: "Hi" }]}
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+      />,
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: /Hi/ }));
+    expect(screen.getByRole("textbox", { name: "Words" })).toHaveProperty("value", "Hi");
   });
 
   it("lets two panels draw a kind with different renderers, and replace a built-in one (R11)", () => {

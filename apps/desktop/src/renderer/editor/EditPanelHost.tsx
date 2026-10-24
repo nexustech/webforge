@@ -61,7 +61,7 @@ import { useDocument, useUi } from "./use-document.js";
 /**
  * The Edit panel's spec for a field (R11): its kind with everything its renderer needs, or undefined
  * for fields edited elsewhere. Rich text is edited on the canvas (1.23), slots by dragging elements
- * in, and a slot of one type is a list (see editableList).
+ * in. Lists, and slots of one type, are drawn as lists by {@link listField} (see editableList).
  */
 function specOf(field: FieldDef): FieldSpec | undefined {
   const { label } = field;

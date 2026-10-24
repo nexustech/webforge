@@ -4,7 +4,14 @@ import { type ReactNode, useEffect, useRef, useState } from "react";
 import { cn } from "../../lib/cn.js";
 import { Button } from "../ui/button.js";
 import { drawField, useFieldRenderers } from "./field-context.js";
-import type { FieldRendererProps, ListChange, ListItem, ListItemFieldSpec } from "./field-spec.js";
+import type {
+  FieldRendererProps,
+  FieldRenderers,
+  ListChange,
+  ListItem,
+  ListItemFieldSpec,
+} from "./field-spec.js";
+import { PLAIN_RENDERERS } from "./plain-renderers.js";
 
 /** The items of a list's value; anything else is an empty list. */
 function itemsOf(value: unknown): readonly ListItem[] {
@@ -70,7 +77,8 @@ export function ListField({
 }: FieldRendererProps<"list">) {
   const items = itemsOf(value);
   const { itemLabel: item, itemFields: fields } = field;
-  const renderers = useFieldRenderers();
+  // The panel's renderers, over the plain ones a list drawn on its own has (R11).
+  const renderers: FieldRenderers = { ...PLAIN_RENDERERS, ...useFieldRenderers() };
   const [open, setOpen] = useState<Open>(null);
   // Where focus goes once a deleted item's row (and its focused Delete button) has gone: the row
   // that took its place, else the one before, else Add.
