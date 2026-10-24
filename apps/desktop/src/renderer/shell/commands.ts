@@ -406,6 +406,30 @@ function isForText(target: Window, event: KeyboardEvent): boolean {
   return selection !== null && !selection.isCollapsed && selection.toString() !== "";
 }
 
+/** The character a key types without modifiers: `KeyS` is "s", `Digit2` is "2"; else undefined. */
+function ownCharacter(code: string): string | undefined {
+  const match = /^(?:Key([A-Z])|Digit([0-9]))$/.exec(code);
+  return (match?.[1] ?? match?.[2])?.toLowerCase();
+}
+
+/**
+ * Whether a key press typed a character with AltGr. On Windows, Chromium sets AltGraph for any
+ * Ctrl+Alt press when the layout has AltGr (German, French, Polish…), not only for the right Alt
+ * key, so AltGraph alone can't tell typing from a shortcut: a German Ctrl+Alt+S has key "s", code
+ * `KeyS`, and is Save version. It's typing when the key gives one character that isn't the key's
+ * own letter or digit (Hungarian AltGr+V: key "@", code `KeyV`).
+ */
+function typedWithAltGr(
+  event: Pick<KeyboardEvent, "key" | "code"> & {
+    readonly getModifierState?: KeyboardEvent["getModifierState"];
+  },
+): boolean {
+  if (event.getModifierState?.("AltGraph") !== true || [...event.key].length !== 1) {
+    return false;
+  }
+  return event.key.toLowerCase() !== ownCharacter(event.code);
+}
+
 /**
  * Runs registered commands from their shortcuts on `target` (the editor window, or the canvas
  * iframe's). Listens in the bubble phase, so keys that something else already handled (text fields,
@@ -420,9 +444,9 @@ export function installCommandShortcuts(target: Window, registry: CommandRegistr
     if (event.defaultPrevented || event.repeat || isInDialog(event.target, document)) {
       return;
     }
-    // AltGr types characters on many European layouts (Hungarian AltGr+V is @, Polish AltGr+S
-    // is ś), and Windows reports it as Ctrl+Alt: typing wins, so no Ctrl+Alt command runs (#290).
-    if (event.getModifierState?.("AltGraph") === true) {
+    // A character typed with AltGr (Hungarian AltGr+V is @, Polish AltGr+S is ś) is the text's,
+    // never a command's (#290).
+    if (typedWithAltGr(event)) {
       return;
     }
     const inControl = isFocusedControl(event.target);

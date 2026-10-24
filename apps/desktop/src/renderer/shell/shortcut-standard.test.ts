@@ -117,7 +117,7 @@ describe("keys that can't work on Windows (#290)", () => {
     for (const [name, entry] of EVERY_SHORTCUT) {
       for (const key of entry.keys.filter((each) => /^Mod\+Alt\+Arrow/.test(each))) {
         const alternative = key.replace("Mod+Alt+", "Alt+");
-        expect(entry.windowsKeys ?? [], `${key} (${name})`).toContain(alternative);
+        expect(platformKeys(entry, false), `${key} (${name})`).toContain(alternative);
       }
     }
   });

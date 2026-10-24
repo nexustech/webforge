@@ -272,28 +272,40 @@ describe("shortcuts", () => {
       expect(event.defaultPrevented).toBe(true);
     });
 
-    it("leaves a key typed with AltGr to the text: no Ctrl+Alt command runs (#290)", () => {
-      const registry = withKeys({ paste: { keys: ["Mod+Alt+V"] } });
-      const run = vi.fn();
-      registry.register({ id: "paste", label: "Paste style", run });
+    it("leaves a character typed with AltGr to the text, but runs Ctrl+Alt shortcuts (#290)", () => {
+      const registry = withKeys({
+        saveVersion: { keys: ["Mod+Alt+S"] },
+        pasteStyle: { keys: ["Mod+Alt+V"] },
+        moveUp: { keys: ["Mod+Alt+ArrowUp"] },
+      });
+      const run = { saveVersion: vi.fn(), pasteStyle: vi.fn(), moveUp: vi.fn() };
+      for (const [id, fn] of Object.entries(run)) registry.register({ id, label: id, run: fn });
       remove = installCommandShortcuts(window, registry);
       const ctrl = !isMac();
+      /** A Ctrl+Alt press as Chromium reports it on Windows with an AltGr layout: AltGraph set. */
+      const chromium = (init: { key: string; code: string }) => {
+        const event = key({ ...init, ctrlKey: ctrl, metaKey: !ctrl, altKey: true });
+        Object.defineProperty(event, "getModifierState", {
+          value: (modifier: string) => modifier === "AltGraph",
+        });
+        return event;
+      };
 
-      // Hungarian AltGr+V types @: Windows reports Ctrl+Alt, and AltGraph too.
-      const altGr = key({ key: "v", ctrlKey: ctrl, metaKey: !ctrl, altKey: true });
-      Object.defineProperty(altGr, "getModifierState", {
-        value: (modifier: string) => modifier === "AltGraph",
-      });
-      window.dispatchEvent(altGr);
-      expect(run).not.toHaveBeenCalled();
-      expect(altGr.defaultPrevented).toBe(false);
+      // Hungarian AltGr+V types @: the text's.
+      const typed = chromium({ key: "@", code: "KeyV" });
+      window.dispatchEvent(typed);
+      // Polish AltGr+S types ś: the text's too.
+      window.dispatchEvent(chromium({ key: "ś", code: "KeyS" }));
+      expect(run.pasteStyle).not.toHaveBeenCalled();
+      expect(run.saveVersion).not.toHaveBeenCalled();
+      expect(typed.defaultPrevented).toBe(false);
 
-      // Ctrl and Alt themselves still run it. (happy-dom reports AltGraph whenever Alt is held;
-      // Chromium only for the AltGr key, so this says so.)
-      const ctrlAlt = key({ key: "v", ctrlKey: ctrl, metaKey: !ctrl, altKey: true });
-      Object.defineProperty(ctrlAlt, "getModifierState", { value: () => false });
-      window.dispatchEvent(ctrlAlt);
-      expect(run).toHaveBeenCalledOnce();
+      // German Ctrl+Alt+S types nothing (key "s", its own letter): Save version runs. So do the
+      // arrows, which type no character.
+      window.dispatchEvent(chromium({ key: "s", code: "KeyS" }));
+      window.dispatchEvent(chromium({ key: "ArrowUp", code: "ArrowUp" }));
+      expect(run.saveVersion).toHaveBeenCalledOnce();
+      expect(run.moveUp).toHaveBeenCalledOnce();
     });
 
     it("runs a command from its extra shortcuts too", () => {
