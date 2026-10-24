@@ -10,12 +10,12 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-function invoker() {
+function invoker(now?: () => number) {
   const registered = new Map<string, Handler>();
   const ipc = {
     handle: (channel: string, handler: Handler) => registered.set(channel, handler),
   } as unknown as Pick<IpcMain, "handle">;
-  registerFailureLog(ipc, () => true);
+  registerFailureLog(ipc, () => true, now);
   return (...args: unknown[]) =>
     registered.get("app:log-failure")?.(
       { senderFrame: { url: "app" } } as IpcMainInvokeEvent,
@@ -50,5 +50,24 @@ describe("registerFailureLog (R12)", () => {
       await expect(invoke(context, code)).rejects.toThrow("ipc-failed");
     }
     expect(lines.join("\n")).not.toMatch(/home|EACCES:/);
+  });
+
+  it("logs at most 10 failures a minute, then says how many it left out", async () => {
+    const lines: string[] = [];
+    setLogSink((_level, line) => lines.push(line));
+    let time = 0;
+    const invoke = invoker(() => time);
+
+    for (let failure = 0; failure < 25; failure += 1) {
+      await invoke("autosave.commit", "Error ipc-failed");
+    }
+    expect(lines).toHaveLength(10);
+
+    time = 60_000;
+    await invoke("clipboard.paste", "TypeError");
+    expect(lines.slice(10)).toEqual([
+      "The editor handled more failures than the log keeps (dropped=15)",
+      "The editor handled a failure (context=clipboard.paste, code=TypeError)",
+    ]);
   });
 });

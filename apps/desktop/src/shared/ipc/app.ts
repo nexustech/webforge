@@ -16,13 +16,13 @@ const appInfoSchema = z.object({
 /** Information about the running app. */
 export type AppInfo = z.infer<typeof appInfoSchema>;
 
-/** IPC channels of the `app` domain (`app:*`). */
 /** Where a handled failure happened, by area and action: `clipboard.paste`, `command.edit.undo`. */
 const failureContextSchema = z.string().regex(/^[a-z][a-zA-Z0-9.-]{0,63}$/);
 
 /** An error as `errorCode` gives it: a name, and maybe a code (`Error ENOENT`), or a type. */
 const failureCodeSchema = z.string().regex(/^[A-Za-z0-9_.:-]{1,64}(?: [A-Za-z0-9_.:-]{1,64})?$/);
 
+/** IPC channels of the `app` domain (`app:*`). */
 export const appChannels = {
   getAppInfo: {
     channel: "app:get-info",

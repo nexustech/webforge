@@ -37,6 +37,8 @@ describe("log (standards §4)", () => {
       "https://api.netlify.com/sites?token=abc",
       "a".repeat(81),
       "two words here",
+      // Personal data: an e-mail address, as a site's contact details or a sign-in hold one.
+      "jane@example.com",
     ];
 
     for (const leak of leaks) {

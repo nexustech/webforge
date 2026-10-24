@@ -28,8 +28,11 @@ export function setLogSink(next: LogSink = consoleSink): void {
   sink = next;
 }
 
-/** A context value as a log may hold it: letters, digits and `_ . : @ -`, short. */
-const SAFE_VALUE = /^[A-Za-z0-9_.:@-]{0,80}$/;
+/**
+ * A context value as a log may hold it: letters, digits and `_ . : -`, short. No `@`, so an
+ * e-mail address is never written (CLAUDE.md: never log personal data); no code needs one.
+ */
+const SAFE_VALUE = /^[A-Za-z0-9_.:-]{0,80}$/;
 
 /** `value` as it is written to the log: a plain token as it is, anything else redacted. */
 function logValue(value: string | number | boolean): string {
