@@ -1,7 +1,7 @@
 import type { CanvasEngine } from "@webforge/engine";
 import { t } from "@webforge/i18n";
 import { type ImageMeta, isImageMeta, mediaItem, type SiteDoc } from "@webforge/model";
-import type { ResolvedImage } from "@webforge/site-components";
+import type { RenderContext, ResolvedImage } from "@webforge/site-components";
 import { mediaImageUrl } from "../../shared/ipc/media.js";
 
 type Unsubscribe = () => void;
@@ -87,6 +87,17 @@ function resolverFor(media: SiteDoc["media"]) {
   };
 }
 
+/**
+ * The canvas's render context parts for `media`'s images: each placed image as the canvas shows
+ * it, and the hint an Image without one shows. The canvas renders with them, and its CSS collects
+ * classes with them, so an Image's classes are compiled however it shows (#371).
+ */
+export function canvasImageParts(
+  media: SiteDoc["media"],
+): Required<Pick<RenderContext, "image" | "emptyImage">> {
+  return { image: resolverFor(media), emptyImage: emptyImageHint };
+}
+
 /** How long Media must stay unchanged before the canvas is drawn again, e.g. while alt text is typed. */
 const REDRAW_DELAY_MS = 150;
 
@@ -110,14 +121,18 @@ export function connectCanvasImages(
 ): Unsubscribe {
   let shown = session.history.document.getState().media;
   let timer: ReturnType<typeof setTimeout> | undefined;
-  engine.setImages(resolverFor(shown), emptyImageHint);
+  const show = () => {
+    const { image, emptyImage } = canvasImageParts(shown);
+    engine.setImages(image, emptyImage);
+  };
+  show();
   const unsubscribe = session.history.document.subscribe(() => {
     clearTimeout(timer);
     timer = setTimeout(() => {
       const media = session.history.document.getState().media;
       if (media !== shown) {
         shown = media;
-        engine.setImages(resolverFor(shown), emptyImageHint);
+        show();
       }
     }, delayMs);
   });
