@@ -6,12 +6,12 @@ import { afterEach, describe, expect, it } from "vitest";
 import { addPage, renamePage } from "../site/page-actions.js";
 import { createEditorSession } from "./editor-session.js";
 import { starterSite } from "./starter-site.js";
-import { pageListOf, useDocument } from "./use-document.js";
+import { pageListOf, samePages, useDocument } from "./use-document.js";
 
 afterEach(cleanup);
 
-describe("pageListOf (R9)", () => {
-  it("keeps the same list while only page content changes, and a new one when a page does", () => {
+describe("pageListOf and samePages (R9)", () => {
+  it("lists the same pages while only page content changes, and others when a page does", () => {
     const session = createEditorSession(siteLibrary, starterSite());
     const site = () => session.history.document.getState();
     const first = pageListOf(site());
@@ -20,11 +20,12 @@ describe("pageListOf (R9)", () => {
       const home = draft.pages[draft.homePageId];
       if (home !== undefined) home.doc.content = [];
     });
-    expect(pageListOf(site())).toBe(first);
+    expect(pageListOf(site())).toBe(pageListOf(site()));
+    expect(samePages(pageListOf(site()), first)).toBe(true);
 
     const about = addPage(session, "About");
     const added = pageListOf(site());
-    expect(added).not.toBe(first);
+    expect(samePages(added, first)).toBe(false);
     expect(added.map((page) => page.title)).toContain("About");
     if (about === null) throw new Error("not added");
     renamePage(session, about, "Our story");

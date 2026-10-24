@@ -6,7 +6,7 @@ import { siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it } from "vitest";
 import { createEditorSession } from "../editor/editor-session.js";
 import { starterSite } from "../editor/starter-site.js";
-import { undoEntry } from "../editor/undo-toasts.js";
+import { undoEntry } from "../editor/undo-entry.js";
 import { CommandRegistryProvider } from "./command-context.js";
 import { COMMAND_IDS } from "./command-ids.js";
 import { createCommandRegistry } from "./commands.js";

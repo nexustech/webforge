@@ -1,5 +1,5 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
-import { launchDesktopApp } from "./launch.js";
+import { launchDesktopApp, waitForCanvas } from "./launch.js";
 
 // Undo History panel and Undo toasts (1.11, D3, D4): deleting shows "Deleted … · Undo"; jumping to
 // a step brings back the page and the selection of that moment (U3).
@@ -20,7 +20,7 @@ test.beforeEach(async () => {
     .click();
   await expect(canvas().locator("h1")).toHaveText(STARTER_HEADING);
   // The site CSS changes the layout when it arrives; clicks need the final positions.
-  await expect(canvas().locator("style[data-webforge-site-css]")).toHaveCount(1);
+  await waitForCanvas(page);
 });
 
 test.afterEach(async () => {

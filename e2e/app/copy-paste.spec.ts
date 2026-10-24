@@ -6,7 +6,7 @@ import { type ElectronApplication, expect, type Page, test } from "@playwright/t
 import { changedDocuments, createSite, type MediaId, type SiteDoc } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
 import { heroPhoto } from "@webforge/test-utils";
-import { launchDesktopApp, launchSecondInstance } from "./launch.js";
+import { launchDesktopApp, launchSecondInstance, waitForCanvas } from "./launch.js";
 import type { RendererWindow } from "./sites.js";
 
 // Copy and paste (1.25, F-ED-16): elements copied in one site paste into another opened later,
@@ -74,12 +74,6 @@ test.afterEach(async () => {
 });
 
 const canvas = (page: Page) => page.frameLocator(".editor__canvas iframe");
-
-async function waitForCanvas(page: Page): Promise<void> {
-  await expect(canvas(page).locator("style[data-webforge-site-css]")).toHaveCount(1, {
-    timeout: 30_000,
-  });
-}
 
 test("pastes a Hero copied in another site with its photo, as one undo step", async () => {
   app = await launchDesktopApp({ args: [bakery], userDataDir: userData });
