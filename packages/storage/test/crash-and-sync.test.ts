@@ -99,7 +99,8 @@ describe("cloud-synced folders", () => {
     const store = ProjectStore.open(path);
     expect(seqOf(store, "progress")).toBeGreaterThanOrEqual(writer.lastAcknowledged());
     store.close();
-  }, 60_000);
+    // 60 copies, each opened and integrity-checked: about 80 s on CI's macOS runners.
+  }, 120_000);
 
   it("keeps every commit in the .wforge itself, unlike WAL (why we use the rollback journal)", () => {
     // Copying only the .wforge while it is open (what a sync client, e-mail or a USB stick sees)

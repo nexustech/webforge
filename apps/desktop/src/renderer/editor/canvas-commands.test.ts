@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createCommandRegistry } from "../shell/commands.js";
+import { createCommandRegistry, isMac } from "../shell/commands.js";
 import { registerCanvasCommands } from "./canvas-commands.js";
 import { createFakeEngine } from "./fake-engine.test-helper.js";
 
@@ -12,7 +12,8 @@ describe("registerCanvasCommands", () => {
       registry.list().map((command) => [command.id, command.shortcut, command.menu ?? null]),
     ).toEqual([
       ["edit.duplicate", "Mod+D", "edit"],
-      ["edit.delete", "Delete", "edit"],
+      // A Mac keyboard has no Delete key, so Delete's command shows Mod+Backspace there.
+      ["edit.delete", isMac() ? "Mod+Backspace" : "Delete", "edit"],
       // F-ED-27's keys: Mod+Alt+arrows move, Mod+arrows walk the page's tree.
       ["edit.moveUp", "Mod+Alt+ArrowUp", "edit"],
       ["edit.moveDown", "Mod+Alt+ArrowDown", "edit"],
@@ -42,8 +43,11 @@ describe("registerCanvasCommands", () => {
       "edit.selectNextSibling",
     ]);
     expect(registry.get("edit.delete")?.label).toBe("Delete");
-    // Cmd+Delete on a Mac, whose delete key is Backspace (decision of 23 Oct 2026).
-    expect(registry.get("edit.delete")?.extraShortcuts).toEqual(["Mod+Backspace"]);
+    // Cmd+Delete on a Mac, whose delete key is Backspace (decision of 23 Oct 2026): there it is the
+    // shortcut shown, and Delete the extra one.
+    expect(registry.get("edit.delete")?.extraShortcuts).toEqual([
+      isMac() ? "Delete" : "Mod+Backspace",
+    ]);
   });
 
   it("deletes with Backspace an element that has no text of its own, unless the layout is locked", () => {
