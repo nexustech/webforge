@@ -100,6 +100,18 @@ describe("buildSite: self-contained output (X1, C8)", () => {
     expect(css.split("\n").length).toBeGreaterThan(500);
   });
 
+  it("links each gallery image to a file the export writes, which opens without the script (2.7a)", () => {
+    const about = text(built, "about.html");
+    const links = [...about.matchAll(/<a href="([^"]+)"[^>]*data-wf-lightbox-item=""/g)].map(
+      (match) => match[1] ?? "",
+    );
+
+    expect(links).toHaveLength(3);
+    for (const link of links) {
+      expect(built.files.has(link), link).toBe(true);
+    }
+  });
+
   it("exports each image as WebP plus a JPEG fallback, never wider than the original", () => {
     const images = [...built.files.keys()].filter((path) => path.startsWith("assets/img/"));
 

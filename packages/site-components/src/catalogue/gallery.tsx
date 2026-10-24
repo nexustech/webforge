@@ -1,14 +1,17 @@
 import { t } from "@webforge/i18n";
 import { defineComponent } from "../define.js";
-import { boxClasses, type ComponentDef } from "../library.js";
+import { defineSection } from "../frame.js";
+import type { ComponentDef } from "../library.js";
 import { Picture } from "../picture.js";
-import { MARGIN_FIELD, marginClasses, PADDING_FIELD, SECTION_PADDING } from "./basic.js";
+import { BUTTON_CLASSES, SectionTitle } from "../typography.js";
 
 const GALLERY_LAYOUTS = ["grid", "masonry", "featured"] as const;
 
 /**
  * Each layout's classes for the element that holds the images (the slot's, see `SlotComponent`):
- * square crops in a grid; their own shapes in columns; or the first image large in a grid.
+ * square crops in a grid; their own shapes in columns, which read down each column, so the tab
+ * and reading order runs down too; or the first image large in a grid. Grid and the first image
+ * large keep the order the images have.
  */
 const IMAGES_CLASSES: Readonly<Record<(typeof GALLERY_LAYOUTS)[number], string>> = {
   grid: "grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 [&_img]:aspect-square [&_img]:h-full [&_img]:object-cover",
@@ -40,10 +43,12 @@ function Icon({ path }: { readonly path: string }) {
 /**
  * The lightbox: a native `<dialog>`, which `webforge.js`'s "lightbox" behaviour opens with the
  * image clicked, large, with its caption. Opened as a modal, it keeps the focus in it and the page
- * behind it out of reach; Esc closes it, as does its button or a click beside it.
+ * behind it out of reach and still; Esc, its button or a click beside it closes it. The image is a
+ * `<picture>` the script gives the image's own sources, as wide as the screen (`sizes="100vw"`), so
+ * a phone doesn't load the largest file. A swipe moves through the images, while scrolling up and
+ * down and zooming with two fingers stay the browser's (`touch-pan-y`).
  */
 function Lightbox() {
-  const button = "btn btn-circle btn-ghost";
   return (
     <dialog
       className="modal"
@@ -53,22 +58,24 @@ function Lightbox() {
     >
       <div className="modal-box flex max-w-5xl flex-col items-center gap-3 p-4">
         <form method="dialog" className="self-end">
-          <button type="submit" className={button} aria-label={t("siteText.close")}>
+          <button type="submit" className={BUTTON_CLASSES.icon} aria-label={t("siteText.close")}>
             <Icon path="M18 6 6 18M6 6l12 12" />
           </button>
         </form>
         <figure className="flex w-full flex-col items-center gap-2">
-          <img
-            className="max-h-[70vh] w-auto max-w-full rounded-box object-contain"
-            alt=""
-            data-wf-lightbox-image=""
-          />
+          <picture data-wf-lightbox-picture="">
+            <img
+              className="max-h-[70vh] w-auto max-w-full touch-pan-y rounded-box object-contain"
+              alt=""
+              data-wf-lightbox-image=""
+            />
+          </picture>
           <figcaption className="text-center" data-wf-lightbox-caption="" />
         </figure>
         <div className="flex items-center gap-3">
           <button
             type="button"
-            className={button}
+            className={BUTTON_CLASSES.icon}
             aria-label={t("siteText.previousImage")}
             data-wf-lightbox-previous=""
           >
@@ -77,7 +84,7 @@ function Lightbox() {
           <p className="text-sm" aria-live="polite" data-wf-lightbox-status="" />
           <button
             type="button"
-            className={button}
+            className={BUTTON_CLASSES.icon}
             aria-label={t("siteText.nextImage")}
             data-wf-lightbox-next=""
           >
@@ -97,44 +104,42 @@ function Lightbox() {
 
 /**
  * A gallery of images (2.7a, G10): a title and its images, in a grid of squares, in columns of
- * their own shapes, or with the first one large. Each image links to its full-size file, which a
- * click opens without JavaScript too; with `webforge.js`'s "lightbox" behaviour it opens large in
- * the page instead, to go through with the buttons, the arrow keys or a swipe.
+ * their own shapes, or with the first one large. Every image opens larger: `webforge.js`'s
+ * "lightbox" behaviour shows it in the page, to go through with the buttons, the arrow keys or a
+ * swipe; without JavaScript, its link opens its largest file.
  */
-const gallery = defineComponent({
+const gallery = defineSection({
   label: t("section.gallery"),
-  place: "section",
+  name: "gallery",
   category: t("category.galleries"),
   variants: GALLERY_LAYOUTS.map((value) => ({ label: t(`field.galleryLayout.${value}`), value })),
   fields: {
     title: { kind: "text", label: t("field.title"), inline: true },
     images: { kind: "slot", label: t("field.images"), allow: ["GalleryImage"] },
-    lightbox: { kind: "toggle", label: t("field.lightbox") },
-    padding: PADDING_FIELD,
-    margin: MARGIN_FIELD,
   },
-  defaults: { title: t("starter.galleryTitle"), images: [], lightbox: true },
-  behaviours: (values) => (values.lightbox ? ["lightbox"] : []),
+  defaults: { title: t("starter.galleryTitle"), images: [] },
+  behaviours: ["lightbox"],
+  frame: () => "bg-base-100",
+  frameAttributes: () => ({ "data-wf-gallery": "" }),
   render: ({ values, slots }) => {
     const Images = slots.images;
     return (
-      <section
-        className={`site-gallery bg-base-100 ${boxClasses(values.padding, "padding", SECTION_PADDING)}${marginClasses(values.margin)}`}
-        {...(values.lightbox ? { "data-wf-gallery": "" } : {})}
-      >
+      <>
         <div className="mx-auto max-w-6xl space-y-8">
-          <h2 className="text-3xl font-bold">{values.title}</h2>
+          <SectionTitle>{values.title}</SectionTitle>
           <Images className={IMAGES_CLASSES[values.variant]} />
         </div>
-        {values.lightbox ? <Lightbox /> : null}
-      </section>
+        <Lightbox />
+      </>
     );
   },
 });
 
 /**
- * One image of a Gallery, with an optional caption. It links to the image's full-size file: the
- * lightbox opens it large, and without JavaScript the browser shows the file.
+ * One image of a Gallery, with an optional caption. It links to the image's largest file, which
+ * the export writes for the image's sources anyway: the lightbox opens it large, and without
+ * JavaScript the browser shows the file. The link is named for what it opens: the image's alt
+ * text, else its caption.
  */
 const galleryImage = defineComponent({
   label: t("element.galleryImage"),
@@ -147,15 +152,24 @@ const galleryImage = defineComponent({
   render: ({ values, context }) => {
     const placed = values.image;
     const image = placed === undefined ? null : context.image(placed.mediaId);
+    const alt = placed?.alt ?? image?.alt ?? "";
+    // On the canvas an inline caption is the editor, not text: then the alt text or the fallback.
+    const caption = typeof values.caption === "string" ? values.caption.trim() : "";
+    const name = alt.trim() !== "" ? alt : caption !== "" ? caption : t("siteText.galleryImage");
     return (
       <figure className="site-gallery-image space-y-2">
         {image === null ? (
           <div className="aspect-square w-full rounded-box bg-base-200" />
         ) : (
-          <a href={image.src} className="block" data-wf-lightbox-item="">
+          <a
+            href={image.src}
+            className="block"
+            aria-label={t("siteText.openLarger", { name })}
+            data-wf-lightbox-item=""
+          >
             <Picture
               image={image}
-              alt={placed?.alt ?? image.alt}
+              alt={alt}
               sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw"
               className="w-full rounded-box"
             />

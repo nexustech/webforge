@@ -16,7 +16,12 @@ afterEach(async () => {
 
 /** Image `id` as the export resolves it: its full-size file is `assets/img/<id>-1600.jpg`. */
 const resolved = (id: string): ResolvedImage => ({
-  sources: [],
+  sources: [
+    {
+      type: "image/webp",
+      srcset: `assets/img/${id}-640.webp 640w, assets/img/${id}-1600.webp 1600w`,
+    },
+  ],
   src: `assets/img/${id}-1600.jpg`,
   fallback: { type: "image/jpeg", srcset: `assets/img/${id}-640.jpg 640w` },
   width: 1600,
@@ -31,7 +36,7 @@ const image = (id: string, caption = ""): NodeDoc => ({
 });
 
 /** A page of its own with a Gallery of `ids`, and `lightbox.js` run on it. */
-function page(ids = ["a", "b", "c"], props: Record<string, unknown> = {}) {
+function page(ids = ["a", "b", "c"]) {
   const happy = new Window({ width: 1024, height: 768 });
   windows.push(happy);
   const window = happy as unknown as typeof globalThis;
@@ -44,7 +49,6 @@ function page(ids = ["a", "b", "c"], props: Record<string, unknown> = {}) {
           id: "gallery",
           title: "Our work",
           images: ids.map((id, index) => image(id, index === 1 ? "Our oven" : "")),
-          ...props,
         },
       },
     ],
@@ -164,13 +168,30 @@ describe("the lightbox behaviour (2.7a)", () => {
     expect(button("next").hidden).toBe(true);
   });
 
-  it("leaves the links to the files alone when the gallery has no lightbox", () => {
-    const { dialog, items, window } = page(["a", "b"], { lightbox: false });
+  it("shows the large image from its own sources, as wide as the screen", () => {
+    const { items, document } = page();
+    items[1]?.click();
 
-    const click = new window.MouseEvent("click", { bubbles: true, cancelable: true });
-    items[0]?.dispatchEvent(click);
+    const picture = document.querySelector("[data-wf-lightbox-picture]");
+    const sources = [...(picture?.querySelectorAll("source") ?? [])];
+    expect(
+      sources.map((source) => [source.getAttribute("srcset"), source.getAttribute("sizes")]),
+    ).toEqual([["assets/img/b-640.webp 640w, assets/img/b-1600.webp 1600w", "100vw"]]);
+    const shown = document.querySelector<HTMLImageElement>("[data-wf-lightbox-image]");
+    expect(shown?.getAttribute("srcset")).toBe("assets/img/b-640.jpg 640w");
+    expect(shown?.getAttribute("sizes")).toBe("100vw");
+    // The next image replaces them, not adds to them.
+    items[2]?.click();
+    expect(picture?.querySelectorAll("source")).toHaveLength(1);
+  });
 
-    expect(dialog).toBeNull();
-    expect(click.defaultPrevented).toBe(false);
+  it("goes to the first and last image with Home and End", () => {
+    const { items, text, dialog, window } = page();
+    items[1]?.click();
+
+    dialog?.dispatchEvent(new window.KeyboardEvent("keydown", { key: "End", bubbles: true }));
+    expect(text("[data-wf-lightbox-status]")).toBe("3 of 3");
+    dialog?.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Home", bubbles: true }));
+    expect(text("[data-wf-lightbox-status]")).toBe("1 of 3");
   });
 });
