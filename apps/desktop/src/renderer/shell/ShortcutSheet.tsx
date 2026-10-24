@@ -14,6 +14,7 @@ import {
   COMMAND_SHORTCUTS,
   OTHER_SHORTCUTS,
   type OtherShortcut,
+  platformKeys,
   SHORTCUT_GROUPS,
   type ShortcutGroup,
 } from "./shortcut-standard.js";
@@ -59,8 +60,10 @@ export function shortcutSheet(
         .filter((entry) => entry.group === group)
         .map((entry) => ({
           label: t(entry.label),
-          keys: shown(entry.keys),
-        })),
+          keys: shown(platformKeys(entry, mac)),
+        }))
+        // A shortcut with no key on this platform (Cmd+Esc on Windows, #290) isn't listed.
+        .filter((row) => row.keys.length > 0),
     ],
   })).filter(({ rows }) => rows.length > 0);
 }

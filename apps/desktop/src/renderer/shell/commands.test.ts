@@ -272,6 +272,30 @@ describe("shortcuts", () => {
       expect(event.defaultPrevented).toBe(true);
     });
 
+    it("leaves a key typed with AltGr to the text: no Ctrl+Alt command runs (#290)", () => {
+      const registry = withKeys({ paste: { keys: ["Mod+Alt+V"] } });
+      const run = vi.fn();
+      registry.register({ id: "paste", label: "Paste style", run });
+      remove = installCommandShortcuts(window, registry);
+      const ctrl = !isMac();
+
+      // Hungarian AltGr+V types @: Windows reports Ctrl+Alt, and AltGraph too.
+      const altGr = key({ key: "v", ctrlKey: ctrl, metaKey: !ctrl, altKey: true });
+      Object.defineProperty(altGr, "getModifierState", {
+        value: (modifier: string) => modifier === "AltGraph",
+      });
+      window.dispatchEvent(altGr);
+      expect(run).not.toHaveBeenCalled();
+      expect(altGr.defaultPrevented).toBe(false);
+
+      // Ctrl and Alt themselves still run it. (happy-dom reports AltGraph whenever Alt is held;
+      // Chromium only for the AltGr key, so this says so.)
+      const ctrlAlt = key({ key: "v", ctrlKey: ctrl, metaKey: !ctrl, altKey: true });
+      Object.defineProperty(ctrlAlt, "getModifierState", { value: () => false });
+      window.dispatchEvent(ctrlAlt);
+      expect(run).toHaveBeenCalledOnce();
+    });
+
     it("runs a command from its extra shortcuts too", () => {
       const registry = withKeys({ palette: { keys: ["Mod+P", "Mod+K"] } });
       const run = vi.fn();

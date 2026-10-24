@@ -268,7 +268,7 @@ describe("style field renderers (1.14 part 2)", () => {
     expect(onCommit.mock.calls).toEqual([["fullWidth"]]);
   });
 
-  it("resets a changed field from its right-click menu or with Ctrl/Cmd+Esc (UX-13)", async () => {
+  it("resets a changed field from its right-click menu or with Cmd+Esc (UX-13, #290)", async () => {
     const { onResetToDefault, user } = renderStyle({ changed: true });
 
     // A right-click on the field's label (a text field keeps its own menu, with spelling).
@@ -277,7 +277,10 @@ describe("style field renderers (1.14 part 2)", () => {
     expect(onResetToDefault).toHaveBeenLastCalledWith(["padding"]);
 
     screen.getByRole("radio", { name: "Small" }).focus();
+    // Ctrl + Esc opens Windows' Start menu, so only Cmd + Esc resets (#290).
     await user.keyboard("{Control>}{Escape}{/Control}");
+    expect(onResetToDefault).toHaveBeenCalledTimes(1);
+    await user.keyboard("{Meta>}{Escape}{/Meta}");
     expect(onResetToDefault).toHaveBeenCalledTimes(2);
   });
 
@@ -297,7 +300,7 @@ describe("style field renderers (1.14 part 2)", () => {
     expect(reset.getAttribute("aria-disabled")).toBe("true");
     await user.keyboard("{Escape}");
     screen.getByLabelText("Gap").focus();
-    await user.keyboard("{Control>}{Escape}{/Control}");
+    await user.keyboard("{Meta>}{Escape}{/Meta}");
     expect(onResetToDefault).not.toHaveBeenCalled();
   });
 
@@ -340,7 +343,7 @@ describe("style field renderers (1.14 part 2)", () => {
     expect(onResetToDefault).toHaveBeenLastCalledWith(["padding"], "Spacing");
 
     spacing.focus();
-    await user.keyboard("{Control>}{Escape}{/Control}");
+    await user.keyboard("{Meta>}{Escape}{/Meta}");
     expect(onResetToDefault).toHaveBeenCalledTimes(2);
   });
 

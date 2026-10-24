@@ -1,6 +1,6 @@
 import { t } from "@webforge/i18n";
 import { reportFailure } from "../log.js";
-import { COMMAND_SHORTCUTS, type StandardShortcut } from "./shortcut-standard.js";
+import { COMMAND_SHORTCUTS, platformKeys, type StandardShortcut } from "./shortcut-standard.js";
 
 /**
  * The command registry: every action the title bar, the app menu, the command box and keyboard
@@ -97,11 +97,14 @@ function withKeys(
   if (standard === undefined) {
     return command;
   }
+  // This platform's keys only (#290): a Mac's Cmd+Esc is no key on Windows, Windows' Alt+arrows
+  // none on a Mac.
+  const keys = platformKeys(standard, mac);
   const [shown, ...others] = [
-    ...standard.keys.filter((key) => onKeyboard(key, mac)),
-    ...standard.keys.filter((key) => !onKeyboard(key, mac)),
+    ...keys.filter((key) => onKeyboard(key, mac)),
+    ...keys.filter((key) => !onKeyboard(key, mac)),
   ];
-  const text = standard.text === true ? standard.keys : (standard.text ?? []);
+  const text = standard.text === true ? keys : (standard.text ?? []);
   return {
     ...command,
     ...(shown === undefined ? {} : { shortcut: shown }),
@@ -415,6 +418,11 @@ export function installCommandShortcuts(target: Window, registry: CommandRegistr
     // While a dialog (the sheet, Link, Rename) or a menu is open, no command runs: the page behind
     // it must not change, and Mod keys such as Mod+D would change it.
     if (event.defaultPrevented || event.repeat || isInDialog(event.target, document)) {
+      return;
+    }
+    // AltGr types characters on many European layouts (Hungarian AltGr+V is @, Polish AltGr+S
+    // is ś), and Windows reports it as Ctrl+Alt: typing wins, so no Ctrl+Alt command runs (#290).
+    if (event.getModifierState?.("AltGraph") === true) {
       return;
     }
     const inControl = isFocusedControl(event.target);

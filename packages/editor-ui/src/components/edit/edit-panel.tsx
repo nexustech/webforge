@@ -271,12 +271,17 @@ function FieldList({
                   onClick={() => onToggle(key)}
                   onKeyDown={(event) => {
                     if (!(event.ctrlKey || event.metaKey)) return;
-                    // Ctrl/Cmd + Enter opens or closes every group, Ctrl/Cmd + Esc resets this one
-                    // (F-ED-27, UX-13).
+                    // Ctrl/Cmd + Enter opens or closes every group, Cmd + Esc resets this one
+                    // (F-ED-27, UX-13). Not Ctrl + Esc: Windows opens the Start menu with it, and
+                    // the group's right-click menu resets it there (#290).
                     if (event.key === "Enter") {
                       event.preventDefault();
                       onToggleAll(all);
-                    } else if (event.key === "Escape" && resetGroup !== undefined) {
+                    } else if (
+                      event.key === "Escape" &&
+                      event.metaKey &&
+                      resetGroup !== undefined
+                    ) {
                       event.preventDefault();
                       event.stopPropagation();
                       resetGroup();
@@ -445,16 +450,15 @@ export function EditPanel({
   const content = shown.filter((field) => field.group === "content");
   const style = shown.filter((field) => field.group === "style");
   const advancedFields = shown.filter((field) => field.group === "advanced");
-  /** Ctrl/Cmd + Esc in a field resets it to the element's default (F-ED-27, UX-13). */
+  /**
+   * Cmd + Esc in a field resets it to the element's default (F-ED-27, UX-13), on a Mac only:
+   * Windows opens the Start menu with Ctrl + Esc (#290).
+   */
   const resetFromKeys = (
     event: KeyboardEvent<HTMLElement>,
     groupFields: readonly EditPanelField[],
   ) => {
-    if (
-      event.key !== "Escape" ||
-      !(event.ctrlKey || event.metaKey) ||
-      onResetToDefault === undefined
-    ) {
+    if (event.key !== "Escape" || !event.metaKey || onResetToDefault === undefined) {
       return;
     }
     const name = (event.target as Element).closest("[data-field]")?.getAttribute("data-field");
