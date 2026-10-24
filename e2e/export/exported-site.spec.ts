@@ -99,6 +99,35 @@ test.describe("exported site from disk", () => {
     );
   });
 
+  test("draws a section with reversed colours on the theme's reversed colours (2.4)", async ({
+    page,
+  }) => {
+    await open(page, "index.html");
+    const colours = (selector: string) =>
+      page
+        .locator(selector)
+        .first()
+        .evaluate((element) => {
+          const style = getComputedStyle(element);
+          return { background: style.backgroundColor, text: style.color };
+        });
+
+    const band = page.locator('section[data-theme="wf_inverse"]');
+    await expect(band.getByRole("heading", { name: "Fresh every day" })).toBeVisible();
+    const onPage = await colours("body");
+    const reversed = await colours('section[data-theme="wf_inverse"]');
+    // Its own background and text: the theme's reversed colours, not the page's.
+    expect(reversed.background).not.toBe("rgba(0, 0, 0, 0)");
+    expect(reversed.background).not.toBe(onPage.background);
+    expect(reversed.text).not.toBe(onPage.text);
+    // Its heading follows the band's text colour, not the page's.
+    expect((await colours('section[data-theme="wf_inverse"] h3')).text).toBe(reversed.text);
+    // A band across the page, its text in the page's column (max-w-4xl).
+    const width = await page.evaluate(() => document.documentElement.clientWidth);
+    expect((await band.boundingBox())?.width).toBe(width);
+    expect((await band.getByRole("heading").boundingBox())?.width).toBeLessThanOrEqual(896);
+  });
+
   test("navigates between pages with relative links", async ({ page }) => {
     await open(page, "index.html");
 
@@ -236,11 +265,17 @@ test.describe("exported site from disk", () => {
       page,
     }) => {
       await page.setViewportSize({ width: 1280, height: 800 });
+      // Its clock held until it's stopped: on a slow machine loading the page and reaching the
+      // carousel can take its 5 seconds, and the slides would move on before the first press.
+      const start = Date.now();
+      await page.clock.install({ time: start });
+      await page.clock.pauseAt(start + 1_000);
       await open(page, "index.html");
       const { carousel, track, button, scrollLeft } = quotes(page);
-      // Stopped first, so only the buttons move it.
+      // Stopped first, so only the buttons move it; then the strip's rests run on real time.
       await button("Stop the slides").click();
       await expect(button("Play the slides")).toBeVisible();
+      await page.clock.resume();
 
       // The slides, inside the strip (a group too, named "Slides").
       const slides = carousel.getByRole("group", { name: /^\d of 3$/ });

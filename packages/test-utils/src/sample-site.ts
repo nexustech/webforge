@@ -156,6 +156,24 @@ export function sampleSite(): SiteSnapshot {
               },
             },
             {
+              // A band on the theme's reversed colours (2.4, F-DS-3): dark on this light theme.
+              type: "Section",
+              props: {
+                id: "fresh",
+                colors: "inverse",
+                content: [
+                  {
+                    type: "Heading",
+                    props: { id: "fresh-heading", text: "Fresh every day", size: "small" },
+                  },
+                  {
+                    type: "Text",
+                    props: { id: "fresh-text", text: "<p>Bread from 7 am, cakes from 9.</p>" },
+                  },
+                ],
+              },
+            },
+            {
               type: "CallToAction",
               props: {
                 id: "cta",

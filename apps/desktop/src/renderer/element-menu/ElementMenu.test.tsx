@@ -77,6 +77,34 @@ describe("ElementMenu (1.35)", () => {
     expect(run).toHaveBeenCalledWith("duplicate");
   });
 
+  it("renames once it has closed, as the menu was when Rename was chosen (R10)", async () => {
+    const { commands } = registry({ save: true, detach: false });
+    const rename = vi.fn();
+    const onCloseFocus = vi.fn();
+    // As on the canvas: closed, the menu has no layer, so no Rename, to offer any more.
+    function Host() {
+      const [open, setOpen] = useState(true);
+      return (
+        <ElementMenu
+          at={open ? { x: 0, y: 0 } : null}
+          onClose={() => setOpen(false)}
+          onRename={open ? rename : undefined}
+          onCloseFocus={onCloseFocus}
+        />
+      );
+    }
+    render(
+      <CommandRegistryProvider registry={commands}>
+        <Host />
+      </CommandRegistryProvider>,
+    );
+
+    await userEvent.click(menu().getByRole("menuitem", { name: "Rename" }));
+    await waitFor(() => expect(rename).toHaveBeenCalledOnce());
+    // The dialog has the focus: the menu doesn't give it back to where it was opened from.
+    expect(onCloseFocus).not.toHaveBeenCalled();
+  });
+
   it("offers Detach for a linked copy, and no Rename where there is no layer to name", () => {
     const { commands } = registry({ save: false, detach: true });
     render(
