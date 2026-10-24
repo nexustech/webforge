@@ -34,8 +34,6 @@ import type {
   FieldDrag,
   HistoryCommandHandler,
   InsertPoint,
-  LinkPicker,
-  RichTextAt,
   TextSplit,
   ViewOptions,
 } from "../canvas-engine.js";
@@ -73,7 +71,7 @@ import {
 import { hidePuckLayout } from "./layout-styles.js";
 import { pageActions, type SlotsOf } from "./page-actions.js";
 import { CANVAS_ROOT, componentSelector } from "./puck-dom.js";
-import { createFormatToolbar } from "./rich-text.js";
+import { createRichTextTools } from "./rich-text-tools.js";
 import { type CanvasDocs, type RoutedEdit, routeEdit, routeLinkedCopy } from "./route-edit.js";
 import { performOnSelected } from "./selected-actions.js";
 import { showAlsoSelected, watchAddingClicks } from "./selection-clicks.js";
@@ -82,7 +80,6 @@ import { applySiteStyles, type SiteStyles } from "./site-styles.js";
 import { boxHandleFields } from "./spacing-handles.js";
 import { focusedRichTextId, richTextArrived, staleRichText } from "./stale-rich-text.js";
 import { startTextEditing } from "./text-editing.js";
-import { createTextKeys, type PickLink } from "./text-keys.js";
 import { allNodes, findNode } from "./tree.js";
 import { applyViewOptions } from "./view-options.js";
 
@@ -484,39 +481,12 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     actionBar: SharedAwareActionBar,
   };
 
-  /** Picks links in rich text for the format toolbar (F-ED-18); none until the app gives one. */
-  let linkPicker: LinkPicker | null = null;
-  /**
-   * The rich-text field being edited: the selected element, and the inline field Puck has focused
-   * (`text::inline`). Read when the toolbar's Link button is clicked, before the dialog takes focus.
-   */
-  const editingRichText = (): RichTextAt | null => {
-    const state = getPuck?.();
-    const nodeId = state?.selectedItem?.props.id;
-    const focus = state?.appState.ui.field.focus;
-    return typeof nodeId === "string" && typeof focus === "string"
-      ? { nodeId, field: focus.replace(/::inline$/, "") }
-      : null;
-  };
-  const pickLink = (): PickLink | null => {
-    const picker = linkPicker;
-    return picker === null ? null : (current) => picker(current, editingRichText());
-  };
-  const richTextTools = {
-    toolbar: createFormatToolbar(pickLink),
-    // Mod + K, Alt + Enter and Shift + Space in rich text (F-ED-27).
-    extensions: [
-      createTextKeys({
-        pickLink,
-        split: (halves) => {
-          const at = editingRichText();
-          // After the last keystrokes Puck still holds back, so the step before the split has them
-          // and undoing the split gives back all that was typed.
-          if (at !== null) commands.whenSent(() => textSplits.emit({ ...at, ...halves }));
-        },
-      }),
-    ],
-  };
+  /** The format toolbar and text keys of rich text on the canvas (see `rich-text-tools.ts`). */
+  const richText = createRichTextTools(
+    () => getPuck?.() ?? null,
+    textSplits.emit,
+    commands.whenSent,
+  );
 
   /** The Puck config for `library`, rendering with the current editor revisions and context. */
   const configFor = (forLibrary: ComponentLibrary) =>
@@ -524,7 +494,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       forLibrary,
       (id) => editorRevisions.get(id) ?? 0,
       () => renderContext,
-      richTextTools,
+      richText.tools,
     );
 
   /**
@@ -720,9 +690,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       redraw();
     },
 
-    setLinkPicker(picker) {
-      linkPicker = picker;
-    },
+    setLinkPicker: richText.setLinkPicker,
 
     setSettings(setting, emptySetting) {
       const { emptySetting: _previous, ...rest } = renderContext;
