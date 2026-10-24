@@ -7,8 +7,6 @@ import { type Layer, layerItem, renameLayer, shownLayer } from "../layers/layers
 import { NameDialog } from "../site/NameDialog.js";
 import { ElementMenu, type MenuPoint } from "./ElementMenu.js";
 
-/** The longest layer name; as Layers' own name field. */
-
 /** The selected element's layer on the shown page, if it is one (not the Header or Footer). */
 function selectedLayer(session: EditorSession): Layer | undefined {
   const { nodeId } = session.ui.getState();

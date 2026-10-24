@@ -26,8 +26,6 @@ import type { EditKind, EditorSelection, EditorSession } from "../editor/editor-
 /** The parts of an editor session the actions use. */
 export type PagesSession = Pick<EditorSession, "history" | "ui" | "edit">;
 
-/** The longest page title `pageEntrySchema` accepts. */
-
 /** A name as a page title: trimmed, and short enough to save. */
 const titleOf = (name: string) => name.trim().slice(0, PAGE_TITLE_MAX).trim();
 
@@ -369,8 +367,6 @@ export type PageSettingsChange = {
   readonly hideFooter: boolean;
   readonly hideFromNavigation: boolean;
 };
-
-/** The longest description `pageEntrySchema` accepts. */
 
 /**
  * Applies Page Settings as one undo step, "Changed page settings", or nothing when nothing

@@ -45,8 +45,6 @@ export type Layer = {
   readonly animated?: boolean;
 };
 
-/** The longest layer name the model accepts. */
-
 /** The node lists inside `node`: its slots' contents, in field order. */
 function slotsOf(node: NodeDoc, library: ComponentLibrary): NodeDoc[][] {
   const fields = library.components[node.type]?.fields ?? {};

@@ -15,8 +15,6 @@ import { DEVICE_NAME_MAX, DEVICE_SIZE } from "../../shared/ipc/prefs.js";
 /** A device as the person describes it: its name and size in CSS pixels. */
 export type NewDevice = { readonly name: string; readonly width: number; readonly height: number };
 
-/** The longest device name the preferences keep. */
-
 /** `value` as a size the canvas can show, or undefined. */
 function sizeOf(value: string): number | undefined {
   const size = Number(value);
