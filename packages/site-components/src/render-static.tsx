@@ -7,7 +7,7 @@ import {
   rewriteRichTextLinks,
   richTextFileLinks,
 } from "@webforge/model";
-import type { ComponentType, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { type ComponentDef, type ComponentLibrary, withAdvanced } from "./library.js";
 import { RichText } from "./rich-text.js";

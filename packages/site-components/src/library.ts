@@ -16,7 +16,7 @@ import {
   type SpacingToken,
   type TextStyle,
 } from "@webforge/model";
-import { type ComponentType, cloneElement, isValidElement, type ReactNode } from "react";
+import { cloneElement, isValidElement, type ReactNode } from "react";
 import { isDocumentPath } from "./document-path.js";
 import type {
   BehaviourName,
