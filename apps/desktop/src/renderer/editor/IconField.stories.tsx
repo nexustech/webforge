@@ -26,6 +26,8 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+// No story opens the picker: it draws all 1,891 icons, and the Picker's own stories show it.
+
 /** No icon chosen yet. */
 export const Empty: Story = {};
 
@@ -34,13 +36,3 @@ export const Chosen: Story = { args: { value: "phone" } };
 
 /** In Content mode, or on a locked element. */
 export const Disabled: Story = { args: { value: "phone", disabled: true } };
-
-/** Choosing in the picker, on the icon chosen. */
-export const Choosing: Story = {
-  args: { value: "phone" },
-  play: ({ canvasElement }) => {
-    const change = canvasElement.querySelector<HTMLButtonElement>("#field-icon");
-    if (change === null) throw new Error("No icon field");
-    change.click();
-  },
-};
