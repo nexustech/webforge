@@ -363,6 +363,18 @@ test.describe("exported site from disk", () => {
     const list = (page: Page) => page.getByRole("tablist");
     const tab = (page: Page, name: string) => page.getByRole("tab", { name });
 
+    test("opens at a link into a tab not chosen first, with that tab chosen (#395 review)", async ({
+      page,
+    }) => {
+      await blockNetwork(page.context());
+      await page.goto(`${exportedPageUrl("thanks.html")}#tab-next-collect`);
+      await page.waitForLoadState("load");
+
+      await expect(tab(page, "Collecting")).toHaveAttribute("aria-selected", "true");
+      await expect(page.getByText("Come to the shop from 9 am.")).toBeInViewport();
+      await expect(page.getByText("We bake it the day before")).toBeHidden();
+    });
+
     test("shows one panel at a time, moving with the arrow keys, Home and End", async ({
       page,
     }) => {
