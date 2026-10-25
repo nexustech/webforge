@@ -620,15 +620,11 @@ app.on("second-instance", (_event, argv, workingDirectory) => {
 });
 
 // Closing the site waits for work on its file (at most a few seconds, R13b), so quitting waits for
-// that, then goes on.
-let siteClosed = false;
+// that, then exits. Not `app.quit()` again: once "will-quit" was held back, Electron ignores it,
+// and every window is closed by now anyway.
 app.on("will-quit", (event) => {
-  if (siteClosed) return;
   event.preventDefault();
-  void projectSession.close().finally(() => {
-    siteClosed = true;
-    app.quit();
-  });
+  void projectSession.close().finally(() => app.exit(0));
 });
 
 // Webforge quits when its window closes, on macOS too (spec/02 §1, #287): it's a one-window app,
