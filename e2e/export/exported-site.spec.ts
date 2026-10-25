@@ -282,6 +282,67 @@ test.describe("exported site from disk", () => {
     });
   });
 
+  test.describe("back-to-top button (F-CM-9)", () => {
+    const backToTop = (page: Page) => page.getByRole("link", { name: "Back to top" });
+    /**
+     * Scrolls two screens down, as a visitor reading on does. Not with the wheel: Firefox's wheel
+     * steps can scroll less than a screen, below where the button shows.
+     */
+    const readOn = async (page: Page) => {
+      await page.evaluate(() => window.scrollTo(0, 2 * window.innerHeight));
+      await expect.poll(() => page.evaluate(() => window.scrollY >= window.innerHeight)).toBe(true);
+    };
+
+    test("shows once the page has scrolled a screen, and not on a page that hides it", async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 1280, height: 600 });
+      await open(page, "about.html");
+      await expect(page.locator("[data-wf-back-to-top]")).toHaveCount(0);
+
+      await open(page, "index.html");
+      await expect(backToTop(page)).toBeHidden();
+      await readOn(page);
+      await expect(backToTop(page)).toBeVisible();
+      const results = await new AxeBuilder({ page }).include("[data-wf-back-to-top]").analyze();
+      expect(results.violations).toEqual([]);
+    });
+
+    test("takes a keyboard user back to the top, and the focus with them", async ({
+      page,
+      browserName,
+    }) => {
+      await page.setViewportSize({ width: 1280, height: 600 });
+      await open(page, "index.html");
+      await readOn(page);
+
+      await backToTop(page).focus();
+      await page.keyboard.press("Enter");
+
+      await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+      expect(await page.evaluate(() => document.activeElement === document.body)).toBe(true);
+      // The next Tab starts again from the top (WebKit doesn't tab to links by default).
+      if (browserName !== "webkit") {
+        await page.keyboard.press("Tab");
+        expect(await page.evaluate(() => document.activeElement?.closest("header") !== null)).toBe(
+          true,
+        );
+      }
+    });
+
+    test("jumps back at once for a visitor who prefers less motion", async ({ page }) => {
+      await page.emulateMedia({ reducedMotion: "reduce" });
+      await page.setViewportSize({ width: 1280, height: 600 });
+      await open(page, "index.html");
+      await readOn(page);
+
+      await backToTop(page).click();
+
+      // No smooth scroll to wait for.
+      expect(await page.evaluate(() => window.scrollY)).toBe(0);
+    });
+  });
+
   test.describe("gallery lightbox (2.7a)", () => {
     test("opens an image large, keeps the focus in it, moves with the keys and closes with Esc", async ({
       page,
@@ -451,6 +512,21 @@ test.describe("exported site from disk", () => {
       await page.locator("a[data-wf-lightbox-item]").first().click();
 
       await expect(page).toHaveURL(/\/assets\/img\/[^/]+\.(jpg|png|webp)$/);
+    });
+
+    test("has a back-to-top link that is always there and goes to the top (F-CM-9)", async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 1280, height: 600 });
+      await open(page, "index.html");
+      const link = page.getByRole("link", { name: "Back to top" });
+      await expect(link).toBeVisible();
+      await expect(link).toHaveAttribute("href", "#top");
+
+      await wheelDown(page, 900);
+      await link.click();
+
+      await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
     });
 
     test("links a video and a map to their own sites, with no button that does nothing (2.8)", async ({

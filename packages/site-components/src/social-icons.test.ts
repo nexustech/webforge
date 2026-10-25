@@ -22,6 +22,10 @@ describe("the social networks' logos (PH2-4)", () => {
     const svg = PACKAGE_SVGS[slug as keyof typeof SOCIAL_LOGOS];
     expect(svg).toContain(`<title>${logo.title}</title>`);
     expect(svg).toContain(` d="${logo.path}"`);
+    // The link is named as Site Settings name the network: the brand's own name.
+    expect(
+      socialName({ network: slug as keyof typeof SOCIAL_LOGOS, url: "https://a.example" }),
+    ).toBe(logo.title);
   });
 
   it("names a profile by its network, or by its address's host", () => {

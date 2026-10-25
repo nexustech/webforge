@@ -34,6 +34,8 @@ export type SettingsForm = {
   readonly description: string;
   readonly language: string;
   readonly icon: MediaId | undefined;
+  /** A back-to-top button on every page that doesn't hide it (F-CM-9). */
+  readonly backToTop: boolean;
   readonly url: string;
   readonly profiles: readonly {
     readonly network: (typeof SOCIAL_NETWORKS)[number];
@@ -69,6 +71,7 @@ export function toSettingsForm(settings: SiteSettings): SettingsForm {
     description: general.description ?? "",
     language: general.language,
     icon: general.icon,
+    backToTop: general.backToTop === true,
     url: address.url ?? "",
     profiles: social.profiles.map((profile) => ({ ...profile })),
     shareImage: social.shareImage,
@@ -136,6 +139,8 @@ export function fromSettingsForm(form: SettingsForm, previous: SiteSettings): un
       ...optional("description", form.description),
       language: form.language.trim(),
       ...(form.icon === undefined ? {} : { icon: form.icon }),
+      // Absent when off, as in files from before it.
+      ...(form.backToTop ? { backToTop: true } : {}),
     },
     address: optional("url", form.url.trim().replace(/\/$/, "")),
     social: {

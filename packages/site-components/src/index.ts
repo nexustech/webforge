@@ -1,3 +1,4 @@
+export { backToTopHtml } from "./back-to-top.js";
 export { BEHAVIOUR_SCRIPTS } from "./behaviours.js";
 export type { ColumnLayout } from "./catalogue/column-layouts.js";
 export {

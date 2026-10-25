@@ -3,11 +3,13 @@ import { WebforgeError } from "@webforge/errors";
 import {
   DOCUMENT_EXTENSIONS,
   type NodeDoc,
+  type SitePage,
   type SiteSnapshot,
   siteSnapshotSchema,
 } from "@webforge/model";
 import {
   BEHAVIOUR_SCRIPTS,
+  backToTopHtml,
   behavioursUsedBy,
   type ComponentLibrary,
   documentsLinkedBy,
@@ -73,6 +75,11 @@ function depthOf(pagePath: string): number {
   return pagePath.split("/").length - 1;
 }
 
+/** Whether `page` has the back-to-top button: Site Settings ask for it, and it doesn't hide it. */
+function showsBackToTop(site: SiteSnapshot, page: SitePage): boolean {
+  return site.backToTop === true && page.hideBackToTop !== true;
+}
+
 function allNodes(site: SiteSnapshot): NodeDoc[] {
   return [
     ...site.layout.header,
@@ -105,6 +112,9 @@ export async function buildSite(
   let documentIds: Set<string>;
   try {
     behaviours = behavioursUsedBy(allNodes(site), library);
+    if (site.pages.some((page) => showsBackToTop(site, page))) {
+      behaviours = [...behaviours, "back-to-top" as const].sort();
+    }
     mediaIds = mediaUsedBy(allNodes(site), library);
     documentIds = documentsLinkedBy(allNodes(site), library);
     // Documents the navigation menu links to are exported too.
@@ -226,7 +236,14 @@ export async function buildSite(
     return { page, prefix, ...renderPage(regions, library, context) };
   });
 
-  const markup = rendered.flatMap((entry) => [entry.header, entry.main, entry.footer]);
+  // The back-to-top button (F-CM-9) on the pages that show it, its classes compiled with theirs.
+  const backToTop = backToTopHtml();
+  const markup = rendered.flatMap((entry) => [
+    entry.header,
+    entry.main,
+    entry.footer,
+    showsBackToTop(site, entry.page) ? backToTop : "",
+  ]);
   const css = await buildSiteCss(resources, {
     theme: site.theme,
     candidates: classCandidates([`<body class="${BODY_CLASS}">`, ...markup].join("\n")),
@@ -246,6 +263,7 @@ export async function buildSite(
       header: entry.header,
       main: entry.main,
       footer: entry.footer,
+      ...(showsBackToTop(site, entry.page) ? { backToTop } : {}),
     });
     files.set(`${entry.page.path}.html`, text.encode(html));
   }
