@@ -359,6 +359,40 @@ test.describe("exported site from disk", () => {
     });
   });
 
+  test.describe("tabs (2.11)", () => {
+    const list = (page: Page) => page.getByRole("tablist");
+    const tab = (page: Page, name: string) => page.getByRole("tab", { name });
+
+    test("shows one panel at a time, moving with the arrow keys, Home and End", async ({
+      page,
+    }) => {
+      await open(page, "thanks.html");
+
+      await expect(list(page)).toBeVisible();
+      await expect(tab(page, "Your order")).toHaveAttribute("aria-selected", "true");
+      await expect(page.getByRole("tabpanel", { name: "Your order" })).toContainText(
+        "We bake it the day before",
+      );
+      await expect(page.getByText("Come to the shop from 9 am.")).toBeHidden();
+
+      await tab(page, "Your order").focus();
+      await page.keyboard.press("ArrowRight");
+      await expect(tab(page, "Collecting")).toBeFocused();
+      await expect(tab(page, "Collecting")).toHaveAttribute("aria-selected", "true");
+      await expect(page.getByText("Come to the shop from 9 am.")).toBeVisible();
+      await page.keyboard.press("End");
+      await expect(page.getByRole("tabpanel", { name: "Questions" })).toBeVisible();
+      await page.keyboard.press("Home");
+      await expect(tab(page, "Your order")).toBeFocused();
+      // One tab in the Tab order: Tab goes on to the panel, not the next tab.
+      await page.keyboard.press("Tab");
+      await expect(page.getByRole("tabpanel", { name: "Your order" })).toBeFocused();
+
+      const results = await new AxeBuilder({ page }).include(".site-tabs").analyze();
+      expect(results.violations).toEqual([]);
+    });
+  });
+
   test.describe("back-to-top button (F-CM-9)", () => {
     const backToTop = (page: Page) => page.getByRole("link", { name: "Back to top" });
     /**
@@ -582,6 +616,16 @@ test.describe("exported site from disk", () => {
 
   test.describe("without JavaScript", () => {
     test.use({ javaScriptEnabled: false });
+
+    test("shows every tab's panel under its label (2.11)", async ({ page }) => {
+      await open(page, "thanks.html");
+
+      await expect(page.getByRole("tablist")).toBeHidden();
+      for (const label of ["Your order", "Collecting", "Questions"]) {
+        await expect(page.getByRole("heading", { name: label })).toBeVisible();
+      }
+      await expect(page.getByText("Come to the shop from 9 am.")).toBeVisible();
+    });
 
     test("shows a section with an entrance animation, never hidden (2.12)", async ({ page }) => {
       await page.setViewportSize({ width: 1280, height: 600 });

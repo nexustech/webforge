@@ -58,6 +58,19 @@ export type ComponentDef = {
    * page shows, and can be selected and edited, in either mode.
    */
   readonly advancedOnly?: true;
+  /**
+   * The same component with some values set, each offered in the Add panel as an entry of its own
+   * (2.11): the Booking button is a Button reading "Book now" (F-CM-7). Placing one places this
+   * component, so it edits and exports as any other.
+   */
+  readonly presets?: readonly {
+    /** Unique among this component's presets: "booking". */
+    readonly id: string;
+    /** Its name in the Add panel, already translated ("Booking button"). */
+    readonly label: string;
+    /** What it sets over the component's defaults. */
+    readonly values: Readonly<Record<string, unknown>>;
+  }[];
   /** Set on a section {@link defineSection} framed: every section is (2.19). */
   readonly framed?: true;
   readonly fields: Readonly<Record<string, FieldDef>>;

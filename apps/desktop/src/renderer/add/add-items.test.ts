@@ -16,8 +16,10 @@ import {
   addItems,
   addSharedCopy,
   addTarget,
+  addTargetFor,
   forLevel,
   groupItems,
+  presetKey,
   sharedSectionItems,
   suggestedItems,
   suggestedTypes,
@@ -57,7 +59,7 @@ describe("addItems (F-ED-1, ADR 0005)", () => {
     // Every section and element in the library's order, a family added later's too.
     expect(sections).toEqual(of("section"));
     expect(sections.slice(0, 2)).toEqual(["Section", "Hero"]);
-    expect(elements.map((item) => item.type)).toEqual(of("element"));
+    expect(elements.filter((item) => !item.preset).map((item) => item.type)).toEqual(of("element"));
     expect(elements.slice(0, 2)).toEqual([
       { type: "Heading", label: "Heading", category: "Text" },
       { type: "Text", label: "Text", category: "Text" },
@@ -76,6 +78,18 @@ describe("addItems (F-ED-1, ADR 0005)", () => {
     expect(types("advanced")).toContain("CustomCode");
     expect(types("simple")).not.toContain("CustomCode");
     expect(types("simple")).toContain("Heading");
+  });
+
+  it("offers a component's presets after it, each an entry of its own (2.11, F-CM-7)", () => {
+    const elements = addItems(siteLibrary, "elements");
+    const at = elements.findIndex((item) => item.type === "Button");
+
+    expect(elements[at + 1]).toEqual({
+      type: presetKey("Button", "booking"),
+      label: "Booking button",
+      category: elements[at]?.category,
+      preset: true,
+    });
   });
 
   it("finds by name or group, ignoring case, and groups by category", () => {
@@ -163,6 +177,25 @@ describe("addComponent", () => {
     expect(session.ui.getState().nodeId).toBe(hero?.props.id);
     session.history.undo();
     expect(content()).toHaveLength(1);
+  });
+
+  it("adds a preset as its component with the preset's values, named as the component (2.11)", () => {
+    const session = sessionWith();
+    const content = () => currentPage(session)?.doc.content ?? [];
+    session.select("heading-1");
+
+    expect(addTargetFor(session, presetKey("Button", "booking"))).toBeDefined();
+    expect(addComponent(session, presetKey("Button", "booking"))).toBe(true);
+
+    const added = (content()[0]?.props.content as NodeDoc[] | undefined)?.[1];
+    expect(added).toMatchObject({
+      type: "Button",
+      props: { ...siteLibrary.components.Button?.defaults, label: "Book now" },
+    });
+    expect(session.history.entries().map((entry) => entry.label)).toEqual(["Added Button"]);
+    // A preset the library doesn't have places nothing.
+    expect(addTargetFor(session, presetKey("Button", "gone"))).toBeUndefined();
+    expect(addComponent(session, presetKey("Button", "gone"))).toBe(false);
   });
 
   it("gives every element in what it adds an id of its own, each time (2.9)", () => {

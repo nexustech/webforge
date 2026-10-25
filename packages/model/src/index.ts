@@ -109,6 +109,7 @@ export {
   DAYS,
   defaultSiteSettings,
   formServiceSchema,
+  LANGUAGE_TAG_MAX,
   languageTagSchema,
   MEASUREMENT_ID_MAX,
   OPENING_HOURS_NOTE_MAX,

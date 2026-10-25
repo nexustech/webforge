@@ -151,14 +151,17 @@ export const site = {
   "site.binding.formHint.insecure": "The form address must start with https://",
   "site.binding.formHint.noAddress":
     "Add the form address your newsletter service gives you, in the Edit panel",
+  // An element without what it needs yet (2.11), on the canvas.
+  "site.binding.elementHint.videoAddress": "Add a YouTube or Vimeo address in the Edit panel",
+  "site.binding.elementHint.mapAddress": "Add an address or a map link in the Edit panel",
+  "site.binding.elementHint.paymentLink":
+    "Add the payment link (https://…) from Stripe, PayPal or your shop, in the Edit panel",
   "site.settings.title": "Site Settings",
   "site.settings.description": "Details that apply to the whole site, wherever they appear.",
   "site.settings.sections": "Site Settings sections",
   "site.settings.save": "Save",
-  "site.settings.cancel": "Cancel",
   "site.settings.history": "Changed Site Settings",
   "site.settings.historySections": "Changed Site Settings: {sections}",
-  "site.settings.fixErrors": "Some values need fixing before they can be saved.",
   "site.settings.section.general": "General",
   "site.settings.section.address": "Web address",
   "site.settings.section.social": "Social & sharing",
@@ -238,15 +241,11 @@ export const site = {
   "site.settings.formValue.custom": "Address forms send to",
   "site.settings.formValue.customHint":
     "It must start with https://, so messages travel encrypted.",
-  "site.settings.error.invalid": "Check this value.",
-  "site.settings.error.name": "Give the site a name of up to 100 characters.",
-  "site.settings.error.description": "Keep the description to 300 characters.",
   "site.settings.error.language": "Use a language code such as en or en-GB.",
   "site.settings.error.webAddress":
     "Use the site's address starting with https://, such as https://www.example.com, without a page or folder.",
   "site.settings.error.profileUrl": "Use the profile's full address, starting with https://.",
   "site.settings.error.xHandle": "Use your X username, such as @rosasbakery.",
-  "site.settings.error.tooLong": "This is too long.",
   "site.settings.error.email": "Use an email address such as hello@example.com.",
   "site.settings.error.phone": "Use a phone number such as +44 1234 567890.",
   "site.settings.error.days": "Choose at least one day.",

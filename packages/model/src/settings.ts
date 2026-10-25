@@ -5,6 +5,12 @@ import { phoneNumberSchema, webUrlSchema } from "./link.js";
 /** A BCP 47 language tag for `<html lang>`, e.g. `en` or `en-GB`. */
 export const languageTagSchema = z.string().regex(/^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/);
 
+/**
+ * The longest language code the Site Settings field takes (`en-GB`, `zh-Hant-TW`): RFC 5646's
+ * practical limit.
+ */
+export const LANGUAGE_TAG_MAX = 35;
+
 /** The longest name the site can have (F-SET-1). */
 export const SITE_NAME_MAX = 100;
 /** The longest description the site can have for search results; as a page's (X3). */

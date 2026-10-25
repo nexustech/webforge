@@ -27,6 +27,7 @@ export const RENDER_CONTEXT_SOURCES = {
   language: "setSettings",
   formService: "setSettings",
   formHint: "setSettings",
+  elementHint: "setSettings",
 } as const satisfies Record<keyof SiteBindings, "setSettings"> &
   Record<Exclude<keyof RenderContext, keyof SiteBindings>, Exclude<Source, "setSettings">>;
 

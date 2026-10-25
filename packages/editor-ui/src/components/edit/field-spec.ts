@@ -61,6 +61,15 @@ type FieldSpecs = {
     readonly itemFields: readonly ListItemFieldSpec[];
     /** The order of the items means nothing (attributes), so they can't be moved. */
     readonly orderless?: boolean;
+    /**
+     * How a form draws it (2.21): each item a row of its fields, as Site Settings' profiles and
+     * opening hours are; or as the Edit panel does, each item a panel that opens (the default).
+     */
+    readonly look?: "rows" | "panels";
+    /** Its add button ("Add a profile"), already translated; "Add {item}" when left out. */
+    readonly addLabel?: string;
+    /** Each item's remove button ("Remove this profile"); "Delete {item}" when left out. */
+    readonly removeLabel?: string;
   };
   /** Drawn by the app: where a link goes (1.19). */
   readonly link: Nothing;
@@ -90,8 +99,16 @@ type FieldSpecs = {
 /** A kind of field: the renderer that draws it. */
 export type FieldKind = keyof FieldSpecs;
 
-/** The kinds an item of a list can have: plain values. */
-export type PlainFieldKind = "text" | "select" | "toggle" | "slider" | "color" | "spacing";
+/** The kinds an item of a list can have: plain values (a form's lists: times and days too). */
+export type PlainFieldKind =
+  | "text"
+  | "select"
+  | "toggle"
+  | "slider"
+  | "color"
+  | "spacing"
+  | "time"
+  | "multiChoice";
 
 /**
  * What a field renderer needs to know about its field, by its kind (`FieldSpec<"select">`, or any
@@ -110,7 +127,14 @@ export type FieldSpec<K extends FieldKind = FieldKind> = {
 }[K];
 
 /** One field of a list item. */
-export type ListItemFieldSpec = FieldSpec<PlainFieldKind> & { readonly name: string };
+export type ListItemFieldSpec = FieldSpec<PlainFieldKind> & {
+  readonly name: string;
+  /**
+   * In a row (`look: "rows"`), its label shows beside it ("Opens 09:00"); otherwise it is for
+   * screen readers only.
+   */
+  readonly labelBeside?: boolean;
+};
 
 /**
  * One item of a list's value, as the site keeps it (`ListItem`): its id, which stays with it when
@@ -143,6 +167,11 @@ export type FieldRendererProps<K extends FieldKind = FieldKind> = {
   readonly errorId?: string;
   /** The field can't be changed now: its controls are shown greyed out, and Tab skips them. */
   readonly disabled?: boolean;
+  /**
+   * A list's problems by item (2.21): by the item's id, then the field's name, each a translated
+   * message to show by that field.
+   */
+  readonly itemErrors?: Readonly<Record<string, Readonly<Record<string, string>>>>;
   readonly field: FieldSpec<K>;
   readonly value: unknown;
   /**
