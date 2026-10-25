@@ -1,5 +1,5 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
-import { launchDesktopApp } from "./launch.js";
+import { launchDesktopApp, waitForCanvas } from "./launch.js";
 
 // The canvas's View menu (1.33, F-ED-25): outlines around every element, margins and padding on
 // hover, element names and room below the page. They only change what the canvas shows: never
@@ -17,6 +17,9 @@ test.beforeEach(async () => {
     .getByRole("tab", { name: "Undo History" })
     .click();
   await expect(canvas().locator("h1")).toHaveText("Welcome to our business");
+  // The site's CSS changes the layout when it arrives: a hover before then can find its element
+  // moved out from under the pointer, and the hover ends (macOS and Windows CI, #412).
+  await waitForCanvas(page);
 });
 
 test.afterEach(async () => {
