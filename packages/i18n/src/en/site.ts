@@ -142,6 +142,7 @@ export const site = {
   "site.binding.empty.contact.phone": "Add your phone number in Site Settings",
   "site.binding.empty.contact.address": "Add your address in Site Settings",
   "site.binding.empty.contact.openingHoursNote": "Add a note on opening hours in Site Settings",
+  "site.binding.socialHint": "Add your social profiles in Site Settings, under Social & sharing",
   "site.binding.empty.address.url": "Add the site's web address in Site Settings",
   // A form with nowhere to send submissions yet (2.8), on the canvas, by why.
   "site.binding.formHint.noService": "Choose where submissions go in Site Settings",
@@ -184,6 +185,8 @@ export const site = {
   "site.settings.profileUrl": "Profile address",
   "site.settings.addProfile": "Add a profile",
   "site.settings.removeProfile": "Remove this profile",
+  "site.settings.profilesHint":
+    "Social links show each network's logo, linking to your page there. The logos belong to their brands: follow each brand's guidelines when you use them.",
   "site.settings.network.facebook": "Facebook",
   "site.settings.network.instagram": "Instagram",
   "site.settings.network.x": "X",

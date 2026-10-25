@@ -9,7 +9,7 @@ export {
 export { siteLibrary, starterLayout, starterNotFoundPage, starterPage } from "./catalogue/index.js";
 export type { ComponentSpec } from "./define.js";
 export { createLibrary, defineComponent } from "./define.js";
-export { ICON_NAMES, iconTags, isIconName, LucideIcon } from "./icons.js";
+export { ICON_NAMES, isIconName, LucideIcon } from "./icons.js";
 export type {
   ComponentDef,
   ComponentLibrary,

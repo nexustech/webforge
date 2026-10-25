@@ -40,6 +40,8 @@ export function connectCanvasSettings(
       setting: (key) => values[key],
       emptySetting: emptySettingHint,
       openingHours: shown.contact.openingHours,
+      socialProfiles: shown.social.profiles,
+      socialHint: () => hint(t("site.binding.socialHint")),
       language: shown.general.language,
       ...(shown.forms.service === undefined ? {} : { formService: shown.forms.service }),
       formHint: (reason) => hint(t(`site.binding.formHint.${reason}`)),

@@ -20,6 +20,8 @@ export const RENDER_CONTEXT_SOURCES = {
   setting: "setSettings",
   emptySetting: "setSettings",
   openingHours: "setSettings",
+  socialProfiles: "setSettings",
+  socialHint: "setSettings",
   language: "setSettings",
   formService: "setSettings",
   formHint: "setSettings",

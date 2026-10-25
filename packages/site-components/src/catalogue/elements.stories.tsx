@@ -181,3 +181,19 @@ export const Icons: Story = {
     ]),
   },
 };
+
+/**
+ * Social links to every network Site Settings offer, in the text's colour; then larger, in primary
+ * and centred. LinkedIn and other sites show a globe.
+ */
+export const SocialLinks: Story = {
+  args: {
+    nodes: inSection([
+      { type: "SocialLinks", props: { id: "social" } },
+      {
+        type: "SocialLinks",
+        props: { id: "social-large", size: "large", color: "primary", alignment: "centre" },
+      },
+    ]),
+  },
+};

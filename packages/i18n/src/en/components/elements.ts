@@ -44,7 +44,12 @@ export const elements = {
   "field.listStyle.bullets": "Bullets",
   "field.listStyle.numbers": "Numbers",
   "field.listStyle.plain": "No markers",
+  "field.listStyle.unavailable":
+    "The list's icon takes the place of its markers. Remove the icon to choose a style.",
   "element.icon": "Icon",
+  "element.socialLinks": "Social links",
+  "field.socialColor.help":
+    "Logos show in one colour, as their brands' guidelines allow. Add profiles in Site Settings, under Social & sharing.",
   "field.icon": "Icon",
   "field.iconLabel": "Name for screen readers",
   "field.iconLabel.help":
