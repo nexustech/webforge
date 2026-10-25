@@ -6,8 +6,8 @@ import type { MediaId, RichTextLink } from "@webforge/model";
 import { type ComponentLibrary, siteLibrary } from "@webforge/site-components";
 import { createFakeEngine } from "@webforge/test-utils/renderer";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { starterSite } from "../../shared/starter-site.js";
 import { createEditorSession, currentPage } from "../editor/editor-session.js";
-import { starterSite } from "../editor/starter-site.js";
 import { openedDialog } from "../shell/opened-dialog.test-helper.js";
 import { RichTextLinkHost } from "./RichTextLinkHost.js";
 

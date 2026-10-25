@@ -6,6 +6,7 @@ import type { MediaApi } from "./ipc/media.js";
 import type { PrefsApi } from "./ipc/prefs.js";
 import type { ProjectApi } from "./ipc/project.js";
 import type { SiteApi } from "./ipc/site.js";
+import type { TemplatesApi } from "./ipc/templates.js";
 
 /**
  * The typed API the preload script exposes to the renderer as `window.webforge`.
@@ -21,4 +22,5 @@ export interface WebforgeApi {
   readonly prefs: PrefsApi;
   readonly project: ProjectApi;
   readonly site: SiteApi;
+  readonly templates: TemplatesApi;
 }

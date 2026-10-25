@@ -1,9 +1,15 @@
-import { type FileHandle, open } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { constants } from "node:fs";
+import { type FileHandle, open, stat } from "node:fs/promises";
 import { AssetWriter } from "@webforge/storage";
 import { isTextName } from "../main/document-files.js";
 import { sniffMedia } from "../main/media-files.js";
 import { MAX_MEDIA_BYTES } from "../shared/ipc/media.js";
-import type { StoreImportOutcome, StoreImportRequest } from "../shared/storage-writer-protocol.js";
+import type {
+  ImportSource,
+  PrepareOutcome,
+  StoreOutcome,
+} from "../shared/storage-writer-protocol.js";
 
 /**
  * The most pixels an imported image may have (50 megapixels, e.g. 8660 × 5774). A small file can
@@ -38,10 +44,18 @@ export async function readAtMost(
 /**
  * The bytes of the file at `path`, read through one open handle: its size is checked on that
  * handle, and no more than the size limit is read (`too-large` when it is over). `undefined` for
- * a folder, or a file that is gone (a copy pasted after the file moved).
+ * a folder, a pipe or a device, or a file that is gone (a copy pasted after the file moved). The
+ * path is looked at before it is opened, and opened without waiting, so one that isn't a regular
+ * file never holds the import up: opening a pipe would wait for a writer that may never come.
  */
 async function readFile(path: string): Promise<Uint8Array | "too-large" | undefined> {
-  const handle = await open(path, "r").catch(() => undefined);
+  const found = await stat(path).catch(() => undefined);
+  if (found === undefined || !found.isFile()) {
+    return undefined;
+  }
+  // O_NONBLOCK, where there is one: the path may have become a pipe since it was looked at.
+  const flags = constants.O_RDONLY | (constants.O_NONBLOCK ?? 0);
+  const handle = await open(path, flags).catch(() => undefined);
   if (handle === undefined) {
     return undefined;
   }
@@ -59,50 +73,86 @@ async function readFile(path: string): Promise<Uint8Array | "too-large" | undefi
   }
 }
 
+/** An import read, checked and hashed, waiting to be stored. */
+type Prepared = {
+  readonly data: Uint8Array;
+  readonly hash: string;
+  readonly media: Exclude<ReturnType<typeof sniffMedia>, undefined>;
+};
+
 /**
- * One import (R13b, ADR 0013): reads the file (or takes the bytes), checks it is one Media takes
- * (F-ED-5: a JPEG or PNG of at most 50 megapixels, or a document), and stores its original bytes,
- * unmodified (X2), as the Media item's asset, in the site's file through a connection of its own.
- * Runs in the storage writer thread, so none of it holds up the main thread; `openWriter` is for
- * tests.
+ * The storage writer's work (R13b, ADR 0013), in its thread or, for tests, on the calling one. An
+ * import takes two steps:
+ * - `prepare` reads the file (or takes the bytes), checks it is one Media takes (F-ED-5: a JPEG
+ *   or PNG of at most 50 megapixels, or a document) and hashes it. The site's file isn't touched,
+ *   so the main process goes on saving meanwhile, however slow the file is to read.
+ * - `store` writes the prepared bytes, unmodified (X2), as a Media item's asset, in the site's
+ *   file through a connection of its own, while the main process waits at the store gate.
+ * Prepared bytes are kept by id until stored or discarded. `openWriter` is for tests.
  */
-export async function storeImport(
-  request: StoreImportRequest,
+export function createImportJobs(
   openWriter: (path: string) => Pick<AssetWriter, "put" | "close"> = AssetWriter.open,
-): Promise<StoreImportOutcome> {
-  const { fileName, source } = request;
-  const data = "path" in source ? await readFile(source.path) : source.data;
-  if (data === undefined) {
-    return { status: "skipped" };
-  }
-  if (data === "too-large" || data.byteLength > MAX_MEDIA_BYTES) {
-    return { status: "rejected", reason: "too-large" };
-  }
-  const media = sniffMedia(data, fileName);
-  if (media === undefined) {
-    return { status: "rejected", reason: isTextName(fileName) ? "not-text" : "unsupported" };
-  }
-  if (media.kind === "image" && media.width * media.height > MAX_IMAGE_PIXELS) {
-    return { status: "rejected", reason: "too-large" };
-  }
-  let writer: Pick<AssetWriter, "put" | "close">;
-  try {
-    writer = openWriter(request.sitePath);
-  } catch {
-    return { status: "failed" };
-  }
-  try {
-    const hash = writer.put({
-      mediaId: request.mediaId,
-      data,
-      mime: media.mimeType,
-      ...(media.kind === "image" ? { width: media.width, height: media.height } : {}),
-      originalName: fileName,
-    });
-    return { status: "stored", hash, size: data.byteLength, media: { ...media } };
-  } catch {
-    return { status: "failed" };
-  } finally {
-    writer.close();
-  }
+) {
+  const prepared = new Map<number, Prepared>();
+  return {
+    async prepare(id: number, fileName: string, source: ImportSource): Promise<PrepareOutcome> {
+      const data = "path" in source ? await readFile(source.path) : source.data;
+      if (data === undefined) {
+        return { status: "skipped" };
+      }
+      if (data === "too-large" || data.byteLength > MAX_MEDIA_BYTES) {
+        return { status: "rejected", reason: "too-large" };
+      }
+      const media = sniffMedia(data, fileName);
+      if (media === undefined) {
+        return { status: "rejected", reason: isTextName(fileName) ? "not-text" : "unsupported" };
+      }
+      if (media.kind === "image" && media.width * media.height > MAX_IMAGE_PIXELS) {
+        return { status: "rejected", reason: "too-large" };
+      }
+      const hash = createHash("sha256").update(data).digest("hex");
+      prepared.set(id, { data, hash, media });
+      return { status: "prepared", hash, size: data.byteLength, media: { ...media } };
+    },
+    store(
+      id: number,
+      at: { readonly sitePath: string; readonly mediaId: string; readonly originalName: string },
+    ): StoreOutcome {
+      const ready = prepared.get(id);
+      prepared.delete(id);
+      if (ready === undefined) {
+        return { status: "failed" };
+      }
+      const { data, hash, media } = ready;
+      let writer: Pick<AssetWriter, "put" | "close">;
+      try {
+        writer = openWriter(at.sitePath);
+      } catch {
+        return { status: "failed" };
+      }
+      try {
+        writer.put(
+          {
+            mediaId: at.mediaId,
+            data,
+            mime: media.mimeType,
+            ...(media.kind === "image" ? { width: media.width, height: media.height } : {}),
+            originalName: at.originalName,
+          },
+          hash,
+        );
+        return { status: "stored" };
+      } catch {
+        return { status: "failed" };
+      } finally {
+        writer.close();
+      }
+    },
+    discard(id: number): void {
+      prepared.delete(id);
+    },
+  };
 }
+
+/** See {@link createImportJobs}. */
+export type ImportJobs = ReturnType<typeof createImportJobs>;

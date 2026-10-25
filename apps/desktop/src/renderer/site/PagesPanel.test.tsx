@@ -3,7 +3,7 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { PageId, SiteDoc } from "@webforge/model";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { starterSite } from "../editor/starter-site.js";
+import { starterSite } from "../../shared/starter-site.js";
 import { PagesPanel, type PagesPanelActions } from "./PagesPanel.js";
 
 afterEach(cleanup);

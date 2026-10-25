@@ -1,7 +1,7 @@
 import type { PageId, SiteDoc } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
+import { starterSite } from "../../shared/starter-site.js";
 import { createEditorSession, type EditorSession } from "../editor/editor-session.js";
-import { starterSite } from "../editor/starter-site.js";
 import { type CommandRegistry, createCommandRegistry } from "../shell/commands.js";
 import {
   type ContextualToolbarRegistry,

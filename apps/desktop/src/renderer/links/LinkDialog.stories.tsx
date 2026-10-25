@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { PageId } from "@webforge/model";
 import { userEvent, within } from "storybook/test";
-import { starterSite } from "../editor/starter-site.js";
+import { starterSite } from "../../shared/starter-site.js";
 import { LinkDialog } from "./LinkDialog.js";
 import type { PageTarget } from "./link-targets.js";
 

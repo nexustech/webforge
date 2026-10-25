@@ -2,7 +2,7 @@ import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "n
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
-import { changedDocuments, createSite } from "@webforge/model";
+import { changedDocuments, createSite, type SiteDoc } from "@webforge/model";
 import { desktopDir, desktopVersion, launchDesktopApp } from "./launch.js";
 import { chooseFromMenu } from "./menus.js";
 import { type RendererWindow, stubFileDialogs } from "./sites.js";
@@ -91,7 +91,17 @@ test.describe("desktop shell", () => {
     expect(globals).toEqual({
       require: "undefined",
       process: "undefined",
-      webforgeKeys: ["app", "canvas", "clipboard", "fonts", "media", "prefs", "project", "site"],
+      webforgeKeys: [
+        "app",
+        "canvas",
+        "clipboard",
+        "fonts",
+        "media",
+        "prefs",
+        "project",
+        "site",
+        "templates",
+      ],
     });
   });
 
@@ -175,7 +185,10 @@ test.describe("desktop shell", () => {
     };
 
     const created = await page.evaluate(() =>
-      (window as unknown as RendererWindow).webforge.project.create(),
+      (window as unknown as RendererWindow).webforge.project.create({
+        name: "Rosa's Bakery",
+        theme: "light",
+      }),
     );
     expect(created).toEqual({ status: "opened", project });
     expect(readFileSync(path).subarray(0, 16).toString("latin1")).toBe("SQLite format 3\0");
@@ -215,23 +228,26 @@ test.describe("desktop shell", () => {
       notFoundTitle: "Page not found",
     });
 
+    // New Site writes the Blank site, named as typed (2.14a).
+    const created = (await page.evaluate(async () => {
+      const { project } = (window as unknown as RendererWindow).webforge;
+      await project.create({ name: "Documents", theme: "light" });
+      return project.readSite();
+    })) as { status: string; site: SiteDoc };
+    expect(created.status).toBe("ok");
+    expect(created.site.settings.general.name).toBe("Documents");
+
     const result = await page.evaluate(
       async ({ changes }) => {
         const { project } = (window as unknown as RendererWindow).webforge;
-        await project.create();
-        const empty = await project.readSite();
         const saved = await project.commit((await project.getCurrent())?.sessionId ?? "", changes);
         await project.open();
-        return { empty, saved, read: await project.readSite() };
+        return { saved, read: await project.readSite() };
       },
-      { changes: changedDocuments(undefined, site) },
+      { changes: changedDocuments(created.site, site) },
     );
 
-    expect(result).toEqual({
-      empty: { status: "empty" },
-      saved: { status: "saved" },
-      read: { status: "ok", site },
-    });
+    expect(result).toEqual({ saved: { status: "saved" }, read: { status: "ok", site } });
   });
 
   test("logs no errors in the renderer", () => {

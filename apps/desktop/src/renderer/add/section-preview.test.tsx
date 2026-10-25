@@ -3,7 +3,7 @@ import { act, cleanup, render } from "@testing-library/react";
 import type { NodeDoc, SharedSectionId } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { starterSite } from "../editor/starter-site.js";
+import { starterSite } from "../../shared/starter-site.js";
 import { createSectionPreviews } from "./section-preview.js";
 
 declare global {

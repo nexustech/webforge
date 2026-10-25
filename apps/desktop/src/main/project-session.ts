@@ -27,10 +27,15 @@ import type {
   SiteUiState,
   UiStateResult,
 } from "../shared/ipc-contract.js";
-import type { StoreImportOutcome, StoreImportRequest } from "../shared/storage-writer-protocol.js";
-import { storeImport } from "../worker/store-import.js";
+import type { ImportSource, PrepareOutcome } from "../shared/storage-writer-protocol.js";
+import { createImportJobs } from "../worker/store-import.js";
 import { log, logFailure } from "./log.js";
-import { createInlineStorageWriter, type StorageWriter } from "./storage-writer.js";
+import { type NewSiteFill, newSiteImporter } from "./new-site.js";
+import {
+  createInlineStorageWriter,
+  type PreparedImport,
+  type StorageWriter,
+} from "./storage-writer.js";
 import { createStoreGate, type StoreGate } from "./store-gate.js";
 
 /** The blob types a Media item's file can have; documents (JSON) are never served as media. */
@@ -59,11 +64,12 @@ export type SessionSite = Pick<
  * learnt of it; not a file Media takes; not a file at all; or why it couldn't be stored.
  */
 export type ImportFileResult =
-  | Exclude<StoreImportOutcome, { status: "failed" }>
+  | ({ readonly status: "stored" } & Omit<PreparedImport, "status" | "token">)
+  | Extract<PrepareOutcome, { status: "rejected" | "skipped" }>
   | Extract<StoreAssetResult, { status: "failed" }>;
 
 /** Where an imported file's bytes come from: a file the main process found, or bytes. */
-export type ImportSource = StoreImportRequest["source"];
+export type { ImportSource };
 
 /** File extension of a Webforge site (P1). */
 export const PROJECT_EXTENSION = ".wforge";
@@ -184,7 +190,7 @@ export class ProjectSession {
     this.#openStore = options.openStore ?? ((path) => ProjectStore.open(path));
     this.#createStore =
       options.createStore ?? ((path, name) => ProjectStore.create(path, { name }));
-    this.#writer = options.writer ?? createInlineStorageWriter(storeImport);
+    this.#writer = options.writer ?? createInlineStorageWriter(createImportJobs());
   }
 
   /** The open site's file, for the main process only (never sent to the renderer). */
@@ -227,8 +233,12 @@ export class ProjectSession {
   /**
    * Creates a site at `path` (adding `.wforge` if missing), named after the file, and opens it.
    * An existing file at `path` is replaced; the save dialog has already asked the user.
+   *
+   * New Site (2.14a) gives `newSite`: the site's name as typed, and `fill`, which writes its
+   * pages, theme and Media into the new file before it opens, its images through the storage
+   * writer. A fill that fails closes the file, and the open site stays open.
    */
-  async create(path: string): Promise<ProjectResult> {
+  async create(path: string, newSite?: NewSiteFill): Promise<ProjectResult> {
     const target = withProjectExtension(path);
     // The current site's file can't be replaced while it is open: it is closed first, and opened
     // again, as the same opening, if the new site can't be made.
@@ -239,8 +249,16 @@ export class ProjectSession {
     if (replaced !== undefined) {
       await this.close();
     }
-    const name = basename(target, extname(target)).trim() || t("site.untitledName");
-    const result = await this.#replaceWith(target, () => this.#createStore(target, name));
+    const name =
+      newSite?.name ?? (basename(target, extname(target)).trim() || t("site.untitledName"));
+    const made = await this.#newStore(target, name, newSite).then(
+      (store) => ({ store }),
+      (error: unknown) => ({ error }),
+    );
+    const result = await this.#replaceWith(target, () => {
+      if ("error" in made) throw made.error;
+      return made.store;
+    });
     if (result.status === "failed" && replaced !== undefined) {
       await this.#replaceWith(
         replaced.path,
@@ -249,6 +267,22 @@ export class ProjectSession {
       );
     }
     return result;
+  }
+
+  /** A new site's file at `path`, filled as New Site asked, if it did; closed again if that fails. */
+  async #newStore(path: string, name: string, newSite?: NewSiteFill): Promise<ProjectStore> {
+    const store = this.#createStore(path, name);
+    if (newSite === undefined) return store;
+    try {
+      await newSite.fill({
+        store,
+        importFile: newSiteImporter(this.#writer, path),
+      });
+    } catch (error) {
+      store.close();
+      throw error;
+    }
+    return store;
   }
 
   /** Opens the site at `path`. */
@@ -454,33 +488,51 @@ export class ProjectSession {
     source: ImportSource,
     sessionId?: string,
   ): Promise<ImportFileResult> {
-    // The writer writes alone, the bytes and the asset together: the main process's reads and
-    // saves wait at the gate, as promises, and nothing of the import is written on its thread.
-    const outcome = await this.#gate.run<StoreImportOutcome | ImportFileResult>(
+    const stale = sessionId === undefined ? undefined : this.staleReason(sessionId);
+    if (stale !== undefined) return { status: "failed", reason: stale };
+    // First read, check and hash it, outside the gate: saves go on meanwhile, however slow the
+    // file is to read (a network share), and a file that never opens holds up only its import.
+    const prepared = await this.#writer.prepare(fileName, source);
+    if (prepared.status === "failed") return this.#importFailed();
+    if (prepared.status !== "prepared") return prepared;
+    // Then store it alone, the bytes and the asset together: the main process's reads and saves
+    // wait at the gate, as promises, and nothing of the import is written on its thread.
+    const stored = await this.#gate.run<ImportFileResult | "stored" | "not-stored">(
       "exclusive",
       async () => {
         const path = this.#path;
         if (this.#store === undefined || path === undefined) {
+          this.#writer.discard(prepared);
           return { status: "failed", reason: "no-site" };
         }
         if (sessionId !== undefined && sessionId !== this.#sessionId) {
+          this.#writer.discard(prepared);
           return { status: "failed", reason: "stale-session" };
         }
         // Its own token: an import a close stopped can't clear the mark of the one after it.
         const writing = {};
         this.#writing = writing;
         try {
-          return await this.#writer.store({ sitePath: path, mediaId, fileName, source });
+          const outcome = await this.#writer.store(prepared, {
+            sitePath: path,
+            mediaId,
+            originalName: fileName,
+          });
+          return outcome.status === "stored" ? "stored" : "not-stored";
         } finally {
           if (this.#writing === writing) this.#writing = undefined;
         }
       },
     );
-    if (outcome.status === "failed" && !("reason" in outcome)) {
-      log.error("Webforge could not store an imported file");
-      return { status: "failed", reason: "unknown" };
-    }
-    return outcome;
+    if (stored === "not-stored") return this.#importFailed();
+    if (stored !== "stored") return stored;
+    const { token: _token, status: _status, ...facts } = prepared;
+    return { status: "stored", ...facts };
+  }
+
+  #importFailed(): ImportFileResult {
+    log.error("Webforge could not store an imported file");
+    return { status: "failed", reason: "unknown" };
   }
 
   #storeCopiedMedia(

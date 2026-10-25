@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { SiteDoc } from "@webforge/model";
-import { starterSite } from "../editor/starter-site.js";
+import { starterSite } from "../../shared/starter-site.js";
 import { SiteSettingsDialog } from "./SiteSettingsDialog.js";
 
 /** A bakery's site with some settings filled in. */

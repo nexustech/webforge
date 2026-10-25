@@ -2,6 +2,8 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { NewSiteRequest } from "../../shared/ipc/project.js";
+import type { TemplateSummary } from "../../shared/ipc/templates.js";
 import type { ProjectResult, RecentSite } from "../../shared/ipc-contract.js";
 import { StartScreen } from "./StartScreen.js";
 
@@ -55,7 +57,7 @@ afterEach(async () => {
 
 function api(recent: RecentSite[], result: ProjectResult = { status: "opened", project }) {
   return {
-    create: vi.fn(async () => result),
+    create: vi.fn(async (_request: NewSiteRequest) => result),
     open: vi.fn(async () => result),
     listRecent: vi.fn(async () => recent),
     openRecent: vi.fn(async (_id: string) => result),
@@ -63,12 +65,17 @@ function api(recent: RecentSite[], result: ProjectResult = { status: "opened", p
   };
 }
 
-async function render(project: ReturnType<typeof api>, restart = vi.fn()) {
+async function render(
+  project: ReturnType<typeof api>,
+  restart = vi.fn(),
+  templates: () => Promise<TemplateSummary[]> = async () => [],
+) {
   await act(async () =>
     root.render(
       <StartScreen
         info={info}
         project={project}
+        templates={{ list: templates }}
         app={{ onFlushRequest: flushRequests }}
         restart={restart}
         locale="en-GB"
@@ -89,17 +96,37 @@ describe("StartScreen", () => {
     await expect(save?.()).resolves.toBeUndefined();
   });
 
-  it("offers a blank site and Open, and says when there are no recent sites", async () => {
+  it("offers New Site and Open, and says when there are no recent sites", async () => {
     const project = api([]);
     const restart = await render(project);
 
     expect(container.textContent).toContain("Start a site");
     expect(container.textContent).toContain("Sites you open or create appear here.");
-    await act(async () => button("Blank site")?.click());
-    expect(project.create).toHaveBeenCalled();
+    await act(async () => button("New site…")?.click());
+    // New Site's dialog, in a portal on the body (2.14a).
+    const create = [...document.querySelectorAll("button")].find(
+      (element) => element.textContent === "Create",
+    );
+    await act(async () => create?.click());
+    expect(project.create).toHaveBeenCalledWith({ name: "My site", theme: "light" });
     expect(restart).toHaveBeenCalled();
     await act(async () => button("Open a site…")?.click());
     expect(project.open).toHaveBeenCalled();
+  });
+
+  it("still offers a Blank site when the templates can't be listed", async () => {
+    const project = api([]);
+    await render(project, vi.fn(), async () => {
+      throw new Error("templates folder missing");
+    });
+
+    await act(async () => button("New site…")?.click());
+    expect(document.body.textContent).toContain("No templates of this type yet.");
+    const create = [...document.querySelectorAll("button")].find(
+      (element) => element.textContent === "Create",
+    );
+    await act(async () => create?.click());
+    expect(project.create).toHaveBeenCalledWith({ name: "My site", theme: "light" });
   });
 
   it("lists recent sites with thumbnail, file name and when they were edited or opened", async () => {

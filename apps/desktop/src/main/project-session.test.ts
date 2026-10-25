@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -11,9 +11,12 @@ import {
   pageDocumentId,
 } from "@webforge/model";
 import { ProjectStore, ReadOnlyProjectError } from "@webforge/storage";
+import { TEMPLATES_DIR } from "@webforge/templates/node";
 import { heroPhoto } from "@webforge/test-utils";
 import type { IpcMain } from "electron";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createImportJobs } from "../worker/store-import.js";
+import type { NewSiteTarget } from "./new-site.js";
 import { registerProjectHandlers } from "./project-ipc.js";
 import {
   findProjectArgument,
@@ -21,7 +24,7 @@ import {
   type SiteStoreAccess,
   withProjectExtension,
 } from "./project-session.js";
-import { createStorageWriter } from "./storage-writer.js";
+import { createStorageWriter, type StorageWriter } from "./storage-writer.js";
 import { createStoreGate } from "./store-gate.js";
 
 /** The first bytes of a PNG of `width` × `height`: enough for Media to take it. */
@@ -99,6 +102,56 @@ describe("ProjectSession", () => {
     // Windows can't replace a file that is open; the session closes it first.
     expect(await session.create(path)).toMatchObject({ status: "opened" });
     expect(session.current()?.fileName).toBe("site.wforge");
+  });
+
+  it("names and fills a new site from New Site before it opens (2.14a)", async () => {
+    const site = createSite({
+      name: "Rosa's Bakery",
+      language: "en",
+      homeTitle: "Home",
+      notFoundTitle: "Page not found",
+    });
+
+    const photo = join(TEMPLATES_DIR, "sample", "images", "hero.jpg");
+    let stored: Awaited<ReturnType<NewSiteTarget["importFile"]>> | undefined;
+
+    const result = await session.create(join(dir, "bakery.wforge"), {
+      name: "Rosa's Bakery",
+      fill: async ({ store, importFile }) => {
+        // Into the new file, through the storage writer, before it opens.
+        stored = await importFile("photo00000000000", "hero.jpg", photo);
+        store.saveSite(site);
+      },
+    });
+
+    expect(result).toMatchObject({
+      status: "opened",
+      project: { name: "Rosa's Bakery", fileName: "bakery.wforge" },
+    });
+    expect(await session.readSite()).toEqual({ status: "ok", site });
+    expect(stored).toMatchObject({ status: "stored" });
+    const sessionId = session.current()?.sessionId ?? "";
+    const hash = stored?.status === "stored" ? stored.hash : "";
+    const media = await session.forSession(sessionId).readMedia(hash);
+    expect(new Uint8Array(media?.data ?? [])).toEqual(new Uint8Array(readFileSync(photo)));
+  });
+
+  it("keeps the current site, and closes the new file, when filling it fails (2.14a)", async () => {
+    await session.create(join(dir, "good.wforge"));
+    let filled: ProjectStore | undefined;
+
+    const result = await session.create(join(dir, "new.wforge"), {
+      name: "New",
+      fill: async ({ store }) => {
+        filled = store;
+        throw new Error("A template's image is missing");
+      },
+    });
+
+    expect(result).toEqual({ status: "failed", reason: "unknown" });
+    expect(session.current()?.fileName).toBe("good.wforge");
+    // Closed: its file can be deleted, which Windows refuses while it is open.
+    expect(() => filled?.readDocuments()).toThrow();
   });
 
   it("keeps the current site when another one fails to open", async () => {
@@ -602,16 +655,79 @@ describe("ProjectSession and the store gate (R13b)", () => {
     vi.useRealTimers();
   });
 
+  it("saves while an import's file is still being read: reading holds nothing (#408 review)", async () => {
+    // A writer that reads as slowly as a network share: as long as the test says.
+    let finishReading: () => void = () => undefined;
+    const jobs = createImportJobs();
+    const slow: StorageWriter = {
+      warm: () => undefined,
+      prepare: async (fileName, source) => {
+        await new Promise<void>((resolve) => {
+          finishReading = resolve;
+        });
+        const outcome = await jobs.prepare(1, fileName, source);
+        return outcome.status === "prepared" ? { ...outcome, token: 1 } : outcome;
+      },
+      store: async (prepared, target) => jobs.store(prepared.token, target),
+      discard: (prepared) => jobs.discard(prepared.token),
+      stop: async () => undefined,
+    };
+    const gated = new ProjectSession({}, { writer: slow });
+    await gated.create(join(dir, "Slow share.wforge"));
+    await gated.commit(changedDocuments(undefined, site));
+    const order: string[] = [];
+
+    const importing = gated
+      .importFile("photo", "photo.jpg", { data: heroPhoto() })
+      .then((result) => {
+        order.push("import");
+        return result;
+      });
+    const saving = gated.commit(renamed("Typed while it read")).then((result) => {
+      order.push("save");
+      return result;
+    });
+
+    expect(await saving).toEqual({ status: "saved" });
+    finishReading();
+    expect((await importing).status).toBe("stored");
+    expect(order).toEqual(["save", "import"]);
+    await gated.close();
+  });
+
   it("closes the site when the storage writer doesn't finish, stopping it; the import fails", async () => {
-    // A writer thread that never answers.
-    const thread = { postMessage: vi.fn(), on: vi.fn(), terminate: vi.fn(async () => 0) };
+    // A writer thread that prepares, then never answers while it stores, holding the gate.
+    let answer: (message: unknown) => void = () => undefined;
+    const thread = {
+      postMessage: vi.fn((message: { id: number; type: string }) => {
+        if (message.type !== "prepare") return;
+        queueMicrotask(() =>
+          answer({
+            id: message.id,
+            outcome: {
+              status: "prepared",
+              hash: "a".repeat(64),
+              size: 1,
+              media: { kind: "image", mimeType: "image/jpeg", width: 1, height: 1 },
+            },
+          }),
+        );
+      }),
+      on: vi.fn((event: string, listener: (message: unknown) => void) => {
+        if (event === "message") answer = listener;
+      }),
+      terminate: vi.fn(async () => 0),
+    };
     const gated = new ProjectSession({}, { writer: createStorageWriter(() => thread) });
     await gated.create(join(dir, "Stuck writer.wforge"));
     vi.useFakeTimers();
 
     const importing = gated.importFile("photo", "photo.jpg", { data: heroPhoto() });
     await vi.advanceTimersByTimeAsync(0);
-    expect(thread.postMessage).toHaveBeenCalledTimes(1);
+    expect(thread.postMessage.mock.calls.map(([message]) => message.type)).toEqual([
+      "prepare",
+      "store",
+    ]);
     const closing = gated.close();
     await vi.advanceTimersByTimeAsync(5_000);
     await closing;

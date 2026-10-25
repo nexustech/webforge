@@ -4,9 +4,9 @@ import userEvent from "@testing-library/user-event";
 import { FieldRenderersProvider } from "@webforge/editor-ui";
 import type { NodeDoc } from "@webforge/model";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { starterSite } from "../../../shared/starter-site.js";
 import { EditPanelHost } from "../../editor/EditPanelHost.js";
 import { currentPage } from "../../editor/editor-session.js";
-import { starterSite } from "../../editor/starter-site.js";
 import { sessionWith } from "../../testing/fixtures.js";
 import { IconField } from "./IconField.js";
 

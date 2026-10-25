@@ -49,7 +49,9 @@ describe("createWebforgeApi", () => {
     const invoke = vi.fn(async (channel: string, ..._args: unknown[]) => responses[channel]);
     const api = apiWith(invoke);
 
-    await expect(api.project.create()).resolves.toEqual({ status: "opened", project });
+    const request = { name: "Bakery", theme: "light" };
+    await expect(api.project.create(request)).resolves.toEqual({ status: "opened", project });
+    expect(invoke).toHaveBeenCalledWith("project:create", request);
     await expect(api.project.open()).resolves.toEqual({ status: "canceled" });
     await expect(api.project.getCurrent()).resolves.toBeNull();
     await expect(api.project.readSite()).resolves.toEqual({ status: "ok", site });
@@ -193,6 +195,33 @@ describe("createWebforgeApi site export", () => {
       withoutPath: [0],
     });
     expect(invoke).not.toHaveBeenCalled();
+  });
+
+  it("forwards nothing but getPathForFile's answers for real files: the trust boundary for paths", async () => {
+    // As webUtils.getPathForFile: a path for a File the drop gave, and an error for anything else.
+    const dropped = new File([new Uint8Array([1])], "shop.jpg");
+    const pathOf = vi.fn((file: File) => {
+      if (!(file instanceof File)) throw new TypeError("Not a File");
+      return file === dropped ? "/home/sam/Photos/shop.jpg" : "";
+    });
+    const invoke = vi.fn(async () => ({ status: "imported", items: [], rejected: [] }));
+    const api = createWebforgeApi(invoke, noEvents, pathOf);
+    // What a hostile page could pass instead of files: paths of its own, or objects that say one.
+    const forged = [
+      "/etc/passwd",
+      { name: "/etc/passwd", path: "/etc/passwd" },
+      new File([], "/etc/passwd"),
+    ] as unknown as File[];
+
+    const imported = await api.media.importFiles(SESSION, [...forged, dropped]);
+
+    expect(imported.withoutPath).toEqual([0, 1, 2]);
+    expect(invoke).toHaveBeenCalledTimes(1);
+    expect(invoke).toHaveBeenCalledWith("media:import-paths", SESSION, [
+      "/home/sam/Photos/shop.jpg",
+    ]);
+    // Every path sent is getPathForFile's own answer, for the very File passed.
+    expect(pathOf.mock.calls.map(([file]) => file)).toEqual([...forged, dropped]);
   });
 });
 

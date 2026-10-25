@@ -3,6 +3,7 @@ import { pathToFileURL } from "node:url";
 import { Worker } from "node:worker_threads";
 import { t } from "@webforge/i18n";
 import { DOCUMENT_EXTENSIONS, type SiteSnapshot, type ThemeTokens } from "@webforge/model";
+import { readTemplates, type TemplateFolder } from "@webforge/templates/node";
 import { type CatalogueFont, FONT_CATALOGUE, fontFacesFor } from "@webforge/themes";
 import {
   app,
@@ -58,7 +59,7 @@ import {
   type PreferencesStore,
   registerPreferencesHandlers,
 } from "./preferences.js";
-import { type ProjectDialogs, registerProjectHandlers } from "./project-ipc.js";
+import { type ProjectDialogs, registerProjectHandlers, siteFileName } from "./project-ipc.js";
 import { findProjectArgument, PROJECT_EXTENSION, ProjectSession } from "./project-session.js";
 import { createRecentSites } from "./recent-sites.js";
 import { openOrRecover } from "./recovery.js";
@@ -76,6 +77,7 @@ import {
   spellCheckAvailable,
 } from "./spellcheck.js";
 import { createStorageWriter } from "./storage-writer.js";
+import { registerTemplatesHandlers } from "./templates-ipc.js";
 import {
   MIN_WINDOW_SIZE,
   mainWindowPlacement,
@@ -253,12 +255,12 @@ async function testDialogAnswer(
 // Dialogs are modal to the focused window. E2E tests replace dialog.showSaveDialog and
 // dialog.showOpenDialog, so look them up on the module at call time.
 const projectDialogs: ProjectDialogs = {
-  chooseNewProjectPath: async () => {
+  chooseNewProjectPath: async (siteName) => {
     const answer = await testDialogAnswer("save");
     if (answer !== undefined) return answer.path;
     const options: SaveDialogOptions = {
       title: t("site.newDialogTitle"),
-      defaultPath: `${t("site.untitledName")}${PROJECT_EXTENSION}`,
+      defaultPath: `${siteFileName(siteName, t("site.untitledName"))}${PROJECT_EXTENSION}`,
       filters: projectFilters,
     };
     const parent = BrowserWindow.getFocusedWindow();
@@ -297,6 +299,17 @@ const exportDialogs: ExportDialogs = {
       : dialog.showOpenDialog(parent, options));
     return result.canceled ? undefined : result.filePaths[0];
   },
+};
+
+// The templates New Site offers (2.14a), outside app.asar: in the packaged app's resources, or
+// where the build copied them while developing. Read once, when first listed or used.
+const templatesDir = app.isPackaged
+  ? join(process.resourcesPath, "templates")
+  : join(app.getAppPath(), "out", "templates");
+let shippedTemplates: readonly TemplateFolder[] | undefined;
+const templates = () => {
+  shippedTemplates ??= readTemplates(templatesDir);
+  return shippedTemplates;
 };
 
 // The installer's fonts, outside app.asar (2.2): in the packaged app's resources, or where the
@@ -547,6 +560,7 @@ async function start(): Promise<void> {
       recovery: { backups, dialogs: recoveryDialogs },
       recent: recentSites,
       beforeSwitch: () => siteSwitch.leaveSite(),
+      templates,
     },
   );
   registerCanvasHandlers(ipcMain, (senderUrl) => isAppUrl(senderUrl, appUrl), canvasStyles);
@@ -589,6 +603,7 @@ async function start(): Promise<void> {
     runExport,
     (hash) => projectSession.readMedia(hash),
   );
+  registerTemplatesHandlers(ipcMain, (senderUrl) => isAppUrl(senderUrl, appUrl), templates);
   // A site double-clicked in Explorer arrives as a command-line argument (P1).
   const projectToOpen = projectFromFinder ?? findProjectArgument(process.argv);
   if (projectToOpen !== undefined) {

@@ -75,6 +75,16 @@ const MESSAGES: Readonly<Record<string, Parameters<typeof t>[0]>> = {
   label: "link.error.label",
 };
 
+/**
+ * The section's anchor, whether the link's or the one it's given (`anchor.*`), as one path: the
+ * Section field's, which says it can't be linked to however it fails, since it isn't typed here.
+ */
+const SECTION = ["link", "anchor"] as const;
+
+/** Whether an issue's path is about the section's anchor, given or kept. */
+const aboutSection = (path: readonly PropertyKey[]) =>
+  path[0] === "anchor" || (path[0] === SECTION[0] && path[1] === SECTION[1]);
+
 /** The link schema the form checks against, with a label when the dialog asks for one. */
 function linkSchema(asksLabel: boolean): FormSchema<LinkOutput> {
   const schema = z.strictObject({
@@ -91,6 +101,9 @@ function linkSchema(asksLabel: boolean): FormSchema<LinkOutput> {
         if (parsed.success) return { value: parsed.data as LinkOutput };
         return {
           issues: parsed.error.issues.map((issue) => {
+            if (aboutSection(issue.path)) {
+              return { path: SECTION, message: t("link.error.section") };
+            }
             const own = MESSAGES[issue.path.map(String).join(".")];
             const tooLong = issue.code === "too_big";
             return {
@@ -159,6 +172,7 @@ function linkSpec(
           {
             kind: "select",
             name: "section",
+            path: SECTION.join("."),
             label: t("link.section"),
             options: [
               { label: t("link.top"), value: "" },

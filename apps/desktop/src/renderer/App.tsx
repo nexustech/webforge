@@ -12,12 +12,12 @@ import type {
   SiteUiState,
   UiStateResult,
 } from "../shared/ipc-contract.js";
+import { starterSite } from "../shared/starter-site.js";
 import { EDITOR_AREAS, WINDOW_AREAS } from "./areas.js";
 import { connectAreas, type WindowContext } from "./editor/areas.js";
 import { createCanvasPointer } from "./editor/canvas-pointer.js";
 import { Editor, type EditorProps } from "./editor/Editor.js";
 import { createEditorSession, type EditorSession } from "./editor/editor-session.js";
-import { starterSite } from "./editor/starter-site.js";
 import { useDocument } from "./editor/use-document.js";
 import { reportFailure } from "./log.js";
 import { SettingsHost } from "./settings/SettingsHost.js";
