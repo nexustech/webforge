@@ -24,8 +24,18 @@ function samplePage(): string {
     const inverse = at === types.length - 1 ? { colors: "inverse" } : {};
     return { type, props: { ...structuredClone(defaults), ...inverse, id: `section-${at}` } };
   });
-  const nodes = pastedCopies([...header, ...sections, ...footer], new Set());
-  return renderNodesToHtml(nodes, siteLibrary, SAMPLE_CONTEXT);
+  return laidOut(header, sections, footer);
+}
+
+/**
+ * `sections` between `header` and `footer`, laid out as the export lays out a page: the sections
+ * in `<main id="main">`, which the theme's alternating sections count (2.13d).
+ */
+function laidOut(header: NodeDoc[], sections: NodeDoc[], footer: NodeDoc[]): string {
+  const ids = new Set<string>();
+  const html = (nodes: NodeDoc[]) =>
+    renderNodesToHtml(pastedCopies(nodes, ids), siteLibrary, SAMPLE_CONTEXT);
+  return `${html(header)}<main id="main" class="flex-1">${html(sections)}</main>${html(footer)}`;
 }
 
 /**
@@ -44,19 +54,17 @@ function comparisonPage(): string {
       id: type.toLowerCase(),
     },
   });
-  const nodes = pastedCopies(
+  return laidOut(
+    header,
     [
-      ...header,
       section("Hero"),
       section("Features", { variant: "cards" }),
       section("Testimonials", { variant: "cards", colors: "inverse" }),
       section("Stats", { variant: "cards" }),
       section("CallToAction"),
-      ...footer,
     ],
-    new Set(),
+    footer,
   );
-  return renderNodesToHtml(nodes, siteLibrary, SAMPLE_CONTEXT);
 }
 
 /** A small site for the page to be part of: its name in Site Settings, and a menu. */
