@@ -154,7 +154,8 @@ const schemeOf = (colors: ThemeTokens["colors"]): ThemeTokens["scheme"] =>
  * corners square or pill if its shape says so (rounded keeps the theme's field corners, as
  * buttons always had), the default size's height in its size (daisyUI's own variables, on the
  * button, so fields keep theirs; icon buttons and the small and large sizes keep their own), and
- * the main buttons in its style, as daisyUI's outline or ghost buttons, hover included.
+ * the main buttons in its style, as daisyUI's outline or ghost buttons, hover included; never a
+ * Button set to Filled (`wf-filled`, PH2-14).
  */
 function buttonRules(tokens: ThemeTokens): string[] {
   const look = BUTTON_LOOK[tokens.buttons.style];
@@ -173,7 +174,7 @@ function buttonRules(tokens: ThemeTokens): string[] {
     ...(look === undefined
       ? []
       : [
-          "  .btn-primary:not(.btn-outline, .btn-ghost, .btn-link) {",
+          "  .btn-primary:not(.btn-outline, .btn-ghost, .btn-link, .wf-filled) {",
           `    @apply ${look};`,
           "  }",
         ]),

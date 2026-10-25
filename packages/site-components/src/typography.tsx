@@ -46,10 +46,10 @@ export const RICH_TEXT_LIST_CLASSES =
 
 /**
  * Links in running text, underlined as the theme says (#423): always, on hover or never; always
- * where no theme says (Storybook's own themes).
+ * where no theme says (Storybook's own themes). Never a button drawn as a link, which has its own.
  */
 const LINK_CLASSES =
-  "[&_a]:[text-decoration-line:var(--wf-link-decoration,underline)] [&_a:hover]:[text-decoration-line:var(--wf-link-hover-decoration,underline)]";
+  "[&_a:not(.btn)]:[text-decoration-line:var(--wf-link-decoration,underline)] [&_a:not(.btn):hover]:[text-decoration-line:var(--wf-link-hover-decoration,underline)]";
 
 /**
  * Running text at the type scale's body size (#419): paragraphs, links underlined as the theme
@@ -76,12 +76,17 @@ export function BodyText({
 
 /**
  * The catalogue's buttons: the main colour's at three sizes, and icon buttons (round, or square
- * for the Header's menu). Placing classes come after these ("btn btn-primary btn-lg mt-8").
+ * for the Header's menu). Placing classes come after these ("btn btn-primary btn-lg mt-8"). The
+ * main ones take the theme's button style (#423); `filled` is the main colour filled whatever the
+ * theme says, for a Button set to Filled (`wf-filled` keeps the theme's style off it, PH2-14).
  */
 export const BUTTON_CLASSES = {
   primary: "btn btn-primary",
   primarySmall: "btn btn-primary btn-sm",
   primaryLarge: "btn btn-primary btn-lg",
+  filled: "btn btn-primary wf-filled",
+  filledSmall: "btn btn-primary btn-sm wf-filled",
+  filledLarge: "btn btn-primary btn-lg wf-filled",
   secondary: "btn btn-secondary",
   secondarySmall: "btn btn-secondary btn-sm",
   secondaryLarge: "btn btn-secondary btn-lg",

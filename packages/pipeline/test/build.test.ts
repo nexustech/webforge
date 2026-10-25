@@ -642,7 +642,7 @@ describe("buildSite: the theme's buttons, shadows and links (#423)", () => {
     );
     expect(css).toContain("--size: var(--wf-button-height);");
     expect(css).toMatch(
-      /\.btn-primary:not\(\.btn-outline, \.btn-ghost, \.btn-link\) \{ --btn-bg: #0000;/,
+      /\.btn-primary:not\(\.btn-outline, \.btn-ghost, \.btn-link, \.wf-filled\) \{ --btn-bg: #0000;/,
     );
     // No shadows: Tailwind writes the theme's shadow scale into the classes that use it.
     expect(css).toContain(".shadow-md { --tw-shadow: 0 0 var(--tw-shadow-color, #0000);");

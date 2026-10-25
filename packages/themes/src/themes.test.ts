@@ -303,7 +303,8 @@ describe("themeCss (2.1)", () => {
     expect(square).toContain("--radius-field: var(--wf-button-radius);");
     expect(square).toContain("--size: var(--wf-button-height);");
     expect(square).toContain(
-      ".btn-primary:not(.btn-outline, .btn-ghost, .btn-link) {\n    @apply btn-outline;",
+      // Never a Button set to Filled (PH2-14).
+      ".btn-primary:not(.btn-outline, .btn-ghost, .btn-link, .wf-filled) {\n    @apply btn-outline;",
     );
     const ghost = css({ buttons: { shape: "pill", size: "m", style: "ghost" } });
     expect(ghost).toContain("@apply btn-ghost;");
