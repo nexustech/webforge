@@ -29,10 +29,10 @@ export type TitleBarProps = {
 const NO_DRAG = "[-webkit-app-region:no-drag]";
 
 /**
- * The 40 px custom title bar (UI1): app menu, New and Open, save status, Undo (with its latest
- * steps) and Redo, the
- * command box with the site name, then panel tools and the colour-coded Preview, Export and
- * Publish. The empty parts drag the window. The native window controls (Windows, Linux) or traffic
+ * The 40 px custom title bar (UI1, LF-13): app menu, New and Open, save status, Undo (with its
+ * latest steps) and Redo, the command box with the site name, then panel tools and the
+ * colour-coded Preview, Export and Publish. Its buttons are icons, each named by its command and
+ * with a tooltip that gives the shortcut. The empty parts drag the window. The native window controls (Windows, Linux) or traffic
  * lights (macOS) are drawn over it by Electron; the padding keeps them clear, using the Window
  * Controls Overlay area the window reports.
  */
@@ -49,12 +49,12 @@ export function TitleBar({ siteName, saveStatus, undoSteps, tools }: TitleBarPro
         <CommandButton
           commandId={COMMAND_IDS.newSite}
           icon={<FilePlusIcon />}
-          text={t("shell.new")}
+          label={t("shell.new")}
         />
         <CommandButton
           commandId={COMMAND_IDS.openSite}
           icon={<FolderOpenIcon className="text-warning" />}
-          text={t("shell.open")}
+          label={t("shell.open")}
         />
         {saveStatus}
         <div className="mx-1 h-5 w-px bg-border" aria-hidden />
@@ -77,17 +77,17 @@ export function TitleBar({ siteName, saveStatus, undoSteps, tools }: TitleBarPro
         <CommandButton
           commandId={COMMAND_IDS.preview}
           icon={<EyeIcon className="text-info" />}
-          text={t("shell.preview")}
+          label={t("shell.preview")}
         />
         <CommandButton
           commandId={COMMAND_IDS.exportSite}
           icon={<DownloadIcon className="text-success" />}
-          text={t("shell.export")}
+          label={t("shell.export")}
         />
         <CommandButton
           commandId={COMMAND_IDS.publish}
           icon={<CloudUploadIcon className="text-publish" />}
-          text={t("shell.publish")}
+          label={t("shell.publish")}
         />
       </div>
     </header>

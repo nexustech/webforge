@@ -94,7 +94,7 @@ test("leaves a hidden layer out of the exported site (F-ED-12)", async () => {
 
     const folder = join(parent, "site");
     await stubFileDialogs(app, folder);
-    await page.getByRole("button", { name: "Export", exact: true }).click();
+    await page.getByRole("button", { name: "Export Site…", exact: true }).click();
     await expect(page.getByText(/^Site exported to/)).toBeVisible({ timeout: 30_000 });
 
     const index = readFileSync(join(folder, "index.html"), "utf8");

@@ -105,7 +105,7 @@ test("shows Site Settings values in bound elements, on the canvas and in the exp
 
   const folder = join(dir, "export");
   await stubFileDialogs(app, folder);
-  await page.getByRole("button", { name: "Export", exact: true }).click();
+  await page.getByRole("button", { name: "Export Site…", exact: true }).click();
   await expect(page.getByText(/Site exported to/)).toBeVisible({ timeout: 30_000 });
   const index = readFileSync(join(folder, "index.html"), "utf8");
   // A new site's Header shows the site name (the canvas doesn't show the Header yet).
@@ -150,7 +150,7 @@ test("lists Site Settings' opening hours and contact details, on the canvas and 
 
   const folder = join(dir, "export");
   await stubFileDialogs(app, folder);
-  await page.getByRole("button", { name: "Export", exact: true }).click();
+  await page.getByRole("button", { name: "Export Site…", exact: true }).click();
   await expect(page.getByText(/Site exported to/)).toBeVisible({ timeout: 30_000 });
   const index = readFileSync(join(folder, "index.html"), "utf8");
   expect(index).toContain('<dt class="font-medium">Saturday and Sunday</dt>');

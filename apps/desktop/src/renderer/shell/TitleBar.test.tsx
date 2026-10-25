@@ -35,9 +35,11 @@ describe("TitleBar", () => {
   it("disables buttons whose commands nobody has registered yet", () => {
     renderTitleBar();
 
-    // Icon-only Undo and Redo keep their names before the editor registers them.
+    // Icon-only buttons (LF-13) keep their names before the editor registers them.
     for (const name of ["New", "Open", "Undo", "Redo", "Preview", "Export", "Publish"]) {
-      expect((screen.getByRole("button", { name }) as HTMLButtonElement).disabled).toBe(true);
+      const button = screen.getByRole("button", { name }) as HTMLButtonElement;
+      expect(button.disabled).toBe(true);
+      expect(button.textContent).toBe("");
     }
   });
 
@@ -53,7 +55,8 @@ describe("TitleBar", () => {
     registry.register({ id: COMMAND_IDS.undo, label: "Undo", run: undo });
     renderTitleBar(registry);
 
-    await userEvent.click(screen.getByRole("button", { name: "Export" }));
+    // Named by its command once registered.
+    await userEvent.click(screen.getByRole("button", { name: "Export Site…" }));
     await userEvent.click(screen.getByRole("button", { name: "Undo" }));
 
     expect(exportSite).toHaveBeenCalledOnce();
