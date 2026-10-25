@@ -26,12 +26,15 @@ export function SettingsHost({ registry }: SettingsHostProps) {
   const [shown, setShown] = useState<Shown>({ open: false, parts: [] });
 
   useEffect(() => {
+    const hasSite = () => registry.list().some((entry) => entry.heading === "site");
     /** Opens the dialog on the first section of `heading`'s first part. */
     const open = (heading: "app" | "site") => {
       const entries = registry.list();
       const parts = entries.flatMap((entry) => entry.open() ?? []);
       const first = entries.find((entry) => entry.heading === heading);
       const part = parts.find((each) => each.form.id === first?.id);
+      // Site Settings… with no site's part to show: nothing to open (its command is off then).
+      if (heading === "site" && part === undefined) return;
       const group = part?.form.spec.groups?.[0]?.id ?? "";
       setShown({
         open: true,
@@ -50,8 +53,11 @@ export function SettingsHost({ registry }: SettingsHostProps) {
         id: COMMAND_IDS.siteSettings,
         label: t("site.settings.command"),
         menu: "file",
+        enabled: hasSite(),
         run: () => open("site"),
       }),
+      // Site Settings… is on while a site's part is there, as other site-only commands are.
+      registry.subscribe(() => commands.update(COMMAND_IDS.siteSettings, { enabled: hasSite() })),
     ];
     return () => {
       for (const stop of stops) stop();

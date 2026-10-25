@@ -1,3 +1,4 @@
+export { AssetWriter } from "./asset-writer.js";
 export { ProjectFileError, type ProjectFileErrorCode, ReadOnlyProjectError } from "./errors.js";
 export {
   type AssetInfo,

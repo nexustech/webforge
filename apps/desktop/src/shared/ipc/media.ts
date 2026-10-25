@@ -89,6 +89,19 @@ export const mediaChannels = {
     ]),
     response: importResultSchema,
   },
+  /**
+   * Imports dropped files by the paths the operating system gave the preload for them (R13b): the
+   * main process reads them, so their bytes never cross IPC. The renderer itself never sees a
+   * path; the preload sends only those of real dropped files (`webUtils.getPathForFile`).
+   */
+  importMediaPaths: {
+    channel: "media:import-paths",
+    request: z.tuple([
+      sessionIdSchema,
+      z.array(z.string().min(1).max(4096)).min(1).max(MAX_MEDIA_FILES),
+    ]),
+    response: importResultSchema,
+  },
   /** Asks for images or PDFs with a native dialog, then imports them, as `importMedia` does. */
   chooseMedia: {
     channel: "media:choose",
@@ -101,6 +114,15 @@ export const mediaChannels = {
 export interface MediaApi {
   /** Imports dropped files into the open site's file, if it is still the opening `sessionId` names. */
   import(sessionId: string, files: readonly DroppedFile[]): Promise<MediaImportResult>;
+  /**
+   * Imports the dropped `files` the operating system has paths for, which the main process reads
+   * (R13b), and says which it had none for (by index), for the renderer to send as bytes: a file
+   * dragged from a web page, say. Paths stay in the preload and the main process.
+   */
+  importFiles(
+    sessionId: string,
+    files: readonly File[],
+  ): Promise<{ readonly result: MediaImportResult; readonly withoutPath: readonly number[] }>;
   /** Lets the user pick files to import into the open site, if it is still the opening `sessionId` names. */
   choose(sessionId: string): Promise<MediaImportResult>;
 }

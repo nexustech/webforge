@@ -2,10 +2,6 @@ import { type ChildProcess, spawn } from "node:child_process";
 import { once } from "node:events";
 import { fileURLToPath } from "node:url";
 
-// --import takes a URL (a bare Windows path such as C:\... is not one); the script takes a path.
-const resolveHook = new URL("./resolve-ts.ts", import.meta.url).href;
-const writerScript = fileURLToPath(new URL("./writer.ts", import.meta.url));
-
 /** A child process committing to a project in a loop (see writer.ts). */
 export type ChildWriter = {
   /** Sequence number of the last commit the writer reported as returned (0 before the first). */
@@ -16,11 +12,28 @@ export type ChildWriter = {
   kill(): Promise<void>;
 };
 
-/** Starts a writer process on the project at `path`. */
-export function startChildWriter(path: string): ChildWriter {
+/**
+ * What a child writer does: commit in a loop (`writer.ts`), or import as the storage writer does
+ * (`asset-writer.ts`, R13b).
+ */
+const SCRIPTS = {
+  commits: new URL("./writer.ts", import.meta.url),
+  imports: new URL("./asset-writer.ts", import.meta.url),
+};
+
+/**
+ * Starts a writer process on the project at `path`, doing `what`. `hook` is the test kit's
+ * `TYPESCRIPT_HOOK`, which lets the process run the TypeScript sources.
+ */
+export function startChildWriter(
+  path: string,
+  hook: string,
+  what: keyof typeof SCRIPTS = "commits",
+): ChildWriter {
+  const writerScript = fileURLToPath(SCRIPTS[what]);
   const child: ChildProcess = spawn(
     process.execPath,
-    ["--disable-warning=ExperimentalWarning", "--import", resolveHook, writerScript, path],
+    ["--disable-warning=ExperimentalWarning", "--import", hook, writerScript, path],
     { stdio: ["ignore", "pipe", "pipe"] },
   );
   let acknowledged = 0;

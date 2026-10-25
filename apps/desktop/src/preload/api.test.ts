@@ -161,6 +161,41 @@ describe("createWebforgeApi site export", () => {
       apiWith(async () => ({ ...result, items: [{ ...item, hash: "x" }] })).media.choose(SESSION),
     ).rejects.toThrow();
   });
+
+  it("sends dropped files' paths to the main process only, saying which had none (R13b)", async () => {
+    const result = { status: "imported", items: [], rejected: [] };
+    const invoke = vi.fn(async () => result);
+    const paths = new Map<unknown, string>();
+    const file = (name: string, path: string) => {
+      const made = { name } as File;
+      paths.set(made, path);
+      return made;
+    };
+    const pathOf = (dropped: File) => {
+      const path = paths.get(dropped);
+      if (path === undefined) throw new Error("not a dropped file");
+      return path;
+    };
+    const api = createWebforgeApi(invoke, noEvents, pathOf);
+    const files = [
+      file("shop.jpg", "C:\\Photos\\shop.jpg"),
+      file("from-page.png", ""),
+      { name: "made.png" } as File,
+    ];
+
+    const imported = await api.media.importFiles(SESSION, files);
+
+    expect(imported).toEqual({ result, withoutPath: [1, 2] });
+    // No path comes back to the renderer.
+    expect(JSON.stringify(imported)).not.toContain("Photos");
+    expect(invoke).toHaveBeenCalledWith("media:import-paths", SESSION, ["C:\\Photos\\shop.jpg"]);
+    invoke.mockClear();
+    await expect(api.media.importFiles(SESSION, [files[1] as File])).resolves.toEqual({
+      result,
+      withoutPath: [0],
+    });
+    expect(invoke).not.toHaveBeenCalled();
+  });
 });
 
 describe("createWebforgeApi app events", () => {

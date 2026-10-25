@@ -59,7 +59,11 @@ const meta = {
   component: MediaPanel,
   args: {
     session: sessionWithMedia(ITEMS),
-    media: { import: noImport, choose: noImport },
+    media: {
+      import: noImport,
+      importFiles: async () => ({ result: { status: "canceled" }, withoutPath: [] }),
+      choose: noImport,
+    },
     notify: () => undefined,
     imageUrl: placeholder,
   },

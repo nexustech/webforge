@@ -1,28 +1,16 @@
-import {
-  Button,
-  Check,
-  cn,
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  Field,
-  fieldControlClass,
-  ToggleGroup,
-  ToggleGroupItem,
-} from "@webforge/editor-ui";
+import { FormDialog, type FormField, type FormSchema, type FormSpec } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import {
+  anchorIdSchema,
   EMAIL_SUBJECT_MAX,
   type LinkValue,
   linkValueSchema,
   MENU_LABEL_MAX,
-  type PageId,
+  pageIdSchema,
   type SiteDoc,
 } from "@webforge/model";
-import { useState } from "react";
+import { z } from "zod";
+import "../shell/form-messages.js";
 import type { LinkFieldChange } from "./link-change.js";
 import { type PageTarget, sectionAnchor } from "./link-targets.js";
 
@@ -49,33 +37,288 @@ export type LinkDialogProps = {
   readonly onCancel: () => void;
 };
 
-/**
- * The link dialog (F-ED-18): a page of the site, or a section on it; an e-mail address; a phone
- * number; a web address, optionally opened in a new tab; or a document in Media (1.28), in a new
- * tab by default or saved as a download. Linking to a section that has no anchor yet gives it one,
- * named after the section.
- */
-export function LinkDialog({ open, onCancel, ...form }: LinkDialogProps) {
-  return (
-    <Dialog
-      open={open}
-      onOpenChange={(next) => {
-        if (!next) onCancel();
-      }}
-    >
-      {/* The content mounts with each opening, so the form starts from the link every time. */}
-      <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto">
-        <LinkForm {...form} onCancel={onCancel} />
-      </DialogContent>
-    </Dialog>
-  );
-}
+/** What the form holds as the person edits: every kind's values, kept while they switch kinds. */
+type LinkValues = {
+  readonly label: string;
+  readonly kind: Kind;
+  readonly pageId: string;
+  /** The section's node id, or "" for the top of the page. */
+  readonly section: string;
+  readonly newTab: boolean;
+  readonly address: string;
+  readonly subject: string;
+  readonly number: string;
+  readonly href: string;
+  readonly fileId: string;
+  readonly fileNewTab: boolean;
+  readonly download: boolean;
+};
+
+/** What the form saves: the link, its label, and the anchor a section gets (F-ED-18). */
+type LinkOutput = { readonly label: string } & LinkFieldChange & { readonly link: LinkValue };
 
 /** A web address as typed, with `https://` added when it has no scheme ("example.com"). */
 const withScheme = (address: string) =>
   /^[a-z][a-z0-9+.-]*:/i.test(address) ? address : `https://${address}`;
 
-function LinkForm({
+/**
+ * The dialog's own wording for a value the model's link schema refuses (#391), by the path it
+ * checks: an address, a number or a web address not in the form it should be, a page or document
+ * not chosen. Too long or empty says so in the editor's general words (`form.error.*`).
+ */
+const MESSAGES: Readonly<Record<string, Parameters<typeof t>[0]>> = {
+  "link.address": "link.error.email",
+  "link.number": "link.error.phone",
+  "link.href": "link.error.url",
+  "link.pageId": "link.error.page",
+  "link.mediaId": "link.error.file",
+  label: "link.error.label",
+};
+
+/** The link schema the form checks against, with a label when the dialog asks for one. */
+function linkSchema(asksLabel: boolean): FormSchema<LinkOutput> {
+  const schema = z.strictObject({
+    label: asksLabel ? z.string().min(1) : z.string(),
+    link: linkValueSchema,
+    anchor: z
+      .strictObject({ pageId: pageIdSchema, nodeId: z.string().min(1), anchorId: anchorIdSchema })
+      .optional(),
+  });
+  return {
+    "~standard": {
+      validate: (value) => {
+        const parsed = schema.safeParse(value);
+        if (parsed.success) return { value: parsed.data as LinkOutput };
+        return {
+          issues: parsed.error.issues.map((issue) => {
+            const own = MESSAGES[issue.path.map(String).join(".")];
+            const tooLong = issue.code === "too_big";
+            return {
+              path: issue.path,
+              message: own === undefined || tooLong ? issue.message : t(own),
+            };
+          }),
+        };
+      },
+    },
+  };
+}
+
+/** The values a link starts the form from, with the first page and document as the defaults. */
+function initialValues(
+  link: LinkValue | undefined,
+  label: string | undefined,
+  targets: readonly PageTarget[],
+  documents: readonly { readonly id: string }[],
+): LinkValues {
+  const pageId = link?.kind === "page" ? link.pageId : (targets[0]?.id ?? "");
+  const page = targets.find((target) => target.id === pageId);
+  return {
+    label: label ?? "",
+    kind: link === undefined ? "page" : link.kind,
+    pageId,
+    section:
+      link?.kind === "page" && link.anchor !== undefined
+        ? (page?.sections.find((target) => target.anchorId === link.anchor)?.nodeId ?? "")
+        : "",
+    newTab: link?.newTab === true,
+    address: link?.kind === "email" ? link.address : "",
+    subject: link?.kind === "email" ? (link.subject ?? "") : "",
+    number: link?.kind === "phone" ? link.number : "",
+    href: link?.kind === "url" ? link.href : "",
+    fileId: link?.kind === "file" ? link.mediaId : (documents[0]?.id ?? ""),
+    // A link to a document opens in a new tab unless told otherwise.
+    fileNewTab: link?.kind !== "file" || link.newTab === true,
+    download: link?.kind === "file" && link.download === true,
+  };
+}
+
+/**
+ * The link dialog's form (#391): the label when asked, what the link goes to, and that kind's
+ * fields as the values ask. The model's link schema checks it, so it keeps no state of its own.
+ */
+function linkSpec(
+  site: SiteDoc,
+  targets: readonly PageTarget[],
+  documents: readonly { readonly id: string; readonly fileName: string }[],
+  asksLabel: boolean,
+): FormSpec<LinkValues, LinkOutput> {
+  const newTab: FormField = { kind: "toggle", name: "newTab", label: t("link.newTab") };
+  return {
+    fields: (values) => {
+      const page = targets.find((target) => target.id === values.pageId);
+      const kindFields: Record<Kind, readonly FormField[]> = {
+        page: [
+          {
+            kind: "select",
+            name: "pageId",
+            path: "link.pageId",
+            label: t("link.page"),
+            options: targets.map((target) => ({ label: target.title, value: target.id })),
+          },
+          {
+            kind: "select",
+            name: "section",
+            label: t("link.section"),
+            options: [
+              { label: t("link.top"), value: "" },
+              ...(page?.sections ?? []).map((target) => ({
+                label: target.label,
+                value: target.nodeId,
+              })),
+            ],
+          },
+          newTab,
+        ],
+        email: [
+          {
+            kind: "text",
+            name: "address",
+            path: "link.address",
+            label: t("link.address"),
+            inputType: "email",
+            placeholder: t("link.addressPlaceholder"),
+          },
+          {
+            kind: "text",
+            name: "subject",
+            path: "link.subject",
+            label: t("link.subject"),
+            maxLength: EMAIL_SUBJECT_MAX,
+          },
+        ],
+        phone: [
+          {
+            kind: "text",
+            name: "number",
+            path: "link.number",
+            label: t("link.number"),
+            inputType: "tel",
+            placeholder: t("link.numberPlaceholder"),
+          },
+        ],
+        url: [
+          {
+            kind: "text",
+            name: "href",
+            path: "link.href",
+            label: t("link.url"),
+            inputType: "url",
+            placeholder: t("link.urlPlaceholder"),
+          },
+          newTab,
+        ],
+        file:
+          documents.length === 0
+            ? []
+            : [
+                {
+                  kind: "select",
+                  name: "fileId",
+                  path: "link.mediaId",
+                  label: t("link.document"),
+                  options: documents.map((document) => ({
+                    label: document.fileName,
+                    value: document.id,
+                  })),
+                },
+                { kind: "toggle", name: "fileNewTab", label: t("link.newTab") },
+                { kind: "toggle", name: "download", label: t("link.download") },
+              ],
+      };
+      return [
+        ...(asksLabel
+          ? [
+              {
+                kind: "text",
+                name: "label",
+                label: t("link.label"),
+                maxLength: MENU_LABEL_MAX,
+              } as const,
+            ]
+          : []),
+        {
+          kind: "choice",
+          name: "kind",
+          label: t("link.kind"),
+          options: KINDS.map((kind) => ({ label: t(`link.kind.${kind}`), value: kind })),
+        },
+        ...kindFields[values.kind],
+      ];
+    },
+    schema: linkSchema(asksLabel),
+    toModel: (values) => {
+      const label = values.label.trim();
+      switch (values.kind) {
+        case "page": {
+          const tab = values.newTab ? { newTab: true } : {};
+          const page = targets.find((target) => target.id === values.pageId);
+          const target = page?.sections.find((each) => each.nodeId === values.section);
+          if (page === undefined || target === undefined) {
+            return { label, link: { kind: "page", pageId: values.pageId, ...tab } };
+          }
+          const { anchor, given } = sectionAnchor(site, page.id, target);
+          return {
+            label,
+            link: { kind: "page", pageId: page.id, anchor, ...tab },
+            ...(given === undefined
+              ? {}
+              : { anchor: { pageId: page.id, nodeId: target.nodeId, anchorId: given } }),
+          };
+        }
+        case "email": {
+          const subject = values.subject.trim();
+          return {
+            label,
+            link: {
+              kind: "email",
+              address: values.address.trim(),
+              ...(subject === "" ? {} : { subject }),
+            },
+          };
+        }
+        case "phone":
+          return { label, link: { kind: "phone", number: values.number.trim() } };
+        case "url":
+          return {
+            label,
+            link: {
+              kind: "url",
+              href: withScheme(values.href.trim()),
+              ...(values.newTab ? { newTab: true } : {}),
+            },
+          };
+        case "file":
+          return {
+            label,
+            link: {
+              kind: "file",
+              mediaId: values.fileId,
+              ...(values.fileNewTab ? { newTab: true } : {}),
+              ...(values.download ? { download: true } : {}),
+            },
+          };
+      }
+    },
+    // With no documents in Media there's nothing to link to: said on the kind, once it's chosen.
+    check: (values) =>
+      values.kind === "file" && documents.length === 0
+        ? [{ path: ["kind"], message: t("link.error.file") }]
+        : [],
+    // Another page has other sections: its top first.
+    adjust: (next, previous) => (next.pageId === previous.pageId ? next : { ...next, section: "" }),
+    validateOn: "change",
+  };
+}
+
+/**
+ * The link dialog (F-ED-18): a page of the site, or a section on it; an e-mail address; a phone
+ * number; a web address, optionally opened in a new tab; or a document in Media (1.28), in a new
+ * tab by default or saved as a download. Linking to a section that has no anchor yet gives it one,
+ * named after the section. A form (#391): the model's link schema checks what's typed.
+ */
+export function LinkDialog({
+  open,
   link,
   site,
   targets,
@@ -83,281 +326,23 @@ function LinkForm({
   title,
   onSave,
   onCancel,
-}: Omit<LinkDialogProps, "open">) {
-  // The documents in Media, by file name; a link to one opens in a new tab unless told otherwise.
+}: LinkDialogProps) {
+  // The documents in Media, by file name.
   const documents = Object.values(site.media)
     .filter((item) => item.kind === "file")
     .sort((a, b) => a.fileName.localeCompare(b.fileName));
-  const [fileId, setFileId] = useState<string | undefined>(
-    link?.kind === "file" ? link.mediaId : documents[0]?.id,
-  );
-  const [fileNewTab, setFileNewTab] = useState(link?.kind !== "file" || link.newTab === true);
-  const [download, setDownload] = useState(link?.kind === "file" && link.download === true);
-  const [labelText, setLabelText] = useState(label ?? "");
-  // Said only once the label has been typed in and emptied again, not while it waits to be filled.
-  const [labelTouched, setLabelTouched] = useState(false);
-  const labelMissing = label !== undefined && labelText.trim() === "";
-  const [kind, setKind] = useState<Kind>(link === undefined ? "page" : link.kind);
-  const [pageId, setPageId] = useState<PageId | undefined>(
-    link?.kind === "page" ? link.pageId : targets[0]?.id,
-  );
-  const page = targets.find((target) => target.id === pageId);
-  const [section, setSection] = useState<string>(() =>
-    link?.kind === "page" && link.anchor !== undefined
-      ? (page?.sections.find((target) => target.anchorId === link.anchor)?.nodeId ?? "")
-      : "",
-  );
-  const [address, setAddress] = useState(link?.kind === "email" ? link.address : "");
-  const [subject, setSubject] = useState(link?.kind === "email" ? (link.subject ?? "") : "");
-  const [number, setNumber] = useState(link?.kind === "phone" ? link.number : "");
-  const [href, setHref] = useState(link?.kind === "url" ? link.href : "");
-  const [newTab, setNewTab] = useState(link?.newTab === true);
-
-  /** The change the form describes, or a message saying what's missing. */
-  const result = ((): { change: LinkFieldChange } | { error: string } => {
-    const tab = newTab && (kind === "page" || kind === "url") ? { newTab: true } : {};
-    if (kind === "page") {
-      if (page === undefined) return { error: t("link.error.page") };
-      const target = page.sections.find((candidate) => candidate.nodeId === section);
-      if (target === undefined) {
-        return { change: { link: { kind: "page", pageId: page.id, ...tab } } };
-      }
-      const { anchor, given } = sectionAnchor(site, page.id, target);
-      return {
-        change: {
-          link: { kind: "page", pageId: page.id, anchor, ...tab },
-          ...(given === undefined
-            ? {}
-            : { anchor: { pageId: page.id, nodeId: target.nodeId, anchorId: given } }),
-        },
-      };
-    }
-    if (kind === "file") {
-      const document = documents.find((item) => item.id === fileId);
-      if (document === undefined) return { error: t("link.error.file") };
-      return {
-        change: {
-          link: {
-            kind: "file",
-            mediaId: document.id,
-            ...(fileNewTab ? { newTab: true } : {}),
-            ...(download ? { download: true } : {}),
-          },
-        },
-      };
-    }
-    const candidate: unknown =
-      kind === "email"
-        ? {
-            kind,
-            address: address.trim(),
-            ...(subject.trim() === "" ? {} : { subject: subject.trim() }),
-          }
-        : kind === "phone"
-          ? { kind, number: number.trim() }
-          : { kind, href: withScheme(href.trim()), ...tab };
-    const parsed = linkValueSchema.safeParse(candidate);
-    return parsed.success ? { change: { link: parsed.data } } : { error: t(`link.error.${kind}`) };
-  })();
-  const typed =
-    kind === "page" ||
-    kind === "file" ||
-    (kind === "email" ? address : kind === "phone" ? number : href).trim() !== "";
-
   return (
-    <form
-      className="grid gap-3"
-      // The form checks links itself: the browser's own check would refuse "example.com" (no
-      // https://, which the form adds) before it could.
-      noValidate
-      onSubmit={(event) => {
-        event.preventDefault();
-        if ("change" in result && !labelMissing) onSave(result.change, labelText.trim());
-      }}
-    >
-      <DialogHeader>
-        <DialogTitle>{title ?? t("link.title")}</DialogTitle>
-        <DialogDescription>{t("link.description")}</DialogDescription>
-      </DialogHeader>
-
-      {label !== undefined && (
-        <Field label={t("link.label")}>
-          {(control) => (
-            <input
-              {...control}
-              className={fieldControlClass}
-              value={labelText}
-              maxLength={MENU_LABEL_MAX}
-              onChange={(event) => {
-                setLabelText(event.currentTarget.value);
-                setLabelTouched(true);
-              }}
-            />
-          )}
-        </Field>
-      )}
-
-      <ToggleGroup
-        type="single"
-        value={kind}
-        aria-label={t("link.kind")}
-        className="justify-self-start"
-        onValueChange={(value) => {
-          const next = KINDS.find((candidate) => candidate === value);
-          if (next !== undefined) setKind(next);
-        }}
-      >
-        {KINDS.map((option) => (
-          <ToggleGroupItem key={option} value={option}>
-            {t(`link.kind.${option}`)}
-          </ToggleGroupItem>
-        ))}
-      </ToggleGroup>
-
-      {kind === "page" && (
-        <>
-          <Field label={t("link.page")}>
-            {(control) => (
-              <select
-                {...control}
-                className={fieldControlClass}
-                value={pageId ?? ""}
-                onChange={(event) => {
-                  const { value } = event.currentTarget;
-                  setPageId(targets.find((target) => target.id === value)?.id);
-                  setSection("");
-                }}
-              >
-                {targets.map((target) => (
-                  <option key={target.id} value={target.id}>
-                    {target.title}
-                  </option>
-                ))}
-              </select>
-            )}
-          </Field>
-          <Field label={t("link.section")}>
-            {(control) => (
-              <select
-                {...control}
-                className={fieldControlClass}
-                value={section}
-                onChange={(event) => setSection(event.currentTarget.value)}
-              >
-                <option value="">{t("link.top")}</option>
-                {page?.sections.map((target) => (
-                  <option key={target.nodeId} value={target.nodeId}>
-                    {target.label}
-                  </option>
-                ))}
-              </select>
-            )}
-          </Field>
-        </>
-      )}
-      {kind === "email" && (
-        <>
-          <Field label={t("link.address")}>
-            {(control) => (
-              <input
-                {...control}
-                type="email"
-                className={fieldControlClass}
-                value={address}
-                placeholder={t("link.addressPlaceholder")}
-                onChange={(event) => setAddress(event.currentTarget.value)}
-              />
-            )}
-          </Field>
-          <Field label={t("link.subject")}>
-            {(control) => (
-              <input
-                {...control}
-                className={fieldControlClass}
-                value={subject}
-                maxLength={EMAIL_SUBJECT_MAX}
-                onChange={(event) => setSubject(event.currentTarget.value)}
-              />
-            )}
-          </Field>
-        </>
-      )}
-      {kind === "phone" && (
-        <Field label={t("link.number")}>
-          {(control) => (
-            <input
-              {...control}
-              type="tel"
-              className={fieldControlClass}
-              value={number}
-              placeholder={t("link.numberPlaceholder")}
-              onChange={(event) => setNumber(event.currentTarget.value)}
-            />
-          )}
-        </Field>
-      )}
-      {kind === "url" && (
-        <Field label={t("link.url")}>
-          {(control) => (
-            <input
-              {...control}
-              type="url"
-              className={fieldControlClass}
-              value={href}
-              placeholder={t("link.urlPlaceholder")}
-              onChange={(event) => setHref(event.currentTarget.value)}
-            />
-          )}
-        </Field>
-      )}
-      {kind === "file" && documents.length > 0 && (
-        <>
-          <Field label={t("link.document")}>
-            {(control) => (
-              <select
-                {...control}
-                className={fieldControlClass}
-                value={fileId ?? ""}
-                onChange={(event) => setFileId(event.currentTarget.value)}
-              >
-                {documents.map((document) => (
-                  <option key={document.id} value={document.id}>
-                    {document.fileName}
-                  </option>
-                ))}
-              </select>
-            )}
-          </Field>
-          <Check label={t("link.newTab")} checked={fileNewTab} onChange={setFileNewTab} />
-          <Check label={t("link.download")} checked={download} onChange={setDownload} />
-        </>
-      )}
-      {(kind === "page" || kind === "url") && (
-        <Check label={t("link.newTab")} checked={newTab} onChange={setNewTab} />
-      )}
-
-      <p
-        role="status"
-        className={cn(
-          "min-h-4 text-xs text-destructive-text",
-          !typed && !labelTouched && "invisible",
-        )}
-      >
-        {"error" in result && typed
-          ? result.error
-          : labelMissing && labelTouched
-            ? t("link.error.label")
-            : ""}
-      </p>
-
-      <DialogFooter>
-        <Button type="button" variant="secondary" onClick={onCancel}>
-          {t("pages.cancel")}
-        </Button>
-        <Button type="submit" disabled={!("change" in result) || labelMissing}>
-          {t("link.save")}
-        </Button>
-      </DialogFooter>
-    </form>
+    <FormDialog
+      open={open}
+      title={title ?? t("link.title")}
+      description={t("link.description")}
+      confirm={t("link.save")}
+      spec={linkSpec(site, targets, documents, label !== undefined)}
+      initial={initialValues(link, label, targets, documents)}
+      onSave={({ label: text, link: saved, anchor }) =>
+        onSave({ link: saved, ...(anchor === undefined ? {} : { anchor }) }, text)
+      }
+      onCancel={onCancel}
+    />
   );
 }

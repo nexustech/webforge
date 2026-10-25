@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { existsSync, renameSync, rmSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import {
@@ -11,6 +11,7 @@ import {
 } from "@webforge/model";
 import Database from "better-sqlite3";
 import { z } from "zod";
+import { configureWrites, connect, INSERT_BLOB, sha256, UPSERT_ASSET } from "./connection.js";
 import { checkContent, stampContent } from "./content-check.js";
 import { ProjectFileError, ReadOnlyProjectError } from "./errors.js";
 import { APPLICATION_ID, FORMAT_VERSION, SCHEMA, SCHEMA_MIGRATIONS, SCHEMAS } from "./schema.js";
@@ -206,10 +207,6 @@ function collectHashes(value: JsonValue, into: Set<string>): void {
   }
 }
 
-function sha256(data: Uint8Array): string {
-  return createHash("sha256").update(data).digest("hex");
-}
-
 /** The `sqlite_schema` rows of a database, in a stable order, for comparison. */
 function readSchema(db: Database.Database): string[] {
   return db
@@ -263,35 +260,6 @@ function toProjectFileError(error: unknown): unknown {
     });
   }
   return error;
-}
-
-/**
- * Hardens a connection before anything is read from a possibly untrusted file
- * ([Defense against the dark arts](https://www.sqlite.org/security.html)). better-sqlite3 already
- * turns on `SQLITE_DBCONFIG_DEFENSIVE`, which blocks `writable_schema`, `journal_mode=OFF` and
- * other ways to corrupt the file from SQL.
- */
-export function hardenConnection(db: Database.Database): void {
-  // Functions with side effects may not run from views or triggers stored in the file.
-  db.pragma("trusted_schema = OFF");
-  // Catch malformed b-tree cells early instead of reading past them.
-  db.pragma("cell_size_check = ON");
-  // Never memory-map the file: an I/O error would then crash the process instead of failing a call.
-  db.pragma("mmap_size = 0");
-  // A document or asset can't name a blob the file doesn't have. better-sqlite3 turns this on by
-  // default; set here so a change of default can't turn it off (R14, a test checks).
-  db.pragma("foreign_keys = ON");
-}
-
-/**
- * Settings for every write. The rollback journal (`DELETE`) leaves no side files once a commit
- * has finished, so copying the `.wforge` alone (cloud sync, e-mail, USB stick) always gets every
- * committed change; WAL would leave recent commits in a `-wal` file (ADR 0003). `FULL` syncs the
- * journal and the database before a commit returns, so a returned commit survives a crash.
- */
-function configureWrites(db: Database.Database): void {
-  db.pragma("journal_mode = DELETE");
-  db.pragma("synchronous = FULL");
 }
 
 function readMetaRows(db: Database.Database): Record<string, string> {
@@ -417,7 +385,7 @@ export class ProjectStore {
   static create(path: string, options: CreateProjectOptions): ProjectStore {
     const tempPath = join(dirname(path), `.${basename(path)}.${randomUUID()}.tmp`);
     try {
-      const db = new Database(tempPath);
+      const db = connect(tempPath, { create: true });
       try {
         db.pragma(`application_id = ${APPLICATION_ID}`);
         configureWrites(db);
@@ -461,9 +429,8 @@ export class ProjectStore {
       throw new ProjectFileError("not-found", "The project file does not exist");
     }
     const readOnly = options.readOnly === true;
-    const db = new Database(path, { fileMustExist: true, readonly: readOnly });
+    const db = connect(path, { readOnly });
     try {
-      hardenConnection(db);
       const validated = validateProject(db);
       if (validated.newerFormat && !readOnly) {
         db.close();
@@ -680,13 +647,7 @@ export class ProjectStore {
   putAsset(asset: NewAsset): AssetInfo {
     return this.#write(() => {
       const hash = this.#insertBlob(asset.data, asset.mime);
-      this.#prepare(
-        `INSERT INTO assets (media_id, blob_hash, mime, width, height, original_name)
-           VALUES (?, ?, ?, ?, ?, ?)
-         ON CONFLICT (media_id) DO UPDATE SET blob_hash = excluded.blob_hash,
-           mime = excluded.mime, width = excluded.width, height = excluded.height,
-           original_name = excluded.original_name`,
-      ).run(
+      this.#prepare(UPSERT_ASSET).run(
         asset.mediaId,
         hash,
         asset.mime,
@@ -769,9 +730,8 @@ export class ProjectStore {
    */
   async backupTo(path: string): Promise<void> {
     const tempPath = join(dirname(path), `.${basename(path)}.${randomUUID()}.tmp`);
-    const source = new Database(this.#db.name, { readonly: true, fileMustExist: true });
+    const source = connect(this.#db.name, { readOnly: true });
     try {
-      hardenConnection(source);
       await source.backup(tempPath);
       renameSync(tempPath, path);
     } catch (error) {
@@ -838,12 +798,7 @@ export class ProjectStore {
 
   #insertBlob(data: Uint8Array, mime: string): string {
     const hash = sha256(data);
-    this.#prepare("INSERT OR IGNORE INTO blobs (hash, mime, size, data) VALUES (?, ?, ?, ?)").run(
-      hash,
-      mime,
-      data.byteLength,
-      data,
-    );
+    this.#prepare(INSERT_BLOB).run(hash, mime, data.byteLength, data);
     return hash;
   }
 

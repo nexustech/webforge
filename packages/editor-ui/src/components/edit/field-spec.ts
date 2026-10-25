@@ -79,6 +79,8 @@ type FieldSpecs = {
   readonly number: { readonly min?: number; readonly max?: number };
   /** A time of day, `HH:MM` (forms, 2.21: opening hours). */
   readonly time: Nothing;
+  /** One of a few options, side by side (forms: what a link goes to, #391). */
+  readonly choice: { readonly options: readonly FieldChoice[] };
   /** Any number of its options, in their order (forms, 2.21: the days a shop opens). */
   readonly multiChoice: { readonly options: readonly FieldChoice[] };
   /** One of Media's images, or none (forms, 2.21: the site's icon and share image). */
