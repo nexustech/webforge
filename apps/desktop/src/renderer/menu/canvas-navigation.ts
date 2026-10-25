@@ -1,3 +1,4 @@
+import { sameValue } from "@webforge/editor-ui";
 import type { CanvasEngine } from "@webforge/engine";
 import { mediaItem, pagePath, type SiteDoc } from "@webforge/model";
 // The export's own navigation, through a subpath that must stay free of Node imports, as it runs
@@ -5,7 +6,6 @@ import { mediaItem, pagePath, type SiteDoc } from "@webforge/model";
 import { type NavigationPage, navigationFor } from "@webforge/pipeline/navigation";
 import type { NavItem, NavLink } from "@webforge/site-components";
 import type { EditorSession } from "../editor/editor-session.js";
-import { sameValue } from "../editor/same-value.js";
 
 type Unsubscribe = () => void;
 
