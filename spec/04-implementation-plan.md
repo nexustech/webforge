@@ -148,7 +148,7 @@ gantt
     2.11 Elements – tabs, commerce, forms, embeds and c… :t2_11, after t2_12, 5d
     2.12 Animations and hover effects :t2_12, 2027-05-17, 2d
     2.13 Design 10–12 curated themes :crit, t2_13, 2027-05-19, 14d
-    2.14 Template format and New Site flow :crit, t2_14, 2027-06-09, 7d
+    2.14 Template format and New Site flow :crit, t2_14, after t2_13, 7d
     2.15 Templates – 8 starter sites :crit, t2_15, 2027-06-14, 20d
     2.16 Component accessibility and visual regression… :t2_16, 2027-07-12, 3d
     2.17 Columns toolbar and edit-only previews :t2_17, after t2_16, 4d
@@ -654,11 +654,13 @@ Close the visible gap to Bootstrap Studio 9.0.1 within the IP rule ([product/07]
 
 | Stream | Items, in order (after its Phase 1 items) |
 |---|---|
-| A: Shell & panels | ~~R9 → R10 → R11 → 2.9 → 2.21~~ → 1.39 → 2.3 → 2.18 → 2.13c (themes 9–12, from C, 25 Oct) → 2.15a (Café/Restaurant, Salon/Beauty, Trades) |
-| B: Data & site | ~~2.1 → 2.2 → R12 → R14 → 2.4 → 2.20 → 2.8 → 2.7b~~ → R13 (R13a → R13b → R13c → R13d) → 2.14 → 2.13b (themes 5–8) → 2.15b (Consultant, Photographer/Portfolio, Shop) |
-| C: History & canvas | ~~2.5 (before 1.30) → R7 → R8 (part 2 before 2.17) → 2.6 → 2.10 → 2.19 → 2.7a → 2.17 → 2.12 → 2.11 (from B, 25 Oct)~~ → 2.13a (themes 1–4, from A, 25 Oct) → 2.16 → 2.15c (Personal/CV, Blank) |
+| A: Shell & panels | ~~R9 → R10 → R11 → 2.9 → 2.21~~ → 1.39 → 2.3 → 2.18 → 2.15a (Café/Restaurant, Salon/Beauty, Trades) |
+| B: Data & site | ~~2.1 → 2.2 → R12 → R14 → 2.4 → 2.20 → 2.8 → 2.7b~~ → R13 (R13a → R13b → R13c → R13d) → 2.13b (themes 5–8) → 2.15b (Consultant, Photographer/Portfolio, Shop) |
+| C: History & canvas | ~~2.5 (before 1.30) → R7 → R8 (part 2 before 2.17) → 2.6 → 2.10 → 2.19 → 2.7a → 2.17 → 2.12 → 2.11 (from B, 25 Oct)~~ → 2.13a (themes 1–4, from A, 25 Oct) → 2.14 (from B, 25 Oct) → 2.13c (themes 9–12, from A, 25 Oct) → 2.15c (Personal/CV, Blank) → 2.16 |
 
 **Issue review, 25 Oct 2026.** Every Phase 2 item except 2.3, 2.13, 2.14, 2.15, 2.16, 2.18 and R13 is merged, and 1.39 is stream A's next item. Two corrections: **2.13 no longer depends on 2.3.** The curated themes are presets in `packages/themes` (2.1, merged), reviewed side by side in Storybook against the merged components; the Theme panel is the UI for editing a site's theme and nothing in 2.13 needs it, so the three theme batches are unblocked today instead of waiting about 16 raw days for stream A's 1.39, 2.3 and 2.18. **2.13a and 2.13c swap streams:** stream C's queue was empty until 2.13c, so it takes themes 1–4 (#210) now, and the product owner's review of that batch feeds the other two as the 23 Oct review intended; stream A takes themes 9–12 (#212) after 2.18. The template batches keep their issue dependencies (2.15a waits for #210, 2.15c for #212). Nothing else was blocked: 2.14, R13 and the 2.21 follow-up chore (#391) have their dependencies met, and 1.39's are all closed. The theme issues' contrast criterion is brought in line with the 24 Oct decision (reported, not a gate), and 2.18's issue now lists only 1.37 as a dependency, with 1.39 and 2.3 as queue order, as this plan says.
+
+**Re-plan, 25 Oct 2026 (stream levelling).** 2.14 (#56) moves from stream B to C, and 2.13c (themes 9–12, #212) from A to C. Stream C ran out of work after 2.13a, while every template batch waits for 2.14 and A's queue (1.39, 2.3, 2.18) is the longest; B keeps R13, 2.13b and 2.15b. Stream C's queue is now 2.13a → 2.14 → 2.13c → 2.15c → 2.16. Days are unchanged, so there is no scope change.
 
 **Re-plan, 23 Oct 2026 (plan review C2, C7).** The architecture review's Phase 2 items R7–R14 ([#240](https://github.com/nexustech/webforge/issues/240)–[#247](https://github.com/nexustech/webforge/issues/247), 14 days, 18 since R13's re-estimate on 25 Oct, from contingency per §10.6) are sequenced where their *blocks* links say: R7 and R8 before 2.6, R9 and R10 before 2.9, R11 with 2.3 (moved on 24 Oct to just after R10, before 2.9, 2.20 and 2.21). 2.11 moved to B (it extends 2.8's form-field module and `embed` behaviour), 2.7a (Gallery and lightbox) and 2.12 to C, 2.14 earlier in B so the templates' sync point comes sooner, and stream A starts with 2.9 (its dependencies are met) and takes 1.39 before 2.3, so the Theme panel is built on the two-column field rows. With the 24 Oct items (2.19–2.21) the queues are 42–47 raw days: at the plan's pace (0.5 engineering, 0.7 content) the longest, B's, takes about 27 working days, so code-complete about **1 Dec 2026**, about **9 Dec** with +25%, against the milestone's 11 Dec. The lever if the first component batch runs slower than 0.5 is §11's template and theme cuts.
 
@@ -767,12 +769,13 @@ Entrance animation presets (fade, slide, zoom; delay) and hover effects (lift, g
 - [ ] Works when opened via file://
 
 **2.13 Design 10–12 curated themes**  
-10–12 visibly distinct themes (colours, font pairing, corner style, spacing, button style) with light and dark variants, tuned against the real component catalogue. About 1–2 days per theme including contrast checks (product/03). Themes are presets in `packages/themes` and need the theme model (2.1) and the components, not the Theme panel (2.3; dependency dropped 25 Oct 2026). Batches: 2.13a (themes 1–4) on stream C first, reviewed by the product owner; 2.13b on B; 2.13c on A.
+10–12 visibly distinct themes (colours, font pairing, corner style, spacing, button style) with light and dark variants, tuned against the real component catalogue. About 1–2 days per theme including contrast checks (product/03). Themes are presets in `packages/themes` and need the theme model (2.1) and the components, not the Theme panel (2.3; dependency dropped 25 Oct 2026). Batches: 2.13a (themes 1–4) on stream C first, reviewed by the product owner; 2.13b on B; 2.13c on C after 2.14 (moved from A on 25 Oct 2026).
 
 - [ ] Every theme aims for WCAG AA contrast; `contrastIssues` is reported for each, not a CI gate (contrast is a guideline the site owner can override, product owner, 24 Oct 2026)
 - [ ] Themes reviewed side by side in Storybook and look distinct
 
 **2.14 Template format and New Site flow**  
+Stream C after 2.13a, moved from B on 25 Oct 2026: C ran out of work after 2.13a, every template batch waits for 2.14, and A's queue is the longest. Days unchanged.  
 Template package format (pages, theme, sample content, images with an image-licence manifest), start-screen template gallery with thumbnails, New Site asks name + theme, creating a site copies the template into a new .wforge. The gallery can be filtered and sorted (UX-29, added 22 Oct 2026, +1 day). The dialog follows Bootstrap Studio's New Design layout (LF-11, added 23 Oct 2026, +1 day): name and theme on the left, a *Blank* starter row, the template grid with category chips and sort, and a *Details* link per card that opens a preview. The start screen itself follows Bootstrap Studio's (LF-10, moved from 1.39 on 23 Oct 2026, +1 day): two columns, a card grid for recent sites (thumbnail, name, folder, last edited, pin, remove), a *Help* tab and search. The theme choice offers the presets that exist (2.1's development presets first); the curated themes join it as their PRs land. **Try an example** (PG-3, added 24 Oct 2026, +1 day): the start screen offers one or two templates pre-filled with complete sample content (the Café and Trades templates from 2.15, which already carry realistic copy), so a first-time user opens a finished site to edit; the format marks a template as an example and the New Site flow skips the empty-content path for it. 2.14 builds the flag and the flow against a development example; the shipped examples are 2.15's Café (2.15a) and Trades (2.15a) templates, marked when they land.
 
 - [ ] Template thumbnails generated in CI
