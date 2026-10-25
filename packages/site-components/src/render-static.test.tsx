@@ -871,8 +871,22 @@ describe("renderNodesToHtml", () => {
         '<a href="assets/img/hero-640.jpg" class="block" aria-label="Open larger: Our bakery" data-wf-lightbox-item="">',
       );
       expect(html).toContain('<figcaption class="text-sm empty:hidden">The shop</figcaption>');
-      // An image not chosen yet: a placeholder, no link.
       expect(html.match(/data-wf-lightbox-item/g)).toHaveLength(1);
+    });
+
+    it("exports nothing for an image not chosen yet, and shows a space for it on the canvas (#404)", () => {
+      const exported = galleryHtml();
+      const onCanvas = renderNodesToHtml(
+        [{ type: "GalleryImage", props: { id: "g2", caption: "" } }],
+        siteLibrary,
+        { ...context, emptyImage: () => "" },
+      );
+
+      expect(exported.match(/class="site-gallery-image/g)).toHaveLength(1);
+      expect(exported).not.toContain("rounded-box bg-base-200");
+      expect(onCanvas).toContain(
+        '<div class="aspect-square w-full rounded-box bg-base-200"></div>',
+      );
     });
 
     it("names an image's link by its caption, else as an image, when its alt text is empty", () => {
