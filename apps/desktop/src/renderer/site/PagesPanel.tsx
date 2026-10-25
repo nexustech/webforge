@@ -11,6 +11,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
   ScrollArea,
+  useMenuDialog,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import {
@@ -31,7 +32,6 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { NameDialog } from "../shell/NameDialog.js";
-import { useMenuDialog } from "../shell/use-menu-dialog.js";
 import { PageSettingsDialog } from "./PageSettingsDialog.js";
 import {
   canBeHome,

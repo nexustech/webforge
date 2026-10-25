@@ -4,6 +4,7 @@ import {
   type FieldSpec,
   type ListChange,
   type PlainFieldKind,
+  sameValue,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import {
@@ -54,7 +55,6 @@ import {
   withoutOverride,
   withValueAt,
 } from "./responsive-value.js";
-import { sameValue } from "./same-value.js";
 import { shownLayout } from "./shared-layout.js";
 import { useDocument, useUi } from "./use-document.js";
 

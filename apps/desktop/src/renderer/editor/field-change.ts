@@ -1,7 +1,7 @@
+import { sameValue } from "@webforge/editor-ui";
 import type { EditorSession } from "./editor-session.js";
 import { fieldTarget } from "./field-target.js";
 import { breakpointOf, valueAt, withValueAt } from "./responsive-value.js";
-import { sameValue } from "./same-value.js";
 import { useDocument, useUi } from "./use-document.js";
 
 /**

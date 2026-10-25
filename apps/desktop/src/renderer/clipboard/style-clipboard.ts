@@ -1,10 +1,10 @@
+import { sameValue } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import type { ComponentDef } from "@webforge/site-components";
 import type { EditorSession } from "../editor/editor-session.js";
 import { fieldGroupOf } from "../editor/field-group.js";
 import { type FieldTarget, fieldTarget } from "../editor/field-target.js";
 import { pastedStyleLabel } from "../editor/labels.js";
-import { sameValue } from "../editor/same-value.js";
 import type { CommandRegistry } from "../shell/commands.js";
 
 /** What Copy Style keeps (1.37, UX-14): the element's type, and the values of its style fields. */

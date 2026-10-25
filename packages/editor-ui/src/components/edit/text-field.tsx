@@ -87,10 +87,11 @@ export function TextField({
     <>
       <input
         id={id}
-        type="text"
+        type={field.inputType ?? "text"}
         className={fieldControlClass}
         value={draft ?? stored}
         placeholder={field.placeholder}
+        maxLength={field.maxLength}
         spellCheck={false}
         disabled={disabled}
         aria-invalid={error !== null || errorId !== undefined}

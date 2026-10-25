@@ -23,18 +23,26 @@ type FieldSpecs = {
   readonly text: {
     /** Shown while the field is empty, already translated. */
     readonly placeholder?: string;
-    /**
-     * Why a value isn't acceptable (translated), or undefined if it is. The field then reports its
-     * text only when the user is done with it, and only if it is acceptable.
-     */
-    readonly validate?: (value: string) => string | undefined;
-    /** Several lines, for a description or a postal address (forms, 2.21). */
-    readonly multiline?: boolean;
     /** What the text is, for the keyboard phones show and the browser's checks (forms, 2.21). */
     readonly inputType?: "text" | "email" | "tel" | "url";
     /** The longest text it takes: the model's limit for it (forms, 2.21). */
     readonly maxLength?: number;
-  };
+  } & (
+    | {
+        /**
+         * Why a value isn't acceptable (translated), or undefined if it is. The field then reports
+         * its text only when the user is done with it (Enter or leaving it), and only if it is
+         * acceptable: so on one line only.
+         */
+        readonly validate: (value: string) => string | undefined;
+        readonly multiline?: false;
+      }
+    | {
+        readonly validate?: undefined;
+        /** Several lines, for a description or a postal address (forms, 2.21). */
+        readonly multiline?: boolean;
+      }
+  );
   readonly select: { readonly options: readonly FieldChoice[] };
   readonly toggle: Nothing;
   /** Its steps, smallest first. */
