@@ -12,7 +12,7 @@ export type OpenSettings = {
 };
 
 /** A part of Settings, as an area registers it (LF-12, the registry deferred from 2.21). */
-export type SettingsEntry = {
+type SettingsEntry = {
   /** Unique: "interface", "devices", "site". */
   readonly id: string;
   readonly heading: SettingsHeading;
