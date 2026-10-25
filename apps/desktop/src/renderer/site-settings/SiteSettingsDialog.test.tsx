@@ -51,9 +51,12 @@ describe("SiteSettingsDialog", () => {
       await user.clear(name);
       await user.type(name, "Rosa's Bakery");
       await user.click(screen.getByRole("radio", { name: "shop.jpg" }));
-      await user.click(
-        screen.getByLabelText("Show a back-to-top button once visitors scroll down"),
+      const backToTop = screen.getByRole("checkbox", { name: "Show a back-to-top button" });
+      // Only the published site shows it, which the option says.
+      expect(backToTop.getAttribute("aria-describedby")).toBe(
+        screen.getByText("Shows on the published site once visitors scroll down.").id,
       );
+      await user.click(backToTop);
       await user.click(screen.getByRole("tab", { name: "Contact & hours" }));
       await user.type(screen.getByLabelText("Phone number"), "+44 1234 567890");
       await user.click(screen.getByRole("button", { name: "Add opening hours" }));

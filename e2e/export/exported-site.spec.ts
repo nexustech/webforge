@@ -609,7 +609,7 @@ test.describe("exported site from disk", () => {
       await open(page, "index.html");
       const link = page.getByRole("link", { name: "Back to top" });
       await expect(link).toBeVisible();
-      await expect(link).toHaveAttribute("href", "#top");
+      await expect(link).toHaveAttribute("href", "#");
 
       await wheelDown(page, 900);
       await link.click();
