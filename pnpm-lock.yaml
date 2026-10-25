@@ -434,9 +434,18 @@ importers:
       '@webforge/model':
         specifier: workspace:*
         version: link:../packages/model
+      '@webforge/pipeline':
+        specifier: workspace:*
+        version: link:../packages/pipeline
+      '@webforge/site-components':
+        specifier: workspace:*
+        version: link:../packages/site-components
       '@webforge/storage':
         specifier: workspace:*
         version: link:../packages/storage
+      '@webforge/templates':
+        specifier: workspace:*
+        version: link:../packages/templates
       '@webforge/test-utils':
         specifier: workspace:*
         version: link:../packages/test-utils
