@@ -69,6 +69,23 @@ describe("macOS's menu bar (LF-13)", () => {
     ]);
   });
 
+  it("lists Settings… in the application menu, not in File (LF-12)", () => {
+    const { registry } = setUp();
+    registry.register({ id: "app.settings", label: "Settings…", menu: "file", run: vi.fn() });
+
+    const menus = nativeMenusOf(registry);
+    expect(menus[0]).toEqual({
+      id: "app",
+      label: "Webforge",
+      items: [
+        { id: "app.settings", label: "Settings…", enabled: true, accelerator: "CmdOrCtrl+," },
+      ],
+    });
+    expect(menus.find((menu) => menu.id === "file")?.items.map((item) => item.id)).toEqual([
+      "site.settings",
+    ]);
+  });
+
   it("sends the menus at once, then once per burst of changes, and runs what's chosen there", () => {
     const { registry, settings, app, doc, choose } = setUp();
     const stop = syncNativeMenus(registry, app, doc);

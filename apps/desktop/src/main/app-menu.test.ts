@@ -93,4 +93,37 @@ describe("applicationMenu (F-ED-27)", () => {
     submenu("File")[0]?.click?.({} as never, undefined, {} as never);
     expect(run).toHaveBeenCalledWith("site.settings");
   });
+
+  it("puts the editor's Settings… in a Mac's application menu, after About (LF-12)", () => {
+    const run = vi.fn();
+    const menu = applicationMenu("darwin", false, {
+      menus: [
+        {
+          id: "app",
+          label: "Webforge",
+          items: [
+            { id: "app.settings", label: "Settings…", enabled: true, accelerator: "CmdOrCtrl+," },
+          ],
+        },
+      ],
+      run,
+    });
+
+    const app = (menu?.[0]?.submenu ?? []) as MenuItemConstructorOptions[];
+    expect(app.map((each) => each.role ?? each.label ?? each.type)).toEqual([
+      "about",
+      "separator",
+      "Settings…",
+      "separator",
+      "services",
+      "separator",
+      "hide",
+      "hideOthers",
+      "unhide",
+      "separator",
+      "quit",
+    ]);
+    app[2]?.click?.({} as never, undefined, {} as never);
+    expect(run).toHaveBeenCalledWith("app.settings");
+  });
 });

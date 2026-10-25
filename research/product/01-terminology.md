@@ -72,7 +72,8 @@
 | **Media** | Images, video, files in the site | Wix, WordPress | Assets |
 | **Fonts** | Font choices in the theme | Universal | Typefaces, Web fonts |
 | **Custom Code** | Custom HTML/JS element + site code (C7) | Wix, Framer, Bootstrap Studio | Embed HTML, Raw HTML |
-| **Site Settings** | URL, social links, contact details, analytics, SEO (X3) | Universal | Config, Properties |
+| **Settings** | The one dialog for the editor's own preferences (*App*: Interface, Devices) and the open site's Site Settings (*This site*), File → Settings… or Ctrl/Cmd + , (Webforge › Settings… on a Mac) (LF-12) | Universal | Preferences, Options |
+| **Site Settings** | URL, social links, contact details, analytics, SEO (X3); the *This site* sections of Settings | Universal | Config, Properties |
 | **Page Settings** | Per-page title, description, share image, hide header/footer | Universal | Page properties, Meta |
 | **Preview** | Open the live preview (desktop, phone via QR) | Universal | Serve, Run |
 | **Publish** | Upload to a host (B1) | Universal | Deploy, Upload, Push |
