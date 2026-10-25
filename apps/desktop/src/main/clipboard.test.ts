@@ -51,7 +51,7 @@ const importMedia: ClipboardMediaImport = {
     imported.push(paths);
     return { status: "imported", items: [photo], rejected: [] };
   },
-  image: (file) => {
+  image: async (file) => {
     imported.push(file);
     return { status: "imported", items: [photo], rejected: [] };
   },
@@ -77,9 +77,9 @@ function fakeSite(has = true) {
       formatVersion: 1,
       syncService: null,
     }),
-    readMedia: (hash) =>
+    readMedia: async (hash) =>
       has && hash === photo.hash ? { mime: "image/jpeg", data: bytes } : undefined,
-    storeCopiedMedia: (item, read) => {
+    storeCopiedMedia: async (item, read) => {
       const data = read();
       stored.push({ item, data });
       return data === undefined ? { status: "missing" } : { status: "stored", hash: item.hash };
@@ -165,7 +165,7 @@ describe("element clipboard (1.25)", () => {
 
     const readOnly = elementClipboard({
       ...site,
-      storeCopiedMedia: () => ({ status: "failed", reason: "read-only" }),
+      storeCopiedMedia: async () => ({ status: "failed", reason: "read-only" }),
     });
     expect(await readOnly.read()).toEqual({ status: "failed", reason: "read-only" });
   });

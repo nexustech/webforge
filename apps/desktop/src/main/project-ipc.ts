@@ -75,14 +75,16 @@ export function registerProjectHandlers(
   registerIpcHandler(ipc, "getCurrentProject", isTrustedSender, () => session.current());
   registerIpcHandler(ipc, "readSite", isTrustedSender, () => session.readSite());
   // Only from a renderer loaded for the site open now (R6): a save on its way while another site
-  // replaced it is refused.
+  // replaced it is refused, now and again once the store gate lets it in (R13b).
   registerIpcHandler(ipc, "commitSite", isTrustedSender, (sessionId, changes) => {
     const reason = session.staleReason(sessionId);
-    return reason === undefined ? session.commit(changes) : { status: "failed", reason };
+    return reason === undefined ? session.commit(changes, sessionId) : { status: "failed", reason };
   });
   registerIpcHandler(ipc, "getUiState", isTrustedSender, () => session.uiState());
   registerIpcHandler(ipc, "setUiState", isTrustedSender, (sessionId, state) => {
     const reason = session.staleReason(sessionId);
-    return reason === undefined ? session.setUiState(state) : { status: "failed", reason };
+    return reason === undefined
+      ? session.setUiState(state, sessionId)
+      : { status: "failed", reason };
   });
 }
