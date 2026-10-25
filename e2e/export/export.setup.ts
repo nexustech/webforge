@@ -32,6 +32,20 @@ function themed(site: SiteSnapshot): SiteSnapshot {
     type: "Text",
     props: { id: "linked", text: '<p>Read <a href="about.html">our story</a>.</p>' },
   };
+  // A Reversed section with a link in its text: the link takes the inverse main colour.
+  const reversed: NodeDoc = {
+    type: "Section",
+    props: {
+      id: "reversed",
+      colors: "inverse",
+      content: [
+        {
+          type: "Text",
+          props: { id: "reversed-text", text: '<p>See <a href="about.html">our menu</a>.</p>' },
+        },
+      ],
+    },
+  };
   // A Button the person set to Filled: the theme's outline style never reaches it (PH2-14).
   const filled: NodeDoc = {
     type: "Button",
@@ -47,7 +61,7 @@ function themed(site: SiteSnapshot): SiteSnapshot {
       links: { underline: "never" },
     },
     pages: [
-      { ...home, doc: { ...home.doc, content: [...home.doc.content, linked, filled] } },
+      { ...home, doc: { ...home.doc, content: [...home.doc.content, linked, filled, reversed] } },
       ...rest,
     ],
   };
