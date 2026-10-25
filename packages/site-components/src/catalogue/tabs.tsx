@@ -51,8 +51,10 @@ const tabs = defineComponent({
       >
         {/* Filled and shown by the script. */}
         <div className="tabs tabs-border mb-6" role="tablist" data-wf-tabs-list="" hidden />
+        {/* Its text in the theme's full text colour: daisyUI fades a tab not chosen below WCAG AA's
+            contrast. The chosen one is underlined (tabs-border) and says so (aria-selected). */}
         <template data-wf-tab-button="">
-          <button type="button" role="tab" className="tab tab-active" />
+          <button type="button" role="tab" className="tab tab-active text-base-content" />
         </template>
         <Panels className="space-y-8" />
       </div>
