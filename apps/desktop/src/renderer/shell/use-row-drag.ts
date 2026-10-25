@@ -138,10 +138,11 @@ export function useRowDrag<R>({
     indicatorClass: (row) => {
       if (drop?.key !== keyOf(row)) return undefined;
       if (!drop.allowed) return "shadow-[inset_0_0_0_1px_var(--destructive)]";
+      // A 1 px line in the accent between the rows (SP-8); a ring round a row it goes into.
       return drop.place === "before"
-        ? "shadow-[inset_0_2px_0_var(--ring)]"
+        ? "shadow-[inset_0_1px_0_var(--primary)]"
         : drop.place === "after"
-          ? "shadow-[inset_0_-2px_0_var(--ring)]"
+          ? "shadow-[inset_0_-1px_0_var(--primary)]"
           : "ring-2 ring-ring ring-inset";
     },
   };

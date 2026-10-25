@@ -26,6 +26,7 @@ import {
   useRef,
   useState,
 } from "react";
+import type { CanvasPointer } from "../editor/canvas-pointer.js";
 import { type Layer, layerItem } from "../editor/layers.js";
 import type { MenuPoint } from "../element-menu/index.js";
 import { isMac } from "../shell/commands.js";
@@ -80,6 +81,11 @@ export type LayersPanelProps = {
      */
     readonly onCloseFocus: () => void;
   }>;
+  /**
+   * The canvas beside the panel: a row under the pointer outlines its element there with its chip
+   * (SP-10), and a dragged layer's drop point shows there too (SP-8).
+   */
+  readonly canvas?: CanvasPointer | undefined;
 };
 
 /** A layer as a row: where it sits among its siblings, so moves stay within its parent. */
@@ -171,6 +177,7 @@ export function LayersPanel({
   actions,
   layoutLocked = false,
   menu: Menu,
+  canvas,
 }: LayersPanelProps) {
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(() => new Set());
   const [filter, setFilter] = useState("");
@@ -316,7 +323,41 @@ export function LayersPanel({
       }
     },
   });
-  const { dragging } = rowDrag;
+  const { dragging, drop } = rowDrag;
+  // Where the dragged layer would land, on the canvas too (SP-8).
+  const dropMark =
+    dragging === null || drop === null || !drop.allowed || drop.place === "into"
+      ? null
+      : { nodeId: drop.key, place: drop.place, name: dragging.layer.name ?? dragging.layer.kind };
+  const dropKey = dropMark === null ? "" : `${dropMark.nodeId} ${dropMark.place}`;
+  // The row under the pointer: its element stays outlined until the pointer leaves it, or the row
+  // goes (deleted, collapsed or filtered out), which leaves no pointerleave to clear it.
+  const [hovered, setHovered] = useState<string | null>(null);
+  const outlinedId =
+    hovered !== null && rows.some((row) => row.layer.id === hovered) ? hovered : null;
+  // What the panel has shown on the canvas, so it clears only that: an outline a breadcrumb set
+  // stays (#421 review).
+  const shown = useRef<{ outline: string | null; drop: string }>({ outline: null, drop: "" });
+  useEffect(() => {
+    if (shown.current.outline === outlinedId) return;
+    shown.current.outline = outlinedId;
+    canvas?.outline(outlinedId);
+  }, [canvas, outlinedId]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: redrawn when where it lands changes.
+  useEffect(() => {
+    if (shown.current.drop === dropKey) return;
+    shown.current.drop = dropKey;
+    canvas?.markDrop(dropMark);
+  }, [canvas, dropKey]);
+  // Nothing stays outlined or marked once the panel goes.
+  useEffect(
+    () => () => {
+      if (shown.current.outline !== null) canvas?.outline(null);
+      if (shown.current.drop !== "") canvas?.markDrop(null);
+      shown.current = { outline: null, drop: "" };
+    },
+    [canvas],
+  );
 
   if (layers.length === 0) {
     return (
@@ -383,6 +424,11 @@ export function LayersPanel({
                   rowDrag.indicatorClass(row),
                 )}
                 style={{ paddingLeft: `${(row.depth - 1) * 12 + 4}px` }}
+                // Its element outlined on the canvas, with its chip, as a breadcrumb does (SP-10).
+                onPointerEnter={() => setHovered(layer.id)}
+                onPointerLeave={() =>
+                  setHovered((current) => (current === layer.id ? null : current))
+                }
                 onClick={(event) => {
                   const start =
                     rows.find((each) => each.layer.id === anchor.current) ?? selectedRow;

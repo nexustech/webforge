@@ -42,6 +42,20 @@ const LAYERS: Layer[] = [
   layer("s2", { kind: "Section" }),
 ];
 
+/** Actions that do nothing, for tests that look at something else. */
+const setUpActions = (): LayersPanelActions => ({
+  select: vi.fn(),
+  toggle: vi.fn(),
+  selectMany: vi.fn(),
+  rename: vi.fn(),
+  setHidden: vi.fn(),
+  move: vi.fn(),
+  moveUp: undefined,
+  moveDown: undefined,
+  duplicate: undefined,
+  remove: undefined,
+});
+
 function setUp(
   selectedId: string | null = "a",
   toolbar = true,
@@ -254,6 +268,54 @@ describe("LayersPanel (F-ED-12)", () => {
       ["a", 1],
       ["c", 0],
     ]);
+  });
+
+  it("points at a row's element on the canvas, and marks a dragged layer's drop there (SP-8, SP-10)", () => {
+    const canvas = { outline: vi.fn(), markDrop: vi.fn() };
+    const view = render(
+      <LayersPanel layers={LAYERS} selectedId={null} actions={setUpActions()} canvas={canvas} />,
+    );
+    const rows = screen.getAllByRole("treeitem");
+
+    fireEvent.pointerEnter(rows[2] as HTMLElement);
+    fireEvent.pointerLeave(rows[2] as HTMLElement);
+    expect(canvas.outline.mock.calls).toEqual([["b"], [null]]);
+
+    // "Hours" over its sibling a: before it, as happy-dom lays nothing out.
+    const dataTransfer = { setData: vi.fn(), effectAllowed: "" };
+    fireEvent.dragStart(rows[2] as HTMLElement, { dataTransfer });
+    fireEvent.dragOver(rows[1] as HTMLElement, { dataTransfer });
+    expect(canvas.markDrop).toHaveBeenLastCalledWith({
+      nodeId: "a",
+      place: "before",
+      name: "Hours",
+    });
+    // Over a row it can't go to: no mark.
+    fireEvent.dragOver(rows[4] as HTMLElement, { dataTransfer });
+    expect(canvas.markDrop).toHaveBeenLastCalledWith(null);
+    fireEvent.dragEnd(rows[2] as HTMLElement, { dataTransfer });
+
+    view.unmount();
+    expect(canvas.outline).toHaveBeenLastCalledWith(null);
+    expect(canvas.markDrop).toHaveBeenLastCalledWith(null);
+  });
+
+  it("takes the outline away when the hovered row goes, as when its layer is deleted (#421 review)", () => {
+    const canvas = { outline: vi.fn(), markDrop: vi.fn() };
+    const props = { selectedId: null, actions: setUpActions(), canvas };
+    const view = render(<LayersPanel layers={LAYERS} {...props} />);
+    // Nothing shown yet: nothing cleared either (a breadcrumb's outline stays).
+    expect(canvas.outline).not.toHaveBeenCalled();
+
+    fireEvent.pointerEnter(screen.getAllByRole("treeitem")[2] as HTMLElement);
+    const [section, ...rest] = LAYERS;
+    const withoutHours =
+      section === undefined
+        ? []
+        : [{ ...section, children: section.children.filter((each) => each.id !== "b") }, ...rest];
+    view.rerender(<LayersPanel layers={withoutHours} {...props} />);
+
+    expect(canvas.outline.mock.calls).toEqual([["b"], [null]]);
   });
 
   it("copies a layer dragged with Ctrl or Cmd, with Shift for a linked copy (1.35, UX-4)", () => {

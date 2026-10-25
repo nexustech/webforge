@@ -11,6 +11,8 @@ export const panels = {
   "panels.rightCollapsed": "Right panels, collapsed",
   "panels.drawer": "Bottom panel",
   "panels.empty": "Nothing here yet",
+  // A tab strip's magnifier (LF-5): "Search Layers".
+  "panels.search": "Search {panel}",
   // A panel that ran into an error (R3): the rest of the editor keeps working.
   "panels.error.message": "Something went wrong in this panel. Your work is saved.",
   "panels.error.reload": "Reload panel",

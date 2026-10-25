@@ -3,6 +3,7 @@ import type { ReadonlyStore } from "@webforge/history";
 import { t } from "@webforge/i18n";
 import { LayersIcon } from "lucide-react";
 import { useSyncExternalStore } from "react";
+import type { CanvasPointer } from "../editor/canvas-pointer.js";
 import type { EditorSession } from "../editor/editor-session.js";
 import {
   copyLayer,
@@ -55,7 +56,12 @@ export function registerLayersPanel(
   session: EditorSession,
   {
     preferences = createPreferencesStore(),
-  }: { readonly preferences?: ReadonlyStore<EditorPreferences> } = {},
+    canvas,
+  }: {
+    readonly preferences?: ReadonlyStore<EditorPreferences>;
+    /** The canvas the rows point at (SP-8, SP-10); nothing is shown there without it. */
+    readonly canvas?: CanvasPointer;
+  } = {},
 ): () => void {
   const { history, ui, library } = session;
   // The tree as last shown, for the page content and shared sections it was made from: rebuilt
@@ -101,6 +107,7 @@ export function registerLayersPanel(
         alsoSelected={alsoSelected}
         layoutLocked={layoutLocked}
         menu={ElementMenu}
+        canvas={canvas}
         actions={{
           select: (id) => session.select(id),
           toggle: (id) => session.toggleSelected(id),
