@@ -63,10 +63,37 @@ const BUTTON_HEIGHT: Readonly<Record<ThemeTokens["buttons"]["size"], string>> = 
   l: "3rem",
 };
 
-const SHADOW: Readonly<Record<ThemeTokens["shadow"], string>> = {
-  none: "none",
-  soft: "0 4px 12px rgb(0 0 0 / 0.08)",
-  strong: "0 10px 30px rgb(0 0 0 / 0.2)",
+/**
+ * Tailwind's shadow scale for each shadow token (#423), which every `shadow-*` class draws from:
+ * none at all, Tailwind's own (soft, which needs nothing written), or twice as dark.
+ */
+const SHADOW_SCALE: Readonly<Record<ThemeTokens["shadow"], Readonly<Record<string, string>>>> = {
+  none: {
+    "2xs": "0 0 #0000",
+    xs: "0 0 #0000",
+    sm: "0 0 #0000",
+    md: "0 0 #0000",
+    lg: "0 0 #0000",
+    xl: "0 0 #0000",
+    "2xl": "0 0 #0000",
+  },
+  soft: {},
+  strong: {
+    "2xs": "0 1px rgb(0 0 0 / 0.1)",
+    xs: "0 1px 2px 0 rgb(0 0 0 / 0.1)",
+    sm: "0 1px 3px 0 rgb(0 0 0 / 0.2), 0 1px 2px -1px rgb(0 0 0 / 0.2)",
+    md: "0 4px 6px -1px rgb(0 0 0 / 0.2), 0 2px 4px -2px rgb(0 0 0 / 0.2)",
+    lg: "0 10px 15px -3px rgb(0 0 0 / 0.2), 0 4px 6px -4px rgb(0 0 0 / 0.2)",
+    xl: "0 20px 25px -5px rgb(0 0 0 / 0.2), 0 8px 10px -6px rgb(0 0 0 / 0.2)",
+    "2xl": "0 25px 50px -12px rgb(0 0 0 / 0.5)",
+  },
+};
+
+/** daisyUI's look the theme gives its main buttons (#423): their own, or outline or ghost. */
+const BUTTON_LOOK: Readonly<Record<ThemeTokens["buttons"]["style"], string | undefined>> = {
+  filled: undefined,
+  outline: "btn-outline",
+  ghost: "btn-ghost",
 };
 
 const FALLBACKS: Readonly<Record<FontRef["fallback"], string>> = {
@@ -123,6 +150,39 @@ const schemeOf = (colors: ThemeTokens["colors"]): ThemeTokens["scheme"] =>
   colors["base-100"].l < 0.5 ? "dark" : "light";
 
 /**
+ * The buttons as the theme draws them (#423), whatever a component's classes: every button's
+ * corners square or pill if its shape says so (rounded keeps the theme's field corners, as
+ * buttons always had), the default size's height in its size (daisyUI's own variables, on the
+ * button, so fields keep theirs; icon buttons and the small and large sizes keep their own), and
+ * the main buttons in its style, as daisyUI's outline or ghost buttons, hover included; never a
+ * Button set to Filled (`wf-filled`, PH2-14).
+ */
+function buttonRules(tokens: ThemeTokens): string[] {
+  const look = BUTTON_LOOK[tokens.buttons.style];
+  return [
+    "@layer utilities {",
+    ...(tokens.buttons.shape === "rounded"
+      ? []
+      : [
+          "  .btn:not(.btn-circle, .btn-square) {",
+          "    --radius-field: var(--wf-button-radius);",
+          "  }",
+        ]),
+    "  .btn:not(.btn-xs, .btn-sm, .btn-md, .btn-lg, .btn-xl, .btn-circle, .btn-square) {",
+    "    --size: var(--wf-button-height);",
+    "  }",
+    ...(look === undefined
+      ? []
+      : [
+          "  .btn-primary:not(.btn-outline, .btn-ghost, .btn-link, .wf-filled) {",
+          `    @apply ${look};`,
+          "  }",
+        ]),
+    "}",
+  ];
+}
+
+/**
  * The site's theme as Tailwind and daisyUI source (2.1), for the site's stylesheet after Tailwind's
  * own imports:
  * - daisyUI with none of its built-in themes, and the site's own: every colour role, the corners,
@@ -135,8 +195,9 @@ const schemeOf = (colors: ThemeTokens["colors"]): ThemeTokens["scheme"] =>
  * - shades 50–950 of the colour roles (`primary-300`), read where they're used (`@theme inline`)
  *   from variables each theme sets, so they follow inverse sections. They're fixed values: Safari
  *   16.4–17 can't compute relative colours;
- * - the links' underline, the buttons' shape and height, and the shadow, as `--wf-*` variables
- *   components style with (the buttons' style picks their daisyUI classes instead).
+ * - the shadow scale (`shadow-*`), the links' underline and the buttons' shape and height as
+ *   `--wf-*` variables, which running text and the buttons' rules below use (#423);
+ * - the buttons in the theme's shape, size and style ({@link buttonRules}).
  *
  * Every value is a token the model checked, so nothing from a site can reach the CSS as written.
  */
@@ -168,6 +229,9 @@ export function themeCss(tokens: ThemeTokens): string {
     `  --font-heading: ${fontStack(tokens.fonts.heading)};`,
     `  --spacing: ${SPACING_UNIT[tokens.spacing]};`,
     ...typeScale,
+    ...Object.entries(SHADOW_SCALE[tokens.shadow]).map(
+      ([step, shadow]) => `  --shadow-${step}: ${shadow};`,
+    ),
     "}",
     `@media (width < ${PHONE_WIDTH}) {`,
     "  :root {",
@@ -184,11 +248,11 @@ export function themeCss(tokens: ThemeTokens): string {
     `  --wf-link-hover-decoration: ${tokens.links.underline === "never" ? "none" : "underline"};`,
     `  --wf-button-radius: ${BUTTON_RADIUS[tokens.buttons.shape]};`,
     `  --wf-button-height: ${BUTTON_HEIGHT[tokens.buttons.size]};`,
-    `  --wf-shadow: ${SHADOW[tokens.shadow]};`,
     ...roleShades(tokens.colors),
     "}",
     `[data-theme="${INVERSE_THEME}"] {`,
     ...roleShades(inverse),
     "}",
+    ...buttonRules(tokens),
   ].join("\n");
 }
