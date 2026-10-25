@@ -12,10 +12,17 @@ export type FieldControlProps = {
   readonly "aria-invalid"?: true;
 };
 
+/** The DOM ids of a {@link Field}'s label, and of its hint and error while it shows them. */
+export type FieldIds = {
+  readonly labelId: string;
+  readonly hintId?: string;
+  readonly errorId?: string;
+};
+
 /** Props of {@link Field}. */
 export type FieldProps = {
-  /** Already translated. */
-  readonly label: string;
+  /** Already translated; none for a control that labels itself (a form's checkbox). */
+  readonly label?: string | undefined;
   /** A line under the control that says what to type; already translated. */
   readonly hint?: string | undefined;
   /** What to fix, if anything (already translated): shown under the control, which it describes. */
@@ -23,9 +30,9 @@ export type FieldProps = {
   /**
    * Draws the control, spreading `control` on it so the label, hint and error belong to it. A
    * group of controls (radios, a field renderer of the Edit panel) is named by `labelId` instead,
-   * with `aria-labelledby`.
+   * with `aria-labelledby`; a field renderer is described by the hint's and error's ids in `ids`.
    */
-  readonly children: (control: FieldControlProps, ids: { readonly labelId: string }) => ReactNode;
+  readonly children: (control: FieldControlProps, ids: FieldIds) => ReactNode;
 };
 
 /**
@@ -43,16 +50,22 @@ export function Field({ label, hint, error, children }: FieldProps) {
   ].filter((part) => part !== undefined);
   return (
     <div className="grid gap-1">
-      <label id={labelId} htmlFor={id} className="text-xs text-muted-foreground">
-        {label}
-      </label>
+      {label === undefined ? null : (
+        <label id={labelId} htmlFor={id} className="text-xs text-muted-foreground">
+          {label}
+        </label>
+      )}
       {children(
         {
           id,
           ...(describedBy.length === 0 ? {} : { "aria-describedby": describedBy.join(" ") }),
           ...(error === undefined ? {} : { "aria-invalid": true }),
         },
-        { labelId },
+        {
+          labelId,
+          ...(hint === undefined ? {} : { hintId }),
+          ...(error === undefined ? {} : { errorId }),
+        },
       )}
       <ErrorText id={errorId} message={error} />
       {hint !== undefined && (
@@ -69,7 +82,7 @@ export function ErrorText({
   id,
   message,
 }: {
-  readonly id: string;
+  readonly id?: string;
   readonly message?: string | undefined;
 }) {
   return message === undefined ? null : (
@@ -80,7 +93,9 @@ export function ErrorText({
 }
 
 /** Props of {@link TextInput}. */
-export type TextInputProps = Omit<FieldProps, "children"> & {
+export type TextInputProps = Omit<FieldProps, "children" | "label"> & {
+  /** Already translated. */
+  readonly label: string;
   readonly value: string;
   readonly onChange: (value: string) => void;
   /** The longest text the field takes: the model's limit for it. */

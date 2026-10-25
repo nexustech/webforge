@@ -17,6 +17,7 @@ export type {
   FieldRendererProps,
   FieldRenderers,
   FieldSpec,
+  ImageChoiceOption,
   ListChange,
   ListItem,
   ListItemFieldSpec,
@@ -37,12 +38,23 @@ export {
   ErrorText,
   Field,
   type FieldControlProps,
+  type FieldIds,
   type FieldProps,
   ImageChoice,
   TextInput,
   type TextInputProps,
   TimeInput,
 } from "./components/form/form.js";
+export { Form, type FormProps } from "./components/form/form-engine.js";
+export type {
+  FormField,
+  FormIssue,
+  FormSchema,
+  FormSchemaResult,
+  FormSpec,
+  FormValues,
+} from "./components/form/form-spec.js";
+export { type FormState, type FormSubmit, useForm } from "./components/form/use-form.js";
 export {
   AlertDialog,
   AlertDialogAction,
