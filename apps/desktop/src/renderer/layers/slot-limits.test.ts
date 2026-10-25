@@ -105,4 +105,25 @@ describe("a Columns' four columns (2.9)", () => {
     expect(duplicateSelected(session)).toEqual({});
     expect(count("room")).toBe(2);
   });
+
+  it("says why a copy-drag is refused, as duplicate does (#384)", () => {
+    const { session, count } = setUp();
+
+    expect(copyLayer(session, "f0", 1, false)).toBe(
+      "There's no room for another there: a Columns holds at most four columns.",
+    );
+    expect(count("full")).toBe(MAX_COLUMNS);
+  });
+
+  it("says a copy that holds a Columns over the limit itself must lose a column first (#384)", () => {
+    const { session } = setUp({ over: true });
+    const overfull =
+      "What you're copying holds a Columns with more than four columns. Remove one first, then copy it.";
+
+    // The Section holding the Columns of five: there's room for it, but it's over the limit.
+    session.select("s");
+    expect(duplicateSelected(session)).toEqual({ refused: overfull });
+    expect(copyLayer(session, "s", 1, false)).toBe(overfull);
+    expect(session.history.entries()).toEqual([]);
+  });
 });
