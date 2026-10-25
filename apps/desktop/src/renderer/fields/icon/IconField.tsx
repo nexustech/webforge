@@ -1,13 +1,21 @@
 import { Button, type FieldRendererProps, Picker } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
-import { ICON_NAMES, iconTags, isIconName, LucideIcon } from "@webforge/site-components";
+import { ICON_NAMES, isIconName, LucideIcon } from "@webforge/site-components";
+// Search data only the picker needs, so it stays out of the site components and the export.
+import tags from "lucide-static/tags.json" with { type: "json" };
 import { useId, useState } from "react";
+
+/** How many icons the picker draws at once, enough to browse: 20 rows of six. */
+const ICONS_SHOWN = 120;
+
+/** Words people search an icon by ("heart": like, love), besides its name. */
+const ICON_TAGS = tags as unknown as Readonly<Record<string, readonly string[]>>;
 
 /** The picker's items: every Lucide icon by its name in words, found by its tags too. */
 const ICON_ITEMS = ICON_NAMES.map((name) => ({
   id: name,
   label: name.replaceAll("-", " "),
-  keywords: iconTags(name),
+  keywords: Object.hasOwn(ICON_TAGS, name) ? (ICON_TAGS[name] ?? []) : [],
 }));
 
 /**
@@ -73,6 +81,8 @@ export function IconField({
         items={ICON_ITEMS}
         value={current ?? null}
         columns={6}
+        // Drawing all of Lucide's icons at once is slow: a search finds the others.
+        limit={ICONS_SHOWN}
         renderItem={(item) => <LucideIcon name={item.id} className="size-6" />}
         renderPreview={(item) => (
           <>

@@ -63,6 +63,11 @@ export type PickerProps<Item extends PickerItem> = {
   readonly actions?: ReactNode;
   /** Shown when there are no items at all. */
   readonly emptyText: string;
+  /**
+   * The most matches drawn at once, for pickers of thousands (icons); a line under them says how
+   * many more a search finds. All of them when left out.
+   */
+  readonly limit?: number;
 };
 
 /** Whether `item` matches every word of `words` in its name, category or keywords. */
@@ -72,6 +77,23 @@ const matches = (item: PickerItem, words: readonly string[]) => {
     .toLocaleLowerCase();
   return words.every((word) => text.includes(word));
 };
+
+/**
+ * The first `limit` of `shown`, with the current choice `value` first when it is further down, so
+ * the picker still opens on it.
+ */
+function drawnOf<Item extends PickerItem>(
+  shown: readonly Item[],
+  limit: number | undefined,
+  value: string | null | undefined,
+): readonly Item[] {
+  if (limit === undefined || shown.length <= limit) return shown;
+  const first = shown.slice(0, limit);
+  const current = shown.find((item) => item.id === value);
+  return current === undefined || first.includes(current)
+    ? first
+    : [current, ...first.slice(0, limit - 1)];
+}
 
 /** A key that types a character, which the grid hands to the search field. */
 const isTyping = (event: KeyboardEvent) =>
@@ -100,6 +122,7 @@ export function Picker<Item extends PickerItem>({
   onChoose,
   actions,
   emptyText,
+  limit,
 }: PickerProps<Item>) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<string | null>(null);
@@ -135,7 +158,8 @@ export function Picker<Item extends PickerItem>({
   const shown = items.filter(
     (item) => (category === null || item.category === category) && matches(item, words),
   );
-  const active = shown.find((item) => item.id === activeId) ?? shown[0];
+  const drawn = drawnOf(shown, limit, value);
+  const active = drawn.find((item) => item.id === activeId) ?? drawn[0];
   const step = layout === "grid" ? columns : 1;
 
   const choose = (item: Item | undefined) => {
@@ -153,7 +177,7 @@ export function Picker<Item extends PickerItem>({
   };
 
   const onItemKeyDown = (event: KeyboardEvent) => {
-    const at = active === undefined ? -1 : shown.indexOf(active);
+    const at = active === undefined ? -1 : drawn.indexOf(active);
     // A list moves up and down only; a grid also along its rows.
     const moves: Readonly<Record<string, number>> =
       layout === "grid"
@@ -165,10 +189,10 @@ export function Picker<Item extends PickerItem>({
       const next = at + move;
       // Up from the first row goes back to the search field.
       if (next < 0 && event.key === "ArrowUp") search.current?.focus();
-      else moveTo(shown[Math.min(Math.max(next, 0), shown.length - 1)]);
+      else moveTo(drawn[Math.min(Math.max(next, 0), drawn.length - 1)]);
     } else if (event.key === "Home" || event.key === "End") {
       event.preventDefault();
-      moveTo(event.key === "Home" ? shown[0] : shown.at(-1));
+      moveTo(event.key === "Home" ? drawn[0] : drawn.at(-1));
     } else if (event.key === "Enter") {
       event.preventDefault();
       choose(active);
@@ -277,7 +301,7 @@ export function Picker<Item extends PickerItem>({
                 shown.length === 0 && "hidden",
               )}
             >
-              {shown.map((item) => {
+              {drawn.map((item) => {
                 const isActive = item.id === active?.id;
                 return (
                   <div
@@ -305,6 +329,11 @@ export function Picker<Item extends PickerItem>({
                 );
               })}
             </div>
+            {drawn.length < shown.length ? (
+              <p className="m-0 px-3 pb-3 text-center text-xs text-muted-foreground">
+                {plural("ui.picker.more", shown.length - drawn.length)}
+              </p>
+            ) : null}
           </ScrollArea>
           {renderPreview === undefined || active === undefined ? null : (
             // Not announced: the item's own name is read as the person moves to it.

@@ -41,10 +41,13 @@ export const SOCIAL_NETWORKS = [
   "custom",
 ] as const;
 
-const socialProfileSchema = z.strictObject({
+export const socialProfileSchema = z.strictObject({
   network: z.enum(SOCIAL_NETWORKS),
   url: webUrlSchema,
 });
+
+/** A link to the site's page on a social network, from Site Settings → Social & sharing. */
+export type SocialProfile = z.infer<typeof socialProfileSchema>;
 
 /** The days of the week, Monday first, as opening hours store them. */
 export const DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;

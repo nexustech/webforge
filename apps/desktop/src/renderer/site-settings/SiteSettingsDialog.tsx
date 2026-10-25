@@ -279,6 +279,8 @@ function SiteSettingsForm({
               <PlusIcon />
               {t("site.settings.addProfile")}
             </Button>
+            {/* The logos are trademarks (PH2-4): they may only link to the site's own pages. */}
+            <p className="m-0 text-xs text-muted-foreground">{t("site.settings.profilesHint")}</p>
           </fieldset>
           <ImagePicker
             name="site-share-image"

@@ -213,6 +213,7 @@ export async function buildSite(
       // An empty binding has no emptySetting here: the export leaves it out (1.17).
       setting: (key) => site.settings?.[key],
       openingHours: site.openingHours ?? [],
+      socialProfiles: site.socialProfiles ?? [],
       language: site.language,
       ...(site.formService === undefined ? {} : { formService: site.formService }),
     };

@@ -13,6 +13,7 @@ import type {
   NodeDoc,
   OpeningHours,
   Responsive,
+  SocialProfile,
 } from "@webforge/model";
 import type { ComponentType, ReactNode } from "react";
 import type { EditPreviews } from "./previews.js";
@@ -38,6 +39,12 @@ export type FieldDef = {
    * label can't say ("Visitors who prefer less motion never see it move").
    */
   readonly help?: string;
+  /**
+   * Why the field can't be used while the element has `values` (with its defaults), already
+   * translated, or none when it can. The Edit panel then shows it disabled, with that sentence
+   * as its help: a List's style while an icon takes the place of its markers.
+   */
+  readonly unavailable?: (values: Readonly<Record<string, unknown>>) => string | undefined;
   readonly responsive?: boolean;
   /**
    * The option group the Edit panel shows it in (UX-13), by its kind if not given. Fields of one
@@ -63,7 +70,17 @@ export type FieldDef = {
   /** On or off, stored as a boolean. */
   | { readonly kind: "toggle"; readonly label: string }
   /** A step along a token scale (C4), smallest first, stored as the step's value. */
-  | { readonly kind: "slider"; readonly label: string; readonly steps: readonly FieldOption[] }
+  | {
+      readonly kind: "slider";
+      readonly label: string;
+      readonly steps: readonly FieldOption[];
+      /**
+       * The element's width at each step, in CSS pixels (`null`: as wide as its container), when
+       * the slider sets how wide the element is. The canvas then gives the selected element width
+       * handles on its edges, which snap to these steps (2.17).
+       */
+      readonly widths?: Readonly<Record<string, number | null>>;
+    }
   /** A colour of the site's theme (a daisyUI colour name), never a free colour (C4). */
   | { readonly kind: "color"; readonly label: string; readonly options: readonly FieldOption[] }
   /** A spacing token such as Small · Medium · Large (C4). */
@@ -92,7 +109,7 @@ export type FieldDef = {
       readonly accepts?: ComponentPlace;
       /**
        * The most elements it holds (a Columns' four): nothing adds more, by the Add panel, paste,
-       * duplicate or a drop (`slotsOverfull`).
+       * duplicate or a drop (`overfillsSlots`).
        */
       readonly max?: number;
     }
@@ -210,6 +227,10 @@ export type SiteBindings = {
   readonly emptySetting?: (key: BindableSetting) => ReactNode;
   /** Site Settings' opening hours (2.8), for the Opening hours and contact section; none if left out. */
   readonly openingHours?: readonly OpeningHours[];
+  /** Site Settings' social profiles, for the Social links element (2.9b); none if left out. */
+  readonly socialProfiles?: readonly SocialProfile[];
+  /** What Social links show without any profiles: a hint on the canvas; nothing in the export. */
+  readonly socialHint?: () => ReactNode;
   /** The site's language (`en-GB`), for times and dates in its own format (2.8). */
   readonly language?: string;
   /** Where Site Settings send form submissions (F-CM-1, 2.8), if a service is chosen. */

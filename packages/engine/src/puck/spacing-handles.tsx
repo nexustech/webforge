@@ -3,8 +3,8 @@ import {
   BOX_SIDES,
   type BoxSide,
   type BoxValue,
+  type Breakpoint,
   boxValueOf,
-  breakpointForWidth,
   resolveResponsive,
   responsiveBoxOf,
   SPACING_TOKENS,
@@ -139,6 +139,11 @@ export type SpacingHandlesProps = {
   readonly fields: readonly BoxHandleField[];
   /** The element's props now. */
   readonly props: Readonly<Record<string, unknown>> | undefined;
+  /**
+   * The device view the canvas shows, whose value a drag changes: as the app writes it, which a
+   * custom width's frame can't be trusted to say while it resizes.
+   */
+  readonly breakpoint: () => Breakpoint;
   readonly onFieldDrag: (drag: FieldDrag) => void;
 };
 
@@ -149,7 +154,13 @@ export type SpacingHandlesProps = {
  * to the element's own spacing ("Default"). Esc cancels a drag. The grips are for the mouse; the
  * Edit panel sets the same values from the keyboard.
  */
-export function SpacingHandles({ nodeId, fields, props, onFieldDrag }: SpacingHandlesProps) {
+export function SpacingHandles({
+  nodeId,
+  fields,
+  props,
+  breakpoint: shownBreakpoint,
+  onFieldDrag,
+}: SpacingHandlesProps) {
   const [readout, setReadout] = useState<Readout | null>(null);
   // Cancels the drag going on, if any: grips that go mid-drag (the selection or the mode changed)
   // leave no listeners behind, and no change half made.
@@ -174,8 +185,8 @@ export function SpacingHandles({ nodeId, fields, props, onFieldDrag }: SpacingHa
     if (!frame || element === null || element === undefined) {
       return;
     }
-    // The value for the device the canvas shows: the frame is as wide as that device's view.
-    const breakpoint = breakpointForWidth(frame.innerWidth);
+    // The value for the device the canvas shows.
+    const breakpoint = shownBreakpoint();
     const before = boxValueOf(resolveResponsive(responsiveBoxOf(props?.[field.name]), breakpoint));
     const report = (phase: FieldDrag["phase"], value: BoxValue) =>
       onFieldDrag({ phase, nodeId, field: field.name, value });

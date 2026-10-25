@@ -20,8 +20,32 @@ export const RENDER_CONTEXT_SOURCES = {
   setting: "setSettings",
   emptySetting: "setSettings",
   openingHours: "setSettings",
+  socialProfiles: "setSettings",
+  socialHint: "setSettings",
   language: "setSettings",
   formService: "setSettings",
   formHint: "setSettings",
 } as const satisfies Record<keyof SiteBindings, "setSettings"> &
   Record<Exclude<keyof RenderContext, keyof SiteBindings>, Exclude<Source, "setSettings">>;
+
+/** A render context's parts that don't come from Site Settings. */
+export type CanvasParts = Omit<RenderContext, keyof SiteBindings>;
+
+/**
+ * `context` split by {@link RENDER_CONTEXT_SOURCES}: Site Settings' bindings, and every other part
+ * as it is. A default added to the editor's render context lands on its side of the split without
+ * the engine naming it.
+ */
+export function splitRenderContext(context: RenderContext): {
+  readonly parts: CanvasParts;
+  readonly bindings: SiteBindings;
+} {
+  const parts: Record<string, unknown> = {};
+  const bindings: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(context)) {
+    const source: string | undefined = (RENDER_CONTEXT_SOURCES as Record<string, string>)[key];
+    (source === "setSettings" ? bindings : parts)[key] = value;
+  }
+  // Each key went where its type says: the map is checked against both types above.
+  return { parts: parts as CanvasParts, bindings: bindings as SiteBindings };
+}

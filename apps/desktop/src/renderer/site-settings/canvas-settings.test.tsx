@@ -57,6 +57,24 @@ describe("connectCanvasSettings", () => {
     expect(bindingsGiven(engine.setSettings, 1).openingHours).toEqual(openingHours);
   });
 
+  it("gives the canvas the social profiles, again when they change, and a hint without any (2.9b)", () => {
+    const session = sessionWith();
+    const engine = { setSettings: vi.fn() };
+    connectCanvasSettings(engine, session);
+    const first = bindingsGiven(engine.setSettings, 0);
+    expect(first.socialProfiles).toEqual([]);
+    const hint = first.socialHint();
+    expect(isValidElement(hint) && renderToStaticMarkup(hint)).toContain(
+      "Add your social profiles in Site Settings",
+    );
+
+    const settings = session.history.document.getState().settings;
+    const profiles = [{ network: "github" as const, url: "https://github.com/ourbakery" }];
+    saveSiteSettings(session, { ...settings, social: { ...settings.social, profiles } });
+
+    expect(bindingsGiven(engine.setSettings, 1).socialProfiles).toEqual(profiles);
+  });
+
   it("gives the canvas the site's language and form service, and a hint without one (2.8)", () => {
     const session = sessionWith();
     const engine = { setSettings: vi.fn() };

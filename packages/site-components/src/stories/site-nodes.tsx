@@ -49,6 +49,16 @@ const storyContext: RenderContext = {
     { days: ["tue", "wed", "thu", "fri"], opens: "07:00", closes: "15:00" },
     { days: ["sat", "sun"], opens: "08:00", closes: "13:00" },
   ],
+  socialProfiles: [
+    { network: "facebook", url: "https://www.facebook.com/rosasbakery" },
+    { network: "instagram", url: "https://www.instagram.com/rosasbakery" },
+    { network: "x", url: "https://x.com/rosasbakery" },
+    { network: "youtube", url: "https://www.youtube.com/@rosasbakery" },
+    { network: "tiktok", url: "https://www.tiktok.com/@rosasbakery" },
+    { network: "github", url: "https://github.com/rosasbakery" },
+    { network: "linkedin", url: "https://www.linkedin.com/company/rosasbakery" },
+    { network: "custom", url: "https://mastodon.social/@rosasbakery" },
+  ],
 };
 
 /**

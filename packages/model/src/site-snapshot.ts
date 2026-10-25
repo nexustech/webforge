@@ -25,6 +25,8 @@ import {
   languageTagSchema,
   type OpeningHours,
   openingHoursSchema,
+  type SocialProfile,
+  socialProfileSchema,
 } from "./settings.js";
 
 /**
@@ -104,6 +106,8 @@ export type SiteSnapshot = {
   readonly settings?: Readonly<Partial<Record<BindableSetting, string>>> | undefined;
   /** Site Settings' opening hours, which the Opening hours and contact section lists (2.8). */
   readonly openingHours?: readonly OpeningHours[] | undefined;
+  /** Site Settings' social profiles, which the Social links element links to (2.9b). */
+  readonly socialProfiles?: readonly SocialProfile[] | undefined;
   /** Where Site Settings send form submissions (F-CM-1), for the Contact form (2.8). */
   readonly formService?: FormService | undefined;
   /** Site Settings' back-to-top button (F-CM-9, 2.9), on pages that don't hide it. */
@@ -161,6 +165,7 @@ export const siteSnapshotSchema: z.ZodType<SiteSnapshot> = withoutUnsafeKeys(
       documents: z.array(documentItemSchema).optional(),
       settings: z.partialRecord(bindableSettingSchema, z.string()).optional(),
       openingHours: z.array(openingHoursSchema).optional(),
+      socialProfiles: z.array(socialProfileSchema).optional(),
       formService: formServiceSchema.optional(),
       backToTop: z.boolean().optional(),
       menu: menuDocSchema.optional(),

@@ -3,6 +3,8 @@ import type { NodeDoc, SiteDoc } from "@webforge/model";
 import {
   BOX_CLASS_SAFELIST,
   EDITOR_RENDER_CONTEXT,
+  type RenderContext,
+  type ResolvedImage,
   renderNodesToHtml,
 } from "@webforge/site-components";
 import type { CanvasCssRequest, CanvasCssResult } from "../../shared/ipc/canvas.js";
@@ -19,6 +21,30 @@ export const SITE_CSS_DEBOUNCE_MS = 300;
  * versions, so after an edit only the changed page is rendered again.
  */
 const classesOfList = new WeakMap<readonly NodeDoc[], readonly string[]>();
+
+/** The image every placed image renders as while classes are collected: which one never matters. */
+const PLACEHOLDER_IMAGE: ResolvedImage = {
+  sources: [],
+  src: "",
+  fallback: { type: "image/png", srcset: "" },
+  width: 1,
+  height: 1,
+  alt: "",
+};
+
+/**
+ * What classes are collected with (#371): the editor's context, rendered twice, once with every
+ * placed image resolving and once with none, an Image without one showing its hint either way. The
+ * canvas can show an element either way at any moment (an image picked, or removed from Media, or a
+ * new Gallery image), so both are compiled before it does. With the editor's context alone, images
+ * rendered nothing, so none of their classes were compiled. Only whether an image resolves changes
+ * an element's classes, never which image or its alt text, so a change to Media collects nothing
+ * again.
+ */
+const CLASS_CONTEXTS: readonly RenderContext[] = [
+  { ...EDITOR_RENDER_CONTEXT, image: () => PLACEHOLDER_IMAGE, emptyImage: () => "" },
+  { ...EDITOR_RENDER_CONTEXT, image: () => null, emptyImage: () => "" },
+];
 
 /** The class names in static `html`, in order, repeats included. */
 export function classesOfHtml(html: string): string[] {
@@ -47,10 +73,9 @@ function listClasses(nodes: readonly NodeDoc[], session: EditorSession): readonl
   let classes = classesOfList.get(nodes);
   if (classes === undefined) {
     // Hidden elements too: the canvas shows them, dimmed, so it needs their styles (#142).
-    const html = renderNodesToHtml(nodes, session.library, EDITOR_RENDER_CONTEXT, {
-      includeHidden: true,
-    });
-    classes = classesOfHtml(html);
+    classes = CLASS_CONTEXTS.flatMap((context) =>
+      classesOfHtml(renderNodesToHtml(nodes, session.library, context, { includeHidden: true })),
+    );
     classesOfList.set(nodes, classes);
   }
   return classes;

@@ -1,0 +1,240 @@
+// @vitest-environment happy-dom
+
+import type { Breakpoint } from "@webforge/model";
+import { siteLibrary } from "@webforge/site-components";
+import { act } from "react";
+import { createRoot, type Root } from "react-dom/client";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import type { FieldDrag } from "../canvas-engine.js";
+import { anchorOf, nearestStep, WidthHandles, widthAt, widthHandleField } from "./width-handles.js";
+
+declare global {
+  // Tells React that act() is available (testing without @testing-library).
+  var IS_REACT_ACT_ENVIRONMENT: boolean;
+}
+globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+
+const imageWidth = widthHandleField(siteLibrary, "Image");
+
+describe("the width a handle sets (2.17)", () => {
+  it("finds the Image's width field and each step's width", () => {
+    expect(imageWidth?.name).toBe("width");
+    expect(imageWidth?.steps.map((step) => [step.value, step.px])).toEqual([
+      ["small", 320],
+      ["medium", 448],
+      ["large", 672],
+      ["full", null],
+    ]);
+    // Elements without one get no width handles.
+    expect(widthHandleField(siteLibrary, "Heading")).toBeUndefined();
+  });
+
+  it("holds an element by the side it touches, by its middle otherwise, and as aligned when full", () => {
+    const column = { left: 0, right: 800 };
+    expect(anchorOf({ left: 0, right: 320 }, column, "centre")).toBe("left");
+    expect(anchorOf({ left: 480, right: 800 }, column, "centre")).toBe("right");
+    expect(anchorOf({ left: 240, right: 560 }, column, "left")).toBe("centre");
+    expect(anchorOf({ left: 0, right: 800 }, column, "right")).toBe("right");
+    expect(anchorOf({ left: 0, right: 800 }, column, "centre")).toBe("centre");
+  });
+
+  it("puts the moving edge at the pointer: twice as far from the middle when centred", () => {
+    const element = { left: 100, right: 500 };
+    expect(widthAt("left", 420, element)).toBe(320);
+    expect(widthAt("right", 180, element)).toBe(320);
+    expect(widthAt("centre", 460, element)).toBe(320);
+    expect(widthAt("centre", 140, element)).toBe(320);
+  });
+
+  it("snaps to the nearest step, full taking the container's width, none wider than it", () => {
+    const steps = imageWidth?.steps ?? [];
+    expect(nearestStep(steps, 400, 1000)?.value).toBe("medium");
+    expect(nearestStep(steps, 900, 1000)?.value).toBe("full");
+    // In a 500 px column, Large shows 500 px wide as Full does; the wider step wins the tie, so
+    // dragging to the column's edge gives Full there too.
+    expect(nearestStep(steps, 499, 500)?.value).toBe("full");
+    expect(nearestStep(steps, 10, 1000)?.value).toBe("small");
+  });
+});
+
+describe("width handles (2.17)", () => {
+  let root: Root;
+  let host: HTMLDivElement;
+  let drags: FieldDrag[];
+
+  /** The view the canvas shows, as the app writes a drag at. */
+  let breakpoint: Breakpoint;
+  /** Draws the handles again for an Image with `props`. */
+  const draw = (props: Readonly<Record<string, unknown>>) =>
+    act(() =>
+      root.render(
+        <WidthHandles
+          nodeId="i"
+          field={imageWidth ?? { name: "width", label: "Width", steps: [] }}
+          props={props}
+          breakpoint={() => breakpoint}
+          onFieldDrag={(drag) => drags.push(drag)}
+        />,
+      ),
+    );
+
+  /** Shows the handles of an Image `left`–`right` in a column 0–800, its width `width`. */
+  function show(width: unknown, left = 240, right = 560, alignment = "centre") {
+    // As Puck draws it: the element inside a wrapper of its own, in its column.
+    document.body.innerHTML = `<div id="column"><div data-puck-component="i"><figure></figure></div></div>`;
+    const figure = document.querySelector("figure");
+    const column = document.getElementById("column");
+    if (figure === null || column === null) throw new Error("no figure");
+    figure.getBoundingClientRect = () => new DOMRect(left, 0, right - left, 200);
+    // Puck's wrapper is the figure's parent, as wide as the column.
+    const wrapper = figure.parentElement;
+    if (wrapper !== null) wrapper.getBoundingClientRect = () => new DOMRect(0, 0, 800, 200);
+    // The outline the grips are drawn in: as wide as Puck's wrapper.
+    host = document.createElement("div");
+    host.getBoundingClientRect = () => new DOMRect(0, 0, 800, 200);
+    document.body.append(host);
+    root = createRoot(host);
+    draw({ width, alignment });
+  }
+  const gripsAt = () => {
+    const grips = host.querySelector(".wf-width-grips");
+    if (!(grips instanceof HTMLElement)) throw new Error("no grips");
+    return [grips.style.left, grips.style.right];
+  };
+
+  const grip = (side: string) => {
+    const found = host.querySelector(`.wf-width-grip[data-side="${side}"]`);
+    if (!(found instanceof HTMLElement)) throw new Error(`no ${side} grip`);
+    return found;
+  };
+  const pointer = (type: string, x: number) =>
+    new PointerEvent(type, { bubbles: true, pointerId: 1, clientX: x, clientY: 100 });
+  const at = (element: HTMLElement, type: string, x: number) =>
+    act(() => {
+      element.dispatchEvent(pointer(type, x));
+    });
+
+  beforeEach(() => {
+    drags = [];
+    breakpoint = "desktop";
+  });
+  afterEach(() => {
+    act(() => root.unmount());
+    document.body.innerHTML = "";
+  });
+
+  it("gives grips on both edges, and snaps a drag to the nearest width, from start to commit", () => {
+    show("small");
+    const right = grip("right");
+    expect(grip("left")).toBeTruthy();
+
+    at(right, "pointerdown", 560);
+    // Centred: the right edge at 624 makes it 448 px wide, Medium.
+    at(right, "pointermove", 624);
+    at(right, "pointermove", 626);
+    at(right, "pointerup", 626);
+
+    expect(drags.map((drag) => [drag.phase, drag.value])).toEqual([
+      ["start", "small"],
+      ["update", "medium"],
+      ["commit", "medium"],
+    ]);
+  });
+
+  it("puts the grips on the element's edges, not the wider outline's (2.17)", () => {
+    show("small");
+    // A Small Image, 240–560 in an 800 px outline: grabbed at its edge, its width doesn't jump.
+    expect(gripsAt()).toEqual(["240px", "240px"]);
+  });
+
+  it("follows the element as its alignment moves it, without a resize (2.17)", () => {
+    show("small", 0, 320, "left");
+    expect(gripsAt()).toEqual(["0px", "480px"]);
+    const figure = document.querySelector("figure");
+    if (figure === null) throw new Error("no figure");
+
+    // Centred: the render that gives it the new alignment measures it again.
+    figure.getBoundingClientRect = () => new DOMRect(240, 0, 320, 200);
+    draw({ width: "small", alignment: "centre" });
+    expect(gripsAt()).toEqual(["240px", "240px"]);
+  });
+
+  it("follows the element when the site's styles for its new class arrive later (2.17)", async () => {
+    show("small", 0, 320, "left");
+    const figure = document.querySelector("figure");
+    if (figure === null) throw new Error("no figure");
+
+    // Right-aligned, once the canvas's CSS has its class: no render of the handles, no resize.
+    figure.getBoundingClientRect = () => new DOMRect(480, 0, 320, 200);
+    await act(async () => {
+      document.head.append(document.createElement("style"));
+      await Promise.resolve();
+    });
+    expect(gripsAt()).toEqual(["480px", "0px"]);
+  });
+
+  it("follows the element when it's replaced, an Image given its picture (2.17)", () => {
+    // A stand-in for the frame's ResizeObserver, which happy-dom doesn't lay out for.
+    const observed = new Set<Element>();
+    let notify: () => void = () => undefined;
+    class FakeObserver {
+      constructor(callback: () => void) {
+        notify = callback;
+      }
+      observe(target: Element) {
+        observed.add(target);
+      }
+      unobserve(target: Element) {
+        observed.delete(target);
+      }
+      disconnect() {
+        observed.clear();
+      }
+    }
+    const real = window.ResizeObserver;
+    window.ResizeObserver = FakeObserver as unknown as typeof ResizeObserver;
+    try {
+      show("small");
+      const wrapper = document.querySelector("[data-puck-component]");
+      const picture = document.createElement("figure");
+      picture.getBoundingClientRect = () => new DOMRect(0, 0, 320, 200);
+      wrapper?.replaceChildren(picture);
+      act(() => notify());
+
+      expect(gripsAt()).toEqual(["0px", "480px"]);
+      expect(observed.has(picture)).toBe(true);
+    } finally {
+      window.ResizeObserver = real;
+    }
+  });
+
+  it("starts from the value for the device the app shows, not the frame's width (2.17)", () => {
+    // happy-dom's window is Desktop wide; the app shows Mobile (a custom width, say).
+    breakpoint = "mobile";
+    show({ $responsive: { desktop: "large", mobile: "small" } });
+    const right = grip("right");
+
+    at(right, "pointerdown", 560);
+    at(right, "pointerup", 560);
+
+    expect(drags.map((drag) => [drag.phase, drag.value])).toEqual([
+      ["start", "small"],
+      ["commit", "small"],
+    ]);
+  });
+
+  it("cancels a drag with Esc, back to the width before it", () => {
+    show({ $responsive: { desktop: "large" } });
+    const left = grip("left");
+
+    at(left, "pointerdown", 240);
+    at(left, "pointermove", 360);
+    act(() => {
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    });
+    at(left, "pointermove", 0);
+
+    expect(drags.map((drag) => drag.phase)).toEqual(["start", "update", "cancel"]);
+    expect(drags.at(-1)?.value).toBe("large");
+  });
+});

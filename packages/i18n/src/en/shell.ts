@@ -17,6 +17,9 @@ export const shell = {
   // A count: plural("ui.picker.match", n) picks one or other (B10).
   "ui.picker.match.one": "{count} match",
   "ui.picker.match.other": "{count} matches",
+  // Under a picker that draws only its first matches (icons).
+  "ui.picker.more.one": "{count} more isn't shown. Search to find it.",
+  "ui.picker.more.other": "{count} more aren't shown. Search to find them.",
   "ui.picker.choose": "Choose",
   "ui.picker.cancel": "Cancel",
 
@@ -167,7 +170,7 @@ export const shell = {
   // The selected Columns' toolbar (2.17): its columns, its layout on the device shown, and outlines.
   "columnsToolbar.columns": "Columns",
   "columnsToolbar.addColumn": "Add column",
-  "columnsToolbar.removeColumn": "Remove column",
+  "columnsToolbar.removeColumn": "Remove last column",
   // {device} is a device view: "Column widths on Mobile", as the Edit panel calls the field.
   "columnsToolbar.layoutOn": "Column widths on {device}",
   "columnsToolbar.previewLabel": "Columns preview",
