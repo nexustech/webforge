@@ -85,7 +85,8 @@ describe("addItems (F-ED-1, ADR 0005)", () => {
     expect(groupItems(sections, "  QUESTIONS ").map((group) => group.category)).toEqual([
       "Questions and answers",
     ]);
-    expect(groupItems(sections, "pricing")).toEqual([]);
+    // A word no item has.
+    expect(groupItems(sections, "zebra")).toEqual([]);
   });
 });
 
