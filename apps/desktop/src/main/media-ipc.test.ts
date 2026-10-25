@@ -6,7 +6,7 @@ import { tempDirFactory } from "@webforge/test-utils";
 import type { IpcMain, IpcMainInvokeEvent } from "electron";
 import { describe, expect, it, vi } from "vitest";
 import { MAX_MEDIA_BYTES } from "../shared/ipc/media.js";
-import { readAtMost, storeImport } from "../worker/store-import.js";
+import { createImportJobs, readAtMost } from "../worker/store-import.js";
 import { registerMediaHandlers } from "./media-ipc.js";
 import { type ImportFileResult, type ImportSource, ProjectSession } from "./project-session.js";
 
@@ -22,18 +22,25 @@ function setUp(chosen: readonly string[] | undefined, open = true) {
   const ipc = {
     handle: (channel: string, handler: Handler) => handlers.set(channel, handler),
   } as unknown as Pick<IpcMain, "handle">;
+  // Reads and checks as the storage writer does; stores nowhere.
+  const jobs = createImportJobs(() => ({ put: () => "a".repeat(64), close: () => undefined }));
   const session = {
     current: vi.fn(() => (open ? { name: "Bakery" } : null)),
     staleReason: vi.fn((sessionId: string) =>
       !open ? "no-site" : sessionId === SESSION ? undefined : "stale-session",
     ),
-    // Reads and checks as the storage writer does, storing nowhere.
     importFile: vi.fn(
-      (mediaId: string, fileName: string, source: ImportSource): Promise<ImportFileResult> =>
-        storeImport({ sitePath: "site.wforge", mediaId, fileName, source }, () => ({
-          put: () => "a".repeat(64),
-          close: () => undefined,
-        })) as Promise<ImportFileResult>,
+      async (
+        _mediaId: string,
+        fileName: string,
+        source: ImportSource,
+      ): Promise<ImportFileResult> => {
+        const prepared = await jobs.prepare(1, fileName, source);
+        if (prepared.status === "failed") return { status: "failed", reason: "unknown" };
+        if (prepared.status !== "prepared") return prepared;
+        const { status: _status, ...facts } = prepared;
+        return { status: "stored", ...facts };
+      },
     ),
   };
   // As the real session's, without a hand-off: the same site.
