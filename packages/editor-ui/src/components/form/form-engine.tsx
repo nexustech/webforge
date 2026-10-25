@@ -15,7 +15,20 @@ import {
   TimeField,
 } from "./form-fields.js";
 import type { FormField, FormValues } from "./form-spec.js";
-import { type FormState, issueOf, unplacedIssues } from "./use-form.js";
+import { RowsListField } from "./rows-list-field.js";
+import {
+  concerns,
+  type FormState,
+  issueOf,
+  itemIssuesOf,
+  itemsOf,
+  unplacedIssues,
+} from "./use-form.js";
+
+/** A form's list: as rows when its spec asks (Site Settings), else as the Edit panel's. */
+function FormListField(props: FieldRendererProps<"list">) {
+  return props.field.look === "rows" ? <RowsListField {...props} /> : <ListField {...props} />;
+}
 
 /**
  * The renderers a form draws its fields with: the Edit panel's, the form-only kinds', and a
@@ -24,7 +37,7 @@ import { type FormState, issueOf, unplacedIssues } from "./use-form.js";
  */
 const FORM_RENDERERS: FieldRenderers = {
   ...PLAIN_RENDERERS,
-  list: ListField,
+  list: FormListField,
   box: BoxField,
   toggle: CheckField,
   number: NumberField,
@@ -42,6 +55,8 @@ export type FormProps<V extends FormValues, Out> = {
   readonly form: FormState<V, Out>;
   /** What its tabs are, for screen readers ("Site Settings sections"); with groups only. */
   readonly groupsLabel?: string;
+  /** The tab it opens on; its first when left out. */
+  readonly initialGroup?: string;
 };
 
 /**
@@ -49,14 +64,18 @@ export type FormProps<V extends FormValues, Out> = {
  * with its label, help and problem (R10's `Field`); on tabs if the form has groups. Problems no
  * field shows are listed above the fields. After a failed Save it shows the first tab with one.
  */
-export function Form<V extends FormValues, Out>({ form, groupsLabel }: FormProps<V, Out>) {
+export function Form<V extends FormValues, Out>({
+  form,
+  groupsLabel,
+  initialGroup,
+}: FormProps<V, Out>) {
   const renderers: FieldRenderers = { ...FORM_RENDERERS, ...useFieldRenderers() };
   const { fields, issues } = form;
   const groups = form.spec.groups ?? [];
-  const [tab, setTab] = useState(groups[0]?.id ?? "");
+  const [tab, setTab] = useState(initialGroup ?? groups[0]?.id ?? "");
   const [seen, setSeen] = useState(form.attempts);
   const hasIssue = (group: string) =>
-    fields.some((field) => field.group === group && issueOf(field, issues) !== undefined);
+    fields.some((field) => field.group === group && issues.some((issue) => concerns(field, issue)));
   if (seen !== form.attempts) {
     setSeen(form.attempts);
     const first = groups.find((group) => hasIssue(group.id));
@@ -71,6 +90,9 @@ export function Form<V extends FormValues, Out>({ form, groupsLabel }: FormProps
           field={field}
           value={form.values[field.name]}
           error={issueOf(field, issues)}
+          {...(field.kind === "list"
+            ? { itemErrors: itemIssuesOf(field, itemsOf(form.values[field.name]), issues) }
+            : {})}
           renderers={renderers}
           onChange={(value) => form.change(field.name, value)}
         />
@@ -127,12 +149,14 @@ function FormFieldRow({
   field,
   value,
   error,
+  itemErrors,
   renderers,
   onChange,
 }: {
   readonly field: FormField;
   readonly value: unknown;
   readonly error: string | undefined;
+  readonly itemErrors?: FieldRendererProps["itemErrors"];
   readonly renderers: FieldRenderers;
   readonly onChange: (value: unknown) => void;
 }) {
@@ -143,6 +167,7 @@ function FormFieldRow({
       {
         ...props,
         ...(field.disabled === true ? { disabled: true } : {}),
+        ...(itemErrors === undefined ? {} : { itemErrors }),
         field,
         value,
         onChange,

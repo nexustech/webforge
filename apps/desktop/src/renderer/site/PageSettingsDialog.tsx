@@ -1,15 +1,4 @@
-import {
-  Button,
-  Check,
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  ImageChoice,
-  TextInput,
-} from "@webforge/editor-ui";
+import { FormDialog, type FormField, type FormSpec } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import {
   isImageMeta,
@@ -18,10 +7,14 @@ import {
   PAGE_SLUG_MAX,
   PAGE_TITLE_MAX,
   type PageEntry,
+  pageEntrySchema,
   type SiteDoc,
+  slugify,
+  slugSchema,
 } from "@webforge/model";
-import { useState } from "react";
+import { z } from "zod";
 import { MEDIA_SCHEME } from "../../shared/ipc/media.js";
+import "../shell/form-messages.js";
 import { fileNameFor, type PageSettingsChange } from "./page-actions.js";
 
 /** Props of {@link PageSettingsDialog}. */
@@ -33,6 +26,125 @@ export type PageSettingsDialogProps = {
   readonly onSave: (change: PageSettingsChange) => void;
   readonly onCancel: () => void;
 };
+
+/** What the dialog edits: each value as typed. */
+type PageValues = {
+  readonly title: string;
+  readonly slug: string;
+  readonly description: string;
+  readonly shareImage: MediaId | undefined;
+  readonly hideHeader: boolean;
+  readonly hideFooter: boolean;
+  readonly hideFromNavigation: boolean;
+  readonly hideBackToTop: boolean;
+};
+
+const settings = pageEntrySchema.shape.settings.shape;
+
+/**
+ * Page Settings checked by the model's own schema (2.21, decision 5): the page entry's title and
+ * settings, and a file name made file-friendly first, so a name that saved before still does.
+ */
+const pageSettingsFormSchema = z.object({
+  title: pageEntrySchema.shape.title.trim().min(1),
+  slug: slugSchema,
+  description: settings.description.unwrap(),
+  shareImage: settings.shareImage,
+  hideHeader: settings.hideHeader,
+  hideFooter: settings.hideFooter,
+  hideFromNavigation: settings.hideFromNavigation,
+  hideBackToTop: z.boolean(),
+});
+
+/**
+ * Page Settings as a form (F-SET-2, 2.21): the title and description, the file name (fixed for
+ * the Home page and "Page not found"), the share image, and what the page leaves out.
+ */
+export function pageSettingsSpec(
+  site: SiteDoc,
+  page: PageEntry,
+): FormSpec<PageValues, z.infer<typeof pageSettingsFormSchema>> {
+  const fixedFile =
+    page.id === site.homePageId
+      ? t("pageSettings.homeFile")
+      : page.kind === "not-found"
+        ? t("pageSettings.notFoundFile")
+        : undefined;
+  const images = Object.values(site.media).filter(isImageMeta);
+  const siteDescription = site.settings.general.description;
+  return {
+    fields: ({ slug }): readonly FormField[] => [
+      {
+        kind: "text",
+        name: "title",
+        label: t("pageSettings.pageTitle"),
+        maxLength: PAGE_TITLE_MAX,
+      },
+      {
+        kind: "text",
+        name: "slug",
+        label: t("pageSettings.fileName"),
+        help:
+          fixedFile ??
+          t("pages.fileName", {
+            path: fileNameFor(site, slug.trim() === "" ? page.slug : slug, page.folder, page.id),
+          }),
+        maxLength: PAGE_SLUG_MAX,
+        ...(fixedFile === undefined ? {} : { disabled: true }),
+      },
+      {
+        kind: "text",
+        name: "description",
+        label: t("pageSettings.metaDescription"),
+        help: t("pageSettings.metaDescriptionHint"),
+        multiline: true,
+        maxLength: PAGE_DESCRIPTION_MAX,
+        ...(siteDescription === undefined ? {} : { placeholder: siteDescription }),
+      },
+      {
+        kind: "imageChoice",
+        name: "shareImage",
+        label: t("pageSettings.shareImage"),
+        noneLabel: t("pageSettings.siteShareImage"),
+        options: images.map((image) => ({
+          value: image.id,
+          label: image.name,
+          thumbnail: `${MEDIA_SCHEME}://thumbnail/${image.hash}`,
+        })),
+        ...(images.length === 0 ? { help: t("pageSettings.noImages") } : {}),
+      },
+      { kind: "toggle", name: "hideHeader", label: t("pageSettings.hideHeader") },
+      { kind: "toggle", name: "hideFooter", label: t("pageSettings.hideFooter") },
+      // "Page not found" is never in navigation.
+      ...(page.kind === "page"
+        ? [
+            {
+              kind: "toggle" as const,
+              name: "hideFromNavigation",
+              label: t("pageSettings.hideFromNavigation"),
+            },
+          ]
+        : []),
+      // Only while the site shows one (Site Settings → General).
+      ...(site.settings.general.backToTop === true
+        ? [
+            {
+              kind: "toggle" as const,
+              name: "hideBackToTop",
+              label: t("pageSettings.hideBackToTop"),
+            },
+          ]
+        : []),
+    ],
+    schema: pageSettingsFormSchema,
+    toModel: (values) => ({
+      ...values,
+      // An emptied file name keeps the page's own; a fixed one isn't the dialog's to change.
+      slug: fixedFile !== undefined || values.slug.trim() === "" ? page.slug : slugify(values.slug),
+      description: values.description.trim(),
+    }),
+  };
+}
 
 /**
  * Page Settings (F-SET-2): the title and description search engines and browser tabs show, the
@@ -47,159 +159,28 @@ export function PageSettingsDialog({
   onSave,
   onCancel,
 }: PageSettingsDialogProps) {
+  if (page === undefined) return null;
+  const fixed = page.id === site.homePageId || page.kind === "not-found";
   return (
-    <Dialog
-      open={open && page !== undefined}
-      onOpenChange={(next) => {
-        if (!next) onCancel();
+    <FormDialog
+      open={open}
+      title={t("pageSettings.title", { name: page.title })}
+      description={t("pageSettings.description")}
+      confirm={t("pageSettings.save")}
+      spec={pageSettingsSpec(site, page)}
+      initial={{
+        title: page.title,
+        // A fixed file name shows as it is ("index.html").
+        slug: fixed ? fileNameFor(site, page.slug, undefined, page.id) : page.slug,
+        description: page.settings.description ?? "",
+        shareImage: page.settings.shareImage,
+        hideHeader: page.settings.hideHeader,
+        hideFooter: page.settings.hideFooter,
+        hideFromNavigation: page.settings.hideFromNavigation,
+        hideBackToTop: page.settings.hideBackToTop === true,
       }}
-    >
-      {/* The content mounts with each opening, so the form starts from the page every time. */}
-      {/* Taller than a small window can show, so it scrolls instead of hiding Save. */}
-      <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-lg">
-        {page !== undefined && (
-          <PageSettingsForm site={site} page={page} onSave={onSave} onCancel={onCancel} />
-        )}
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function PageSettingsForm({
-  site,
-  page,
-  onSave,
-  onCancel,
-}: Omit<PageSettingsDialogProps, "open" | "page"> & { readonly page: PageEntry }) {
-  const [title, setTitle] = useState(page.title);
-  const [slug, setSlug] = useState(page.slug);
-  const [description, setDescription] = useState(page.settings.description ?? "");
-  const [shareImage, setShareImage] = useState<MediaId | undefined>(page.settings.shareImage);
-  const [hideHeader, setHideHeader] = useState(page.settings.hideHeader);
-  const [hideFooter, setHideFooter] = useState(page.settings.hideFooter);
-  const [hideFromNavigation, setHideFromNavigation] = useState(page.settings.hideFromNavigation);
-  const [hideBackToTop, setHideBackToTop] = useState(page.settings.hideBackToTop === true);
-  const fixedFile =
-    page.id === site.homePageId
-      ? t("pageSettings.homeFile")
-      : page.kind === "not-found"
-        ? t("pageSettings.notFoundFile")
-        : undefined;
-  const images = Object.values(site.media).filter(isImageMeta);
-
-  return (
-    <form
-      className="grid gap-3"
-      // Save says what's missing in the editor's own words, never the browser's bubble.
-      noValidate
-      onSubmit={(event) => {
-        event.preventDefault();
-        onSave({
-          title,
-          slug,
-          description,
-          shareImage,
-          hideHeader,
-          hideFooter,
-          hideFromNavigation,
-          hideBackToTop,
-        });
-      }}
-    >
-      <DialogHeader>
-        <DialogTitle>{t("pageSettings.title", { name: page.title })}</DialogTitle>
-        <DialogDescription>{t("pageSettings.description")}</DialogDescription>
-      </DialogHeader>
-
-      <TextInput
-        label={t("pageSettings.pageTitle")}
-        value={title}
-        maxLength={PAGE_TITLE_MAX}
-        required
-        onChange={setTitle}
-      />
-
-      <TextInput
-        label={t("pageSettings.fileName")}
-        hint={
-          fixedFile ??
-          t("pages.fileName", {
-            path: fileNameFor(site, slug.trim() === "" ? page.slug : slug, page.folder, page.id),
-          })
-        }
-        value={fixedFile === undefined ? slug : fileNameFor(site, slug, undefined, page.id)}
-        maxLength={PAGE_SLUG_MAX}
-        disabled={fixedFile !== undefined}
-        onChange={setSlug}
-      />
-
-      <TextInput
-        label={t("pageSettings.metaDescription")}
-        hint={t("pageSettings.metaDescriptionHint")}
-        multiline
-        value={description}
-        maxLength={PAGE_DESCRIPTION_MAX}
-        {...(site.settings.general.description === undefined
-          ? {}
-          : { placeholder: site.settings.general.description })}
-        onChange={setDescription}
-      />
-
-      <fieldset className="grid gap-1">
-        <legend className="mb-1 text-xs text-muted-foreground">
-          {t("pageSettings.shareImage")}
-        </legend>
-        <div className="flex flex-wrap gap-2">
-          <ImageChoice
-            name="share-image"
-            label={t("pageSettings.siteShareImage")}
-            selected={shareImage === undefined}
-            onSelect={() => setShareImage(undefined)}
-          />
-          {images.map((image) => (
-            <ImageChoice
-              key={image.id}
-              name="share-image"
-              label={image.name}
-              thumbnail={`${MEDIA_SCHEME}://thumbnail/${image.hash}`}
-              selected={shareImage === image.id}
-              onSelect={() => setShareImage(image.id)}
-            />
-          ))}
-        </div>
-        {images.length === 0 && (
-          <p className="text-xs text-muted-foreground">{t("pageSettings.noImages")}</p>
-        )}
-      </fieldset>
-
-      <div className="grid gap-1.5">
-        <Check label={t("pageSettings.hideHeader")} checked={hideHeader} onChange={setHideHeader} />
-        <Check label={t("pageSettings.hideFooter")} checked={hideFooter} onChange={setHideFooter} />
-        {page.kind === "page" && (
-          <Check
-            label={t("pageSettings.hideFromNavigation")}
-            checked={hideFromNavigation}
-            onChange={setHideFromNavigation}
-          />
-        )}
-        {/* Only while the site shows one (Site Settings → General). */}
-        {site.settings.general.backToTop === true && (
-          <Check
-            label={t("pageSettings.hideBackToTop")}
-            checked={hideBackToTop}
-            onChange={setHideBackToTop}
-          />
-        )}
-      </div>
-
-      <DialogFooter>
-        <Button type="button" variant="secondary" onClick={onCancel}>
-          {t("pages.cancel")}
-        </Button>
-        <Button type="submit" disabled={title.trim() === ""}>
-          {t("pageSettings.save")}
-        </Button>
-      </DialogFooter>
-    </form>
+      onSave={(change) => onSave({ ...change, shareImage: change.shareImage })}
+      onCancel={onCancel}
+    />
   );
 }
