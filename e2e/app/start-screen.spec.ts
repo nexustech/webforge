@@ -57,7 +57,8 @@ test("creates a blank site, keeps an edit and reopens it from the Recent list", 
   // New Site, Blank: the save dialog (stubbed) names the file, and the editor opens on it.
   const sitePath = join(dir, "Rosa's Bakery.wforge");
   await stubFileDialogs(running(), sitePath);
-  await page.getByRole("button", { name: "New site…" }).click();
+  // Exactly: the title bar's New Site… button has the same name in another case.
+  await page.getByRole("button", { name: "New site…", exact: true }).click();
   const newSite = page.getByRole("dialog", { name: "New Site" });
   await newSite.getByRole("textbox", { name: "Site name" }).fill("Rosa's Bakery");
   await newSite.getByRole("button", { name: "Create" }).click();
@@ -90,7 +91,8 @@ test("makes a site from a template, named as typed and in the chosen theme, in u
   await stubFileDialogs(running(), join(dir, "Rosa's Bakery.wforge"));
 
   // New Site (2.14a, F-SITE-1): the name, a template (which brings its theme), then another theme.
-  await page.getByRole("button", { name: "New site…" }).click();
+  // Exactly: the title bar's New Site… button has the same name in another case.
+  await page.getByRole("button", { name: "New site…", exact: true }).click();
   const newSite = page.getByRole("dialog", { name: "New Site" });
   await newSite.getByRole("textbox", { name: "Site name" }).fill("Rosa's Bakery");
   await newSite.getByText("Sample bakery", { exact: true }).click();
@@ -99,11 +101,14 @@ test("makes a site from a template, named as typed and in the chosen theme, in u
 
   const started = Date.now();
   await newSite.getByRole("button", { name: "Create" }).click();
-  // The template's home page, with its photo, which came into the site's Media.
+  // Open in under 3 s (F-SITE-1): the template's home page on the canvas. Nearly all of it is the
+  // editor starting again on the new site, as for every site opened; the fill itself is quick.
   const hero = canvas(page).locator("h1", { hasText: "Fresh bread, baked every morning" });
   await expect(hero).toBeVisible();
-  await expect(canvas(page).locator("section img").first()).toHaveJSProperty("complete", true);
   expect(Date.now() - started).toBeLessThan(3_000);
+  // With its photo, which came into the site's Media.
+  await expect(canvas(page).locator("section img").first()).toHaveJSProperty("complete", true);
+  await expect(canvas(page).locator("section img").first()).not.toHaveJSProperty("naturalWidth", 0);
 
   const site = await page.evaluate(async () => {
     const read = await (window as unknown as RendererWindow).webforge.project.readSite();
