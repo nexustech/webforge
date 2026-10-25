@@ -24,7 +24,8 @@ describe("entrance animations (2.12, F-DS-5)", () => {
         "motion-safe:wf-waiting:translate-y-8",
         // No fading out when the page is marked: it moves only on the way in.
         "motion-safe:wf-waiting:transition-none",
-        "motion-safe:delay-300",
+        // Only while it moves in.
+        "motion-safe:wf-entering:delay-300",
       ]),
     );
     // Every class that hides or moves it waits for motion-safe.

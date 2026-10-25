@@ -92,7 +92,10 @@ describe("buildSiteCss", () => {
     expect(motionSafe).toMatch(
       /\.motion-safe\\:wf-waiting\\:transition-none:not\(\[data-wf-shown\]\) \{\s*transition-property: none;/,
     );
-    expect(motionSafe).toContain("transition-delay: 600ms;");
+    // Its delay only while it moves in: shown, not yet done.
+    expect(motionSafe).toMatch(
+      /\.motion-safe\\:wf-entering\\:delay-600\[data-wf-shown\]:not\(\[data-wf-done\]\) \{\s*transition-delay: 600ms;/,
+    );
     expect(motionSafe).toContain(String.raw`.motion-safe\:hover\:-translate-y-1:hover`);
   });
 

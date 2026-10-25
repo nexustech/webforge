@@ -330,6 +330,25 @@ test.describe("exported site from disk", () => {
       await expect(band).toHaveAttribute("data-wf-shown", "");
     });
 
+    test("moves in what ends the page, once scrolled to the bottom (#382 review)", async ({
+      page,
+    }) => {
+      // Tall: the last line never rises far up the view, only into its bottom.
+      await page.setViewportSize({ width: 1280, height: 1200 });
+      await open(page, "thanks.html");
+      const last = page.locator(".site-text", { hasText: "We'll be in touch soon." });
+
+      await expect(page.locator("html")).toHaveAttribute("data-wf-animate", "");
+      await expect(last).not.toHaveAttribute("data-wf-shown");
+      await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+
+      await expect
+        .poll(() => last.evaluate((element) => getComputedStyle(element).opacity))
+        .toBe("1");
+      // Moved in, its entrance is done: later changes to it don't wait for its delay.
+      await expect(last).toHaveAttribute("data-wf-done", "");
+    });
+
     test("shows everything at once for a visitor who prefers reduced motion", async ({ page }) => {
       await page.emulateMedia({ reducedMotion: "reduce" });
       await page.setViewportSize({ width: 1280, height: 600 });

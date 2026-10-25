@@ -51,6 +51,8 @@ export function siteStylesheetSource(options: SiteCssOptions): string {
     // An element waiting for its entrance animation (2.12, `entranceClasses` in site-components):
     // once webforge.js has marked the page, until it has moved in.
     "@custom-variant wf-waiting (:root[data-wf-animate] &:not([data-wf-shown]));",
+    // ...and while it moves in, which its delay applies to, not to later changes.
+    "@custom-variant wf-entering (&[data-wf-shown]:not([data-wf-done]));",
     themeCss(options.theme),
     fontFaces(fontFacesFor(options.theme, options.fonts), options.fontsUrl),
   ]

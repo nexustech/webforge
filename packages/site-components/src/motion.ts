@@ -65,11 +65,15 @@ const ENTRANCE_START: Readonly<Record<Moving, string>> = {
   slideRight: `${HIDDEN}opacity-0 ${HIDDEN}translate-x-8`,
   zoom: `${HIDDEN}opacity-0 ${HIDDEN}scale-95`,
 };
+/**
+ * Each delay, only while it moves in (`wf-entering`: shown, and not yet done, see `animate.js`), so
+ * later changes to it (the canvas restyling it, a class of its own) don't wait.
+ */
 const DELAY_CLASS: Readonly<Record<Delay, string>> = {
   none: "",
-  short: " motion-safe:delay-150",
-  medium: " motion-safe:delay-300",
-  long: " motion-safe:delay-600",
+  short: " motion-safe:wf-entering:delay-150",
+  medium: " motion-safe:wf-entering:delay-300",
+  long: " motion-safe:wf-entering:delay-600",
 };
 
 /**

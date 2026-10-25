@@ -13,6 +13,7 @@ afterEach(async () => {
 type Watcher = {
   readonly callback: (entries: { target: Element; isIntersecting: boolean }[]) => void;
   readonly observed: Set<Element>;
+  readonly options: IntersectionObserverInit | undefined;
   /** Whether the page was marked when the observer was made. */
   readonly markedFirst: boolean;
   /** The sections shown when the observer was made. */
@@ -39,10 +40,11 @@ function page({ reduced = false, observer = true } = {}) {
   })) as typeof window.matchMedia;
   const watchers: Watcher[] = [];
   class FakeObserver {
-    constructor(callback: Watcher["callback"]) {
+    constructor(callback: Watcher["callback"], options?: IntersectionObserverInit) {
       watchers.push({
         callback,
         observed: this.observed,
+        options,
         markedFirst: document.documentElement.hasAttribute("data-wf-animate"),
         shownFirst: [...document.querySelectorAll("[data-wf-shown]")].map((each) => each.id),
       });
@@ -63,16 +65,19 @@ function page({ reduced = false, observer = true } = {}) {
     BEHAVIOUR_SCRIPTS.animate ?? "",
   )(document, window, window.HTMLElement, observer ? FakeObserver : undefined);
   const shown = () => [...document.querySelectorAll("[data-wf-shown]")].map((each) => each.id);
+  const done = () => [...document.querySelectorAll("[data-wf-done]")].map((each) => each.id);
   const marked = () => document.documentElement.hasAttribute("data-wf-animate");
-  return { window, document, watchers, shown, marked };
+  return { window, document, watchers, shown, done, marked };
 }
 
 describe("entrance animations on the exported page (2.12, F-DS-5)", () => {
   it("shows what is already in view before marking the page, so it never disappears", () => {
-    const { watchers, shown, marked, document } = page();
+    const { watchers, shown, done, marked, document } = page();
 
     expect(marked()).toBe(true);
     expect(shown()).toEqual(["top"]);
+    // Shown without moving: done at once, so it has no delay.
+    expect(done()).toEqual(["top"]);
     const [watcher] = watchers;
     // The page was marked after the first section was shown, and only the others wait.
     expect(watcher?.markedFirst).toBe(true);
@@ -82,18 +87,39 @@ describe("entrance animations on the exported page (2.12, F-DS-5)", () => {
     expect(document.documentElement.style.overflowX).toBe("clip");
   });
 
-  it("shows each of the others once, as it scrolls into view", () => {
+  it("shows each of the others once, as soon as any of it scrolls into view", () => {
     const { watchers, shown, document } = page();
     const [watcher] = watchers;
     const middle = document.getElementById("middle");
     if (watcher === undefined || middle === null) throw new Error("not set up");
 
+    // No margin into the view: what ends the page, never far up it, still comes in (#382 review).
+    expect(watcher.options?.rootMargin).toBeUndefined();
+    expect(watcher.options?.threshold).toBe(0);
     watcher.callback([{ target: middle, isIntersecting: false }]);
     expect(shown()).toEqual(["top"]);
     watcher.callback([{ target: middle, isIntersecting: true }]);
 
     expect(shown()).toEqual(["top", "middle"]);
     expect(watcher.observed.has(middle)).toBe(false);
+  });
+
+  it("ends an element's delay once it has moved in, so later changes don't wait", () => {
+    const { window, watchers, done, document } = page();
+    const [watcher] = watchers;
+    const middle = document.getElementById("middle");
+    const inside = document.createElement("span");
+    middle?.append(inside);
+    if (watcher === undefined || middle === null) throw new Error("not set up");
+    watcher.callback([{ target: middle, isIntersecting: true }]);
+    expect(done()).toEqual(["top"]);
+
+    // Not for a transition inside it.
+    inside.dispatchEvent(new window.Event("transitionend", { bubbles: true }));
+    expect(done()).toEqual(["top"]);
+    middle.dispatchEvent(new window.Event("transitionend", { bubbles: true }));
+
+    expect(done()).toEqual(["top", "middle"]);
   });
 
   it("shows everything for printing", () => {
