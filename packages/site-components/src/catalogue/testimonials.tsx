@@ -139,7 +139,7 @@ function TestimonialView({
     return (
       <figure className={`site-testimonial flex flex-col items-center gap-6 text-center${hover}`}>
         {/* A pull quote, larger than running text. */}
-        <blockquote className="text-2xl leading-snug italic">
+        <blockquote className="font-heading text-2xl leading-snug italic">
           <p>{quote}</p>
         </blockquote>
         <div className="flex items-center gap-4 text-left">

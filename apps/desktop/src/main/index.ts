@@ -620,6 +620,9 @@ app.on("second-instance", (_event, argv, workingDirectory) => {
 
 app.on("will-quit", () => {
   projectSession.close();
+  // The site is saved and closed: a launch from now on opens Webforge itself, rather than handing
+  // its site to this one, which on a busy computer can take up to a minute more to end (#413).
+  if (primaryInstance) app.releaseSingleInstanceLock();
 });
 
 // Webforge quits when its window closes, on macOS too (spec/02 §1, #287): it's a one-window app,

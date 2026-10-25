@@ -1,4 +1,5 @@
-import { BOX_SIDES, SPACING_TOKENS } from "@webforge/model";
+import { BOX_SIDES, DEFAULT_THEME, SPACING_TOKENS } from "@webforge/model";
+import { themeCss } from "@webforge/themes";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import previewCss from "../.storybook/preview.css?raw";
@@ -73,5 +74,16 @@ describe("the site Storybook's CSS", () => {
       }),
       { numRuns: 200 },
     );
+  });
+});
+
+describe("the Storybook's type scale (#419)", () => {
+  it("is the default theme's, a size smaller page title on phones included", () => {
+    const declarations = (css: string) =>
+      css
+        .split("\n")
+        .map((line) => line.trim())
+        .filter((line) => line.startsWith("--text-"));
+    expect(declarations(previewCss)).toEqual(declarations(themeCss(DEFAULT_THEME)));
   });
 });
