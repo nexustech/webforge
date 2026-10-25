@@ -16,7 +16,7 @@ export type RecentSitesProps = {
 };
 
 /** Whether `site`'s name, file or folder contains every word of `query`, ignoring case. */
-export function matchesSearch(site: RecentSite, query: string): boolean {
+function matchesSearch(site: RecentSite, query: string): boolean {
   const words = query.toLocaleLowerCase().split(/\s+/).filter(Boolean);
   const text = `${site.name} ${site.fileName} ${site.folder}`.toLocaleLowerCase();
   return words.every((word) => text.includes(word));
