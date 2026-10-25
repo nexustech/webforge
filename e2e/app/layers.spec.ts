@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { launchDesktopApp } from "./launch.js";
+import { chooseFromMenu } from "./menus.js";
 import { stubFileDialogs } from "./sites.js";
 
 // Layers (1.24, F-ED-12): always shown under Add and Undo History, in Simple and Advanced mode
@@ -38,8 +39,7 @@ const steps = () => page.locator(".undo-history__step");
 /** Runs a View menu command, once a menu an earlier one closed has gone. */
 async function viewMenu(name: string): Promise<void> {
   await expect(page.getByRole("menu")).toHaveCount(0);
-  await page.getByRole("menuitem", { name: "View", exact: true }).click();
-  await page.getByRole("menuitem", { name }).click();
+  await chooseFromMenu(app, page, "View", name);
 }
 
 test("Layers shows with Add in Simple mode, and selects in step with the canvas", async () => {

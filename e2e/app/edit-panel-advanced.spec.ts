@@ -1,5 +1,6 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
+import { chooseFromMenu } from "./menus.js";
 
 // The Edit panel's Advanced tab (Advanced mode, F-ED-11): CSS classes, attributes and the anchor
 // go onto the element's own HTML on the canvas, each change one labelled undo step.
@@ -36,8 +37,7 @@ test("sets an element's anchor and classes on the Advanced tab, in Advanced mode
   await selectHeading();
   await expect(panel().getByRole("tab", { name: "Advanced" })).toHaveCount(0);
 
-  await page.getByRole("menuitem", { name: "View", exact: true }).click();
-  await page.getByRole("menuitem", { name: "Use Advanced Mode" }).click();
+  await chooseFromMenu(app, page, "View", "Use Advanced Mode");
   await selectHeading();
   await panel().getByRole("tab", { name: "Advanced" }).click();
   const anchor = panel().getByLabel("Anchor ID");
