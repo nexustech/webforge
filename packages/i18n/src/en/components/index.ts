@@ -1,5 +1,6 @@
 import { basic } from "./basic.js";
 import { carousel } from "./carousel.js";
+import { commerce } from "./commerce.js";
 import { contactDetails } from "./contactDetails.js";
 import { elements } from "./elements.js";
 import { embeds } from "./embeds.js";
@@ -25,6 +26,7 @@ export const componentFamilies = {
   contactDetails,
   gallery,
   forms,
+  commerce,
 } as const;
 
 /** Site components: element names, their fields, exported-site text and the starter page. */
@@ -39,4 +41,5 @@ export const components = {
   ...contactDetails,
   ...gallery,
   ...forms,
+  ...commerce,
 } as const;

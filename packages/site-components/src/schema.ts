@@ -244,8 +244,11 @@ export type SiteBindings = {
   readonly elementHint?: (missing: ElementHint) => ReactNode;
 };
 
-/** What an element is missing, for {@link SiteBindings.elementHint}: a video's or a map's address. */
-export type ElementHint = "videoAddress" | "mapAddress";
+/**
+ * What an element is missing, for {@link SiteBindings.elementHint}: a video's or a map's address,
+ * a Buy button's payment link.
+ */
+export type ElementHint = "videoAddress" | "mapAddress" | "paymentLink";
 
 /**
  * Why a form has nowhere to send to (2.8): no form service chosen in Site Settings, Netlify Forms
