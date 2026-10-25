@@ -11,7 +11,7 @@ import {
 } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { describe, expect, it } from "vitest";
-import { starterSite } from "../editor/starter-site.js";
+import { starterSite } from "../../shared/starter-site.js";
 import { applyAnchor, asLinkFieldChange } from "./link-change.js";
 import {
   createLinkTargets,

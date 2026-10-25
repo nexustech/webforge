@@ -54,6 +54,14 @@ export function template(key: MessageKey): string {
   return en[key];
 }
 
+/**
+ * Whether `key` is in the catalogue: for a key built from data, such as a theme preset's name
+ * (`theme.preset.<name>`), which the compiler can't check.
+ */
+export function isMessageKey(key: string): key is MessageKey {
+  return Object.hasOwn(en, key);
+}
+
 /** Keys with a message per plural category: `base.one` and `base.other` (and any of `zero`…). */
 export type PluralKey = {
   [K in MessageKey]: K extends `${infer Base}.other`

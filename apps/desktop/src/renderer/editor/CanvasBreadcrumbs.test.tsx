@@ -11,10 +11,10 @@ import {
 import { siteLibrary } from "@webforge/site-components";
 import { createFakeEngine } from "@webforge/test-utils/renderer";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { starterSite } from "../../shared/starter-site.js";
 import { sessionWith } from "../testing/fixtures.js";
 import { selectionPath } from "./breadcrumbs.js";
 import { CanvasBreadcrumbs } from "./CanvasBreadcrumbs.js";
-import { starterSite } from "./starter-site.js";
 
 const HOURS = "shared-hours" as SharedSectionId;
 

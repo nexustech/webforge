@@ -154,6 +154,13 @@ export const SHADED_ROLES = [
  */
 export const INVERSE_THEME = "wf_inverse";
 
+/**
+ * Marks a section or element hidden in Layers (F-ED-12) on the canvas, which still draws it,
+ * dimmed; the export leaves it out. The theme's alternating sections (2.13d) count only those
+ * without it, so the canvas stripes as the exported page does.
+ */
+export const HIDDEN_ATTRIBUTE = "data-webforge-hidden";
+
 /** See {@link themeTokensSchema}. */
 export const themeTokensSchema = z.strictObject({
   /** The preset the theme started from ("light"): the name it is listed under. */

@@ -6,10 +6,10 @@ import {
   type SharedSectionId,
 } from "@webforge/model";
 import { describe, expect, it } from "vitest";
+import { starterSite } from "../../shared/starter-site.js";
 import { currentPage } from "../editor/editor-session.js";
 import { copyLayer } from "../editor/layers.js";
 import { selectedIds } from "../editor/selection.js";
-import { starterSite } from "../editor/starter-site.js";
 import { sessionWith } from "../testing/fixtures.js";
 import {
   deleteSelected,

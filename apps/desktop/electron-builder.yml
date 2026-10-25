@@ -7,8 +7,9 @@ directories:
   buildResources: build
 files:
   - out/**
-  # The fonts go beside app.asar instead (below).
+  # The fonts and templates go beside app.asar instead (below).
   - "!out/fonts/**"
+  - "!out/templates/**"
   - package.json
   # Production dependencies (only better-sqlite3) are added from node_modules automatically.
   # Ship only the prebuilt binary for the platform being packaged, not SQLite's C sources.
@@ -20,6 +21,10 @@ files:
 extraResources:
   - from: out/fonts
     to: fonts
+  # The templates New Site offers (2.14a): each a folder with its template.json, images.json and
+  # images, read and checked by the main process when it lists them or makes a site from one.
+  - from: out/templates
+    to: templates
 asar: true
 # Native addons can't be loaded from inside an asar archive.
 asarUnpack:

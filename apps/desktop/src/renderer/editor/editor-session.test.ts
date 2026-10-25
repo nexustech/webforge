@@ -9,6 +9,7 @@ import {
 import { starterPage } from "@webforge/site-components";
 import { createFakeEngine } from "@webforge/test-utils/renderer";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { starterSite } from "../../shared/starter-site.js";
 import { sessionWith } from "../testing/fixtures.js";
 import {
   connectEngine,
@@ -18,7 +19,6 @@ import {
   TEXT_SESSION_GRACE_MS,
   TYPING_PAUSE_MS,
 } from "./editor-session.js";
-import { starterSite } from "./starter-site.js";
 
 const withHeadingText = (page: PageDoc, text: string): PageDoc => {
   const section = page.content[0];

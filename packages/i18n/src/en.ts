@@ -10,6 +10,7 @@ import { puck } from "./en/puck.js";
 import { shell } from "./en/shell.js";
 import { site } from "./en/site.js";
 import { storage } from "./en/storage.js";
+import { templates } from "./en/templates.js";
 
 /**
  * The per-area catalogues that make up the English UI strings. Each area lives in its own file under
@@ -29,6 +30,7 @@ export const areas = {
   fonts,
   puck,
   errors,
+  templates,
 } as const;
 
 /**
@@ -48,4 +50,5 @@ export const en = {
   ...fonts,
   ...puck,
   ...errors,
+  ...templates,
 } as const;

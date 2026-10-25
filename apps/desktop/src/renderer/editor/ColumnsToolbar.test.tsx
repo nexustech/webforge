@@ -5,6 +5,7 @@ import { TooltipProvider } from "@webforge/editor-ui";
 import type { NodeDoc } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { starterSite } from "../../shared/starter-site.js";
 import { CanvasToolbarHost } from "../shell/CanvasToolbarHost.js";
 import { createCanvasView } from "../shell/canvas-view.js";
 import { ContextualToolbarsProvider } from "../shell/contextual-toolbar-context.js";
@@ -13,7 +14,6 @@ import { createPreferencesStore } from "../shell/preferences-store.js";
 import { columnsToolbar } from "./ColumnsToolbar.js";
 import { createPreviewStore } from "./edit-previews.js";
 import { createEditorSession, currentPage } from "./editor-session.js";
-import { starterSite } from "./starter-site.js";
 
 afterEach(cleanup);
 

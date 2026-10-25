@@ -10,7 +10,7 @@ import {
 } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { describe, expect, it } from "vitest";
-import { starterSite } from "../editor/starter-site.js";
+import { starterSite } from "../../shared/starter-site.js";
 import { mediaUsage, unplacedSharedUsage } from "./media-usage.js";
 
 const hero = (id: string, mediaId: string, more: Record<string, unknown> = {}): NodeDoc => ({

@@ -1,0 +1,28 @@
+import type { TemplateFolder } from "@webforge/templates/node";
+import type { IpcMain } from "electron";
+import type { TemplateSummary } from "../shared/ipc/templates.js";
+import { registerIpcHandler } from "./ipc.js";
+
+/** What New Site shows of a template (2.14a): never its content, which only main reads. */
+function templateSummary({ template }: TemplateFolder): TemplateSummary {
+  const pages = Object.values(template.site.pages).filter((page) => page.kind === "page");
+  return {
+    id: template.id,
+    category: template.category,
+    example: template.example,
+    pages: pages.length,
+    theme: template.site.theme.preset,
+  };
+}
+
+/**
+ * Registers the `templates` IPC calls (2.14a): the templates the app ships, as `templates` gives
+ * them (read once, from the folder the installer puts beside app.asar).
+ */
+export function registerTemplatesHandlers(
+  ipc: Pick<IpcMain, "handle">,
+  isTrustedSender: (senderUrl: string) => boolean,
+  templates: () => readonly TemplateFolder[],
+): void {
+  registerIpcHandler(ipc, "listTemplates", isTrustedSender, () => templates().map(templateSummary));
+}
