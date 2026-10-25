@@ -95,6 +95,32 @@ describe("installHistoryKeys", () => {
     remove();
   });
 
+  it("leaves the gestures it is told to ignore, as a dialog's text's own undo (#421 review)", () => {
+    const onCommand = vi.fn();
+    const field = document.createElement("input");
+    document.body.append(field);
+    const remove = installHistoryKeys(window, onCommand, {
+      ignore: (event) => event.target === field,
+    });
+
+    const key = new KeyboardEvent("keydown", { key: "z", ctrlKey: true, cancelable: true });
+    field.dispatchEvent(key);
+    field.dispatchEvent(new InputEvent("beforeinput", { inputType: "historyUndo" }));
+    document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "z", ctrlKey: true }));
+
+    expect(key.defaultPrevented).toBe(false);
+    expect(onCommand.mock.calls).toEqual([["undo"]]);
+    // Nothing after it saw the key (Puck's hotkeys would take it), but Esc goes on to the dialog.
+    const after = vi.fn();
+    window.addEventListener("keydown", after);
+    field.dispatchEvent(new KeyboardEvent("keydown", { key: "z", ctrlKey: true, bubbles: true }));
+    field.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    window.removeEventListener("keydown", after);
+    expect(after.mock.calls.map(([event]) => event.key)).toEqual(["Escape"]);
+    remove();
+    field.remove();
+  });
+
   it("stops listening when removed", () => {
     const onCommand = vi.fn();
     installHistoryKeys(window, onCommand)();

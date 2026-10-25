@@ -7,6 +7,6 @@ import { registerLayersPanel } from "./register-layers-panel.js";
  */
 export const layersPanelArea: Area<WindowContext> = {
   id: "layersPanel",
-  register: ({ panels, session, preferences }) =>
-    registerLayersPanel(panels, session, { preferences }),
+  register: ({ panels, session, preferences, canvasPointer }) =>
+    registerLayersPanel(panels, session, { preferences, canvas: canvasPointer }),
 };

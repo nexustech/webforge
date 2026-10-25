@@ -41,6 +41,11 @@ function registry(shared: { save: boolean; detach: boolean }) {
     run: () => run("similar"),
   });
   commands.register({
+    id: ELEMENT_MENU_COMMANDS.selectParent,
+    label: "Select parent",
+    run: () => run("parent"),
+  });
+  commands.register({
     id: ELEMENT_MENU_COMMANDS.remove,
     label: "Delete",
     enabled: false,
@@ -70,10 +75,23 @@ describe("ElementMenu (1.35)", () => {
       ["DuplicateCtrl+D", false],
       ["Save as shared section…", false],
       ["Select similar", false],
+      ["Select parentCtrl+↑", false],
       ["DeleteDelete", true],
     ]);
     await userEvent.click(menu().getByRole("menuitem", { name: /Duplicate/ }));
     expect(run).toHaveBeenCalledWith("duplicate");
+  });
+
+  it("selects the element's parent, on the canvas and in Layers alike (SP-9)", async () => {
+    const { commands, run } = registry({ save: true, detach: false });
+    render(
+      <CommandRegistryProvider registry={commands}>
+        <ElementMenu at={{ x: 10, y: 20 }} onClose={vi.fn()} onRename={vi.fn()} />
+      </CommandRegistryProvider>,
+    );
+
+    await userEvent.click(menu().getByRole("menuitem", { name: /Select parent/ }));
+    expect(run).toHaveBeenCalledWith("parent");
   });
 
   it("renames once it has closed, as the menu was when Rename was chosen (R10)", async () => {
@@ -117,6 +135,7 @@ describe("ElementMenu (1.35)", () => {
       ["DuplicateCtrl+D", false],
       ["Detach from shared section", false],
       ["Select similar", false],
+      ["Select parentCtrl+↑", false],
       ["DeleteDelete", true],
     ]);
   });
@@ -149,7 +168,7 @@ describe("ElementMenu (1.35)", () => {
       </CommandRegistryProvider>,
     );
 
-    expect(items().slice(4, 8)).toEqual([
+    expect(items().slice(5, 9)).toEqual([
       ["CutCtrl+X", false],
       ["CopyCtrl+C", false],
       ["PasteCtrl+V", false],
@@ -174,7 +193,7 @@ describe("ElementMenu (1.35)", () => {
       </CommandRegistryProvider>,
     );
 
-    expect(items().slice(4, 6)).toEqual([
+    expect(items().slice(5, 7)).toEqual([
       ["Copy StyleCtrl+Alt+C", false],
       ["Paste Style (onto a Heading)Ctrl+Alt+V", true],
     ]);

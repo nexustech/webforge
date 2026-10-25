@@ -27,7 +27,7 @@ import { createCanvasSelection } from "./canvas-selection.js";
 import { createCanvasSync } from "./canvas-sync.js";
 import { createCanvasView } from "./canvas-view.js";
 import { preserveCaret } from "./caret.js";
-import { outlineElement } from "./chrome.js";
+import { canvasZoom, outlineElement } from "./chrome.js";
 import { toPuckConfig } from "./config.js";
 import { deferredCommands } from "./deferred-commands.js";
 import { puckDictionary } from "./dictionary.js";
@@ -46,6 +46,7 @@ import {
   toPuckData,
 } from "./engine-support.js";
 import { hidePuckLayout } from "./layout-styles.js";
+import { showDropMark, showOutlineChip } from "./marks.js";
 import type { SlotsOf } from "./page-actions.js";
 import { createPuckOverrides } from "./puck-overrides.js";
 import { type CanvasParts, splitRenderContext } from "./render-context-sources.js";
@@ -272,6 +273,9 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
 
   /** The canvas's document: the iframe's, or the editor's without one. */
   const canvasDocument = () => frame.document() ?? host?.ownerDocument;
+  /** The canvas's scale, which the marks drawn on it keep the same size on screen through. */
+  const zoomOf = (doc: Document | undefined) =>
+    doc === undefined ? 1 : canvasZoom(doc.documentElement);
 
   return {
     mount(el, opts) {
@@ -333,7 +337,16 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       };
     },
 
-    outline: (nodeId) => outlineElement(canvasDocument(), nodeId),
+    outline(nodeId) {
+      const doc = canvasDocument();
+      outlineElement(doc, nodeId);
+      const name = nodeId === null ? undefined : names(page.docs()).get(nodeId);
+      showOutlineChip(doc, nodeId, name, zoomOf(doc));
+    },
+    markDrop: (mark) => {
+      const doc = canvasDocument();
+      showDropMark(doc, mark, zoomOf(doc));
+    },
 
     select: selection.select,
 

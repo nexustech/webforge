@@ -4,6 +4,7 @@ export type {
   CanvasEngine,
   CanvasSize,
   DocChange,
+  DropMark,
   EditorMode,
   ElementRequest,
   EngineEdit,

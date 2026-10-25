@@ -10,6 +10,7 @@ import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
 import type { ContextualToolbarRegistry } from "../shell/contextual-toolbars.js";
 import type { PanelRegistry } from "../shell/panels.js";
 import type { PreferencesStore } from "../shell/preferences-store.js";
+import type { CanvasPointer } from "./canvas-pointer.js";
 import type { PreviewChoices } from "./edit-previews.js";
 import type { EditorSession } from "./editor-session.js";
 import type { EngineHandle } from "./engine-host.js";
@@ -46,6 +47,8 @@ export type WindowContext = AreaContext & {
   readonly siteWide: Pick<SiteWideConfirm, "confirmSiteWide">;
   /** The canvas toolbar's zoom and size readout (1.15). */
   readonly canvasView: CanvasView;
+  /** What a panel points at on the canvas: an element to outline, a drop point (SP-8, SP-10). */
+  readonly canvasPointer: CanvasPointer;
   /** Exports a site. */
   readonly exportSite: (request: ExportRequest) => Promise<ExportResult>;
 };

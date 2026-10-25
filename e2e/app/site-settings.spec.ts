@@ -66,6 +66,34 @@ test("edits Site Settings from the File menu, fixing what Save points at, as one
   }
 });
 
+test("Ctrl/Cmd+Z in Site Settings' text undoes the text, not the site's last step (#421 review)", async () => {
+  app = await launchDesktopApp({ args: [sitePath] });
+  const page = await app.firstWindow();
+  await expect(page.getByRole("banner").getByRole("status")).toHaveText("Saved", {
+    timeout: 30_000,
+  });
+  const dialog = page.getByRole("dialog", { name: "Site Settings" });
+  const name = dialog.getByLabel("Site name");
+  // A step of the site's own to undo, if the keys went to the site.
+  await chooseFromMenu(app, page, "File", "Site Settings…");
+  await name.fill("Rosa's");
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(dialog).toHaveCount(0);
+
+  await chooseFromMenu(app, page, "File", "Site Settings…");
+  await name.click();
+  await name.press("End");
+  await name.pressSequentially(" Bakery", { delay: 20 });
+  await expect(name).toHaveValue("Rosa's Bakery");
+  await page.keyboard.press("ControlOrMeta+z");
+  await expect(name).not.toHaveValue("Rosa's Bakery");
+  await dialog.getByRole("button", { name: "Cancel" }).click();
+
+  // The site kept its step: its name is still the saved one.
+  await chooseFromMenu(app, page, "File", "Site Settings…");
+  await expect(name).toHaveValue("Rosa's");
+});
+
 test("shows Site Settings values in bound elements, on the canvas and in the export", async () => {
   app = await launchDesktopApp();
   const page = await app.firstWindow();

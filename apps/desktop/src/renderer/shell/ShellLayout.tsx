@@ -1,4 +1,5 @@
 import {
+  Button,
   ResizableHandle,
   type ResizableLayout,
   ResizablePanel,
@@ -11,6 +12,7 @@ import {
   TabsTrigger,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
+import { SearchIcon } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import type { Preferences } from "../../shared/ipc-contract.js";
 import { useCommandRegistry } from "./command-context.js";
@@ -112,7 +114,26 @@ function PanelTabs({
       }),
     [registry, slots, editorLevel],
   );
+  const tabs = useRef<HTMLDivElement>(null);
   const first = panels[0];
+  const activeId = (panels.find((panel) => panel.id === chosen) ?? first)?.id;
+  // The shown panel's search field, while it has one (the Edit panel's shows with a selection):
+  // the strip's magnifier focuses it (LF-5), and is there only then.
+  const [search, setSearch] = useState<HTMLInputElement | null>(null);
+  useEffect(() => {
+    const root = tabs.current;
+    if (root === null || activeId === undefined) return;
+    const find = () =>
+      setSearch(
+        root.querySelector<HTMLInputElement>(
+          `[data-panel="${CSS.escape(activeId)}"] input[type="search"]`,
+        ),
+      );
+    find();
+    const observer = new MutationObserver(find);
+    observer.observe(root, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [activeId]);
   if (first === undefined) {
     return (
       <div className="flex h-full items-center justify-center bg-panel p-4 text-center text-xs text-muted-foreground">
@@ -120,21 +141,39 @@ function PanelTabs({
       </div>
     );
   }
+  const active = panels.find((panel) => panel.id === chosen) ?? first;
   return (
-    <Tabs
-      value={panels.some((panel) => panel.id === chosen) ? (chosen ?? first.id) : first.id}
-      onValueChange={setChosen}
-      className="h-full"
-    >
-      <TabsList>
-        {panels.map((panel) => (
-          <TabsTrigger key={panel.id} value={panel.id}>
-            {panel.title}
-          </TabsTrigger>
-        ))}
-      </TabsList>
+    <Tabs ref={tabs} value={active.id} onValueChange={setChosen} className="h-full">
+      <div className="flex shrink-0 items-center bg-tabs">
+        <TabsList className="min-w-0 flex-1">
+          {panels.map((panel) => (
+            <TabsTrigger key={panel.id} value={panel.id}>
+              {panel.title}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+        {search !== null ? (
+          // The panel's search, from the strip's right end (LF-5).
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            className="mr-1"
+            aria-label={t("panels.search", { panel: active.title })}
+            title={t("panels.search", { panel: active.title })}
+            onClick={() => search.focus()}
+          >
+            <SearchIcon />
+          </Button>
+        ) : null}
+      </div>
       {panels.map((panel) => (
-        <TabsContent key={panel.id} value={panel.id} className="overflow-auto">
+        <TabsContent
+          key={panel.id}
+          value={panel.id}
+          data-panel={panel.id}
+          className="overflow-auto"
+        >
           <PanelErrorBoundary>
             <panel.component />
           </PanelErrorBoundary>
