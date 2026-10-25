@@ -11,7 +11,7 @@ import { HONEYPOT_NAME } from "../form.js";
 import { EDITOR_RENDER_CONTEXT } from "../library.js";
 import { renderNodesToHtml } from "../render-static.js";
 import type { RenderContext } from "../schema.js";
-import { emailFieldName } from "./forms.js";
+import { createFieldNames, emailFieldName, fieldNameBase } from "./forms.js";
 import { siteLibrary } from "./index.js";
 
 const happy = new Window();
@@ -185,5 +185,110 @@ describe("forms in linked copies (F-ED-23)", () => {
     const ids = [...host.querySelectorAll("[id]")].map((element) => element.id);
     expect(ids.length).toBeGreaterThan(4);
     expect(new Set(ids).size).toBe(ids.length);
+  });
+});
+
+describe("the Form and its fields (2.11, S1)", () => {
+  const field = (id: string, props: Record<string, unknown>): NodeDoc => ({
+    type: "FormField",
+    props: { id, ...siteLibrary.components.FormField?.defaults, ...props },
+  });
+  const form = (fields?: NodeDoc[], props: Record<string, unknown> = {}): NodeDoc => ({
+    type: "Form",
+    props: {
+      id: "enquiry",
+      ...siteLibrary.components.Form?.defaults,
+      ...(fields === undefined ? {} : { fields }),
+      ...props,
+    },
+  });
+  const names = (host: ReturnType<typeof drawn>) =>
+    [...host.querySelectorAll("[name]")].map((control) => control.getAttribute("name"));
+
+  it("starts asking for a name, an email address and a message, all required", () => {
+    const host = drawn(form());
+
+    expect(names(host)).toEqual(["name", "email", "message", HONEYPOT_NAME]);
+    for (const control of host.querySelectorAll(".site-form-field [name]")) {
+      expect(control.hasAttribute("required")).toBe(true);
+      expect(control.getAttribute("aria-required")).toBe("true");
+    }
+    // Marked for the eye, the mark skipped by screen readers.
+    expect(host.querySelector("label span")?.getAttribute("aria-hidden")).toBe("true");
+    // Ids unique on the page: the form's, then the field's name.
+    expect(host.querySelector("label")?.getAttribute("for")).toBe("enquiry-name");
+    expect(host.querySelector("form")?.getAttribute("aria-label")).toBe(t("starter.formLabel"));
+  });
+
+  it("names each field from its label, uniquely, in plain letters or by its place", () => {
+    const host = drawn(
+      form([
+        field("a", { kind: "text", label: "Téléphone" }),
+        field("b", { kind: "text", label: "電話" }),
+        field("c", { kind: "text", label: "Téléphone" }),
+        field("d", { kind: "email", label: "Your e-mail" }),
+        field("e", { kind: "email", label: "A second email" }),
+      ]),
+    );
+
+    expect(names(host).slice(0, 5)).toEqual([
+      "telephone",
+      "field-2",
+      "telephone-2",
+      "email",
+      "email-2",
+    ]);
+  });
+
+  it("keeps a field's name when it's drawn again alone, and renames it with its label", () => {
+    const fields = createFieldNames("f");
+
+    expect(fields.claim("a", "text", "Name")).toEqual({ name: "name", id: "f-name" });
+    expect(fields.claim("b", "text", "Name")).toEqual({ name: "name-2", id: "f-name-2" });
+    expect(fields.claim("a", "text", "Name").name).toBe("name");
+    expect(fields.claim("b", "text", "Company").name).toBe("company");
+    expect(fieldNameBase("checkbox", "  ", 4)).toBe("field-4");
+  });
+
+  it("offers a tick box and a choice from its list, with the honeypot out of reach", () => {
+    const host = drawn(
+      form([
+        field("a", { kind: "checkbox", label: "Send me news" }),
+        field("b", {
+          kind: "select",
+          label: "Cake",
+          options: [
+            { id: "1", label: "Lemon" },
+            { id: "2", label: " " },
+            { id: "3", label: "Chocolate" },
+          ],
+        }),
+      ]),
+    );
+
+    expect(host.querySelector("input[type=checkbox]")?.getAttribute("name")).toBe("send-me-news");
+    const choices = [...host.querySelectorAll("select option")].map((option) => option.textContent);
+    expect(choices).toEqual([t("siteText.form.choose"), "Lemon", "Chocolate"]);
+    const honeypot = host.querySelector(`[name="${HONEYPOT_NAME}"]`);
+    expect(honeypot?.getAttribute("tabindex")).toBe("-1");
+    expect(honeypot?.closest("[hidden]")).not.toBeNull();
+  });
+
+  it("posts to the form service in Site Settings, else draws and says where to choose one", () => {
+    const sending = drawn(form(), {
+      ...EDITOR_RENDER_CONTEXT,
+      formService: { kind: "formspree", formId: "xyzAbc12" },
+    });
+    expect(sending.querySelector("form")?.getAttribute("action")).toBe(
+      "https://formspree.io/f/xyzAbc12",
+    );
+
+    const unset = drawn(form(), {
+      ...EDITOR_RENDER_CONTEXT,
+      formHint: (reason) => `Hint: ${reason}`,
+    });
+    expect(unset.querySelector("form")?.hasAttribute("action")).toBe(false);
+    expect(unset.textContent).toContain("Hint: noService");
+    expect(unset.querySelector("button[type=submit]")?.hasAttribute("disabled")).toBe(true);
   });
 });

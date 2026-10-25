@@ -73,3 +73,107 @@ export const NewsletterBesideText: Story = {
     ],
   },
 };
+
+/** A Form element in a Section, as it starts: a name, an email address and a message (2.11). */
+export const FormElement: Story = {
+  args: {
+    nodes: [
+      {
+        type: "Section",
+        props: {
+          id: "section",
+          ...siteLibrary.components.Section?.defaults,
+          content: [
+            { type: "Heading", props: { id: "heading", text: "Book a table", size: "medium" } },
+            { type: "Form", props: { id: "booking", ...siteLibrary.components.Form?.defaults } },
+          ],
+        },
+      },
+    ],
+  },
+};
+
+/** A Form with every kind of field: some optional, a tick box and a choice from a list. */
+export const FormEveryField: Story = {
+  args: {
+    nodes: [
+      {
+        type: "Section",
+        props: {
+          id: "section",
+          ...siteLibrary.components.Section?.defaults,
+          content: [
+            {
+              type: "Form",
+              props: {
+                id: "order",
+                ...siteLibrary.components.Form?.defaults,
+                label: "Cake order",
+                buttonLabel: "Order",
+                fields: [
+                  {
+                    type: "FormField",
+                    props: { id: "f1", kind: "text", label: "Name", required: true, options: [] },
+                  },
+                  {
+                    type: "FormField",
+                    props: {
+                      id: "f2",
+                      kind: "email",
+                      label: "Email address",
+                      required: true,
+                      options: [],
+                    },
+                  },
+                  {
+                    type: "FormField",
+                    props: {
+                      id: "f3",
+                      kind: "phone",
+                      label: "Phone number",
+                      required: false,
+                      options: [],
+                    },
+                  },
+                  {
+                    type: "FormField",
+                    props: {
+                      id: "f4",
+                      kind: "select",
+                      label: "Cake",
+                      required: true,
+                      options: [
+                        { id: "o1", label: "Lemon drizzle" },
+                        { id: "o2", label: "Chocolate" },
+                      ],
+                    },
+                  },
+                  {
+                    type: "FormField",
+                    props: {
+                      id: "f5",
+                      kind: "message",
+                      label: "Message on the cake",
+                      required: false,
+                      options: [],
+                    },
+                  },
+                  {
+                    type: "FormField",
+                    props: {
+                      id: "f6",
+                      kind: "checkbox",
+                      label: "Send me news now and then",
+                      required: false,
+                      options: [],
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      },
+    ],
+  },
+};

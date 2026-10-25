@@ -6,6 +6,7 @@ import { basicComponents } from "./basic.js";
 import { carouselComponents } from "./carousel.js";
 import { commerceComponents } from "./commerce.js";
 import { contactDetailsComponents } from "./contact-details.js";
+import { customCodeComponents } from "./custom-code.js";
 import { elementsComponents } from "./elements.js";
 import { embedsComponents } from "./embeds.js";
 import { featuresComponents } from "./features.js";
@@ -40,6 +41,7 @@ export const siteLibrary: ComponentLibrary = createLibrary(
   pricingComponents,
   commerceComponents,
   tabsComponents,
+  customCodeComponents,
 );
 
 /** The page a new site starts with. */

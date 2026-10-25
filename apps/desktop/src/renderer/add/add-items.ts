@@ -43,6 +43,8 @@ export type AddItem = {
    * so it can't be a favourite.
    */
   readonly suggested?: true;
+  /** Set for a component offered in Advanced mode only (Custom Code, F-ED-11). */
+  readonly advancedOnly?: true;
   /**
    * Set for a component's preset (the Booking button, a Button, 2.11), whose `type` is
    * {@link presetKey}'s. A click places it; it can't be dragged, as the canvas drags in components.
@@ -81,16 +83,26 @@ export function addItems(library: ComponentLibrary, tab: AddTab): AddItem[] {
     .filter(([, def]) => (def.place ?? "element") === place)
     .flatMap(([type, def]) => {
       const category = def.category ?? "";
+      const level = def.advancedOnly === true ? { advancedOnly: true as const } : {};
       return [
-        { type, label: def.label, category },
+        { type, label: def.label, category, ...level },
         ...(def.presets ?? []).map((preset) => ({
           type: presetKey(type, preset.id),
           label: preset.label,
           category,
           preset: true as const,
+          ...level,
         })),
       ];
     });
+}
+
+/**
+ * `items` as the Add panel offers them in `level`: in Simple mode, none offered in Advanced mode
+ * only (Custom Code, F-ED-11). One already on a page stays there in either mode.
+ */
+export function forLevel(items: readonly AddItem[], level: "simple" | "advanced"): AddItem[] {
+  return level === "advanced" ? [...items] : items.filter((item) => item.advancedOnly !== true);
 }
 
 /** The site's shared sections, by name, as the Sections tab offers them first (F-ED-23). */

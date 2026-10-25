@@ -235,7 +235,11 @@ const embedVideo = defineComponent({
     ...ELEMENT_FIELDS,
   },
   defaults: { address: "", name: "" },
-  behaviours: (values) => ["embed", ...entranceBehaviours(values)],
+  // The behaviour only for a video there is: an address that isn't one exports nothing.
+  behaviours: (values) => [
+    ...(videoEmbed(plainText(values.address) ?? "") === null ? [] : (["embed"] as const)),
+    ...entranceBehaviours(values),
+  ],
   render: ({ values, context }) => (
     <EmbedElement
       name="embed-video"
@@ -265,7 +269,15 @@ const embedMap = defineComponent({
     ...ELEMENT_FIELDS,
   },
   defaults: { address: "", name: "" },
-  behaviours: (values) => ["embed", ...entranceBehaviours(values)],
+  // The behaviour only for a map there is. Bound to Site Settings, whose address isn't known here,
+  // it is listed, as the address may be filled in.
+  behaviours: (values) => [
+    ...(bindingOf(values.bindings, "address") !== undefined ||
+    mapEmbed(plainText(values.address) ?? "") !== null
+      ? (["embed"] as const)
+      : []),
+    ...entranceBehaviours(values),
+  ],
   render: ({ values, context }) => (
     <EmbedElement
       name="embed-map"
