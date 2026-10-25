@@ -152,8 +152,17 @@ export const themeTokensSchema = z.strictObject({
   spacing: z.enum(["compact", "normal", "roomy"]),
   /** The type scale: each text style's size, weight and line height. */
   typeScale: z.record(z.enum(TEXT_STYLES), textStepSchema),
-  /** Links in text. */
-  links: z.strictObject({ underline: z.enum(["always", "hover", "never"]) }),
+  /**
+   * Links in text: always underlined, or on hover (and keyboard focus) only, in the main colour
+   * then. A site from before #427 may say "never", which became the same as "hover" when links
+   * were always underlined on hover and focus (WCAG 1.4.1, #426): it reads as "hover".
+   */
+  links: z.strictObject({
+    underline: z.preprocess(
+      (value) => (value === "never" ? "hover" : value),
+      z.enum(["always", "hover"]),
+    ),
+  }),
   buttons: z.strictObject({
     shape: z.enum(["square", "rounded", "pill"]),
     size: z.enum(["s", "m", "l"]),

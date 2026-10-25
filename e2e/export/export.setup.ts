@@ -22,7 +22,7 @@ type ExportingWindow = { webforge: { site: { export(request: ExportRequest): Pro
 // them by hash.
 /**
  * `site` in a theme of its own (#423): square, large, outline buttons, strong shadows and links
- * never underlined, with running text that has a link in it and a Button set to Filled on the
+ * underlined only on hover, with running text that has a link in it and a Button set to Filled on the
  * home page.
  */
 function themed(site: SiteSnapshot): SiteSnapshot {
@@ -44,7 +44,7 @@ function themed(site: SiteSnapshot): SiteSnapshot {
       preset: "outline",
       buttons: { shape: "square", size: "l", style: "outline" },
       shadow: "strong",
-      links: { underline: "never" },
+      links: { underline: "hover" },
     },
     pages: [
       { ...home, doc: { ...home.doc, content: [...home.doc.content, linked, filled] } },

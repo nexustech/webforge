@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { themedPageUrl } from "./exported-site.js";
 
 // The fixture site exported in a theme of its own (#423, export.setup.ts): square, large, outline
-// buttons, strong shadows and links never underlined, each as the browser draws it.
+// buttons, strong shadows and links underlined only on hover, each as the browser draws it.
 
 test("draws its buttons, shadows and links as the theme says (#423)", async ({ page }) => {
   await page.goto(themedPageUrl("index.html"));
@@ -39,7 +39,7 @@ test("draws its buttons, shadows and links as the theme says (#423)", async ({ p
     .evaluate((element) => getComputedStyle(element).boxShadow);
   expect(shadow).toMatch(/0\.2\)/);
 
-  // A link in running text: never underlined.
+  // A link in running text: not underlined until it's hovered or focused.
   const link = page.getByRole("link", { name: "our story" });
   expect(await link.evaluate((element) => getComputedStyle(element).textDecorationLine)).toBe(
     "none",
