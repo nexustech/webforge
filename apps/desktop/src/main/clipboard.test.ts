@@ -168,6 +168,28 @@ describe("element clipboard (1.25)", () => {
     expect(existsSync(dir)).toBe(false);
   });
 
+  it("keeps the images of a copy made while it looked at the clipboard", async () => {
+    let answer: (holds: boolean) => void = () => undefined;
+    const made = createElementClipboard(
+      {
+        ...system,
+        holdsElements: () =>
+          new Promise((resolve) => {
+            answer = resolve;
+          }),
+      },
+      dir,
+    );
+
+    // The window is focused, then the person copies at once, before the look has answered.
+    const looking = made.forgetIfReplaced();
+    await made.write(fakeSite().site, { nodes: [hero], media: [photo] });
+    answer(false);
+    await looking;
+
+    expect(readdirSync(dir)).toEqual([photo.hash]);
+  });
+
   it("keeps the copied images when it can't tell what the clipboard holds", async () => {
     const made = createElementClipboard(
       { ...system, holdsElements: () => Promise.reject(new Error("busy")) },

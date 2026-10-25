@@ -190,6 +190,18 @@ export function createElementClipboard(system: SystemClipboard, dir: string) {
     }
   };
 
+  /** Copies begun, and those still writing: a check that began before one mustn't undo it. */
+  let copiesBegun = 0;
+  let copying = 0;
+
+  /**
+   * Removes the kept bytes after a look at the clipboard that began when `copiesBegun` was
+   * `before`, unless a copy has begun since: its images are the clipboard's now.
+   */
+  const forgetUnlessCopied = (before: number): void => {
+    if (copying === 0 && copiesBegun === before) forgetKept();
+  };
+
   /** The kept bytes of `item`, if they are still there and unchanged. */
   const readKept = (item: MediaMeta): Uint8Array | undefined => {
     const path = join(dir, item.hash);
@@ -225,6 +237,8 @@ export function createElementClipboard(system: SystemClipboard, dir: string) {
       if (site.current() === null) {
         return { status: "failed", reason: "no-site" };
       }
+      copiesBegun += 1;
+      copying += 1;
       try {
         mkdirSync(dir, { recursive: true });
         const media: MediaMeta[] = [];
@@ -251,6 +265,8 @@ export function createElementClipboard(system: SystemClipboard, dir: string) {
       } catch (error) {
         failed("copy elements", error);
         return { status: "failed", reason: "unknown" };
+      } finally {
+        copying -= 1;
       }
     },
 
@@ -262,6 +278,7 @@ export function createElementClipboard(system: SystemClipboard, dir: string) {
       site: ClipboardSite,
       importMedia: ClipboardMediaImport,
     ): Promise<ClipboardReadResult> {
+      const before = copiesBegun;
       let content: ClipboardContent;
       try {
         content = await system.read({
@@ -276,7 +293,7 @@ export function createElementClipboard(system: SystemClipboard, dir: string) {
       }
       if (content.kind !== "elements") {
         // Something else was copied since: the kept images are no longer the clipboard's.
-        forgetKept();
+        forgetUnlessCopied(before);
       }
       if (content.kind === "none") {
         return { status: "empty" };
@@ -326,13 +343,14 @@ export function createElementClipboard(system: SystemClipboard, dir: string) {
      * them: the next paste or quit decides.
      */
     async forgetIfReplaced(): Promise<void> {
+      const before = copiesBegun;
       let holds: boolean;
       try {
         holds = await system.holdsElements();
       } catch {
         return;
       }
-      if (!holds) forgetKept();
+      if (!holds) forgetUnlessCopied(before);
     },
   };
 }
