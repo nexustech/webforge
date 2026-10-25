@@ -37,10 +37,14 @@ export function boxHandleFields(
 }
 
 /**
- * The handles' styles (UI1 §3, 1.32): thin magenta grips, inside the element's edges for padding
- * and outside them for margin, the same size on screen whatever the zoom. Top and bottom grips sit
- * left of the middle, clear of the floating + on a section's bottom edge.
+ * The handles' styles (UI1 §3, 1.32, SP-3): thin grips, inside the element's edges for padding and
+ * outside them for margin, tinted as the spacing overlay tints them (padding green, margin warm),
+ * the same size on screen whatever the zoom. Top and bottom grips sit left of the middle, clear of
+ * the floating + on a section's bottom edge.
  */
+/** The grips' solid tints (SP-3): the spacing overlay's, strong enough to grab. */
+const GRIP_TINT = { margin: "#e8913a", padding: "#5f9e45" } as const;
+
 export const SPACING_HANDLES_CSS = `
 .wf-grip {
   position: absolute;
@@ -48,7 +52,6 @@ export const SPACING_HANDLES_CSS = `
   padding: 0;
   border: calc(1px / var(--wf-zoom, 1)) solid #fff;
   border-radius: calc(3px / var(--wf-zoom, 1));
-  background: var(--wf-outline-color);
   pointer-events: auto;
   touch-action: none;
 }
@@ -64,6 +67,8 @@ export const SPACING_HANDLES_CSS = `
   height: calc(28px / var(--wf-zoom, 1));
   cursor: ew-resize;
 }
+.wf-grip[data-property="padding"] { background: ${GRIP_TINT.padding}; }
+.wf-grip[data-property="margin"] { background: ${GRIP_TINT.margin}; }
 .wf-grip[data-property="padding"][data-side="top"] { top: calc(3px / var(--wf-zoom, 1)); }
 .wf-grip[data-property="padding"][data-side="bottom"] { bottom: calc(3px / var(--wf-zoom, 1)); }
 .wf-grip[data-property="padding"][data-side="left"] { left: calc(3px / var(--wf-zoom, 1)); }

@@ -68,13 +68,38 @@ test("shows Puck's canvas only: no Puck rail or panel, in Design or Content mode
 });
 
 test.describe("selection chrome", () => {
-  test("outlines the selected element in magenta", async () => {
+  test("outlines the selected element in the accent, its bar the accent too (LF-1, LF-3)", async () => {
     await selectHeading();
 
+    // The editor's accent, as the browser writes colours.
+    const accent = await page.evaluate(() => {
+      const probe = document.createElement("i");
+      probe.style.color = "var(--primary)";
+      document.body.append(probe);
+      const colour = getComputedStyle(probe).color;
+      probe.remove();
+      return colour;
+    });
     const outline = canvas().locator('.wf-outline[data-state="selected"]');
     await expect(outline).toHaveCount(1);
-    await expect(outline).toHaveCSS("outline-color", "rgb(240, 40, 243)");
+    await expect(outline).toHaveCSS("outline-color", accent);
     await expect(outline).toHaveCSS("outline-style", "solid");
+    await expect(canvas().locator('[class*="_ActionBar_"]').first()).toHaveCSS(
+      "background-color",
+      accent,
+    );
+  });
+
+  test("its buttons work while the element's text is being edited, the format menu with them (LF-3)", async () => {
+    // Clicking the text edits it: the bar holds the format menu too.
+    await canvas().getByText(STARTER_TEXT).click();
+    await expect(quickAction("Bold")).toBeVisible();
+
+    // A press on the bar keeps the text focused, so the menu stays and the button under the
+    // pointer is the one clicked.
+    await quickAction("Delete").click();
+
+    await expect(canvas().getByText(STARTER_TEXT)).toHaveCount(0);
   });
 
   test("moves, duplicates and deletes the selected element, one undo step each", async () => {

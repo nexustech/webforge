@@ -1,4 +1,4 @@
-import { LAYOUT } from "./puck-dom.js";
+import { CANVAS, LAYOUT } from "./puck-dom.js";
 import { ensureStyle } from "./styles.js";
 
 /** Marks the element the canvas is mounted in, which {@link PUCK_LAYOUT_CSS} is scoped to. */
@@ -25,6 +25,12 @@ const PUCK_LAYOUT_CSS = `
   --puck-pluginbar-width: 0px !important;
   --puck-sidebar-left-width: 0px !important;
   --puck-sidebar-right-width: 0px !important;
+}
+/* LF-2: the page flush at the top of a flat backdrop (the editor's), with its own scrollbar. */
+[${CANVAS_HOST_ATTRIBUTE}] ${CANVAS} {
+  --puck-canvas-color-bg: transparent;
+  background: transparent;
+  padding-top: 0 !important;
 }
 `;
 
