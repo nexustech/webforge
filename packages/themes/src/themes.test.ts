@@ -18,6 +18,8 @@ import {
   shadeOf,
 } from "./colors.js";
 import { AA_LARGE, AA_TEXT, contrastIssues } from "./contrast.js";
+import { CURATED_THEMES } from "./curated/index.js";
+import { FONT_CATALOGUE, FONT_PAIRINGS } from "./fonts/catalogue.js";
 import { THEME_PRESETS, themePreset } from "./presets.js";
 import { oklchCss, themeCss } from "./theme-css.js";
 
@@ -192,7 +194,20 @@ describe("contrastIssues (2.1)", () => {
     expect(issues[0]?.ratio).toBe(Math.floor(contrastRatio(grey, WHITE) * 100) / 100);
   });
 
-  it("checks brand colours as large text on every surface", () => {
+  it("checks links apart from the text by colour alone against it: 3:1 (WCAG 1.4.1)", () => {
+    const theme = (underline: ThemeTokens["links"]["underline"]) =>
+      themeTokensSchema.parse({ ...DEFAULT_THEME, links: { underline } });
+    const linkIssues = (tokens: ThemeTokens) =>
+      contrastIssues(tokens).filter((issue) => issue.background === "base-content");
+
+    // The default theme's primary is close to its text: fine underlined, too close otherwise.
+    expect(linkIssues(theme("always"))).toEqual([]);
+    expect(
+      linkIssues(theme("never")).map((issue) => [issue.palette, issue.required]),
+    ).toContainEqual(["colors", AA_LARGE]);
+  });
+
+  it("checks the main colour as text on every surface: an outline button's label (2.13a)", () => {
     const theme = themeTokensSchema.parse({
       ...DEFAULT_THEME,
       colors: { ...DEFAULT_THEME.colors, primary: { l: 0.95, c: 0.02, h: 90 } },
@@ -202,20 +217,22 @@ describe("contrastIssues (2.1)", () => {
       (issue) => issue.palette === "colors" && issue.foreground === "primary",
     );
     expect(brand.map((issue) => [issue.background, issue.required])).toEqual([
-      ["base-100", AA_LARGE],
-      ["base-200", AA_LARGE],
-      ["base-300", AA_LARGE],
+      ["base-100", AA_TEXT],
+      ["base-200", AA_TEXT],
+      ["base-300", AA_TEXT],
     ]);
   });
 });
 
 describe("presets (2.1)", () => {
-  it("are three valid themes, light first as a new site's", () => {
+  it("are valid themes, the development ones first, light first as a new site's", () => {
     expect(THEME_PRESETS.map((preset) => preset.preset)).toEqual([
       "light",
       "dark",
       "high-contrast-rounded",
+      ...CURATED_THEMES.map((theme) => theme.preset),
     ]);
+    expect(new Set(THEME_PRESETS.map((preset) => preset.preset)).size).toBe(THEME_PRESETS.length);
     for (const preset of THEME_PRESETS) {
       expect(themeTokensSchema.parse(preset)).toEqual(preset);
     }
@@ -239,6 +256,71 @@ describe("presets (2.1)", () => {
         );
       }
     }
+  });
+});
+
+describe("curated themes (2.13)", () => {
+  it("use one of the tested font pairings, in weights the catalogue has", () => {
+    for (const theme of CURATED_THEMES) {
+      const { heading, body } = theme.fonts;
+      const headingFont = FONT_CATALOGUE.find((font) => font.family === heading.family);
+      const bodyFont = FONT_CATALOGUE.find((font) => font.family === body.family);
+      expect(headingFont, `${theme.preset}: ${heading.family}`).toBeDefined();
+      expect(bodyFont, `${theme.preset}: ${body.family}`).toBeDefined();
+      expect(headingFont?.fallback).toBe(heading.fallback);
+      expect(bodyFont?.fallback).toBe(body.fallback);
+      expect(
+        FONT_PAIRINGS.some(
+          (pairing) => pairing.heading === headingFont?.id && pairing.body === bodyFont?.id,
+        ),
+        `${theme.preset}: ${heading.family} with ${body.family}`,
+      ).toBe(true);
+      for (const style of ["h1", "h2", "h3", "h4", "h5", "h6"] as const) {
+        expect(headingFont?.weights, `${theme.preset} ${style}`).toContain(
+          theme.typeScale[style].weight,
+        );
+      }
+      expect(bodyFont?.weights).toContain(theme.typeScale.body.weight);
+    }
+  });
+
+  it("set their own inverse sections, dark under a light page", () => {
+    for (const theme of CURATED_THEMES) {
+      expect(theme.scheme).toBe("light");
+      const inverse = theme.inverse;
+      expect(inverse, theme.preset).toBeDefined();
+      if (inverse === undefined) continue;
+      expect(inverse["base-100"].l).toBeLessThan(0.4);
+      expect(inverse["base-content"].l).toBeGreaterThan(0.85);
+    }
+  });
+
+  it("look distinct: each its own fonts, brand colour and shape", () => {
+    // How far apart two colours look (OKLab's distance): about 0.02 is just noticeable.
+    const distance = (a: Oklch, b: Oklch) => {
+      const lab = ({ l, c, h }: Oklch) => [
+        l,
+        c * Math.cos((h * Math.PI) / 180),
+        c * Math.sin((h * Math.PI) / 180),
+      ];
+      const [x, y] = [lab(a), lab(b)];
+      return Math.hypot(...x.map((value, at) => value - (y[at] ?? 0)));
+    };
+    CURATED_THEMES.forEach((theme, index) => {
+      for (const other of CURATED_THEMES.slice(index + 1)) {
+        const pair = `${theme.preset} and ${other.preset}`;
+        expect(theme.fonts.heading.family, pair).not.toBe(other.fonts.heading.family);
+        expect(distance(theme.colors.primary, other.colors.primary), pair).toBeGreaterThan(0.1);
+        const shape = (t: ThemeTokens) => [
+          t.radius.box,
+          t.buttons.shape,
+          t.buttons.style,
+          t.spacing,
+        ];
+        const differences = shape(theme).filter((value, at) => value !== shape(other)[at]);
+        expect(differences.length, pair).toBeGreaterThanOrEqual(1);
+      }
+    });
   });
 });
 
@@ -284,7 +366,19 @@ describe("themeCss (2.1)", () => {
     const css = (change: Partial<ThemeTokens>) => themeCss({ ...DEFAULT_THEME, ...change });
 
     expect(css({ links: { underline: "never" } })).toContain("--wf-link-decoration: none;");
-    expect(css({ links: { underline: "never" } })).toContain("--wf-link-hover-decoration: none;");
+    // Underlined on hover and focus whatever the theme says, and in the main colour unless always
+    // underlined: a link must show it's one (WCAG 1.4.1, 2.13a).
+    expect(css({ links: { underline: "never" } })).toContain(
+      "--wf-link-hover-decoration: underline;",
+    );
+    expect(css({ links: { underline: "never" } })).toContain(
+      "--wf-link-color: var(--color-primary);",
+    );
+    expect(css({ links: { underline: "always" } })).toContain("--wf-link-color: currentColor;");
+    // The Shadow hover effect keeps a shadow under a theme without shadows.
+    expect(css({ shadow: "none" })).toContain(
+      "--wf-hover-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);",
+    );
     expect(css({ links: { underline: "hover" } })).toContain(
       "--wf-link-hover-decoration: underline;",
     );
@@ -308,6 +402,12 @@ describe("themeCss (2.1)", () => {
     );
     const ghost = css({ buttons: { shape: "pill", size: "m", style: "ghost" } });
     expect(ghost).toContain("@apply btn-ghost;");
+    // On a dark band, an outline or ghost button takes the band's text colour (2.13a).
+    for (const styled of [square, ghost]) {
+      expect(styled).toContain(
+        ".bg-neutral .btn-primary:not(.btn-outline, .btn-ghost, .btn-link, .wf-filled) {\n    --btn-color: var(--color-neutral-content);",
+      );
+    }
     const filled = css({ buttons: { shape: "pill", size: "m", style: "filled" } });
     expect(filled).not.toContain("@apply");
     // Rounded buttons keep the theme's field corners, as they always had.
@@ -316,6 +416,22 @@ describe("themeCss (2.1)", () => {
     expect(css({ radius: { box: "none", field: "full", selector: "s" } })).toContain(
       "--radius-selector: 0.25rem;\n  --radius-field: 9999px;\n  --radius-box: 0rem;",
     );
+  });
+
+  it("sets the page title a size smaller on phones, never above 4xl (#419)", () => {
+    const phone = (size: ThemeTokens["typeScale"]["h1"]["size"]) =>
+      /@media \(width < 48rem\) \{\s*:root \{\s*--text-h1: ([^;]+);/.exec(
+        themeCss({
+          ...DEFAULT_THEME,
+          typeScale: { ...DEFAULT_THEME.typeScale, h1: { ...DEFAULT_THEME.typeScale.h1, size } },
+        }),
+      )?.[1];
+    // The default theme's 5xl is 4xl, as its titles always were on phones.
+    expect(phone("5xl")).toBe("2.25rem");
+    // A display size stops at 4xl, so it fits a 375 px screen.
+    expect(phone("6xl")).toBe("2.25rem");
+    expect(phone("3xl")).toBe("1.5rem");
+    expect(phone("xs")).toBe("0.75rem");
   });
 
   it("quotes every font family the model allows, safely", () => {

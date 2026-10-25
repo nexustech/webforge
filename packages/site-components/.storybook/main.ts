@@ -1,5 +1,9 @@
 import type { StorybookConfig } from "@storybook/react-vite";
 import tailwindcss from "@tailwindcss/vite";
+import { themeGallery, writeThemeStylesheets } from "./theme-gallery.js";
+
+// Each preset's stylesheet, for the theme stories (2.13).
+writeThemeStylesheets();
 
 /**
  * Storybook for the site components (standards §5): every component's variants as the export
@@ -18,7 +22,7 @@ const config: StorybookConfig = {
   },
   viteFinal: (viteConfig) => ({
     ...viteConfig,
-    plugins: [...(viteConfig.plugins ?? []), tailwindcss()],
+    plugins: [...(viteConfig.plugins ?? []), tailwindcss(), themeGallery()],
   }),
 };
 

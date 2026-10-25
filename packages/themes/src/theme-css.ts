@@ -44,6 +44,9 @@ const LEADING: Readonly<Record<ThemeTokens["typeScale"]["h1"]["leading"], string
 /** Narrower than this, a page is on a phone: Tailwind's `md`, where layouts change. */
 const PHONE_WIDTH = "48rem";
 
+/** The largest page title on a phone: a 375 px screen fits a few words of it per line. */
+const PHONE_H1_MAX = "4xl";
+
 /** Tailwind's spacing unit for each spacing token: every padding, margin and gap scales with it. */
 const SPACING_UNIT: Readonly<Record<ThemeTokens["spacing"], string>> = {
   compact: "0.225rem",
@@ -87,6 +90,16 @@ const SHADOW_SCALE: Readonly<Record<ThemeTokens["shadow"], Readonly<Record<strin
     xl: "0 20px 25px -5px rgb(0 0 0 / 0.2), 0 8px 10px -6px rgb(0 0 0 / 0.2)",
     "2xl": "0 25px 50px -12px rgb(0 0 0 / 0.5)",
   },
+};
+
+/**
+ * The Shadow hover effect's shadow (2.12), which a person chooses for an element: the theme's
+ * large shadow, or Tailwind's own where the theme has none, so the effect never disappears.
+ */
+const HOVER_SHADOW: Readonly<Record<ThemeTokens["shadow"], string>> = {
+  none: "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
+  soft: "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
+  strong: "0 10px 15px -3px rgb(0 0 0 / 0.2), 0 4px 6px -4px rgb(0 0 0 / 0.2)",
 };
 
 /** daisyUI's look the theme gives its main buttons (#423): their own, or outline or ghost. */
@@ -177,6 +190,11 @@ function buttonRules(tokens: ThemeTokens): string[] {
           "  .btn-primary:not(.btn-outline, .btn-ghost, .btn-link, .wf-filled) {",
           `    @apply ${look};`,
           "  }",
+          // On a dark band (the Call to action, a Hero over its photo), in the band's text colour.
+          "  .bg-neutral .btn-primary:not(.btn-outline, .btn-ghost, .btn-link, .wf-filled) {",
+          "    --btn-color: var(--color-neutral-content);",
+          "    --btn-fg: var(--color-neutral);",
+          "  }",
         ]),
     "}",
   ];
@@ -203,9 +221,11 @@ function buttonRules(tokens: ThemeTokens): string[] {
  */
 export function themeCss(tokens: ThemeTokens): string {
   const inverse = inverseColors(tokens);
-  // On phones the page title is a size smaller (#419): a display size would fill the width.
+  // On phones the page title is a size smaller (#419), and never above 4xl, so a display size
+  // (a 6xl title) doesn't overflow a phone's width; the default theme's 5xl is 4xl there.
   const h1 = TEXT_SIZES.indexOf(tokens.typeScale.h1.size);
-  const phoneH1 = TEXT_SIZE[TEXT_SIZES[Math.max(h1 - 1, 0)] ?? tokens.typeScale.h1.size];
+  const phoneStep = Math.min(Math.max(h1 - 1, 0), TEXT_SIZES.indexOf(PHONE_H1_MAX));
+  const phoneH1 = TEXT_SIZE[TEXT_SIZES[phoneStep] ?? tokens.typeScale.h1.size];
   const themes = [
     daisyTheme(tokens, tokens.preset, tokens.colors, { default: true, scheme: tokens.scheme }),
     daisyTheme(tokens, INVERSE_THEME, inverse, {
@@ -245,7 +265,11 @@ export function themeCss(tokens: ThemeTokens): string {
     "}",
     `:root, [data-theme="${tokens.preset}"] {`,
     `  --wf-link-decoration: ${tokens.links.underline === "always" ? "underline" : "none"};`,
-    `  --wf-link-hover-decoration: ${tokens.links.underline === "never" ? "none" : "underline"};`,
+    // Underlined on hover and focus whatever the theme says: a link must show it's one (WCAG
+    // 1.4.1), and in the main colour when it isn't always underlined, apart from the text.
+    "  --wf-link-hover-decoration: underline;",
+    `  --wf-link-color: ${tokens.links.underline === "always" ? "currentColor" : "var(--color-primary)"};`,
+    `  --wf-hover-shadow: ${HOVER_SHADOW[tokens.shadow]};`,
     `  --wf-button-radius: ${BUTTON_RADIUS[tokens.buttons.shape]};`,
     `  --wf-button-height: ${BUTTON_HEIGHT[tokens.buttons.size]};`,
     ...roleShades(tokens.colors),
