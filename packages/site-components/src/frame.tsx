@@ -3,6 +3,13 @@ import { INVERSE_THEME } from "@webforge/model";
 import type { ReactNode } from "react";
 import { type ComponentSpec, defineFramedSection } from "./define.js";
 import { boxClasses, type ComponentDef } from "./library.js";
+import {
+  ENTRANCE_FIELD_NAMES,
+  ENTRANCE_FIELDS,
+  entranceAttributes,
+  entranceBehaviours,
+  entranceClasses,
+} from "./motion.js";
 import type { DefaultsOf, FieldDef, RenderPropsOf, ValuesOf } from "./schema.js";
 
 /** A section's own padding (`px-4 py-16`), for the sides left unset (1.32). */
@@ -49,15 +56,15 @@ export const COLORS_FIELD = {
   ],
 } as const satisfies FieldDef;
 
-/** The fields every section has, which {@link defineSection} adds. */
+/** The fields every section has, which {@link defineSection} adds: its entrance too (F-DS-5). */
 type FrameFields = {
   readonly colors: typeof COLORS_FIELD;
   readonly padding: typeof PADDING_FIELD;
   readonly margin: typeof MARGIN_FIELD;
-};
+} & typeof ENTRANCE_FIELDS;
 
 /** The names of {@link FrameFields}, which a section can't give a field of its own. */
-const FRAME_FIELDS = ["colors", "padding", "margin"] as const;
+const FRAME_FIELDS = ["colors", "padding", "margin", ...ENTRANCE_FIELD_NAMES] as const;
 
 /** The fields of a section: its own, and its frame's. */
 type Fields = Readonly<Record<string, FieldDef>>;
@@ -67,11 +74,16 @@ export type SectionSpec<F extends Fields, Variant extends string = never> = Omit
   ComponentSpec<F & FrameFields, Variant>,
   "place" | "fields" | "render"
 > & {
-  /** Its own fields; its colours, padding and margin are added (a field of those names is refused). */
+  /**
+   * Its own fields; its colours, padding, margin and entrance are added (a field of those names is
+   * refused).
+   */
   readonly fields: F & {
     readonly colors?: never;
     readonly padding?: never;
     readonly margin?: never;
+    readonly entrance?: never;
+    readonly entranceDelay?: never;
   };
   /** Its name in the `site-<name>` class every exported page and test finds it by: "hero". */
   readonly name: string;
@@ -96,7 +108,7 @@ export type SectionSpec<F extends Fields, Variant extends string = never> = Omit
 export function defineSection<const F extends Fields, const Variant extends string = never>(
   spec: SectionSpec<F, Variant> & { readonly defaults: NoInfer<DefaultsOf<F & FrameFields>> },
 ): ComponentDef {
-  const { name, frame, frameAttributes, render, fields, ...rest } = spec;
+  const { name, frame, frameAttributes, render, fields, behaviours, ...rest } = spec;
   for (const own of FRAME_FIELDS) {
     if (Object.hasOwn(fields, own)) {
       throw new Error(`'${spec.label}' declares its own "${own}": defineSection adds it`);
@@ -105,7 +117,22 @@ export function defineSection<const F extends Fields, const Variant extends stri
   return defineFramedSection<F & FrameFields, Variant>({
     ...rest,
     place: "section",
-    fields: { ...fields, colors: COLORS_FIELD, padding: PADDING_FIELD, margin: MARGIN_FIELD },
+    fields: {
+      ...fields,
+      colors: COLORS_FIELD,
+      padding: PADDING_FIELD,
+      margin: MARGIN_FIELD,
+      ...ENTRANCE_FIELDS,
+    },
+    // Its own behaviours, and `animate` for its entrance.
+    behaviours: (values) => {
+      // Every section's values have the frame's fields, which generic types can't see through.
+      const stored: Readonly<Record<string, unknown>> = values;
+      return [
+        ...(typeof behaviours === "function" ? behaviours(values) : (behaviours ?? [])),
+        ...entranceBehaviours(stored),
+      ];
+    },
     // A new section has the page's colours, as one with no value has: choosing them is no change.
     defaults: { colors: "page", ...rest.defaults },
     render: (props) => {
@@ -115,11 +142,16 @@ export function defineSection<const F extends Fields, const Variant extends stri
       const classes = [
         `site-${name}`,
         frame?.(values) ?? "",
-        `${boxClasses(stored.padding, "padding", SECTION_PADDING)}${marginClasses(stored.margin)}`,
+        `${boxClasses(stored.padding, "padding", SECTION_PADDING)}${marginClasses(stored.margin)}${entranceClasses(stored)}`,
       ].filter((part) => part !== "");
       const theme = stored.colors === "inverse" ? { "data-theme": INVERSE_THEME } : {};
       return (
-        <section className={classes.join(" ")} {...(frameAttributes?.(values) ?? {})} {...theme}>
+        <section
+          className={classes.join(" ")}
+          {...(frameAttributes?.(values) ?? {})}
+          {...theme}
+          {...entranceAttributes(stored)}
+        >
           {render(props)}
         </section>
       );

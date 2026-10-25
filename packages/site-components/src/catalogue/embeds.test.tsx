@@ -56,7 +56,9 @@ describe("the Video (F-CM-4)", () => {
   });
 
   it("needs the embed behaviour", () => {
-    expect(siteLibrary.components.Video?.behaviours).toEqual(["embed"]);
+    const behaviours = siteLibrary.components.Video?.behaviours;
+    // A section's are a function of its values: its own, and `animate` for an entrance (2.12).
+    expect(typeof behaviours === "function" ? behaviours({}) : behaviours).toEqual(["embed"]);
   });
 });
 
