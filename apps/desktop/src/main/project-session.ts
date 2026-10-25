@@ -27,10 +27,14 @@ import type {
   SiteUiState,
   UiStateResult,
 } from "../shared/ipc-contract.js";
-import type { StoreImportOutcome, StoreImportRequest } from "../shared/storage-writer-protocol.js";
-import { storeImport } from "../worker/store-import.js";
+import type { ImportSource, PrepareOutcome } from "../shared/storage-writer-protocol.js";
+import { createImportJobs } from "../worker/store-import.js";
 import { log, logFailure } from "./log.js";
-import { createInlineStorageWriter, type StorageWriter } from "./storage-writer.js";
+import {
+  createInlineStorageWriter,
+  type PreparedImport,
+  type StorageWriter,
+} from "./storage-writer.js";
 import { createStoreGate, type StoreGate } from "./store-gate.js";
 
 /** The blob types a Media item's file can have; documents (JSON) are never served as media. */
@@ -59,11 +63,12 @@ export type SessionSite = Pick<
  * learnt of it; not a file Media takes; not a file at all; or why it couldn't be stored.
  */
 export type ImportFileResult =
-  | Exclude<StoreImportOutcome, { status: "failed" }>
+  | ({ readonly status: "stored" } & Omit<PreparedImport, "status" | "token">)
+  | Extract<PrepareOutcome, { status: "rejected" | "skipped" }>
   | Extract<StoreAssetResult, { status: "failed" }>;
 
 /** Where an imported file's bytes come from: a file the main process found, or bytes. */
-export type ImportSource = StoreImportRequest["source"];
+export type { ImportSource };
 
 /** File extension of a Webforge site (P1). */
 export const PROJECT_EXTENSION = ".wforge";
@@ -184,7 +189,7 @@ export class ProjectSession {
     this.#openStore = options.openStore ?? ((path) => ProjectStore.open(path));
     this.#createStore =
       options.createStore ?? ((path, name) => ProjectStore.create(path, { name }));
-    this.#writer = options.writer ?? createInlineStorageWriter(storeImport);
+    this.#writer = options.writer ?? createInlineStorageWriter(createImportJobs());
   }
 
   /** The open site's file, for the main process only (never sent to the renderer). */
@@ -454,33 +459,51 @@ export class ProjectSession {
     source: ImportSource,
     sessionId?: string,
   ): Promise<ImportFileResult> {
-    // The writer writes alone, the bytes and the asset together: the main process's reads and
-    // saves wait at the gate, as promises, and nothing of the import is written on its thread.
-    const outcome = await this.#gate.run<StoreImportOutcome | ImportFileResult>(
+    const stale = sessionId === undefined ? undefined : this.staleReason(sessionId);
+    if (stale !== undefined) return { status: "failed", reason: stale };
+    // First read, check and hash it, outside the gate: saves go on meanwhile, however slow the
+    // file is to read (a network share), and a file that never opens holds up only its import.
+    const prepared = await this.#writer.prepare(fileName, source);
+    if (prepared.status === "failed") return this.#importFailed();
+    if (prepared.status !== "prepared") return prepared;
+    // Then store it alone, the bytes and the asset together: the main process's reads and saves
+    // wait at the gate, as promises, and nothing of the import is written on its thread.
+    const stored = await this.#gate.run<ImportFileResult | "stored" | "not-stored">(
       "exclusive",
       async () => {
         const path = this.#path;
         if (this.#store === undefined || path === undefined) {
+          this.#writer.discard(prepared);
           return { status: "failed", reason: "no-site" };
         }
         if (sessionId !== undefined && sessionId !== this.#sessionId) {
+          this.#writer.discard(prepared);
           return { status: "failed", reason: "stale-session" };
         }
         // Its own token: an import a close stopped can't clear the mark of the one after it.
         const writing = {};
         this.#writing = writing;
         try {
-          return await this.#writer.store({ sitePath: path, mediaId, fileName, source });
+          const outcome = await this.#writer.store(prepared, {
+            sitePath: path,
+            mediaId,
+            originalName: fileName,
+          });
+          return outcome.status === "stored" ? "stored" : "not-stored";
         } finally {
           if (this.#writing === writing) this.#writing = undefined;
         }
       },
     );
-    if (outcome.status === "failed" && !("reason" in outcome)) {
-      log.error("Webforge could not store an imported file");
-      return { status: "failed", reason: "unknown" };
-    }
-    return outcome;
+    if (stored === "not-stored") return this.#importFailed();
+    if (stored !== "stored") return stored;
+    const { token: _token, status: _status, ...facts } = prepared;
+    return { status: "stored", ...facts };
+  }
+
+  #importFailed(): ImportFileResult {
+    log.error("Webforge could not store an imported file");
+    return { status: "failed", reason: "unknown" };
   }
 
   #storeCopiedMedia(

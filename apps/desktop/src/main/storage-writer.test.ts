@@ -30,78 +30,112 @@ function fakeThread() {
   return { thread, sent, emit: (event: string, value: unknown) => listeners.get(event)?.(value) };
 }
 
-const request = (data: Uint8Array) => ({
-  sitePath: "site.wforge",
-  mediaId: "photo",
-  fileName: "a.png",
-  source: { data },
+const bytes = (...values: number[]) => ({ data: new Uint8Array(values) });
+
+/** What the thread answers for a prepared JPEG. */
+const preparedAnswer = (id: number) => ({
+  id,
+  outcome: {
+    status: "prepared",
+    hash: "a".repeat(64),
+    size: 3,
+    media: { kind: "image", mimeType: "image/jpeg", width: 4, height: 3 },
+  },
 });
 
+const target = { sitePath: "site.wforge", mediaId: "photo", originalName: "a.jpg" };
+
 describe("createStorageWriter", () => {
-  it("starts its thread for the first import, and gives each import its own answer", async () => {
+  it("starts its thread for the first import, and gives each step its own answer", async () => {
     const fake = fakeThread();
     const start = vi.fn(() => fake.thread);
     const writer = createStorageWriter(start);
 
-    const first = writer.store(request(new Uint8Array([1])));
-    const second = writer.store(request(new Uint8Array([2])));
-    fake.emit("message", { id: 2, outcome: { status: "skipped" } });
-    fake.emit("message", { id: 1, outcome: { status: "rejected", reason: "unsupported" } });
+    const first = writer.prepare("a.jpg", bytes(1));
+    const second = writer.prepare("b.txt", bytes(2));
+    fake.emit("message", { id: 2, outcome: { status: "rejected", reason: "not-text" } });
+    fake.emit("message", preparedAnswer(1));
     // Settled already: ignored.
     fake.emit("message", { id: 1, outcome: { status: "skipped" } });
 
-    expect(await first).toEqual({ status: "rejected", reason: "unsupported" });
-    expect(await second).toEqual({ status: "skipped" });
+    const prepared = await first;
+    expect(prepared).toMatchObject({ status: "prepared", token: 1, hash: "a".repeat(64) });
+    expect(await second).toEqual({ status: "rejected", reason: "not-text" });
+    if (prepared.status !== "prepared") return;
+    const stored = writer.store(prepared, target);
+    fake.emit("message", { id: 3, outcome: { status: "stored" } });
+    expect(await stored).toEqual({ status: "stored" });
+    expect(fake.sent.map(({ message }) => message)).toContainEqual({
+      id: 3,
+      type: "store",
+      prepared: 1,
+      ...target,
+    });
     expect(start).toHaveBeenCalledTimes(1);
   });
 
-  it("fails an import whose answer doesn't parse, rather than leaving it waiting at the gate", async () => {
+  it("fails a step whose answer doesn't parse, or is another step's, rather than leaving it waiting", async () => {
     const fake = fakeThread();
     const writer = createStorageWriter(() => fake.thread);
-    const importing = writer.store(request(new Uint8Array([1])));
+    const preparing = writer.prepare("a.jpg", bytes(1));
+    const storing = writer.prepare("b.jpg", bytes(2));
 
     fake.emit("message", "noise");
-    fake.emit("message", { id: 1, outcome: { status: "stored" } });
+    fake.emit("message", { id: 1, outcome: { status: "prepared" } });
+    fake.emit("message", { id: 2, outcome: { status: "stored" } });
 
-    expect(await importing).toEqual({ status: "failed" });
+    expect(await preparing).toEqual({ status: "failed" });
+    expect(await storing).toEqual({ status: "failed" });
   });
 
   it("moves bytes with a buffer of their own to the thread, and copies a view of a larger one", () => {
     const fake = fakeThread();
     const writer = createStorageWriter(() => fake.thread);
-    const own = new Uint8Array([1, 2, 3]);
-    const view = new Uint8Array([9, 1, 2, 3]).subarray(1);
 
-    void writer.store(request(own));
-    void writer.store(request(view));
+    void writer.prepare("a.jpg", { data: new Uint8Array([1, 2, 3]) });
+    void writer.prepare("b.jpg", { data: new Uint8Array([9, 1, 2, 3]).subarray(1) });
+    void writer.prepare("c.jpg", { path: "C:Photosc.jpg" });
 
-    expect(fake.sent.map(({ transfer }) => transfer?.length)).toEqual([1, 0]);
+    expect(fake.sent.map(({ transfer }) => transfer?.length)).toEqual([1, 0, 0]);
   });
 
-  it("fails what a thread was writing when it ends, and starts another for the next import", async () => {
+  it("tells the thread to forget an import that goes no further", async () => {
+    const fake = fakeThread();
+    const writer = createStorageWriter(() => fake.thread);
+    const preparing = writer.prepare("a.jpg", bytes(1));
+    fake.emit("message", preparedAnswer(1));
+    const prepared = await preparing;
+    if (prepared.status !== "prepared") throw new Error("not prepared");
+
+    writer.discard(prepared);
+
+    expect(fake.sent.at(-1)?.message).toEqual({ id: 2, type: "discard", prepared: 1 });
+  });
+
+  it("fails what a thread was doing when it ends, and starts another for the next import", async () => {
     const threads = [fakeThread(), fakeThread()];
     const start = vi.fn(() => (threads[start.mock.calls.length - 1] ?? fakeThread()).thread);
     const writer = createStorageWriter(start);
 
-    const lost = writer.store(request(new Uint8Array([1])));
+    const lost = writer.prepare("a.jpg", bytes(1));
     threads[0]?.emit("exit", 1);
     expect(await lost).toEqual({ status: "failed" });
 
-    const next = writer.store(request(new Uint8Array([2])));
+    const next = writer.prepare("b.jpg", bytes(2));
     threads[1]?.emit("message", { id: 2, outcome: { status: "skipped" } });
     expect(await next).toEqual({ status: "skipped" });
     expect(start).toHaveBeenCalledTimes(2);
   });
 
-  it("stops its thread, failing what it was writing", async () => {
+  it("stops its thread, failing what it was doing", async () => {
     const fake = fakeThread();
     const writer = createStorageWriter(() => fake.thread);
-    const writing = writer.store(request(new Uint8Array([1])));
+    const preparing = writer.prepare("a.jpg", bytes(1));
 
     await writer.stop();
 
     expect(fake.thread.terminate).toHaveBeenCalled();
-    expect(await writing).toEqual({ status: "failed" });
+    expect(await preparing).toEqual({ status: "failed" });
   });
 });
 

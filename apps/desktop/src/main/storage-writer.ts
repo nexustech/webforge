@@ -1,8 +1,11 @@
 import {
-  type StoreImportOutcome,
-  type StoreImportRequest,
+  type ImportSource,
+  type PrepareOutcome,
+  type StorageWriterMessage,
+  type StoreOutcome,
   storageWriterAnswerSchema,
 } from "../shared/storage-writer-protocol.js";
+import type { ImportJobs } from "../worker/store-import.js";
 
 /** The parts of a `worker_threads` Worker the storage writer uses; a fake in tests. */
 export type WriterThread = {
@@ -13,11 +16,18 @@ export type WriterThread = {
   terminate(): Promise<number>;
 };
 
-/** The id a message from the thread carries, if it carries one. */
-function idOf(message: unknown): number | undefined {
-  if (typeof message !== "object" || message === null || !("id" in message)) return undefined;
-  return typeof message.id === "number" ? message.id : undefined;
-}
+/** An import the writer has read, checked and hashed, ready to store. */
+export type PreparedImport = Extract<PrepareOutcome, { status: "prepared" }> & {
+  /** Which prepared bytes the writer keeps for it. */
+  readonly token: number;
+};
+
+/** Where a prepared import goes: the open site's file, as a Media item's asset. */
+export type ImportTarget = {
+  readonly sitePath: string;
+  readonly mediaId: string;
+  readonly originalName: string;
+};
 
 /** Stores imports in the open site's file, off the main thread (R13b, ADR 0013). */
 export type StorageWriter = {
@@ -26,24 +36,54 @@ export type StorageWriter = {
    * a thread takes the main thread a few milliseconds. When a site opens, which is idle time.
    */
   warm(): void;
-  /** Reads, checks, hashes and stores one import; never throws (a failure is `failed`). */
-  store(request: StoreImportRequest): Promise<StoreImportOutcome>;
+  /**
+   * Reads, checks and hashes a file, keeping its bytes for {@link store}: no gate needed, as it
+   * doesn't touch the site's file. Never throws (a failure is `failed`).
+   */
+  prepare(
+    fileName: string,
+    source: ImportSource,
+  ): Promise<PreparedImport | Exclude<PrepareOutcome, { status: "prepared" }>>;
+  /** Stores a prepared import, while its caller holds the store gate alone. Never throws. */
+  store(prepared: PreparedImport, target: ImportTarget): Promise<StoreOutcome>;
+  /** Forgets a prepared import that goes no further, such as one for a site that has closed. */
+  discard(prepared: PreparedImport): void;
   /**
    * Stops what the writer is doing, as closing the site does when it can wait no longer: the
-   * thread ends, and an import it was writing fails. Its transaction is rolled back the next time
-   * the file opens, and garbage collection removes a blob nothing names.
+   * thread ends, and an import it was storing fails. Its transaction is rolled back the next time
+   * the file opens.
    */
   stop(): Promise<void>;
 };
 
+/** The id a message from the thread carries, if it carries one. */
+function idOf(message: unknown): number | undefined {
+  if (typeof message !== "object" || message === null || !("id" in message)) return undefined;
+  return typeof message.id === "number" ? message.id : undefined;
+}
+
+/** Bytes that can move to the thread rather than be copied: those with a buffer of their own. */
+function transferable(source: ImportSource): ArrayBuffer[] {
+  if (!("data" in source)) return [];
+  const { data } = source;
+  return data.byteOffset === 0 &&
+    data.byteLength === data.buffer.byteLength &&
+    data.buffer instanceof ArrayBuffer
+    ? [data.buffer]
+    : [];
+}
+
+type Outcome = PrepareOutcome | StoreOutcome;
+
 /**
- * The storage writer, in the thread `start` makes, started when the first import comes and again
- * after a stop or a crash. Answers are parsed, and a thread that ends fails what it was writing.
+ * The storage writer, in the thread `start` makes, started when the first import comes (or
+ * {@link StorageWriter.warm}) and again after a stop or a crash. Answers are parsed; a thread that
+ * ends fails what it was doing, and an answer that doesn't parse fails its step.
  */
 export function createStorageWriter(start: () => WriterThread): StorageWriter {
   let thread: WriterThread | undefined;
   let nextId = 1;
-  const pending = new Map<number, (outcome: StoreImportOutcome) => void>();
+  const pending = new Map<number, (outcome: Outcome) => void>();
 
   const failAll = () => {
     for (const settle of pending.values()) settle({ status: "failed" });
@@ -55,8 +95,8 @@ export function createStorageWriter(start: () => WriterThread): StorageWriter {
     const started = start();
     started.on("message", (message) => {
       const answer = storageWriterAnswerSchema.safeParse(message);
-      // An answer that doesn't parse still settles its import, as failed: an import left waiting
-      // would hold the store gate, and every save behind it, for good.
+      // An answer that doesn't parse still settles its step, as failed: an import left waiting
+      // in its store step would hold the store gate, and every save behind it, for good.
       const id = answer.success ? answer.data.id : idOf(message);
       const settle = id === undefined ? undefined : pending.get(id);
       if (id === undefined || settle === undefined) return;
@@ -73,6 +113,23 @@ export function createStorageWriter(start: () => WriterThread): StorageWriter {
     return started;
   };
 
+  /** Sends `message` with a new id and gives the thread's answer, or `failed`. */
+  const ask = (
+    message: (id: number) => StorageWriterMessage,
+    transfer: ArrayBuffer[] = [],
+  ): Promise<Outcome> => {
+    const id = nextId++;
+    return new Promise((resolve) => {
+      pending.set(id, resolve);
+      try {
+        running().postMessage(message(id), transfer);
+      } catch {
+        pending.delete(id);
+        resolve({ status: "failed" });
+      }
+    });
+  };
+
   return {
     warm() {
       try {
@@ -81,24 +138,31 @@ export function createStorageWriter(start: () => WriterThread): StorageWriter {
         // It starts again with the first import, which then fails if it still can't.
       }
     },
-    store(request) {
-      const id = nextId++;
-      return new Promise((resolve) => {
-        pending.set(id, resolve);
-        try {
-          // Bytes move to the thread rather than being copied, when they have a buffer of their own.
-          const data = "data" in request.source ? request.source.data : undefined;
-          const ownBuffer =
-            data !== undefined &&
-            data.byteOffset === 0 &&
-            data.byteLength === data.buffer.byteLength &&
-            data.buffer instanceof ArrayBuffer;
-          running().postMessage({ id, request }, ownBuffer ? [data.buffer as ArrayBuffer] : []);
-        } catch {
-          pending.delete(id);
-          resolve({ status: "failed" });
-        }
-      });
+    async prepare(fileName, source) {
+      let token = 0;
+      const outcome = await ask((id) => {
+        token = id;
+        return { id, type: "prepare", fileName, source };
+      }, transferable(source));
+      // A store's answer to a prepare is no answer at all.
+      if (outcome.status === "stored") return { status: "failed" };
+      return outcome.status === "prepared" ? { ...outcome, token } : outcome;
+    },
+    async store(prepared, target) {
+      const outcome = await ask((id) => ({
+        id,
+        type: "store",
+        prepared: prepared.token,
+        ...target,
+      }));
+      return outcome.status === "stored" ? outcome : { status: "failed" };
+    },
+    discard(prepared) {
+      try {
+        thread?.postMessage({ id: nextId++, type: "discard", prepared: prepared.token });
+      } catch {
+        // A thread that has ended has forgotten it anyway.
+      }
     },
     async stop() {
       const current = thread;
@@ -110,15 +174,21 @@ export function createStorageWriter(start: () => WriterThread): StorageWriter {
 }
 
 /**
- * A storage writer that runs on the calling thread, for tests and for the rare caller with no
- * thread to spare. Same results, but it holds up its thread while it stores.
+ * A storage writer that runs on the calling thread, for tests. Same results, but it holds up its
+ * thread while it reads and stores.
  */
-export function createInlineStorageWriter(
-  storeImport: (request: StoreImportRequest) => Promise<StoreImportOutcome>,
-): StorageWriter {
+export function createInlineStorageWriter(jobs: ImportJobs): StorageWriter {
+  let nextToken = 1;
   return {
     warm: () => undefined,
-    store: (request) => storeImport(request).catch(() => ({ status: "failed" }) as const),
+    async prepare(fileName, source) {
+      const token = nextToken++;
+      const outcome = await jobs.prepare(token, fileName, source).catch(() => undefined);
+      if (outcome === undefined) return { status: "failed" };
+      return outcome.status === "prepared" ? { ...outcome, token } : outcome;
+    },
+    store: async (prepared, target) => jobs.store(prepared.token, target),
+    discard: (prepared) => jobs.discard(prepared.token),
     stop: async () => undefined,
   };
 }

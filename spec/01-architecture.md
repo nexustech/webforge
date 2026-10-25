@@ -72,6 +72,11 @@ flowchart TB
 
 **Electron hardening:** `contextIsolation: true`, `sandbox: true`, `nodeIntegration: false`, no `@electron/remote`, strict CSP, `will-navigate`/`window.open` handlers, Electron Fuses (disable `RunAsNode`, enable ASAR integrity, cookie encryption).
 
+**File paths:** the renderer never names a file. The main process reads only paths it got itself: from native dialogs, the clipboard's file list, the command line, and dropped files' paths that the preload finds with `webUtils.getPathForFile` (`media:import-paths`, R13b).
+- **The preload is the trust boundary for dropped files' paths.** The main process takes any absolute path on that channel.
+- So the preload sends nothing but `getPathForFile`'s output for the `File` objects it was given. A `File` a page made has no path, so a page can't name a file.
+- A preload test keeps it that way ([ADR 0013](../docs/adr/0013-store-gate.md)).
+
 ## 4. Package / module structure (pnpm monorepo)
 
 ```
