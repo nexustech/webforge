@@ -62,6 +62,7 @@ const pricing = defineSection({
         details: `<p>${t("starter.planDetails")}</p>`,
         buttonLabel: t("starter.planButton"),
         featured: plan.featured,
+        badge: t("starter.planBadge"),
       },
     })),
   },
@@ -91,6 +92,7 @@ function PricingPlanView({
   buttonLabel,
   link,
   featured,
+  badge,
   context,
 }: {
   readonly name: ReactNode;
@@ -100,9 +102,24 @@ function PricingPlanView({
   readonly buttonLabel: string;
   readonly link: unknown;
   readonly featured: boolean;
+  /** Said of a highlighted plan in its heading ("Recommended"); nothing when empty. */
+  readonly badge: string;
   readonly context: RenderContext;
 }) {
   const { layout, hover } = useContext(PricingContext);
+  // In the heading, so a screen reader says it with the plan's name: the highlight isn't colour
+  // alone (WCAG 1.4.1).
+  const title = (
+    <SectionTitle size="small">
+      {name}
+      {featured && badge !== "" && (
+        <>
+          {" "}
+          <span className="badge badge-primary ml-1 align-middle">{badge}</span>
+        </>
+      )}
+    </SectionTitle>
+  );
   const amount = (size: string) => (
     <p>
       <span className={`${size} font-bold`}>{price}</span>{" "}
@@ -118,7 +135,7 @@ function PricingPlanView({
         data-featured={featured ? "" : undefined}
       >
         <div>
-          <SectionTitle size="small">{name}</SectionTitle>
+          {title}
           <BodyText className="mt-2">{details}</BodyText>
         </div>
         <div className="flex shrink-0 flex-col items-start gap-3 sm:items-end">
@@ -143,7 +160,7 @@ function PricingPlanView({
       }${hover}`}
       data-featured={featured ? "" : undefined}
     >
-      <SectionTitle size="small">{name}</SectionTitle>
+      {title}
       {amount("text-4xl")}
       <BodyText className="flex-1">{details}</BodyText>
       <ButtonLink
@@ -172,6 +189,13 @@ const pricingPlan = defineComponent({
       label: t("field.featuredPlan"),
       help: t("field.featuredPlan.help"),
     },
+    badge: {
+      kind: "text",
+      label: t("field.planBadge"),
+      help: t("field.planBadge.help"),
+      unavailable: (values) =>
+        values.featured === true ? undefined : t("field.planBadge.unavailable"),
+    },
   },
   defaults: {
     name: t("starter.planNameStandard"),
@@ -180,6 +204,7 @@ const pricingPlan = defineComponent({
     details: `<p>${t("starter.planDetails")}</p>`,
     buttonLabel: t("starter.planButton"),
     featured: false,
+    badge: t("starter.planBadge"),
   },
   render: ({ values, context }) => (
     <PricingPlanView
@@ -190,6 +215,7 @@ const pricingPlan = defineComponent({
       buttonLabel={values.buttonLabel.trim()}
       link={values.link}
       featured={values.featured}
+      badge={values.badge.trim()}
       context={context}
     />
   ),

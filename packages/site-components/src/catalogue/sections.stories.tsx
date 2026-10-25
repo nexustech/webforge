@@ -129,3 +129,36 @@ export const Faq: Story = {
     ],
   },
 };
+
+/** An FAQ of four questions in `variant`. */
+const faq = (variant: string): Story => ({
+  args: {
+    nodes: [
+      {
+        type: "Faq",
+        props: {
+          id: `faq-${variant}`,
+          title: "Questions",
+          variant,
+          items: (
+            [
+              ["Are you open on Sundays?", "Yes, 8 to 2."],
+              ["Do you bake gluten-free?", "Every Friday, in a kitchen of its own."],
+              ["Can I order a birthday cake?", "Yes: give us three days and we'll write any name."],
+              ["Is there parking?", "Two spaces behind the shop, and a car park across the road."],
+            ] as const
+          ).map(([question, answer], index) => ({
+            type: "FaqItem",
+            props: { id: `faq-${variant}-${index}`, question, answer: `<p>${answer}</p>` },
+          })),
+        },
+      },
+    ],
+  },
+});
+
+/** An FAQ in two columns of questions that open. */
+export const FaqColumns: Story = faq("columns");
+
+/** An FAQ with every answer shown below its question. */
+export const FaqOpen: Story = faq("open");

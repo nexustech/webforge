@@ -42,7 +42,7 @@ describe("the Pricing section", () => {
     const plans = [...doc.querySelectorAll(".site-pricing-plan")];
     expect(plans.map((each) => each.querySelector("h3")?.textContent)).toEqual([
       t("starter.planNameBasic"),
-      t("starter.planNameStandard"),
+      `${t("starter.planNameStandard")} ${t("starter.planBadge")}`,
       t("starter.planNamePremium"),
     ]);
     expect(plans.map((each) => each.hasAttribute("data-featured"))).toEqual([false, true, false]);
@@ -76,6 +76,33 @@ describe("the Pricing section", () => {
     expect(list.querySelector(".grid")?.className).toContain("max-w-3xl");
     expect(list.querySelector(".site-pricing-plan")?.className).toContain("sm:flex-row");
     expect(list.querySelector(".site-pricing-plan a")?.className).toContain("btn-sm");
+  });
+
+  it("says a highlighted plan is recommended in its heading, in either layout, as worded", () => {
+    // Not colour alone (WCAG 1.4.1): a screen reader says it with the plan's name.
+    const items = [
+      plan("one", { featured: true, badge: "Most popular" }),
+      plan("two", { badge: "Most popular" }),
+      plan("three", { featured: true, badge: " " }),
+    ];
+    for (const variant of ["cards", "list"]) {
+      const headings = [
+        ...page(render({ variant, items })).querySelectorAll(".site-pricing-plan h3"),
+      ];
+
+      expect(
+        headings.map((each) => each.textContent),
+        variant,
+      ).toEqual(["one Most popular", "two", "three"]);
+      expect(headings[0]?.querySelector(".badge")?.textContent, variant).toBe("Most popular");
+    }
+  });
+
+  it("offers its badge only on a highlighted plan, saying why in the Edit panel", () => {
+    const badge = siteLibrary.components.PricingPlan?.fields.badge;
+
+    expect(badge?.unavailable?.({ featured: true })).toBeUndefined();
+    expect(badge?.unavailable?.({ featured: false })).toBe(t("field.planBadge.unavailable"));
   });
 
   it("leaves the button out when its text is empty", () => {
