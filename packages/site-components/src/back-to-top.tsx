@@ -8,11 +8,12 @@ import { LucideIcon } from "./icons.js";
  * `back-to-top` behaviour shows it once the visitor has scrolled down; without it the link is
  * always there.
  */
-export function BackToTop() {
+function BackToTop() {
   return (
     <a
       href="#top"
-      className="site-back-to-top btn btn-circle btn-primary fixed right-4 bottom-4 z-40 shadow-md"
+      // Not on paper: a printed page has nowhere to go back to.
+      className="site-back-to-top btn btn-circle btn-primary fixed right-4 bottom-4 z-40 shadow-md print:hidden"
       aria-label={t("siteText.backToTop")}
       title={t("siteText.backToTop")}
       data-wf-back-to-top=""
