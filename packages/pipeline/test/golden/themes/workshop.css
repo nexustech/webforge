@@ -293,6 +293,7 @@
   --wf-color-error-950: oklch(23% 0.114 27);
 }
 [data-theme="wf_inverse"] {
+  --wf-link-color: currentColor;
   --wf-color-primary-50: oklch(97% 0.04 50);
   --wf-color-primary-100: oklch(94% 0.064 50);
   --wf-color-primary-200: oklch(88% 0.096 50);

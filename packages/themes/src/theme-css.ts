@@ -221,6 +221,8 @@ function buttonRules(tokens: ThemeTokens): string[] {
  */
 export function themeCss(tokens: ThemeTokens): string {
   const inverse = inverseColors(tokens);
+  // Links not always underlined are in the main colour, apart from the text (WCAG 1.4.1).
+  const linkColor = tokens.links.underline === "always" ? "currentColor" : "var(--color-primary)";
   // On phones the page title is a size smaller (#419), and never above 4xl, so a display size
   // (a 6xl title) doesn't overflow a phone's width; the default theme's 5xl is 4xl there.
   const h1 = TEXT_SIZES.indexOf(tokens.typeScale.h1.size);
@@ -268,13 +270,16 @@ export function themeCss(tokens: ThemeTokens): string {
     // Underlined on hover and focus whatever the theme says: a link must show it's one (WCAG
     // 1.4.1), and in the main colour when it isn't always underlined, apart from the text.
     "  --wf-link-hover-decoration: underline;",
-    `  --wf-link-color: ${tokens.links.underline === "always" ? "currentColor" : "var(--color-primary)"};`,
+    `  --wf-link-color: ${linkColor};`,
     `  --wf-hover-shadow: ${HOVER_SHADOW[tokens.shadow]};`,
     `  --wf-button-radius: ${BUTTON_RADIUS[tokens.buttons.shape]};`,
     `  --wf-button-height: ${BUTTON_HEIGHT[tokens.buttons.size]};`,
     ...roleShades(tokens.colors),
     "}",
     `[data-theme="${INVERSE_THEME}"] {`,
+    // Declared again, so its main colour is the inverse one: a custom property inherits as
+    // its value, already resolved with the page's colours.
+    `  --wf-link-color: ${linkColor};`,
     ...roleShades(inverse),
     "}",
     ...buttonRules(tokens),
