@@ -51,6 +51,7 @@ export const MIGRATIONS: Readonly<Record<number, SiteMigration>> = {
   3: uniqueSharedSectionNames,
   4: themeTokens,
   5: sectionPaddingBoxes,
+  6: themeStyleTokens,
 };
 
 type RawNode = { type: string; props: Record<string, unknown> };
@@ -233,6 +234,26 @@ function sectionPaddingBoxes(site: RawSite): RawSite {
     }
   });
   return { ...site, formatVersion: 6 };
+}
+
+/** The style tokens format 7 gives every theme: the look every site had in format 6. */
+const FORMAT_7_DEFAULTS = {
+  headings: { case: "normal", tracking: "normal" },
+  cards: { style: "flat" },
+  images: { corners: "rounded" },
+  sections: { rhythm: "plain" },
+};
+
+/**
+ * Format 6 → 7 (2.13d, PH2-15): the theme has style tokens for headings' case and letter spacing,
+ * cards, photos' corners and the sections' rhythm, each as every site looked in format 6. A theme
+ * that isn't a record is left for validation.
+ */
+function themeStyleTokens(site: RawSite): RawSite {
+  const theme = isRecord(site.theme)
+    ? { ...JSON.parse(JSON.stringify(FORMAT_7_DEFAULTS)), ...site.theme }
+    : site.theme;
+  return { ...site, theme, formatVersion: 7 };
 }
 
 /** Options of {@link migrateSiteWith}; the defaults are this build's chain and version. */
