@@ -168,8 +168,9 @@ test("a launch just after quitting opens Webforge, not the Webforge still ending
   const quitting = app;
   if (quitting === undefined) throw new Error("Webforge isn't running");
   // As on a busy computer, where the process took up to a minute to end after quitting (#393):
-  // held in its teardown for 10 s. Once it has closed the site file, it says whether it still
-  // holds the lock that would hand a new launch's site to it.
+  // held in its teardown for 10 s. When it exits, once it has closed the site file (R13b: its
+  // will-quit handler waits for that, then calls app.exit), it says whether it still holds the
+  // lock that would hand a new launch's site to it.
   const lockAfterQuit = new Promise<string>((resolve) => {
     // Everything written so far: a line can arrive split across two chunks.
     let written = "";
@@ -180,15 +181,19 @@ test("a launch just after quitting opens Webforge, not the Webforge still ending
     });
   });
   await quitting.evaluate(({ app: electronApp }) => {
-    // After Webforge's own will-quit handler, which closes the site file.
-    electronApp.once("will-quit", () =>
-      process.stderr.write(`[test] lock held: ${electronApp.hasSingleInstanceLock()}\n`),
-    );
-    electronApp.once("quit", () => {
-      const end = Date.now() + 10_000;
-      while (Date.now() < end) {
-        // Ending.
-      }
+    const exit = electronApp.exit.bind(electronApp);
+    Object.assign(electronApp, {
+      exit: (code?: number) => {
+        process.stderr.write(`[test] lock held: ${electronApp.hasSingleInstanceLock()}\n`);
+        // A turn for the line to reach the test, then the slow end.
+        setTimeout(() => {
+          const end = Date.now() + 10_000;
+          while (Date.now() < end) {
+            // Ending.
+          }
+          exit(code);
+        }, 100);
+      },
     });
     setTimeout(() => electronApp.quit(), 0);
   });

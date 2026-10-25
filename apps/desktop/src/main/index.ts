@@ -48,7 +48,7 @@ import {
 } from "./fonts.js";
 import { createHandOff } from "./hand-off.js";
 import { registerIpcHandler } from "./ipc.js";
-import { logFailure, setLogSink } from "./log.js";
+import { log, logFailure, setLogSink } from "./log.js";
 import { fileLogSink } from "./log-file.js";
 import { type MediaDialogs, registerMediaHandlers } from "./media-ipc.js";
 import { createMediaResponder } from "./media-protocol.js";
@@ -622,16 +622,38 @@ app.on("second-instance", (_event, argv, workingDirectory) => {
 // Closing the site waits for work on its file (at most a few seconds, R13b), so quitting waits for
 // that, then exits. Not `app.quit()` again: once "will-quit" was held back, Electron ignores it,
 // and every window is closed by now anyway.
+let exiting = false;
 app.on("will-quit", (event) => {
   event.preventDefault();
-  void projectSession.close().finally(() => {
+  if (exiting) return;
+  exiting = true;
+  void closeThenExit();
+});
+
+/** How long quitting waits for the site to close before it exits anyway. */
+const QUIT_CLOSE_WAIT_MS = 10_000;
+
+/** Closes the site, then exits, whatever closing does: Webforge never lingers without a window. */
+async function closeThenExit(): Promise<void> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    const timedOut = new Promise<"timed-out">((resolve) => {
+      timer = setTimeout(() => resolve("timed-out"), QUIT_CLOSE_WAIT_MS);
+    });
+    if ((await Promise.race([projectSession.close(), timedOut])) === "timed-out") {
+      log.error("Webforge quit before the site had closed");
+    }
+  } catch (error) {
+    logFailure("Webforge could not close the site", error);
+  } finally {
+    clearTimeout(timer);
     // The site is saved and closed: a launch from now on opens Webforge itself, rather than
     // handing its site to this one, which on a busy computer can take up to a minute more to end
     // (#413).
     if (primaryInstance) app.releaseSingleInstanceLock();
     app.exit(0);
-  });
-});
+  }
+}
 
 // Webforge quits when its window closes, on macOS too (spec/02 §1, #287): it's a one-window app,
 // and one left in the Dock with no window looks broken to the people it's for.
