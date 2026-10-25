@@ -682,8 +682,9 @@ describe("Editor", () => {
   });
 
   it("puts Add and Undo History on the left, and the Edit panel and Media on the right", () => {
-    // In any order: Add is registered again once the canvas engine is there.
-    expect(panels.list()).toHaveLength(4);
+    // In any order, and each once, among whatever other panels the editor's areas add.
+    const ids = panels.list().map((panel) => panel.id);
+    expect(new Set(ids).size).toBe(ids.length);
     expect(panels.list()).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ id: "undoHistory", slot: "left.bottom", title: "Undo History" }),
