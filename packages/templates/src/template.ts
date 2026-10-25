@@ -5,8 +5,9 @@ import {
   type MediaId,
   mediaIdSchema,
   mediaNameSchema,
+  migrateSite,
   type SiteDoc,
-  siteDocSchema,
+  SiteFormatError,
   type ThemeTokens,
 } from "@webforge/model";
 import { z } from "zod";
@@ -77,9 +78,26 @@ export const imageManifestSchema = z
   });
 
 /**
+ * A template's site, in whatever format it was written in: migrated to the current one, as a
+ * site file is, so a template keeps working when the format moves on (`migrateSite`), then
+ * validated. A site this build can't read, or one that fails validation, is refused.
+ */
+const templateSiteSchema = z.unknown().transform((raw, context): SiteDoc => {
+  try {
+    return migrateSite(raw);
+  } catch (error) {
+    context.addIssue({
+      code: "custom",
+      message: error instanceof SiteFormatError ? error.message : "The site could not be read",
+    });
+    return z.NEVER;
+  }
+});
+
+/**
  * A template (`template.json`): its business type, whether *Try an example* offers it (PG-3), and
- * the site a new site starts as. Its Media is empty: the images come from the manifest, with the
- * hash of their bytes, as the site file stores them.
+ * the site a new site starts as ({@link templateSiteSchema}). Its Media is empty: the images come
+ * from the manifest, with the hash of their bytes, as the site file stores them.
  */
 export const templateSchema = z
   .strictObject({
@@ -87,7 +105,7 @@ export const templateSchema = z
     category: z.enum(TEMPLATE_CATEGORIES),
     /** Offered by *Try an example*: complete sample content to edit (PG-3). */
     example: z.boolean(),
-    site: siteDocSchema,
+    site: templateSiteSchema,
   })
   .refine((template) => Object.keys(template.site.media).length === 0, {
     message: "A template's images belong in its images.json, not in its site's Media",

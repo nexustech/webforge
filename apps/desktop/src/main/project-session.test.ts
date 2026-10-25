@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -11,12 +11,14 @@ import {
   pageDocumentId,
 } from "@webforge/model";
 import { ProjectStore, ReadOnlyProjectError } from "@webforge/storage";
+import { TEMPLATES_DIR } from "@webforge/templates/node";
 import { heroPhoto } from "@webforge/test-utils";
 import type { IpcMain } from "electron";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { registerProjectHandlers } from "./project-ipc.js";
 import {
   findProjectArgument,
+  type NewSiteTarget,
   ProjectSession,
   type SiteStoreAccess,
   withProjectExtension,
@@ -109,9 +111,16 @@ describe("ProjectSession", () => {
       notFoundTitle: "Page not found",
     });
 
+    const photo = join(TEMPLATES_DIR, "sample", "images", "hero.jpg");
+    let stored: Awaited<ReturnType<NewSiteTarget["importFile"]>> | undefined;
+
     const result = await session.create(join(dir, "bakery.wforge"), {
       name: "Rosa's Bakery",
-      fill: (store) => store.saveSite(site),
+      fill: async ({ store, importFile }) => {
+        // Into the new file, through the storage writer, before it opens.
+        stored = await importFile("photo00000000000", "hero.jpg", photo);
+        store.saveSite(site);
+      },
     });
 
     expect(result).toMatchObject({
@@ -119,6 +128,11 @@ describe("ProjectSession", () => {
       project: { name: "Rosa's Bakery", fileName: "bakery.wforge" },
     });
     expect(await session.readSite()).toEqual({ status: "ok", site });
+    expect(stored).toMatchObject({ status: "stored" });
+    const sessionId = session.current()?.sessionId ?? "";
+    const hash = stored?.status === "stored" ? stored.hash : "";
+    const media = await session.forSession(sessionId).readMedia(hash);
+    expect(new Uint8Array(media?.data ?? [])).toEqual(new Uint8Array(readFileSync(photo)));
   });
 
   it("keeps the current site, and closes the new file, when filling it fails (2.14a)", async () => {
@@ -127,7 +141,7 @@ describe("ProjectSession", () => {
 
     const result = await session.create(join(dir, "new.wforge"), {
       name: "New",
-      fill: (store) => {
+      fill: async ({ store }) => {
         filled = store;
         throw new Error("A template's image is missing");
       },

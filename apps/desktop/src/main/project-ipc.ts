@@ -78,7 +78,7 @@ export function registerProjectHandlers(
     await beforeSwitch?.();
     return session.create(path, {
       name: request.name,
-      fill: (store) => fillNewSite(store, request, templates),
+      fill: (target) => fillNewSite(target, request, templates),
     });
   });
   registerIpcHandler(ipc, "openProject", isTrustedSender, async () => {

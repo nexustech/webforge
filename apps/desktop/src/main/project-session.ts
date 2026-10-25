@@ -144,7 +144,21 @@ const CLOSE_WAIT_MS = 5_000;
 /** What New Site makes of a new site (2.14a): its name, and what writes its content. */
 export type NewSiteFill = {
   readonly name: string;
-  readonly fill: (store: ProjectStore) => void;
+  readonly fill: (target: NewSiteTarget) => Promise<void>;
+};
+
+/** The new site's file as New Site fills it, before it opens (2.14a). */
+export type NewSiteTarget = {
+  readonly store: ProjectStore;
+  /**
+   * Stores the file at `path` as Media item `mediaId`'s asset in the new file, through the storage
+   * writer, off the main thread as imports are (R13b).
+   */
+  readonly importFile: (
+    mediaId: string,
+    fileName: string,
+    path: string,
+  ) => Promise<StoreImportOutcome>;
 };
 
 /** What a {@link ProjectSession} is made with, injectable for tests. */
@@ -235,8 +249,8 @@ export class ProjectSession {
    * An existing file at `path` is replaced; the save dialog has already asked the user.
    *
    * New Site (2.14a) gives `newSite`: the site's name as typed, and `fill`, which writes its
-   * pages, theme and Media into the new file before it opens. A fill that fails closes the file,
-   * and the open site stays open.
+   * pages, theme and Media into the new file before it opens, its images through the storage
+   * writer. A fill that fails closes the file, and the open site stays open.
    */
   async create(path: string, newSite?: NewSiteFill): Promise<ProjectResult> {
     const target = withProjectExtension(path);
@@ -251,15 +265,13 @@ export class ProjectSession {
     }
     const name =
       newSite?.name ?? (basename(target, extname(target)).trim() || t("site.untitledName"));
+    const made = await this.#newStore(target, name, newSite).then(
+      (store) => ({ store }),
+      (error: unknown) => ({ error }),
+    );
     const result = await this.#replaceWith(target, () => {
-      const store = this.#createStore(target, name);
-      try {
-        newSite?.fill(store);
-      } catch (error) {
-        store.close();
-        throw error;
-      }
-      return store;
+      if ("error" in made) throw made.error;
+      return made.store;
     });
     if (result.status === "failed" && replaced !== undefined) {
       await this.#replaceWith(
@@ -269,6 +281,23 @@ export class ProjectSession {
       );
     }
     return result;
+  }
+
+  /** A new site's file at `path`, filled as New Site asked, if it did; closed again if that fails. */
+  async #newStore(path: string, name: string, newSite?: NewSiteFill): Promise<ProjectStore> {
+    const store = this.#createStore(path, name);
+    if (newSite === undefined) return store;
+    try {
+      await newSite.fill({
+        store,
+        importFile: (mediaId, fileName, source) =>
+          this.#writer.store({ sitePath: path, mediaId, fileName, source: { path: source } }),
+      });
+    } catch (error) {
+      store.close();
+      throw error;
+    }
+    return store;
   }
 
   /** Opens the site at `path`. */

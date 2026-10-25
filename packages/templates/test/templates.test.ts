@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { cpSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { DEFAULT_THEME, siteDocSchema } from "@webforge/model";
+import { DEFAULT_THEME, SITE_FORMAT_VERSION, siteDocSchema } from "@webforge/model";
 import { siteLibrary, walkNodes } from "@webforge/site-components";
 import { THEME_PRESETS } from "@webforge/themes";
 import { describe, expect, it } from "vitest";
@@ -75,6 +75,26 @@ describe("the shipped templates (2.14a)", () => {
         }
       });
     }
+  });
+
+  it("open in the current format, whatever format they were written in", () => {
+    for (const { template } of templates) {
+      expect(template.site.formatVersion, template.id).toBe(SITE_FORMAT_VERSION);
+    }
+  });
+
+  it("migrate a site of an older format as a site file is, and refuse a newer one", () => {
+    const raw = JSON.parse(
+      readFileSync(join(TEMPLATES_DIR, "sample", "template.json"), "utf8"),
+    ) as { site: Record<string, unknown> };
+    // Format 5 → 6 only changes a Section's padding sizes, which the sample doesn't use.
+    const older = templateSchema.parse({ ...raw, site: { ...raw.site, formatVersion: 5 } });
+
+    expect(older.site.formatVersion).toBe(SITE_FORMAT_VERSION);
+    expect(
+      templateSchema.safeParse({ ...raw, site: { ...raw.site, formatVersion: 99 } }).success,
+    ).toBe(false);
+    expect(templateSchema.safeParse({ ...raw, site: "not a site" }).success).toBe(false);
   });
 
   it("offer at least one example for Try an example (PG-3)", () => {
