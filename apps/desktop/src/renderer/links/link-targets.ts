@@ -1,3 +1,4 @@
+import { sameValue } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import {
   anchorIdSchema,
@@ -14,7 +15,6 @@ import {
 } from "@webforge/model";
 import type { ComponentLibrary } from "@webforge/site-components";
 import { elementName } from "../editor/labels.js";
-import { sameValue } from "../editor/same-value.js";
 
 /**
  * A section a link can go to: a top-level element of a page, or the section a copy of a shared

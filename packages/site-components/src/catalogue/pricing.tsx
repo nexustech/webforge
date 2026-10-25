@@ -162,7 +162,7 @@ const pricingPlan = defineComponent({
   place: "child",
   fields: {
     name: { kind: "text", label: t("field.planName"), inline: true },
-    price: { kind: "text", label: t("field.price"), inline: true },
+    price: { kind: "text", label: t("field.planPrice"), inline: true },
     period: { kind: "text", label: t("field.pricePeriod"), inline: true },
     details: { kind: "richtext", label: t("field.planDetails"), inline: true },
     buttonLabel: { kind: "text", label: t("field.buttonLabel") },

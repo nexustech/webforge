@@ -5,11 +5,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuShortcut,
   DropdownMenuTrigger,
+  useMenuDialog,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { useCommand, useCommandRegistry } from "../shell/command-context.js";
 import { type Command, formatShortcut } from "../shell/commands.js";
-import { useMenuDialog } from "../shell/use-menu-dialog.js";
 
 /** Where a menu opens, in the editor window's coordinates. */
 export type MenuPoint = { readonly x: number; readonly y: number };

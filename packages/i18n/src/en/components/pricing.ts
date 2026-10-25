@@ -9,7 +9,7 @@ export const pricing = {
   "field.pricingLayout.cards": "Cards",
   "field.pricingLayout.list": "Price list",
   "field.planName": "Plan name",
-  "field.price": "Price",
+  "field.planPrice": "Price",
   "field.pricePeriod": "Per",
   "field.planDetails": "What's included",
   "field.featuredPlan": "Highlight this plan",

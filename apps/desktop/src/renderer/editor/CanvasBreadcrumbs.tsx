@@ -1,11 +1,10 @@
-import { cn } from "@webforge/editor-ui";
+import { cn, sameValue } from "@webforge/editor-ui";
 import type { CanvasEngine } from "@webforge/engine";
 import { t } from "@webforge/i18n";
 import { ChevronRightIcon } from "lucide-react";
 import { useEffect } from "react";
 import { selectionPath } from "./breadcrumbs.js";
 import type { EditorSession } from "./editor-session.js";
-import { sameValue } from "./same-value.js";
 import { useDocument, useUi } from "./use-document.js";
 
 /** Props of {@link CanvasBreadcrumbs}. */

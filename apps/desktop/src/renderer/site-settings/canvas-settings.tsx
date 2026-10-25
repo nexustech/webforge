@@ -45,6 +45,7 @@ export function connectCanvasSettings(
       language: shown.general.language,
       ...(shown.forms.service === undefined ? {} : { formService: shown.forms.service }),
       formHint: (reason) => hint(t(`site.binding.formHint.${reason}`)),
+      elementHint: (missing) => hint(t(`site.binding.elementHint.${missing}`)),
     });
   };
   show();
