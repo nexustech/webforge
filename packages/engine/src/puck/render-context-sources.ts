@@ -1,11 +1,11 @@
 import type { RenderContext, SiteBindings } from "@webforge/site-components";
 
 /** Where a part of the canvas's render context comes from. */
-type Source = "editor" | "setNavigation" | "setImages" | "setPreviews" | "setSettings";
+type Source = "editor" | "setNavigation" | "setImages" | "setPreviews" | "setSettings" | "export";
 
 /**
  * Which `CanvasEngine` method gives each part of the canvas's render context (#367): the editor's
- * own canvas defaults, or the method that sets it. A part added to `RenderContext` fails to compile
+ * own canvas defaults, the method that sets it, or none for a part only the export sets. A part added to `RenderContext` fails to compile
  * until it's listed here, so the engine says where it comes from. Site Settings' bindings, and only
  * they, come from `setSettings`, which replaces all of them at once (a binding left out goes) and
  * nothing else.
@@ -17,8 +17,8 @@ export const RENDER_CONTEXT_SOURCES = {
   image: "setImages",
   emptyImage: "setImages",
   previews: "setPreviews",
-  // Only the export sets it: the canvas always shows Custom Code sanitised.
-  rawCustomCode: "editor",
+  // Never on the canvas, which always shows Custom Code sanitised.
+  rawCustomCode: "export",
   setting: "setSettings",
   emptySetting: "setSettings",
   openingHours: "setSettings",
