@@ -153,7 +153,12 @@ export {
   siteDocSchema,
   slugSchema,
 } from "./site-doc.js";
-export type { SiteDocument, SiteDocumentChange, SiteDocumentKind } from "./site-documents.js";
+export type {
+  SiteChangesResult,
+  SiteDocument,
+  SiteDocumentChange,
+  SiteDocumentKind,
+} from "./site-documents.js";
 export {
   applySiteChanges,
   changedDocuments,
@@ -162,6 +167,7 @@ export {
   siteDocumentChangeSchema,
   siteDocuments,
   siteFromDocuments,
+  validateSiteChanges,
 } from "./site-documents.js";
 export type { DocumentItem, MediaItem, SitePage, SiteSnapshot } from "./site-snapshot.js";
 export { siteSnapshotSchema } from "./site-snapshot.js";

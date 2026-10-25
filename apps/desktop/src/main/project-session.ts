@@ -2,14 +2,13 @@ import { randomUUID } from "node:crypto";
 import { basename, extname, resolve } from "node:path";
 import { t } from "@webforge/i18n";
 import {
-  applySiteChanges,
   FILE_MIME_TYPES,
   IMAGE_MIME_TYPES,
   type MediaMeta,
   type SiteDoc,
   type SiteDocumentChange,
   SiteFormatError,
-  siteDocSchema,
+  validateSiteChanges,
 } from "@webforge/model";
 import {
   detectSyncFolder,
@@ -260,7 +259,8 @@ export class ProjectSession {
         return { status: "failed", reason: "invalid" };
       }
     }
-    const next = siteDocSchema.safeParse(applySiteChanges(this.#site, changes));
+    // Only the changed documents are parsed: the rest of the site passed when it was read or saved.
+    const next = validateSiteChanges(this.#site, changes);
     if (!next.success) {
       log.error("Webforge refused changes that would break the site");
       return { status: "failed", reason: "invalid" };
