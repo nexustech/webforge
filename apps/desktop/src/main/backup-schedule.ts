@@ -1,6 +1,6 @@
-import type { ProjectStore } from "@webforge/storage";
 import type { Backups } from "./backups.js";
 import { logFailure } from "./log.js";
+import type { SiteStoreAccess } from "./project-session.js";
 
 /** How often an edited site is backed up again (1.7: every 30 min while editing). */
 const INTERVAL_MS = 30 * 60 * 1_000;
@@ -23,7 +23,7 @@ export function createBackupSchedule(
     setInterval: (callback, ms) => globalThis.setInterval(callback, ms),
     clearInterval: (handle) => globalThis.clearInterval(handle as ReturnType<typeof setInterval>),
   };
-  let open: { store: ProjectStore; path: string } | undefined;
+  let open: { access: SiteStoreAccess; path: string } | undefined;
   let edited = false;
   let interval: unknown;
 
@@ -32,7 +32,8 @@ export function createBackupSchedule(
     if (current === undefined) return;
     edited = false;
     try {
-      await backups.take(current.store, current.path);
+      // Through the store gate: a backup reads the file while the main process may save to it.
+      await current.access((store) => backups.take(store, current.path));
     } catch (error) {
       // A backup that fails (disk full, site closed meanwhile) never disturbs editing. Only the
       // error's code is logged: never paths or content.
@@ -48,9 +49,9 @@ export function createBackupSchedule(
 
   return {
     /** A site was opened (or created): back it up now and start the 30-minute rhythm. */
-    opened(store: ProjectStore, path: string): Promise<void> {
+    opened(access: SiteStoreAccess, path: string): Promise<void> {
       stop();
-      open = { store, path };
+      open = { access, path };
       interval = timers.setInterval(() => {
         if (edited) void backUp();
       }, options.intervalMs ?? INTERVAL_MS);

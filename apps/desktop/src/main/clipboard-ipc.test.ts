@@ -1,6 +1,7 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { ProjectStore } from "@webforge/storage";
 import type { IpcMain, IpcMainInvokeEvent } from "electron";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
@@ -89,7 +90,7 @@ describe("registerClipboardHandlers (1.25)", () => {
     const dir = mkdtempSync(join(tmpdir(), "webforge-clipboard-ipc-"));
     dirs.push(dir);
     const project = new ProjectSession();
-    const opened = project.create(join(dir, "Bakery.wforge"));
+    const opened = await project.create(join(dir, "Bakery.wforge"));
     if (opened.status !== "opened") throw new Error("not opened");
     // The clipboard answers only once the hand-off below has opened another site.
     let answer: (value: Awaited<ReturnType<SystemClipboard["read"]>>) => void = () => undefined;
@@ -101,14 +102,15 @@ describe("registerClipboardHandlers (1.25)", () => {
         }),
     };
     const invoke = handlers(createElementClipboard(system, join(dir, "kept")), project);
-    const store = vi.spyOn(project, "storeAsset");
+    // Nothing reaches the file, whichever way the bytes would be stored.
+    const store = vi.spyOn(ProjectStore.prototype, "putAsset");
 
     const pasted = invoke("clipboard:read", opened.project.sessionId);
-    project.create(join(dir, "Florist.wforge"));
+    await project.create(join(dir, "Florist.wforge"));
     answer({ kind: "image", png: PNG });
 
     await expect(pasted).resolves.toEqual({ status: "failed", reason: "stale-session" });
     expect(store).not.toHaveBeenCalled();
-    project.close();
+    await project.close();
   });
 });

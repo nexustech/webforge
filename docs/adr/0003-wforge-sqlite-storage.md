@@ -102,7 +102,7 @@ The spike adds a minimal `ProjectStore` in `packages/storage` and wires it throu
 - **Over IPC.** Errors are a typed `ProjectFileError` with a code. The IPC returns `{ status: "failed", reason }`, and logs only the code, never paths or content. The renderer never sends a path: native dialogs run in the main process.
 
 ### 6. Storage API shape
-- **Synchronous, like better-sqlite3.** `create`, `open`, `commit(changes)` (one transaction), `putBlob`/`readBlob` (SHA-256 content addressing), `saveVersion`/`listVersions`/`readVersion` (manifests of document hashes) and `close`. Each call is one short transaction in the main process. Architecture §6 sketches a Promise API; it can wrap this later, or move into a `utilityProcess` if commits outgrow the budget.
+- **Synchronous, like better-sqlite3.** `create`, `open`, `commit(changes)` (one transaction), `putBlob`/`readBlob` (SHA-256 content addressing), `saveVersion`/`listVersions`/`readVersion` (manifests of document hashes) and `close`. Each call is one short transaction in the main process. Architecture §6 sketches a Promise API; it can wrap this later, or move into a `utilityProcess` if commits outgrow the budget. (Since R13b, the main process's `ProjectSession` wraps it in a Promise API behind a store gate, and large blobs are written through a second connection: [ADR 0013](0013-store-gate.md).)
 - **Format version 1 is provisional** until Phase 1 adds the first fixture (`packages/test-utils/fixtures/`).
 
 ### 7. Reading an older site format never writes (R14, 24 Oct 2026)
