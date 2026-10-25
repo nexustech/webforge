@@ -1,7 +1,6 @@
 import { type ChildProcess, spawn } from "node:child_process";
 import { once } from "node:events";
 import { fileURLToPath } from "node:url";
-import { TYPESCRIPT_HOOK } from "@webforge/test-utils";
 
 /** A child process committing to a project in a loop (see writer.ts). */
 export type ChildWriter = {
@@ -15,13 +14,14 @@ export type ChildWriter = {
 
 /**
  * Starts a writer process on the project at `path`: `writer.ts`, which commits, or another script
- * here, such as `asset-writer.ts`, which imports as the storage writer does (R13b).
+ * here, such as `asset-writer.ts`, which imports as the storage writer does (R13b). `hook` is the
+ * test kit's `TYPESCRIPT_HOOK`, which lets the process run the TypeScript sources.
  */
-export function startChildWriter(path: string, script = "writer.ts"): ChildWriter {
+export function startChildWriter(path: string, hook: string, script = "writer.ts"): ChildWriter {
   const writerScript = fileURLToPath(new URL(`./${script}`, import.meta.url));
   const child: ChildProcess = spawn(
     process.execPath,
-    ["--disable-warning=ExperimentalWarning", "--import", TYPESCRIPT_HOOK, writerScript, path],
+    ["--disable-warning=ExperimentalWarning", "--import", hook, writerScript, path],
     { stdio: ["ignore", "pipe", "pipe"] },
   );
   let acknowledged = 0;

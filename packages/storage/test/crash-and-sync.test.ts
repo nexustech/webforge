@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { copyFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import { tempDirFactory } from "@webforge/test-utils";
+import { TYPESCRIPT_HOOK, tempDirFactory } from "@webforge/test-utils";
 import Database from "better-sqlite3";
 import { describe, expect, it } from "vitest";
 import { ProjectFileError, ProjectStore } from "../src/index.js";
@@ -34,7 +34,7 @@ describe("crash safety", () => {
     for (let round = 0; round < 20 && (round < 5 || killedMidTransaction === 0); round += 1) {
       const delayMs = delays[round % delays.length] ?? 0;
       const path = createProject();
-      const writer = startChildWriter(path);
+      const writer = startChildWriter(path, TYPESCRIPT_HOOK);
       await writer.waitForCommits(3);
       await new Promise((resolve) => setTimeout(resolve, delayMs));
       await writer.kill();
@@ -71,7 +71,7 @@ describe("crash safety", () => {
     let killedMidTransaction = 0;
     for (let round = 0; round < 12 && (round < 3 || killedMidTransaction === 0); round += 1) {
       const path = createProject();
-      const writer = startChildWriter(path, "asset-writer.ts");
+      const writer = startChildWriter(path, TYPESCRIPT_HOOK, "asset-writer.ts");
       await writer.waitForCommits(2);
       await new Promise((resolve) => setTimeout(resolve, delays[round % delays.length]));
       await writer.kill();
@@ -102,7 +102,7 @@ describe("cloud-synced folders", () => {
     // rollback journal a copy taken during a commit can be torn; it must then fail the integrity
     // check on open instead of opening with half a commit.
     const path = createProject();
-    const writer = startChildWriter(path);
+    const writer = startChildWriter(path, TYPESCRIPT_HOOK);
     await writer.waitForCommits(2);
     const copyDir = tempDir();
     const copies: string[] = [];
