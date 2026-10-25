@@ -1,9 +1,9 @@
 import type { NodeDoc } from "@webforge/model";
 import { MAX_COLUMNS } from "@webforge/site-components";
 import { describe, expect, it } from "vitest";
+import { starterSite } from "../../shared/starter-site.js";
 import { currentPage } from "../editor/editor-session.js";
 import { copyLayer } from "../editor/layers.js";
-import { starterSite } from "../editor/starter-site.js";
 import { sessionWith } from "../testing/fixtures.js";
 import { duplicateSelected } from "./bulk-layers.js";
 

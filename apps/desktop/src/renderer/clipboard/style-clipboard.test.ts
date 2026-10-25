@@ -1,8 +1,8 @@
 import type { NodeDoc } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { describe, expect, it } from "vitest";
+import { starterSite } from "../../shared/starter-site.js";
 import { currentPage } from "../editor/editor-session.js";
-import { starterSite } from "../editor/starter-site.js";
 import { createCommandRegistry } from "../shell/commands.js";
 import { sessionWith } from "../testing/fixtures.js";
 import {

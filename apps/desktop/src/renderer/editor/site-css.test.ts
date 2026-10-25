@@ -3,9 +3,9 @@ import { DEFAULT_THEME } from "@webforge/model";
 import { createFakeEngine } from "@webforge/test-utils/renderer";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CanvasCssRequest, CanvasCssResult } from "../../shared/ipc/canvas.js";
+import { starterSite } from "../../shared/starter-site.js";
 import { sessionWith } from "../testing/fixtures.js";
 import { classesOfHtml, connectSiteCss, SITE_CSS_DEBOUNCE_MS, siteClasses } from "./site-css.js";
-import { starterSite } from "./starter-site.js";
 
 function setup(
   answer: (n: number) => CanvasCssResult = (n) => ({

@@ -5,9 +5,9 @@ import { FieldRenderersProvider } from "@webforge/editor-ui";
 import type { MediaId, NodeDoc, PageDoc } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it } from "vitest";
+import { starterSite } from "../../shared/starter-site.js";
 import { EditPanelHost } from "../editor/EditPanelHost.js";
 import { currentPage } from "../editor/editor-session.js";
-import { starterSite } from "../editor/starter-site.js";
 import { sessionWith } from "../testing/fixtures.js";
 import { linkFieldRenderer } from "./LinkField.js";
 

@@ -82,7 +82,7 @@ async function appPage(browser: Browser): Promise<Page> {
 /** The renderer's `window.webforge.project`, as far as these tests call it. */
 type ProjectApi = {
   getCurrent(): Promise<unknown>;
-  create(): Promise<{ status: string }>;
+  create(request: { name: string; theme: string }): Promise<{ status: string }>;
 };
 
 const currentProject = (page: Page) =>

@@ -8,8 +8,8 @@ import {
   type SiteDoc,
 } from "@webforge/model";
 import { describe, expect, it } from "vitest";
+import { starterSite } from "../../shared/starter-site.js";
 import { currentPage, type EditorSession } from "../editor/editor-session.js";
-import { starterSite } from "../editor/starter-site.js";
 import { sessionWith } from "../testing/fixtures.js";
 import {
   anchorsTakenInSection,

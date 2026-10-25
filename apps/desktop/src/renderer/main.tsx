@@ -2,8 +2,8 @@ import { installMenuKeys } from "@webforge/engine";
 import { t } from "@webforge/i18n";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { starterSite } from "../shared/starter-site.js";
 import { App } from "./App.js";
-import { starterSite } from "./editor/starter-site.js";
 import { createErrorReporter, installErrorReporting, rootErrorOptions } from "./error-reporting.js";
 import { StartScreen } from "./start/StartScreen.js";
 // Schemas word their problems in the editor's words (2.21).

@@ -11,8 +11,8 @@ import {
 import { siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_PREFERENCES } from "../../shared/ipc/prefs.js";
+import { starterSite } from "../../shared/starter-site.js";
 import { currentPage } from "../editor/editor-session.js";
-import { starterSite } from "../editor/starter-site.js";
 import { saveAsSharedSection } from "../shared-sections/index.js";
 import { createCommandRegistry } from "../shell/commands.js";
 import { PanelRegistryProvider, usePanels } from "../shell/panel-context.js";
