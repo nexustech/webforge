@@ -445,6 +445,10 @@ describe("shortcuts", () => {
         dialog.removeAttribute("aria-modal");
         press(document.body);
         expect(run).toHaveBeenCalledOnce();
+        // A menu closing, still in the page for its animation: the keys are the page's again.
+        dialog.setAttribute("data-state", "closed");
+        press(document.body);
+        expect(run).toHaveBeenCalledTimes(2);
       } finally {
         dialog.remove();
       }

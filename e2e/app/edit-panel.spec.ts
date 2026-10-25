@@ -245,14 +245,14 @@ test("remembers the option groups closed for a kind of element, after a restart 
   await reopen();
   await selectHeading();
   await panel().getByRole("tab", { name: "Style" }).click();
-  const appearance = panel().getByRole("button", { name: "Appearance" });
+  const appearance = panel().getByRole("button", { name: "Appearance", exact: true });
   await appearance.click();
   await expect(appearance).toHaveAttribute("aria-expanded", "false");
 
   await reopen();
   await selectHeading();
   await panel().getByRole("tab", { name: "Style" }).click();
-  await expect(panel().getByRole("button", { name: "Appearance" })).toHaveAttribute(
+  await expect(panel().getByRole("button", { name: "Appearance", exact: true })).toHaveAttribute(
     "aria-expanded",
     "false",
   );

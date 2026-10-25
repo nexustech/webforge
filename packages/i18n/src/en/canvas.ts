@@ -111,6 +111,10 @@ export const canvas = {
   // Back to the element's defaults (UX-13, UX-18): a field's right-click menu, and Ctrl/Cmd + Esc.
   "editPanel.resetField": "Reset to Default",
   "editPanel.resetGroup": "Reset Group to Defaults",
+  // An option group's header, on hover (SP-7): "Copy Spacing", "Paste Spacing", "Reset Spacing".
+  "editPanel.group.copy": "Copy {group}",
+  "editPanel.group.paste": "Paste {group}",
+  "editPanel.group.reset": "Reset {group}",
   // The Edit panel's groups (UX-13): Ctrl/Cmd + Enter on a group's title opens or closes them all.
   "editPanel.expandAll": "Expand All",
   "editPanel.collapseAll": "Collapse All",
@@ -127,6 +131,11 @@ export const canvas = {
   "editPanel.dot.inherits": "{field}: same as Desktop on {device}",
   "editPanel.dot.set": "{field}: set for {device} only",
   "editPanel.dot.clear": "{field}: set for {device} only. Use the Desktop value instead",
+  // A field that may differ per device (SP-5): its rows, one per device.
+  "editPanel.devices.show": "{field} on each device",
+  // After the device's name, for screen readers: "Tablet, its own value".
+  "editPanel.devices.own": "its own value",
+  "editPanel.devices.inEffect": "In effect on the device shown",
   "editPanel.box.default": "Default",
   "editPanel.box.same": "Same on every side",
   // The Advanced tab (Advanced mode, F-ED-11): technical words are fine here, clearly labelled.

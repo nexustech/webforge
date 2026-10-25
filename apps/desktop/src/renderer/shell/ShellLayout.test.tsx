@@ -50,6 +50,29 @@ function renderLayout({
 }
 
 describe("ShellLayout", () => {
+  it("finds the search again when the shown panel comes back, its column emptied meanwhile (#425 review)", async () => {
+    const { panels } = renderLayout({ filled: false });
+    const layers = {
+      id: "layers",
+      slot: "left.top" as const,
+      title: "Layers",
+      component: () => <input type="search" aria-label="Find a layer" />,
+    };
+    let remove: () => void = () => undefined;
+    act(() => {
+      remove = panels.register(layers);
+    });
+    const left = () => within(screen.getByRole("region", { name: "Left panels" }));
+    expect(await left().findByRole("button", { name: "Search Layers" })).toBeDefined();
+
+    act(() => remove());
+    act(() => {
+      panels.register(layers);
+    });
+    await userEvent.setup().click(await left().findByRole("button", { name: "Search Layers" }));
+    expect(document.activeElement).toBe(left().getByRole("searchbox", { name: "Find a layer" }));
+  });
+
   it("shows the magnifier only while the panel has a search, as the Edit panel's comes with a selection (#421 review)", async () => {
     const { panels } = renderLayout({ filled: false });
     function Edit() {
