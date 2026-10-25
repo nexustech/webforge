@@ -5,6 +5,7 @@ import {
   type Oklch,
   SHADE_STEPS,
   SHADED_ROLES,
+  TEXT_SIZES,
   TEXT_STYLES,
   type ThemeTokens,
 } from "@webforge/model";
@@ -39,6 +40,9 @@ const LEADING: Readonly<Record<ThemeTokens["typeScale"]["h1"]["leading"], string
   normal: "1.5",
   relaxed: "1.625",
 };
+
+/** Narrower than this, a page is on a phone: Tailwind's `md`, where layouts change. */
+const PHONE_WIDTH = "48rem";
 
 /** Tailwind's spacing unit for each spacing token: every padding, margin and gap scales with it. */
 const SPACING_UNIT: Readonly<Record<ThemeTokens["spacing"], string>> = {
@@ -138,6 +142,9 @@ const schemeOf = (colors: ThemeTokens["colors"]): ThemeTokens["scheme"] =>
  */
 export function themeCss(tokens: ThemeTokens): string {
   const inverse = inverseColors(tokens);
+  // On phones the page title is a size smaller (#419): a display size would fill the width.
+  const h1 = TEXT_SIZES.indexOf(tokens.typeScale.h1.size);
+  const phoneH1 = TEXT_SIZE[TEXT_SIZES[Math.max(h1 - 1, 0)] ?? tokens.typeScale.h1.size];
   const themes = [
     daisyTheme(tokens, tokens.preset, tokens.colors, { default: true, scheme: tokens.scheme }),
     daisyTheme(tokens, INVERSE_THEME, inverse, {
@@ -161,6 +168,11 @@ export function themeCss(tokens: ThemeTokens): string {
     `  --font-heading: ${fontStack(tokens.fonts.heading)};`,
     `  --spacing: ${SPACING_UNIT[tokens.spacing]};`,
     ...typeScale,
+    "}",
+    `@media (width < ${PHONE_WIDTH}) {`,
+    "  :root {",
+    `    --text-h1: ${phoneH1};`,
+    "  }",
     "}",
     "@theme inline {",
     ...SHADED_ROLES.flatMap((role) =>

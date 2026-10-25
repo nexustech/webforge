@@ -581,3 +581,40 @@ describe("buildSite: documents (1.28)", () => {
     expect(output.report.warnings).toEqual([]);
   });
 });
+
+describe("buildSite: the theme's typography (#419)", () => {
+  it("sets titles in the heading font and text at the type scale's sizes, the page title smaller on phones", async () => {
+    const site: SiteSnapshot = {
+      ...sampleSite(),
+      theme: {
+        ...DEFAULT_THEME,
+        preset: "typography",
+        fonts: {
+          heading: { family: "Lora", fallback: "serif" },
+          body: { family: "Work Sans", fallback: "sans-serif" },
+        },
+        typeScale: {
+          ...DEFAULT_THEME.typeScale,
+          h1: { size: "6xl", weight: 600, leading: "tight" },
+          body: { size: "base", weight: 400, leading: "normal" },
+        },
+      },
+    };
+
+    const exported = await buildSite(site, siteLibrary, resources);
+
+    const page = text(exported, "index.html");
+    expect(page).toContain('<h1 class="font-heading text-h1">');
+    expect(page).toContain("text-body");
+    const css = text(exported, fileNamed(exported, /^assets\/css\//)).replace(/\s+/g, " ");
+    expect(css).toContain('--font-heading: "Lora", ui-serif, Georgia, serif;');
+    expect(css).toContain("font-family: var(--font-heading);");
+    expect(css).toContain("--text-h1: 3.75rem;");
+    expect(css).toContain("--text-h1--font-weight: 600;");
+    expect(css).toContain("font-size: var(--text-h1);");
+    expect(css).toContain("--text-body: 1rem;");
+    expect(css).toContain("@media (width < 48rem) { :root { --text-h1: 3rem; } }");
+    // The heading font's files are part of the site.
+    expect([...exported.files.keys()].some((path) => /lora/i.test(path))).toBe(true);
+  }, 60_000);
+});
