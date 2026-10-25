@@ -13,8 +13,11 @@ import { linkFieldRenderer } from "./LinkField.js";
 
 afterEach(cleanup);
 
-/** The starter page with a Hero to link from and an "Opening times" section to link to. */
-function setUp(buttonLink?: unknown) {
+/**
+ * The starter page with a Hero to link from and an "Opening times" section to link to, with
+ * `times`' props over its own.
+ */
+function setUp(buttonLink?: unknown, times: Record<string, unknown> = {}) {
   const site = starterSite();
   const home = site.pages[site.homePageId];
   if (home === undefined) throw new Error("no home page");
@@ -27,7 +30,10 @@ function setUp(buttonLink?: unknown) {
         ...(buttonLink === undefined ? {} : { buttonLink }),
       },
     },
-    { type: "Section", props: { id: "times", layerName: "Opening times", content: [] } },
+    {
+      type: "Section",
+      props: { id: "times", layerName: "Opening times", content: [], ...times },
+    },
   );
   const session = sessionWith(site);
   session.select("hero");
@@ -75,6 +81,27 @@ describe("LinkField and LinkDialog (F-ED-18)", () => {
 
     session.history.undo();
     expect(node("times")?.advanced).toBeUndefined();
+  });
+
+  it("says when a section's anchor ID can't be linked to, under Section, and won't save", async () => {
+    // An anchor ID the link schema refuses (typed in the Advanced tab): before, Save stayed off
+    // with nothing said, since no field showed the anchor's problem (#435 review).
+    const { node, user } = setUp(undefined, { advanced: { anchorId: "Opening Times!" } });
+
+    await user.click(screen.getByRole("button", { name: "Add Link…" }));
+    const dialog = within(screen.getByRole("dialog", { name: "Link" }));
+    const section = dialog.getByRole("combobox", { name: "Section" });
+    await user.selectOptions(section, "Opening times");
+
+    expect(section.getAttribute("aria-invalid")).toBe("true");
+    expect(dialog.getByText(/anchor ID can't be used in a link/)).toBeTruthy();
+    expect((dialog.getByRole("button", { name: "Save Link" }) as HTMLButtonElement).disabled).toBe(
+      true,
+    );
+    await user.selectOptions(section, "Top of the page");
+    expect(section.getAttribute("aria-invalid")).not.toBe("true");
+    await user.click(dialog.getByRole("button", { name: "Save Link" }));
+    expect(node("hero")?.buttonLink).toEqual({ kind: "page", pageId: expect.any(String) });
   });
 
   it("checks addresses before saving, and adds https:// to a bare web address", async () => {
