@@ -23,7 +23,7 @@
 | Team | One developer, full-time, working with Claude Code. From Phase 1, up to three Claude Code sessions work in parallel streams, one item in progress per stream; the developer reviews and merges every PR. Calendar waits (enrolment, beta) also run in parallel |
 | Estimates | **Ideal working days** with Claude Code, including tests, stories, code review and docs for the item (Definition of Done, [standards §8](03-engineering-standards.md#8-definition-of-done)) |
 | Calendar | Start **26 Oct 2026**, 5-day weeks, England & Wales bank holidays excluded. Add personal leave when known |
-| Contingency | Dates are shown at 100% of the estimates and with **+25%** contingency. Plan against the contingency date |
+| Contingency | Since the Phase 1 exit re-plan (25 Oct 2026) the phase dates are planned at half the measured throughput, which is the margin. The **+25%** contingency column is kept only for the baseline dates |
 | Platforms | Develop on Linux CI + the developer's Mac; Windows checked through CI (Windows runner) and a Windows test machine/VM. Beta on **Windows and macOS** |
 | Signing | Neither Apple Developer nor Windows signing is set up yet. Enrolment (item 0.1) starts by 13 Nov 2026 (product owner, 25 Oct 2026) |
 | Scope | Exactly the [MVP spec](02-mvp-spec.md) after the gap-analysis additions (GA1–GA9). Licensing (MVP §8) is post-MVP and not in this plan |
@@ -206,7 +206,7 @@ These take calendar time rather than effort. Start them in week 1 so they never 
 | Apple Developer Program enrolment (+ D-U-N-S number if enrolling as a company) | Identity checks can take days to weeks; notarisation and macOS auto-update need it | Item 0.5 (about two weeks after enrolment starts by 13 Nov 2026) |
 | Windows code signing: Azure Artifact Signing (formerly Trusted Signing) for a UK organisation, otherwise an OV certificate | Identity validation; Artifact Signing is open to UK organisations but to individuals only in the US and Canada | Item 0.5 (about two weeks after enrolment starts by 13 Nov 2026) |
 | Decide the update-feed host (open question Q1) | Auto-update spike needs a real feed | Item 0.5 (after enrolment's lead time) |
-| Decide booking and newsletter presets (Q4) | The Newsletter section and Booking button are built in Phase 2 | Item 2.8 (15 Apr 2027) |
+| Decide booking and newsletter presets (Q4) | The Newsletter section and Booking button are built in Phase 2 | Item 2.8 (decided 23 Oct 2026) |
 | Template copy and photos (Q6) | About 3–5 weeks of content work; can be sourced in parallel with engineering | Item 2.15 (by 6 Nov 2026) |
 | Start recruiting beta testers (10–20 small businesses, both OSes) | Recruitment is slow; a waiting list helps usability tests in Phase 5 | Item 5.7 (mid-December 2026) |
 
@@ -1181,7 +1181,7 @@ Sequencing rules:
 | # | Risk | Impact | Mitigation |
 |---|---|---|---|
 | R1 | Signing enrolment or eligibility delays (Apple, Azure Artifact Signing) | Unsigned beta: SmartScreen/Gatekeeper warnings scare non-technical users, and macOS auto-update needs a signed app | Start by 13 Nov 2026 (0.1); OV certificate as the Windows fallback; keep 0.5 independent of feature work |
-| R2 | Estimates are optimistic for a solo developer | v1.0 slips by months | Plan against the +25% date; re-estimate at every phase exit; use §11 cuts early rather than late |
+| R2 | Estimates are optimistic for a solo developer | v1.0 slips by months | Plan at half the measured throughput (Phase 1 exit re-plan; the +25% date is the baseline's); re-estimate at every phase exit; use §11 cuts early rather than late |
 | R3 | Puck 0.x changes or limits (performance, API churn) | Rework in the engine package | CanvasEngine adapter; pin the version; large-page check (0.5); fallback canvas on dnd-kit + Tiptap documented in ADR 0004 |
 | R4 | Template and theme content takes longer than engineering | Phase 2 overruns | Source copy/photos in parallel (Q6); ship beta with fewer templates if needed (§11) |
 | R5 | Netlify Forms not detected on API deploys | Forms silently fail on Netlify | Spike 0.2 decides; default to Formspree/Web3Forms if needed; Site Check warns |
@@ -1194,13 +1194,13 @@ Sequencing rules:
 ## 9. Open questions
 | # | Question | Needed by | Default if undecided |
 |---|---|---|---|
-| Q1 | Update-feed host: GitHub Releases on the private repo needs a token in the app. A public releases-only repo or object storage (Cloudflare R2/S3) avoids that | 0.5 (13 Nov 2026) | Cloudflare R2 bucket with electron-updater's generic provider |
+| Q1 | Update-feed host: GitHub Releases on the private repo needs a token in the app. A public releases-only repo or object storage (Cloudflare R2/S3) avoids that | 0.5 (after enrolment's lead time) | Cloudflare R2 bucket with electron-updater's generic provider |
 | Q2 | Apple enrolment as an individual or as the company (company name shown to users; needs D-U-N-S) | 0.1 (by 13 Nov 2026) | Company, if a legal entity exists |
 | Q3 | Windows signing route (depends on Q2): Azure Artifact Signing is open to UK organisations but not UK individuals; the alternative is an OV certificate on a cloud HSM | 0.1 (by 13 Nov 2026) | Artifact Signing if enrolling as a UK company; otherwise an OV certificate |
 | Q4 | Booking and newsletter provider presets (GA3, MVP §7 item 8) | 2.8 | **Decided 23 Oct 2026:** generic URL / form action only, no presets in the MVP |
-| Q5 | Open already-published sites in Content mode by default (MVP §7 item 5) | 4.5 (16 Sep 2027) | No: remember the last mode per site |
+| Q5 | Open already-published sites in Content mode by default (MVP §7 item 5) | 4.5 (Phase 4, 23 Nov–4 Dec 2026) | No: remember the last mode per site |
 | Q6 | Who writes template copy and picks photos; final image licence review (S5) | 2.15 | **Decided 23 Oct 2026:** Claude drafts the copy and the product owner reviews it; CC0 or public-domain photos only (no bundled Unsplash or Pexels photos), recorded in each template's image manifest; the product owner does the final licence review |
-| Q7 | Where beta testers come from and how feedback is collected | 5.7 (20 Oct 2027) | Waiting-list page + email; GitHub issues via a form |
+| Q7 | Where beta testers come from and how feedback is collected | 5.7 (mid-December 2026) | Waiting-list page + email; GitHub issues via a form |
 | Q8 | Licensing details: updates included, computers per licence, trial-end behaviour (MVP §8) | After MVP | Not in this plan |
 | Q9 | MCP transport: a loopback HTTP endpoint with a per-app token, or a small bundled stdio bridge? (`RunAsNode` is disabled, so the Electron binary can't be the bridge) | 4.9 | Loopback Streamable HTTP with per-app tokens, if the main AI desktop apps can connect to it |
 
