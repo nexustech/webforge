@@ -38,8 +38,12 @@ export const ENTRANCE_FIELD_NAMES = Object.keys(ENTRANCE_FIELDS) as readonly (
   | "entranceDelay"
 )[];
 
-/** The entrance fields' values, as a component's render gets them. */
-type EntranceValues = { readonly entrance?: unknown; readonly entranceDelay?: unknown };
+/** The entrance fields' values among a component's, as its render or the document has them. */
+type EntranceValues = {
+  readonly entrance?: unknown;
+  readonly entranceDelay?: unknown;
+  readonly [field: string]: unknown;
+};
 
 /** An entrance that moves: every one but `none`. */
 type Moving = Exclude<Entrance, "none">;
