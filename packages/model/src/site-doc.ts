@@ -112,95 +112,151 @@ function duplicatesOf(values: readonly string[]): string[] {
 }
 
 /**
+ * The schema of each part of a site but its pages, which is also the document each is stored as.
+ * The `site` document's three fields are checked one by one, in {@link SITE_FIELD_SCHEMAS}.
+ */
+export const SITE_PART_SCHEMAS = {
+  settings: siteSettingsSchema,
+  theme: themeSchema,
+  layout: layoutDocSchema,
+  media: z.record(mediaIdSchema, mediaMetaSchema),
+  code: siteCodeSchema,
+  menu: menuDocSchema,
+  /** Shared sections (F-ED-23): saved once, placed on pages as linked copies. */
+  sharedSections: sharedSectionsDocSchema,
+} as const;
+
+/** The fields of the `site` document: the format and the pages' order, which concern every page. */
+export const SITE_FIELD_SCHEMAS = {
+  formatVersion: z.literal(SITE_FORMAT_VERSION),
+  /** Every page id exactly once, in Pages panel order. */
+  pageOrder: z.array(pageIdSchema),
+  /** The page exported as `index.html`. */
+  homePageId: pageIdSchema,
+} as const;
+
+/** One of {@link siteIssues}: what is wrong, and where in the site. */
+type SiteIssue = { readonly message: string; readonly path: PropertyKey[] };
+
+/**
+ * Which parts of a site {@link siteIssues} walks the element trees of, looking for misplaced copies
+ * of shared sections: every page and the layout, or only those a change touched. The rest of its
+ * checks are cheap and always cover the whole site.
+ */
+type SiteIssueScope = {
+  readonly pages: "all" | ReadonlySet<string>;
+  readonly layout: boolean;
+};
+
+/** Every page and the layout: what checking a whole site covers. */
+const WHOLE_SITE: SiteIssueScope = { pages: "all", layout: true };
+
+/**
+ * What is wrong across the parts of a site that each part's schema can't see: pages keyed by their
+ * id, reserved slugs and folders, one home page and one "Page not found" page, the page order,
+ * unique page paths, media names and menu ids, and copies of shared sections only at the top of
+ * pages. `scope` limits the tree walks to the pages and layout that changed (R13a); the site's
+ * other parts must have passed before.
+ */
+export function siteIssues(site: SiteDoc, scope: SiteIssueScope = WHOLE_SITE): SiteIssue[] {
+  const issues: SiteIssue[] = [];
+  const issue = (message: string, path: PropertyKey[]) => issues.push({ message, path });
+  const pages = Object.entries(site.pages);
+
+  for (const [key, page] of pages) {
+    if (page.id !== key) {
+      issue(`Page "${key}" has the id "${page.id}"`, ["pages", key, "id"]);
+    }
+    if (page.kind === "page" && page.id !== site.homePageId && RESERVED_SLUGS.has(page.slug)) {
+      issue(`The slug "${page.slug}" is reserved`, ["pages", key, "slug"]);
+    }
+    if (page.folder?.split("/")[0] === "assets") {
+      issue("The folder 'assets' is reserved", ["pages", key, "folder"]);
+    }
+    if ((page.id === site.homePageId || page.kind === "not-found") && page.folder !== undefined) {
+      issue("The home page and the 'Page not found' page can't be in a folder", [
+        "pages",
+        key,
+        "folder",
+      ]);
+    }
+    if (scope.pages === "all" || scope.pages.has(key)) {
+      for (const { message, path } of copyIssues(page.doc.content)) {
+        issue(message, ["pages", key, "doc", "content", ...path]);
+      }
+    }
+  }
+
+  // Copies of shared sections go on pages, never in the Header or Footer (F-ED-23).
+  if (scope.layout) {
+    for (const region of ["header", "footer"] as const) {
+      if (containsCopy(site.layout[region])) {
+        issue("The Header and Footer can't hold a copy of a shared section", ["layout", region]);
+      }
+    }
+  }
+
+  const order = [...site.pageOrder].sort();
+  const keys = pages.map(([key]) => key).sort();
+  if (order.length !== keys.length || order.some((id, index) => id !== keys[index])) {
+    issue("pageOrder must list every page exactly once", ["pageOrder"]);
+  }
+
+  const home = site.pages[site.homePageId];
+  if (home === undefined || home.kind !== "page") {
+    issue("The home page is missing", ["homePageId"]);
+  }
+  if (pages.filter(([, page]) => page.kind === "not-found").length !== 1) {
+    issue("The site needs exactly one 'Page not found' page", ["pages"]);
+  }
+
+  const paths = duplicatesOf(pages.map(([, page]) => pagePath(page, site.homePageId)));
+  if (paths.length > 0) {
+    issue(`Duplicate page paths: ${paths.join(", ")}`, ["pages"]);
+  }
+
+  const media = Object.entries(site.media);
+  for (const [key, item] of media) {
+    if (item.id !== key) {
+      issue(`Media "${key}" has the id "${item.id}"`, ["media", key, "id"]);
+    }
+  }
+  // Exported files are named after the media name, so two items can't share one.
+  const names = duplicatesOf(media.map(([, item]) => item.name));
+  if (names.length > 0) {
+    issue(`Duplicate media names: ${names.join(", ")}`, ["media"]);
+  }
+
+  const menuIds = duplicatesOf(menuItemIds(site.menu.items));
+  if (menuIds.length > 0) {
+    issue(`Duplicate menu item ids: ${menuIds.join(", ")}`, ["menu", "items"]);
+  }
+  return issues;
+}
+
+/**
  * The whole site as the editor holds it (architecture §5): one document per concern, stored as
  * separate `.wforge` documents so a save writes only what changed. Pages are keyed by id and
  * ordered by `pageOrder`, which is also the navigation order until the menu is edited (S6).
  */
 const siteDocObjectSchema = z
   .strictObject({
-    formatVersion: z.literal(SITE_FORMAT_VERSION),
-    settings: siteSettingsSchema,
-    theme: themeSchema,
-    layout: layoutDocSchema,
+    // In the order sites have always been parsed in, which is the order of their keys.
+    formatVersion: SITE_FIELD_SCHEMAS.formatVersion,
+    settings: SITE_PART_SCHEMAS.settings,
+    theme: SITE_PART_SCHEMAS.theme,
+    layout: SITE_PART_SCHEMAS.layout,
     pages: z.record(pageIdSchema, pageEntrySchema),
-    /** Every page id exactly once, in Pages panel order. */
-    pageOrder: z.array(pageIdSchema),
-    /** The page exported as `index.html`. */
-    homePageId: pageIdSchema,
-    media: z.record(mediaIdSchema, mediaMetaSchema),
-    code: siteCodeSchema,
-    menu: menuDocSchema,
-    /** Shared sections (F-ED-23): saved once, placed on pages as linked copies. */
-    sharedSections: sharedSectionsDocSchema,
+    pageOrder: SITE_FIELD_SCHEMAS.pageOrder,
+    homePageId: SITE_FIELD_SCHEMAS.homePageId,
+    media: SITE_PART_SCHEMAS.media,
+    code: SITE_PART_SCHEMAS.code,
+    menu: SITE_PART_SCHEMAS.menu,
+    sharedSections: SITE_PART_SCHEMAS.sharedSections,
   })
   .superRefine((site, ctx) => {
-    const issue = (message: string, path: PropertyKey[]) =>
+    for (const { message, path } of siteIssues(site)) {
       ctx.addIssue({ code: "custom", message, path });
-    const pages = Object.entries(site.pages);
-
-    for (const [key, page] of pages) {
-      if (page.id !== key) {
-        issue(`Page "${key}" has the id "${page.id}"`, ["pages", key, "id"]);
-      }
-      if (page.kind === "page" && page.id !== site.homePageId && RESERVED_SLUGS.has(page.slug)) {
-        issue(`The slug "${page.slug}" is reserved`, ["pages", key, "slug"]);
-      }
-      if (page.folder?.split("/")[0] === "assets") {
-        issue("The folder 'assets' is reserved", ["pages", key, "folder"]);
-      }
-      if ((page.id === site.homePageId || page.kind === "not-found") && page.folder !== undefined) {
-        issue("The home page and the 'Page not found' page can't be in a folder", [
-          "pages",
-          key,
-          "folder",
-        ]);
-      }
-      for (const { message, path } of copyIssues(page.doc.content)) {
-        issue(message, ["pages", key, "doc", "content", ...path]);
-      }
-    }
-
-    // Copies of shared sections go on pages, never in the Header or Footer (F-ED-23).
-    for (const region of ["header", "footer"] as const) {
-      if (containsCopy(site.layout[region])) {
-        issue("The Header and Footer can't hold a copy of a shared section", ["layout", region]);
-      }
-    }
-
-    const order = [...site.pageOrder].sort();
-    const keys = pages.map(([key]) => key).sort();
-    if (order.length !== keys.length || order.some((id, index) => id !== keys[index])) {
-      issue("pageOrder must list every page exactly once", ["pageOrder"]);
-    }
-
-    const home = site.pages[site.homePageId];
-    if (home === undefined || home.kind !== "page") {
-      issue("The home page is missing", ["homePageId"]);
-    }
-    if (pages.filter(([, page]) => page.kind === "not-found").length !== 1) {
-      issue("The site needs exactly one 'Page not found' page", ["pages"]);
-    }
-
-    const paths = duplicatesOf(pages.map(([, page]) => pagePath(page, site.homePageId)));
-    if (paths.length > 0) {
-      issue(`Duplicate page paths: ${paths.join(", ")}`, ["pages"]);
-    }
-
-    const media = Object.entries(site.media);
-    for (const [key, item] of media) {
-      if (item.id !== key) {
-        issue(`Media "${key}" has the id "${item.id}"`, ["media", key, "id"]);
-      }
-    }
-    // Exported files are named after the media name, so two items can't share one.
-    const names = duplicatesOf(media.map(([, item]) => item.name));
-    if (names.length > 0) {
-      issue(`Duplicate media names: ${names.join(", ")}`, ["media"]);
-    }
-
-    const menuIds = duplicatesOf(menuItemIds(site.menu.items));
-    if (menuIds.length > 0) {
-      issue(`Duplicate menu item ids: ${menuIds.join(", ")}`, ["menu", "items"]);
     }
   });
 
