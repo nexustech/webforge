@@ -75,8 +75,8 @@ function typeScale(
 }
 
 /**
- * Bistro: warm and welcoming, for a café, restaurant or bakery. Cream pages, espresso text and a
- * terracotta brand colour, with Lora's friendly serif headings over Work Sans (the "warm" pairing).
+ * Bistro: warm and welcoming, for a café, restaurant or bakery. Cream pages, espresso text, a
+ * deep green brand colour and terracotta as its second, with Lora's friendly serif headings over Work Sans (the "warm" pairing).
  * Dark sections are espresso with cream text.
  */
 const bistro: ThemeTokens = {
@@ -86,9 +86,9 @@ const bistro: ThemeTokens = {
     {
       surfaces: [ok(0.975, 0.014, 85), ok(0.945, 0.022, 80), ok(0.905, 0.03, 75)],
       text: ok(0.27, 0.035, 50),
-      primary: [ok(0.5, 0.13, 40), WHITE],
-      secondary: [ok(0.45, 0.08, 125), WHITE],
-      accent: [ok(0.45, 0.08, 165), WHITE],
+      primary: [ok(0.45, 0.09, 150), WHITE],
+      secondary: [ok(0.5, 0.13, 40), WHITE],
+      accent: [ok(0.47, 0.09, 75), WHITE],
       neutral: [ok(0.3, 0.035, 50), ok(0.975, 0.014, 85)],
     },
     "light",
@@ -97,9 +97,9 @@ const bistro: ThemeTokens = {
     {
       surfaces: [ok(0.25, 0.03, 50), ok(0.29, 0.032, 50), ok(0.34, 0.034, 50)],
       text: ok(0.96, 0.016, 85),
-      primary: [ok(0.76, 0.11, 45), ok(0.22, 0.04, 45)],
-      secondary: [ok(0.8, 0.08, 125), ok(0.22, 0.03, 125)],
-      accent: [ok(0.8, 0.08, 165), ok(0.22, 0.03, 165)],
+      primary: [ok(0.8, 0.08, 150), ok(0.22, 0.03, 150)],
+      secondary: [ok(0.76, 0.11, 45), ok(0.22, 0.04, 45)],
+      accent: [ok(0.8, 0.09, 75), ok(0.22, 0.03, 75)],
       neutral: [ok(0.92, 0.02, 80), ok(0.25, 0.03, 50)],
     },
     "dark",
@@ -165,7 +165,8 @@ const atelier: ThemeTokens = {
 
 /**
  * Workshop: sturdy and direct, for builders, electricians and other trades. White pages, navy
- * text and a safety-orange brand colour, with Bebas Neue's tall capitals over Roboto (the "bold"
+ * text and a burnt-orange brand colour (dark enough for white text, and for an outline button's
+ * label on white), with Bebas Neue's tall capitals over Roboto (the "bold"
  * pairing), square corners, thick borders, large buttons and compact spacing. Dark sections are
  * navy.
  */
@@ -176,7 +177,7 @@ const workshop: ThemeTokens = {
     {
       surfaces: [ok(0.99, 0.002, 250), ok(0.96, 0.006, 250), ok(0.93, 0.01, 250)],
       text: ok(0.22, 0.035, 255),
-      primary: [ok(0.63, 0.19, 45), ok(0.18, 0.03, 255)],
+      primary: [ok(0.52, 0.17, 42), WHITE],
       secondary: [ok(0.32, 0.08, 255), WHITE],
       accent: [ok(0.48, 0.12, 235), WHITE],
       neutral: [ok(0.25, 0.03, 255), WHITE],
@@ -187,7 +188,7 @@ const workshop: ThemeTokens = {
     {
       surfaces: [ok(0.24, 0.045, 255), ok(0.28, 0.05, 255), ok(0.33, 0.055, 255)],
       text: WHITE,
-      primary: [ok(0.7, 0.18, 45), ok(0.18, 0.03, 255)],
+      primary: [ok(0.74, 0.16, 50), ok(0.18, 0.03, 255)],
       secondary: [ok(0.85, 0.05, 255), ok(0.22, 0.04, 255)],
       accent: [ok(0.78, 0.1, 235), ok(0.2, 0.04, 255)],
       neutral: [ok(0.93, 0.005, 250), ok(0.22, 0.035, 255)],

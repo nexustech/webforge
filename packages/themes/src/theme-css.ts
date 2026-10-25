@@ -180,6 +180,11 @@ function buttonRules(tokens: ThemeTokens): string[] {
           "  .btn-primary:not(.btn-outline, .btn-ghost, .btn-link, .wf-filled) {",
           `    @apply ${look};`,
           "  }",
+          // On a dark band (the Call to action, a Hero over its photo), in the band's text colour.
+          "  .bg-neutral .btn-primary:not(.btn-outline, .btn-ghost, .btn-link, .wf-filled) {",
+          "    --btn-color: var(--color-neutral-content);",
+          "    --btn-fg: var(--color-neutral);",
+          "  }",
         ]),
     "}",
   ];

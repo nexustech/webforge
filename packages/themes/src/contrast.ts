@@ -7,7 +7,8 @@ export const AA_LARGE = 3;
 
 /**
  * The colour pairs the components put together (2.1): each role's text on it, text on every
- * surface, and the brand colours as large text (headings in the theme's colour) on every surface.
+ * surface, the main colour as text on every surface (an outline button's label), and the other
+ * brand colours as large text (headings in the theme's colour) on every surface.
  */
 const PAIRS: readonly (readonly [ColorRole, ColorRole, number])[] = [
   ["base-100", "base-content", AA_TEXT],
@@ -21,13 +22,14 @@ const PAIRS: readonly (readonly [ColorRole, ColorRole, number])[] = [
   ["success", "success-content", AA_TEXT],
   ["warning", "warning-content", AA_TEXT],
   ["error", "error-content", AA_TEXT],
-  ["base-100", "primary", AA_LARGE],
+  // The main colour as text: outline buttons write their label in it (#423, 2.13a).
+  ["base-100", "primary", AA_TEXT],
   ["base-100", "secondary", AA_LARGE],
   ["base-100", "accent", AA_LARGE],
-  ["base-200", "primary", AA_LARGE],
+  ["base-200", "primary", AA_TEXT],
   ["base-200", "secondary", AA_LARGE],
   ["base-200", "accent", AA_LARGE],
-  ["base-300", "primary", AA_LARGE],
+  ["base-300", "primary", AA_TEXT],
   ["base-300", "secondary", AA_LARGE],
   ["base-300", "accent", AA_LARGE],
 ];

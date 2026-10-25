@@ -390,4 +390,8 @@
   .btn-primary:not(.btn-outline, .btn-ghost, .btn-link, .wf-filled) {
     @apply btn-outline;
   }
+  .bg-neutral .btn-primary:not(.btn-outline, .btn-ghost, .btn-link, .wf-filled) {
+    --btn-color: var(--color-neutral-content);
+    --btn-fg: var(--color-neutral);
+  }
 }

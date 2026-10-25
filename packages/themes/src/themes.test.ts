@@ -194,7 +194,7 @@ describe("contrastIssues (2.1)", () => {
     expect(issues[0]?.ratio).toBe(Math.floor(contrastRatio(grey, WHITE) * 100) / 100);
   });
 
-  it("checks brand colours as large text on every surface", () => {
+  it("checks the main colour as text on every surface: an outline button's label (2.13a)", () => {
     const theme = themeTokensSchema.parse({
       ...DEFAULT_THEME,
       colors: { ...DEFAULT_THEME.colors, primary: { l: 0.95, c: 0.02, h: 90 } },
@@ -204,9 +204,9 @@ describe("contrastIssues (2.1)", () => {
       (issue) => issue.palette === "colors" && issue.foreground === "primary",
     );
     expect(brand.map((issue) => [issue.background, issue.required])).toEqual([
-      ["base-100", AA_LARGE],
-      ["base-200", AA_LARGE],
-      ["base-300", AA_LARGE],
+      ["base-100", AA_TEXT],
+      ["base-200", AA_TEXT],
+      ["base-300", AA_TEXT],
     ]);
   });
 });
@@ -377,6 +377,12 @@ describe("themeCss (2.1)", () => {
     );
     const ghost = css({ buttons: { shape: "pill", size: "m", style: "ghost" } });
     expect(ghost).toContain("@apply btn-ghost;");
+    // On a dark band, an outline or ghost button takes the band's text colour (2.13a).
+    for (const styled of [square, ghost]) {
+      expect(styled).toContain(
+        ".bg-neutral .btn-primary:not(.btn-outline, .btn-ghost, .btn-link, .wf-filled) {\n    --btn-color: var(--color-neutral-content);",
+      );
+    }
     const filled = css({ buttons: { shape: "pill", size: "m", style: "filled" } });
     expect(filled).not.toContain("@apply");
     // Rounded buttons keep the theme's field corners, as they always had.
