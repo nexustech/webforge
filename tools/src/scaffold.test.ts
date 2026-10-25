@@ -1,4 +1,12 @@
-import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  cpSync,
+  existsSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -14,6 +22,7 @@ import {
   namesOf,
   planFor,
   registerStrings,
+  STRINGS_FILES,
   scaffold,
   stringKeys,
 } from "./scaffold.js";
@@ -226,7 +235,7 @@ describe("scaffold", () => {
       expect.arrayContaining([
         "apps/desktop/src/renderer/site/area.ts",
         "apps/desktop/src/renderer/areas.ts",
-        "packages/i18n/src/en/site.ts",
+        "packages/i18n/src/en/panels.ts",
       ]),
     );
     expect(read(root, "apps/desktop/src/renderer/site/area.ts")).toContain(
@@ -235,8 +244,22 @@ describe("scaffold", () => {
     expect(read(root, "apps/desktop/src/renderer/areas.ts")).toMatch(
       /WINDOW_AREAS[\s\S]*jumpHomeCommandsArea,\n\];/,
     );
-    expect(read(root, "packages/i18n/src/en/site.ts")).toContain(
+    // The Site panel's strings are in panels.ts, so its commands' are too.
+    expect(read(root, "packages/i18n/src/en/panels.ts")).toContain(
       '"command.jumpHome": "Jump home",',
+    );
+  });
+
+  it("puts an area's strings where the area keeps them, never in a file beside them", () => {
+    const root = copyOfRepo();
+
+    const result = scaffold(planFor("panel", "Outline", { root, folder: "layers" }), root, false);
+
+    expect(result.changed).toContain("packages/i18n/src/en/panels.ts");
+    expect(result.written).not.toContain("packages/i18n/src/en/layers.ts");
+    expect(existsSync(join(root, "packages/i18n/src/en/layers.ts"))).toBe(false);
+    expect(read(root, "packages/i18n/src/en/panels.ts")).toContain(
+      '"outline.panelTitle": "Outline",',
     );
   });
 
@@ -331,6 +354,29 @@ describe("scaffold's refusals", () => {
     );
     expect(() => planFor("ipc-domain", "SpellCheck", { root: REPO })).toThrow(/one word/);
     expect(() => planFor("ipc-domain", "Clipboard", { root: REPO })).toThrow(/exists already/);
+  });
+
+  it("refuses an area whose strings file it doesn't know, rather than starting another", () => {
+    expect(() => planFor("panel", "Timings", { root: REPO, folder: "perf" })).toThrow(
+      /renderer\/perf keeps its strings in a file the scaffold doesn't know: add it to STRINGS_FILES/,
+    );
+  });
+
+  it("knows where every area that has strings keeps them", () => {
+    const renderer = join(REPO, "apps/desktop/src/renderer");
+    // Every area (not what every area builds on, nor a folder such as node_modules), but those with
+    // no strings of their own.
+    const areas = readdirSync(renderer, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name)
+      .filter((name) => folderProblem(name) === undefined && !["fields", "perf"].includes(name));
+    const fileOf = (area: string) =>
+      `packages/i18n/src/en/${STRINGS_FILES[area] ?? area.replace(/-(\w)/g, (_, c: string) => c.toUpperCase())}.ts`;
+
+    const unknown = areas.filter((area) => !existsSync(join(REPO, fileOf(area))));
+
+    expect(unknown).toEqual([]);
+    expect(areas).toContain("layers");
   });
 
   it("puts a panel or commands in an area's folder only", () => {

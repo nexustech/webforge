@@ -63,6 +63,7 @@ A panel is a tab in one of the window's slots: `left.top`, `left.bottom`, `left.
 - **Register it** with `panels.register({ id, slot, title: t(…), component, icon?, order?, advancedOnly? })`, from a `register…Panel(panels, session)` function in its area. `order` sorts a slot's tabs, lowest first; ties keep registration order.
 - **It has a story,** made with `panelStory()` from `renderer/testing/stories.tsx`, which registers it as the area does and draws it. `tools/src/panel-stories.test.ts` fails for a `register…Panel` without one, and says how to add it.
 - **A dialog's story** uses `dialogStory()`.
+- **An editor panel** joins the list of panels `Editor.test.tsx` expects, so a panel an area adds by mistake fails it.
 
 ## Commands
 
@@ -107,7 +108,14 @@ Never log or store site content, credentials or personal data on the way; secret
 ## Strings
 
 No UI text is hard-coded (`pnpm ui-strings` checks): every string goes through `t()` from `@webforge/i18n`, worded from the glossary (`research/product/01-terminology.md`).
-- **Each area's strings** are in `packages/i18n/src/en/<area>.ts`, listed in `en.ts`; a test fails on a key in two files.
+- **Each area's strings** are in one file under `packages/i18n/src/en/`, listed in `en.ts`; a test fails on a key in two files. A new area gets its own (`<area>.ts`). The areas from before then share files, which `pnpm scaffold` knows (`STRINGS_FILES` in `tools/src/scaffold.ts`):
+  - `panels.ts`: add, element-menu, layers, links, menu, site;
+  - `site.ts`: clipboard, media, site-settings, start;
+  - `canvas.ts`: shared-sections;
+  - their own: export (`export.ts`), storage (`storage.ts`);
+  - none of their own: fields (the colour field's are in `components/shared.ts`), perf.
+
+  The scaffold refuses an area it can't place, rather than starting a second file for it.
 - **`t(key, params)` is typed by the message:** its `{placeholders}` are the params it needs, checked when it compiles.
 - **Counts** use `plural(base, count)`, with `base.one` and `base.other` keys.
 - **Code that fills placeholders itself** (a script, Puck) uses `template(key)`.

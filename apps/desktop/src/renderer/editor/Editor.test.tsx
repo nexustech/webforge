@@ -682,9 +682,14 @@ describe("Editor", () => {
   });
 
   it("puts Add and Undo History on the left, and the Edit panel and Media on the right", () => {
-    // In any order, and each once, among whatever other panels the editor's areas add.
-    const ids = panels.list().map((panel) => panel.id);
-    expect(new Set(ids).size).toBe(ids.length);
+    // These four and no others, each once, in any order: a panel an editor area adds joins them
+    // here (EDITOR_AREAS, renderer/areas.ts).
+    expect(
+      panels
+        .list()
+        .map((panel) => panel.id)
+        .toSorted(),
+    ).toEqual(["add", "edit", "media", "undoHistory"]);
     expect(panels.list()).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ id: "undoHistory", slot: "left.bottom", title: "Undo History" }),
