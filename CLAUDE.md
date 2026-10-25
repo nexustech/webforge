@@ -7,6 +7,7 @@ Read the specs before making changes:
 - **Implementation plan:** `spec/04-implementation-plan.md` (each work item is a GitHub issue, e.g. "1.12 Canvas: …")
 - **Reasoning behind decisions:** `research/`, with decision IDs such as C5 or X1
 - **Reviews of `main` and of the plan:** `docs/reviews/` (the architecture review tracks its findings as issues R1–R17)
+- **Adding to the editor:** `docs/extending.md` (areas, panels, commands, toolbars, kinds of field, IPC domains, strings, the test kit); a site component: `docs/components.md`
 
 ## Product in one line
 A desktop builder for non-technical small-business owners that produces self-contained static sites (flat `about.html` files, relative links, work from disk, no external requests).
@@ -41,6 +42,7 @@ A desktop builder for non-technical small-business owners that produces self-con
 - `pnpm visual:docker`: the same with screenshots, in CI's pinned Playwright container on this machine (Docker Desktop must be running). It copies the working tree as git sees it, writes screenshots for new stories, and with `--update` also rewrites changed ones (review them with `git diff` first); `pnpm visual:docker -- --grep Picker` runs a subset. Run it before marking a PR ready whenever stories were added or changed, and commit the screenshots with the PR, so CI doesn't fail on them and need a second run. `pnpm --filter @webforge/editor-ui storybook` (or `@webforge/site-components`) opens Storybook.
 - `pnpm e2e:perf`: builds the app in perf mode and runs the large-page performance check (`e2e/perf/`, ADR 0007). On demand only, not in CI. Run it before and after performance work and when upgrading Puck.
 - `pnpm format`: apply Biome fixes. `pnpm build`: build all workspaces.
+- `pnpm scaffold area|panel|commands|field-kind|ipc-domain <Name>` and `pnpm new-component <Name> --place section|element|child`: write a new part of the editor, or a site component, with its strings, story and test, and register it (`docs/extending.md`, `docs/components.md`).
 - `pnpm behaviours` and `pnpm font-catalogue`: regenerate `packages/site-components/src/behaviours/index.ts` (a site-components test fails when it is stale) and `packages/themes/src/fonts/catalogue.json` (the bundled family list is in `tools/src/build-font-catalogue.ts`). Run them after adding or renaming a behaviour file or editing that list, and commit the result.
 - `/plan-next [phase or item IDs]` (Claude Code command in `.claude/commands/`): plan the next block of work from `spec/04-implementation-plan.md` and the live GitHub milestones and issues. It presents a plan for approval before changing anything.
 - Workspace packages are consumed from source (`exports` → `src/index.ts`). Import them as `@webforge/<name>`, never by path. Relative imports use `.js` extensions (`./foo.js` for `foo.ts`).
