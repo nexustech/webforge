@@ -1,13 +1,14 @@
 import { mkdirSync, truncateSync, writeFileSync } from "node:fs";
 import { open } from "node:fs/promises";
 import { join } from "node:path";
-import { ProjectStore } from "@webforge/storage";
+import { AssetWriter, ProjectStore } from "@webforge/storage";
 import { tempDirFactory } from "@webforge/test-utils";
 import type { IpcMain, IpcMainInvokeEvent } from "electron";
 import { describe, expect, it, vi } from "vitest";
 import { MAX_MEDIA_BYTES } from "../shared/ipc/media.js";
-import { readAtMost, registerMediaHandlers } from "./media-ipc.js";
-import { ProjectSession, type StoreAssetResult } from "./project-session.js";
+import { readAtMost, storeImport } from "../worker/store-import.js";
+import { registerMediaHandlers } from "./media-ipc.js";
+import { type ImportFileResult, type ImportSource, ProjectSession } from "./project-session.js";
 
 type Handler = (event: IpcMainInvokeEvent, ...args: unknown[]) => Promise<unknown>;
 
@@ -26,7 +27,14 @@ function setUp(chosen: readonly string[] | undefined, open = true) {
     staleReason: vi.fn((sessionId: string) =>
       !open ? "no-site" : sessionId === SESSION ? undefined : "stale-session",
     ),
-    storeAsset: vi.fn((): StoreAssetResult => ({ status: "stored", hash: "a".repeat(64) })),
+    // Reads and checks as the storage writer does, storing nowhere.
+    importFile: vi.fn(
+      (mediaId: string, fileName: string, source: ImportSource): Promise<ImportFileResult> =>
+        storeImport({ sitePath: "site.wforge", mediaId, fileName, source }, () => ({
+          put: () => "a".repeat(64),
+          close: () => undefined,
+        })) as Promise<ImportFileResult>,
+    ),
   };
   // As the real session's, without a hand-off: the same site.
   const withSession = {
@@ -47,9 +55,9 @@ describe("registerMediaHandlers", () => {
     const result = await invoke("media:import", SESSION, [{ fileName: "prices.pdf", data: pdf }]);
 
     expect(result).toMatchObject({ status: "imported", items: [{ fileName: "prices.pdf" }] });
-    expect(session.storeAsset).toHaveBeenCalledWith(
-      expect.objectContaining({ data: pdf, mime: "application/pdf", originalName: "prices.pdf" }),
-    );
+    expect(session.importFile).toHaveBeenCalledWith(expect.any(String), "prices.pdf", {
+      data: pdf,
+    });
   });
 
   it("imports nothing for a renderer loaded for a site another one has replaced (R6)", async () => {
@@ -60,7 +68,7 @@ describe("registerMediaHandlers", () => {
         { fileName: "prices.pdf", data: pdf },
       ]),
     ).resolves.toEqual({ status: "failed", reason: "stale-session" });
-    expect(session.storeAsset).not.toHaveBeenCalled();
+    expect(session.importFile).not.toHaveBeenCalled();
   });
 
   it("refuses a drop with a path for a name or more than 50 MB of bytes", async () => {
@@ -87,7 +95,7 @@ describe("registerMediaHandlers", () => {
         { fileName: "c.pdf", data: pdf },
       ]),
     ).rejects.toThrow();
-    expect(session.storeAsset).not.toHaveBeenCalled();
+    expect(session.importFile).not.toHaveBeenCalled();
   });
 
   it("stores each chosen file before reading the next, and stops when storing fails", async () => {
@@ -98,13 +106,13 @@ describe("registerMediaHandlers", () => {
       return path;
     });
     const { invoke, session } = setUp(paths);
-    vi.mocked(session.storeAsset).mockReturnValueOnce({ status: "failed", reason: "read-only" });
+    vi.mocked(session.importFile).mockResolvedValueOnce({ status: "failed", reason: "read-only" });
 
     await expect(invoke("media:choose", SESSION)).resolves.toEqual({
       status: "failed",
       reason: "read-only",
     });
-    expect(session.storeAsset).toHaveBeenCalledTimes(1);
+    expect(session.importFile).toHaveBeenCalledTimes(1);
   });
 
   it("reads the chosen files, and doesn't read one that is too large", async () => {
@@ -121,6 +129,32 @@ describe("registerMediaHandlers", () => {
       items: [{ fileName: "Prices.pdf", kind: "file" }],
       rejected: [{ fileName: "Big.pdf", reason: "too-large" }],
     });
+  });
+
+  it("imports dropped files by the paths the preload found, absolute ones only (R13b)", async () => {
+    const dir = tempDir();
+    const prices = join(dir, "Prices.pdf");
+    writeFileSync(prices, pdf);
+    const { invoke, session } = setUp(undefined);
+
+    await expect(invoke("media:import-paths", SESSION, [prices])).resolves.toMatchObject({
+      status: "imported",
+      items: [{ fileName: "Prices.pdf", kind: "file" }],
+    });
+    expect(session.importFile).toHaveBeenCalledWith(expect.any(String), "Prices.pdf", {
+      path: prices,
+    });
+    // Refused whole, and answered as a failure: nothing read.
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    session.importFile.mockClear();
+    await expect(invoke("media:import-paths", SESSION, ["Prices.pdf"])).resolves.toEqual({
+      status: "failed",
+      reason: "unknown",
+    });
+    expect(session.importFile).not.toHaveBeenCalled();
+    await expect(
+      invoke("media:import-paths", "3c1d2e4f-5a6b-4c7d-8e9f-0a1b2c3d4e5f", [prices]),
+    ).resolves.toEqual({ status: "failed", reason: "stale-session" });
   });
 
   it("does nothing when the user cancels, or without a site", async () => {
@@ -213,6 +247,7 @@ describe("registerMediaHandlers and a hand-off (R6)", () => {
     registerMediaHandlers(ipc, (url) => url === APP_URL, project, { chooseMediaFiles });
     // Nothing reaches the file, whichever way the bytes would be stored.
     const store = vi.spyOn(ProjectStore.prototype, "putAsset");
+    const write = vi.spyOn(AssetWriter.prototype, "put");
 
     const chosen = handlers.get("media:choose")?.(
       { senderFrame: { url: APP_URL } } as IpcMainInvokeEvent,
@@ -223,6 +258,7 @@ describe("registerMediaHandlers and a hand-off (R6)", () => {
 
     await expect(chosen).resolves.toEqual({ status: "failed", reason: "stale-session" });
     expect(store).not.toHaveBeenCalled();
+    expect(write).not.toHaveBeenCalled();
     await project.close();
     vi.restoreAllMocks();
   });

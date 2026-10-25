@@ -1,5 +1,6 @@
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
+import { Worker } from "node:worker_threads";
 import { t } from "@webforge/i18n";
 import { DOCUMENT_EXTENSIONS, type SiteSnapshot, type ThemeTokens } from "@webforge/model";
 import { type CatalogueFont, FONT_CATALOGUE, fontFacesFor } from "@webforge/themes";
@@ -74,6 +75,7 @@ import {
   registerSpellCheckHandlers,
   spellCheckAvailable,
 } from "./spellcheck.js";
+import { createStorageWriter } from "./storage-writer.js";
 import {
   MIN_WINDOW_SIZE,
   mainWindowPlacement,
@@ -91,6 +93,7 @@ setLogSink(fileLogSink(app.isPackaged));
 const rendererHtml = join(import.meta.dirname, "../renderer/index.html");
 const preloadScript = join(import.meta.dirname, "../preload/index.cjs");
 const exportWorkerScript = join(import.meta.dirname, "export-worker.js");
+const storageWriterScript = join(import.meta.dirname, "storage-writer.js");
 
 // electron-vite sets ELECTRON_RENDERER_URL to the Vite dev server in development only.
 const devServerUrl = app.isPackaged ? undefined : process.env.ELECTRON_RENDERER_URL;
@@ -125,19 +128,23 @@ const backups = createBackups({ root: join(app.getPath("userData"), "backups") }
 const backupSchedule = createBackupSchedule(backups);
 // The start screen's Recent list (F-SITE-2, 1.8).
 const recentSites = createRecentSites({ dir: app.getPath("userData") });
-const projectSession = new ProjectSession({
-  opened: (access, path) => {
-    void backupSchedule.opened(access, path);
-    const name = projectSession.current()?.name;
-    if (name !== undefined) recentSites.opened(path, name);
+const projectSession = new ProjectSession(
+  {
+    opened: (access, path) => {
+      void backupSchedule.opened(access, path);
+      const name = projectSession.current()?.name;
+      if (name !== undefined) recentSites.opened(path, name);
+    },
+    committed: () => {
+      backupSchedule.committed();
+      const path = projectSession.currentPath();
+      if (path !== undefined) recentSites.edited(path);
+    },
+    closed: () => backupSchedule.closed(),
   },
-  committed: () => {
-    backupSchedule.committed();
-    const path = projectSession.currentPath();
-    if (path !== undefined) recentSites.edited(path);
-  },
-  closed: () => backupSchedule.closed(),
-});
+  // Imports are read, hashed and stored in a thread of their own (R13b, ADR 0013).
+  { writer: createStorageWriter(() => new Worker(storageWriterScript)) },
+);
 const canvasAreaSchema = z.object({
   x: z.number().transform(Math.round),
   y: z.number().transform(Math.round),

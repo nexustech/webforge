@@ -1,6 +1,7 @@
+import { createHash } from "node:crypto";
 import { copyFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import { tempDirFactory } from "@webforge/test-utils";
+import { TYPESCRIPT_HOOK, tempDirFactory } from "@webforge/test-utils";
 import Database from "better-sqlite3";
 import { describe, expect, it } from "vitest";
 import { ProjectFileError, ProjectStore } from "../src/index.js";
@@ -33,7 +34,7 @@ describe("crash safety", () => {
     for (let round = 0; round < 20 && (round < 5 || killedMidTransaction === 0); round += 1) {
       const delayMs = delays[round % delays.length] ?? 0;
       const path = createProject();
-      const writer = startChildWriter(path);
+      const writer = startChildWriter(path, TYPESCRIPT_HOOK);
       await writer.waitForCommits(3);
       await new Promise((resolve) => setTimeout(resolve, delayMs));
       await writer.kill();
@@ -61,6 +62,38 @@ describe("crash safety", () => {
     // Proves the rounds above really interrupted a write, not only idle moments.
     expect(killedMidTransaction).toBeGreaterThan(0);
   }, 120_000);
+
+  it("opens after the storage writer is killed mid-import, keeping every import it finished (R13b)", async () => {
+    // As support/asset-writer.ts makes them.
+    const blobOf = (seq: number) => new Uint8Array(2 * 1024 * 1024).fill(seq % 251);
+    const hash = (seq: number) => createHash("sha256").update(blobOf(seq)).digest("hex");
+    const delays = [0, 20, 60];
+    let killedMidTransaction = 0;
+    for (let round = 0; round < 12 && (round < 3 || killedMidTransaction === 0); round += 1) {
+      const path = createProject();
+      const writer = startChildWriter(path, TYPESCRIPT_HOOK, "imports");
+      await writer.waitForCommits(2);
+      await new Promise((resolve) => setTimeout(resolve, delays[round % delays.length]));
+      await writer.kill();
+      if (existsSync(`${path}-journal`)) {
+        killedMidTransaction += 1;
+      }
+
+      // Opens (the half-written import rolled back, the fingerprint matching), with every import
+      // the writer saw return: its bytes and its asset.
+      const store = ProjectStore.open(path);
+      for (let seq = 1; seq <= writer.lastAcknowledged(); seq += 1) {
+        expect(store.readAsset(`photo-${seq}`)?.hash, `import ${seq}`).toBe(hash(seq));
+        expect(store.hasBlob(hash(seq)), `import ${seq}`).toBe(true);
+      }
+      // No page names them, so garbage collection removes them all, and the file still opens.
+      store.collectGarbage();
+      expect(store.hasBlob(hash(1))).toBe(false);
+      store.close();
+      ProjectStore.open(path).close();
+    }
+    expect(killedMidTransaction).toBeGreaterThan(0);
+  }, 120_000);
 });
 
 describe("cloud-synced folders", () => {
@@ -69,7 +102,7 @@ describe("cloud-synced folders", () => {
     // rollback journal a copy taken during a commit can be torn; it must then fail the integrity
     // check on open instead of opening with half a commit.
     const path = createProject();
-    const writer = startChildWriter(path);
+    const writer = startChildWriter(path, TYPESCRIPT_HOOK);
     await writer.waitForCommits(2);
     const copyDir = tempDir();
     const copies: string[] = [];

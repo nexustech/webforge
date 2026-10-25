@@ -4,7 +4,7 @@ import { ProjectStore } from "../../src/index.js";
 
 // Writes packages/test-utils/fixtures/wforge/v1.wforge, the format 1 fixture. Run once when the
 // format is released, never again (the fixture must stay as format 1 wrote it):
-//   node --import ./packages/storage/test/support/resolve-ts.ts \
+//   node --import ./packages/test-utils/src/resolve-ts.ts \
 //     packages/storage/test/support/make-v1-fixture.ts <output path>
 
 const output = process.argv[2];
