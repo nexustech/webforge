@@ -135,6 +135,15 @@ describe("the Embed video and Embed map elements (2.11, F-CM-4)", () => {
     expect(notVideo).not.toContain("data-wf-embed");
   });
 
+  it("says on the canvas to fill in Site Settings when bound to an empty address", () => {
+    const bound = element("EmbedMap", { bindings: { address: "contact.address" } });
+
+    const drawn = html(bound, { ...canvas, emptySetting: (key) => `Empty: ${key}` });
+
+    expect(drawn).toContain("Empty: contact.address");
+    expect(drawn).not.toContain("Missing");
+  });
+
   it("needs the embed behaviour, and animate for an entrance", () => {
     const behavioursOf = (values: Record<string, unknown>) => {
       const behaviours = siteLibrary.components.EmbedVideo?.behaviours;

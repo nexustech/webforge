@@ -174,11 +174,19 @@ function EmbedElement({
   readonly name: string;
   readonly embed: Embed | null;
   readonly kind: EmbedKind;
+  /** What it lacks while it shows no embed, for the canvas's hint. */
   readonly missing: ElementHint;
   readonly values: Readonly<Record<string, unknown>>;
   readonly context: RenderContext;
 }) {
-  const hint = embed === null ? context.elementHint?.(missing) : undefined;
+  // Bound to an empty Site Settings value: filled in there, as other bound elements say.
+  const key = bindingOf(values.bindings, "address");
+  const hint =
+    embed !== null
+      ? undefined
+      : key === undefined
+        ? context.elementHint?.(missing)
+        : context.emptySetting?.(key);
   if (embed === null && (hint === undefined || hint === null)) return null;
   return (
     <div
