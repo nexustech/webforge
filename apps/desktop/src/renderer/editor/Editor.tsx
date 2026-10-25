@@ -1,4 +1,4 @@
-import { type FieldRenderers, FieldRenderersProvider, toast } from "@webforge/editor-ui";
+import { FieldRenderersProvider, toast } from "@webforge/editor-ui";
 import {
   type CanvasEngine,
   createPuckEngine,
@@ -7,17 +7,17 @@ import {
   type ViewOptions,
 } from "@webforge/engine";
 import { t } from "@webforge/i18n";
-import { textStylesOf } from "@webforge/site-components";
 import { HistoryIcon, SlidersHorizontalIcon } from "lucide-react";
 import { type RefObject, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { shallow } from "zustand/shallow";
 import type { CustomDevice, EditPanelPreferences } from "../../shared/ipc/prefs.js";
+import { createSectionPreviews } from "../add/index.js";
 import { CanvasElementMenu } from "../element-menu/CanvasElementMenu.js";
 import { createErrorReporter, type ReportError } from "../error-reporting.js";
-import { linkFieldRenderer } from "../links/LinkField.js";
+import { fieldRenderers } from "../fields/index.js";
 import { RichTextLinkHost } from "../links/RichTextLinkHost.js";
-import { imageFieldRenderer } from "../media/ImageField.js";
 import { createImagePickRequests } from "../media/image-picks.js";
+import { sharedSection } from "../shared-sections/index.js";
 import {
   SharedSectionNameDialog,
   type SharedSectionNaming,
@@ -40,7 +40,6 @@ import {
 import { type Area, connectAreas, type EditorContext, type EditorDialogs } from "./areas.js";
 import { CanvasBreadcrumbs } from "./CanvasBreadcrumbs.js";
 import { CanvasResizeHandles } from "./CanvasResizeHandles.js";
-import { colourFieldRenderer } from "./ColourField.js";
 import { EditPanelHost, type EditPanelHostProps } from "./EditPanelHost.js";
 import { canvasPreviews, createPreviewStore } from "./edit-previews.js";
 import {
@@ -50,8 +49,6 @@ import {
   runHistoryCommand,
 } from "./editor-session.js";
 import { createEngineHost } from "./engine-host.js";
-import { fieldTarget } from "./field-target.js";
-import { IconField } from "./IconField.js";
 import type { Layer } from "./layers.js";
 import { SharedRegionBanner } from "./SharedRegionBanner.js";
 import { confirmSharedRemovals } from "./shared-confirmations.js";
@@ -222,6 +219,16 @@ export function Editor({
   const viewOptions = usePreferences(preferences, viewOptionsOf, shallow);
   /** The edit-only previews the user turned on (UX-26), for this window. */
   const [editPreviews] = useState(() => createPreviewStore());
+  // The sections' larger previews in the Add panel (UX-10), drawn with the site's theme. Made once
+  // for the editor's session, so the drawings they keep outlive the areas registering again.
+  const [sectionPreviews] = useState(() =>
+    createSectionPreviews({
+      library: session.library,
+      theme: () => session.history.document.getState().theme,
+      sharedSection: (id) => sharedSection(session.history.document.getState(), id)?.section,
+      compileCss,
+    }),
+  );
   // The canvas engine as the areas see it, while one is mounted (2.20, B1).
   const [host] = useState(createEngineHost);
   const panels = usePanelRegistry();
@@ -419,29 +426,9 @@ export function Editor({
   // The Edit panel replaces Puck's own fields (1.14). Registered once: it follows the editor level
   // and the mode (Content shows its Content tab only) itself, so a switch redraws it alone (R9).
   useEffect(() => {
-    // The fields the app draws itself (R11): images, links, icons, and colours with the theme's own
-    // colours and a contrast warning (1.37, UX-25).
-    const renderers: FieldRenderers = {
-      image: imageFieldRenderer({ session, picks: imagePicks }),
-      link: linkFieldRenderer({ session }),
-      icon: IconField,
-      color: colourFieldRenderer({
-        session,
-        preferences,
-        // The selected element's text styles, wherever it is (the page, the shared Header or
-        // Footer, a linked copy), as the Edit panel finds it.
-        textStyles: () => {
-          const { pageId, nodeId } = session.ui.getState();
-          const target = fieldTarget(
-            session.history.document.getState(),
-            session.library,
-            pageId,
-            nodeId,
-          );
-          return target === undefined ? [] : textStylesOf(target.node, session.library);
-        },
-      }),
-    };
+    // The fields the app draws itself (R11, fields/): images, links, icons, and colours with the
+    // theme's own colours and a contrast warning (1.37, UX-25).
+    const renderers = fieldRenderers({ session, preferences, imagePicks });
     function Edit() {
       return (
         <FieldRenderersProvider renderers={renderers}>
@@ -475,6 +462,7 @@ export function Editor({
         engine: host,
         ...(siteWide === undefined ? {} : { siteWide }),
         compileCss,
+        sectionPreviews,
         editPreviews,
         dialogs,
       }),
@@ -488,6 +476,7 @@ export function Editor({
       host,
       siteWide,
       compileCss,
+      sectionPreviews,
       editPreviews,
       dialogs,
     ],

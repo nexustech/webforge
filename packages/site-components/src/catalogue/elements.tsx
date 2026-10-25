@@ -86,6 +86,10 @@ const image = defineComponent({
       label: t("field.imageWidth"),
       responsive: true,
       steps: IMAGE_WIDTHS.map((value) => ({ label: t(`field.imageWidth.${value}`), value })),
+      // The canvas's width handles snap to these (2.17); full is as wide as the column.
+      widths: Object.fromEntries(
+        IMAGE_WIDTHS.map((value) => [value, IMAGE_WIDTH_PX[value] ?? null]),
+      ),
     },
     alignment: ALIGNMENT_FIELD,
     rounded: { kind: "toggle", label: t("field.rounded"), group: "style" },

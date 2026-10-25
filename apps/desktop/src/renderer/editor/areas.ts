@@ -1,6 +1,8 @@
+import type { ReactNode } from "react";
 import type { StoreApi } from "zustand/vanilla";
 import type { ExportRequest } from "../../shared/ipc/site.js";
 import type { ExportResult } from "../../shared/ipc-contract.js";
+import type { AddItem } from "../add/index.js";
 import type { SharedSectionNaming } from "../shared-sections/SharedSectionCommands.js";
 import type { CanvasView } from "../shell/canvas-view.js";
 import type { CommandRegistry } from "../shell/commands.js";
@@ -31,12 +33,14 @@ type AreaContext = {
   readonly session: EditorSession;
   readonly commands: CommandRegistry;
   readonly panels: PanelRegistry;
-  readonly toolbars: ContextualToolbarRegistry;
   /** The person's preferences and the editor mode, which an area follows itself. */
   readonly preferences: PreferencesStore;
 };
 
-/** What the window gives the areas it registers (App). */
+/**
+ * What the window gives the areas it registers (App): its own registries and stores, made once,
+ * so its areas register once and a panel keeps what it shows (Layers' collapsed layers and filter).
+ */
 export type WindowContext = AreaContext & {
   /** Asks before what changes more than the page shown (D7). */
   readonly siteWide: Pick<SiteWideConfirm, "confirmSiteWide">;
@@ -48,12 +52,19 @@ export type WindowContext = AreaContext & {
 
 /** What the editor gives the areas it registers, around its canvas (Editor). */
 export type EditorContext = AreaContext & {
+  /** The selected element's own toolbars, in the row under the canvas toolbar (SP-4). */
+  readonly toolbars: ContextualToolbarRegistry;
   /** The canvas engine, while the editor has one mounted. */
   readonly engine: EngineHandle;
   /** Asks before what changes more than the page shown (D7); without it, changes happen at once. */
   readonly siteWide?: Pick<SiteWideConfirm, "confirmSiteWide" | "current">;
-  /** Compiles the site CSS for the canvas and the Add panel's previews. */
+  /** Compiles the site CSS for the canvas. */
   readonly compileCss: CompileCanvasCss;
+  /**
+   * The sections' larger previews in the Add panel (UX-10), drawn with the site's theme: made once
+   * for the editor's session, so the drawings they keep outlive the areas registering again.
+   */
+  readonly sectionPreviews: (item: AddItem) => ReactNode;
   /** The edit-only previews the person turned on (UX-26), for this window. */
   readonly editPreviews: StoreApi<PreviewChoices>;
   /** The editor's own dialogs and panels, which an area's commands open. */

@@ -2,7 +2,7 @@ import { type ResizableLayout, Toaster, TooltipProvider } from "@webforge/editor
 import { t } from "@webforge/i18n";
 import { siteLibrary } from "@webforge/site-components";
 import { PanelBottomIcon, PanelLeftIcon, PanelRightIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ExportRequest } from "../shared/ipc/site.js";
 import type {
   AppInfo,
@@ -13,7 +13,7 @@ import type {
   UiStateResult,
 } from "../shared/ipc-contract.js";
 import { EDITOR_AREAS, WINDOW_AREAS } from "./areas.js";
-import { connectAreas } from "./editor/areas.js";
+import { connectAreas, type WindowContext } from "./editor/areas.js";
 import { Editor, type EditorProps } from "./editor/Editor.js";
 import { createEditorSession, type EditorSession } from "./editor/editor-session.js";
 import { starterSite } from "./editor/starter-site.js";
@@ -129,21 +129,22 @@ export function App({
   useEffect(() => installCommandShortcuts(window, registry), [registry]);
   useEffect(() => pauseCommandsWhileAsking(siteWide, registry), [siteWide, registry]);
   // The window's areas (2.20, B1): the Site and Layers panels, Go to page, Open Crash Reports,
-  // the View menu's zoom and device views, and Export, after the shell's own commands.
-  useEffect(
-    () =>
-      connectAreas(WINDOW_AREAS, {
-        session,
-        commands: registry,
-        panels,
-        toolbars,
-        preferences,
-        siteWide,
-        canvasView,
-        exportSite,
-      }),
-    [session, registry, panels, toolbars, preferences, siteWide, canvasView, exportSite],
-  );
+  // the View menu's zoom and device views, and Export, after the shell's own commands. Their
+  // context is made once, so they register once: Export reads the latest exportSite as it runs.
+  const exportSiteRef = useRef(exportSite);
+  useEffect(() => {
+    exportSiteRef.current = exportSite;
+  }, [exportSite]);
+  const [windowContext] = useState<WindowContext>(() => ({
+    session,
+    commands: registry,
+    panels,
+    preferences,
+    siteWide,
+    canvasView,
+    exportSite: (request) => exportSiteRef.current(request),
+  }));
+  useEffect(() => connectAreas(WINDOW_AREAS, windowContext), [windowContext]);
 
   // View → Use Light/Dark Theme, labelled for the theme shown; it reads that when it runs.
   useEffect(

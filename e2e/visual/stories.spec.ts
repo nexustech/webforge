@@ -110,9 +110,10 @@ for (const build of BUILDS) {
           );
           // A story that draws after it renders says so until it has (the app's panelStory():
           // its panels register in an effect), so a slow story is waited for, not failed (#365).
-          await page.waitForFunction(
-            () => document.querySelector('[data-story-state="drawing"]') === null,
-          );
+          await expect(
+            page.locator('[data-story-state="drawing"]'),
+            `${story.title} › ${story.name} is still drawing: its panels never registered`,
+          ).toHaveCount(0, { timeout: 15_000 });
           await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
           await page.evaluate(() => document.fonts.ready);
 

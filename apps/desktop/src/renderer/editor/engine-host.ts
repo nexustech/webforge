@@ -58,8 +58,10 @@ export function createEngineHost(): EngineHost {
     attach: (mounted) => {
       const detach = () => {
         if (current !== mounted) return;
-        // Gone before what it was connected to stops, so nothing reaches it while that happens.
+        // Gone before what it was connected to stops, so nothing reaches it while that happens;
+        // and not kept, so the engine and its iframe can go.
         current = null;
+        detachCurrent = undefined;
         for (const entry of [...waiting].reverse()) {
           entry.disconnect?.();
           entry.disconnect = undefined;
@@ -69,7 +71,14 @@ export function createEngineHost(): EngineHost {
       detachCurrent?.();
       current = mounted;
       detachCurrent = detach;
-      for (const entry of [...waiting]) entry.disconnect = entry.connect(mounted);
+      try {
+        for (const entry of [...waiting]) entry.disconnect = entry.connect(mounted);
+      } catch (error) {
+        // What connected before the one that failed is undone, so the engine isn't left half
+        // connected with nothing to detach it.
+        detach();
+        throw error;
+      }
       return detach;
     },
   };

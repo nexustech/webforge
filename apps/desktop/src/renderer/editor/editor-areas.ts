@@ -1,5 +1,5 @@
 import { toast } from "@webforge/editor-ui";
-import { deleteSelected, duplicateSelected, moveSelected } from "../layers/bulk-layers.js";
+import { deleteSelected, duplicateSelected, moveSelected } from "../layers/index.js";
 import { followLayoutLock } from "../shell/preferences-store.js";
 import type { Area, EditorContext } from "./areas.js";
 import { columnsToolbar } from "./ColumnsToolbar.js";

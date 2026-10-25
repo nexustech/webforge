@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen, within } from "@testing-library/rea
 import userEvent from "@testing-library/user-event";
 import { t } from "@webforge/i18n";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { EditPanel, type EditPanelField } from "./edit-panel.js";
+import { EditPanel, type EditPanelField, hasBuiltInRenderer } from "./edit-panel.js";
 import { FieldRenderersProvider } from "./field-context.js";
 import type { FieldRendererProps } from "./field-spec.js";
 import { ListField } from "./list-field.js";
@@ -1059,5 +1059,15 @@ describe("Advanced tab and checked text fields (F-ED-11)", () => {
 
     expect(input.value).toBe("");
     expect(onChange).not.toHaveBeenCalled();
+  });
+});
+
+describe("hasBuiltInRenderer (2.20, B5)", () => {
+  it("says which kinds every Edit panel draws, and which the app must give it", () => {
+    expect(hasBuiltInRenderer("text")).toBe(true);
+    expect(hasBuiltInRenderer("box")).toBe(true);
+    expect(hasBuiltInRenderer("list")).toBe(true);
+    expect(hasBuiltInRenderer("image")).toBe(false);
+    expect(hasBuiltInRenderer("link")).toBe(false);
   });
 });

@@ -590,27 +590,15 @@ describe("createPuckEngine", () => {
     expect(open()).toBe(false);
   });
 
-  it("keeps an Image's hint, the previews and the navigation when Site Settings change (#367)", async () => {
+  it("still draws an Image's hint after Site Settings change (#367)", async () => {
+    // The keys test below sees that the hint is kept; this sees the Image draw it.
     const pic = () => element.querySelector(".t-pic")?.textContent;
-    const open = () => element.querySelector<HTMLDetailsElement>(".t-menu")?.open;
-    const nav = () => [...element.querySelectorAll(".t-nav li")].map((item) => item.textContent);
     await act(async () => {
       engine.setImages(
         () => null,
         () => "Choose one",
       );
-      engine.setPreviews({ mobileMenu: true });
-      engine.setNavigation([{ label: "Home", href: "#", current: true }]);
-      engine.applyChange({
-        page: {
-          ...page,
-          content: [
-            { type: "Pic", props: { id: "p" } },
-            { type: "Menu", props: { id: "m" } },
-            { type: "Nav", props: { id: "n" } },
-          ],
-        },
-      });
+      engine.applyChange({ page: { ...page, content: [{ type: "Pic", props: { id: "p" } }] } });
     });
     await settle();
 
@@ -619,8 +607,6 @@ describe("createPuckEngine", () => {
     await settle();
 
     expect(pic()).toBe("Choose one");
-    expect(open()).toBe(true);
-    expect(nav()).toEqual(["Home"]);
   });
 
   it("keeps every part of the render context not from Site Settings when they change (#367)", async () => {

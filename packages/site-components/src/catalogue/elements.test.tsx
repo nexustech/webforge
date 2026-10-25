@@ -1,6 +1,6 @@
 import type { NodeDoc } from "@webforge/model";
 import { describe, expect, it } from "vitest";
-import { slotsOverfull } from "../library.js";
+import { overfillsSlots } from "../library.js";
 import { renderNodesToHtml } from "../render-static.js";
 import type { RenderContext, ResolvedImage } from "../schema.js";
 import { columnLayoutsFor, MAX_COLUMNS, MIN_COLUMNS } from "./column-layouts.js";
@@ -193,8 +193,38 @@ describe("the Columns element (2.9)", () => {
       { type: "Section", props: { id: "s", content: [node] } },
     ];
 
-    expect(slotsOverfull(siteLibrary, inSection(columns(MAX_COLUMNS)))).toBe(false);
-    expect(slotsOverfull(siteLibrary, inSection(columns(MAX_COLUMNS + 1)))).toBe(true);
+    // A fifth added, or a Columns of five arriving: refused; four are fine.
+    expect(overfillsSlots(siteLibrary, [], inSection(columns(MAX_COLUMNS)))).toBe(false);
+    expect(overfillsSlots(siteLibrary, [], inSection(columns(MAX_COLUMNS + 1)))).toBe(true);
+  });
+
+  it("counts only the slots a change fills, not one already over its limit (#375)", () => {
+    const column = (id: string): NodeDoc => ({ type: "Column", props: { id, content: [] } });
+    const columns = (id: string, count: number): NodeDoc => ({
+      type: "Columns",
+      props: { id, columns: Array.from({ length: count }, (_, index) => column(`${id}${index}`)) },
+    });
+    const section = (...content: NodeDoc[]): NodeDoc[] => [
+      { type: "Section", props: { id: "s", content } },
+    ];
+    // "over" holds five, as an old file might.
+    const before = section(columns("over", MAX_COLUMNS + 1), columns("full", MAX_COLUMNS));
+    const overfills = (...after: NodeDoc[]) =>
+      overfillsSlots(siteLibrary, before, section(...after));
+
+    // A fifth in "full", or a sixth in "over": refused, whatever else the page holds.
+    expect(overfills(columns("over", MAX_COLUMNS + 1), columns("full", MAX_COLUMNS + 1))).toBe(
+      true,
+    );
+    expect(overfills(columns("over", MAX_COLUMNS + 2), columns("full", MAX_COLUMNS))).toBe(true);
+    // Anything else, and moves that leave "over" as full as it was: fine.
+    const heading: NodeDoc = { type: "Heading", props: { id: "h" } };
+    expect(overfills(columns("over", MAX_COLUMNS + 1), columns("full", MAX_COLUMNS), heading)).toBe(
+      false,
+    );
+    expect(overfills(columns("full", MAX_COLUMNS), columns("over", MAX_COLUMNS + 1))).toBe(false);
+    // Taking a column out of "over" is fine too.
+    expect(overfills(columns("over", MAX_COLUMNS), columns("full", MAX_COLUMNS))).toBe(false);
   });
 
   it("offers 2.17's presets for each number of columns", () => {
