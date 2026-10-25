@@ -14,6 +14,7 @@ import {
   ACTIONS,
   ACTIONS_OVERLAY,
   componentSelector,
+  elementOf,
   HOVERED_COMPONENT,
   OVERLAY,
   SELECTED_COMPONENT,
@@ -402,15 +403,15 @@ function ElementActionButtons({
 
 /**
  * Element `id`'s size on the page ("256 × 256"), for its name chip while *Show spacing on hover* is
- * on (SP-2); nothing while it's off.
+ * on (SP-2); nothing while it's off. The element's own, not Puck's wrapper around it, which can be
+ * wider (a Small Image in a wide column).
  */
-function hoveredSize(bar: HTMLElement, id: string): string | undefined {
-  const document = bar.ownerDocument;
+export function hoveredSize(document: Document, id: string): string | undefined {
   if (!document.documentElement.hasAttribute(OPTION_ATTRIBUTES.spacingOnHover)) return undefined;
-  const element = document.querySelector<HTMLElement>(componentSelector(id));
-  return element === null
-    ? undefined
-    : `${Math.round(element.offsetWidth)} × ${Math.round(element.offsetHeight)}`;
+  const element = elementOf(document, id);
+  if (element === null || element === undefined) return undefined;
+  const { width, height } = element.getBoundingClientRect();
+  return `${Math.round(width)} × ${Math.round(height)}`;
 }
 
 /** Space between the element and its bar when the bar goes below it, in screen pixels. */
@@ -490,7 +491,8 @@ export function QuickActionBar({
   useLayoutEffect(() => {
     const bar = kept.current;
     // With *Show spacing on hover* on, a hovered element's chip says its size (SP-2).
-    const next = bar === null || selected || id === null ? undefined : hoveredSize(bar, id);
+    const next =
+      bar === null || selected || id === null ? undefined : hoveredSize(bar.ownerDocument, id);
     if (next !== size) setSize(next);
     return bar === null ? undefined : keepInFrame(bar, selected);
   });

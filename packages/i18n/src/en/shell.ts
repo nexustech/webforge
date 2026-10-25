@@ -49,6 +49,8 @@ export const shell = {
   "shell.export": "Export",
   "shell.publish": "Publish",
   "shell.actions": "Site actions",
+  // A title-bar button's caret (LF-13), named by the button: "More Export options".
+  "shell.moreOptions": "More {name} options",
 
   // Command box.
   "shell.commandBox.open": "Search commands",

@@ -7,6 +7,7 @@ import { ProjectStore } from "@webforge/storage";
 import { heroPhoto } from "@webforge/test-utils";
 import { placeCaret } from "./caret.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
+import { chooseFromMenu, hasMenuItem } from "./menus.js";
 
 // Design | Content (M3, 1.10): switching is instant, locks the layout in Content mode and is
 // remembered with the site. Simple | Advanced is a per-person preference.
@@ -210,11 +211,10 @@ test.describe("editor modes", () => {
   test("turns Advanced mode on from the View menu", async () => {
     const page = await openSite();
 
-    await page.getByRole("menuitem", { name: "View", exact: true }).click();
-    await page.getByRole("menuitem", { name: "Use Advanced Mode" }).click();
+    await chooseFromMenu(app as ElectronApplication, page, "View", "Use Advanced Mode");
     await expect(page.getByRole("menu")).toHaveCount(0);
-    await page.getByRole("menuitem", { name: "View", exact: true }).click();
-
-    await expect(page.getByRole("menuitem", { name: "Use Simple Mode" })).toBeVisible();
+    await expect
+      .poll(() => hasMenuItem(app as ElectronApplication, page, "View", "Use Simple Mode"))
+      .toBe(true);
   });
 });

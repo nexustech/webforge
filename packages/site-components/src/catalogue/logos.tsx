@@ -93,6 +93,8 @@ function LogoView({
 }) {
   const layout = useContext(LogosLayoutContext);
   const image = placed === undefined ? null : context.image(placed.mediaId);
+  // Until an image is chosen: a space to see and select on the canvas, and nothing in the export.
+  if (image === null && context.emptyImage === undefined) return null;
   const linked = linkValue(link);
   const attributes = linked === undefined ? undefined : linkAttributes(linked, context);
   // Its name for screen readers: the alt text, else the company's name. A linked logo is the
@@ -105,7 +107,6 @@ function LogoView({
       : destinationOf(linked, attributes.href, context) || t("siteText.logo");
   const picture =
     image === null ? (
-      // Until an image is chosen: a space to see and select on the canvas, as the Gallery's.
       <span className="block h-12 w-32 rounded-box bg-base-200">
         {alt !== "" && <span className="sr-only">{alt}</span>}
       </span>

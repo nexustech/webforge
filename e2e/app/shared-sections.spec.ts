@@ -1,6 +1,7 @@
 import { type ElectronApplication, expect, type Locator, type Page, test } from "@playwright/test";
 import { type Box, below, boxOf, drag } from "./drag.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
+import { chooseFromMenu } from "./menus.js";
 
 // Shared sections (1.29, F-ED-23): a section saved once and placed as linked copies; editing any
 // copy changes them all in one undo step, and Detach makes one copy a normal section again.
@@ -32,8 +33,7 @@ const headings = () => canvas().locator(".site-heading");
 /** Runs an Edit menu command, once the menu a previous command closed has gone. */
 async function editMenu(name: string | RegExp): Promise<void> {
   await expect(page.getByRole("menu")).toHaveCount(0);
-  await page.getByRole("menuitem", { name: "Edit" }).click();
-  await page.getByRole("menuitem", { name }).click();
+  await chooseFromMenu(app, page, "Edit", name);
 }
 
 /** Waits until `target` stays where it is: Puck animates the canvas, and redraws a saved section. */

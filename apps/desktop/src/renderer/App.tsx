@@ -25,7 +25,7 @@ import { CommandButton } from "./shell/CommandButton.js";
 import { createCanvasView } from "./shell/canvas-view.js";
 import { CommandRegistryProvider } from "./shell/command-context.js";
 import { COMMAND_IDS } from "./shell/command-ids.js";
-import { createCommandRegistry, installCommandShortcuts } from "./shell/commands.js";
+import { createCommandRegistry, installCommandShortcuts, isMac } from "./shell/commands.js";
 import {
   createSiteWideConfirm,
   pauseCommandsWhileAsking,
@@ -205,6 +205,8 @@ export function App({
             <div className="flex h-full flex-col">
               <TitleBar
                 siteName={siteName}
+                // On macOS the menus are the menu bar's (LF-13).
+                menuBar={isMac() ? window.webforge.app : undefined}
                 saveStatus={<AutosaveStatus session={session} loaded={loaded} />}
                 undoSteps={
                   <UndoStepsMenu

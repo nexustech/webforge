@@ -1,6 +1,7 @@
 import {
   cpSync,
   existsSync,
+  mkdirSync,
   mkdtempSync,
   readdirSync,
   readFileSync,
@@ -34,19 +35,26 @@ import {
 
 const REPO = join(import.meta.dirname, "../..");
 
-/** The repository's files the scaffolds read and change. */
-const FILES = [
-  "apps/desktop/src/renderer/areas.ts",
-  "apps/desktop/src/renderer/site/area.ts",
+// The repository's files each kind of scaffold reads and changes. Each test copies only those it
+// needs: on a slow runner every file copied and then read for the first time costs time (#403).
+
+/** An area's: the list of areas and the strings' index. */
+const AREA = ["apps/desktop/src/renderer/areas.ts", "packages/i18n/src/en.ts"];
+
+/** A panel's: an area's, and the editor's test that lists the panels. */
+const PANEL = [...AREA, "apps/desktop/src/renderer/editor/Editor.test.tsx"];
+
+/** The Site area there is, and the strings file it keeps its strings in. */
+const SITE = ["apps/desktop/src/renderer/site/area.ts", "packages/i18n/src/en/panels.ts"];
+
+/** The Layers area there is, which keeps its strings in the same file. */
+const LAYERS = ["apps/desktop/src/renderer/layers/area.ts", "packages/i18n/src/en/panels.ts"];
+
+/** A kind of field's. */
+const FIELD_KIND = [
   "apps/desktop/src/renderer/editor/EditPanelHost.tsx",
-  "apps/desktop/src/renderer/editor/Editor.test.tsx",
   "apps/desktop/src/renderer/fields/field-kinds.ts",
   "apps/desktop/src/renderer/fields/field-renderers.ts",
-  "apps/desktop/src/shared/ipc-contract.ts",
-  "apps/desktop/src/shared/webforge-api.ts",
-  "apps/desktop/src/preload/api.ts",
-  "apps/desktop/src/main/index.ts",
-  "packages/i18n/src/en.ts",
   "packages/site-components/src/schema.ts",
   "packages/site-components/src/define.ts",
   "packages/engine/src/puck/config.tsx",
@@ -54,16 +62,22 @@ const FILES = [
   "packages/editor-ui/src/components/edit/field-spec.ts",
 ];
 
+/** An IPC domain's. */
+const IPC_DOMAIN = [
+  "apps/desktop/src/shared/ipc-contract.ts",
+  "apps/desktop/src/shared/webforge-api.ts",
+  "apps/desktop/src/preload/api.ts",
+  "apps/desktop/src/main/index.ts",
+];
+
 const temporary: string[] = [];
 
-/** A folder with copies of the files the scaffolds read and change, and the English strings. */
-function copyOfRepo(): string {
+/** A folder with copies of `files` from the repository, and a folder for the English strings. */
+function copyOfRepo(files: readonly string[]): string {
   const root = mkdtempSync(join(tmpdir(), "webforge-scaffold-"));
   temporary.push(root);
-  for (const path of FILES) cpSync(join(REPO, path), join(root, path), { recursive: true });
-  cpSync(join(REPO, "packages/i18n/src/en"), join(root, "packages/i18n/src/en"), {
-    recursive: true,
-  });
+  mkdirSync(join(root, "packages/i18n/src/en"), { recursive: true });
+  for (const path of files) cpSync(join(REPO, path), join(root, path));
   return root;
 }
 
@@ -196,7 +210,7 @@ describe("scaffold on the repository's files", () => {
 
 describe("scaffold", () => {
   it("writes an area, its panel and commands, each listed, with their strings", () => {
-    const root = copyOfRepo();
+    const root = copyOfRepo(PANEL);
 
     const area = scaffold(planFor("area", "Bookings", { root }), root, false);
     const panel = scaffold(planFor("panel", "Bookings", { root, folder: "bookings" }), root, false);
@@ -240,7 +254,7 @@ describe("scaffold", () => {
   });
 
   it("adds the window's commands to an area there is, with its strings", () => {
-    const root = copyOfRepo();
+    const root = copyOfRepo([...AREA, ...SITE]);
 
     const result = scaffold(
       planFor("commands", "JumpHome", { root, folder: "site", scope: "window" }),
@@ -268,7 +282,7 @@ describe("scaffold", () => {
   });
 
   it("puts an area's strings where the area keeps them, never in a file beside them", () => {
-    const root = copyOfRepo();
+    const root = copyOfRepo([...PANEL, ...LAYERS]);
 
     const result = scaffold(planFor("panel", "Outline", { root, folder: "layers" }), root, false);
 
@@ -281,7 +295,7 @@ describe("scaffold", () => {
   });
 
   it("writes a kind of field in all seven places", () => {
-    const root = copyOfRepo();
+    const root = copyOfRepo(FIELD_KIND);
 
     const result = scaffold(planFor("field-kind", "Rating", { root }), root, false);
 
@@ -304,7 +318,7 @@ describe("scaffold", () => {
   });
 
   it("writes an IPC domain from the contract to main's handler", () => {
-    const root = copyOfRepo();
+    const root = copyOfRepo(IPC_DOMAIN);
 
     const result = scaffold(planFor("ipc-domain", "Calendar", { root }), root, false);
 
@@ -329,7 +343,7 @@ describe("scaffold", () => {
   });
 
   it("formats what it wrote and changed, and says whether that worked", () => {
-    const root = copyOfRepo();
+    const root = copyOfRepo(AREA);
     const format = vi.fn(() => true);
 
     const result = scaffold(planFor("area", "Bookings", { root }), root, format);
@@ -342,7 +356,7 @@ describe("scaffold", () => {
   });
 
   it("refuses what is there already, writing nothing", () => {
-    const root = copyOfRepo();
+    const root = copyOfRepo(AREA);
     const plan = planFor("area", "Bookings", { root });
     scaffold(plan, root, false);
 
@@ -350,7 +364,7 @@ describe("scaffold", () => {
   });
 
   it("writes nothing when a file can't take what it adds", () => {
-    const root = copyOfRepo();
+    const root = copyOfRepo(AREA);
     const list = join(root, "apps/desktop/src/renderer/areas.ts");
     writeFileSync(list, "export const SOMETHING_ELSE = [];\n");
 
@@ -404,7 +418,7 @@ describe("scaffold's refusals", () => {
   });
 
   it("puts a panel in the name's own folder when no area is given (#322's pnpm scaffold panel Notes)", () => {
-    const root = copyOfRepo();
+    const root = copyOfRepo(PANEL);
 
     const result = scaffold(planFor("panel", "Notes", { root }), root, false);
 
@@ -424,7 +438,7 @@ describe("scaffold's refusals", () => {
   });
 
   it("refuses strings the app has already", () => {
-    const root = copyOfRepo();
+    const root = copyOfRepo(PANEL);
     scaffold(planFor("panel", "Bookings", { root, folder: "bookings" }), root, false);
 
     expect(() => planFor("panel", "Bookings", { root, folder: "other" })).toThrow(
@@ -447,7 +461,7 @@ describe("pnpm scaffold", () => {
   });
 
   it("lists what it wrote and changed, and what to do next", () => {
-    const root = copyOfRepo();
+    const root = copyOfRepo(PANEL);
     const output = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
 
     main(["panel", "Bookings", "--area", "bookings", "--window"], { root, format: () => true });
@@ -463,7 +477,7 @@ describe("pnpm scaffold", () => {
   });
 
   it("says when it can't, or couldn't format what it wrote", () => {
-    const root = copyOfRepo();
+    const root = copyOfRepo([...AREA, ...SITE]);
     const errors = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
     vi.spyOn(process.stdout, "write").mockImplementation(() => true);
 
