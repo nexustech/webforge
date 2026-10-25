@@ -52,7 +52,7 @@ describe("editableList", () => {
     );
 
     expect(repeating.map(({ type }) => type)).toEqual(
-      expect.arrayContaining(["Faq", "Features", "Testimonials"]),
+      expect.arrayContaining(["Faq", "Features", "Testimonials", "Team", "Pricing"]),
     );
     for (const { type, list } of repeating) {
       expect(list?.holds, type).toBe("elements");

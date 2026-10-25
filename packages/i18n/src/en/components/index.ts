@@ -8,9 +8,11 @@ import { features } from "./features.js";
 import { forms } from "./forms.js";
 import { gallery } from "./gallery.js";
 import { layout } from "./layout.js";
+import { pricing } from "./pricing.js";
 import { sections } from "./sections.js";
 import { shared } from "./shared.js";
 import { tabs } from "./tabs.js";
+import { team } from "./team.js";
 import { testimonials } from "./testimonials.js";
 
 /**
@@ -31,6 +33,8 @@ export const componentFamilies = {
   forms,
   features,
   testimonials,
+  team,
+  pricing,
   commerce,
   tabs,
 } as const;
@@ -49,6 +53,8 @@ export const components = {
   ...forms,
   ...features,
   ...testimonials,
+  ...team,
+  ...pricing,
   ...commerce,
   ...tabs,
 } as const;

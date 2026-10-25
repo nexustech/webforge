@@ -59,21 +59,59 @@ export function checkForm<V extends FormValues, Out>(
 const patternOf = (path: readonly PropertyKey[]) =>
   path.map((key) => (typeof key === "number" ? "*" : String(key))).join(".");
 
+/** Whether `issue` is about `field`: at its path, or inside it (a part of it, an item of a list). */
+export function concerns(field: FormField, issue: FormIssue): boolean {
+  const own = field.path ?? field.name;
+  const pattern = patternOf(issue.path);
+  return pattern === own || own === "" || pattern.startsWith(`${own}.`);
+}
+
 /**
- * The message of `field`'s first problem in `issues`, if any: one at its path, or inside it (an
- * item of a list).
+ * The message of `field`'s first problem in `issues`, if any. A list's are those about the list
+ * itself: its items' show by their fields ({@link itemIssuesOf}).
  */
 export function issueOf(field: FormField, issues: readonly FormIssue[]): string | undefined {
-  const own = field.path ?? field.name;
-  return issues.find((issue) => {
-    const pattern = patternOf(issue.path);
-    return pattern === own || pattern.startsWith(`${own}.`);
-  })?.message;
+  return issues.find(
+    (issue) =>
+      concerns(field, issue) &&
+      (field.kind !== "list" || patternOf(issue.path) === (field.path ?? field.name)),
+  )?.message;
+}
+
+/**
+ * A list field's problems by item, as its renderer shows them: by the item's id, then the field's
+ * name (`social.profiles.2.url` is the third item's `url`). Its first problem each.
+ */
+export function itemIssuesOf(
+  field: FormField,
+  items: readonly ListItem[],
+  issues: readonly FormIssue[],
+): Readonly<Record<string, Readonly<Record<string, string>>>> {
+  const own = (field.path ?? field.name).split(".").filter((part) => part !== "");
+  const found: Record<string, Record<string, string>> = {};
+  for (const issue of issues) {
+    const keys = issue.path;
+    const index = keys[own.length];
+    const name = keys[own.length + 1];
+    if (
+      typeof index !== "number" ||
+      name === undefined ||
+      !own.every((part, at) => String(keys[at]) === part)
+    ) {
+      continue;
+    }
+    const item = items[index];
+    if (item === undefined) continue;
+    const byField = found[item.id] ?? {};
+    byField[String(name)] ??= issue.message;
+    found[item.id] = byField;
+  }
+  return found;
 }
 
 /** The problems in `issues` that none of `fields` shows, which the form shows above them. */
 export const unplacedIssues = (fields: readonly FormField[], issues: readonly FormIssue[]) =>
-  issues.filter((issue) => !fields.some((field) => issueOf(field, [issue]) !== undefined));
+  issues.filter((issue) => !fields.some((field) => concerns(field, issue)));
 
 /** The groups of the fields whose values differ between `before` and `after`, in the form's order. */
 export function changedGroups<V extends FormValues>(
@@ -115,7 +153,7 @@ export function applyListChange(
 }
 
 /** A list field's items in `value`, which holds them when it is an array. */
-const itemsOf = (value: unknown): readonly ListItem[] =>
+export const itemsOf = (value: unknown): readonly ListItem[] =>
   Array.isArray(value) ? (value as readonly ListItem[]) : [];
 
 /** Edits a form of `spec`, starting from `initial` (2.21): its values, problems and Save. */

@@ -185,7 +185,8 @@ describe("PagesPanel (F-ED-13)", () => {
 
     expect(actions.changeSettings).toHaveBeenCalledWith("page-team", {
       title: "Team",
-      slug: "Our Team",
+      // Made file-friendly before the model checks it (2.21).
+      slug: "our-team",
       description: "Who we are",
       shareImage: undefined,
       hideHeader: false,
