@@ -61,11 +61,6 @@ type FieldSpecs = {
     readonly itemFields: readonly ListItemFieldSpec[];
     /** The order of the items means nothing (attributes), so they can't be moved. */
     readonly orderless?: boolean;
-    /**
-     * How a form draws it (2.21): each item a row of its fields, as Site Settings' profiles and
-     * opening hours are; or as the Edit panel does, each item a panel that opens (the default).
-     */
-    readonly look?: "rows" | "panels";
     /** Its add button ("Add a profile"), already translated; "Add {item}" when left out. */
     readonly addLabel?: string;
     /** Each item's remove button ("Remove this profile"); "Delete {item}" when left out. */
@@ -129,11 +124,6 @@ export type FieldSpec<K extends FieldKind = FieldKind> = {
 /** One field of a list item. */
 export type ListItemFieldSpec = FieldSpec<PlainFieldKind> & {
   readonly name: string;
-  /**
-   * In a row (`look: "rows"`), its label shows beside it ("Opens 09:00"); otherwise it is for
-   * screen readers only.
-   */
-  readonly labelBeside?: boolean;
 };
 
 /**

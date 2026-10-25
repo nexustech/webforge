@@ -162,7 +162,7 @@ test("a downloaded font shows and exports offline, after a restart", async () =>
 
   const folder = join(dir, "export");
   await stubFileDialogs(app, folder);
-  await page.getByRole("button", { name: "Export", exact: true }).click();
+  await page.getByRole("button", { name: "Export Site…", exact: true }).click();
   await expect(page.getByText(/^Site exported to “export”/)).toBeVisible({ timeout: 30_000 });
   expect(readFileSync(join(folder, "assets", "fonts", FILE))).toEqual(BYTES);
   const [css] = readdirSync(join(folder, "assets", "css"));

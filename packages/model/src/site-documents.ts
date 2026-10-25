@@ -1,6 +1,15 @@
 import { z } from "zod";
-import type { PageId } from "./ids.js";
-import type { SiteDoc } from "./site-doc.js";
+import { documentIssue } from "./documents.js";
+import { type PageId, pageIdSchema } from "./ids.js";
+import {
+  type PageEntry,
+  pageEntrySchema,
+  SITE_FIELD_SCHEMAS,
+  SITE_PART_SCHEMAS,
+  type SiteDoc,
+  siteDocSchema,
+  siteIssues,
+} from "./site-doc.js";
 
 /** The parts of a {@link SiteDoc} stored as one document each, under their own name. */
 const PARTS = ["settings", "theme", "layout", "media", "code", "menu", "sharedSections"] as const;
@@ -130,6 +139,112 @@ export function applySiteChanges(
     }
   }
   return siteFromDocuments([...documents.values()]);
+}
+
+/** What {@link validateSiteChanges} gives: the site the changes leave, checked, or a refusal. */
+export type SiteChangesResult =
+  | { readonly success: true; readonly data: SiteDoc }
+  | { readonly success: false };
+
+type Part = (typeof PARTS)[number];
+
+const isPart = (value: string): value is Part => (PARTS as readonly string[]).includes(value);
+
+/**
+ * The site `changes` leave `site` as, checked as `siteDocSchema` checks it: accepted exactly when
+ * `siteDocSchema.safeParse(applySiteChanges(site, changes))` succeeds, with equal data, but only the
+ * changed documents are parsed (R13a). The rest of `site` passed before and is shared, unchanged;
+ * the checks across documents run on the result, walking only the changed pages' and layout's
+ * element trees. Each changed document's unsafe keys and depth are checked at the depth it has in
+ * the site, so a document refused as part of the whole site is refused alone. A new, empty site
+ * (`site` undefined) is checked whole.
+ */
+export function validateSiteChanges(
+  site: SiteDoc | undefined,
+  changes: readonly SiteDocumentChange[],
+): SiteChangesResult {
+  if (site === undefined) {
+    const parsed = siteDocSchema.safeParse(applySiteChanges(undefined, changes));
+    return parsed.success ? { success: true, data: parsed.data } : { success: false };
+  }
+  // What each document ends up as: the last change to it wins, as in applySiteChanges.
+  const latest = new Map<string, SiteDocumentChange>();
+  for (const change of changes) {
+    latest.set(change.id, change);
+  }
+  const pages: Record<string, PageEntry> = { ...site.pages };
+  const parts: Partial<Record<Part, unknown>> = {};
+  let fields: Partial<Pick<SiteDoc, keyof typeof SITE_FIELD_SCHEMAS>> = {};
+  const changedPages = new Set<string>();
+  for (const [id, change] of latest) {
+    const isPage = id.startsWith(PAGE_PREFIX);
+    const key = id.slice(PAGE_PREFIX.length);
+    // A put of a kind its id doesn't take is ignored when the site is put back together, and so
+    // is whatever was stored under that id: like a delete.
+    const put =
+      change.type === "put" &&
+      (change.kind === "page" ? isPage : change.kind === id && (id === "site" || isPart(id)))
+        ? change
+        : undefined;
+    if (put === undefined) {
+      if (id === "site" || isPart(id)) {
+        return { success: false };
+      }
+      if (isPage) {
+        delete pages[key];
+      }
+      continue;
+    }
+    if (put.kind === "page") {
+      // The pages record is 1 deep in the site; its keys are checked with it.
+      if (documentIssue({ [key]: put.content }, 1) !== undefined) {
+        return { success: false };
+      }
+      const pageId = pageIdSchema.safeParse(key);
+      const page = pageEntrySchema.safeParse(put.content);
+      if (!pageId.success || !page.success) {
+        return { success: false };
+      }
+      pages[key] = page.data;
+      changedPages.add(key);
+    } else if (put.kind === "site") {
+      if (typeof put.content !== "object" || put.content === null) {
+        return { success: false };
+      }
+      // Only its own fields, as when the site is put back together.
+      const content = put.content as Record<string, unknown>;
+      const formatVersion = SITE_FIELD_SCHEMAS.formatVersion.safeParse(content.formatVersion);
+      const pageOrder = SITE_FIELD_SCHEMAS.pageOrder.safeParse(content.pageOrder);
+      const homePageId = SITE_FIELD_SCHEMAS.homePageId.safeParse(content.homePageId);
+      if (
+        documentIssue(content.pageOrder, 1) !== undefined ||
+        !formatVersion.success ||
+        !pageOrder.success ||
+        !homePageId.success
+      ) {
+        return { success: false };
+      }
+      fields = {
+        formatVersion: formatVersion.data,
+        pageOrder: pageOrder.data,
+        homePageId: homePageId.data,
+      };
+    } else {
+      const part = put.kind;
+      if (documentIssue(put.content, 1) !== undefined) {
+        return { success: false };
+      }
+      const parsed = SITE_PART_SCHEMAS[part].safeParse(put.content);
+      if (!parsed.success) {
+        return { success: false };
+      }
+      parts[part] = parsed.data;
+    }
+  }
+  // In the site's own key order: the spreads keep it.
+  const next = { ...site, ...parts, ...fields, pages } as SiteDoc;
+  const issues = siteIssues(next, { pages: changedPages, layout: "layout" in parts });
+  return issues.length === 0 ? { success: true, data: next } : { success: false };
 }
 
 /**

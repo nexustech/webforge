@@ -119,6 +119,28 @@ describe("zoom and size readout", () => {
     expect(onZoomChange.mock.calls).toEqual([[1.5], ["fit"]]);
   });
 
+  it("zooms in and out a level at a time from the scale it shows, Fit included (LF-4)", async () => {
+    // Fit at 58%: in goes to the next level up, out to the next down.
+    const { onZoomChange } = setUp("desktop", { width: 1280, height: 2140.4, zoom: 0.584 });
+
+    await userEvent.click(screen.getByRole("button", { name: "Zoom In" }));
+    await userEvent.click(screen.getByRole("button", { name: "Zoom Out" }));
+
+    expect(onZoomChange.mock.calls).toEqual([[0.75], [0.5]]);
+  });
+
+  it("can't zoom in past the largest zoom, or out past the smallest", () => {
+    // Fit at 200%, the largest: only zooming out is left.
+    setUp("desktop", { width: 320, height: 640, zoom: 2 });
+
+    expect((screen.getByRole("button", { name: "Zoom In" }) as HTMLButtonElement).disabled).toBe(
+      true,
+    );
+    expect((screen.getByRole("button", { name: "Zoom Out" }) as HTMLButtonElement).disabled).toBe(
+      false,
+    );
+  });
+
   it("shows no size before the canvas has shown the page", () => {
     setUp();
 

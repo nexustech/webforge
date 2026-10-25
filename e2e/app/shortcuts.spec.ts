@@ -1,6 +1,7 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { placeCaret } from "./caret.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
+import { chooseFromMenu } from "./menus.js";
 
 // The keyboard shortcut standard (1.38, F-ED-27): the sheet from the Help menu and `?`, the view
 // keys, Electron's own zoom keys gone, and no shortcut taking keys from text being typed.
@@ -40,8 +41,7 @@ async function selectHeading(): Promise<void> {
 }
 
 test("lists every shortcut in a sheet, from the Help menu and from ?", async () => {
-  await page.getByRole("menuitem", { name: "Help" }).click();
-  await page.getByRole("menuitem", { name: /^Keyboard Shortcuts/ }).click();
+  await chooseFromMenu(app, page, "Help", "Keyboard Shortcuts");
 
   await expect(sheet()).toBeVisible();
   const editing = sheet().getByRole("region", { name: "Editing" });

@@ -1,5 +1,5 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
-import { launchDesktopApp } from "./launch.js";
+import { launchDesktopApp, waitForCanvas } from "./launch.js";
 
 // The canvas's View menu (1.33, F-ED-25): outlines around every element, margins and padding on
 // hover, element names and room below the page. They only change what the canvas shows: never
@@ -17,6 +17,9 @@ test.beforeEach(async () => {
     .getByRole("tab", { name: "Undo History" })
     .click();
   await expect(canvas().locator("h1")).toHaveText("Welcome to our business");
+  // The site's CSS changes the layout when it arrives: a hover before then can find its element
+  // moved out from under the pointer, and the hover ends (macOS and Windows CI, #412).
+  await waitForCanvas(page);
 });
 
 test.afterEach(async () => {
@@ -75,21 +78,57 @@ test("shows outlines, element names, spacing on hover and extra space, none an u
 
 test("names a hovered element in a chip, with its size while spacing on hover is on (SP-1, SP-2)", async () => {
   const chip = canvas().locator('[class*="_ActionBar-label_"]', { hasText: /^Heading/ });
-  // The Heading beside its text: Puck keeps the pointer over inline text from hovering its element.
-  const heading = canvas().locator("h1");
-  const beside = async () => {
-    const box = await heading.boundingBox();
-    if (box === null) throw new Error("No heading");
-    await heading.hover({ position: { x: box.width - 4, y: box.height / 2 } });
-  };
+  // Over the Heading's own text, which Puck's inline text field used to keep from hovering it (#399).
+  const text = canvas().locator("h1 [contenteditable]");
 
-  await beside();
+  await text.hover();
   await expect(chip).toBeVisible();
   await expect(chip).toHaveText("Heading");
 
   await toggle("Show spacing on hover");
   // Away and back, as the person moves on.
   await page.mouse.move(0, 0);
-  await beside();
+  await text.hover();
   await expect(chip).toHaveText(/^Heading · \d+ × \d+$/);
+});
+
+test("moves the hover straight from one element's text onto another's, one at a time (#399)", async () => {
+  const chip = (name: string) =>
+    canvas().locator('[class*="_ActionBar-label_"]', { hasText: new RegExp(`^${name}`) });
+  const heading = canvas().locator("h1 [contenteditable]");
+  const text = canvas().locator(".site-text .ProseMirror");
+  const centre = async (target: typeof heading) => {
+    const box = await target.boundingBox();
+    if (box === null) throw new Error("Not on the canvas");
+    return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+  };
+  await heading.hover();
+  await expect(chip("Heading")).toBeVisible();
+  // Every change to what's hovered on the way, counted.
+  await canvas()
+    .locator("body")
+    .evaluate((body) => {
+      const counts: number[] = [];
+      (window as unknown as { hoverCounts: number[] }).hoverCounts = counts;
+      new MutationObserver(() => {
+        counts.push(body.querySelectorAll('[class*="_DraggableComponent--hover_"]').length);
+      }).observe(body, {
+        subtree: true,
+        childList: true,
+        attributes: true,
+        attributeFilter: ["class"],
+      });
+    });
+
+  const to = await centre(text);
+  await page.mouse.move(to.x, to.y, { steps: 12 });
+
+  await expect(chip("Text")).toBeVisible();
+  await expect(chip("Heading")).toHaveCount(0);
+  const counts = await canvas()
+    .locator("body")
+    .evaluate(() => (window as unknown as { hoverCounts: number[] }).hoverCounts);
+  // Never two hovered at once, and one at the end: no outline left behind.
+  expect(Math.max(...counts, 0)).toBeLessThanOrEqual(1);
+  expect(counts.at(-1)).toBe(1);
 });

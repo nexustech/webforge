@@ -22,6 +22,32 @@ const failureContextSchema = z.string().regex(/^[a-z][a-zA-Z0-9.-]{0,63}$/);
 /** An error as `errorCode` gives it: a name, and maybe a code (`Error ENOENT`), or a type. */
 const failureCodeSchema = z.string().regex(/^[A-Za-z0-9_.:-]{1,64}(?: [A-Za-z0-9_.:-]{1,64})?$/);
 
+/** A command's id, as the renderer's registry names it (`edit.undo`, `site.settings`). */
+const commandIdSchema = z.string().regex(/^[a-z][a-zA-Z0-9.-]{0,63}$/);
+
+/** One item of a native menu: the renderer's command, as its menus show it (LF-13). */
+const nativeMenuItemSchema = z.strictObject({
+  id: commandIdSchema,
+  label: z.string().min(1).max(80),
+  /** Its shortcut as Electron writes accelerators (`CmdOrCtrl+Shift+Z`), shown only. */
+  accelerator: z.string().max(40).optional(),
+  enabled: z.boolean(),
+});
+
+/** The renderer's menus (File, Edit, View, Help), for macOS's menu bar (LF-13). */
+const nativeMenusSchema = z
+  .array(
+    z.strictObject({
+      id: z.enum(["file", "edit", "view", "help"]),
+      label: z.string().min(1).max(40),
+      items: z.array(nativeMenuItemSchema).max(100),
+    }),
+  )
+  .max(4);
+
+/** The renderer's menus, as macOS's menu bar shows them. */
+export type NativeMenus = z.infer<typeof nativeMenusSchema>;
+
 /** IPC channels of the `app` domain (`app:*`). */
 export const appChannels = {
   getAppInfo: {
@@ -53,6 +79,15 @@ export const appChannels = {
     request: z.tuple([failureContextSchema, failureCodeSchema]),
     response: z.null(),
   },
+  /**
+   * Shows the renderer's menus in macOS's menu bar (LF-13): on macOS the window has no menus of its
+   * own. Elsewhere it does nothing.
+   */
+  setNativeMenus: {
+    channel: "app:set-native-menus",
+    request: z.tuple([nativeMenusSchema]),
+    response: z.null(),
+  },
   /** Spell checks text in the site's language (F-ED-19); Windows only, macOS chooses itself. */
   setSpellCheckLanguage: {
     channel: "app:set-spellcheck-language",
@@ -71,6 +106,8 @@ export const appEvents = {
    * `project:flushed` and that id once everything is saved.
    */
   flushRequest: { channel: "app:flush", args: z.tuple([z.int().positive()]) },
+  /** An item of macOS's menu bar was chosen: run the renderer's command with this id (LF-13). */
+  runCommand: { channel: "app:run-command", args: z.tuple([commandIdSchema]) },
 } as const;
 
 /** `window.webforge.app`. */
@@ -85,6 +122,10 @@ export interface AppApi {
   logFailure(context: string, code: string): Promise<null>;
   /** Spell checks text in `language`, the site's (a language tag such as `en-GB`). */
   setSpellCheckLanguage(language: string): Promise<null>;
+  /** Shows `menus` in macOS's menu bar; nothing elsewhere. */
+  setNativeMenus(menus: NativeMenus): Promise<null>;
+  /** Runs `run` with a command's id whenever it is chosen in macOS's menu bar. */
+  onRunCommand(run: (id: string) => void): () => void;
   /**
    * Runs `save` whenever the window is about to close, and tells the main process once it has
    * finished (or failed), so the window can close. Returns a function that stops listening.

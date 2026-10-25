@@ -15,7 +15,6 @@ import {
   TimeField,
 } from "./form-fields.js";
 import type { FormField, FormValues } from "./form-spec.js";
-import { RowsListField } from "./rows-list-field.js";
 import {
   concerns,
   type FormState,
@@ -25,11 +24,6 @@ import {
   unplacedIssues,
 } from "./use-form.js";
 
-/** A form's list: as rows when its spec asks (Site Settings), else as the Edit panel's. */
-function FormListField(props: FieldRendererProps<"list">) {
-  return props.field.look === "rows" ? <RowsListField {...props} /> : <ListField {...props} />;
-}
-
 /**
  * The renderers a form draws its fields with: the Edit panel's, the form-only kinds', and a
  * checkbox for an on/off field, as dialogs have. The app's own (link, image, colour) come from
@@ -37,7 +31,8 @@ function FormListField(props: FieldRendererProps<"list">) {
  */
 const FORM_RENDERERS: FieldRenderers = {
   ...PLAIN_RENDERERS,
-  list: FormListField,
+  // The Edit panel's lists, in Site Settings too (PH2-13).
+  list: ListField,
   box: BoxField,
   toggle: CheckField,
   number: NumberField,

@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { type ElectronApplication, expect, test } from "@playwright/test";
 import { ProjectStore } from "@webforge/storage";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
+import { chooseFromMenu } from "./menus.js";
 import { stubFileDialogs } from "./sites.js";
 
 // Site Settings (1.17, F-SET-1): opened from the File menu, checked on Save, saved as one undo
@@ -32,8 +33,7 @@ test("edits Site Settings from the File menu, fixing what Save points at, as one
   const status = page.getByRole("banner").getByRole("status");
   await expect(status).toHaveText("Saved", { timeout: 30_000 });
 
-  await page.getByRole("menuitem", { name: "File" }).click();
-  await page.getByRole("menuitem", { name: "Site Settings…" }).click();
+  await chooseFromMenu(app as ElectronApplication, page, "File", "Site Settings…");
   const dialog = page.getByRole("dialog", { name: "Site Settings" });
   await dialog.getByLabel("Site name").fill("Rosa's Bakery");
   await dialog.getByRole("tab", { name: "Contact & hours" }).click();
@@ -92,8 +92,7 @@ test("shows Site Settings values in bound elements, on the canvas and in the exp
   );
   await expect(heading).toHaveText("Add your phone number in Site Settings");
 
-  await page.getByRole("menuitem", { name: "File" }).click();
-  await page.getByRole("menuitem", { name: "Site Settings…" }).click();
+  await chooseFromMenu(app as ElectronApplication, page, "File", "Site Settings…");
   const dialog = page.getByRole("dialog", { name: "Site Settings" });
   await dialog.getByLabel("Site name").fill("Hightown Bakery");
   await dialog.getByRole("tab", { name: "Contact & hours" }).click();
@@ -105,7 +104,7 @@ test("shows Site Settings values in bound elements, on the canvas and in the exp
 
   const folder = join(dir, "export");
   await stubFileDialogs(app, folder);
-  await page.getByRole("button", { name: "Export", exact: true }).click();
+  await page.getByRole("button", { name: "Export Site…", exact: true }).click();
   await expect(page.getByText(/Site exported to/)).toBeVisible({ timeout: 30_000 });
   const index = readFileSync(join(folder, "index.html"), "utf8");
   // A new site's Header shows the site name (the canvas doesn't show the Header yet).
@@ -128,8 +127,7 @@ test("lists Site Settings' opening hours and contact details, on the canvas and 
   // Until Site Settings have them, the canvas says where to add them.
   await expect(section).toContainText("Add your phone number in Site Settings");
 
-  await page.getByRole("menuitem", { name: "File" }).click();
-  await page.getByRole("menuitem", { name: "Site Settings…" }).click();
+  await chooseFromMenu(app as ElectronApplication, page, "File", "Site Settings…");
   const dialog = page.getByRole("dialog", { name: "Site Settings" });
   await dialog.getByRole("tab", { name: "Contact & hours" }).click();
   await dialog.getByLabel("Phone number").fill("+44 1234 567890");
@@ -150,7 +148,7 @@ test("lists Site Settings' opening hours and contact details, on the canvas and 
 
   const folder = join(dir, "export");
   await stubFileDialogs(app, folder);
-  await page.getByRole("button", { name: "Export", exact: true }).click();
+  await page.getByRole("button", { name: "Export Site…", exact: true }).click();
   await expect(page.getByText(/Site exported to/)).toBeVisible({ timeout: 30_000 });
   const index = readFileSync(join(folder, "index.html"), "utf8");
   expect(index).toContain('<dt class="font-medium">Saturday and Sunday</dt>');

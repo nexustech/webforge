@@ -26,12 +26,15 @@ const context: RenderContext = {
   navigation: [{ id: "about", label: "About us", href: "about.html", current: false }],
 };
 
-/** The Logos section with `props` over its defaults, as the export renders it. */
-const render = (props: Record<string, unknown> = {}) =>
+/** The same on the canvas, which shows where an image is still to be chosen. */
+const canvas: RenderContext = { ...context, emptyImage: () => "" };
+
+/** The Logos section with `props` over its defaults, as the export (or `on`) renders it. */
+const render = (props: Record<string, unknown> = {}, on: RenderContext = context) =>
   renderNodesToHtml(
     [{ type: "Logos", props: { id: "logos", ...defaults, ...props } }],
     siteLibrary,
-    context,
+    on,
   );
 
 const windows: Window[] = [];
@@ -56,8 +59,8 @@ const logo = (id: string, props: Record<string, unknown> = {}) => ({
 const website = { kind: "url", href: "https://www.acme.example/about" };
 
 describe("the Logos section", () => {
-  it("renders a title and four spaces for logos, as the Add panel places it", () => {
-    const doc = page(render());
+  it("renders a title and four spaces for logos on the canvas, as the Add panel places it", () => {
+    const doc = page(render({}, canvas));
 
     expect(doc.querySelector(".site-logos h2")?.textContent).toBe(t("starter.logosTitle"));
     expect(doc.querySelectorAll(".site-logo")).toHaveLength(4);
@@ -65,9 +68,27 @@ describe("the Logos section", () => {
     expect(doc.querySelector(".site-logo a")).toBeNull();
   });
 
+  it("exports nothing for a logo whose image isn't chosen, or has gone from Media (#404)", () => {
+    const items = [
+      logo("unchosen", { name: "Acme", link: website }),
+      logo("gone", { image: { mediaId: "gone" } }),
+      logo("shown", { image: { mediaId: "acme" } }),
+    ];
+    const doc = page(render({ items }));
+
+    expect(doc.querySelectorAll(".site-logo")).toHaveLength(1);
+    expect(doc.querySelector(".site-logo img")?.getAttribute("alt")).toBe("Acme Ltd");
+    expect(doc.querySelector("a")).toBeNull();
+    expect(page(render()).querySelector(".site-logo")).toBeNull();
+  });
+
   it("lays its logos out in a row that wraps or in a grid of tiles", () => {
-    const row = page(render({ variant: "row", items: [logo("one")] }));
-    const grid = page(render({ variant: "grid", items: [logo("one")] }));
+    const row = page(
+      render({ variant: "row", items: [logo("one", { image: { mediaId: "acme" } })] }),
+    );
+    const grid = page(
+      render({ variant: "grid", items: [logo("one", { image: { mediaId: "acme" } })] }),
+    );
 
     expect(row.querySelector(".site-logo")?.parentElement?.className).toContain("flex-wrap");
     expect(row.querySelector(".site-logo")?.className).not.toContain("border");
@@ -107,7 +128,7 @@ describe("the Logos section", () => {
       logo("empty", { link: website }),
       logo("unlinked", { image: { mediaId: "plain" } }),
     ];
-    const tiles = [...page(render({ items })).querySelectorAll(".site-logo")];
+    const tiles = [...page(render({ items }, canvas)).querySelectorAll(".site-logo")];
 
     expect(tiles.map((each) => each.tagName)).toEqual([
       ...["A", "A", "A", "A", "A", "A", "A"],
@@ -124,7 +145,7 @@ describe("the Logos section", () => {
       undefined,
       "",
     ]);
-    // A logo still to be chosen names its link in text only screen readers hear.
+    // On the canvas, a logo still to be chosen names its link in text only screen readers hear.
     expect(tiles[6]?.querySelector(".sr-only")?.textContent).toBe("acme.example");
   });
 
