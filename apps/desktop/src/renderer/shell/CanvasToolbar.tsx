@@ -207,6 +207,7 @@ function ZoomButtons({
       {(["in", "out"] as const).map((direction) => {
         const label = t(direction === "in" ? "command.zoomIn" : "command.zoomOut");
         const Icon = direction === "in" ? ZoomInIcon : ZoomOutIcon;
+        const next = zoomStep(scale, direction);
         return (
           <Button
             key={direction}
@@ -215,7 +216,9 @@ function ZoomButtons({
             variant="ghost"
             aria-label={label}
             title={label}
-            onClick={() => onZoomChange(zoomStep(scale, direction))}
+            // Off at the largest and the smallest zoom.
+            disabled={Math.abs(next - scale) < 0.005}
+            onClick={() => onZoomChange(next)}
           >
             <Icon />
           </Button>

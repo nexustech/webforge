@@ -129,6 +129,18 @@ describe("zoom and size readout", () => {
     expect(onZoomChange.mock.calls).toEqual([[0.75], [0.5]]);
   });
 
+  it("can't zoom in past the largest zoom, or out past the smallest", () => {
+    // Fit at 200%, the largest: only zooming out is left.
+    setUp("desktop", { width: 320, height: 640, zoom: 2 });
+
+    expect((screen.getByRole("button", { name: "Zoom In" }) as HTMLButtonElement).disabled).toBe(
+      true,
+    );
+    expect((screen.getByRole("button", { name: "Zoom Out" }) as HTMLButtonElement).disabled).toBe(
+      false,
+    );
+  });
+
   it("shows no size before the canvas has shown the page", () => {
     setUp();
 

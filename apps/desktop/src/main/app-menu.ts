@@ -9,8 +9,11 @@ export type RendererMenus = {
   readonly run: (id: string) => void;
 };
 
-/** The renderer's own Undo and Redo, which Edit's roles already give on macOS. */
-const ROLE_COMMANDS: ReadonlySet<string> = new Set(["edit.undo", "edit.redo"]);
+/**
+ * The editor's Undo and Redo, in place of Edit's roles, which would undo only text. They take the
+ * keys the page leaves (Cmd+Z in a dialog's text field), and the renderer gives those to the text.
+ */
+const UNDO_REDO: readonly string[] = ["edit.undo", "edit.redo"];
 
 /** The items of the renderer's menu `id`, each running its command when chosen. */
 function itemsOf(
@@ -18,18 +21,22 @@ function itemsOf(
   id: NativeMenus[number]["id"],
 ): MenuItemConstructorOptions[] {
   const menu = renderer?.menus.find((each) => each.id === id);
-  return (menu?.items ?? [])
-    .filter((item) => !ROLE_COMMANDS.has(item.id))
-    .map((item) => ({
-      id: item.id,
-      label: item.label,
-      enabled: item.enabled,
-      // Shown, not taken: the renderer handles its own keys (F-ED-27).
-      ...(item.accelerator === undefined
-        ? {}
-        : { accelerator: item.accelerator, registerAccelerator: false }),
-      click: () => renderer?.run(item.id),
-    }));
+  return (menu?.items ?? []).map((item) => ({
+    id: item.id,
+    label: item.label,
+    enabled: item.enabled,
+    // Shown, not taken: the renderer handles its own keys (F-ED-27), Undo's and Redo's aside.
+    ...(item.accelerator === undefined
+      ? {}
+      : { accelerator: item.accelerator, registerAccelerator: UNDO_REDO.includes(item.id) }),
+    click: () => renderer?.run(item.id),
+  }));
+}
+
+/** Edit's Undo and Redo: the editor's when it has them, else the roles (the start screen). */
+function undoRedo(edit: readonly MenuItemConstructorOptions[]): MenuItemConstructorOptions[] {
+  const [undo, redo] = UNDO_REDO.map((id) => edit.find((item) => item.id === id));
+  return [undo ?? { role: "undo" }, redo ?? { role: "redo" }];
 }
 
 /** A menu of `items` after a separator, or nothing when there are none. */
@@ -61,6 +68,7 @@ export function applicationMenu(
     : [];
   if (platform === "darwin") {
     const file = itemsOf(renderer, "file");
+    const edit = itemsOf(renderer, "edit");
     const view = itemsOf(renderer, "view");
     const help = itemsOf(renderer, "help");
     const fullScreen: MenuItemConstructorOptions = { role: "togglefullscreen" };
@@ -72,14 +80,13 @@ export function applicationMenu(
         : {
             label: t("shell.menu.edit"),
             submenu: [
-              { role: "undo" },
-              { role: "redo" },
+              ...undoRedo(edit),
               { type: "separator" },
               { role: "cut" },
               { role: "copy" },
               { role: "paste" },
               { role: "selectAll" },
-              ...after(itemsOf(renderer, "edit")),
+              ...after(edit.filter((item) => !UNDO_REDO.includes(item.id ?? ""))),
             ],
           },
       {

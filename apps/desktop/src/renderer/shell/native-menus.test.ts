@@ -41,7 +41,12 @@ describe("macOS's menu bar (LF-13)", () => {
         return () => undefined;
       }),
     };
-    return { registry, settings, app, choose: (id: string) => chosen(id) };
+    // The editor window, with or without a dialog open.
+    const doc = {
+      querySelector: vi.fn((): Element | null => null),
+      execCommand: vi.fn(() => true),
+    };
+    return { registry, settings, app, doc, choose: (id: string) => chosen(id) };
   }
 
   it("lists each menu's commands with their keys, leaving out empty menus and others", () => {
@@ -64,8 +69,8 @@ describe("macOS's menu bar (LF-13)", () => {
   });
 
   it("sends the menus at once, then once per burst of changes, and runs what's chosen there", () => {
-    const { registry, settings, app, choose } = setUp();
-    const stop = syncNativeMenus(registry, app);
+    const { registry, settings, app, doc, choose } = setUp();
+    const stop = syncNativeMenus(registry, app, doc);
     expect(app.setNativeMenus).toHaveBeenCalledTimes(1);
 
     registry.update("site.settings", { enabled: false });
@@ -82,6 +87,27 @@ describe("macOS's menu bar (LF-13)", () => {
     registry.update("site.settings", { enabled: true });
     choose("site.settings");
     expect(settings).toHaveBeenCalledOnce();
+    stop();
+  });
+
+  it("leaves a dialog its keys: no command runs, and Undo and Redo are its text's", () => {
+    const { registry, settings, app, doc, choose } = setUp();
+    const undo = vi.fn();
+    registry.register({ id: "edit.undo", label: "Undo", menu: "edit", run: undo });
+    const stop = syncNativeMenus(registry, app, doc);
+    doc.querySelector.mockReturnValue({} as Element);
+
+    choose("site.settings");
+    choose("edit.undo");
+    choose("edit.redo");
+    expect(settings).not.toHaveBeenCalled();
+    expect(undo).not.toHaveBeenCalled();
+    expect(doc.execCommand.mock.calls).toEqual([["undo"], ["redo"]]);
+
+    // The dialog closed: the site's Undo again.
+    doc.querySelector.mockReturnValue(null);
+    choose("edit.undo");
+    expect(undo).toHaveBeenCalledOnce();
     stop();
   });
 });

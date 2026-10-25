@@ -382,8 +382,13 @@ function isInDialog(target: EventTarget | null, doc: Pick<Document, "querySelect
   const element = target as { closest?: (selector: string) => unknown } | null;
   return (
     element?.closest?.('[role="dialog"], [role="alertdialog"], [role="menu"]') != null ||
-    doc.querySelector(MODAL) !== null
+    hasModalOpen(doc)
   );
+}
+
+/** Whether the editor window `doc` has a modal dialog or a menu open, which owns the keys. */
+export function hasModalOpen(doc: Pick<Document, "querySelector">): boolean {
+  return doc.querySelector(MODAL) !== null;
 }
 
 /**

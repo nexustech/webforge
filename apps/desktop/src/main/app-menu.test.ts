@@ -66,9 +66,9 @@ describe("applicationMenu (F-ED-27)", () => {
     const submenu = (label: string) =>
       (menu?.find((each) => (each.role ?? each.label) === label)?.submenu ??
         []) as MenuItemConstructorOptions[];
-    // Edit keeps its roles for text fields; the editor's Undo is the role's there.
+    // Edit keeps its roles for text fields, but Undo is the editor's: it undoes the site.
     expect(submenu("Edit").map((each) => each.role ?? each.label ?? each.type)).toEqual([
-      "undo",
+      "Undo",
       "redo",
       "separator",
       "cut",
@@ -83,6 +83,11 @@ describe("applicationMenu (F-ED-27)", () => {
       label: "Zoom In",
       accelerator: "CmdOrCtrl+Plus",
       registerAccelerator: false,
+    });
+    // Undo takes the keys the page leaves (a dialog's text), so they still undo there.
+    expect(submenu("Edit")[0]).toMatchObject({
+      accelerator: "CmdOrCtrl+Z",
+      registerAccelerator: true,
     });
     expect(submenu("View").at(-1)).toEqual({ role: "togglefullscreen" });
     submenu("File")[0]?.click?.({} as never, undefined, {} as never);
