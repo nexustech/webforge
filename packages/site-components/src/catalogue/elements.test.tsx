@@ -130,6 +130,29 @@ describe("the Button element (2.9)", () => {
     );
   });
 
+  it("takes the theme's button style unless the person chose one (PH2-14, #423)", () => {
+    const def = siteLibrary.components.Button;
+    expect(def?.defaults.style).toBe("theme");
+    const style = def?.fields.style;
+    expect(style?.kind === "select" ? style.options.map((option) => option.label) : []).toEqual([
+      "Theme's style",
+      "Filled",
+      "Second colour",
+      "Outline",
+    ]);
+    // The theme's: the main buttons' classes, which the theme's CSS styles.
+    expect(render("Button", { label: "Order", style: "theme" })).toContain(
+      'class="btn btn-primary"',
+    );
+    // Filled, as every Button was before: marked, so no theme's style reaches it.
+    expect(render("Button", { label: "Order", style: "primary" })).toContain(
+      'class="btn btn-primary wf-filled"',
+    );
+    // The Booking button is a Button with the theme's style too.
+    const booking = def?.presets?.find((preset) => preset.id === "booking");
+    expect({ ...def?.defaults, ...booking?.values }.style).toBe("theme");
+  });
+
   it("draws no link without its text", () => {
     expect(render("Button", { label: "  ", link: "about" })).toBe(
       '<div class="site-button flex justify-start"></div>',
