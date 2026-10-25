@@ -1,5 +1,6 @@
 import {
   Button,
+  cn,
   type FieldRendererProps,
   fieldControlClass,
   Picker,
@@ -100,7 +101,7 @@ export function FontField({
             </label>
             <input
               id={sampleId}
-              className={`${fieldControlClass} h-7 w-48 text-xs`}
+              className={cn(fieldControlClass, "h-7 w-48 text-xs")}
               value={sample}
               maxLength={80}
               onChange={(event) => setSample(event.currentTarget.value)}

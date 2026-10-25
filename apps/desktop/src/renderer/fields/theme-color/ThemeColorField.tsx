@@ -1,4 +1,4 @@
-import { type FieldRendererProps, fieldControlClass } from "@webforge/editor-ui";
+import { cn, type FieldRendererProps, fieldControlClass } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { oklchSchema } from "@webforge/model";
 import { hexToOklch } from "@webforge/themes";
@@ -56,7 +56,7 @@ export function ThemeColorField({
   const warnings = field.warnings;
   return (
     <div className="flex flex-col gap-1.5">
-      <div className="flex items-center gap-1.5">
+      <div className="flex min-w-0 items-center gap-1.5">
         <input
           // Uncontrolled, so dragging in the picker moves freely; it starts again at a new colour.
           key={hex}
@@ -65,7 +65,7 @@ export function ThemeColorField({
           type="color"
           aria-labelledby={labelId}
           aria-describedby={warnings.length === 0 ? undefined : warningsId}
-          className={`${fieldControlClass} h-7 w-9 shrink-0 cursor-pointer p-0.5`}
+          className={cn(fieldControlClass, "h-7 w-9 shrink-0 cursor-pointer p-0.5")}
           defaultValue={hex}
           disabled={disabled}
         />
@@ -75,7 +75,7 @@ export function ThemeColorField({
         <input
           id={hexId}
           aria-labelledby={`${labelId} ${hexLabelId}`}
-          className={`${fieldControlClass} h-7 w-24 font-mono text-xs`}
+          className={cn(fieldControlClass, "h-7 w-auto min-w-0 flex-1 font-mono text-xs")}
           value={text}
           spellCheck={false}
           disabled={disabled}
