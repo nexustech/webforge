@@ -28,19 +28,38 @@ describe("the Buy button (2.11, F-CM-2)", () => {
     expect(drawn).toContain('class="site-buy-button');
     expect(drawn).toContain("£24");
     expect(drawn).toContain(
-      'href="https://buy.stripe.com/test_00abc" target="_blank" rel="noopener noreferrer">Buy now</a>',
+      'href="https://buy.stripe.com/test_00abc" target="_blank" rel="noopener noreferrer" aria-describedby="buy-price">Buy now</a>',
     );
+    expect(drawn).toContain('<p class="text-lg font-semibold" id="buy-price">£24</p>');
     // No script of its own.
     expect(siteLibrary.components.BuyButton?.behaviours).toBeTypeOf("function");
   });
 
-  it("takes only an https link: anything else leaves its button going nowhere", () => {
+  it("takes only an https link: without one, no button in the export, a disabled one on the canvas", () => {
+    const canvas: RenderContext = { ...EDITOR_RENDER_CONTEXT, elementHint: () => "Add a link" };
     for (const link of ["", "http://example.com/pay", "javascript:alert(1)", "not a link"]) {
-      const drawn = html(buy({ link }));
+      const exported = html(buy({ link }));
+      const shown = html(buy({ link }), canvas);
 
-      expect(drawn, link).not.toContain("<a");
-      expect(drawn, link).toContain("btn-disabled");
+      // A button that does nothing would leave visitors stuck (#389 review): its price stays.
+      expect(exported, link).not.toContain("<a");
+      expect(exported, link).not.toContain("Buy now");
+      expect(exported, link).toContain("£12");
+      expect(shown, link).toContain("btn-disabled");
+      expect(shown, link).not.toContain("<a");
     }
+  });
+
+  it("tells one Buy button's link from another by its price and image", () => {
+    const context: RenderContext = { ...EDITOR_RENDER_CONTEXT, image: () => cake };
+
+    const drawn = html(
+      buy({ link: "https://paypal.me/rosas", price: "£8", image: { mediaId: "cake" } }),
+      context,
+    );
+
+    expect(drawn).toContain('aria-describedby="buy-price buy-image"');
+    expect(drawn).toContain('id="buy-image"');
   });
 
   it("says on the canvas what to add while its link is missing", () => {

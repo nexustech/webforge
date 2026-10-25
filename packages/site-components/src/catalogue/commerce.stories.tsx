@@ -39,7 +39,7 @@ export const BuyButton: Story = {
   },
 };
 
-/** Centred, before its payment link is added: its button goes nowhere yet. */
+/** Centred, before its payment link is added: its price, and no button until there is somewhere to pay. */
 export const BuyButtonWithoutLink: Story = {
   args: {
     nodes: [

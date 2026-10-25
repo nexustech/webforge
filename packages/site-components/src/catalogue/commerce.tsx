@@ -21,8 +21,10 @@ const ITEMS_ALIGN_CLASS = { left: "items-start", centre: "items-center", right: 
 /**
  * A Buy button (F-CM-2, M1): what's for sale, its price, an image of it if there is one, and a
  * button to the payment page Stripe, PayPal or a shop gives: a plain link in a new tab, no script.
- * Only an `https://` link is used. Without one it still draws, so it can be set up, but its button
- * goes nowhere and the canvas says what to add.
+ * Its link is described by the price and the image, so a screen reader's list of links tells one
+ * Buy button from another. Only an `https://` link is used. Without one the export leaves the
+ * button out, rather than show one that does nothing; the canvas shows it disabled, and says what
+ * to add.
  */
 const buyButton = defineComponent({
   label: t("element.buyButton"),
@@ -44,7 +46,7 @@ const buyButton = defineComponent({
     alignment: "left",
   },
   behaviours: entranceBehaviours,
-  render: ({ values, context }) => {
+  render: ({ id, values, context }) => {
     const label = values.label.trim();
     const price = values.price.trim();
     const link = httpsAddress(values.link);
@@ -52,6 +54,11 @@ const buyButton = defineComponent({
     const image = placed === undefined ? null : context.image(placed.mediaId);
     const hint = link === undefined ? context.elementHint?.("paymentLink") : undefined;
     const button = `${BUTTON_CLASSES.primary}${hoverClasses(values.hover)}`;
+    // What the link is for, after its text ("Buy now"): the price, and the image's alt text.
+    const priceId = `${id}-price`;
+    const imageId = `${id}-image`;
+    const describedBy = [...(price === "" ? [] : [priceId]), ...(image === null ? [] : [imageId])];
+    const showHint = hint !== undefined && hint !== null;
     return (
       <div
         className={`site-buy-button flex flex-col gap-3 ${ITEMS_ALIGN_CLASS[values.alignment]}${marginClasses(values.margin)}${entranceClasses(values)}`}
@@ -59,26 +66,37 @@ const buyButton = defineComponent({
       >
         {image === null ? null : (
           <Picture
+            id={imageId}
             image={image}
             alt={placed?.alt ?? image.alt}
             sizes="(min-width: 768px) 20rem, 100vw"
             className="h-auto w-full max-w-xs rounded-box"
           />
         )}
-        {price === "" ? null : <p className="text-lg font-semibold">{price}</p>}
-        {label === "" ? null : (
+        {price === "" ? null : (
+          <p className="text-lg font-semibold" id={priceId}>
+            {price}
+          </p>
+        )}
+        {label === "" || (link === undefined && !showHint) ? null : (
           <div className={`flex w-full ${BUTTON_ALIGN_CLASS[values.alignment]}`}>
             {link === undefined ? (
-              // Nowhere to pay yet: no link, only its text, drawn as a disabled button.
+              // On the canvas only, nowhere to pay yet: its text, drawn as a disabled button.
               <span className={`${button} btn-disabled`}>{label}</span>
             ) : (
-              <a className={button} href={link} target="_blank" rel="noopener noreferrer">
+              <a
+                className={button}
+                href={link}
+                target="_blank"
+                rel="noopener noreferrer"
+                {...(describedBy.length === 0 ? {} : { "aria-describedby": describedBy.join(" ") })}
+              >
                 {label}
               </a>
             )}
           </div>
         )}
-        {hint === undefined || hint === null ? null : <p>{hint}</p>}
+        {showHint ? <p>{hint}</p> : null}
       </div>
     );
   },

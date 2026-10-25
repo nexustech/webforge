@@ -75,17 +75,22 @@ describe("the Features section", () => {
     expect(item?.querySelector("svg")).toBeNull();
   });
 
-  it("lifts, grows or shadows a feature under the pointer as it's set, and does nothing unless set", () => {
+  it("lifts every feature under the pointer when the section says so, and none unless it does", () => {
     const plain = page(render());
-    const lifting = page(
+    const lifting = page(render({ hover: "lift" }));
+    // An effect left on one feature (sites from before the section had it) does nothing.
+    const leftOnItem = page(
       render({
         items: [{ type: "Feature", props: { id: "lift", title: "Fresh", hover: "lift" } }],
       }),
     );
 
     expect(plain.querySelector(".site-feature")?.className).not.toContain("hover:");
-    expect(lifting.querySelector(".site-feature")?.className).toContain(
-      "motion-safe:hover:-translate-y-1",
-    );
+    const lifted = [...lifting.querySelectorAll(".site-feature")];
+    expect(lifted).toHaveLength(3);
+    for (const item of lifted) {
+      expect(item.className).toContain("motion-safe:hover:-translate-y-1");
+    }
+    expect(leftOnItem.querySelector(".site-feature")?.className).not.toContain("hover:");
   });
 });
