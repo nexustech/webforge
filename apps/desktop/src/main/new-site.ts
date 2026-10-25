@@ -1,11 +1,48 @@
 import { join } from "node:path";
 import { DEFAULT_THEME } from "@webforge/model";
+import type { ProjectStore } from "@webforge/storage";
 import { siteFromTemplate } from "@webforge/templates";
 import type { TemplateFolder } from "@webforge/templates/node";
 import { themePreset } from "@webforge/themes";
 import type { NewSiteRequest } from "../shared/ipc/project.js";
 import { starterSite } from "../shared/starter-site.js";
-import type { NewSiteTarget } from "./project-session.js";
+import type { StorageWriter } from "./storage-writer.js";
+
+/** What New Site makes of a new site (2.14a): its name, and what writes its content. */
+export type NewSiteFill = {
+  readonly name: string;
+  readonly fill: (target: NewSiteTarget) => Promise<void>;
+};
+
+/** What came of putting a file into the new site: stored under `hash`, or not. */
+export type NewSiteImport =
+  | { readonly status: "stored"; readonly hash: string }
+  | { readonly status: "rejected" | "skipped" | "failed" };
+
+/** The new site's file as New Site fills it, before it opens (2.14a). */
+export type NewSiteTarget = {
+  readonly store: ProjectStore;
+  /** Stores the file at `path` as Media item `mediaId`'s asset in the new file. */
+  readonly importFile: (mediaId: string, fileName: string, path: string) => Promise<NewSiteImport>;
+};
+
+/**
+ * How New Site puts a file into the new site's file at `sitePath`: through the storage writer, off
+ * the main thread as imports are (R13b). No gate: the file isn't the open site's yet.
+ */
+export function newSiteImporter(
+  writer: Pick<StorageWriter, "prepare" | "store">,
+  sitePath: string,
+): NewSiteTarget["importFile"] {
+  return async (mediaId, fileName, path) => {
+    const prepared = await writer.prepare(fileName, { path });
+    if (prepared.status !== "prepared") return { status: prepared.status };
+    const stored = await writer.store(prepared, { sitePath, mediaId, originalName: fileName });
+    return stored.status === "stored"
+      ? { status: "stored", hash: prepared.hash }
+      : { status: "failed" };
+  };
+}
 
 /**
  * Writes the site New Site asked for into a new site's file (2.14a, F-SITE-1): the template's
@@ -19,9 +56,7 @@ import type { NewSiteTarget } from "./project-session.js";
  * whose photos are missing.
  */
 export async function fillNewSite(
-  target: Pick<NewSiteTarget, "importFile"> & {
-    readonly store: Pick<NewSiteTarget["store"], "saveSite">;
-  },
+  target: NewSiteTarget,
   request: NewSiteRequest,
   templates: () => readonly TemplateFolder[],
 ): Promise<void> {

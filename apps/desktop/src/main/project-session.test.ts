@@ -16,10 +16,10 @@ import { heroPhoto } from "@webforge/test-utils";
 import type { IpcMain } from "electron";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createImportJobs } from "../worker/store-import.js";
+import type { NewSiteTarget } from "./new-site.js";
 import { registerProjectHandlers } from "./project-ipc.js";
 import {
   findProjectArgument,
-  type NewSiteTarget,
   ProjectSession,
   type SiteStoreAccess,
   withProjectExtension,

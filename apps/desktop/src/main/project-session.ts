@@ -30,6 +30,7 @@ import type {
 import type { ImportSource, PrepareOutcome } from "../shared/storage-writer-protocol.js";
 import { createImportJobs } from "../worker/store-import.js";
 import { log, logFailure } from "./log.js";
+import { type NewSiteFill, newSiteImporter } from "./new-site.js";
 import {
   createInlineStorageWriter,
   type PreparedImport,
@@ -145,26 +146,6 @@ export type ProjectSessionEvents = {
 
 /** How long closing the site waits for work on it before closing anyway (R13b). */
 const CLOSE_WAIT_MS = 5_000;
-
-/** What New Site makes of a new site (2.14a): its name, and what writes its content. */
-export type NewSiteFill = {
-  readonly name: string;
-  readonly fill: (target: NewSiteTarget) => Promise<void>;
-};
-
-/** The new site's file as New Site fills it, before it opens (2.14a). */
-export type NewSiteTarget = {
-  readonly store: ProjectStore;
-  /**
-   * Stores the file at `path` as Media item `mediaId`'s asset in the new file, through the storage
-   * writer, off the main thread as imports are (R13b).
-   */
-  readonly importFile: (
-    mediaId: string,
-    fileName: string,
-    path: string,
-  ) => Promise<StoreImportOutcome>;
-};
 
 /** What a {@link ProjectSession} is made with, injectable for tests. */
 export type ProjectSessionOptions = {
@@ -295,8 +276,7 @@ export class ProjectSession {
     try {
       await newSite.fill({
         store,
-        importFile: (mediaId, fileName, source) =>
-          this.#writer.store({ sitePath: path, mediaId, fileName, source: { path: source } }),
+        importFile: newSiteImporter(this.#writer, path),
       });
     } catch (error) {
       store.close();

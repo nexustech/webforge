@@ -7,8 +7,9 @@ import { ProjectStore } from "@webforge/storage";
 import { readTemplates, type TemplateFolder } from "@webforge/templates/node";
 import { themePreset } from "@webforge/themes";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { storeImport } from "../worker/store-import.js";
-import { fillNewSite } from "./new-site.js";
+import { createImportJobs } from "../worker/store-import.js";
+import { fillNewSite, newSiteImporter } from "./new-site.js";
+import { createInlineStorageWriter } from "./storage-writer.js";
 
 let dir: string;
 let sitePath: string;
@@ -29,9 +30,7 @@ afterEach(() => {
 /** The new file as the session hands it to the fill: its images stored as the writer stores them. */
 const target = () => ({
   store,
-  importFile: vi.fn((mediaId: string, fileName: string, path: string) =>
-    storeImport({ sitePath, mediaId, fileName, source: { path } }),
-  ),
+  importFile: vi.fn(newSiteImporter(createInlineStorageWriter(createImportJobs()), sitePath)),
 });
 
 describe("fillNewSite (2.14a)", () => {
