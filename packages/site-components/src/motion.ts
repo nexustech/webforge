@@ -132,7 +132,9 @@ const HOVER_CLASS: Readonly<Record<Hover, string>> = {
   none: "",
   lift: " motion-safe:transition-all motion-safe:hover:-translate-y-1",
   grow: " motion-safe:transition-all motion-safe:hover:scale-105",
-  shadow: " transition-all hover:shadow-lg",
+  // Its own shadow (`--wf-hover-shadow`), so a theme without shadows doesn't take away an
+  // effect the person chose.
+  shadow: " transition-all hover:shadow-(--wf-hover-shadow)",
 };
 
 /** A hover effect's classes, with a space before them to append to others, or "" for none. */

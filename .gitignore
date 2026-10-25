@@ -46,3 +46,5 @@ desktop.ini
 # Claude Code: shared commands and settings are committed; per-person files are not.
 .claude/settings.local.json
 .claude/launch.json
+# Each theme preset's stylesheet and fonts, for the site components' theme stories (2.13).
+packages/site-components/.storybook/themes/

@@ -45,17 +45,25 @@ export const RICH_TEXT_LIST_CLASSES =
   "[&_ol]:my-3 [&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-6";
 
 /**
- * Links in running text, underlined as the theme says (#423): always, on hover or never; always
+ * Links in running text, underlined as the theme says (#423): always, or only on hover and
+ * keyboard focus, in the main colour then, so they stand apart from the text (WCAG 1.4.1); always
  * where no theme says (Storybook's own themes). Never a button drawn as a link, which has its own.
  */
 const LINK_CLASSES =
-  "[&_a:not(.btn)]:[text-decoration-line:var(--wf-link-decoration,underline)] [&_a:not(.btn):hover]:[text-decoration-line:var(--wf-link-hover-decoration,underline)]";
+  "[&_a:not(.btn)]:[text-decoration-line:var(--wf-link-decoration,underline)] [&_a:not(.btn):hover]:[text-decoration-line:var(--wf-link-hover-decoration,underline)] [&_a:not(.btn):focus-visible]:[text-decoration-line:var(--wf-link-hover-decoration,underline)] [&_a:not(.btn)]:[color:var(--wf-link-color,currentColor)]";
 
 /**
  * Running text at the type scale's body size (#419): paragraphs, links underlined as the theme
  * says, space between paragraphs, its lists marked.
  */
 export const BODY_TEXT_CLASSES = `text-body ${LINK_CLASSES} [&_p+p]:mt-4 ${RICH_TEXT_LIST_CLASSES}`;
+
+/**
+ * A lead: the line under a page's or a section's title (a Hero's, a Call to action's, a
+ * carousel's), at the type scale's body size, so a theme's body text reaches the top of a page.
+ * Placing classes come before it ("py-6 text-body").
+ */
+export const LEAD_TEXT_CLASSES = "text-body";
 
 /** Running text, in a `<div>` that holds its paragraphs; `className` places it ("mt-4"). */
 export function BodyText({

@@ -39,6 +39,10 @@
   --text-small--line-height: 1.5;
   --text-small--font-weight: 400;
 }
+/* The Shadow hover effect's shadow (2.12), as the default theme sets it. */
+:root {
+  --wf-hover-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
 @media (width < 48rem) {
   :root {
     --text-h1: 2.25rem;
