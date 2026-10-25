@@ -279,6 +279,12 @@ test("places a copied YouTube address in an Embed video, and pastes nothing for 
   const placed = JSON.stringify(site?.pages[site.homePageId]?.doc.content);
   expect(placed).toContain('"address":"https://www.youtube.com/watch?v=dQw4w9WgXcQ"');
 
-  await page.keyboard.press("ControlOrMeta+z");
-  await expect(video).toHaveCount(0);
+  // In a text field, pasting a video's address pastes the text: no other Embed video.
+  await app.evaluate(({ clipboard }) => clipboard.writeText("https://vimeo.com/76979871"));
+  const field = page.getByRole("textbox", { name: "Video address" });
+  await field.click();
+  await page.keyboard.press("ControlOrMeta+a");
+  await page.keyboard.press("ControlOrMeta+v");
+  await expect(field).toHaveValue("https://vimeo.com/76979871");
+  await expect(video).toHaveCount(1);
 });
