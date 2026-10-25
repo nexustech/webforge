@@ -81,14 +81,18 @@ export function canPasteStyle(session: StyleSession, copied: CopiedStyle | undef
 
 /**
  * Gives the selected element `copied`'s style, as one undo step "Pasted style on Heading" (D2), or
- * named as any change in a linked copy is. Nothing is recorded when its style is the same already.
- * Returns whether it changed.
+ * named as any change in a linked copy is. A field it can't use with its own values is left as it
+ * is, as the Edit panel leaves it (a List's style while it has an icon). Nothing is recorded when
+ * its style is the same already. Returns whether it changed.
  */
 export function pasteStyle(session: StyleSession, copied: CopiedStyle): boolean {
   const target = selectedTarget(session);
   if (target === undefined || target.node.type !== copied.type) return false;
+  const values = { ...target.component.defaults, ...target.node.props };
   const changed = Object.entries(copied.values).filter(
-    ([name, value]) => !sameValue(target.storedOr(name, target.node.props[name]), value),
+    ([name, value]) =>
+      target.component.fields[name]?.unavailable?.(values) === undefined &&
+      !sameValue(target.storedOr(name, target.node.props[name]), value),
   );
   if (changed.length === 0) return false;
   const label = target.copyLabel ?? pastedStyleLabel(target.editOf("props", ""), session.library);

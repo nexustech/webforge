@@ -193,3 +193,20 @@ describe("registerStyleCommands", () => {
     expect(command("edit.pasteStyle")).toBeUndefined();
   });
 });
+
+describe("Paste Style and fields a target can't use (2.9b)", () => {
+  it("leaves a List's style while it has an icon, and records nothing if that was all", () => {
+    const { session, select, top, labels } = sessionOn([
+      { type: "List", props: { id: "numbered", style: "numbers", items: [] } },
+      { type: "List", props: { id: "ticked", icon: "check", items: [] } },
+    ]);
+    select("numbered");
+    const copied = copyStyle(session);
+    if (copied === undefined) throw new Error("No style copied");
+
+    select("ticked");
+    expect(pasteStyle(session, copied)).toBe(false);
+    expect(top("ticked")?.style).toBeUndefined();
+    expect(labels()).toEqual([]);
+  });
+});
