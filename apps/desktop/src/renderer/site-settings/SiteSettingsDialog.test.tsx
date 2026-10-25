@@ -51,6 +51,9 @@ describe("SiteSettingsDialog", () => {
       await user.clear(name);
       await user.type(name, "Rosa's Bakery");
       await user.click(screen.getByRole("radio", { name: "shop.jpg" }));
+      await user.click(
+        screen.getByLabelText("Show a back-to-top button once visitors scroll down"),
+      );
       await user.click(screen.getByRole("tab", { name: "Contact & hours" }));
       await user.type(screen.getByLabelText("Phone number"), "+44 1234 567890");
       await user.click(screen.getByRole("button", { name: "Add opening hours" }));
@@ -61,7 +64,7 @@ describe("SiteSettingsDialog", () => {
 
       expect(onSave).toHaveBeenCalledTimes(1);
       expect(onSave.mock.calls[0]?.[0]).toMatchObject({
-        general: { name: "Rosa's Bakery", icon: "photo" },
+        general: { name: "Rosa's Bakery", icon: "photo", backToTop: true },
         contact: {
           phone: "+44 1234 567890",
           openingHours: [{ days: ["tue"], opens: "09:00", closes: "17:00" }],

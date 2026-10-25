@@ -36,8 +36,10 @@ function siteWithPages(): SiteDoc {
   };
 }
 
-function setUp() {
+/** The panel on {@link siteWithPages}, with the site's back-to-top button if `backToTop`. */
+function setUp({ backToTop = false } = {}) {
   const site = siteWithPages();
+  if (backToTop) site.settings.general.backToTop = true;
   const actions: PagesPanelActions = {
     show: vi.fn(),
     add: vi.fn(),
@@ -189,7 +191,27 @@ describe("PagesPanel (F-ED-13)", () => {
       hideHeader: false,
       hideFooter: true,
       hideFromNavigation: false,
+      hideBackToTop: false,
     });
+    // The site has no back-to-top button to leave off.
+    expect(within(dialog).queryByRole("checkbox", { name: /back-to-top/ })).toBeNull();
+  });
+
+  it("leaves the site's back-to-top button off a page (F-CM-9)", async () => {
+    const { actions } = setUp({ backToTop: true });
+
+    await openMenu("Team");
+    await userEvent.click(screen.getByRole("menuitem", { name: "Page Settings…" }));
+    const dialog = screen.getByRole("dialog", { name: "Settings for 'Team'" });
+    await userEvent.click(
+      within(dialog).getByRole("checkbox", { name: "Hide the back-to-top button on this page" }),
+    );
+    await userEvent.click(within(dialog).getByRole("button", { name: "Save" }));
+
+    expect(actions.changeSettings).toHaveBeenCalledWith(
+      "page-team",
+      expect.objectContaining({ hideBackToTop: true }),
+    );
   });
 
   it("keeps the Home page's and 'Page not found''s file names fixed", async () => {
