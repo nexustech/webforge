@@ -17,7 +17,7 @@ import { ErrorText } from "./form.js";
 const ROW_WIDTH: Partial<Record<ListItemFieldSpec["kind"], string>> = {
   text: "min-w-40 flex-1",
   select: "w-32",
-  multiChoice: "min-w-0 flex-1",
+  multiChoice: "basis-full",
 };
 
 /**
