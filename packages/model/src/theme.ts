@@ -64,6 +64,12 @@ export const fontRefSchema = z.strictObject({
 /** See {@link fontRefSchema}. */
 export type FontRef = z.infer<typeof fontRefSchema>;
 
+/**
+ * How links in text are underlined, as the Theme panel offers it (2.3a): always, or on hover and
+ * keyboard focus only (#427).
+ */
+export const LINK_UNDERLINES = ["always", "hover"] as const;
+
 /** Corner sizes, smallest first (C4: people choose a size, never a value). */
 export const RADIUS_TOKENS = ["none", "s", "m", "l", "xl", "full"] as const;
 
@@ -160,7 +166,7 @@ export const themeTokensSchema = z.strictObject({
   links: z.strictObject({
     underline: z.preprocess(
       (value) => (value === "never" ? "hover" : value),
-      z.enum(["always", "hover"]),
+      z.enum(LINK_UNDERLINES),
     ),
   }),
   buttons: z.strictObject({
