@@ -1,11 +1,12 @@
 import { createHash } from "node:crypto";
-import { readdirSync, readFileSync } from "node:fs";
+import { cpSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DEFAULT_THEME, siteDocSchema } from "@webforge/model";
 import { siteLibrary, walkNodes } from "@webforge/site-components";
 import { THEME_PRESETS } from "@webforge/themes";
 import { describe, expect, it } from "vitest";
-import { readTemplates } from "../src/node.js";
+import { readTemplate, readTemplates, TEMPLATES_DIR } from "../src/node.js";
 import {
   imageManifestSchema,
   siteFromTemplate,
@@ -78,6 +79,26 @@ describe("the shipped templates (2.14a)", () => {
 
   it("offer at least one example for Try an example (PG-3)", () => {
     expect(templates.some(({ template }) => template.example)).toBe(true);
+  });
+});
+
+describe("readTemplate (2.14a)", () => {
+  it("reads a shipped template from the package's folder by default", () => {
+    expect(readTemplate("sample").template.id).toBe("sample");
+  });
+
+  it("refuses a folder whose template says it is another, or that has none", () => {
+    const dir = mkdtempSync(join(tmpdir(), "webforge-templates-"));
+    try {
+      cpSync(join(TEMPLATES_DIR, "sample"), join(dir, "other"), { recursive: true });
+      expect(() => readTemplate("other", dir)).toThrow("says it is sample");
+      expect(() => readTemplate("missing", dir)).toThrow();
+      // A template.json that fails its schema.
+      writeFileSync(join(dir, "other", "template.json"), JSON.stringify({ id: "sample" }));
+      expect(() => readTemplate("other", dir)).toThrow();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
 
