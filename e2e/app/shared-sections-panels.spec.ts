@@ -1,5 +1,6 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
+import { chooseFromMenu } from "./menus.js";
 
 // Shared sections in the panels (1.29, F-ED-23): the Add panel places linked copies, Layers marks
 // them, and deleting inside a copy asks first, as it changes every copy (D7).
@@ -31,8 +32,7 @@ const DELETE = /^Delete(?! shared)/;
 
 /** Runs an Edit menu command. */
 async function editMenu(name: string | RegExp): Promise<void> {
-  await page.getByRole("menuitem", { name: "Edit" }).click();
-  await page.getByRole("menuitem", { name }).click();
+  await chooseFromMenu(app, page, "Edit", name);
 }
 
 /**

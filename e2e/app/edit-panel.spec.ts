@@ -1,6 +1,7 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { placeCaret } from "./caret.js";
 import { launchDesktopApp, newUserDataDir, waitForCanvas } from "./launch.js";
+import { chooseFromMenu } from "./menus.js";
 
 // The Edit panel (1.14): the selected element's fields, each change one labelled undo step.
 
@@ -109,8 +110,7 @@ test.describe("Edit panel", () => {
     const box = await first.boundingBox();
     if (box === null) throw new Error("Heading not visible");
     await first.click({ position: { x: box.width * 0.97, y: box.height - 2 } });
-    await page.getByRole("menuitem", { name: "Edit" }).click();
-    await page.getByRole("menuitem", { name: "Paste Style" }).click();
+    await chooseFromMenu(app, page, "Edit", "Paste Style");
 
     await expect(canvas().locator("h3.site-heading")).toHaveCount(2);
     await expect(steps().first()).toHaveText("Pasted style on Heading");

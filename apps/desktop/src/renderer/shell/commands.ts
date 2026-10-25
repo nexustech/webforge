@@ -39,6 +39,11 @@ export type Command = {
   readonly textKeys?: readonly string[];
   /** Defaults to true; a disabled command is shown but can't run. */
   readonly enabled?: boolean;
+  /**
+   * The title-bar button whose caret menu lists it, by that button's command id (LF-13): Export's
+   * caret for a ZIP export, say. A button shows its caret only while some command names it.
+   */
+  readonly more?: string;
   /** The palette's group for it; the app's own commands when left out. */
   readonly palette?: PaletteGroup;
   /** More words the palette finds it by (a page's file name, a component's category). */
@@ -314,6 +319,28 @@ export function formatShortcut(shortcut: string, mac = isMac()): string {
     .join("+");
 }
 
+/** Keys as Electron's accelerators name them, where they differ from ours. */
+const ACCELERATOR_KEYS: Readonly<Record<string, string>> = {
+  arrowup: "Up",
+  arrowdown: "Down",
+  arrowleft: "Left",
+  arrowright: "Right",
+  " ": "Space",
+  "+": "Plus",
+};
+
+/**
+ * A shortcut as Electron's menus take it (`CmdOrCtrl+Shift+Z`), for macOS's menu bar to show it
+ * (LF-13).
+ */
+export function electronAccelerator(shortcut: string): string {
+  const { key, mod, shift, alt } = parseShortcut(shortcut);
+  const name =
+    ACCELERATOR_KEYS[key] ??
+    (key.length <= 1 ? key.toUpperCase() : key[0]?.toUpperCase() + key.slice(1));
+  return [mod && "CmdOrCtrl", alt && "Alt", shift && "Shift", name].filter(Boolean).join("+");
+}
+
 /** Tags that use plain keys (arrows, Delete) themselves. */
 const CONTROL_TAGS: ReadonlySet<string> = new Set(["INPUT", "TEXTAREA", "SELECT", "BUTTON", "A"]);
 
@@ -355,8 +382,13 @@ function isInDialog(target: EventTarget | null, doc: Pick<Document, "querySelect
   const element = target as { closest?: (selector: string) => unknown } | null;
   return (
     element?.closest?.('[role="dialog"], [role="alertdialog"], [role="menu"]') != null ||
-    doc.querySelector(MODAL) !== null
+    hasModalOpen(doc)
   );
+}
+
+/** Whether the editor window `doc` has a modal dialog or a menu open, which owns the keys. */
+export function hasModalOpen(doc: Pick<Document, "querySelector">): boolean {
+  return doc.querySelector(MODAL) !== null;
 }
 
 /**

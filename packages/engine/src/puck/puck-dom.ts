@@ -17,6 +17,14 @@ export function componentSelector(id: string): string {
   return `[${COMPONENT_ATTRIBUTE}="${CSS.escape(id)}"]`;
 }
 
+/**
+ * The element node `id` draws: Puck wraps each element in a `div` of its own, which can be wider
+ * than the element (a Small Image in a wide column).
+ */
+export function elementOf(document: Document, id: string): Element | null | undefined {
+  return document.querySelector(componentSelector(id))?.firstElementChild;
+}
+
 /** Puck's overlay over a component on the canvas, which holds its outline and action bar. */
 export const OVERLAY = "[data-puck-overlay]";
 
