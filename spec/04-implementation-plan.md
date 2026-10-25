@@ -39,7 +39,7 @@ Phase 0 is largely done (PRs #1–#6):
 | Puck running under **our** HistoryManager (go decision) | [ADR 0004](../docs/adr/0004-puck-with-webforge-history.md) |
 | Export pipeline: static render (`renderNodesToHtml`) → Tailwind/daisyUI → jSquash images, `file://` output | [ADR 0005](../docs/adr/0005-export-pipeline-spike.md) |
 
-Still open in Phase 0: publishing spikes (Netlify, FTP/SFTP), signed installers + auto-update, and the Puck large-page check. The ADR follow-ups (storage, history, export) are folded into the Phase 1–5 items below.
+Still open in Phase 0: the publishing spikes (Netlify, FTP/SFTP). The Puck large-page check is done, and signed installers and auto-update (0.1, 0.5, 0.6) moved to Phase 5 on 25 Oct 2026. The ADR follow-ups (storage, history, export) are folded into the Phase 1–5 items below.
 
 Current code size (approx. lines): desktop 2.7k · engine 1.6k · history 1.6k · pipeline 1.1k · site-components 1.0k · storage 0.6k · model 0.3k. `editor-ui`, `publish` and `themes` are placeholders.
 
@@ -79,16 +79,18 @@ Current code size (approx. lines): desktop 2.7k · engine 1.6k · history 1.6k �
 - **Code signing:** enrolment (0.1) starts by **13 Nov 2026** (product owner, 25 Oct 2026), replacing the 24 Oct deferral, about two weeks before 0.5 (signed installers) and the beta.
 - **Publish spikes:** 0.2 (Netlify) and 0.3 (FTP/FTPS/SFTP) join stream B's queue after R13d, before 2.13b, because Phase 4's publishers build on them.
 
+**Scope change, 25 Oct 2026 (signing to Phase 5, product owner):** code-signing enrolment (0.1), the signed-installer and auto-update spike (0.5) and the Phase 0 wrap-up (0.6) move to Phase 5. 0.5 can't start until enrolment's lead time is over, about two weeks after it starts by 13 Nov, and 0.1's acceptance (an active Apple membership, an issued Windows certificate) waits for the same. 0.6 follows 0.5. Phase 0 closes on 13 Nov once 0.2 and 0.3 are done. Phase 0 is 5 days down (11 → 6) and Phase 5 is 5 up (38 → 43); the total is unchanged.
+
 | Phase | Effort (days) | Starts | Ends (100%) | Ends (+25%) | Exit criteria |
 |---|---|---|---|---|---|
-| [Phase 0: Prototype (finish)](#phase-0-prototype-finish) | 11 | 26 Oct 2026 | 13 Nov 2026 (spikes; 0.5 after enrolment's lead time) | – | Netlify and SFTP/FTPS publish spikes meet the spike criteria in research/stack/08<br>Signed NSIS and DMG builds install, and auto-update from a test feed on both OSes<br>A large page (200+ elements) stays within the editing performance budget<br>ADRs written; architecture §6 interfaces updated |
+| [Phase 0: Prototype (finish)](#phase-0-prototype-finish) | 6 | 26 Oct 2026 | 13 Nov 2026 (0.2 and 0.3) | – | Netlify and SFTP/FTPS publish spikes meet the spike criteria in research/stack/08<br>A large page (200+ elements) stays within the editing performance budget |
 | [Phase 1: Editor core](#phase-1-editor-core) | 128 | 22 Oct 2026 | 25 Oct 2026 (exit criteria met; closes on the screenshots' sign-off) | – | Build a 3-page site from blank, close, reopen: everything restored<br>Undo-all property tests green; every edit has a meaningful label<br>Shell matches UI1 as amended by UI6 in dark and light (Storybook screenshots) |
 | [Phase 2: Design & components](#phase-2-design--components) | 125 | 23 Oct 2026 | 6 Nov 2026 (code-complete) | – | Every component has stories × 3 themes × Desktop/Mobile, axe-clean (colour contrast in site themes reported, not blocking)<br>New Site from each of the 8 templates works and looks distinct<br>Theme changes restyle every component; contrast warnings work |
 | [Phase 3: Output](#phase-3-output) | 32 | 9 Nov 2026 | 20 Nov 2026 | – | Exported templates open from disk in Chromium, Firefox, WebKit (+ Edge on Windows) with no external requests<br>Site Check blocks only Must-fix issues on export<br>Preview CSS hot-swap < 100 ms; phone preview via QR works |
 | [Phase 4: Publish & versions](#phase-4-publish--versions) | 30 | 23 Nov 2026 | 4 Dec 2026 | – | Publish + rollback on all targets in E2E tests (mock Netlify, local FTP/SFTP)<br>A paired AI app's edits are undoable, and the MCP server can't be reached from another computer<br>Version History: save, auto-retention, preview, restore, open as new site, republish |
-| [Phase 5: Beta hardening](#phase-5-beta-hardening) | 38 | 7 Dec 2026 | 22 Jan 2027 (hardening by mid-December, then the 4-week beta) | – | All performance budgets met on Windows and macOS<br>Signed, notarised builds auto-update from the production feed<br>Beta running with 10–20 users; no open Must-fix bugs |
+| [Phase 5: Beta hardening](#phase-5-beta-hardening) | 43 | 7 Dec 2026 | 22 Jan 2027 (hardening by mid-December, then the 4-week beta) | – | All performance budgets met on Windows and macOS<br>Signed NSIS and DMG builds install, and auto-update from a test feed on both OSes (0.5)<br>Signed, notarised builds auto-update from the production feed<br>ADRs written; architecture §6 interfaces updated (0.6)<br>Beta running with 10–20 users; no open Must-fix bugs |
 
-Phase 0's signed-installer item waits on enrolment (lead time), so Phase 1 work starts while it waits. **Enrolment (0.1) starts by 13 Nov 2026** (product owner, 25 Oct 2026, replacing the 24 Oct deferral), about two weeks before 0.5 and the beta. The product owner does this step: it needs their accounts and payment. The Gantt chart shows the baseline schedule at 100% of the estimates, not the Phase 1 exit dates in the table. Items added on 22 Oct 2026 (1.28, 1.29, 4.8, 4.9, and 3.5's extra day) are drawn after their predecessors, so some overlap the baseline bars that follow them until the Phase 1 exit re-plan.
+The signed-installer item (0.5, in Phase 5 since 25 Oct 2026) waits on enrolment (lead time), so other work goes on while it waits. **Enrolment (0.1) starts by 13 Nov 2026** (product owner, 25 Oct 2026, replacing the 24 Oct deferral), about two weeks before 0.5 and the beta. The product owner does this step: it needs their accounts and payment. The Gantt chart shows the baseline schedule at 100% of the estimates, not the Phase 1 exit dates in the table. Items added on 22 Oct 2026 (1.28, 1.29, 4.8, 4.9, and 3.5's extra day) are drawn after their predecessors, so some overlap the baseline bars that follow them until the Phase 1 exit re-plan.
 
 ```mermaid
 gantt
@@ -97,12 +99,9 @@ gantt
     axisFormat %b %y
     excludes weekends 2026-12-25 2026-12-28 2027-01-01 2027-03-26 2027-03-29 2027-05-03 2027-05-31 2027-08-30 2027-12-27 2027-12-28
     section Phase 0
-    0.1 Start code-signing enrolment (Apple Developer… :crit, t0_1, 2026-10-26, 1d
     0.2 Spike – Netlify publish (OAuth, digest deploy,… :t0_2, 2026-10-27, 3d
     0.3 Spike – FTP/FTPS/SFTP incremental publish :t0_3, 2026-10-30, 2d
     0.4 Puck large-page performance check :t0_4, 2026-11-03, 1d
-    0.5 Spike – signed installers and auto-update :crit, t0_5, 2026-11-13, 3d
-    0.6 Phase 0 wrap-up – interfaces and decision log :t0_6, 2026-11-18, 1d
     section Phase 1
     1.1 Editor theme tokens, compact density and Story… :crit, t1_1, 2026-10-23, 3d
     1.2 Window shell – title bar, panels, drawer (UI1… :crit, t1_2, 2026-10-28, 4d
@@ -188,6 +187,10 @@ gantt
     4.8 Command API for AI apps :t4_8, after t4_7, 3d
     4.9 Local MCP server and AI app approvals :t4_9, after t4_8, 5d
     section Phase 5
+    %% 0.1, 0.5 and 0.6 moved from Phase 0 on 25 Oct 2026; drawn at their baseline dates
+    0.1 Start code-signing enrolment (Apple Developer… :crit, t0_1, 2026-10-26, 1d
+    0.5 Spike – signed installers and auto-update :crit, t0_5, 2026-11-13, 3d
+    0.6 Phase 0 wrap-up – interfaces and decision log :t0_6, 2026-11-18, 1d
     5.1 Performance budgets and benchmarks :t5_1, 2027-09-29, 3d
     5.2 Production builds, signing and update channels :crit, t5_2, 2027-10-04, 3d
     5.3 Open-source licences screen and third-party no… :t5_3, 2027-10-07, 1d
@@ -214,27 +217,16 @@ These take calendar time rather than effort. Start them in week 1 so they never 
 Each item becomes one GitHub issue (title prefixed with its ID) in its phase milestone, labelled `area/*` and `type/*`. Estimates are ideal days. Dependencies list item IDs.
 
 ### Phase 0: Prototype (finish)
-**Goal:** Close the remaining spikes so every 🔬 item in the specs is proven: publishing, signed installers, auto-update and Puck performance.  
-**Effort:** 11 days · **Scheduled:** 26 Oct 2026 → 13 Nov 2026 (Phase 1 exit re-plan; 0.5 follows enrolment's lead time; 0.2 and 0.3 in stream B after R13d)
+**Goal:** Close the remaining spikes: publishing and Puck performance. Signed installers, auto-update and the wrap-up (0.1, 0.5, 0.6) moved to [Phase 5](#phase-5-beta-hardening) on 25 Oct 2026.  
+**Effort:** 6 days · **Scheduled:** 26 Oct 2026 → 13 Nov 2026 (Phase 1 exit re-plan; 0.2 and 0.3 in stream B after R13d; 0.1, 0.5 and 0.6 moved to Phase 5 on 25 Oct 2026)
 
 | ID | Item | Issue | Area | Refs | Est | Depends on |
 |---|---|---|---|---|---|---|
-| 0.1 | Start code-signing enrolment (Apple Developer + Windows signing) | [#11](https://github.com/nexustech/webforge/issues/11) | release | [stack/01](../research/stack/01-electron-vs-tauri.md), MVP §6, standards §10 | 1 | – |
 | 0.2 | Spike: Netlify publish (OAuth, digest deploy, restore, Forms) | [#12](https://github.com/nexustech/webforge/issues/12) | publish | [stack/08](../research/stack/08-publishing.md), B1, B6, F-PB-1, F-PB-2 | 3 | – |
 | 0.3 | Spike: FTP/FTPS/SFTP incremental publish | [#13](https://github.com/nexustech/webforge/issues/13) | publish | [stack/08](../research/stack/08-publishing.md), B5 | 2 | – |
 | 0.4 | Puck large-page performance check | [#14](https://github.com/nexustech/webforge/issues/14) | engine | [ADR 0004](../docs/adr/0004-puck-with-webforge-history.md), architecture §10 | 1 | – |
-| 0.5 | Spike: signed installers and auto-update | [#15](https://github.com/nexustech/webforge/issues/15) | release | [stack/01](../research/stack/01-electron-vs-tauri.md), MVP §6 | 3 | 0.1 |
-| 0.6 | Phase 0 wrap-up: interfaces and decision log | [#16](https://github.com/nexustech/webforge/issues/16) | docs | architecture §6, ADRs 0003–0005 | 1 | 0.2, 0.3, 0.5, 0.4 |
 
 <details><summary>Scope and acceptance criteria</summary>
-
-**0.1 Start code-signing enrolment (Apple Developer + Windows signing)**  
-Enrol in the Apple Developer Program (as the company if a legal entity exists; that needs a D-U-N-S number) and set up Windows code signing: Azure Artifact Signing (formerly Trusted Signing) if enrolling as a UK organisation, since individuals are only eligible in the US and Canada; otherwise an OV certificate on a cloud HSM. Both involve identity verification that can take days to weeks. It starts by 13 Nov 2026 (product owner, 25 Oct 2026), about two weeks before 0.5 and the beta (Q2, Q3). The product owner does this step: it needs their accounts and payment.
-*Lead time:* about 10 working days of waiting after this item before dependants can start.
-
-- [ ] Apple Developer membership active; Developer ID Application certificate created
-- [ ] Windows signing route chosen and verified (Artifact Signing account or OV certificate issued)
-- [ ] Secrets stored in GitHub Actions secrets, never in the repo
 
 **0.2 Spike: Netlify publish (OAuth, digest deploy, restore, Forms)**  
 Netlify OAuth from Electron via loopback redirect (PAT fallback), create/pick site, file-digest deploy of an exported site, re-deploy with one changed file, restore a previous deploy, Netlify Forms detection on an API deploy.
@@ -258,21 +250,6 @@ Measure editing a page with 200+ elements: keystroke-to-canvas latency, drag, un
 - [ ] Measurements recorded against the §10 budgets
 - [ ] Mitigations listed if budgets are missed
 - [ ] Upstream issues filed
-
-**0.5 Spike: signed installers and auto-update**  
-electron-builder signing for NSIS (per-user) and macOS arm64 DMG **plus zip** (electron-updater needs the zip on macOS) with notarisation in CI; electron-updater against a test feed (Q1); confirm .wforge file association. macOS updates only work for a signed app, so the macOS update test needs the real certificate.
-
-- [ ] Signed NSIS installs per-user without admin; SmartScreen reputation path understood
-- [ ] Notarised app is not blocked by Gatekeeper on a clean Mac (only the standard downloaded-from-the-internet prompt)
-- [ ] Signed app updates itself from v0.0.1 to v0.0.2 via the test feed on both OSes
-- [ ] Double-clicking a .wforge file opens Webforge
-- [ ] ADR written (incl. chosen update-feed host)
-
-**0.6 Phase 0 wrap-up: interfaces and decision log**  
-Fold spike learnings into architecture §6 (CanvasEngine, HistoryManager, Pipeline, Publisher), mark all 🔬 items resolved, update the decision register.
-
-- [ ] No 🔬 items left in specs
-- [ ] Architecture §6 matches the code's interfaces
 
 </details>
 
@@ -665,7 +642,7 @@ Close the visible gap to Bootstrap Studio 9.0.1 within the IP rule ([product/07]
 | Stream | Items, in order (after its Phase 1 items) |
 |---|---|
 | A: Shell & panels | ~~R9 → R10 → R11 → 2.9 → 2.21~~ → 1.39 → 2.3 → 2.15a (Café/Restaurant, Salon/Beauty, Trades) → 2.18 |
-| B: Data & site | ~~2.1 → 2.2 → R12 → R14 → 2.4 → 2.20 → 2.8 → 2.7b~~ → R13 (R13a → R13b → R13c → R13d) → 0.2 (Netlify spike, 25 Oct) → 0.3 (FTP/FTPS/SFTP spike, 25 Oct) → 2.13b (themes 5–8) → 2.15b (Consultant, Photographer/Portfolio, Shop) |
+| B: Data & site | ~~2.1 → 2.2 → R12 → R14 → 2.4 → 2.20 → 2.8 → 2.7b~~ → R13 (R13a → R13b → R13c → R13d) → 0.2 (Netlify spike, 25 Oct) → 0.3 (FTP/FTPS/SFTP spike, 25 Oct) → 2.13b (themes 5–8) → 2.15b (Consultant, Photographer/Portfolio, Shop) → 0.5 (once enrolment is through, 25 Oct) → 0.6 |
 | C: History & canvas | ~~2.5 (before 1.30) → R7 → R8 (part 2 before 2.17) → 2.6 → 2.10 → 2.19 → 2.7a → 2.17 → 2.12 → 2.11 (from B, 25 Oct)~~ → 2.13a (themes 1–4, from A, 25 Oct) → 2.14a (2.14, from B, 25 Oct) → 2.13d (theme range, 25 Oct) → 2.14b → 2.13c (themes 9–12, from A, 25 Oct) → 2.15c (Personal/CV, Blank) → 2.16 |
 
 **Issue review, 25 Oct 2026.** Every Phase 2 item except 2.3, 2.13, 2.14, 2.15, 2.16, 2.18 and R13 is merged, and 1.39 is stream A's next item. Two corrections: **2.13 no longer depends on 2.3.** The curated themes are presets in `packages/themes` (2.1, merged), reviewed side by side in Storybook against the merged components; the Theme panel is the UI for editing a site's theme and nothing in 2.13 needs it, so the three theme batches are unblocked today instead of waiting about 16 raw days for stream A's 1.39, 2.3 and 2.18. **2.13a and 2.13c swap streams:** stream C's queue was empty until 2.13c, so it takes themes 1–4 (#210) now, and the product owner's review of that batch feeds the other two as the 23 Oct review intended; stream A takes themes 9–12 (#212) after 2.18. The template batches keep their issue dependencies (2.15a waits for #210, 2.15c for #212). Nothing else was blocked: 2.14, R13 and the 2.21 follow-up chore (#391) have their dependencies met, and 1.39's are all closed. The theme issues' contrast criterion is brought in line with the 24 Oct decision (reported, not a gate), and 2.18's issue now lists only 1.37 as a dependency, with 1.39 and 2.3 as queue order, as this plan says.
@@ -1027,10 +1004,13 @@ ADR on the transport (Q9). The MCP server runs in main on the official TypeScrip
 
 ### Phase 5: Beta hardening
 **Goal:** Production-ready signed builds, performance, onboarding and a closed beta with 10–20 small-business users on Windows and macOS.  
-**Effort:** 38 days · **Scheduled:** 7 Dec 2026 → 22 Jan 2027 (Phase 1 exit re-plan; baseline 29 Sep → 19 Nov 2027)
+**Effort:** 43 days · **Scheduled:** 7 Dec 2026 → 22 Jan 2027 (Phase 1 exit re-plan; baseline 29 Sep → 19 Nov 2027; 0.1, 0.5 and 0.6 moved from Phase 0 on 25 Oct 2026, +5 days)
 
 | ID | Item | Issue | Area | Refs | Est | Depends on |
 |---|---|---|---|---|---|---|
+| 0.1 | Start code-signing enrolment (Apple Developer + Windows signing) | [#11](https://github.com/nexustech/webforge/issues/11) | release | [stack/01](../research/stack/01-electron-vs-tauri.md), MVP §6, standards §10 | 1 | – |
+| 0.5 | Spike: signed installers and auto-update | [#15](https://github.com/nexustech/webforge/issues/15) | release | [stack/01](../research/stack/01-electron-vs-tauri.md), MVP §6 | 3 | 0.1 |
+| 0.6 | Phase 0 wrap-up: interfaces and decision log | [#16](https://github.com/nexustech/webforge/issues/16) | docs | architecture §6, ADRs 0003–0005 | 1 | 0.2, 0.3, 0.5, 0.4 |
 | 5.1 | Performance budgets and benchmarks | [#76](https://github.com/nexustech/webforge/issues/76) | release | architecture §10, standards §5, [ADR 0004](../docs/adr/0004-puck-with-webforge-history.md) | 3 | – |
 | 5.2 | Production builds, signing and update channels | [#77](https://github.com/nexustech/webforge/issues/77) | release | [stack/01](../research/stack/01-electron-vs-tauri.md), standards §7, §10 | 3 | 0.5 |
 | 5.3 | Open-source licences screen and third-party notices | [#78](https://github.com/nexustech/webforge/issues/78) | release | C1 | 1 | – |
@@ -1040,7 +1020,34 @@ ADR on the transport (Q9). The MCP server runs in main on the official TypeScrip
 | 5.7 | Pre-beta checks and closed beta programme | [#82](https://github.com/nexustech/webforge/issues/82) | release | MVP §6 Phase 5, [ADR 0003](../docs/adr/0003-wforge-sqlite-storage.md) | 3 | 5.2, 5.4 |
 | 5.8 | Beta period (4 weeks): fix findings and release v1.0 | [#83](https://github.com/nexustech/webforge/issues/83) | release | MVP §6 Phase 5 | 20 | 5.7 |
 
+**Moved from Phase 0, 25 Oct 2026 (product owner):** 0.1, 0.5 and 0.6 keep their IDs and issues. 0.5 needs enrolment's lead time (about 27 Nov → early December 2026), and 0.6 follows it; both are in stream B after 2.15b.
+
 <details><summary>Scope and acceptance criteria</summary>
+
+*0.1, 0.5 and 0.6 moved from Phase 0 on 25 Oct 2026.*
+
+**0.1 Start code-signing enrolment (Apple Developer + Windows signing)**  
+Enrol in the Apple Developer Program (as the company if a legal entity exists; that needs a D-U-N-S number) and set up Windows code signing: Azure Artifact Signing (formerly Trusted Signing) if enrolling as a UK organisation, since individuals are only eligible in the US and Canada; otherwise an OV certificate on a cloud HSM. Both involve identity verification that can take days to weeks. It starts by 13 Nov 2026 (product owner, 25 Oct 2026), about two weeks before 0.5 and the beta (Q2, Q3). The product owner does this step: it needs their accounts and payment.
+*Lead time:* about 10 working days of waiting after this item before dependants can start.
+
+- [ ] Apple Developer membership active; Developer ID Application certificate created
+- [ ] Windows signing route chosen and verified (Artifact Signing account or OV certificate issued)
+- [ ] Secrets stored in GitHub Actions secrets, never in the repo
+
+**0.5 Spike: signed installers and auto-update**  
+electron-builder signing for NSIS (per-user) and macOS arm64 DMG **plus zip** (electron-updater needs the zip on macOS) with notarisation in CI; electron-updater against a test feed (Q1); confirm .wforge file association. macOS updates only work for a signed app, so the macOS update test needs the real certificate.
+
+- [ ] Signed NSIS installs per-user without admin; SmartScreen reputation path understood
+- [ ] Notarised app is not blocked by Gatekeeper on a clean Mac (only the standard downloaded-from-the-internet prompt)
+- [ ] Signed app updates itself from v0.0.1 to v0.0.2 via the test feed on both OSes
+- [ ] Double-clicking a .wforge file opens Webforge
+- [ ] ADR written (incl. chosen update-feed host)
+
+**0.6 Phase 0 wrap-up: interfaces and decision log**  
+Fold spike learnings into architecture §6 (CanvasEngine, HistoryManager, Pipeline, Publisher), mark all 🔬 items resolved, update the decision register.
+
+- [ ] No 🔬 items left in specs
+- [ ] Architecture §6 matches the code's interfaces
 
 **5.1 Performance budgets and benchmarks**  
 vitest bench + Playwright traces for cold start, keystroke latency, undo/redo on a 20-section page (ADR 0004), preview hot-swap, autosave, export; CI fails on > 20% regression; fix hotspots.
