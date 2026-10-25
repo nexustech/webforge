@@ -18,12 +18,12 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
+  useMenuDialog,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import type { SharedSectionId } from "@webforge/model";
 import { EllipsisIcon, PlusIcon, SearchIcon } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
-import { useMenuDialog } from "../shell/use-menu-dialog.js";
 import { type AddItem, type AddTab, groupItems } from "./add-items.js";
 
 /** What the "…" menu of a shared section offers (1.29): each opens a dialog. */

@@ -45,6 +45,9 @@ const deviceSchema = z.strictObject({
 /** A device the person added for the canvas. */
 export type CustomDevice = z.infer<typeof deviceSchema>;
 
+/** A device as the person describes it in *Add device…*, before it has an id (2.21). */
+export const newDeviceSchema = deviceSchema.omit({ id: true });
+
 /**
  * How the canvas shows the page (F-ED-25, UX-7): the View menu's options, and the person's own
  * devices. View state, never an undo step (U6).

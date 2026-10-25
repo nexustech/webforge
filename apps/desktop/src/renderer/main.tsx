@@ -6,6 +6,8 @@ import { App } from "./App.js";
 import { starterSite } from "./editor/starter-site.js";
 import { createErrorReporter, installErrorReporting, rootErrorOptions } from "./error-reporting.js";
 import { StartScreen } from "./start/StartScreen.js";
+// Schemas word their problems in the editor's words (2.21).
+import "./shell/form-messages.js";
 import { loadSite } from "./storage/load-site.js";
 import "./styles.css";
 import { setFailureLog, showInDevConsole } from "./log.js";

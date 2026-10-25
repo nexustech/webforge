@@ -13,8 +13,13 @@ export type FormState<V extends FormValues, Out> = {
   readonly spec: FormSpec<V, Out>;
   readonly values: V;
   readonly fields: readonly FormField[];
-  /** The problems to show now: none until they should show (`validateOn`). */
+  /**
+   * The problems to show now (`validateOn`): none until Save is tried, or, checking as the person
+   * types, those of the fields they have changed; after a Save, all of them.
+   */
   readonly issues: readonly FormIssue[];
+  /** Whether the values pass now: a dialog checking as the person types keeps Save off until then. */
+  readonly valid: boolean;
   /** Sets field `name`'s value; a `list` field takes a {@link ListChange}. */
   readonly change: (name: string, value: unknown) => void;
   /** Checks the values; from now on their problems show as they change. */
@@ -118,28 +123,42 @@ export function useForm<V extends FormValues, Out>(
   spec: FormSpec<V, Out>,
   initial: V,
 ): FormState<V, Out> {
-  const [values, setValues] = useState(initial);
+  const [{ values, touched }, setState] = useState({
+    values: initial,
+    touched: new Set<string>(),
+  });
   const [first] = useState(initial);
-  const [showing, setShowing] = useState(spec.validateOn === "change");
   const [attempts, setAttempts] = useState(0);
   const fields = fieldsOf(spec, values);
-  const issues = showing ? checkForm(spec, values).issues : [];
+  const all = checkForm(spec, values).issues;
+  const issues =
+    attempts > 0
+      ? all
+      : spec.validateOn === "change"
+        ? all.filter((issue) =>
+            fields.some(
+              (field) => touched.has(field.name) && issueOf(field, [issue]) !== undefined,
+            ),
+          )
+        : [];
 
   // From the values as they are when the change applies, so changes made together (a link and its
   // anchor, a preset filling several fields) all count.
+  // Every field whose value it changes (adjust's too) is touched: its problems show.
   const change = (name: string, value: unknown) =>
-    setValues((current) => {
-      const field = fieldsOf(spec, current).find((each) => each.name === name);
+    setState((current) => {
+      const field = fieldsOf(spec, current.values).find((each) => each.name === name);
       const next =
         field?.kind === "list"
-          ? applyListChange(itemsOf(current[name]), value as ListChange, field.newItem)
+          ? applyListChange(itemsOf(current.values[name]), value as ListChange, field.newItem)
           : value;
-      const changed = { ...current, [name]: next } as V;
-      return spec.adjust?.(changed, current) ?? changed;
+      const changed = { ...current.values, [name]: next } as V;
+      const adjusted = spec.adjust?.(changed, current.values) ?? changed;
+      const moved = Object.keys(adjusted).filter((key) => adjusted[key] !== current.values[key]);
+      return { values: adjusted, touched: new Set([...current.touched, ...moved]) };
     });
 
   const submit = (): FormSubmit<Out> => {
-    setShowing(true);
     setAttempts(attempts + 1);
     const checked = checkForm(spec, values);
     return "output" in checked
@@ -147,5 +166,5 @@ export function useForm<V extends FormValues, Out>(
       : { ok: false };
   };
 
-  return { spec, values, fields, issues, change, submit, attempts };
+  return { spec, values, fields, issues, valid: all.length === 0, change, submit, attempts };
 }
