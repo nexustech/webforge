@@ -5,13 +5,14 @@
 //
 // Usage:
 //   pnpm scaffold area <Name> [--window]
-//   pnpm scaffold panel <Name> --area <folder> [--window]
-//   pnpm scaffold commands <Name> --area <folder> [--window]
+//   pnpm scaffold panel <Name> [--area <folder>] [--window]
+//   pnpm scaffold commands <Name> [--area <folder>] [--window]
 //   pnpm scaffold field-kind <Name>
 //   pnpm scaffold ipc-domain <Name>
 //
 //   <Name>    PascalCase: Bookings, OpeningTimes. An IPC domain's is one word (Calendar).
-//   --area    the renderer folder the panel or commands go in (bookings); made if it isn't there
+//   --area    the renderer folder the panel or commands go in (bookings); made if it isn't there.
+//             Without it, the name's own folder: `panel Notes` goes in notes/
 //   --window  registered by the window (WINDOW_AREAS), after the shell's own commands, rather than
 //             around the canvas (EDITOR_AREAS): see renderer/areas.ts
 //
@@ -464,11 +465,30 @@ export function panelPlanFor(root: string, names: Names, folder: string, scope: 
       ...area.files,
       ...strings.files,
     },
-    edits: merge(area.edits, strings.edits),
+    edits: merge(
+      merge(area.edits, strings.edits),
+      // The editor's test lists its panels exactly, so one added by mistake fails it: this one
+      // joins the list.
+      scope === "editor" ? { [EDITOR_TEST]: [(text: string) => listEditorPanel(text, camel)] } : {},
+    ),
     next: [
       `Fill in ${dir}/${pascal}Panel.tsx; its story shows it in Storybook (Panels/Registered/${pascal}).`,
     ],
   };
+}
+
+const EDITOR_TEST = `${RENDERER}/editor/Editor.test.tsx`;
+
+/** The editor's test with panel `id` in the sorted list of panels it expects. */
+export function listEditorPanel(text: string, id: string): string {
+  const list = /(\.toSorted\(\),\s*\)\.toEqual\(\[)([^\]]*)(\]\);)/.exec(text);
+  if (list === null) throw new Error("can't find the editor's list of panels");
+  const ids = [...(list[2] ?? "").matchAll(/"([^"]+)"/g)].map(([, each]) => each ?? "");
+  const listed = [...ids, id]
+    .toSorted()
+    .map((each) => `"${each}"`)
+    .join(", ");
+  return text.replace(list[0], `${list[1]}${listed}${list[3]}`);
 }
 
 /** `pnpm scaffold commands`: a command, its registration, test and strings, as an area. */
@@ -918,12 +938,12 @@ export function planFor(
 ): Plan {
   const names = namesOf(name);
   if (typeof names === "string") throw new Error(names);
+  // Without --area, the name's own folder: `panel Notes` makes the notes area.
   const area = () => {
-    if (folder === undefined)
-      throw new Error(`A ${what} goes in an area: say which, with --area <folder>`);
-    const problem = folderProblem(folder);
+    const chosen = folder ?? names.file;
+    const problem = folderProblem(chosen);
     if (problem !== undefined) throw new Error(problem);
-    return folder;
+    return chosen;
   };
   switch (what) {
     case "area":
@@ -1014,8 +1034,8 @@ const option = (args: readonly string[], name: string) => {
 const USAGE = [
   "Usage:",
   "  pnpm scaffold area <Name> [--window]",
-  "  pnpm scaffold panel <Name> --area <folder> [--window]",
-  "  pnpm scaffold commands <Name> --area <folder> [--window]",
+  "  pnpm scaffold panel <Name> [--area <folder>] [--window]",
+  "  pnpm scaffold commands <Name> [--area <folder>] [--window]",
   "  pnpm scaffold field-kind <Name>",
   "  pnpm scaffold ipc-domain <Name>",
   "",

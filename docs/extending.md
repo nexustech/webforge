@@ -13,12 +13,12 @@ pnpm scaffold area Bookings
 | What | Command | Writes and registers |
 |---|---|---|
 | An area | `pnpm scaffold area <Name> [--window]` | `renderer/<name>/area.ts` and its test, listed in the composition root; its strings file |
-| A panel | `pnpm scaffold panel <Name> --area <folder> [--window]` | the panel, its `register…Panel`, a `panelStory()` story and a test; an area for it, listed; its strings |
-| Commands | `pnpm scaffold commands <Name> --area <folder> [--window]` | `register…Commands` with one command, and a test; an area for it, listed; its strings |
+| A panel | `pnpm scaffold panel <Name> [--area <folder>] [--window]` | the panel, its `register…Panel`, a `panelStory()` story and a test; an area for it, listed; its strings |
+| Commands | `pnpm scaffold commands <Name> [--area <folder>] [--window]` | `register…Commands` with one command, and a test; an area for it, listed; its strings |
 | A kind of field | `pnpm scaffold field-kind <Name>` | `fields/<kind>/` (renderer, registration, story, test), and the kind in all seven places it touches, storing a string |
 | An IPC domain | `pnpm scaffold ipc-domain <Name>` | the contract with one call, the preload's API, main's handler and its test, each registered |
 
-What it writes passes `pnpm check` as it is; then make it what it should be. `--window` registers the area with the window rather than the editor (see [Two lists](#two-lists-the-editors-and-the-windows)). It refuses a name, folder, file or string key that's taken, and writes nothing when it refuses. 2.19's `pnpm new-component` does the same for site components.
+What it writes passes `pnpm check` as it is; then make it what it should be. A panel or commands go in the folder `--area` names, or without it the name's own (`pnpm scaffold panel Notes` makes `renderer/notes/`). `--window` registers the area with the window rather than the editor (see [Two lists](#two-lists-the-editors-and-the-windows)). It refuses a name, folder, file or string key that's taken, and writes nothing when it refuses. 2.19's `pnpm new-component` does the same for site components.
 
 ## Areas and the composition root
 

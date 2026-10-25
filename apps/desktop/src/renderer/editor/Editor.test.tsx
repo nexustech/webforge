@@ -682,8 +682,8 @@ describe("Editor", () => {
   });
 
   it("puts Add and Undo History on the left, and the Edit panel and Media on the right", () => {
-    // These four and no others, each once, in any order: a panel an editor area adds joins them
-    // here (EDITOR_AREAS, renderer/areas.ts).
+    // The editor's panels and no others, each once, in any order: a panel an editor area adds
+    // (EDITOR_AREAS, renderer/areas.ts) joins them here, as `pnpm scaffold panel` does.
     expect(
       panels
         .list()
