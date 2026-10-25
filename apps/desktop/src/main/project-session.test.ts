@@ -11,6 +11,7 @@ import {
   pageDocumentId,
 } from "@webforge/model";
 import { ProjectStore, ReadOnlyProjectError } from "@webforge/storage";
+import { heroPhoto } from "@webforge/test-utils";
 import type { IpcMain } from "electron";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { registerProjectHandlers } from "./project-ipc.js";
@@ -21,6 +22,16 @@ import {
   withProjectExtension,
 } from "./project-session.js";
 import { createStoreGate } from "./store-gate.js";
+
+/** The first bytes of a PNG of `width` × `height`: enough for Media to take it. */
+function pngOf(width: number, height: number): Uint8Array {
+  const bytes = new Uint8Array(33);
+  bytes.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13, 73, 72, 68, 82]);
+  const view = new DataView(bytes.buffer);
+  view.setUint32(16, width);
+  view.setUint32(20, height);
+  return bytes;
+}
 
 let dir: string;
 let session: ProjectSession;
@@ -335,7 +346,7 @@ describe("ProjectSession events", () => {
 });
 
 describe("ProjectSession storeCopiedMedia (1.25)", () => {
-  const bytes = new Uint8Array([0xff, 0xd8, 0xff, 1, 2, 3]);
+  const bytes = heroPhoto();
   const photo: ImageMeta = {
     id: "photo" as MediaId,
     hash: createHash("sha256").update(bytes).digest("hex"),
@@ -367,13 +378,7 @@ describe("ProjectSession storeCopiedMedia (1.25)", () => {
 
   it("keeps the site's own item under that id, adding only missing bytes", async () => {
     await session.create(join(dir, "Own.wforge"));
-    const replaced = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
-    await session.storeAsset({
-      mediaId: photo.id,
-      data: replaced,
-      mime: "image/png",
-      originalName: "a.png",
-    });
+    await session.importFile(photo.id, "a.png", { data: pngOf(4, 3) });
 
     await session.storeCopiedMedia(photo, () => bytes);
 
@@ -394,12 +399,7 @@ describe("ProjectSession storeCopiedMedia (1.25)", () => {
     await session.create(join(dir, "Missing.wforge"));
     expect(await session.storeCopiedMedia(photo, () => undefined)).toEqual({ status: "missing" });
     // The same bytes under another item: those do.
-    await session.storeAsset({
-      mediaId: "other",
-      data: bytes,
-      mime: "image/jpeg",
-      originalName: "b.jpg",
-    });
+    await session.importFile("other", "b.jpg", { data: bytes });
     expect(await session.storeCopiedMedia(photo, () => undefined)).toEqual({
       status: "stored",
       hash: photo.hash,
@@ -489,28 +489,18 @@ describe("ProjectSession and the store gate (R13b)", () => {
       },
     );
     const path = join(dir, "Gated.wforge");
-    const bytes = new Uint8Array([0xff, 0xd8, 0xff, 1, 2, 3]);
+    const bytes = heroPhoto();
 
     const created = await gated.create(path);
     const sessionId = created.status === "opened" ? created.project.sessionId : "";
     await gated.readSite();
     await gated.commit(changedDocuments(undefined, site), sessionId);
     await gated.readSite();
-    const stored = await gated.storeAsset({
-      mediaId: "photo",
-      data: bytes,
-      mime: "image/jpeg",
-      originalName: "a.jpg",
-    });
+    const stored = await gated.importFile("photo", "a.jpg", { data: bytes });
     const hash = stored.status === "stored" ? stored.hash : "";
     await gated.readMedia(hash);
     await gated.forSession(sessionId).readMedia(hash);
-    await gated.forSession(sessionId).storeAsset({
-      mediaId: "again",
-      data: bytes,
-      mime: "image/jpeg",
-      originalName: "a.jpg",
-    });
+    await gated.forSession(sessionId).importFile("again", "a.jpg", { data: bytes });
     await gated.storeCopiedMedia(
       {
         id: "pasted" as MediaId,

@@ -1,5 +1,6 @@
 import { join } from "node:path";
 import type { MediaId } from "@webforge/model";
+import { ProjectStore } from "@webforge/storage";
 import { heroPhoto, tempDirFactory } from "@webforge/test-utils";
 import { afterEach, describe, expect, it } from "vitest";
 import { importMediaFiles } from "./media-import.js";
@@ -139,16 +140,15 @@ describe("importMediaFiles", () => {
 
 describe("ProjectSession.readMedia", () => {
   it("serves only Media files, never a site document or a missing blob", async () => {
-    const session = await openSession();
-    const stored = await session.storeAsset({
-      mediaId: "doc",
-      data: new TextEncoder().encode("{}"),
-      mime: "application/json",
-      originalName: "site.json",
-    });
+    const path = join(tempDir(), "Documents.wforge");
+    const writing = ProjectStore.create(path, { name: "Documents" });
+    const hash = writing.putBlob(new TextEncoder().encode("{}"), "application/json");
+    writing.close();
+    const session = new ProjectSession();
+    sessions.push(session);
+    await session.open(path);
 
-    expect(stored.status).toBe("stored");
-    expect(stored.status === "stored" && (await session.readMedia(stored.hash))).toBeUndefined();
+    expect(await session.readMedia(hash)).toBeUndefined();
     expect(await session.readMedia("0".repeat(64))).toBeUndefined();
     expect(await new ProjectSession().readMedia("0".repeat(64))).toBeUndefined();
   });
