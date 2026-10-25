@@ -9,6 +9,7 @@ import { gallery } from "./gallery.js";
 import { layout } from "./layout.js";
 import { sections } from "./sections.js";
 import { shared } from "./shared.js";
+import { testimonials } from "./testimonials.js";
 
 /**
  * Each family's strings, in a file of its own beside its catalogue module (2.19): a new family
@@ -27,6 +28,7 @@ export const componentFamilies = {
   gallery,
   forms,
   features,
+  testimonials,
 } as const;
 
 /** Site components: element names, their fields, exported-site text and the starter page. */
@@ -42,4 +44,5 @@ export const components = {
   ...gallery,
   ...forms,
   ...features,
+  ...testimonials,
 } as const;

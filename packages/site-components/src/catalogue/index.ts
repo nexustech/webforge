@@ -12,6 +12,7 @@ import { formsComponents } from "./forms.js";
 import { galleryComponents } from "./gallery.js";
 import { layoutComponents } from "./layout.js";
 import { sectionsComponents } from "./sections.js";
+import { testimonialsComponents } from "./testimonials.js";
 
 /**
  * Webforge's site components (daisyUI 5 markup), one module per family: the MVP catalogue
@@ -30,6 +31,7 @@ export const siteLibrary: ComponentLibrary = createLibrary(
   contactDetailsComponents,
   formsComponents,
   featuresComponents,
+  testimonialsComponents,
 );
 
 /** The page a new site starts with. */
