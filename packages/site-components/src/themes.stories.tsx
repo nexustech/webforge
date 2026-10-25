@@ -5,6 +5,7 @@ import { CURATED_THEMES } from "@webforge/themes";
 import { siteLibrary, starterLayout } from "./catalogue/index.js";
 import { EDITOR_RENDER_CONTEXT } from "./library.js";
 import { renderNodesToHtml } from "./render-static.js";
+import type { RenderContext } from "./schema.js";
 
 /** The classes the export gives a page's `<body>` (`BODY_CLASS` in the pipeline). */
 const BODY_CLASS = "flex min-h-screen flex-col bg-base-100 font-sans text-base-content";
@@ -24,8 +25,20 @@ function samplePage(): string {
     return { type, props: { ...structuredClone(defaults), ...inverse, id: `section-${at}` } };
   });
   const nodes = pastedCopies([...header, ...sections, ...footer], new Set());
-  return renderNodesToHtml(nodes, siteLibrary, EDITOR_RENDER_CONTEXT);
+  return renderNodesToHtml(nodes, siteLibrary, SAMPLE_CONTEXT);
 }
+
+/** A small site for the page to be part of: its name in Site Settings, and a menu. */
+const SAMPLE_CONTEXT: RenderContext = {
+  ...EDITOR_RENDER_CONTEXT,
+  setting: (key) => (key === "general.name" ? "Rosa's Bakery" : undefined),
+  navigation: [
+    { label: "Home", href: "#", current: true },
+    { label: "Our story", href: "#", current: false },
+    { label: "Menu", href: "#", current: false },
+    { label: "Book a table", href: "#", current: false, button: true },
+  ],
+};
 
 /** The page in `preset`'s theme, as a document of its own: its stylesheet and the page. */
 function themedDocument(preset: string, page: string): string {
