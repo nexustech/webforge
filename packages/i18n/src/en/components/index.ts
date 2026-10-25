@@ -3,6 +3,7 @@ import { carousel } from "./carousel.js";
 import { contactDetails } from "./contactDetails.js";
 import { elements } from "./elements.js";
 import { embeds } from "./embeds.js";
+import { features } from "./features.js";
 import { forms } from "./forms.js";
 import { gallery } from "./gallery.js";
 import { layout } from "./layout.js";
@@ -25,6 +26,7 @@ export const componentFamilies = {
   contactDetails,
   gallery,
   forms,
+  features,
 } as const;
 
 /** Site components: element names, their fields, exported-site text and the starter page. */
@@ -39,4 +41,5 @@ export const components = {
   ...contactDetails,
   ...gallery,
   ...forms,
+  ...features,
 } as const;

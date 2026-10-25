@@ -7,6 +7,7 @@ import { carouselComponents } from "./carousel.js";
 import { contactDetailsComponents } from "./contact-details.js";
 import { elementsComponents } from "./elements.js";
 import { embedsComponents } from "./embeds.js";
+import { featuresComponents } from "./features.js";
 import { formsComponents } from "./forms.js";
 import { galleryComponents } from "./gallery.js";
 import { layoutComponents } from "./layout.js";
@@ -28,6 +29,7 @@ export const siteLibrary: ComponentLibrary = createLibrary(
   embedsComponents,
   contactDetailsComponents,
   formsComponents,
+  featuresComponents,
 );
 
 /** The page a new site starts with. */
