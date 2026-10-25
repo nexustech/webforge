@@ -118,6 +118,57 @@ test("makes a site from a template, named as typed and in the chosen theme, in u
   expect(site.site.theme.preset).toBe("atelier");
 });
 
+test("tries the example: a pre-filled site named after it, in under 3 s (2.14b, PG-3)", async () => {
+  const page = await startWithoutSite();
+  await stubFileDialogs(running(), join(dir, "Sample bakery.wforge"));
+
+  const started = Date.now();
+  // Straight from the start screen: no New Site dialog, the example's own name and theme.
+  await page.getByRole("button", { name: "Try an example" }).click();
+  const hero = canvas(page).locator("h1", { hasText: "Fresh bread, baked every morning" });
+  await expect(hero).toBeVisible();
+  expect(Date.now() - started).toBeLessThan(3_000);
+
+  const site = await page.evaluate(async () => {
+    const read = await (window as unknown as RendererWindow).webforge.project.readSite();
+    return read as { site: { settings: { general: { name: string } }; pageOrder: string[] } };
+  });
+  expect(site.site.settings.general.name).toBe("Sample bakery");
+  expect(site.site.pageOrder.length).toBeGreaterThan(1);
+});
+
+test("pins a site to the top of the Recent list, which it keeps after a restart (2.14b)", async () => {
+  // Two sites on the list, the newer first.
+  for (const name of ["Older", "Newer"]) {
+    app = await launchDesktopApp({ userDataDir: userData, site: false });
+    const page = await app.firstWindow();
+    await stubFileDialogs(running(), join(dir, `${name}.wforge`));
+    await page.getByRole("button", { name: "New site…", exact: true }).click();
+    const newSite = page.getByRole("dialog", { name: "New Site" });
+    await newSite.getByRole("textbox", { name: "Site name" }).fill(name);
+    await newSite.getByRole("button", { name: "Create" }).click();
+    await waitForCanvas(page);
+    await closeWindow();
+  }
+
+  let page = await startWithoutSite();
+  const cards = page.getByRole("listitem");
+  await expect(cards.first()).toContainText("Newer");
+  await page.getByRole("button", { name: "Pin Older to the top" }).click();
+  await expect(cards.first()).toContainText("Older");
+  await closeWindow();
+
+  page = await startWithoutSite();
+  await expect(page.getByRole("listitem").first()).toContainText("Older");
+  await expect(page.getByRole("button", { name: "Unpin Older" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  // Search finds a site by its name.
+  await page.getByRole("searchbox", { name: "Search sites" }).fill("newer");
+  await expect(page.getByRole("listitem")).toHaveCount(1);
+});
+
 test("says when a site can't be opened, and removes sites from the list", async () => {
   // Open a site once, so it is on the list, then lose the file.
   app = await launchDesktopApp({ userDataDir: userData });
