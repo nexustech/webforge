@@ -1,7 +1,7 @@
 import type { SiteDoc } from "@webforge/model";
 import { FONT_PAIRINGS, themePreset } from "@webforge/themes";
 import { describe, expect, it, vi } from "vitest";
-import { starterSite } from "../editor/starter-site.js";
+import { starterSite } from "../../shared/starter-site.js";
 import { sessionWith } from "../testing/fixtures.js";
 import { TOKEN_CONTROLS, tokenKey } from "./theme-controls.js";
 import {

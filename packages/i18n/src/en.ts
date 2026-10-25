@@ -10,6 +10,7 @@ import { puck } from "./en/puck.js";
 import { shell } from "./en/shell.js";
 import { site } from "./en/site.js";
 import { storage } from "./en/storage.js";
+import { templates } from "./en/templates.js";
 import { theme } from "./en/theme.js";
 
 /**
@@ -31,6 +32,7 @@ export const areas = {
   puck,
   errors,
   theme,
+  templates,
 } as const;
 
 /**
@@ -51,4 +53,5 @@ export const en = {
   ...puck,
   ...errors,
   ...theme,
+  ...templates,
 } as const;

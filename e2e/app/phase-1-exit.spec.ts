@@ -91,7 +91,11 @@ test("a three-page site built from blank comes back as it was, page by page", as
   let page = await startWithoutSite();
   const sitePath = join(dir, "Rosa's Bakery.wforge");
   await stubFileDialogs(running(), sitePath);
-  await page.getByRole("button", { name: "Blank site" }).click();
+  // New Site, Blank (2.14a); exactly, as the title bar's New Site… has the same name in another case.
+  await page.getByRole("button", { name: "New site…", exact: true }).click();
+  const newSite = page.getByRole("dialog", { name: "New Site" });
+  await newSite.getByRole("textbox", { name: "Site name" }).fill("Rosa's Bakery");
+  await newSite.getByRole("button", { name: "Create" }).click();
   await waitForCanvas(page);
   await expect(page.getByRole("banner").getByRole("status")).toHaveText("Saved");
   const blank = built(await readSite(page));

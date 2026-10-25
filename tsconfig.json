@@ -16,6 +16,7 @@
     { "path": "./packages/site-components" },
     { "path": "./packages/site-components/tsconfig.behaviours.json" },
     { "path": "./packages/storage" },
+    { "path": "./packages/templates" },
     { "path": "./packages/test-utils" },
     { "path": "./packages/themes" }
   ]

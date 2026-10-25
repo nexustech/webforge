@@ -3,7 +3,7 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { t } from "@webforge/i18n";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { starterSite } from "../editor/starter-site.js";
+import { starterSite } from "../../shared/starter-site.js";
 import { registriesForTest, sessionWith } from "../testing/fixtures.js";
 import { registerThemePanel } from "./register-theme-panel.js";
 import { ThemePanel } from "./ThemePanel.js";

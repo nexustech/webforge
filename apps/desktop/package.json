@@ -45,6 +45,7 @@
     "@webforge/publish": "workspace:*",
     "@webforge/site-components": "workspace:*",
     "@webforge/storage": "workspace:*",
+    "@webforge/templates": "workspace:*",
     "@webforge/test-utils": "workspace:*",
     "@webforge/themes": "workspace:*",
     "babel-plugin-react-compiler": "catalog:",

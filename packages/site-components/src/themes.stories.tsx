@@ -24,8 +24,47 @@ function samplePage(): string {
     const inverse = at === types.length - 1 ? { colors: "inverse" } : {};
     return { type, props: { ...structuredClone(defaults), ...inverse, id: `section-${at}` } };
   });
-  const nodes = pastedCopies([...header, ...sections, ...footer], new Set());
-  return renderNodesToHtml(nodes, siteLibrary, SAMPLE_CONTEXT);
+  return laidOut(header, sections, footer);
+}
+
+/**
+ * `sections` between `header` and `footer`, laid out as the export lays out a page: the sections
+ * in `<main id="main">`, which the theme's alternating sections count (2.13d).
+ */
+function laidOut(header: NodeDoc[], sections: NodeDoc[], footer: NodeDoc[]): string {
+  const ids = new Set<string>();
+  const html = (nodes: NodeDoc[]) =>
+    renderNodesToHtml(pastedCopies(nodes, ids), siteLibrary, SAMPLE_CONTEXT);
+  return `${html(header)}<main id="main" class="flex-1">${html(sections)}</main>${html(footer)}`;
+}
+
+/**
+ * A short page for comparing themes side by side (2.13d): a Hero, Features and Stats as cards,
+ * Testimonials on the theme's reversed colours and a Call to action, between the Header and
+ * Footer. It shows each theme's cards, headings, corners and photos, its sections' rhythm, and
+ * a reversed band: light under a dark-first theme, dark under a light one.
+ */
+function comparisonPage(): string {
+  const { header, footer } = starterLayout("Rosa's Bakery");
+  const section = (type: string, props: Record<string, unknown> = {}): NodeDoc => ({
+    type,
+    props: {
+      ...structuredClone(siteLibrary.components[type]?.defaults ?? {}),
+      ...props,
+      id: type.toLowerCase(),
+    },
+  });
+  return laidOut(
+    header,
+    [
+      section("Hero"),
+      section("Features", { variant: "cards" }),
+      section("Testimonials", { variant: "cards", colors: "inverse" }),
+      section("Stats", { variant: "cards" }),
+      section("CallToAction"),
+    ],
+    footer,
+  );
 }
 
 /** A small site for the page to be part of: its name in Site Settings, and a menu. */
@@ -105,23 +144,31 @@ export const Atelier: Story = pageOf("atelier");
 export const Workshop: Story = pageOf("workshop");
 export const Clarity: Story = pageOf("clarity");
 
-/** The curated themes side by side, each as narrow as a phone, for comparing at a glance. */
-export const SideBySide: Story = {
-  name: "Side by side",
+/**
+ * A batch of curated themes side by side on the comparison page, each as narrow as a phone, for
+ * comparing at a glance. A batch at a time (four themes, never more than six), so each story stays
+ * well inside the visual tests' time.
+ */
+const sideBySide = (first: number, last: number): Story => ({
+  name: `Side by side: ${first}–${last}`,
   render: () => {
-    const page = samplePage();
+    const page = comparisonPage();
+    const themes = CURATED_THEMES.slice(first - 1, last);
     return (
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: `repeat(${CURATED_THEMES.length}, minmax(0, 1fr))`,
+          gridTemplateColumns: `repeat(${themes.length}, minmax(0, 1fr))`,
           gap: "8px",
         }}
       >
-        {CURATED_THEMES.map((theme) => (
+        {themes.map((theme) => (
           <ThemedPage key={theme.preset} preset={theme.preset} page={page} />
         ))}
       </div>
     );
   },
-};
+});
+
+/** Themes 1–4 (2.13a, redone in 2.13d); themes 5–8 and 9–12 add a story each. */
+export const SideBySide1to4: Story = sideBySide(1, 4);

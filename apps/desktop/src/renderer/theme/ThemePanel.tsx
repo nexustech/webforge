@@ -4,7 +4,7 @@ import {
   FieldRenderersProvider,
   type OptionGroup,
 } from "@webforge/editor-ui";
-import { type MessageKey, t } from "@webforge/i18n";
+import { isMessageKey, type MessageKey, t } from "@webforge/i18n";
 import {
   type ColorRole,
   fontRefSchema,
@@ -39,8 +39,7 @@ import {
 } from "./theme-edits.js";
 
 /** A message whose key is made at run time, if it has one: a test checks every key the tab makes. */
-export const named = (key: string): string | undefined =>
-  t(key as MessageKey) as string | undefined;
+export const named = (key: string): string | undefined => (isMessageKey(key) ? t(key) : undefined);
 
 /** The pairing value of fonts that are no pairing: the person's own choice. */
 const OWN_PAIRING = "own";
@@ -249,7 +248,7 @@ export function ThemePanel({ session, siteWide }: ThemePanelProps) {
     <FieldRenderersProvider renderers={RENDERERS}>
       <EditPanel
         heading={t("theme.heading", {
-          name: named(`theme.preset.${theme.preset}`) ?? theme.preset,
+          name: presetName(theme.preset),
         })}
         itemKey="theme"
         single

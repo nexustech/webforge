@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { ProjectStore } from "@webforge/storage";
+import { themePreset } from "@webforge/themes";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
 import type { RendererWindow } from "./sites.js";
 
@@ -64,7 +65,8 @@ test("switching the theme asks first, with the pages it changes, and is one undo
   // The main process has the site once the change reaches it.
   await expect.poll(async () => (await themeOf(page)).preset).toBe("bistro");
   // The canvas takes the theme's heading font.
-  await expect(canvasHeading).toHaveCSS("font-family", /Lora/);
+  const heading = themePreset("bistro")?.fonts.heading.family ?? "";
+  await expect(canvasHeading).toHaveCSS("font-family", new RegExp(heading));
 
   await page.getByRole("tab", { name: "Undo History" }).click();
   // Newest first.

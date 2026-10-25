@@ -20,15 +20,8 @@ export const theme = {
   "theme.group.border": "Borders",
   "theme.group.effects": "Effects",
 
-  // The presets (S3), by the name each is listed under in the theme (`preset`).
+  // The preset (S3); each preset's name is the templates area's (`theme.preset.<name>`).
   "theme.preset.label": "Theme",
-  "theme.preset.light": "Light",
-  "theme.preset.dark": "Dark",
-  "theme.preset.high-contrast-rounded": "High contrast",
-  "theme.preset.bistro": "Bistro",
-  "theme.preset.atelier": "Atelier",
-  "theme.preset.workshop": "Workshop",
-  "theme.preset.clarity": "Clarity",
   // Switching (D7): asked first, with the pages it changes.
   "theme.preset.confirm": "Switch to the theme '{name}'?",
   "theme.preset.confirmDescription":

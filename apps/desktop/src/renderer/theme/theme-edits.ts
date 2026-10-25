@@ -1,4 +1,4 @@
-import { type MessageKey, t } from "@webforge/i18n";
+import { isMessageKey, type MessageKey, t } from "@webforge/i18n";
 import {
   copyTheme,
   type FontRef,
@@ -41,8 +41,11 @@ export const COLOR_WORDS: Readonly<
   "base-content": { name: "colour.role.text", history: "theme.history.color.text" },
 };
 
-/** A preset's name (`theme.preset.<name>`). */
-export const presetName = (preset: string) => t(`theme.preset.${preset}` as MessageKey);
+/** A preset's name (`theme.preset.<name>`); its own name for one the catalogue hasn't named yet. */
+export function presetName(preset: string): string {
+  const key = `theme.preset.${preset}`;
+  return isMessageKey(key) ? t(key) : preset;
+}
 
 /** How many pages a theme change changes: all of them. */
 const pageCount = (session: ThemeSession) =>

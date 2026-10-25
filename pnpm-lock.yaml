@@ -359,6 +359,9 @@ importers:
       '@webforge/storage':
         specifier: workspace:*
         version: link:../../packages/storage
+      '@webforge/templates':
+        specifier: workspace:*
+        version: link:../../packages/templates
       '@webforge/test-utils':
         specifier: workspace:*
         version: link:../../packages/test-utils
@@ -960,6 +963,28 @@ importers:
         specifier: 'catalog:'
         version: 5.0.5(@types/node@24.19.2)(@vitest/coverage-v8@5.0.5)(happy-dom@21.0.4)(vite@8.3.4(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
 
+  packages/templates:
+    dependencies:
+      '@webforge/model':
+        specifier: workspace:*
+        version: link:../model
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.7
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.19.2
+      '@webforge/site-components':
+        specifier: workspace:*
+        version: link:../site-components
+      '@webforge/themes':
+        specifier: workspace:*
+        version: link:../themes
+      vitest:
+        specifier: 'catalog:'
+        version: 5.0.5(@types/node@24.19.2)(@vitest/coverage-v8@5.0.5)(happy-dom@21.0.4)(vite@8.3.4(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
+
   packages/test-utils:
     dependencies:
       '@webforge/engine':
@@ -991,6 +1016,9 @@ importers:
       fast-check:
         specifier: 4.10.2
         version: 4.10.2
+      happy-dom:
+        specifier: 21.0.4
+        version: 21.0.4
       vitest:
         specifier: 'catalog:'
         version: 5.0.5(@types/node@24.19.2)(@vitest/coverage-v8@5.0.5)(happy-dom@21.0.4)(vite@8.3.4(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))

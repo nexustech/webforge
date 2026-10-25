@@ -255,7 +255,7 @@ export const site = {
   "site.settings.error.web3forms": "Use the access key from Web3Forms.",
   "site.settings.error.formUrl": "Use a full web address, starting with https://.",
   "site.start.title": "Start a site",
-  "site.start.blank": "Blank site",
+  "site.start.new": "New site…",
   "site.start.open": "Open a site…",
   "site.start.recent": "Recent sites",
   "site.start.noRecent": "Sites you open or create appear here.",

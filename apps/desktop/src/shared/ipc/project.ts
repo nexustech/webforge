@@ -1,4 +1,10 @@
-import { type SiteDocumentChange, siteDocSchema, siteDocumentChangeSchema } from "@webforge/model";
+import {
+  SITE_NAME_MAX,
+  type SiteDocumentChange,
+  siteDocSchema,
+  siteDocumentChangeSchema,
+} from "@webforge/model";
+import { TEMPLATE_IDS } from "@webforge/templates";
 import { z } from "zod";
 
 /**
@@ -120,12 +126,25 @@ const recentSiteSchema = z.strictObject({
 /** A site on the start screen's Recent list. */
 export type RecentSite = z.infer<typeof recentSiteSchema>;
 
+/**
+ * What New Site makes (2.14a, F-SITE-1): a site named `name` (the save dialog's file name too), in
+ * theme preset `theme`, from `template`, or the Blank site without one. Main checks the preset.
+ */
+const newSiteRequestSchema = z.strictObject({
+  name: z.string().trim().min(1).max(SITE_NAME_MAX),
+  theme: z.string().min(1).max(40),
+  template: z.enum(TEMPLATE_IDS).optional(),
+});
+
+/** See {@link newSiteRequestSchema}. */
+export type NewSiteRequest = z.infer<typeof newSiteRequestSchema>;
+
 /** IPC channels of the `project` domain (`project:*`). */
 export const projectChannels = {
   /** Asks where to save a new site (save dialog in main), creates it and makes it current. */
   createProject: {
     channel: "project:create",
-    request: z.tuple([]),
+    request: z.tuple([newSiteRequestSchema]),
     response: projectResultSchema,
   },
   /** Asks which site to open (open dialog in main) and makes it current. */
@@ -195,8 +214,8 @@ export const projectChannels = {
 
 /** `window.webforge.project`. */
 export interface ProjectApi {
-  /** Shows a save dialog, then creates the site there and opens it. */
-  create(): Promise<ProjectResult>;
+  /** Shows a save dialog, then creates the site New Site asked for there and opens it. */
+  create(request: NewSiteRequest): Promise<ProjectResult>;
   /** Shows an open dialog, then opens the chosen site. */
   open(): Promise<ProjectResult>;
   /** The site that is open, or `null`. */

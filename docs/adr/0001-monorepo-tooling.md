@@ -18,4 +18,4 @@ Setting up the pnpm + Turborepo skeleton showed a few places where the standards
 ## Consequences
 - Adding a package means adding it to the root `tsconfig.json` references and to the `references` of every workspace that imports it. Coverage thresholds and Vitest projects pick it up automatically.
 - Revisit item 3 when dependency-cruiser supports TypeScript 7's API, and item 4 if the nursery rules prove noisy.
-- Process entry points (`src/main/index.ts`, `src/preload/index.ts`, `src/renderer/main.tsx`) are excluded from unit coverage; the Playwright Electron smoke test (`e2e/app/smoke.spec.ts`) covers them.
+- Process entry points (`src/main/index.ts`, `src/preload/index.ts`, `src/renderer/main.tsx`) are excluded from unit coverage; the Playwright Electron smoke test (`e2e/app/smoke.spec.ts`) covers them. The main process's entry point only hands Electron to `src/main/app.ts`, whose wiring is unit-tested against a fake Electron, and a tools test keeps it to 40 lines (R13c).
