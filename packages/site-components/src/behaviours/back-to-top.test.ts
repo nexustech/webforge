@@ -40,7 +40,7 @@ describe("the back-to-top behaviour (F-CM-9)", () => {
   it("is a link to the top named for screen readers, shown once the page has scrolled a screen", () => {
     const { button, scrollTo } = page();
 
-    expect(button.getAttribute("href")).toBe("#top");
+    expect(button.getAttribute("href")).toBe("#");
     expect(button.getAttribute("aria-label")).toBe("Back to top");
     expect(button.hidden).toBe(true);
     scrollTo(767);

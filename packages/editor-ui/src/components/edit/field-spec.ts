@@ -3,6 +3,15 @@ import type { ComponentType } from "react";
 /** One choice a field offers, its label already translated. */
 export type FieldChoice = { readonly label: string; readonly value: string };
 
+/** One image a form's image choice offers (2.21): a Media image's id, name and thumbnail. */
+export type ImageChoiceOption = {
+  readonly value: string;
+  /** Already translated, or the image's own name. */
+  readonly label: string;
+  /** Its thumbnail's URL. */
+  readonly thumbnail: string;
+};
+
 /** Nothing besides the label and help: a kind whose renderer needs nothing more. */
 type Nothing = Readonly<Record<never, never>>;
 
@@ -19,6 +28,12 @@ type FieldSpecs = {
      * text only when the user is done with it, and only if it is acceptable.
      */
     readonly validate?: (value: string) => string | undefined;
+    /** Several lines, for a description or a postal address (forms, 2.21). */
+    readonly multiline?: boolean;
+    /** What the text is, for the keyboard phones show and the browser's checks (forms, 2.21). */
+    readonly inputType?: "text" | "email" | "tel" | "url";
+    /** The longest text it takes: the model's limit for it (forms, 2.21). */
+    readonly maxLength?: number;
   };
   readonly select: { readonly options: readonly FieldChoice[] };
   readonly toggle: Nothing;
@@ -45,6 +60,21 @@ type FieldSpecs = {
   readonly image: Nothing;
   /** Drawn by the app: one of Lucide's icons, chosen in the icon picker (F-ED-22). */
   readonly icon: Nothing;
+  /**
+   * A whole number typed in (forms, 2.21: a device's width). Its value is the text as typed; the
+   * form's schema reads the number from it.
+   */
+  readonly number: { readonly min?: number; readonly max?: number };
+  /** A time of day, `HH:MM` (forms, 2.21: opening hours). */
+  readonly time: Nothing;
+  /** Any number of its options, in their order (forms, 2.21: the days a shop opens). */
+  readonly multiChoice: { readonly options: readonly FieldChoice[] };
+  /** One of Media's images, or none (forms, 2.21: the site's icon and share image). */
+  readonly imageChoice: {
+    readonly options: readonly ImageChoiceOption[];
+    /** What choosing none means ("None", "The site's image"), already translated. */
+    readonly noneLabel: string;
+  };
 };
 
 /** A kind of field: the renderer that draws it. */
