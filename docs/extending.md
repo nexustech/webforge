@@ -53,7 +53,7 @@ export const bookingsPanelArea: Area<EditorContext> = {
 `pnpm deps` checks them:
 - **Another area only through its `index.ts`** (`renderer-areas-through-index`, B2): the index says what an area offers the others; everything else in its folder is its own.
 - **No cycles between areas** (`tools/src/check-area-cycles.ts`): two areas needing each other move what both need into `editor/` or `shell/`.
-- **`shell/`, `editor/` and `testing/` are what every area builds on,** not areas. `editor/` reaches areas only through their `index.ts`. `Editor.tsx`, which draws the editor's dialogs and menus, is the exception.
+- **`shell/`, `editor/` and `testing/` are what every area builds on,** not areas. `editor/` reaches an area only through its `index.ts` too (`renderer-editor-areas-through-index`); `Editor.tsx`, which draws the editor's dialogs and menus, is the exception.
 - **`renderer/testing/` is for tests and stories only** (`renderer-testing-only-in-tests`).
 - **The renderer never imports Node or Electron,** and only `packages/engine` imports Puck.
 

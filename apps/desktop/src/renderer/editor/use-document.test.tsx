@@ -2,7 +2,7 @@
 import { act, cleanup, render } from "@testing-library/react";
 import type { PageId } from "@webforge/model";
 import { afterEach, describe, expect, it } from "vitest";
-import { addPage, renamePage } from "../site/page-actions.js";
+import { addPage, renamePage } from "../site/index.js";
 import { sessionWith } from "../testing/fixtures.js";
 import { pageListOf, samePages, useDocument } from "./use-document.js";
 

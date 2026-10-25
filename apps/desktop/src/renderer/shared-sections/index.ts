@@ -3,10 +3,15 @@
  * here is the area's own.
  */
 
-export { removeSharedSection } from "./SharedSectionCommands.js";
+export { removeSharedSection, type SharedSectionNaming } from "./SharedSectionCommands.js";
 export {
+  anchorsTakenInSection,
   type CopySelection,
   copySelection,
+  deleteSharedSection,
+  detachCopy,
+  reachOf,
+  renameSharedSection,
   saveAsSharedSection,
   sharedSection,
   updateSectionField,

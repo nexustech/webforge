@@ -7,7 +7,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_PREFERENCES } from "../../shared/ipc/prefs.js";
 import { EDITOR_AREAS } from "../areas.js";
-import { saveAsSharedSection } from "../shared-sections/shared-sections.js";
+import { saveAsSharedSection } from "../shared-sections/index.js";
 import { CommandRegistryProvider } from "../shell/command-context.js";
 import { type CommandRegistry, createCommandRegistry } from "../shell/commands.js";
 import { createSiteWideConfirm } from "../shell/confirm-site-wide.js";

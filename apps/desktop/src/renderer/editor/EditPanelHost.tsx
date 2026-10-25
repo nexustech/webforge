@@ -19,15 +19,15 @@ import {
 } from "@webforge/model";
 import { type ComponentLibrary, type FieldDef, isIconName } from "@webforge/site-components";
 import { useEffect, useRef } from "react";
-import { applyAnchor, asLinkFieldChange } from "../links/link-change.js";
-import { anchorsTakenInSection } from "../shared-sections/shared-sections.js";
+import { applyAnchor, asLinkFieldChange } from "../links/index.js";
+import { anchorsTakenInSection } from "../shared-sections/index.js";
 import {
   bindingLabel,
   boundFieldOf,
   isBindingField,
   withBinding,
   withBindingChoice,
-} from "../site-settings/binding-fields.js";
+} from "../site-settings/index.js";
 import {
   advancedFieldLabel,
   advancedFields,
