@@ -35,18 +35,28 @@ export function TextField({
   const [error, setError] = useState<string | null>(null);
   const { validate } = field;
   if (validate === undefined) {
-    return (
-      <input
-        id={id}
-        type="text"
-        className={fieldControlClass}
-        value={stored}
-        placeholder={field.placeholder}
-        disabled={disabled}
-        aria-invalid={errorId !== undefined}
-        aria-describedby={describedBy(errorId, helpId)}
+    const shared = {
+      id,
+      value: stored,
+      placeholder: field.placeholder,
+      maxLength: field.maxLength,
+      disabled,
+      "aria-invalid": errorId !== undefined,
+      "aria-describedby": describedBy(errorId, helpId),
+      onBlur: onCommit,
+    };
+    return field.multiline === true ? (
+      <textarea
+        {...shared}
+        className={cn(fieldControlClass, "h-16 resize-none py-1")}
         onChange={(event) => onChange(event.target.value)}
-        onBlur={onCommit}
+      />
+    ) : (
+      <input
+        {...shared}
+        type={field.inputType ?? "text"}
+        className={fieldControlClass}
+        onChange={(event) => onChange(event.target.value)}
       />
     );
   }

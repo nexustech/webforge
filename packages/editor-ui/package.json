@@ -42,6 +42,7 @@
     "happy-dom": "21.0.4",
     "storybook": "10.6.2",
     "vite": "8.3.4",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "zod": "catalog:"
   }
 }
