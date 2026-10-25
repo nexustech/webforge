@@ -618,3 +618,36 @@ describe("buildSite: the theme's typography (#419)", () => {
     expect([...exported.files.keys()].some((path) => /lora/i.test(path))).toBe(true);
   }, 60_000);
 });
+
+describe("buildSite: the theme's buttons, shadows and links (#423)", () => {
+  it("draws buttons, shadows and links in running text as the theme says", async () => {
+    const site: SiteSnapshot = {
+      ...sampleSite(),
+      theme: {
+        ...DEFAULT_THEME,
+        preset: "outline",
+        buttons: { shape: "square", size: "l", style: "outline" },
+        shadow: "none",
+        links: { underline: "never" },
+      },
+    };
+
+    const exported = await buildSite(site, siteLibrary, resources);
+
+    const css = text(exported, fileNamed(exported, /^assets\/css\//)).replace(/\s+/g, " ");
+    // Every button's corners and the default size's height; the main buttons drawn outline.
+    expect(css).toContain("--wf-button-radius: 0rem; --wf-button-height: 3rem;");
+    expect(css).toContain(
+      ".btn:not(.btn-circle, .btn-square) { --radius-field: var(--wf-button-radius); }",
+    );
+    expect(css).toContain("--size: var(--wf-button-height);");
+    expect(css).toMatch(
+      /\.btn-primary:not\(\.btn-outline, \.btn-ghost, \.btn-link\) \{ --btn-bg: #0000;/,
+    );
+    // No shadows: Tailwind writes the theme's shadow scale into the classes that use it.
+    expect(css).toContain(".shadow-md { --tw-shadow: 0 0 var(--tw-shadow-color, #0000);");
+    // Links in running text never underlined.
+    expect(css).toContain("--wf-link-decoration: none;");
+    expect(css).toContain("text-decoration-line: var(--wf-link-decoration,underline);");
+  }, 60_000);
+});

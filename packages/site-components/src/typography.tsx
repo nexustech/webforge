@@ -45,10 +45,17 @@ export const RICH_TEXT_LIST_CLASSES =
   "[&_ol]:my-3 [&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-6";
 
 /**
- * Running text at the type scale's body size (#419): paragraphs, links underlined, space between
- * paragraphs, its lists marked.
+ * Links in running text, underlined as the theme says (#423): always, on hover or never; always
+ * where no theme says (Storybook's own themes).
  */
-export const BODY_TEXT_CLASSES = `text-body [&_a]:underline [&_p+p]:mt-4 ${RICH_TEXT_LIST_CLASSES}`;
+const LINK_CLASSES =
+  "[&_a]:[text-decoration-line:var(--wf-link-decoration,underline)] [&_a:hover]:[text-decoration-line:var(--wf-link-hover-decoration,underline)]";
+
+/**
+ * Running text at the type scale's body size (#419): paragraphs, links underlined as the theme
+ * says, space between paragraphs, its lists marked.
+ */
+export const BODY_TEXT_CLASSES = `text-body ${LINK_CLASSES} [&_p+p]:mt-4 ${RICH_TEXT_LIST_CLASSES}`;
 
 /** Running text, in a `<div>` that holds its paragraphs; `className` places it ("mt-4"). */
 export function BodyText({
