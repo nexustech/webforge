@@ -215,6 +215,8 @@ const isWide = (field: FormField) =>
   field.kind === "box" ||
   field.kind === "multiChoice" ||
   field.kind === "imageChoice" ||
+  // A row of choices (a link's kind) reads best across the form.
+  field.kind === "choice" ||
   (field.kind === "text" && field.multiline === true);
 
 /**
