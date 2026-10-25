@@ -7,6 +7,7 @@ import { features } from "./features.js";
 import { forms } from "./forms.js";
 import { gallery } from "./gallery.js";
 import { layout } from "./layout.js";
+import { pricing } from "./pricing.js";
 import { sections } from "./sections.js";
 import { shared } from "./shared.js";
 import { team } from "./team.js";
@@ -31,6 +32,7 @@ export const componentFamilies = {
   features,
   testimonials,
   team,
+  pricing,
 } as const;
 
 /** Site components: element names, their fields, exported-site text and the starter page. */
@@ -48,4 +50,5 @@ export const components = {
   ...features,
   ...testimonials,
   ...team,
+  ...pricing,
 } as const;
