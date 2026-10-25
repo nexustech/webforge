@@ -111,7 +111,7 @@ export function StartScreen({ info, project, templates, app, restart, locale }: 
                   <TabsTrigger value="recent">{t("site.start.recent")}</TabsTrigger>
                   <TabsTrigger value="help">{t("site.start.help")}</TabsTrigger>
                 </TabsList>
-                <TabsContent value="recent">
+                <TabsContent value="recent" className="bg-transparent">
                   <RecentSites
                     sites={recent}
                     locale={locale}
@@ -120,7 +120,7 @@ export function StartScreen({ info, project, templates, app, restart, locale }: 
                     onRemove={(site) => void remove(site)}
                   />
                 </TabsContent>
-                <TabsContent value="help">
+                <TabsContent value="help" className="bg-transparent">
                   <StartHelp />
                 </TabsContent>
               </Tabs>
