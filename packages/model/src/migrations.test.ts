@@ -616,6 +616,8 @@ const migratableSite = fc
   });
 
 describe("migrations, down and up (standards §5)", () => {
+  // 200 generated sites take under a second alone, but over 5 s on a busy machine (once, in a
+  // full pnpm check): a timeout of its own, as the storage tests have, so load can't fail it.
   it("brings a site taken down to any older format back to the same site", () => {
     fc.assert(
       fc.property(
@@ -627,5 +629,5 @@ describe("migrations, down and up (standards §5)", () => {
       ),
       { numRuns: 200 },
     );
-  });
+  }, 30_000);
 });
