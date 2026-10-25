@@ -1,6 +1,8 @@
+import type { TemplateFolder } from "@webforge/templates/node";
 import type { IpcMain } from "electron";
 import type { Backups } from "./backups.js";
 import { registerIpcHandler } from "./ipc.js";
+import { fillNewSite } from "./new-site.js";
 import type { ProjectSession } from "./project-session.js";
 import type { RecentSites } from "./recent-sites.js";
 import { openOrRecover, type RecoveryDialogs } from "./recovery.js";
@@ -57,9 +59,11 @@ export function registerProjectHandlers(
      * the canvas is captured for the Recent list.
      */
     readonly beforeSwitch?: () => Promise<void>;
+    /** The templates the app ships, which New Site makes sites from (2.14a); read when needed. */
+    readonly templates?: () => readonly TemplateFolder[];
   } = {},
 ): void {
-  const { recovery, recent, beforeSwitch } = options;
+  const { recovery, recent, beforeSwitch, templates = () => [] } = options;
   const open = async (path: string) => {
     await beforeSwitch?.();
     return recovery === undefined
@@ -72,7 +76,10 @@ export function registerProjectHandlers(
       return { status: "canceled" };
     }
     await beforeSwitch?.();
-    return session.create(path);
+    return session.create(path, {
+      name: request.name,
+      fill: (store) => fillNewSite(store, request, templates),
+    });
   });
   registerIpcHandler(ipc, "openProject", isTrustedSender, async () => {
     const path = await dialogs.chooseProjectToOpen();

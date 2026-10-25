@@ -553,6 +553,7 @@ async function start(): Promise<void> {
       recovery: { backups, dialogs: recoveryDialogs },
       recent: recentSites,
       beforeSwitch: () => siteSwitch.leaveSite(),
+      templates,
     },
   );
   registerCanvasHandlers(ipcMain, (senderUrl) => isAppUrl(senderUrl, appUrl), canvasStyles);

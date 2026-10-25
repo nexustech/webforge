@@ -67,7 +67,11 @@ describe("registerProjectHandlers", () => {
 
     await expect(invoke("project:create", APP_URL, bakery)).resolves.toEqual(opened);
     expect(chooseNewProjectPath).toHaveBeenCalledWith("Rosa's Bakery");
-    expect(session.create).toHaveBeenCalledWith("/sites/Bakery.wforge");
+    // Named as typed, whatever the file is called, and filled by New Site (2.14a).
+    expect(session.create).toHaveBeenCalledWith("/sites/Bakery.wforge", {
+      name: "Rosa's Bakery",
+      fill: expect.any(Function),
+    });
   });
 
   it("refuses a New Site request without a name, or for a template the app doesn't have", async () => {

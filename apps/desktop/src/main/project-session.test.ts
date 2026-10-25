@@ -89,6 +89,44 @@ describe("ProjectSession", () => {
     expect(session.current()?.fileName).toBe("site.wforge");
   });
 
+  it("names and fills a new site from New Site before it opens (2.14a)", async () => {
+    const site = createSite({
+      name: "Rosa's Bakery",
+      language: "en",
+      homeTitle: "Home",
+      notFoundTitle: "Page not found",
+    });
+
+    const result = await session.create(join(dir, "bakery.wforge"), {
+      name: "Rosa's Bakery",
+      fill: (store) => store.saveSite(site),
+    });
+
+    expect(result).toMatchObject({
+      status: "opened",
+      project: { name: "Rosa's Bakery", fileName: "bakery.wforge" },
+    });
+    expect(await session.readSite()).toEqual({ status: "ok", site });
+  });
+
+  it("keeps the current site, and closes the new file, when filling it fails (2.14a)", async () => {
+    await session.create(join(dir, "good.wforge"));
+    let filled: ProjectStore | undefined;
+
+    const result = await session.create(join(dir, "new.wforge"), {
+      name: "New",
+      fill: (store) => {
+        filled = store;
+        throw new Error("A template's image is missing");
+      },
+    });
+
+    expect(result).toEqual({ status: "failed", reason: "unknown" });
+    expect(session.current()?.fileName).toBe("good.wforge");
+    // Closed: its file can be deleted, which Windows refuses while it is open.
+    expect(() => filled?.readDocuments()).toThrow();
+  });
+
   it("keeps the current site when another one fails to open", async () => {
     await session.create(join(dir, "good.wforge"));
     const bad = join(dir, "bad.wforge");

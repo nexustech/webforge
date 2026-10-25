@@ -128,6 +128,12 @@ export type ProjectSessionEvents = {
 /** How long closing the site waits for work on it before closing anyway (R13b). */
 const CLOSE_WAIT_MS = 5_000;
 
+/** What New Site makes of a new site (2.14a): its name, and what writes its content. */
+export type NewSiteFill = {
+  readonly name: string;
+  readonly fill: (store: ProjectStore) => void;
+};
+
 /** What a {@link ProjectSession} is made with, injectable for tests. */
 export type ProjectSessionOptions = {
   /** Who may use the open site's file when: the main process, or the storage writer (R13b). */
@@ -204,8 +210,12 @@ export class ProjectSession {
   /**
    * Creates a site at `path` (adding `.wforge` if missing), named after the file, and opens it.
    * An existing file at `path` is replaced; the save dialog has already asked the user.
+   *
+   * New Site (2.14a) gives `newSite`: the site's name as typed, and `fill`, which writes its
+   * pages, theme and Media into the new file before it opens. A fill that fails closes the file,
+   * and the open site stays open.
    */
-  async create(path: string): Promise<ProjectResult> {
+  async create(path: string, newSite?: NewSiteFill): Promise<ProjectResult> {
     const target = withProjectExtension(path);
     // The current site's file can't be replaced while it is open: it is closed first, and opened
     // again, as the same opening, if the new site can't be made.
@@ -216,8 +226,18 @@ export class ProjectSession {
     if (replaced !== undefined) {
       await this.close();
     }
-    const name = basename(target, extname(target)).trim() || t("site.untitledName");
-    const result = await this.#replaceWith(target, () => this.#createStore(target, name));
+    const name =
+      newSite?.name ?? (basename(target, extname(target)).trim() || t("site.untitledName"));
+    const result = await this.#replaceWith(target, () => {
+      const store = this.#createStore(target, name);
+      try {
+        newSite?.fill(store);
+      } catch (error) {
+        store.close();
+        throw error;
+      }
+      return store;
+    });
     if (result.status === "failed" && replaced !== undefined) {
       await this.#replaceWith(
         replaced.path,
