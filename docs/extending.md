@@ -101,7 +101,7 @@ The renderer reaches the main process only through `window.webforge`, the preloa
 - **its contract,** in `shared/ipc/<domain>.ts`: each call's channel (`<domain>:<call>`) and its request and response as zod schemas, which main checks on every call;
 - **listed** in `shared/ipc-contract.ts` (`ipcContract` and `ipcDomains`) and in `WebforgeApi`;
 - **the preload's builder,** `preload/api/<domain>.ts`, listed in `preload/api.ts`;
-- **main's handlers,** `main/<domain>-ipc.ts`, registered with `registerIpcHandler` (which refuses a renderer it doesn't trust), called from `main/index.ts`.
+- **main's handlers,** `main/<domain>-ipc.ts`, registered with `registerIpcHandler` (which refuses a renderer it doesn't trust), called from `main/app.ts`.
 
 Never log or store site content, credentials or personal data on the way; secrets stay in the OS keychain.
 

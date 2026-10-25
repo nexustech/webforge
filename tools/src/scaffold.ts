@@ -896,13 +896,13 @@ export function ipcDomainPlanFor(root: string, names: Names): Plan {
             text.indexOf("export function createWebforgeApi"),
           ),
       ],
-      "apps/desktop/src/main/index.ts": [
+      "apps/desktop/src/main/app.ts": [
         (text) => addImport(text, `./${domain}-ipc.js`, handlers),
         (text) =>
           insertBefore(
             text,
-            "  // A site double-clicked in Explorer arrives",
-            `  ${handlers}(ipcMain, (senderUrl) => isAppUrl(senderUrl, appUrl));\n`,
+            "    // A site double-clicked in Explorer arrives",
+            `    ${handlers}(ipcMain, isTrustedSender);\n`,
           ),
       ],
     },

@@ -67,7 +67,7 @@ const IPC_DOMAIN = [
   "apps/desktop/src/shared/ipc-contract.ts",
   "apps/desktop/src/shared/webforge-api.ts",
   "apps/desktop/src/preload/api.ts",
-  "apps/desktop/src/main/index.ts",
+  "apps/desktop/src/main/app.ts",
 ];
 
 const temporary: string[] = [];
@@ -337,8 +337,8 @@ describe("scaffold", () => {
     expect(read(root, "apps/desktop/src/preload/api.ts")).toContain(
       "    calendar: calendarApi(call),",
     );
-    expect(read(root, "apps/desktop/src/main/index.ts")).toContain(
-      "  registerCalendarHandlers(ipcMain, (senderUrl) => isAppUrl(senderUrl, appUrl));",
+    expect(read(root, "apps/desktop/src/main/app.ts")).toContain(
+      "    registerCalendarHandlers(ipcMain, isTrustedSender);",
     );
   });
 
