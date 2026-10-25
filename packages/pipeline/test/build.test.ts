@@ -680,7 +680,7 @@ describe("buildSite: the theme's style (2.13d)", () => {
     // In the components layer, under the classes of sections with colours of their own, which
     // are utilities.
     const rhythm = css.indexOf(
-      ":is(#main > section:nth-child(even), .wf-sections > :nth-child(even) > section):not([data-theme]) { background-color: var(--color-base-200); }",
+      "#main > section:nth-child(even of section):not([data-theme]), .wf-sections > :nth-child(even of :has(> section:not([data-webforge-hidden]))) > section:not([data-theme]) { background-color: var(--color-base-200); }",
     );
     expect(rhythm).toBeGreaterThan(-1);
     expect(
@@ -690,5 +690,9 @@ describe("buildSite: the theme's style (2.13d)", () => {
         ?.at(-1),
     ).toBe("@layer components {");
     expect(css).toContain("@layer theme, base, components, utilities;");
+    // And over the page's surface that Features, Stats and Testimonials set by their class.
+    expect(css).toContain(
+      "#main > section:nth-child(even of section):not([data-theme]).bg-base-100, .wf-sections > :nth-child(even of :has(> section:not([data-webforge-hidden]))) > section:not([data-theme]).bg-base-100 { background-color: var(--color-base-200); }",
+    );
   }, 60_000);
 });

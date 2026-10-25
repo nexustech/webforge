@@ -1,11 +1,11 @@
 import { ActionBar, createUsePuck, useGetPuck } from "@puckeditor/core";
 import { t } from "@webforge/i18n";
 import type { Breakpoint } from "@webforge/model";
+import { HIDDEN_ATTRIBUTE } from "@webforge/model";
 import { PREVIEW_ATTRIBUTE } from "@webforge/site-components";
 import { ArrowDownIcon, ArrowUpIcon, EyeIcon, EyeOffIcon, PencilIcon } from "lucide-react";
 import { type ReactNode, useLayoutEffect, useRef, useState } from "react";
 import type { FieldDrag, InsertPoint } from "../canvas-engine.js";
-import { HIDDEN_ATTRIBUTE } from "./config.js";
 
 /** Marks the element outlined from outside the canvas (`CanvasEngine.outline`). */
 export const OUTLINED_ATTRIBUTE = "data-wf-outlined";
