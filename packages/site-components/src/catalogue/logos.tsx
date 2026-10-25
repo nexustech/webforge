@@ -1,5 +1,5 @@
 import { t } from "@webforge/i18n";
-import type { ImageValue } from "@webforge/model";
+import type { ImageValue, LinkValue } from "@webforge/model";
 import { createContext, useContext } from "react";
 import { defineComponent } from "../define.js";
 import { defineSection } from "../frame.js";
@@ -58,16 +58,24 @@ const logos = defineSection({
   },
 });
 
-/** Where `href` goes, as a name: a web address's host ("example.com"); undefined for others. */
-function hostOf(href: string | undefined): string | undefined {
-  if (href === undefined) return undefined;
-  try {
-    const url = new URL(href);
-    return url.protocol === "http:" || url.protocol === "https:"
-      ? url.hostname.replace(/^www\./, "")
-      : undefined;
-  } catch {
-    return undefined;
+/**
+ * Where `link` goes, as a name: a web address's host ("example.com"), the email address or phone
+ * number, or the page's name in the menu; undefined for a file or a page not in the menu.
+ */
+function destinationOf(link: LinkValue, href: string, context: RenderContext): string | undefined {
+  switch (link.kind) {
+    case "url":
+      return URL.parse(link.href)?.hostname.replace(/^www\./, "");
+    case "email":
+      return link.address;
+    case "phone":
+      return link.number;
+    case "page":
+      return context.navigation
+        .flatMap((item) => ("children" in item ? item.children : [item]))
+        .find((item) => item.href === href)?.label;
+    case "file":
+      return undefined;
   }
 }
 
@@ -85,13 +93,16 @@ function LogoView({
 }) {
   const layout = useContext(LogosLayoutContext);
   const image = placed === undefined ? null : context.image(placed.mediaId);
-  const attributes = linkValue(link) === undefined ? undefined : linkAttributes(link, context);
+  const linked = linkValue(link);
+  const attributes = linked === undefined ? undefined : linkAttributes(linked, context);
   // Its name for screen readers: the alt text, else the company's name. A linked logo is the
   // link's only content, so without either it is named by where it goes: a link must have a name.
   const described = [placed?.alt, image?.alt, name].map((text) => text?.trim() ?? "");
   const own = described.find((text) => text !== "") ?? "";
   const alt =
-    own !== "" || attributes === undefined ? own : (hostOf(attributes.href) ?? t("siteText.logo"));
+    own !== "" || linked === undefined || attributes === undefined
+      ? own
+      : destinationOf(linked, attributes.href, context) || t("siteText.logo");
   const picture =
     image === null ? (
       // Until an image is chosen: a space to see and select on the canvas, as the Gallery's.
@@ -127,7 +138,7 @@ const logo = defineComponent({
     name: { kind: "text", label: t("field.logoName"), help: t("field.logoName.help") },
     link: { kind: "link", label: t("field.logoLink"), help: t("field.logoLink.help") },
   },
-  defaults: { name: "" },
+  defaults: {},
   render: ({ values, context }) => (
     <LogoView image={values.image} name={values.name} link={values.link} context={context} />
   ),

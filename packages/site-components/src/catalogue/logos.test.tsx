@@ -21,7 +21,9 @@ const acme: ResolvedImage = {
 const context: RenderContext = {
   ...EDITOR_RENDER_CONTEXT,
   image: (id) => (id === "acme" ? acme : id === "plain" ? { ...acme, alt: "" } : null),
-  href: (link) => (link.kind === "url" ? link.href : "index.html"),
+  href: (link) =>
+    link.kind === "url" ? link.href : link.kind === "page" ? `${link.pageId}.html` : "#",
+  navigation: [{ id: "about", label: "About us", href: "about.html", current: false }],
 };
 
 /** The Logos section with `props` over its defaults, as the export renders it. */
@@ -92,23 +94,38 @@ describe("the Logos section", () => {
     const items = [
       logo("named", { image: { mediaId: "plain" }, name: "Acme", link: website }),
       logo("host", { image: { mediaId: "plain" }, link: website }),
-      logo("page", { image: { mediaId: "plain" }, link: { kind: "page", pageId: "home" } }),
+      logo("page", { image: { mediaId: "plain" }, link: { kind: "page", pageId: "about" } }),
+      logo("email", {
+        image: { mediaId: "plain" },
+        link: { kind: "email", address: "hello@acme.example" },
+      }),
+      logo("phone", {
+        image: { mediaId: "plain" },
+        link: { kind: "phone", number: "01632 960000" },
+      }),
+      logo("off-menu", { image: { mediaId: "plain" }, link: { kind: "page", pageId: "terms" } }),
       logo("empty", { link: website }),
       logo("unlinked", { image: { mediaId: "plain" } }),
     ];
     const tiles = [...page(render({ items })).querySelectorAll(".site-logo")];
 
-    expect(tiles.map((each) => each.tagName)).toEqual(["A", "A", "A", "A", "DIV"]);
+    expect(tiles.map((each) => each.tagName)).toEqual([
+      ...["A", "A", "A", "A", "A", "A", "A"],
+      "DIV",
+    ]);
     expect(tiles[0]?.getAttribute("href")).toBe(website.href);
     expect(tiles.map((each) => each.querySelector("img")?.getAttribute("alt"))).toEqual([
       "Acme",
       "acme.example",
+      "About us",
+      "hello@acme.example",
+      "01632 960000",
       t("siteText.logo"),
       undefined,
       "",
     ]);
     // A logo still to be chosen names its link in text only screen readers hear.
-    expect(tiles[3]?.querySelector(".sr-only")?.textContent).toBe("acme.example");
+    expect(tiles[6]?.querySelector(".sr-only")?.textContent).toBe("acme.example");
   });
 
   it("gives each logo's row in the Edit panel the company's name to fill in", () => {
