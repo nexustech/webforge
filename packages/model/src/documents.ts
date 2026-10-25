@@ -129,11 +129,13 @@ const MAX_DOCUMENT_DEPTH = 200;
 
 /**
  * What makes `value` unsafe to take in: a key in {@link UNSAFE_KEYS} at any depth, or nesting
- * deeper than {@link MAX_DOCUMENT_DEPTH}. Undefined if it's neither.
+ * deeper than {@link MAX_DOCUMENT_DEPTH}. Undefined if it's neither. `startDepth` is how deep
+ * `value` sits in the document it's part of: a page in a site is 2 deep (`site.pages[id]`), so
+ * checking the page alone refuses what checking the whole site would.
  */
-function documentIssue(value: unknown): string | undefined {
+export function documentIssue(value: unknown, startDepth = 0): string | undefined {
   // Iterative: a crafted file nested very deeply can't overflow the stack here.
-  const pending: [unknown, number][] = [[value, 0]];
+  const pending: [unknown, number][] = [[value, startDepth]];
   // Structured clone (IPC) keeps cycles, and this runs before zod refuses anything: each object
   // is visited once, so a cycle can't loop forever.
   const seen = new WeakSet<object>();
