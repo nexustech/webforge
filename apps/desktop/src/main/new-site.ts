@@ -15,7 +15,7 @@ export type NewSiteFill = {
 };
 
 /** What came of putting a file into the new site: stored under `hash`, or not. */
-export type NewSiteImport =
+type NewSiteImport =
   | { readonly status: "stored"; readonly hash: string }
   | { readonly status: "rejected" | "skipped" | "failed" };
 
