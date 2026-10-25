@@ -3,11 +3,13 @@ import { carousel } from "./carousel.js";
 import { contactDetails } from "./contactDetails.js";
 import { elements } from "./elements.js";
 import { embeds } from "./embeds.js";
+import { features } from "./features.js";
 import { forms } from "./forms.js";
 import { gallery } from "./gallery.js";
 import { layout } from "./layout.js";
 import { sections } from "./sections.js";
 import { shared } from "./shared.js";
+import { testimonials } from "./testimonials.js";
 
 /**
  * Each family's strings, in a file of its own beside its catalogue module (2.19): a new family
@@ -25,6 +27,8 @@ export const componentFamilies = {
   contactDetails,
   gallery,
   forms,
+  features,
+  testimonials,
 } as const;
 
 /** Site components: element names, their fields, exported-site text and the starter page. */
@@ -39,4 +43,6 @@ export const components = {
   ...contactDetails,
   ...gallery,
   ...forms,
+  ...features,
+  ...testimonials,
 } as const;
