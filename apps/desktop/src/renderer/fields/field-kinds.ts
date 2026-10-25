@@ -6,17 +6,19 @@ import type { FieldDef } from "@webforge/site-components";
  * `FieldDef` fails the type check here until it is listed, and the field-kind test then checks it
  * has a renderer and a story. A new kind touches seven places:
  *
- * 1. `FieldDef` (packages/site-components/src/schema.ts): what it stores and how it's described.
- * 2. `toPuckField` (packages/engine/src/puck/config.tsx): its Puck field. The engine's field-kind
- *    test fails until it has one.
- * 3. `FieldSpecs` (packages/editor-ui/src/components/edit/field-spec.ts): what its Edit panel
+ * 1. `FieldDef`, `StoredOne` and `ValueOne` (packages/site-components/src/schema.ts): how it's
+ *    described, what it stores, and what a component's render gets.
+ * 2. `valueReader` (packages/site-components/src/define.ts): how render reads what is stored, and
+ *    what it falls back to.
+ * 3. `toPuckField` (packages/engine/src/puck/config.tsx): its Puck field, and a sample in the
+ *    engine's every-kind test (config.test.tsx), which fails until it has one.
+ * 4. `FieldSpecs` (packages/editor-ui/src/components/edit/field-spec.ts): what its Edit panel
  *    renderer needs, if the Edit panel draws it.
- * 4. Its renderer: the Edit panel's own (editor-ui's `edit/`), or the app's in `fields/<kind>/`,
+ * 5. Its renderer: the Edit panel's own (editor-ui's `edit/`), or the app's in `fields/<kind>/`,
  *    listed in `fieldRenderers` (field-renderers.ts).
- * 5. `specOf` and `accepts` (apps/desktop/src/renderer/editor/EditPanelHost.tsx): the Edit panel's
+ * 6. `specOf` and `accepts` (apps/desktop/src/renderer/editor/EditPanelHost.tsx): the Edit panel's
  *    spec for the field, and the values it accepts.
- * 6. A story of its renderer, next to it, with the title listed here.
- * 7. This list.
+ * 7. A story of its renderer, next to it, and the kind in this list with the story's title.
  *
  * Its words go through `t()` (the glossary, research/product/01-terminology.md).
  */
