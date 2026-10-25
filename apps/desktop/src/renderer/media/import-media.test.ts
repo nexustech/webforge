@@ -3,7 +3,12 @@ import { describe, expect, it, vi } from "vitest";
 import { MAX_MEDIA_BYTES } from "../../shared/ipc/media.js";
 import type { MediaImportResult } from "../../shared/ipc-contract.js";
 import { setFailureLog } from "../log.js";
-import { type DroppedFileLike, importDroppedFiles, importItems } from "./import-media.js";
+import {
+  type DroppedFileLike,
+  importDrop,
+  importDroppedFiles,
+  importItems,
+} from "./import-media.js";
 
 const prices: MediaMeta = {
   id: "prices" as MediaId,
@@ -143,5 +148,63 @@ describe("importItems", () => {
 
     expect(failures).toHaveBeenCalledExactlyOnceWith("media.import", "TypeError");
     setFailureLog(undefined);
+  });
+});
+
+describe("importDrop (R13b)", () => {
+  /** Files as the drop gives them; the test only reads their names. */
+  const dropped = (...names: string[]) => names.map((name) => file(name, 1) as unknown as File);
+
+  it("imports files with paths in the main process, and sends only the rest as bytes", async () => {
+    const files = dropped("a.jpg", "from-page.png", "b.pdf");
+    const media = {
+      importFiles: vi.fn(async () => ({
+        result: imported([{ ...prices, id: "a" as MediaId }]),
+        withoutPath: [1],
+      })),
+      import: vi.fn(async (_session: string, _sent: readonly { fileName: string }[]) =>
+        imported([{ ...prices, id: "page" as MediaId }]),
+      ),
+    };
+
+    const result = await importDrop(files, media);
+
+    expect(media.importFiles).toHaveBeenCalledWith(expect.any(String), files);
+    expect(media.import.mock.calls.map(([, sent]) => sent.map((one) => one.fileName))).toEqual([
+      ["from-page.png"],
+    ]);
+    expect(result).toMatchObject({ status: "imported", items: [{ id: "a" }, { id: "page" }] });
+  });
+
+  it("sends nothing as bytes when every file has a path, and stops at a failed import", async () => {
+    const media = {
+      importFiles: vi.fn(async () => ({ result: imported(), withoutPath: [] })),
+      import: vi.fn(async () => imported()),
+    };
+    await importDrop(dropped("a.jpg"), media);
+    expect(media.import).not.toHaveBeenCalled();
+
+    media.importFiles.mockResolvedValueOnce({
+      result: { status: "failed", reason: "read-only" },
+      withoutPath: [],
+    });
+    await expect(importDrop(dropped("a.jpg"), media)).resolves.toEqual({
+      status: "failed",
+      reason: "read-only",
+    });
+  });
+
+  it("asks about at most 50 files at a time", async () => {
+    const media = {
+      importFiles: vi.fn(async (_session: string, _sent: readonly File[]) => ({
+        result: imported(),
+        withoutPath: [] as number[],
+      })),
+      import: vi.fn(async () => imported()),
+    };
+
+    await importDrop(dropped(...Array.from({ length: 51 }, (_, index) => `${index}.png`)), media);
+
+    expect(media.importFiles.mock.calls.map(([, sent]) => sent.length)).toEqual([50, 1]);
   });
 });

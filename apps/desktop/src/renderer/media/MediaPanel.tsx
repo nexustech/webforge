@@ -25,7 +25,7 @@ import { useDocument } from "../editor/use-document.js";
 import { useGesture } from "../editor/use-gesture.js";
 import { siteSession } from "../storage/index.js";
 import { documentIcon, documentTypeName, fileSizeLabel } from "./document-types.js";
-import { importDroppedFiles, importItems } from "./import-media.js";
+import { importDrop, importItems } from "./import-media.js";
 import {
   addMedia,
   CROP_PRESETS,
@@ -42,7 +42,7 @@ import { mediaUsage, unplacedSharedUsage } from "./media-usage.js";
 export type MediaPanelProps = {
   readonly session: EditorSession;
   /** The preload API's Media calls; injectable for tests and stories. */
-  readonly media?: Pick<MediaApi, "import" | "choose">;
+  readonly media?: Pick<MediaApi, "import" | "importFiles" | "choose">;
   /** Shows a message, e.g. why a file wasn't added; a toast by default. */
   readonly notify?: (message: string) => void;
   /** Where an image shows; the `webforge-media:` scheme by default, data URLs in stories. */
@@ -114,7 +114,7 @@ export function MediaPanel({
     setDragging(false);
     const files = [...event.dataTransfer.files];
     if (files.length > 0) {
-      void importWith(() => importDroppedFiles(files, api));
+      void importWith(() => importDrop(files, api));
     }
   };
 

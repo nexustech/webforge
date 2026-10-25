@@ -122,8 +122,13 @@ export default defineConfig(({ command }) => {
       plugins: [inlineBase64(), bundleFonts()],
       build: {
         rolldownOptions: {
-          // The export worker runs in its own utility process (07); it bundles the pipeline.
-          input: { index: "src/main/index.ts", "export-worker": "src/worker/export-worker.ts" },
+          // The export worker runs in its own utility process (07); it bundles the pipeline. The
+          // storage writer is a worker thread of the main process (R13b, ADR 0013).
+          input: {
+            index: "src/main/index.ts",
+            "export-worker": "src/worker/export-worker.ts",
+            "storage-writer": "src/worker/storage-writer.ts",
+          },
         },
       },
     },

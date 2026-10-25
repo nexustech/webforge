@@ -1,86 +1,73 @@
 import { type MediaId, type MediaMeta, mediaNameFor, newId } from "@webforge/model";
-import { MAX_MEDIA_BYTES } from "../shared/ipc/media.js";
 import type { MediaImportResult } from "../shared/ipc-contract.js";
-import { isTextName } from "./document-files.js";
-import { sniffMedia } from "./media-files.js";
-import type { ProjectSession, StoreAssetResult } from "./project-session.js";
+import type { ImportFileResult, ProjectSession } from "./project-session.js";
 
 /**
- * The most pixels an imported image may have (50 megapixels, e.g. 8660 × 5774). A small file can
- * claim a huge size; decoding it for thumbnails and the export would exhaust memory.
+ * A file to import: one the main process found (chosen in the dialog, dropped, or copied in the
+ * file manager), by its path, or bytes (a pasted image; `undefined` when it was too large to read).
  */
-const MAX_IMAGE_PIXELS = 50_000_000;
-
-/** A file to import: dropped (bytes from the renderer) or chosen in the dialog (read here). */
-export type ImportFile = {
-  readonly fileName: string;
-  /** `undefined` when the file is over {@link MAX_MEDIA_BYTES} and wasn't read. */
-  readonly data: Uint8Array | undefined;
-};
+export type ImportFile =
+  | { readonly fileName: string; readonly path: string }
+  | { readonly fileName: string; readonly data: Uint8Array | undefined };
 
 /** Why an import stopped: no site, a read-only site, or a write error. */
-type ImportFailure = Extract<StoreAssetResult, { status: "failed" }>;
+type ImportFailure = Extract<ImportFileResult, { status: "failed" }>;
 
 /**
- * An import in progress: files are added one at a time, so a caller reading them from disk holds
- * only one in memory. Each file's original bytes are stored in the open site (F-ED-5, X2: never
- * re-encoded) and described as a Media item. Files Media doesn't take are listed as rejected; the
- * rest are still imported. The items' names are unique within this import; the renderer makes
- * them unique within the site when it adds them.
+ * An import in progress: files are added one at a time, and the storage writer reads, checks and
+ * stores each, off the main thread (R13b). Each file's original bytes are stored in the open site
+ * (F-ED-5, X2: never re-encoded) and described as a Media item. Files Media doesn't take are
+ * listed as rejected; the rest are still imported. The items' names are unique within this
+ * import; the renderer makes them unique within the site when it adds them.
  */
-export function createMediaImport(
-  session: Pick<ProjectSession, "storeAsset">,
+function createMediaImport(
+  session: Pick<ProjectSession, "importFile">,
   createId: () => MediaId = () => newId("media"),
 ) {
   const items: MediaMeta[] = [];
   const rejected: { fileName: string; reason: "unsupported" | "too-large" | "not-text" }[] = [];
   return {
     /** Imports one file; gives why the import has to stop, if it does. One file at a time. */
-    async add({ fileName, data }: ImportFile): Promise<ImportFailure | undefined> {
-      if (data === undefined || data.byteLength > MAX_MEDIA_BYTES) {
-        rejected.push({ fileName, reason: "too-large" });
-        return undefined;
-      }
-      const sniffed = sniffMedia(data, fileName);
-      if (sniffed === undefined) {
-        rejected.push({ fileName, reason: isTextName(fileName) ? "not-text" : "unsupported" });
-        return undefined;
-      }
-      if (sniffed.kind === "image" && sniffed.width * sniffed.height > MAX_IMAGE_PIXELS) {
+    async add(file: ImportFile): Promise<ImportFailure | undefined> {
+      const { fileName } = file;
+      if ("data" in file && file.data === undefined) {
         rejected.push({ fileName, reason: "too-large" });
         return undefined;
       }
       const id = createId();
-      const stored = await session.storeAsset({
-        mediaId: id,
-        data,
-        mime: sniffed.mimeType,
-        originalName: fileName,
-        ...(sniffed.kind === "image" ? { width: sniffed.width, height: sniffed.height } : {}),
-      });
-      if (stored.status === "failed") {
-        return stored;
+      const result = await session.importFile(
+        id,
+        fileName,
+        "path" in file ? { path: file.path } : { data: file.data ?? new Uint8Array() },
+      );
+      switch (result.status) {
+        case "failed":
+          return result;
+        case "skipped":
+          // A folder, or a file that is gone: not one Media takes.
+          rejected.push({ fileName, reason: "unsupported" });
+          return undefined;
+        case "rejected":
+          rejected.push({ fileName, reason: result.reason });
+          return undefined;
       }
+      const { media } = result;
       const base = {
         id,
-        hash: stored.hash,
+        hash: result.hash,
         name: mediaNameFor(
           fileName,
-          sniffed.kind,
+          media.kind,
           items.map((item) => item.name),
         ),
         fileName,
       };
       items.push(
-        sniffed.kind === "image"
-          ? { ...base, ...sniffed, alt: "" }
-          : { ...base, ...sniffed, size: data.byteLength },
+        media.kind === "image"
+          ? { ...base, ...media, alt: "" }
+          : { ...base, ...media, size: result.size },
       );
       return undefined;
-    },
-    /** Lists a file that isn't one Media can take, such as a folder, without importing it. */
-    skip(fileName: string): void {
-      rejected.push({ fileName, reason: "unsupported" });
     },
     /** What was imported and what wasn't. */
     result(): MediaImportResult {
@@ -89,9 +76,9 @@ export function createMediaImport(
   };
 }
 
-/** Imports files that are all in memory already (a drop); see {@link createMediaImport}. */
+/** Imports `files`, one at a time; see {@link createMediaImport}. */
 export async function importMediaFiles(
-  session: Pick<ProjectSession, "storeAsset">,
+  session: Pick<ProjectSession, "importFile">,
   files: readonly ImportFile[],
   createId?: () => MediaId,
 ): Promise<MediaImportResult> {

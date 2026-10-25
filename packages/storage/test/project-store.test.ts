@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { tempDirFactory } from "@webforge/test-utils";
 import Database from "better-sqlite3";
 import { describe, expect, it } from "vitest";
+import { hardenConnection } from "../src/connection.js";
 import {
   APPLICATION_ID,
   FORMAT_VERSION,
@@ -12,7 +13,6 @@ import {
   ProjectStore,
   ReadOnlyProjectError,
 } from "../src/index.js";
-import { hardenConnection } from "../src/project-store.js";
 
 const tempDir = tempDirFactory();
 

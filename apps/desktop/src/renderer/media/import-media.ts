@@ -75,6 +75,42 @@ export async function importDroppedFiles(
   return { status: "imported", items, rejected };
 }
 
+/**
+ * Imports files dropped on the Media panel (R13b): those the operating system has paths for are
+ * read by the main process, so their bytes never cross IPC; the rest (a file dragged from a web
+ * page, say) are sent as bytes ({@link importDroppedFiles}). The results come back as one import.
+ */
+export async function importDrop(
+  files: readonly File[],
+  media: Pick<MediaApi, "import" | "importFiles">,
+): Promise<MediaImportResult> {
+  const items: MediaMeta[] = [];
+  const rejected: Rejected[] = [];
+  const withoutPath: File[] = [];
+  for (let start = 0; start < files.length; start += MAX_MEDIA_FILES) {
+    const group = files.slice(start, start + MAX_MEDIA_FILES);
+    const { result, withoutPath: left } = await media.importFiles(siteSession(), group);
+    if (result.status !== "imported") {
+      return result;
+    }
+    items.push(...result.items);
+    rejected.push(...result.rejected);
+    for (const index of left) {
+      const file = group[index];
+      if (file !== undefined) withoutPath.push(file);
+    }
+  }
+  if (withoutPath.length > 0) {
+    const sent = await importDroppedFiles(withoutPath, media);
+    if (sent.status !== "imported") {
+      return sent;
+    }
+    items.push(...sent.items);
+    rejected.push(...sent.rejected);
+  }
+  return { status: "imported", items, rejected };
+}
+
 /** What a file that wasn't added says, by why. */
 const REJECTED_MESSAGE = {
   "too-large": "site.media.rejected.tooLarge",

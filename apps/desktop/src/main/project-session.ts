@@ -12,7 +12,6 @@ import {
 } from "@webforge/model";
 import {
   detectSyncFolder,
-  type NewAsset,
   ProjectFileError,
   type ProjectFileErrorCode,
   ProjectStore,
@@ -28,7 +27,10 @@ import type {
   SiteUiState,
   UiStateResult,
 } from "../shared/ipc-contract.js";
+import type { StoreImportOutcome, StoreImportRequest } from "../shared/storage-writer-protocol.js";
+import { storeImport } from "../worker/store-import.js";
 import { log, logFailure } from "./log.js";
+import { createInlineStorageWriter, type StorageWriter } from "./storage-writer.js";
 import { createStoreGate, type StoreGate } from "./store-gate.js";
 
 /** The blob types a Media item's file can have; documents (JSON) are never served as media. */
@@ -49,8 +51,19 @@ export type StoreAssetResult =
  */
 export type SessionSite = Pick<
   ProjectSession,
-  "current" | "readMedia" | "storeAsset" | "storeCopiedMedia"
+  "current" | "readMedia" | "importFile" | "storeCopiedMedia"
 >;
+
+/**
+ * What came of importing a file into the open site (R13b): stored, with what the storage writer
+ * learnt of it; not a file Media takes; not a file at all; or why it couldn't be stored.
+ */
+export type ImportFileResult =
+  | Exclude<StoreImportOutcome, { status: "failed" }>
+  | Extract<StoreAssetResult, { status: "failed" }>;
+
+/** Where an imported file's bytes come from: a file the main process found, or bytes. */
+export type ImportSource = StoreImportRequest["source"];
 
 /** File extension of a Webforge site (P1). */
 export const PROJECT_EXTENSION = ".wforge";
@@ -136,6 +149,11 @@ export type ProjectSessionOptions = {
   readonly openStore?: (path: string) => ProjectStore;
   /** Creates a site's file; `ProjectStore.create` unless a test wraps it. */
   readonly createStore?: (path: string, name: string) => ProjectStore;
+  /**
+   * Stores imports off the main thread (R13b, ADR 0013): the storage writer thread in the app.
+   * Without one, imports are stored on the calling thread, as in tests.
+   */
+  readonly writer?: StorageWriter;
 };
 
 /**
@@ -156,6 +174,9 @@ export class ProjectSession {
   readonly #gate: StoreGate;
   readonly #openStore: (path: string) => ProjectStore;
   readonly #createStore: (path: string, name: string) => ProjectStore;
+  readonly #writer: StorageWriter;
+  /** The import the storage writer is writing to the open site's file now, holding the gate. */
+  #writing: object | undefined;
 
   constructor(events: ProjectSessionEvents = {}, options: ProjectSessionOptions = {}) {
     this.#events = events;
@@ -163,6 +184,7 @@ export class ProjectSession {
     this.#openStore = options.openStore ?? ((path) => ProjectStore.open(path));
     this.#createStore =
       options.createStore ?? ((path, name) => ProjectStore.create(path, { name }));
+    this.#writer = options.writer ?? createInlineStorageWriter(storeImport);
   }
 
   /** The open site's file, for the main process only (never sent to the renderer). */
@@ -196,7 +218,8 @@ export class ProjectSession {
     return {
       current: () => this.current(),
       readMedia: (hash) => this.#readMedia(hash, sessionId),
-      storeAsset: (asset) => this.#storeAsset(asset, sessionId),
+      importFile: (mediaId, fileName, source) =>
+        this.#importFile(mediaId, fileName, source, sessionId),
       storeCopiedMedia: (item, read) => this.#storeCopiedMedia(item, read, sessionId),
     };
   }
@@ -293,12 +316,14 @@ export class ProjectSession {
   }
 
   /**
-   * Stores an imported file's original bytes, unmodified, as a Media item's asset (1.16). The item
-   * itself joins the site when the renderer commits it; until then, and after an Undo, garbage
-   * collection at the next open or close removes the unused bytes again.
+   * Imports a file as the asset of Media item `mediaId` (1.16): the storage writer reads, checks
+   * and stores its original bytes, unmodified, off the main thread (R13b, ADR 0013), holding the
+   * file alone meanwhile; then the asset that names them is recorded. The item itself joins the
+   * site when the renderer commits it; until then, and after an Undo, garbage collection at the
+   * next open or close removes the unused bytes again.
    */
-  storeAsset(asset: NewAsset): Promise<StoreAssetResult> {
-    return this.#storeAsset(asset);
+  importFile(mediaId: string, fileName: string, source: ImportSource): Promise<ImportFileResult> {
+    return this.#importFile(mediaId, fileName, source);
   }
 
   /**
@@ -355,7 +380,14 @@ export class ProjectSession {
     return this.#gate.run("exclusive", () => this.#closeNow(), { waitMs: CLOSE_WAIT_MS });
   }
 
-  #closeNow(): void {
+  /**
+   * Closes the open site's store. Let in while the storage writer still writes (its time was up),
+   * it stops the writer first: the import fails, and garbage collection removes its bytes.
+   */
+  async #closeNow(): Promise<void> {
+    if (this.#writing !== undefined) {
+      await this.#writer.stop();
+    }
     if (this.#store !== undefined) {
       this.#events.closed?.();
     }
@@ -416,22 +448,39 @@ export class ProjectSession {
     );
   }
 
-  #storeAsset(asset: NewAsset, sessionId?: string): Promise<StoreAssetResult> {
-    return this.#shared<StoreAssetResult>(
-      (store) => {
+  async #importFile(
+    mediaId: string,
+    fileName: string,
+    source: ImportSource,
+    sessionId?: string,
+  ): Promise<ImportFileResult> {
+    // The writer writes alone, the bytes and the asset together: the main process's reads and
+    // saves wait at the gate, as promises, and nothing of the import is written on its thread.
+    const outcome = await this.#gate.run<StoreImportOutcome | ImportFileResult>(
+      "exclusive",
+      async () => {
+        const path = this.#path;
+        if (this.#store === undefined || path === undefined) {
+          return { status: "failed", reason: "no-site" };
+        }
+        if (sessionId !== undefined && sessionId !== this.#sessionId) {
+          return { status: "failed", reason: "stale-session" };
+        }
+        // Its own token: an import a close stopped can't clear the mark of the one after it.
+        const writing = {};
+        this.#writing = writing;
         try {
-          return { status: "stored", hash: store.putAsset(asset).hash };
-        } catch (error) {
-          if (error instanceof ReadOnlyProjectError) {
-            return { status: "failed", reason: "read-only" };
-          }
-          logFailure("Webforge could not store an imported file", error);
-          return { status: "failed", reason: "unknown" };
+          return await this.#writer.store({ sitePath: path, mediaId, fileName, source });
+        } finally {
+          if (this.#writing === writing) this.#writing = undefined;
         }
       },
-      (reason) => ({ status: "failed", reason }),
-      sessionId,
     );
+    if (outcome.status === "failed" && !("reason" in outcome)) {
+      log.error("Webforge could not store an imported file");
+      return { status: "failed", reason: "unknown" };
+    }
+    return outcome;
   }
 
   #storeCopiedMedia(
@@ -496,14 +545,16 @@ export class ProjectSession {
     }
     await this.#gate.run(
       "exclusive",
-      () => {
-        this.#closeNow();
+      async () => {
+        await this.#closeNow();
         this.#store = store;
         this.#path = path;
         this.#sessionId = sessionId;
       },
       { waitMs: CLOSE_WAIT_MS },
     );
+    // Ready for the first import, which then doesn't wait for a thread to start.
+    this.#writer.warm();
     this.#events.opened?.(this.#accessTo(store), path);
     return { status: "opened", project: summarise(store, path, sessionId) };
   }
