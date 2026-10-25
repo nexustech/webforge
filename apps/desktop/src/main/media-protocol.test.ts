@@ -36,6 +36,19 @@ describe("createMediaResponder", () => {
     expect(await bytes(response)).toEqual(photo.data);
   });
 
+  it("serves exactly an image's bytes when they are part of a larger buffer, uncopied (R13b)", async () => {
+    // As a pooled Buffer can be: the image is bytes 2 to 4 of 8.
+    const pooled = new Uint8Array([9, 9, 0xff, 0xd8, 0xff, 9, 9, 9]);
+    const respond = createMediaResponder({
+      readMedia: async () => ({ mime: "image/jpeg", data: pooled.subarray(2, 5) }),
+      makeThumbnail: async () => undefined,
+    });
+
+    const response = await respond(`webforge-media://original/${PHOTO}`);
+
+    expect(await bytes(response)).toEqual(new Uint8Array([0xff, 0xd8, 0xff]));
+  });
+
   it("makes a thumbnail once and serves it as WebP", async () => {
     const { respond, makeThumbnail } = setUp();
 
