@@ -25,6 +25,9 @@ const failureCodeSchema = z.string().regex(/^[A-Za-z0-9_.:-]{1,64}(?: [A-Za-z0-9
 /** A command's id, as the renderer's registry names it (`edit.undo`, `site.settings`). */
 const commandIdSchema = z.string().regex(/^[a-z][a-zA-Z0-9.-]{0,63}$/);
 
+/** The menus macOS's menu bar takes from the renderer: the application menu (`app`), then four. */
+const NATIVE_MENU_KINDS = ["app", "file", "edit", "view", "help"] as const;
+
 /** One item of a native menu: the renderer's command, as its menus show it (LF-13). */
 const nativeMenuItemSchema = z.strictObject({
   id: commandIdSchema,
@@ -38,12 +41,14 @@ const nativeMenuItemSchema = z.strictObject({
 const nativeMenusSchema = z
   .array(
     z.strictObject({
-      id: z.enum(["file", "edit", "view", "help"]),
+      // `app`: the application menu, macOS's first (Webforge › Settings…).
+      id: z.enum(NATIVE_MENU_KINDS),
       label: z.string().min(1).max(40),
       items: z.array(nativeMenuItemSchema).max(100),
     }),
   )
-  .max(4);
+  // One of each kind at most.
+  .max(NATIVE_MENU_KINDS.length);
 
 /** The renderer's menus, as macOS's menu bar shows them. */
 export type NativeMenus = z.infer<typeof nativeMenusSchema>;

@@ -41,7 +41,7 @@ const PAGE_PREFIX = "page:";
 
 /**
  * A change to one of a site's documents, as the renderer sends it and storage commits it. Content
- * is checked separately, as part of the whole site the changes produce ({@link applySiteChanges}).
+ * is checked separately, with the site the changes produce ({@link validateSiteChanges}).
  */
 export const siteDocumentChangeSchema = z.discriminatedUnion("type", [
   z
@@ -120,9 +120,10 @@ export function siteFromDocuments(
 
 /**
  * The site `changes` would leave behind (`site` is `undefined` for a new, still empty project),
- * unvalidated: what the main process checks with
- * `siteDocSchema` before it commits changes from the renderer, so the file never holds a broken
- * site (a page order naming a deleted page, a change of the wrong kind).
+ * unvalidated: what `siteDocSchema` would check whole. The main process commits changes from the
+ * renderer only once {@link validateSiteChanges} accepts them, which checks the same with only the
+ * changed documents parsed, so the file never holds a broken site (a page order naming a deleted
+ * page, a change of the wrong kind).
  */
 export function applySiteChanges(
   site: SiteDoc | undefined,
@@ -151,13 +152,16 @@ type Part = (typeof PARTS)[number];
 const isPart = (value: string): value is Part => (PARTS as readonly string[]).includes(value);
 
 /**
- * The site `changes` leave `site` as, checked as `siteDocSchema` checks it: accepted exactly when
- * `siteDocSchema.safeParse(applySiteChanges(site, changes))` succeeds, with equal data, but only the
- * changed documents are parsed (R13a). The rest of `site` passed before and is shared, unchanged;
- * the checks across documents run on the result, walking only the changed pages' and layout's
- * element trees. Each changed document's unsafe keys and depth are checked at the depth it has in
- * the site, so a document refused as part of the whole site is refused alone. A new, empty site
- * (`site` undefined) is checked whole.
+ * The site `changes` leave `site` as, checked as `siteDocSchema` checks it, but parsing only the
+ * changed documents (R13a). It never accepts what `siteDocSchema.safeParse(applySiteChanges(site,
+ * changes))` refuses, and what both accept is the same site, its pages in the same order. The rest
+ * of `site` passed before and is shared, unchanged; the checks across documents run on the result,
+ * walking only the changed pages' and layout's element trees. Each changed document's unsafe keys
+ * and depth are checked at the depth it has in the site, so a document refused as part of the
+ * whole site is refused alone. The one difference: an object shared by reference between two
+ * changed documents (structured clone keeps such references) is checked in each, where the whole
+ * site's check visits it once, so it may be refused here and accepted there; only ever stricter.
+ * A new, empty site (`site` undefined) is checked whole.
  */
 export function validateSiteChanges(
   site: SiteDoc | undefined,
@@ -241,8 +245,22 @@ export function validateSiteChanges(
       parts[part] = parsed.data;
     }
   }
+  // The pages in the order putting the site back together gives them: the stored order, a page
+  // deleted and put again moving to the end, new pages after the rest (applySiteChanges' Map).
+  const order = new Set(site.pageOrder);
+  for (const change of changes) {
+    if (!change.id.startsWith(PAGE_PREFIX)) continue;
+    const key = change.id.slice(PAGE_PREFIX.length);
+    if (change.type === "delete") order.delete(key as PageId);
+    else order.add(key as PageId);
+  }
+  const ordered: Record<string, PageEntry> = {};
+  for (const key of order) {
+    const page = pages[key];
+    if (page !== undefined) ordered[key] = page;
+  }
   // In the site's own key order: the spreads keep it.
-  const next = { ...site, ...parts, ...fields, pages } as SiteDoc;
+  const next = { ...site, ...parts, ...fields, pages: ordered } as SiteDoc;
   const issues = siteIssues(next, { pages: changedPages, layout: "layout" in parts });
   return issues.length === 0 ? { success: true, data: next } : { success: false };
 }

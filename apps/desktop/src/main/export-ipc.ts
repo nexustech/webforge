@@ -38,19 +38,23 @@ export function toExportResult(outcome: ExportOutcome, destination: string): Exp
  * open site's file. One whose bytes aren't there is left out: a page placing that image shows
  * none, and a link to that document goes nowhere, each with a warning.
  */
-function snapshotWithMedia(
+async function snapshotWithMedia(
   request: ExportRequest,
-  readMedia: (hash: string) => StoredBlob | undefined,
-): SiteSnapshot {
-  const media = request.media.flatMap(({ hash, ...image }): MediaItem[] => {
-    const blob = readMedia(hash);
-    return blob === undefined ? [] : [{ ...image, data: blob.data }];
-  });
+  readMedia: (hash: string) => Promise<StoredBlob | undefined>,
+): Promise<SiteSnapshot> {
+  // One at a time: each read takes its turn at the site's file with the saves (R13b).
+  const media: MediaItem[] = [];
+  for (const { hash, ...image } of request.media) {
+    const blob = await readMedia(hash);
+    if (blob !== undefined) media.push({ ...image, data: blob.data });
+  }
   // A document is exported under its type's extension, so its stored bytes must be that type.
-  const documents = (request.documents ?? []).flatMap(({ hash, ...file }): DocumentItem[] => {
-    const blob = readMedia(hash);
-    return blob === undefined || blob.mime !== file.mimeType ? [] : [{ ...file, data: blob.data }];
-  });
+  const documents: DocumentItem[] = [];
+  for (const { hash, ...file } of request.documents ?? []) {
+    const blob = await readMedia(hash);
+    if (blob !== undefined && blob.mime === file.mimeType)
+      documents.push({ ...file, data: blob.data });
+  }
   return { ...request.snapshot, media, documents };
 }
 
@@ -64,14 +68,14 @@ export function registerExportHandlers(
   isTrustedSender: (senderUrl: string) => boolean,
   dialogs: ExportDialogs,
   runExport: RunExport,
-  readMedia: (hash: string) => StoredBlob | undefined,
+  readMedia: (hash: string) => Promise<StoredBlob | undefined>,
 ): void {
   registerIpcHandler(ipc, "exportSite", isTrustedSender, async (request) => {
     const destination = await dialogs.chooseExportFolder();
     if (destination === undefined) {
       return { status: "canceled" };
     }
-    const snapshot = snapshotWithMedia(request, readMedia);
+    const snapshot = await snapshotWithMedia(request, readMedia);
     return toExportResult(await runExport(snapshot, destination), destination);
   });
 }

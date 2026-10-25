@@ -1,5 +1,6 @@
 import { t } from "@webforge/i18n";
 import type { AppApi, NativeMenus } from "../../shared/ipc/app.js";
+import { reportFailure } from "../log.js";
 import { COMMAND_IDS } from "./command-ids.js";
 import {
   type CommandRegistry,
@@ -8,8 +9,18 @@ import {
   type MenuId,
 } from "./commands.js";
 
+/**
+ * Commands a Mac lists in its application menu (Webforge › Settings…, LF-12), whatever their
+ * menu in the window's own menus elsewhere.
+ */
+const APP_MENU: ReadonlySet<string> = new Set([COMMAND_IDS.settings]);
+
 /** The menus, in the menu bar's order, and their names. */
-const MENUS: readonly { readonly id: MenuId; readonly label: () => string }[] = [
+const MENUS: readonly {
+  readonly id: MenuId | "app";
+  readonly label: () => string;
+}[] = [
+  { id: "app", label: () => t("app.name") },
   { id: "file", label: () => t("shell.menu.file") },
   { id: "edit", label: () => t("shell.menu.edit") },
   { id: "view", label: () => t("shell.menu.view") },
@@ -23,7 +34,9 @@ export function nativeMenusOf(registry: Pick<CommandRegistry, "list">): NativeMe
     id,
     label: label(),
     items: commands
-      .filter((command) => command.menu === id)
+      .filter((command) =>
+        id === "app" ? APP_MENU.has(command.id) : command.menu === id && !APP_MENU.has(command.id),
+      )
       .map((command) => ({
         id: command.id,
         label: command.label,
@@ -76,7 +89,8 @@ export function syncNativeMenus(
     const key = JSON.stringify(menus);
     if (key === sent) return;
     sent = key;
-    void app.setNativeMenus(menus).catch(() => undefined);
+    // Refused (main's check), the menu bar would stay as it was: reported, never silent (#432).
+    void app.setNativeMenus(menus).catch((error: unknown) => reportFailure("menus.native", error));
   };
   const schedule = () => {
     if (pending === undefined) pending = setTimeout(send, 50);

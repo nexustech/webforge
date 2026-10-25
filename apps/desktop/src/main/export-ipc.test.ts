@@ -51,7 +51,7 @@ function setUp(dialogs: ExportDialogs, outcome: ExportOutcome = exported) {
     },
   } as unknown as Pick<IpcMain, "handle">;
   const runExport = vi.fn(async () => outcome);
-  const readMedia = vi.fn((hash: string) =>
+  const readMedia = vi.fn(async (hash: string) =>
     hash === PHOTO ? photo : hash === PDF ? pdf : undefined,
   );
   registerExportHandlers(ipc, (url) => url === APP_URL, dialogs, runExport, readMedia);

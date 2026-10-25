@@ -16,7 +16,7 @@ export function ChoiceField({
   value,
   onChange,
   onCommit,
-}: FieldRendererProps<"color" | "spacing">) {
+}: FieldRendererProps<"color" | "spacing" | "choice">) {
   const { options } = field;
   return (
     <ToggleGroup
@@ -36,7 +36,12 @@ export function ChoiceField({
       }}
     >
       {options.map((option) => (
-        <ToggleGroupItem key={option.value} value={option.value} className="flex-1">
+        <ToggleGroupItem
+          key={option.value}
+          value={option.value}
+          // Never narrower than its label: in a narrow column (LF-7) the options wrap instead.
+          className="min-w-fit flex-1"
+        >
           {option.label}
         </ToggleGroupItem>
       ))}
