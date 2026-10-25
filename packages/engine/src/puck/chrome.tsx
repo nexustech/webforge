@@ -16,6 +16,7 @@ import {
   componentSelector,
   HOVERED_COMPONENT,
   OVERLAY,
+  SELECTED_COMPONENT,
 } from "./puck-dom.js";
 import { canPerform, performOnSelected } from "./selected-actions.js";
 import { type BoxHandleField, SPACING_HANDLES_CSS, SpacingHandles } from "./spacing-handles.js";
@@ -105,9 +106,15 @@ ${ACTIONS} {
   transform-origin: left top !important;
   margin-top: calc(7px / var(--wf-zoom, 1));
 }
-/* A hovered element shows its name chip there too (SP-1): only the chip, which takes no clicks. */
-${HOVERED_COMPONENT} ${ACTIONS_OVERLAY} {
+/*
+ * A hovered element shows its name chip there too (SP-1): only the chip, which takes no clicks, so
+ * the selected element's bar under it keeps them (Puck lets everything in its overlays take clicks).
+ */
+${HOVERED_COMPONENT}:not(${SELECTED_COMPONENT}) ${ACTIONS_OVERLAY} {
   opacity: 1;
+}
+${HOVERED_COMPONENT}:not(${SELECTED_COMPONENT}) ${ACTIONS_OVERLAY} * {
+  pointer-events: none !important;
 }
 ${SPACING_HANDLES_CSS}${WIDTH_HANDLES_CSS}`;
 
@@ -465,6 +472,21 @@ export function QuickActionBar({
   // Puck also draws a hovered element's bar: only its name chip shows there (SP-1).
   const selected = usePuck((state) => id !== null && state.selectedItem?.props.id === id);
   const [size, setSize] = useState<string | undefined>(undefined);
+  // Pressing one of the bar's buttons leaves the focus where it is, as toolbars do: in text being
+  // edited, whose format menu (in this bar) would otherwise close on the press, the bar shrinking so
+  // the button under the pointer moved away before the click landed (LF-3's bar starts at the left).
+  useLayoutEffect(() => {
+    const bar = kept.current;
+    if (bar === null) return undefined;
+    // The canvas iframe's elements aren't this window's: `closest` rather than `instanceof`.
+    const keepFocus = (event: Event) => {
+      const target = event.target as { closest?: (selector: string) => unknown } | null;
+      const button = target?.closest?.("button");
+      if (button !== null && button !== undefined) event.preventDefault();
+    };
+    bar.addEventListener("mousedown", keepFocus);
+    return () => bar.removeEventListener("mousedown", keepFocus);
+  });
   useLayoutEffect(() => {
     const bar = kept.current;
     // With *Show spacing on hover* on, a hovered element's chip says its size (SP-2).

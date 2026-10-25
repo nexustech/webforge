@@ -90,6 +90,18 @@ test.describe("selection chrome", () => {
     );
   });
 
+  test("its buttons work while the element's text is being edited, the format menu with them (LF-3)", async () => {
+    // Clicking the text edits it: the bar holds the format menu too.
+    await canvas().getByText(STARTER_TEXT).click();
+    await expect(quickAction("Bold")).toBeVisible();
+
+    // A press on the bar keeps the text focused, so the menu stays and the button under the
+    // pointer is the one clicked.
+    await quickAction("Delete").click();
+
+    await expect(canvas().getByText(STARTER_TEXT)).toHaveCount(0);
+  });
+
   test("moves, duplicates and deletes the selected element, one undo step each", async () => {
     await selectHeading();
 

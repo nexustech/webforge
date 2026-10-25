@@ -42,8 +42,9 @@ export const CANVAS = '[class*="_PuckCanvas_"]';
 export const ACTIONS = '[class*="_DraggableComponent-actions_"]';
 export const ACTIONS_OVERLAY = '[class*="_DraggableComponent-actionsOverlay_"]';
 
-/** The component under the pointer, as Puck marks it. */
+/** The component under the pointer, and the selected one, as Puck marks them. */
 export const HOVERED_COMPONENT = '[class*="_DraggableComponent--hover_"]';
+export const SELECTED_COMPONENT = '[class*="_DraggableComponent--isSelected_"]';
 
 /** Puck's layout around the canvas (#274): its plugin rail, its two sidebars and their box. */
 export const LAYOUT = {

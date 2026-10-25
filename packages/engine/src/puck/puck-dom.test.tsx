@@ -22,6 +22,7 @@ import {
   puckPrivateApi,
   RICH_TEXT,
   ROOT_DROP_ZONE,
+  SELECTED_COMPONENT,
 } from "./puck-dom.js";
 import { createPuckEngine } from "./puck-engine.js";
 
@@ -119,6 +120,7 @@ describe("Puck's DOM contract (R8)", () => {
     expect(element.querySelector(OVERLAY)).not.toBeNull();
     // LF-3 moves the bar's box; HOVERED_COMPONENT needs a real pointer: canvas-chrome.spec.ts.
     expect(element.querySelector(`${OVERLAY} ${ACTIONS_OVERLAY} ${ACTIONS}`)).not.toBeNull();
+    expect(element.querySelector(`${SELECTED_COMPONENT} ${ACTIONS}`)).not.toBeNull();
   });
 
   it("draws a drag source as an item of Puck's drawer", async () => {
