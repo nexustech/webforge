@@ -14,6 +14,7 @@ import { ProjectStore, ReadOnlyProjectError } from "@webforge/storage";
 import { heroPhoto } from "@webforge/test-utils";
 import type { IpcMain } from "electron";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createImportJobs } from "../worker/store-import.js";
 import { registerProjectHandlers } from "./project-ipc.js";
 import {
   findProjectArgument,
@@ -21,7 +22,7 @@ import {
   type SiteStoreAccess,
   withProjectExtension,
 } from "./project-session.js";
-import { createStorageWriter } from "./storage-writer.js";
+import { createStorageWriter, type StorageWriter } from "./storage-writer.js";
 import { createStoreGate } from "./store-gate.js";
 
 /** The first bytes of a PNG of `width` × `height`: enough for Media to take it. */
@@ -602,16 +603,79 @@ describe("ProjectSession and the store gate (R13b)", () => {
     vi.useRealTimers();
   });
 
+  it("saves while an import's file is still being read: reading holds nothing (#408 review)", async () => {
+    // A writer that reads as slowly as a network share: as long as the test says.
+    let finishReading: () => void = () => undefined;
+    const jobs = createImportJobs();
+    const slow: StorageWriter = {
+      warm: () => undefined,
+      prepare: async (fileName, source) => {
+        await new Promise<void>((resolve) => {
+          finishReading = resolve;
+        });
+        const outcome = await jobs.prepare(1, fileName, source);
+        return outcome.status === "prepared" ? { ...outcome, token: 1 } : outcome;
+      },
+      store: async (prepared, target) => jobs.store(prepared.token, target),
+      discard: (prepared) => jobs.discard(prepared.token),
+      stop: async () => undefined,
+    };
+    const gated = new ProjectSession({}, { writer: slow });
+    await gated.create(join(dir, "Slow share.wforge"));
+    await gated.commit(changedDocuments(undefined, site));
+    const order: string[] = [];
+
+    const importing = gated
+      .importFile("photo", "photo.jpg", { data: heroPhoto() })
+      .then((result) => {
+        order.push("import");
+        return result;
+      });
+    const saving = gated.commit(renamed("Typed while it read")).then((result) => {
+      order.push("save");
+      return result;
+    });
+
+    expect(await saving).toEqual({ status: "saved" });
+    finishReading();
+    expect((await importing).status).toBe("stored");
+    expect(order).toEqual(["save", "import"]);
+    await gated.close();
+  });
+
   it("closes the site when the storage writer doesn't finish, stopping it; the import fails", async () => {
-    // A writer thread that never answers.
-    const thread = { postMessage: vi.fn(), on: vi.fn(), terminate: vi.fn(async () => 0) };
+    // A writer thread that prepares, then never answers while it stores, holding the gate.
+    let answer: (message: unknown) => void = () => undefined;
+    const thread = {
+      postMessage: vi.fn((message: { id: number; type: string }) => {
+        if (message.type !== "prepare") return;
+        queueMicrotask(() =>
+          answer({
+            id: message.id,
+            outcome: {
+              status: "prepared",
+              hash: "a".repeat(64),
+              size: 1,
+              media: { kind: "image", mimeType: "image/jpeg", width: 1, height: 1 },
+            },
+          }),
+        );
+      }),
+      on: vi.fn((event: string, listener: (message: unknown) => void) => {
+        if (event === "message") answer = listener;
+      }),
+      terminate: vi.fn(async () => 0),
+    };
     const gated = new ProjectSession({}, { writer: createStorageWriter(() => thread) });
     await gated.create(join(dir, "Stuck writer.wforge"));
     vi.useFakeTimers();
 
     const importing = gated.importFile("photo", "photo.jpg", { data: heroPhoto() });
     await vi.advanceTimersByTimeAsync(0);
-    expect(thread.postMessage).toHaveBeenCalledTimes(1);
+    expect(thread.postMessage.mock.calls.map(([message]) => message.type)).toEqual([
+      "prepare",
+      "store",
+    ]);
     const closing = gated.close();
     await vi.advanceTimersByTimeAsync(5_000);
     await closing;
