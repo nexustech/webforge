@@ -6,14 +6,17 @@ import { basicComponents } from "./basic.js";
 import { carouselComponents } from "./carousel.js";
 import { commerceComponents } from "./commerce.js";
 import { contactDetailsComponents } from "./contact-details.js";
+import { customCodeComponents } from "./custom-code.js";
 import { elementsComponents } from "./elements.js";
 import { embedsComponents } from "./embeds.js";
 import { featuresComponents } from "./features.js";
 import { formsComponents } from "./forms.js";
 import { galleryComponents } from "./gallery.js";
 import { layoutComponents } from "./layout.js";
+import { pricingComponents } from "./pricing.js";
 import { sectionsComponents } from "./sections.js";
 import { tabsComponents } from "./tabs.js";
+import { teamComponents } from "./team.js";
 import { testimonialsComponents } from "./testimonials.js";
 
 /**
@@ -34,8 +37,11 @@ export const siteLibrary: ComponentLibrary = createLibrary(
   formsComponents,
   featuresComponents,
   testimonialsComponents,
+  teamComponents,
+  pricingComponents,
   commerceComponents,
   tabsComponents,
+  customCodeComponents,
 );
 
 /** The page a new site starts with. */

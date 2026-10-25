@@ -21,19 +21,22 @@ export type PictureProps = {
   /** Load immediately (above the fold) instead of lazily. */
   readonly eager?: boolean;
   readonly className?: string;
+  /** The image's id, for a link it describes (a Buy button's). */
+  readonly id?: string;
 };
 
 /**
  * A responsive image: WebP sources with a JPEG/PNG fallback, sized to avoid layout shift (X2). Its
  * focal point keeps the important part in view wherever CSS cuts the image to fit.
  */
-export function Picture({ image, alt, sizes, eager = false, className }: PictureProps) {
+export function Picture({ image, alt, sizes, eager = false, className, id }: PictureProps) {
   return (
     <picture>
       {image.sources.map((source) => (
         <source key={source.type} type={source.type} srcSet={source.srcset} sizes={sizes} />
       ))}
       <img
+        id={id}
         src={image.src}
         srcSet={image.fallback.srcset}
         sizes={sizes}

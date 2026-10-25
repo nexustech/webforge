@@ -109,14 +109,23 @@ const HOVERS = ["none", "lift", "grow", "shadow"] as const;
 type Hover = (typeof HOVERS)[number];
 
 /**
- * The hover effect field (F-DS-5): on the Button, and on 2.7's card items (Features, Testimonials,
- * Team, Pricing) once they're built. CSS only; Lift and Grow move, so only under `motion-safe`.
+ * The hover effect field (F-DS-5), on the Button. CSS only; Lift and Grow move, so only under
+ * `motion-safe`.
  */
 export const HOVER_FIELD = {
   kind: "select",
   label: t("field.hoverEffect"),
   group: "style",
   options: HOVERS.map((value) => ({ label: t(`field.hoverEffect.${value}`), value })),
+} as const satisfies FieldDef;
+
+/**
+ * The cards' hover effect (F-DS-5), set on a section for all its cards (2.7's Features,
+ * Testimonials, Team and Pricing), so every card does the same, those added later too.
+ */
+export const CARD_HOVER_FIELD = {
+  ...HOVER_FIELD,
+  label: t("field.cardHoverEffect"),
 } as const satisfies FieldDef;
 
 const HOVER_CLASS: Readonly<Record<Hover, string>> = {

@@ -54,6 +54,11 @@ export type ComponentDef = {
   /** Its group in the Add panel, already translated ("Heroes", "Text"). */
   readonly category?: string;
   /**
+   * Offered in the Add panel in Advanced mode only (F-ED-11), as Custom Code is. One already on a
+   * page shows, and can be selected and edited, in either mode.
+   */
+  readonly advancedOnly?: true;
+  /**
    * The same component with some values set, each offered in the Add panel as an entry of its own
    * (2.11): the Booking button is a Button reading "Book now" (F-CM-7). Placing one places this
    * component, so it edits and exports as any other.

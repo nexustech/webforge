@@ -447,6 +447,67 @@ describe("copy and paste (1.25)", () => {
     });
   });
 
+  describe("a copied video address (2.11, F-ED-16)", () => {
+    const address = (copied: string) => fakeClipboard({ status: "address", address: copied });
+    const video = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+
+    it("puts a YouTube or Vimeo address in a new Embed video, as one step that selects it", async () => {
+      const session = sessionWith();
+      const notify = vi.fn();
+      select(session, "heading-1");
+
+      expect(await pasteElements(session, address(video), notify)).toBe(true);
+
+      const placed = sectionContent(session)[1];
+      expect(sectionContent(session).map((node) => node.type)).toEqual([
+        "Heading",
+        "EmbedVideo",
+        "Text",
+      ]);
+      expect(placed?.props.address).toBe(video);
+      expect(session.ui.getState().nodeId).toBe(placed?.props.id);
+      expect(labels(session).at(-1)).toBe("Added Embed video");
+      expect(notify).not.toHaveBeenCalled();
+      session.history.undo();
+      expect(sectionContent(session).map((node) => node.type)).toEqual(["Heading", "Text"]);
+
+      expect(await pasteElements(session, address("https://vimeo.com/76979871"), notify)).toBe(
+        true,
+      );
+      expect(sectionContent(session)[1]?.props.address).toBe("https://vimeo.com/76979871");
+    });
+
+    it("pastes nothing for another address, or as a linked copy", async () => {
+      const session = sessionWith();
+      const notify = vi.fn();
+      select(session, "heading-1");
+
+      expect(await pasteElements(session, address("https://example.com/menu"), notify)).toBe(false);
+      expect(await pasteElements(session, address(video), notify, true)).toBe(false);
+
+      expect(sectionContent(session).map((node) => node.type)).toEqual(["Heading", "Text"]);
+      expect(notify.mock.calls.map(([message]) => message)).toEqual([
+        "There's nothing to paste. Copy a section or element first.",
+        "Only a shared section can be pasted as a linked copy.",
+      ]);
+    });
+
+    it("says a page with nowhere for an element can't take one", async () => {
+      const session = sessionWith();
+      const notify = vi.fn();
+      session.edit("remove", "Deleted section", (draft) => {
+        const page = draft.pages[draft.homePageId];
+        if (page !== undefined) page.doc.content = [];
+      });
+
+      expect(await pasteElements(session, address(video), notify)).toBe(false);
+
+      expect(content(session)).toEqual([]);
+      expect(notify).toHaveBeenCalledTimes(1);
+      expect(notify.mock.calls[0]?.[0]).toContain("Embed video");
+    });
+  });
+
   describe("the shared Header and Footer (F-ED-7)", () => {
     /** The site library plus a shared Banner whose slot holds elements, as the Header could. */
     const library: ComponentLibrary = {

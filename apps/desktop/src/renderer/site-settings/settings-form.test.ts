@@ -2,12 +2,25 @@ import { defaultSiteSettings, type SiteSettings } from "@webforge/model";
 import { describe, expect, it } from "vitest";
 import { sessionWith } from "../testing/fixtures.js";
 import {
-  checkSettings,
   fromSettingsForm,
   type SettingsForm,
   saveSiteSettings,
+  settingsSchema,
   toSettingsForm,
 } from "./settings-form.js";
+
+/** The form checked as the dialog checks it: the settings, or a message per model path. */
+function checkSettings(form: SettingsForm, previous: SiteSettings) {
+  const result = settingsSchema["~standard"].validate(fromSettingsForm(form, previous));
+  if (result instanceof Promise) throw new Error("Not synchronous");
+  if (result.issues === undefined) return { ok: true, settings: result.value } as const;
+  const errors: Record<string, string> = {};
+  for (const issue of result.issues) {
+    const path = (issue.path ?? []).map((key) => String(typeof key === "object" ? key.key : key));
+    errors[path.join(".")] ??= issue.message;
+  }
+  return { ok: false, errors } as const;
+}
 
 const full: SiteSettings = {
   general: {
@@ -61,7 +74,7 @@ describe("settings form", () => {
       url: "https://www.example.com/",
       xHandle: "rosas",
       measurementId: "g-abc123def4",
-      openingHours: [{ days: ["fri", "mon"], opens: "09:00", closes: "17:00" }],
+      openingHours: [{ id: "a", days: ["fri", "mon"], opens: "09:00", closes: "17:00" }],
     });
 
     expect(fromSettingsForm(form, full)).toMatchObject({
@@ -96,7 +109,7 @@ describe("settings form", () => {
     expect(toSettingsForm(full)).toMatchObject({ formService: "formspree", formValue: "mzbqwxyz" });
   });
 
-  it("explains what to fix, field by field, in words people use", () => {
+  it("explains what to fix at each model path, in the settings' words or the editor's (2.21)", () => {
     const result = checkSettings(
       edit(full, {
         name: "",
@@ -106,8 +119,8 @@ describe("settings form", () => {
         phone: "call us",
         xHandle: "@this-is-not-a-handle",
         measurementId: "UA-1234",
-        profiles: [{ network: "facebook", url: "facebook.com/rosas" }],
-        openingHours: [{ days: [], opens: "7am", closes: "15:00" }],
+        profiles: [{ id: "a", network: "facebook", url: "facebook.com/rosas" }],
+        openingHours: [{ id: "b", days: [], opens: "7am", closes: "15:00" }],
         formService: "web3forms",
         formValue: "not-a-key",
       }),
@@ -117,7 +130,8 @@ describe("settings form", () => {
     expect(result).toEqual({
       ok: false,
       errors: {
-        "general.name": "Give the site a name of up to 100 characters.",
+        // Empty or too long: the editor's general words.
+        "general.name": "Fill this in.",
         "general.language": "Use a language code such as en or en-GB.",
         "address.url":
           "Use the site's address starting with https://, such as https://www.example.com, without a page or folder.",
@@ -128,7 +142,7 @@ describe("settings form", () => {
         "contact.openingHours.0.days": "Choose at least one day.",
         "contact.openingHours.0.opens": "Use a time such as 09:00.",
         "analytics.measurementId": "Use a measurement ID such as G-ABC123DEF4.",
-        "forms.value": "Use the access key from Web3Forms.",
+        "forms.service.accessKey": "Use the access key from Web3Forms.",
       },
     });
   });

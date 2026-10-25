@@ -1,7 +1,18 @@
-import { type CopiedElements, copiedElementsSchema, mediaMetaSchema } from "@webforge/model";
+import {
+  type CopiedElements,
+  copiedElementsSchema,
+  mediaMetaSchema,
+  webUrlSchema,
+} from "@webforge/model";
 import { z } from "zod";
 import { rejectedFileSchema } from "./media.js";
 import { sessionIdSchema } from "./project.js";
+
+/**
+ * The most bytes of copied text read as a web address (F-ED-16): far more than a video's address,
+ * and not so much that a long text is read only to be left out.
+ */
+export const MAX_ADDRESS_BYTES = 2048;
 
 /** Outcome of a copy: the elements are on the system clipboard, with their images kept aside. */
 const writeResultSchema = z.discriminatedUnion("status", [
@@ -33,6 +44,11 @@ const readResultSchema = z.discriminatedUnion("status", [
     items: z.array(mediaMetaSchema),
     rejected: z.array(rejectedFileSchema),
   }),
+  /**
+   * Copied text that is one web address (F-ED-16): the renderer places an Embed video if it is a
+   * video's, YouTube or Vimeo.
+   */
+  z.strictObject({ status: z.literal("address"), address: webUrlSchema.max(MAX_ADDRESS_BYTES) }),
   /** The clipboard holds nothing Webforge can paste (nothing, text, or another app's data). */
   z.strictObject({ status: z.literal("empty") }),
   z.strictObject({
@@ -54,7 +70,7 @@ export const clipboardChannels = {
   },
   /**
    * What the system clipboard holds for a paste: Webforge's elements, their images stored in the
-   * open site; else image files or an image, imported into it.
+   * open site; else image files or an image, imported into it; else a copied web address.
    */
   readClipboard: {
     channel: "clipboard:read",
@@ -68,8 +84,8 @@ export interface ClipboardApi {
   /** Copies elements (F-ED-16), to paste on any page of this site or another one opened later. */
   write(sessionId: string, elements: CopiedElements): Promise<ClipboardWriteResult>;
   /**
-   * Reads copied elements, image files or an image for a paste; images it imports go into the open
-   * site only if it is still the opening `sessionId` names.
+   * Reads copied elements, image files, an image or a web address for a paste; images it imports go
+   * into the open site only if it is still the opening `sessionId` names.
    */
   read(sessionId: string): Promise<ClipboardReadResult>;
 }

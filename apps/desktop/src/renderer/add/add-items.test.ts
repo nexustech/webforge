@@ -17,6 +17,7 @@ import {
   addSharedCopy,
   addTarget,
   addTargetFor,
+  forLevel,
   groupItems,
   presetKey,
   sharedSectionItems,
@@ -68,6 +69,17 @@ describe("addItems (F-ED-1, ADR 0005)", () => {
     }
   });
 
+  it("offers Custom Code in Advanced mode only (2.11, F-ED-11)", () => {
+    const elements = addItems(siteLibrary, "elements");
+    const types = (level: "simple" | "advanced") =>
+      forLevel(elements, level).map((item) => item.type);
+
+    expect(elements.find((item) => item.type === "CustomCode")?.advancedOnly).toBe(true);
+    expect(types("advanced")).toContain("CustomCode");
+    expect(types("simple")).not.toContain("CustomCode");
+    expect(types("simple")).toContain("Heading");
+  });
+
   it("offers a component's presets after it, each an entry of its own (2.11, F-CM-7)", () => {
     const elements = addItems(siteLibrary, "elements");
     const at = elements.findIndex((item) => item.type === "Button");
@@ -99,7 +111,8 @@ describe("addItems (F-ED-1, ADR 0005)", () => {
     expect(groupItems(sections, "  QUESTIONS ").map((group) => group.category)).toEqual([
       "Questions and answers",
     ]);
-    expect(groupItems(sections, "pricing")).toEqual([]);
+    // A word no item has.
+    expect(groupItems(sections, "zebra")).toEqual([]);
   });
 });
 

@@ -8,6 +8,7 @@ import {
   changedGroups,
   checkForm,
   issueOf,
+  itemIssuesOf,
   unplacedIssues,
   useForm,
 } from "./use-form.js";
@@ -81,6 +82,33 @@ describe("a field's problems (2.21)", () => {
     expect(issueOf(url, issues)).toBe("Use a web address");
     expect(issueOf({ kind: "text", name: "name", label: "Name" }, issues)).toBeUndefined();
     expect(issueOf({ ...url, path: "general.name" }, issues)).toBe("Give it a name");
+  });
+
+  it("of a list's items show by those items' fields, not on the list", () => {
+    const profiles: FormField = {
+      kind: "list",
+      name: "profiles",
+      label: "Profiles",
+      path: "social.profiles",
+      itemLabel: "Profile",
+      itemFields: [{ kind: "text", name: "url", label: "Address" }],
+    };
+    const issues = [
+      { path: ["social", "profiles", 1, "url"], message: "Use a web address" },
+      { path: ["social", "profiles"], message: "Too many profiles" },
+    ];
+    expect(issueOf(profiles, issues)).toBe("Too many profiles");
+    expect(
+      itemIssuesOf(
+        profiles,
+        [
+          { id: "a", url: "x" },
+          { id: "b", url: "y" },
+        ],
+        issues,
+      ),
+    ).toEqual({ b: { url: "Use a web address" } });
+    expect(unplacedIssues([profiles], issues)).toEqual([]);
   });
 
   it("that no field shows are the form's own", () => {

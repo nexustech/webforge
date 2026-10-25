@@ -22,9 +22,12 @@ const text = (id: string, words: string): NodeDoc => ({
   props: { id, text: `<p>${words}</p>` },
 });
 
-/** A page of its own with Tabs of `tabs`, and `tabs.js` run on it unless `script` is false. */
-function page(tabs: NodeDoc[], { script = true } = {}) {
-  const happy = new Window();
+/**
+ * A page of its own with Tabs of `tabs`, and `tabs.js` run on it unless `script` is false; opened
+ * at `hash` if given.
+ */
+function page(tabs: NodeDoc[], { script = true, hash = "" } = {}) {
+  const happy = new Window({ url: `https://example.com/page.html${hash}` });
   windows.push(happy);
   const window = happy as unknown as typeof globalThis;
   const { document } = window;
@@ -34,11 +37,13 @@ function page(tabs: NodeDoc[], { script = true } = {}) {
     EDITOR_RENDER_CONTEXT,
   );
   if (script) {
-    new Function("document", "HTMLElement", "HTMLTemplateElement", BEHAVIOUR_SCRIPTS.tabs ?? "")(
-      document,
-      window.HTMLElement,
-      window.HTMLTemplateElement,
-    );
+    new Function(
+      "document",
+      "window",
+      "HTMLElement",
+      "HTMLTemplateElement",
+      BEHAVIOUR_SCRIPTS.tabs ?? "",
+    )(document, window, window.HTMLElement, window.HTMLTemplateElement);
   }
   const buttons = () => [...document.querySelectorAll("[role=tab]")] as HTMLElement[];
   const panels = () => [...document.querySelectorAll("[data-wf-tab]")] as HTMLElement[];
@@ -50,7 +55,7 @@ function page(tabs: NodeDoc[], { script = true } = {}) {
     const event = new window.KeyboardEvent("keydown", { key, bubbles: true, ...options });
     document.activeElement?.dispatchEvent(event);
   };
-  return { document, buttons, panels, shown, press };
+  return { window, document, buttons, panels, shown, press };
 }
 
 const MENU = [
@@ -121,6 +126,52 @@ describe("tabs on the exported page (2.11, WCAG 2.1 AA)", () => {
     expect(buttons()[1]?.getAttribute("aria-selected")).toBe("true");
     expect(buttons()[1]?.classList.contains("tab-active")).toBe(true);
     expect(buttons()[0]?.classList.contains("tab-active")).toBe(false);
+  });
+
+  it("hides a panel not chosen until found, and chooses its tab when it is (#395 review)", () => {
+    const { window, panels, shown } = page(MENU);
+
+    expect(panels()[1]?.getAttribute("hidden")).toBe("until-found");
+    panels()[2]?.dispatchEvent(new window.Event("beforematch"));
+
+    expect(shown()).toEqual(["tab-c"]);
+    expect(panels()[0]?.getAttribute("hidden")).toBe("until-found");
+  });
+
+  it("chooses the tab holding the page's #anchor, as it opens and as the anchor changes", () => {
+    const opened = page(MENU, { hash: "#tab-b" });
+    expect(opened.shown()).toEqual(["tab-b"]);
+
+    const { window, shown } = page(MENU);
+    window.location.hash = "#tab-c";
+    window.dispatchEvent(new window.Event("hashchange"));
+    expect(shown()).toEqual(["tab-c"]);
+    // An anchor outside the tabs leaves them as they are.
+    window.location.hash = "#elsewhere";
+    window.dispatchEvent(new window.Event("hashchange"));
+    expect(shown()).toEqual(["tab-c"]);
+  });
+
+  it("sets up every Tabs and follows the anchor at an #anchor not encoded right (#397 review)", () => {
+    const inner: NodeDoc = {
+      type: "Tabs",
+      props: { id: "inner", tabs: [tab("x", "Hot"), tab("y", "Cold")] },
+    };
+    // Opened at "#100%", which decodeURIComponent can't decode.
+    const { window, document, shown } = page([tab("a", "Drinks", [inner]), tab("b", "Food")], {
+      hash: "#100%",
+    });
+    const errors: unknown[] = [];
+    window.addEventListener("error", (event) => errors.push(event));
+
+    const lists = [...document.querySelectorAll("[role=tablist]")];
+    expect(lists.map((list) => list.querySelectorAll("[role=tab]").length)).toEqual([2, 2]);
+    expect(shown()).toEqual(["tab-a", "tab-x"]);
+
+    window.location.hash = "#50%off";
+    window.dispatchEvent(new window.Event("hashchange"));
+    expect(errors).toEqual([]);
+    expect(shown()).toEqual(["tab-a", "tab-x"]);
   });
 
   it("leaves tabs inside a panel to themselves", () => {

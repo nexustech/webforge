@@ -664,11 +664,27 @@
 // One tab is in the Tab order; Left and Right move between tabs (round past either end), Home and
 // End to the first and last, and the tab moved to is shown at once. Each panel is labelled by its
 // tab, and its own heading is hidden, as the tab says it.
+//
+// What's in a panel not shown can still be reached: a panel not chosen is hidden "until found",
+// so the browser's find-in-page (where it supports it) shows it and its tab is chosen, and a link
+// to something in it (the page opened at #anchor, or a menu link) chooses its tab and scrolls to
+// it.
 (() => {
-  for (const tabs of document.querySelectorAll("[data-wf-tabs]")) {
+  /** The page's #anchor, decoded: as it is when it isn't encoded right ("#100%"). */
+  const hashId = () => {
+    const hash = window.location.hash.slice(1);
+    try {
+      return decodeURIComponent(hash);
+    } catch {
+      return hash;
+    }
+  };
+
+  /** Makes `tabs` a tab list with its panels. */
+  const setUp = (/** @type {Element} */ tabs) => {
     const list = tabs.querySelector(":scope > [data-wf-tabs-list]");
     const template = tabs.querySelector(":scope > template[data-wf-tab-button]");
-    if (!(list instanceof HTMLElement) || !(template instanceof HTMLTemplateElement)) continue;
+    if (!(list instanceof HTMLElement) || !(template instanceof HTMLTemplateElement)) return;
     // This tabs' own panels, not those of tabs inside one.
     const panels = /** @type {HTMLElement[]} */ (
       [...tabs.querySelectorAll("[data-wf-tab]")].filter(
@@ -676,7 +692,7 @@
       )
     );
     const model = template.content.firstElementChild;
-    if (panels.length === 0 || !(model instanceof HTMLElement)) continue;
+    if (panels.length === 0 || !(model instanceof HTMLElement)) return;
 
     const buttons = panels.map((panel, index) => {
       const heading = panel.querySelector(":scope > [data-wf-tab-label]");
@@ -702,7 +718,10 @@
         button.tabIndex = selected ? 0 : -1;
         button.classList.toggle("tab-active", selected);
         const panel = panels[each];
-        if (panel !== undefined) panel.hidden = !selected;
+        if (panel === undefined) return;
+        // Browsers without "until-found" hide it as they would any hidden element.
+        if (selected) panel.removeAttribute("hidden");
+        else panel.setAttribute("hidden", "until-found");
       });
       if (focus) buttons[index]?.focus();
     };
@@ -710,6 +729,20 @@
     buttons.forEach((button, index) => {
       button.addEventListener("click", () => select(index, false));
     });
+    // Found by find-in-page in a panel not chosen: its tab is chosen as the browser shows it.
+    panels.forEach((panel, index) => {
+      panel.addEventListener("beforematch", () => select(index, false));
+    });
+    /** Chooses the tab of the panel holding the page's #anchor, if one does, and scrolls to it. */
+    const followHash = () => {
+      const id = hashId();
+      const target = id === "" ? null : document.getElementById(id);
+      const index = target === null ? -1 : panels.findIndex((panel) => panel.contains(target));
+      if (target === null || index < 0) return;
+      select(index, false);
+      target.scrollIntoView();
+    };
+    window.addEventListener("hashchange", followHash);
     /** Where each key goes from tab `from`. */
     /** @type {Readonly<Record<string, (from: number) => number>>} */
     const KEYS = {
@@ -730,6 +763,14 @@
 
     list.hidden = false;
     select(0, false);
+    followHash();
+  };
+
+  for (const tabs of document.querySelectorAll("[data-wf-tabs]")) {
+    // One Tabs that goes wrong leaves the others working, every panel shown as without the script.
+    try {
+      setUp(tabs);
+    } catch {}
   }
 })();
 

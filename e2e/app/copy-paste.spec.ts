@@ -245,3 +245,46 @@ test("places an image file copied in the file manager in an Image element of its
   await expect(canvas.locator(".site-image")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Shop front.jpg" })).toHaveCount(0);
 });
+
+test("places a copied YouTube address in an Embed video, and pastes nothing for another address (2.11)", async () => {
+  app = await launchDesktopApp({ args: [florist], userDataDir: userData });
+  const page = await app.firstWindow();
+  await waitForCanvas(page);
+  const video = page.frameLocator(".editor__canvas iframe").locator(".site-embed-video");
+
+  // Copied text that is a web address, but not a video's: nothing to paste.
+  await app.evaluate(({ clipboard }) => clipboard.writeText("https://example.com/menu"));
+  await page.keyboard.press("ControlOrMeta+v");
+  await expect(
+    page.getByText("There's nothing to paste. Copy a section or element first."),
+  ).toBeVisible();
+  await expect(video).toHaveCount(0);
+
+  // A video's address, copied from the browser's address bar.
+  await app.evaluate(({ clipboard }) =>
+    clipboard.writeText(" https://www.youtube.com/watch?v=dQw4w9WgXcQ\n"),
+  );
+  await page.keyboard.press("ControlOrMeta+v");
+
+  await expect(video).toHaveCount(1);
+  await page.getByRole("tab", { name: "Undo History" }).click();
+  await expect(page.locator(".undo-history__step").first()).toHaveText("Added Embed video");
+  await expect(page.getByRole("banner").getByRole("status")).toHaveText("Saved", {
+    timeout: 10_000,
+  });
+  const site = await page.evaluate(async () => {
+    const read = await (window as unknown as RendererWindow).webforge.project.readSite();
+    return (read as { site?: SiteDoc }).site;
+  });
+  const placed = JSON.stringify(site?.pages[site.homePageId]?.doc.content);
+  expect(placed).toContain('"address":"https://www.youtube.com/watch?v=dQw4w9WgXcQ"');
+
+  // In a text field, pasting a video's address pastes the text: no other Embed video.
+  await app.evaluate(({ clipboard }) => clipboard.writeText("https://vimeo.com/76979871"));
+  const field = page.getByRole("textbox", { name: "Video address" });
+  await field.click();
+  await page.keyboard.press("ControlOrMeta+a");
+  await page.keyboard.press("ControlOrMeta+v");
+  await expect(field).toHaveValue("https://vimeo.com/76979871");
+  await expect(video).toHaveCount(1);
+});

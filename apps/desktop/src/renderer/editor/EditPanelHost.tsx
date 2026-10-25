@@ -98,6 +98,8 @@ function specOf(field: FieldDef): FieldSpec | undefined {
     // One of Lucide's icons (F-ED-22): see IconField.
     case "icon":
       return { kind: "icon", label };
+    case "code":
+      return { kind: "code", label };
     case "list":
     case "richtext":
     case "slot":
