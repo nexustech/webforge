@@ -284,6 +284,14 @@ test.describe("exported site from disk", () => {
 
   test.describe("back-to-top button (F-CM-9)", () => {
     const backToTop = (page: Page) => page.getByRole("link", { name: "Back to top" });
+    /**
+     * Scrolls two screens down, as a visitor reading on does. Not with the wheel: Firefox's wheel
+     * steps can scroll less than a screen, below where the button shows.
+     */
+    const readOn = async (page: Page) => {
+      await page.evaluate(() => window.scrollTo(0, 2 * window.innerHeight));
+      await expect.poll(() => page.evaluate(() => window.scrollY >= window.innerHeight)).toBe(true);
+    };
 
     test("shows once the page has scrolled a screen, and not on a page that hides it", async ({
       page,
@@ -294,7 +302,7 @@ test.describe("exported site from disk", () => {
 
       await open(page, "index.html");
       await expect(backToTop(page)).toBeHidden();
-      await wheelDown(page, 900);
+      await readOn(page);
       await expect(backToTop(page)).toBeVisible();
       const results = await new AxeBuilder({ page }).include("[data-wf-back-to-top]").analyze();
       expect(results.violations).toEqual([]);
@@ -306,7 +314,7 @@ test.describe("exported site from disk", () => {
     }) => {
       await page.setViewportSize({ width: 1280, height: 600 });
       await open(page, "index.html");
-      await wheelDown(page, 900);
+      await readOn(page);
 
       await backToTop(page).focus();
       await page.keyboard.press("Enter");
@@ -326,7 +334,7 @@ test.describe("exported site from disk", () => {
       await page.emulateMedia({ reducedMotion: "reduce" });
       await page.setViewportSize({ width: 1280, height: 600 });
       await open(page, "index.html");
-      await wheelDown(page, 900);
+      await readOn(page);
 
       await backToTop(page).click();
 
