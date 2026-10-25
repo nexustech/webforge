@@ -144,13 +144,26 @@ describe("the Embed video and Embed map elements (2.11, F-CM-4)", () => {
     expect(drawn).not.toContain("Missing");
   });
 
-  it("needs the embed behaviour, and animate for an entrance", () => {
-    const behavioursOf = (values: Record<string, unknown>) => {
-      const behaviours = siteLibrary.components.EmbedVideo?.behaviours;
+  it("needs the embed behaviour only with something to load, and animate for an entrance", () => {
+    const behavioursOf = (type: string, values: Record<string, unknown>) => {
+      const behaviours = siteLibrary.components[type]?.behaviours;
       return typeof behaviours === "function" ? behaviours(values) : behaviours;
     };
+    const video = { address: "https://youtu.be/aqz-KE-bpKQ" };
 
-    expect(behavioursOf({})).toEqual(["embed"]);
-    expect(behavioursOf({ entrance: "fade" })).toEqual(["embed", "animate"]);
+    // Nothing to load, nothing exported: no behaviour (#389 review).
+    expect(behavioursOf("EmbedVideo", {})).toEqual([]);
+    expect(behavioursOf("EmbedVideo", { address: "https://example.com/film" })).toEqual([]);
+    expect(behavioursOf("EmbedVideo", video)).toEqual(["embed"]);
+    expect(behavioursOf("EmbedVideo", { ...video, entrance: "fade" })).toEqual([
+      "embed",
+      "animate",
+    ]);
+    expect(behavioursOf("EmbedMap", {})).toEqual([]);
+    expect(behavioursOf("EmbedMap", { address: "1 High Street" })).toEqual(["embed"]);
+    // Bound to Site Settings, whose address isn't known here: listed.
+    expect(behavioursOf("EmbedMap", { bindings: { address: "contact.address" } })).toEqual([
+      "embed",
+    ]);
   });
 });
