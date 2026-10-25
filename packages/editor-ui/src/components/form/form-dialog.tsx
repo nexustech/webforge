@@ -102,6 +102,12 @@ function FormDialogBody<V extends FormValues, Out>({
         {...(groupsLabel === undefined ? {} : { groupsLabel })}
         {...(initialGroup === undefined ? {} : { initialGroup })}
       />
+      {/* After a Save that couldn't: why nothing happened, read out at once. */}
+      {form.attempts > 0 && form.issues.length > 0 ? (
+        <p role="alert" className="m-0 text-xs text-destructive-text">
+          {t("ui.form.fixErrors")}
+        </p>
+      ) : null}
       <DialogFooter>
         <Button type="button" variant="secondary" onClick={onCancel}>
           {t("ui.form.cancel")}

@@ -1,3 +1,4 @@
+import { type FormSchema, sameValue } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import {
   DAYS,
@@ -8,6 +9,7 @@ import {
   siteSettingsSchema,
 } from "@webforge/model";
 import type { EditorSession } from "../editor/editor-session.js";
+import "../shell/form-messages.js";
 
 /** The days of the week, in the order the dialog shows them: the model's, Monday first. */
 export { DAYS };
@@ -23,11 +25,12 @@ export const FORM_SERVICES = [
 ] as const;
 
 /** A form service, or `""` for none. */
-type FormServiceKind = (typeof FORM_SERVICES)[number];
+export type FormServiceKind = (typeof FORM_SERVICES)[number];
 
 /**
  * What the Site Settings dialog edits: every value as the user types it (empty strings for empty
- * fields), so the form can hold invalid input until Save checks it.
+ * fields), so the form can hold invalid input until Save checks it. Rows of profiles and opening
+ * hours have ids while the dialog is open, which saving leaves out.
  */
 export type SettingsForm = {
   readonly name: string;
@@ -38,6 +41,7 @@ export type SettingsForm = {
   readonly backToTop: boolean;
   readonly url: string;
   readonly profiles: readonly {
+    readonly id: string;
     readonly network: (typeof SOCIAL_NETWORKS)[number];
     readonly url: string;
   }[];
@@ -48,6 +52,7 @@ export type SettingsForm = {
   readonly phone: string;
   readonly address: string;
   readonly openingHours: readonly {
+    readonly id: string;
     readonly days: readonly Day[];
     readonly opens: string;
     readonly closes: string;
@@ -73,14 +78,18 @@ export function toSettingsForm(settings: SiteSettings): SettingsForm {
     icon: general.icon,
     backToTop: general.backToTop === true,
     url: address.url ?? "",
-    profiles: social.profiles.map((profile) => ({ ...profile })),
+    profiles: social.profiles.map((profile, index) => ({ id: `profile-${index}`, ...profile })),
     shareImage: social.shareImage,
     xHandle: social.xHandle ?? "",
     businessName: contact.businessName ?? "",
     email: contact.email ?? "",
     phone: contact.phone ?? "",
     address: contact.address ?? "",
-    openingHours: contact.openingHours.map((hours) => ({ ...hours, days: [...hours.days] })),
+    openingHours: contact.openingHours.map((hours, index) => ({
+      id: `hours-${index}`,
+      ...hours,
+      days: [...hours.days],
+    })),
     openingHoursNote: contact.openingHoursNote ?? "",
     allowIndexing: search.allowIndexing,
     includeSitemap: search.includeSitemap,
@@ -128,7 +137,7 @@ function formServiceOf(form: SettingsForm): Record<string, string> | undefined {
 
 /**
  * The settings the form describes, unchecked: `previous` supplies what the dialog doesn't edit
- * (publish destinations, allowed external addresses). {@link checkSettings} validates it.
+ * (publish destinations, allowed external addresses). {@link settingsSchema} checks it.
  */
 export function fromSettingsForm(form: SettingsForm, previous: SiteSettings): unknown {
   const service = formServiceOf(form);
@@ -175,22 +184,21 @@ export function fromSettingsForm(form: SettingsForm, previous: SiteSettings): un
   };
 }
 
-/** The friendly message for each field, by its path with list positions as `*`. */
+/**
+ * The settings' own wording for problems the editor's general words can't describe: a value that
+ * isn't in the form it should be (a language code, a web address, a phone number, an ID), by its
+ * path with list positions as `*` (2.21, decision 4). Too long or empty says so in general words.
+ */
 const MESSAGES: Readonly<Record<string, Parameters<typeof t>[0]>> = {
-  "general.name": "site.settings.error.name",
-  "general.description": "site.settings.error.description",
   "general.language": "site.settings.error.language",
   "address.url": "site.settings.error.webAddress",
   "social.profiles.*.url": "site.settings.error.profileUrl",
   "social.xHandle": "site.settings.error.xHandle",
-  "contact.businessName": "site.settings.error.tooLong",
   "contact.email": "site.settings.error.email",
   "contact.phone": "site.settings.error.phone",
-  "contact.address": "site.settings.error.tooLong",
   "contact.openingHours.*.days": "site.settings.error.days",
   "contact.openingHours.*.opens": "site.settings.error.time",
   "contact.openingHours.*.closes": "site.settings.error.time",
-  "contact.openingHoursNote": "site.settings.error.tooLong",
   "analytics.measurementId": "site.settings.error.measurementId",
   "forms.service.formId": "site.settings.error.formspree",
   "forms.service.accessKey": "site.settings.error.web3forms",
@@ -198,61 +206,35 @@ const MESSAGES: Readonly<Record<string, Parameters<typeof t>[0]>> = {
   "forms.service.url": "site.settings.error.formUrl",
 };
 
-/**
- * The form field a validation issue belongs to, as the dialog names fields: `contact.email`,
- * `social.profiles.0.url`, `contact.openingHours.1.opens`. A form service's value is `forms.value`.
- */
-function fieldOf(path: readonly PropertyKey[]): string {
-  const parts = path.map(String);
-  return parts[0] === "forms" ? "forms.value" : parts.join(".");
-}
-
-/** Outcome of checking the form: the valid settings, or a message per field to fix. */
-export type SettingsCheck =
-  | { readonly ok: true; readonly settings: SiteSettings }
-  | { readonly ok: false; readonly errors: Readonly<Record<string, string>> };
+/** Whether `issue` is text too long or missing, which general words say best. */
+const sizeProblem = (issue: { readonly code: string; readonly origin?: string }) =>
+  (issue.code === "too_big" || issue.code === "too_small") && issue.origin === "string";
 
 /**
- * Checks the form with the model's own schema (X3, F-SET-1), turning its issues into messages a
- * person can act on ("Use an email address such as hello@example.com."), one per field.
+ * Site Settings' schema for the form (X3, F-SET-1, 2.21): the model's own, with the settings' own
+ * wording for a value in the wrong form ({@link MESSAGES}) and the editor's general words for the
+ * rest. Its issues are at the model's paths, which the form's fields name.
  */
-export function checkSettings(form: SettingsForm, previous: SiteSettings): SettingsCheck {
-  const parsed = siteSettingsSchema.safeParse(fromSettingsForm(form, previous));
-  if (parsed.success) {
-    return { ok: true, settings: parsed.data };
-  }
-  const errors: Record<string, string> = {};
-  for (const issue of parsed.error.issues) {
-    const field = fieldOf(issue.path);
-    if (errors[field] !== undefined) continue;
-    const pattern = issue.path
-      .map((part) => (typeof part === "number" ? "*" : String(part)))
-      .join(".");
-    errors[field] = t(MESSAGES[pattern] ?? "site.settings.error.invalid");
-  }
-  return { ok: false, errors };
-}
-
-/** Whether two JSON values are equal, whatever order their objects' keys are in. */
-function sameJson(a: unknown, b: unknown): boolean {
-  if (a === b) return true;
-  if (Array.isArray(a) || Array.isArray(b)) {
-    return (
-      Array.isArray(a) &&
-      Array.isArray(b) &&
-      a.length === b.length &&
-      a.every((item, index) => sameJson(item, b[index]))
-    );
-  }
-  if (typeof a !== "object" || typeof b !== "object" || a === null || b === null) return false;
-  const left = a as Record<string, unknown>;
-  const right = b as Record<string, unknown>;
-  const keys = Object.keys(left);
-  return (
-    keys.length === Object.keys(right).length &&
-    keys.every((key) => Object.hasOwn(right, key) && sameJson(left[key], right[key]))
-  );
-}
+export const settingsSchema: FormSchema<SiteSettings> = {
+  "~standard": {
+    validate: (value) => {
+      const parsed = siteSettingsSchema.safeParse(value);
+      if (parsed.success) return { value: parsed.data };
+      return {
+        issues: parsed.error.issues.map((issue) => {
+          const pattern = issue.path
+            .map((part) => (typeof part === "number" ? "*" : String(part)))
+            .join(".");
+          const own = MESSAGES[pattern];
+          return {
+            path: issue.path,
+            message: own === undefined || sizeProblem(issue) ? issue.message : t(own),
+          };
+        }),
+      };
+    },
+  },
+};
 
 /**
  * Site Settings' sections, in the dialog's order (F-SET-1); each is a group of the settings, and
@@ -276,11 +258,11 @@ export type Section = (typeof SECTIONS)[number];
  * them.
  */
 function savedLabel(before: SiteSettings, after: SiteSettings): string {
-  const sections = SECTIONS.filter((section) => !sameJson(before[section], after[section]));
+  const sections = SECTIONS.filter((section) => !sameValue(before[section], after[section]));
   const earlier: Readonly<Record<string, unknown>> = before;
   const outside = Object.entries(after).some(
     ([key, value]) =>
-      !SECTIONS.some((section) => section === key) && !sameJson(earlier[key], value),
+      !SECTIONS.some((section) => section === key) && !sameValue(earlier[key], value),
   );
   return sections.length === 0 || outside
     ? t("site.settings.history")
@@ -301,7 +283,7 @@ export function saveSiteSettings(
   settings: SiteSettings,
 ): boolean {
   const current = session.history.document.getState().settings;
-  if (sameJson(current, settings)) {
+  if (sameValue(current, settings)) {
     return false;
   }
   session.edit("props", savedLabel(current, settings), (draft) => {
