@@ -9,7 +9,7 @@ type Issue = Parameters<z.core.$ZodErrorMap>[0];
  * empty, out of range, not an email or web address. A schema's own message (the model's wording)
  * wins over these; anything else keeps zod's.
  */
-export function formMessage(issue: Issue): string | undefined {
+function formMessage(issue: Issue): string | undefined {
   const empty = issue.input === undefined || issue.input === "";
   switch (issue.code) {
     case "invalid_type":
