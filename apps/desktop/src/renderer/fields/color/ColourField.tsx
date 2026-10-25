@@ -32,9 +32,9 @@ import {
   resolveColorRef,
 } from "@webforge/themes";
 import { type CSSProperties, useId } from "react";
-import { type EditorPreferences, usePreferences } from "../shell/preferences-store.js";
-import type { EditorSession } from "./editor-session.js";
-import { useDocument } from "./use-document.js";
+import type { EditorSession } from "../../editor/editor-session.js";
+import { useDocument } from "../../editor/use-document.js";
+import { type EditorPreferences, usePreferences } from "../../shell/preferences-store.js";
 
 /** Tailwind's text sizes in CSS pixels, as the type scale names them. */
 const TEXT_PX: Readonly<Record<ThemeTokens["typeScale"][TextStyle]["size"], number>> = {

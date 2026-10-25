@@ -66,6 +66,23 @@ describe("createEngineHost (2.20, B1)", () => {
     expect(engine.connection.flush).toHaveBeenCalledOnce();
   });
 
+  it("undoes what connected and has no engine when a connection fails, and says why", () => {
+    const host = createEngineHost();
+    const disconnect = vi.fn();
+    const after = vi.fn(() => () => undefined);
+    host.whileMounted(() => disconnect);
+    host.whileMounted(() => {
+      throw new Error("no canvas");
+    });
+    host.whileMounted(after);
+
+    expect(() => host.attach(mounted())).toThrow("no canvas");
+
+    expect(disconnect).toHaveBeenCalledOnce();
+    expect(after).not.toHaveBeenCalled();
+    expect(host.current()).toBeNull();
+  });
+
   it("detaches an engine still attached when another attaches, and ignores its late detach", () => {
     const host = createEngineHost();
     const disconnect = vi.fn();

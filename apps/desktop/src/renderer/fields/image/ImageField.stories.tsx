@@ -1,8 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { ImageMeta, MediaId } from "@webforge/model";
-import { sessionWith } from "../testing/fixtures.js";
-import { ImageField } from "./ImageField.js";
-import { addMedia } from "./media-commands.js";
+import { addMedia, ImageField } from "../../media/index.js";
+import { sessionWith } from "../../testing/fixtures.js";
 
 const image = (id: string, fileName: string, alt: string): ImageMeta => ({
   id: id as MediaId,
