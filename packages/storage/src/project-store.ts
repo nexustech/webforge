@@ -11,7 +11,7 @@ import {
 } from "@webforge/model";
 import Database from "better-sqlite3";
 import { z } from "zod";
-import { configureWrites, connect, INSERT_BLOB, sha256 } from "./connection.js";
+import { configureWrites, connect, INSERT_BLOB, sha256, UPSERT_ASSET } from "./connection.js";
 import { checkContent, stampContent } from "./content-check.js";
 import { ProjectFileError, ReadOnlyProjectError } from "./errors.js";
 import { APPLICATION_ID, FORMAT_VERSION, SCHEMA, SCHEMA_MIGRATIONS, SCHEMAS } from "./schema.js";
@@ -75,9 +75,6 @@ export type NewAsset = {
   /** The file's name on the user's computer, e.g. `shop.jpg`. Never a path. */
   readonly originalName: string;
 };
-
-/** What {@link ProjectStore.addAsset} records: an asset whose bytes the file has under `hash`. */
-export type StoredAsset = Omit<NewAsset, "data"> & { readonly hash: string };
 
 /** An imported Media item's original, as recorded in the `assets` table. */
 export type AssetInfo = {
@@ -649,42 +646,24 @@ export class ProjectStore {
    */
   putAsset(asset: NewAsset): AssetInfo {
     return this.#write(() => {
-      const { data, ...facts } = asset;
-      return this.#putAssetRow({ ...facts, hash: this.#insertBlob(data, asset.mime) });
+      const hash = this.#insertBlob(asset.data, asset.mime);
+      this.#prepare(UPSERT_ASSET).run(
+        asset.mediaId,
+        hash,
+        asset.mime,
+        asset.width ?? null,
+        asset.height ?? null,
+        asset.originalName,
+      );
+      return {
+        mediaId: asset.mediaId,
+        hash,
+        mime: asset.mime,
+        width: asset.width,
+        height: asset.height,
+        originalName: asset.originalName,
+      };
     });
-  }
-
-  /**
-   * Records a Media item's asset whose bytes are stored already, as the storage writer stores them
-   * through a connection of its own (R13b, ADR 0013). Fails if the file has no blob under its hash.
-   */
-  addAsset(asset: StoredAsset): AssetInfo {
-    return this.#write(() => this.#putAssetRow(asset));
-  }
-
-  #putAssetRow(asset: StoredAsset): AssetInfo {
-    this.#prepare(
-      `INSERT INTO assets (media_id, blob_hash, mime, width, height, original_name)
-         VALUES (?, ?, ?, ?, ?, ?)
-       ON CONFLICT (media_id) DO UPDATE SET blob_hash = excluded.blob_hash,
-         mime = excluded.mime, width = excluded.width, height = excluded.height,
-         original_name = excluded.original_name`,
-    ).run(
-      asset.mediaId,
-      asset.hash,
-      asset.mime,
-      asset.width ?? null,
-      asset.height ?? null,
-      asset.originalName,
-    );
-    return {
-      mediaId: asset.mediaId,
-      hash: asset.hash,
-      mime: asset.mime,
-      width: asset.width,
-      height: asset.height,
-      originalName: asset.originalName,
-    };
   }
 
   /** The asset of a Media item, or `undefined` if none was imported under this id. */

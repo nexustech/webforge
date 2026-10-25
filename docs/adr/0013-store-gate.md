@@ -12,17 +12,26 @@ Hashing in slices on the main thread can't fix that: the insert is one statement
 A second connection can do the write on another thread. But under the rollback journal (kept for cloud sync, ADR 0003) a connection that commits locks out the others, and a main-thread connection that met that lock would wait on the main thread, which is the block we are removing.
 
 ## Decision
-1. **A storage writer** (a `worker_threads` worker in the main process, R13b part 2) gets its own connection to the open file. It is opened with the same hardening and pragmas as the main one. It reads, checks and hashes an import, and inserts its blob in a transaction of its own. The main connection then adds the small asset row.
+1. **A storage writer** (`apps/desktop/src/worker/storage-writer.ts`, a `worker_threads` worker in the main process) imports one file at a time, through a connection of its own to the open file (`BlobWriter`, opened per import and closed after it):
+   - It opens through the same `connect()` as every connection to a project (`packages/storage/src/connection.ts`), with the same hardening and write settings.
+   - It reads the file in 1 MB chunks (or takes transferred bytes), checks it is one Media takes, hashes it, and inserts its blob in a transaction of its own.
+   - It writes the `blobs` table only, which the content fingerprint (#295) doesn't cover. The main connection then records the asset row (`ProjectStore.addAsset`), which does stamp it.
+   - A 50 MB import measured 626 ms of main-thread hold-up on the calling thread, and under 50 ms with the writer (`storage-writer.test.ts`).
 2. **One store gate** (`apps/desktop/src/main/store-gate.ts`) decides who uses the file:
    - **Shared:** the main process's work (reads, commits, backups) runs alongside other shared work.
    - **Exclusive:** the writer, and closing or replacing the site, run alone.
    - **Order:** work runs in the order it asked. A save asked for while an import writes lands after it, in order with the saves around it. Shared work asked for after waiting exclusive work queues behind it, so the writer is never starved.
 3. **Nothing reaches the store outside the gate.** Every `ProjectSession` method that touches the store goes through it, and those methods are async. The backup gets a gated accessor from the `opened` event, not the store. A test wraps the store and fails on any call made while the gate isn't held.
-4. **Closing waits for the gate at most 5 s,** then closes anyway, so a writer that never finishes can't hold up quitting or switching sites. Part 2 terminates the writer at that point; the existing garbage collection removes a blob it left without an asset.
-5. **A save checks its session again once the gate lets it in** (R6), so a save that queued behind a hand-off can't change the site that replaced its own.
+4. **Closing waits for the gate at most 5 s,** then closes anyway, so a writer that never finishes can't hold up quitting or switching sites. A close let in while the writer still writes terminates its thread first. The import fails, SQLite rolls its transaction back the next time the file opens, and garbage collection removes a blob it left without an asset.
+5. **A save checks its session again once the gate lets it in** (R6), so a save that queued behind a hand-off can't change the site that replaced its own. An import records its asset only in the site its writer wrote to.
+6. **Dropped files travel by path, not as bytes.** The preload finds each one's path with `webUtils.getPathForFile` and sends the paths to the main process (`media:import-paths`), which the writer reads.
+   - The renderer never sees a path, and can't invent one: a `File` a page makes has none.
+   - Files without a path (dragged from a web page) still go as bytes over `media:import`.
 
 ## Consequences
 - The main thread never waits on SQLite's locks. Saves during an import wait their turn as promises, not on the thread.
 - Every caller of `ProjectSession` awaits it, and `will-quit` defers quitting until the site is closed.
 - A long backup holds the shared side. A writer, or a close, waits for it, at most 5 s for a close; saves meanwhile go on.
-- The writer's connection is a second reader and writer of the file. The backup already opens a read-only one, so nothing new for SQLite, but it must close before the file is closed, replaced or restored.
+- The writer's connection is a second reader and writer of the file. The backup already opens a read-only one, so nothing new for SQLite. Opening it per import means nothing stays open when the file is closed, replaced or restored.
+- A backup reads through its own read-only connection and renames its file into place only when it is complete, so a close that runs out of time leaves either a whole backup or none.
+- Not covered: pasting copied elements stores their images through the main connection (`storeCopiedMedia`). Those are images from Webforge's clipboard cache, and the same rule could move them to the writer if they prove slow.

@@ -175,8 +175,8 @@ export class ProjectSession {
   readonly #openStore: (path: string) => ProjectStore;
   readonly #createStore: (path: string, name: string) => ProjectStore;
   readonly #writer: StorageWriter;
-  /** Whether the storage writer is writing to the open site's file now, holding the gate. */
-  #writing = false;
+  /** The import the storage writer is writing to the open site's file now, holding the gate. */
+  #writing: object | undefined;
 
   constructor(events: ProjectSessionEvents = {}, options: ProjectSessionOptions = {}) {
     this.#events = events;
@@ -385,7 +385,7 @@ export class ProjectSession {
    * it stops the writer first: the import fails, and garbage collection removes its bytes.
    */
   async #closeNow(): Promise<void> {
-    if (this.#writing) {
+    if (this.#writing !== undefined) {
       await this.#writer.stop();
     }
     if (this.#store !== undefined) {
@@ -454,57 +454,33 @@ export class ProjectSession {
     source: ImportSource,
     sessionId?: string,
   ): Promise<ImportFileResult> {
-    // The writer writes alone: the main process's reads and saves wait at the gate, as promises.
-    const written = await this.#gate.run<
-      { readonly store: ProjectStore; readonly outcome: StoreImportOutcome } | ImportFileResult
-    >("exclusive", async () => {
-      const store = this.#store;
-      const path = this.#path;
-      if (store === undefined || path === undefined) return { status: "failed", reason: "no-site" };
-      if (sessionId !== undefined && sessionId !== this.#sessionId) {
-        return { status: "failed", reason: "stale-session" };
-      }
-      this.#writing = true;
-      try {
-        return { store, outcome: await this.#writer.store({ sitePath: path, fileName, source }) };
-      } finally {
-        this.#writing = false;
-      }
-    });
-    if (!("outcome" in written)) return written;
-    const { store: writtenTo, outcome } = written;
-    if (outcome.status === "failed") {
+    // The writer writes alone, the bytes and the asset together: the main process's reads and
+    // saves wait at the gate, as promises, and nothing of the import is written on its thread.
+    const outcome = await this.#gate.run<StoreImportOutcome | ImportFileResult>(
+      "exclusive",
+      async () => {
+        const path = this.#path;
+        if (this.#store === undefined || path === undefined) {
+          return { status: "failed", reason: "no-site" };
+        }
+        if (sessionId !== undefined && sessionId !== this.#sessionId) {
+          return { status: "failed", reason: "stale-session" };
+        }
+        // Its own token: an import a close stopped can't clear the mark of the one after it.
+        const writing = {};
+        this.#writing = writing;
+        try {
+          return await this.#writer.store({ sitePath: path, mediaId, fileName, source });
+        } finally {
+          if (this.#writing === writing) this.#writing = undefined;
+        }
+      },
+    );
+    if (outcome.status === "failed" && !("reason" in outcome)) {
       log.error("Webforge could not store an imported file");
       return { status: "failed", reason: "unknown" };
     }
-    if (outcome.status !== "stored") return outcome;
-    // Then the asset that names the bytes, in the same site: a hand-off between the two leaves
-    // the bytes to garbage collection.
-    return this.#shared<ImportFileResult>(
-      (store) => {
-        if (store !== writtenTo) return { status: "failed", reason: "stale-session" };
-        try {
-          store.addAsset({
-            mediaId,
-            hash: outcome.hash,
-            mime: outcome.media.mimeType,
-            ...(outcome.media.kind === "image"
-              ? { width: outcome.media.width, height: outcome.media.height }
-              : {}),
-            originalName: fileName,
-          });
-          return outcome;
-        } catch (error) {
-          if (error instanceof ReadOnlyProjectError) {
-            return { status: "failed", reason: "read-only" };
-          }
-          logFailure("Webforge could not store an imported file", error);
-          return { status: "failed", reason: "unknown" };
-        }
-      },
-      (reason) => ({ status: "failed", reason }),
-      sessionId,
-    );
+    return outcome;
   }
 
   #storeCopiedMedia(
@@ -577,6 +553,8 @@ export class ProjectSession {
       },
       { waitMs: CLOSE_WAIT_MS },
     );
+    // Ready for the first import, which then doesn't wait for a thread to start.
+    this.#writer.warm();
     this.#events.opened?.(this.#accessTo(store), path);
     return { status: "opened", project: summarise(store, path, sessionId) };
   }

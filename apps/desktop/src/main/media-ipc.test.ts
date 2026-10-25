@@ -1,7 +1,7 @@
 import { mkdirSync, truncateSync, writeFileSync } from "node:fs";
 import { open } from "node:fs/promises";
 import { join } from "node:path";
-import { BlobWriter, ProjectStore } from "@webforge/storage";
+import { AssetWriter, ProjectStore } from "@webforge/storage";
 import { tempDirFactory } from "@webforge/test-utils";
 import type { IpcMain, IpcMainInvokeEvent } from "electron";
 import { describe, expect, it, vi } from "vitest";
@@ -29,8 +29,8 @@ function setUp(chosen: readonly string[] | undefined, open = true) {
     ),
     // Reads and checks as the storage writer does, storing nowhere.
     importFile: vi.fn(
-      (_mediaId: string, fileName: string, source: ImportSource): Promise<ImportFileResult> =>
-        storeImport({ sitePath: "site.wforge", fileName, source }, () => ({
+      (mediaId: string, fileName: string, source: ImportSource): Promise<ImportFileResult> =>
+        storeImport({ sitePath: "site.wforge", mediaId, fileName, source }, () => ({
           put: () => "a".repeat(64),
           close: () => undefined,
         })) as Promise<ImportFileResult>,
@@ -246,8 +246,8 @@ describe("registerMediaHandlers and a hand-off (R6)", () => {
     } as unknown as Pick<IpcMain, "handle">;
     registerMediaHandlers(ipc, (url) => url === APP_URL, project, { chooseMediaFiles });
     // Nothing reaches the file, whichever way the bytes would be stored.
-    const store = vi.spyOn(ProjectStore.prototype, "addAsset");
-    const write = vi.spyOn(BlobWriter.prototype, "put");
+    const store = vi.spyOn(ProjectStore.prototype, "putAsset");
+    const write = vi.spyOn(AssetWriter.prototype, "put");
 
     const chosen = handlers.get("media:choose")?.(
       { senderFrame: { url: APP_URL } } as IpcMainInvokeEvent,

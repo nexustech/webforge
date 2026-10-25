@@ -32,6 +32,7 @@ function fakeThread() {
 
 const request = (data: Uint8Array) => ({
   sitePath: "site.wforge",
+  mediaId: "photo",
   fileName: "a.png",
   source: { data },
 });
@@ -46,12 +47,23 @@ describe("createStorageWriter", () => {
     const second = writer.store(request(new Uint8Array([2])));
     fake.emit("message", { id: 2, outcome: { status: "skipped" } });
     fake.emit("message", { id: 1, outcome: { status: "rejected", reason: "unsupported" } });
-    // Not an answer: ignored.
-    fake.emit("message", { id: 1, outcome: { status: "stored" } });
+    // Settled already: ignored.
+    fake.emit("message", { id: 1, outcome: { status: "skipped" } });
 
     expect(await first).toEqual({ status: "rejected", reason: "unsupported" });
     expect(await second).toEqual({ status: "skipped" });
     expect(start).toHaveBeenCalledTimes(1);
+  });
+
+  it("fails an import whose answer doesn't parse, rather than leaving it waiting at the gate", async () => {
+    const fake = fakeThread();
+    const writer = createStorageWriter(() => fake.thread);
+    const importing = writer.store(request(new Uint8Array([1])));
+
+    fake.emit("message", "noise");
+    fake.emit("message", { id: 1, outcome: { status: "stored" } });
+
+    expect(await importing).toEqual({ status: "failed" });
   });
 
   it("moves bytes with a buffer of their own to the thread, and copies a view of a larger one", () => {
@@ -126,8 +138,17 @@ describe("the storage writer thread (R13b)", () => {
     const photo = join(dir, "poster.png");
     writeFileSync(photo, bigPng());
     const session = new ProjectSession({}, { writer: createStorageWriter(startThread) });
+    // Opening the site starts the writer thread, before the import.
     await session.open(sitePath);
+    try {
+      await expectQuickImport(session, photo);
+    } finally {
+      await session.close();
+    }
+  }, 60_000);
 
+  /** Imports `photo`, checking the main thread is never held up for 50 ms or more. */
+  async function expectQuickImport(session: ProjectSession, photo: string) {
     // How long the main thread goes without running a 5 ms timer, as an IPC call would wait.
     let longest = 0;
     let last = performance.now();
@@ -149,6 +170,5 @@ describe("the storage writer thread (R13b)", () => {
     expect(longest).toBeLessThan(50);
     const blob = await session.readMedia(result.status === "stored" ? result.hash : "");
     expect(blob?.data.byteLength).toBe(MAX_MEDIA_BYTES);
-    await session.close();
-  }, 60_000);
+  }
 });

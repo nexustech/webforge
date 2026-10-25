@@ -15,7 +15,7 @@ export type ChildWriter = {
 
 /**
  * Starts a writer process on the project at `path`: `writer.ts`, which commits, or another script
- * here, such as `blob-writer.ts`, which writes blobs as the storage writer does (R13b).
+ * here, such as `asset-writer.ts`, which imports as the storage writer does (R13b).
  */
 export function startChildWriter(path: string, script = "writer.ts"): ChildWriter {
   const writerScript = fileURLToPath(new URL(`./${script}`, import.meta.url));

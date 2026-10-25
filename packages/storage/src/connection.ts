@@ -58,6 +58,13 @@ export function sha256(data: Uint8Array): string {
   return createHash("sha256").update(data).digest("hex");
 }
 
+/** Records a Media item's asset: the blob of its original bytes and its facts. */
+export const UPSERT_ASSET = `INSERT INTO assets (media_id, blob_hash, mime, width, height, original_name)
+    VALUES (?, ?, ?, ?, ?, ?)
+  ON CONFLICT (media_id) DO UPDATE SET blob_hash = excluded.blob_hash,
+    mime = excluded.mime, width = excluded.width, height = excluded.height,
+    original_name = excluded.original_name`;
+
 /** Stores `data` under its hash unless a blob has it already. */
 export const INSERT_BLOB =
   "INSERT OR IGNORE INTO blobs (hash, mime, size, data) VALUES (?, ?, ?, ?)";

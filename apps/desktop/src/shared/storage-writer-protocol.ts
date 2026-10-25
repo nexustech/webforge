@@ -10,9 +10,10 @@ const importSourceSchema = z.union([
   z.strictObject({ data: z.custom<Uint8Array>((value) => value instanceof Uint8Array) }),
 ]);
 
-/** One import into the open site's file at `sitePath`. */
+/** One import into the open site's file at `sitePath`, as Media item `mediaId`'s asset. */
 export const storeImportRequestSchema = z.strictObject({
   sitePath: z.string().min(1),
+  mediaId: z.string().min(1).max(100),
   fileName: z.string().min(1).max(255),
   source: importSourceSchema,
 });
@@ -22,7 +23,7 @@ export type StoreImportRequest = z.infer<typeof storeImportRequestSchema>;
 
 /**
  * What came of an import:
- * - `stored`: its bytes are in the file under `hash`, with what the main process records with them;
+ * - `stored`: its bytes are in the file under `hash`, recorded as the item's asset;
  * - `rejected`: Media doesn't take it, and why;
  * - `skipped`: not a file to import, such as a folder or a file that is gone;
  * - `failed`: the file couldn't be written.

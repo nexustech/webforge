@@ -63,15 +63,15 @@ describe("crash safety", () => {
     expect(killedMidTransaction).toBeGreaterThan(0);
   }, 120_000);
 
-  it("opens after the storage writer is killed mid-import, keeping every blob it finished (R13b)", async () => {
-    // As support/blob-writer.ts makes them.
+  it("opens after the storage writer is killed mid-import, keeping every import it finished (R13b)", async () => {
+    // As support/asset-writer.ts makes them.
     const blobOf = (seq: number) => new Uint8Array(2 * 1024 * 1024).fill(seq % 251);
     const hash = (seq: number) => createHash("sha256").update(blobOf(seq)).digest("hex");
     const delays = [0, 20, 60];
     let killedMidTransaction = 0;
     for (let round = 0; round < 12 && (round < 3 || killedMidTransaction === 0); round += 1) {
       const path = createProject();
-      const writer = startChildWriter(path, "blob-writer.ts");
+      const writer = startChildWriter(path, "asset-writer.ts");
       await writer.waitForCommits(2);
       await new Promise((resolve) => setTimeout(resolve, delays[round % delays.length]));
       await writer.kill();
@@ -79,12 +79,14 @@ describe("crash safety", () => {
         killedMidTransaction += 1;
       }
 
-      // Opens (the half-written blob rolled back), with every blob the writer saw return.
+      // Opens (the half-written import rolled back, the fingerprint matching), with every import
+      // the writer saw return: its bytes and its asset.
       const store = ProjectStore.open(path);
       for (let seq = 1; seq <= writer.lastAcknowledged(); seq += 1) {
-        expect(store.hasBlob(hash(seq)), `blob ${seq}`).toBe(true);
+        expect(store.readAsset(`photo-${seq}`)?.hash, `import ${seq}`).toBe(hash(seq));
+        expect(store.hasBlob(hash(seq)), `import ${seq}`).toBe(true);
       }
-      // Nothing names them, so garbage collection removes them all, and the file still opens.
+      // No page names them, so garbage collection removes them all, and the file still opens.
       store.collectGarbage();
       expect(store.hasBlob(hash(1))).toBe(false);
       store.close();

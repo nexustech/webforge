@@ -1,5 +1,5 @@
 import { type FileHandle, open } from "node:fs/promises";
-import { BlobWriter } from "@webforge/storage";
+import { AssetWriter } from "@webforge/storage";
 import { isTextName } from "../main/document-files.js";
 import { sniffMedia } from "../main/media-files.js";
 import { MAX_MEDIA_BYTES } from "../shared/ipc/media.js";
@@ -62,13 +62,13 @@ async function readFile(path: string): Promise<Uint8Array | "too-large" | undefi
 /**
  * One import (R13b, ADR 0013): reads the file (or takes the bytes), checks it is one Media takes
  * (F-ED-5: a JPEG or PNG of at most 50 megapixels, or a document), and stores its original bytes,
- * unmodified (X2), in the site's file through a connection of its own. The main process records
- * the asset that names them. Runs in the storage writer thread, so none of it holds up the main
- * thread; `openWriter` is for tests.
+ * unmodified (X2), as the Media item's asset, in the site's file through a connection of its own.
+ * Runs in the storage writer thread, so none of it holds up the main thread; `openWriter` is for
+ * tests.
  */
 export async function storeImport(
   request: StoreImportRequest,
-  openWriter: (path: string) => Pick<BlobWriter, "put" | "close"> = BlobWriter.open,
+  openWriter: (path: string) => Pick<AssetWriter, "put" | "close"> = AssetWriter.open,
 ): Promise<StoreImportOutcome> {
   const { fileName, source } = request;
   const data = "path" in source ? await readFile(source.path) : source.data;
@@ -85,14 +85,20 @@ export async function storeImport(
   if (media.kind === "image" && media.width * media.height > MAX_IMAGE_PIXELS) {
     return { status: "rejected", reason: "too-large" };
   }
-  let writer: Pick<BlobWriter, "put" | "close">;
+  let writer: Pick<AssetWriter, "put" | "close">;
   try {
     writer = openWriter(request.sitePath);
   } catch {
     return { status: "failed" };
   }
   try {
-    const hash = writer.put(data, media.mimeType);
+    const hash = writer.put({
+      mediaId: request.mediaId,
+      data,
+      mime: media.mimeType,
+      ...(media.kind === "image" ? { width: media.width, height: media.height } : {}),
+      originalName: fileName,
+    });
     return { status: "stored", hash, size: data.byteLength, media: { ...media } };
   } catch {
     return { status: "failed" };
