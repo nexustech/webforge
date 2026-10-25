@@ -97,6 +97,7 @@ export const InvalidOnSave: Story = {
 export const LongContent: Story = {
   args: {
     title: "Site Settings",
+    description: "Details that apply to the whole site, wherever they appear.",
     confirm: "Save",
     spec: {
       ...settings,
