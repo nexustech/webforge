@@ -12,8 +12,10 @@ import { featuresComponents } from "./features.js";
 import { formsComponents } from "./forms.js";
 import { galleryComponents } from "./gallery.js";
 import { layoutComponents } from "./layout.js";
+import { logosComponents } from "./logos.js";
 import { pricingComponents } from "./pricing.js";
 import { sectionsComponents } from "./sections.js";
+import { statsComponents } from "./stats.js";
 import { tabsComponents } from "./tabs.js";
 import { teamComponents } from "./team.js";
 import { testimonialsComponents } from "./testimonials.js";
@@ -40,6 +42,8 @@ export const siteLibrary: ComponentLibrary = createLibrary(
   pricingComponents,
   commerceComponents,
   tabsComponents,
+  logosComponents,
+  statsComponents,
 );
 
 /** The page a new site starts with. */
