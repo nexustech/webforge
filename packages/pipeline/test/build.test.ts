@@ -629,7 +629,7 @@ describe("buildSite: the theme's buttons, shadows and links (#423)", () => {
         preset: "outline",
         buttons: { shape: "square", size: "l", style: "outline" },
         shadow: "none",
-        links: { underline: "never" },
+        links: { underline: "hover" },
       },
     };
 
@@ -647,7 +647,7 @@ describe("buildSite: the theme's buttons, shadows and links (#423)", () => {
     );
     // No shadows: Tailwind writes the theme's shadow scale into the classes that use it.
     expect(css).toContain(".shadow-md { --tw-shadow: 0 0 var(--tw-shadow-color, #0000);");
-    // Links in running text never underlined.
+    // Links in running text not underlined until hovered or focused.
     expect(css).toContain("--wf-link-decoration: none;");
     expect(css).toContain("text-decoration-line: var(--wf-link-decoration,underline);");
   }, 60_000);
