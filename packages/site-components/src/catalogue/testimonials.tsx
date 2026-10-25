@@ -5,7 +5,7 @@ import { defineComponent } from "../define.js";
 import { defineSection } from "../frame.js";
 import { LucideIcon } from "../icons.js";
 import type { ComponentDef } from "../library.js";
-import { HOVER_FIELD, hoverClasses } from "../motion.js";
+import { CARD_HOVER_FIELD, hoverClasses } from "../motion.js";
 import { Picture } from "../picture.js";
 import type { RenderContext } from "../schema.js";
 import { BODY_TEXT_CLASSES, SectionTitle } from "../typography.js";
@@ -20,8 +20,14 @@ const GRID_CLASS = {
   photos: "grid gap-10 md:grid-cols-2",
 } as const satisfies Record<TestimonialsLayout, string>;
 
-/** The layout of the Testimonials section a testimonial is in, which draws it. */
-const TestimonialsLayoutContext = createContext<TestimonialsLayout>("cards");
+/** The layout of the Testimonials section a testimonial is in, and its cards' hover effect's classes. */
+const TestimonialsContext = createContext<{
+  readonly layout: TestimonialsLayout;
+  readonly hover: string;
+}>({
+  layout: "cards",
+  hover: "",
+});
 
 /**
  * What customers say (F-ED-6's testimonials): a title and testimonials, each a quote, a name, what
@@ -40,6 +46,8 @@ const testimonials = defineSection({
   fields: {
     title: { kind: "text", label: t("field.title"), inline: true },
     items: { kind: "slot", label: t("field.testimonials"), allow: ["Testimonial"] },
+    // Every card alike under the pointer, those added later too (F-DS-5, 2.12).
+    hover: CARD_HOVER_FIELD,
   },
   defaults: {
     title: t("starter.testimonialsTitle"),
@@ -62,9 +70,9 @@ const testimonials = defineSection({
         <div className="text-center">
           <SectionTitle>{values.title}</SectionTitle>
         </div>
-        <TestimonialsLayoutContext value={values.variant}>
+        <TestimonialsContext value={{ layout: values.variant, hover: hoverClasses(values.hover) }}>
           <Items className={GRID_CLASS[values.variant]} />
-        </TestimonialsLayoutContext>
+        </TestimonialsContext>
       </div>
     );
   },
@@ -100,17 +108,14 @@ function TestimonialView({
   role,
   photo,
   context,
-  hover,
 }: {
   readonly quote: ReactNode;
   readonly name: ReactNode;
   readonly role: ReactNode;
   readonly photo: ImageValue | undefined;
   readonly context: RenderContext;
-  /** Its hover effect's classes, with a space before them (F-DS-5). */
-  readonly hover: string;
 }) {
-  const layout = useContext(TestimonialsLayoutContext);
+  const { layout, hover } = useContext(TestimonialsContext);
   const caption = (
     <figcaption>
       <span className="block font-semibold">{name}</span>
@@ -167,8 +172,6 @@ const testimonial = defineComponent({
     name: { kind: "text", label: t("field.testimonialName"), inline: true },
     role: { kind: "text", label: t("field.testimonialRole"), inline: true },
     photo: { kind: "media", label: t("field.photo") },
-    // A card lifts, grows or casts a shadow under the pointer (F-DS-5, 2.12).
-    hover: HOVER_FIELD,
   },
   defaults: {
     quote: t("starter.testimonialQuote"),
@@ -182,7 +185,6 @@ const testimonial = defineComponent({
       role={values.role}
       photo={values.photo}
       context={context}
-      hover={hoverClasses(values.hover)}
     />
   ),
 });

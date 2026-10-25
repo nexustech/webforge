@@ -85,11 +85,13 @@ describe("the Pricing section", () => {
     expect(doc.querySelector(".site-pricing-plan")?.textContent).toContain("£10");
   });
 
-  it("casts a shadow under the pointer when set, and does nothing unless set", () => {
+  it("casts a shadow under every plan when the section says so, and none unless it does", () => {
     const plain = page(render({ items: [plan("one")] }));
-    const shadowed = page(render({ items: [plan("one", { hover: "shadow" })] }));
+    const shadowed = page(render({ hover: "shadow" }));
 
     expect(plain.querySelector(".site-pricing-plan")?.className).not.toContain("hover:");
-    expect(shadowed.querySelector(".site-pricing-plan")?.className).toContain("hover:shadow-lg");
+    for (const each of shadowed.querySelectorAll(".site-pricing-plan")) {
+      expect(each.className).toContain("hover:shadow-lg");
+    }
   });
 });

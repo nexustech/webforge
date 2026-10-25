@@ -93,13 +93,13 @@ describe("the Team section", () => {
     expect(gone.querySelector(".site-team-member img")).toBeNull();
   });
 
-  it("grows under the pointer when set, and does nothing unless set", () => {
+  it("grows every card under the pointer when the section says so, and none unless it does", () => {
     const plain = page(render({ items: sam() }));
-    const growing = page(render({ items: sam({ hover: "grow" }) }));
+    const growing = page(render({ hover: "grow" }));
 
     expect(plain.querySelector(".site-team-member")?.className).not.toContain("hover:");
-    expect(growing.querySelector(".site-team-member")?.className).toContain(
-      "motion-safe:hover:scale-105",
-    );
+    for (const person of growing.querySelectorAll(".site-team-member")) {
+      expect(person.className).toContain("motion-safe:hover:scale-105");
+    }
   });
 });

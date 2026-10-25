@@ -3,7 +3,7 @@ import { createContext, type ReactNode, useContext } from "react";
 import { defineComponent } from "../define.js";
 import { defineSection } from "../frame.js";
 import type { ComponentDef } from "../library.js";
-import { HOVER_FIELD, hoverClasses } from "../motion.js";
+import { CARD_HOVER_FIELD, hoverClasses } from "../motion.js";
 import type { RenderContext } from "../schema.js";
 import { BodyText, ButtonLink, SectionTitle } from "../typography.js";
 
@@ -16,8 +16,11 @@ const GRID_CLASS = {
   list: "mx-auto grid max-w-3xl gap-4",
 } as const satisfies Record<PricingLayout, string>;
 
-/** The layout of the Pricing section a plan is in, which draws it. */
-const PricingLayoutContext = createContext<PricingLayout>("cards");
+/** The layout of the Pricing section a plan is in, and its cards' hover effect's classes. */
+const PricingContext = createContext<{ readonly layout: PricingLayout; readonly hover: string }>({
+  layout: "cards",
+  hover: "",
+});
 
 /** The starter plans: three steps up, the middle one highlighted. */
 const STARTER_PLANS = [
@@ -42,6 +45,8 @@ const pricing = defineSection({
     title: { kind: "text", label: t("field.title"), inline: true },
     text: { kind: "richtext", label: t("field.text"), inline: true },
     items: { kind: "slot", label: t("field.plans"), allow: ["PricingPlan"] },
+    // Every card alike under the pointer, those added later too (F-DS-5, 2.12).
+    hover: CARD_HOVER_FIELD,
   },
   defaults: {
     title: t("starter.pricingTitle"),
@@ -69,9 +74,9 @@ const pricing = defineSection({
           <SectionTitle>{values.title}</SectionTitle>
           <BodyText className="mt-4">{values.text}</BodyText>
         </div>
-        <PricingLayoutContext value={values.variant}>
+        <PricingContext value={{ layout: values.variant, hover: hoverClasses(values.hover) }}>
           <Items className={GRID_CLASS[values.variant]} />
-        </PricingLayoutContext>
+        </PricingContext>
       </div>
     );
   },
@@ -87,7 +92,6 @@ function PricingPlanView({
   link,
   featured,
   context,
-  hover,
 }: {
   readonly name: ReactNode;
   readonly price: ReactNode;
@@ -97,10 +101,8 @@ function PricingPlanView({
   readonly link: unknown;
   readonly featured: boolean;
   readonly context: RenderContext;
-  /** Its hover effect's classes, with a space before them (F-DS-5). */
-  readonly hover: string;
 }) {
-  const layout = useContext(PricingLayoutContext);
+  const { layout, hover } = useContext(PricingContext);
   const amount = (size: string) => (
     <p>
       <span className={`${size} font-bold`}>{price}</span>{" "}
@@ -170,8 +172,6 @@ const pricingPlan = defineComponent({
       label: t("field.featuredPlan"),
       help: t("field.featuredPlan.help"),
     },
-    // A card lifts, grows or casts a shadow under the pointer (F-DS-5, 2.12).
-    hover: HOVER_FIELD,
   },
   defaults: {
     name: t("starter.planNameStandard"),
@@ -191,7 +191,6 @@ const pricingPlan = defineComponent({
       link={values.link}
       featured={values.featured}
       context={context}
-      hover={hoverClasses(values.hover)}
     />
   ),
 });

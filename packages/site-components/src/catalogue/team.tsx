@@ -4,7 +4,7 @@ import { createContext, type ReactNode, useContext } from "react";
 import { defineComponent } from "../define.js";
 import { defineSection } from "../frame.js";
 import type { ComponentDef } from "../library.js";
-import { HOVER_FIELD, hoverClasses } from "../motion.js";
+import { CARD_HOVER_FIELD, hoverClasses } from "../motion.js";
 import { Picture } from "../picture.js";
 import type { RenderContext } from "../schema.js";
 import { BodyText, SectionTitle } from "../typography.js";
@@ -19,8 +19,11 @@ const GRID_CLASS = {
   list: "grid gap-8 md:grid-cols-2",
 } as const satisfies Record<TeamLayout, string>;
 
-/** The layout of the Team section a person is in, which draws them. */
-const TeamLayoutContext = createContext<TeamLayout>("cards");
+/** The layout of the Team section a person is in, and its cards' hover effect's classes. */
+const TeamContext = createContext<{ readonly layout: TeamLayout; readonly hover: string }>({
+  layout: "cards",
+  hover: "",
+});
 
 /**
  * The people behind the business (F-ED-6's team): a title, an introduction and people, each a photo,
@@ -37,6 +40,8 @@ const team = defineSection({
     title: { kind: "text", label: t("field.title"), inline: true },
     text: { kind: "richtext", label: t("field.text"), inline: true },
     items: { kind: "slot", label: t("field.teamMembers"), allow: ["TeamMember"] },
+    // Every card alike under the pointer, those added later too (F-DS-5, 2.12).
+    hover: CARD_HOVER_FIELD,
   },
   defaults: {
     title: t("starter.teamTitle"),
@@ -61,9 +66,9 @@ const team = defineSection({
           <SectionTitle>{values.title}</SectionTitle>
           <BodyText className="mt-4">{values.text}</BodyText>
         </div>
-        <TeamLayoutContext value={values.variant}>
+        <TeamContext value={{ layout: values.variant, hover: hoverClasses(values.hover) }}>
           <Items className={GRID_CLASS[values.variant]} />
-        </TeamLayoutContext>
+        </TeamContext>
       </div>
     );
   },
@@ -76,17 +81,14 @@ function TeamMemberView({
   role,
   text,
   context,
-  hover,
 }: {
   readonly photo: ImageValue | undefined;
   readonly name: ReactNode;
   readonly role: ReactNode;
   readonly text: ReactNode;
   readonly context: RenderContext;
-  /** Its hover effect's classes, with a space before them (F-DS-5). */
-  readonly hover: string;
 }) {
-  const layout = useContext(TeamLayoutContext);
+  const { layout, hover } = useContext(TeamContext);
   const image = photo === undefined ? null : context.image(photo.mediaId);
   const picture = (className: string, sizes: string) =>
     photo === undefined || image === null ? null : (
@@ -140,8 +142,6 @@ const teamMember = defineComponent({
     name: { kind: "text", label: t("field.teamMemberName"), inline: true },
     role: { kind: "text", label: t("field.teamMemberRole"), inline: true },
     text: { kind: "richtext", label: t("field.text"), inline: true },
-    // A card lifts, grows or casts a shadow under the pointer (F-DS-5, 2.12).
-    hover: HOVER_FIELD,
   },
   defaults: {
     name: t("starter.teamMemberName"),
@@ -155,7 +155,6 @@ const teamMember = defineComponent({
       role={values.role}
       text={values.text}
       context={context}
-      hover={hoverClasses(values.hover)}
     />
   ),
 });

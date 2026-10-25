@@ -31,6 +31,7 @@ export const shared = {
   "field.entranceDelay.long": "Long",
   // What a button (and later a card) does under the pointer (2.12, F-DS-5).
   "field.hoverEffect": "Hover effect",
+  "field.cardHoverEffect": "Card hover effect",
   "field.hoverEffect.none": "None",
   "field.hoverEffect.lift": "Lift",
   "field.hoverEffect.grow": "Grow",
