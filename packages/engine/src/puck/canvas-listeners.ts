@@ -5,6 +5,7 @@ import { keepCanvasOnPage } from "./canvas-navigation.js";
 import { installContextMenu } from "./context-menu.js";
 import { hidePuckDeleteKeys } from "./delete-keys.js";
 import { type DragKeys, trackDragKeys } from "./drag-copies.js";
+import { hoverElementsOverText } from "./text-hover.js";
 import { type TypingPauses, timeKeystrokes } from "./typing-pauses.js";
 
 /** What the canvas's keys, clicks and menus report to, and ask, in a window. */
@@ -31,14 +32,16 @@ export type FrameListenerOptions = CanvasListenerOptions & {
 
 /**
  * Listens in the editor window `target`, around a canvas without an iframe: Delete and Backspace
- * kept from Puck (see `delete-keys.ts`), the keys held while dragging, and clicks that add to the
- * selection. Returns what stops it.
+ * kept from Puck (see `delete-keys.ts`), the keys held while dragging, clicks that add to the
+ * selection, and the pointer over an element's text hovering the element (see `text-hover.ts`).
+ * Returns what stops it.
  */
 export function listenInEditor(target: Window, options: CanvasListenerOptions): () => void {
   const stops = [
     hidePuckDeleteKeys(target),
     trackDragKeys(target, options.dragKeys),
     options.watchClicks(target),
+    hoverElementsOverText(target),
   ];
   return () => {
     for (const stop of stops) stop();

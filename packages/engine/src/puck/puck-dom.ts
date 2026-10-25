@@ -29,6 +29,9 @@ export const ROOT_DROP_ZONE = '[data-puck-dropzone="root:default-zone"]';
 /** A rich-text editor (Tiptap's ProseMirror) on the canvas. */
 export const RICH_TEXT = ".ProseMirror";
 
+/** An inline text field on the canvas: a Heading's or a Button's text, edited where it is. */
+export const INLINE_TEXT = '[class*="_InlineTextField_"]';
+
 /** Puck's canvas root, whose style carries the canvas zoom (its scale and height). */
 export const CANVAS_ROOT = '[class*="PuckCanvas-root"]';
 
