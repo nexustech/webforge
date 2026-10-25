@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -11,10 +11,12 @@ import {
   pageDocumentId,
 } from "@webforge/model";
 import { ProjectStore, ReadOnlyProjectError } from "@webforge/storage";
+import { TEMPLATES_DIR } from "@webforge/templates/node";
 import { heroPhoto } from "@webforge/test-utils";
 import type { IpcMain } from "electron";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createImportJobs } from "../worker/store-import.js";
+import type { NewSiteTarget } from "./new-site.js";
 import { registerProjectHandlers } from "./project-ipc.js";
 import {
   findProjectArgument,
@@ -100,6 +102,56 @@ describe("ProjectSession", () => {
     // Windows can't replace a file that is open; the session closes it first.
     expect(await session.create(path)).toMatchObject({ status: "opened" });
     expect(session.current()?.fileName).toBe("site.wforge");
+  });
+
+  it("names and fills a new site from New Site before it opens (2.14a)", async () => {
+    const site = createSite({
+      name: "Rosa's Bakery",
+      language: "en",
+      homeTitle: "Home",
+      notFoundTitle: "Page not found",
+    });
+
+    const photo = join(TEMPLATES_DIR, "sample", "images", "hero.jpg");
+    let stored: Awaited<ReturnType<NewSiteTarget["importFile"]>> | undefined;
+
+    const result = await session.create(join(dir, "bakery.wforge"), {
+      name: "Rosa's Bakery",
+      fill: async ({ store, importFile }) => {
+        // Into the new file, through the storage writer, before it opens.
+        stored = await importFile("photo00000000000", "hero.jpg", photo);
+        store.saveSite(site);
+      },
+    });
+
+    expect(result).toMatchObject({
+      status: "opened",
+      project: { name: "Rosa's Bakery", fileName: "bakery.wforge" },
+    });
+    expect(await session.readSite()).toEqual({ status: "ok", site });
+    expect(stored).toMatchObject({ status: "stored" });
+    const sessionId = session.current()?.sessionId ?? "";
+    const hash = stored?.status === "stored" ? stored.hash : "";
+    const media = await session.forSession(sessionId).readMedia(hash);
+    expect(new Uint8Array(media?.data ?? [])).toEqual(new Uint8Array(readFileSync(photo)));
+  });
+
+  it("keeps the current site, and closes the new file, when filling it fails (2.14a)", async () => {
+    await session.create(join(dir, "good.wforge"));
+    let filled: ProjectStore | undefined;
+
+    const result = await session.create(join(dir, "new.wforge"), {
+      name: "New",
+      fill: async ({ store }) => {
+        filled = store;
+        throw new Error("A template's image is missing");
+      },
+    });
+
+    expect(result).toEqual({ status: "failed", reason: "unknown" });
+    expect(session.current()?.fileName).toBe("good.wforge");
+    // Closed: its file can be deleted, which Windows refuses while it is open.
+    expect(() => filled?.readDocuments()).toThrow();
   });
 
   it("keeps the current site when another one fails to open", async () => {

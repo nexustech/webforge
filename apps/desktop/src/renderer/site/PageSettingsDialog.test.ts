@@ -1,7 +1,7 @@
 import { PAGE_DESCRIPTION_MAX, PAGE_SLUG_MAX, PAGE_TITLE_MAX } from "@webforge/model";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { starterSite } from "../editor/starter-site.js";
+import { starterSite } from "../../shared/starter-site.js";
 import { pageSettingsSpec } from "./PageSettingsDialog.js";
 
 describe("Page Settings checked by the model (2.21, decision 5)", () => {

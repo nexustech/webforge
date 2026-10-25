@@ -49,7 +49,9 @@ describe("createWebforgeApi", () => {
     const invoke = vi.fn(async (channel: string, ..._args: unknown[]) => responses[channel]);
     const api = apiWith(invoke);
 
-    await expect(api.project.create()).resolves.toEqual({ status: "opened", project });
+    const request = { name: "Bakery", theme: "light" };
+    await expect(api.project.create(request)).resolves.toEqual({ status: "opened", project });
+    expect(invoke).toHaveBeenCalledWith("project:create", request);
     await expect(api.project.open()).resolves.toEqual({ status: "canceled" });
     await expect(api.project.getCurrent()).resolves.toBeNull();
     await expect(api.project.readSite()).resolves.toEqual({ status: "ok", site });

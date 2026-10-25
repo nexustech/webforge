@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { DEFAULT_PREFERENCES } from "../../shared/ipc/prefs.js";
-import { starterSite } from "../editor/starter-site.js";
+import { starterSite } from "../../shared/starter-site.js";
 import { createSettingsRegistry, registerAppSettings, SettingsDialog } from "../settings/index.js";
 import { createPreferencesStore } from "../shell/preferences-store.js";
 import { siteSettingsPart } from "./site-part.js";

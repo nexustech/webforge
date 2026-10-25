@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { PageEntry, PageId, SiteDoc } from "@webforge/model";
 import { userEvent, within } from "storybook/test";
-import { starterSite } from "../editor/starter-site.js";
+import { starterSite } from "../../shared/starter-site.js";
 import { PagesPanel, type PagesPanelActions } from "./PagesPanel.js";
 
 const page = (id: string, title: string, extra: Partial<PageEntry> = {}): PageEntry => ({

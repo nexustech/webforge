@@ -150,7 +150,8 @@ gantt
     2.11 Elements – tabs, commerce, forms, embeds and c… :t2_11, after t2_12, 5d
     2.12 Animations and hover effects :t2_12, 2027-05-17, 2d
     2.13 Design 10–12 curated themes :crit, t2_13, 2027-05-19, 17d
-    2.14 Template format and New Site flow :crit, t2_14, after t2_13, 7d
+    2.14a Template format and New Site from a template :crit, t2_14a, after t2_13, 3.5d
+    2.14b Start screen, Try an example and thumbnails :crit, t2_14, after t2_14a, 3.5d
     2.15 Templates – 8 starter sites :crit, t2_15, 2027-06-14, 20d
     2.16 Component accessibility and visual regression… :t2_16, 2027-07-12, 3d
     2.17 Columns toolbar and edit-only previews :t2_17, after t2_16, 4d
@@ -643,8 +644,8 @@ Close the visible gap to Bootstrap Studio 9.0.1 within the IP rule ([product/07]
 | 2.11 | Elements: tabs, commerce, forms, embeds and custom code | [#53](https://github.com/nexustech/webforge/issues/53) | components | F-CM-2, F-CM-7, F-ED-15, F-ED-16 | 5 | 2.5, 2.8 |
 | 2.12 | Animations and hover effects | [#54](https://github.com/nexustech/webforge/issues/54) | components | F-DS-5, G8 | 2 | 2.5 |
 | 2.13 | Design 10–12 curated themes (2.13d theme range [#434](https://github.com/nexustech/webforge/issues/434), +3 on 25 Oct 2026) | [#55](https://github.com/nexustech/webforge/issues/55) | themes | S3, F-DS-1, PH2-15 | 17 | 2.1, 2.6, 2.7, 2.8, 2.9 (2.3 dropped 25 Oct 2026) |
-| 2.14 | Template format and New Site flow | [#56](https://github.com/nexustech/webforge/issues/56) | content | F-SITE-1, S2, S5, UX-29, LF-10, LF-11, PG-3 | 7 | 1.8, 2.1 |
-| 2.15 | Templates: 8 starter sites | [#57](https://github.com/nexustech/webforge/issues/57) | content | F-SITE-1, S2, S5 | 20 | 2.14, 2.10, 2.11, 2.12, the theme each template uses (2.13) |
+| 2.14 | Template format and New Site flow (2.14a [#429](https://github.com/nexustech/webforge/issues/429), 2.14b [#430](https://github.com/nexustech/webforge/issues/430)) | [#56](https://github.com/nexustech/webforge/issues/56) | content | F-SITE-1, S2, S5, UX-29, LF-10, LF-11, PG-3 | 7 | 1.8, 2.1 |
+| 2.15 | Templates: 8 starter sites | [#57](https://github.com/nexustech/webforge/issues/57) | content | F-SITE-1, S2, S5 | 20 | 2.14a, 2.10, 2.11, 2.12, the theme each template uses (2.13) |
 | 2.16 | Component accessibility and visual regression sweep | [#58](https://github.com/nexustech/webforge/issues/58) | components | standards §5, MVP §4 | 3 | 2.6, 2.7, 2.8, 2.9, 2.10, 2.11, 2.12, 2.13 |
 | 2.17 | Columns toolbar, image resize handles and edit-only previews | [#187](https://github.com/nexustech/webforge/issues/187) | components | F-ED-25, UI2, UI5, UX-6, UX-26 | 4 | 2.9, 2.6, 1.32 |
 | 2.18 | Advanced mode: CSS class autocomplete and browser | [#276](https://github.com/nexustech/webforge/issues/276) | shell | F-ED-11, UX-15 | 3 | 1.37 |
@@ -658,7 +659,7 @@ Close the visible gap to Bootstrap Studio 9.0.1 within the IP rule ([product/07]
 |---|---|
 | A: Shell & panels | ~~R9 → R10 → R11 → 2.9 → 2.21~~ → 1.39 → 2.3 → 2.18 → 2.15a (Café/Restaurant, Salon/Beauty, Trades) |
 | B: Data & site | ~~2.1 → 2.2 → R12 → R14 → 2.4 → 2.20 → 2.8 → 2.7b~~ → R13 (R13a → R13b → R13c → R13d) → 2.13b (themes 5–8) → 2.15b (Consultant, Photographer/Portfolio, Shop) |
-| C: History & canvas | ~~2.5 (before 1.30) → R7 → R8 (part 2 before 2.17) → 2.6 → 2.10 → 2.19 → 2.7a → 2.17 → 2.12 → 2.11 (from B, 25 Oct)~~ → 2.13a (themes 1–4, from A, 25 Oct) → 2.14 (from B, 25 Oct) → 2.13d (theme range, 25 Oct; between 2.14a and 2.14b) → 2.13c (themes 9–12, from A, 25 Oct) → 2.15c (Personal/CV, Blank) → 2.16 |
+| C: History & canvas | ~~2.5 (before 1.30) → R7 → R8 (part 2 before 2.17) → 2.6 → 2.10 → 2.19 → 2.7a → 2.17 → 2.12 → 2.11 (from B, 25 Oct)~~ → 2.13a (themes 1–4, from A, 25 Oct) → 2.14a (2.14, from B, 25 Oct) → 2.13d (theme range, 25 Oct) → 2.14b → 2.13c (themes 9–12, from A, 25 Oct) → 2.15c (Personal/CV, Blank) → 2.16 |
 
 **Issue review, 25 Oct 2026.** Every Phase 2 item except 2.3, 2.13, 2.14, 2.15, 2.16, 2.18 and R13 is merged, and 1.39 is stream A's next item. Two corrections: **2.13 no longer depends on 2.3.** The curated themes are presets in `packages/themes` (2.1, merged), reviewed side by side in Storybook against the merged components; the Theme panel is the UI for editing a site's theme and nothing in 2.13 needs it, so the three theme batches are unblocked today instead of waiting about 16 raw days for stream A's 1.39, 2.3 and 2.18. **2.13a and 2.13c swap streams:** stream C's queue was empty until 2.13c, so it takes themes 1–4 (#210) now, and the product owner's review of that batch feeds the other two as the 23 Oct review intended; stream A takes themes 9–12 (#212) after 2.18. The template batches keep their issue dependencies (2.15a waits for #210, 2.15c for #212). Nothing else was blocked: 2.14, R13 and the 2.21 follow-up chore (#391) have their dependencies met, and 1.39's are all closed. The theme issues' contrast criterion is brought in line with the 24 Oct decision (reported, not a gate), and 2.18's issue now lists only 1.37 as a dependency, with 1.39 and 2.3 as queue order, as this plan says.
 
@@ -780,6 +781,7 @@ Entrance animation presets (fade, slide, zoom; delay) and hover effects (lift, g
 
 **2.14 Template format and New Site flow**  
 Stream C after 2.13a, moved from B on 25 Oct 2026: C ran out of work after 2.13a, every template batch waits for 2.14, and A's queue is the longest. Days unchanged.  
+Split on 25 Oct 2026 into two sub-issues of about 3.5 days each (items over 5 days are split from Phase 2), days unchanged: **2.14a** ([#429](https://github.com/nexustech/webforge/issues/429)) the template format and image-licence manifest (`packages/templates`), a development template and example, `project:create` with a name, theme and template, and the New Site dialog (LF-11); **2.14b** ([#430](https://github.com/nexustech/webforge/issues/430)) the start screen (LF-10) with pinned recent sites and a *Help* tab, *Try an example* (PG-3) and the template thumbnails CI checks. The template batches (2.15a–c) wait for 2.14a only.  
 Template package format (pages, theme, sample content, images with an image-licence manifest), start-screen template gallery with thumbnails, New Site asks name + theme, creating a site copies the template into a new .wforge. The gallery can be filtered and sorted (UX-29, added 22 Oct 2026, +1 day). The dialog follows Bootstrap Studio's New Design layout (LF-11, added 23 Oct 2026, +1 day): name and theme on the left, a *Blank* starter row, the template grid with category chips and sort, and a *Details* link per card that opens a preview. The start screen itself follows Bootstrap Studio's (LF-10, moved from 1.39 on 23 Oct 2026, +1 day): two columns, a card grid for recent sites (thumbnail, name, folder, last edited, pin, remove), a *Help* tab and search. The theme choice offers the presets that exist (2.1's development presets first); the curated themes join it as their PRs land. **Try an example** (PG-3, added 24 Oct 2026, +1 day): the start screen offers one or two templates pre-filled with complete sample content (the Café and Trades templates from 2.15, which already carry realistic copy), so a first-time user opens a finished site to edit; the format marks a template as an example and the New Site flow skips the empty-content path for it. 2.14 builds the flag and the flow against a development example; the shipped examples are 2.15's Café (2.15a) and Trades (2.15a) templates, marked when they land.
 
 - [ ] Template thumbnails generated in CI

@@ -1,7 +1,7 @@
 import type { IpcMain, IpcMainInvokeEvent } from "electron";
 import { describe, expect, it, vi } from "vitest";
 import type { ProjectResult } from "../shared/ipc-contract.js";
-import { type ProjectDialogs, registerProjectHandlers } from "./project-ipc.js";
+import { type ProjectDialogs, registerProjectHandlers, siteFileName } from "./project-ipc.js";
 import type { ProjectSession } from "./project-session.js";
 
 type Handler = (event: IpcMainInvokeEvent, ...args: unknown[]) => Promise<unknown>;
@@ -15,6 +15,7 @@ const project = {
   sessionId: "9b2f6c1e-4d3a-4f7b-8e21-5c6d7a8b9c0d",
 };
 const opened: ProjectResult = { status: "opened", project };
+const bakery = { name: "Rosa's Bakery", theme: "bistro", template: "sample" };
 
 function setUp(
   dialogs: Partial<ProjectDialogs> = {},
@@ -60,11 +61,31 @@ function setUp(
 }
 
 describe("registerProjectHandlers", () => {
-  it("creates a site at the path chosen in the save dialog", async () => {
+  it("creates a site at the path chosen in the save dialog, which offers its name", async () => {
+    const chooseNewProjectPath = vi.fn(async (_name: string) => "/sites/Bakery.wforge");
+    const { invoke, session } = setUp({ chooseNewProjectPath });
+
+    await expect(invoke("project:create", APP_URL, bakery)).resolves.toEqual(opened);
+    expect(chooseNewProjectPath).toHaveBeenCalledWith("Rosa's Bakery");
+    // Named as typed, whatever the file is called, and filled by New Site (2.14a).
+    expect(session.create).toHaveBeenCalledWith("/sites/Bakery.wforge", {
+      name: "Rosa's Bakery",
+      fill: expect.any(Function),
+    });
+  });
+
+  it("refuses a New Site request without a name, or for a template the app doesn't have", async () => {
     const { invoke, session } = setUp();
 
-    await expect(invoke("project:create")).resolves.toEqual(opened);
-    expect(session.create).toHaveBeenCalledWith("/sites/Bakery.wforge");
+    for (const request of [
+      undefined,
+      { ...bakery, name: "  " },
+      { ...bakery, template: "../../secrets" },
+      { ...bakery, extra: true },
+    ]) {
+      await expect(invoke("project:create", APP_URL, request)).rejects.toThrow("ipc-failed");
+    }
+    expect(session.create).not.toHaveBeenCalled();
   });
 
   it("opens the site chosen in the open dialog", async () => {
@@ -80,7 +101,9 @@ describe("registerProjectHandlers", () => {
       chooseProjectToOpen: async () => undefined,
     });
 
-    await expect(invoke("project:create")).resolves.toEqual({ status: "canceled" });
+    await expect(invoke("project:create", APP_URL, bakery)).resolves.toEqual({
+      status: "canceled",
+    });
     await expect(invoke("project:open")).resolves.toEqual({ status: "canceled" });
     expect(session.create).not.toHaveBeenCalled();
     expect(session.open).not.toHaveBeenCalled();
@@ -172,7 +195,7 @@ describe("registerProjectHandlers", () => {
       return opened;
     });
 
-    await invoke("project:create");
+    await invoke("project:create", APP_URL, bakery);
     await invoke("project:open");
 
     expect(order).toEqual(["before", "create", "before", "open"]);
@@ -241,5 +264,23 @@ describe("registerProjectHandlers", () => {
     await expect(
       invoke("project:set-ui-state", APP_URL, project.sessionId, { editorMode: "zoom" }),
     ).rejects.toThrow();
+  });
+});
+
+describe("siteFileName (2.14a)", () => {
+  it("offers the site's name as the file name, without what no file name may have", () => {
+    expect(siteFileName("Rosa's Bakery", "My site")).toBe("Rosa's Bakery");
+    expect(siteFileName('Fish & Chips: "Best" in town?', "My site")).toBe(
+      "Fish & Chips- -Best- in town-",
+    );
+    expect(siteFileName(String.raw`A/B\C|D*E<F>G` + "\u0007", "My site")).toBe("A-B-C-D-E-F-G-");
+    // Windows drops trailing dots and spaces.
+    expect(siteFileName("  Café Rosa...  ", "My site")).toBe("Café Rosa");
+  });
+
+  it("falls back when nothing usable is left", () => {
+    expect(siteFileName("...", "My site")).toBe("My site");
+    expect(siteFileName("CON", "My site")).toBe("My site");
+    expect(siteFileName("lpt1", "My site")).toBe("My site");
   });
 });
