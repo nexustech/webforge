@@ -116,6 +116,24 @@ function PanelTabs({
   );
   const tabs = useRef<HTMLDivElement>(null);
   const first = panels[0];
+  const activeId = (panels.find((panel) => panel.id === chosen) ?? first)?.id;
+  // The shown panel's search field, while it has one (the Edit panel's shows with a selection):
+  // the strip's magnifier focuses it (LF-5), and is there only then.
+  const [search, setSearch] = useState<HTMLInputElement | null>(null);
+  useEffect(() => {
+    const root = tabs.current;
+    if (root === null || activeId === undefined) return;
+    const find = () =>
+      setSearch(
+        root.querySelector<HTMLInputElement>(
+          `[data-panel="${CSS.escape(activeId)}"] input[type="search"]`,
+        ),
+      );
+    find();
+    const observer = new MutationObserver(find);
+    observer.observe(root, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [activeId]);
   if (first === undefined) {
     return (
       <div className="flex h-full items-center justify-center bg-panel p-4 text-center text-xs text-muted-foreground">
@@ -134,7 +152,7 @@ function PanelTabs({
             </TabsTrigger>
           ))}
         </TabsList>
-        {active.searchable === true ? (
+        {search !== null ? (
           // The panel's search, from the strip's right end (LF-5).
           <Button
             type="button"
@@ -143,13 +161,7 @@ function PanelTabs({
             className="mr-1"
             aria-label={t("panels.search", { panel: active.title })}
             title={t("panels.search", { panel: active.title })}
-            onClick={() =>
-              tabs.current
-                ?.querySelector<HTMLInputElement>(
-                  `[data-panel="${CSS.escape(active.id)}"] input[type="search"]`,
-                )
-                ?.focus()
-            }
+            onClick={() => search.focus()}
           >
             <SearchIcon />
           </Button>

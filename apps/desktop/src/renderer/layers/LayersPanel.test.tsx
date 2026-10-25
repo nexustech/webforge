@@ -300,6 +300,24 @@ describe("LayersPanel (F-ED-12)", () => {
     expect(canvas.markDrop).toHaveBeenLastCalledWith(null);
   });
 
+  it("takes the outline away when the hovered row goes, as when its layer is deleted (#421 review)", () => {
+    const canvas = { outline: vi.fn(), markDrop: vi.fn() };
+    const props = { selectedId: null, actions: setUpActions(), canvas };
+    const view = render(<LayersPanel layers={LAYERS} {...props} />);
+    // Nothing shown yet: nothing cleared either (a breadcrumb's outline stays).
+    expect(canvas.outline).not.toHaveBeenCalled();
+
+    fireEvent.pointerEnter(screen.getAllByRole("treeitem")[2] as HTMLElement);
+    const [section, ...rest] = LAYERS;
+    const withoutHours =
+      section === undefined
+        ? []
+        : [{ ...section, children: section.children.filter((each) => each.id !== "b") }, ...rest];
+    view.rerender(<LayersPanel layers={withoutHours} {...props} />);
+
+    expect(canvas.outline.mock.calls).toEqual([["b"], [null]]);
+  });
+
   it("copies a layer dragged with Ctrl or Cmd, with Shift for a linked copy (1.35, UX-4)", () => {
     const { actions } = setUp();
     const rows = screen.getAllByRole("treeitem");

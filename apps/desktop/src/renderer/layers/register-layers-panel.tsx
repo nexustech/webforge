@@ -137,7 +137,6 @@ export function registerLayersPanel(
     slot: "left.lower",
     title: t("layers.title"),
     icon: LayersIcon,
-    searchable: true,
     component: Layers,
   });
 }

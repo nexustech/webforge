@@ -21,6 +21,19 @@ describe("createCanvasPointer (SP-8, SP-10)", () => {
     expect(engine.outline).not.toHaveBeenCalledWith("c");
   });
 
+  it("clears only what it showed itself, leaving a breadcrumb's outline (#421 review)", () => {
+    const pointer = createCanvasPointer();
+    const engine = { outline: vi.fn(), markDrop: vi.fn() };
+    const disconnect = pointer.connect(engine);
+
+    // Nothing outlined or marked through it: nothing to clear on the engine.
+    pointer.outline(null);
+    pointer.markDrop(null);
+    disconnect();
+    expect(engine.outline).not.toHaveBeenCalled();
+    expect(engine.markDrop).not.toHaveBeenCalled();
+  });
+
   it("leaves a newer engine connected when an older one disconnects late", () => {
     const pointer = createCanvasPointer();
     const older = { outline: vi.fn(), markDrop: vi.fn() };

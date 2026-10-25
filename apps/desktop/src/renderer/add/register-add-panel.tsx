@@ -287,7 +287,6 @@ export function registerAddPanel(
     slot: "left.top",
     title: t("add.title"),
     icon: SquarePlusIcon,
-    searchable: true,
     order: -1,
     component: Add,
   });

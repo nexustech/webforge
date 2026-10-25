@@ -298,20 +298,24 @@ export function AddPanel({
               <details
                 key={group.category}
                 open={searching || !closed.has(key)}
-                onToggle={(event) => {
-                  if (searching) return;
-                  const open = event.currentTarget.open;
-                  setClosed((current) => {
-                    if (open !== current.has(key)) return current;
-                    const next = new Set(current);
-                    if (open) next.delete(key);
-                    else next.add(key);
-                    return next;
-                  });
-                }}
                 className="group/category px-2 pb-1"
               >
-                <summary className="flex cursor-default list-none items-center gap-1 rounded-sm py-1 text-xs font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+                <summary
+                  // The panel keeps which are open, not the page: a click toggles that, and the
+                  // <details> follows. A search shows every category, so a click there does
+                  // nothing (#421 review). On the way down, so the toggle is cancelled before
+                  // anything on the way up could act on it.
+                  onClickCapture={(event) => {
+                    event.preventDefault();
+                    if (searching) return;
+                    setClosed((current) => {
+                      const next = new Set(current);
+                      if (!next.delete(key)) next.add(key);
+                      return next;
+                    });
+                  }}
+                  className="flex cursor-default list-none items-center gap-1 rounded-sm py-1 text-xs font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden"
+                >
                   <ChevronRightIcon
                     aria-hidden
                     className="size-3 shrink-0 transition-transform group-open/category:rotate-90"

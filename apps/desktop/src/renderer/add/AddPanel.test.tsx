@@ -74,15 +74,27 @@ describe("AddPanel (F-ED-1)", () => {
     const heroes = screen.getByRole("list", { name: "Heroes" }).closest("details") as HTMLElement;
     expect(heroes.hasAttribute("open")).toBe(true);
 
-    // As a click on its name toggles it.
-    (heroes as HTMLDetailsElement).open = false;
-    fireEvent(heroes, new Event("toggle"));
+    await userEvent.click(heroes.querySelector("summary") as HTMLElement);
     expect(heroes.hasAttribute("open")).toBe(false);
 
     await userEvent.type(screen.getByRole("searchbox", { name: /Search/ }), "Hero");
     expect(heroes.hasAttribute("open")).toBe(true);
     await userEvent.clear(screen.getByRole("searchbox", { name: /Search/ }));
     expect(heroes.hasAttribute("open")).toBe(false);
+  });
+
+  it("keeps every category open while searching: a click on its name doesn't close it", async () => {
+    setUp();
+    const heroes = screen.getByRole("list", { name: "Heroes" }).closest("details") as HTMLElement;
+    const name = heroes.querySelector("summary") as HTMLElement;
+    const search = screen.getByRole("searchbox", { name: /Search/ });
+
+    await userEvent.type(search, "Hero");
+    await userEvent.click(name);
+    expect(heroes.hasAttribute("open")).toBe(true);
+    // Nor once the search is cleared: the click during it changed nothing.
+    await userEvent.clear(search);
+    expect(heroes.hasAttribute("open")).toBe(true);
   });
 
   it("lists sections by category and adds the one clicked", async () => {

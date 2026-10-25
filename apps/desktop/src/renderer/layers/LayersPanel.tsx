@@ -330,15 +330,31 @@ export function LayersPanel({
       ? null
       : { nodeId: drop.key, place: drop.place, name: dragging.layer.name ?? dragging.layer.kind };
   const dropKey = dropMark === null ? "" : `${dropMark.nodeId} ${dropMark.place}`;
+  // The row under the pointer: its element stays outlined until the pointer leaves it, or the row
+  // goes (deleted, collapsed or filtered out), which leaves no pointerleave to clear it.
+  const [hovered, setHovered] = useState<string | null>(null);
+  const outlinedId =
+    hovered !== null && rows.some((row) => row.layer.id === hovered) ? hovered : null;
+  // What the panel has shown on the canvas, so it clears only that: an outline a breadcrumb set
+  // stays (#421 review).
+  const shown = useRef<{ outline: string | null; drop: string }>({ outline: null, drop: "" });
+  useEffect(() => {
+    if (shown.current.outline === outlinedId) return;
+    shown.current.outline = outlinedId;
+    canvas?.outline(outlinedId);
+  }, [canvas, outlinedId]);
   // biome-ignore lint/correctness/useExhaustiveDependencies: redrawn when where it lands changes.
   useEffect(() => {
+    if (shown.current.drop === dropKey) return;
+    shown.current.drop = dropKey;
     canvas?.markDrop(dropMark);
   }, [canvas, dropKey]);
   // Nothing stays outlined or marked once the panel goes.
   useEffect(
     () => () => {
-      canvas?.outline(null);
-      canvas?.markDrop(null);
+      if (shown.current.outline !== null) canvas?.outline(null);
+      if (shown.current.drop !== "") canvas?.markDrop(null);
+      shown.current = { outline: null, drop: "" };
     },
     [canvas],
   );
@@ -409,8 +425,10 @@ export function LayersPanel({
                 )}
                 style={{ paddingLeft: `${(row.depth - 1) * 12 + 4}px` }}
                 // Its element outlined on the canvas, with its chip, as a breadcrumb does (SP-10).
-                onPointerEnter={() => canvas?.outline(layer.id)}
-                onPointerLeave={() => canvas?.outline(null)}
+                onPointerEnter={() => setHovered(layer.id)}
+                onPointerLeave={() =>
+                  setHovered((current) => (current === layer.id ? null : current))
+                }
                 onClick={(event) => {
                   const start =
                     rows.find((each) => each.layer.id === anchor.current) ?? selectedRow;
