@@ -186,6 +186,7 @@ export {
   DEFAULT_THEME,
   fontRefSchema,
   INVERSE_THEME,
+  LINK_UNDERLINES,
   OPACITY_STEPS,
   oklchSchema,
   RADIUS_TOKENS,

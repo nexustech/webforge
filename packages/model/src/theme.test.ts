@@ -110,6 +110,14 @@ describe("theme tokens (2.1)", () => {
     expect(themeTokensSchema.safeParse(changed(change)).success).toBe(false);
   });
 
+  it('reads a site\'s "never" link underline as "hover", which it now means (#427)', () => {
+    const parsed = themeTokensSchema.parse({ ...DEFAULT_THEME, links: { underline: "never" } });
+    expect(parsed.links.underline).toBe("hover");
+    expect(
+      themeTokensSchema.safeParse({ ...DEFAULT_THEME, links: { underline: "sometimes" } }).success,
+    ).toBe(false);
+  });
+
   it("keeps the default theme from being changed by mistake", () => {
     expect(Object.isFrozen(DEFAULT_THEME.colors.primary)).toBe(true);
     expect(() => {
