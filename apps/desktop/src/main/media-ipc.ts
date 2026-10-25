@@ -1,4 +1,4 @@
-import { basename } from "node:path";
+import { basename, isAbsolute } from "node:path";
 import type { IpcMain } from "electron";
 import { MAX_MEDIA_FILES } from "../shared/ipc/media.js";
 import type { MediaImportResult } from "../shared/ipc-contract.js";
@@ -13,8 +13,9 @@ export type MediaDialogs = {
 };
 
 /**
- * Registers the Media IPC calls (1.16). Dropped files arrive as bytes, never as paths; chosen files
- * are read from the paths the native dialog returned, so the renderer can't name a file.
+ * Registers the Media IPC calls (1.16). Dropped files arrive by the paths the preload found for
+ * them, or as bytes when they have none; chosen files are read from the paths the native dialog
+ * returned. The renderer itself never names a file.
  */
 export function registerMediaHandlers(
   ipc: Pick<IpcMain, "handle">,
@@ -27,6 +28,17 @@ export function registerMediaHandlers(
     const reason = session.staleReason(sessionId);
     return reason === undefined
       ? importMediaFiles(session.forSession(sessionId), files)
+      : { status: "failed", reason };
+  });
+  // Dropped files by the paths the preload found for them (R13b): read in the storage writer,
+  // their bytes never cross IPC. Only absolute paths, as the operating system gives them.
+  registerIpcHandler(ipc, "importMediaPaths", isTrustedSender, (sessionId, paths) => {
+    if (!paths.every((path) => isAbsolute(path))) {
+      throw new Error("A dropped file's path must be absolute");
+    }
+    const reason = session.staleReason(sessionId);
+    return reason === undefined
+      ? importFilesAt(session.forSession(sessionId), paths)
       : { status: "failed", reason };
   });
   registerIpcHandler(ipc, "chooseMedia", isTrustedSender, async (sessionId) => {

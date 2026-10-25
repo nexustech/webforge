@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from "electron";
+import { contextBridge, ipcRenderer, webUtils } from "electron";
 import { createWebforgeApi } from "./api.js";
 
 // Expose only the typed API, never ipcRenderer itself.
@@ -14,5 +14,7 @@ contextBridge.exposeInMainWorld(
         ipcRenderer.removeListener(channel, forward);
       };
     },
+    // A dropped file's path goes to the main process, never to the renderer (R13b).
+    (file) => webUtils.getPathForFile(file),
   ),
 );

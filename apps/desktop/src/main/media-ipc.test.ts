@@ -131,6 +131,32 @@ describe("registerMediaHandlers", () => {
     });
   });
 
+  it("imports dropped files by the paths the preload found, absolute ones only (R13b)", async () => {
+    const dir = tempDir();
+    const prices = join(dir, "Prices.pdf");
+    writeFileSync(prices, pdf);
+    const { invoke, session } = setUp(undefined);
+
+    await expect(invoke("media:import-paths", SESSION, [prices])).resolves.toMatchObject({
+      status: "imported",
+      items: [{ fileName: "Prices.pdf", kind: "file" }],
+    });
+    expect(session.importFile).toHaveBeenCalledWith(expect.any(String), "Prices.pdf", {
+      path: prices,
+    });
+    // Refused whole, and answered as a failure: nothing read.
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    session.importFile.mockClear();
+    await expect(invoke("media:import-paths", SESSION, ["Prices.pdf"])).resolves.toEqual({
+      status: "failed",
+      reason: "unknown",
+    });
+    expect(session.importFile).not.toHaveBeenCalled();
+    await expect(
+      invoke("media:import-paths", "3c1d2e4f-5a6b-4c7d-8e9f-0a1b2c3d4e5f", [prices]),
+    ).resolves.toEqual({ status: "failed", reason: "stale-session" });
+  });
+
   it("does nothing when the user cancels, or without a site", async () => {
     await expect(setUp(undefined).invoke("media:choose", SESSION)).resolves.toEqual({
       status: "canceled",
