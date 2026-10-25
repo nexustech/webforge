@@ -611,8 +611,9 @@ describe("createPuckEngine", () => {
 
   it("keeps every part of the render context not from Site Settings when they change (#367)", async () => {
     const keys = () => element.querySelector(".t-keys")?.textContent?.split(" ") ?? [];
+    // Every part the canvas has: not Site Settings', nor one only the export sets.
     const notSettings = Object.entries(RENDER_CONTEXT_SOURCES)
-      .filter(([, source]) => source !== "setSettings")
+      .filter(([, source]) => source !== "setSettings" && source !== "export")
       .map(([key]) => key);
     // Every part from somewhere else than Site Settings, set.
     await act(async () => {

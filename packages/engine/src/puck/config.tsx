@@ -38,6 +38,7 @@ function toPuckField(field: FieldDef, richText: RichTextTools): Field {
     case "select":
       return { type: "select", label: field.label, options: [...field.options] };
     case "media":
+    case "code":
     case "link":
     case "icon":
     // The Edit panel (1.14) edits these; Puck only needs to know the field exists.
