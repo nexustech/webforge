@@ -78,6 +78,7 @@ function PageSettingsForm({
   const [hideHeader, setHideHeader] = useState(page.settings.hideHeader);
   const [hideFooter, setHideFooter] = useState(page.settings.hideFooter);
   const [hideFromNavigation, setHideFromNavigation] = useState(page.settings.hideFromNavigation);
+  const [hideBackToTop, setHideBackToTop] = useState(page.settings.hideBackToTop === true);
   const fixedFile =
     page.id === site.homePageId
       ? t("pageSettings.homeFile")
@@ -101,6 +102,7 @@ function PageSettingsForm({
           hideHeader,
           hideFooter,
           hideFromNavigation,
+          hideBackToTop,
         });
       }}
     >
@@ -178,6 +180,14 @@ function PageSettingsForm({
             label={t("pageSettings.hideFromNavigation")}
             checked={hideFromNavigation}
             onChange={setHideFromNavigation}
+          />
+        )}
+        {/* Only while the site shows one (Site Settings → General). */}
+        {site.settings.general.backToTop === true && (
+          <Check
+            label={t("pageSettings.hideBackToTop")}
+            checked={hideBackToTop}
+            onChange={setHideBackToTop}
           />
         )}
       </div>

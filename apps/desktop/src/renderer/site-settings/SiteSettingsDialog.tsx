@@ -184,6 +184,11 @@ function SiteSettingsForm({
             value={form.icon}
             onChange={(icon) => change({ icon })}
           />
+          <Check
+            label={t("site.settings.backToTop")}
+            checked={form.backToTop}
+            onChange={(backToTop) => change({ backToTop })}
+          />
         </TabsContent>
 
         <TabsContent value="address" className="grid gap-3 pt-3">

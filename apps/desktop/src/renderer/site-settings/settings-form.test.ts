@@ -10,7 +10,12 @@ import {
 } from "./settings-form.js";
 
 const full: SiteSettings = {
-  general: { name: "Rosa's Bakery", description: "Fresh bread", language: "en-GB" },
+  general: {
+    name: "Rosa's Bakery",
+    description: "Fresh bread",
+    language: "en-GB",
+    backToTop: true,
+  },
   address: { url: "https://www.rosasbakery.co.uk" },
   social: {
     profiles: [{ network: "instagram", url: "https://instagram.com/rosas" }],
@@ -41,6 +46,12 @@ describe("settings form", () => {
     for (const settings of [full, defaultSiteSettings("My site", "en")]) {
       expect(checkSettings(toSettingsForm(settings), settings)).toEqual({ ok: true, settings });
     }
+  });
+
+  it("turns the back-to-top button on and off, storing nothing when off (F-CM-9)", () => {
+    expect(toSettingsForm(full).backToTop).toBe(true);
+    const off = checkSettings(edit(full, { backToTop: false }), full);
+    expect(off.ok && off.settings.general).not.toHaveProperty("backToTop");
   });
 
   it("leaves empty fields out, trims what was typed and tidies addresses and handles", () => {

@@ -336,6 +336,7 @@ describe("Page Settings (F-SET-2)", () => {
       hideHeader: page.settings.hideHeader,
       hideFooter: page.settings.hideFooter,
       hideFromNavigation: page.settings.hideFromNavigation,
+      hideBackToTop: page.settings.hideBackToTop === true,
       ...change,
     };
   };
@@ -373,6 +374,18 @@ describe("Page Settings (F-SET-2)", () => {
     expect(labels().at(-1)).toBe("Changed page settings");
     session.history.undo();
     expect(site().pages[about]).toMatchObject({ title: "About", slug: "about" });
+  });
+
+  it("leaves the back-to-top button off a page, and stores nothing when it is shown (F-CM-9)", () => {
+    const { session, site, add, labels } = setUp();
+    const about = add("About");
+
+    changePageSettings(session, about, settingsOf(site(), about, { hideBackToTop: true }));
+    expect(site().pages[about]?.settings.hideBackToTop).toBe(true);
+    expect(labels().at(-1)).toBe("Changed page settings");
+
+    changePageSettings(session, about, settingsOf(site(), about, { hideBackToTop: false }));
+    expect(site().pages[about]?.settings).not.toHaveProperty("hideBackToTop");
   });
 
   it("keeps a file name set by hand when the page is renamed, and when the field is emptied", () => {
@@ -488,6 +501,7 @@ function perform(session: EditorSession, { kind, page, name }: Action): void {
         hideHeader: page % 2 === 0,
         hideFooter: page % 3 === 0,
         hideFromNavigation: entry?.settings.hideFromNavigation !== true,
+        hideBackToTop: page % 5 === 0,
       });
       break;
     }

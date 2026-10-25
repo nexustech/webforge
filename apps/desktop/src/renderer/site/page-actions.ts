@@ -366,6 +366,8 @@ export type PageSettingsChange = {
   readonly hideHeader: boolean;
   readonly hideFooter: boolean;
   readonly hideFromNavigation: boolean;
+  /** Leaves the site's back-to-top button off this page (F-CM-9). */
+  readonly hideBackToTop: boolean;
 };
 
 /**
@@ -402,7 +404,8 @@ export function changePageSettings(
     shareImage === settings.shareImage &&
     change.hideHeader === settings.hideHeader &&
     change.hideFooter === settings.hideFooter &&
-    hideFromNavigation === settings.hideFromNavigation
+    hideFromNavigation === settings.hideFromNavigation &&
+    change.hideBackToTop === (settings.hideBackToTop === true)
   ) {
     return;
   }
@@ -419,6 +422,8 @@ export function changePageSettings(
       hideHeader: change.hideHeader,
       hideFooter: change.hideFooter,
       hideFromNavigation,
+      // Absent when shown, as in files from before it.
+      ...(change.hideBackToTop ? { hideBackToTop: true } : {}),
     };
   });
 }
