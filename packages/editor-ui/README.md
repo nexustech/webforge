@@ -21,7 +21,7 @@ import { Button, Tooltip, TooltipContent, TooltipTrigger } from "@webforge/edito
 ```
 
 ## Tokens
-Colours are CSS variables with shadcn's names (`--background`, `--primary`, `--ring`…) plus Webforge's own (`--panel`, `--panel-group`, `--tabs`, `--titlebar`, `--toolbar`, `--selection-outline`, `--success`, `--warning`, `--info`, `--publish`, `--save-status`…). Tailwind gets them as colours (`bg-panel`, `text-publish`). Text sizes: `text-2xs` 11 px, `text-xs` 12 px, `text-sm`/`text-base` 13 px, `text-lg` 15 px.
+Colours are CSS variables with shadcn's names (`--background`, `--primary`, `--ring`…) plus Webforge's own (`--panel`, `--panel-group`, `--tabs`, `--titlebar`, `--toolbar`, `--grid-outline`, `--success`, `--warning`, `--info`, `--publish`, `--save-status`…). Tailwind gets them as colours (`bg-panel`, `text-publish`). Text sizes: `text-2xs` 11 px, `text-xs` 12 px, `text-sm`/`text-base` 13 px, `text-lg` 15 px.
 
 `src/contrast.test.ts` checks every text pair for at least 4.5:1 and every control, icon and outline for at least 3:1 (WCAG AA) in both themes. A few UI1 values were adjusted to pass; `theme.css` says which.
 

@@ -2,6 +2,7 @@ import type { ViewOptions } from "../canvas-engine.js";
 import { canvasZoom } from "./chrome.js";
 import { COMPONENT, COMPONENT_ATTRIBUTE, OVERLAY, ROOT_DROP_ZONE } from "./puck-dom.js";
 import { ensureStyle } from "./styles.js";
+import { OPTION_ATTRIBUTES } from "./view-attributes.js";
 
 /**
  * The canvas's View options (F-ED-25, UX-7): outlines around every element, an element's margins
@@ -13,27 +14,24 @@ import { ensureStyle } from "./styles.js";
 
 const VIEW_STYLE_ATTRIBUTE = "data-webforge-view-css";
 
-/** The attribute on the canvas document's root for each option that is on. */
-const OPTION_ATTRIBUTES: Record<keyof ViewOptions, string> = {
-  outlines: "data-wf-view-outlines",
-  spacingOnHover: "data-wf-view-spacing",
-  elementNames: "data-wf-view-names",
-  extraBottomSpace: "data-wf-view-extra-space",
-};
-
 /** Puck's wrapper around each element on the canvas. */
 const ELEMENT = COMPONENT;
 
 /** The room *Extra space at the bottom* leaves below the page's last section, in CSS pixels. */
 const EXTRA_SPACE = 320;
 
+/** The tints of margins and padding (SP-3), on the canvas's spacing overlay and grips alike. */
+const MARGIN_TINT = "rgba(246, 178, 107, 0.55)";
+const PADDING_TINT = "rgba(147, 196, 125, 0.55)";
+
 /** How tall a name label is on screen, in pixels: it sits that far above its element. */
 const NAME_HEIGHT = 16;
 
 const VIEW_CSS = `
-/* Show outlines: a thin dashed line around every element, in the chrome's magenta. */
+/* Show outlines: a thin dashed line around every element, in the grid's magenta (LF-1). */
 [${OPTION_ATTRIBUTES.outlines}] ${ELEMENT} {
-  outline: calc(1px / var(--wf-view-zoom, 1)) dashed rgba(240, 40, 243, 0.45);
+  outline: calc(1px / var(--wf-view-zoom, 1)) dashed
+    color-mix(in srgb, var(--wf-grid-color, #f028f3) 45%, transparent);
   outline-offset: calc(-1px / var(--wf-view-zoom, 1));
 }
 /*
@@ -61,8 +59,9 @@ const VIEW_CSS = `
   padding: 1px 4px;
   box-sizing: border-box;
   border-radius: 2px;
-  background: rgba(240, 40, 243, 0.85);
-  color: #fff;
+  /* As the hovered element's name chip (SP-1): the accent, white text. */
+  background: var(--wf-primary, #0a6fb7);
+  color: var(--wf-primary-foreground, #fff);
   font: 500 11px/14px system-ui, sans-serif;
   white-space: nowrap;
   transform: scale(calc(1 / var(--wf-view-zoom, 1)));
@@ -74,12 +73,12 @@ const VIEW_CSS = `
   box-sizing: border-box;
   border-style: solid;
 }
-/* As browsers' developer tools colour them: margins orange, padding green. */
+/* As browsers' developer tools colour them (SP-3): margins warm, padding green. */
 .wf-view-margin {
-  border-color: rgba(246, 178, 107, 0.55);
+  border-color: ${MARGIN_TINT};
 }
 .wf-view-padding {
-  border-color: rgba(147, 196, 125, 0.55);
+  border-color: ${PADDING_TINT};
 }
 `;
 
