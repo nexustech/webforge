@@ -122,7 +122,7 @@ describe("the Testimonials section", () => {
 
     expect(plain.querySelector(".site-testimonial")?.className).not.toContain("hover:");
     for (const item of shadowed.querySelectorAll(".site-testimonial")) {
-      expect(item.className).toContain("hover:shadow-lg");
+      expect(item.className).toContain("hover:shadow-(--wf-hover-shadow)");
     }
   });
 });

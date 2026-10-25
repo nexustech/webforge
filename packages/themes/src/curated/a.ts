@@ -158,7 +158,7 @@ const atelier: ThemeTokens = {
   effects: { depth: false, noise: false },
   spacing: "roomy",
   typeScale: typeScale(600, "6xl"),
-  links: { underline: "hover" },
+  links: { underline: "always" },
   buttons: { shape: "pill", size: "m", style: "outline" },
   shadow: "none",
 };
@@ -249,7 +249,7 @@ const clarity: ThemeTokens = {
   effects: { depth: false, noise: false },
   spacing: "normal",
   typeScale: typeScale(700, "5xl"),
-  links: { underline: "hover" },
+  links: { underline: "always" },
   buttons: { shape: "rounded", size: "m", style: "filled" },
   shadow: "soft",
 };

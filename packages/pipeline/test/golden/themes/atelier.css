@@ -197,8 +197,10 @@
   --color-error-950: var(--wf-color-error-950);
 }
 :root, [data-theme="atelier"] {
-  --wf-link-decoration: none;
+  --wf-link-decoration: underline;
   --wf-link-hover-decoration: underline;
+  --wf-link-color: currentColor;
+  --wf-hover-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
   --wf-button-radius: 9999px;
   --wf-button-height: 2.5rem;
   --wf-color-primary-50: oklch(97% 0.0275 355);

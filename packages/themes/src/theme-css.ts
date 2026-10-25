@@ -92,6 +92,16 @@ const SHADOW_SCALE: Readonly<Record<ThemeTokens["shadow"], Readonly<Record<strin
   },
 };
 
+/**
+ * The Shadow hover effect's shadow (2.12), which a person chooses for an element: the theme's
+ * large shadow, or Tailwind's own where the theme has none, so the effect never disappears.
+ */
+const HOVER_SHADOW: Readonly<Record<ThemeTokens["shadow"], string>> = {
+  none: "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
+  soft: "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
+  strong: "0 10px 15px -3px rgb(0 0 0 / 0.2), 0 4px 6px -4px rgb(0 0 0 / 0.2)",
+};
+
 /** daisyUI's look the theme gives its main buttons (#423): their own, or outline or ghost. */
 const BUTTON_LOOK: Readonly<Record<ThemeTokens["buttons"]["style"], string | undefined>> = {
   filled: undefined,
@@ -255,7 +265,11 @@ export function themeCss(tokens: ThemeTokens): string {
     "}",
     `:root, [data-theme="${tokens.preset}"] {`,
     `  --wf-link-decoration: ${tokens.links.underline === "always" ? "underline" : "none"};`,
-    `  --wf-link-hover-decoration: ${tokens.links.underline === "never" ? "none" : "underline"};`,
+    // Underlined on hover and focus whatever the theme says: a link must show it's one (WCAG
+    // 1.4.1), and in the main colour when it isn't always underlined, apart from the text.
+    "  --wf-link-hover-decoration: underline;",
+    `  --wf-link-color: ${tokens.links.underline === "always" ? "currentColor" : "var(--color-primary)"};`,
+    `  --wf-hover-shadow: ${HOVER_SHADOW[tokens.shadow]};`,
     `  --wf-button-radius: ${BUTTON_RADIUS[tokens.buttons.shape]};`,
     `  --wf-button-height: ${BUTTON_HEIGHT[tokens.buttons.size]};`,
     ...roleShades(tokens.colors),

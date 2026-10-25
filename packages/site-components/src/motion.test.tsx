@@ -86,7 +86,7 @@ describe("hover effects (2.12, F-DS-5)", () => {
     ]);
     expect(hoverClasses("lift")).toContain("motion-safe:hover:-translate-y-1");
     expect(hoverClasses("grow")).toContain("motion-safe:hover:scale-105");
-    expect(hoverClasses("shadow")).toContain("hover:shadow-lg");
+    expect(hoverClasses("shadow")).toContain("hover:shadow-(--wf-hover-shadow)");
     expect(hoverClasses("none")).toBe("");
     expect(hoverClasses(undefined)).toBe("");
 

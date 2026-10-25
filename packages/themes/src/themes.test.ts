@@ -194,6 +194,19 @@ describe("contrastIssues (2.1)", () => {
     expect(issues[0]?.ratio).toBe(Math.floor(contrastRatio(grey, WHITE) * 100) / 100);
   });
 
+  it("checks links apart from the text by colour alone against it: 3:1 (WCAG 1.4.1)", () => {
+    const theme = (underline: ThemeTokens["links"]["underline"]) =>
+      themeTokensSchema.parse({ ...DEFAULT_THEME, links: { underline } });
+    const linkIssues = (tokens: ThemeTokens) =>
+      contrastIssues(tokens).filter((issue) => issue.background === "base-content");
+
+    // The default theme's primary is close to its text: fine underlined, too close otherwise.
+    expect(linkIssues(theme("always"))).toEqual([]);
+    expect(
+      linkIssues(theme("never")).map((issue) => [issue.palette, issue.required]),
+    ).toContainEqual(["colors", AA_LARGE]);
+  });
+
   it("checks the main colour as text on every surface: an outline button's label (2.13a)", () => {
     const theme = themeTokensSchema.parse({
       ...DEFAULT_THEME,
@@ -353,7 +366,19 @@ describe("themeCss (2.1)", () => {
     const css = (change: Partial<ThemeTokens>) => themeCss({ ...DEFAULT_THEME, ...change });
 
     expect(css({ links: { underline: "never" } })).toContain("--wf-link-decoration: none;");
-    expect(css({ links: { underline: "never" } })).toContain("--wf-link-hover-decoration: none;");
+    // Underlined on hover and focus whatever the theme says, and in the main colour unless always
+    // underlined: a link must show it's one (WCAG 1.4.1, 2.13a).
+    expect(css({ links: { underline: "never" } })).toContain(
+      "--wf-link-hover-decoration: underline;",
+    );
+    expect(css({ links: { underline: "never" } })).toContain(
+      "--wf-link-color: var(--color-primary);",
+    );
+    expect(css({ links: { underline: "always" } })).toContain("--wf-link-color: currentColor;");
+    // The Shadow hover effect keeps a shadow under a theme without shadows.
+    expect(css({ shadow: "none" })).toContain(
+      "--wf-hover-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);",
+    );
     expect(css({ links: { underline: "hover" } })).toContain(
       "--wf-link-hover-decoration: underline;",
     );

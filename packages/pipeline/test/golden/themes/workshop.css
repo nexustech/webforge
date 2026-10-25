@@ -199,6 +199,8 @@
 :root, [data-theme="workshop"] {
   --wf-link-decoration: underline;
   --wf-link-hover-decoration: underline;
+  --wf-link-color: currentColor;
+  --wf-hover-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.2), 0 4px 6px -4px rgb(0 0 0 / 0.2);
   --wf-button-radius: 0rem;
   --wf-button-height: 3rem;
   --wf-color-primary-50: oklch(97% 0.0425 42);

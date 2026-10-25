@@ -93,4 +93,10 @@ describe("the Storybook's type scale (#419)", () => {
     expect(DEFAULT_THEME.fonts.heading).toEqual(DEFAULT_THEME.fonts.body);
     expect(previewCss).toContain("--font-heading: var(--font-sans);");
   });
+
+  it("gives the Shadow hover effect the default theme's shadow (2.12, 2.13a)", () => {
+    const hoverShadow = (css: string) => /--wf-hover-shadow: ([^;]+);/.exec(css)?.[1];
+    expect(hoverShadow(previewCss)).toBeDefined();
+    expect(hoverShadow(previewCss)).toBe(hoverShadow(themeCss(DEFAULT_THEME)));
+  });
 });
