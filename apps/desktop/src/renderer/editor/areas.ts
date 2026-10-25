@@ -3,7 +3,7 @@ import type { StoreApi } from "zustand/vanilla";
 import type { ExportRequest } from "../../shared/ipc/site.js";
 import type { ExportResult } from "../../shared/ipc-contract.js";
 import type { AddItem } from "../add/index.js";
-import type { SharedSectionNaming } from "../shared-sections/SharedSectionCommands.js";
+import type { SharedSectionNaming } from "../shared-sections/index.js";
 import type { CanvasView } from "../shell/canvas-view.js";
 import type { CommandRegistry } from "../shell/commands.js";
 import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";

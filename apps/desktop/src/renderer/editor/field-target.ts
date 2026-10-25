@@ -9,11 +9,7 @@ import {
   type SiteDoc,
 } from "@webforge/model";
 import type { ComponentDef, ComponentLibrary, FieldDef } from "@webforge/site-components";
-import {
-  type CopySelection,
-  copySelection,
-  updateSectionField,
-} from "../shared-sections/shared-sections.js";
+import { type CopySelection, copySelection, updateSectionField } from "../shared-sections/index.js";
 import { updateField } from "./apply-patch.js";
 import { deviceLabelFor, labelFor } from "./labels.js";
 import { findNode } from "./nodes.js";

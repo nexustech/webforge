@@ -5,5 +5,5 @@
 
 export { LinkDialog } from "./LinkDialog.js";
 export { linkFieldRenderer } from "./LinkField.js";
-export { applyAnchor, type LinkFieldChange } from "./link-change.js";
+export { applyAnchor, asLinkFieldChange, type LinkFieldChange } from "./link-change.js";
 export { linkTargets, type PageTarget } from "./link-targets.js";

@@ -1,7 +1,7 @@
 import type { CanvasEngine } from "@webforge/engine";
 import { t } from "@webforge/i18n";
 import type { SharedSectionId } from "@webforge/model";
-import { copySelection, reachOf } from "../shared-sections/shared-sections.js";
+import { copySelection, reachOf } from "../shared-sections/index.js";
 import type { SiteWideAction, SiteWideConfirm } from "../shell/confirm-site-wide.js";
 import type { EditorSession } from "./editor-session.js";
 import { removeNode } from "./nodes.js";
