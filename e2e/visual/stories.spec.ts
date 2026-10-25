@@ -84,7 +84,9 @@ for (const build of BUILDS) {
   });
 
   for (const story of stories) {
-    for (const theme of build.themes) {
+    // A story that shows its own theme (the themes' pages, 2.13) looks the same in every one.
+    const themes = story.tags.includes("own-theme") ? build.themes.slice(0, 1) : build.themes;
+    for (const theme of themes) {
       for (const device of build.devices.length === 0 ? [undefined] : build.devices) {
         const shown = device === undefined ? theme : `${theme}, ${device.name}`;
         test(`${story.title} › ${story.name} (${shown})`, async ({ page }) => {

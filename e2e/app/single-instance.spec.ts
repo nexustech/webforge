@@ -162,3 +162,42 @@ test("quitting saves the last edit, then closes the site file", async () => {
   // DELETE journal mode leaves no journal behind once the store is closed (ADR 0003).
   expect(existsSync(`${bakery}-journal`)).toBe(false);
 });
+
+test("a launch just after quitting opens Webforge, not the Webforge still ending (#413)", async () => {
+  await openBakery();
+  const quitting = app;
+  if (quitting === undefined) throw new Error("Webforge isn't running");
+  // As on a busy computer, where the process took up to a minute to end after quitting (#393):
+  // held in its teardown for 10 s. Once it has closed the site file, it says whether it still
+  // holds the lock that would hand a new launch's site to it.
+  const lockAfterQuit = new Promise<string>((resolve) => {
+    // Everything written so far: a line can arrive split across two chunks.
+    let written = "";
+    quitting.process().stderr?.on("data", (data: Buffer) => {
+      written += data.toString();
+      const held = /\[test\] lock held: (true|false)/.exec(written)?.[1];
+      if (held !== undefined) resolve(held);
+    });
+  });
+  await quitting.evaluate(({ app: electronApp }) => {
+    // After Webforge's own will-quit handler, which closes the site file.
+    electronApp.once("will-quit", () =>
+      process.stderr.write(`[test] lock held: ${electronApp.hasSingleInstanceLock()}\n`),
+    );
+    electronApp.once("quit", () => {
+      const end = Date.now() + 10_000;
+      while (Date.now() < end) {
+        // Ending.
+      }
+    });
+    setTimeout(() => electronApp.quit(), 0);
+  });
+  expect(await lockAfterQuit).toBe("false");
+
+  app = await launchDesktopApp({ args: [bakery], userDataDir: userData });
+
+  const page = await app.firstWindow();
+  await waitForCanvas(page);
+  expect(await currentFile(page)).toBe("Bakery.wforge");
+  await quitting.close();
+});

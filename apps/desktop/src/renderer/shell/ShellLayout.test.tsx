@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { act, cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { CommandRegistryProvider } from "./command-context.js";
 import { COMMAND_IDS } from "./command-ids.js";
@@ -49,6 +50,74 @@ function renderLayout({
 }
 
 describe("ShellLayout", () => {
+  it("finds the search again when the shown panel comes back, its column emptied meanwhile (#425 review)", async () => {
+    const { panels } = renderLayout({ filled: false });
+    const layers = {
+      id: "layers",
+      slot: "left.top" as const,
+      title: "Layers",
+      component: () => <input type="search" aria-label="Find a layer" />,
+    };
+    let remove: () => void = () => undefined;
+    act(() => {
+      remove = panels.register(layers);
+    });
+    const left = () => within(screen.getByRole("region", { name: "Left panels" }));
+    expect(await left().findByRole("button", { name: "Search Layers" })).toBeDefined();
+
+    act(() => remove());
+    act(() => {
+      panels.register(layers);
+    });
+    await userEvent.setup().click(await left().findByRole("button", { name: "Search Layers" }));
+    expect(document.activeElement).toBe(left().getByRole("searchbox", { name: "Find a layer" }));
+  });
+
+  it("shows the magnifier only while the panel has a search, as the Edit panel's comes with a selection (#421 review)", async () => {
+    const { panels } = renderLayout({ filled: false });
+    function Edit() {
+      const [selected, setSelected] = useState(false);
+      return selected ? (
+        <input type="search" aria-label="Search options" />
+      ) : (
+        <button type="button" onClick={() => setSelected(true)}>
+          Select
+        </button>
+      );
+    }
+    act(() => {
+      panels.register({ id: "edit", slot: "right.top", title: "Edit", component: Edit });
+    });
+    const right = within(screen.getByRole("region", { name: "Right panels" }));
+    expect(right.queryByRole("button", { name: "Search Edit" })).toBeNull();
+
+    await userEvent.setup().click(right.getByRole("button", { name: "Select" }));
+    await userEvent.setup().click(await right.findByRole("button", { name: "Search Edit" }));
+    expect(document.activeElement).toBe(right.getByRole("searchbox", { name: "Search options" }));
+  });
+
+  it("focuses the shown panel's search from its tab strip's magnifier (LF-5)", async () => {
+    const { panels } = renderLayout({ filled: false });
+    act(() => {
+      panels.register({
+        id: "layers",
+        slot: "left.top",
+        title: "Layers",
+        component: () => <input type="search" aria-label="Find a layer" />,
+      });
+      panels.register({ id: "pages", slot: "left.top", title: "Pages", component: () => null });
+    });
+    const left = within(screen.getByRole("region", { name: "Left panels" }));
+    const user = userEvent.setup();
+
+    await user.click(left.getByRole("button", { name: "Search Layers" }));
+    expect(document.activeElement).toBe(left.getByRole("searchbox", { name: "Find a layer" }));
+
+    // A panel with no search has no magnifier.
+    await user.click(left.getByRole("tab", { name: "Pages" }));
+    expect(left.queryByRole("button", { name: /^Search/ })).toBeNull();
+  });
+
   it("shows a panel that throws as a fallback in its tab; the rest keeps working (R3)", async () => {
     // React reports the caught error on the console; in the app, the root reports it instead.
     const log = vi.spyOn(console, "error").mockImplementation(() => undefined);

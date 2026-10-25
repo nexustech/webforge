@@ -9,6 +9,7 @@ import type { RenderContext } from "./schema.js";
 import {
   BODY_TEXT_CLASSES,
   BUTTON_CLASSES,
+  LEAD_TEXT_CLASSES,
   RICH_TEXT_LIST_CLASSES,
   TITLE_CLASSES,
 } from "./typography.js";
@@ -231,10 +232,13 @@ describe("the typography and button primitives (2.19)", () => {
     for (const classes of headings) expect(titles, classes).toContain(classes);
   });
 
-  it("sets running text with the body-text classes only", () => {
-    const body = classesOf(html).filter((classes) => classes.includes("leading-relaxed"));
+  it("sets running text with the body-text classes only, and a lead with the lead classes", () => {
+    const body = classesOf(html).filter((classes) => classes.split(" ").includes("text-body"));
     expect(body.length).toBeGreaterThan(2);
-    for (const classes of body) expect(classes, classes).toContain(BODY_TEXT_CLASSES);
+    const leads = body.filter((classes) => !classes.includes(BODY_TEXT_CLASSES));
+    // A Hero's, a Call to action's and a carousel's lead (#419's follow-up in 2.13a).
+    expect(leads.length).toBeGreaterThan(0);
+    for (const classes of leads) expect(classes.split(" "), classes).toContain(LEAD_TEXT_CLASSES);
   });
 
   it("marks the lists in rich text, never the element the classes are on (#388)", () => {

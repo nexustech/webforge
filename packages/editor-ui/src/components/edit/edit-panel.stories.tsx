@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
+import { userEvent, within } from "storybook/test";
 import { EditPanel, type EditPanelField } from "./edit-panel.js";
 import type { ListChange } from "./field-spec.js";
 
@@ -117,6 +118,68 @@ export const StyleFields: Story = {
         }}
       />
     );
+  },
+};
+
+/**
+ * The space between elements on each device (SP-5), the Section seen on Mobile: Desktop's value,
+ * Tablet's own (its name in the accent), and Mobile taking Tablet's (the dot on Tablet).
+ */
+export const PerDevice: Story = {
+  args: {
+    heading: "Section",
+    device: "Mobile",
+    onChangeOn: () => undefined,
+    fields: [
+      {
+        name: "gap",
+        kind: "slider",
+        label: "Space between elements",
+        group: "style",
+        value: "small",
+        steps: sizes,
+        responsive: true,
+        devices: [
+          { id: "desktop", label: "Desktop", value: "large", own: true, inEffect: false },
+          { id: "tablet", label: "Tablet", value: "small", own: true, inEffect: true },
+          { id: "mobile", label: "Mobile", value: "small", own: false, inEffect: false },
+        ],
+      },
+    ],
+  },
+  play: async ({ canvasElement }) => {
+    await userEvent.click(
+      within(canvasElement).getByRole("button", { name: "Space between elements on each device" }),
+    );
+  },
+};
+
+/**
+ * Searching for "pad" (SP-6): the matching part of each label is marked, and a group's header
+ * shows its copy, paste and reset buttons while hovered or focused (SP-7).
+ */
+export const SearchAndGroupActions: Story = {
+  args: {
+    heading: "Section",
+    onPaste: () => undefined,
+    onResetToDefault: () => undefined,
+    fields: [
+      {
+        name: "padding",
+        kind: "spacing",
+        label: "Padding",
+        group: "style",
+        value: "small",
+        options: sizes,
+        changed: true,
+      },
+      { name: "fullWidth", kind: "toggle", label: "Full width", group: "style", value: false },
+    ],
+  },
+  play: async ({ canvasElement }) => {
+    const panel = within(canvasElement);
+    await userEvent.type(panel.getByRole("searchbox", { name: "Search options" }), "pad");
+    panel.getByRole("button", { name: "Copy Spacing" }).focus();
   },
 };
 

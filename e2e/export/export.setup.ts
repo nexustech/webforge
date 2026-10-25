@@ -2,12 +2,12 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, test as setup } from "@playwright/test";
-import type { SiteSnapshot } from "@webforge/model";
+import { DEFAULT_THEME, type NodeDoc, type SiteSnapshot } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
 import { sampleSite } from "@webforge/test-utils";
 import { launchDesktopApp } from "../app/launch.js";
 import { stubFileDialogs } from "../app/sites.js";
-import { EXPORTED_SITE_DIR } from "./exported-site.js";
+import { EXPORTED_SITE_DIR, THEMED_SITE_DIR } from "./exported-site.js";
 
 type ExportRequest = {
   snapshot: SiteSnapshot;
@@ -20,6 +20,53 @@ type ExportingWindow = { webforge: { site: { export(request: ExportRequest): Pro
 // API, IPC, export utility process. The browser projects then open the result from disk. As in the
 // app, the photo's and the document's bytes come from the open site's file; the renderer names
 // them by hash.
+/**
+ * `site` in a theme of its own (#423): square, large, outline buttons, strong shadows and links
+ * never underlined, with running text that has a link in it and a Button set to Filled on the
+ * home page.
+ */
+function themed(site: SiteSnapshot): SiteSnapshot {
+  const [home, ...rest] = site.pages;
+  if (home === undefined) throw new Error("The fixture site has no pages");
+  const linked: NodeDoc = {
+    type: "Text",
+    props: { id: "linked", text: '<p>Read <a href="about.html">our story</a>.</p>' },
+  };
+  // A Reversed section with a link in its text: the link takes the inverse main colour.
+  const reversed: NodeDoc = {
+    type: "Section",
+    props: {
+      id: "reversed",
+      colors: "inverse",
+      content: [
+        {
+          type: "Text",
+          props: { id: "reversed-text", text: '<p>See <a href="about.html">our menu</a>.</p>' },
+        },
+      ],
+    },
+  };
+  // A Button the person set to Filled: the theme's outline style never reaches it (PH2-14).
+  const filled: NodeDoc = {
+    type: "Button",
+    props: { id: "filled", label: "Call us", style: "primary", size: "medium" },
+  };
+  return {
+    ...site,
+    theme: {
+      ...DEFAULT_THEME,
+      preset: "outline",
+      buttons: { shape: "square", size: "l", style: "outline" },
+      shadow: "strong",
+      links: { underline: "never" },
+    },
+    pages: [
+      { ...home, doc: { ...home.doc, content: [...home.doc.content, linked, filled, reversed] } },
+      ...rest,
+    ],
+  };
+}
+
 setup("export the fixture site from the app", async () => {
   rmSync(EXPORTED_SITE_DIR, { recursive: true, force: true });
   const site = sampleSite();
@@ -63,6 +110,14 @@ setup("export the fixture site from the app", async () => {
     );
 
     expect(result).toMatchObject({ status: "exported", pages: 3, warnings: 0 });
+
+    // Again in a theme of its own, into a folder inside the first.
+    await stubFileDialogs(app, THEMED_SITE_DIR);
+    const again = await page.evaluate(
+      (request) => (window as unknown as ExportingWindow).webforge.site.export(request),
+      { snapshot: { ...themed(site), media: [], documents: [] }, media, documents },
+    );
+    expect(again).toMatchObject({ status: "exported", pages: 3, warnings: 0 });
   } finally {
     await app.close();
     rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });

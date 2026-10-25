@@ -118,7 +118,7 @@ describe("the Pricing section", () => {
 
     expect(plain.querySelector(".site-pricing-plan")?.className).not.toContain("hover:");
     for (const each of shadowed.querySelectorAll(".site-pricing-plan")) {
-      expect(each.className).toContain("hover:shadow-lg");
+      expect(each.className).toContain("hover:shadow-(--wf-hover-shadow)");
     }
   });
 });

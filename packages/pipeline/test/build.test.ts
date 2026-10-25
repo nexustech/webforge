@@ -581,3 +581,74 @@ describe("buildSite: documents (1.28)", () => {
     expect(output.report.warnings).toEqual([]);
   });
 });
+
+describe("buildSite: the theme's typography (#419)", () => {
+  it("sets titles in the heading font and text at the type scale's sizes, the page title smaller on phones", async () => {
+    const site: SiteSnapshot = {
+      ...sampleSite(),
+      theme: {
+        ...DEFAULT_THEME,
+        preset: "typography",
+        fonts: {
+          heading: { family: "Lora", fallback: "serif" },
+          body: { family: "Work Sans", fallback: "sans-serif" },
+        },
+        typeScale: {
+          ...DEFAULT_THEME.typeScale,
+          h1: { size: "6xl", weight: 600, leading: "tight" },
+          body: { size: "base", weight: 400, leading: "normal" },
+        },
+      },
+    };
+
+    const exported = await buildSite(site, siteLibrary, resources);
+
+    const page = text(exported, "index.html");
+    expect(page).toContain('<h1 class="font-heading text-h1">');
+    expect(page).toContain("text-body");
+    const css = text(exported, fileNamed(exported, /^assets\/css\//)).replace(/\s+/g, " ");
+    expect(css).toContain('--font-heading: "Lora", ui-serif, Georgia, serif;');
+    expect(css).toContain("font-family: var(--font-heading);");
+    expect(css).toContain("--text-h1: 3.75rem;");
+    expect(css).toContain("--text-h1--font-weight: 600;");
+    expect(css).toContain("font-size: var(--text-h1);");
+    expect(css).toContain("--text-body: 1rem;");
+    // A 6xl title is 4xl on phones (capped, so it fits).
+    expect(css).toContain("@media (width < 48rem) { :root { --text-h1: 2.25rem; } }");
+    // The heading font's files are part of the site.
+    expect([...exported.files.keys()].some((path) => /lora/i.test(path))).toBe(true);
+  }, 60_000);
+});
+
+describe("buildSite: the theme's buttons, shadows and links (#423)", () => {
+  it("draws buttons, shadows and links in running text as the theme says", async () => {
+    const site: SiteSnapshot = {
+      ...sampleSite(),
+      theme: {
+        ...DEFAULT_THEME,
+        preset: "outline",
+        buttons: { shape: "square", size: "l", style: "outline" },
+        shadow: "none",
+        links: { underline: "never" },
+      },
+    };
+
+    const exported = await buildSite(site, siteLibrary, resources);
+
+    const css = text(exported, fileNamed(exported, /^assets\/css\//)).replace(/\s+/g, " ");
+    // Every button's corners and the default size's height; the main buttons drawn outline.
+    expect(css).toContain("--wf-button-radius: 0rem; --wf-button-height: 3rem;");
+    expect(css).toContain(
+      ".btn:not(.btn-circle, .btn-square) { --radius-field: var(--wf-button-radius); }",
+    );
+    expect(css).toContain("--size: var(--wf-button-height);");
+    expect(css).toMatch(
+      /\.btn-primary:not\(\.btn-outline, \.btn-ghost, \.btn-link, \.wf-filled\) \{ --btn-bg: #0000;/,
+    );
+    // No shadows: Tailwind writes the theme's shadow scale into the classes that use it.
+    expect(css).toContain(".shadow-md { --tw-shadow: 0 0 var(--tw-shadow-color, #0000);");
+    // Links in running text never underlined.
+    expect(css).toContain("--wf-link-decoration: none;");
+    expect(css).toContain("text-decoration-line: var(--wf-link-decoration,underline);");
+  }, 60_000);
+});

@@ -74,7 +74,7 @@ const buyButton = defineComponent({
           />
         )}
         {price === "" ? null : (
-          <p className="text-lg font-semibold" id={priceId}>
+          <p className="font-heading text-lg font-semibold" id={priceId}>
             {price}
           </p>
         )}

@@ -3,7 +3,7 @@ import { defineComponent } from "../define.js";
 import { MARGIN_FIELD, marginClasses } from "../frame.js";
 import type { ComponentDef } from "../library.js";
 import { Picture } from "../picture.js";
-import { BUTTON_CLASSES } from "../typography.js";
+import { BUTTON_CLASSES, LEAD_TEXT_CLASSES } from "../typography.js";
 
 const CAROUSEL_LAYOUTS = ["images", "testimonials", "logos"] as const;
 const INTERVALS = ["5", "7", "10"] as const;
@@ -164,7 +164,9 @@ const carouselSlide = defineComponent({
             className="h-auto w-full rounded-box object-cover group-data-[layout=images]/carousel:aspect-video group-data-[layout=logos]/carousel:max-h-16 group-data-[layout=logos]/carousel:w-auto group-data-[layout=logos]/carousel:rounded-none group-data-[layout=logos]/carousel:object-contain group-data-[layout=testimonials]/carousel:size-16 group-data-[layout=testimonials]/carousel:rounded-full"
           />
         )}
-        <p className="max-w-2xl text-lg group-data-[layout=images]/carousel:text-base group-data-[layout=logos]/carousel:hidden group-data-[layout=testimonials]/carousel:text-xl group-data-[layout=testimonials]/carousel:italic">
+        <p
+          className={`max-w-2xl ${LEAD_TEXT_CLASSES} group-data-[layout=images]/carousel:text-base group-data-[layout=logos]/carousel:hidden group-data-[layout=testimonials]/carousel:text-xl group-data-[layout=testimonials]/carousel:italic`}
+        >
           {values.text}
         </p>
         <figcaption className="font-semibold group-data-[layout=images]/carousel:hidden group-data-[layout=logos]/carousel:sr-only">

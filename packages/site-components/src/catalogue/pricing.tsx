@@ -161,7 +161,7 @@ function PricingPlanView({
       data-featured={featured ? "" : undefined}
     >
       {title}
-      {amount("text-4xl")}
+      {amount("font-heading text-4xl")}
       <BodyText className="flex-1">{details}</BodyText>
       <ButtonLink
         label={buttonLabel}

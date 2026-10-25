@@ -4,7 +4,13 @@ import { defineComponent } from "../define.js";
 import { defineSection } from "../frame.js";
 import type { ComponentDef } from "../library.js";
 import { Picture } from "../picture.js";
-import { BodyText, ButtonLink, RICH_TEXT_LIST_CLASSES, SectionTitle } from "../typography.js";
+import {
+  BodyText,
+  ButtonLink,
+  LEAD_TEXT_CLASSES,
+  RICH_TEXT_LIST_CLASSES,
+  SectionTitle,
+} from "../typography.js";
 
 const ALIGNMENTS = ["centre", "left"] as const;
 const HERO_LAYOUTS = ["split", "centred", "background", "minimal"] as const;
@@ -62,7 +68,7 @@ const hero = defineSection({
     const copy = (
       <div className={layout === "centred" ? "mx-auto max-w-2xl" : "max-w-xl"}>
         <SectionTitle size="page">{values.title}</SectionTitle>
-        <p className="py-6 text-lg">{values.text}</p>
+        <p className={`py-6 ${LEAD_TEXT_CLASSES}`}>{values.text}</p>
         <ButtonLink label={values.buttonLabel} link={values.buttonLink} context={context} />
       </div>
     );
@@ -216,7 +222,7 @@ const callToAction = defineSection({
       >
         <div>
           <SectionTitle>{values.title}</SectionTitle>
-          <p className="mt-4 text-lg">{values.text}</p>
+          <p className={`mt-4 ${LEAD_TEXT_CLASSES}`}>{values.text}</p>
         </div>
         <ButtonLink
           label={values.buttonLabel}

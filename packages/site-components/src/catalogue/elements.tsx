@@ -141,11 +141,16 @@ const image = defineComponent({
   },
 });
 
-const BUTTON_STYLES = ["primary", "secondary", "outline"] as const;
+/**
+ * A Button's styles: the theme's button style (new Buttons' default, PH2-14), or its own, Filled
+ * (stored as "primary", what every Button had before), Second colour or Outline.
+ */
+const BUTTON_STYLES = ["theme", "primary", "secondary", "outline"] as const;
 const BUTTON_SIZES = ["small", "medium", "large"] as const;
 /** A Button's classes by its style and size, all from the catalogue's button classes (2.19). */
 const BUTTON_KIND = {
-  primary: { small: "primarySmall", medium: "primary", large: "primaryLarge" },
+  theme: { small: "primarySmall", medium: "primary", large: "primaryLarge" },
+  primary: { small: "filledSmall", medium: "filled", large: "filledLarge" },
   secondary: { small: "secondarySmall", medium: "secondary", large: "secondaryLarge" },
   outline: { small: "outlineSmall", medium: "outline", large: "outlineLarge" },
 } as const satisfies Record<string, Record<string, keyof typeof BUTTON_CLASSES>>;
@@ -183,7 +188,7 @@ const button = defineComponent({
   behaviours: entranceBehaviours,
   defaults: {
     label: t("starter.buttonLabel"),
-    style: "primary",
+    style: "theme",
     size: "medium",
     alignment: "left",
   },

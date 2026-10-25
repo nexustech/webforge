@@ -16,6 +16,14 @@ import type {
 } from "@webforge/site-components";
 import type { ComponentType, ReactNode } from "react";
 
+/** Where a layer dragged in Layers would land (SP-8): before or after element `nodeId`. */
+export type DropMark = {
+  readonly nodeId: string;
+  readonly place: "before" | "after";
+  /** The dragged element's name, for the chip at the drop point. */
+  readonly name: string;
+};
+
 /** The rich-text field being edited on the canvas: its element and the field's name. */
 export type RichTextAt = { readonly nodeId: string; readonly field: string };
 
@@ -248,10 +256,16 @@ export interface CanvasEngine {
   onUserEdit(cb: (edit: EngineEdit) => void): Unsubscribe;
   select(nodeId: string | null): void;
   /**
-   * Outlines element `nodeId` on the canvas as a hovered element is, or none (`null`): for a
-   * pointer over something outside the canvas that names it, such as a breadcrumb (1.30).
+   * Outlines element `nodeId` on the canvas as a hovered element is, with its name chip (SP-10),
+   * or none (`null`): for a pointer over something outside the canvas that names it, such as a
+   * breadcrumb (1.30) or a Layers row.
    */
   outline(nodeId: string | null): void;
+  /**
+   * Marks where a layer dragged in Layers would land (SP-8): a line in the accent along the edge of
+   * the element it would go before or after, with the dragged element's chip; `null` for none.
+   */
+  markDrop(mark: DropMark | null): void;
   /**
    * The selection changed on the canvas. `adding` for a Ctrl/Cmd- or Shift-click (1.31): it adds
    * `nodeId` to the selection, or takes it out if it is in it already; the app keeps the set.
