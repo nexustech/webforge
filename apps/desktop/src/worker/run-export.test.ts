@@ -28,7 +28,7 @@ describe("runExport", () => {
 
     const outcome = await runExport(await job(sampleSite(), destination), loadNodeResources);
 
-    expect(outcome).toMatchObject({ type: "exported", pages: 2, files: 15, warnings: 0 });
+    expect(outcome).toMatchObject({ type: "exported", pages: 3, files: 16, warnings: 0 });
     expect(readFileSync(join(destination, "about.html"), "utf8")).toContain(
       "A family bakery since 1998.",
     );

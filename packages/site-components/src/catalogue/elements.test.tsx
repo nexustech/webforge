@@ -1,6 +1,6 @@
 import type { NodeDoc } from "@webforge/model";
 import { describe, expect, it } from "vitest";
-import { overfillsSlots } from "../library.js";
+import { holdsOverfullSlot, overfillsSlots } from "../library.js";
 import { renderNodesToHtml } from "../render-static.js";
 import type { RenderContext, ResolvedImage } from "../schema.js";
 import { columnLayoutsFor, MAX_COLUMNS, MIN_COLUMNS } from "./column-layouts.js";
@@ -225,6 +225,10 @@ describe("the Columns element (2.9)", () => {
     expect(overfills(columns("full", MAX_COLUMNS), columns("over", MAX_COLUMNS + 1))).toBe(false);
     // Taking a column out of "over" is fine too.
     expect(overfills(columns("over", MAX_COLUMNS), columns("full", MAX_COLUMNS))).toBe(false);
+
+    // What already holds a slot over its limit, which a copy of can't fix (#384).
+    expect(holdsOverfullSlot(siteLibrary, section(columns("over", MAX_COLUMNS + 1)))).toBe(true);
+    expect(holdsOverfullSlot(siteLibrary, section(columns("full", MAX_COLUMNS)))).toBe(false);
   });
 
   it("offers 2.17's presets for each number of columns", () => {

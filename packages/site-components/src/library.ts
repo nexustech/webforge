@@ -358,6 +358,15 @@ function slotCounts(
 }
 
 /**
+ * Whether `nodes`, or the elements in their slots, already hold more in a slot than its `max` (a
+ * Columns of five, from an old file). A copy of them is refused like any add that overfills a slot,
+ * with a message of its own: there's room where it goes, but it is over the limit itself (#384).
+ */
+export function holdsOverfullSlot(library: ComponentLibrary, nodes: readonly NodeDoc[]): boolean {
+  return slotCounts(library, nodes).size > 0;
+}
+
+/**
  * Whether `after`, made from `before` by adding or moving elements, puts more in a slot than its
  * `max` (a Columns' four columns) and than the slot held before. Every way of adding or moving
  * elements refuses such a change: the Add panel, paste, duplicate, and drops on the canvas and in

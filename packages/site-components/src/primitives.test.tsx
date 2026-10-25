@@ -140,7 +140,13 @@ describe("the section frame (2.19)", () => {
       EDITOR_RENDER_CONTEXT,
     );
 
-    expect(Object.keys(band.fields)).toEqual(["colors", "padding", "margin"]);
+    expect(Object.keys(band.fields)).toEqual([
+      "colors",
+      "padding",
+      "margin",
+      "entrance",
+      "entranceDelay",
+    ]);
     expect(html).toBe(
       '<section class="site-band bg-base-200 px-4 py-16 mt-4" data-band=""><p>Inside</p></section>',
     );

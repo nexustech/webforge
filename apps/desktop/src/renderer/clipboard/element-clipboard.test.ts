@@ -190,6 +190,34 @@ describe("copy and paste (1.25)", () => {
     expect(labels(session)).toEqual([]);
   });
 
+  it("says a pasted Columns of five holds too many, not that it can't go here (#384)", async () => {
+    const session = sessionWith();
+    const columns: NodeDoc = {
+      type: "Columns",
+      props: {
+        id: "five",
+        columns: ["a", "b", "c", "d", "e"].map((id) => ({
+          type: "Column",
+          props: { id, content: [] },
+        })),
+      },
+    };
+    const notify = vi.fn();
+
+    expect(
+      await pasteElements(
+        session,
+        fakeClipboard({ status: "elements", elements: { nodes: [columns], media: [] } }),
+        notify,
+      ),
+    ).toBe(false);
+
+    expect(notify).toHaveBeenCalledWith(
+      "What you're copying holds a Columns with more than four columns. Remove one first, then copy it.",
+    );
+    expect(labels(session)).toEqual([]);
+  });
+
   it("says when there is nothing to paste or the paste failed", async () => {
     const session = sessionWith();
     const notify = vi.fn();

@@ -14,6 +14,27 @@ export const shared = {
     "Reversed swaps the theme's light and dark colours: a dark band on a light page, a light one on a dark page.",
   "field.padding": "Padding",
   "field.margin": "Margin",
+  // How a section or element moves in as visitors scroll to it (2.12, F-DS-5), and after how long.
+  "field.entrance": "Entrance animation",
+  "field.entrance.help":
+    "Plays once as visitors scroll to it. Visitors who prefer less motion never see it move.",
+  "field.entrance.none": "None",
+  "field.entrance.fade": "Fade in",
+  "field.entrance.slideUp": "Slide up",
+  "field.entrance.slideLeft": "Slide in from the left",
+  "field.entrance.slideRight": "Slide in from the right",
+  "field.entrance.zoom": "Zoom in",
+  "field.entranceDelay": "Delay",
+  "field.entranceDelay.none": "None",
+  "field.entranceDelay.short": "Short",
+  "field.entranceDelay.medium": "Medium",
+  "field.entranceDelay.long": "Long",
+  // What a button (and later a card) does under the pointer (2.12, F-DS-5).
+  "field.hoverEffect": "Hover effect",
+  "field.hoverEffect.none": "None",
+  "field.hoverEffect.lift": "Lift",
+  "field.hoverEffect.grow": "Grow",
+  "field.hoverEffect.shadow": "Shadow",
   // A component's layout variants (2.5): "Image on the left", "Three columns".
   "field.variant": "Layout",
   "field.side.top": "Top",
