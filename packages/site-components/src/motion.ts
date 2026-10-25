@@ -48,12 +48,12 @@ const entranceOf = (values: EntranceValues): Moving | undefined =>
   ENTRANCES.find((each): each is Moving => each !== "none" && each === values.entrance);
 
 /**
- * How each entrance starts, before it has moved in: drawn only under `motion-safe`, and only once
- * the `animate` behaviour has marked the page (`<html data-wf-animate>`) and not yet this one
- * (`data-wf-shown`). Without JavaScript, in print, for search engines and for visitors who prefer
- * less motion, it shows as it is.
+ * How each entrance starts, before it has moved in: drawn only under `motion-safe`, and only while
+ * it waits (`wf-waiting`, the site stylesheet's variant for once the `animate` behaviour has marked
+ * the page, `<html data-wf-animate>`, and not yet this one, `data-wf-shown`). Without JavaScript,
+ * in print, for search engines and for visitors who prefer less motion, it shows as it is.
  */
-const HIDDEN = "motion-safe:[:root[data-wf-animate]_&:not([data-wf-shown])]:";
+const HIDDEN = "motion-safe:wf-waiting:";
 const ENTRANCE_START: Readonly<Record<Moving, string>> = {
   fade: `${HIDDEN}opacity-0`,
   slideUp: `${HIDDEN}opacity-0 ${HIDDEN}translate-y-8`,

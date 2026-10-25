@@ -81,11 +81,12 @@ describe("buildSiteCss", () => {
     });
 
     const motionSafe = css.slice(css.indexOf("@media (prefers-reduced-motion: no-preference)"));
+    // Only while it waits: once the page is marked, and until it has moved in.
     expect(motionSafe).toMatch(
-      /:root\[data-wf-animate\] \.[^{]*opacity-0:not\(\[data-wf-shown\]\) \{\s*opacity: 0%;/,
+      /:root\[data-wf-animate\] \.motion-safe\\:wf-waiting\\:opacity-0:not\(\[data-wf-shown\]\) \{\s*opacity: 0%;/,
     );
     expect(motionSafe).toMatch(
-      /:root\[data-wf-animate\] \.[^{]*-translate-x-8:not\(\[data-wf-shown\]\)/,
+      /:root\[data-wf-animate\] \.motion-safe\\:wf-waiting\\:-translate-x-8:not\(\[data-wf-shown\]\)/,
     );
     expect(motionSafe).toContain("transition-delay: 600ms;");
     expect(motionSafe).toContain(String.raw`.motion-safe\:hover\:-translate-y-1:hover`);

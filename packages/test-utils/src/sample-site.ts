@@ -74,6 +74,8 @@ export function sampleSite(): SiteSnapshot {
                 buttonLink: "about",
                 alignment: "left",
                 image: { mediaId: "hero-photo", alt: "Green hills under a morning sun" },
+                // In view as the page opens (2.12): never hidden, it shows at once.
+                entrance: "fade",
               },
             },
             {
@@ -162,10 +164,18 @@ export function sampleSite(): SiteSnapshot {
               props: {
                 id: "fresh",
                 colors: "inverse",
+                // Below the fold (2.12): it moves in as it is scrolled to, its heading too.
+                entrance: "slideUp",
+                entranceDelay: "short",
                 content: [
                   {
                     type: "Heading",
-                    props: { id: "fresh-heading", text: "Fresh every day", size: "small" },
+                    props: {
+                      id: "fresh-heading",
+                      text: "Fresh every day",
+                      size: "small",
+                      entrance: "slideLeft",
+                    },
                   },
                   {
                     type: "Text",
@@ -183,6 +193,7 @@ export function sampleSite(): SiteSnapshot {
                 buttonLabel: "About ordering",
                 buttonLink: "about",
                 variant: "banner",
+                entrance: "zoom",
               },
             },
           ],

@@ -48,6 +48,9 @@ export function siteStylesheetSource(options: SiteCssOptions): string {
     '@import "tailwindcss/theme.css" layer(theme);',
     '@import "tailwindcss/preflight.css" layer(base);',
     '@import "tailwindcss/utilities.css" layer(utilities);',
+    // An element waiting for its entrance animation (2.12, `entranceClasses` in site-components):
+    // once webforge.js has marked the page, until it has moved in.
+    "@custom-variant wf-waiting (:root[data-wf-animate] &:not([data-wf-shown]));",
     themeCss(options.theme),
     fontFaces(fontFacesFor(options.theme, options.fonts), options.fontsUrl),
   ]

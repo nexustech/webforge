@@ -20,8 +20,8 @@ describe("entrance animations (2.12, F-DS-5)", () => {
     expect(classes.startsWith(" ")).toBe(true);
     expect(classes.split(" ")).toEqual(
       expect.arrayContaining([
-        "motion-safe:[:root[data-wf-animate]_&:not([data-wf-shown])]:opacity-0",
-        "motion-safe:[:root[data-wf-animate]_&:not([data-wf-shown])]:translate-y-8",
+        "motion-safe:wf-waiting:opacity-0",
+        "motion-safe:wf-waiting:translate-y-8",
         "motion-safe:delay-300",
       ]),
     );
@@ -56,9 +56,7 @@ describe("entrance animations (2.12, F-DS-5)", () => {
     const heading = html("Heading", { text: "Hi", entrance: "fade" });
     for (const drawn of [section, heading]) {
       expect(drawn).toContain('data-wf-entrance="fade"');
-      expect(drawn).toContain(
-        "motion-safe:[:root[data-wf-animate]_&amp;:not([data-wf-shown])]:opacity-0",
-      );
+      expect(drawn).toContain("motion-safe:wf-waiting:opacity-0");
     }
   });
 
