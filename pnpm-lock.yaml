@@ -359,6 +359,9 @@ importers:
       '@webforge/storage':
         specifier: workspace:*
         version: link:../../packages/storage
+      '@webforge/templates':
+        specifier: workspace:*
+        version: link:../../packages/templates
       '@webforge/test-utils':
         specifier: workspace:*
         version: link:../../packages/test-utils

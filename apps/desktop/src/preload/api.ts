@@ -8,6 +8,7 @@ import { mediaApi } from "./api/media.js";
 import { prefsApi } from "./api/prefs.js";
 import { projectApi } from "./api/project.js";
 import { siteApi } from "./api/site.js";
+import { templatesApi } from "./api/templates.js";
 
 export type { Invoke, Subscribe } from "./api/call.js";
 
@@ -26,5 +27,6 @@ export function createWebforgeApi(invoke: Invoke, subscribe: Subscribe): Webforg
     prefs: prefsApi(call),
     project: projectApi(call),
     site: siteApi(call),
+    templates: templatesApi(call),
   };
 }

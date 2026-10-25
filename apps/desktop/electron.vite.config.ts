@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
-import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -112,6 +112,23 @@ function bundleFonts(): Plugin {
   };
 }
 
+/**
+ * Copies the templates (2.14a) into `out/templates`, which electron-builder puts beside app.asar
+ * (`extraResources`): each template's folder from `@webforge/templates`, as it is. The main process
+ * checks each template against its schemas when it reads it.
+ */
+function bundleTemplates(): Plugin {
+  const root = fileURLToPath(new URL(".", import.meta.url));
+  return {
+    name: "webforge:bundle-templates",
+    async closeBundle() {
+      const target = join(root, "out", "templates");
+      await rm(target, { recursive: true, force: true });
+      await cp(join(root, "../../packages/templates/templates"), target, { recursive: true });
+    },
+  };
+}
+
 export default defineConfig(({ command }) => {
   // The dev server injects inline scripts and styles (HMR, React Refresh); a per-run nonce lets
   // them through without weakening the policy to 'unsafe-inline'.
@@ -119,7 +136,7 @@ export default defineConfig(({ command }) => {
 
   return {
     main: {
-      plugins: [inlineBase64(), bundleFonts()],
+      plugins: [inlineBase64(), bundleFonts(), bundleTemplates()],
       build: {
         rolldownOptions: {
           // The export worker runs in its own utility process (07); it bundles the pipeline.

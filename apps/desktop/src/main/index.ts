@@ -2,6 +2,7 @@ import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { t } from "@webforge/i18n";
 import { DOCUMENT_EXTENSIONS, type SiteSnapshot, type ThemeTokens } from "@webforge/model";
+import { readTemplates, type TemplateFolder } from "@webforge/templates/node";
 import { type CatalogueFont, FONT_CATALOGUE, fontFacesFor } from "@webforge/themes";
 import {
   app,
@@ -74,6 +75,7 @@ import {
   registerSpellCheckHandlers,
   spellCheckAvailable,
 } from "./spellcheck.js";
+import { registerTemplatesHandlers } from "./templates-ipc.js";
 import {
   MIN_WINDOW_SIZE,
   mainWindowPlacement,
@@ -289,6 +291,17 @@ const exportDialogs: ExportDialogs = {
       : dialog.showOpenDialog(parent, options));
     return result.canceled ? undefined : result.filePaths[0];
   },
+};
+
+// The templates New Site offers (2.14a), outside app.asar: in the packaged app's resources, or
+// where the build copied them while developing. Read once, when first listed or used.
+const templatesDir = app.isPackaged
+  ? join(process.resourcesPath, "templates")
+  : join(app.getAppPath(), "out", "templates");
+let shippedTemplates: readonly TemplateFolder[] | undefined;
+const templates = () => {
+  shippedTemplates ??= readTemplates(templatesDir);
+  return shippedTemplates;
 };
 
 // The installer's fonts, outside app.asar (2.2): in the packaged app's resources, or where the
@@ -581,6 +594,7 @@ async function start(): Promise<void> {
     runExport,
     (hash) => projectSession.readMedia(hash),
   );
+  registerTemplatesHandlers(ipcMain, (senderUrl) => isAppUrl(senderUrl, appUrl), templates);
   // A site double-clicked in Explorer arrives as a command-line argument (P1).
   const projectToOpen = projectFromFinder ?? findProjectArgument(process.argv);
   if (projectToOpen !== undefined) {
