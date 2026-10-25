@@ -1,5 +1,6 @@
 import {
   Button,
+  Check,
   cn,
   Dialog,
   DialogContent,
@@ -327,36 +328,12 @@ function LinkForm({
               </select>
             )}
           </Field>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              className="size-4 accent-primary"
-              checked={fileNewTab}
-              onChange={(event) => setFileNewTab(event.currentTarget.checked)}
-            />
-            {t("link.newTab")}
-          </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              className="size-4 accent-primary"
-              checked={download}
-              onChange={(event) => setDownload(event.currentTarget.checked)}
-            />
-            {t("link.download")}
-          </label>
+          <Check label={t("link.newTab")} checked={fileNewTab} onChange={setFileNewTab} />
+          <Check label={t("link.download")} checked={download} onChange={setDownload} />
         </>
       )}
       {(kind === "page" || kind === "url") && (
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            className="size-4 accent-primary"
-            checked={newTab}
-            onChange={(event) => setNewTab(event.currentTarget.checked)}
-          />
-          {t("link.newTab")}
-        </label>
+        <Check label={t("link.newTab")} checked={newTab} onChange={setNewTab} />
       )}
 
       <p
