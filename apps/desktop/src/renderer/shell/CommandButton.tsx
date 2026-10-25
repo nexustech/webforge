@@ -102,7 +102,8 @@ function MoreMenu({
 }) {
   const registry = useCommandRegistry();
   return (
-    <DropdownMenu>
+    // Not modal, as Undo's steps menu beside it: the title bar stays as it is behind it.
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"

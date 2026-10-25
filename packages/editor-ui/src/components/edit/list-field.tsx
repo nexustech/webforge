@@ -24,7 +24,28 @@ function itemsOf(value: unknown): readonly ListItem[] {
     : [];
 }
 
-/** What an item's row shows: its first text, as the user wrote it. */
+/** A choice's or a time's value as its row shows it: the options' labels, or the time. */
+function shownValue(field: ListItemFieldSpec, value: unknown): string {
+  const labelOf = (choice: unknown) =>
+    "options" in field ? field.options.find((option) => option.value === choice)?.label : undefined;
+  switch (field.kind) {
+    case "select":
+      return labelOf(value) ?? "";
+    case "multiChoice":
+      return Array.isArray(value)
+        ? value.flatMap((choice) => labelOf(choice) ?? []).join(", ")
+        : "";
+    case "time":
+      return typeof value === "string" ? value : "";
+    default:
+      return "";
+  }
+}
+
+/**
+ * What an item's row shows: its first text, as the user wrote it; without one, its choices and
+ * times ("Tue, Wed · 07:00 · 15:00", PH2-13).
+ */
 function summaryOf(item: ListItem, fields: readonly ListItemFieldSpec[]): string {
   for (const field of fields) {
     const value = item[field.name];
@@ -32,7 +53,10 @@ function summaryOf(item: ListItem, fields: readonly ListItemFieldSpec[]): string
       return value.trim();
     }
   }
-  return "";
+  return fields
+    .map((field) => shownValue(field, item[field.name]))
+    .filter((shown) => shown !== "")
+    .join(" · ");
 }
 
 function RowAction({

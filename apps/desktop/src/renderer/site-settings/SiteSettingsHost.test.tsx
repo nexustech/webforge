@@ -75,6 +75,10 @@ describe("SiteSettingsHost", () => {
       await user.click(
         screen.getAllByRole("button", { name: "Remove these hours" })[2] as HTMLElement,
       );
+      // Each row says its days and times.
+      expect(
+        screen.getAllByRole("button", { expanded: false }).map((row) => row.textContent),
+      ).toEqual(["Tue · 09:00 · 17:00", "Mon · 09:00 · 17:00"]);
       // Nothing is a step until Save.
       expect(session.history.state.getState().entries).toEqual([]);
       await user.click(screen.getByRole("button", { name: "Save" }));
