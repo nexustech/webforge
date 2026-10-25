@@ -156,6 +156,8 @@ const galleryImage = defineComponent({
     // On the canvas an inline caption is the editor, not text: then the alt text or the fallback.
     const caption = typeof values.caption === "string" ? values.caption.trim() : "";
     const name = alt.trim() !== "" ? alt : caption !== "" ? caption : t("siteText.galleryImage");
+    // Until an image is chosen: a space to see and select on the canvas, and nothing in the export.
+    if (image === null && context.emptyImage === undefined) return null;
     return (
       <figure className="site-gallery-image space-y-2">
         {image === null ? (
