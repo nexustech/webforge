@@ -77,7 +77,7 @@ describe("App", () => {
       ),
     );
 
-    await userEvent.click(screen.getByRole("button", { name: "Export" }));
+    await userEvent.click(screen.getByRole("button", { name: "Export Site…" }));
 
     expect(exportSite).toHaveBeenCalledWith({
       snapshot: expect.objectContaining({ pages: expect.any(Array), media: [] }),
@@ -103,7 +103,7 @@ describe("App", () => {
     const { rerender } = render(<App {...props} exportSite={first} />);
 
     rerender(<App {...props} exportSite={latest} />);
-    await userEvent.click(screen.getByRole("button", { name: "Export" }));
+    await userEvent.click(screen.getByRole("button", { name: "Export Site…" }));
 
     expect(latest).toHaveBeenCalledOnce();
     expect(first).not.toHaveBeenCalled();

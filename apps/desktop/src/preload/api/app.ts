@@ -8,6 +8,12 @@ export const appApi = (call: Call, subscribe: Subscribe): AppApi => ({
   reportError: (kind, error) => call("reportError", kind, error),
   logFailure: (context, code) => call("logFailure", context, code),
   setSpellCheckLanguage: (language) => call("setSpellCheckLanguage", language),
+  setNativeMenus: (menus) => call("setNativeMenus", menus),
+  onRunCommand: (run) =>
+    subscribe(appEvents.runCommand.channel, (...args) => {
+      const parsed = appEvents.runCommand.args.safeParse(args);
+      if (parsed.success) run(parsed.data[0]);
+    }),
   onFlushRequest: (save) =>
     subscribe(appEvents.flushRequest.channel, (...args) => {
       const parsed = appEvents.flushRequest.args.safeParse(args);

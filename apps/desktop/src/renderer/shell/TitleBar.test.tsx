@@ -24,6 +24,27 @@ function renderTitleBar(registry: CommandRegistry = createCommandRegistry()) {
 }
 
 describe("TitleBar", () => {
+  it("leaves its menus to the system's menu bar when it has one (macOS, LF-13)", () => {
+    const registry = createCommandRegistry();
+    registry.register({ id: "site.settings", label: "Site Settings…", menu: "file", run: vi.fn() });
+    const menuBar = {
+      setNativeMenus: vi.fn(async () => null),
+      onRunCommand: vi.fn(() => () => undefined),
+    };
+    render(
+      <CommandRegistryProvider registry={registry}>
+        <TooltipProvider>
+          <TitleBar siteName="Bloom Bakery" menuBar={menuBar} />
+        </TooltipProvider>
+      </CommandRegistryProvider>,
+    );
+
+    expect(screen.queryByRole("menubar")).toBeNull();
+    expect(menuBar.setNativeMenus).toHaveBeenCalledWith(
+      expect.arrayContaining([expect.objectContaining({ id: "file", label: "File" })]),
+    );
+  });
+
   it("is the window's banner, with the app name as its heading and the save status", () => {
     renderTitleBar();
 
@@ -35,10 +56,34 @@ describe("TitleBar", () => {
   it("disables buttons whose commands nobody has registered yet", () => {
     renderTitleBar();
 
-    // Icon-only Undo and Redo keep their names before the editor registers them.
+    // Icon-only buttons (LF-13) keep their names before the editor registers them.
     for (const name of ["New", "Open", "Undo", "Redo", "Preview", "Export", "Publish"]) {
-      expect((screen.getByRole("button", { name }) as HTMLButtonElement).disabled).toBe(true);
+      const button = screen.getByRole("button", { name }) as HTMLButtonElement;
+      expect(button.disabled).toBe(true);
+      expect(button.textContent).toBe("");
     }
+  });
+
+  it("gives a button a caret once commands go with it, and none before (LF-13)", async () => {
+    const registry = renderTitleBar();
+    expect(screen.queryByRole("button", { name: "More Export options" })).toBeNull();
+
+    const zip = vi.fn();
+    act(() => {
+      registry.register({ id: COMMAND_IDS.exportSite, label: "Export Site…", run: vi.fn() });
+      registry.register({
+        id: "site.exportZip",
+        label: "Export as ZIP…",
+        more: COMMAND_IDS.exportSite,
+        run: zip,
+      });
+    });
+    await userEvent.click(screen.getByRole("button", { name: "More Export options" }));
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Export as ZIP…" }));
+
+    expect(zip).toHaveBeenCalledOnce();
+    // The caret is the only one: Preview and Publish have nothing to go with them.
+    expect(screen.queryByRole("button", { name: /^More (Preview|Publish) options$/ })).toBeNull();
   });
 
   it("runs a registered command from its button, and labels icon buttons with the command", async () => {
@@ -53,7 +98,8 @@ describe("TitleBar", () => {
     registry.register({ id: COMMAND_IDS.undo, label: "Undo", run: undo });
     renderTitleBar(registry);
 
-    await userEvent.click(screen.getByRole("button", { name: "Export" }));
+    // Named by its command once registered.
+    await userEvent.click(screen.getByRole("button", { name: "Export Site…" }));
     await userEvent.click(screen.getByRole("button", { name: "Undo" }));
 
     expect(exportSite).toHaveBeenCalledOnce();

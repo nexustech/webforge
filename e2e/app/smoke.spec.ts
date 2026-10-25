@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { changedDocuments, createSite } from "@webforge/model";
 import { desktopDir, desktopVersion, launchDesktopApp } from "./launch.js";
+import { chooseFromMenu } from "./menus.js";
 import { type RendererWindow, stubFileDialogs } from "./sites.js";
 
 // Smoke test of the desktop shell: it starts, shows its window and keeps the renderer locked down.
@@ -38,8 +39,7 @@ test.describe("desktop shell", () => {
     await expect(page).toHaveTitle("Webforge");
     await expect(page.getByRole("heading", { level: 1, name: "Webforge" })).toBeAttached();
     // The version travels main → IPC → preload → renderer, so this proves the whole round trip.
-    await page.getByRole("menuitem", { name: "Help" }).click();
-    await page.getByRole("menuitem", { name: "About Webforge" }).click();
+    await chooseFromMenu(app, page, "Help", "About Webforge");
     await expect(page.getByRole("dialog").getByText(`Version ${desktopVersion}`)).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(page.getByRole("dialog")).toHaveCount(0);

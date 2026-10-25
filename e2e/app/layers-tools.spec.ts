@@ -1,5 +1,6 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { launchDesktopApp } from "./launch.js";
+import { chooseFromMenu } from "./menus.js";
 
 // Layers tools and the element menu (1.35, F-ED-26): one right-click menu on the canvas and in
 // Layers; while a layer is dragged, the rows it can't go to are marked; a filter and Expand/Collapse
@@ -167,8 +168,7 @@ test("copies a layer dragged with Ctrl/Cmd, and places another linked copy with 
 
   // A linked copy of a shared section, dragged onto itself with Shift too: another linked copy.
   await row("Section").first().click();
-  await page.getByRole("menuitem", { name: "Edit" }).click();
-  await page.getByRole("menuitem", { name: "Save as shared section…" }).click();
+  await chooseFromMenu(app, page, "Edit", "Save as shared section…");
   const dialog = page.getByRole("dialog", { name: "Save as shared section" });
   await dialog.getByRole("textbox", { name: "Name" }).fill("Welcome");
   await dialog.getByRole("button", { name: "Save" }).click();

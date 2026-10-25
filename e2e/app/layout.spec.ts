@@ -2,6 +2,7 @@ import { existsSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { launchDesktopApp, newUserDataDir } from "./launch.js";
+import { chooseFromMenu } from "./menus.js";
 
 // The window shell (1.2): panel sizes and the theme are remembered per person, across restarts.
 
@@ -30,8 +31,7 @@ test.afterAll(async () => {
  */
 async function viewMenu(name: string): Promise<void> {
   await expect(page.getByRole("menu")).toHaveCount(0);
-  await page.getByRole("menuitem", { name: "View", exact: true }).click();
-  await page.getByRole("menuitem", { name }).click();
+  await chooseFromMenu(app, page, "View", name);
 }
 
 /** The left column's width; a collapsed one hides its panels (it shows a strip of icons). */

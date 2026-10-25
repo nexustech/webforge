@@ -98,7 +98,7 @@ test("links a button to a section, and the exported link follows a renamed page"
 
   const folder = join(dir, "export");
   await stubFileDialogs(app, folder);
-  await page.getByRole("button", { name: "Export", exact: true }).click();
+  await page.getByRole("button", { name: "Export Site…", exact: true }).click();
   await expect(page.getByText(/^Site exported to/)).toBeVisible({ timeout: 30_000 });
 
   expect(readFileSync(join(folder, "index.html"), "utf8")).toContain(
