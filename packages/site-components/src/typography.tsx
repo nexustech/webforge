@@ -31,8 +31,17 @@ export function SectionTitle({
   return <Tag className={TITLE_CLASSES[size]}>{children}</Tag>;
 }
 
-/** Running text: paragraphs, links underlined, space between paragraphs. */
-export const BODY_TEXT_CLASSES = "text-lg leading-relaxed [&_a]:underline [&_p+p]:mt-4";
+/**
+ * Bullets or numbers, an indent and space around them, for the lists rich text holds (#388):
+ * Tailwind's base styles take them away. They style lists inside the element they're on, never
+ * that element itself, so the List element, whose own <ul> carries the body-text classes, keeps
+ * its own markers.
+ */
+export const RICH_TEXT_LIST_CLASSES =
+  "[&_ol]:my-3 [&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-6";
+
+/** Running text: paragraphs, links underlined, space between paragraphs, its lists marked. */
+export const BODY_TEXT_CLASSES = `text-lg leading-relaxed [&_a]:underline [&_p+p]:mt-4 ${RICH_TEXT_LIST_CLASSES}`;
 
 /** Running text, in a `<div>` that holds its paragraphs; `className` places it ("mt-4"). */
 export function BodyText({
