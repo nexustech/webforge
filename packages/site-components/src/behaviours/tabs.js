@@ -10,10 +10,21 @@
 // to something in it (the page opened at #anchor, or a menu link) chooses its tab and scrolls to
 // it.
 (() => {
-  for (const tabs of document.querySelectorAll("[data-wf-tabs]")) {
+  /** The page's #anchor, decoded: as it is when it isn't encoded right ("#100%"). */
+  const hashId = () => {
+    const hash = window.location.hash.slice(1);
+    try {
+      return decodeURIComponent(hash);
+    } catch {
+      return hash;
+    }
+  };
+
+  /** Makes `tabs` a tab list with its panels. */
+  const setUp = (/** @type {Element} */ tabs) => {
     const list = tabs.querySelector(":scope > [data-wf-tabs-list]");
     const template = tabs.querySelector(":scope > template[data-wf-tab-button]");
-    if (!(list instanceof HTMLElement) || !(template instanceof HTMLTemplateElement)) continue;
+    if (!(list instanceof HTMLElement) || !(template instanceof HTMLTemplateElement)) return;
     // This tabs' own panels, not those of tabs inside one.
     const panels = /** @type {HTMLElement[]} */ (
       [...tabs.querySelectorAll("[data-wf-tab]")].filter(
@@ -21,7 +32,7 @@
       )
     );
     const model = template.content.firstElementChild;
-    if (panels.length === 0 || !(model instanceof HTMLElement)) continue;
+    if (panels.length === 0 || !(model instanceof HTMLElement)) return;
 
     const buttons = panels.map((panel, index) => {
       const heading = panel.querySelector(":scope > [data-wf-tab-label]");
@@ -64,7 +75,7 @@
     });
     /** Chooses the tab of the panel holding the page's #anchor, if one does, and scrolls to it. */
     const followHash = () => {
-      const id = decodeURIComponent(window.location.hash.slice(1));
+      const id = hashId();
       const target = id === "" ? null : document.getElementById(id);
       const index = target === null ? -1 : panels.findIndex((panel) => panel.contains(target));
       if (target === null || index < 0) return;
@@ -93,5 +104,12 @@
     list.hidden = false;
     select(0, false);
     followHash();
+  };
+
+  for (const tabs of document.querySelectorAll("[data-wf-tabs]")) {
+    // One Tabs that goes wrong leaves the others working, every panel shown as without the script.
+    try {
+      setUp(tabs);
+    } catch {}
   }
 })();

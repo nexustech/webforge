@@ -6,7 +6,12 @@ import { COLORS_FIELD, defineSection, PADDING_FIELD } from "./frame.js";
 import { EDITOR_RENDER_CONTEXT } from "./library.js";
 import { renderNodesToHtml } from "./render-static.js";
 import type { RenderContext } from "./schema.js";
-import { BODY_TEXT_CLASSES, BUTTON_CLASSES, TITLE_CLASSES } from "./typography.js";
+import {
+  BODY_TEXT_CLASSES,
+  BUTTON_CLASSES,
+  RICH_TEXT_LIST_CLASSES,
+  TITLE_CLASSES,
+} from "./typography.js";
 
 // The section frame and the typography and button primitives (2.19).
 
@@ -230,6 +235,23 @@ describe("the typography and button primitives (2.19)", () => {
     const body = classesOf(html).filter((classes) => classes.includes("leading-relaxed"));
     expect(body.length).toBeGreaterThan(2);
     for (const classes of body) expect(classes, classes).toContain(BODY_TEXT_CLASSES);
+  });
+
+  it("marks the lists in rich text, never the element the classes are on (#388)", () => {
+    // Only lists inside: the List element's own <ul> carries the body-text classes too, and keeps
+    // its own markers (bullets, numbers or none).
+    const rules = RICH_TEXT_LIST_CLASSES.split(" ");
+    expect(rules).toEqual(expect.arrayContaining(["[&_ul]:list-disc", "[&_ol]:list-decimal"]));
+    for (const rule of rules) expect(rule, rule).toMatch(/^\[&_(ul|ol)\]:/);
+    expect(BODY_TEXT_CLASSES).toContain(RICH_TEXT_LIST_CLASSES);
+
+    const text = renderNodesToHtml(
+      [{ type: "Text", props: { id: "list", text: "<ul><li>Bread</li><li>Cakes</li></ul>" } }],
+      siteLibrary,
+      EDITOR_RENDER_CONTEXT,
+    );
+    expect(text).toContain("[&amp;_ul]:list-disc");
+    expect(text).toContain("<ul><li>Bread</li><li>Cakes</li></ul>");
   });
 
   it("draws every button with the button classes, placing classes after them", () => {

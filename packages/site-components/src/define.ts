@@ -151,6 +151,8 @@ function valueReader(field: FieldDef, initial: unknown): (value: unknown) => unk
       // A name Lucide doesn't have (a file from elsewhere) draws no icon.
       case "icon":
         return isIconName(value) ? value : isIconName(fallback) ? fallback : undefined;
+      case "code":
+        return typeof value === "string" ? value : typeof fallback === "string" ? fallback : "";
       case "link": {
         const link = linkValueSchema.safeParse(value);
         if (link.success) return link.data;

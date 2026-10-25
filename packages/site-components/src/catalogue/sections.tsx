@@ -4,7 +4,7 @@ import { defineComponent } from "../define.js";
 import { defineSection } from "../frame.js";
 import type { ComponentDef } from "../library.js";
 import { Picture } from "../picture.js";
-import { BodyText, ButtonLink, SectionTitle } from "../typography.js";
+import { BodyText, ButtonLink, RICH_TEXT_LIST_CLASSES, SectionTitle } from "../typography.js";
 
 const ALIGNMENTS = ["centre", "left"] as const;
 const HERO_LAYOUTS = ["split", "centred", "background", "minimal"] as const;
@@ -291,7 +291,7 @@ function FaqItemView({
   return (
     <details className="site-faq-item collapse-arrow collapse border border-base-300 bg-base-100">
       <summary className="collapse-title font-semibold">{question}</summary>
-      <div className="collapse-content [&_p+p]:mt-2">{answer}</div>
+      <div className={`collapse-content [&_p+p]:mt-2 ${RICH_TEXT_LIST_CLASSES}`}>{answer}</div>
     </details>
   );
 }

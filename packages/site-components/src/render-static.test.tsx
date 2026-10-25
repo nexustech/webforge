@@ -64,7 +64,7 @@ describe("renderNodesToHtml", () => {
     expect(html).toBe(
       '<section class="site-section mx-auto max-w-4xl space-y-6 px-4 py-16">' +
         '<h1 class="site-heading text-4xl font-bold md:text-5xl">Welcome to our business</h1>' +
-        '<div class="site-text text-lg leading-relaxed [&amp;_a]:underline [&amp;_p+p]:mt-4">' +
+        '<div class="site-text text-lg leading-relaxed [&amp;_a]:underline [&amp;_p+p]:mt-4 [&amp;_ol]:my-3 [&amp;_ol]:list-decimal [&amp;_ol]:pl-6 [&amp;_ul]:my-3 [&amp;_ul]:list-disc [&amp;_ul]:pl-6">' +
         '<div class="contents"><p>Tell visitors what you do and why they will love it.</p></div>' +
         "</div></section>",
     );
@@ -747,7 +747,7 @@ describe("renderNodesToHtml", () => {
       '<h3 class="site-heading text-xl font-semibold max-md:mt-24 md:mt-4">Hi</h3>',
     );
     expect(html).toContain(
-      '<div class="site-text text-lg leading-relaxed [&amp;_a]:underline [&amp;_p+p]:mt-4 mb-8">',
+      '<div class="site-text text-lg leading-relaxed [&amp;_a]:underline [&amp;_p+p]:mt-4 [&amp;_ol]:my-3 [&amp;_ol]:list-decimal [&amp;_ol]:pl-6 [&amp;_ul]:my-3 [&amp;_ul]:list-disc [&amp;_ul]:pl-6 mb-8">',
     );
     // An FAQ is a section like the others (2.19): its own padding, its margin set.
     expect(html).toContain('<section class="site-faq bg-base-100 px-4 py-16 my-4">');

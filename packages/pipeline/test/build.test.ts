@@ -167,6 +167,34 @@ describe("buildSite: pages in folders", () => {
   }, 60_000);
 });
 
+describe("buildSite: Custom Code (2.11, F-ED-15)", () => {
+  it("writes Custom Code into the page as it is, its classes in the site's CSS", async () => {
+    const base = sampleSite();
+    const script =
+      "<script>\nconst note = `Sale\n  today`;   if (note) window.sold = true;\n</script>";
+    const code = `<div class="rounded-full bg-accent">Sale</div>${script}<style>.sale{color:red}</style>`;
+    const [home, ...rest] = base.pages;
+    if (home === undefined) throw new Error("no home page");
+    const custom: NodeDoc = { type: "CustomCode", props: { id: "custom", code } };
+    const site: SiteSnapshot = {
+      ...base,
+      pages: [{ ...home, doc: { ...home.doc, content: [...home.doc.content, custom] } }, ...rest],
+    };
+
+    const exported = await buildSite(site, siteLibrary, resources);
+
+    // As written: its markup laid out as the rest of the readable HTML is (X4), and what's in its
+    // script and style exactly as typed, not reformatted.
+    const page = text(exported, "index.html");
+    expect(page.replace(/\s+/g, " ")).toContain(
+      '<div class="site-custom-code"> <div class="rounded-full bg-accent">Sale</div> <script>',
+    );
+    expect(page).toContain(script);
+    expect(page).toContain("<style>.sale{color:red}</style>");
+    expect(text(exported, fileNamed(exported, /site\.[0-9a-f]+\.css$/))).toContain(".rounded-full");
+  }, 60_000);
+});
+
 describe("buildSite: page settings", () => {
   it("uses navigation labels, leaves hidden pages out of the menu and hides Header or Footer", async () => {
     const base = sampleSite();

@@ -18,6 +18,7 @@ import {
   addItems,
   addSharedCopy,
   addTargetFor,
+  forLevel,
   sharedSectionItems,
   suggestedItems,
   suggestedTypes,
@@ -129,11 +130,14 @@ export function registerAddPanel(
   };
   const noPreferences: AddPreferences = { favourites: [], recent: [] };
   const prefs = () => preferences?.getState().preferences.add ?? noPreferences;
-  // Both tabs' items, rebuilt only when the shared sections or the favourites change.
+  /** Simple or Advanced mode (F-ED-11): what's offered in Advanced mode only is left out in Simple. */
+  const level = () => preferences?.getState().preferences.editorLevel ?? "simple";
+  // Both tabs' items, rebuilt only when the shared sections, the favourites or the mode change.
   let listed:
     | {
         readonly shared: SharedSectionsDoc;
         readonly prefs: AddPreferences;
+        readonly level: "simple" | "advanced";
         readonly sections: readonly AddItem[];
         readonly elements: readonly AddItem[];
       }
@@ -141,14 +145,16 @@ export function registerAddPanel(
   const items = () => {
     const shared = history.document.getState().sharedSections;
     const current = prefs();
-    if (listed?.shared !== shared || listed.prefs !== current) {
+    const mode = level();
+    if (listed?.shared !== shared || listed.prefs !== current || listed.level !== mode) {
       const { favourites, recent } = current;
       const all = [...sharedSectionItems(history.document.getState()), ...sections];
       listed = {
         shared,
         prefs: current,
-        sections: withFavourites(all, favourites, recent),
-        elements: withFavourites(elements, favourites, recent),
+        level: mode,
+        sections: withFavourites(forLevel(all, mode), favourites, recent),
+        elements: withFavourites(forLevel(elements, mode), favourites, recent),
       };
     }
     return listed;

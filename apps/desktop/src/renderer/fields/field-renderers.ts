@@ -1,4 +1,5 @@
 import type { FieldRenderers } from "@webforge/editor-ui";
+import { codeField } from "./code/field.js";
 import { colourField } from "./color/field.js";
 import type { FieldRendererContext } from "./field-context.js";
 import { iconField } from "./icon/field.js";
@@ -16,5 +17,6 @@ export function fieldRenderers(context: FieldRendererContext): FieldRenderers {
     link: linkField(context),
     icon: iconField(),
     color: colourField(context),
+    code: codeField(),
   };
 }
