@@ -36,6 +36,7 @@ export const FIELD_KINDS = {
   media: { editPanel: "image", story: "Edit/ImageField" },
   link: { editPanel: "link", story: "Edit/Fields/Link" },
   icon: { editPanel: "icon", story: "Edit/Fields/Icon" },
+  code: { editPanel: "code", story: "Edit/Fields/Code" },
   list: { editPanel: "list", story: "Edit/Fields/List" },
 } as const satisfies { readonly [K in FieldDef["kind"]]: FieldKindEditing };
 

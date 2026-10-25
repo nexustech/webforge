@@ -1,6 +1,7 @@
 import { basic } from "./basic.js";
 import { carousel } from "./carousel.js";
 import { contactDetails } from "./contactDetails.js";
+import { customCode } from "./customCode.js";
 import { elements } from "./elements.js";
 import { embeds } from "./embeds.js";
 import { features } from "./features.js";
@@ -29,6 +30,7 @@ export const componentFamilies = {
   forms,
   features,
   testimonials,
+  customCode,
 } as const;
 
 /** Site components: element names, their fields, exported-site text and the starter page. */
@@ -45,4 +47,5 @@ export const components = {
   ...forms,
   ...features,
   ...testimonials,
+  ...customCode,
 } as const;

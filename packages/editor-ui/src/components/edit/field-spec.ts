@@ -83,6 +83,8 @@ type FieldSpecs = {
     /** What choosing none means ("None", "The site's image"), already translated. */
     readonly noneLabel: string;
   };
+  /** Drawn by the app: code (fields/code/). */
+  readonly code: Nothing;
 };
 
 /** A kind of field: the renderer that draws it. */

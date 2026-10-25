@@ -16,6 +16,7 @@ import {
   addItems,
   addSharedCopy,
   addTarget,
+  forLevel,
   groupItems,
   sharedSectionItems,
   suggestedItems,
@@ -64,6 +65,17 @@ describe("addItems (F-ED-1, ADR 0005)", () => {
     for (const left of ["Header", "Footer", "FaqItem", "CarouselSlide"]) {
       expect([...sections, ...elements.map((item) => item.type)]).not.toContain(left);
     }
+  });
+
+  it("offers Custom Code in Advanced mode only (2.11, F-ED-11)", () => {
+    const elements = addItems(siteLibrary, "elements");
+    const types = (level: "simple" | "advanced") =>
+      forLevel(elements, level).map((item) => item.type);
+
+    expect(elements.find((item) => item.type === "CustomCode")?.advancedOnly).toBe(true);
+    expect(types("advanced")).toContain("CustomCode");
+    expect(types("simple")).not.toContain("CustomCode");
+    expect(types("simple")).toContain("Heading");
   });
 
   it("finds by name or group, ignoring case, and groups by category", () => {

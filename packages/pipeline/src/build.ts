@@ -226,6 +226,8 @@ export async function buildSite(
       socialProfiles: site.socialProfiles ?? [],
       language: site.language,
       ...(site.formService === undefined ? {} : { formService: site.formService }),
+      // Custom Code as written (F-ED-15): the export is the one place it runs (3.9 checks it).
+      rawCustomCode: true,
     };
     // The one static renderer (ADR 0005), whose render functions the canvas draws with too.
     const regions = {

@@ -53,6 +53,11 @@ export type ComponentDef = {
   readonly place?: ComponentPlace;
   /** Its group in the Add panel, already translated ("Heroes", "Text"). */
   readonly category?: string;
+  /**
+   * Offered in the Add panel in Advanced mode only (F-ED-11), as Custom Code is. One already on a
+   * page shows, and can be selected and edited, in either mode.
+   */
+  readonly advancedOnly?: true;
   /** Set on a section {@link defineSection} framed: every section is (2.19). */
   readonly framed?: true;
   readonly fields: Readonly<Record<string, FieldDef>>;

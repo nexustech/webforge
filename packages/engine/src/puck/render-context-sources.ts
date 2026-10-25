@@ -17,6 +17,8 @@ export const RENDER_CONTEXT_SOURCES = {
   image: "setImages",
   emptyImage: "setImages",
   previews: "setPreviews",
+  // Only the export sets it: the canvas always shows Custom Code sanitised.
+  rawCustomCode: "editor",
   setting: "setSettings",
   emptySetting: "setSettings",
   openingHours: "setSettings",

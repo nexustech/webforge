@@ -124,6 +124,11 @@ export type FieldDef = {
    */
   | { readonly kind: "link"; readonly label: string }
   /**
+   * Code the person writes themselves (Custom Code's HTML, F-ED-15), stored as written: edited in a
+   * monospace box of its own lines, never on the canvas.
+   */
+  | { readonly kind: "code"; readonly label: string }
+  /**
    * One of Lucide's icons by name ("arrow-right", F-ED-22), chosen in the icon picker and drawn as
    * inline SVG; none when not set.
    */
@@ -263,6 +268,12 @@ export type RenderContext = SiteBindings & {
   readonly previews?: EditPreviews;
   /** What an Image without its image shows instead (2.9): a hint on the canvas; nothing in the export. */
   readonly emptyImage?: () => ReactNode;
+  /**
+   * Custom Code is written as it is (2.11, F-ED-15): set by the export pipeline only. Everywhere
+   * else (the canvas, Storybook, the class collection) it is shown sanitised. It is never part of a
+   * stored document, so no site file can ask for its code to be written raw into the editor.
+   */
+  readonly rawCustomCode?: true;
 };
 
 /**
@@ -302,11 +313,13 @@ type StoredOne<Field extends FieldDef> = Field extends { readonly kind: "text" |
                 ? LinkValue
                 : Field extends { readonly kind: "icon" }
                   ? string
-                  : Field extends { readonly kind: "list" }
-                    ? readonly Readonly<Record<string, unknown>>[]
-                    : Field extends { readonly kind: "slot" }
-                      ? readonly NodeDoc[]
-                      : never;
+                  : Field extends { readonly kind: "code" }
+                    ? string
+                    : Field extends { readonly kind: "list" }
+                      ? readonly Readonly<Record<string, unknown>>[]
+                      : Field extends { readonly kind: "slot" }
+                        ? readonly NodeDoc[]
+                        : never;
 
 /** What a field stores: per device too, for a field set per device (F-ED-4). */
 export type StoredValue<Field extends FieldDef> = Field extends { readonly responsive: true }
