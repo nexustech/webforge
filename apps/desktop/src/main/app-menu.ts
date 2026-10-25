@@ -67,13 +67,34 @@ export function applicationMenu(
       ]
     : [];
   if (platform === "darwin") {
+    const appItems = itemsOf(renderer, "app");
     const file = itemsOf(renderer, "file");
     const edit = itemsOf(renderer, "edit");
     const view = itemsOf(renderer, "view");
     const help = itemsOf(renderer, "help");
     const fullScreen: MenuItemConstructorOptions = { role: "togglefullscreen" };
     return [
-      { role: "appMenu" },
+      // The application menu, with the editor's own items (Settings…, LF-12) after About.
+      appItems.length === 0
+        ? { role: "appMenu" }
+        : {
+            // A Mac's first menu is the app's, whatever its label; a role's own submenu can't
+            // take items.
+            label: t("app.name"),
+            submenu: [
+              { role: "about" },
+              { type: "separator" },
+              ...appItems,
+              { type: "separator" },
+              { role: "services" },
+              { type: "separator" },
+              { role: "hide" },
+              { role: "hideOthers" },
+              { role: "unhide" },
+              { type: "separator" },
+              { role: "quit" },
+            ],
+          },
       ...(file.length === 0 ? [] : [{ label: t("shell.menu.file"), submenu: file }]),
       renderer === undefined
         ? { role: "editMenu" }

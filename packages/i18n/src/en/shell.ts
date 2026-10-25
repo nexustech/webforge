@@ -52,6 +52,29 @@ export const shell = {
   // A title-bar button's caret (LF-13), named by the button: "More Export options".
   "shell.moreOptions": "More {name} options",
 
+  // Settings (LF-12): one dialog for the app and the open site.
+  "settings.command": "Settings…",
+  "settings.title": "Settings",
+  "settings.description": "How Webforge works for you, and the open site's details.",
+  "settings.save": "Save",
+  "settings.sections": "Settings sections",
+  "settings.heading.app": "App",
+  "settings.heading.site": "This site",
+  "settings.interface": "Interface",
+  "settings.interface.theme": "Theme",
+  "settings.interface.dark": "Dark",
+  "settings.interface.light": "Light",
+  "settings.interface.level": "Editing",
+  "settings.interface.simple": "Simple mode",
+  "settings.interface.advanced": "Advanced mode",
+  "settings.interface.levelHelp":
+    "Advanced mode adds the Edit panel's Advanced tab and Custom Code.",
+  "settings.devices": "Devices",
+  "settings.devices.label": "Your devices",
+  "settings.devices.item": "Device",
+  "settings.devices.add": "Add a device",
+  "settings.devices.remove": "Remove this device",
+
   // Command box.
   "shell.commandBox.open": "Search commands",
   "shell.commandBox.placeholder": "Type a command, a page or something to add",

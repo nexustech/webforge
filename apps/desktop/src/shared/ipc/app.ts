@@ -38,12 +38,14 @@ const nativeMenuItemSchema = z.strictObject({
 const nativeMenusSchema = z
   .array(
     z.strictObject({
-      id: z.enum(["file", "edit", "view", "help"]),
+      // `app`: the application menu, macOS's first (Webforge › Settings…).
+      id: z.enum(["app", "file", "edit", "view", "help"]),
       label: z.string().min(1).max(40),
       items: z.array(nativeMenuItemSchema).max(100),
     }),
   )
-  .max(4);
+  // One of each: the application menu, File, Edit, View and Help.
+  .max(5);
 
 /** The renderer's menus, as macOS's menu bar shows them. */
 export type NativeMenus = z.infer<typeof nativeMenusSchema>;

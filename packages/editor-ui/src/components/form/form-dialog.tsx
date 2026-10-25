@@ -29,7 +29,7 @@ export type FormDialogProps<V extends FormValues, Out> = {
   /** The tab it opens on; its first when left out. */
   readonly initialGroup?: string;
   /** Wide, for a form with tabs (Site Settings); the dialogs' width otherwise. */
-  readonly size?: "md" | "lg";
+  readonly size?: "md" | "lg" | "xl";
   /**
    * Saving: the checked value, and the groups whose fields changed, for the one undo step the
    * app records ("Changed Site Settings: Contact & hours"). The dialog doesn't close by itself.
@@ -62,7 +62,12 @@ export function FormDialog<V extends FormValues, Out>({
         focuses the first field with its text selected, so typing replaces it (renaming).
       */}
       <DialogContent
-        className={cn("max-h-[calc(100dvh-2rem)] overflow-y-auto", size === "lg" && "sm:max-w-2xl")}
+        className={cn(
+          "max-h-[calc(100dvh-2rem)] overflow-y-auto",
+          size === "lg" && "sm:max-w-2xl",
+          // A form with a side nav (LF-12's Settings).
+          size === "xl" && "sm:max-w-3xl",
+        )}
       >
         <FormDialogBody {...body} onCancel={onCancel} />
       </DialogContent>

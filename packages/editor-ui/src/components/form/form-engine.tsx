@@ -1,4 +1,4 @@
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useId, useState } from "react";
 import { cn } from "../../lib/cn.js";
 import { BoxField } from "../edit/box-field.js";
 import { drawField, useFieldRenderers } from "../edit/field-context.js";
@@ -65,6 +65,7 @@ export function Form<V extends FormValues, Out>({
   initialGroup,
 }: FormProps<V, Out>) {
   const renderers: FieldRenderers = { ...FORM_RENDERERS, ...useFieldRenderers() };
+  const navId = useId();
   const { fields, issues } = form;
   const groups = form.spec.groups ?? [];
   const [tab, setTab] = useState(initialGroup ?? groups[0]?.id ?? "");
@@ -111,6 +112,68 @@ export function Form<V extends FormValues, Out>({
       </div>
     );
   }
+  const marker = (group: string) =>
+    hasIssue(group) ? (
+      <span aria-hidden className="ml-1 size-1.5 rounded-full bg-destructive" />
+    ) : null;
+  // Groups with headings are listed down the side, under them (LF-12): a tab list per heading.
+  const headings = [...new Set(groups.flatMap((group) => group.heading ?? []))];
+  if (headings.length > 0) {
+    return (
+      <div className="grid gap-3">
+        {general}
+        <Tabs
+          orientation="vertical"
+          // A section is chosen with a click or Enter, not by focus: each heading's list has a tab to
+          // focus, and the dialog's first focus would otherwise choose App's first section.
+          activationMode="manual"
+          value={tab}
+          onValueChange={setTab}
+          className="grid grid-cols-[minmax(0,10rem)_minmax(0,1fr)] gap-4"
+        >
+          <nav
+            {...(groupsLabel === undefined ? {} : { "aria-label": groupsLabel })}
+            className="flex flex-col gap-3"
+          >
+            {headings.map((heading, index) => (
+              <div key={heading} className="flex flex-col gap-0.5">
+                <p
+                  id={`${navId}-${index}`}
+                  className="m-0 px-2 text-xs font-semibold text-muted-foreground"
+                >
+                  {heading}
+                </p>
+                <TabsList
+                  aria-labelledby={`${navId}-${index}`}
+                  className="h-auto flex-col items-stretch bg-transparent p-0"
+                >
+                  {groups
+                    .filter((group) => group.heading === heading)
+                    .map((group) => (
+                      <TabsTrigger
+                        key={group.id}
+                        value={group.id}
+                        className="h-7 justify-start px-2 font-normal data-[state=active]:bg-accent data-[state=active]:text-accent-foreground"
+                      >
+                        {group.label}
+                        {marker(group.id)}
+                      </TabsTrigger>
+                    ))}
+                </TabsList>
+              </div>
+            ))}
+          </nav>
+          <div className="min-w-0">
+            {groups.map((group) => (
+              <TabsContent key={group.id} value={group.id} className="bg-transparent">
+                {draw(fields.filter((field) => field.group === group.id))}
+              </TabsContent>
+            ))}
+          </div>
+        </Tabs>
+      </div>
+    );
+  }
   return (
     <div className="grid gap-3">
       {general}
@@ -123,9 +186,7 @@ export function Form<V extends FormValues, Out>({
           {groups.map((group) => (
             <TabsTrigger key={group.id} value={group.id}>
               {group.label}
-              {hasIssue(group.id) ? (
-                <span aria-hidden className="ml-1 size-1.5 rounded-full bg-destructive" />
-              ) : null}
+              {marker(group.id)}
             </TabsTrigger>
           ))}
         </TabsList>

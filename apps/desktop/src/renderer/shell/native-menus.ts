@@ -8,8 +8,18 @@ import {
   type MenuId,
 } from "./commands.js";
 
+/**
+ * Commands a Mac lists in its application menu (Webforge › Settings…, LF-12), whatever their
+ * menu in the window's own menus elsewhere.
+ */
+const APP_MENU: ReadonlySet<string> = new Set([COMMAND_IDS.settings]);
+
 /** The menus, in the menu bar's order, and their names. */
-const MENUS: readonly { readonly id: MenuId; readonly label: () => string }[] = [
+const MENUS: readonly {
+  readonly id: MenuId | "app";
+  readonly label: () => string;
+}[] = [
+  { id: "app", label: () => t("app.name") },
   { id: "file", label: () => t("shell.menu.file") },
   { id: "edit", label: () => t("shell.menu.edit") },
   { id: "view", label: () => t("shell.menu.view") },
@@ -23,7 +33,9 @@ export function nativeMenusOf(registry: Pick<CommandRegistry, "list">): NativeMe
     id,
     label: label(),
     items: commands
-      .filter((command) => command.menu === id)
+      .filter((command) =>
+        id === "app" ? APP_MENU.has(command.id) : command.menu === id && !APP_MENU.has(command.id),
+      )
       .map((command) => ({
         id: command.id,
         label: command.label,
