@@ -3,7 +3,7 @@ import type { IpcMain } from "electron";
 import { MAX_MEDIA_FILES } from "../shared/ipc/media.js";
 import type { MediaImportResult } from "../shared/ipc-contract.js";
 import { registerIpcHandler } from "./ipc.js";
-import { createMediaImport, importMediaFiles } from "./media-import.js";
+import { importMediaFiles } from "./media-import.js";
 import type { ProjectSession } from "./project-session.js";
 
 /** The native dialog of the Media import, injected so the handlers can be tested. */

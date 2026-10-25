@@ -131,7 +131,7 @@ describe("the storage writer thread (R13b)", () => {
     return bytes;
   }
 
-  it("stores a 50 MB image without holding up the main thread for more than 50 ms", async () => {
+  it("stores a 50 MB image keeping the main thread busy for less than 50 ms", async () => {
     const dir = tempDir();
     const sitePath = join(dir, "Large.wforge");
     ProjectStore.create(sitePath, { name: "Large" }).close();
@@ -149,25 +149,20 @@ describe("the storage writer thread (R13b)", () => {
 
   /** Imports `photo`, checking the main thread is never held up for 50 ms or more. */
   async function expectQuickImport(session: ProjectSession, photo: string) {
-    // How long the main thread goes without running a 5 ms timer, as an IPC call would wait.
-    let longest = 0;
-    let last = performance.now();
-    const ticker = setInterval(() => {
-      const now = performance.now();
-      longest = Math.max(longest, now - last);
-      last = now;
-    }, 5);
+    // How long this thread's event loop was busy while the import ran, as an IPC call would wait
+    // behind it. Busy time, not wall time: a loaded machine that schedules the thread late (CI
+    // runs test files side by side) doesn't count, while any work on the thread does, so a total
+    // under 50 ms means no single hold-up reached 50 ms.
+    const before = performance.eventLoopUtilization();
     const result = await session.importFile("poster", "poster.png", { path: photo });
-    // One more tick, so a hold-up at the very end is measured too.
-    await new Promise((resolve) => setTimeout(resolve, 20));
-    clearInterval(ticker);
+    const busy = performance.eventLoopUtilization(before).active;
 
     expect(result).toMatchObject({
       status: "stored",
       size: MAX_MEDIA_BYTES,
       media: { kind: "image", mimeType: "image/png", width: 2000, height: 1500 },
     });
-    expect(longest).toBeLessThan(50);
+    expect(busy).toBeLessThan(50);
     const blob = await session.readMedia(result.status === "stored" ? result.hash : "");
     expect(blob?.data.byteLength).toBe(MAX_MEDIA_BYTES);
   }
