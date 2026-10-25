@@ -375,6 +375,10 @@ describe("themeCss (2.1)", () => {
       "--wf-link-color: var(--color-primary);",
     );
     expect(css({ links: { underline: "always" } })).toContain("--wf-link-color: currentColor;");
+    // In Reversed sections too, so the colour there is the inverse palette's main one.
+    expect(
+      css({ links: { underline: "hover" } }).split(`[data-theme="${INVERSE_THEME}"] {`)[1],
+    ).toContain("--wf-link-color: var(--color-primary);");
     // The Shadow hover effect keeps a shadow under a theme without shadows.
     expect(css({ shadow: "none" })).toContain(
       "--wf-hover-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);",

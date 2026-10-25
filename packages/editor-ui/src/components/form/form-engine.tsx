@@ -139,7 +139,21 @@ export function Form<V extends FormValues, Out>({
   );
 }
 
-/** One field of a form: its label, its control (by its kind's renderer), its problem and help. */
+/**
+ * Kinds whose control needs the form's width (LF-7): their label sits above them, as in the Edit
+ * panel. Lists, choices of several, images and a paragraph of text.
+ */
+const isWide = (field: FormField) =>
+  field.kind === "list" ||
+  field.kind === "box" ||
+  field.kind === "multiChoice" ||
+  field.kind === "imageChoice" ||
+  (field.kind === "text" && field.multiline === true);
+
+/**
+ * One field of a form, in a two-column row (LF-7) unless it is wide: its label, its control (by its
+ * kind's renderer), its problem and help.
+ */
 function FormFieldRow({
   field,
   value,
@@ -177,6 +191,7 @@ function FormFieldRow({
       label={field.kind === "toggle" ? undefined : field.label}
       hint={field.help}
       error={error}
+      layout={isWide(field) ? "stacked" : "row"}
     >
       {(ids, { labelId, hintId, errorId }) =>
         wide(

@@ -28,6 +28,11 @@ export type FieldProps = {
   /** What to fix, if anything (already translated): shown under the control, which it describes. */
   readonly error?: string | undefined;
   /**
+   * `row` (LF-7): the label on the left, about two fifths of the row, and the control, its hint and
+   * its error on the right, as the Edit panel's rows are. `stacked` (the default): one under another.
+   */
+  readonly layout?: "stacked" | "row";
+  /**
    * Draws the control, spreading `control` on it so the label, hint and error belong to it. A
    * group of controls (radios, a field renderer of the Edit panel) is named by `labelId` instead,
    * with `aria-labelledby`; a field renderer is described by the hint's and error's ids in `ids`.
@@ -39,7 +44,7 @@ export type FieldProps = {
  * A labelled form field (dialogs: Page Settings, Site Settings, links): the label, the control the
  * field draws, its error and its hint. The form engine of plan item 2.21 draws its fields with it.
  */
-export function Field({ label, hint, error, children }: FieldProps) {
+export function Field({ label, hint, error, layout = "stacked", children }: FieldProps) {
   const id = useId();
   const labelId = useId();
   const hintId = useId();
@@ -48,28 +53,38 @@ export function Field({ label, hint, error, children }: FieldProps) {
     hint === undefined ? undefined : hintId,
     error === undefined ? undefined : errorId,
   ].filter((part) => part !== undefined);
+  const row = layout === "row";
+  // In a row, everything but the label goes in the right-hand column.
+  const right = row ? "col-start-2" : undefined;
   return (
-    <div className="grid gap-1">
+    <div
+      className={cn(
+        "grid gap-1",
+        row && "min-h-6 grid-cols-[minmax(0,2fr)_minmax(0,3fr)] items-center gap-x-3",
+      )}
+    >
       {label === undefined ? null : (
         <label id={labelId} htmlFor={id} className="text-xs text-muted-foreground">
           {label}
         </label>
       )}
-      {children(
-        {
-          id,
-          ...(describedBy.length === 0 ? {} : { "aria-describedby": describedBy.join(" ") }),
-          ...(error === undefined ? {} : { "aria-invalid": true }),
-        },
-        {
-          labelId,
-          ...(hint === undefined ? {} : { hintId }),
-          ...(error === undefined ? {} : { errorId }),
-        },
-      )}
-      <ErrorText id={errorId} message={error} />
+      <div className={cn("min-w-0", right)}>
+        {children(
+          {
+            id,
+            ...(describedBy.length === 0 ? {} : { "aria-describedby": describedBy.join(" ") }),
+            ...(error === undefined ? {} : { "aria-invalid": true }),
+          },
+          {
+            labelId,
+            ...(hint === undefined ? {} : { hintId }),
+            ...(error === undefined ? {} : { errorId }),
+          },
+        )}
+      </div>
+      <ErrorText id={errorId} message={error} className={right} />
       {hint !== undefined && (
-        <p id={hintId} className="m-0 text-xs text-muted-foreground">
+        <p id={hintId} className={cn("m-0 text-xs text-muted-foreground", right)}>
           {hint}
         </p>
       )}
@@ -81,12 +96,14 @@ export function Field({ label, hint, error, children }: FieldProps) {
 export function ErrorText({
   id,
   message,
+  className,
 }: {
   readonly id?: string;
   readonly message?: string | undefined;
+  readonly className?: string | undefined;
 }) {
   return message === undefined ? null : (
-    <p id={id} className="m-0 text-xs text-destructive-text">
+    <p id={id} className={cn("m-0 text-xs text-destructive-text", className)}>
       {message}
     </p>
   );

@@ -39,6 +39,22 @@ test("draws its buttons, shadows and links as the theme says (#423)", async ({ p
     .evaluate((element) => getComputedStyle(element).boxShadow);
   expect(shadow).toMatch(/0\.2\)/);
 
+  // A link in a Reversed section: in that section's main colour, not the page's.
+  const colours = await page.getByRole("link", { name: "our menu" }).evaluate((link) => {
+    const section = link.closest("[data-theme]");
+    const probe = document.createElement("span");
+    probe.style.color = "var(--color-primary)";
+    section?.append(probe);
+    const sectionPrimary = getComputedStyle(probe).color;
+    probe.remove();
+    return { link: getComputedStyle(link).color, sectionPrimary };
+  });
+  expect(colours.link).toBe(colours.sectionPrimary);
+  const pageLink = await page
+    .getByRole("link", { name: "our story" })
+    .evaluate((link) => getComputedStyle(link).color);
+  expect(colours.link).not.toBe(pageLink);
+
   // A link in running text: not underlined until it's hovered or focused.
   const link = page.getByRole("link", { name: "our story" });
   expect(await link.evaluate((element) => getComputedStyle(element).textDecorationLine)).toBe(
