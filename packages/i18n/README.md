@@ -16,6 +16,9 @@ t("app.version", { version: "1.2.0" }); // "Version 1.2.0"
 - Framework-free: no React, no Electron. Used by both the main process and the renderer.
 - No hard-coded UI strings elsewhere: add a key to the area file under `src/en/` instead (`pnpm ui-strings` checks the renderer, editor-ui, engine and site-components).
 
+## Names that are data, not UI strings
+Some names come with the content they name and aren't translated, as a font's family name isn't. The icon picker shows each Lucide icon by its name ("arrow right", from `arrow-right`) and finds it by Lucide's English tags. They are the icon set's own names, like font names, not forgotten strings (PH2-4, 2.9b). A translated icon catalogue can replace them later.
+
 ## Catalogue layout
 The English catalogue is split by area: one file per area under `src/en/`, assembled in `src/en.ts`. Each key lives in exactly one area (a test checks this), so work on different areas edits different files.
 

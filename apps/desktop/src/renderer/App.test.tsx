@@ -87,6 +87,28 @@ describe("App", () => {
     expect(await screen.findByText("Site exported to “my-site” (6 files).")).toBeTruthy();
   });
 
+  it("exports with the exportSite it was given last", async () => {
+    const props = {
+      saveUiState,
+      setSpellCheckLanguage,
+      info: { name: "Webforge", version: "1.2.0" },
+      preferences: DEFAULT_PREFERENCES,
+      savePreferences,
+      createEngine: createFakeEngine,
+      compileCss,
+    } satisfies Partial<AppProps>;
+    const canceled = async (): Promise<ExportResult> => ({ status: "canceled" });
+    const first = vi.fn(canceled);
+    const latest = vi.fn(canceled);
+    const { rerender } = render(<App {...props} exportSite={first} />);
+
+    rerender(<App {...props} exportSite={latest} />);
+    await userEvent.click(screen.getByRole("button", { name: "Export" }));
+
+    expect(latest).toHaveBeenCalledOnce();
+    expect(first).not.toHaveBeenCalled();
+  });
+
   it("runs commands from their shortcuts", async () => {
     renderApp();
 

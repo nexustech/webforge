@@ -8,7 +8,7 @@ export type {
   FieldGroup,
   OptionGroup,
 } from "./components/edit/edit-panel.js";
-export { EditPanel } from "./components/edit/edit-panel.js";
+export { EditPanel, hasBuiltInRenderer } from "./components/edit/edit-panel.js";
 export { FieldRenderersProvider } from "./components/edit/field-context.js";
 export type {
   FieldChoice,

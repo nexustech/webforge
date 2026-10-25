@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { IconField } from "./IconField.js";
 
 const meta = {
-  title: "Edit/IconField",
+  title: "Edit/Fields/Icon",
   component: IconField,
   args: {
     id: "field-icon",
