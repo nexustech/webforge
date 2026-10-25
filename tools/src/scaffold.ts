@@ -940,18 +940,7 @@ export function scaffold(
   for (const path of Object.keys(plan.files)) {
     if (existsSync(join(root, path))) throw new Error(`${path} exists already: pick another name`);
   }
-  const changed: Record<string, string> = {};
-  for (const [path, edits] of Object.entries(plan.edits)) {
-    let text = plan.files[path] ?? readFileSync(join(root, path), "utf8");
-    for (const edit of edits) {
-      try {
-        text = edit(text);
-      } catch (error) {
-        throw new Error(`${path}: ${error instanceof Error ? error.message : String(error)}`);
-      }
-    }
-    changed[path] = text;
-  }
+  const changed = applyEdits(plan, root);
   const files = { ...plan.files, ...changed };
   for (const [path, text] of Object.entries(files)) {
     mkdirSync(dirname(join(root, path)), { recursive: true });
@@ -964,6 +953,26 @@ export function scaffold(
     formatted: format !== false && format(all, root),
     next: plan.next,
   };
+}
+
+/**
+ * The files `plan` changes in the repository at `root`, as they would be: nothing is written. Throws,
+ * naming the file, when an edit can't find its place.
+ */
+export function applyEdits(plan: Plan, root = "."): Record<string, string> {
+  const changed: Record<string, string> = {};
+  for (const [path, edits] of Object.entries(plan.edits)) {
+    let text = plan.files[path] ?? readFileSync(join(root, path), "utf8");
+    for (const edit of edits) {
+      try {
+        text = edit(text);
+      } catch (error) {
+        throw new Error(`${path}: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+    changed[path] = text;
+  }
+  return changed;
 }
 
 /** `--name`'s value in `args`, if there is one. */
@@ -983,7 +992,16 @@ const USAGE = [
 ].join("\n");
 
 /** The command: scaffolds what `args` say, setting the exit code when it fails. */
-export function main(args: readonly string[] = process.argv.slice(2)): void {
+export function main(
+  args: readonly string[] = process.argv.slice(2),
+  {
+    root = ".",
+    format = formatWithBiome,
+  }: {
+    readonly root?: string;
+    readonly format?: ((files: readonly string[], root: string) => boolean) | false;
+  } = {},
+): void {
   const [what, name] = args;
   if (!WHATS.includes(what as What) || name === undefined || name.startsWith("--")) {
     process.stderr.write(USAGE);
@@ -993,10 +1011,11 @@ export function main(args: readonly string[] = process.argv.slice(2)): void {
   try {
     const folder = option(args, "--area");
     const plan = planFor(what as What, name, {
+      root,
       ...(folder === undefined ? {} : { folder }),
       scope: args.includes("--window") ? "window" : "editor",
     });
-    const result = scaffold(plan);
+    const result = scaffold(plan, root, format);
     for (const path of result.written) process.stdout.write(`wrote ${path}\n`);
     for (const path of result.changed) process.stdout.write(`changed ${path}\n`);
     process.stdout.write(`Next: ${result.next.join(" ")} Then pnpm check.\n`);
