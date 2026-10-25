@@ -901,6 +901,9 @@ importers:
       '@types/sanitize-html':
         specifier: 2.16.2
         version: 2.16.2
+      '@webforge/themes':
+        specifier: workspace:*
+        version: link:../themes
       daisyui:
         specifier: 'catalog:'
         version: 5.7.50

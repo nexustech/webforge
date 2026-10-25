@@ -199,7 +199,7 @@ const header = defineComponent({
       ? `${STICKY_CLASSES[values.scrollStyle]} ${STICKY_OFFSET[layout]}`
       : "bg-base-100 shadow-sm";
     const name = (
-      <a className="text-xl font-bold" href={context.link("index")}>
+      <a className="font-heading text-xl font-bold" href={context.link("index")}>
         {boundText(values, "siteName", context)}
       </a>
     );

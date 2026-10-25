@@ -232,7 +232,7 @@ describe("the typography and button primitives (2.19)", () => {
   });
 
   it("sets running text with the body-text classes only", () => {
-    const body = classesOf(html).filter((classes) => classes.includes("leading-relaxed"));
+    const body = classesOf(html).filter((classes) => classes.split(" ").includes("text-body"));
     expect(body.length).toBeGreaterThan(2);
     for (const classes of body) expect(classes, classes).toContain(BODY_TEXT_CLASSES);
   });

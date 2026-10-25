@@ -8,6 +8,43 @@
 }
 @source "../src";
 /*
+ * The default theme's heading font and type scale (#419), which titles and running text use, as
+ * an export with the default theme has them (a test, src/storybook-css.test.ts, checks they're
+ * the theme's). The heading font is the body font there; daisyUI's themes give the colours.
+ */
+@theme {
+  --font-heading: var(--font-sans);
+  --text-h1: 3rem;
+  --text-h1--line-height: 1.25;
+  --text-h1--font-weight: 700;
+  --text-h2: 1.875rem;
+  --text-h2--line-height: 1.25;
+  --text-h2--font-weight: 700;
+  --text-h3: 1.25rem;
+  --text-h3--line-height: 1.25;
+  --text-h3--font-weight: 600;
+  --text-h4: 1.125rem;
+  --text-h4--line-height: 1.5;
+  --text-h4--font-weight: 600;
+  --text-h5: 1rem;
+  --text-h5--line-height: 1.5;
+  --text-h5--font-weight: 600;
+  --text-h6: 0.875rem;
+  --text-h6--line-height: 1.5;
+  --text-h6--font-weight: 600;
+  --text-body: 1.125rem;
+  --text-body--line-height: 1.625;
+  --text-body--font-weight: 400;
+  --text-small: 0.875rem;
+  --text-small--line-height: 1.5;
+  --text-small--font-weight: 400;
+}
+@media (width < 48rem) {
+  :root {
+    --text-h1: 2.25rem;
+  }
+}
+/*
  * The spacing classes boxClasses builds from tokens (pt-32, max-md:mt-24…), which no source file
  * writes out: the export compiles the classes its pages use, this compiles them all. A test
  * (src/storybook-css.test.ts) checks every class boxClasses can give is here.

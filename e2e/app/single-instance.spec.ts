@@ -171,8 +171,11 @@ test("a launch just after quitting opens Webforge, not the Webforge still ending
   // held in its teardown for 10 s. Once it has closed the site file, it says whether it still
   // holds the lock that would hand a new launch's site to it.
   const lockAfterQuit = new Promise<string>((resolve) => {
+    // Everything written so far: a line can arrive split across two chunks.
+    let written = "";
     quitting.process().stderr?.on("data", (data: Buffer) => {
-      const held = /\[test\] lock held: (true|false)/.exec(data.toString())?.[1];
+      written += data.toString();
+      const held = /\[test\] lock held: (true|false)/.exec(written)?.[1];
       if (held !== undefined) resolve(held);
     });
   });
