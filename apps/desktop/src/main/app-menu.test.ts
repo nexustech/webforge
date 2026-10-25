@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import type { MenuItemConstructorOptions } from "electron";
+import { describe, expect, it, vi } from "vitest";
 import { applicationMenu } from "./app-menu.js";
 
 describe("applicationMenu (F-ED-27)", () => {
@@ -30,5 +31,61 @@ describe("applicationMenu (F-ED-27)", () => {
       "Developer",
       "windowMenu",
     ]);
+  });
+
+  it("shows the editor's menus in a Mac's menu bar, its keys left to the editor (LF-13)", () => {
+    const run = vi.fn();
+    const item = (id: string, label: string, accelerator?: string) => ({
+      id,
+      label,
+      enabled: true,
+      ...(accelerator === undefined ? {} : { accelerator }),
+    });
+    const menu = applicationMenu("darwin", false, {
+      menus: [
+        { id: "file", label: "File", items: [item("site.settings", "Site Settings…")] },
+        {
+          id: "edit",
+          label: "Edit",
+          items: [item("edit.undo", "Undo", "CmdOrCtrl+Z"), item("edit.copyStyle", "Copy Style")],
+        },
+        { id: "view", label: "View", items: [item("view.zoomIn", "Zoom In", "CmdOrCtrl+Plus")] },
+        { id: "help", label: "Help", items: [item("help.shortcuts", "Keyboard Shortcuts")] },
+      ],
+      run,
+    });
+
+    expect(menu?.map((each) => each.role ?? each.label)).toEqual([
+      "appMenu",
+      "File",
+      "Edit",
+      "View",
+      "windowMenu",
+      "help",
+    ]);
+    const submenu = (label: string) =>
+      (menu?.find((each) => (each.role ?? each.label) === label)?.submenu ??
+        []) as MenuItemConstructorOptions[];
+    // Edit keeps its roles for text fields; the editor's Undo is the role's there.
+    expect(submenu("Edit").map((each) => each.role ?? each.label ?? each.type)).toEqual([
+      "undo",
+      "redo",
+      "separator",
+      "cut",
+      "copy",
+      "paste",
+      "selectAll",
+      "separator",
+      "Copy Style",
+    ]);
+    const zoomIn = submenu("View")[0];
+    expect(zoomIn).toMatchObject({
+      label: "Zoom In",
+      accelerator: "CmdOrCtrl+Plus",
+      registerAccelerator: false,
+    });
+    expect(submenu("View").at(-1)).toEqual({ role: "togglefullscreen" });
+    submenu("File")[0]?.click?.({} as never, undefined, {} as never);
+    expect(run).toHaveBeenCalledWith("site.settings");
   });
 });

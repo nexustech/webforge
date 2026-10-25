@@ -24,6 +24,27 @@ function renderTitleBar(registry: CommandRegistry = createCommandRegistry()) {
 }
 
 describe("TitleBar", () => {
+  it("leaves its menus to the system's menu bar when it has one (macOS, LF-13)", () => {
+    const registry = createCommandRegistry();
+    registry.register({ id: "site.settings", label: "Site Settings…", menu: "file", run: vi.fn() });
+    const menuBar = {
+      setNativeMenus: vi.fn(async () => null),
+      onRunCommand: vi.fn(() => () => undefined),
+    };
+    render(
+      <CommandRegistryProvider registry={registry}>
+        <TooltipProvider>
+          <TitleBar siteName="Bloom Bakery" menuBar={menuBar} />
+        </TooltipProvider>
+      </CommandRegistryProvider>,
+    );
+
+    expect(screen.queryByRole("menubar")).toBeNull();
+    expect(menuBar.setNativeMenus).toHaveBeenCalledWith(
+      expect.arrayContaining([expect.objectContaining({ id: "file", label: "File" })]),
+    );
+  });
+
   it("is the window's banner, with the app name as its heading and the save status", () => {
     renderTitleBar();
 

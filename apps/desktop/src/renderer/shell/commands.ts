@@ -314,6 +314,28 @@ export function formatShortcut(shortcut: string, mac = isMac()): string {
     .join("+");
 }
 
+/** Keys as Electron's accelerators name them, where they differ from ours. */
+const ACCELERATOR_KEYS: Readonly<Record<string, string>> = {
+  arrowup: "Up",
+  arrowdown: "Down",
+  arrowleft: "Left",
+  arrowright: "Right",
+  " ": "Space",
+  "+": "Plus",
+};
+
+/**
+ * A shortcut as Electron's menus take it (`CmdOrCtrl+Shift+Z`), for macOS's menu bar to show it
+ * (LF-13).
+ */
+export function electronAccelerator(shortcut: string): string {
+  const { key, mod, shift, alt } = parseShortcut(shortcut);
+  const name =
+    ACCELERATOR_KEYS[key] ??
+    (key.length <= 1 ? key.toUpperCase() : key[0]?.toUpperCase() + key.slice(1));
+  return [mod && "CmdOrCtrl", alt && "Alt", shift && "Shift", name].filter(Boolean).join("+");
+}
+
 /** Tags that use plain keys (arrows, Delete) themselves. */
 const CONTROL_TAGS: ReadonlySet<string> = new Set(["INPUT", "TEXTAREA", "SELECT", "BUTTON", "A"]);
 

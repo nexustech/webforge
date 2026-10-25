@@ -8,11 +8,14 @@ import {
   Redo2Icon,
   Undo2Icon,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect } from "react";
+import type { AppApi } from "../../shared/ipc/app.js";
 import { AppMenu } from "./AppMenu.js";
 import { CommandBox } from "./CommandBox.js";
 import { CommandButton } from "./CommandButton.js";
+import { useCommandRegistry } from "./command-context.js";
 import { COMMAND_IDS } from "./command-ids.js";
+import { syncNativeMenus } from "./native-menus.js";
 
 /** Props of {@link TitleBar}. */
 export type TitleBarProps = {
@@ -23,6 +26,11 @@ export type TitleBarProps = {
   readonly undoSteps?: ReactNode;
   /** Panel toggles and the Design | Content switch, before the site actions. */
   readonly tools?: ReactNode;
+  /**
+   * The system's menu bar, to show the menus in instead of the title bar (macOS, LF-13); the title
+   * bar's own when left out.
+   */
+  readonly menuBar?: Pick<AppApi, "setNativeMenus" | "onRunCommand"> | undefined;
 };
 
 /** Areas the window controls cover; buttons and fields there must stay clickable. */
@@ -36,7 +44,12 @@ const NO_DRAG = "[-webkit-app-region:no-drag]";
  * lights (macOS) are drawn over it by Electron; the padding keeps them clear, using the Window
  * Controls Overlay area the window reports.
  */
-export function TitleBar({ siteName, saveStatus, undoSteps, tools }: TitleBarProps) {
+export function TitleBar({ siteName, saveStatus, undoSteps, tools, menuBar }: TitleBarProps) {
+  const registry = useCommandRegistry();
+  useEffect(
+    () => (menuBar === undefined ? undefined : syncNativeMenus(registry, menuBar)),
+    [registry, menuBar],
+  );
   return (
     <header
       data-slot="title-bar"
@@ -45,7 +58,7 @@ export function TitleBar({ siteName, saveStatus, undoSteps, tools }: TitleBarPro
       {/* The window's heading for screen readers; the window title says the same. */}
       <h1 className="sr-only">{t("app.name")}</h1>
       <div className={`flex items-center gap-0.5 ${NO_DRAG}`}>
-        <AppMenu />
+        {menuBar === undefined ? <AppMenu /> : null}
         <CommandButton
           commandId={COMMAND_IDS.newSite}
           icon={<FilePlusIcon />}
