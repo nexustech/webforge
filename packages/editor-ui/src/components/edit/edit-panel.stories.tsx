@@ -122,6 +122,55 @@ export const StyleFields: Story = {
 };
 
 /**
+ * The Style tab in a 240 px column (#278): every row keeps its label and control side by side, a
+ * long label cut short with its full name in its tooltip, and every control reachable by Tab.
+ */
+export const Narrow: Story = {
+  decorators: [
+    (Story) => (
+      <div className="w-60">
+        <Story />
+      </div>
+    ),
+  ],
+  args: {
+    heading: "Section",
+    device: "Mobile",
+    fields: [
+      {
+        name: "padding",
+        kind: "spacing",
+        label: "Padding",
+        group: "style",
+        value: "small",
+        options: sizes,
+        responsive: true,
+      },
+      {
+        name: "gap",
+        kind: "slider",
+        label: "Space between elements",
+        group: "style",
+        value: "medium",
+        steps: sizes,
+      },
+      { name: "fullWidth", kind: "toggle", label: "Full width", group: "style", value: false },
+      {
+        name: "alignment",
+        kind: "select",
+        label: "Alignment",
+        group: "style",
+        value: "centre",
+        options: [
+          { label: "Centre", value: "centre" },
+          { label: "Left", value: "left" },
+        ],
+      },
+    ],
+  },
+};
+
+/**
  * The space between elements on each device (SP-5), the Section seen on Mobile: Desktop's value,
  * Tablet's own (its name in the accent), and Mobile taking Tablet's (the dot on Tablet).
  */
