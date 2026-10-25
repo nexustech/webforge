@@ -152,30 +152,45 @@ export function TextInput({
   );
 }
 
-/** A checkbox with its label to the right. */
+/** A checkbox with its label to the right, and a line under it if it has a `hint`. */
 export function Check({
   label,
+  hint,
   checked,
   onChange,
   disabled,
 }: {
   /** Already translated. */
   readonly label: string;
+  /** What the label can't say, already translated: shown under it, and describing the checkbox. */
+  readonly hint?: string;
   readonly checked: boolean;
   readonly onChange: (checked: boolean) => void;
   readonly disabled?: boolean;
 }) {
-  return (
+  const hintId = useId();
+  const box = (
     <label className="flex items-center gap-2 text-sm has-[:disabled]:opacity-50">
       <input
         type="checkbox"
         className="size-4 accent-primary"
         checked={checked}
         {...(disabled === undefined ? {} : { disabled })}
+        {...(hint === undefined ? {} : { "aria-describedby": hintId })}
         onChange={(event) => onChange(event.currentTarget.checked)}
       />
       {label}
     </label>
+  );
+  return hint === undefined ? (
+    box
+  ) : (
+    <div className="grid gap-1">
+      {box}
+      <p id={hintId} className="m-0 pl-6 text-xs text-muted-foreground">
+        {hint}
+      </p>
+    </div>
   );
 }
 

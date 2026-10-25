@@ -186,6 +186,8 @@ function SiteSettingsForm({
           />
           <Check
             label={t("site.settings.backToTop")}
+            // The canvas doesn't show it: only the published site has it.
+            hint={t("site.settings.backToTopHint")}
             checked={form.backToTop}
             onChange={(backToTop) => change({ backToTop })}
           />

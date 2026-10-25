@@ -5,8 +5,13 @@ import { applyListChange, changedGroups, checkForm, issueOf, unplacedIssues } fr
 
 type Values = { readonly name: string; readonly email: string; readonly hours: readonly unknown[] };
 
+const schema = z.object({
+  name: z.string().min(1, "Give it a name").max(10, "At most 10 characters"),
+  email: z.email("Use an email address").optional(),
+});
+
 /** A form of a name (at most 10 characters) and an email address, as zod checks them. */
-const spec: FormSpec<Values, { name: string; email?: string }> = {
+const spec: FormSpec<Values, z.infer<typeof schema>> = {
   groups: [
     { id: "general", label: "General" },
     { id: "contact", label: "Contact" },
@@ -15,10 +20,7 @@ const spec: FormSpec<Values, { name: string; email?: string }> = {
     { kind: "text", name: "name", label: "Name", group: "general" },
     { kind: "text", name: "email", label: "Email", group: "contact" },
   ],
-  schema: z.object({
-    name: z.string().min(1, "Give it a name").max(10, "At most 10 characters"),
-    email: z.email("Use an email address").optional(),
-  }),
+  schema,
   toModel: (values) => ({
     name: values.name.trim(),
     ...(values.email.trim() === "" ? {} : { email: values.email.trim() }),

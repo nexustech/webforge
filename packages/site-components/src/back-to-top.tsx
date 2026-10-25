@@ -4,14 +4,16 @@ import { LucideIcon } from "./icons.js";
 
 /**
  * The back-to-top button (F-CM-9, 2.9b) the export adds to a page when Site Settings ask for it and
- * the page doesn't hide it: a link to the top in the page's corner, named for screen readers. The
+ * the page doesn't hide it: a link to the top (`#`) in the page's corner, named for screen readers. The
  * `back-to-top` behaviour shows it once the visitor has scrolled down; without it the link is
  * always there.
  */
 function BackToTop() {
   return (
     <a
-      href="#top"
+      // Always the page's top, even with a section anchored "top" (which "#top" would go to).
+      // biome-ignore lint/a11y/useValidAnchor: an empty fragment is the page's top, which it links to.
+      href="#"
       // Not on paper: a printed page has nowhere to go back to.
       className="site-back-to-top btn btn-circle btn-primary fixed right-4 bottom-4 z-40 shadow-md print:hidden"
       aria-label={t("siteText.backToTop")}
