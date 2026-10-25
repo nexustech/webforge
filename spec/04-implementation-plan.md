@@ -255,7 +255,7 @@ Measure editing a page with 200+ elements: keystroke-to-canvas latency, drag, un
 
 </details>
 
-**Phase exit:** Netlify and SFTP/FTPS publish spikes meet the spike criteria in research/stack/08; Signed NSIS and DMG builds install, and auto-update from a test feed on both OSes; A large page (200+ elements) stays within the editing performance budget; ADRs written; architecture §6 interfaces updated.
+**Phase exit:** Netlify and SFTP/FTPS publish spikes meet the spike criteria in research/stack/08; A large page (200+ elements) stays within the editing performance budget.
 
 ### Phase 1: Editor core
 **Goal:** A real editor on the UI1 shell: create, open and autosave sites; add, edit, move, copy and undo sections and elements across pages with a shared Header/Footer, Site Settings and media.  
@@ -1097,7 +1097,7 @@ Four weeks of closed beta with weekly builds. Time is reserved to fix beta findi
 
 </details>
 
-**Phase exit:** All performance budgets met on Windows and macOS; Signed, notarised builds auto-update from the production feed; Beta running with 10–20 users; no open Must-fix bugs.
+**Phase exit:** All performance budgets met on Windows and macOS; Signed NSIS and DMG builds install, and auto-update from a test feed on both OSes (0.5); Signed, notarised builds auto-update from the production feed; ADRs written; architecture §6 interfaces updated (0.6); Beta running with 10–20 users; no open Must-fix bugs.
 
 ## 6. Feature coverage
 Every MVP feature ID maps to at least one work item (checked when this plan was generated).
