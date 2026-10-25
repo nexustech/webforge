@@ -36,13 +36,16 @@ export function isOverridden(value: unknown, breakpoint: Breakpoint): boolean {
 export const DEVICES: readonly Breakpoint[] = ["desktop", "tablet", "mobile"];
 
 /**
- * The device whose value applies on `breakpoint`: its own if it has one, else the next larger
- * device's that has, Desktop last (Mobile falls back to Tablet, then Desktop).
+ * The device whose value applies on `breakpoint`: its own if it has one, else the one the page
+ * falls back to. Resolved by the page's own rule ({@link resolveResponsive}) over the devices' names
+ * rather than their values, so it can't differ from what the canvas draws (#425 review).
  */
 export function sourceOf(value: unknown, breakpoint: Breakpoint): Breakpoint {
-  if (breakpoint === "mobile" && isOverridden(value, "mobile")) return "mobile";
-  if (breakpoint !== "desktop" && isOverridden(value, "tablet")) return "tablet";
-  return "desktop";
+  const own = (device: Breakpoint) => (isOverridden(value, device) ? device : undefined);
+  return resolveResponsive<Breakpoint>(
+    { $responsive: { desktop: "desktop", tablet: own("tablet"), mobile: own("mobile") } },
+    breakpoint,
+  );
 }
 
 /** Drops empty overrides; a value with none left is plain again. */

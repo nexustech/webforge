@@ -114,33 +114,48 @@ function PanelTabs({
       }),
     [registry, slots, editorLevel],
   );
-  const tabs = useRef<HTMLDivElement>(null);
+  // The tabs' root, in state: a new one (the column emptied and filled again) is watched anew.
+  const [tabs, setTabs] = useState<HTMLDivElement | null>(null);
   const first = panels[0];
   const activeId = (panels.find((panel) => panel.id === chosen) ?? first)?.id;
   // The shown panel's search field, while it has one (the Edit panel's shows with a selection):
   // the strip's magnifier focuses it (LF-5), and is there only then.
   const [search, setSearch] = useState<HTMLInputElement | null>(null);
   useEffect(() => {
-    const content = tabs.current?.querySelector(
-      `[data-slot="tabs-content"][data-panel="${CSS.escape(activeId ?? "")}"]`,
-    );
-    if (content === null || content === undefined) return;
+    if (tabs === null || activeId === undefined) return;
     // Watching the shown panel only, and looking at most once a frame: a drag in Layers or typing
-    // in the Edit panel changes it often (#421 review).
+    // in the Edit panel changes it often (#421 review). The tabs' own children are watched too, so
+    // a panel's content replaced while its tab stays shown is followed (#425 review).
     let frame = 0;
-    const find = () => setSearch(content.querySelector<HTMLInputElement>('input[type="search"]'));
+    let content: Element | null = null;
+    const inner = new MutationObserver(() => later());
+    const find = () =>
+      setSearch(content?.querySelector<HTMLInputElement>('input[type="search"]') ?? null);
     const later = () => {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(find);
     };
+    const follow = () => {
+      const next = tabs.querySelector(
+        `:scope > [data-slot="tabs-content"][data-panel="${CSS.escape(activeId)}"]`,
+      );
+      if (next !== content) {
+        inner.disconnect();
+        content = next;
+        if (content !== null) inner.observe(content, { childList: true, subtree: true });
+      }
+      later();
+    };
+    const outer = new MutationObserver(follow);
+    outer.observe(tabs, { childList: true });
+    follow();
     find();
-    const observer = new MutationObserver(later);
-    observer.observe(content, { childList: true, subtree: true });
     return () => {
       cancelAnimationFrame(frame);
-      observer.disconnect();
+      outer.disconnect();
+      inner.disconnect();
     };
-  }, [activeId]);
+  }, [tabs, activeId]);
   if (first === undefined) {
     return (
       <div className="flex h-full items-center justify-center bg-panel p-4 text-center text-xs text-muted-foreground">
@@ -150,7 +165,7 @@ function PanelTabs({
   }
   const active = panels.find((panel) => panel.id === chosen) ?? first;
   return (
-    <Tabs ref={tabs} value={active.id} onValueChange={setChosen} className="h-full">
+    <Tabs ref={setTabs} value={active.id} onValueChange={setChosen} className="h-full">
       <div className="flex shrink-0 items-center bg-tabs">
         <TabsList className="min-w-0 flex-1">
           {panels.map((panel) => (

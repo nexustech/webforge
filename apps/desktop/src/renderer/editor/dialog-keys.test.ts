@@ -9,6 +9,7 @@ describe("isDialogText (#421 review)", () => {
     document.body.innerHTML = `
       <div role="dialog" data-state="open">
         <input id="name" type="text"><textarea id="note"></textarea><select id="pick"></select>
+        <input id="email" type="email"><input id="count" type="number"><input id="plain">
         <div id="rich" contenteditable="true"></div>
         <input id="check" type="checkbox"><input id="size" type="range"><button id="swatch"></button>
       </div>
@@ -16,12 +17,10 @@ describe("isDialogText (#421 review)", () => {
       <div role="alertdialog" data-state="closed"><input id="closing" type="text"></div>`;
     const at = (id: string) => document.getElementById(id);
 
-    expect(["name", "note", "pick", "rich"].map((id) => isDialogText(at(id)))).toEqual([
-      true,
-      true,
-      true,
-      true,
-    ]);
+    // Email and number fields too, whose caret browsers don't report (#425 review).
+    expect(
+      ["name", "note", "pick", "rich", "email", "count", "plain"].map((id) => isDialogText(at(id))),
+    ).toEqual([true, true, true, true, true, true, true]);
     // A slider or a swatch in a dialog (Theme Studio) leaves Ctrl/Cmd+Z to the site.
     expect(["check", "size", "swatch"].map((id) => isDialogText(at(id)))).toEqual([
       false,

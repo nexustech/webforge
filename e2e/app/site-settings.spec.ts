@@ -87,6 +87,13 @@ test("Ctrl/Cmd+Z in Site Settings' text undoes the text, not the site's last ste
   await expect(name).toHaveValue("Rosa's Bakery");
   await page.keyboard.press("ControlOrMeta+z");
   await expect(name).not.toHaveValue("Rosa's Bakery");
+  // An email field too, whose caret browsers don't report (#425 review).
+  await dialog.getByRole("tab", { name: "Contact & hours" }).click();
+  const email = dialog.getByLabel("Email address", { exact: true });
+  await email.click();
+  await email.pressSequentially("hi@rosas.co", { delay: 20 });
+  await page.keyboard.press("ControlOrMeta+z");
+  await expect(email).not.toHaveValue("hi@rosas.co");
   await dialog.getByRole("button", { name: "Cancel" }).click();
 
   // The site kept its step: its name is still the saved one.
