@@ -21,6 +21,8 @@ import {
   RotateCwIcon,
   SmartphoneIcon,
   TabletIcon,
+  ZoomInIcon,
+  ZoomOutIcon,
 } from "lucide-react";
 import { useId, useState } from "react";
 import { type CanvasPreferences, DEVICE_SIZE, MAX_DEVICES } from "../../shared/ipc/prefs.js";
@@ -31,7 +33,7 @@ import {
   viewportFor,
   widthOf,
 } from "./canvas-size.js";
-import { type CanvasZoom, ZOOM_LEVELS } from "./canvas-view.js";
+import { type CanvasZoom, ZOOM_LEVELS, zoomStep } from "./canvas-view.js";
 import { DeviceDialog, type NewDevice } from "./DeviceDialog.js";
 
 const DEVICES = [
@@ -69,10 +71,11 @@ const VIEW_OPTIONS = [
 const percent = (zoom: number) => Math.round(zoom * 100);
 
 /**
- * The canvas toolbar (F-ED-8, UI1): which page the canvas shows, Desktop · Tablet · Mobile or a
- * custom width, the zoom, the View menu (F-ED-25), and the page's size and scale ("1280 × 879 @
- * 64%"), which opens the device list, the person's own devices and *Add device…* included.
- * Changing any of them is never an undo step (U6).
+ * The canvas toolbar (F-ED-8, UI1, LF-4): on the left, zoom in and out, Rotate, the zoom (Fit
+ * first), the View menu (F-ED-25), a custom width and the page's size and scale ("1280 × 879 @
+ * 64%"), which opens the device list, the person's own devices and *Add device…* included; on the
+ * right, which page the canvas shows and Desktop · Tablet · Mobile. Changing any of them is never
+ * an undo step (U6).
  */
 export function CanvasToolbar({
   pages,
@@ -95,51 +98,11 @@ export function CanvasToolbar({
       // Text in the toolbar's own colour: muted text is under 4.5:1 on the toolbar.
       className="flex h-9 shrink-0 items-center gap-2 border-b border-border-strong bg-toolbar px-2 text-foreground"
     >
-      <label htmlFor={pageId} className="sr-only">
-        {t("canvasToolbar.page")}
-      </label>
-      <select
-        id={pageId}
-        className={cn(fieldControlClass, "w-44")}
-        value={shownPageId}
-        onChange={(event) => {
-          const { value } = event.currentTarget;
-          const page = pages.find((candidate) => candidate.id === value);
-          if (page !== undefined) onShowPage(page.id);
-        }}
-      >
-        {pages.map((page) => (
-          <option key={page.id} value={page.id}>
-            {page.title}
-          </option>
-        ))}
-      </select>
-
-      <ToggleGroup
-        type="single"
-        value={typeof viewport === "number" ? "" : viewport}
-        aria-label={t("canvasToolbar.device")}
-        onValueChange={(value) => {
-          const device = DEVICES.find(({ id }) => id === value);
-          if (device !== undefined) {
-            onViewportChange(device.id);
-          }
-        }}
-      >
-        {DEVICES.map(({ id, icon: Icon }) => (
-          <ToggleGroupItem
-            key={id}
-            value={id}
-            aria-label={t(`device.${id}`)}
-            title={t(`device.${id}`)}
-          >
-            <Icon />
-          </ToggleGroupItem>
-        ))}
-      </ToggleGroup>
-
-      {/* Keyed by the width, so it shows a width chosen elsewhere (a device, undo). */}
-      <CustomWidth key={widthOf(viewport)} width={widthOf(viewport)} onChange={onViewportChange} />
+      {/* LF-4: the zoom, Rotate, Fit, View and the size on the left; page and device on the right. */}
+      <ZoomButtons
+        scale={typeof zoom === "number" ? zoom : (size?.zoom ?? 1)}
+        onZoomChange={onZoomChange}
+      />
       <RotateButton
         width={widthOf(viewport)}
         devices={canvas.devices}
@@ -172,13 +135,93 @@ export function CanvasToolbar({
 
       <ViewMenu canvas={canvas} onCanvasChange={onCanvasChange} />
 
+      {/* Keyed by the width, so it shows a width chosen elsewhere (a device, undo). */}
+      <CustomWidth key={widthOf(viewport)} width={widthOf(viewport)} onChange={onViewportChange} />
       <DeviceMenu
         size={size}
         canvas={canvas}
         onCanvasChange={onCanvasChange}
         onViewportChange={onViewportChange}
       />
+      <div className="ml-auto flex items-center gap-2">
+        <label htmlFor={pageId} className="sr-only">
+          {t("canvasToolbar.page")}
+        </label>
+        <select
+          id={pageId}
+          className={cn(fieldControlClass, "w-44")}
+          value={shownPageId}
+          onChange={(event) => {
+            const { value } = event.currentTarget;
+            const page = pages.find((candidate) => candidate.id === value);
+            if (page !== undefined) onShowPage(page.id);
+          }}
+        >
+          {pages.map((page) => (
+            <option key={page.id} value={page.id}>
+              {page.title}
+            </option>
+          ))}
+        </select>
+
+        <ToggleGroup
+          type="single"
+          value={typeof viewport === "number" ? "" : viewport}
+          aria-label={t("canvasToolbar.device")}
+          onValueChange={(value) => {
+            const device = DEVICES.find(({ id }) => id === value);
+            if (device !== undefined) {
+              onViewportChange(device.id);
+            }
+          }}
+        >
+          {DEVICES.map(({ id, icon: Icon }) => (
+            <ToggleGroupItem
+              key={id}
+              value={id}
+              aria-label={t(`device.${id}`)}
+              title={t(`device.${id}`)}
+            >
+              <Icon />
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
+      </div>
     </div>
+  );
+}
+
+/**
+ * Zoom in and zoom out (LF-4), a level at a time from the scale the canvas shows, as the View
+ * menu's commands do.
+ */
+function ZoomButtons({
+  scale,
+  onZoomChange,
+}: {
+  readonly scale: number;
+  readonly onZoomChange: (zoom: CanvasZoom) => void;
+}) {
+  return (
+    <>
+      {(["in", "out"] as const).map((direction) => {
+        const label = t(direction === "in" ? "command.zoomIn" : "command.zoomOut");
+        const Icon = direction === "in" ? ZoomInIcon : ZoomOutIcon;
+        return (
+          <Button
+            key={direction}
+            type="button"
+            size="icon"
+            variant="ghost"
+            aria-label={label}
+            title={label}
+            onClick={() => onZoomChange(zoomStep(scale, direction))}
+          >
+            <Icon />
+          </Button>
+        );
+      })}
+    </>
   );
 }
 
@@ -279,7 +322,7 @@ function DeviceMenu({
             type="button"
             size="sm"
             variant="ghost"
-            className="ml-auto text-xs whitespace-nowrap tabular-nums"
+            className="text-xs whitespace-nowrap tabular-nums"
             aria-label={
               readout === undefined
                 ? t("canvasToolbar.devices")
