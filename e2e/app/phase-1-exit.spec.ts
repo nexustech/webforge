@@ -179,12 +179,13 @@ test("a three-page site built from blank comes back as it was, page by page", as
   await expect(picker).toBeHidden();
   await expect(canvas().locator(".site-section img")).toHaveCount(1);
 
+  // From its row in Layers, which renames it in place: on the canvas the new Image's element bar
+  // can cover the Text.
   await showTab(left, "Layers");
-  await canvas().locator(".site-text").first().click({ button: "right" });
+  await row("Text").click({ button: "right" });
   await page.getByRole("menu").getByRole("menuitem", { name: "Rename" }).click();
-  const rename = page.getByRole("dialog", { name: "Rename Text" });
-  await rename.getByRole("textbox").fill("Intro");
-  await rename.getByRole("button", { name: "Rename" }).click();
+  await tree().getByRole("textbox", { name: "Name for this Text" }).fill("Intro");
+  await page.keyboard.press("Enter");
   await expect(row("Intro")).toBeVisible();
   await tree().getByRole("button", { name: "Hide Image" }).click();
   await expect(tree().getByRole("button", { name: "Show Image" })).toBeVisible();
