@@ -44,7 +44,8 @@ const nativeMenusSchema = z
       items: z.array(nativeMenuItemSchema).max(100),
     }),
   )
-  .max(4);
+  // One of each: the application menu, File, Edit, View and Help.
+  .max(5);
 
 /** The renderer's menus, as macOS's menu bar shows them. */
 export type NativeMenus = z.infer<typeof nativeMenusSchema>;
