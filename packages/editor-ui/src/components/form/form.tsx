@@ -241,6 +241,7 @@ export function ImageChoice({
   selected,
   onSelect,
   name,
+  disabled = false,
 }: {
   /** Already translated. */
   readonly label: string;
@@ -248,16 +249,25 @@ export function ImageChoice({
   readonly selected: boolean;
   readonly onSelect: () => void;
   readonly name: string;
+  readonly disabled?: boolean;
 }) {
   return (
     <label
       className={cn(
         "flex w-20 cursor-pointer flex-col items-center gap-1 rounded-sm border border-border p-1 text-center text-xs",
         "has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring",
+        "has-[:disabled]:cursor-default has-[:disabled]:opacity-50",
         selected && "border-primary bg-accent text-accent-foreground",
       )}
     >
-      <input type="radio" name={name} className="sr-only" checked={selected} onChange={onSelect} />
+      <input
+        type="radio"
+        name={name}
+        className="sr-only"
+        checked={selected}
+        disabled={disabled}
+        onChange={onSelect}
+      />
       {thumbnail === undefined ? (
         <span
           className="flex size-12 items-center justify-center rounded-sm bg-input"

@@ -109,6 +109,7 @@ export function ImageChoiceField({
   labelId,
   helpId,
   errorId,
+  disabled = false,
   field,
   value,
   onChange,
@@ -128,6 +129,7 @@ export function ImageChoiceField({
       <ImageChoice
         name={id}
         label={field.noneLabel}
+        disabled={disabled}
         selected={value === undefined}
         onSelect={() => choose(undefined)}
       />
@@ -137,6 +139,7 @@ export function ImageChoiceField({
           name={id}
           label={option.label}
           thumbnail={option.thumbnail}
+          disabled={disabled}
           selected={value === option.value}
           onSelect={() => choose(option.value)}
         />

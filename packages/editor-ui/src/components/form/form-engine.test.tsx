@@ -154,4 +154,33 @@ describe("Form (2.21)", () => {
 
     expect(screen.getByRole("alert").textContent).toBe("Publishing isn't set up");
   });
+
+  it("keeps a disabled field's controls from changing, an image choice's too", () => {
+    function Host() {
+      const state = useForm(
+        {
+          fields: [
+            {
+              kind: "imageChoice",
+              name: "icon",
+              label: "Site icon",
+              noneLabel: "None",
+              options: [{ value: "shop", label: "shop", thumbnail: "test://shop" }],
+              disabled: true,
+            },
+          ],
+          schema: z.unknown(),
+          toModel: (values) => values,
+        },
+        { icon: "shop" },
+      );
+      return <Form form={state} />;
+    }
+    render(<Host />);
+
+    for (const radio of screen.getAllByRole("radio")) {
+      expect(radio).toHaveProperty("disabled", true);
+    }
+    expect(screen.getByRole("radio", { name: "shop" })).toHaveProperty("checked", true);
+  });
 });

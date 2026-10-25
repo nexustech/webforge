@@ -207,9 +207,13 @@ export const Disabled: Story = {
   args: {
     spec: {
       ...anything,
-      fields: [FORM_KINDS.text, FORM_KINDS.toggle, FORM_KINDS.number, FORM_KINDS.select].map(
-        (field) => ({ ...field, disabled: true }),
-      ),
+      fields: [
+        FORM_KINDS.text,
+        FORM_KINDS.toggle,
+        FORM_KINDS.number,
+        FORM_KINDS.select,
+        FORM_KINDS.imageChoice,
+      ].map((field) => ({ ...field, disabled: true })),
     },
   },
 };

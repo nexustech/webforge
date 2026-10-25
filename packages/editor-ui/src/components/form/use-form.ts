@@ -23,7 +23,7 @@ export type FormState<V extends FormValues, Out> = {
 };
 
 /** The fields of `spec` for `values`. */
-export const fieldsOf = <V extends FormValues>(spec: FormSpec<V, unknown>, values: V) =>
+const fieldsOf = <V extends FormValues>(spec: FormSpec<V, unknown>, values: V) =>
   typeof spec.fields === "function" ? spec.fields(values) : spec.fields;
 
 /** A schema issue's path as plain keys. */
