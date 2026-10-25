@@ -101,7 +101,7 @@ describe("cloud-synced folders", () => {
     const store = ProjectStore.open(path);
     expect(seqOf(store, "menu")).toBeGreaterThanOrEqual(writer.lastAcknowledged());
     store.close();
-    // 60 copies took 80–132 s on CI's macOS runners (#392); 30 take about half the time.
+    // 60 copies took 80–132 s on CI's macOS runners (#392); with 30 the file took 12 s there.
   }, 120_000);
 
   it("keeps every commit in the .wforge itself, unlike WAL (why we use the rollback journal)", () => {
