@@ -20,7 +20,7 @@ type ImportFailure = Extract<ImportFileResult, { status: "failed" }>;
  * listed as rejected; the rest are still imported. The items' names are unique within this
  * import; the renderer makes them unique within the site when it adds them.
  */
-export function createMediaImport(
+function createMediaImport(
   session: Pick<ProjectSession, "importFile">,
   createId: () => MediaId = () => newId("media"),
 ) {

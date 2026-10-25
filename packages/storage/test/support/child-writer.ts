@@ -13,12 +13,24 @@ export type ChildWriter = {
 };
 
 /**
- * Starts a writer process on the project at `path`: `writer.ts`, which commits, or another script
- * here, such as `asset-writer.ts`, which imports as the storage writer does (R13b). `hook` is the
- * test kit's `TYPESCRIPT_HOOK`, which lets the process run the TypeScript sources.
+ * What a child writer does: commit in a loop (`writer.ts`), or import as the storage writer does
+ * (`asset-writer.ts`, R13b).
  */
-export function startChildWriter(path: string, hook: string, script = "writer.ts"): ChildWriter {
-  const writerScript = fileURLToPath(new URL(`./${script}`, import.meta.url));
+const SCRIPTS = {
+  commits: new URL("./writer.ts", import.meta.url),
+  imports: new URL("./asset-writer.ts", import.meta.url),
+};
+
+/**
+ * Starts a writer process on the project at `path`, doing `what`. `hook` is the test kit's
+ * `TYPESCRIPT_HOOK`, which lets the process run the TypeScript sources.
+ */
+export function startChildWriter(
+  path: string,
+  hook: string,
+  what: keyof typeof SCRIPTS = "commits",
+): ChildWriter {
+  const writerScript = fileURLToPath(SCRIPTS[what]);
   const child: ChildProcess = spawn(
     process.execPath,
     ["--disable-warning=ExperimentalWarning", "--import", hook, writerScript, path],

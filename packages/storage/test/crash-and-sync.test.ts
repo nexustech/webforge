@@ -71,7 +71,7 @@ describe("crash safety", () => {
     let killedMidTransaction = 0;
     for (let round = 0; round < 12 && (round < 3 || killedMidTransaction === 0); round += 1) {
       const path = createProject();
-      const writer = startChildWriter(path, TYPESCRIPT_HOOK, "asset-writer.ts");
+      const writer = startChildWriter(path, TYPESCRIPT_HOOK, "imports");
       await writer.waitForCommits(2);
       await new Promise((resolve) => setTimeout(resolve, delays[round % delays.length]));
       await writer.kill();

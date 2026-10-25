@@ -11,7 +11,7 @@ const importSourceSchema = z.union([
 ]);
 
 /** One import into the open site's file at `sitePath`, as Media item `mediaId`'s asset. */
-export const storeImportRequestSchema = z.strictObject({
+const storeImportRequestSchema = z.strictObject({
   sitePath: z.string().min(1),
   mediaId: z.string().min(1).max(100),
   fileName: z.string().min(1).max(255),
@@ -28,7 +28,7 @@ export type StoreImportRequest = z.infer<typeof storeImportRequestSchema>;
  * - `skipped`: not a file to import, such as a folder or a file that is gone;
  * - `failed`: the file couldn't be written.
  */
-export const storeImportOutcomeSchema = z.discriminatedUnion("status", [
+const storeImportOutcomeSchema = z.discriminatedUnion("status", [
   z.strictObject({
     status: z.literal("stored"),
     hash: z.string().regex(/^[0-9a-f]{64}$/),
