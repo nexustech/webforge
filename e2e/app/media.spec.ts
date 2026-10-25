@@ -230,7 +230,7 @@ test("exports a placed photo cut to its crop, as WebP with a JPEG fallback and i
   const page = await openSite();
   const folder = join(dir, "exported");
   await stubFileDialogs(running(), folder);
-  await page.getByRole("button", { name: "Export", exact: true }).click();
+  await page.getByRole("button", { name: "Export Site…", exact: true }).click();
   await expect(page.getByText(/Site exported to “exported”/)).toBeVisible({ timeout: 60_000 });
 
   // Cut to the square crop (1000 × 1000), so exported at 640 and 1000 wide.
@@ -323,7 +323,7 @@ test("places a Media image on the Hero from the Edit panel, shows it on the canv
 
   const folder = join(dir, "exported");
   await stubFileDialogs(running(), folder);
-  await page.getByRole("button", { name: "Export", exact: true }).click();
+  await page.getByRole("button", { name: "Export Site…", exact: true }).click();
   await expect(page.getByText(/Site exported to “exported”/)).toBeVisible({ timeout: 60_000 });
   const index = readFileSync(join(folder, "index.html"), "utf8");
   expect(index).toContain('alt="Loaves in the window"');
@@ -401,7 +401,7 @@ test("warns before deleting a placed image, shows a placeholder, undoes it, and 
   await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
   const folder = join(dir, "exported");
   await stubFileDialogs(running(), folder);
-  await page.getByRole("button", { name: "Export", exact: true }).click();
+  await page.getByRole("button", { name: "Export Site…", exact: true }).click();
   await expect(page.getByText(/Site exported to “exported”/)).toBeVisible({ timeout: 60_000 });
   const index = readFileSync(join(folder, "index.html"), "utf8");
   expect(index).toContain("Fresh bread");

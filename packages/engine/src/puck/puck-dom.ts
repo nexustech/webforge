@@ -17,6 +17,14 @@ export function componentSelector(id: string): string {
   return `[${COMPONENT_ATTRIBUTE}="${CSS.escape(id)}"]`;
 }
 
+/**
+ * The element node `id` draws: Puck wraps each element in a `div` of its own, which can be wider
+ * than the element (a Small Image in a wide column).
+ */
+export function elementOf(document: Document, id: string): Element | null | undefined {
+  return document.querySelector(componentSelector(id))?.firstElementChild;
+}
+
 /** Puck's overlay over a component on the canvas, which holds its outline and action bar. */
 export const OVERLAY = "[data-puck-overlay]";
 
@@ -28,6 +36,9 @@ export const ROOT_DROP_ZONE = '[data-puck-dropzone="root:default-zone"]';
 
 /** A rich-text editor (Tiptap's ProseMirror) on the canvas. */
 export const RICH_TEXT = ".ProseMirror";
+
+/** An inline text field on the canvas: a Heading's or a Button's text, edited where it is. */
+export const INLINE_TEXT = '[class*="_InlineTextField_"]';
 
 /** Puck's canvas root, whose style carries the canvas zoom (its scale and height). */
 export const CANVAS_ROOT = '[class*="PuckCanvas-root"]';

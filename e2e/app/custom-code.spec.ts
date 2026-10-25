@@ -1,5 +1,6 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
+import { chooseFromMenu } from "./menus.js";
 
 // Custom Code (2.11, F-ED-15): offered in Advanced mode only, its HTML shown on the canvas without
 // its scripts, and still there to select in Simple mode.
@@ -22,8 +23,7 @@ const left = () => page.getByRole("region", { name: "Left panels" });
 const panel = () => page.getByRole("region", { name: "Right panels" });
 const item = (name: string) => left().getByRole("button", { name, exact: true });
 const useMode = async (name: string) => {
-  await page.getByRole("menuitem", { name: "View", exact: true }).click();
-  await page.getByRole("menuitem", { name }).click();
+  await chooseFromMenu(app, page, "View", name);
 };
 
 test("adds Custom Code in Advanced mode, shows its HTML without scripts, keeps it in Simple", async () => {

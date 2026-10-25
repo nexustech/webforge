@@ -23,6 +23,7 @@ import {
 } from "electron";
 import { z } from "zod";
 import { thumbnailOutcomeSchema } from "../shared/export-worker-protocol.js";
+import { appEvents } from "../shared/ipc/app.js";
 import { MEDIA_SCHEME } from "../shared/ipc/media.js";
 import { openFailureMessage } from "../shared/open-failure.js";
 import { applicationMenu } from "./app-menu.js";
@@ -512,6 +513,22 @@ async function start(): Promise<void> {
     "getAppInfo",
     (senderUrl) => isAppUrl(senderUrl, appUrl),
     () => ({ name: t("app.name"), version: app.getVersion() }),
+  );
+  // On macOS the editor's menus are the menu bar's (LF-13): rebuilt as its commands change.
+  registerIpcHandler(
+    ipcMain,
+    "setNativeMenus",
+    (senderUrl) => isAppUrl(senderUrl, appUrl),
+    (menus) => {
+      if (process.platform !== "darwin") return null;
+      const template = applicationMenu(process.platform, devServerUrl !== undefined, {
+        menus,
+        run: (id) =>
+          BrowserWindow.getAllWindows()[0]?.webContents.send(appEvents.runCommand.channel, id),
+      });
+      Menu.setApplicationMenu(template === null ? null : Menu.buildFromTemplate(template));
+      return null;
+    },
   );
   registerProjectHandlers(
     ipcMain,
