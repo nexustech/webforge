@@ -202,5 +202,14 @@ export async function waitForCanvas(page: Page): Promise<void> {
   await expect(canvas.locator("style[data-webforge-site-css]")).toHaveCount(1, {
     timeout: CANVAS_START_TIMEOUT_MS,
   });
-  await canvas.locator("body").evaluate(() => document.fonts.ready.then(() => undefined));
+  // A frame first: the styles have to be applied before the fonts they use start loading, and
+  // `fonts.ready` resolves at once while nothing is loading yet.
+  await canvas
+    .locator("body")
+    .evaluate(
+      () =>
+        new Promise<void>((resolve) =>
+          requestAnimationFrame(() => void document.fonts.ready.then(() => resolve())),
+        ),
+    );
 }
