@@ -20,8 +20,11 @@ type Watcher = {
   readonly shownFirst: readonly string[];
 };
 
-/** Runs `animate.js` on the page; `reduced` for a visitor who prefers less motion. */
-function page({ reduced = false, observer = true } = {}) {
+/**
+ * Runs `animate.js` on the page; `reduced` for a visitor who prefers less motion, `loading` with
+ * the site's stylesheet still loading.
+ */
+function page({ reduced = false, observer = true, loading = false } = {}) {
   const happy = new Window({ width: 1024, height: 768 });
   windows.push(happy);
   const window = happy as unknown as typeof globalThis;
@@ -29,6 +32,10 @@ function page({ reduced = false, observer = true } = {}) {
   document.body.innerHTML = ["top", "middle", "bottom"]
     .map((id) => `<section id="${id}" data-wf-entrance="fade"></section>`)
     .join("");
+  const stylesheet = document.createElement("link");
+  stylesheet.rel = "stylesheet";
+  Object.defineProperty(stylesheet, "sheet", { value: loading ? null : {}, configurable: true });
+  document.head.append(stylesheet);
   ["top", "middle", "bottom"].forEach((id, index) => {
     const section = document.getElementById(id);
     if (section !== null) {
@@ -61,13 +68,20 @@ function page({ reduced = false, observer = true } = {}) {
     "document",
     "window",
     "HTMLElement",
+    "HTMLLinkElement",
     "IntersectionObserver",
     BEHAVIOUR_SCRIPTS.animate ?? "",
-  )(document, window, window.HTMLElement, observer ? FakeObserver : undefined);
+  )(
+    document,
+    window,
+    window.HTMLElement,
+    window.HTMLLinkElement,
+    observer ? FakeObserver : undefined,
+  );
   const shown = () => [...document.querySelectorAll("[data-wf-shown]")].map((each) => each.id);
   const done = () => [...document.querySelectorAll("[data-wf-done]")].map((each) => each.id);
   const marked = () => document.documentElement.hasAttribute("data-wf-animate");
-  return { window, document, watchers, shown, done, marked };
+  return { window, document, watchers, shown, done, marked, stylesheet };
 }
 
 describe("entrance animations on the exported page (2.12, F-DS-5)", () => {
@@ -128,6 +142,19 @@ describe("entrance animations on the exported page (2.12, F-DS-5)", () => {
     window.dispatchEvent(new window.Event("beforeprint"));
 
     expect(shown()).toEqual(["top", "middle", "bottom"]);
+  });
+
+  it("measures what is in view only once the stylesheet has loaded (#382 CI, WebKit)", () => {
+    const { window, watchers, shown, marked, stylesheet } = page({ loading: true });
+
+    // Unstyled, the page is short: nothing is measured, marked or hidden yet.
+    expect(marked()).toBe(false);
+    expect(watchers).toEqual([]);
+    stylesheet.dispatchEvent(new window.Event("load"));
+
+    expect(marked()).toBe(true);
+    expect(shown()).toEqual(["top"]);
+    expect(watchers).toHaveLength(1);
   });
 
   it("does nothing for a visitor who prefers less motion, or without an observer", () => {
