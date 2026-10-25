@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { type ChildProcess, spawn } from "node:child_process";
 import { once } from "node:events";
 import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -126,38 +126,55 @@ export async function launchDesktopApp(
  */
 const CLOSE_TIMEOUT_MS = 30_000;
 
+/** How long a process told to end (SIGTERM) may take before it is killed outright (SIGKILL). */
+const KILL_TIMEOUT_MS = 5_000;
+
 /**
  * `app`, its `close()` quitting it as Playwright's does, then killing its process if it hasn't
  * exited within `timeoutMs`: by then the app has long finished closing, and only the process's
- * teardown is left. Closing it again (a test that closes it, then its `afterEach`) waits for the
- * first close.
+ * teardown is left. A process that doesn't end when told to (SIGTERM) is killed outright (SIGKILL)
+ * `killTimeoutMs` later, so one stuck in its teardown can't outlast the test either. Closing it
+ * again (a test that closes it, then its `afterEach`) waits for the first close.
  */
 export function closingWithin<App extends Pick<ElectronApplication, "close" | "process">>(
   app: App,
   timeoutMs = CLOSE_TIMEOUT_MS,
+  killTimeoutMs = KILL_TIMEOUT_MS,
 ): App {
   const close = app.close.bind(app);
   let closed: Promise<void> | undefined;
   const closeInTime = async () => {
-    const child = app.process();
+    let child: ChildProcess;
+    try {
+      child = app.process();
+    } catch {
+      // Playwright's app has no process once it has closed by itself (a launch that handed its
+      // site to a running Webforge): there is nothing left to close.
+      return close();
+    }
     const exited =
       child.exitCode !== null || child.signalCode !== null
         ? Promise.resolve()
         : once(child, "exit");
     const closing = close();
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const late = new Promise<true>((resolve) => {
-      timer = setTimeout(() => resolve(true), timeoutMs);
-    });
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    /** Resolves with true after `ms`. */
+    const after = (ms: number) =>
+      new Promise<true>((resolve) => {
+        timers.push(setTimeout(() => resolve(true), ms));
+      });
     try {
-      if (await Promise.race([closing.then(() => false), late])) {
+      if (await Promise.race([closing.then(() => false), after(timeoutMs)])) {
         // Playwright's close settles once the process is gone; nothing waits on it after this.
         closing.catch(() => undefined);
         child.kill();
-        await exited;
+        if (await Promise.race([exited.then(() => false), after(killTimeoutMs)])) {
+          child.kill("SIGKILL");
+          await exited;
+        }
       }
     } finally {
-      clearTimeout(timer);
+      for (const timer of timers) clearTimeout(timer);
     }
   };
   app.close = () => {
