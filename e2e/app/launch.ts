@@ -115,6 +115,55 @@ export async function launchDesktopApp(
       }
     });
   }
+  return closingWithin(app);
+}
+
+/**
+ * How long closing the app may take before its process is killed (#393). The app's own close (its
+ * last save, the Recent thumbnail, closing the site file, quitting) takes under a second, and at
+ * most about 13 s when its renderer doesn't answer. On a busy machine, Electron then took up to a
+ * minute more to tear the process down after quitting, past the test's timeout.
+ */
+const CLOSE_TIMEOUT_MS = 30_000;
+
+/**
+ * `app`, its `close()` quitting it as Playwright's does, then killing its process if it hasn't
+ * exited within `timeoutMs`: by then the app has long finished closing, and only the process's
+ * teardown is left. Closing it again (a test that closes it, then its `afterEach`) waits for the
+ * first close.
+ */
+export function closingWithin<App extends Pick<ElectronApplication, "close" | "process">>(
+  app: App,
+  timeoutMs = CLOSE_TIMEOUT_MS,
+): App {
+  const close = app.close.bind(app);
+  let closed: Promise<void> | undefined;
+  const closeInTime = async () => {
+    const child = app.process();
+    const exited =
+      child.exitCode !== null || child.signalCode !== null
+        ? Promise.resolve()
+        : once(child, "exit");
+    const closing = close();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const late = new Promise<true>((resolve) => {
+      timer = setTimeout(() => resolve(true), timeoutMs);
+    });
+    try {
+      if (await Promise.race([closing.then(() => false), late])) {
+        // Playwright's close settles once the process is gone; nothing waits on it after this.
+        closing.catch(() => undefined);
+        child.kill();
+        await exited;
+      }
+    } finally {
+      clearTimeout(timer);
+    }
+  };
+  app.close = () => {
+    closed ??= closeInTime();
+    return closed;
+  };
   return app;
 }
 
