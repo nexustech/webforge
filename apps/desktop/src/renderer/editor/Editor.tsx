@@ -26,7 +26,7 @@ import { widthOf } from "../shell/canvas-size.js";
 import { type CanvasView, connectCanvasView } from "../shell/canvas-view.js";
 import { useCommandRegistry } from "../shell/command-context.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
-import { installCommandShortcuts } from "../shell/commands.js";
+import { installCommandShortcuts, isInDialog } from "../shell/commands.js";
 import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
 import { useContextualToolbars } from "../shell/contextual-toolbar-context.js";
 import { CanvasErrorBoundary } from "../shell/error-boundaries.js";
@@ -329,13 +329,19 @@ export function Editor({
     );
     setEngine(engine);
     // One handler for the whole window (U4); the engine reports keys pressed inside its iframe.
-    const removeKeys = installHistoryKeys(window, (command) => {
-      // Nothing changes while a question about the whole site waits for its answer (D7); Esc
-      // goes to its dialog.
-      if (siteWide !== undefined && siteWide.current() !== null) return false;
-      connection.flush();
-      return runHistoryCommand(session, command);
-    });
+    const removeKeys = installHistoryKeys(
+      window,
+      (command) => {
+        // Nothing changes while a question about the whole site waits for its answer (D7); Esc
+        // goes to its dialog.
+        if (siteWide !== undefined && siteWide.current() !== null) return false;
+        connection.flush();
+        return runHistoryCommand(session, command);
+      },
+      // A dialog or a menu over the page has the keys: Ctrl/Cmd+Z in its text field undoes the
+      // text, not a step of the site behind it (#421 review), as its other keys are its own.
+      { ignore: (event) => isInDialog(event.target, document) },
+    );
     // The areas' connections to the canvas, and their commands on it (2.20, B1).
     const detach = host.attach({ engine, connection });
     let removeFrameShortcuts: (() => void) | undefined;

@@ -1,11 +1,10 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
-import { chooseFromMenu } from "./menus.js";
 
 // On macOS the editor's menus are the menu bar's (LF-13), and Edit's Undo and Redo there register
-// their keys, so that Cmd+Z in a dialog's text field still undoes its text. The editor handles the
-// same keys itself everywhere else: a key press must undo or redo one step, never one for the page
-// and one more for the menu bar (#414 review).
+// their keys, so that Cmd+Z in a dialog's text field still undoes its text (site-settings.spec.ts
+// checks that on every system). The editor handles the same keys itself everywhere else: a press
+// must undo or redo one step, never one for the page and one more for the menu bar (#414 review).
 
 test.skip(process.platform !== "darwin", "The menus are in the menu bar on macOS only");
 
@@ -44,7 +43,8 @@ async function expectAt(at: number): Promise<void> {
 
 /** Puts the focus on the canvas, in its frame, with the heading selected. */
 async function focusCanvas(): Promise<void> {
-  const heading = canvas().locator("h1");
+  // Duplicates of it follow it: the first is the one to click.
+  const heading = canvas().locator("h1").first();
   const box = await heading.boundingBox();
   if (box === null) throw new Error("Heading not visible");
   await heading.click({ position: { x: box.width * 0.97, y: box.height - 2 } });
@@ -82,26 +82,4 @@ test("Cmd+Z and Cmd+Shift+Z undo and redo one step, on the canvas and in the Edi
   await press(focusCanvas, "Meta+z", 2);
   await press(focusCanvas, "Meta+Shift+z", 1);
   await expect(steps()).toHaveCount(4);
-});
-
-test("Cmd+Z in a dialog's text field undoes its text, and no step of the site", async () => {
-  await focusCanvas();
-  await page.keyboard.press("Meta+d");
-  await expectAt(0);
-
-  await chooseFromMenu(app, page, "File", "Site Settings…");
-  const dialog = page.getByRole("dialog", { name: "Site Settings" });
-  const name = dialog.getByLabel("Site name");
-  const before = await name.inputValue();
-  await name.click();
-  await name.press("End");
-  await name.pressSequentially(" Co", { delay: 20 });
-  await expect(name).toHaveValue(`${before} Co`);
-
-  await page.keyboard.press("Meta+z");
-  await expect(name).not.toHaveValue(`${before} Co`);
-  expect(await current()).toBe(0);
-  await dialog.getByRole("button", { name: "Cancel" }).click();
-  await expect(steps()).toHaveText(["Duplicated Heading", "Opened page"]);
-  expect(await current()).toBe(0);
 });
