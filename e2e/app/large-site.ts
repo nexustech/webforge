@@ -19,18 +19,32 @@ export type LargeSiteEdits = {
 /**
  * `count` edits of a site with a large home page, each renaming that page: what one autosave of a
  * typical edit commits (architecture §10, ADR 0003). For the autosave E2E and the commit timing in
- * `pnpm e2e:perf`.
+ * `pnpm e2e:perf`. `otherPages` adds that many more pages as large as the home page, which an edit
+ * of the home page leaves as they are.
  */
-export function largeSiteEdits(count: number): LargeSiteEdits {
+export function largeSiteEdits(count: number, otherPages = 0): LargeSiteEdits {
   const doc = largePage();
   if (countNodes(doc) < 225) throw new Error("The large page has fewer than 225 nodes");
-  const site = createSite({
+  const created = createSite({
     name: "Large",
     language: "en",
     homeTitle: "Home",
     notFoundTitle: "Page not found",
     homeDoc: doc,
   });
+  const others = Array.from({ length: otherPages }, (_, index) => ({
+    id: `page-${index}` as PageId,
+    kind: "page" as const,
+    slug: `page-${index}`,
+    title: `Page ${index}`,
+    settings: { hideHeader: false, hideFooter: false, hideFromNavigation: false },
+    doc: largePage(),
+  }));
+  const site: SiteDoc = {
+    ...created,
+    pages: { ...created.pages, ...Object.fromEntries(others.map((page) => [page.id, page])) },
+    pageOrder: [...created.pageOrder, ...others.map((page) => page.id)],
+  };
   const home = site.pages[site.homePageId];
   if (home === undefined) throw new Error("no home page");
   const edits: SiteDoc[] = Array.from({ length: count }, (_, index) => ({
