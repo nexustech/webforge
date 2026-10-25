@@ -39,11 +39,11 @@ export class AssetWriter {
   /**
    * Stores an imported file's original bytes, unmodified (X2), and records it as a Media item's
    * asset, in one transaction that records the content fingerprint (#295), as
-   * `ProjectStore.putAsset` does. Gives the bytes' hash.
+   * `ProjectStore.putAsset` does. Gives the bytes' hash: `hash`, when the caller has it already
+   * (the storage writer hashes while it prepares an import, before it may write).
    */
-  put(asset: NewAsset): string {
+  put(asset: NewAsset, hash: string = sha256(asset.data)): string {
     return this.#db.transaction(() => {
-      const hash = sha256(asset.data);
       this.#db.prepare(INSERT_BLOB).run(hash, asset.mime, asset.data.byteLength, asset.data);
       this.#db
         .prepare(UPSERT_ASSET)

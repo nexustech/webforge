@@ -13,7 +13,9 @@
       "entry": ["src/worker/export-worker.ts"],
       // Imported by @webforge/storage, which is bundled from source. Listed as a dependency so
       // electron-vite keeps it external and electron-builder packages it (ADR 0003).
-      "ignoreDependencies": ["better-sqlite3"]
+      "ignoreDependencies": ["better-sqlite3"],
+      // A system tool on macOS and Linux: a test makes a named pipe with it (R13b).
+      "ignoreBinaries": ["mkfifo"]
     },
     "e2e": {
       // The export-setup project (playwright.config.ts) runs before the exported-site tests.
