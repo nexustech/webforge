@@ -378,10 +378,7 @@ const MODAL = '[role="dialog"][aria-modal="true"], [role="alertdialog"], [role="
  * a modal dialog or a menu open (a key pressed in the canvas while one is open counts too).
  * Duck-typed, as in {@link isFocusedControl}.
  */
-export function isInDialog(
-  target: EventTarget | null,
-  doc: Pick<Document, "querySelector">,
-): boolean {
+function isInDialog(target: EventTarget | null, doc: Pick<Document, "querySelector">): boolean {
   const element = target as { closest?: (selector: string) => unknown } | null;
   return (
     element?.closest?.('[role="dialog"], [role="alertdialog"], [role="menu"]') != null ||

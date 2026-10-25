@@ -33,7 +33,7 @@ const NATIVE_HISTORY: Readonly<Record<string, HistoryCommand>> = {
 type HistoryKeysOptions = {
   /**
    * Whether `event` belongs to something else that has the keys, such as a dialog over the page:
-   * its undo is its own text's, and its Esc closes it.
+   * its undo and redo are its own text's (the browser's), and its Esc closes it.
    */
   readonly ignore?: (event: Event) => boolean;
 };
@@ -43,7 +43,8 @@ type HistoryKeysOptions = {
  * `onCommand`, before anything else sees it: Puck's own history hotkeys, the rich-text editor and
  * the browser's native `contenteditable` undo (research/stack/03-undo-redo.md rules 5 and 6).
  * Esc goes to `onCommand` first too, but reaches the rest of the page unless it cancelled something.
- * Gestures `ignore` names are left alone.
+ * Gestures `ignore` names are left to the browser: an undo or redo there still reaches nothing else
+ * (Puck's hotkeys would take it), but isn't cancelled, so its text's own undo runs.
  */
 export function installHistoryKeys(
   target: Window,
@@ -52,7 +53,11 @@ export function installHistoryKeys(
 ): Unsubscribe {
   const onKeyDown = (event: KeyboardEvent) => {
     const command = historyCommandFor(event);
-    if (command === null || ignore(event)) {
+    if (command === null) {
+      return;
+    }
+    if (ignore(event)) {
+      if (command !== "cancel") event.stopImmediatePropagation();
       return;
     }
     if (command === "cancel") {

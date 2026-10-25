@@ -26,7 +26,7 @@ import { widthOf } from "../shell/canvas-size.js";
 import { type CanvasView, connectCanvasView } from "../shell/canvas-view.js";
 import { useCommandRegistry } from "../shell/command-context.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
-import { installCommandShortcuts, isInDialog } from "../shell/commands.js";
+import { installCommandShortcuts } from "../shell/commands.js";
 import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
 import { useContextualToolbars } from "../shell/contextual-toolbar-context.js";
 import { CanvasErrorBoundary } from "../shell/error-boundaries.js";
@@ -72,6 +72,15 @@ function withClosedGroups(
     ),
   };
 }
+
+/**
+ * Whether `target` is in an open dialog: not one closing, which keeps the focus a moment after its
+ * answer. Duck-typed: a key pressed in the canvas is another window's.
+ */
+const inDialog = (target: EventTarget | null) =>
+  (target as { closest?: (selector: string) => unknown } | null)?.closest?.(
+    ':is([role="dialog"], [role="alertdialog"]):not([data-state="closed"])',
+  ) != null;
 
 /** Props of {@link Editor}. */
 export type EditorProps = {
@@ -338,9 +347,10 @@ export function Editor({
         connection.flush();
         return runHistoryCommand(session, command);
       },
-      // A dialog or a menu over the page has the keys: Ctrl/Cmd+Z in its text field undoes the
-      // text, not a step of the site behind it (#421 review), as its other keys are its own.
-      { ignore: (event) => isInDialog(event.target, document) },
+      // A dialog's keys are its own: Ctrl/Cmd+Z in its text field undoes the text, not a step of
+      // the site behind it (#421 review). Where the key was pressed decides, not whether a dialog
+      // is in the page: one that is closing still is, for a moment.
+      { ignore: (event) => inDialog(event.target) },
     );
     // The areas' connections to the canvas, and their commands on it (2.20, B1).
     const detach = host.attach({ engine, connection });
