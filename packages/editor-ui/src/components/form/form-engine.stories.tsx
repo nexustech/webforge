@@ -75,6 +75,12 @@ const FORM_KINDS = {
     label: "Days",
     options: ["Mon", "Tue", "Wed", "Thu", "Fri"].map((day) => ({ label: day, value: day })),
   },
+  choice: {
+    kind: "choice",
+    name: "choice",
+    label: "Link to",
+    options: ["Page", "Email", "Phone"].map((label) => ({ label, value: label.toLowerCase() })),
+  },
   imageChoice: {
     kind: "imageChoice",
     name: "imageChoice",
@@ -100,6 +106,7 @@ const VALUES: FormValues = {
   time: "07:00",
   multiChoice: ["Tue", "Wed"],
   imageChoice: "shop",
+  choice: "email",
 };
 
 /** The app draws these kinds (a link, a Media image, an icon, code): a stand-in shows where. */
@@ -170,6 +177,7 @@ export const Tabs: Story = {
       fields: [
         { ...FORM_KINDS.text, group: "general" },
         { ...FORM_KINDS.imageChoice, group: "general" },
+        { ...FORM_KINDS.choice, group: "general" },
         { ...FORM_KINDS.toggle, group: "general" },
         { ...FORM_KINDS.multiChoice, group: "hours" },
         { ...FORM_KINDS.time, group: "hours" },
@@ -214,6 +222,7 @@ export const Disabled: Story = {
         FORM_KINDS.number,
         FORM_KINDS.select,
         FORM_KINDS.imageChoice,
+        FORM_KINDS.choice,
       ].map((field) => ({ ...field, disabled: true })),
     },
   },
