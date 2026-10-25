@@ -1,10 +1,10 @@
+import { sameValue } from "@webforge/editor-ui";
 import type { CanvasEngine, FieldDrag, Unsubscribe } from "@webforge/engine";
 import { boxValueSchema } from "@webforge/model";
 import type { FieldDef } from "@webforge/site-components";
 import type { EditorSession, Gesture } from "./editor-session.js";
 import { fieldTarget } from "./field-target.js";
 import { breakpointOf, withValueAt } from "./responsive-value.js";
-import { sameValue } from "./same-value.js";
 
 /** Whether a drag may set `field` to `value`. */
 function accepts(field: FieldDef, value: unknown): boolean {

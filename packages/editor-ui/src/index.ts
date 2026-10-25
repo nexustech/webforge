@@ -45,6 +45,7 @@ export {
   type TextInputProps,
   TimeInput,
 } from "./components/form/form.js";
+export { FormDialog, type FormDialogProps } from "./components/form/form-dialog.js";
 export { Form, type FormProps } from "./components/form/form-engine.js";
 export type {
   FormField,
@@ -55,6 +56,7 @@ export type {
   FormValues,
 } from "./components/form/form-spec.js";
 export { type FormState, type FormSubmit, useForm } from "./components/form/use-form.js";
+export { type MenuDialog, useMenuDialog } from "./components/form/use-menu-dialog.js";
 export {
   AlertDialog,
   AlertDialogAction,
@@ -157,3 +159,4 @@ export {
   TooltipTrigger,
 } from "./components/ui/tooltip.js";
 export { cn } from "./lib/cn.js";
+export { sameValue } from "./lib/same-value.js";

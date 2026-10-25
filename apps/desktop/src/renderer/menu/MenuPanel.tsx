@@ -6,6 +6,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  useMenuDialog,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { MENU_LABEL_MAX, type MenuItem, type MenuItemId, type SiteDoc } from "@webforge/model";
@@ -23,7 +24,6 @@ import { type KeyboardEvent, useRef, useState } from "react";
 import type { LinkFieldChange, PageTarget } from "../links/index.js";
 import { LinkDialog } from "../links/index.js";
 import { NameDialog } from "../shell/NameDialog.js";
-import { useMenuDialog } from "../shell/use-menu-dialog.js";
 import { useRowDrag } from "../shell/use-row-drag.js";
 import { itemLabel, type MenuPosition, type NewMenuItem } from "./menu-actions.js";
 

@@ -10,6 +10,7 @@ import {
   fieldControlClass,
   ToggleGroup,
   ToggleGroupItem,
+  useMenuDialog,
 } from "@webforge/editor-ui";
 import type { CanvasSize, Viewport } from "@webforge/engine";
 import { t } from "@webforge/i18n";
@@ -32,7 +33,6 @@ import {
 } from "./canvas-size.js";
 import { type CanvasZoom, ZOOM_LEVELS } from "./canvas-view.js";
 import { DeviceDialog, type NewDevice } from "./DeviceDialog.js";
-import { useMenuDialog } from "./use-menu-dialog.js";
 
 const DEVICES = [
   { id: "desktop", icon: MonitorIcon },

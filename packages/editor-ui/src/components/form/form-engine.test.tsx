@@ -3,6 +3,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
+import { FormDialog } from "./form-dialog.js";
 import { Form } from "./form-engine.js";
 import type { FormSpec } from "./form-spec.js";
 import { type FormSubmit, useForm } from "./use-form.js";
@@ -182,5 +183,63 @@ describe("Form (2.21)", () => {
       expect(radio).toHaveProperty("disabled", true);
     }
     expect(screen.getByRole("radio", { name: "shop" })).toHaveProperty("checked", true);
+  });
+
+  it("gives a text field that checks what's typed its kind of text and its limit too", () => {
+    function Host() {
+      const state = useForm(
+        {
+          fields: [
+            {
+              kind: "text",
+              name: "email",
+              label: "Email",
+              inputType: "email",
+              maxLength: 20,
+              validate: (text) => (text.includes("@") ? undefined : "Use an email address"),
+            },
+          ],
+          schema: z.unknown(),
+          toModel: (values) => values,
+        },
+        { email: "" },
+      );
+      return <Form form={state} />;
+    }
+    render(<Host />);
+
+    const email = screen.getByRole("textbox", { name: "Email" });
+    expect(email.getAttribute("type")).toBe("email");
+    expect(email.getAttribute("maxlength")).toBe("20");
+  });
+});
+
+describe("FormDialog (2.21, B4)", () => {
+  it("saves with the groups that changed, or shows what to fix and stays open", async () => {
+    const onSave = vi.fn();
+    render(
+      <FormDialog
+        open
+        title="Site Settings"
+        confirm="Save"
+        spec={spec}
+        initial={initial}
+        onSave={onSave}
+        onCancel={vi.fn()}
+      />,
+    );
+    const user = userEvent.setup({ delay: null });
+
+    await user.clear(screen.getByRole("textbox", { name: "Site name" }));
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(onSave).not.toHaveBeenCalled();
+    expect(screen.getByText("Give it a name")).toBeTruthy();
+
+    await user.type(screen.getByRole("textbox", { name: "Site name" }), "Ana");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(onSave).toHaveBeenCalledWith(
+      { name: "Ana", open: false, service: "formspree", value: "x1" },
+      { groups: ["general"] },
+    );
   });
 });
