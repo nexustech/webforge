@@ -102,7 +102,7 @@ export type FieldDef = {
       readonly accepts?: ComponentPlace;
       /**
        * The most elements it holds (a Columns' four): nothing adds more, by the Add panel, paste,
-       * duplicate or a drop (`slotsOverfull`).
+       * duplicate or a drop (`overfillsSlots`).
        */
       readonly max?: number;
     }

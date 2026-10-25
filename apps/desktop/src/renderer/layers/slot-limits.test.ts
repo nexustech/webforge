@@ -12,8 +12,11 @@ import { duplicateSelected } from "./bulk-layers.js";
 
 const column = (id: string): NodeDoc => ({ type: "Column", props: { id, content: [] } });
 
-/** A page whose Section holds a full Columns ("full") and one with room ("room"). */
-function setUp() {
+/**
+ * A page whose Section holds a full Columns ("full") and one with room ("room"), and with
+ * `over`, one of five before them, as an old file might hold (#375).
+ */
+function setUp({ over = false } = {}) {
   const site = starterSite();
   const home = site.pages[site.homePageId];
   if (home === undefined) throw new Error("no home page");
@@ -24,6 +27,19 @@ function setUp() {
       props: {
         id: "s",
         content: [
+          ...(over
+            ? [
+                {
+                  type: "Columns",
+                  props: {
+                    id: "over",
+                    columns: Array.from({ length: MAX_COLUMNS + 1 }, (_, index) =>
+                      column(`o${index}`),
+                    ),
+                  },
+                },
+              ]
+            : []),
           { type: "Columns", props: { id: "full", columns: full } },
           { type: "Columns", props: { id: "room", columns: [column("r0")] } },
         ],
@@ -66,6 +82,27 @@ describe("a Columns' four columns (2.9)", () => {
     expect(count("full")).toBe(MAX_COLUMNS);
     expect(session.history.entries()).toEqual([]);
     copyLayer(session, "r0", 1, false);
+    expect(count("room")).toBe(2);
+  });
+
+  it("keeps to the limit on a page with a Columns over it elsewhere (#375)", () => {
+    const { session, count } = setUp({ over: true });
+
+    session.select("f0");
+    expect(duplicateSelected(session)).toEqual({
+      refused: "There's no room for another there: a Columns holds at most four columns.",
+    });
+    copyLayer(session, "f0", 1, false);
+    expect(count("full")).toBe(MAX_COLUMNS);
+    // Nor one more in the Columns already over it.
+    session.select("o0");
+    expect(duplicateSelected(session)).toHaveProperty("refused");
+    expect(count("over")).toBe(MAX_COLUMNS + 1);
+    expect(session.history.entries()).toEqual([]);
+
+    // Where there is room, as before.
+    session.select("r0");
+    expect(duplicateSelected(session)).toEqual({});
     expect(count("room")).toBe(2);
   });
 });
