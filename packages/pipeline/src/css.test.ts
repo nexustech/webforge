@@ -88,6 +88,10 @@ describe("buildSiteCss", () => {
     expect(motionSafe).toMatch(
       /:root\[data-wf-animate\] \.motion-safe\\:wf-waiting\\:-translate-x-8:not\(\[data-wf-shown\]\)/,
     );
+    // Nor any transition while it waits: it moves only on the way in.
+    expect(motionSafe).toMatch(
+      /\.motion-safe\\:wf-waiting\\:transition-none:not\(\[data-wf-shown\]\) \{\s*transition-property: none;/,
+    );
     expect(motionSafe).toContain("transition-delay: 600ms;");
     expect(motionSafe).toContain(String.raw`.motion-safe\:hover\:-translate-y-1:hover`);
   });

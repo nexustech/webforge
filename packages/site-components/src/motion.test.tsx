@@ -22,6 +22,8 @@ describe("entrance animations (2.12, F-DS-5)", () => {
       expect.arrayContaining([
         "motion-safe:wf-waiting:opacity-0",
         "motion-safe:wf-waiting:translate-y-8",
+        // No fading out when the page is marked: it moves only on the way in.
+        "motion-safe:wf-waiting:transition-none",
         "motion-safe:delay-300",
       ]),
     );

@@ -282,6 +282,64 @@ test.describe("exported site from disk", () => {
     });
   });
 
+  test.describe("entrance animations (2.12, F-DS-5)", () => {
+    /** The band below the fold that slides up as it is scrolled to. */
+    const fresh = (page: Page) =>
+      page.locator("section", { has: page.getByRole("heading", { name: "Fresh every day" }) });
+    const opacity = (section: ReturnType<typeof fresh>) =>
+      section.evaluate((element) => getComputedStyle(element).opacity);
+
+    test("never hides the section in view as the page opens", async ({ page }) => {
+      await page.setViewportSize({ width: 1280, height: 600 });
+      // The Hero's opacity on every frame from the first, before and after webforge.js runs.
+      await page.addInitScript(() => {
+        const seen: number[] = [];
+        Object.assign(window, { heroOpacity: seen });
+        const sample = () => {
+          const hero = document.querySelector(".site-hero");
+          if (hero !== null) seen.push(Number(getComputedStyle(hero).opacity));
+          if (seen.length < 60) requestAnimationFrame(sample);
+        };
+        requestAnimationFrame(sample);
+      });
+      await open(page, "index.html");
+      const hero = page.locator(".site-hero");
+
+      await expect(page.locator("html")).toHaveAttribute("data-wf-animate", "");
+      await expect(hero).toHaveAttribute("data-wf-shown", "");
+      const seen = () =>
+        page.evaluate(() => (window as unknown as { heroOpacity: number[] }).heroOpacity);
+      await expect.poll(async () => (await seen()).length).toBeGreaterThanOrEqual(30);
+      expect(Math.min(...(await seen()))).toBe(1);
+    });
+
+    test("moves a section below the fold in as it is scrolled to, once", async ({ page }) => {
+      await page.setViewportSize({ width: 1280, height: 600 });
+      await open(page, "index.html");
+      const band = fresh(page);
+
+      await expect(page.locator("html")).toHaveAttribute("data-wf-animate", "");
+      await expect(band).not.toHaveAttribute("data-wf-shown");
+      expect(await opacity(band)).toBe("0");
+      await band.scrollIntoViewIfNeeded();
+
+      await expect(band).toHaveAttribute("data-wf-shown", "");
+      await expect.poll(() => opacity(band)).toBe("1");
+      // Scrolled away and back, it stays shown.
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await expect(band).toHaveAttribute("data-wf-shown", "");
+    });
+
+    test("shows everything at once for a visitor who prefers reduced motion", async ({ page }) => {
+      await page.emulateMedia({ reducedMotion: "reduce" });
+      await page.setViewportSize({ width: 1280, height: 600 });
+      await open(page, "index.html");
+
+      await expect(page.locator("html")).not.toHaveAttribute("data-wf-animate");
+      expect(await opacity(fresh(page))).toBe("1");
+    });
+  });
+
   test.describe("gallery lightbox (2.7a)", () => {
     test("opens an image large, keeps the focus in it, moves with the keys and closes with Esc", async ({
       page,
@@ -444,6 +502,17 @@ test.describe("exported site from disk", () => {
 
   test.describe("without JavaScript", () => {
     test.use({ javaScriptEnabled: false });
+
+    test("shows a section with an entrance animation, never hidden (2.12)", async ({ page }) => {
+      await page.setViewportSize({ width: 1280, height: 600 });
+      await open(page, "index.html");
+      const band = page.locator("section", {
+        has: page.getByRole("heading", { name: "Fresh every day" }),
+      });
+
+      await expect(page.locator("html")).not.toHaveAttribute("data-wf-animate");
+      expect(await band.evaluate((element) => getComputedStyle(element).opacity)).toBe("1");
+    });
 
     test("opens a gallery image's full-size file, from disk", async ({ page }) => {
       await open(page, "about.html");

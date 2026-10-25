@@ -68,12 +68,16 @@ const DELAY_CLASS: Readonly<Record<Delay, string>> = {
   long: " motion-safe:delay-600",
 };
 
-/** An entrance's classes, with a space before them to append to others, or "" for none. */
+/**
+ * An entrance's classes, with a space before them to append to others, or "" for none. It moves
+ * only on the way in: while it waits it has no transition, so when the page is marked it goes from
+ * as drawn to its start at once, rather than fading out where a fast scroll or a checker sees it.
+ */
 export function entranceClasses(values: EntranceValues): string {
   const entrance = entranceOf(values);
   if (entrance === undefined) return "";
   const delay = DELAYS.find((each) => each === values.entranceDelay) ?? "none";
-  return ` motion-safe:transition-[opacity,translate,scale] motion-safe:duration-700 motion-safe:ease-out ${ENTRANCE_START[entrance]}${DELAY_CLASS[delay]}`;
+  return ` motion-safe:transition-[opacity,translate,scale] motion-safe:duration-700 motion-safe:ease-out ${HIDDEN}transition-none ${ENTRANCE_START[entrance]}${DELAY_CLASS[delay]}`;
 }
 
 /** The attribute the `animate` behaviour finds an entrance by: `data-wf-entrance="fade"`. */
