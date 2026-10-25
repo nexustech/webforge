@@ -1,3 +1,4 @@
+export { BlobWriter } from "./blob-writer.js";
 export { ProjectFileError, type ProjectFileErrorCode, ReadOnlyProjectError } from "./errors.js";
 export {
   type AssetInfo,
@@ -10,6 +11,7 @@ export {
   type ProjectInfo,
   ProjectStore,
   type SiteEditorMode,
+  type StoredAsset,
   type StoredBlob,
   type StoredDocument,
   type VersionInfo,

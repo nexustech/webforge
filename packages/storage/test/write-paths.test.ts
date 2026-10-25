@@ -49,6 +49,14 @@ const WRITERS: Record<string, (store: ProjectStore) => unknown> = {
       mime: "image/png",
       originalName: "photo.png",
     }),
+  // Of bytes stored already, as the storage writer stores them (R13b).
+  addAsset: (store) =>
+    store.addAsset({
+      mediaId: "logo",
+      hash: store.putBlob(new Uint8Array([7, 8, 9]), "image/png"),
+      mime: "image/png",
+      originalName: "logo.png",
+    }),
   saveVersion: (store) => store.saveVersion("Before the change", "manual"),
   writeEditorMode: (store) => store.writeEditorMode("content"),
   collectGarbage: (store) => store.collectGarbage(),
