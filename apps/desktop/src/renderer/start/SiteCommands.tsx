@@ -21,7 +21,7 @@ export type SiteCommandsProps = {
 
 /**
  * File → New Site… (Ctrl/Cmd+N) and Open Site… (Ctrl/Cmd+O), the title bar's New and Open
- * buttons (F-SITE-1, F-SITE-2). New Site shows its dialog (2.14a) with the templates main lists;
+ * buttons (F-SITE-1, F-SITE-2), and Help → Try an Example (PG-3). New Site shows its dialog (2.14a) with the templates main lists;
  * then main shows the save dialog and saves the open site before switching. A failure appears as
  * a toast.
  */
@@ -53,6 +53,38 @@ export function SiteCommands({ project, templates, restart }: SiteCommandsProps)
       removeOpen();
     };
   }, [registry, project, templates, restart]);
+
+  // Try an example (PG-3, 2.14b): the first template marked as one, if the app ships any.
+  const [example, setExample] = useState<TemplateSummary>();
+  useEffect(() => {
+    let current = true;
+    (templates ?? window.webforge.templates).list().then(
+      (listed) => {
+        if (current) setExample(listed.find((template) => template.example));
+      },
+      (error: unknown) => reportFailure("site.templates", error),
+    );
+    return () => {
+      current = false;
+    };
+  }, [templates]);
+  useEffect(() => {
+    if (example === undefined) return;
+    // Pre-filled and named after the example, straight from the template: no New Site dialog.
+    return registry.register({
+      id: COMMAND_IDS.tryExample,
+      label: t("command.tryExample"),
+      menu: "help",
+      run: () =>
+        openWith(restart, () =>
+          (project ?? window.webforge.project).create({
+            name: t(`template.${example.id}.name`),
+            theme: example.theme,
+            template: example.id,
+          }),
+        ),
+    });
+  }, [registry, example, project, restart]);
 
   const create = (request: NewSiteRequest) => {
     setNewSite(null);

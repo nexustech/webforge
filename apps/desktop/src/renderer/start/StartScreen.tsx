@@ -1,19 +1,33 @@
-import { Button, Toaster, TooltipProvider } from "@webforge/editor-ui";
+import {
+  Button,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  Toaster,
+  TooltipProvider,
+} from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
-import { FilePlusIcon, FolderOpenIcon, XIcon } from "lucide-react";
+import { FilePlusIcon, FolderOpenIcon, SparklesIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { AppApi } from "../../shared/ipc/app.js";
 import type { ProjectApi } from "../../shared/ipc/project.js";
 import type { TemplatesApi } from "../../shared/ipc/templates.js";
 import type { AppInfo, RecentSite } from "../../shared/ipc-contract.js";
 import { AboutDialog } from "../shell/AboutDialog.js";
-import { CommandRegistryProvider } from "../shell/command-context.js";
+import {
+  CommandRegistryProvider,
+  useCommand,
+  useCommandRegistry,
+} from "../shell/command-context.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { createCommandRegistry, installCommandShortcuts, isMac } from "../shell/commands.js";
 import { ShortcutSheet } from "../shell/ShortcutSheet.js";
 import { TitleBar } from "../shell/TitleBar.js";
 import { openSiteWith } from "./open-site.js";
+import { RecentSites } from "./RecentSites.js";
 import { SiteCommands } from "./SiteCommands.js";
+import { StartHelp } from "./StartHelp.js";
 
 /** Props of {@link StartScreen}. */
 export type StartScreenProps = {
@@ -21,7 +35,7 @@ export type StartScreenProps = {
   /** The preload API's site calls; injectable for tests. */
   readonly project?: Pick<
     ProjectApi,
-    "create" | "open" | "listRecent" | "openRecent" | "removeRecent"
+    "create" | "open" | "listRecent" | "openRecent" | "pinRecent" | "removeRecent"
   >;
   /** Lists the templates New Site offers; injectable for tests. */
   readonly templates?: Pick<TemplatesApi, "list">;
@@ -34,9 +48,9 @@ export type StartScreenProps = {
 };
 
 /**
- * The window when no site is open (F-SITE-1, F-SITE-2): start a site (New Site's dialog: Blank or a
- * template, 2.14a), open one, or pick one of the recently opened sites, each with its thumbnail
- * and when it was last edited.
+ * The window when no site is open (F-SITE-1, F-SITE-2), as Bootstrap Studio's (LF-10): on the left,
+ * start a site (New Site's dialog, 2.14a), open one or try an example (PG-3); on the right, the
+ * recent sites, searchable, pinned ones first, and a Help tab.
  */
 export function StartScreen({ info, project, templates, app, restart, locale }: StartScreenProps) {
   const [registry] = useState(createCommandRegistry);
@@ -69,12 +83,16 @@ export function StartScreen({ info, project, templates, app, restart, locale }: 
     setRecent(await api.listRecent().catch(() => recent));
   };
 
-  const remove = async (id: string) => {
-    await api.removeRecent(id);
-    setRecent((sites) => sites.filter((site) => site.id !== id));
+  const remove = async (site: RecentSite) => {
+    await api.removeRecent(site.id);
+    setRecent((sites) => sites.filter((each) => each.id !== site.id));
   };
 
-  const when = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" });
+  const pin = async (site: RecentSite, pinned: boolean) => {
+    await api.pinRecent(site.id, pinned);
+    // Main orders the list: pinned sites first.
+    setRecent(await api.listRecent().catch(() => recent));
+  };
 
   return (
     <CommandRegistryProvider registry={registry}>
@@ -85,92 +103,28 @@ export function StartScreen({ info, project, templates, app, restart, locale }: 
             // On macOS the menus are the menu bar's (LF-13).
             menuBar={isMac() ? window.webforge.app : undefined}
           />
-          <main className="flex min-h-0 flex-1 justify-center overflow-y-auto p-8">
-            <div className="flex w-full max-w-3xl flex-col gap-8">
-              <section aria-labelledby="start-new" className="flex flex-col gap-3">
-                <h2 id="start-new" className="m-0 text-lg font-semibold">
-                  {t("site.start.title")}
-                </h2>
-                <div className="flex flex-wrap gap-3">
-                  <Button type="button" onClick={() => registry.run(COMMAND_IDS.newSite)}>
-                    <FilePlusIcon />
-                    {t("site.start.new")}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => void run(() => api.open())}
-                  >
-                    <FolderOpenIcon className="text-warning" />
-                    {t("site.start.open")}
-                  </Button>
-                </div>
-                {message === undefined ? null : (
-                  <p role="alert" className="m-0 text-sm text-destructive-text">
-                    {message}
-                  </p>
-                )}
-              </section>
-              <section aria-labelledby="start-recent" className="flex flex-col gap-3">
-                <h2 id="start-recent" className="m-0 text-lg font-semibold">
-                  {t("site.start.recent")}
-                </h2>
-                {recent.length === 0 ? (
-                  <p className="m-0 text-sm text-muted-foreground">{t("site.start.noRecent")}</p>
-                ) : (
-                  <ul className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(14rem,1fr))] gap-3 p-0">
-                    {recent.map((site) => (
-                      <li key={site.id} className="relative">
-                        <button
-                          type="button"
-                          className="flex w-full flex-col overflow-hidden rounded-md border border-border bg-panel text-left hover:border-border-strong focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-60"
-                          disabled={site.missing}
-                          onClick={() => void run(() => api.openRecent(site.id))}
-                        >
-                          {site.thumbnail === null ? (
-                            <span className="aspect-video w-full bg-muted" aria-hidden />
-                          ) : (
-                            <img
-                              src={site.thumbnail}
-                              alt=""
-                              className="aspect-video w-full object-cover object-top"
-                            />
-                          )}
-                          <span className="flex flex-col gap-0.5 p-2">
-                            <span className="truncate text-sm font-medium">{site.name}</span>
-                            <span className="truncate text-xs text-muted-foreground">
-                              {site.missing
-                                ? t("site.start.missing")
-                                : site.lastEdited === null
-                                  ? t("site.start.opened", {
-                                      when: when.format(new Date(site.lastOpened)),
-                                    })
-                                  : t("site.start.edited", {
-                                      when: when.format(new Date(site.lastEdited)),
-                                    })}
-                            </span>
-                            <span className="truncate text-xs text-muted-foreground">
-                              {site.fileName}
-                            </span>
-                          </span>
-                        </button>
-                        <Button
-                          type="button"
-                          size="icon"
-                          variant="ghost"
-                          className="absolute top-1 right-1"
-                          aria-label={t("site.start.remove", { name: site.name })}
-                          title={t("site.start.remove", { name: site.name })}
-                          onClick={() => void remove(site.id)}
-                        >
-                          <XIcon />
-                        </Button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </section>
-            </div>
+          <main className="flex min-h-0 flex-1">
+            <StartActions info={info} message={message} onOpen={() => void run(() => api.open())} />
+            <section className="flex min-w-0 flex-1 flex-col overflow-y-auto p-8">
+              <Tabs defaultValue="recent" className="flex w-full max-w-5xl flex-col gap-4">
+                <TabsList aria-label={t("site.start.title")} className="self-start">
+                  <TabsTrigger value="recent">{t("site.start.recent")}</TabsTrigger>
+                  <TabsTrigger value="help">{t("site.start.help")}</TabsTrigger>
+                </TabsList>
+                <TabsContent value="recent">
+                  <RecentSites
+                    sites={recent}
+                    locale={locale}
+                    onOpen={(site) => void run(() => api.openRecent(site.id))}
+                    onPin={(site, pinned) => void pin(site, pinned)}
+                    onRemove={(site) => void remove(site)}
+                  />
+                </TabsContent>
+                <TabsContent value="help">
+                  <StartHelp />
+                </TabsContent>
+              </Tabs>
+            </section>
           </main>
         </div>
         <SiteCommands
@@ -183,5 +137,52 @@ export function StartScreen({ info, project, templates, app, restart, locale }: 
         <Toaster theme="dark" />
       </TooltipProvider>
     </CommandRegistryProvider>
+  );
+}
+
+/**
+ * The start screen's left column: the app and its version, New Site, Open and, when the app ships
+ * an example, Try an Example; and why a site couldn't be opened.
+ */
+function StartActions({
+  info,
+  message,
+  onOpen,
+}: {
+  readonly info: AppInfo;
+  readonly message: string | undefined;
+  readonly onOpen: () => void;
+}) {
+  const registry = useCommandRegistry();
+  const example = useCommand(COMMAND_IDS.tryExample);
+  return (
+    <aside className="flex w-64 shrink-0 flex-col gap-3 border-r border-border bg-panel px-6 py-8">
+      <div className="flex flex-col gap-0.5 pb-3">
+        <h1 className="m-0 text-xl font-semibold">{info.name}</h1>
+        <p className="m-0 text-xs text-muted-foreground">
+          {t("site.start.version", { version: info.version })}
+        </p>
+      </div>
+      <h2 className="m-0 text-sm font-medium text-muted-foreground">{t("site.start.title")}</h2>
+      <Button type="button" onClick={() => registry.run(COMMAND_IDS.newSite)}>
+        <FilePlusIcon />
+        {t("site.start.new")}
+      </Button>
+      <Button type="button" variant="outline" onClick={onOpen}>
+        <FolderOpenIcon className="text-warning" />
+        {t("site.start.open")}
+      </Button>
+      {example === undefined ? null : (
+        <Button type="button" variant="outline" onClick={() => registry.run(example.id)}>
+          <SparklesIcon />
+          {t("site.start.tryExample")}
+        </Button>
+      )}
+      {message === undefined ? null : (
+        <p role="alert" className="m-0 text-sm text-destructive-text">
+          {message}
+        </p>
+      )}
+    </aside>
   );
 }
