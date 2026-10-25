@@ -38,7 +38,7 @@ import {
 import type { EditorSession } from "./editor-session.js";
 import { fieldGroupOf } from "./field-group.js";
 import { type FieldTarget, fieldTarget } from "./field-target.js";
-import { changedLabel, labelFor, resetGroupLabel, resetLabel } from "./labels.js";
+import { changedLabel, labelFor, pasteGroupLabel, resetGroupLabel, resetLabel } from "./labels.js";
 import {
   applyListChange,
   type EditableList,
@@ -636,6 +636,43 @@ export function EditPanelHost({
     );
   };
 
+  /**
+   * Sets an option group's values copied from an element (SP-7) as one step: "Pasted Spacing on
+   * Heading". Only plain fields this element has and accepts the value for; a field set per device
+   * takes it for the device shown.
+   */
+  const paste = (values: Readonly<Record<string, unknown>>, group: string) => {
+    const live = now();
+    const known = Object.entries(values).filter(([name, value]) => {
+      const field = component.fields[name];
+      return (
+        field !== undefined &&
+        field.kind !== "link" &&
+        editableList(field, library) === undefined &&
+        accepts(field, value)
+      );
+    });
+    const [first] = known;
+    if (live === undefined || first === undefined) return;
+    endRun();
+    flush();
+    session.edit(
+      "props",
+      live.copyLabel ?? pasteGroupLabel(live.editOf("props", first[0]), library, group),
+      (draft) => {
+        for (const [name, value] of known) {
+          const responsive = component.fields[name]?.responsive === true;
+          live.write(draft, name, (stored) =>
+            responsive
+              ? withValueAt(stored, breakpoint, structuredClone(value))
+              : structuredClone(value),
+          );
+        }
+      },
+      { selectionAfter },
+    );
+  };
+
   return (
     <EditPanel
       heading={component.label}
@@ -647,6 +684,7 @@ export function EditPanelHost({
       }}
       onReset={reset}
       onResetToDefault={resetToDefault}
+      onPaste={paste}
       {...(closedGroups === undefined
         ? {}
         : {

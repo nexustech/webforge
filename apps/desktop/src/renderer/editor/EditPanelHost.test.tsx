@@ -410,6 +410,23 @@ describe("EditPanelHost", () => {
       );
     });
 
+    it("pastes a copied group's values back as one step, named by the group (SP-7)", async () => {
+      const { labels, section, user } = setup("section-1");
+      await user.click(side("Padding Top").getByRole("radio", { name: "S" }));
+      const changed = section()?.padding;
+      await user.click(screen.getByRole("button", { name: "Copy Spacing" }));
+      await user.click(screen.getByRole("button", { name: "Reset Spacing" }));
+
+      await user.click(screen.getByRole("button", { name: "Paste Spacing" }));
+
+      expect(section()?.padding).toEqual(changed);
+      expect(labels()).toEqual([
+        "Changed Section padding",
+        "Reset Spacing on Section",
+        "Pasted Spacing on Section",
+      ]);
+    });
+
     it("on Mobile, resets only the group's Mobile values, and says so (F-ED-4)", async () => {
       const { session, labels, section, user } = setup("section-1");
       act(() => session.setViewport("mobile"));

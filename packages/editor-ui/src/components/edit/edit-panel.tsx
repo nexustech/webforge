@@ -1,6 +1,6 @@
 import { t } from "@webforge/i18n";
-import { ChevronRightIcon } from "lucide-react";
-import { type KeyboardEvent, useId, useState } from "react";
+import { ChevronRightIcon, ClipboardPasteIcon, CopyIcon, RotateCcwIcon } from "lucide-react";
+import { type KeyboardEvent, type ReactNode, useId, useState } from "react";
 import { cn } from "../../lib/cn.js";
 import {
   ContextMenu,
@@ -69,6 +69,11 @@ export type EditPanelProps = {
    * Ctrl/Cmd + Esc, or an option group's changed fields, `group` naming it ("Spacing").
    */
   onResetToDefault?(names: readonly string[], group?: string): void;
+  /**
+   * Sets fields to `values`, by name, as one step: an option group's values copied from this or
+   * another element (SP-7), `group` naming it ("Spacing"). No paste without it.
+   */
+  onPaste?(values: Readonly<Record<string, unknown>>, group: string): void;
   /**
    * The option groups shown closed, as `tab:id` ("style:spacing"), and how to change them: the app
    * remembers them per person (UX-13). By id, so a new language or name keeps them; per tab, as
@@ -151,6 +156,24 @@ export function hasBuiltInRenderer(kind: FieldKind): boolean {
   return BUILT_IN[kind] !== undefined;
 }
 
+/**
+ * `label` with the part the search found in it marked (SP-6), in the case the label has it; the
+ * label as it is when the search is empty or isn't in it.
+ */
+function withMatch(label: string, query: string): ReactNode {
+  const at = query === "" ? -1 : label.toLocaleLowerCase().indexOf(query);
+  if (at < 0) return label;
+  return (
+    <>
+      {label.slice(0, at)}
+      <mark className="rounded-xs bg-ring/25 text-foreground">
+        {label.slice(at, at + query.length)}
+      </mark>
+      {label.slice(at + query.length)}
+    </>
+  );
+}
+
 /** A field the person can reset to its default: changed, and not disabled (R11). */
 const resettable = (field: EditPanelField) => field.changed === true && field.disabled !== true;
 
@@ -211,6 +234,41 @@ function optionGroupsOf(tab: FieldGroup, fields: readonly EditPanelField[]) {
   return [...groups].map(([key, group]) => ({ key, ...group }));
 }
 
+/** An option group's values the person copied (SP-7): by field name, with each field's kind. */
+type CopiedGroup = {
+  readonly group: string;
+  readonly values: ReadonlyMap<string, { readonly kind: FieldKind; readonly value: unknown }>;
+};
+
+/** One of a group header's icon buttons (SP-7), shown while the header is hovered or focused. */
+function GroupAction({
+  label,
+  onClick,
+  children,
+}: {
+  readonly label: string;
+  readonly onClick: (() => void) | undefined;
+  readonly children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      disabled={onClick === undefined}
+      onClick={onClick}
+      className={cn(
+        "flex size-5 shrink-0 items-center justify-center rounded-sm text-muted-foreground",
+        "opacity-0 group-hover/header:opacity-100 group-focus-within/header:opacity-100",
+        "hover:bg-hover hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring",
+        "disabled:pointer-events-none disabled:text-disabled [&_svg]:size-3.5",
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
 type FieldListProps = Omit<EditPanelProps, "heading" | "fields"> & {
   readonly idPrefix: string;
   /** The tab the fields are on: its option groups are its own. */
@@ -222,6 +280,9 @@ type FieldListProps = Omit<EditPanelProps, "heading" | "fields"> & {
   onToggle(key: string): void;
   /** Opens every group, or closes them all if all are open (Ctrl/Cmd + Enter). */
   onToggleAll(keys: readonly string[]): void;
+  /** The group copied last, from any element (SP-7). */
+  readonly copied: CopiedGroup | null;
+  onCopy(copied: CopiedGroup): void;
 };
 
 function FieldList({
@@ -233,10 +294,13 @@ function FieldList({
   device,
   onReset,
   onResetToDefault,
+  onPaste,
   query = "",
   closed,
   onToggle,
   onToggleAll,
+  copied,
+  onCopy,
 }: FieldListProps) {
   if (fields.length === 0) {
     return (
@@ -262,61 +326,105 @@ function FieldList({
                 )
             : undefined;
         const bodyId = `${idPrefix}-group-${index}`;
+        // Copy takes the group's values; paste sets those of them that this group has too, of the
+        // same kind, and that can change now (SP-7).
+        const copy = () =>
+          onCopy({
+            group: key,
+            values: new Map(
+              inGroup.map((field) => [field.name, { kind: field.kind, value: field.value }]),
+            ),
+          });
+        const pasted =
+          copied === null
+            ? []
+            : inGroup.filter(
+                (field) =>
+                  field.disabled !== true && copied.values.get(field.name)?.kind === field.kind,
+              );
+        const paste =
+          onPaste === undefined || copied === null || pasted.length === 0
+            ? undefined
+            : () =>
+                onPaste(
+                  Object.fromEntries(
+                    pasted.map((field) => [field.name, copied.values.get(field.name)?.value]),
+                  ),
+                  name,
+                );
         return (
           <div key={key} className="border-b border-border">
-            <ContextMenu>
-              <ContextMenuTrigger asChild>
-                <button
-                  id={`${bodyId}-title`}
-                  type="button"
-                  aria-expanded={open}
-                  aria-controls={open ? bodyId : undefined}
-                  className={cn(
-                    "flex h-7 w-full items-center gap-1 px-2 text-left text-xs font-semibold",
-                    "hover:bg-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
-                    changed.length > 0 ? "text-ring" : "text-foreground",
-                  )}
-                  data-changed={changed.length > 0 ? "" : undefined}
-                  onClick={() => onToggle(key)}
-                  onKeyDown={(event) => {
-                    if (!(event.ctrlKey || event.metaKey)) return;
-                    // Ctrl/Cmd + Enter opens or closes every group, Cmd + Esc resets this one
-                    // (F-ED-27, UX-13). Not Ctrl + Esc: Windows opens the Start menu with it, and
-                    // the group's right-click menu resets it there (#290).
-                    if (event.key === "Enter") {
-                      event.preventDefault();
-                      onToggleAll(all);
-                    } else if (
-                      event.key === "Escape" &&
-                      event.metaKey &&
-                      resetGroup !== undefined
-                    ) {
-                      event.preventDefault();
-                      event.stopPropagation();
-                      resetGroup();
-                    }
-                  }}
+            <div className="group/header flex items-center gap-0.5 pr-1.5 hover:bg-hover">
+              <ContextMenu>
+                <ContextMenuTrigger asChild>
+                  <button
+                    id={`${bodyId}-title`}
+                    type="button"
+                    aria-expanded={open}
+                    aria-controls={open ? bodyId : undefined}
+                    className={cn(
+                      "flex h-7 min-w-0 flex-1 items-center gap-1 px-2 text-left text-xs font-semibold",
+                      "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
+                      changed.length > 0 ? "text-ring" : "text-foreground",
+                    )}
+                    data-changed={changed.length > 0 ? "" : undefined}
+                    onClick={() => onToggle(key)}
+                    onKeyDown={(event) => {
+                      if (!(event.ctrlKey || event.metaKey)) return;
+                      // Ctrl/Cmd + Enter opens or closes every group, Cmd + Esc resets this one
+                      // (F-ED-27, UX-13). Not Ctrl + Esc: Windows opens the Start menu with it, and
+                      // the group's right-click menu resets it there (#290).
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        onToggleAll(all);
+                      } else if (
+                        event.key === "Escape" &&
+                        event.metaKey &&
+                        resetGroup !== undefined
+                      ) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        resetGroup();
+                      }
+                    }}
+                  >
+                    <ChevronRightIcon
+                      aria-hidden
+                      className={cn("size-3.5 shrink-0 transition-transform", open && "rotate-90")}
+                    />
+                    {name}
+                  </button>
+                </ContextMenuTrigger>
+                <ContextMenuContent>
+                  <ContextMenuItem disabled={resetGroup === undefined} onSelect={resetGroup}>
+                    {t("editPanel.resetGroup")}
+                  </ContextMenuItem>
+                  <ContextMenuItem onSelect={() => onToggleAll(all)}>
+                    {all.every((each) => !closed.includes(each))
+                      ? t("editPanel.collapseAll")
+                      : t("editPanel.expandAll")}
+                  </ContextMenuItem>
+                </ContextMenuContent>
+              </ContextMenu>
+              <GroupAction label={t("editPanel.group.copy", { group: name })} onClick={copy}>
+                <CopyIcon />
+              </GroupAction>
+              {onPaste === undefined ? null : (
+                <GroupAction label={t("editPanel.group.paste", { group: name })} onClick={paste}>
+                  <ClipboardPasteIcon />
+                </GroupAction>
+              )}
+              {onResetToDefault === undefined ? null : (
+                <GroupAction
+                  label={t("editPanel.group.reset", { group: name })}
+                  onClick={resetGroup}
                 >
-                  <ChevronRightIcon
-                    aria-hidden
-                    className={cn("size-3.5 shrink-0 transition-transform", open && "rotate-90")}
-                  />
-                  {name}
-                </button>
-              </ContextMenuTrigger>
-              <ContextMenuContent>
-                <ContextMenuItem disabled={resetGroup === undefined} onSelect={resetGroup}>
-                  {t("editPanel.resetGroup")}
-                </ContextMenuItem>
-                <ContextMenuItem onSelect={() => onToggleAll(all)}>
-                  {all.every((each) => !closed.includes(each))
-                    ? t("editPanel.collapseAll")
-                    : t("editPanel.expandAll")}
-                </ContextMenuItem>
-              </ContextMenuContent>
-            </ContextMenu>
+                  <RotateCcwIcon />
+                </GroupAction>
+              )}
+            </div>
             {open ? (
-              <div id={bodyId} className="flex flex-col gap-3 px-3 pt-1 pb-3">
+              <div id={bodyId} className="flex flex-col gap-1.5 px-3 pt-1 pb-2.5">
                 {inGroup.map((field) => (
                   <FieldRow
                     key={field.name}
@@ -327,6 +435,7 @@ function FieldList({
                     device={device}
                     onReset={onReset}
                     onResetToDefault={onResetToDefault}
+                    query={query}
                   />
                 ))}
               </div>
@@ -338,7 +447,23 @@ function FieldList({
   );
 }
 
-/** One field: its label, its per-device dot, and its renderer; the label's menu resets it. */
+/**
+ * Kinds whose control needs the panel's width (LF-7): their label sits above them, not beside.
+ * Lists, spacing boxes, images and a paragraph of text.
+ */
+const isWide = (field: EditPanelField) =>
+  field.kind === "list" ||
+  field.kind === "box" ||
+  field.kind === "image" ||
+  field.kind === "imageChoice" ||
+  field.kind === "multiChoice" ||
+  (field.kind === "text" && field.multiline === true);
+
+/**
+ * One field (LF-7): its muted label on the left, about two fifths of the row, with its per-device
+ * dot, and its control filling the right, in 24 px rows; a wide control under its label instead.
+ * The label's menu resets it.
+ */
 function FieldRow({
   idPrefix,
   field,
@@ -347,9 +472,12 @@ function FieldRow({
   device,
   onReset,
   onResetToDefault,
+  query,
 }: {
   readonly idPrefix: string;
   readonly field: EditPanelField;
+  /** The search's text, lower case: the part of the label it found is marked (SP-6). */
+  readonly query: string;
   readonly onChange: EditPanelProps["onChange"];
   readonly onCommit: EditPanelProps["onCommit"];
   readonly device: string | undefined;
@@ -365,14 +493,27 @@ function FieldRow({
     resettable(field) && onResetToDefault !== undefined
       ? () => onResetToDefault([field.name])
       : undefined;
+  const wide = isWide(field);
   return (
-    <div className="flex flex-col gap-1" data-field={field.name}>
+    <div
+      className={cn(
+        wide
+          ? "flex flex-col gap-1"
+          : "grid min-h-6 grid-cols-[minmax(0,2fr)_minmax(0,3fr)] items-center gap-x-2 gap-y-1",
+      )}
+      data-field={field.name}
+    >
       {/* The menu is the label's: a right-click in a text field keeps its own (spelling, F-ED-19). */}
       <ContextMenu>
         <ContextMenuTrigger asChild>
-          <div className="flex items-center gap-1.5">
-            <label id={labelId} htmlFor={id} className="text-xs text-muted-foreground">
-              {field.label}
+          <div className="flex min-w-0 items-center gap-1">
+            <label
+              id={labelId}
+              htmlFor={id}
+              title={field.label}
+              className="truncate text-xs text-muted-foreground"
+            >
+              {withMatch(field.label, query)}
             </label>
             {field.responsive === true || field.overridden === true ? (
               <DeviceDot
@@ -394,24 +535,27 @@ function FieldRow({
           </ContextMenuItem>
         </ContextMenuContent>
       </ContextMenu>
-      {drawField(renderers, field.kind, {
-        id,
-        labelId,
-        ...(helpId === undefined ? {} : { helpId }),
-        ...(errorId === undefined ? {} : { errorId }),
-        ...(field.disabled === true ? { disabled: true } : {}),
-        field,
-        value: field.value,
-        onChange: (value) => onChange(field.name, value),
-        onCommit: () => onCommit(field.name),
-      })}
+      <div className="min-w-0">
+        {drawField(renderers, field.kind, {
+          id,
+          labelId,
+          ...(helpId === undefined ? {} : { helpId }),
+          ...(errorId === undefined ? {} : { errorId }),
+          ...(field.disabled === true ? { disabled: true } : {}),
+          field,
+          value: field.value,
+          onChange: (value) => onChange(field.name, value),
+          onCommit: () => onCommit(field.name),
+        })}
+      </div>
+      {/* Under the control, in its column. */}
       {errorId === undefined ? null : (
-        <p id={errorId} className="text-2xs text-destructive-text">
+        <p id={errorId} className={cn("text-2xs text-destructive-text", !wide && "col-start-2")}>
           {field.error}
         </p>
       )}
       {helpId === undefined ? null : (
-        <p id={helpId} className="text-xs text-muted-foreground">
+        <p id={helpId} className={cn("text-xs text-muted-foreground", !wide && "col-start-2")}>
           {field.help}
         </p>
       )}
@@ -431,6 +575,7 @@ export function EditPanel({
   device,
   onReset,
   onResetToDefault,
+  onPaste,
   closedGroups,
   onClosedGroupsChange,
   advanced = false,
@@ -438,6 +583,8 @@ export function EditPanel({
   itemKey,
 }: EditPanelProps) {
   const idPrefix = useId();
+  // The option group copied last (SP-7): kept while other elements are selected, to paste there.
+  const [copied, setCopied] = useState<CopiedGroup | null>(null);
   // The search field's text (UX-13): the fields whose name has it are shown. It is the element's:
   // selecting another starts with every field shown.
   const [search, setSearch] = useState({ itemKey, text: "" });
@@ -512,7 +659,10 @@ export function EditPanel({
         closed={closed}
         onToggle={toggle}
         onToggleAll={toggleAll}
+        copied={copied}
+        onCopy={setCopied}
         {...(onResetToDefault === undefined ? {} : { onResetToDefault })}
+        {...(onPaste === undefined ? {} : { onPaste })}
         {...(onReset === undefined ? {} : { onReset })}
       />
     </TabsContent>
