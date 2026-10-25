@@ -7,7 +7,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_PREFERENCES } from "../../shared/ipc/prefs.js";
 import { EDITOR_AREAS } from "../areas.js";
-import { saveAsSharedSection } from "../shared-sections/shared-sections.js";
+import { saveAsSharedSection } from "../shared-sections/index.js";
 import { CommandRegistryProvider } from "../shell/command-context.js";
 import { type CommandRegistry, createCommandRegistry } from "../shell/commands.js";
 import { createSiteWideConfirm } from "../shell/confirm-site-wide.js";
@@ -682,8 +682,14 @@ describe("Editor", () => {
   });
 
   it("puts Add and Undo History on the left, and the Edit panel and Media on the right", () => {
-    // In any order: Add is registered again once the canvas engine is there.
-    expect(panels.list()).toHaveLength(4);
+    // These four and no others, each once, in any order: a panel an editor area adds joins them
+    // here (EDITOR_AREAS, renderer/areas.ts).
+    expect(
+      panels
+        .list()
+        .map((panel) => panel.id)
+        .toSorted(),
+    ).toEqual(["add", "edit", "media", "undoHistory"]);
     expect(panels.list()).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ id: "undoHistory", slot: "left.bottom", title: "Undo History" }),

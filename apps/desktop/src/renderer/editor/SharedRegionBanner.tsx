@@ -1,6 +1,6 @@
 import { t } from "@webforge/i18n";
 import type { PageId, SiteDoc } from "@webforge/model";
-import { copySelection, reachOf } from "../shared-sections/shared-sections.js";
+import { copySelection, reachOf } from "../shared-sections/index.js";
 import type { EditorSession } from "./editor-session.js";
 import { pagesShowing, sharedRegionOf, shownLayout } from "./shared-layout.js";
 import { useDocument, useUi } from "./use-document.js";

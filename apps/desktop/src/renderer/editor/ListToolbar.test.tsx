@@ -3,7 +3,7 @@ import { act, cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { copiedNodeId, type NodeDoc } from "@webforge/model";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { saveAsSharedSection } from "../shared-sections/shared-sections.js";
+import { saveAsSharedSection } from "../shared-sections/index.js";
 import { CanvasToolbarHost } from "../shell/CanvasToolbarHost.js";
 import { createCanvasView } from "../shell/canvas-view.js";
 import { ContextualToolbarsProvider } from "../shell/contextual-toolbar-context.js";

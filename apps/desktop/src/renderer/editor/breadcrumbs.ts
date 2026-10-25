@@ -1,7 +1,7 @@
 import { t } from "@webforge/i18n";
 import { copiedNodeId, isNodeDoc, type NodeDoc, type PageId, type SiteDoc } from "@webforge/model";
 import type { ComponentLibrary } from "@webforge/site-components";
-import { copySelection } from "../shared-sections/shared-sections.js";
+import { copySelection } from "../shared-sections/index.js";
 import { sharedRegionOf, shownLayout } from "./shared-layout.js";
 
 /** One step of the breadcrumb bar: the element the canvas shows under `id`, or the page (`null`). */

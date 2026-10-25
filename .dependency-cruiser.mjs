@@ -173,6 +173,25 @@ export default {
       },
     },
     {
+      name: "renderer-editor-areas-through-index",
+      severity: "error",
+      comment:
+        "editor/ (what every area builds on) uses an area only through that area's index.ts " +
+        "(2.20, B8), as the areas use each other. Editor.tsx, which draws the editor's dialogs " +
+        "and menus from the areas, is the exception, as the composition root's other half.",
+      from: {
+        path: "^apps/desktop/src/renderer/editor/",
+        pathNot: "^apps/desktop/src/renderer/editor/Editor\\.tsx$",
+      },
+      to: {
+        path: "^apps/desktop/src/renderer/[^/]+/",
+        pathNot: [
+          "^apps/desktop/src/renderer/(shell|editor|testing)/",
+          "^apps/desktop/src/renderer/[^/]+/index\\.ts$",
+        ],
+      },
+    },
+    {
       name: "renderer-testing-only-in-tests",
       severity: "error",
       comment:

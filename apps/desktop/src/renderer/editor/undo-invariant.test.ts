@@ -25,7 +25,7 @@ import {
   moveSelected,
   similarTo,
   toggleSelectedHidden,
-} from "../layers/bulk-layers.js";
+} from "../layers/index.js";
 import {
   addMenuItem,
   editMenuLink,
@@ -34,14 +34,14 @@ import {
   removeMenuItem,
   renameMenuItem,
   setMenuItemHidden,
-} from "../menu/menu-actions.js";
+} from "../menu/index.js";
 import {
   deleteSharedSection,
   detachCopy,
   renameSharedSection,
   saveAsSharedSection,
   updateSectionField,
-} from "../shared-sections/shared-sections.js";
+} from "../shared-sections/index.js";
 import { sessionWith } from "../testing/fixtures.js";
 import {
   connectEngine,
