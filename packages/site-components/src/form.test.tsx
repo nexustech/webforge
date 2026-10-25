@@ -38,6 +38,8 @@ describe("form fields (2.8, shared with 2.11)", () => {
       type: "email",
       class: "input w-full",
       required: "",
+      // Said by every screen reader, as the browser checks it (2.11 review).
+      "aria-required": "true",
       autocomplete: "email",
     });
     expect(

@@ -45,6 +45,7 @@
 | **Section** | A full-width band (Hero, Features, Contact…), a top-level Puck component | Wix, Squarespace, Canva, Hostinger, Adobe | Block (ambiguous), Component |
 | **Element** | Anything inside a section (Heading, Text, Image, Button, Form, Columns…) | Wix, Hostinger, Canva, Adobe | Component, Widget, Node |
 | **Columns** | Layout element that splits a section horizontally | Universal | Grid, Row/Col, Flex |
+| **Form · Form field** | An element sending its fields to the form service in Site Settings, and each field in it: a line of text, an email address, a phone number, a message, a tick box or a choice from a list (S1, 2.11). The Contact form section is a ready-made form | Wix, Squarespace ("Form", "Form field") | Input, Control, Widget |
 | **Add column · Remove last column** | The Columns toolbar's buttons (2.17): Add puts a new column at the end; Remove last column takes away the last one, with what's in it, whichever column is selected | Says which column goes | Remove column (which one?), Delete column |
 | **Header / Footer** | Shared top/bottom of every page (C5) | Universal | Layout regions, Master page |
 | **Shared section** | A section stored once and placed on several pages; edits apply everywhere (MVP, F-ED-23, GA6). A separate, later feature is a library of **saved sections** reused across sites (C5) | Plain English; Squarespace "Saved Sections" | Linked Component, Symbol, Synced pattern, Global Template |

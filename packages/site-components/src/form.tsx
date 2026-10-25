@@ -8,7 +8,15 @@ import { BUTTON_CLASSES } from "./typography.js";
  * The kinds of field a form can ask for (S1's form fields): a line of text, an email address, a
  * phone number, a message, a tick box, or a choice from a list.
  */
-type FormFieldKind = "text" | "email" | "phone" | "message" | "checkbox" | "select";
+export const FORM_FIELD_KINDS = [
+  "text",
+  "email",
+  "phone",
+  "message",
+  "checkbox",
+  "select",
+] as const;
+export type FormFieldKind = (typeof FORM_FIELD_KINDS)[number];
 
 /** What each kind asks the browser for: its input type, and what it may fill in. */
 const INPUT: Readonly<
@@ -49,6 +57,9 @@ function LabelText({ label, required }: { readonly label: string; readonly requi
   );
 }
 
+/** `aria-required` with `required`: said by every screen reader, as the browser checks it. */
+const requiredAttributes = (required: boolean) => (required ? { "aria-required": true } : {});
+
 /**
  * A form field with its label, in daisyUI's form classes: plain HTML the browser checks itself
  * (`required`, `type="email"`), so it works without JavaScript.
@@ -65,7 +76,14 @@ export function FormField({
   if (kind === "checkbox") {
     return (
       <label className="site-form-field flex items-start gap-3" htmlFor={id}>
-        <input id={id} name={name} type="checkbox" className="checkbox mt-1" required={required} />
+        <input
+          id={id}
+          name={name}
+          type="checkbox"
+          className="checkbox mt-1"
+          required={required}
+          {...requiredAttributes(required)}
+        />
         <span>
           <LabelText label={label} required={required} />
         </span>
@@ -75,11 +93,25 @@ export function FormField({
   let control: ReactNode;
   if (kind === "message") {
     control = (
-      <textarea id={id} name={name} rows={5} className="textarea w-full" required={required} />
+      <textarea
+        id={id}
+        name={name}
+        rows={5}
+        className="textarea w-full"
+        required={required}
+        {...requiredAttributes(required)}
+      />
     );
   } else if (kind === "select") {
     control = (
-      <select id={id} name={name} className="select w-full" required={required} defaultValue="">
+      <select
+        id={id}
+        name={name}
+        className="select w-full"
+        required={required}
+        defaultValue=""
+        {...requiredAttributes(required)}
+      >
         <option value="" disabled>
           {t("siteText.form.choose")}
         </option>
@@ -99,6 +131,7 @@ export function FormField({
         type={input.type}
         className="input w-full"
         required={required}
+        {...requiredAttributes(required)}
         autoComplete={autoComplete ?? input.fill}
       />
     );
