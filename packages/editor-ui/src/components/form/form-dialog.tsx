@@ -28,8 +28,6 @@ export type FormDialogProps<V extends FormValues, Out> = {
   readonly groupsLabel?: string;
   /** Wide, for a form with tabs (Site Settings); the dialogs' width otherwise. */
   readonly size?: "md" | "lg";
-  /** The first field's text is selected when it opens, to type over (renaming). */
-  readonly selectFirst?: boolean;
   /**
    * Saving: the checked value, and the groups whose fields changed, for the one undo step the
    * app records ("Changed Site Settings: Contact & hours"). The dialog doesn't close by itself.
@@ -47,7 +45,6 @@ export type FormDialogProps<V extends FormValues, Out> = {
 export function FormDialog<V extends FormValues, Out>({
   open,
   size = "md",
-  selectFirst = false,
   onCancel,
   ...body
 }: FormDialogProps<V, Out>) {
@@ -58,19 +55,12 @@ export function FormDialog<V extends FormValues, Out>({
         if (!next) onCancel();
       }}
     >
-      {/* The content mounts with each opening, so the form starts from `initial` every time. */}
+      {/*
+        The content mounts with each opening, so the form starts from `initial` every time. It
+        focuses the first field with its text selected, so typing replaces it (renaming).
+      */}
       <DialogContent
-        className={cn("max-h-[calc(100vh-4rem)] overflow-y-auto", size === "lg" && "sm:max-w-2xl")}
-        onOpenAutoFocus={(event) => {
-          if (!selectFirst) return;
-          // The first field, its text selected so typing replaces it.
-          const field = (event.currentTarget as HTMLElement | null)?.querySelector("input");
-          if (field instanceof HTMLInputElement) {
-            event.preventDefault();
-            field.focus();
-            field.select();
-          }
-        }}
+        className={cn("max-h-[calc(100dvh-2rem)] overflow-y-auto", size === "lg" && "sm:max-w-2xl")}
       >
         <FormDialogBody {...body} onCancel={onCancel} />
       </DialogContent>
@@ -87,7 +77,7 @@ function FormDialogBody<V extends FormValues, Out>({
   groupsLabel,
   onSave,
   onCancel,
-}: Omit<FormDialogProps<V, Out>, "open" | "size" | "selectFirst">) {
+}: Omit<FormDialogProps<V, Out>, "open" | "size">) {
   const form = useForm(spec, initial);
   return (
     <form

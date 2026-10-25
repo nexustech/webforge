@@ -76,8 +76,6 @@ export function NameDialog({
       confirm={confirm}
       spec={spec}
       initial={{ name: initialValue }}
-      // Renaming: what's there is typed over.
-      selectFirst
       onSave={(name) => onSubmit(name)}
       onCancel={onCancel}
     />
