@@ -143,7 +143,7 @@ gantt
     2.8 Sections C – Opening hours & contact, Contact… :t2_8, 2027-04-15, 5d
     2.9 Elements – basic set and icon picker :t2_9, 2027-04-22, 7d
     2.10 Carousel element :t2_10, 2027-04-29, 6d
-    2.11 Elements – tabs, commerce, forms, embeds and c… :t2_11, 2027-05-10, 5d
+    2.11 Elements – tabs, commerce, forms, embeds and c… :t2_11, after t2_12, 5d
     2.12 Animations and hover effects :t2_12, 2027-05-17, 2d
     2.13 Design 10–12 curated themes :crit, t2_13, 2027-05-19, 14d
     2.14 Template format and New Site flow :crit, t2_14, 2027-06-09, 7d
@@ -653,8 +653,8 @@ Close the visible gap to Bootstrap Studio 9.0.1 within the IP rule ([product/07]
 | Stream | Items, in order (after its Phase 1 items) |
 |---|---|
 | A: Shell & panels | ~~R9~~ → R10 → R11 → 2.9 → 2.21 → 1.39 → 2.3 → 2.18 → 2.13a (themes 1–4) → 2.15a (Café/Restaurant, Salon/Beauty, Trades) |
-| B: Data & site | ~~2.1 → 2.2 → R12~~ → R14 → 2.4 → 2.20 → 2.8 → 2.7b → 2.11 → R13 → 2.14 → 2.13b (themes 5–8) → 2.15b (Consultant, Photographer/Portfolio, Shop) |
-| C: History & canvas | ~~2.5 (before 1.30) → R7~~ → R8 (part 2 before 2.17) → ~~2.6 → 2.10~~ → 2.19 → 2.7a → 2.17 → 2.12 → 2.13c (themes 9–12) → 2.16 → 2.15c (Personal/CV, Blank) |
+| B: Data & site | ~~2.1 → 2.2 → R12~~ → R14 → 2.4 → 2.20 → 2.8 → 2.7b → R13 → 2.14 → 2.13b (themes 5–8) → 2.15b (Consultant, Photographer/Portfolio, Shop) |
+| C: History & canvas | ~~2.5 (before 1.30) → R7 → R8 (part 2 before 2.17) → 2.6 → 2.10 → 2.19 → 2.7a → 2.17~~ → 2.12 → 2.11 (from B, 25 Oct) → 2.13c (themes 9–12) → 2.16 → 2.15c (Personal/CV, Blank) |
 
 **Re-plan, 23 Oct 2026 (plan review C2, C7).** The architecture review's Phase 2 items R7–R14 ([#240](https://github.com/nexustech/webforge/issues/240)–[#247](https://github.com/nexustech/webforge/issues/247), 14 days, from contingency per §10.6) are sequenced where their *blocks* links say: R7 and R8 before 2.6, R9 and R10 before 2.9, R11 with 2.3 (moved on 24 Oct to just after R10, before 2.9, 2.20 and 2.21). 2.11 moved to B (it extends 2.8's form-field module and `embed` behaviour), 2.7a (Gallery and lightbox) and 2.12 to C, 2.14 earlier in B so the templates' sync point comes sooner, and stream A starts with 2.9 (its dependencies are met) and takes 1.39 before 2.3, so the Theme panel is built on the two-column field rows. With the 24 Oct items (2.19–2.21) the queues are 42–47 raw days: at the plan's pace (0.5 engineering, 0.7 content) the longest, B's, takes about 27 working days, so code-complete about **1 Dec 2026**, about **9 Dec** with +25%, against the milestone's 11 Dec. The lever if the first component batch runs slower than 0.5 is §11's template and theme cuts.
 
@@ -746,6 +746,7 @@ One accessible Carousel element for images, testimonials and logos: slides as a 
 - [ ] Works from file:// with no external requests
 
 **2.11 Elements: tabs, commerce, forms, embeds and custom code**  
+Stream C after 2.12, moved from B on 25 Oct 2026 to level the queues (B's was the longest; C's next item, 2.13c, waits for 2.3 and the review of themes 1–4). Days unchanged.  
 Tabs (ARIA), Buy button (payment link), Booking button (a Button preset with a generic URL; no presets, Q4 decided 23 Oct 2026), Form fields, Embed video and Embed map (click-to-load, reusing 2.8's `embed` behaviour), Custom Code element (Advanced, scripts off in the editor). Pasting a YouTube/Vimeo URL inserts an Embed video (F-ED-16).
 
 - [ ] Tabs meet WCAG 2.1 AA

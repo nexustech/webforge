@@ -8,7 +8,7 @@ import {
   pageAnchors,
   pastedCopies,
 } from "@webforge/model";
-import { overfillsSlots } from "@webforge/site-components";
+import { holdsOverfullSlot, overfillsSlots } from "@webforge/site-components";
 import {
   type Layer,
   type LayersSession,
@@ -145,7 +145,11 @@ export function duplicateSelected(session: LayersSession): BulkResult {
     place?.list.splice(place.index + 1, 0, copy);
   }
   if (overfillsSlots(session.library, content, after)) {
-    return { refused: t("bulk.full") };
+    const over = holdsOverfullSlot(
+      session.library,
+      copies.map(({ copy }) => copy),
+    );
+    return { refused: t(over ? "bulk.overfull" : "bulk.full") };
   }
   const shownIds = copies.map((each) => each.shown);
   const copiesSelected = { ...current, nodeId: shownIds[0] ?? null, others: shownIds.slice(1) };
