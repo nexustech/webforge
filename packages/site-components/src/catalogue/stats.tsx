@@ -91,7 +91,8 @@ function StatView({ number, label }: { readonly number: ReactNode; readonly labe
             : "site-stat flex flex-col items-center gap-1 text-center"
       }
     >
-      <span className="text-4xl font-bold text-primary">{number}</span>
+      {/* The text's own colour: a theme's primary can be too light to read on its background. */}
+      <span className="text-4xl font-bold">{number}</span>
       <span className="opacity-80">{label}</span>
     </div>
   );
