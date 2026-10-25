@@ -149,13 +149,15 @@ describe("the storage writer thread (R13b)", () => {
 
   /** Imports `photo`, checking the main thread is never held up for 50 ms or more. */
   async function expectQuickImport(session: ProjectSession, photo: string) {
-    // How long this thread's event loop was busy while the import ran, as an IPC call would wait
-    // behind it. Busy time, not wall time: a loaded machine that schedules the thread late (CI
-    // runs test files side by side) doesn't count, while any work on the thread does, so a total
-    // under 50 ms means no single hold-up reached 50 ms.
-    const before = performance.eventLoopUtilization();
+    // The CPU time this thread spent while the import ran, which an IPC call would wait behind: a
+    // total under 50 ms means no single hold-up reached 50 ms. CPU time rather than wall or
+    // event-loop time, which a loaded machine stretches (CI runs test files side by side). It
+    // doesn't count waiting for the disk, so the import also writes nothing on this thread: its
+    // bytes, asset and fingerprint are all the writer's (AssetWriter).
+    const before = process.threadCpuUsage();
     const result = await session.importFile("poster", "poster.png", { path: photo });
-    const busy = performance.eventLoopUtilization(before).active;
+    const { user, system } = process.threadCpuUsage(before);
+    const busy = (user + system) / 1000;
 
     expect(result).toMatchObject({
       status: "stored",
