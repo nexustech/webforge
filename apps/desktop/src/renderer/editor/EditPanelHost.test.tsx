@@ -394,6 +394,29 @@ describe("EditPanelHost", () => {
       ).toBeDefined();
     });
 
+    it("sets another device's value from its row, and dots the device in effect (SP-5)", async () => {
+      const { session, labels, section, user } = setup("section-1");
+      await user.click(screen.getByRole("button", { name: "Padding on each device" }));
+      const row = (device: string) =>
+        within(document.querySelector(`[data-device="${device}"]`) as HTMLElement);
+      const inEffect = () =>
+        [...document.querySelectorAll("[data-device]")]
+          .filter((each) => within(each as HTMLElement).queryByRole("img", { name: /In effect/ }))
+          .map((each) => each.getAttribute("data-device"));
+      expect(inEffect()).toEqual(["desktop"]);
+
+      // From Desktop, Mobile's own value: one step, named for Mobile.
+      await user.click(row("mobile").getAllByRole("radio", { name: "S" })[0] as HTMLElement);
+      expect(labels()).toEqual(["Changed Section padding on Mobile"]);
+      expect(section()?.padding).toMatchObject({ $responsive: { mobile: { top: "s" } } });
+
+      // Shown on Mobile, Mobile's value is the one in effect; Tablet still takes Desktop's.
+      act(() => session.setViewport("mobile"));
+      expect(inEffect()).toEqual(["mobile"]);
+      expect(row("mobile").getByText("Mobile").className).toContain("text-ring");
+      expect(row("tablet").getByText("Tablet").className).not.toContain("text-ring");
+    });
+
     it("resets a changed group to its defaults as one step, named by the group (UX-13)", async () => {
       const { labels, section, user } = setup("section-1");
       await user.click(side("Padding Top").getByRole("radio", { name: "S" }));

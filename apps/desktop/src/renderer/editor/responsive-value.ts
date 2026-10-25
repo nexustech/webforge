@@ -32,6 +32,19 @@ export function isOverridden(value: unknown, breakpoint: Breakpoint): boolean {
   );
 }
 
+/** The devices, Desktop first, as the Edit panel lists a field's values per device (SP-5). */
+export const DEVICES: readonly Breakpoint[] = ["desktop", "tablet", "mobile"];
+
+/**
+ * The device whose value applies on `breakpoint`: its own if it has one, else the next larger
+ * device's that has, Desktop last (Mobile falls back to Tablet, then Desktop).
+ */
+export function sourceOf(value: unknown, breakpoint: Breakpoint): Breakpoint {
+  if (breakpoint === "mobile" && isOverridden(value, "mobile")) return "mobile";
+  if (breakpoint !== "desktop" && isOverridden(value, "tablet")) return "tablet";
+  return "desktop";
+}
+
 /** Drops empty overrides; a value with none left is plain again. */
 function normalised(value: ResponsiveValue<unknown>): Responsive<unknown> {
   const { desktop, tablet, mobile } = value.$responsive;

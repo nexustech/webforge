@@ -131,6 +131,10 @@ export const canvas = {
   "editPanel.dot.inherits": "{field}: same as Desktop on {device}",
   "editPanel.dot.set": "{field}: set for {device} only",
   "editPanel.dot.clear": "{field}: set for {device} only. Use the Desktop value instead",
+  // A field that may differ per device (SP-5): its rows, one per device.
+  "editPanel.devices.show": "{field} on each device",
+  "editPanel.devices.own": "{device}: its own value",
+  "editPanel.devices.inEffect": "In effect on the device shown",
   "editPanel.box.default": "Default",
   "editPanel.box.same": "Same on every side",
   // The Advanced tab (Advanced mode, F-ED-11): technical words are fine here, clearly labelled.

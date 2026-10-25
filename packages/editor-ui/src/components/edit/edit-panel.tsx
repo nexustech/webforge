@@ -42,11 +42,29 @@ export type EditPanelField = FieldSpec & {
   /** Why its value isn't acceptable (translated), shown under its control. */
   readonly error?: string;
   /**
+   * Its value on each device, for a field that may differ per device (SP-5): expanding it shows a
+   * row per device, in this order.
+   */
+  readonly devices?: readonly DeviceValue[];
+  /**
    * The option group it is shown in (UX-13), by its kind if not given: `id` stays the same in every
    * language and is what closed groups are remembered by, `label` is translated. Not "section":
    * that is a part of a page (glossary).
    */
   readonly optionGroup?: OptionGroup;
+};
+
+/** A field's value on one device (SP-5). */
+type DeviceValue = {
+  /** The device's id ("tablet"), as the app's {@link EditPanelProps.onChangeOn} takes it. */
+  readonly id: string;
+  /** Its name, translated ("Tablet"). */
+  readonly label: string;
+  readonly value: unknown;
+  /** It has a value of its own: Desktop always, Tablet or Mobile once set there. */
+  readonly own: boolean;
+  /** The device shown on the canvas takes its value from this one. */
+  readonly inEffect: boolean;
 };
 
 /** An option group (UX-13): a stable id ("spacing") and its translated name ("Spacing"). */
@@ -58,6 +76,11 @@ export type EditPanelProps = {
   readonly heading?: string | undefined;
   readonly fields: readonly EditPanelField[];
   onChange(name: string, value: unknown): void;
+  /**
+   * The value of field `name` on device `device` (a {@link DeviceValue}'s id) changed, in its row
+   * of the device rows (SP-5); `onCommit` ends the run as for `onChange`.
+   */
+  onChangeOn?(name: string, device: string, value: unknown): void;
   /** The user is done with a field (it lost focus, or a choice was made). */
   onCommit(name: string): void;
   /** The device being viewed, translated ("Mobile"), named in the override marker. */
@@ -290,6 +313,7 @@ function FieldList({
   tab,
   fields,
   onChange,
+  onChangeOn,
   onCommit,
   device,
   onReset,
@@ -431,6 +455,7 @@ function FieldList({
                     idPrefix={idPrefix}
                     field={field}
                     onChange={onChange}
+                    onChangeOn={onChangeOn}
                     onCommit={onCommit}
                     device={device}
                     onReset={onReset}
@@ -468,6 +493,7 @@ function FieldRow({
   idPrefix,
   field,
   onChange,
+  onChangeOn,
   onCommit,
   device,
   onReset,
@@ -476,6 +502,7 @@ function FieldRow({
 }: {
   readonly idPrefix: string;
   readonly field: EditPanelField;
+  readonly onChangeOn: EditPanelProps["onChangeOn"] | undefined;
   /** The search's text, lower case: the part of the label it found is marked (SP-6). */
   readonly query: string;
   readonly onChange: EditPanelProps["onChange"];
@@ -494,6 +521,13 @@ function FieldRow({
       ? () => onResetToDefault([field.name])
       : undefined;
   const wide = isWide(field);
+  // Its rows per device, open or not (SP-5).
+  const [perDevice, setPerDevice] = useState(false);
+  const devices =
+    field.devices !== undefined && field.devices.length > 1 && onChangeOn !== undefined
+      ? field.devices
+      : undefined;
+  const devicesId = `${id}-devices`;
   return (
     <div
       className={cn(
@@ -527,6 +561,22 @@ function FieldRow({
                 }
               />
             ) : null}
+            {devices === undefined ? null : (
+              <button
+                type="button"
+                aria-expanded={perDevice}
+                aria-controls={perDevice ? devicesId : undefined}
+                aria-label={t("editPanel.devices.show", { field: field.label })}
+                title={t("editPanel.devices.show", { field: field.label })}
+                className="ml-auto shrink-0 rounded-sm p-0.5 text-muted-foreground hover:bg-hover focus-visible:outline-2 focus-visible:outline-ring"
+                onClick={() => setPerDevice(!perDevice)}
+              >
+                <ChevronRightIcon
+                  aria-hidden
+                  className={cn("size-3 transition-transform", perDevice && "rotate-90")}
+                />
+              </button>
+            )}
           </div>
         </ContextMenuTrigger>
         <ContextMenuContent>
@@ -559,6 +609,91 @@ function FieldRow({
           {field.help}
         </p>
       )}
+      {devices === undefined || !perDevice ? null : (
+        <fieldset
+          id={devicesId}
+          aria-label={t("editPanel.devices.show", { field: field.label })}
+          className={cn(
+            "m-0 flex min-w-0 flex-col gap-1 border-0 border-l-2 border-border p-0 pl-2",
+            !wide && "col-span-2",
+          )}
+        >
+          {devices.map((each) => (
+            <DeviceRow
+              key={each.id}
+              id={`${id}-${each.id}`}
+              field={field}
+              device={each}
+              onChange={(value) => onChangeOn?.(field.name, each.id, value)}
+              onCommit={() => onCommit(field.name)}
+            />
+          ))}
+        </fieldset>
+      )}
+    </div>
+  );
+}
+
+/**
+ * One device's row of a field (SP-5): the device's name, in the accent where it has a value of its
+ * own, the dot on the device whose value the device shown takes, and the control for its value.
+ */
+function DeviceRow({
+  id,
+  field,
+  device,
+  onChange,
+  onCommit,
+}: {
+  readonly id: string;
+  readonly field: EditPanelField;
+  readonly device: DeviceValue;
+  readonly onChange: (value: unknown) => void;
+  readonly onCommit: () => void;
+}) {
+  const renderers = useFieldRenderers();
+  const labelId = `${id}-label`;
+  return (
+    <div
+      className="grid min-h-6 grid-cols-[minmax(0,2fr)_minmax(0,3fr)] items-center gap-x-2"
+      data-device={device.id}
+    >
+      <div className="flex min-w-0 items-center gap-1">
+        <label
+          id={labelId}
+          htmlFor={id}
+          className={cn(
+            "truncate text-xs",
+            device.own ? "font-semibold text-ring" : "text-muted-foreground",
+          )}
+        >
+          {device.label}
+          {device.own ? (
+            <span className="sr-only">{`, ${t("editPanel.devices.own", { device: device.label })}`}</span>
+          ) : null}
+        </label>
+        {device.inEffect ? (
+          <span
+            role="img"
+            aria-label={t("editPanel.devices.inEffect")}
+            title={t("editPanel.devices.inEffect")}
+            className="p-1"
+          >
+            <span aria-hidden className="block size-2 rounded-full bg-ring" />
+          </span>
+        ) : null}
+      </div>
+      <div className="min-w-0">
+        {drawField(renderers, field.kind, {
+          id,
+          labelId,
+          ...(field.disabled === true ? { disabled: true } : {}),
+          field,
+          value: device.value,
+          onChange,
+          onCommit,
+        })}
+      </div>
     </div>
   );
 }
@@ -571,6 +706,7 @@ export function EditPanel({
   heading,
   fields,
   onChange,
+  onChangeOn,
   onCommit,
   device,
   onReset,
@@ -653,6 +789,7 @@ export function EditPanel({
         tab={group}
         fields={groupFields}
         onChange={onChange}
+        {...(onChangeOn === undefined ? {} : { onChangeOn })}
         onCommit={onCommit}
         device={device}
         query={wanted}

@@ -49,8 +49,10 @@ import {
 import { findNode } from "./nodes.js";
 import {
   breakpointOf,
+  DEVICES,
   differsFromDefault,
   isOverridden,
+  sourceOf,
   valueAt,
   withoutOverride,
   withValueAt,
@@ -378,6 +380,18 @@ export function EditPanelHost({
           ? { changed: true }
           : {}),
         ...(responsive && isOverridden(stored, breakpoint) ? { overridden: true } : {}),
+        // Its value on each device, in rows of their own (SP-5).
+        ...(responsive
+          ? {
+              devices: DEVICES.map((each) => ({
+                id: each,
+                label: t(`device.${each}`),
+                value: valueAt(stored, each),
+                own: each === "desktop" || isOverridden(stored, each),
+                inEffect: each === sourceOf(stored, breakpoint),
+              })),
+            }
+          : {}),
       },
     ]);
   });
@@ -442,7 +456,11 @@ export function EditPanelHost({
     );
   };
 
-  const change = (name: string, value: unknown) => {
+  /**
+   * A change to field `name`, for the device shown, or for device `at` from its row of the device
+   * rows (SP-5): that device's value, named in its step ("Changed Section padding on Mobile").
+   */
+  const change = (name: string, value: unknown, at: Breakpoint = breakpoint) => {
     const live = now();
     if (live === undefined) return;
     if (isAdvancedField(name)) {
@@ -467,21 +485,23 @@ export function EditPanelHost({
       return;
     }
     const next = (stored: unknown) =>
-      field.responsive === true ? withValueAt(stored, breakpoint, value) : value;
+      field.responsive === true ? withValueAt(stored, at, value) : value;
+    // Another device's row is a run of its own.
+    const key = at === breakpoint ? name : `${name}@${at}`;
     if (field.kind === "slider") {
       // A drag is one step, shown live as it goes (U2).
       const run = openRun.current;
-      if (run?.update !== undefined && run.key === name && run.nodeId === id && run.active()) {
+      if (run?.update !== undefined && run.key === key && run.nodeId === id && run.active()) {
         run.update(live.recipe(name, next));
         return;
       }
       endRun();
       flush();
-      const gesture = session.begin("props", live.labelOf(name, field, breakpoint));
+      const gesture = session.begin("props", live.labelOf(name, field, at));
       openRun.current = {
         nodeId: id,
         name,
-        key: name,
+        key,
         breakpoint,
         active: () => gesture.active,
         update: (change) => gesture.update(change),
@@ -495,17 +515,17 @@ export function EditPanelHost({
       gesture.update(live.recipe(name, next));
       return;
     }
-    if (openRun.current?.key !== name) {
+    if (openRun.current?.key !== key) {
       endRun();
     }
     flush();
-    const textKey = `field:${pageId}:${id}:${name}`;
+    const textKey = `field:${pageId}:${id}:${key}`;
     // Typing in a field is one step per visit (D1), like typing on the canvas: a text field, or
     // an image's alt text for this placement.
     const typed = field.kind === "text" || field.kind === "media";
     session.edit(
       field.kind === "text" ? "text" : "props",
-      live.labelOf(name, field, breakpoint),
+      live.labelOf(name, field, at),
       live.recipe(name, next),
       { selectionAfter, ...(typed ? { coalesceKey: textKey } : {}) },
     );
@@ -513,7 +533,7 @@ export function EditPanelHost({
       openRun.current = {
         nodeId: id,
         name,
-        key: name,
+        key,
         breakpoint,
         active: () => true,
         end: () => history.endSession(textKey),
@@ -678,7 +698,11 @@ export function EditPanelHost({
       heading={component.label}
       fields={fields}
       device={device}
-      onChange={change}
+      onChange={(name, value) => change(name, value)}
+      onChangeOn={(name, device, value) => {
+        const at = DEVICES.find((each) => each === device);
+        if (at !== undefined) change(name, value, at);
+      }}
       onCommit={(name) => {
         if (openRun.current?.name === name) endRun();
       }}
