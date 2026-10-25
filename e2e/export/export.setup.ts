@@ -16,7 +16,7 @@ type ExportRequest = {
 };
 type ExportingWindow = { webforge: { site: { export(request: ExportRequest): Promise<unknown> } } };
 
-// Exports the two-page fixture site (with its photo and price list) through the real app: preload
+// Exports the three-page fixture site (with its photo and price list) through the real app: preload
 // API, IPC, export utility process. The browser projects then open the result from disk. As in the
 // app, the photo's and the document's bytes come from the open site's file; the renderer names
 // them by hash.
@@ -62,7 +62,7 @@ setup("export the fixture site from the app", async () => {
       { snapshot: { ...site, media: [], documents: [] }, media, documents },
     );
 
-    expect(result).toMatchObject({ status: "exported", pages: 2, warnings: 0 });
+    expect(result).toMatchObject({ status: "exported", pages: 3, warnings: 0 });
   } finally {
     await app.close();
     rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });

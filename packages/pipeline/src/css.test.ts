@@ -1,4 +1,5 @@
 import { DEFAULT_THEME } from "@webforge/model";
+import { entranceClasses, hoverClasses } from "@webforge/site-components";
 import { beforeAll, describe, expect, it } from "vitest";
 import { buildSiteCss, classCandidates, siteStylesheetSource } from "./css.js";
 import { loadNodeResources } from "./node-resources.js";
@@ -68,6 +69,36 @@ describe("siteStylesheetSource", () => {
 });
 
 describe("buildSiteCss", () => {
+  it("hides an entrance only once the page is marked, and only where motion is welcome (2.12)", async () => {
+    const candidates =
+      `${entranceClasses({ entrance: "slideLeft", entranceDelay: "long" })}${hoverClasses("lift")}`
+        .trim()
+        .split(" ");
+    const css = await buildSiteCss(resources, {
+      theme: DEFAULT_THEME,
+      candidates,
+      fontsUrl: "../fonts/",
+    });
+
+    const motionSafe = css.slice(css.indexOf("@media (prefers-reduced-motion: no-preference)"));
+    // Only while it waits: once the page is marked, and until it has moved in.
+    expect(motionSafe).toMatch(
+      /:root\[data-wf-animate\] \.motion-safe\\:wf-waiting\\:opacity-0:not\(\[data-wf-shown\]\) \{\s*opacity: 0%;/,
+    );
+    expect(motionSafe).toMatch(
+      /:root\[data-wf-animate\] \.motion-safe\\:wf-waiting\\:-translate-x-8:not\(\[data-wf-shown\]\)/,
+    );
+    // Nor any transition while it waits: it moves only on the way in.
+    expect(motionSafe).toMatch(
+      /\.motion-safe\\:wf-waiting\\:transition-none:not\(\[data-wf-shown\]\) \{\s*transition-property: none;/,
+    );
+    // Its delay only while it moves in: shown, not yet done.
+    expect(motionSafe).toMatch(
+      /\.motion-safe\\:wf-entering\\:delay-600\[data-wf-shown\]:not\(\[data-wf-done\]\) \{\s*transition-delay: 600ms;/,
+    );
+    expect(motionSafe).toContain(String.raw`.motion-safe\:hover\:-translate-y-1:hover`);
+  });
+
   it("compiles only the candidates it is given, with the site's theme", async () => {
     const css = await buildSiteCss(resources, {
       theme: { ...DEFAULT_THEME, preset: "dracula" },

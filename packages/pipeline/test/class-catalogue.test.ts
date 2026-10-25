@@ -33,6 +33,8 @@ describe("loadClassCatalogue (#276)", () => {
       expect(catalogue.variants, name).toContain(name);
     }
     expect(catalogue.variants.every((name) => /^[a-z][a-z0-9-]*$/.test(name))).toBe(true);
+    // Nor Webforge's own, which work its entrance animations (2.12).
+    expect(catalogue.variants).not.toContain("wf-waiting");
   });
 
   it("gives each class's CSS, and none for a class that produces none", () => {

@@ -3,10 +3,10 @@ import { describe, expect, it } from "vitest";
 import { heroPhoto, sampleSite } from "./sample-site.js";
 
 describe("sampleSite", () => {
-  it("is a valid site snapshot with a home page and an about page", () => {
+  it("is a valid site snapshot with a home page, an about page and a thank-you page", () => {
     const site = siteSnapshotSchema.parse(sampleSite());
 
-    expect(site.pages.map((page) => page.path)).toEqual(["index", "about"]);
+    expect(site.pages.map((page) => page.path)).toEqual(["index", "about", "thanks"]);
   });
 
   it("includes the hero photo as a JPEG", () => {

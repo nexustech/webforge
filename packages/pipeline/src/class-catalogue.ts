@@ -36,7 +36,13 @@ export async function loadClassCatalogue(
     classes: design.getClassList().map(([name]) => name),
     variants: design
       .getVariants()
-      .filter((variant) => !variant.isArbitrary && PLAIN_VARIANT.test(variant.name))
+      // Webforge's own (`wf-waiting`, 2.12) work its features, not a person's classes.
+      .filter(
+        (variant) =>
+          !variant.isArbitrary &&
+          PLAIN_VARIANT.test(variant.name) &&
+          !variant.name.startsWith("wf-"),
+      )
       .map((variant) => variant.name),
     cssFor: (classes) => design.candidatesToCss([...classes]),
   };

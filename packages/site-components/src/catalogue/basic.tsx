@@ -2,6 +2,12 @@ import { t } from "@webforge/i18n";
 import { defineComponent } from "../define.js";
 import { defineSection, MARGIN_FIELD, marginClasses } from "../frame.js";
 import { boundText, type ComponentDef, colorClass, responsiveClasses } from "../library.js";
+import {
+  ENTRANCE_FIELDS,
+  entranceAttributes,
+  entranceBehaviours,
+  entranceClasses,
+} from "../motion.js";
 import { BODY_TEXT_CLASSES, TITLE_CLASSES } from "../typography.js";
 
 const SIZES = ["large", "medium", "small"] as const;
@@ -89,8 +95,10 @@ const heading = defineComponent({
       options: COLOURS.map((value) => ({ label: t(`field.color.${value}`), value })),
     },
     margin: MARGIN_FIELD,
+    ...ENTRANCE_FIELDS,
   },
   defaults: { text: t("element.heading"), size: "medium", color: "default" },
+  behaviours: entranceBehaviours,
   // Its level, which its size sets.
   textStyle: (values) => HEADING_TAG[values.size],
   render: ({ values, context }) => {
@@ -102,7 +110,8 @@ const heading = defineComponent({
     if (content === null) return null;
     return (
       <Tag
-        className={`site-heading ${HEADING_CLASS[size]}${colour === "" ? "" : ` ${colour}`}${marginClasses(values.margin)}`}
+        className={`site-heading ${HEADING_CLASS[size]}${colour === "" ? "" : ` ${colour}`}${marginClasses(values.margin)}${entranceClasses(values)}`}
+        {...entranceAttributes(values)}
       >
         {content}
       </Tag>
@@ -117,11 +126,16 @@ const text = defineComponent({
   fields: {
     text: { kind: "richtext", label: t("field.text"), inline: true },
     margin: MARGIN_FIELD,
+    ...ENTRANCE_FIELDS,
   },
   defaults: { text: `<p>${t("element.text")}</p>` },
+  behaviours: entranceBehaviours,
   textStyle: () => "body",
   render: ({ values }) => (
-    <div className={`site-text ${BODY_TEXT_CLASSES}${marginClasses(values.margin)}`}>
+    <div
+      className={`site-text ${BODY_TEXT_CLASSES}${marginClasses(values.margin)}${entranceClasses(values)}`}
+      {...entranceAttributes(values)}
+    >
       {values.text}
     </div>
   ),

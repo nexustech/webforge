@@ -5,6 +5,14 @@ import { defineComponent } from "../define.js";
 import { MARGIN_FIELD, marginClasses } from "../frame.js";
 import { isIconName, LucideIcon } from "../icons.js";
 import { type ComponentDef, colorClass, linkAttributes, responsiveClasses } from "../library.js";
+import {
+  ENTRANCE_FIELDS,
+  entranceAttributes,
+  entranceBehaviours,
+  entranceClasses,
+  HOVER_FIELD,
+  hoverClasses,
+} from "../motion.js";
 import { Picture } from "../picture.js";
 import { PREVIEW_ATTRIBUTE } from "../previews.js";
 import type { FieldDef, ResolvedImage } from "../schema.js";
@@ -95,18 +103,22 @@ const image = defineComponent({
     rounded: { kind: "toggle", label: t("field.rounded"), group: "style" },
     caption: { kind: "text", label: t("field.caption") },
     margin: MARGIN_FIELD,
+    ...ENTRANCE_FIELDS,
   },
   defaults: { width: "full", alignment: "centre", rounded: false, caption: "" },
+  behaviours: entranceBehaviours,
   render: ({ values, context }) => {
     const placed = values.image;
     const resolved = placed === undefined ? null : context.image(placed.mediaId);
     const width = responsiveClasses(values.width, (value) => IMAGE_WIDTH_CLASS[value]);
-    const frame = `site-image w-full ${IMAGE_ALIGN_CLASS[values.alignment]} ${width}${marginClasses(values.margin)}`;
+    const frame = `site-image w-full ${IMAGE_ALIGN_CLASS[values.alignment]} ${width}${marginClasses(values.margin)}${entranceClasses(values)}`;
+    const entrance = entranceAttributes(values);
     if (resolved === null) {
       const hint = context.emptyImage?.();
       return hint === undefined ? null : (
         <div
           className={`${frame} flex aspect-video items-center justify-center rounded-box border-2 border-base-300 border-dashed p-4 text-center text-sm`}
+          {...entrance}
         >
           {hint}
         </div>
@@ -114,7 +126,7 @@ const image = defineComponent({
     }
     const caption = values.caption.trim();
     return (
-      <figure className={frame}>
+      <figure className={frame} {...entrance}>
         <ImagePicture
           image={resolved}
           alt={placed?.alt ?? resolved.alt}
@@ -164,8 +176,11 @@ const button = defineComponent({
       options: BUTTON_SIZES.map((value) => ({ label: t(`field.size.${value}`), value })),
     },
     alignment: ALIGNMENT_FIELD,
+    hover: HOVER_FIELD,
     margin: MARGIN_FIELD,
+    ...ENTRANCE_FIELDS,
   },
+  behaviours: entranceBehaviours,
   defaults: {
     label: t("starter.buttonLabel"),
     style: "primary",
@@ -176,11 +191,12 @@ const button = defineComponent({
     const label = values.label.trim();
     return (
       <div
-        className={`site-button flex ${BUTTON_ALIGN_CLASS[values.alignment]}${marginClasses(values.margin)}`}
+        className={`site-button flex ${BUTTON_ALIGN_CLASS[values.alignment]}${marginClasses(values.margin)}${entranceClasses(values)}`}
+        {...entranceAttributes(values)}
       >
         {label === "" ? null : (
           <a
-            className={BUTTON_CLASSES[BUTTON_KIND[values.style][values.size]]}
+            className={`${BUTTON_CLASSES[BUTTON_KIND[values.style][values.size]]}${hoverClasses(values.hover)}`}
             {...linkAttributes(values.link, context)}
           >
             {values.icon === undefined ? null : <LucideIcon name={values.icon} />}
@@ -263,7 +279,9 @@ const columns = defineComponent({
       steps: COLUMN_GAPS.map((value) => ({ label: t(`field.columnGap.${value}`), value })),
     },
     margin: MARGIN_FIELD,
+    ...ENTRANCE_FIELDS,
   },
+  behaviours: entranceBehaviours,
   defaults: {
     columns: [0, 1].map((index) => ({
       type: "Column",
@@ -287,7 +305,10 @@ const columns = defineComponent({
     const placing = responsiveClasses(layout, (value) => COLUMN_LAYOUT_CLASS[value]);
     const gap = responsiveClasses(values.gap, (value) => COLUMN_GAP_CLASS[value]);
     return (
-      <div className={`site-columns${marginClasses(values.margin)}`}>
+      <div
+        className={`site-columns${marginClasses(values.margin)}${entranceClasses(values)}`}
+        {...entranceAttributes(values)}
+      >
         <ColumnsLayoutContext value={layout}>
           {/* The grid is the slot's own element, so the canvas lays them out as the export does. */}
           <Columns className={`grid ${placing} ${gap}`} />
@@ -362,7 +383,9 @@ const list = defineComponent({
     // Before each item instead of its markers (F-ED-22).
     icon: { kind: "icon", label: t("field.listIcon"), help: t("field.listIcon.help") },
     margin: MARGIN_FIELD,
+    ...ENTRANCE_FIELDS,
   },
+  behaviours: entranceBehaviours,
   defaults: {
     items: [0, 1, 2].map((index) => ({
       type: "ListItem",
@@ -374,17 +397,18 @@ const list = defineComponent({
     const Items = slots.items;
     // An icon replaces the markers: a plain list with it before each item.
     const style = values.icon === undefined ? values.style : "plain";
-    const className = `site-list ${BODY_TEXT_CLASSES} ${LIST_CLASS[style]}${marginClasses(values.margin)}`;
+    const className = `site-list ${BODY_TEXT_CLASSES} ${LIST_CLASS[style]}${marginClasses(values.margin)}${entranceClasses(values)}`;
+    const entrance = entranceAttributes(values);
     // Without a class the slot adds no element, so its items are the list's own <li>s.
     return (
       <ListIconContext value={values.icon}>
         {style === "numbers" ? (
-          <ol className={className}>
+          <ol className={className} {...entrance}>
             <Items />
           </ol>
         ) : (
           // Safari and VoiceOver drop a list's semantics once its markers are gone: say it is one.
-          <ul className={className} role={style === "plain" ? "list" : undefined}>
+          <ul className={className} role={style === "plain" ? "list" : undefined} {...entrance}>
             <Items />
           </ul>
         )}
@@ -436,14 +460,17 @@ const icon = defineComponent({
     },
     alignment: ALIGNMENT_FIELD,
     margin: MARGIN_FIELD,
+    ...ENTRANCE_FIELDS,
   },
   defaults: { icon: "star", label: "", size: "medium", color: "primary", alignment: "left" },
+  behaviours: entranceBehaviours,
   render: ({ values }) => {
     const size = responsiveClasses(values.size, (value) => ICON_SIZE_CLASS[value]);
     const colour = colorClass("text", values.color);
     return (
       <div
-        className={`site-icon flex ${BUTTON_ALIGN_CLASS[values.alignment]}${marginClasses(values.margin)}`}
+        className={`site-icon flex ${BUTTON_ALIGN_CLASS[values.alignment]}${marginClasses(values.margin)}${entranceClasses(values)}`}
+        {...entranceAttributes(values)}
       >
         {values.icon === undefined ? null : (
           <LucideIcon

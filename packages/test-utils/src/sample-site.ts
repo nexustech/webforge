@@ -20,13 +20,14 @@ export function priceList(): Uint8Array {
 }
 
 /**
- * A small two-page site: Header and Footer, a home page with a Hero (with photo), text, a Carousel
+ * A small site: Header and Footer, a home page with a Hero (with photo), text, a Carousel
  * of customers' quotes (2.10), an FAQ and a Call to action, and an About page with a text-only Hero
  * linking to a price list (a document), a Text section, a Text + Image section (2.6), a Gallery
  * with its lightbox (2.7a), Opening hours and contact from Site Settings, a Video and a Map that
  * load only when clicked, and a Contact form and a Newsletter signup (2.8). Its menu has both
  * pages, a "Visit us" dropdown (a link to the FAQ section and a web address in a new tab) and an
- * "Order a cake" button. Used by pipeline tests and the export E2E tests.
+ * "Order a cake" button. A third page, out of the menus and without the Footer, ends in an
+ * element with an entrance animation (2.12). Used by pipeline tests and the export E2E tests.
  */
 export function sampleSite(): SiteSnapshot {
   return {
@@ -74,6 +75,8 @@ export function sampleSite(): SiteSnapshot {
                 buttonLink: "about",
                 alignment: "left",
                 image: { mediaId: "hero-photo", alt: "Green hills under a morning sun" },
+                // In view as the page opens (2.12): never hidden, it shows at once.
+                entrance: "fade",
               },
             },
             {
@@ -162,10 +165,18 @@ export function sampleSite(): SiteSnapshot {
               props: {
                 id: "fresh",
                 colors: "inverse",
+                // Below the fold (2.12): it moves in as it is scrolled to, its heading too.
+                entrance: "slideUp",
+                entranceDelay: "short",
                 content: [
                   {
                     type: "Heading",
-                    props: { id: "fresh-heading", text: "Fresh every day", size: "small" },
+                    props: {
+                      id: "fresh-heading",
+                      text: "Fresh every day",
+                      size: "small",
+                      entrance: "slideLeft",
+                    },
                   },
                   {
                     type: "Text",
@@ -183,6 +194,7 @@ export function sampleSite(): SiteSnapshot {
                 buttonLabel: "About ordering",
                 buttonLink: "about",
                 variant: "banner",
+                entrance: "zoom",
               },
             },
           ],
@@ -295,6 +307,44 @@ export function sampleSite(): SiteSnapshot {
               // A signup whose form address isn't set yet: it draws, but can't send (2.8).
               type: "Newsletter",
               props: { id: "news-unset", title: "Cake club", action: "" },
+            },
+          ],
+        },
+      },
+      {
+        // Out of the menus and without the Footer: its last element, with an entrance, ends the
+        // page, so it comes into view only at the bottom (2.12).
+        id: "thanks",
+        path: "thanks",
+        title: "Thank you",
+        hideFooter: true,
+        hideFromNavigation: true,
+        doc: {
+          root: { props: {} },
+          content: [
+            {
+              type: "Section",
+              props: {
+                id: "thanks-section",
+                content: [
+                  {
+                    type: "Heading",
+                    props: { id: "thanks-heading", text: "Thank you", size: "large" },
+                  },
+                  ...Array.from({ length: 16 }, (_, index) => ({
+                    type: "Spacer",
+                    props: { id: `thanks-space-${index}`, height: "xlarge" },
+                  })),
+                  {
+                    type: "Text",
+                    props: {
+                      id: "thanks-text",
+                      text: "<p>We'll be in touch soon.</p>",
+                      entrance: "slideUp",
+                    },
+                  },
+                ],
+              },
             },
           ],
         },

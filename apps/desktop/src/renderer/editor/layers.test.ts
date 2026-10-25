@@ -78,6 +78,31 @@ describe("layersOf (F-ED-12)", () => {
       { id: "g", kind: "Gallery", name: undefined, hidden: false, children: [] },
     ]);
   });
+
+  it("marks a section or element with an entrance animation as animated (2.12, UX-12)", () => {
+    const layers = layersOf(
+      [
+        {
+          type: "Section",
+          props: {
+            id: "s",
+            entrance: "fade",
+            content: [
+              heading("moves", { entrance: "slideUp" }),
+              heading("still", { entrance: "none" }),
+            ],
+          },
+        },
+      ],
+      siteLibrary,
+    );
+
+    expect(layers[0]?.animated).toBe(true);
+    expect(layers[0]?.children.map(({ id, animated }) => [id, animated])).toEqual([
+      ["moves", true],
+      ["still", undefined],
+    ]);
+  });
 });
 
 describe("Layers changes, one undo step each", () => {

@@ -34,6 +34,14 @@ export {
   textValue,
   withAdvanced,
 } from "./library.js";
+export {
+  ENTRANCE_FIELDS,
+  entranceAttributes,
+  entranceClasses,
+  HOVER_FIELD,
+  hasEntrance,
+  hoverClasses,
+} from "./motion.js";
 export { type EditPreviews, PREVIEW_ATTRIBUTE, samePreviews } from "./previews.js";
 export type { RenderedPage } from "./render-static.js";
 export {
