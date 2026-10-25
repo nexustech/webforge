@@ -1,4 +1,5 @@
 import { copyTheme, DEFAULT_THEME, type ThemeTokens } from "@webforge/model";
+import { CURATED_THEMES } from "./curated/index.js";
 
 /** daisyUI's dark colours, which the light preset keeps for inverse sections. */
 const DARK_COLORS = DEFAULT_THEME.inverse ?? DEFAULT_THEME.colors;
@@ -12,8 +13,8 @@ const WHITE = ok(1, 0, 0);
 const INK = ok(0.18, 0.01, 265);
 
 /**
- * The starter presets (2.1, S3): three themes that show the range a theme covers, until 2.13's
- * curated themes. `light` is the theme a new site starts with.
+ * The presets (S3): 2.1's three development themes, which show the range a theme covers, then
+ * 2.13's curated themes. `light` is the theme a new site starts with.
  */
 export const THEME_PRESETS: readonly ThemeTokens[] = [
   DEFAULT_THEME,
@@ -78,6 +79,7 @@ export const THEME_PRESETS: readonly ThemeTokens[] = [
     border: "thick",
     buttons: { shape: "pill", size: "l", style: "filled" },
   },
+  ...CURATED_THEMES,
 ];
 
 /** The preset named `name`, if there is one. */

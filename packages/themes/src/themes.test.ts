@@ -18,6 +18,8 @@ import {
   shadeOf,
 } from "./colors.js";
 import { AA_LARGE, AA_TEXT, contrastIssues } from "./contrast.js";
+import { CURATED_THEMES } from "./curated/index.js";
+import { FONT_CATALOGUE, FONT_PAIRINGS } from "./fonts/catalogue.js";
 import { THEME_PRESETS, themePreset } from "./presets.js";
 import { oklchCss, themeCss } from "./theme-css.js";
 
@@ -210,12 +212,14 @@ describe("contrastIssues (2.1)", () => {
 });
 
 describe("presets (2.1)", () => {
-  it("are three valid themes, light first as a new site's", () => {
+  it("are valid themes, the development ones first, light first as a new site's", () => {
     expect(THEME_PRESETS.map((preset) => preset.preset)).toEqual([
       "light",
       "dark",
       "high-contrast-rounded",
+      ...CURATED_THEMES.map((theme) => theme.preset),
     ]);
+    expect(new Set(THEME_PRESETS.map((preset) => preset.preset)).size).toBe(THEME_PRESETS.length);
     for (const preset of THEME_PRESETS) {
       expect(themeTokensSchema.parse(preset)).toEqual(preset);
     }
@@ -239,6 +243,71 @@ describe("presets (2.1)", () => {
         );
       }
     }
+  });
+});
+
+describe("curated themes (2.13)", () => {
+  it("use one of the tested font pairings, in weights the catalogue has", () => {
+    for (const theme of CURATED_THEMES) {
+      const { heading, body } = theme.fonts;
+      const headingFont = FONT_CATALOGUE.find((font) => font.family === heading.family);
+      const bodyFont = FONT_CATALOGUE.find((font) => font.family === body.family);
+      expect(headingFont, `${theme.preset}: ${heading.family}`).toBeDefined();
+      expect(bodyFont, `${theme.preset}: ${body.family}`).toBeDefined();
+      expect(headingFont?.fallback).toBe(heading.fallback);
+      expect(bodyFont?.fallback).toBe(body.fallback);
+      expect(
+        FONT_PAIRINGS.some(
+          (pairing) => pairing.heading === headingFont?.id && pairing.body === bodyFont?.id,
+        ),
+        `${theme.preset}: ${heading.family} with ${body.family}`,
+      ).toBe(true);
+      for (const style of ["h1", "h2", "h3", "h4", "h5", "h6"] as const) {
+        expect(headingFont?.weights, `${theme.preset} ${style}`).toContain(
+          theme.typeScale[style].weight,
+        );
+      }
+      expect(bodyFont?.weights).toContain(theme.typeScale.body.weight);
+    }
+  });
+
+  it("set their own inverse sections, dark under a light page", () => {
+    for (const theme of CURATED_THEMES) {
+      expect(theme.scheme).toBe("light");
+      const inverse = theme.inverse;
+      expect(inverse, theme.preset).toBeDefined();
+      if (inverse === undefined) continue;
+      expect(inverse["base-100"].l).toBeLessThan(0.4);
+      expect(inverse["base-content"].l).toBeGreaterThan(0.85);
+    }
+  });
+
+  it("look distinct: each its own fonts, brand colour and shape", () => {
+    // How far apart two colours look (OKLab's distance): about 0.02 is just noticeable.
+    const distance = (a: Oklch, b: Oklch) => {
+      const lab = ({ l, c, h }: Oklch) => [
+        l,
+        c * Math.cos((h * Math.PI) / 180),
+        c * Math.sin((h * Math.PI) / 180),
+      ];
+      const [x, y] = [lab(a), lab(b)];
+      return Math.hypot(...x.map((value, at) => value - (y[at] ?? 0)));
+    };
+    CURATED_THEMES.forEach((theme, index) => {
+      for (const other of CURATED_THEMES.slice(index + 1)) {
+        const pair = `${theme.preset} and ${other.preset}`;
+        expect(theme.fonts.heading.family, pair).not.toBe(other.fonts.heading.family);
+        expect(distance(theme.colors.primary, other.colors.primary), pair).toBeGreaterThan(0.1);
+        const shape = (t: ThemeTokens) => [
+          t.radius.box,
+          t.buttons.shape,
+          t.buttons.style,
+          t.spacing,
+        ];
+        const differences = shape(theme).filter((value, at) => value !== shape(other)[at]);
+        expect(differences.length, pair).toBeGreaterThanOrEqual(1);
+      }
+    });
   });
 });
 
