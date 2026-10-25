@@ -23,7 +23,7 @@ export type PreparedImport = Extract<PrepareOutcome, { status: "prepared" }> & {
 };
 
 /** Where a prepared import goes: the open site's file, as a Media item's asset. */
-export type ImportTarget = {
+type ImportTarget = {
   readonly sitePath: string;
   readonly mediaId: string;
   readonly originalName: string;
