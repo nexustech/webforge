@@ -69,6 +69,8 @@ export type SystemClipboard = {
     readonly image: number;
     readonly address: number;
   }): Promise<ClipboardContent>;
+  /** Whether the clipboard still holds copied elements, without reading them. */
+  holdsElements(): Promise<boolean>;
 };
 
 /**
@@ -146,6 +148,9 @@ export function systemClipboard(
           : webAddress(await text.text());
       return address === undefined ? { kind: "none" } : { kind: "address", address };
     },
+    // Only the items' types are listed: no content is read.
+    holdsElements: async () =>
+      (await clipboard.read()).some((item) => item.types.includes(ELEMENTS_FORMAT)),
   };
 }
 
@@ -169,11 +174,22 @@ function failed(action: string, error: unknown): void {
  * Copies and pastes elements (1.25, F-ED-16). The elements go on the system clipboard in Webforge's
  * own format, so copying anything else replaces them. Only one site is open at a time, so the bytes
  * of the images they show are kept in `dir` until the next copy: a site opened later can paste
- * them with their images. Nothing but those bytes is written there. Without elements, a paste
- * imports copied image files or a copied image (a screenshot) into Media, or passes on a copied web
- * address (never logged), which the renderer places if it is a video's.
+ * them with their images. Nothing but those bytes is written there, and only while the clipboard
+ * holds the elements: they go once something else is copied, and when Webforge quits (R13d), so a
+ * site's images don't stay on disk outside it. Without elements, a paste imports copied image files
+ * or a copied image (a screenshot) into Media, or passes on a copied web address (never logged),
+ * which the renderer places if it is a video's.
  */
 export function createElementClipboard(system: SystemClipboard, dir: string) {
+  /** Removes the kept bytes; a failure is logged, and the next copy or quit tries again. */
+  const forgetKept = (): void => {
+    try {
+      rmSync(dir, { recursive: true, force: true });
+    } catch (error) {
+      failed("clear the copied images", error);
+    }
+  };
+
   /** The kept bytes of `item`, if they are still there and unchanged. */
   const readKept = (item: MediaMeta): Uint8Array | undefined => {
     const path = join(dir, item.hash);
@@ -258,6 +274,10 @@ export function createElementClipboard(system: SystemClipboard, dir: string) {
         // Unreadable: nothing Webforge can paste.
         return { status: "empty" };
       }
+      if (content.kind !== "elements") {
+        // Something else was copied since: the kept images are no longer the clipboard's.
+        forgetKept();
+      }
       if (content.kind === "none") {
         return { status: "empty" };
       }
@@ -295,6 +315,24 @@ export function createElementClipboard(system: SystemClipboard, dir: string) {
         failed("paste elements", error);
         return { status: "failed", reason: "unknown" };
       }
+    },
+
+    /** Removes the kept images: Webforge is quitting. */
+    forgetKept,
+
+    /**
+     * Removes the kept images if the clipboard no longer holds the elements they belong to (the
+     * window was focused, after something was copied elsewhere). An unreadable clipboard keeps
+     * them: the next paste or quit decides.
+     */
+    async forgetIfReplaced(): Promise<void> {
+      let holds: boolean;
+      try {
+        holds = await system.holdsElements();
+      } catch {
+        return;
+      }
+      if (!holds) forgetKept();
     },
   };
 }

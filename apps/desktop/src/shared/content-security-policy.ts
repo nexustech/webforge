@@ -32,6 +32,9 @@ export function buildContentSecurityPolicy(options: ContentSecurityPolicyOptions
     "base-uri 'none'",
     "form-action 'none'",
     "object-src 'none'",
+    // No frame loads anything, so none shows another site (R13d): `default-src` says so already,
+    // and this says it outright. The canvas's iframe loads nothing: the editor writes it.
+    "frame-src 'none'",
   ];
   return directives.join("; ");
 }
