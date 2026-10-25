@@ -183,4 +183,32 @@ describe("Form (2.21)", () => {
     }
     expect(screen.getByRole("radio", { name: "shop" })).toHaveProperty("checked", true);
   });
+
+  it("gives a text field that checks what's typed its kind of text and its limit too", () => {
+    function Host() {
+      const state = useForm(
+        {
+          fields: [
+            {
+              kind: "text",
+              name: "email",
+              label: "Email",
+              inputType: "email",
+              maxLength: 20,
+              validate: (text) => (text.includes("@") ? undefined : "Use an email address"),
+            },
+          ],
+          schema: z.unknown(),
+          toModel: (values) => values,
+        },
+        { email: "" },
+      );
+      return <Form form={state} />;
+    }
+    render(<Host />);
+
+    const email = screen.getByRole("textbox", { name: "Email" });
+    expect(email.getAttribute("type")).toBe("email");
+    expect(email.getAttribute("maxlength")).toBe("20");
+  });
 });

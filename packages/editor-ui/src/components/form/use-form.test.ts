@@ -1,7 +1,16 @@
+// @vitest-environment happy-dom
+import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import type { FormField, FormSpec } from "./form-spec.js";
-import { applyListChange, changedGroups, checkForm, issueOf, unplacedIssues } from "./use-form.js";
+import {
+  applyListChange,
+  changedGroups,
+  checkForm,
+  issueOf,
+  unplacedIssues,
+  useForm,
+} from "./use-form.js";
 
 type Values = { readonly name: string; readonly email: string; readonly hours: readonly unknown[] };
 
@@ -92,6 +101,47 @@ describe("changedGroups (2.21)", () => {
       "general",
       "contact",
     ]);
+  });
+});
+
+describe("useForm's changes (2.21)", () => {
+  it("keeps every change made together, each on the values as they are then", () => {
+    const { result } = renderHook(() => useForm(spec, values()));
+
+    // A renderer reporting a link and then its anchor, or a preset filling several fields.
+    act(() => {
+      result.current.change("name", "Ana");
+      result.current.change("email", "ana@example.com");
+    });
+
+    expect(result.current.values).toMatchObject({ name: "Ana", email: "ana@example.com" });
+  });
+
+  it("names a group changed by what its values hold, not how they were rebuilt", () => {
+    const before = values({ hours: [{ id: "a", days: ["mon"], opens: "09:00" }] });
+    const listed: typeof spec = {
+      ...spec,
+      fields: [
+        ...(spec.fields as readonly FormField[]),
+        { kind: "text", name: "hours", label: "Hours", group: "contact" },
+      ],
+    };
+    // The same item with its keys in another order: nothing changed.
+    expect(
+      changedGroups(
+        listed,
+        before,
+        values({ hours: [{ opens: "09:00", days: ["mon"], id: "a" }] }),
+      ),
+    ).toEqual([]);
+    // A value cleared to undefined has changed.
+    expect(
+      changedGroups(
+        listed,
+        before,
+        values({ hours: [{ id: "a", days: ["mon"], opens: undefined }] }),
+      ),
+    ).toEqual(["contact"]);
   });
 });
 

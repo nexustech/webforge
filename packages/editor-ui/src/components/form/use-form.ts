@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { sameValue } from "../../lib/same-value.js";
 import type { ListChange, ListItem } from "../edit/field-spec.js";
 import type { FormField, FormIssue, FormSpec, FormValues } from "./form-spec.js";
 
@@ -69,9 +70,6 @@ export function issueOf(field: FormField, issues: readonly FormIssue[]): string 
 export const unplacedIssues = (fields: readonly FormField[], issues: readonly FormIssue[]) =>
   issues.filter((issue) => !fields.some((field) => issueOf(field, [issue]) !== undefined));
 
-/** Whether two values are the same: form values are plain data. */
-const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
-
 /** The groups of the fields whose values differ between `before` and `after`, in the form's order. */
 export function changedGroups<V extends FormValues>(
   spec: FormSpec<V, unknown>,
@@ -80,7 +78,7 @@ export function changedGroups<V extends FormValues>(
 ): readonly string[] {
   const changed = new Set(
     fieldsOf(spec, after)
-      .filter((field) => !same(before[field.name], after[field.name]))
+      .filter((field) => !sameValue(before[field.name], after[field.name]))
       .map((field) => field.group ?? ""),
   );
   const order = spec.groups?.map((group) => group.id) ?? [""];
@@ -127,15 +125,18 @@ export function useForm<V extends FormValues, Out>(
   const fields = fieldsOf(spec, values);
   const issues = showing ? checkForm(spec, values).issues : [];
 
-  const change = (name: string, value: unknown) => {
-    const field = fields.find((each) => each.name === name);
-    const next =
-      field?.kind === "list"
-        ? applyListChange(itemsOf(values[name]), value as ListChange, field.newItem)
-        : value;
-    const changed = { ...values, [name]: next } as V;
-    setValues(spec.adjust?.(changed, values) ?? changed);
-  };
+  // From the values as they are when the change applies, so changes made together (a link and its
+  // anchor, a preset filling several fields) all count.
+  const change = (name: string, value: unknown) =>
+    setValues((current) => {
+      const field = fieldsOf(spec, current).find((each) => each.name === name);
+      const next =
+        field?.kind === "list"
+          ? applyListChange(itemsOf(current[name]), value as ListChange, field.newItem)
+          : value;
+      const changed = { ...current, [name]: next } as V;
+      return spec.adjust?.(changed, current) ?? changed;
+    });
 
   const submit = (): FormSubmit<Out> => {
     setShowing(true);

@@ -1,3 +1,4 @@
+import { sameValue } from "@webforge/editor-ui";
 import type { ReadonlyStore } from "@webforge/history";
 import { t } from "@webforge/i18n";
 import { LayersIcon } from "lucide-react";
@@ -11,7 +12,6 @@ import {
   renameLayer,
   setLayerHidden,
 } from "../editor/layers.js";
-import { sameValue } from "../editor/same-value.js";
 import { useUi } from "../editor/use-document.js";
 import { ElementMenu } from "../element-menu/index.js";
 import { useCommand, useCommandRegistry } from "../shell/command-context.js";
