@@ -668,9 +668,7 @@ function DeviceRow({
           )}
         >
           {device.label}
-          {device.own ? (
-            <span className="sr-only">{`, ${t("editPanel.devices.own", { device: device.label })}`}</span>
-          ) : null}
+          {device.own ? <span className="sr-only">{`, ${t("editPanel.devices.own")}`}</span> : null}
         </label>
         {device.inEffect ? (
           <span

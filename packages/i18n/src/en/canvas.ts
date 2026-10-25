@@ -133,7 +133,8 @@ export const canvas = {
   "editPanel.dot.clear": "{field}: set for {device} only. Use the Desktop value instead",
   // A field that may differ per device (SP-5): its rows, one per device.
   "editPanel.devices.show": "{field} on each device",
-  "editPanel.devices.own": "{device}: its own value",
+  // After the device's name, for screen readers: "Tablet, its own value".
+  "editPanel.devices.own": "its own value",
   "editPanel.devices.inEffect": "In effect on the device shown",
   "editPanel.box.default": "Default",
   "editPanel.box.same": "Same on every side",
