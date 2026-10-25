@@ -31,11 +31,17 @@ export type SettingsRegistry = {
   register(entry: SettingsEntry): () => void;
   /** The parts, App's before This site's, each in its order. */
   list(): readonly SettingsEntry[];
+  /** Calls `listener` after a part is added or removed; returns a function that stops it. */
+  subscribe(listener: () => void): () => void;
 };
 
 /** Creates an empty registry. */
 export function createSettingsRegistry(): SettingsRegistry {
   const entries = new Map<string, SettingsEntry>();
+  const listeners = new Set<() => void>();
+  const changed = () => {
+    for (const listener of listeners) listener();
+  };
   const HEADINGS: readonly SettingsHeading[] = ["app", "site"];
   return {
     register(entry) {
@@ -43,8 +49,17 @@ export function createSettingsRegistry(): SettingsRegistry {
         throw new Error(`Settings "${entry.id}" are already registered`);
       }
       entries.set(entry.id, entry);
+      changed();
       return () => {
-        if (entries.get(entry.id) === entry) entries.delete(entry.id);
+        if (entries.get(entry.id) !== entry) return;
+        entries.delete(entry.id);
+        changed();
+      };
+    },
+    subscribe(listener) {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
       };
     },
     list: () =>

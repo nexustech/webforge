@@ -35,6 +35,48 @@ function setUp(session = sessionWith()) {
 }
 
 describe("SettingsHost (LF-12)", () => {
+  it("keeps Site Settings… off while no site's part is there (#432 review)", () => {
+    const commands = createCommandRegistry();
+    const settings = createSettingsRegistry();
+    registerAppSettings(settings, createPreferencesStore());
+    render(
+      <CommandRegistryProvider registry={commands}>
+        <SettingsHost registry={settings} />
+      </CommandRegistryProvider>,
+    );
+    expect(commands.get(COMMAND_IDS.siteSettings)?.enabled).toBe(false);
+
+    let remove: () => void = () => undefined;
+    act(() => {
+      remove = registerSiteSettings(settings, sessionWith());
+    });
+    expect(commands.get(COMMAND_IDS.siteSettings)?.enabled).toBe(true);
+    act(() => remove());
+    expect(commands.get(COMMAND_IDS.siteSettings)?.enabled).toBe(false);
+  });
+
+  it(
+    "writes no preferences for devices saved as they were, whatever their keys' order (#432 review)",
+    async () => {
+      const { preferences, run, user } = setUp();
+      act(() =>
+        preferences.change({
+          canvas: {
+            ...preferences.getState().preferences.canvas,
+            // Keys in another order than the form gives them back.
+            devices: [{ height: 915, width: 412, name: "Pixel", id: "pixel" }],
+          },
+        }),
+      );
+      const before = preferences.getState().preferences;
+      run(COMMAND_IDS.settings);
+      await user.click(await screen.findByRole("button", { name: "Save" }));
+
+      expect(preferences.getState().preferences).toBe(before);
+    },
+    SLOW,
+  );
+
   it(
     "opens on App's Interface, saving the person's preferences, never an undo step",
     async () => {
