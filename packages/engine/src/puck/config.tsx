@@ -1,6 +1,6 @@
 import type { ComponentConfig, Config, Field, PuckContext } from "@puckeditor/core";
 import type { Extensions } from "@tiptap/core";
-import { isNodeDoc, type NodeDoc } from "@webforge/model";
+import { HIDDEN_ATTRIBUTE, isNodeDoc, type NodeDoc } from "@webforge/model";
 import {
   type ComponentDef,
   type ComponentLibrary,
@@ -107,9 +107,6 @@ function toPuckComponent(
     },
   };
 }
-
-/** Marks a hidden element's HTML on the canvas (F-ED-12); the chrome's styles dim it. */
-export const HIDDEN_ATTRIBUTE = "data-webforge-hidden";
 
 /**
  * A hidden element's output (Layers' Hide, F-ED-12), marked so the canvas shows it dimmed: it stays
