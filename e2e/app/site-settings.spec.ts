@@ -34,7 +34,7 @@ test("edits Site Settings from the File menu, fixing what Save points at, as one
   await expect(status).toHaveText("Saved", { timeout: 30_000 });
 
   await chooseFromMenu(app as ElectronApplication, page, "File", "Site Settings…");
-  const dialog = page.getByRole("dialog", { name: "Site Settings" });
+  const dialog = page.getByRole("dialog", { name: "Settings", exact: true });
   await dialog.getByLabel("Site name").fill("Rosa's Bakery");
   await dialog.getByRole("tab", { name: "Contact & hours" }).click();
   await dialog.getByLabel("Phone number").fill("call us");
@@ -72,7 +72,7 @@ test("Ctrl/Cmd+Z in Site Settings' text undoes the text, not the site's last ste
   await expect(page.getByRole("banner").getByRole("status")).toHaveText("Saved", {
     timeout: 30_000,
   });
-  const dialog = page.getByRole("dialog", { name: "Site Settings" });
+  const dialog = page.getByRole("dialog", { name: "Settings", exact: true });
   const name = dialog.getByLabel("Site name");
   // A step of the site's own to undo, if the keys went to the site.
   await chooseFromMenu(app, page, "File", "Site Settings…");
@@ -129,7 +129,7 @@ test("shows Site Settings values in bound elements, on the canvas and in the exp
   await expect(heading).toHaveText("Add your phone number in Site Settings");
 
   await chooseFromMenu(app as ElectronApplication, page, "File", "Site Settings…");
-  const dialog = page.getByRole("dialog", { name: "Site Settings" });
+  const dialog = page.getByRole("dialog", { name: "Settings", exact: true });
   await dialog.getByLabel("Site name").fill("Hightown Bakery");
   await dialog.getByRole("tab", { name: "Contact & hours" }).click();
   await dialog.getByLabel("Phone number").fill("+44 1234 567890");
@@ -164,7 +164,7 @@ test("lists Site Settings' opening hours and contact details, on the canvas and 
   await expect(section).toContainText("Add your phone number in Site Settings");
 
   await chooseFromMenu(app as ElectronApplication, page, "File", "Site Settings…");
-  const dialog = page.getByRole("dialog", { name: "Site Settings" });
+  const dialog = page.getByRole("dialog", { name: "Settings", exact: true });
   await dialog.getByRole("tab", { name: "Contact & hours" }).click();
   await dialog.getByLabel("Phone number").fill("+44 1234 567890");
   await dialog.getByRole("button", { name: "Add opening hours" }).click();

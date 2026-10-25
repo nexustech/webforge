@@ -91,6 +91,8 @@ export const COMMAND_SHORTCUTS: Readonly<Record<string, StandardShortcut>> = {
   [COMMAND_IDS.exportSite]: { group: "site", keys: ["Mod+E"] },
   [COMMAND_IDS.publish]: { group: "site", keys: ["Mod+U"], text: true },
   [COMMAND_IDS.saveVersion]: { group: "site", keys: ["Mod+Alt+S"] },
+  // Settings, as most apps open theirs (LF-12): Ctrl+, on Windows, Cmd+, on a Mac.
+  [COMMAND_IDS.settings]: { group: "site", keys: ["Mod+,"] },
   [COMMAND_IDS.undo]: { group: "edit", keys: ["Mod+Z"] },
   // Ctrl+Y as on Windows; the history's own keys take both everywhere (U4).
   [COMMAND_IDS.redo]: { group: "edit", keys: ["Mod+Shift+Z", "Mod+Y"] },
