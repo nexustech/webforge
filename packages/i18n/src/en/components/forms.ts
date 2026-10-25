@@ -5,6 +5,26 @@
 export const forms = {
   "section.contactForm": "Contact form",
   "section.newsletter": "Newsletter signup",
+  // A form of one's own fields, as an element (2.11).
+  "element.form": "Form",
+  "element.formField": "Form field",
+  "field.formFields": "Fields",
+  "field.formLabel": "What the form is for",
+  "field.formLabel.help": "Screen readers name the form by it, such as Booking request.",
+  "field.formFieldKind": "Asks for",
+  "field.formFieldKind.text": "A line of text",
+  "field.formFieldKind.email": "An email address",
+  "field.formFieldKind.phone": "A phone number",
+  "field.formFieldKind.message": "A message",
+  "field.formFieldKind.checkbox": "A tick box",
+  "field.formFieldKind.select": "A choice from a list",
+  "field.formFieldLabel": "Label",
+  "field.formFieldRequired": "Required",
+  "field.formFieldOptions": "Choices",
+  "field.formFieldOption": "Choice",
+  "starter.formLabel": "Enquiry form",
+  "starter.formButton": "Send",
+  "starter.formFieldLabel": "Your question",
   "field.askPhone": "Ask for a phone number",
   "field.askName": "Ask for a name",
   "field.formAddress": "Form address",
@@ -29,6 +49,8 @@ export const forms = {
   "siteText.form.phone": "Phone number",
   "siteText.form.message": "Message",
   "siteText.form.choose": "Choose…",
+  // A form field whose label was left empty.
+  "siteText.form.untitled": "Answer",
   // The honeypot's label, which visitors never see (B6).
   "siteText.form.leaveEmpty": "Leave this empty",
 } as const;
