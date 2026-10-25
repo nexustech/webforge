@@ -171,9 +171,15 @@ export function toPuckConfig(
     root: {
       // No page-level fields yet (Puck's default root has a "title" field).
       fields: {},
-      // Puck's own top level when not editing (static HTML).
+      // Puck's own top level when not editing (static HTML). While editing, the page's drop zone
+      // is marked (`wf-sections`), so a theme's alternating sections show on the canvas too, where
+      // each section is in a wrapper of Puck's (2.13d).
       render: ({ puck, children }: { puck: PuckContext; children: ReactNode }) => (
-        <>{puck.isEditing ? puck.renderDropZone({ zone: ROOT_ZONE, allow: sections }) : children}</>
+        <>
+          {puck.isEditing
+            ? puck.renderDropZone({ zone: ROOT_ZONE, allow: sections, className: "wf-sections" })
+            : children}
+        </>
       ),
     },
     components: Object.fromEntries(

@@ -7,6 +7,7 @@ import v3Site from "../test/fixtures/v3/site.json" with { type: "json" };
 import v4Site from "../test/fixtures/v4/site.json" with { type: "json" };
 import v5Site from "../test/fixtures/v5/site.json" with { type: "json" };
 import v6Site from "../test/fixtures/v6/site.json" with { type: "json" };
+import v7Site from "../test/fixtures/v7/site.json" with { type: "json" };
 import { FORMAT_5_DAISYUI_THEMES } from "./format-5-themes.js";
 import type { PageId, SharedSectionId } from "./ids.js";
 import {
@@ -39,20 +40,47 @@ const sectionPaddingBoxes =
     throw new Error("No migration from format 5");
   });
 
-/** Format 5 → 6, its own fixture tested below: what the later steps do to an older fixture. */
-function format6(site: Record<string, unknown> & { formatVersion: 5 }): unknown {
-  return sectionPaddingBoxes(JSON.parse(JSON.stringify(site)));
+/** Format 6 → 7 (`MIGRATIONS[6]`). */
+const themeStyleTokens =
+  MIGRATIONS[6] ??
+  ((): never => {
+    throw new Error("No migration from format 6");
+  });
+
+/** Format 5 → 7, each step's own fixture tested below: what the later steps do to an older one. */
+function latest(site: Record<string, unknown> & { formatVersion: 5 }): unknown {
+  return themeStyleTokens(sectionPaddingBoxes(JSON.parse(JSON.stringify(site))));
 }
 
 describe("migrateSite", () => {
-  it("opens the format 6 fixture unchanged", () => {
-    const site = migrateSite(v6Site);
+  it("opens the format 7 fixture unchanged", () => {
+    const site = migrateSite(v7Site);
 
-    expect(site).toEqual(v6Site);
+    expect(site).toEqual(v7Site);
     expect(site.formatVersion).toBe(SITE_FORMAT_VERSION);
   });
 
-  it("opens the format 5 fixture as format 6, a Section's padding size as its top and bottom (R14)", () => {
+  it("opens the format 6 fixture as format 7, its theme's style tokens as it looked (2.13d)", () => {
+    const site = migrateSite(v6Site);
+
+    expect(v6Site.theme).not.toHaveProperty("cards");
+    expect(site).toEqual(v7Site);
+    expect(site.theme).toMatchObject({
+      headings: { case: "normal", tracking: "normal" },
+      cards: { style: "flat" },
+      images: { corners: "rounded" },
+      sections: { rhythm: "plain" },
+    });
+  });
+
+  it("leaves a format 6 theme that isn't a record to validation (6 → 7)", () => {
+    expect(themeStyleTokens({ formatVersion: 6, theme: "light" })).toEqual({
+      formatVersion: 7,
+      theme: "light",
+    });
+  });
+
+  it("opens the format 5 fixture as format 7, a Section's padding size as its top and bottom (R14)", () => {
     const site = migrateSite(v5Site);
 
     // The fixture's Sections have format 5's sizes, one plain, one per device.
@@ -63,7 +91,7 @@ describe("migrateSite", () => {
     expect(v5Site.sharedSections["shared-hours"].section.props.padding).toEqual({
       $responsive: { desktop: "large", mobile: "small" },
     });
-    expect(site).toEqual(v6Site);
+    expect(site).toEqual(v7Site);
     const padding = (id: string) =>
       site.pages["home000000000000" as PageId]?.doc.content.find((node) => node.props.id === id)
         ?.props.padding;
@@ -97,10 +125,10 @@ describe("migrateSite", () => {
     expect(hero.pages.home.doc.content[0]?.props.padding).toBe("large");
   });
 
-  it("opens the format 4 fixture as format 6, its theme as tokens named after it (2.1)", () => {
+  it("opens the format 4 fixture as format 7, its theme as tokens named after it (2.1)", () => {
     const site = migrateSite(v4Site);
 
-    expect(site).toEqual(format6({ ...v4Site, formatVersion: 5, theme: cupcakeTokens }));
+    expect(site).toEqual(latest({ ...v4Site, formatVersion: 5, theme: cupcakeTokens }));
     expect(site.theme.preset).toBe("cupcake");
     // daisyUI's own cupcake colours and corners (FORMAT_5_DAISYUI_THEMES; the pipeline's tests
     // compare every built-in theme with daisyUI's).
@@ -122,13 +150,13 @@ describe("migrateSite", () => {
     expect(migrateSite({ ...v4Site, theme: undefined }).theme.preset).toBe("light");
   });
 
-  it("opens the format 3 fixture as format 6, its shared sections' names made unique (3 → 4)", () => {
+  it("opens the format 3 fixture as format 7, its shared sections' names made unique (3 → 4)", () => {
     const site = migrateSite(v3Site);
 
     // The fixture's second shared section repeats the first's name, as format 3 allowed.
     expect(v3Site.sharedSections["shared-hours-weekend"].name).toBe(" opening HOURS ");
     expect(site).toEqual(
-      format6({
+      latest({
         ...v3Site,
         formatVersion: 5,
         theme: cupcakeTokens,
@@ -170,13 +198,13 @@ describe("migrateSite", () => {
     ]);
   });
 
-  it("opens the format 2 fixture as format 6, with no shared sections yet", () => {
+  it("opens the format 2 fixture as format 7, with no shared sections yet", () => {
     expect(migrateSite(v2Site)).toEqual(
-      format6({ ...v2Site, formatVersion: 5, sharedSections: {}, theme: cupcakeTokens }),
+      latest({ ...v2Site, formatVersion: 5, sharedSections: {}, theme: cupcakeTokens }),
     );
   });
 
-  it("opens the format 1 fixture as format 6, its Hero image one value with its alt text (1 → 2)", () => {
+  it("opens the format 1 fixture as format 7, its Hero image one value with its alt text (1 → 2)", () => {
     // Fixtures of released formats are never deleted: every old site must keep opening. This one
     // has its Hero image in the format 1 shape: a media id, and its alt text apart.
     const site = migrateSite(v1Site);
@@ -189,7 +217,7 @@ describe("migrateSite", () => {
       alt: "Fresh loaves on the counter",
     });
     expect(hero?.props).not.toHaveProperty("imageDescription");
-    expect(site).toMatchObject({ formatVersion: 6, sharedSections: {}, theme: cupcakeTokens });
+    expect(site).toMatchObject({ formatVersion: 7, sharedSections: {}, theme: cupcakeTokens });
   });
 
   it("opens a new site after a JSON round trip", () => {
@@ -379,7 +407,7 @@ describe("migrateSite with a malformed file (R14)", () => {
     }
     return top;
   }
-  const withContent = (site: typeof v5Site, content: unknown[], formatVersion: number) => ({
+  const withContent = (site: typeof v7Site, content: unknown[], formatVersion: number) => ({
     ...site,
     formatVersion,
     pages: {
@@ -395,7 +423,7 @@ describe("migrateSite with a malformed file (R14)", () => {
     const deep = [nested(100_000)];
 
     for (const formatVersion of [SITE_FORMAT_VERSION, 1]) {
-      const error = formatError(() => migrateSite(withContent(v5Site, deep, formatVersion)));
+      const error = formatError(() => migrateSite(withContent(v7Site, deep, formatVersion)));
       expect(error.code).toBe("invalid");
     }
   });
@@ -419,7 +447,7 @@ describe("migrateSite with a malformed file (R14)", () => {
   });
 
   it("opens a site nested as deeply as a page plausibly is", () => {
-    const site = migrateSite(withContent(v5Site, [nested(40)], SITE_FORMAT_VERSION));
+    const site = migrateSite(withContent(v7Site, [nested(40)], SITE_FORMAT_VERSION));
 
     expect(site.pages[site.homePageId]?.doc.content).toHaveLength(1);
   });
@@ -431,7 +459,7 @@ describe("migrateSite with a malformed file (R14)", () => {
 
     for (const content of [[inSection], [deeper]]) {
       const error = formatError(() =>
-        migrateSite(withContent(v5Site, content, SITE_FORMAT_VERSION)),
+        migrateSite(withContent(v7Site, content, SITE_FORMAT_VERSION)),
       );
       expect(error.code).toBe("invalid");
     }
@@ -450,13 +478,13 @@ describe("migrateSite with a malformed file (R14)", () => {
         },
       },
     ];
-    expect(() => migrateSite(withContent(v5Site, lists, SITE_FORMAT_VERSION))).not.toThrow();
+    expect(() => migrateSite(withContent(v7Site, lists, SITE_FORMAT_VERSION))).not.toThrow();
   });
 });
 
 // Down and up (standards §5): a site of the current format, taken back to an older one by hand-
 // written inverses of each step, migrates up to the same site. The inverses only go where each
-// step's input could be: format 5 could have a Section's padding as a size, format 4 named a
+// step's input could be: format 6 had no style tokens in its theme, format 5 could have a Section's padding as a size, format 4 named a
 // daisyUI theme, format 1 had Hero images as a media id with their alt text apart.
 
 type Raw = Record<string, unknown> & { formatVersion: number };
@@ -502,6 +530,11 @@ function paddingSize(box: unknown): unknown {
 
 /** Each step's inverse, keyed by the version it goes down *to*. */
 const DOWN: Readonly<Record<number, (site: Raw) => Raw>> = {
+  // 7 → 6: the theme had no style tokens; sites looked as their defaults do.
+  6: (site) => {
+    const { headings, cards, images, sections, ...theme } = site.theme as Record<string, unknown>;
+    return { ...site, theme, formatVersion: 6 };
+  },
   // 6 → 5: a Section's padding with the same small, medium or large top and bottom was a size.
   5: (site) => {
     eachNode(site, (node) => {
@@ -588,8 +621,8 @@ const migratableSite = fc
     shared: fc.boolean(),
   })
   .map(({ site, preset, alt, withImage, padding, shared }): SiteDoc => {
-    const theme = themeTokens({ formatVersion: 4, theme: { name: preset } })
-      .theme as SiteDoc["theme"];
+    const format5 = themeTokens({ formatVersion: 4, theme: { name: preset } });
+    const theme = themeStyleTokens({ ...format5, formatVersion: 6 }).theme as SiteDoc["theme"];
     const home = site.pages[site.homePageId];
     if (home === undefined) throw new Error("no home page");
     const hero = {

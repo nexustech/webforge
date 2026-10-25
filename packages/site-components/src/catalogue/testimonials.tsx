@@ -150,7 +150,9 @@ function TestimonialView({
     );
   }
   return (
-    <figure className={`site-testimonial flex flex-col gap-4 rounded-box bg-base-200 p-6${hover}`}>
+    <figure
+      className={`site-testimonial wf-card flex flex-col gap-4 rounded-box bg-base-200 p-6${hover}`}
+    >
       <LucideIcon name="quote" className="size-8 text-primary" />
       <blockquote className={`flex-1 ${BODY_TEXT_CLASSES}`}>
         <p>{quote}</p>
