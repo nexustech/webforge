@@ -2,7 +2,7 @@
 
 A desktop visual website builder for **DIY small-business owners**. Users drag and drop sections, click to edit text, choose a theme, and publish a fast, **self-contained static website** (plain HTML/CSS/JS, no server, no CDN), to a folder/ZIP, FTP/FTPS/SFTP or Netlify.
 
-**Status:** Phase 1 (editor core) is all but complete and Phase 2 (design and components) has started; the remaining Phase 0 items are the publishing spikes and signed installers. The live state is in the [GitHub milestones](https://github.com/nexustech/webforge/milestones) and the [implementation plan](spec/04-implementation-plan.md).
+**Status:** Phase 1 (editor core) is all but complete and Phase 2 (design and components) has started; the remaining Phase 0 items are the publishing spikes, and signed installers moved to Phase 5 (25 Oct 2026). The live state is in the [GitHub milestones](https://github.com/nexustech/webforge/milestones) and the [implementation plan](spec/04-implementation-plan.md).
 
 ## Documentation
 | Document | What it covers |

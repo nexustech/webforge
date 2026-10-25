@@ -1,6 +1,7 @@
 import {
   COLOR_ROLES,
   type FontRef,
+  HIDDEN_ATTRIBUTE,
   INVERSE_THEME,
   type Oklch,
   SHADE_STEPS,
@@ -133,12 +134,25 @@ const IMAGE_RADIUS: Readonly<Record<ThemeTokens["images"]["corners"], string | u
 };
 
 /**
- * The sections every second one of a page is (2.13d): on the exported page, `main`'s; on the
- * canvas, those in the page's drop zone (`wf-sections`), where each is in a wrapper of its own.
- * Not a section on reversed colours, which keeps its own.
+ * Every second section of a page (2.13d), counting only the sections a visitor sees, so the canvas
+ * stripes as the exported page does:
+ * - on the exported page, `main`'s sections, whatever else it holds;
+ * - on the canvas, the page's drop zone (`wf-sections`), where each section is in a wrapper of its
+ *   own: wrappers of a shown section, never one hidden in Layers (which the export leaves out) or
+ *   Puck's place for a dragged one.
+ *
+ * Not a section on reversed colours, which keeps its own. A browser without `:nth-child(… of …)`
+ * (before Chromium 111, Safari 9 and Firefox 113) drops the rule: its sections are all on the
+ * page's surface.
  */
-const EVEN_SECTIONS =
-  ":is(#main > section:nth-child(even), .wf-sections > :nth-child(even) > section):not([data-theme])";
+const EVEN_SECTION_SELECTORS = [
+  "#main > section:nth-child(even of section):not([data-theme])",
+  `.wf-sections > :nth-child(even of :has(> section:not([${HIDDEN_ATTRIBUTE}]))) > section:not([data-theme])`,
+];
+
+/** {@link EVEN_SECTION_SELECTORS}, each followed by `then` (" .wf-card"), as one selector list. */
+export const evenSections = (then = ""): string =>
+  EVEN_SECTION_SELECTORS.map((selector) => `${selector}${then}`).join(", ");
 
 /** daisyUI's look the theme gives its main buttons (#423): their own, or outline or ghost. */
 const BUTTON_LOOK: Readonly<Record<ThemeTokens["buttons"]["style"], string | undefined>> = {
@@ -245,8 +259,9 @@ function buttonRules(tokens: ThemeTokens): string[] {
  * - cards (`wf-card`: Features, Stats, Team and Testimonials) outlined or raised on the page's
  *   surface instead of flat on the second one;
  * - photos (an `img` with the box corners) square or softer;
- * - every second section on the second surface, under the classes of sections that have colours
- *   of their own (`@layer components`), with flat cards on the page's surface there.
+ * - every second section on the second surface: one with no surface class (`@layer components`)
+ *   and one on the page's surface by its class (`bg-base-100`), never one with another surface
+ *   of its own (a tinted Hero, a dark band); flat cards go on the page's surface there.
  */
 function styleRules(tokens: ThemeTokens): string[] {
   const { headings, cards, images, sections } = tokens;
@@ -275,15 +290,24 @@ function styleRules(tokens: ThemeTokens): string[] {
     ...(imageRadius === undefined
       ? []
       : ["  img.rounded-box {", `    border-radius: ${imageRadius};`, "  }"]),
+    // A section on the page's surface by its own class (Features, Stats, Testimonials) too; one
+    // with another surface of its own (a tinted Hero, a dark band) keeps it.
+    ...(alternating
+      ? [
+          `  ${evenSections(".bg-base-100")} {`,
+          "    background-color: var(--color-base-200);",
+          "  }",
+        ]
+      : []),
     ...(alternating && cards.style === "flat"
-      ? [`  ${EVEN_SECTIONS} .wf-card {`, "    background-color: var(--color-base-100);", "  }"]
+      ? [`  ${evenSections(" .wf-card")} {`, "    background-color: var(--color-base-100);", "  }"]
       : []),
   ];
   return [
     ...(alternating
       ? [
           "@layer components {",
-          `  ${EVEN_SECTIONS} {`,
+          `  ${evenSections()} {`,
           "    background-color: var(--color-base-200);",
           "  }",
           "}",

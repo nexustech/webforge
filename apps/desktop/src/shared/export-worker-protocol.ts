@@ -96,6 +96,9 @@ export const workerJobSchema = z.discriminatedUnion("type", [
   thumbnailJobSchema,
 ]);
 
+/** Any job the worker accepts. */
+export type WorkerJob = z.infer<typeof workerJobSchema>;
+
 /** The worker's answer to a {@link ThumbnailJob}: a WebP, or a failure without details. */
 export const thumbnailOutcomeSchema = z.discriminatedUnion("type", [
   z.strictObject({

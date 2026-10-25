@@ -1,7 +1,8 @@
 import { DEFAULT_THEME } from "@webforge/model";
 import { describe, expect, it, vi } from "vitest";
 import type { ExportJob } from "../shared/export-worker-protocol.js";
-import { runExportInWorker, type WorkerProcess } from "./export-worker-client.js";
+import { runExportInWorker } from "./export-worker-client.js";
+import type { WorkerProcess } from "./worker-process.js";
 
 const job: ExportJob = {
   type: "export",
@@ -28,7 +29,7 @@ function fakeWorker() {
     postMessage: (message: unknown) => {
       worker.posted.push(message);
     },
-    once: (event: "message" | "exit", listener: (value: never) => void) => {
+    on: (event: "message" | "exit", listener: (value: never) => void) => {
       listeners[event] = listener as never;
       return worker;
     },
