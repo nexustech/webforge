@@ -12,7 +12,7 @@ import {
   type SharedCopyNode,
   type SharedSectionsDoc,
 } from "@webforge/model";
-import { type ComponentLibrary, overfillsSlots } from "@webforge/site-components";
+import { type ComponentLibrary, hasEntrance, overfillsSlots } from "@webforge/site-components";
 import type { EditorSession } from "../editor/editor-session.js";
 import { elementKind, givenElementName, quotedName } from "../editor/labels.js";
 import { findNode } from "../editor/nodes.js";
@@ -41,7 +41,7 @@ export type Layer = {
    * are. Nothing the page lists is locked yet; Layers marks it when something is.
    */
   readonly locked?: boolean;
-  /** It has an animation (UX-12), which 2.12 adds; Layers marks it. */
+  /** It has an entrance animation (UX-12, 2.12); Layers marks it. */
   readonly animated?: boolean;
 };
 
@@ -86,6 +86,8 @@ export function layersOf(
           hidden: node.props.hidden === true,
           children: [],
           sharedSection: entry.name,
+          // A copy shows its shared section, entrance and all.
+          ...(hasEntrance(entry.section.props) ? { animated: true } : {}),
         },
       ];
     }
@@ -96,6 +98,7 @@ export function layersOf(
         name,
         hidden: node.props.hidden === true,
         children: slotsOf(node, library).flatMap((list) => layersOf(list, library, shared)),
+        ...(hasEntrance(node.props) ? { animated: true } : {}),
       },
     ];
   });
