@@ -111,13 +111,11 @@ describe("SiteSettingsDialog", () => {
     async () => {
       const { onSave, user } = setUp();
       await user.click(screen.getByRole("tab", { name: "Social & sharing" }));
+      // Each added profile opens; the second is removed again.
       await user.click(screen.getByRole("button", { name: "Add a profile" }));
+      await user.selectOptions(screen.getByLabelText("Network"), "instagram");
+      await user.type(screen.getByLabelText("Profile address"), "https://instagram.com/rosas");
       await user.click(screen.getByRole("button", { name: "Add a profile" }));
-      await user.selectOptions(screen.getAllByLabelText("Network")[0] as HTMLElement, "instagram");
-      await user.type(
-        screen.getAllByLabelText("Profile address")[0] as HTMLElement,
-        "https://instagram.com/rosas",
-      );
       await user.click(
         screen.getAllByRole("button", { name: "Remove this profile" })[1] as HTMLElement,
       );

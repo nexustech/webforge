@@ -23,12 +23,6 @@ import {
   settingsSchema,
 } from "./settings-form.js";
 
-/**
- * How Site Settings draw their rows of profiles and opening hours: as today, a row each. "panels"
- * draws them as the Edit panel's lists do, once the product owner chooses that (2.21, decision 3).
- */
-const ROWS_LOOK = "rows";
-
 /** One of Site Settings' sections (F-SET-1): its fields, for the values the dialog holds. */
 type SettingsSection = {
   readonly id: Section;
@@ -119,7 +113,6 @@ function sections(media: SettingsMedia): readonly SettingsSection[] {
           label: t("site.settings.profiles"),
           // The logos are trademarks (PH2-4): they may only link to the site's own pages.
           help: t("site.settings.profilesHint"),
-          look: ROWS_LOOK,
           itemLabel: t("site.settings.profileUrl"),
           addLabel: t("site.settings.addProfile"),
           removeLabel: t("site.settings.removeProfile"),
@@ -182,7 +175,6 @@ function sections(media: SettingsMedia): readonly SettingsSection[] {
           kind: "list",
           name: "openingHours",
           label: t("site.settings.openingHours"),
-          look: ROWS_LOOK,
           itemLabel: t("site.settings.openingHours"),
           addLabel: t("site.settings.addHours"),
           removeLabel: t("site.settings.removeHours"),
@@ -193,8 +185,8 @@ function sections(media: SettingsMedia): readonly SettingsSection[] {
               label: t("site.settings.days"),
               options: DAYS.map((day) => ({ label: t(`site.settings.day.${day}`), value: day })),
             },
-            { kind: "time", name: "opens", label: t("site.settings.opens"), labelBeside: true },
-            { kind: "time", name: "closes", label: t("site.settings.closes"), labelBeside: true },
+            { kind: "time", name: "opens", label: t("site.settings.opens") },
+            { kind: "time", name: "closes", label: t("site.settings.closes") },
           ],
           newItem: () => ({ days: [], opens: "09:00", closes: "17:00" }),
         },

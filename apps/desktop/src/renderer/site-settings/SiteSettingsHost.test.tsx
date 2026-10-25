@@ -46,4 +46,47 @@ describe("SiteSettingsHost", () => {
     },
     SLOW,
   );
+
+  it(
+    "saves adding, moving and removing opening hours as one undo step (PH2-13)",
+    async () => {
+      const registry = createCommandRegistry();
+      const session = sessionWith();
+      render(
+        <CommandRegistryProvider registry={registry}>
+          <SiteSettingsHost session={session} />
+        </CommandRegistryProvider>,
+      );
+      const user = userEvent.setup({ delay: null });
+      act(() => {
+        registry.run(COMMAND_IDS.siteSettings);
+      });
+
+      await user.click(await screen.findByRole("tab", { name: "Contact & hours" }));
+      // Each added item opens: a day for each, as hours need one.
+      const add = screen.getByRole("button", { name: "Add opening hours" });
+      for (const day of ["Mon", "Tue", "Wed"]) {
+        await user.click(add);
+        await user.click(screen.getByRole("checkbox", { name: day }));
+      }
+      await user.click(
+        screen.getAllByRole("button", { name: "Move Opening hours down" })[0] as HTMLElement,
+      );
+      await user.click(
+        screen.getAllByRole("button", { name: "Remove these hours" })[2] as HTMLElement,
+      );
+      // Nothing is a step until Save.
+      expect(session.history.state.getState().entries).toEqual([]);
+      await user.click(screen.getByRole("button", { name: "Save" }));
+
+      // Monday moved below Tuesday, and Wednesday removed.
+      expect(
+        session.history.document.getState().settings.contact.openingHours.map(({ days }) => days),
+      ).toEqual([["tue"], ["mon"]]);
+      expect(session.history.state.getState().entries.map((entry) => entry.label)).toEqual([
+        "Changed Site Settings: Contact & hours",
+      ]);
+    },
+    SLOW,
+  );
 });
