@@ -95,6 +95,7 @@ test("Ctrl/Cmd+Z in Site Settings' text undoes the text, not the site's last ste
   await page.keyboard.press("ControlOrMeta+z");
   await expect(email).not.toHaveValue("hi@rosas.co");
   await dialog.getByRole("button", { name: "Cancel" }).click();
+  await expect(dialog).toHaveCount(0);
 
   // The site kept its step: its name is still the saved one.
   await chooseFromMenu(app, page, "File", "Site Settings…");
