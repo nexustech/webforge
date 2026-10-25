@@ -187,6 +187,15 @@ const button = defineComponent({
     size: "medium",
     alignment: "left",
   },
+  // A Booking button (F-CM-7): a Button to the owner's booking page, whatever service it is on.
+  // No provider presets and no script of theirs (GA3, Q4).
+  presets: [
+    {
+      id: "booking",
+      label: t("element.bookingButton"),
+      values: { label: t("starter.bookingLabel") },
+    },
+  ],
   render: ({ values, context }) => {
     const label = values.label.trim();
     return (

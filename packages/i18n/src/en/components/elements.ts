@@ -5,6 +5,8 @@
 export const elements = {
   "element.image": "Image",
   "element.button": "Button",
+  // A Button preset (2.11, F-CM-7): "Book now", linking to the owner's booking page.
+  "element.bookingButton": "Booking button",
   "element.spacer": "Spacer",
   "element.divider": "Divider",
   "field.imageWidth": "Width",
@@ -63,6 +65,7 @@ export const elements = {
   "field.listIcon": "Icon instead of markers",
   "field.listIcon.help": "Shown before each item in place of bullets or numbers.",
   "starter.buttonLabel": "Find out more",
+  "starter.bookingLabel": "Book now",
   "starter.columnText": "Write something for this column.",
   "starter.listItem": "List item",
 } as const;

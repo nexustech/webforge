@@ -94,17 +94,18 @@ function AddButton({
   const ref = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     const element = ref.current;
-    // A shared section is placed by a click only: the canvas drags in components, not copies.
+    // A shared section and a preset are placed by a click only: the canvas drags in components.
     if (
       element === null ||
       dragSource === undefined ||
       disabled ||
-      item.sharedSectionId !== undefined
+      item.sharedSectionId !== undefined ||
+      item.preset === true
     ) {
       return;
     }
     return dragSource(element, item.type);
-  }, [dragSource, item.type, item.sharedSectionId, disabled]);
+  }, [dragSource, item.type, item.sharedSectionId, item.preset, disabled]);
   const card = preview?.(item);
   const hasCard = card !== undefined && card !== null;
   // The preview card opens on hover from the pointer's own events: the canvas's drag handle
