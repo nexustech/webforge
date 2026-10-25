@@ -16,7 +16,7 @@ function setUp(
   cacheSize = 300,
 ) {
   const respond = createMediaResponder({
-    readMedia: (hash) => blobs.get(hash),
+    readMedia: async (hash) => blobs.get(hash),
     makeThumbnail,
     cacheSize,
   });

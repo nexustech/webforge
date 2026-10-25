@@ -112,7 +112,7 @@ export async function importFilesAt(
         running.skip(basename(path).slice(0, 255));
         continue;
       }
-      const failed = running.add(file);
+      const failed = await running.add(file);
       if (failed !== undefined) {
         return failed;
       }

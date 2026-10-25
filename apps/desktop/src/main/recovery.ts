@@ -46,7 +46,7 @@ export async function openOrRecover(
   backups: Pick<Backups, "list" | "restore">,
   dialogs: RecoveryDialogs,
 ): Promise<ProjectResult> {
-  const result = session.open(path);
+  const result = await session.open(path);
   if (result.status !== "failed") {
     return result;
   }

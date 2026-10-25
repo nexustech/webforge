@@ -126,9 +126,10 @@ const backupSchedule = createBackupSchedule(backups);
 // The start screen's Recent list (F-SITE-2, 1.8).
 const recentSites = createRecentSites({ dir: app.getPath("userData") });
 const projectSession = new ProjectSession({
-  opened: (store, path) => {
-    void backupSchedule.opened(store, path);
-    recentSites.opened(path, store.info.name);
+  opened: (access, path) => {
+    void backupSchedule.opened(access, path);
+    const name = projectSession.current()?.name;
+    if (name !== undefined) recentSites.opened(path, name);
   },
   committed: () => {
     backupSchedule.committed();
@@ -618,8 +619,16 @@ app.on("second-instance", (_event, argv, workingDirectory) => {
   );
 });
 
-app.on("will-quit", () => {
-  projectSession.close();
+// Closing the site waits for work on its file (at most a few seconds, R13b), so quitting waits for
+// that, then goes on.
+let siteClosed = false;
+app.on("will-quit", (event) => {
+  if (siteClosed) return;
+  event.preventDefault();
+  void projectSession.close().finally(() => {
+    siteClosed = true;
+    app.quit();
+  });
 });
 
 // Webforge quits when its window closes, on macOS too (spec/02 §1, #287): it's a one-window app,

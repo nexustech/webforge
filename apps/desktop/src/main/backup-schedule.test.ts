@@ -1,8 +1,11 @@
 import type { ProjectStore } from "@webforge/storage";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createBackupSchedule } from "./backup-schedule.js";
+import type { SiteStoreAccess } from "./project-session.js";
 
 const store = { info: { projectId: "p" } } as unknown as ProjectStore;
+/** The store as the session hands it on: through the gate (R13b). */
+const access: SiteStoreAccess = async (work) => work(store);
 const HALF_HOUR = 30 * 60 * 1_000;
 
 beforeEach(() => {
@@ -20,7 +23,7 @@ describe("createBackupSchedule", () => {
     const take = vi.fn(async () => ({ path: "b", takenAt: new Date() }));
     const schedule = createBackupSchedule({ take });
 
-    await schedule.opened(store, "/sites/a.wforge");
+    await schedule.opened(access, "/sites/a.wforge");
     expect(take).toHaveBeenCalledWith(store, "/sites/a.wforge");
 
     await vi.advanceTimersByTimeAsync(HALF_HOUR);
@@ -36,14 +39,14 @@ describe("createBackupSchedule", () => {
   it("stops when the site closes, and follows the next site opened", async () => {
     const take = vi.fn(async () => ({ path: "b", takenAt: new Date() }));
     const schedule = createBackupSchedule({ take });
-    await schedule.opened(store, "/sites/a.wforge");
+    await schedule.opened(access, "/sites/a.wforge");
 
     schedule.closed();
     schedule.committed();
     await vi.advanceTimersByTimeAsync(HALF_HOUR);
     expect(take).toHaveBeenCalledTimes(1);
 
-    await schedule.opened(store, "/sites/b.wforge");
+    await schedule.opened(access, "/sites/b.wforge");
     expect(take).toHaveBeenLastCalledWith(store, "/sites/b.wforge");
   });
 
@@ -55,7 +58,7 @@ describe("createBackupSchedule", () => {
     });
     const schedule = createBackupSchedule({ take });
 
-    await expect(schedule.opened(store, "/sites/a.wforge")).resolves.toBeUndefined();
+    await expect(schedule.opened(access, "/sites/a.wforge")).resolves.toBeUndefined();
 
     expect(console.error).toHaveBeenCalledWith(
       "Webforge could not back up the site (code=Error ENOSPC)",

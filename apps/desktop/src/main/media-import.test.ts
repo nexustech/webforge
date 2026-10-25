@@ -8,13 +8,13 @@ import { ProjectSession } from "./project-session.js";
 const tempDir = tempDirFactory("webforge-media-import-");
 const sessions: ProjectSession[] = [];
 // Registered after tempDirFactory's hook, so it runs first: the files close before their folder goes.
-afterEach(() => {
-  for (const session of sessions.splice(0)) session.close();
+afterEach(async () => {
+  for (const session of sessions.splice(0)) await session.close();
 });
 
-function openSession(): ProjectSession {
+async function openSession(): Promise<ProjectSession> {
   const session = new ProjectSession();
-  session.create(join(tempDir(), "Bakery.wforge"));
+  await session.create(join(tempDir(), "Bakery.wforge"));
   sessions.push(session);
   return session;
 }
@@ -38,11 +38,11 @@ function pngClaiming(width: number, height: number): Uint8Array {
 }
 
 describe("importMediaFiles", () => {
-  it("stores the originals byte for byte and describes them as Media items", () => {
-    const session = openSession();
+  it("stores the originals byte for byte and describes them as Media items", async () => {
+    const session = await openSession();
     const photo = heroPhoto();
 
-    const result = importMediaFiles(
+    const result = await importMediaFiles(
       session,
       [
         { fileName: "Shop Front.JPG", data: photo },
@@ -79,15 +79,15 @@ describe("importMediaFiles", () => {
     });
     if (result.status !== "imported") return;
     const [image, file] = result.items;
-    expect(new Uint8Array(session.readMedia(image?.hash ?? "")?.data ?? [])).toEqual(photo);
-    expect(new Uint8Array(session.readMedia(file?.hash ?? "")?.data ?? [])).toEqual(pdf);
+    expect(new Uint8Array((await session.readMedia(image?.hash ?? ""))?.data ?? [])).toEqual(photo);
+    expect(new Uint8Array((await session.readMedia(file?.hash ?? ""))?.data ?? [])).toEqual(pdf);
   });
 
-  it("gives files with the same name different names, and imports the same bytes twice", () => {
-    const session = openSession();
+  it("gives files with the same name different names, and imports the same bytes twice", async () => {
+    const session = await openSession();
     const photo = heroPhoto();
 
-    const result = importMediaFiles(
+    const result = await importMediaFiles(
       session,
       [
         { fileName: "shop.jpg", data: photo },
@@ -104,10 +104,10 @@ describe("importMediaFiles", () => {
     ]);
   });
 
-  it("rejects files Media doesn't take and imports the rest", () => {
-    const session = openSession();
+  it("rejects files Media doesn't take and imports the rest", async () => {
+    const session = await openSession();
 
-    const result = importMediaFiles(session, [
+    const result = await importMediaFiles(session, [
       { fileName: "logo.gif", data: new TextEncoder().encode("GIF89a") },
       { fileName: "photo.jpg", data: new TextEncoder().encode("not really a JPEG") },
       { fileName: "poster.png", data: undefined },
@@ -130,17 +130,17 @@ describe("importMediaFiles", () => {
     });
   });
 
-  it("fails without an open site", () => {
-    expect(importMediaFiles(new ProjectSession(), [{ fileName: "prices.pdf", data: pdf }])).toEqual(
-      { status: "failed", reason: "no-site" },
-    );
+  it("fails without an open site", async () => {
+    expect(
+      await importMediaFiles(new ProjectSession(), [{ fileName: "prices.pdf", data: pdf }]),
+    ).toEqual({ status: "failed", reason: "no-site" });
   });
 });
 
 describe("ProjectSession.readMedia", () => {
-  it("serves only Media files, never a site document or a missing blob", () => {
-    const session = openSession();
-    const stored = session.storeAsset({
+  it("serves only Media files, never a site document or a missing blob", async () => {
+    const session = await openSession();
+    const stored = await session.storeAsset({
       mediaId: "doc",
       data: new TextEncoder().encode("{}"),
       mime: "application/json",
@@ -148,8 +148,8 @@ describe("ProjectSession.readMedia", () => {
     });
 
     expect(stored.status).toBe("stored");
-    expect(stored.status === "stored" && session.readMedia(stored.hash)).toBeUndefined();
-    expect(session.readMedia("0".repeat(64))).toBeUndefined();
-    expect(new ProjectSession().readMedia("0".repeat(64))).toBeUndefined();
+    expect(stored.status === "stored" && (await session.readMedia(stored.hash))).toBeUndefined();
+    expect(await session.readMedia("0".repeat(64))).toBeUndefined();
+    expect(await new ProjectSession().readMedia("0".repeat(64))).toBeUndefined();
   });
 });
