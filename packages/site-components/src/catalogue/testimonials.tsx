@@ -5,6 +5,7 @@ import { defineComponent } from "../define.js";
 import { defineSection } from "../frame.js";
 import { LucideIcon } from "../icons.js";
 import type { ComponentDef } from "../library.js";
+import { HOVER_FIELD, hoverClasses } from "../motion.js";
 import { Picture } from "../picture.js";
 import type { RenderContext } from "../schema.js";
 import { BODY_TEXT_CLASSES, SectionTitle } from "../typography.js";
@@ -99,12 +100,15 @@ function TestimonialView({
   role,
   photo,
   context,
+  hover,
 }: {
   readonly quote: ReactNode;
   readonly name: ReactNode;
   readonly role: ReactNode;
   readonly photo: ImageValue | undefined;
   readonly context: RenderContext;
+  /** Its hover effect's classes, with a space before them (F-DS-5). */
+  readonly hover: string;
 }) {
   const layout = useContext(TestimonialsLayoutContext);
   const caption = (
@@ -115,7 +119,7 @@ function TestimonialView({
   );
   if (layout === "photos") {
     return (
-      <figure className="site-testimonial flex items-start gap-6">
+      <figure className={`site-testimonial flex items-start gap-6${hover}`}>
         <Photo photo={photo} context={context} className="size-24" />
         <div className="space-y-4">
           <blockquote className={BODY_TEXT_CLASSES}>
@@ -128,7 +132,7 @@ function TestimonialView({
   }
   if (layout === "large") {
     return (
-      <figure className="site-testimonial flex flex-col items-center gap-6 text-center">
+      <figure className={`site-testimonial flex flex-col items-center gap-6 text-center${hover}`}>
         {/* A pull quote, larger than running text. */}
         <blockquote className="text-2xl leading-snug italic">
           <p>{quote}</p>
@@ -141,7 +145,7 @@ function TestimonialView({
     );
   }
   return (
-    <figure className="site-testimonial flex flex-col gap-4 rounded-box bg-base-200 p-6">
+    <figure className={`site-testimonial flex flex-col gap-4 rounded-box bg-base-200 p-6${hover}`}>
       <LucideIcon name="quote" className="size-8 text-primary" />
       <blockquote className={`flex-1 ${BODY_TEXT_CLASSES}`}>
         <p>{quote}</p>
@@ -163,6 +167,8 @@ const testimonial = defineComponent({
     name: { kind: "text", label: t("field.testimonialName"), inline: true },
     role: { kind: "text", label: t("field.testimonialRole"), inline: true },
     photo: { kind: "media", label: t("field.photo") },
+    // A card lifts, grows or casts a shadow under the pointer (F-DS-5, 2.12).
+    hover: HOVER_FIELD,
   },
   defaults: {
     quote: t("starter.testimonialQuote"),
@@ -176,6 +182,7 @@ const testimonial = defineComponent({
       role={values.role}
       photo={values.photo}
       context={context}
+      hover={hoverClasses(values.hover)}
     />
   ),
 });

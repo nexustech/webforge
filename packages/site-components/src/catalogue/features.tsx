@@ -4,6 +4,7 @@ import { defineComponent } from "../define.js";
 import { defineSection } from "../frame.js";
 import { LucideIcon } from "../icons.js";
 import type { ComponentDef } from "../library.js";
+import { HOVER_FIELD, hoverClasses } from "../motion.js";
 import { BodyText, SectionTitle } from "../typography.js";
 
 const FEATURES_LAYOUTS = ["cards", "centred", "list"] as const;
@@ -74,8 +75,11 @@ function FeatureView({
   icon,
   title,
   text,
+  hover,
 }: {
   readonly icon: string | undefined;
+  /** Its hover effect's classes, with a space before them (F-DS-5). */
+  readonly hover: string;
   readonly title: ReactNode;
   readonly text: ReactNode;
 }) {
@@ -90,7 +94,7 @@ function FeatureView({
     );
   if (layout === "list") {
     return (
-      <div className="site-feature flex items-start gap-4">
+      <div className={`site-feature flex items-start gap-4${hover}`}>
         {symbol}
         <div>
           <SectionTitle size="small">{title}</SectionTitle>
@@ -101,11 +105,11 @@ function FeatureView({
   }
   return (
     <div
-      className={
+      className={`${
         layout === "cards"
           ? "site-feature flex flex-col gap-4 rounded-box bg-base-200 p-6"
           : "site-feature flex flex-col gap-4 text-center"
-      }
+      }${hover}`}
     >
       {symbol}
       <SectionTitle size="small">{title}</SectionTitle>
@@ -122,6 +126,8 @@ const feature = defineComponent({
     icon: { kind: "icon", label: t("field.icon") },
     title: { kind: "text", label: t("field.title"), inline: true },
     text: { kind: "richtext", label: t("field.text"), inline: true },
+    // A card lifts, grows or casts a shadow under the pointer (F-DS-5, 2.12).
+    hover: HOVER_FIELD,
   },
   // No icon: one the person removes stays removed (a default would come back in its place). The
   // section's starter features each have one.
@@ -130,7 +136,12 @@ const feature = defineComponent({
     text: `<p>${t("starter.featureText")}</p>`,
   },
   render: ({ values }) => (
-    <FeatureView icon={values.icon} title={values.title} text={values.text} />
+    <FeatureView
+      icon={values.icon}
+      title={values.title}
+      text={values.text}
+      hover={hoverClasses(values.hover)}
+    />
   ),
 });
 

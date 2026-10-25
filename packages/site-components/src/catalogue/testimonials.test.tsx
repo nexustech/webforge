@@ -115,4 +115,16 @@ describe("the Testimonials section", () => {
     expect(doc.querySelector(".site-testimonial img")).toBeNull();
     expect(doc.querySelector(".site-testimonial blockquote")?.textContent).toBe("Lovely.");
   });
+
+  it("casts a shadow under the pointer when set, and nothing unless set", () => {
+    const plain = page(render());
+    const shadowed = page(
+      render({
+        items: [{ type: "Testimonial", props: { id: "s", quote: "Great.", hover: "shadow" } }],
+      }),
+    );
+
+    expect(plain.querySelector(".site-testimonial")?.className).not.toContain("hover:");
+    expect(shadowed.querySelector(".site-testimonial")?.className).toContain("hover:shadow-lg");
+  });
 });

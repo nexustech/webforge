@@ -74,4 +74,18 @@ describe("the Features section", () => {
     expect(item?.querySelector("h3")?.textContent).toBe("Fresh bread");
     expect(item?.querySelector("svg")).toBeNull();
   });
+
+  it("lifts, grows or shadows a feature under the pointer as it's set, and does nothing unless set", () => {
+    const plain = page(render());
+    const lifting = page(
+      render({
+        items: [{ type: "Feature", props: { id: "lift", title: "Fresh", hover: "lift" } }],
+      }),
+    );
+
+    expect(plain.querySelector(".site-feature")?.className).not.toContain("hover:");
+    expect(lifting.querySelector(".site-feature")?.className).toContain(
+      "motion-safe:hover:-translate-y-1",
+    );
+  });
 });
