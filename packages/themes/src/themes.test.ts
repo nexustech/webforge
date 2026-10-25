@@ -360,11 +360,28 @@ describe("themeCss (2.1)", () => {
     expect(css({ effects: { depth: false, noise: true } })).toMatch(/--depth: 0;\n {2}--noise: 1;/);
     expect(css({ border: "thick" })).toContain("--border: 2px;");
     expect(css({ spacing: "compact" })).toContain("--spacing: 0.225rem;");
-    expect(css({ shadow: "none" })).toContain("--wf-shadow: none;");
-    expect(css({ shadow: "strong" })).toContain("--wf-shadow: 0 10px 30px rgb(0 0 0 / 0.2);");
-    expect(css({ buttons: { shape: "square", size: "s", style: "outline" } })).toContain(
-      "--wf-button-radius: 0rem;\n  --wf-button-height: 2rem;",
+    // The shadow scale (#423): none, Tailwind's own for soft, or darker.
+    expect(css({ shadow: "none" })).toContain("--shadow-md: 0 0 #0000;");
+    expect(css({ shadow: "soft" })).not.toContain("--shadow-md:");
+    expect(css({ shadow: "strong" })).toContain(
+      "--shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.2), 0 2px 4px -2px rgb(0 0 0 / 0.2);",
     );
+    // The buttons (#423): their shape and size on every button, their style on the main ones.
+    const square = css({ buttons: { shape: "square", size: "s", style: "outline" } });
+    expect(square).toContain("--wf-button-radius: 0rem;\n  --wf-button-height: 2rem;");
+    expect(square).toContain("--radius-field: var(--wf-button-radius);");
+    expect(square).toContain("--size: var(--wf-button-height);");
+    expect(square).toContain(
+      // Never a Button set to Filled (PH2-14).
+      ".btn-primary:not(.btn-outline, .btn-ghost, .btn-link, .wf-filled) {\n    @apply btn-outline;",
+    );
+    const ghost = css({ buttons: { shape: "pill", size: "m", style: "ghost" } });
+    expect(ghost).toContain("@apply btn-ghost;");
+    const filled = css({ buttons: { shape: "pill", size: "m", style: "filled" } });
+    expect(filled).not.toContain("@apply");
+    // Rounded buttons keep the theme's field corners, as they always had.
+    const rounded = css({ buttons: { shape: "rounded", size: "m", style: "filled" } });
+    expect(rounded).not.toContain("--radius-field: var(--wf-button-radius);");
     expect(css({ radius: { box: "none", field: "full", selector: "s" } })).toContain(
       "--radius-selector: 0.25rem;\n  --radius-field: 9999px;\n  --radius-box: 0rem;",
     );

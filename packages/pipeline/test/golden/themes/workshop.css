@@ -93,6 +93,13 @@
   --text-small: 0.875rem;
   --text-small--line-height: 1.5;
   --text-small--font-weight: 400;
+  --shadow-2xs: 0 1px rgb(0 0 0 / 0.1);
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.1);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.2), 0 1px 2px -1px rgb(0 0 0 / 0.2);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.2), 0 2px 4px -2px rgb(0 0 0 / 0.2);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.2), 0 4px 6px -4px rgb(0 0 0 / 0.2);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.2), 0 8px 10px -6px rgb(0 0 0 / 0.2);
+  --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.5);
 }
 @media (width < 48rem) {
   :root {
@@ -194,7 +201,6 @@
   --wf-link-hover-decoration: underline;
   --wf-button-radius: 0rem;
   --wf-button-height: 3rem;
-  --wf-shadow: 0 10px 30px rgb(0 0 0 / 0.2);
   --wf-color-primary-50: oklch(97% 0.0475 45);
   --wf-color-primary-100: oklch(94% 0.076 45);
   --wf-color-primary-200: oklch(88% 0.114 45);
@@ -373,4 +379,12 @@
   --wf-color-error-800: oklch(38% 0.1105 27);
   --wf-color-error-900: oklch(31% 0.0975 27);
   --wf-color-error-950: oklch(23% 0.078 27);
+}
+@layer utilities {
+  .btn:not(.btn-circle, .btn-square) {
+    --radius-field: var(--wf-button-radius);
+  }
+  .btn:not(.btn-xs, .btn-sm, .btn-md, .btn-lg, .btn-xl, .btn-circle, .btn-square) {
+    --size: var(--wf-button-height);
+  }
 }
