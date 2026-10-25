@@ -112,6 +112,8 @@ const recentSiteSchema = z.strictObject({
   id: z.string().regex(/^[0-9a-f]{32}$/),
   name: z.string().min(1),
   fileName: z.string().min(1),
+  /** The name of the folder the file is in, never its path. */
+  folder: z.string(),
   lastOpened: z.iso.datetime(),
   lastEdited: z.iso.datetime().nullable(),
   /** A JPEG data URL of the canvas when the site was last closed. */
@@ -121,6 +123,8 @@ const recentSiteSchema = z.strictObject({
     .nullable(),
   /** The file is no longer where it was. */
   missing: z.boolean(),
+  /** Kept at the top of the list (2.14b). */
+  pinned: z.boolean(),
 });
 
 /** A site on the start screen's Recent list. */
@@ -187,6 +191,12 @@ export const projectChannels = {
     request: z.tuple([z.string().regex(/^[0-9a-f]{32}$/)]),
     response: projectResultSchema,
   },
+  /** Pins a site to the top of the Recent list, or unpins it (2.14b). */
+  pinRecentSite: {
+    channel: "project:pin-recent",
+    request: z.tuple([z.string().regex(/^[0-9a-f]{32}$/), z.boolean()]),
+    response: z.null(),
+  },
   /** Takes a site off the Recent list; its file is untouched. */
   removeRecentSite: {
     channel: "project:remove-recent",
@@ -233,6 +243,8 @@ export interface ProjectApi {
   listRecent(): Promise<RecentSite[]>;
   /** Opens a site from the Recent list. */
   openRecent(id: string): Promise<ProjectResult>;
+  /** Pins a site to the top of the Recent list, or unpins it. */
+  pinRecent(id: string, pinned: boolean): Promise<null>;
   /** Takes a site off the Recent list. */
   removeRecent(id: string): Promise<null>;
   /** Remembers the editor state with the open site, if it is still the opening `sessionId` names. */

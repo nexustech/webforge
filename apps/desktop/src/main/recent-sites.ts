@@ -8,10 +8,10 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { basename, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { z } from "zod";
 
-/** How many sites the start screen lists. */
+/** How many sites the start screen lists, besides those pinned, which stay however many there are. */
 const MAX_SITES = 12;
 
 const entrySchema = z.strictObject({
@@ -21,6 +21,8 @@ const entrySchema = z.strictObject({
   name: z.string().min(1),
   lastOpened: z.iso.datetime(),
   lastEdited: z.iso.datetime().nullable(),
+  /** Kept at the top of the start screen (2.14b, LF-10). A list from before pinning reads as none. */
+  pinned: z.boolean().default(false),
 });
 
 const fileSchema = z.strictObject({ version: z.literal(1), sites: z.array(entrySchema) });
@@ -33,13 +35,26 @@ export type RecentSite = {
   readonly name: string;
   /** The file's name, e.g. `Rosa's Bakery.wforge`; the full path stays in the main process. */
   readonly fileName: string;
+  /** The name of the folder the file is in, e.g. `Documents` (2.14b). */
+  readonly folder: string;
   readonly lastOpened: string;
   readonly lastEdited: string | null;
   /** A JPEG data URL of the canvas when the site was last closed, if there is one. */
   readonly thumbnail: string | null;
   /** The file is no longer where it was (moved, deleted, on a disconnected drive). */
   readonly missing: boolean;
+  /** Kept at the top of the list (2.14b). */
+  readonly pinned: boolean;
 };
+
+/**
+ * `sites`, most recently opened first, without the oldest unpinned ones past `max`: pinned sites
+ * stay, however many there are.
+ */
+function capped(sites: readonly Entry[], max: number): Entry[] {
+  let unpinned = 0;
+  return sites.filter((site) => site.pinned || unpinned++ < max);
+}
 
 /** The id of a site file: stable for one path, case-insensitive on Windows and macOS. */
 export function recentSiteId(path: string): string {
@@ -97,7 +112,7 @@ export function createRecentSites(options: {
     if (next === undefined) {
       return;
     }
-    write([next, ...sites.filter((site) => site.id !== id)].slice(0, max));
+    write(capped([next, ...sites.filter((site) => site.id !== id)], max));
   };
 
   return {
@@ -109,6 +124,7 @@ export function createRecentSites(options: {
         name,
         lastOpened: now().toISOString(),
         lastEdited: existing?.lastEdited ?? null,
+        pinned: existing?.pinned ?? false,
       }));
     },
 
@@ -136,20 +152,27 @@ export function createRecentSites(options: {
       writeFileSync(thumbnailPath(id), jpeg);
     },
 
-    /** The list, most recently opened first. */
+    /** The list: pinned sites first, then the rest, each most recently opened first. */
     list(): RecentSite[] {
-      return read().map((site) => {
+      const sites = read();
+      const ordered = [
+        ...sites.filter((site) => site.pinned),
+        ...sites.filter((site) => !site.pinned),
+      ];
+      return ordered.map((site) => {
         const thumbnail = thumbnailPath(site.id);
         return {
           id: site.id,
           name: site.name,
           fileName: basename(site.path),
+          folder: basename(dirname(site.path)),
           lastOpened: site.lastOpened,
           lastEdited: site.lastEdited,
           thumbnail: existsSync(thumbnail)
             ? `data:image/jpeg;base64,${readFileSync(thumbnail).toString("base64")}`
             : null,
           missing: !existsSync(site.path),
+          pinned: site.pinned,
         };
       });
     },
@@ -157,6 +180,14 @@ export function createRecentSites(options: {
     /** The path of a listed site, for opening it; `undefined` for an unknown id. */
     pathOf(id: string): string | undefined {
       return read().find((site) => site.id === id)?.path;
+    },
+
+    /** Pins a listed site to the top of the list, or unpins it (2.14b). */
+    setPinned(id: string, pinned: boolean): void {
+      const sites = read();
+      if (sites.some((site) => site.id === id && site.pinned !== pinned)) {
+        write(sites.map((site) => (site.id === id ? { ...site, pinned } : site)));
+      }
     },
 
     /** Takes a site off the list (its file is untouched). */
