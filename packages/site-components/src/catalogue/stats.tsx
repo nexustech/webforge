@@ -85,7 +85,7 @@ function StatView({ number, label }: { readonly number: ReactNode; readonly labe
     <div
       className={
         layout === "cards"
-          ? "site-stat flex flex-col items-center gap-1 rounded-box bg-base-200 p-6 text-center"
+          ? "site-stat wf-card flex flex-col items-center gap-1 rounded-box bg-base-200 p-6 text-center"
           : layout === "split"
             ? "site-stat flex flex-col gap-1"
             : "site-stat flex flex-col items-center gap-1 text-center"

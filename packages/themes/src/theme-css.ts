@@ -102,6 +102,44 @@ const HOVER_SHADOW: Readonly<Record<ThemeTokens["shadow"], string>> = {
   strong: "0 10px 15px -3px rgb(0 0 0 / 0.2), 0 4px 6px -4px rgb(0 0 0 / 0.2)",
 };
 
+/**
+ * A raised card's shadow (2.13d): the theme's medium shadow, or Tailwind's own where the theme has
+ * none, so a raised card never looks flat.
+ */
+const RAISED_SHADOW: Readonly<Record<ThemeTokens["shadow"], string>> = {
+  none: "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
+  soft: "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
+  strong: "0 4px 6px -1px rgb(0 0 0 / 0.2), 0 2px 4px -2px rgb(0 0 0 / 0.2)",
+};
+
+/** Headings' letter spacing for each tracking token (2.13d). */
+const HEADING_TRACKING: Readonly<Record<ThemeTokens["headings"]["tracking"], number>> = {
+  tight: -0.02,
+  normal: 0,
+  wide: 0.04,
+};
+
+/** Titles in the heading font: headings 1–6, whatever the element that sets them. */
+const TITLES = ":is(h1, h2, h3, h4, h5, h6).font-heading";
+
+/** The letter spacing capitals and small capitals add, which they need to read well (2.13d). */
+const CAPS_TRACKING = 0.06;
+
+/** A photo's corners for each corner token (2.13d); `rounded` keeps the box corners. */
+const IMAGE_RADIUS: Readonly<Record<ThemeTokens["images"]["corners"], string | undefined>> = {
+  square: "0",
+  rounded: undefined,
+  soft: "1.5rem",
+};
+
+/**
+ * The sections every second one of a page is (2.13d): on the exported page, `main`'s; on the
+ * canvas, those in the page's drop zone (`wf-sections`), where each is in a wrapper of its own.
+ * Not a section on reversed colours, which keeps its own.
+ */
+const EVEN_SECTIONS =
+  ":is(#main > section:nth-child(even), .wf-sections > :nth-child(even) > section):not([data-theme])";
+
 /** daisyUI's look the theme gives its main buttons (#423): their own, or outline or ghost. */
 const BUTTON_LOOK: Readonly<Record<ThemeTokens["buttons"]["style"], string | undefined>> = {
   filled: undefined,
@@ -201,6 +239,61 @@ function buttonRules(tokens: ThemeTokens): string[] {
 }
 
 /**
+ * The theme's style (2.13d, PH2-15), each only when it isn't as every site always looked, so the
+ * default theme's stylesheet is as it was:
+ * - headings (titles in the heading font) in capitals or small capitals, and their tracking;
+ * - cards (`wf-card`: Features, Stats, Team and Testimonials) outlined or raised on the page's
+ *   surface instead of flat on the second one;
+ * - photos (an `img` with the box corners) square or softer;
+ * - every second section on the second surface, under the classes of sections that have colours
+ *   of their own (`@layer components`), with flat cards on the page's surface there.
+ */
+function styleRules(tokens: ThemeTokens): string[] {
+  const { headings, cards, images, sections } = tokens;
+  const caps = headings.case !== "normal";
+  const tracking = HEADING_TRACKING[headings.tracking] + (caps ? CAPS_TRACKING : 0);
+  const heading = [
+    ...(headings.case === "uppercase" ? ["    text-transform: uppercase;"] : []),
+    ...(headings.case === "small-caps" ? ["    font-variant-caps: all-small-caps;"] : []),
+    ...(tracking === 0 ? [] : [`    letter-spacing: ${Number(tracking.toFixed(2))}em;`]),
+  ];
+  const card =
+    cards.style === "outlined"
+      ? ["    border: var(--border) solid var(--color-base-300);"]
+      : cards.style === "raised"
+        ? [`    box-shadow: ${RAISED_SHADOW[tokens.shadow]};`]
+        : [];
+  const imageRadius = IMAGE_RADIUS[images.corners];
+  const alternating = sections.rhythm === "alternating";
+  const utilities = [
+    // Titles, never a pull quote or a price in the heading font.
+    ...(heading.length === 0 ? [] : [`  ${TITLES} {`, ...heading, "  }"]),
+    // `section` outweighs the cards' own background class.
+    ...(card.length === 0
+      ? []
+      : ["  section .wf-card {", "    background-color: var(--color-base-100);", ...card, "  }"]),
+    ...(imageRadius === undefined
+      ? []
+      : ["  img.rounded-box {", `    border-radius: ${imageRadius};`, "  }"]),
+    ...(alternating && cards.style === "flat"
+      ? [`  ${EVEN_SECTIONS} .wf-card {`, "    background-color: var(--color-base-100);", "  }"]
+      : []),
+  ];
+  return [
+    ...(alternating
+      ? [
+          "@layer components {",
+          `  ${EVEN_SECTIONS} {`,
+          "    background-color: var(--color-base-200);",
+          "  }",
+          "}",
+        ]
+      : []),
+    ...(utilities.length === 0 ? [] : ["@layer utilities {", ...utilities, "}"]),
+  ];
+}
+
+/**
  * The site's theme as Tailwind and daisyUI source (2.1), for the site's stylesheet after Tailwind's
  * own imports:
  * - daisyUI with none of its built-in themes, and the site's own: every colour role, the corners,
@@ -215,7 +308,8 @@ function buttonRules(tokens: ThemeTokens): string[] {
  *   16.4–17 can't compute relative colours;
  * - the shadow scale (`shadow-*`), the links' underline and the buttons' shape and height as
  *   `--wf-*` variables, which running text and the buttons' rules below use (#423);
- * - the buttons in the theme's shape, size and style ({@link buttonRules}).
+ * - the buttons in the theme's shape, size and style ({@link buttonRules});
+ * - its headings, cards, photos and sections' rhythm ({@link styleRules}).
  *
  * Every value is a token the model checked, so nothing from a site can reach the CSS as written.
  */
@@ -283,5 +377,6 @@ export function themeCss(tokens: ThemeTokens): string {
     ...roleShades(inverse),
     "}",
     ...buttonRules(tokens),
+    ...styleRules(tokens),
   ].join("\n");
 }

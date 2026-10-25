@@ -65,6 +65,11 @@ const imported = (items: MediaMeta[]): MediaImportResult => ({
 async function render(api: Partial<{ import: () => Promise<MediaImportResult> }> = {}) {
   const media = {
     import: vi.fn(api.import ?? (async () => imported([photo]))),
+    // As for files from a web page: none has a path, so all are sent as bytes.
+    importFiles: vi.fn(async (_session: string, files: readonly File[]) => ({
+      result: imported([]),
+      withoutPath: files.map((_, index) => index),
+    })),
     choose: vi.fn(async () => imported([photo])),
   };
   const notify = vi.fn();

@@ -70,6 +70,30 @@ export type FontRef = z.infer<typeof fontRefSchema>;
  */
 export const LINK_UNDERLINES = ["always", "hover"] as const;
 
+/**
+ * How headings are set (2.13d, PH2-15): as written, in capitals, or in small capitals. Capitals
+ * and small capitals get a little tracking of their own on top of {@link HEADING_TRACKINGS}.
+ */
+export const HEADING_CASES = ["normal", "uppercase", "small-caps"] as const;
+
+/** The letter spacing of headings (2.13d): tighter, as the font has it, or wider. */
+export const HEADING_TRACKINGS = ["tight", "normal", "wide"] as const;
+
+/**
+ * How cards look (2.13d): Features, Stats, Team and Testimonials cards. Flat on the second surface
+ * (as they always were), outlined on the page with a border, or raised on the page with a shadow.
+ */
+export const CARD_STYLES = ["flat", "outlined", "raised"] as const;
+
+/** The corners of photos (2.13d): square, the theme's box corners (as always), or softer. */
+export const IMAGE_CORNERS = ["square", "rounded", "soft"] as const;
+
+/**
+ * How a page's sections follow one another (2.13d): all on the page's surface, or every second one
+ * on the second surface. A section with colours of its own keeps them.
+ */
+export const SECTION_RHYTHMS = ["plain", "alternating"] as const;
+
 /** Corner sizes, smallest first (C4: people choose a size, never a value). */
 export const RADIUS_TOKENS = ["none", "s", "m", "l", "xl", "full"] as const;
 
@@ -176,6 +200,17 @@ export const themeTokensSchema = z.strictObject({
   }),
   /** The shadow scale: how strong shadows are, if any. */
   shadow: z.enum(["none", "soft", "strong"]),
+  /** Headings' case and letter spacing (2.13d). */
+  headings: z.strictObject({
+    case: z.enum(HEADING_CASES),
+    tracking: z.enum(HEADING_TRACKINGS),
+  }),
+  /** How cards look (2.13d). */
+  cards: z.strictObject({ style: z.enum(CARD_STYLES) }),
+  /** The corners of photos (2.13d). */
+  images: z.strictObject({ corners: z.enum(IMAGE_CORNERS) }),
+  /** How a page's sections follow one another (2.13d). */
+  sections: z.strictObject({ rhythm: z.enum(SECTION_RHYTHMS) }),
 });
 
 /** The site's theme tokens; see {@link themeTokensSchema}. */
@@ -273,4 +308,8 @@ export const DEFAULT_THEME: ThemeTokens = frozen({
   links: { underline: "always" },
   buttons: { shape: "rounded", size: "m", style: "filled" },
   shadow: "soft",
+  headings: { case: "normal", tracking: "normal" },
+  cards: { style: "flat" },
+  images: { corners: "rounded" },
+  sections: { rhythm: "plain" },
 });

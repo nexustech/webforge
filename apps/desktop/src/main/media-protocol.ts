@@ -24,7 +24,9 @@ export type MediaResponderOptions = {
 const notFound = () => new Response(null, { status: 404 });
 
 function image(data: Uint8Array, type: string): Response {
-  return new Response(new Uint8Array(data), {
+  // The bytes as they are, not a copy: copying a 50 MB original for every request held up the
+  // main thread (R13b). They come from SQLite or the thumbnail worker, never from shared memory.
+  return new Response(data as Uint8Array<ArrayBuffer>, {
     headers: {
       "Content-Type": type,
       // The URL names the bytes by their hash, so they never change.

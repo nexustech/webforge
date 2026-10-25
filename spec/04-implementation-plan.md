@@ -44,7 +44,7 @@ Still open in Phase 0: publishing spikes (Netlify, FTP/SFTP), signed installers 
 Current code size (approx. lines): desktop 2.7k · engine 1.6k · history 1.6k · pipeline 1.1k · site-components 1.0k · storage 0.6k · model 0.3k. `editor-ui`, `publish` and `themes` are placeholders.
 
 ## 3. Timeline
-**Total: 364 working days** (≈ 73 weeks of effort; 335 before the 22–24 Oct additions) including the 4-week beta. Baseline v1.0 (sequential, for the original 277 days, before the Phase 1 re-plan) at 100% of estimates: **19 Nov 2027**; with +25% contingency: **25 Feb 2028**.
+**Total: 367 working days** (≈ 73 weeks of effort; 335 before the 22–25 Oct additions) including the 4-week beta. Baseline v1.0 (sequential, for the original 277 days, before the Phase 1 re-plan) at 100% of estimates: **19 Nov 2027**; with +25% contingency: **25 Feb 2028**.
 
 **Re-plan, 20 Oct 2026:** Phase 1 runs in three concurrent streams (82 days of effort in about 28 working days, see [Phase 1](#phase-1-editor-core)). Phase 2–5 dates and the v1.0 date are re-planned at the Phase 1 exit review.
 
@@ -65,6 +65,8 @@ Current code size (approx. lines): desktop 2.7k · engine 1.6k · history 1.6k �
 **Scope change, 24 Oct 2026 (Webflow and Pinegrow reviews, WF-1…6, PG-1…9):** +2 days from [competitors/01](../research/competitors/01-webflow.md) and [competitors/02](../research/competitors/02-pinegrow.md): palette from an image in Theme Studio (2.3, in 2.3b, +1 day, PG-2) and *Try an example* on the start screen (2.14, +1 day, PG-3). All devices side by side on the canvas, before/after in Version History, light and dark side by side and approve-before-apply for AI edits are v1.1 (WF-1/PG-1, PG-4, PG-5, WF-2); GSAP is never a licence exception (PG-6, standards §3). The stream queues are unchanged.
 
 **Scope change, 25 Oct 2026 (R13):** R13 2 → 6 days (25 Oct 2026): measured 1.4–2.0 s main-thread block on a 50 MB import; the blob write moves to a worker. [#246](https://github.com/nexustech/webforge/issues/246) is split into R13a–R13d ([#407](https://github.com/nexustech/webforge/issues/407)–[#410](https://github.com/nexustech/webforge/issues/410)): incremental commit validation (1 day), imports off the main thread behind an async store gate (2.5 days), `main/index.ts` as the entry point only (1.5 days), and the clipboard cache and frame navigation (0.5 day). Like the other review items it comes out of contingency (§10.6). Stream B's queue grows by 4 raw days, about 2 working days at the plan's pace, after 2.11 (5 days) moved to stream C, so the forecast is unchanged.
+
+**Scope change, 25 Oct 2026 (theme range, PH2-15):** 2.13 14 → 17 days. The product owner reviewed themes 1–4 (2.13a) side by side and found them too similar; they chose **A: themes differ in style, not layout** (PH2-15). A new sub-issue, 2.13d ([#434](https://github.com/nexustech/webforge/issues/434), 3 days, stream C between 2.14a and 2.14b), adds style tokens (heading case and tracking, card style, photo corners, the sections' rhythm) and redoes themes 1–4 so no two share a heading font category or a colour character, with a distinctness test. Section layouts stay with the templates (2.15) and each section's settings, so switching theme never rearranges a site. At the content pace (0.7) stream C's queue grows by about 2 working days.
 
 **Re-plan, 23 Oct 2026 (Phase 2):** Phase 2 was planned ahead of the Phase 1 exit so each stream can continue straight into it: three streams, items over 5 days split into sub-issues, Phase 1's actual pace (0.39 of estimates) applied as 0.5 for engineering and 0.7 for content. Code-complete about **1 Dec 2026** (9 Dec with +25%) after the plan review's levelling below and the 24 Oct building-block items (26 Nov and 4 Dec before them); milestone due 11 Dec 2026. See [Phase 2](#phase-2-design--components). The table below and the Gantt chart still show the baseline dates for Phases 2–5.
 
@@ -147,7 +149,7 @@ gantt
     2.10 Carousel element :t2_10, 2027-04-29, 6d
     2.11 Elements – tabs, commerce, forms, embeds and c… :t2_11, after t2_12, 5d
     2.12 Animations and hover effects :t2_12, 2027-05-17, 2d
-    2.13 Design 10–12 curated themes :crit, t2_13, 2027-05-19, 14d
+    2.13 Design 10–12 curated themes :crit, t2_13, 2027-05-19, 17d
     2.14 Template format and New Site flow :crit, t2_14, after t2_13, 7d
     2.15 Templates – 8 starter sites :crit, t2_15, 2027-06-14, 20d
     2.16 Component accessibility and visual regression… :t2_16, 2027-07-12, 3d
@@ -623,7 +625,7 @@ Close the visible gap to Bootstrap Studio 9.0.1 within the IP rule ([product/07]
 
 ### Phase 2: Design & components
 **Goal:** The full component catalogue (19 sections with ~45 layout variants, 17 elements), 10–12 curated themes, fonts and the 8 templates, all accessible and visually tested.  
-**Effort:** 125 days · **Scheduled:** 2 Mar 2027 → 14 Jul 2027 (baseline; 22 Oct 2026: 2.6 and 2.9 +1 day each, 2.3 +2, 2.14 +1, 2.17 added; 23 Oct: 2.9 +1, 2.14 +2, 2.18 added; 24 Oct: 2.19–2.21 added, 2.3 +1 and 2.14 +1 for PG-2 and PG-3)  
+**Effort:** 128 days · **Scheduled:** 2 Mar 2027 → 14 Jul 2027 (baseline; 22 Oct 2026: 2.6 and 2.9 +1 day each, 2.3 +2, 2.14 +1, 2.17 added; 23 Oct: 2.9 +1, 2.14 +2, 2.18 added; 24 Oct: 2.19–2.21 added, 2.3 +1 and 2.14 +1 for PG-2 and PG-3; 25 Oct: 2.13 +3 for 2.13d, PH2-15)  
 **Re-plan, 23 Oct 2026:** three streams, each starting as soon as its queue allows, Phase 1 items included (stream A takes 2.9 before 1.39). Phase 1's actuals run at 0.39 of the estimates; this plan uses 0.5 for engineering items and 0.7 for content (2.13, 2.15; risk R4). Code-complete about **1 Dec 2026** (9 Dec with +25%) after the plan review's levelling and the 24 Oct building-block items; Phase 1's exit review about 9 Nov 2026.
 
 | ID | Item | Issue | Area | Refs | Est | Depends on |
@@ -640,7 +642,7 @@ Close the visible gap to Bootstrap Studio 9.0.1 within the IP rule ([product/07]
 | 2.10 | Carousel element | [#52](https://github.com/nexustech/webforge/issues/52) | components | G9, GA1 | 6 | 2.5 |
 | 2.11 | Elements: tabs, commerce, forms, embeds and custom code | [#53](https://github.com/nexustech/webforge/issues/53) | components | F-CM-2, F-CM-7, F-ED-15, F-ED-16 | 5 | 2.5, 2.8 |
 | 2.12 | Animations and hover effects | [#54](https://github.com/nexustech/webforge/issues/54) | components | F-DS-5, G8 | 2 | 2.5 |
-| 2.13 | Design 10–12 curated themes | [#55](https://github.com/nexustech/webforge/issues/55) | themes | S3, F-DS-1 | 14 | 2.1, 2.6, 2.7, 2.8, 2.9 (2.3 dropped 25 Oct 2026) |
+| 2.13 | Design 10–12 curated themes (2.13d theme range [#434](https://github.com/nexustech/webforge/issues/434), +3 on 25 Oct 2026) | [#55](https://github.com/nexustech/webforge/issues/55) | themes | S3, F-DS-1, PH2-15 | 17 | 2.1, 2.6, 2.7, 2.8, 2.9 (2.3 dropped 25 Oct 2026) |
 | 2.14 | Template format and New Site flow | [#56](https://github.com/nexustech/webforge/issues/56) | content | F-SITE-1, S2, S5, UX-29, LF-10, LF-11, PG-3 | 7 | 1.8, 2.1 |
 | 2.15 | Templates: 8 starter sites | [#57](https://github.com/nexustech/webforge/issues/57) | content | F-SITE-1, S2, S5 | 20 | 2.14, 2.10, 2.11, 2.12, the theme each template uses (2.13) |
 | 2.16 | Component accessibility and visual regression sweep | [#58](https://github.com/nexustech/webforge/issues/58) | components | standards §5, MVP §4 | 3 | 2.6, 2.7, 2.8, 2.9, 2.10, 2.11, 2.12, 2.13 |
@@ -656,7 +658,7 @@ Close the visible gap to Bootstrap Studio 9.0.1 within the IP rule ([product/07]
 |---|---|
 | A: Shell & panels | ~~R9 → R10 → R11 → 2.9 → 2.21~~ → 1.39 → 2.3 → 2.18 → 2.15a (Café/Restaurant, Salon/Beauty, Trades) |
 | B: Data & site | ~~2.1 → 2.2 → R12 → R14 → 2.4 → 2.20 → 2.8 → 2.7b~~ → R13 (R13a → R13b → R13c → R13d) → 2.13b (themes 5–8) → 2.15b (Consultant, Photographer/Portfolio, Shop) |
-| C: History & canvas | ~~2.5 (before 1.30) → R7 → R8 (part 2 before 2.17) → 2.6 → 2.10 → 2.19 → 2.7a → 2.17 → 2.12 → 2.11 (from B, 25 Oct)~~ → 2.13a (themes 1–4, from A, 25 Oct) → 2.14 (from B, 25 Oct) → 2.13c (themes 9–12, from A, 25 Oct) → 2.15c (Personal/CV, Blank) → 2.16 |
+| C: History & canvas | ~~2.5 (before 1.30) → R7 → R8 (part 2 before 2.17) → 2.6 → 2.10 → 2.19 → 2.7a → 2.17 → 2.12 → 2.11 (from B, 25 Oct)~~ → 2.13a (themes 1–4, from A, 25 Oct) → 2.14 (from B, 25 Oct) → 2.13d (theme range, 25 Oct; between 2.14a and 2.14b) → 2.13c (themes 9–12, from A, 25 Oct) → 2.15c (Personal/CV, Blank) → 2.16 |
 
 **Issue review, 25 Oct 2026.** Every Phase 2 item except 2.3, 2.13, 2.14, 2.15, 2.16, 2.18 and R13 is merged, and 1.39 is stream A's next item. Two corrections: **2.13 no longer depends on 2.3.** The curated themes are presets in `packages/themes` (2.1, merged), reviewed side by side in Storybook against the merged components; the Theme panel is the UI for editing a site's theme and nothing in 2.13 needs it, so the three theme batches are unblocked today instead of waiting about 16 raw days for stream A's 1.39, 2.3 and 2.18. **2.13a and 2.13c swap streams:** stream C's queue was empty until 2.13c, so it takes themes 1–4 (#210) now, and the product owner's review of that batch feeds the other two as the 23 Oct review intended; stream A takes themes 9–12 (#212) after 2.18. The template batches keep their issue dependencies (2.15a waits for #210, 2.15c for #212). Nothing else was blocked: 2.14, R13 and the 2.21 follow-up chore (#391) have their dependencies met, and 1.39's are all closed. The theme issues' contrast criterion is brought in line with the 24 Oct decision (reported, not a gate), and 2.18's issue now lists only 1.37 as a dependency, with 1.39 and 2.3 as queue order, as this plan says.
 
@@ -683,6 +685,7 @@ Shared files are split in 2.5 so that streams add files instead of editing the s
 - PH2-12 (2026-10-25): no LinkedIn mark until a permissively licensed one exists. Simple Icons removed LinkedIn's logo at LinkedIn's request and Lucide has no brand icons, so Social links show Lucide's globe for LinkedIn, as for other sites, named "LinkedIn" for screen readers and in its tooltip. No "in" lettermark: a rounded "in" badge imitates LinkedIn's trademark. Confirmed by the product owner, 2026-10-25, for now: revisit it if a permissively licensed LinkedIn mark appears.
 - PH2-13 (2026-10-25, product owner): Site Settings' profile and opening-hours rows use the Edit panel's list look (ListField), as decided for 2.21's decision 3.
 - PH2-14 (2026-10-25, product owner): a Button's Style gains *Theme's style*, the default for new Buttons and Booking buttons, which draws it as the theme's buttons are; Filled, Second colour and Outline still override the theme, and existing Buttons keep Filled (#423).
+- PH2-15 (2026-10-25, product owner): themes differ in style, not layout (A). A wider range of fonts, colour schemes and style tokens (heading case and tracking, card style, photo corners, the sections' rhythm); section layouts come from the templates (2.15) and each section's own settings, so switching theme never rearranges a site. 2.13d (#434) adds the tokens and redoes themes 1–4.
 
 <details><summary>Scope and acceptance criteria</summary>
 
@@ -770,7 +773,7 @@ Entrance animation presets (fade, slide, zoom; delay) and hover effects (lift, g
 - [ ] Works when opened via file://
 
 **2.13 Design 10–12 curated themes**  
-10–12 visibly distinct themes (colours, font pairing, corner style, spacing, button style) with light and dark variants, tuned against the real component catalogue. About 1–2 days per theme including contrast checks (product/03). Themes are presets in `packages/themes` and need the theme model (2.1) and the components, not the Theme panel (2.3; dependency dropped 25 Oct 2026). Batches: 2.13a (themes 1–4) on stream C first, reviewed by the product owner; 2.13b on B; 2.13c on C after 2.14 (moved from A on 25 Oct 2026).
+10–12 visibly distinct themes (colours, font pairing, corner style, spacing, button style) with light and dark variants, tuned against the real component catalogue. About 1–2 days per theme including contrast checks (product/03). Themes are presets in `packages/themes` and need the theme model (2.1) and the components, not the Theme panel (2.3; dependency dropped 25 Oct 2026). Batches: 2.13a (themes 1–4) on stream C first, reviewed by the product owner; 2.13b on B; 2.13c on C after 2.14 (moved from A on 25 Oct 2026). **2.13d Theme range** (added 25 Oct 2026, +3 days, PH2-15, [#434](https://github.com/nexustech/webforge/issues/434)): the product owner's review of 2.13a found themes 1–4 too similar. New style tokens in the theme model (format 7): heading case and tracking (normal, capitals, small capitals), card style (flat, outlined, raised), photo corners (square, rounded, soft) and the sections' rhythm (plain, alternating), each written into the stylesheet only when it differs from how sites always looked, so the default theme is unchanged. Themes 1–4 are redone so no two share a heading font category (humanist sans, geometric sans, high-contrast serif, slab, condensed or display, rounded) or a colour character (dark-first, vivid, muted or earthy, monochrome with one accent), and they differ in corners, cards, heading case and spacing; fonts come from the bundled catalogue. A distinctness test checks every pair differs in at least 4 of heading font, body font, scheme lightness, primary hue band, corners, card style, heading case, spacing and button style. The gallery also shows each theme with a dark-first section and a card section.
 
 - [ ] Every theme aims for WCAG AA contrast; `contrastIssues` is reported for each, not a CI gate (contrast is a guideline the site owner can override, product owner, 24 Oct 2026)
 - [ ] Themes reviewed side by side in Storybook and look distinct
@@ -1150,7 +1153,7 @@ Up to Phase 0 the schedule was simply the sum of effort. From Phase 1, up to thr
 
 | Chain | Items | Length (days) |
 |---|---|---|
-| Editor → components → templates → exported-site checks | 1.1 → 1.2 → 1.12 → 1.14 → 1.19 → 1.21 → 2.6 → 2.13 → 2.14 → 2.15 → 3.10 | 74 (70 before the 22–23 Oct additions to 2.6 and 2.14) |
+| Editor → components → templates → exported-site checks | 1.1 → 1.2 → 1.12 → 1.14 → 1.19 → 1.21 → 2.6 → 2.13 → 2.14 → 2.15 → 3.10 | 77 (70 before the 22–23 Oct additions to 2.6 and 2.14; 74 before 2.13d, 25 Oct) |
 | Editor → pipeline → publishing → versions | 1.1 → 1.2 → 1.12 → 1.14 → 2.5 → 3.1 → 3.3 → 4.1 → 4.2 → 4.4 → 4.5 → 4.6 | 44 |
 | Signing → release workflow → beta (incl. enrolment wait) | 0.1 → 0.5 → 5.2 → 5.7 → 5.8 | 40 |
 
