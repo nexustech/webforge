@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -21,6 +21,7 @@ import {
   type SiteStoreAccess,
   withProjectExtension,
 } from "./project-session.js";
+import { createStorageWriter } from "./storage-writer.js";
 import { createStoreGate } from "./store-gate.js";
 
 /** The first bytes of a PNG of `width` × `height`: enough for Media to take it. */
@@ -599,5 +600,60 @@ describe("ProjectSession and the store gate (R13b)", () => {
 
     expect(gated.current()).toBeNull();
     vi.useRealTimers();
+  });
+
+  it("closes the site when the storage writer doesn't finish, stopping it; the import fails", async () => {
+    // A writer thread that never answers.
+    const thread = { postMessage: vi.fn(), on: vi.fn(), terminate: vi.fn(async () => 0) };
+    const gated = new ProjectSession({}, { writer: createStorageWriter(() => thread) });
+    await gated.create(join(dir, "Stuck writer.wforge"));
+    vi.useFakeTimers();
+
+    const importing = gated.importFile("photo", "photo.jpg", { data: heroPhoto() });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(thread.postMessage).toHaveBeenCalledTimes(1);
+    const closing = gated.close();
+    await vi.advanceTimersByTimeAsync(5_000);
+    await closing;
+
+    expect(thread.terminate).toHaveBeenCalled();
+    expect(gated.current()).toBeNull();
+    expect(await importing).toEqual({ status: "failed", reason: "unknown" });
+    vi.useRealTimers();
+  });
+
+  it("lets a backup finish whole, from its own connection, when a close can wait no longer", async () => {
+    const accesses: SiteStoreAccess[] = [];
+    const gated = new ProjectSession({ opened: (access) => accesses.push(access) });
+    await gated.create(join(dir, "Backed up.wforge"));
+    await gated.commit(changedDocuments(undefined, site));
+    const target = join(dir, "backup.wforge");
+    let carryOn: () => void = () => undefined;
+    // A backup that takes longer than closing waits: it is still to start when the store closes.
+    const backup = accesses[0]?.(async (store) => {
+      await new Promise<void>((resolve) => {
+        carryOn = resolve;
+      });
+      await store.backupTo(target);
+      return "done";
+    });
+    vi.useFakeTimers();
+    await vi.advanceTimersByTimeAsync(0);
+
+    const closing = gated.close();
+    await vi.advanceTimersByTimeAsync(5_000);
+    await closing;
+    vi.useRealTimers();
+    expect(gated.current()).toBeNull();
+    carryOn();
+
+    expect(await backup).toBe("done");
+    const copy = ProjectStore.open(target);
+    try {
+      expect(copy.readSite()).toEqual(site);
+    } finally {
+      copy.close();
+    }
+    expect(readdirSync(dir).filter((name) => name.endsWith(".tmp"))).toEqual([]);
   });
 });

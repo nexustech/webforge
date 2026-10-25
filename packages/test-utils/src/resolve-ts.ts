@@ -1,7 +1,8 @@
 import { registerHooks } from "node:module";
 
-// Lets plain Node run the package's TypeScript sources in a child process: relative imports are
-// written with `.js` extensions (repo convention), so fall back to the `.ts` file next to them.
+// Lets plain Node run the repository's TypeScript sources in a child process or a worker thread
+// (TYPESCRIPT_HOOK): relative imports are written with `.js` extensions (repo convention), so fall
+// back to the `.ts` file next to them.
 registerHooks({
   resolve(specifier, context, nextResolve) {
     if (specifier.startsWith(".") && specifier.endsWith(".js")) {

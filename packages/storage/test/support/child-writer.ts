@@ -1,10 +1,7 @@
 import { type ChildProcess, spawn } from "node:child_process";
 import { once } from "node:events";
 import { fileURLToPath } from "node:url";
-
-// --import takes a URL (a bare Windows path such as C:\... is not one); the script takes a path.
-const resolveHook = new URL("./resolve-ts.ts", import.meta.url).href;
-const writerScript = fileURLToPath(new URL("./writer.ts", import.meta.url));
+import { TYPESCRIPT_HOOK } from "@webforge/test-utils";
 
 /** A child process committing to a project in a loop (see writer.ts). */
 export type ChildWriter = {
@@ -16,11 +13,15 @@ export type ChildWriter = {
   kill(): Promise<void>;
 };
 
-/** Starts a writer process on the project at `path`. */
-export function startChildWriter(path: string): ChildWriter {
+/**
+ * Starts a writer process on the project at `path`: `writer.ts`, which commits, or another script
+ * here, such as `blob-writer.ts`, which writes blobs as the storage writer does (R13b).
+ */
+export function startChildWriter(path: string, script = "writer.ts"): ChildWriter {
+  const writerScript = fileURLToPath(new URL(`./${script}`, import.meta.url));
   const child: ChildProcess = spawn(
     process.execPath,
-    ["--disable-warning=ExperimentalWarning", "--import", resolveHook, writerScript, path],
+    ["--disable-warning=ExperimentalWarning", "--import", TYPESCRIPT_HOOK, writerScript, path],
     { stdio: ["ignore", "pipe", "pipe"] },
   );
   let acknowledged = 0;

@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { copyFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { tempDirFactory } from "@webforge/test-utils";
@@ -59,6 +60,36 @@ describe("crash safety", () => {
       expect(existsSync(`${path}-journal`)).toBe(false);
     }
     // Proves the rounds above really interrupted a write, not only idle moments.
+    expect(killedMidTransaction).toBeGreaterThan(0);
+  }, 120_000);
+
+  it("opens after the storage writer is killed mid-import, keeping every blob it finished (R13b)", async () => {
+    // As support/blob-writer.ts makes them.
+    const blobOf = (seq: number) => new Uint8Array(2 * 1024 * 1024).fill(seq % 251);
+    const hash = (seq: number) => createHash("sha256").update(blobOf(seq)).digest("hex");
+    const delays = [0, 20, 60];
+    let killedMidTransaction = 0;
+    for (let round = 0; round < 12 && (round < 3 || killedMidTransaction === 0); round += 1) {
+      const path = createProject();
+      const writer = startChildWriter(path, "blob-writer.ts");
+      await writer.waitForCommits(2);
+      await new Promise((resolve) => setTimeout(resolve, delays[round % delays.length]));
+      await writer.kill();
+      if (existsSync(`${path}-journal`)) {
+        killedMidTransaction += 1;
+      }
+
+      // Opens (the half-written blob rolled back), with every blob the writer saw return.
+      const store = ProjectStore.open(path);
+      for (let seq = 1; seq <= writer.lastAcknowledged(); seq += 1) {
+        expect(store.hasBlob(hash(seq)), `blob ${seq}`).toBe(true);
+      }
+      // Nothing names them, so garbage collection removes them all, and the file still opens.
+      store.collectGarbage();
+      expect(store.hasBlob(hash(1))).toBe(false);
+      store.close();
+      ProjectStore.open(path).close();
+    }
     expect(killedMidTransaction).toBeGreaterThan(0);
   }, 120_000);
 });
