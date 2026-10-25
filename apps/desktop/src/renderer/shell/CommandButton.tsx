@@ -2,13 +2,20 @@ import {
   Button,
   type ButtonProps,
   cn,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuShortcut,
+  DropdownMenuTrigger,
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@webforge/editor-ui";
+import { t } from "@webforge/i18n";
+import { ChevronDownIcon } from "lucide-react";
 import type { ReactNode } from "react";
-import { useCommand, useCommandRegistry } from "./command-context.js";
-import { formatShortcut } from "./commands.js";
+import { useCommandRegistry, useCommands } from "./command-context.js";
+import { type Command, formatShortcut } from "./commands.js";
 
 /** Props of {@link CommandButton}. */
 export type CommandButtonProps = {
@@ -24,7 +31,8 @@ export type CommandButtonProps = {
 
 /**
  * A title-bar button for a registered command. Its tooltip gives the command's full label and
- * shortcut. Disabled while the command is missing (not contributed yet) or disabled.
+ * shortcut. Disabled while the command is missing (not contributed yet) or disabled. Commands that
+ * name it as theirs to go with (`more`) make it a split button, with a caret that lists them.
  */
 export function CommandButton({
   commandId,
@@ -35,7 +43,9 @@ export function CommandButton({
   size,
 }: CommandButtonProps) {
   const registry = useCommandRegistry();
-  const command = useCommand(commandId);
+  const commands = useCommands();
+  const command = commands.find((each) => each.id === commandId);
+  const more = commands.filter((each) => each.more === commandId);
   const disabled = command === undefined || command.enabled === false;
   const name = command?.label ?? label;
   const tip =
@@ -59,16 +69,65 @@ export function CommandButton({
       {text}
     </Button>
   );
-  if (tip === undefined) {
-    return button;
+  const withTip =
+    tip === undefined ? (
+      button
+    ) : (
+      <Tooltip>
+        {/* A disabled button gets no pointer events, so the tooltip hangs on a wrapper. */}
+        <TooltipTrigger asChild>
+          <span className="inline-flex">{button}</span>
+        </TooltipTrigger>
+        <TooltipContent>{tip}</TooltipContent>
+      </Tooltip>
+    );
+  if (more.length === 0) {
+    return withTip;
   }
   return (
-    <Tooltip>
-      {/* A disabled button gets no pointer events, so the tooltip hangs on a wrapper. */}
-      <TooltipTrigger asChild>
-        <span className="inline-flex">{button}</span>
-      </TooltipTrigger>
-      <TooltipContent>{tip}</TooltipContent>
-    </Tooltip>
+    <span className="inline-flex">
+      {withTip}
+      <MoreMenu name={label ?? text ?? name ?? commandId} commands={more} />
+    </span>
+  );
+}
+
+/** A split button's caret: the commands that go with the button (LF-13). */
+function MoreMenu({
+  name,
+  commands,
+}: {
+  readonly name: string;
+  readonly commands: readonly Command[];
+}) {
+  const registry = useCommandRegistry();
+  return (
+    // Not modal, as Undo's steps menu beside it: the title bar stays as it is behind it.
+    <DropdownMenu modal={false}>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="w-4"
+          aria-label={t("shell.moreOptions", { name })}
+        >
+          <ChevronDownIcon aria-hidden />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        {commands.map((command) => (
+          <DropdownMenuItem
+            key={command.id}
+            disabled={command.enabled === false}
+            onSelect={() => void registry.run(command.id)}
+          >
+            {command.label}
+            {command.shortcut === undefined ? null : (
+              <DropdownMenuShortcut>{formatShortcut(command.shortcut)}</DropdownMenuShortcut>
+            )}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

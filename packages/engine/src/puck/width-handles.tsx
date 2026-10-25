@@ -9,7 +9,7 @@ import {
   useState,
 } from "react";
 import type { FieldDrag } from "../canvas-engine.js";
-import { componentSelector } from "./puck-dom.js";
+import { componentSelector, elementOf } from "./puck-dom.js";
 
 /** A slider field that sets how wide its element is, as its width handles need it (2.17). */
 export type WidthHandleField = {
@@ -98,11 +98,6 @@ export function nearestStep(
     }
   }
   return best;
-}
-
-/** The element node `nodeId` draws: Puck wraps each element in a `div` of its own. */
-function elementOf(document: Document, nodeId: string): Element | null | undefined {
-  return document.querySelector(componentSelector(nodeId))?.firstElementChild;
 }
 
 /**

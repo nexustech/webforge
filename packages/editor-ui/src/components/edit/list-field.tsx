@@ -24,7 +24,28 @@ function itemsOf(value: unknown): readonly ListItem[] {
     : [];
 }
 
-/** What an item's row shows: its first text, as the user wrote it. */
+/** A choice's or a time's value as its row shows it: the options' labels, or the time. */
+function shownValue(field: ListItemFieldSpec, value: unknown): string {
+  const labelOf = (choice: unknown) =>
+    "options" in field ? field.options.find((option) => option.value === choice)?.label : undefined;
+  switch (field.kind) {
+    case "select":
+      return labelOf(value) ?? "";
+    case "multiChoice":
+      return Array.isArray(value)
+        ? value.flatMap((choice) => labelOf(choice) ?? []).join(", ")
+        : "";
+    case "time":
+      return typeof value === "string" ? value : "";
+    default:
+      return "";
+  }
+}
+
+/**
+ * What an item's row shows: its first text, as the user wrote it; without one, its choices and
+ * times ("Tue, Wed · 07:00 · 15:00", PH2-13).
+ */
 function summaryOf(item: ListItem, fields: readonly ListItemFieldSpec[]): string {
   for (const field of fields) {
     const value = item[field.name];
@@ -32,7 +53,10 @@ function summaryOf(item: ListItem, fields: readonly ListItemFieldSpec[]): string
       return value.trim();
     }
   }
-  return "";
+  return fields
+    .map((field) => shownValue(field, item[field.name]))
+    .filter((shown) => shown !== "")
+    .join(" · ");
 }
 
 function RowAction({
@@ -63,10 +87,18 @@ function RowAction({
 /** Which item shows its fields: one by id, or the one Add is about to create (at its index). */
 type Open = { readonly id: string } | { readonly added: number } | null;
 
+/** An item's problems, by its fields' names, if it has any. */
+type ItemProblems = Readonly<Record<string, string>>;
+
+const hasProblems = (problems: ItemProblems | undefined): problems is ItemProblems =>
+  problems !== undefined && Object.keys(problems).length > 0;
+
 /**
  * A repeating list (F-ED-6): a row per item with move up, move down and delete, the open item's
  * fields below its row, and Add at the end. Each action is one {@link ListChange}; so is a change
  * to an item's field, whose run of changes (typing) ends with `onCommit` as the field ends it.
+ * In a form (2.21, PH2-13), an item's problems show by its fields: the first item with any opens,
+ * and a closed one shows its first problem under its row.
  */
 export function ListField({
   id,
@@ -78,9 +110,11 @@ export function ListField({
   value,
   onChange,
   onCommit,
+  itemErrors,
 }: FieldRendererProps<"list">) {
   const items = itemsOf(value);
   const { itemLabel: item, itemFields: fields } = field;
+  const remove = field.removeLabel ?? t("editPanel.list.delete", { item });
   // The panel's renderers, over the plain ones a list drawn on its own has (R11).
   const renderers: FieldRenderers = { ...PLAIN_RENDERERS, ...useFieldRenderers() };
   const [open, setOpen] = useState<Open>(null);
@@ -88,6 +122,11 @@ export function ListField({
   // that took its place, else the one before, else Add.
   const [focusAfterDelete, setFocusAfterDelete] = useState<string | null>(null);
   const root = useRef<HTMLFieldSetElement>(null);
+  // The first item with a problem opens, so its message shows by its field.
+  const firstProblem = items.find((entry) => hasProblems(itemErrors?.[entry.id]))?.id;
+  useEffect(() => {
+    if (firstProblem !== undefined) setOpen({ id: firstProblem });
+  }, [firstProblem]);
   useEffect(() => {
     if (focusAfterDelete === null) {
       return;
@@ -123,6 +162,10 @@ export function ListField({
             const summary =
               summaryOf(entry, fields) || t("editPanel.list.untitled", { item, number: index + 1 });
             const contentId = `${id}-${entry.id}`;
+            const problems = itemErrors?.[entry.id];
+            // A closed item's first problem, under its row.
+            const closedProblem =
+              !expanded && hasProblems(problems) ? Object.values(problems)[0] : undefined;
             return (
               <li key={entry.id} className="rounded-sm border border-border">
                 <div className="flex items-center gap-0.5 pr-0.5">
@@ -131,6 +174,9 @@ export function ListField({
                     data-list-row={entry.id}
                     aria-expanded={expanded}
                     aria-controls={expanded ? contentId : undefined}
+                    aria-describedby={
+                      closedProblem === undefined ? undefined : `${contentId}-problem`
+                    }
                     className={cn(
                       "flex min-w-0 flex-1 items-center gap-1 rounded-sm px-1.5 py-1 text-left text-xs",
                       "outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring",
@@ -165,7 +211,7 @@ export function ListField({
                     </>
                   )}
                   <RowAction
-                    label={t("editPanel.list.delete", { item })}
+                    label={remove}
                     disabled={disabled}
                     onClick={() => {
                       const next = items[index + 1] ?? items[index - 1];
@@ -176,11 +222,20 @@ export function ListField({
                     <Trash2Icon className="size-3.5" />
                   </RowAction>
                 </div>
+                {closedProblem === undefined ? null : (
+                  <p
+                    id={`${contentId}-problem`}
+                    className="px-2 pb-1 text-2xs text-destructive-text"
+                  >
+                    {closedProblem}
+                  </p>
+                )}
                 {expanded ? (
                   <div id={contentId} className="flex flex-col gap-2 px-2 pt-1 pb-2">
                     {fields.map((sub) => {
                       if (renderers[sub.kind] === undefined) return null;
                       const subId = `${contentId}-${sub.name}`;
+                      const problem = problems?.[sub.name];
                       return (
                         <div key={sub.name} className="flex flex-col gap-1">
                           <label
@@ -193,6 +248,7 @@ export function ListField({
                           {drawField(renderers, sub.kind, {
                             id: subId,
                             labelId: `${subId}-label`,
+                            ...(problem === undefined ? {} : { errorId: `${subId}-error` }),
                             field: sub,
                             disabled,
                             value: entry[sub.name],
@@ -200,6 +256,11 @@ export function ListField({
                               change({ type: "edit", id: entry.id, name: sub.name, value: next }),
                             onCommit,
                           })}
+                          {problem === undefined ? null : (
+                            <p id={`${subId}-error`} className="text-2xs text-destructive-text">
+                              {problem}
+                            </p>
+                          )}
                         </div>
                       );
                     })}
@@ -222,7 +283,7 @@ export function ListField({
         }}
       >
         <PlusIcon className="size-3.5" />
-        {t("editPanel.list.add", { item })}
+        {field.addLabel ?? t("editPanel.list.add", { item })}
       </Button>
     </fieldset>
   );

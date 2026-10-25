@@ -677,6 +677,7 @@ Shared files are split in 2.5 so that streams add files instead of editing the s
 - PH2-10: the Booking button is a Button preset (a plain link), so the element count stays 17. There is no product card in the MVP.
 - PH2-11: not written up on the issues; to be recorded by the product owner.
 - PH2-12 (2026-10-25): no LinkedIn mark until a permissively licensed one exists. Simple Icons removed LinkedIn's logo at LinkedIn's request and Lucide has no brand icons, so Social links show Lucide's globe for LinkedIn, as for other sites, named "LinkedIn" for screen readers and in its tooltip. No "in" lettermark: a rounded "in" badge imitates LinkedIn's trademark. Confirmed by the product owner, 2026-10-25, for now: revisit it if a permissively licensed LinkedIn mark appears.
+- PH2-13 (2026-10-25, product owner): Site Settings' profile and opening-hours rows use the Edit panel's list look (ListField), as decided for 2.21's decision 3.
 
 <details><summary>Scope and acceptance criteria</summary>
 

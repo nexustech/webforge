@@ -89,6 +89,26 @@ export const EarlyCommands: Story = {
   render: () => <WithCommands commands={COMMANDS.filter((command) => EARLY.has(command.id))} />,
 };
 
+/**
+ * A command that goes with Export (LF-13), as ZIP export will (3.3): Export becomes a split
+ * button, its caret open.
+ */
+export const SplitButton: Story = {
+  render: () => (
+    <WithCommands
+      commands={[
+        ...COMMANDS,
+        { id: "site.exportZip", label: "Export as ZIP…", more: COMMAND_IDS.exportSite, run: noop },
+      ]}
+    />
+  ),
+  play: async ({ canvasElement }) => {
+    await userEvent.click(
+      within(canvasElement).getByRole("button", { name: "More Export options" }),
+    );
+  },
+};
+
 /** A site's steps so far; the last was undone. */
 const STEPS = createStore<HistoryState<unknown>>()(() => ({
   entries: [

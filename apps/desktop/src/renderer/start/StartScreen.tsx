@@ -7,7 +7,7 @@ import type { ProjectApi } from "../../shared/ipc/project.js";
 import type { AppInfo, RecentSite } from "../../shared/ipc-contract.js";
 import { AboutDialog } from "../shell/AboutDialog.js";
 import { CommandRegistryProvider } from "../shell/command-context.js";
-import { createCommandRegistry, installCommandShortcuts } from "../shell/commands.js";
+import { createCommandRegistry, installCommandShortcuts, isMac } from "../shell/commands.js";
 import { ShortcutSheet } from "../shell/ShortcutSheet.js";
 import { TitleBar } from "../shell/TitleBar.js";
 import { openSiteWith } from "./open-site.js";
@@ -76,7 +76,11 @@ export function StartScreen({ info, project, app, restart, locale }: StartScreen
     <CommandRegistryProvider registry={registry}>
       <TooltipProvider>
         <div className="flex h-full flex-col bg-background text-foreground">
-          <TitleBar siteName={t("app.name")} />
+          <TitleBar
+            siteName={t("app.name")}
+            // On macOS the menus are the menu bar's (LF-13).
+            menuBar={isMac() ? window.webforge.app : undefined}
+          />
           <main className="flex min-h-0 flex-1 justify-center overflow-y-auto p-8">
             <div className="flex w-full max-w-3xl flex-col gap-8">
               <section aria-labelledby="start-new" className="flex flex-col gap-3">

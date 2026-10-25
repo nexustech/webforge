@@ -244,8 +244,8 @@ describe("FormDialog (2.21, B4)", () => {
   });
 });
 
-describe("a form's list as rows (2.21)", () => {
-  it("adds, edits and removes rows, with each row's problem by its field", async () => {
+describe("a form's list (2.21, PH2-13)", () => {
+  it("adds, edits and removes items, with each item's problem by its field", async () => {
     const schema = z.object({
       profiles: z.array(z.object({ url: z.url("Use a web address") })),
     });
@@ -258,7 +258,6 @@ describe("a form's list as rows (2.21)", () => {
               name: "profiles",
               label: "Social profiles",
               itemLabel: "Profile",
-              look: "rows",
               addLabel: "Add a profile",
               removeLabel: "Remove this profile",
               itemFields: [{ kind: "text", name: "url", label: "Profile address" }],
@@ -284,19 +283,27 @@ describe("a form's list as rows (2.21)", () => {
     render(<Host />);
     const user = userEvent.setup({ delay: null });
 
+    // The added profile opens, the first stays closed.
     await user.click(screen.getByRole("button", { name: "Add a profile" }));
-    const addresses = () => screen.getAllByRole("textbox", { name: "Profile address" });
-    expect(addresses()).toHaveLength(2);
-    await user.type(addresses()[1] as HTMLElement, "rosas");
+    const address = () => screen.getByRole("textbox", { name: "Profile address" });
+    await user.type(address(), "rosas");
+    await user.click(screen.getByRole("button", { name: "rosas" }));
     await user.click(screen.getByRole("button", { name: "Save" }));
 
-    const second = addresses()[1] as HTMLElement;
-    expect(second.getAttribute("aria-invalid")).toBe("true");
-    expect(second.getAttribute("aria-describedby")).toBe(screen.getByText("Use a web address").id);
+    // The item with the problem opens, the problem by its field.
+    expect(address().getAttribute("aria-invalid")).toBe("true");
+    expect(address().getAttribute("aria-describedby")).toBe(
+      screen.getByText("Use a web address").id,
+    );
+    // Closed, it shows the problem under its row.
+    const row = screen.getByRole("button", { name: "rosas" });
+    await user.click(row);
+    expect(screen.queryByRole("textbox", { name: "Profile address" })).toBeNull();
+    expect(row.getAttribute("aria-describedby")).toBe(screen.getByText("Use a web address").id);
     await user.click(
       screen.getAllByRole("button", { name: "Remove this profile" })[1] as HTMLElement,
     );
-    expect(addresses()).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: "Remove this profile" })).toHaveLength(1);
     expect(screen.queryByText("Use a web address")).toBeNull();
   });
 });
