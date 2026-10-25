@@ -12,6 +12,7 @@ import {
   filePaths,
   type SystemClipboard,
   systemClipboard,
+  webAddress,
 } from "./clipboard.js";
 import type { ImportFile } from "./media-import.js";
 
@@ -226,6 +227,19 @@ describe("element clipboard (1.25)", () => {
       });
     });
 
+    it("passes on a copied web address, without an open site or anything stored (F-ED-16)", async () => {
+      const address = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+      notElements = { kind: "address", address };
+      const { site, stored } = fakeSite();
+
+      expect(await elementClipboard({ ...site, current: () => null }).read()).toEqual({
+        status: "address",
+        address,
+      });
+      expect(stored).toEqual([]);
+      expect(imported).toEqual([]);
+    });
+
     it("finds nothing when the system clipboard can't be read", async () => {
       const broken: SystemClipboard = { ...system, read: () => Promise.reject(new Error("busy")) };
       expect(await elementClipboard(fakeSite().site, broken).read()).toEqual({ status: "empty" });
@@ -247,8 +261,26 @@ describe("filePaths", () => {
   });
 });
 
+describe("webAddress", () => {
+  it("takes one http(s) address of a domain, trimmed, and nothing else", () => {
+    expect(webAddress(" https://youtu.be/dQw4w9WgXcQ \r\n")).toBe("https://youtu.be/dQw4w9WgXcQ");
+    expect(webAddress("http://example.com/a?b=1")).toBe("http://example.com/a?b=1");
+    for (const text of [
+      "",
+      "hello",
+      "javascript:alert(1)",
+      "file:///C:/shop.jpg",
+      "https://localhost/a",
+      "https://example.com/a b",
+      "https://example.com\nhttps://example.org",
+    ]) {
+      expect(webAddress(text)).toBeUndefined();
+    }
+  });
+});
+
 describe("systemClipboard", () => {
-  const limits = { elements: 100, files: 50, image: 100 };
+  const limits = { elements: 100, files: 50, image: 100, address: 60 };
   /** Electron's clipboard holding one item with these types and contents. */
   const holding = (contents: Record<string, string | Uint8Array>) => {
     const item = {
@@ -275,6 +307,31 @@ describe("systemClipboard", () => {
     );
     expect(await holding({ "image/png": png }).read(limits)).toEqual({ kind: "image", png });
     expect(await holding({ "text/plain": "hello" }).read(limits)).toEqual({ kind: "none" });
+  });
+
+  it("reads text last, as a web address, after an image that comes with one (F-ED-16)", async () => {
+    const video = "https://vimeo.com/76979871";
+    expect(await holding({ "text/plain": `  ${video}\n` }).read(limits)).toEqual({
+      kind: "address",
+      address: video,
+    });
+    // A browser's copied image comes with its address: the image is what's pasted.
+    expect(await holding({ "image/png": png, "text/plain": video }).read(limits)).toEqual({
+      kind: "image",
+      png,
+    });
+    expect(await holding({ "text/uri-list": uri, "text/plain": video }).read(limits)).toEqual({
+      kind: "files",
+      paths: filePaths(uri),
+    });
+  });
+
+  it("doesn't read text over its limit, nor take text with more in it than an address", async () => {
+    const long = `https://example.com/${"a".repeat(60)}`;
+    expect(await holding({ "text/plain": long }).read(limits)).toEqual({ kind: "none" });
+    for (const text of ["https://vimeo.com/1\nhttps://vimeo.com/2", "Watch https://vimeo.com/1"]) {
+      expect(await holding({ "text/plain": text }).read(limits)).toEqual({ kind: "none" });
+    }
   });
 
   it("doesn't read a file list or an image over its limit", async () => {
