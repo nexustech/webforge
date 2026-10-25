@@ -134,7 +134,10 @@ function PricingPlanView({
   return (
     <div
       className={`site-pricing-plan flex flex-col gap-4 rounded-box p-6 ${
-        featured ? "border-2 border-primary bg-base-200" : "border border-base-300"
+        // A ring, which takes no room: the plans line up with or without it.
+        featured
+          ? "border border-primary bg-base-200 ring-1 ring-primary"
+          : "border border-base-300"
       }${hover}`}
       data-featured={featured ? "" : undefined}
     >
