@@ -122,7 +122,7 @@ describe("macOS's menu bar (LF-13)", () => {
     expect(undo).not.toHaveBeenCalled();
     expect(doc.execCommand.mock.calls).toEqual([["undo"], ["redo"]]);
 
-    // The dialog closed: the site's Undo again.
+    // The dialog closed: the site's Undo again, while its closing animation still runs too.
     doc.querySelector.mockReturnValue(null);
     choose("edit.undo");
     expect(undo).toHaveBeenCalledOnce();

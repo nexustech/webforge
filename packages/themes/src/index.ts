@@ -9,6 +9,7 @@ export {
 } from "./colors.js";
 export type { ContrastIssue } from "./contrast.js";
 export { AA_LARGE, AA_TEXT, contrastIssues } from "./contrast.js";
+export { CURATED_THEMES } from "./curated/index.js";
 export type { CatalogueFont, FontPairing } from "./fonts/catalogue.js";
 export {
   bundledFontBytes,

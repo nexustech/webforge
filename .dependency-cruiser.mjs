@@ -28,8 +28,9 @@ export default {
       severity: "error",
       comment: "Every import must resolve to a file or an installed package.",
       from: {},
-      // Vite-only suffixes (?raw, ?base64) on a package's exported file can't be resolved here.
-      to: { couldNotResolve: true, pathNot: "\\?(raw|base64)$" },
+      // Vite-only suffixes (?raw, ?base64) on a package's exported file can't be resolved here, nor
+      // a Vite plugin's virtual module (the site components' theme stylesheets, 2.13).
+      to: { couldNotResolve: true, pathNot: "\\?(raw|base64)$|^virtual:webforge-" },
     },
     {
       name: "no-non-package-json",
@@ -51,7 +52,11 @@ export default {
       severity: "error",
       comment:
         "Renderer code never imports Node built-ins or Electron; it uses the typed window.webforge API.",
-      from: { path: RENDERER_SAFE },
+      // Storybook's own config runs in Node: it writes the theme stories' stylesheets (2.13).
+      from: {
+        path: RENDERER_SAFE,
+        pathNot: "^packages/site-components/\\.storybook/(main|theme-gallery)\\.ts$",
+      },
       to: { dependencyTypes: ["core"] },
     },
     {

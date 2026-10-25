@@ -192,9 +192,10 @@
 :root, [data-theme="high-contrast-rounded"] {
   --wf-link-decoration: underline;
   --wf-link-hover-decoration: underline;
+  --wf-link-color: currentColor;
+  --wf-hover-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
   --wf-button-radius: 9999px;
   --wf-button-height: 3rem;
-  --wf-shadow: 0 4px 12px rgb(0 0 0 / 0.08);
   --wf-color-primary-50: oklch(97% 0.0475 265);
   --wf-color-primary-100: oklch(94% 0.076 265);
   --wf-color-primary-200: oklch(88% 0.114 265);
@@ -373,4 +374,12 @@
   --wf-color-error-800: oklch(38% 0.102 27);
   --wf-color-error-900: oklch(31% 0.09 27);
   --wf-color-error-950: oklch(23% 0.072 27);
+}
+@layer utilities {
+  .btn:not(.btn-circle, .btn-square) {
+    --radius-field: var(--wf-button-radius);
+  }
+  .btn:not(.btn-xs, .btn-sm, .btn-md, .btn-lg, .btn-xl, .btn-circle, .btn-square) {
+    --size: var(--wf-button-height);
+  }
 }

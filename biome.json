@@ -119,6 +119,19 @@
       }
     },
     {
+      "includes": [
+        "packages/site-components/.storybook/main.ts",
+        "packages/site-components/.storybook/theme-gallery.ts"
+      ],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "noNodejsModules": "off"
+          }
+        }
+      }
+    },
+    {
       "includes": ["e2e/**"],
       "linter": {
         "rules": {

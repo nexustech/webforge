@@ -192,9 +192,10 @@
 :root, [data-theme="light"] {
   --wf-link-decoration: underline;
   --wf-link-hover-decoration: underline;
+  --wf-link-color: currentColor;
+  --wf-hover-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
   --wf-button-radius: 0.5rem;
   --wf-button-height: 2.5rem;
-  --wf-shadow: 0 4px 12px rgb(0 0 0 / 0.08);
   --wf-color-primary-50: oklch(97% 0.06 277.023);
   --wf-color-primary-100: oklch(94% 0.096 277.023);
   --wf-color-primary-200: oklch(88% 0.144 277.023);
@@ -373,4 +374,9 @@
   --wf-color-error-800: oklch(38% 0.1649 13.428);
   --wf-color-error-900: oklch(31% 0.1455 13.428);
   --wf-color-error-950: oklch(23% 0.1164 13.428);
+}
+@layer utilities {
+  .btn:not(.btn-xs, .btn-sm, .btn-md, .btn-lg, .btn-xl, .btn-circle, .btn-square) {
+    --size: var(--wf-button-height);
+  }
 }

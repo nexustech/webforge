@@ -14,3 +14,14 @@ export const EXPORTED_SITE_DIR =
 export function exportedPageUrl(page: string): string {
   return pathToFileURL(join(EXPORTED_SITE_DIR, page)).href;
 }
+
+/**
+ * Where the setup exports the fixture site a second time, in a theme of its own (#423), inside the
+ * fixture's folder so CI uploads it with it.
+ */
+export const THEMED_SITE_DIR = join(EXPORTED_SITE_DIR, "themed");
+
+/** The `file://` URL of a page of the themed export. */
+export function themedPageUrl(page: string): string {
+  return pathToFileURL(join(THEMED_SITE_DIR, page)).href;
+}
