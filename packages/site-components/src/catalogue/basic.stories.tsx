@@ -72,3 +72,40 @@ export const Headings: Story = {
     ],
   },
 };
+
+/**
+ * Lists in rich text, with their bullets and numbers (#388), above a List element set to no
+ * markers, which keeps its own style.
+ */
+export const TextWithLists: Story = {
+  args: {
+    nodes: [
+      {
+        type: "Section",
+        props: {
+          id: "section",
+          content: [
+            {
+              type: "Text",
+              props: {
+                id: "lists",
+                text: "<p>What we bake every day:</p><ul><li>Sourdough</li><li>Cinnamon buns</li></ul><p>How to order a cake:</p><ol><li>Choose a size</li><li>Tell us the message</li></ol>",
+              },
+            },
+            {
+              type: "List",
+              props: {
+                id: "plain-list",
+                style: "plain",
+                items: ["Open from 7am", "Closed on Mondays"].map((item, index) => ({
+                  type: "ListItem",
+                  props: { id: `plain-${index}`, text: item },
+                })),
+              },
+            },
+          ],
+        },
+      },
+    ],
+  },
+};
