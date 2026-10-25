@@ -525,6 +525,10 @@ describe("themeCss (2.1)", () => {
       ),
     );
     expect(alternating).toContain(`${evenSections(" .wf-card")} {`);
+    // Sections on the page's surface by their own class (Features, Stats, Testimonials) too.
+    expect(alternating).toContain(
+      lines(`  ${evenSections(".bg-base-100")} {`, "    background-color: var(--color-base-200);"),
+    );
     expect(css({ sections: { rhythm: "alternating" }, cards: { style: "raised" } })).not.toContain(
       `${evenSections(" .wf-card")} {`,
     );

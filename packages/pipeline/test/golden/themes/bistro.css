@@ -396,6 +396,9 @@
   img.rounded-box {
     border-radius: 1.5rem;
   }
+  #main > section:nth-child(even of section):not([data-theme]).bg-base-100, .wf-sections > :nth-child(even of :has(> section:not([data-webforge-hidden]))) > section:not([data-theme]).bg-base-100 {
+    background-color: var(--color-base-200);
+  }
   #main > section:nth-child(even of section):not([data-theme]) .wf-card, .wf-sections > :nth-child(even of :has(> section:not([data-webforge-hidden]))) > section:not([data-theme]) .wf-card {
     background-color: var(--color-base-100);
   }

@@ -690,5 +690,9 @@ describe("buildSite: the theme's style (2.13d)", () => {
         ?.at(-1),
     ).toBe("@layer components {");
     expect(css).toContain("@layer theme, base, components, utilities;");
+    // And over the page's surface that Features, Stats and Testimonials set by their class.
+    expect(css).toContain(
+      "#main > section:nth-child(even of section):not([data-theme]).bg-base-100, .wf-sections > :nth-child(even of :has(> section:not([data-webforge-hidden]))) > section:not([data-theme]).bg-base-100 { background-color: var(--color-base-200); }",
+    );
   }, 60_000);
 });

@@ -259,8 +259,9 @@ function buttonRules(tokens: ThemeTokens): string[] {
  * - cards (`wf-card`: Features, Stats, Team and Testimonials) outlined or raised on the page's
  *   surface instead of flat on the second one;
  * - photos (an `img` with the box corners) square or softer;
- * - every second section on the second surface, under the classes of sections that have colours
- *   of their own (`@layer components`), with flat cards on the page's surface there.
+ * - every second section on the second surface: one with no surface class (`@layer components`)
+ *   and one on the page's surface by its class (`bg-base-100`), never one with another surface
+ *   of its own (a tinted Hero, a dark band); flat cards go on the page's surface there.
  */
 function styleRules(tokens: ThemeTokens): string[] {
   const { headings, cards, images, sections } = tokens;
@@ -289,6 +290,15 @@ function styleRules(tokens: ThemeTokens): string[] {
     ...(imageRadius === undefined
       ? []
       : ["  img.rounded-box {", `    border-radius: ${imageRadius};`, "  }"]),
+    // A section on the page's surface by its own class (Features, Stats, Testimonials) too; one
+    // with another surface of its own (a tinted Hero, a dark band) keeps it.
+    ...(alternating
+      ? [
+          `  ${evenSections(".bg-base-100")} {`,
+          "    background-color: var(--color-base-200);",
+          "  }",
+        ]
+      : []),
     ...(alternating && cards.style === "flat"
       ? [`  ${evenSections(" .wf-card")} {`, "    background-color: var(--color-base-100);", "  }"]
       : []),
