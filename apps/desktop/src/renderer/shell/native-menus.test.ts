@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { NativeMenus } from "../../shared/ipc/app.js";
 import { createCommandRegistry, electronAccelerator } from "./commands.js";
 import { nativeMenusOf, syncNativeMenus } from "./native-menus.js";
 
@@ -35,7 +36,7 @@ describe("macOS's menu bar (LF-13)", () => {
     registry.register({ id: "edit.hidden", label: "Not in a menu", run: vi.fn() });
     let chosen: (id: string) => void = () => undefined;
     const app = {
-      setNativeMenus: vi.fn(async () => null),
+      setNativeMenus: vi.fn(async (_menus: NativeMenus) => null),
       onRunCommand: vi.fn((run: (id: string) => void) => {
         chosen = run;
         return () => undefined;
@@ -77,7 +78,7 @@ describe("macOS's menu bar (LF-13)", () => {
     registry.update("view.zoomIn", { enabled: false });
     vi.runAllTimers();
     expect(app.setNativeMenus).toHaveBeenCalledTimes(2);
-    expect(app.setNativeMenus.mock.lastCall?.[0][0].items[0].enabled).toBe(false);
+    expect(app.setNativeMenus.mock.lastCall?.[0][0]?.items[0]?.enabled).toBe(false);
 
     // The same menus again aren't sent.
     registry.update("view.zoomIn", { enabled: false });
