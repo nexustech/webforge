@@ -50,6 +50,13 @@ export const RICH_TEXT_LIST_CLASSES =
  */
 export const BODY_TEXT_CLASSES = `text-body [&_a]:underline [&_p+p]:mt-4 ${RICH_TEXT_LIST_CLASSES}`;
 
+/**
+ * A lead: the line under a page's or a section's title (a Hero's, a Call to action's, a
+ * carousel's), at the type scale's body size, so a theme's body text reaches the top of a page.
+ * Placing classes come before it ("py-6 text-body").
+ */
+export const LEAD_TEXT_CLASSES = "text-body";
+
 /** Running text, in a `<div>` that holds its paragraphs; `className` places it ("mt-4"). */
 export function BodyText({
   children,

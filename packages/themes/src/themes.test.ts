@@ -370,6 +370,22 @@ describe("themeCss (2.1)", () => {
     );
   });
 
+  it("sets the page title a size smaller on phones, never above 4xl (#419)", () => {
+    const phone = (size: ThemeTokens["typeScale"]["h1"]["size"]) =>
+      /@media \(width < 48rem\) \{\s*:root \{\s*--text-h1: ([^;]+);/.exec(
+        themeCss({
+          ...DEFAULT_THEME,
+          typeScale: { ...DEFAULT_THEME.typeScale, h1: { ...DEFAULT_THEME.typeScale.h1, size } },
+        }),
+      )?.[1];
+    // The default theme's 5xl is 4xl, as its titles always were on phones.
+    expect(phone("5xl")).toBe("2.25rem");
+    // A display size stops at 4xl, so it fits a 375 px screen.
+    expect(phone("6xl")).toBe("2.25rem");
+    expect(phone("3xl")).toBe("1.5rem");
+    expect(phone("xs")).toBe("0.75rem");
+  });
+
   it("quotes every font family the model allows, safely", () => {
     const css = (heading: string, body: string) =>
       themeCss({

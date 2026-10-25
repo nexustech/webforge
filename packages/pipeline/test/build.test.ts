@@ -613,7 +613,8 @@ describe("buildSite: the theme's typography (#419)", () => {
     expect(css).toContain("--text-h1--font-weight: 600;");
     expect(css).toContain("font-size: var(--text-h1);");
     expect(css).toContain("--text-body: 1rem;");
-    expect(css).toContain("@media (width < 48rem) { :root { --text-h1: 3rem; } }");
+    // A 6xl title is 4xl on phones (capped, so it fits).
+    expect(css).toContain("@media (width < 48rem) { :root { --text-h1: 2.25rem; } }");
     // The heading font's files are part of the site.
     expect([...exported.files.keys()].some((path) => /lora/i.test(path))).toBe(true);
   }, 60_000);

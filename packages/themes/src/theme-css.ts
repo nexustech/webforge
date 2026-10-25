@@ -44,6 +44,9 @@ const LEADING: Readonly<Record<ThemeTokens["typeScale"]["h1"]["leading"], string
 /** Narrower than this, a page is on a phone: Tailwind's `md`, where layouts change. */
 const PHONE_WIDTH = "48rem";
 
+/** The largest page title on a phone: a 375 px screen fits a few words of it per line. */
+const PHONE_H1_MAX = "4xl";
+
 /** Tailwind's spacing unit for each spacing token: every padding, margin and gap scales with it. */
 const SPACING_UNIT: Readonly<Record<ThemeTokens["spacing"], string>> = {
   compact: "0.225rem",
@@ -142,9 +145,11 @@ const schemeOf = (colors: ThemeTokens["colors"]): ThemeTokens["scheme"] =>
  */
 export function themeCss(tokens: ThemeTokens): string {
   const inverse = inverseColors(tokens);
-  // On phones the page title is a size smaller (#419): a display size would fill the width.
+  // On phones the page title is a size smaller (#419), and never above 4xl, so a display size
+  // (a 6xl title) doesn't overflow a phone's width; the default theme's 5xl is 4xl there.
   const h1 = TEXT_SIZES.indexOf(tokens.typeScale.h1.size);
-  const phoneH1 = TEXT_SIZE[TEXT_SIZES[Math.max(h1 - 1, 0)] ?? tokens.typeScale.h1.size];
+  const phoneStep = Math.min(Math.max(h1 - 1, 0), TEXT_SIZES.indexOf(PHONE_H1_MAX));
+  const phoneH1 = TEXT_SIZE[TEXT_SIZES[phoneStep] ?? tokens.typeScale.h1.size];
   const themes = [
     daisyTheme(tokens, tokens.preset, tokens.colors, { default: true, scheme: tokens.scheme }),
     daisyTheme(tokens, INVERSE_THEME, inverse, {

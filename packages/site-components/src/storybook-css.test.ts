@@ -86,4 +86,11 @@ describe("the Storybook's type scale (#419)", () => {
         .filter((line) => line.startsWith("--text-"));
     expect(declarations(previewCss)).toEqual(declarations(themeCss(DEFAULT_THEME)));
   });
+
+  it("sets headings in the default theme's heading font: its body font", () => {
+    // The default theme uses one family for both, and Storybook loads no font files: its
+    // headings take the body text's font, as an export with the default theme shows them.
+    expect(DEFAULT_THEME.fonts.heading).toEqual(DEFAULT_THEME.fonts.body);
+    expect(previewCss).toContain("--font-heading: var(--font-sans);");
+  });
 });
