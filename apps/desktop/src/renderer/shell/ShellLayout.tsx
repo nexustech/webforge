@@ -121,18 +121,25 @@ function PanelTabs({
   // the strip's magnifier focuses it (LF-5), and is there only then.
   const [search, setSearch] = useState<HTMLInputElement | null>(null);
   useEffect(() => {
-    const root = tabs.current;
-    if (root === null || activeId === undefined) return;
-    const find = () =>
-      setSearch(
-        root.querySelector<HTMLInputElement>(
-          `[data-panel="${CSS.escape(activeId)}"] input[type="search"]`,
-        ),
-      );
+    const content = tabs.current?.querySelector(
+      `[data-slot="tabs-content"][data-panel="${CSS.escape(activeId ?? "")}"]`,
+    );
+    if (content === null || content === undefined) return;
+    // Watching the shown panel only, and looking at most once a frame: a drag in Layers or typing
+    // in the Edit panel changes it often (#421 review).
+    let frame = 0;
+    const find = () => setSearch(content.querySelector<HTMLInputElement>('input[type="search"]'));
+    const later = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(find);
+    };
     find();
-    const observer = new MutationObserver(find);
-    observer.observe(root, { childList: true, subtree: true });
-    return () => observer.disconnect();
+    const observer = new MutationObserver(later);
+    observer.observe(content, { childList: true, subtree: true });
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
   }, [activeId]);
   if (first === undefined) {
     return (
