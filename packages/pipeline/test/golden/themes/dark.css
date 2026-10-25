@@ -94,6 +94,11 @@
   --text-small--line-height: 1.5;
   --text-small--font-weight: 400;
 }
+@media (width < 48rem) {
+  :root {
+    --text-h1: 2.25rem;
+  }
+}
 @theme inline {
   --color-primary-50: var(--wf-color-primary-50);
   --color-primary-100: var(--wf-color-primary-100);

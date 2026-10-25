@@ -30,7 +30,7 @@ describe("the Buy button (2.11, F-CM-2)", () => {
     expect(drawn).toContain(
       'href="https://buy.stripe.com/test_00abc" target="_blank" rel="noopener noreferrer" aria-describedby="buy-price">Buy now</a>',
     );
-    expect(drawn).toContain('<p class="text-lg font-semibold" id="buy-price">£24</p>');
+    expect(drawn).toContain('<p class="font-heading text-lg font-semibold" id="buy-price">£24</p>');
     // No script of its own.
     expect(siteLibrary.components.BuyButton?.behaviours).toBeTypeOf("function");
   });

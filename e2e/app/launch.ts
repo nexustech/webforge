@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { type ChildProcess, spawn } from "node:child_process";
 import { once } from "node:events";
 import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -126,38 +126,55 @@ export async function launchDesktopApp(
  */
 const CLOSE_TIMEOUT_MS = 30_000;
 
+/** How long a process told to end (SIGTERM) may take before it is killed outright (SIGKILL). */
+const KILL_TIMEOUT_MS = 5_000;
+
 /**
  * `app`, its `close()` quitting it as Playwright's does, then killing its process if it hasn't
  * exited within `timeoutMs`: by then the app has long finished closing, and only the process's
- * teardown is left. Closing it again (a test that closes it, then its `afterEach`) waits for the
- * first close.
+ * teardown is left. A process that doesn't end when told to (SIGTERM) is killed outright (SIGKILL)
+ * `killTimeoutMs` later, so one stuck in its teardown can't outlast the test either. Closing it
+ * again (a test that closes it, then its `afterEach`) waits for the first close.
  */
 export function closingWithin<App extends Pick<ElectronApplication, "close" | "process">>(
   app: App,
   timeoutMs = CLOSE_TIMEOUT_MS,
+  killTimeoutMs = KILL_TIMEOUT_MS,
 ): App {
   const close = app.close.bind(app);
   let closed: Promise<void> | undefined;
   const closeInTime = async () => {
-    const child = app.process();
+    let child: ChildProcess;
+    try {
+      child = app.process();
+    } catch {
+      // Playwright's app has no process once it has closed by itself (a launch that handed its
+      // site to a running Webforge): there is nothing left to close.
+      return close();
+    }
     const exited =
       child.exitCode !== null || child.signalCode !== null
         ? Promise.resolve()
         : once(child, "exit");
     const closing = close();
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const late = new Promise<true>((resolve) => {
-      timer = setTimeout(() => resolve(true), timeoutMs);
-    });
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    /** Resolves with true after `ms`. */
+    const after = (ms: number) =>
+      new Promise<true>((resolve) => {
+        timers.push(setTimeout(() => resolve(true), ms));
+      });
     try {
-      if (await Promise.race([closing.then(() => false), late])) {
+      if (await Promise.race([closing.then(() => false), after(timeoutMs)])) {
         // Playwright's close settles once the process is gone; nothing waits on it after this.
         closing.catch(() => undefined);
         child.kill();
-        await exited;
+        if (await Promise.race([exited.then(() => false), after(killTimeoutMs)])) {
+          child.kill("SIGKILL");
+          await exited;
+        }
       }
     } finally {
-      clearTimeout(timer);
+      for (const timer of timers) clearTimeout(timer);
     }
   };
   app.close = () => {
@@ -176,11 +193,23 @@ export function closingWithin<App extends Pick<ElectronApplication, "close" | "p
 const CANVAS_START_TIMEOUT_MS = 30_000;
 
 /**
- * Waits until `page`'s canvas shows the site with its compiled CSS (1.12). The CSS changes the
- * layout when it arrives, so clicks, drags and measurements wait for it.
+ * Waits until `page`'s canvas shows the site with its compiled CSS (1.12) and the fonts it uses.
+ * Both change the layout when they arrive (a heading set in its font is wider or narrower), so
+ * clicks, hovers, drags and measurements wait for them.
  */
 export async function waitForCanvas(page: Page): Promise<void> {
-  await expect(
-    page.frameLocator(".editor__canvas iframe").locator("style[data-webforge-site-css]"),
-  ).toHaveCount(1, { timeout: CANVAS_START_TIMEOUT_MS });
+  const canvas = page.frameLocator(".editor__canvas iframe");
+  await expect(canvas.locator("style[data-webforge-site-css]")).toHaveCount(1, {
+    timeout: CANVAS_START_TIMEOUT_MS,
+  });
+  // A frame first: the styles have to be applied before the fonts they use start loading, and
+  // `fonts.ready` resolves at once while nothing is loading yet.
+  await canvas
+    .locator("body")
+    .evaluate(
+      () =>
+        new Promise<void>((resolve) =>
+          requestAnimationFrame(() => void document.fonts.ready.then(() => resolve())),
+        ),
+    );
 }

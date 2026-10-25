@@ -19,6 +19,7 @@
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@types/sanitize-html": "2.16.2",
+    "@webforge/themes": "workspace:*",
     "daisyui": "catalog:",
     "fast-check": "4.10.2",
     "happy-dom": "21.0.4",

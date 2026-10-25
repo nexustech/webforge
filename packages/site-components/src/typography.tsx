@@ -9,11 +9,15 @@ import type { RenderContext } from "./schema.js";
  * {@link ButtonLink} or {@link BUTTON_CLASSES}, and never writes them out.
  */
 
-/** Title sizes: a page's (a Hero's, a large Heading), a section's, and a small one. */
+/**
+ * Title sizes: a page's (a Hero's, a large Heading), a section's, and a small one, in the theme's
+ * heading font at its type scale's h1, h2 and h3 (size, weight and line height, #419). The theme
+ * sets the page title a size smaller on phones.
+ */
 export const TITLE_CLASSES = {
-  page: "text-4xl font-bold md:text-5xl",
-  section: "text-3xl font-bold",
-  small: "text-xl font-semibold",
+  page: "font-heading text-h1",
+  section: "font-heading text-h2",
+  small: "font-heading text-h3",
 } as const;
 
 /** The heading level of each title size: a page has one h1. */
@@ -40,8 +44,11 @@ export function SectionTitle({
 export const RICH_TEXT_LIST_CLASSES =
   "[&_ol]:my-3 [&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-6";
 
-/** Running text: paragraphs, links underlined, space between paragraphs, its lists marked. */
-export const BODY_TEXT_CLASSES = `text-lg leading-relaxed [&_a]:underline [&_p+p]:mt-4 ${RICH_TEXT_LIST_CLASSES}`;
+/**
+ * Running text at the type scale's body size (#419): paragraphs, links underlined, space between
+ * paragraphs, its lists marked.
+ */
+export const BODY_TEXT_CLASSES = `text-body [&_a]:underline [&_p+p]:mt-4 ${RICH_TEXT_LIST_CLASSES}`;
 
 /** Running text, in a `<div>` that holds its paragraphs; `className` places it ("mt-4"). */
 export function BodyText({

@@ -90,7 +90,11 @@ function createSiteInTestScript(path: string): void {
   });
   site.theme = {
     ...site.theme,
-    fonts: { ...site.theme.fonts, body: { family: "Test Script", fallback: "serif" } },
+    // Headings too: the Hero's title is in the heading font (#419).
+    fonts: {
+      heading: { family: "Test Script", fallback: "serif" },
+      body: { family: "Test Script", fallback: "serif" },
+    },
   };
   site.pages[site.homePageId]?.doc.content.push({
     type: "Hero",

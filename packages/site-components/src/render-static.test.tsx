@@ -63,8 +63,8 @@ describe("renderNodesToHtml", () => {
 
     expect(html).toBe(
       '<section class="site-section mx-auto max-w-4xl space-y-6 px-4 py-16">' +
-        '<h1 class="site-heading text-4xl font-bold md:text-5xl">Welcome to our business</h1>' +
-        '<div class="site-text text-lg leading-relaxed [&amp;_a]:underline [&amp;_p+p]:mt-4 [&amp;_ol]:my-3 [&amp;_ol]:list-decimal [&amp;_ol]:pl-6 [&amp;_ul]:my-3 [&amp;_ul]:list-disc [&amp;_ul]:pl-6">' +
+        '<h1 class="site-heading font-heading text-h1">Welcome to our business</h1>' +
+        '<div class="site-text text-body [&amp;_a]:underline [&amp;_p+p]:mt-4 [&amp;_ol]:my-3 [&amp;_ol]:list-decimal [&amp;_ol]:pl-6 [&amp;_ul]:my-3 [&amp;_ul]:list-disc [&amp;_ul]:pl-6">' +
         '<div class="contents"><p>Tell visitors what you do and why they will love it.</p></div>' +
         "</div></section>",
     );
@@ -184,7 +184,9 @@ describe("renderNodesToHtml", () => {
   it("renders the header with navigation, the current page and the menu toggle", () => {
     const html = renderNodesToHtml(starterLayout("Rosa's Bakery").header, siteLibrary, context);
 
-    expect(html).toContain('<a class="text-xl font-bold" href="index.html">Rosa&#x27;s Bakery</a>');
+    expect(html).toContain(
+      '<a class="font-heading text-xl font-bold" href="index.html">Rosa&#x27;s Bakery</a>',
+    );
     expect(html).toContain('<nav aria-label="Main navigation">');
     // A row on wide screens; on small ones a menu that opens without the script too (2.6).
     expect(html).toContain('<ul class="menu menu-horizontal hidden p-0 md:flex">');
@@ -294,7 +296,7 @@ describe("renderNodesToHtml", () => {
     );
 
     expect(html).toContain("md:flex-col md:justify-center");
-    expect(html).toMatch(/<header [^>]*><a class="text-xl font-bold"/);
+    expect(html).toMatch(/<header [^>]*><a class="font-heading text-xl font-bold"/);
     expect(html).not.toContain("btn-primary hidden");
   });
 
@@ -333,7 +335,9 @@ describe("renderNodesToHtml", () => {
     const html = renderNodesToHtml(starterLayout("Bakery").header, siteLibrary, reordered);
 
     // The starter Header shows Site Settings' name, not the text it was created with (1.17).
-    expect(html).toContain('<a class="text-xl font-bold" href="index.html">Rosa&#x27;s Bakery</a>');
+    expect(html).toContain(
+      '<a class="font-heading text-xl font-bold" href="index.html">Rosa&#x27;s Bakery</a>',
+    );
   });
 
   it("shows a field's own text until it is bound, and leaves an empty binding out", () => {
@@ -478,7 +482,7 @@ describe("renderNodesToHtml", () => {
     );
 
     expect(html).toContain(
-      '<div class="mx-auto max-w-3xl"><h2 class="text-3xl font-bold">Our story</h2>',
+      '<div class="mx-auto max-w-3xl"><h2 class="font-heading text-h2">Our story</h2>',
     );
     expect(html).toContain("<p>Since 1998.</p><p>In Hightown.</p>");
   });
@@ -571,7 +575,7 @@ describe("renderNodesToHtml", () => {
   it("renders an FAQ as native details elements", () => {
     const html = renderNodesToHtml(faqNodes, siteLibrary, context);
 
-    expect(html).toContain('<h2 class="text-3xl font-bold">Questions</h2>');
+    expect(html).toContain('<h2 class="font-heading text-h2">Questions</h2>');
     expect(html).toContain(
       '<summary class="collapse-title font-semibold">Open on Sunday?</summary>',
     );
@@ -615,7 +619,7 @@ describe("renderNodesToHtml", () => {
     );
 
     expect(html).toBe(
-      '<h2 class="site-heading text-3xl font-bold shadow-lg" role="note" id="prices">Prices</h2>',
+      '<h2 class="site-heading font-heading text-h2 shadow-lg" role="note" id="prices">Prices</h2>',
     );
   });
 
@@ -695,7 +699,7 @@ describe("renderNodesToHtml", () => {
 
     expect(html).toContain('<section class="site-hero hero bg-base-200 px-4 py-16">');
     expect(html).toContain(
-      '<section class="site-section mx-auto max-w-4xl space-y-6 px-4 py-16"><h3 class="site-heading text-xl font-semibold">Hi</h3></section>',
+      '<section class="site-section mx-auto max-w-4xl space-y-6 px-4 py-16"><h3 class="site-heading font-heading text-h3">Hi</h3></section>',
     );
     expect(html).toContain(
       '<section class="site-section mx-auto max-w-4xl space-y-6 px-4 py-8 md:py-24"></section>',
@@ -744,10 +748,10 @@ describe("renderNodesToHtml", () => {
       '<section class="site-section mx-auto max-w-4xl space-y-6 px-8 py-0 mb-16">',
     );
     expect(html).toContain(
-      '<h3 class="site-heading text-xl font-semibold max-md:mt-24 md:mt-4">Hi</h3>',
+      '<h3 class="site-heading font-heading text-h3 max-md:mt-24 md:mt-4">Hi</h3>',
     );
     expect(html).toContain(
-      '<div class="site-text text-lg leading-relaxed [&amp;_a]:underline [&amp;_p+p]:mt-4 [&amp;_ol]:my-3 [&amp;_ol]:list-decimal [&amp;_ol]:pl-6 [&amp;_ul]:my-3 [&amp;_ul]:list-disc [&amp;_ul]:pl-6 mb-8">',
+      '<div class="site-text text-body [&amp;_a]:underline [&amp;_p+p]:mt-4 [&amp;_ol]:my-3 [&amp;_ol]:list-decimal [&amp;_ol]:pl-6 [&amp;_ul]:my-3 [&amp;_ul]:list-disc [&amp;_ul]:pl-6 mb-8">',
     );
     // An FAQ is a section like the others (2.19): its own padding, its margin set.
     expect(html).toContain('<section class="site-faq bg-base-100 px-4 py-16 my-4">');
