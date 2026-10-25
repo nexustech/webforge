@@ -30,6 +30,7 @@ import type {
 import type { ImportSource, PrepareOutcome } from "../shared/storage-writer-protocol.js";
 import { createImportJobs } from "../worker/store-import.js";
 import { log, logFailure } from "./log.js";
+import { type NewSiteFill, newSiteImporter } from "./new-site.js";
 import {
   createInlineStorageWriter,
   type PreparedImport,
@@ -232,8 +233,12 @@ export class ProjectSession {
   /**
    * Creates a site at `path` (adding `.wforge` if missing), named after the file, and opens it.
    * An existing file at `path` is replaced; the save dialog has already asked the user.
+   *
+   * New Site (2.14a) gives `newSite`: the site's name as typed, and `fill`, which writes its
+   * pages, theme and Media into the new file before it opens, its images through the storage
+   * writer. A fill that fails closes the file, and the open site stays open.
    */
-  async create(path: string): Promise<ProjectResult> {
+  async create(path: string, newSite?: NewSiteFill): Promise<ProjectResult> {
     const target = withProjectExtension(path);
     // The current site's file can't be replaced while it is open: it is closed first, and opened
     // again, as the same opening, if the new site can't be made.
@@ -244,8 +249,16 @@ export class ProjectSession {
     if (replaced !== undefined) {
       await this.close();
     }
-    const name = basename(target, extname(target)).trim() || t("site.untitledName");
-    const result = await this.#replaceWith(target, () => this.#createStore(target, name));
+    const name =
+      newSite?.name ?? (basename(target, extname(target)).trim() || t("site.untitledName"));
+    const made = await this.#newStore(target, name, newSite).then(
+      (store) => ({ store }),
+      (error: unknown) => ({ error }),
+    );
+    const result = await this.#replaceWith(target, () => {
+      if ("error" in made) throw made.error;
+      return made.store;
+    });
     if (result.status === "failed" && replaced !== undefined) {
       await this.#replaceWith(
         replaced.path,
@@ -254,6 +267,22 @@ export class ProjectSession {
       );
     }
     return result;
+  }
+
+  /** A new site's file at `path`, filled as New Site asked, if it did; closed again if that fails. */
+  async #newStore(path: string, name: string, newSite?: NewSiteFill): Promise<ProjectStore> {
+    const store = this.#createStore(path, name);
+    if (newSite === undefined) return store;
+    try {
+      await newSite.fill({
+        store,
+        importFile: newSiteImporter(this.#writer, path),
+      });
+    } catch (error) {
+      store.close();
+      throw error;
+    }
+    return store;
   }
 
   /** Opens the site at `path`. */

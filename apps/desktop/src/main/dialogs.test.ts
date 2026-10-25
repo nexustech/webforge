@@ -33,23 +33,30 @@ function setUp(
 }
 
 describe("createNativeDialogs", () => {
-  it("asks where to save a new site, modal to the focused window, with the .wforge filter", async () => {
+  it("asks where to save a new site, named after it, modal to the focused window", async () => {
     const { dialogs, dialog } = setUp();
 
-    await expect(dialogs.project.chooseNewProjectPath()).resolves.toBe("/sites/A.wforge");
+    await expect(dialogs.project.chooseNewProjectPath("Rosie's Bakery")).resolves.toBe(
+      "/sites/A.wforge",
+    );
+    await dialogs.project.chooseNewProjectPath("");
     expect(dialog.showSaveDialog).toHaveBeenCalledWith(parent, {
       title: t("site.newDialogTitle"),
-      defaultPath: `${t("site.untitledName")}.wforge`,
+      defaultPath: "Rosie's Bakery.wforge",
       filters: [{ name: t("site.fileType"), extensions: ["wforge"] }],
     });
+    // A site without a name is offered the untitled one.
+    expect(dialog.showSaveDialog.mock.calls[1]?.[1]?.defaultPath).toBe(
+      `${t("site.untitledName")}.wforge`,
+    );
   });
 
   it("answers nothing for a cancelled or nameless save, and opens without a parent when none is focused", async () => {
     await expect(
-      setUp({ save: { canceled: true, filePath: "/x" } }).dialogs.project.chooseNewProjectPath(),
+      setUp({ save: { canceled: true, filePath: "/x" } }).dialogs.project.chooseNewProjectPath(""),
     ).resolves.toBeUndefined();
     await expect(
-      setUp({ save: { canceled: false, filePath: "" } }).dialogs.project.chooseNewProjectPath(),
+      setUp({ save: { canceled: false, filePath: "" } }).dialogs.project.chooseNewProjectPath(""),
     ).resolves.toBeUndefined();
 
     const { dialogs, dialog } = setUp({ focused: null });
@@ -78,7 +85,7 @@ describe("createNativeDialogs", () => {
   it("takes a test's answer instead of opening a site or export dialog (e2e builds)", async () => {
     const { dialogs, dialog } = setUp({ test: { path: "/test/Site.wforge" } });
 
-    await expect(dialogs.project.chooseNewProjectPath()).resolves.toBe("/test/Site.wforge");
+    await expect(dialogs.project.chooseNewProjectPath("")).resolves.toBe("/test/Site.wforge");
     await expect(dialogs.project.chooseProjectToOpen()).resolves.toBe("/test/Site.wforge");
     await expect(dialogs.export.chooseExportFolder()).resolves.toBe("/test/Site.wforge");
     expect(dialog.showSaveDialog).not.toHaveBeenCalled();

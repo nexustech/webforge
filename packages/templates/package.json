@@ -1,0 +1,20 @@
+{
+  "name": "@webforge/templates",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./node": "./src/node.ts"
+  },
+  "dependencies": {
+    "@webforge/model": "workspace:*",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@webforge/site-components": "workspace:*",
+    "@webforge/themes": "workspace:*",
+    "vitest": "catalog:"
+  }
+}

@@ -14,8 +14,8 @@ import type { ClipboardReadResult } from "../../shared/ipc/clipboard.js";
 /** A file a paste didn't add to Media, and why. */
 type RejectedFile = Extract<ClipboardReadResult, { status: "media" }>["rejected"][number];
 
+import { starterSite } from "../../shared/starter-site.js";
 import { createEditorSession, currentPage, type EditorSession } from "../editor/editor-session.js";
-import { starterSite } from "../editor/starter-site.js";
 import { setFailureLog } from "../log.js";
 import { addMedia } from "../media/index.js";
 import { saveAsSharedSection } from "../shared-sections/index.js";

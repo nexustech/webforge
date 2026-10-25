@@ -82,7 +82,7 @@ async function appPage(browser: Browser): Promise<Page> {
 /** The renderer's `window.webforge.project`, as far as these tests call it. */
 type ProjectApi = {
   getCurrent(): Promise<unknown>;
-  create(): Promise<{ status: string }>;
+  create(request: { name: string; theme: string }): Promise<{ status: string }>;
 };
 
 const currentProject = (page: Page) =>
@@ -193,9 +193,28 @@ test("answers the native file dialogs from the test's file in e2e builds (ADR 00
   writeFileSync(dialogAnswers, JSON.stringify({ save: path }));
 
   const result = await page.evaluate(() =>
-    (window as unknown as { webforge: { project: ProjectApi } }).webforge.project.create(),
+    (window as unknown as { webforge: { project: ProjectApi } }).webforge.project.create({
+      name: "From the dialog",
+      theme: "light",
+    }),
   );
 
   expect(result).toEqual({ status: "opened", project: summary("From the dialog") });
   expect(existsSync(path)).toBe(true);
+});
+
+test("ships the templates beside app.asar, and New Site lists them (2.14a)", async () => {
+  test.skip(child === undefined, "Needs the running packaged app");
+  const dir = resourcesDir();
+  if (dir !== undefined) {
+    expect(existsSync(join(dir, "templates", "sample", "template.json"))).toBe(true);
+  }
+
+  const listed = await page.evaluate(() =>
+    (
+      window as unknown as { webforge: { templates: { list(): Promise<{ id: string }[]> } } }
+    ).webforge.templates.list(),
+  );
+
+  expect(listed.map((template) => template.id)).toEqual(["sample"]);
 });

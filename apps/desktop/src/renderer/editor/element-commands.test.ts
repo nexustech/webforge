@@ -8,11 +8,11 @@ import {
 import { siteLibrary } from "@webforge/site-components";
 import { createFakeEngine } from "@webforge/test-utils/renderer";
 import { describe, expect, it, vi } from "vitest";
+import { starterSite } from "../../shared/starter-site.js";
 import { createCommandRegistry } from "../shell/commands.js";
 import { sessionWith } from "../testing/fixtures.js";
 import { currentPage } from "./editor-session.js";
 import { registerElementCommands } from "./element-commands.js";
-import { starterSite } from "./starter-site.js";
 
 const HOURS = "shared-hours" as SharedSectionId;
 

@@ -7,6 +7,7 @@ import { mediaChannels } from "./ipc/media.js";
 import { prefsChannels } from "./ipc/prefs.js";
 import { projectChannels } from "./ipc/project.js";
 import { siteChannels } from "./ipc/site.js";
+import { templatesChannels } from "./ipc/templates.js";
 
 export type { AppInfo } from "./ipc/app.js";
 export type { MediaImportResult } from "./ipc/media.js";
@@ -41,6 +42,7 @@ export const ipcContract = {
   ...prefsChannels,
   ...projectChannels,
   ...siteChannels,
+  ...templatesChannels,
 } as const;
 
 /** The channels of each domain, keyed by domain; the tests check none overwrites another. */
@@ -53,6 +55,7 @@ export const ipcDomains = {
   prefs: prefsChannels,
   project: projectChannels,
   site: siteChannels,
+  templates: templatesChannels,
 } as const;
 
 /** Name of an entry in {@link ipcContract}. */

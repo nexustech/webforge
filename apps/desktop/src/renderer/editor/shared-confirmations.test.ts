@@ -8,11 +8,11 @@ import {
 } from "@webforge/model";
 import { createFakeEngine } from "@webforge/test-utils/renderer";
 import { describe, expect, it, vi } from "vitest";
+import { starterSite } from "../../shared/starter-site.js";
 import type { SiteWideAction } from "../shell/confirm-site-wide.js";
 import { sessionWith } from "../testing/fixtures.js";
 import { connectEngine, currentPage } from "./editor-session.js";
 import { confirmSharedRemovals, sharedCutConfirmation } from "./shared-confirmations.js";
-import { starterSite } from "./starter-site.js";
 
 /** The starter site, its shared Footer holding two Headings beside the Footer itself. */
 function footerSite(): SiteDoc {

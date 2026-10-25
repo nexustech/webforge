@@ -2,6 +2,7 @@ import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { t } from "@webforge/i18n";
 import type { SiteSnapshot, ThemeTokens } from "@webforge/model";
+import { readTemplates, type TemplateFolder } from "@webforge/templates/node";
 import { type CatalogueFont, FONT_CATALOGUE, fontFacesFor } from "@webforge/themes";
 import {
   type ThumbnailJob,
@@ -61,6 +62,7 @@ import {
   spellCheckAvailable,
 } from "./spellcheck.js";
 import { createStorageWriter, type WriterThread } from "./storage-writer.js";
+import { registerTemplatesHandlers } from "./templates-ipc.js";
 import {
   MIN_WINDOW_SIZE,
   mainWindowPlacement,
@@ -237,6 +239,17 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
 
   const fonts = siteFonts(electron);
 
+  // The templates New Site offers (2.14a), outside app.asar: in the packaged app's resources, or
+  // where the build copied them while developing. Read once, when first listed or used.
+  const templatesDir = app.isPackaged
+    ? join(process.resourcesPath, "templates")
+    : join(app.getAppPath(), "out", "templates");
+  let shippedTemplates: readonly TemplateFolder[] | undefined;
+  const templates = () => {
+    shippedTemplates ??= readTemplates(templatesDir);
+    return shippedTemplates;
+  };
+
   // Each export runs in its own utility process, so building never blocks the window (07). The
   // worker resolves nothing itself: it gets the site's font files, read and checked here. Every
   // worker's crash becomes a local report (R3).
@@ -368,6 +381,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       recovery: { backups, dialogs: parts.recoveryDialogs },
       recent: recentSites,
       beforeSwitch: () => siteSwitch.leaveSite(),
+      templates,
     });
     registerCanvasHandlers(ipcMain, isTrustedSender, canvasStyles);
     registerFontHandlers(ipcMain, isTrustedSender, fonts.downloaded());
@@ -397,6 +411,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     registerExportHandlers(ipcMain, isTrustedSender, dialogs.export, runExport, (hash) =>
       projectSession.readMedia(hash),
     );
+    registerTemplatesHandlers(ipcMain, isTrustedSender, templates);
     // A site double-clicked in Explorer arrives as a command-line argument (P1).
     const projectToOpen = lifecycle.projectFromFinder ?? findProjectArgument(process.argv);
     if (projectToOpen !== undefined) {

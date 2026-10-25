@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { placeCaret } from "./caret.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
-import { stubFileDialogs } from "./sites.js";
+import { type RendererWindow, stubFileDialogs } from "./sites.js";
 
 // The start screen (F-SITE-1, F-SITE-2): new → edit → quit → reopen from the Recent list.
 
@@ -54,10 +54,14 @@ test("creates a blank site, keeps an edit and reopens it from the Recent list", 
   let page = await startWithoutSite();
   await expect(page.getByText("Sites you open or create appear here.")).toBeVisible();
 
-  // Blank site: the save dialog (stubbed) names the file, and the editor opens on it.
+  // New Site, Blank: the save dialog (stubbed) names the file, and the editor opens on it.
   const sitePath = join(dir, "Rosa's Bakery.wforge");
   await stubFileDialogs(running(), sitePath);
-  await page.getByRole("button", { name: "Blank site" }).click();
+  // Exactly: the title bar's New Site… button has the same name in another case.
+  await page.getByRole("button", { name: "New site…", exact: true }).click();
+  const newSite = page.getByRole("dialog", { name: "New Site" });
+  await newSite.getByRole("textbox", { name: "Site name" }).fill("Rosa's Bakery");
+  await newSite.getByRole("button", { name: "Create" }).click();
   await waitForCanvas(page);
   await expect(page.getByRole("banner").getByRole("status")).toHaveText("Saved");
 
@@ -80,6 +84,38 @@ test("creates a blank site, keeps an edit and reopens it from the Recent list", 
   await expect(canvas(page).locator("h1")).toHaveText(`${STARTER_HEADING} today`, {
     timeout: 30_000,
   });
+});
+
+test("makes a site from a template, named as typed and in the chosen theme, in under 3 s", async () => {
+  const page = await startWithoutSite();
+  await stubFileDialogs(running(), join(dir, "Rosa's Bakery.wforge"));
+
+  // New Site (2.14a, F-SITE-1): the name, a template (which brings its theme), then another theme.
+  // Exactly: the title bar's New Site… button has the same name in another case.
+  await page.getByRole("button", { name: "New site…", exact: true }).click();
+  const newSite = page.getByRole("dialog", { name: "New Site" });
+  await newSite.getByRole("textbox", { name: "Site name" }).fill("Rosa's Bakery");
+  await newSite.getByText("Sample bakery", { exact: true }).click();
+  await expect(newSite.getByRole("radio", { name: "Light" })).toBeChecked();
+  await newSite.getByText("Atelier", { exact: true }).click();
+
+  const started = Date.now();
+  await newSite.getByRole("button", { name: "Create" }).click();
+  // Open in under 3 s (F-SITE-1): the template's home page on the canvas. Nearly all of it is the
+  // editor starting again on the new site, as for every site opened; the fill itself is quick.
+  const hero = canvas(page).locator("h1", { hasText: "Fresh bread, baked every morning" });
+  await expect(hero).toBeVisible();
+  expect(Date.now() - started).toBeLessThan(3_000);
+  // With its photo, which came into the site's Media.
+  await expect(canvas(page).locator("section img").first()).toHaveJSProperty("complete", true);
+  await expect(canvas(page).locator("section img").first()).not.toHaveJSProperty("naturalWidth", 0);
+
+  const site = await page.evaluate(async () => {
+    const read = await (window as unknown as RendererWindow).webforge.project.readSite();
+    return read as { site: { settings: { general: { name: string } }; theme: { preset: string } } };
+  });
+  expect(site.site.settings.general.name).toBe("Rosa's Bakery");
+  expect(site.site.theme.preset).toBe("atelier");
 });
 
 test("says when a site can't be opened, and removes sites from the list", async () => {

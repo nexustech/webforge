@@ -1,7 +1,7 @@
 import type { LayoutDoc, PageId, SiteDoc } from "@webforge/model";
 import { describe, expect, it } from "vitest";
+import { starterSite } from "../../shared/starter-site.js";
 import { pagesShowing, sharedRegionOf, shownLayout, updateSharedField } from "./shared-layout.js";
-import { starterSite } from "./starter-site.js";
 
 /** The starter site, with its home page's settings changed by `settings`. */
 function siteHiding(settings: { hideHeader?: boolean; hideFooter?: boolean }): SiteDoc {

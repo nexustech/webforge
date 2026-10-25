@@ -12,7 +12,7 @@ type ProjectSummary = {
 export type RendererWindow = {
   webforge: {
     project: {
-      create(): Promise<unknown>;
+      create(request: { name: string; theme: string; template?: string }): Promise<unknown>;
       open(): Promise<unknown>;
       getCurrent(): Promise<ProjectSummary | null>;
       readSite(): Promise<unknown>;

@@ -4,7 +4,7 @@ import type { BaseWindow, Dialog, OpenDialogOptions, SaveDialogOptions } from "e
 import type { E2eDialog } from "./e2e-dialogs.js";
 import type { ExportDialogs } from "./export-ipc.js";
 import type { MediaDialogs } from "./media-ipc.js";
-import type { ProjectDialogs } from "./project-ipc.js";
+import { type ProjectDialogs, siteFileName } from "./project-ipc.js";
 import { PROJECT_EXTENSION } from "./project-session.js";
 
 /** What the native dialogs are made with; fakes in tests. */
@@ -50,12 +50,12 @@ export function createNativeDialogs(parts: DialogParts): NativeDialogs {
 
   return {
     project: {
-      chooseNewProjectPath: async () => {
+      chooseNewProjectPath: async (siteName) => {
         const answer = await parts.testAnswer("save");
         if (answer !== undefined) return answer.path;
         const result = await save({
           title: t("site.newDialogTitle"),
-          defaultPath: `${t("site.untitledName")}${PROJECT_EXTENSION}`,
+          defaultPath: `${siteFileName(siteName, t("site.untitledName"))}${PROJECT_EXTENSION}`,
           filters: projectFilters,
         });
         return result.canceled || result.filePath === "" ? undefined : result.filePath;

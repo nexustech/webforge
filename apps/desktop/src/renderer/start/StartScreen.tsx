@@ -4,9 +4,11 @@ import { FilePlusIcon, FolderOpenIcon, XIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { AppApi } from "../../shared/ipc/app.js";
 import type { ProjectApi } from "../../shared/ipc/project.js";
+import type { TemplatesApi } from "../../shared/ipc/templates.js";
 import type { AppInfo, RecentSite } from "../../shared/ipc-contract.js";
 import { AboutDialog } from "../shell/AboutDialog.js";
 import { CommandRegistryProvider } from "../shell/command-context.js";
+import { COMMAND_IDS } from "../shell/command-ids.js";
 import { createCommandRegistry, installCommandShortcuts, isMac } from "../shell/commands.js";
 import { ShortcutSheet } from "../shell/ShortcutSheet.js";
 import { TitleBar } from "../shell/TitleBar.js";
@@ -21,6 +23,8 @@ export type StartScreenProps = {
     ProjectApi,
     "create" | "open" | "listRecent" | "openRecent" | "removeRecent"
   >;
+  /** Lists the templates New Site offers; injectable for tests. */
+  readonly templates?: Pick<TemplatesApi, "list">;
   /** Answers the main process's save requests; injectable for tests. */
   readonly app?: Pick<AppApi, "onFlushRequest">;
   /** Starts the window over with the newly opened site; injectable for tests. */
@@ -30,11 +34,11 @@ export type StartScreenProps = {
 };
 
 /**
- * The window when no site is open (F-SITE-1, F-SITE-2): start a blank site, open one, or pick one
- * of the recently opened sites, each with its thumbnail and when it was last edited. Templates
- * join "Blank site" in Phase 2.
+ * The window when no site is open (F-SITE-1, F-SITE-2): start a site (New Site's dialog: Blank or a
+ * template, 2.14a), open one, or pick one of the recently opened sites, each with its thumbnail
+ * and when it was last edited.
  */
-export function StartScreen({ info, project, app, restart, locale }: StartScreenProps) {
+export function StartScreen({ info, project, templates, app, restart, locale }: StartScreenProps) {
   const [registry] = useState(createCommandRegistry);
   const [recent, setRecent] = useState<readonly RecentSite[]>([]);
   const [message, setMessage] = useState<string>();
@@ -88,9 +92,9 @@ export function StartScreen({ info, project, app, restart, locale }: StartScreen
                   {t("site.start.title")}
                 </h2>
                 <div className="flex flex-wrap gap-3">
-                  <Button type="button" onClick={() => void run(() => api.create())}>
+                  <Button type="button" onClick={() => registry.run(COMMAND_IDS.newSite)}>
                     <FilePlusIcon />
-                    {t("site.start.blank")}
+                    {t("site.start.new")}
                   </Button>
                   <Button
                     type="button"
@@ -169,7 +173,11 @@ export function StartScreen({ info, project, app, restart, locale }: StartScreen
             </div>
           </main>
         </div>
-        <SiteCommands project={api} {...(restart === undefined ? {} : { restart })} />
+        <SiteCommands
+          project={api}
+          {...(templates === undefined ? {} : { templates })}
+          {...(restart === undefined ? {} : { restart })}
+        />
         <AboutDialog info={info} />
         <ShortcutSheet editor={false} />
         <Toaster theme="dark" />

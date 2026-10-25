@@ -18,9 +18,9 @@ import {
   type SiteDoc,
 } from "@webforge/model";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { starterSite } from "../../shared/starter-site.js";
 import { currentPage } from "../editor/editor-session.js";
 import { selectedIds } from "../editor/selection.js";
-import { starterSite } from "../editor/starter-site.js";
 import { CommandRegistryProvider } from "../shell/command-context.js";
 import { createCommandRegistry, isMac } from "../shell/commands.js";
 import { createPanelRegistry, panelsInSlot } from "../shell/panels.js";

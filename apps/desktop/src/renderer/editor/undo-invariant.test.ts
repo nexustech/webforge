@@ -19,6 +19,7 @@ import { siteLibrary, starterPage } from "@webforge/site-components";
 import { createFakeEngine, type FakeEngine } from "@webforge/test-utils/renderer";
 import fc from "fast-check";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { starterSite } from "../../shared/starter-site.js";
 import {
   deleteSelected,
   duplicateSelected,
@@ -53,7 +54,6 @@ import {
 import { copyLayer } from "./layers.js";
 import { applyListChange, editableList, listItems } from "./list-edit.js";
 import { withoutOverride, withValueAt } from "./responsive-value.js";
-import { starterSite } from "./starter-site.js";
 
 // Undo invariant (U8) over the editor as wired: canvas edits of every kind on any page, page
 // switches, site settings, the shared layout and the menu editor, interleaved with undo, redo and
