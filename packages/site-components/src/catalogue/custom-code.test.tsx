@@ -29,6 +29,15 @@ describe("Custom Code (2.11, F-ED-15)", () => {
     expect(shown).toContain("Custom Code");
   });
 
+  it("keeps what it holds inside its own box on the canvas, even fixed to the window", () => {
+    const shown = html(custom({ code: '<div class="fixed inset-0 z-50">Cover</div>' }));
+
+    expect(shown).toContain(
+      '<div class="site-custom-code" style="position:relative;contain:paint">',
+    );
+    expect(html(custom({ code: CODE }), exported)).not.toContain("contain");
+  });
+
   it("can't be made raw by a stored document: only the export's render context does it", () => {
     const shown = html(
       custom({ code: CODE, rawCustomCode: true, context: { rawCustomCode: true } }),

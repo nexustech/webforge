@@ -16,6 +16,12 @@ const LABEL_STYLE = {
 } as const;
 
 /**
+ * Its box in the editor: what it holds is drawn inside it, so a fixed or absolutely placed part
+ * ("fixed inset-0") can't cover the rest of the canvas.
+ */
+const CONTAINED = { position: "relative", contain: "paint" } as const;
+
+/**
  * Custom Code (F-ED-15, C7; Advanced mode): HTML the person writes, written into the exported page
  * as it is, where its scripts run. Everywhere else, the canvas included, it is shown sanitised
  * (`sanitizeCustomCode`): no scripts, styles, frames, forms or anything from the web, so it can't
@@ -40,7 +46,7 @@ const customCode = defineComponent({
       return <div className={className} dangerouslySetInnerHTML={{ __html: code }} />;
     }
     return (
-      <div className={className}>
+      <div className={className} style={CONTAINED}>
         <span style={LABEL_STYLE}>{t("element.customCode")}</span>
         {code.trim() === "" ? (
           <p style={{ opacity: 0.6, fontStyle: "italic" }}>{t("field.customCode.empty")}</p>
