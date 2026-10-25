@@ -23,6 +23,7 @@ export {
   boxTokenPixels,
   colorClass,
   EDITOR_RENDER_CONTEXT,
+  holdsOverfullSlot,
   linkAttributes,
   linkValue,
   optionValue,
