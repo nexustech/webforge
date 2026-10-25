@@ -16,6 +16,8 @@ import {
   COMPONENT_ATTRIBUTE,
   componentSelector,
   DRAWER_ITEM,
+  HOVERED_COMPONENT,
+  INLINE_TEXT,
   LAYOUT,
   OVERLAY,
   type PuckPrivateApi,
@@ -121,6 +123,32 @@ describe("Puck's DOM contract (R8)", () => {
     // LF-3 moves the bar's box; HOVERED_COMPONENT needs a real pointer: canvas-chrome.spec.ts.
     expect(element.querySelector(`${OVERLAY} ${ACTIONS_OVERLAY} ${ACTIONS}`)).not.toBeNull();
     expect(element.querySelector(`${SELECTED_COMPONENT} ${ACTIONS}`)).not.toBeNull();
+  });
+
+  it("hovers an element with the pointer over its text, one element at a time (#399)", async () => {
+    const heading = element.querySelector(componentSelector("a"));
+    const text = element.querySelector(componentSelector("t"));
+    const inline = heading?.querySelector(INLINE_TEXT);
+    const editor = text?.querySelector(RICH_TEXT);
+    if (heading == null || text == null || inline == null || editor == null) {
+      throw new Error("the page isn't drawn as expected");
+    }
+    // Each hovered element's overlay, by the name its chip shows (SP-1).
+    const hovered = () =>
+      [...element.querySelectorAll(HOVERED_COMPONENT)].map((overlay) => overlay.textContent);
+    const move = async (from: Element | null, to: Element) => {
+      await act(async () => {
+        from?.dispatchEvent(new MouseEvent("mouseout", { bubbles: true, relatedTarget: to }));
+        to.dispatchEvent(new MouseEvent("mouseover", { bubbles: true, relatedTarget: from }));
+      });
+    };
+
+    // Puck's text stops mouseover before it reaches the element (an overlay portal).
+    await move(null, inline);
+    expect(hovered()).toEqual([expect.stringMatching(/^Heading/)]);
+    // From the Heading's text straight onto the Text's.
+    await move(inline, editor);
+    expect(hovered()).toEqual([expect.stringMatching(/^Text/)]);
   });
 
   it("draws a drag source as an item of Puck's drawer", async () => {
