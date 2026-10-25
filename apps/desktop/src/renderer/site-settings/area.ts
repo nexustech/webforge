@@ -1,5 +1,12 @@
-import type { Area, EditorContext } from "../editor/areas.js";
+import type { Area, EditorContext, WindowContext } from "../editor/areas.js";
 import { connectCanvasSettings } from "./canvas-settings.js";
+import { registerSiteSettings } from "./site-part.js";
+
+/** The open site's part of Settings, under *This site* (F-SET-1, LF-12). */
+export const siteSettingsArea: Area<WindowContext> = {
+  id: "siteSettings",
+  register: ({ settings, session }) => registerSiteSettings(settings, session),
+};
 
 /** The Site Settings the canvas's elements show, such as the opening hours (2.20, B1). */
 export const canvasSettingsArea: Area<EditorContext> = {

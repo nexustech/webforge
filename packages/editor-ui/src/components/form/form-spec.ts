@@ -50,8 +50,15 @@ export type FormSchema<Out> = {
  * schema its values must pass. Dialogs declare one instead of drawing their own fields.
  */
 export type FormSpec<V extends FormValues, Out> = {
-  /** Its tabs, in order; none for a form on one page. */
-  readonly groups?: readonly { readonly id: string; readonly label: string }[];
+  /**
+   * Its tabs, in order; none for a form on one page. Groups with a `heading` are listed down the
+   * side instead, under their headings (LF-12's Settings: "App", "This site").
+   */
+  readonly groups?: readonly {
+    readonly id: string;
+    readonly label: string;
+    readonly heading?: string;
+  }[];
   /** Its fields, in order: fixed, or as the values ask (a form service's one value). */
   readonly fields: readonly FormField[] | ((values: V) => readonly FormField[]);
   readonly schema: FormSchema<Out>;
