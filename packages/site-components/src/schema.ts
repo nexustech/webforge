@@ -63,7 +63,17 @@ export type FieldDef = {
   /** On or off, stored as a boolean. */
   | { readonly kind: "toggle"; readonly label: string }
   /** A step along a token scale (C4), smallest first, stored as the step's value. */
-  | { readonly kind: "slider"; readonly label: string; readonly steps: readonly FieldOption[] }
+  | {
+      readonly kind: "slider";
+      readonly label: string;
+      readonly steps: readonly FieldOption[];
+      /**
+       * The element's width at each step, in CSS pixels (`null`: as wide as its container), when
+       * the slider sets how wide the element is. The canvas then gives the selected element width
+       * handles on its edges, which snap to these steps (2.17).
+       */
+      readonly widths?: Readonly<Record<string, number | null>>;
+    }
   /** A colour of the site's theme (a daisyUI colour name), never a free colour (C4). */
   | { readonly kind: "color"; readonly label: string; readonly options: readonly FieldOption[] }
   /** A spacing token such as Small · Medium · Large (C4). */

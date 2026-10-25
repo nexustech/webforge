@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 
+import type { Breakpoint } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -18,6 +19,8 @@ const sectionFields = boxHandleFields(siteLibrary, "Section");
 let root: Root;
 let host: HTMLDivElement;
 let drags: FieldDrag[];
+/** The view the canvas shows, as the app writes a drag at. */
+let breakpoint: Breakpoint = "desktop";
 
 /** Shows the handles of a Section whose padding is `padding`, drawn with `style`. */
 function show(padding: unknown, style = "padding: 64px 16px; margin: 0") {
@@ -32,6 +35,7 @@ function show(padding: unknown, style = "padding: 64px 16px; margin: 0") {
         nodeId="s"
         fields={sectionFields}
         props={{ padding }}
+        breakpoint={() => breakpoint}
         onFieldDrag={(drag) => drags.push(drag)}
       />,
     ),
@@ -219,7 +223,20 @@ describe("spacing handles (1.32)", () => {
 
     press(grip("padding", "left"), 0, { altKey: true });
 
-    // The canvas is as wide as Desktop's view here.
     expect(drags[0]?.value).toEqual({ top: "l", bottom: "l" });
+  });
+
+  it("reads the device the app shows, not the frame's width (2.17 review)", () => {
+    // happy-dom's window is Desktop wide; the app shows Mobile (a custom width, say).
+    breakpoint = "mobile";
+    try {
+      show({ $responsive: { desktop: { top: "l", bottom: "l" }, mobile: { top: "s" } } });
+
+      press(grip("padding", "left"), 0, { altKey: true });
+
+      expect(drags[0]?.value).toEqual({ top: "s" });
+    } finally {
+      breakpoint = "desktop";
+    }
   });
 });
