@@ -25,7 +25,7 @@ export const FORM_SERVICES = [
 ] as const;
 
 /** A form service, or `""` for none. */
-export type FormServiceKind = (typeof FORM_SERVICES)[number];
+type FormServiceKind = (typeof FORM_SERVICES)[number];
 
 /**
  * What the Site Settings dialog edits: every value as the user types it (empty strings for empty
