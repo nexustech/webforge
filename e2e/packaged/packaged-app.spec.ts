@@ -202,3 +202,19 @@ test("answers the native file dialogs from the test's file in e2e builds (ADR 00
   expect(result).toEqual({ status: "opened", project: summary("From the dialog") });
   expect(existsSync(path)).toBe(true);
 });
+
+test("ships the templates beside app.asar, and New Site lists them (2.14a)", async () => {
+  test.skip(child === undefined, "Needs the running packaged app");
+  const dir = resourcesDir();
+  if (dir !== undefined) {
+    expect(existsSync(join(dir, "templates", "sample", "template.json"))).toBe(true);
+  }
+
+  const listed = await page.evaluate(() =>
+    (
+      window as unknown as { webforge: { templates: { list(): Promise<{ id: string }[]> } } }
+    ).webforge.templates.list(),
+  );
+
+  expect(listed.map((template) => template.id)).toEqual(["sample"]);
+});
