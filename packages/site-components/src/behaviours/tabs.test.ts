@@ -152,6 +152,28 @@ describe("tabs on the exported page (2.11, WCAG 2.1 AA)", () => {
     expect(shown()).toEqual(["tab-c"]);
   });
 
+  it("sets up every Tabs and follows the anchor at an #anchor not encoded right (#397 review)", () => {
+    const inner: NodeDoc = {
+      type: "Tabs",
+      props: { id: "inner", tabs: [tab("x", "Hot"), tab("y", "Cold")] },
+    };
+    // Opened at "#100%", which decodeURIComponent can't decode.
+    const { window, document, shown } = page([tab("a", "Drinks", [inner]), tab("b", "Food")], {
+      hash: "#100%",
+    });
+    const errors: unknown[] = [];
+    window.addEventListener("error", (event) => errors.push(event));
+
+    const lists = [...document.querySelectorAll("[role=tablist]")];
+    expect(lists.map((list) => list.querySelectorAll("[role=tab]").length)).toEqual([2, 2]);
+    expect(shown()).toEqual(["tab-a", "tab-x"]);
+
+    window.location.hash = "#50%off";
+    window.dispatchEvent(new window.Event("hashchange"));
+    expect(errors).toEqual([]);
+    expect(shown()).toEqual(["tab-a", "tab-x"]);
+  });
+
   it("leaves tabs inside a panel to themselves", () => {
     const inner: NodeDoc = {
       type: "Tabs",

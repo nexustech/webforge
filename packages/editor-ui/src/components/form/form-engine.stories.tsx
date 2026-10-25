@@ -66,6 +66,7 @@ const FORM_KINDS = {
   link: { kind: "link", name: "link", label: "Link" },
   image: { kind: "image", name: "image", label: "Image" },
   icon: { kind: "icon", name: "icon", label: "Icon" },
+  code: { kind: "code", name: "code", label: "Custom Code" },
   number: { kind: "number", name: "number", label: "Width (px)", min: 240, max: 3840, width: "sm" },
   time: { kind: "time", name: "time", label: "Opens" },
   multiChoice: {
@@ -101,9 +102,9 @@ const VALUES: FormValues = {
   imageChoice: "shop",
 };
 
-/** The app draws these kinds (a link, a Media image, an icon): a stand-in shows where. */
+/** The app draws these kinds (a link, a Media image, an icon, code): a stand-in shows where. */
 const APP_DRAWN: FieldRenderers = Object.fromEntries(
-  (["link", "image", "icon"] as const).map((kind) => [
+  (["link", "image", "icon", "code"] as const).map((kind) => [
     kind,
     ({ id }: { readonly id: string }) => (
       <output id={id} className="text-xs text-muted-foreground">
