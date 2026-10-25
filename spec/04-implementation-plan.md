@@ -44,7 +44,7 @@ Still open in Phase 0: the publishing spikes (Netlify, FTP/SFTP). The Puck large
 Current code size (approx. lines): desktop 2.7k · engine 1.6k · history 1.6k · pipeline 1.1k · site-components 1.0k · storage 0.6k · model 0.3k. `editor-ui`, `publish` and `themes` are placeholders.
 
 ## 3. Timeline
-**Total: 367 working days** (≈ 73 weeks of effort; 335 before the 22–25 Oct additions) including the 4-week beta. Baseline v1.0 (sequential, for the original 277 days, before the Phase 1 re-plan) at 100% of estimates: **19 Nov 2027**; with +25% contingency: **25 Feb 2028**. Re-planned at the Phase 1 exit (25 Oct 2026, below): v1.0 about **22 Jan 2027**.
+**Total: 369 working days** (≈ 74 weeks of effort; 335 before the 22–25 Oct additions) including the 4-week beta. Baseline v1.0 (sequential, for the original 277 days, before the Phase 1 re-plan) at 100% of estimates: **19 Nov 2027**; with +25% contingency: **25 Feb 2028**. Re-planned at the Phase 1 exit (25 Oct 2026, below): v1.0 about **22 Jan 2027**.
 
 **Re-plan, 20 Oct 2026:** Phase 1 runs in three concurrent streams (82 days of effort in about 28 working days, see [Phase 1](#phase-1-editor-core)). Phase 2–5 dates and the v1.0 date are re-planned at the Phase 1 exit review.
 
@@ -79,16 +79,18 @@ Current code size (approx. lines): desktop 2.7k · engine 1.6k · history 1.6k �
 - **Code signing:** enrolment (0.1) starts by **13 Nov 2026** (product owner, 25 Oct 2026), replacing the 24 Oct deferral, about two weeks before 0.5 (signed installers) and the beta.
 - **Publish spikes:** 0.2 (Netlify) and 0.3 (FTP/FTPS/SFTP) join stream B's queue after R13d, before 2.13b, because Phase 4's publishers build on them.
 
-**Scope change, 25 Oct 2026 (signing to Phase 5, product owner):** code-signing enrolment (0.1), the signed-installer and auto-update spike (0.5) and the Phase 0 wrap-up (0.6) move to Phase 5. 0.5 can't start until enrolment's lead time is over, about two weeks after it starts by 13 Nov, and 0.1's acceptance (an active Apple membership, an issued Windows certificate) waits for the same. 0.6 follows 0.5. Phase 0 closes on 13 Nov once 0.2 and 0.3 are done. Phase 0 is 5 days down (11 → 6) and Phase 5 is 5 up (38 → 43); the total is unchanged.
+**Scope change, 25 Oct 2026 (signing to Phase 5, product owner):** code-signing enrolment (0.1), the signed-installer and auto-update spike (0.5) and the Phase 0 wrap-up (0.6) move to Phase 5. 0.5 can't start until enrolment's lead time is over, about two weeks after it starts by 13 Nov, and 0.1's acceptance (an active Apple membership, an issued Windows certificate) waits for the same. 0.6 follows 0.5. Phase 0 closes on 13 Nov once 0.2 and 0.3 are done. With 0.5's estimate brought in line (below), Phase 0 is 6 days down (13 → 7) and Phase 5 is 6 up (38 → 44); the total is unchanged.
+
+**Scope change, 25 Oct 2026 (Phase 0 estimates):** 0.3 +1 and 0.5 +1 (revised in the Phase 0 plan, 20 Oct 2026; spec/04 brought in line 25 Oct). The issues had the revised estimates (3 and 4 days) and this plan still had 2 and 3. Phase 0 was 13 days rather than 11, and the total is 369 rather than 367; the signing chain in §7 is 41 days.
 
 | Phase | Effort (days) | Starts | Ends (100%) | Ends (+25%) | Exit criteria |
 |---|---|---|---|---|---|
-| [Phase 0: Prototype (finish)](#phase-0-prototype-finish) | 6 | 26 Oct 2026 | 13 Nov 2026 (0.2 and 0.3) | – | Netlify and SFTP/FTPS publish spikes meet the spike criteria in research/stack/08<br>A large page (200+ elements) stays within the editing performance budget |
+| [Phase 0: Prototype (finish)](#phase-0-prototype-finish) | 7 | 26 Oct 2026 | 13 Nov 2026 (0.2 and 0.3) | – | Netlify and SFTP/FTPS publish spikes meet the spike criteria in research/stack/08<br>A large page (200+ elements) stays within the editing performance budget |
 | [Phase 1: Editor core](#phase-1-editor-core) | 128 | 22 Oct 2026 | 25 Oct 2026 (exit criteria met; closes on the screenshots' sign-off) | – | Build a 3-page site from blank, close, reopen: everything restored<br>Undo-all property tests green; every edit has a meaningful label<br>Shell matches UI1 as amended by UI6 in dark and light (Storybook screenshots) |
-| [Phase 2: Design & components](#phase-2-design--components) | 125 | 23 Oct 2026 | 6 Nov 2026 (code-complete) | – | Every component has stories × 3 themes × Desktop/Mobile, axe-clean (colour contrast in site themes reported, not blocking)<br>New Site from each of the 8 templates works and looks distinct<br>Theme changes restyle every component; contrast warnings work |
+| [Phase 2: Design & components](#phase-2-design--components) | 128 | 23 Oct 2026 | 6 Nov 2026 (code-complete) | – | Every component has stories × 3 themes × Desktop/Mobile, axe-clean (colour contrast in site themes reported, not blocking)<br>New Site from each of the 8 templates works and looks distinct<br>Theme changes restyle every component; contrast warnings work |
 | [Phase 3: Output](#phase-3-output) | 32 | 9 Nov 2026 | 20 Nov 2026 | – | Exported templates open from disk in Chromium, Firefox, WebKit (+ Edge on Windows) with no external requests<br>Site Check blocks only Must-fix issues on export<br>Preview CSS hot-swap < 100 ms; phone preview via QR works |
 | [Phase 4: Publish & versions](#phase-4-publish--versions) | 30 | 23 Nov 2026 | 4 Dec 2026 | – | Publish + rollback on all targets in E2E tests (mock Netlify, local FTP/SFTP)<br>A paired AI app's edits are undoable, and the MCP server can't be reached from another computer<br>Version History: save, auto-retention, preview, restore, open as new site, republish |
-| [Phase 5: Beta hardening](#phase-5-beta-hardening) | 43 | 7 Dec 2026 | 22 Jan 2027 (hardening by mid-December, then the 4-week beta) | – | All performance budgets met on Windows and macOS<br>Signed NSIS and DMG builds install, and auto-update from a test feed on both OSes (0.5)<br>Signed, notarised builds auto-update from the production feed<br>ADRs written; architecture §6 interfaces updated (0.6)<br>Beta running with 10–20 users; no open Must-fix bugs |
+| [Phase 5: Beta hardening](#phase-5-beta-hardening) | 44 | 7 Dec 2026 | 22 Jan 2027 (hardening by mid-December, then the 4-week beta) | – | All performance budgets met on Windows and macOS<br>Signed NSIS and DMG builds install, and auto-update from a test feed on both OSes (0.5)<br>Signed, notarised builds auto-update from the production feed<br>ADRs written; architecture §6 interfaces updated (0.6)<br>Beta running with 10–20 users; no open Must-fix bugs |
 
 The signed-installer item (0.5, in Phase 5 since 25 Oct 2026) waits on enrolment (lead time), so other work goes on while it waits. **Enrolment (0.1) starts by 13 Nov 2026** (product owner, 25 Oct 2026, replacing the 24 Oct deferral), about two weeks before 0.5 and the beta. The product owner does this step: it needs their accounts and payment. The Gantt chart shows the baseline schedule at 100% of the estimates, not the Phase 1 exit dates in the table. Items added on 22 Oct 2026 (1.28, 1.29, 4.8, 4.9, and 3.5's extra day) are drawn after their predecessors, so some overlap the baseline bars that follow them until the Phase 1 exit re-plan.
 
@@ -100,8 +102,8 @@ gantt
     excludes weekends 2026-12-25 2026-12-28 2027-01-01 2027-03-26 2027-03-29 2027-05-03 2027-05-31 2027-08-30 2027-12-27 2027-12-28
     section Phase 0
     0.2 Spike – Netlify publish (OAuth, digest deploy,… :t0_2, 2026-10-27, 3d
-    0.3 Spike – FTP/FTPS/SFTP incremental publish :t0_3, 2026-10-30, 2d
-    0.4 Puck large-page performance check :t0_4, 2026-11-03, 1d
+    0.3 Spike – FTP/FTPS/SFTP incremental publish :t0_3, 2026-10-30, 3d
+    0.4 Puck large-page performance check :t0_4, 2026-11-04, 1d
     section Phase 1
     1.1 Editor theme tokens, compact density and Story… :crit, t1_1, 2026-10-23, 3d
     1.2 Window shell – title bar, panels, drawer (UI1… :crit, t1_2, 2026-10-28, 4d
@@ -189,8 +191,8 @@ gantt
     section Phase 5
     %% 0.1, 0.5 and 0.6 moved from Phase 0 on 25 Oct 2026; drawn at their baseline dates
     0.1 Start code-signing enrolment (Apple Developer… :crit, t0_1, 2026-10-26, 1d
-    0.5 Spike – signed installers and auto-update :crit, t0_5, 2026-11-13, 3d
-    0.6 Phase 0 wrap-up – interfaces and decision log :t0_6, 2026-11-18, 1d
+    0.5 Spike – signed installers and auto-update :crit, t0_5, 2026-11-13, 4d
+    0.6 Phase 0 wrap-up – interfaces and decision log :t0_6, 2026-11-19, 1d
     5.1 Performance budgets and benchmarks :t5_1, 2027-09-29, 3d
     5.2 Production builds, signing and update channels :crit, t5_2, 2027-10-04, 3d
     5.3 Open-source licences screen and third-party no… :t5_3, 2027-10-07, 1d
@@ -218,12 +220,12 @@ Each item becomes one GitHub issue (title prefixed with its ID) in its phase mil
 
 ### Phase 0: Prototype (finish)
 **Goal:** Close the remaining spikes: publishing and Puck performance. Signed installers, auto-update and the wrap-up (0.1, 0.5, 0.6) moved to [Phase 5](#phase-5-beta-hardening) on 25 Oct 2026.  
-**Effort:** 6 days · **Scheduled:** 26 Oct 2026 → 13 Nov 2026 (Phase 1 exit re-plan; 0.2 and 0.3 in stream B after R13d; 0.1, 0.5 and 0.6 moved to Phase 5 on 25 Oct 2026)
+**Effort:** 7 days · **Scheduled:** 26 Oct 2026 → 13 Nov 2026 (Phase 1 exit re-plan; 0.2 and 0.3 in stream B after R13d; 0.1, 0.5 and 0.6 moved to Phase 5 on 25 Oct 2026)
 
 | ID | Item | Issue | Area | Refs | Est | Depends on |
 |---|---|---|---|---|---|---|
 | 0.2 | Spike: Netlify publish (OAuth, digest deploy, restore, Forms) | [#12](https://github.com/nexustech/webforge/issues/12) | publish | [stack/08](../research/stack/08-publishing.md), B1, B6, F-PB-1, F-PB-2 | 3 | – |
-| 0.3 | Spike: FTP/FTPS/SFTP incremental publish | [#13](https://github.com/nexustech/webforge/issues/13) | publish | [stack/08](../research/stack/08-publishing.md), B5 | 2 | – |
+| 0.3 | Spike: FTP/FTPS/SFTP incremental publish | [#13](https://github.com/nexustech/webforge/issues/13) | publish | [stack/08](../research/stack/08-publishing.md), B5 | 3 | – |
 | 0.4 | Puck large-page performance check | [#14](https://github.com/nexustech/webforge/issues/14) | engine | [ADR 0004](../docs/adr/0004-puck-with-webforge-history.md), architecture §10 | 1 | – |
 
 <details><summary>Scope and acceptance criteria</summary>
@@ -1004,12 +1006,12 @@ ADR on the transport (Q9). The MCP server runs in main on the official TypeScrip
 
 ### Phase 5: Beta hardening
 **Goal:** Production-ready signed builds, performance, onboarding and a closed beta with 10–20 small-business users on Windows and macOS.  
-**Effort:** 43 days · **Scheduled:** 7 Dec 2026 → 22 Jan 2027 (Phase 1 exit re-plan; baseline 29 Sep → 19 Nov 2027; 0.1, 0.5 and 0.6 moved from Phase 0 on 25 Oct 2026, +5 days)
+**Effort:** 44 days · **Scheduled:** 7 Dec 2026 → 22 Jan 2027 (Phase 1 exit re-plan; baseline 29 Sep → 19 Nov 2027; 0.1, 0.5 and 0.6 moved from Phase 0 on 25 Oct 2026, +6 days)
 
 | ID | Item | Issue | Area | Refs | Est | Depends on |
 |---|---|---|---|---|---|---|
 | 0.1 | Start code-signing enrolment (Apple Developer + Windows signing) | [#11](https://github.com/nexustech/webforge/issues/11) | release | [stack/01](../research/stack/01-electron-vs-tauri.md), MVP §6, standards §10 | 1 | – |
-| 0.5 | Spike: signed installers and auto-update | [#15](https://github.com/nexustech/webforge/issues/15) | release | [stack/01](../research/stack/01-electron-vs-tauri.md), MVP §6 | 3 | 0.1 |
+| 0.5 | Spike: signed installers and auto-update | [#15](https://github.com/nexustech/webforge/issues/15) | release | [stack/01](../research/stack/01-electron-vs-tauri.md), MVP §6 | 4 | 0.1 |
 | 0.6 | Phase 0 wrap-up: interfaces and decision log | [#16](https://github.com/nexustech/webforge/issues/16) | docs | architecture §6, ADRs 0003–0005 | 1 | 0.2, 0.3, 0.5, 0.4 |
 | 5.1 | Performance budgets and benchmarks | [#76](https://github.com/nexustech/webforge/issues/76) | release | architecture §10, standards §5, [ADR 0004](../docs/adr/0004-puck-with-webforge-history.md) | 3 | – |
 | 5.2 | Production builds, signing and update channels | [#77](https://github.com/nexustech/webforge/issues/77) | release | [stack/01](../research/stack/01-electron-vs-tauri.md), standards §7, §10 | 3 | 0.5 |
@@ -1173,7 +1175,7 @@ Up to Phase 0 the schedule was simply the sum of effort. From Phase 1, up to thr
 |---|---|---|
 | Editor → components → templates → exported-site checks | 1.1 → 1.2 → 1.12 → 1.14 → 1.19 → 1.21 → 2.6 → 2.13 → 2.14 → 2.15 → 3.10 | 77 (70 before the 22–23 Oct additions to 2.6 and 2.14; 74 before 2.13d, 25 Oct) |
 | Editor → pipeline → publishing → versions | 1.1 → 1.2 → 1.12 → 1.14 → 2.5 → 3.1 → 3.3 → 4.1 → 4.2 → 4.4 → 4.5 → 4.6 | 44 |
-| Signing → release workflow → beta (incl. enrolment wait) | 0.1 → 0.5 → 5.2 → 5.7 → 5.8 | 40 |
+| Signing → release workflow → beta (incl. enrolment wait) | 0.1 → 0.5 → 5.2 → 5.7 → 5.8 | 41 |
 
 Sequencing rules:
 
