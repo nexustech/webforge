@@ -61,7 +61,10 @@ export function TimeField({
   );
 }
 
-/** Any number of its options, each a checkbox in a row; the value keeps the options' order. */
+/**
+ * Any number of its options, each a button-like checkbox in a row (the days a shop opens); the
+ * value keeps the options' order.
+ */
 export function MultiChoiceField({
   labelId,
   helpId,
@@ -77,13 +80,21 @@ export function MultiChoiceField({
     <fieldset
       aria-labelledby={labelId}
       aria-describedby={describedBy(errorId, helpId)}
-      className="m-0 flex flex-wrap gap-x-3 gap-y-1 border-0 p-0 text-sm"
+      className="m-0 flex flex-wrap items-center gap-1 border-0 p-0"
     >
       {field.options.map((option) => (
-        <label key={option.value} className="flex items-center gap-1.5 has-[:disabled]:opacity-50">
+        <label
+          key={option.value}
+          className={cn(
+            "flex h-7 cursor-pointer items-center rounded-sm border border-border px-2 text-xs",
+            "has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring",
+            "has-[:disabled]:cursor-default has-[:disabled]:opacity-50",
+            chosen.has(option.value) && "border-primary bg-accent text-accent-foreground",
+          )}
+        >
           <input
             type="checkbox"
-            className="size-4 accent-primary"
+            className="sr-only"
             checked={chosen.has(option.value)}
             disabled={disabled}
             onChange={(event) => {

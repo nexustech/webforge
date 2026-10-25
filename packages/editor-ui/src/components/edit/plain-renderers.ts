@@ -1,3 +1,4 @@
+import { MultiChoiceField, TimeField } from "../form/form-fields.js";
 import { ChoiceField } from "./choice-field.js";
 import type { FieldRenderer, PlainFieldKind } from "./field-spec.js";
 import { SelectField } from "./select-field.js";
@@ -13,4 +14,6 @@ export const PLAIN_RENDERERS: { readonly [K in PlainFieldKind]: FieldRenderer<K>
   slider: SliderField,
   color: ChoiceField,
   spacing: ChoiceField,
+  time: TimeField,
+  multiChoice: MultiChoiceField,
 };

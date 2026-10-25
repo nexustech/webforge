@@ -26,6 +26,8 @@ export type FormDialogProps<V extends FormValues, Out> = {
   readonly initial: V;
   /** What its tabs are, for screen readers; for a form with groups. */
   readonly groupsLabel?: string;
+  /** The tab it opens on; its first when left out. */
+  readonly initialGroup?: string;
   /** Wide, for a form with tabs (Site Settings); the dialogs' width otherwise. */
   readonly size?: "md" | "lg";
   /**
@@ -75,6 +77,7 @@ function FormDialogBody<V extends FormValues, Out>({
   spec,
   initial,
   groupsLabel,
+  initialGroup,
   onSave,
   onCancel,
 }: Omit<FormDialogProps<V, Out>, "open" | "size">) {
@@ -94,7 +97,11 @@ function FormDialogBody<V extends FormValues, Out>({
         <DialogTitle>{title}</DialogTitle>
         {description === undefined ? null : <DialogDescription>{description}</DialogDescription>}
       </DialogHeader>
-      <Form form={form} {...(groupsLabel === undefined ? {} : { groupsLabel })} />
+      <Form
+        form={form}
+        {...(groupsLabel === undefined ? {} : { groupsLabel })}
+        {...(initialGroup === undefined ? {} : { initialGroup })}
+      />
       <DialogFooter>
         <Button type="button" variant="secondary" onClick={onCancel}>
           {t("ui.form.cancel")}
