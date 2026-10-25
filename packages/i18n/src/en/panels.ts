@@ -146,6 +146,8 @@ export const panels = {
   "link.error.email": "Enter an email address such as hello@example.com.",
   "link.error.phone": "Enter a phone number using digits, spaces and an optional +.",
   "link.error.url": "Enter a web address such as example.com.",
+  "link.error.section":
+    "This section's anchor ID can't be used in a link. Change it in the Edit panel's Advanced tab.",
   "link.label": "Label",
   "link.error.label": "Enter a label.",
 
