@@ -275,6 +275,36 @@ describe("copy and paste (1.25)", () => {
     ).toBeUndefined();
   });
 
+  it("keeps to a Columns' four on a page with one over its limit elsewhere (#375)", () => {
+    const column = (id: string): NodeDoc => ({ type: "Column", props: { id, content: [] } });
+    const columns = (id: string, count: number): NodeDoc => ({
+      type: "Columns",
+      props: {
+        id,
+        columns: Array.from({ length: count }, (_, index) => column(`${id}${index}`)),
+      },
+    });
+    // "over" holds five, as an old file might.
+    const page: NodeDoc[] = [
+      {
+        type: "Section",
+        props: {
+          id: "s",
+          content: [columns("over", MAX_COLUMNS + 1), columns("full", MAX_COLUMNS)],
+        },
+      },
+    ];
+
+    expect(pasteTarget(siteLibrary, page, [column("new")], "full1")).toBeUndefined();
+    expect(pasteTarget(siteLibrary, page, [column("new")], "over1")).toBeUndefined();
+    // What doesn't fill a slot past its limit still pastes.
+    expect(pasteTarget(siteLibrary, page, [columns("new", 2)], "full")).toEqual({
+      parentId: "s",
+      slot: "content",
+      index: 2,
+    });
+  });
+
   it("cuts past elements whose list fields hold plain items, not elements", async () => {
     const session = sessionWith();
     session.edit("insert", "Added a list", (draft) => {

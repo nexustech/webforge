@@ -166,4 +166,50 @@ describe("CanvasPage (R8)", () => {
     // Puck's view is put back as the page has it.
     expect(dispatched.length).toBeGreaterThan(0);
   });
+
+  it("refuses it on a page with a slot already over its limit elsewhere (#375)", async () => {
+    const item = (id: string): NodeDoc => ({ type: "Item", props: { id } });
+    const row = (id: string, ...items: NodeDoc[]): NodeDoc => ({
+      type: "Row",
+      props: { id, items },
+    });
+    const library: ComponentLibrary = {
+      components: {
+        Row: {
+          label: "Row",
+          fields: { items: { kind: "slot", label: "Items", allow: ["Item"], max: 1 } },
+          defaults: { items: [] },
+          render: () => null,
+        },
+        Item: { label: "Item", place: "child", fields: {}, defaults: {}, render: () => null },
+      },
+    };
+    // "over" holds two Items, one more than a Row may, as an old file might.
+    const before = [row("over", item("o1"), item("o2")), row("row", item("one")), item("two")];
+    const { page } = canvasPage(true, library);
+    page.load({ page: pageOf(...before), layout: NO_LAYOUT, shared: {} });
+    const edits: unknown[] = [];
+    page.onEdit((edit) => edits.push(edit));
+    const state = (content: NodeDoc[]) =>
+      ({
+        data: { root: { props: {} }, content },
+        ui: { isDragging: false },
+      }) as unknown as AppState;
+    const move = {
+      type: "move",
+      sourceZone: "root:default-zone",
+      sourceIndex: 2,
+      destinationZone: "row:items",
+      destinationIndex: 1,
+    } as PuckAction;
+
+    page.handleAction(
+      move,
+      state([row("over", item("o1"), item("o2")), row("row", item("one"), item("two"))]),
+      state(before),
+    );
+    await Promise.resolve();
+
+    expect(edits).toEqual([]);
+  });
 });

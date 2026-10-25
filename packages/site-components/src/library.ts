@@ -336,22 +336,45 @@ export function boxClasses(
   return parts.join(" ");
 }
 
-/**
- * Whether a slot in `nodes`, or in the elements in their slots, holds more elements than its `max`
- * (a Columns' four columns). Every way of adding or moving elements refuses a change that makes it
- * so: the Add panel, paste, duplicate, and drops on the canvas and in Layers.
- */
-export function slotsOverfull(library: ComponentLibrary, nodes: readonly NodeDoc[]): boolean {
-  return nodes.some((node) =>
-    Object.entries(library.components[node.type]?.fields ?? {}).some(([name, field]) => {
-      if (field.kind !== "slot") return false;
+/** How many elements each slot with a `max` holds in `nodes` and below, by `<node id> <slot>`. */
+function slotCounts(
+  library: ComponentLibrary,
+  nodes: readonly NodeDoc[],
+  counts: Map<string, number> = new Map(),
+): Map<string, number> {
+  for (const node of nodes) {
+    for (const [name, field] of Object.entries(library.components[node.type]?.fields ?? {})) {
+      if (field.kind !== "slot") continue;
       const value = node.props[name];
       const children = Array.isArray(value) ? (value as NodeDoc[]) : [];
-      return (
-        (field.max !== undefined && children.length > field.max) || slotsOverfull(library, children)
-      );
-    }),
-  );
+      if (field.max !== undefined && children.length > field.max) {
+        const key = `${String(node.props.id)} ${name}`;
+        counts.set(key, Math.max(counts.get(key) ?? 0, children.length));
+      }
+      slotCounts(library, children, counts);
+    }
+  }
+  return counts;
+}
+
+/**
+ * Whether `after`, made from `before` by adding or moving elements, puts more in a slot than its
+ * `max` (a Columns' four columns) and than the slot held before. Every way of adding or moving
+ * elements refuses such a change: the Add panel, paste, duplicate, and drops on the canvas and in
+ * Layers. Only the slots the change fills count, so a slot already over its `max` elsewhere on the
+ * page (from an old file) neither blocks nor allows anything else (#375). A new element arriving
+ * with a slot over its `max` (a pasted Columns of five) is refused, as its slot held nothing.
+ */
+export function overfillsSlots(
+  library: ComponentLibrary,
+  before: readonly NodeDoc[],
+  after: readonly NodeDoc[],
+): boolean {
+  const held = slotCounts(library, before);
+  for (const [slot, count] of slotCounts(library, after)) {
+    if (count > (held.get(slot) ?? 0)) return true;
+  }
+  return false;
 }
 
 const EmptySlot: SlotComponent = () => null;

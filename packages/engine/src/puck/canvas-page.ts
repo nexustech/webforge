@@ -1,6 +1,6 @@
 import type { AppState, PuckAction } from "@puckeditor/core";
 import type { NodeDoc, PageDoc, SharedCopyNode } from "@webforge/model";
-import { type ComponentLibrary, slotsOverfull } from "@webforge/site-components";
+import { type ComponentLibrary, overfillsSlots } from "@webforge/site-components";
 import type { EngineEdit, Unsubscribe } from "../canvas-engine.js";
 import type { CanvasSelection } from "./canvas-selection.js";
 import type { CanvasSync } from "./canvas-sync.js";
@@ -126,7 +126,7 @@ export function createCanvasPage(options: CanvasPageOptions): CanvasPage {
    * slot than it may (a Columns' four columns): such a drop is refused, nothing changed.
    */
   const overfills = (components: ComponentLibrary, next: PageDoc, before: PageDoc) =>
-    slotsOverfull(components, next.content) && !slotsOverfull(components, before.content);
+    overfillsSlots(components, before.content, next.content);
 
   /** Reports an edit Puck made to the page as the canvas shows it (see `routeEdit`). */
   const reportEdit = (edit: EngineEdit, action: PuckAction, prev: AppState) =>
