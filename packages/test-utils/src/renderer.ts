@@ -99,6 +99,7 @@ export function createFakeEngine(): FakeEngine {
     onTextSplit: textSplits.add,
     onContextMenu: menus.add,
     outline: vi.fn(),
+    markDrop: vi.fn(),
     addDragSource: vi.fn(() => () => undefined),
     setLinkPicker: vi.fn(),
     onFrameWindow: frames.add,

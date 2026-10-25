@@ -4,6 +4,7 @@ import {
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuTrigger,
+  cn,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -22,7 +23,15 @@ import {
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import type { SharedSectionId } from "@webforge/model";
-import { EllipsisIcon, PlusIcon, SearchIcon } from "lucide-react";
+import {
+  BookmarkIcon,
+  BoxIcon,
+  ChevronRightIcon,
+  EllipsisIcon,
+  Link2Icon,
+  PanelTopIcon,
+  SearchIcon,
+} from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { type AddItem, type AddTab, groupItems } from "./add-items.js";
 
@@ -33,6 +42,16 @@ export type SharedSectionActions = {
   /** Deletes shared section `id`, asking first when pages have copies of it (D7). */
   readonly remove: (id: SharedSectionId) => void;
 };
+
+/** Which tab's items a list shows: each kind of item has its icon (LF-6). */
+type ItemKind = "section" | "element";
+
+/** An item's icon (LF-6): a shared section's link, a preset's mark, else its kind's. */
+function iconOf(item: AddItem, kind: ItemKind) {
+  if (item.sharedSectionId !== undefined) return Link2Icon;
+  if (item.preset === true) return BookmarkIcon;
+  return kind === "section" ? PanelTopIcon : BoxIcon;
+}
 
 /** The person's favourites (1.34): which items are, and switching one on or off. */
 type AddFavourites = {
@@ -75,6 +94,7 @@ export type AddPanelProps = {
  */
 function AddButton({
   item,
+  kind,
   disabled,
   onAdd,
   dragSource,
@@ -83,6 +103,7 @@ function AddButton({
   preview,
 }: {
   readonly item: AddItem;
+  readonly kind: ItemKind;
   readonly disabled: boolean;
   readonly onAdd: (type: string) => void;
   readonly dragSource: AddPanelProps["dragSource"];
@@ -134,18 +155,20 @@ function AddButton({
   }, [hasCard]);
   // The triggers nest around the button itself: a menu or card's root renders nothing to pass
   // a trigger's handlers to.
+  const Icon = iconOf(item, kind);
   let trigger: ReactNode = (
+    // A plain row (LF-6): no outline, its kind's icon, the hover colour of a list.
     <Button
       ref={ref}
       type="button"
       size="sm"
-      variant="outline"
+      variant="ghost"
       // Relative: the canvas's drag handle covers the button.
-      className={withMenu ? "relative w-full justify-start pr-8" : "relative w-full justify-start"}
+      className={cn("relative h-6 w-full justify-start px-1.5 font-normal", withMenu && "pr-8")}
       disabled={disabled}
       onClick={() => onAdd(item.type)}
     >
-      <PlusIcon aria-hidden />
+      <Icon aria-hidden className="text-muted-foreground" />
       {item.label}
     </Button>
   );
@@ -248,13 +271,16 @@ export function AddPanel({
   preview,
 }: AddPanelProps) {
   const [query, setQuery] = useState("");
+  // The categories the person closed, by tab and name (LF-6); a search shows them all open.
+  const [closed, setClosed] = useState<ReadonlySet<string>>(() => new Set());
+  const searching = query.trim() !== "";
   // A shared section's dialog opens once its menu has closed, so focus stays in the dialog.
   const menuDialog = useMenuDialog(
     (next: { readonly kind: keyof SharedSectionActions; readonly id: SharedSectionId }) =>
       sharedActions?.[next.kind](next.id),
   );
 
-  const list = (items: readonly AddItem[], hint: string) => {
+  const list = (items: readonly AddItem[], kind: ItemKind, hint: string) => {
     const groups = groupItems(items, query);
     return (
       <ScrollArea className="min-h-0 flex-1">
@@ -264,42 +290,68 @@ export function AddPanel({
             {t("add.noMatch", { query: query.trim() })}
           </p>
         ) : (
-          groups.map((group) => (
-            <div key={group.category} className="px-2 pb-2">
-              <h3 className="m-0 py-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                {group.category || t("add.other")}
-              </h3>
-              <ul
-                aria-label={group.category || t("add.other")}
-                className="m-0 grid list-none gap-1 p-0"
+          groups.map((group) => {
+            const name = group.category || t("add.other");
+            const key = `${kind}:${name}`;
+            return (
+              // A category the person can close (LF-6), with its triangle; a search opens all.
+              <details
+                key={group.category}
+                open={searching || !closed.has(key)}
+                className="group/category px-2 pb-1"
               >
-                {group.items.map((item) => {
-                  const shared = sharedActions === undefined ? undefined : item.sharedSectionId;
-                  return (
-                    <li key={item.type} className="group relative">
-                      <AddButton
-                        item={item}
-                        disabled={!canAdd(item.type)}
-                        onAdd={onAdd}
-                        dragSource={dragSource}
-                        withMenu={shared !== undefined}
-                        favourites={favourites}
-                        preview={preview}
-                      />
-                      {shared !== undefined && (
-                        <SharedSectionMenu
+                <summary
+                  // The panel keeps which are open, not the page: a click toggles that, and the
+                  // <details> follows. A search shows every category, so a click there does
+                  // nothing (#421 review). On the way down, so the toggle is cancelled before
+                  // anything on the way up could act on it.
+                  onClickCapture={(event) => {
+                    event.preventDefault();
+                    if (searching) return;
+                    setClosed((current) => {
+                      const next = new Set(current);
+                      if (!next.delete(key)) next.add(key);
+                      return next;
+                    });
+                  }}
+                  className="flex cursor-default list-none items-center gap-1 rounded-sm py-1 text-xs font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden"
+                >
+                  <ChevronRightIcon
+                    aria-hidden
+                    className="size-3 shrink-0 transition-transform group-open/category:rotate-90"
+                  />
+                  {name}
+                </summary>
+                <ul aria-label={name} className="m-0 grid list-none gap-px p-0 pb-1">
+                  {group.items.map((item) => {
+                    const shared = sharedActions === undefined ? undefined : item.sharedSectionId;
+                    return (
+                      <li key={item.type} className="group relative">
+                        <AddButton
                           item={item}
-                          onRename={() => menuDialog.choose({ kind: "rename", id: shared })}
-                          onDelete={() => menuDialog.choose({ kind: "remove", id: shared })}
-                          onCloseAutoFocus={menuDialog.onCloseAutoFocus}
+                          kind={kind}
+                          disabled={!canAdd(item.type)}
+                          onAdd={onAdd}
+                          dragSource={dragSource}
+                          withMenu={shared !== undefined}
+                          favourites={favourites}
+                          preview={preview}
                         />
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          ))
+                        {shared !== undefined && (
+                          <SharedSectionMenu
+                            item={item}
+                            onRename={() => menuDialog.choose({ kind: "rename", id: shared })}
+                            onDelete={() => menuDialog.choose({ kind: "remove", id: shared })}
+                            onCloseAutoFocus={menuDialog.onCloseAutoFocus}
+                          />
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </details>
+            );
+          })
         )}
       </ScrollArea>
     );
@@ -316,12 +368,8 @@ export function AddPanel({
       className="h-full min-h-0"
     >
       <TabsList aria-label={t("add.kinds")}>
-        <TabsTrigger value="sections" className="normal-case tracking-normal">
-          {t("add.sections")}
-        </TabsTrigger>
-        <TabsTrigger value="elements" className="normal-case tracking-normal">
-          {t("add.elements")}
-        </TabsTrigger>
+        <TabsTrigger value="sections">{t("add.sections")}</TabsTrigger>
+        <TabsTrigger value="elements">{t("add.elements")}</TabsTrigger>
       </TabsList>
       <div className="relative px-2 py-1.5">
         <SearchIcon
@@ -350,10 +398,10 @@ export function AddPanel({
             </Button>
           </div>
         )}
-        {list(sections, t("add.sectionsHint"))}
+        {list(sections, "section", t("add.sectionsHint"))}
       </TabsContent>
       <TabsContent value="elements" className="flex flex-col">
-        {list(elements, elementsHint)}
+        {list(elements, "element", elementsHint)}
       </TabsContent>
     </Tabs>
   );

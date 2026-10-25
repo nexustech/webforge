@@ -29,6 +29,7 @@ export const ELEMENT_MENU_COMMANDS = {
   saveShared: "edit.saveSharedSection",
   detachShared: "edit.detachSharedSection",
   selectSimilar: "edit.selectSimilar",
+  selectParent: "edit.selectParent",
   remove: "edit.delete",
 } as const;
 
@@ -52,7 +53,8 @@ export type ElementMenuProps = {
 
 /**
  * The selected element's right-click menu (1.35, UX-24): the same on the canvas and in Layers.
- * Rename, Duplicate, Save as shared section (or Detach, for a linked copy), Select similar; Cut,
+ * Rename, Duplicate, Save as shared section (or Detach, for a linked copy), Select similar, Select
+ * parent (SP-9); Cut,
  * Copy, Paste and Paste as Linked Copy (F-ED-23); Copy Style and Paste Style (1.37); and Delete.
  * The element is selected before it opens, so each item acts on it.
  */
@@ -65,6 +67,7 @@ export function ElementMenu({ at, onClose, onRename, onCloseFocus }: ElementMenu
   const detach = useCommand(ELEMENT_MENU_COMMANDS.detachShared);
   const remove = useCommand(ELEMENT_MENU_COMMANDS.remove);
   const selectSimilar = useCommand(ELEMENT_MENU_COMMANDS.selectSimilar);
+  const selectParent = useCommand(ELEMENT_MENU_COMMANDS.selectParent);
   const cut = useCommand(ELEMENT_MENU_COMMANDS.cut);
   const copy = useCommand(ELEMENT_MENU_COMMANDS.copy);
   const paste = useCommand(ELEMENT_MENU_COMMANDS.paste);
@@ -127,6 +130,7 @@ export function ElementMenu({ at, onClose, onRename, onCloseFocus }: ElementMenu
         {item(duplicate)}
         {item(shared)}
         {item(selectSimilar)}
+        {item(selectParent)}
         {clipboard.every((command) => command === undefined) ? null : <DropdownMenuSeparator />}
         {item(cut)}
         {item(copy)}

@@ -14,6 +14,7 @@ import type {
 } from "../shared/ipc-contract.js";
 import { EDITOR_AREAS, WINDOW_AREAS } from "./areas.js";
 import { connectAreas, type WindowContext } from "./editor/areas.js";
+import { createCanvasPointer } from "./editor/canvas-pointer.js";
 import { Editor, type EditorProps } from "./editor/Editor.js";
 import { createEditorSession, type EditorSession } from "./editor/editor-session.js";
 import { starterSite } from "./editor/starter-site.js";
@@ -100,6 +101,7 @@ export function App({
   const [panels] = useState(createPanelRegistry);
   const [toolbars] = useState(createContextualToolbars);
   const [canvasView] = useState(createCanvasView);
+  const [canvasPointer] = useState(createCanvasPointer);
   // Actions that change more than the page shown ask first (D7); one dialog for the window.
   const [siteWide] = useState(createSiteWideConfirm);
   // The person's preferences, and Design or Content mode (M3) remembered with the open site (R9).
@@ -142,6 +144,7 @@ export function App({
     preferences,
     siteWide,
     canvasView,
+    canvasPointer,
     exportSite: (request) => exportSiteRef.current(request),
   }));
   useEffect(() => connectAreas(WINDOW_AREAS, windowContext), [windowContext]);
@@ -258,6 +261,7 @@ export function App({
                           preferences={preferences}
                           siteWide={siteWide}
                           canvasView={canvasView}
+                          canvasPointer={canvasPointer}
                         />
                       </div>
                     </div>
