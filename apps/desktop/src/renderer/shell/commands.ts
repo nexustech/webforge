@@ -370,8 +370,13 @@ const CONTROL_ROLES: ReadonlySet<string> = new Set([
   "treeitem",
 ]);
 
-/** Open modal dialogs and menus, which own the keys while they're open. */
-const MODAL = '[role="dialog"][aria-modal="true"], [role="alertdialog"], [role="menu"]';
+/**
+ * Open modal dialogs and menus, which own the keys while they're open: not one closing, still in
+ * the page for its animation a moment after its answer (#425 review).
+ */
+const MODAL = ['[role="dialog"][aria-modal="true"]', '[role="alertdialog"]', '[role="menu"]']
+  .map((selector) => `${selector}:not([data-state="closed"])`)
+  .join(", ");
 
 /**
  * Whether a dialog or a menu has the keys: `target` is inside one, or the editor window `doc` has

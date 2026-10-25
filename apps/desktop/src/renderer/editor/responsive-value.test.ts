@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   breakpointOf,
+  DEVICES,
   isOverridden,
+  sourceOf,
   valueAt,
   withoutOverride,
   withValueAt,
@@ -46,5 +48,17 @@ describe("responsive values in the Edit panel", () => {
     expect(withoutOverride(withoutOverride(value, "mobile"), "tablet")).toBe("large");
     expect(withoutOverride(value, "desktop")).toBe(value);
     expect(withoutOverride("plain", "mobile")).toBe("plain");
+  });
+});
+
+describe("sourceOf (SP-5)", () => {
+  it("names the device whose value applies, as the page resolves it", () => {
+    const tabletOnly = { $responsive: { desktop: "l", tablet: "s" } };
+    const mobileOnly = { $responsive: { desktop: "l", mobile: "s" } };
+
+    expect(DEVICES.map((at) => sourceOf(tabletOnly, at))).toEqual(["desktop", "tablet", "tablet"]);
+    expect(DEVICES.map((at) => sourceOf(mobileOnly, at))).toEqual(["desktop", "desktop", "mobile"]);
+    // A value the same on every device is Desktop's.
+    expect(sourceOf("m", "mobile")).toBe("desktop");
   });
 });

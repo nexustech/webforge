@@ -410,6 +410,43 @@ describe("style field renderers (1.14 part 2)", () => {
     return { onChange, onCommit, onReset, onResetToDefault, user: userEvent.setup() };
   }
 
+  it("copies a group's values from one element and pastes them on another, as one step (SP-7)", async () => {
+    const onPaste = vi.fn();
+    const onResetToDefault = vi.fn();
+    const props = {
+      heading: "Section",
+      onChange: vi.fn(),
+      onCommit: vi.fn(),
+      onPaste,
+      onResetToDefault,
+    };
+    const view = render(<EditPanel {...props} fields={styleFields} itemKey="a" />);
+    const user = userEvent.setup();
+    // Nothing copied yet, nothing changed: no paste or reset to do.
+    expect(screen.getByRole("button", { name: "Paste Spacing" }).hasAttribute("disabled")).toBe(
+      true,
+    );
+    expect(screen.getByRole("button", { name: "Reset Spacing" }).hasAttribute("disabled")).toBe(
+      true,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Copy Spacing" }));
+    view.rerender(
+      <EditPanel
+        {...props}
+        itemKey="b"
+        fields={styleFields.map((field) =>
+          field.name === "padding" ? { ...field, value: "large", changed: true } : field,
+        )}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: "Paste Spacing" }));
+    await user.click(screen.getByRole("button", { name: "Reset Spacing" }));
+
+    expect(onPaste).toHaveBeenCalledExactlyOnceWith({ padding: "medium" }, "Spacing");
+    expect(onResetToDefault).toHaveBeenCalledExactlyOnceWith(["padding"], "Spacing");
+  });
+
   it("makes one change and commits it for a choice, keeping the chosen one when clicked again", async () => {
     const { onChange, onCommit, user } = renderStyle();
     const group = screen.getByRole("radiogroup", { name: "Padding" });
@@ -557,6 +594,10 @@ describe("style field renderers (1.14 part 2)", () => {
     await user.type(search, "GA");
     expect(screen.queryByRole("radiogroup", { name: "Padding" })).toBeNull();
     expect(screen.getByLabelText("Gap")).toBeDefined();
+    // The label keeps its name, with the part found marked, in its own case (SP-6).
+    expect([...document.querySelectorAll("label mark")].map((mark) => mark.textContent)).toEqual([
+      "Ga",
+    ]);
 
     await user.clear(search);
     await user.type(search, "nothing like it");

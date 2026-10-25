@@ -130,6 +130,15 @@ export function resetGroupLabel(
     : t("history.resetGroupOn", { item, group: group.toLocaleLowerCase(), device });
 }
 
+/** The undo label for an option group's values pasted on an element (SP-7). */
+export function pasteGroupLabel(
+  edit: EngineEdit,
+  library: ComponentLibrary,
+  group: string,
+): string {
+  return t("history.pastedGroup", { group, item: itemName(edit, library, [edit.page]) });
+}
+
 /** The definition of the field an edit changed, if any. */
 function fieldOf(edit: EngineEdit, library: ComponentLibrary): FieldDef | undefined {
   const component =
