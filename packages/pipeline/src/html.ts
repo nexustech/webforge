@@ -25,6 +25,8 @@ export type PageDocument = {
   readonly header: string;
   readonly main: string;
   readonly footer: string;
+  /** The back-to-top button (F-CM-9), after the Footer, or nothing when the page has none. */
+  readonly backToTop?: string;
 };
 
 /** A shared region with its marker comment, or nothing when the page hides it. */
@@ -58,6 +60,7 @@ ${sharedRegion("Header", page.header)}
 ${page.main}
 </main>
 ${sharedRegion("Footer", page.footer)}
+${page.backToTop ?? ""}
 </body>
 </html>`;
   return formatHtml(html);

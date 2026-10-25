@@ -216,6 +216,7 @@ export const panels = {
   "pageSettings.hideHeader": "Hide the Header on this page",
   "pageSettings.hideFooter": "Hide the Footer on this page",
   "pageSettings.hideFromNavigation": "Hide from navigation",
+  "pageSettings.hideBackToTop": "Hide the back-to-top button on this page",
   "pageSettings.save": "Save",
   // Undo steps; "Added {item}", "Moved {item}"… use pages.item.
   "pages.item": "page '{name}'",

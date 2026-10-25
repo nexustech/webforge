@@ -47,6 +47,8 @@ export const elements = {
   "field.listStyle.unavailable":
     "The list's icon takes the place of its markers. Remove the icon to choose a style.",
   "element.icon": "Icon",
+  // The exported page's back-to-top button (F-CM-9), for screen readers and its tooltip.
+  "siteText.backToTop": "Back to top",
   "element.socialLinks": "Social links",
   "field.socialColor.help":
     "Logos show in one colour, as their brands' guidelines allow. Add profiles in Site Settings, under Social & sharing.",

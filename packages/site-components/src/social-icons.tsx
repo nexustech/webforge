@@ -1,9 +1,11 @@
+import { t } from "@webforge/i18n";
 import type { SocialProfile } from "@webforge/model";
 import { LucideIcon } from "./icons.js";
 
 /**
  * The networks' logos (PH2-4): Simple Icons 16.34.0 (CC0-1.0), copied for the networks Site Settings
- * offer so the export carries only these. A test checks them against the package. Each is a
+ * offer so the export carries only these. A test checks them, and their titles, against the
+ * package; links are named as Site Settings name the networks ({@link socialName}). Each is a
  * trademark of its brand, used only to link to the site's own page there.
  */
 export const SOCIAL_LOGOS = {
@@ -36,18 +38,13 @@ export const SOCIAL_LOGOS = {
 type Network = SocialProfile["network"];
 
 /**
- * What a profile's link is called for screen readers and in its tooltip: the network's name, or
- * the address's host for any other ("mastodon.social").
+ * What a profile's link is called for screen readers and in its tooltip: the network's name, as
+ * Site Settings show it, or the address's host for any other ("mastodon.social").
  */
 export function socialName(profile: SocialProfile): string {
-  switch (profile.network) {
-    case "linkedin":
-      return "LinkedIn";
-    case "custom":
-      return URL.parse(profile.url)?.hostname.replace(/^www\./, "") ?? profile.url;
-    default:
-      return SOCIAL_LOGOS[profile.network].title;
-  }
+  return profile.network === "custom"
+    ? (URL.parse(profile.url)?.hostname.replace(/^www\./, "") ?? profile.url)
+    : t(`site.settings.network.${profile.network}`);
 }
 
 /**

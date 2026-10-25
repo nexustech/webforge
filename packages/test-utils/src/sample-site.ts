@@ -204,6 +204,8 @@ export function sampleSite(): SiteSnapshot {
         id: "about",
         path: "about",
         title: "About us",
+        // The site's back-to-top button is on the home page only (F-CM-9).
+        hideBackToTop: true,
         doc: {
           root: { props: {} },
           content: [
@@ -354,6 +356,8 @@ export function sampleSite(): SiteSnapshot {
       "contact.email": "hello@rosas-bakery.example",
       "contact.openingHoursNote": "Closed on bank holidays.",
     },
+    // A back-to-top button on every page that doesn't hide it (F-CM-9, 2.9b).
+    backToTop: true,
     // Where the Contact form sends its messages (F-CM-1).
     formService: { kind: "formspree", formId: "xyzAbc12" },
     openingHours: [

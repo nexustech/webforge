@@ -174,6 +174,7 @@ export const site = {
   "site.settings.languageHint": "A language code such as en, en-GB or de.",
   "site.settings.icon": "Site icon",
   "site.settings.iconHint": "Shown in browser tabs and bookmarks.",
+  "site.settings.backToTop": "Show a back-to-top button once visitors scroll down",
   "site.settings.noImage": "None",
   "site.settings.noImages": "Add images in Media to choose one here.",
   "site.settings.webAddress": "Web address",
