@@ -35,7 +35,7 @@ const nativeMenuItemSchema = z.strictObject({
 });
 
 /** The renderer's menus (File, Edit, View, Help), for macOS's menu bar (LF-13). */
-export const nativeMenusSchema = z
+const nativeMenusSchema = z
   .array(
     z.strictObject({
       id: z.enum(["file", "edit", "view", "help"]),
