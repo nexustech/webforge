@@ -1,9 +1,7 @@
-import { FormDialog } from "@webforge/editor-ui";
-import { t } from "@webforge/i18n";
-import { type ImageMeta, isImageMeta, type SiteDoc, type SiteSettings } from "@webforge/model";
-import { mediaImageUrl } from "../../shared/ipc/media.js";
-import { type Section, toSettingsForm } from "./settings-form.js";
-import { siteSettingsSpec } from "./settings-sections.js";
+import type { ImageMeta, SiteDoc, SiteSettings } from "@webforge/model";
+import { SettingsDialog } from "../settings/index.js";
+import type { Section } from "./settings-form.js";
+import { siteSettingsPart } from "./site-part.js";
 
 /** Props of {@link SiteSettingsDialog}. */
 export type SiteSettingsDialogProps = {
@@ -18,37 +16,26 @@ export type SiteSettingsDialogProps = {
   readonly initialSection?: Section;
 };
 
-/** Media thumbnails, by default. */
-const thumbnailUrl: NonNullable<SiteSettingsDialogProps["imageUrl"]> = (item) =>
-  mediaImageUrl(item, "thumbnail");
-
 /**
- * Site Settings (F-SET-1, X3): the details that apply to the whole site, in sections, as a form
- * (2.21). Save checks every value with the model's own schema and points at what needs fixing in
- * plain words; saved settings are one undo step. Publishing destinations are set up when
- * publishing (B1).
+ * The Settings dialog with the site's part alone (F-SET-1, X3, LF-12): the details that apply to
+ * the whole site, in sections, as a form (2.21). Save checks every value with the model's own
+ * schema and points at what needs fixing in plain words. The window's Settings show the app's parts
+ * too ({@link SettingsDialog}); this shows the site's on its own, for stories and tests.
  */
 export function SiteSettingsDialog({
   open,
   site,
   onSave,
   onCancel,
-  imageUrl = thumbnailUrl,
+  imageUrl,
   initialSection = "general",
 }: SiteSettingsDialogProps) {
-  const images = Object.values(site.media).filter(isImageMeta);
   return (
-    <FormDialog
+    <SettingsDialog
       open={open}
-      title={t("site.settings.title")}
-      description={t("site.settings.description")}
-      confirm={t("site.settings.save")}
-      spec={siteSettingsSpec(site.settings, { images, imageUrl })}
-      initial={toSettingsForm(site.settings)}
-      groupsLabel={t("site.settings.sections")}
-      initialGroup={initialSection}
-      size="lg"
-      onSave={(settings) => onSave(settings)}
+      parts={[siteSettingsPart(site, onSave, imageUrl)]}
+      initialGroup={`site:${initialSection}`}
+      onSaved={() => undefined}
       onCancel={onCancel}
     />
   );

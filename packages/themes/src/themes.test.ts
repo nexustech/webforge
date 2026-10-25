@@ -203,7 +203,7 @@ describe("contrastIssues (2.1)", () => {
     // The default theme's primary is close to its text: fine underlined, too close otherwise.
     expect(linkIssues(theme("always"))).toEqual([]);
     expect(
-      linkIssues(theme("never")).map((issue) => [issue.palette, issue.required]),
+      linkIssues(theme("hover")).map((issue) => [issue.palette, issue.required]),
     ).toContainEqual(["colors", AA_LARGE]);
   });
 
@@ -365,13 +365,13 @@ describe("themeCss (2.1)", () => {
   it("writes every choice of the tokens as CSS", () => {
     const css = (change: Partial<ThemeTokens>) => themeCss({ ...DEFAULT_THEME, ...change });
 
-    expect(css({ links: { underline: "never" } })).toContain("--wf-link-decoration: none;");
+    expect(css({ links: { underline: "hover" } })).toContain("--wf-link-decoration: none;");
     // Underlined on hover and focus whatever the theme says, and in the main colour unless always
     // underlined: a link must show it's one (WCAG 1.4.1, 2.13a).
-    expect(css({ links: { underline: "never" } })).toContain(
+    expect(css({ links: { underline: "hover" } })).toContain(
       "--wf-link-hover-decoration: underline;",
     );
-    expect(css({ links: { underline: "never" } })).toContain(
+    expect(css({ links: { underline: "hover" } })).toContain(
       "--wf-link-color: var(--color-primary);",
     );
     expect(css({ links: { underline: "always" } })).toContain("--wf-link-color: currentColor;");

@@ -3,6 +3,7 @@ import type { StoreApi } from "zustand/vanilla";
 import type { ExportRequest } from "../../shared/ipc/site.js";
 import type { ExportResult } from "../../shared/ipc-contract.js";
 import type { AddItem } from "../add/index.js";
+import type { SettingsRegistry } from "../settings/index.js";
 import type { SharedSectionNaming } from "../shared-sections/index.js";
 import type { CanvasView } from "../shell/canvas-view.js";
 import type { CommandRegistry } from "../shell/commands.js";
@@ -49,6 +50,8 @@ export type WindowContext = AreaContext & {
   readonly canvasView: CanvasView;
   /** What a panel points at on the canvas: an element to outline, a drop point (SP-8, SP-10). */
   readonly canvasPointer: CanvasPointer;
+  /** The parts of the window's Settings dialog (LF-12). */
+  readonly settings: SettingsRegistry;
   /** Exports a site. */
   readonly exportSite: (request: ExportRequest) => Promise<ExportResult>;
 };

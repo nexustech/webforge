@@ -410,6 +410,21 @@ describe("style field renderers (1.14 part 2)", () => {
     return { onChange, onCommit, onReset, onResetToDefault, user: userEvent.setup() };
   }
 
+  it("reaches every control of its two-column rows by Tab, in reading order (LF-7, #278)", async () => {
+    const { user } = renderStyle();
+    const reached: string[] = [];
+    // From the search field through the Style tab's rows: a group header, then each row's control.
+    screen.getByRole("searchbox", { name: "Search options" }).focus();
+    for (let step = 0; step < 30; step += 1) {
+      await user.tab();
+      const at = document.activeElement;
+      const name =
+        at?.getAttribute("aria-label") ?? at?.closest("[data-field]")?.getAttribute("data-field");
+      if (name !== null && name !== undefined && !reached.includes(name)) reached.push(name);
+    }
+    expect(reached).toEqual(expect.arrayContaining(["padding", "gap", "fullWidth"]));
+  });
+
   it("copies a group's values from one element and pastes them on another, as one step (SP-7)", async () => {
     const onPaste = vi.fn();
     const onResetToDefault = vi.fn();
