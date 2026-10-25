@@ -32,6 +32,20 @@ export const RICH_TEXT = ".ProseMirror";
 /** Puck's canvas root, whose style carries the canvas zoom (its scale and height). */
 export const CANVAS_ROOT = '[class*="PuckCanvas-root"]';
 
+/** Puck's scrolling canvas area around the canvas root (LF-2: its padding and background). */
+export const CANVAS = '[class*="_PuckCanvas_"]';
+
+/**
+ * Puck's box around a component's action bar, which it places with inline styles, and the sticky
+ * layer that holds it, shown only for the selected component (LF-3, SP-1).
+ */
+export const ACTIONS = '[class*="_DraggableComponent-actions_"]';
+export const ACTIONS_OVERLAY = '[class*="_DraggableComponent-actionsOverlay_"]';
+
+/** The component under the pointer, and the selected one, as Puck marks them. */
+export const HOVERED_COMPONENT = '[class*="_DraggableComponent--hover_"]';
+export const SELECTED_COMPONENT = '[class*="_DraggableComponent--isSelected_"]';
+
 /** Puck's layout around the canvas (#274): its plugin rail, its two sidebars and their box. */
 export const LAYOUT = {
   nav: '[class*="_PuckLayout-nav_"]',

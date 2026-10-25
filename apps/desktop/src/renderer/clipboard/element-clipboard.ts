@@ -10,7 +10,12 @@ import {
   pageAnchors,
   pastedCopies,
 } from "@webforge/model";
-import { holdsOverfullSlot, mediaUsedBy, overfillsSlots } from "@webforge/site-components";
+import {
+  holdsOverfullSlot,
+  mediaUsedBy,
+  overfillsSlots,
+  videoEmbed,
+} from "@webforge/site-components";
 import type {
   ClipboardApi,
   ClipboardReadResult,
@@ -19,7 +24,7 @@ import type {
 import type { MediaImportResult } from "../../shared/ipc-contract.js";
 import { type AddTarget, addTarget, insertAt } from "../add/index.js";
 import { currentPage, type EditorSession } from "../editor/editor-session.js";
-import { quotedElementName } from "../editor/labels.js";
+import { labelFor, quotedElementName } from "../editor/labels.js";
 import { findNode, removeNode } from "../editor/nodes.js";
 import type { SharedPlace } from "../editor/shared-confirmations.js";
 import { type SharedRegion, sharedRegionOf, shownLayout } from "../editor/shared-layout.js";
@@ -203,6 +208,21 @@ export function pasteTarget(
   return rest.every(sameTarget) ? target : undefined;
 }
 
+/**
+ * The element a paste goes beside or into, as the Add panel's place for it (1.13): the selected
+ * one on the page, or the linked copy holding it (F-ED-23). Nothing for one in the shared Header or
+ * Footer: pasting goes into the page, never into them (F-ED-7), so the page takes it as with
+ * nothing selected. The Header and Footer as this page shows them, as when copying.
+ */
+function pasteSelection(session: ClipboardSession): string | null {
+  const ui = session.ui.getState();
+  const site = session.history.document.getState();
+  if (ui.nodeId === null || sharedRegionOf(shownLayout(site, ui.pageId), ui.nodeId) !== undefined) {
+    return null;
+  }
+  return copySelection(site, ui.pageId, ui.nodeId)?.copy.props.id ?? ui.nodeId;
+}
+
 /** What the user is told when the clipboard has nothing to paste or couldn't be read. */
 function readMessage(result: Extract<ClipboardReadResult, { status: "empty" | "failed" }>): string {
   if (result.status === "empty") return t("site.clipboard.nothing");
@@ -218,7 +238,8 @@ function readMessage(result: Extract<ClipboardReadResult, { status: "empty" | "f
  * Ctrl/Cmd-drag copies one; `linked` (Paste as Linked Copy, Mod + Shift + V, F-ED-23) places
  * another linked copy instead, and pastes nothing but says so for anything else. In a site without
  * the shared section, both paste a section of its own. Image files or a copied image go to Media
- * and the selection ({@link pasteMedia}). Returns whether it pasted.
+ * and the selection ({@link pasteMedia}); a copied video address, to a new Embed video
+ * ({@link pasteVideo}). Returns whether it pasted.
  */
 export async function pasteElements(
   session: ClipboardSession,
@@ -242,6 +263,11 @@ export async function pasteElements(
   if (result.status === "media") {
     return pasteMedia(session, result.items, result.rejected, notify);
   }
+  if (result.status === "address") {
+    if (!linked) return pasteVideo(session, result.address, notify);
+    notify(t("site.clipboard.onlySharedLinked"));
+    return false;
+  }
   if (result.status !== "elements") {
     notify(readMessage(result));
     return false;
@@ -253,17 +279,9 @@ export async function pasteElements(
   if (first === undefined || page === undefined || nodes.length > MAX_COPIED_NODES) {
     return false;
   }
-  // Pasting goes into the page, never into the shared Header or Footer: elements don't move between
-  // them and the page (F-ED-7). With a shared element selected, the page takes it as the Add panel
-  // would with nothing selected. The Header and Footer as this page shows them, as when copying.
   const site = session.history.document.getState();
   const layout = shownLayout(site, ui.pageId);
-  // In a linked copy, the page holds the copy: what's pasted goes next to it.
-  const selectedId =
-    ui.nodeId === null || sharedRegionOf(layout, ui.nodeId) !== undefined
-      ? null
-      : (copySelection(site, ui.pageId, ui.nodeId)?.copy.props.id ?? ui.nodeId);
-  const target = pasteTarget(session.library, page.doc.content, nodes, selectedId);
+  const target = pasteTarget(session.library, page.doc.content, nodes, pasteSelection(session));
   if (target === undefined) {
     // Over the limit itself (a Columns of five, from an old file), no place takes it (#384).
     notify(
@@ -318,6 +336,48 @@ export async function pasteElements(
       insertAt(content, target, copies);
     },
     { selectionAfter: { ...ui, nodeId: firstId }, apply: true },
+  );
+  return true;
+}
+
+/**
+ * Puts a copied video address, YouTube's or Vimeo's (F-ED-16), in a new Embed video, where the Add
+ * panel would place one, as one "Added Embed video" step that selects it. Any other address is
+ * nothing to paste; a page with nowhere for an element says it can't take one.
+ */
+function pasteVideo(
+  session: ClipboardSession,
+  address: string,
+  notify: (message: string) => void,
+): boolean {
+  const type = "EmbedVideo";
+  const defaults = session.library.components[type]?.defaults;
+  const page = currentPage(session)?.doc;
+  // Checked again here, as the canvas will: main only knows it's a web address.
+  if (videoEmbed(address) === null || defaults === undefined || page === undefined) {
+    notify(t("site.clipboard.nothing"));
+    return false;
+  }
+  const ui = session.ui.getState();
+  const id = newId("node");
+  const node: NodeDoc = { type, props: { ...structuredClone(defaults), id, address } };
+  const target = addTarget(session.library, page.content, type, pasteSelection(session));
+  if (target === undefined) {
+    notify(t("site.clipboard.cantPaste", { item: itemName(session, node) }));
+    return false;
+  }
+  const label = labelFor(
+    { kind: "insert", nodeId: id, componentType: type, field: null, page, selection: id },
+    session.library,
+  );
+  session.edit(
+    "insert",
+    label,
+    (draft) => {
+      const content = draft.pages[ui.pageId]?.doc.content;
+      if (content !== undefined) insertAt(content, target, [node]);
+    },
+    { selectionAfter: { ...ui, nodeId: id }, apply: true },
   );
   return true;
 }

@@ -146,8 +146,9 @@ function Window() {
               onLayoutChange={noop}
               editorLevel="simple"
               center={
-                <div className="flex h-full items-start justify-center p-6">
-                  <div className="h-3/4 w-3/4 bg-white shadow-lg" />
+                // The page flush at the top of the flat backdrop, with no shadow (LF-2).
+                <div className="flex h-full items-start justify-center px-6">
+                  <div className="h-3/4 w-3/4 bg-white" />
                 </div>
               }
             />

@@ -31,7 +31,9 @@ const canvas = () => page.frameLocator(".editor__canvas iframe");
 const history = () => page.getByRole("list", { name: "Undo History" });
 const step = (label: string) => history().getByRole("button", { name: label });
 /** The label of Puck's action bar, which names the selected element. */
-const selected = () => canvas().locator('[class*="ActionBar-label"]');
+// The selected element's name, in its bar: a hovered element's chip is a label too (SP-1).
+const selected = () =>
+  canvas().locator('[class*="DraggableComponent--isSelected"] [class*="ActionBar-label"]');
 
 /** Selects the starter heading and deletes it with Puck's action bar. */
 async function deleteHeading(): Promise<void> {

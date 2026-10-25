@@ -1,14 +1,20 @@
 import { t } from "@webforge/i18n";
+import { createContext, type ReactNode, useContext } from "react";
 import { defineComponent } from "../define.js";
 import { defineSection } from "../frame.js";
 import type { ComponentDef } from "../library.js";
 import { Picture } from "../picture.js";
-import { BodyText, ButtonLink, SectionTitle } from "../typography.js";
+import { BodyText, ButtonLink, RICH_TEXT_LIST_CLASSES, SectionTitle } from "../typography.js";
 
 const ALIGNMENTS = ["centre", "left"] as const;
 const HERO_LAYOUTS = ["split", "centred", "background", "minimal"] as const;
 const TEXT_IMAGE_LAYOUTS = ["imageRight", "imageLeft"] as const;
 const CTA_LAYOUTS = ["banner", "split"] as const;
+const FAQ_LAYOUTS = ["accordion", "columns", "open"] as const;
+type FaqLayout = (typeof FAQ_LAYOUTS)[number];
+
+/** The layout of the FAQ a question is in, which draws it: to open, or open already. */
+const FaqLayoutContext = createContext<FaqLayout>("accordion");
 
 /**
  * The large opening section of a page: title, short text, a button and an image, in one of four
@@ -225,13 +231,16 @@ const callToAction = defineSection({
 });
 
 /**
- * Questions and answers. Each item is a native `<details>`, so it works without JavaScript. A
- * section like the others (2.19): its own padding, its questions in a readable column.
+ * Questions and answers, a section like the others (2.19): its own padding, its questions in a
+ * readable column. As an accordion each question is a native `<details>` that opens, so it works
+ * without JavaScript; in two columns, side by side on wider screens; or with every answer shown,
+ * each question a heading (2.7b).
  */
 const faq = defineSection({
   label: t("section.faq"),
   name: "faq",
   category: t("category.questions"),
+  variants: FAQ_LAYOUTS.map((value) => ({ label: t(`field.faqLayout.${value}`), value })),
   fields: {
     title: { kind: "text", label: t("field.title"), inline: true },
     items: { kind: "slot", label: t("field.questions"), allow: ["FaqItem"] },
@@ -240,16 +249,52 @@ const faq = defineSection({
   frame: () => "bg-base-100",
   render: ({ values, slots }) => {
     const Items = slots.items;
+    const layout = values.variant;
     return (
-      <div className="mx-auto max-w-3xl space-y-4">
+      <div
+        className={
+          layout === "columns" ? "mx-auto max-w-6xl space-y-4" : "mx-auto max-w-3xl space-y-4"
+        }
+      >
         <SectionTitle>{values.title}</SectionTitle>
-        <div className="space-y-2">
-          <Items />
-        </div>
+        <FaqLayoutContext value={layout}>
+          {layout === "columns" ? (
+            <Items className="grid items-start gap-2 md:grid-cols-2 md:gap-4" />
+          ) : (
+            <div className={layout === "open" ? "space-y-8" : "space-y-2"}>
+              <Items />
+            </div>
+          )}
+        </FaqLayoutContext>
       </div>
     );
   },
 });
+
+/** A question as its FAQ's layout draws it: one to open, or open already. */
+function FaqItemView({
+  question,
+  answer,
+}: {
+  readonly question: ReactNode;
+  readonly answer: ReactNode;
+}) {
+  const layout = useContext(FaqLayoutContext);
+  if (layout === "open") {
+    return (
+      <div className="site-faq-item">
+        <SectionTitle size="small">{question}</SectionTitle>
+        <BodyText className="mt-2">{answer}</BodyText>
+      </div>
+    );
+  }
+  return (
+    <details className="site-faq-item collapse-arrow collapse border border-base-300 bg-base-100">
+      <summary className="collapse-title font-semibold">{question}</summary>
+      <div className={`collapse-content [&_p+p]:mt-2 ${RICH_TEXT_LIST_CLASSES}`}>{answer}</div>
+    </details>
+  );
+}
 
 /** One question of an FAQ. */
 const faqItem = defineComponent({
@@ -260,12 +305,7 @@ const faqItem = defineComponent({
     answer: { kind: "richtext", label: t("field.answer"), inline: true },
   },
   defaults: { question: t("starter.faqQuestion"), answer: `<p>${t("starter.faqAnswer")}</p>` },
-  render: ({ values }) => (
-    <details className="site-faq-item collapse-arrow collapse border border-base-300 bg-base-100">
-      <summary className="collapse-title font-semibold">{values.question}</summary>
-      <div className="collapse-content [&_p+p]:mt-2">{values.answer}</div>
-    </details>
-  ),
+  render: ({ values }) => <FaqItemView question={values.question} answer={values.answer} />,
 });
 
 /** Ready-made sections: a Hero, Text, Text + Image, a Call to action, and an FAQ. */

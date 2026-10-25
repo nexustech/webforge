@@ -11,8 +11,17 @@ import {
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { t } from "@webforge/i18n";
-import { type CopiedElements, copiedElementsSchema, type MediaMeta } from "@webforge/model";
-import type { ClipboardReadResult, ClipboardWriteResult } from "../shared/ipc/clipboard.js";
+import {
+  type CopiedElements,
+  copiedElementsSchema,
+  type MediaMeta,
+  webUrlSchema,
+} from "@webforge/model";
+import {
+  type ClipboardReadResult,
+  type ClipboardWriteResult,
+  MAX_ADDRESS_BYTES,
+} from "../shared/ipc/clipboard.js";
 import { MAX_MEDIA_BYTES } from "../shared/ipc/media.js";
 import type { MediaImportResult } from "../shared/ipc-contract.js";
 import { logFailure } from "./log.js";
@@ -42,17 +51,23 @@ export type ClipboardContent =
   | { readonly kind: "files"; readonly paths: readonly string[] }
   /** A copied image (a screenshot) as PNG bytes; none when it is over the size limit. */
   | { readonly kind: "image"; readonly png: Uint8Array | undefined }
+  /** Copied text that is one web address and nothing else (a video's, F-ED-16). */
+  | { readonly kind: "address"; readonly address: string }
   | { readonly kind: "none" };
 
 /** The system clipboard, as the element clipboard uses it. */
 export type SystemClipboard = {
   /** Replaces the clipboard's content with copied elements. */
   writeElements(json: string): Promise<void>;
-  /** What the clipboard holds; elements, a file list or an image over the limits aren't read. */
+  /**
+   * What the clipboard holds; elements, a file list, an image or text over the limits aren't
+   * read.
+   */
   read(maxBytes: {
     readonly elements: number;
     readonly files: number;
     readonly image: number;
+    readonly address: number;
   }): Promise<ClipboardContent>;
 };
 
@@ -74,6 +89,16 @@ export function filePaths(uriList: string): string[] {
         return [];
       }
     });
+}
+
+/**
+ * The web address copied `text` is, trimmed: one line, an http(s) address of a domain, and nothing
+ * else. `undefined` for any other text, which a paste leaves alone.
+ */
+export function webAddress(text: string): string | undefined {
+  const address = text.trim();
+  if (/\s/.test(address)) return undefined;
+  return webUrlSchema.safeParse(address).success ? address : undefined;
 }
 
 /** Electron's clipboard as a {@link SystemClipboard}. */
@@ -113,7 +138,13 @@ export function systemClipboard(
           png: image.size > maxBytes.image ? undefined : new Uint8Array(await image.arrayBuffer()),
         };
       }
-      return { kind: "none" };
+      // Text last: an image copied from a browser comes with its address as text too.
+      const text = await blobOf("text/plain");
+      const address =
+        text === undefined || text.size > maxBytes.address
+          ? undefined
+          : webAddress(await text.text());
+      return address === undefined ? { kind: "none" } : { kind: "address", address };
     },
   };
 }
@@ -139,7 +170,8 @@ function failed(action: string, error: unknown): void {
  * own format, so copying anything else replaces them. Only one site is open at a time, so the bytes
  * of the images they show are kept in `dir` until the next copy: a site opened later can paste
  * them with their images. Nothing but those bytes is written there. Without elements, a paste
- * imports copied image files or a copied image (a screenshot) into Media.
+ * imports copied image files or a copied image (a screenshot) into Media, or passes on a copied web
+ * address (never logged), which the renderer places if it is a video's.
  */
 export function createElementClipboard(system: SystemClipboard, dir: string) {
   /** The kept bytes of `item`, if they are still there and unchanged. */
@@ -215,6 +247,7 @@ export function createElementClipboard(system: SystemClipboard, dir: string) {
           elements: MAX_ELEMENTS_BYTES,
           files: MAX_FILE_LIST_BYTES,
           image: MAX_MEDIA_BYTES,
+          address: MAX_ADDRESS_BYTES,
         });
       } catch {
         // Unreadable: nothing Webforge can paste.
@@ -222,6 +255,10 @@ export function createElementClipboard(system: SystemClipboard, dir: string) {
       }
       if (content.kind === "none") {
         return { status: "empty" };
+      }
+      // For the renderer to place, if it is a video's: nothing to store.
+      if (content.kind === "address") {
+        return { status: "address", address: content.address };
       }
       if (content.kind !== "elements") {
         return pasteMedia(site, importMedia, content);
