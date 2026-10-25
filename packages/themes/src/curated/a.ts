@@ -1,6 +1,14 @@
 import type { ColorRole, Oklch, ThemeTokens } from "@webforge/model";
 import { DEFAULT_THEME } from "@webforge/model";
 
+/** The style tokens of 2.13d as every theme had them, until 2.13d gives each its own. */
+const STYLE_AS_BEFORE = {
+  headings: { case: "normal", tracking: "normal" },
+  cards: { style: "flat" },
+  images: { corners: "rounded" },
+  sections: { rhythm: "plain" },
+} as const satisfies Pick<ThemeTokens, "headings" | "cards" | "images" | "sections">;
+
 /** A colour in OKLCH. */
 const ok = (l: number, c: number, h: number): Oklch => ({ l, c, h });
 const WHITE = ok(1, 0, 0);
@@ -116,6 +124,7 @@ const bistro: ThemeTokens = {
   links: { underline: "always" },
   buttons: { shape: "rounded", size: "m", style: "filled" },
   shadow: "soft",
+  ...STYLE_AS_BEFORE,
 };
 
 /**
@@ -161,6 +170,7 @@ const atelier: ThemeTokens = {
   links: { underline: "always" },
   buttons: { shape: "pill", size: "m", style: "outline" },
   shadow: "none",
+  ...STYLE_AS_BEFORE,
 };
 
 /**
@@ -208,6 +218,7 @@ const workshop: ThemeTokens = {
   links: { underline: "always" },
   buttons: { shape: "square", size: "l", style: "filled" },
   shadow: "strong",
+  ...STYLE_AS_BEFORE,
 };
 
 /**
@@ -252,6 +263,7 @@ const clarity: ThemeTokens = {
   links: { underline: "always" },
   buttons: { shape: "rounded", size: "m", style: "filled" },
   shadow: "soft",
+  ...STYLE_AS_BEFORE,
 };
 
 /**

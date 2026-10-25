@@ -109,7 +109,7 @@ function FeatureView({
     <div
       className={`${
         layout === "cards"
-          ? "site-feature flex flex-col gap-4 rounded-box bg-base-200 p-6"
+          ? "site-feature wf-card flex flex-col gap-4 rounded-box bg-base-200 p-6"
           : "site-feature flex flex-col gap-4 text-center"
       }${hover}`}
     >

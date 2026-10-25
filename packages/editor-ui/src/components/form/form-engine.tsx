@@ -1,6 +1,7 @@
 import { type ReactNode, useId, useState } from "react";
 import { cn } from "../../lib/cn.js";
 import { BoxField } from "../edit/box-field.js";
+import { ChoiceField } from "../edit/choice-field.js";
 import { drawField, useFieldRenderers } from "../edit/field-context.js";
 import type { FieldKind, FieldRendererProps, FieldRenderers } from "../edit/field-spec.js";
 import { ListField } from "../edit/list-field.js";
@@ -24,21 +25,26 @@ import {
   unplacedIssues,
 } from "./use-form.js";
 
-/**
- * The renderers a form draws its fields with: the Edit panel's, the form-only kinds', and a
- * checkbox for an on/off field, as dialogs have. The app's own (link, image, colour) come from
- * {@link FieldRenderersProvider}, over these.
- */
-const FORM_RENDERERS: FieldRenderers = {
+/** The Edit panel's renderers a form starts from; the app's own (link, image, colour) go over them. */
+const PANEL_RENDERERS: FieldRenderers = {
   ...PLAIN_RENDERERS,
   // The Edit panel's lists, in Site Settings too (PH2-13).
   list: ListField,
   box: BoxField,
+};
+
+/**
+ * What a form draws its own way, over any renderers around it: a checkbox for an on/off field, as
+ * dialogs have, and the form-only kinds. A dialog opened from the Edit panel (the link dialog) is
+ * inside the panel's renderers, whose on/off field is a switch (#391).
+ */
+const FORM_OWN: FieldRenderers = {
   toggle: CheckField,
   number: NumberField,
   time: TimeField,
   multiChoice: MultiChoiceField,
   imageChoice: ImageChoiceField,
+  choice: ChoiceField,
 };
 
 /** Classes of a control `width` wide. */
@@ -64,7 +70,7 @@ export function Form<V extends FormValues, Out>({
   groupsLabel,
   initialGroup,
 }: FormProps<V, Out>) {
-  const renderers: FieldRenderers = { ...FORM_RENDERERS, ...useFieldRenderers() };
+  const renderers: FieldRenderers = { ...PANEL_RENDERERS, ...useFieldRenderers(), ...FORM_OWN };
   const navId = useId();
   const { fields, issues } = form;
   const groups = form.spec.groups ?? [];
@@ -209,6 +215,8 @@ const isWide = (field: FormField) =>
   field.kind === "box" ||
   field.kind === "multiChoice" ||
   field.kind === "imageChoice" ||
+  // A row of choices (a link's kind) reads best across the form.
+  field.kind === "choice" ||
   (field.kind === "text" && field.multiline === true);
 
 /**
