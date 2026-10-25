@@ -64,6 +64,28 @@ describe("TitleBar", () => {
     }
   });
 
+  it("gives a button a caret once commands go with it, and none before (LF-13)", async () => {
+    const registry = renderTitleBar();
+    expect(screen.queryByRole("button", { name: "More Export options" })).toBeNull();
+
+    const zip = vi.fn();
+    act(() => {
+      registry.register({ id: COMMAND_IDS.exportSite, label: "Export Site…", run: vi.fn() });
+      registry.register({
+        id: "site.exportZip",
+        label: "Export as ZIP…",
+        more: COMMAND_IDS.exportSite,
+        run: zip,
+      });
+    });
+    await userEvent.click(screen.getByRole("button", { name: "More Export options" }));
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Export as ZIP…" }));
+
+    expect(zip).toHaveBeenCalledOnce();
+    // The caret is the only one: Preview and Publish have nothing to go with them.
+    expect(screen.queryByRole("button", { name: /^More (Preview|Publish) options$/ })).toBeNull();
+  });
+
   it("runs a registered command from its button, and labels icon buttons with the command", async () => {
     const registry = createCommandRegistry();
     const exportSite = vi.fn();

@@ -39,6 +39,11 @@ export type Command = {
   readonly textKeys?: readonly string[];
   /** Defaults to true; a disabled command is shown but can't run. */
   readonly enabled?: boolean;
+  /**
+   * The title-bar button whose caret menu lists it, by that button's command id (LF-13): Export's
+   * caret for a ZIP export, say. A button shows its caret only while some command names it.
+   */
+  readonly more?: string;
   /** The palette's group for it; the app's own commands when left out. */
   readonly palette?: PaletteGroup;
   /** More words the palette finds it by (a page's file name, a component's category). */

@@ -39,10 +39,11 @@ const NO_DRAG = "[-webkit-app-region:no-drag]";
 /**
  * The 40 px custom title bar (UI1, LF-13): app menu, New and Open, save status, Undo (with its
  * latest steps) and Redo, the command box with the site name, then panel tools and the
- * colour-coded Preview, Export and Publish. Its buttons are icons, each named by its command and
- * with a tooltip that gives the shortcut. The empty parts drag the window. The native window controls (Windows, Linux) or traffic
- * lights (macOS) are drawn over it by Electron; the padding keeps them clear, using the Window
- * Controls Overlay area the window reports.
+ * colour-coded Preview, Export and Publish, which get a caret once there is more to choose. Its
+ * buttons are icons, each named by its command and with a tooltip that gives the shortcut. The
+ * empty parts drag the window. The native window controls (Windows, Linux) or traffic lights
+ * (macOS) are drawn over it by Electron; the padding keeps them clear, using the Window Controls
+ * Overlay area the window reports.
  */
 export function TitleBar({ siteName, saveStatus, undoSteps, tools, menuBar }: TitleBarProps) {
   const registry = useCommandRegistry();
