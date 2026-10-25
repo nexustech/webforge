@@ -35,6 +35,12 @@ test("narrows an Image by dragging a grip on its edge, snapping to a width, as o
   await left().getByRole("button", { name: "Image", exact: true }).click();
   const image = canvas().locator(".site-image");
   await expect(image).toHaveCount(1);
+  // A new element's classes reach the canvas's CSS a moment after it is placed: until then the
+  // Image is one line high, then its 16:9 frame. Its grips sit halfway down its edges, so they
+  // move: grabbed too early, the press lands on the Image and drags it instead (macOS CI).
+  await expect
+    .poll(() => image.evaluate((element) => element.getBoundingClientRect().height))
+    .toBeGreaterThan(100);
   const width = () =>
     image.evaluate((element) => Math.round(element.getBoundingClientRect().width));
   // Placed, it is selected, as wide as its column, with a grip on each edge.

@@ -12,7 +12,12 @@ import {
   type SharedCopyNode,
   type SharedSectionsDoc,
 } from "@webforge/model";
-import { type ComponentLibrary, hasEntrance, overfillsSlots } from "@webforge/site-components";
+import {
+  type ComponentLibrary,
+  hasEntrance,
+  holdsOverfullSlot,
+  overfillsSlots,
+} from "@webforge/site-components";
 import type { EditorSession } from "../editor/editor-session.js";
 import { elementKind, givenElementName, quotedName } from "../editor/labels.js";
 import { findNode } from "../editor/nodes.js";
@@ -302,14 +307,15 @@ export function moveLayer(session: LayersSession, id: string, index: number): vo
  * UX-4), as the canvas's own copy-drag does and in the same step: the copy has ids and anchors of
  * its own ("Duplicated Heading"). A linked copy is copied as its section, the page's own; with
  * `linked` (Shift too), it places another linked copy of the same shared section instead ("Added
- * a copy of 'Hours'"), F-ED-23. The copy is selected.
+ * a copy of 'Hours'"), F-ED-23. The copy is selected. Returns why a copy was refused, to tell the
+ * person: there's no room for it there (a Columns' four), or it holds a slot over its limit itself.
  */
 export function copyLayer(
   session: LayersSession,
   id: string,
   index: number,
   linked: boolean,
-): void {
+): string | undefined {
   const found = target(session, id);
   const site = session.history.document.getState();
   const current = session.ui.getState();
@@ -346,7 +352,9 @@ export function copyLayer(
   // No more than its list's slot holds (a Columns' four).
   const after = structuredClone(content) as NodeDoc[];
   placeOf(after, found.own, session.library)?.list.splice(index, 0, added);
-  if (overfillsSlots(session.library, content, after)) return;
+  if (overfillsSlots(session.library, content, after)) {
+    return t(holdsOverfullSlot(session.library, [added]) ? "bulk.overfull" : "bulk.full");
+  }
   const selectionAfter = { ...current, nodeId: shown, others: [] };
   session.edit(
     "duplicate",
@@ -358,4 +366,5 @@ export function copyLayer(
     },
     { selectionAfter, apply: true },
   );
+  return undefined;
 }

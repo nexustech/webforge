@@ -8,10 +8,12 @@ import { commerceComponents } from "./commerce.js";
 import { contactDetailsComponents } from "./contact-details.js";
 import { elementsComponents } from "./elements.js";
 import { embedsComponents } from "./embeds.js";
+import { featuresComponents } from "./features.js";
 import { formsComponents } from "./forms.js";
 import { galleryComponents } from "./gallery.js";
 import { layoutComponents } from "./layout.js";
 import { sectionsComponents } from "./sections.js";
+import { testimonialsComponents } from "./testimonials.js";
 
 /**
  * Webforge's site components (daisyUI 5 markup), one module per family: the MVP catalogue
@@ -29,6 +31,8 @@ export const siteLibrary: ComponentLibrary = createLibrary(
   embedsComponents,
   contactDetailsComponents,
   formsComponents,
+  featuresComponents,
+  testimonialsComponents,
   commerceComponents,
 );
 

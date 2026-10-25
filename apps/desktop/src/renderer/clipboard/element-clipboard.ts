@@ -10,7 +10,7 @@ import {
   pageAnchors,
   pastedCopies,
 } from "@webforge/model";
-import { mediaUsedBy, overfillsSlots } from "@webforge/site-components";
+import { holdsOverfullSlot, mediaUsedBy, overfillsSlots } from "@webforge/site-components";
 import type {
   ClipboardApi,
   ClipboardReadResult,
@@ -265,7 +265,12 @@ export async function pasteElements(
       : (copySelection(site, ui.pageId, ui.nodeId)?.copy.props.id ?? ui.nodeId);
   const target = pasteTarget(session.library, page.doc.content, nodes, selectedId);
   if (target === undefined) {
-    notify(t("site.clipboard.cantPaste", { item: itemName(session, first) }));
+    // Over the limit itself (a Columns of five, from an old file), no place takes it (#384).
+    notify(
+      holdsOverfullSlot(session.library, nodes)
+        ? t("bulk.overfull")
+        : t("site.clipboard.cantPaste", { item: itemName(session, first) }),
+    );
     return false;
   }
   const shared =

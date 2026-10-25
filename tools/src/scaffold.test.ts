@@ -18,6 +18,7 @@ import {
   folderProblem,
   insertAfter,
   insertBefore,
+  listEditorPanel,
   main,
   namesOf,
   planFor,
@@ -38,6 +39,7 @@ const FILES = [
   "apps/desktop/src/renderer/areas.ts",
   "apps/desktop/src/renderer/site/area.ts",
   "apps/desktop/src/renderer/editor/EditPanelHost.tsx",
+  "apps/desktop/src/renderer/editor/Editor.test.tsx",
   "apps/desktop/src/renderer/fields/field-kinds.ts",
   "apps/desktop/src/renderer/fields/field-renderers.ts",
   "apps/desktop/src/shared/ipc-contract.ts",
@@ -128,6 +130,21 @@ describe("scaffold's text edits", () => {
     );
     expect(() => addEntry("const L = [];", "const M", "];", "b,")).toThrow('can\'t find "const M"');
     expect(() => addEntry("const L = [", "const L", "];", "b,")).toThrow("can't find the end");
+  });
+
+  it("adds a panel to the editor test's list, sorted, or says it can't find it", () => {
+    const test = '    ).toEqual(["add", "undoHistory"]);';
+
+    expect(
+      listEditorPanel(
+        `.toSorted(),
+${test}`,
+        "notes",
+      ),
+    ).toContain('.toEqual(["add", "notes", "undoHistory"]);');
+    expect(() => listEditorPanel("expect(ids).toEqual([]);", "notes")).toThrow(
+      "editor's list of panels",
+    );
   });
 
   it("registers an area's strings in en.ts: imported, in areas and in en", () => {
@@ -380,9 +397,29 @@ describe("scaffold's refusals", () => {
   });
 
   it("puts a panel or commands in an area's folder only", () => {
-    expect(() => planFor("panel", "Bookings", { root: REPO })).toThrow(/--area <folder>/);
     expect(() => planFor("commands", "Show", { root: REPO, folder: "shell" })).toThrow(
       /what every area builds on/,
+    );
+    expect(() => planFor("panel", "Editor", { root: REPO })).toThrow(/what every area builds on/);
+  });
+
+  it("puts a panel in the name's own folder when no area is given (#322's pnpm scaffold panel Notes)", () => {
+    const root = copyOfRepo();
+
+    const result = scaffold(planFor("panel", "Notes", { root }), root, false);
+
+    expect(result.written).toEqual(
+      expect.arrayContaining([
+        "apps/desktop/src/renderer/notes/NotesPanel.tsx",
+        "apps/desktop/src/renderer/notes/register-notes-panel.stories.tsx",
+        "apps/desktop/src/renderer/notes/area.ts",
+        "packages/i18n/src/en/notes.ts",
+      ]),
+    );
+    expect(read(root, "apps/desktop/src/renderer/areas.ts")).toContain("notesPanelArea,");
+    // The editor's test expects it among its panels.
+    expect(read(root, "apps/desktop/src/renderer/editor/Editor.test.tsx")).toContain(
+      '.toEqual(["add", "edit", "media", "notes", "undoHistory"]);',
     );
   });
 

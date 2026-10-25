@@ -1,3 +1,4 @@
+import { toast } from "@webforge/editor-ui";
 import type { ReadonlyStore } from "@webforge/history";
 import { t } from "@webforge/i18n";
 import { LayersIcon } from "lucide-react";
@@ -110,7 +111,11 @@ export function registerLayersPanel(
           // A dragged layer moves or is copied alone, and is selected alone after: the panel
           // never drags a row of several selected (those move with the Edit menu's moves, 1.31).
           move: (id, index) => moveLayer(session, id, index),
-          copy: (id, index, linked) => copyLayer(session, id, index, linked),
+          copy: (id, index, linked) => {
+            // Refused, it says why, as duplicate does.
+            const refused = copyLayer(session, id, index, linked);
+            if (refused !== undefined) toast(refused);
+          },
           moveUp: useCommandAction(TOOLBAR_COMMANDS.moveUp),
           moveDown: useCommandAction(TOOLBAR_COMMANDS.moveDown),
           duplicate: useCommandAction(TOOLBAR_COMMANDS.duplicate),
