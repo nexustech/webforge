@@ -169,7 +169,11 @@ describe("validateSiteChanges", () => {
           const changed = validateSiteChanges(parsed, changes);
 
           expect(changed.success).toBe(whole.success);
-          if (changed.success && whole.success) expect(changed.data).toEqual(whole.data);
+          if (changed.success && whole.success) {
+            expect(changed.data).toEqual(whole.data);
+            // toEqual ignores key order; the pages' order is promised too.
+            expect(Object.keys(changed.data.pages)).toEqual(Object.keys(whole.data.pages));
+          }
         },
       ),
       { numRuns: 400 },

@@ -1,6 +1,7 @@
 import { mkdirSync, truncateSync, writeFileSync } from "node:fs";
 import { open } from "node:fs/promises";
 import { join } from "node:path";
+import { ProjectStore } from "@webforge/storage";
 import { tempDirFactory } from "@webforge/test-utils";
 import type { IpcMain, IpcMainInvokeEvent } from "electron";
 import { describe, expect, it, vi } from "vitest";
@@ -197,7 +198,7 @@ describe("registerMediaHandlers and a hand-off (R6)", () => {
     const prices = join(dir, "Prices.pdf");
     writeFileSync(prices, pdf);
     const project = new ProjectSession();
-    const opened = project.create(join(dir, "Bakery.wforge"));
+    const opened = await project.create(join(dir, "Bakery.wforge"));
     if (opened.status !== "opened") throw new Error("not opened");
     // The dialog answers only once the hand-off below has opened another site.
     let choose: (paths: readonly string[]) => void = () => undefined;
@@ -210,18 +211,19 @@ describe("registerMediaHandlers and a hand-off (R6)", () => {
       handle: (channel: string, handler: Handler) => handlers.set(channel, handler),
     } as unknown as Pick<IpcMain, "handle">;
     registerMediaHandlers(ipc, (url) => url === APP_URL, project, { chooseMediaFiles });
-    const store = vi.spyOn(project, "storeAsset");
+    // Nothing reaches the file, whichever way the bytes would be stored.
+    const store = vi.spyOn(ProjectStore.prototype, "putAsset");
 
     const chosen = handlers.get("media:choose")?.(
       { senderFrame: { url: APP_URL } } as IpcMainInvokeEvent,
       opened.project.sessionId,
     );
-    project.create(join(dir, "Florist.wforge"));
+    await project.create(join(dir, "Florist.wforge"));
     choose([prices]);
 
     await expect(chosen).resolves.toEqual({ status: "failed", reason: "stale-session" });
     expect(store).not.toHaveBeenCalled();
-    project.close();
+    await project.close();
     vi.restoreAllMocks();
   });
 });

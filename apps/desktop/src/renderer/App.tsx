@@ -20,6 +20,8 @@ import { Editor, type EditorProps } from "./editor/Editor.js";
 import { createEditorSession, type EditorSession } from "./editor/editor-session.js";
 import { useDocument } from "./editor/use-document.js";
 import { reportFailure } from "./log.js";
+import { SettingsHost } from "./settings/SettingsHost.js";
+import { createSettingsRegistry } from "./settings/settings-registry.js";
 import { AboutDialog } from "./shell/AboutDialog.js";
 import { CanvasToolbarHost } from "./shell/CanvasToolbarHost.js";
 import { CommandButton } from "./shell/CommandButton.js";
@@ -42,7 +44,6 @@ import { ShellLayout } from "./shell/ShellLayout.js";
 import { ShortcutSheet } from "./shell/ShortcutSheet.js";
 import { TitleBar } from "./shell/TitleBar.js";
 import { UndoStepsMenu } from "./shell/UndoStepsMenu.js";
-import { SiteSettingsHost } from "./site-settings/SiteSettingsHost.js";
 import { SiteCommands } from "./start/SiteCommands.js";
 import { AutosaveStatus } from "./storage/AutosaveStatus.js";
 import type { LoadedSite } from "./storage/load-site.js";
@@ -102,6 +103,7 @@ export function App({
   const [toolbars] = useState(createContextualToolbars);
   const [canvasView] = useState(createCanvasView);
   const [canvasPointer] = useState(createCanvasPointer);
+  const [settings] = useState(createSettingsRegistry);
   // Actions that change more than the page shown ask first (D7); one dialog for the window.
   const [siteWide] = useState(createSiteWideConfirm);
   // The person's preferences, and Design or Content mode (M3) remembered with the open site (R9).
@@ -145,6 +147,7 @@ export function App({
     siteWide,
     canvasView,
     canvasPointer,
+    settings,
     exportSite: (request) => exportSiteRef.current(request),
   }));
   useEffect(() => connectAreas(WINDOW_AREAS, windowContext), [windowContext]);
@@ -272,7 +275,7 @@ export function App({
             <AboutDialog info={info} />
             <ShortcutSheet />
             <SiteCommands />
-            <SiteSettingsHost session={session} />
+            <SettingsHost registry={settings} />
             <SiteWideConfirmDialog confirm={siteWide} />
             <Toaster theme={theme} />
           </TooltipProvider>

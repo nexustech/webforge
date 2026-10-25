@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { NativeMenus } from "../../shared/ipc/app.js";
+import { appChannels, type NativeMenus } from "../../shared/ipc/app.js";
 import { createCommandRegistry, electronAccelerator } from "./commands.js";
 import { nativeMenusOf, syncNativeMenus } from "./native-menus.js";
 
@@ -67,6 +67,40 @@ describe("macOS's menu bar (LF-13)", () => {
         items: [{ id: "view.zoomIn", label: "Zoom In", enabled: true, accelerator: "CmdOrCtrl+=" }],
       },
     ]);
+  });
+
+  it("lists Settings… in the application menu, not in File (LF-12)", () => {
+    const { registry } = setUp();
+    registry.register({ id: "app.settings", label: "Settings…", menu: "file", run: vi.fn() });
+
+    const menus = nativeMenusOf(registry);
+    expect(menus[0]).toEqual({
+      id: "app",
+      label: "Webforge",
+      items: [
+        { id: "app.settings", label: "Settings…", enabled: true, accelerator: "CmdOrCtrl+," },
+      ],
+    });
+    expect(menus.find((menu) => menu.id === "file")?.items.map((item) => item.id)).toEqual([
+      "site.settings",
+    ]);
+  });
+
+  it("sends menus main accepts, one of each kind at most (#432 review)", () => {
+    const registry = createCommandRegistry();
+    for (const [id, menu] of [
+      ["app.settings", "file"],
+      ["site.settings", "file"],
+      ["edit.undo", "edit"],
+      ["view.zoomIn", "view"],
+      ["help.shortcuts", "help"],
+    ] as const) {
+      registry.register({ id, label: id, menu, run: vi.fn() });
+    }
+
+    const menus = nativeMenusOf(registry);
+    expect(menus.map((menu) => menu.id)).toEqual(["app", "file", "edit", "view", "help"]);
+    expect(appChannels.setNativeMenus.request.safeParse([menus]).success).toBe(true);
   });
 
   it("sends the menus at once, then once per burst of changes, and runs what's chosen there", () => {

@@ -119,7 +119,7 @@ describe("registerProjectHandlers", () => {
     await expect(invoke("project:commit", APP_URL, project.sessionId, changes)).resolves.toEqual({
       status: "saved",
     });
-    expect(session.commit).toHaveBeenCalledWith(changes);
+    expect(session.commit).toHaveBeenCalledWith(changes, project.sessionId);
   });
 
   it("refuses changes and the editor mode from a renderer loaded for another site (R6)", async () => {
@@ -256,7 +256,7 @@ describe("registerProjectHandlers", () => {
     await expect(
       invoke("project:set-ui-state", APP_URL, project.sessionId, { editorMode: "design" }),
     ).resolves.toEqual({ status: "saved" });
-    expect(session.setUiState).toHaveBeenCalledWith({ editorMode: "design" });
+    expect(session.setUiState).toHaveBeenCalledWith({ editorMode: "design" }, project.sessionId);
     await expect(
       invoke("project:set-ui-state", APP_URL, project.sessionId, { editorMode: "zoom" }),
     ).rejects.toThrow();

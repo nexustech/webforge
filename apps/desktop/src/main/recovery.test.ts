@@ -28,7 +28,7 @@ function setUp(
   available: BackupInfo[],
   dialogs: Partial<RecoveryDialogs>,
 ) {
-  const session = { open: vi.fn(() => results.shift() ?? opened) };
+  const session = { open: vi.fn(async () => results.shift() ?? opened) };
   const backups = { list: vi.fn(() => available), restore: vi.fn(() => "/sites/damaged.wforge") };
   const all: RecoveryDialogs = {
     ask: vi.fn(async () => "cancel" as const),

@@ -35,8 +35,8 @@ export function createMediaImport(
   const items: MediaMeta[] = [];
   const rejected: { fileName: string; reason: "unsupported" | "too-large" | "not-text" }[] = [];
   return {
-    /** Imports one file; returns why the import has to stop, if it does. */
-    add({ fileName, data }: ImportFile): ImportFailure | undefined {
+    /** Imports one file; gives why the import has to stop, if it does. One file at a time. */
+    async add({ fileName, data }: ImportFile): Promise<ImportFailure | undefined> {
       if (data === undefined || data.byteLength > MAX_MEDIA_BYTES) {
         rejected.push({ fileName, reason: "too-large" });
         return undefined;
@@ -51,7 +51,7 @@ export function createMediaImport(
         return undefined;
       }
       const id = createId();
-      const stored = session.storeAsset({
+      const stored = await session.storeAsset({
         mediaId: id,
         data,
         mime: sniffed.mimeType,
@@ -90,14 +90,14 @@ export function createMediaImport(
 }
 
 /** Imports files that are all in memory already (a drop); see {@link createMediaImport}. */
-export function importMediaFiles(
+export async function importMediaFiles(
   session: Pick<ProjectSession, "storeAsset">,
   files: readonly ImportFile[],
   createId?: () => MediaId,
-): MediaImportResult {
+): Promise<MediaImportResult> {
   const running = createMediaImport(session, createId);
   for (const file of files) {
-    const failed = running.add(file);
+    const failed = await running.add(file);
     if (failed !== undefined) {
       return failed;
     }

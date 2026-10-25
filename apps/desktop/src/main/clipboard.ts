@@ -152,7 +152,7 @@ export function systemClipboard(
 /** Imports what the clipboard holds that isn't elements: copied files, or a copied image. */
 export type ClipboardMediaImport = {
   files(paths: readonly string[]): Promise<MediaImportResult>;
-  image(file: ImportFile): MediaImportResult;
+  image(file: ImportFile): Promise<MediaImportResult>;
 };
 
 /** The open site, as the clipboard reads and fills its Media. */
@@ -194,7 +194,10 @@ export function createElementClipboard(system: SystemClipboard, dir: string) {
     const result =
       content.kind === "files"
         ? await importMedia.files(content.paths)
-        : importMedia.image({ fileName: `${t("site.media.pastedImage")}.png`, data: content.png });
+        : await importMedia.image({
+            fileName: `${t("site.media.pastedImage")}.png`,
+            data: content.png,
+          });
     if (result.status === "failed") return result;
     if (result.status === "canceled") return { status: "empty" };
     return { status: "media", items: result.items, rejected: result.rejected };
@@ -208,17 +211,19 @@ export function createElementClipboard(system: SystemClipboard, dir: string) {
       }
       try {
         mkdirSync(dir, { recursive: true });
-        const media = elements.media.filter((item) => {
-          if (!KEPT_FILE.test(item.hash)) return false;
+        const media: MediaMeta[] = [];
+        for (const item of elements.media) {
+          if (!KEPT_FILE.test(item.hash)) continue;
           const path = join(dir, item.hash);
-          if (existsSync(path)) return true;
-          const blob = site.readMedia(item.hash);
-          if (blob === undefined) return false;
-          const temporary = join(dir, `.${item.hash}.${randomUUID()}.tmp`);
-          writeFileSync(temporary, blob.data);
-          renameSync(temporary, path);
-          return true;
-        });
+          if (!existsSync(path)) {
+            const blob = await site.readMedia(item.hash);
+            if (blob === undefined) continue;
+            const temporary = join(dir, `.${item.hash}.${randomUUID()}.tmp`);
+            writeFileSync(temporary, blob.data);
+            renameSync(temporary, path);
+          }
+          media.push(item);
+        }
         // The last copy's images go: the clipboard holds one copy at a time.
         const kept = new Set(media.map((item) => item.hash));
         for (const name of readdirSync(dir)) {
@@ -279,7 +284,7 @@ export function createElementClipboard(system: SystemClipboard, dir: string) {
       try {
         const media: MediaMeta[] = [];
         for (const item of copied.data.media) {
-          const stored = site.storeCopiedMedia(item, () => readKept(item));
+          const stored = await site.storeCopiedMedia(item, () => readKept(item));
           if (stored.status === "failed") return stored;
           if (stored.status === "stored") media.push(item);
         }

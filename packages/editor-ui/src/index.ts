@@ -34,6 +34,11 @@ export {
 export { fieldControlClass, TextField } from "./components/edit/text-field.js";
 export { ToggleField } from "./components/edit/toggle-field.js";
 export {
+  combineForms,
+  type FormPart,
+  formPart,
+} from "./components/form/combine-forms.js";
+export {
   Check,
   ErrorText,
   Field,

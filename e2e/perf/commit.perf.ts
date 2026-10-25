@@ -25,19 +25,25 @@ const RESULTS = join(import.meta.dirname, "../perf-results/commit.json");
 let dir: string;
 let app: ElectronApplication | undefined;
 
+// Each run's file holds that run's cases only: a run of one case (--grep) leaves no old numbers of
+// the other.
+test.beforeAll(() => {
+  rmSync(RESULTS, { force: true });
+});
+
 test.afterEach(async () => {
   await app?.close();
   rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
 });
 
-/** Adds `name`'s result to the results file, keeping the other case's. */
+/** Adds `name`'s result to the results file, keeping the other case's from this run. */
 function record(name: string, result: Record<string, unknown>): void {
   mkdirSync(join(RESULTS, ".."), { recursive: true });
   let results: Record<string, unknown> = {};
   try {
     results = JSON.parse(readFileSync(RESULTS, "utf8")) as Record<string, unknown>;
   } catch {
-    // The first case of a run, or a file from before.
+    // The run's first case.
   }
   writeFileSync(RESULTS, `${JSON.stringify({ ...results, [name]: result }, null, 2)}\n`);
 }

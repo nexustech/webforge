@@ -12,7 +12,7 @@ const isImageMime = (mime: string): mime is ImageMime =>
 /** Options of {@link createMediaResponder}. */
 export type MediaResponderOptions = {
   /** A Media file of the open site by hash (`ProjectSession.readMedia`). */
-  readonly readMedia: (hash: string) => StoredBlob | undefined;
+  readonly readMedia: (hash: string) => Promise<StoredBlob | undefined>;
   /** Makes the WebP preview of an image in the worker; `undefined` if it couldn't. */
   readonly makeThumbnail: (
     data: Uint8Array,
@@ -70,7 +70,7 @@ export function createMediaResponder(options: MediaResponderOptions) {
     }
     let blob: StoredBlob | undefined;
     try {
-      blob = options.readMedia(hash);
+      blob = await options.readMedia(hash);
     } catch {
       // The site closed or its file failed underneath: the image just doesn't show.
       return notFound();

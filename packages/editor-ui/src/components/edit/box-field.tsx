@@ -88,7 +88,12 @@ export function BoxField({
       }}
     >
       {options.map((option) => (
-        <ToggleGroupItem key={option.value} value={option.value} className="flex-1">
+        <ToggleGroupItem
+          key={option.value}
+          value={option.value}
+          // Never narrower than its label: in a narrow column (LF-7) the options wrap instead.
+          className="min-w-fit flex-1"
+        >
           {option.label}
         </ToggleGroupItem>
       ))}

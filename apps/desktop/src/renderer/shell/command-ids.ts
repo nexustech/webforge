@@ -11,6 +11,7 @@ export const COMMAND_IDS = {
   preview: "site.preview",
   exportSite: "site.export",
   siteSettings: "site.settings",
+  settings: "app.settings",
   publish: "site.publish",
   saveVersion: "site.saveVersion",
   pasteLinked: "edit.pasteLinked",
