@@ -31,8 +31,7 @@
   --tab-inactive: #97989a;
   --titlebar: #3b4248;
   --toolbar: #4d575f;
-  --canvas-backdrop-inner: #262a2d;
-  --canvas-backdrop-outer: #212527;
+  --canvas-backdrop: #232729;
   --card: #24282b;
   --card-foreground: #ffffff;
   --popover: #24282b;
@@ -53,7 +52,7 @@
      (3.4:1 on the toolbar, the lightest surface). */
   --ring: #6cb6f5;
   /* UI1's #fd66ff is 2.5:1 on a white page; this magenta is 3.3:1 (same as light). */
-  --selection-outline: #f028f3;
+  --grid-outline: #f028f3;
   --destructive: #c83b3d;
   --destructive-foreground: #ffffff;
   /* --destructive is a fill (2.5:1 on panels as text); errors under fields use this lighter red. */
@@ -81,8 +80,7 @@
   --tab-inactive: #5b6168;
   --titlebar: #d4d8de;
   --toolbar: #e1e5ea;
-  --canvas-backdrop-inner: #f0f0f0;
-  --canvas-backdrop-outer: #e6e6e6;
+  --canvas-backdrop: #e9e9e9;
   --card: #ffffff;
   --card-foreground: #26292b;
   --popover: #ffffff;
@@ -100,7 +98,7 @@
   --accent-foreground: #26292b;
   --hover: rgb(0 0 0 / 0.04);
   --ring: #1d6fd0;
-  --selection-outline: #f028f3;
+  --grid-outline: #f028f3;
   --destructive: #c42f31;
   --destructive-foreground: #ffffff;
   --destructive-text: #c42f31;
@@ -140,7 +138,7 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-hover: var(--hover);
   --color-ring: var(--ring);
-  --color-selection-outline: var(--selection-outline);
+  --color-grid-outline: var(--grid-outline);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-destructive-text: var(--destructive-text);
@@ -173,8 +171,9 @@
   --radius-xl: 6px;
 }
 
+/* The canvas's backdrop (LF-2): flat, so the page's own edges are what the eye follows. */
 @utility canvas-backdrop {
-  background: radial-gradient(var(--canvas-backdrop-inner), var(--canvas-backdrop-outer));
+  background: var(--canvas-backdrop);
 }
 
 @layer base {

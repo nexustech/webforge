@@ -8,6 +8,9 @@ import { createRoot } from "react-dom/client";
 import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { CanvasEngine } from "../canvas-engine.js";
 import {
+  ACTIONS,
+  ACTIONS_OVERLAY,
+  CANVAS,
   CANVAS_ROOT,
   COMPONENT,
   COMPONENT_ATTRIBUTE,
@@ -97,6 +100,7 @@ describe("Puck's DOM contract (R8)", () => {
   });
 
   it("finds the canvas root, the page's drop zone and the rich-text editor", () => {
+    expect(element.querySelector(CANVAS)).not.toBeNull();
     expect(element.querySelector(CANVAS_ROOT)).not.toBeNull();
     expect(element.querySelector(ROOT_DROP_ZONE)).not.toBeNull();
     expect(element.querySelector(`${componentSelector("t")} ${RICH_TEXT}`)).not.toBeNull();
@@ -108,11 +112,13 @@ describe("Puck's DOM contract (R8)", () => {
     }
   });
 
-  it("finds the overlay of the selected element", async () => {
+  it("finds the overlay of the selected element, and its action bar's box and layer", async () => {
     await act(async () => engine.select("a"));
     await settle();
 
     expect(element.querySelector(OVERLAY)).not.toBeNull();
+    // LF-3 moves the bar's box; HOVERED_COMPONENT needs a real pointer: canvas-chrome.spec.ts.
+    expect(element.querySelector(`${OVERLAY} ${ACTIONS_OVERLAY} ${ACTIONS}`)).not.toBeNull();
   });
 
   it("draws a drag source as an item of Puck's drawer", async () => {

@@ -10,11 +10,18 @@ import { HIDDEN_ATTRIBUTE } from "./config.js";
 /** Marks the element outlined from outside the canvas (`CanvasEngine.outline`). */
 export const OUTLINED_ATTRIBUTE = "data-wf-outlined";
 
-import { componentSelector, OVERLAY } from "./puck-dom.js";
+import {
+  ACTIONS,
+  ACTIONS_OVERLAY,
+  componentSelector,
+  HOVERED_COMPONENT,
+  OVERLAY,
+} from "./puck-dom.js";
 import { canPerform, performOnSelected } from "./selected-actions.js";
 import { type BoxHandleField, SPACING_HANDLES_CSS, SpacingHandles } from "./spacing-handles.js";
 import { ensureStyle } from "./styles.js";
 import { ROOT_ZONE } from "./tree.js";
+import { OPTION_ATTRIBUTES } from "./view-attributes.js";
 import { WIDTH_HANDLES_CSS, type WidthHandleField, WidthHandles } from "./width-handles.js";
 
 const usePuck = createUsePuck();
@@ -23,8 +30,9 @@ const usePuck = createUsePuck();
 const CHROME_STYLE_ATTRIBUTE = "data-webforge-chrome";
 
 /**
- * The canvas chrome's styles (UI1 §3): magenta outlines, 1 px on hover and 2 px on the selected
- * element. They live in the canvas document, which has none of the editor's own styles, so they
+ * The canvas chrome's styles (UI1 §3, LF-1): outlines in the editor's accent, 1 px on hover and
+ * 2 px on the selected element, and the grid's magenta only for *Show outlines* and the columns'
+ * outlines. They live in the canvas document, which has none of the editor's own styles, so they
  * are self-contained; widths are divided by the canvas zoom so they stay 1 and 2 px on screen.
  */
 const CHROME_CSS = `
@@ -63,9 +71,9 @@ const CHROME_CSS = `
   outline: calc(1px / var(--wf-zoom, 1)) solid var(--wf-outline-color);
   outline-offset: calc(-1px / var(--wf-zoom, 1));
 }
-/* *Show column outlines* (2.17): each Column's edges, dashed and lighter than a selection. */
+/* *Show column outlines* (2.17): each Column's edges, dashed in the grid's magenta (LF-1). */
 [${PREVIEW_ATTRIBUTE}="column-outline"] {
-  outline: calc(1px / var(--wf-zoom, 1)) dashed color-mix(in srgb, var(--wf-outline-color) 55%, transparent);
+  outline: calc(1px / var(--wf-zoom, 1)) dashed color-mix(in srgb, var(--wf-grid-color) 55%, transparent);
   outline-offset: calc(-1px / var(--wf-zoom, 1));
 }
 /* A hidden element (Layers' Hide): dimmed, still there to select and show again. */
@@ -76,22 +84,50 @@ const CHROME_CSS = `
   outline: 2px solid #fff;
   outline-offset: 1px;
 }
+/*
+ * The element's bar (LF-3): the accent with white Lucide icons and text, square-ish, on the
+ * element's top-left corner just outside it. Puck places its box with inline styles (top right,
+ * scaled to the screen), which these move to the left and lift above the element's edge.
+ */
+:root {
+  --puck-actionbar-color-bg: var(--wf-primary);
+  --puck-actionbar-color-text: var(--wf-primary-foreground);
+  --puck-actionbar-opacity-text: 1;
+  --puck-actionbar-color-action-hover: var(--wf-primary-foreground);
+  --puck-actionbar-color-action-active: var(--wf-primary-foreground);
+  --puck-actionbar-color-separator: color-mix(in srgb, var(--wf-primary-foreground) 35%, transparent);
+  --puck-actionbar-radius: 3px;
+}
+${ACTIONS} {
+  left: 0 !important;
+  right: auto !important;
+  padding-left: 0 !important;
+  transform-origin: left top !important;
+  margin-top: calc(7px / var(--wf-zoom, 1));
+}
+/* A hovered element shows its name chip there too (SP-1): only the chip, which takes no clicks. */
+${HOVERED_COMPONENT} ${ACTIONS_OVERLAY} {
+  opacity: 1;
+}
 ${SPACING_HANDLES_CSS}${WIDTH_HANDLES_CSS}`;
 
-/** The editor's colours the chrome is drawn in (UI1), from its theme's tokens. */
+/** The editor's colours the chrome is drawn in (UI1, LF-1), from its theme's tokens. */
 export type ChromeTokens = {
-  /** `--selection-outline`: outlines, the other selected elements, the spacing grips. */
-  readonly outline: string;
-  /** `--primary` and `--primary-foreground`: the floating +. */
+  /**
+   * `--primary` and `--primary-foreground`: hover and selection outlines, the other selected
+   * elements, the bar and name chips, the floating +.
+   */
   readonly primary: string;
   readonly primaryForeground: string;
+  /** `--grid-outline`: *Show outlines* and the columns' outlines. */
+  readonly grid: string;
 };
 
 /** The light theme's colours, where the editor document has no tokens (a test without its CSS). */
 const DEFAULT_TOKENS: ChromeTokens = {
-  outline: "#f028f3",
   primary: "#0a6fb7",
   primaryForeground: "#ffffff",
+  grid: "#f028f3",
 };
 
 /** The chrome's colours in `editor`, the editor window's document, as its theme sets them now. */
@@ -99,9 +135,9 @@ export function chromeTokens(editor: Document): ChromeTokens {
   const style = editor.defaultView?.getComputedStyle(editor.documentElement);
   const read = (name: string, fallback: string) => style?.getPropertyValue(name).trim() || fallback;
   return {
-    outline: read("--selection-outline", DEFAULT_TOKENS.outline),
     primary: read("--primary", DEFAULT_TOKENS.primary),
     primaryForeground: read("--primary-foreground", DEFAULT_TOKENS.primaryForeground),
+    grid: read("--grid-outline", DEFAULT_TOKENS.grid),
   };
 }
 
@@ -120,7 +156,8 @@ export function applyChromeStyles(document: Document, editor: Document): () => v
     ensureStyle(
       document,
       CHROME_TOKENS_ATTRIBUTE,
-      `:root {\n  --wf-outline-color: ${tokens.outline};\n  --wf-primary: ${tokens.primary};\n` +
+      `:root {\n  --wf-outline-color: ${tokens.primary};\n  --wf-grid-color: ${tokens.grid};\n` +
+        `  --wf-primary: ${tokens.primary};\n` +
         `  --wf-primary-foreground: ${tokens.primaryForeground};\n}`,
     );
   };
@@ -184,7 +221,10 @@ export function createSelectionOutline(
     useLayoutEffect(() => {
       const element = ref.current;
       if (element !== null) {
-        element.style.setProperty("--wf-zoom", String(canvasZoom(element)));
+        const zoom = String(canvasZoom(element));
+        element.style.setProperty("--wf-zoom", zoom);
+        // The bars Puck draws beside the outlines are scaled by it too (LF-3).
+        element.ownerDocument.documentElement.style.setProperty("--wf-zoom", zoom);
       }
     });
     // Its index in the page's top-level list, or -1 for an element inside a section.
@@ -353,6 +393,19 @@ function ElementActionButtons({
   );
 }
 
+/**
+ * Element `id`'s size on the page ("256 × 256"), for its name chip while *Show spacing on hover* is
+ * on (SP-2); nothing while it's off.
+ */
+function hoveredSize(bar: HTMLElement, id: string): string | undefined {
+  const document = bar.ownerDocument;
+  if (!document.documentElement.hasAttribute(OPTION_ATTRIBUTES.spacingOnHover)) return undefined;
+  const element = document.querySelector<HTMLElement>(componentSelector(id));
+  return element === null
+    ? undefined
+    : `${Math.round(element.offsetWidth)} × ${Math.round(element.offsetHeight)}`;
+}
+
 /** Space between the element and its bar when the bar goes below it, in screen pixels. */
 const BELOW_GAP = 4;
 
@@ -409,13 +462,32 @@ export function QuickActionBar({
     kept.current = bar;
     if (bar !== null) setId(barElementId(bar));
   };
-  // Puck also shows a hovered element's bar; the move, Edit and Hide actions are the selected one's.
+  // Puck also draws a hovered element's bar: only its name chip shows there (SP-1).
   const selected = usePuck((state) => id !== null && state.selectedItem?.props.id === id);
+  const [size, setSize] = useState<string | undefined>(undefined);
   useLayoutEffect(() => {
     const bar = kept.current;
+    // With *Show spacing on hover* on, a hovered element's chip says its size (SP-2).
+    const next = bar === null || selected || id === null ? undefined : hoveredSize(bar, id);
+    if (next !== size) setSize(next);
     return bar === null ? undefined : keepInFrame(bar, selected);
   });
   const locked = id !== null && isLocked?.(id) === true;
+  if (!selected) {
+    return (
+      <div ref={attach}>
+        <ActionBar>
+          <ActionBar.Group>
+            {label === undefined ? null : (
+              <ActionBar.Label
+                label={size === undefined ? label : t("canvas.chipSize", { name: label, size })}
+              />
+            )}
+          </ActionBar.Group>
+        </ActionBar>
+      </div>
+    );
+  }
   return (
     <div ref={attach}>
       <ActionBar>

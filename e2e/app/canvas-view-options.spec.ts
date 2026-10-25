@@ -72,3 +72,24 @@ test("shows outlines, element names, spacing on hover and extra space, none an u
   await expect(canvas().locator(".wf-view-name")).toHaveCount(0);
   await expect(steps()).toHaveCount(before);
 });
+
+test("names a hovered element in a chip, with its size while spacing on hover is on (SP-1, SP-2)", async () => {
+  const chip = canvas().locator('[class*="_ActionBar-label_"]', { hasText: /^Heading/ });
+  // The Heading beside its text: Puck keeps the pointer over inline text from hovering its element.
+  const heading = canvas().locator("h1");
+  const beside = async () => {
+    const box = await heading.boundingBox();
+    if (box === null) throw new Error("No heading");
+    await heading.hover({ position: { x: box.width - 4, y: box.height / 2 } });
+  };
+
+  await beside();
+  await expect(chip).toBeVisible();
+  await expect(chip).toHaveText("Heading");
+
+  await toggle("Show spacing on hover");
+  // Away and back, as the person moves on.
+  await page.mouse.move(0, 0);
+  await beside();
+  await expect(chip).toHaveText(/^Heading · \d+ × \d+$/);
+});

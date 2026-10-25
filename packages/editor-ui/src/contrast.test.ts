@@ -86,8 +86,10 @@ const UI_PAIRS: Readonly<Record<string, readonly string[]>> = {
   info: ["titlebar"],
   publish: ["titlebar"],
   "save-status": ["titlebar"],
-  // The canvas outline sits on the user's page, white by default.
-  "selection-outline": ["page"],
+  // The canvas's outlines sit on the user's page, white by default: hover and selection in the
+  // accent, Show outlines and the columns' in the grid's magenta (LF-1).
+  primary: ["page"],
+  "grid-outline": ["page"],
 };
 
 /** A token's colour; `top@base` is a translucent token shown over an opaque one. */
