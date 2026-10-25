@@ -1,6 +1,6 @@
 import { Button, cn, fieldControlClass } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
-import { PinIcon, PinOffIcon, SearchIcon, XIcon } from "lucide-react";
+import { PinIcon, SearchIcon, XIcon } from "lucide-react";
 import { useId, useState } from "react";
 import type { RecentSite } from "../../shared/ipc-contract.js";
 
@@ -94,7 +94,6 @@ export function RecentSites({ sites, locale, onOpen, onPin, onRemove }: RecentSi
                   type="button"
                   size="icon"
                   variant="ghost"
-                  // Shown on the card while pinned, so the pin is seen at a glance (LF-10).
                   className={cn("bg-panel/80", site.pinned && "text-primary")}
                   aria-pressed={site.pinned}
                   aria-label={t(site.pinned ? "site.start.unpin" : "site.start.pin", {
@@ -105,7 +104,8 @@ export function RecentSites({ sites, locale, onOpen, onPin, onRemove }: RecentSi
                   })}
                   onClick={() => onPin(site, !site.pinned)}
                 >
-                  {site.pinned ? <PinOffIcon /> : <PinIcon />}
+                  {/* Filled while pinned, so the pin is seen at a glance (LF-10). */}
+                  <PinIcon className={site.pinned ? "fill-current" : undefined} />
                 </Button>
                 <Button
                   type="button"

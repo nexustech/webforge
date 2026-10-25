@@ -51,6 +51,16 @@ const many = [
 const meta = {
   title: "Start/StartScreen",
   component: StartScreen,
+  // The whole window, as the app shows it: screenshotted at 1280×800 (e2e/visual).
+  tags: ["full-window"],
+  parameters: { layout: "fullscreen" },
+  decorators: [
+    (Story) => (
+      <div style={{ height: "100vh" }}>
+        <Story />
+      </div>
+    ),
+  ],
   args: {
     info: { name: "Webforge", version: "1.0.0" },
     app: { onFlushRequest: () => () => undefined },
