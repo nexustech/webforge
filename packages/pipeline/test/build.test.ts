@@ -670,7 +670,9 @@ describe("buildSite: the theme's style (2.13d)", () => {
     const exported = await buildSite(site, siteLibrary, resources);
 
     const css = text(exported, fileNamed(exported, /^assets\/css\//)).replace(/\s+/g, " ");
-    expect(css).toContain(".font-heading { text-transform: uppercase; letter-spacing: 0.1em; }");
+    expect(css).toContain(
+      ":is(h1, h2, h3, h4, h5, h6).font-heading { text-transform: uppercase; letter-spacing: 0.1em; }",
+    );
     expect(css).toContain(
       "section .wf-card { background-color: var(--color-base-100); border: var(--border) solid var(--color-base-300); }",
     );

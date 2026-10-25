@@ -425,6 +425,8 @@ describe("themeCss (2.1)", () => {
   it("writes the theme's style only when it isn't as sites always looked (2.13d)", () => {
     const css = (change: Partial<ThemeTokens>) => themeCss({ ...DEFAULT_THEME, ...change });
     const lines = (...each: string[]) => each.join("\n");
+    // Titles, never a pull quote or a price in the heading font.
+    const titles = ":is(h1, h2, h3, h4, h5, h6).font-heading";
 
     // As always: nothing written, so the default theme's stylesheet is as it was.
     expect(themeCss(DEFAULT_THEME)).not.toMatch(
@@ -432,13 +434,13 @@ describe("themeCss (2.1)", () => {
     );
     // Headings: capitals or small capitals, with tracking of their own on top of the theme's.
     expect(css({ headings: { case: "uppercase", tracking: "normal" } })).toContain(
-      lines(".font-heading {", "    text-transform: uppercase;", "    letter-spacing: 0.06em;"),
+      lines(`${titles} {`, "    text-transform: uppercase;", "    letter-spacing: 0.06em;"),
     );
     expect(css({ headings: { case: "small-caps", tracking: "wide" } })).toContain(
       lines("    font-variant-caps: all-small-caps;", "    letter-spacing: 0.1em;"),
     );
     expect(css({ headings: { case: "normal", tracking: "tight" } })).toContain(
-      lines(".font-heading {", "    letter-spacing: -0.02em;", "  }"),
+      lines(`${titles} {`, "    letter-spacing: -0.02em;", "  }"),
     );
     // Cards on the page's surface, outlined or raised; a raised card keeps a shadow under a
     // theme without shadows.

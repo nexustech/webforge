@@ -125,7 +125,7 @@ function TeamMemberView({
   }
   return (
     <div
-      className={`site-team-member flex flex-col overflow-hidden rounded-box bg-base-200${hover}`}
+      className={`site-team-member wf-card flex flex-col overflow-hidden rounded-box bg-base-200${hover}`}
     >
       {picture("aspect-square w-full", "(min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw")}
       <div className="p-6">{words}</div>

@@ -119,6 +119,9 @@ const HEADING_TRACKING: Readonly<Record<ThemeTokens["headings"]["tracking"], num
   wide: 0.04,
 };
 
+/** Titles in the heading font: headings 1–6, whatever the element that sets them. */
+const TITLES = ":is(h1, h2, h3, h4, h5, h6).font-heading";
+
 /** The letter spacing capitals and small capitals add, which they need to read well (2.13d). */
 const CAPS_TRACKING = 0.06;
 
@@ -238,7 +241,7 @@ function buttonRules(tokens: ThemeTokens): string[] {
 /**
  * The theme's style (2.13d, PH2-15), each only when it isn't as every site always looked, so the
  * default theme's stylesheet is as it was:
- * - headings (everything in the heading font) in capitals or small capitals, and their tracking;
+ * - headings (titles in the heading font) in capitals or small capitals, and their tracking;
  * - cards (`wf-card`: Features, Stats, Team and Testimonials) outlined or raised on the page's
  *   surface instead of flat on the second one;
  * - photos (an `img` with the box corners) square or softer;
@@ -263,7 +266,8 @@ function styleRules(tokens: ThemeTokens): string[] {
   const imageRadius = IMAGE_RADIUS[images.corners];
   const alternating = sections.rhythm === "alternating";
   const utilities = [
-    ...(heading.length === 0 ? [] : ["  .font-heading {", ...heading, "  }"]),
+    // Titles, never a pull quote or a price in the heading font.
+    ...(heading.length === 0 ? [] : [`  ${TITLES} {`, ...heading, "  }"]),
     // `section` outweighs the cards' own background class.
     ...(card.length === 0
       ? []
