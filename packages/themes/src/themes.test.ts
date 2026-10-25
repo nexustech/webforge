@@ -286,43 +286,96 @@ describe("curated themes (2.13)", () => {
     }
   });
 
-  it("set their own inverse sections, dark under a light page", () => {
+  it("set their own reversed sections, light under a dark page and dark under a light one", () => {
     for (const theme of CURATED_THEMES) {
-      expect(theme.scheme).toBe("light");
       const inverse = theme.inverse;
       expect(inverse, theme.preset).toBeDefined();
       if (inverse === undefined) continue;
-      expect(inverse["base-100"].l).toBeLessThan(0.4);
-      expect(inverse["base-content"].l).toBeGreaterThan(0.85);
+      const [page, reversed] =
+        theme.scheme === "light" ? [theme.colors, inverse] : [inverse, theme.colors];
+      expect(page["base-100"].l, theme.preset).toBeGreaterThan(0.85);
+      expect(reversed["base-100"].l, theme.preset).toBeLessThan(0.4);
+      expect(reversed["base-content"].l, theme.preset).toBeGreaterThan(0.85);
     }
   });
 
-  it("look distinct: each its own fonts, brand colour and shape", () => {
-    // How far apart two colours look (OKLab's distance): about 0.02 is just noticeable.
-    const distance = (a: Oklch, b: Oklch) => {
-      const lab = ({ l, c, h }: Oklch) => [
-        l,
-        c * Math.cos((h * Math.PI) / 180),
-        c * Math.sin((h * Math.PI) / 180),
-      ];
-      const [x, y] = [lab(a), lab(b)];
-      return Math.hypot(...x.map((value, at) => value - (y[at] ?? 0)));
-    };
+  // Themes differ in style, not layout (PH2-15, 2.13d): each batch's themes look unlike one another.
+
+  /**
+   * The kind of heading font each curated theme's heading family is. A theme with a family not
+   * listed fails below: classify it, and keep each batch's themes to different kinds.
+   */
+  const HEADING_STYLES: Readonly<Record<string, string>> = {
+    "Playfair Display": "high-contrast serif",
+    Montserrat: "geometric sans",
+    "Bebas Neue": "condensed display",
+    Inter: "grotesque sans",
+    Quicksand: "rounded",
+    "Roboto Slab": "slab",
+    Bitter: "slab",
+  };
+
+  /** The hue band of a colour, a twelfth of the wheel each; grey for a colour with little chroma. */
+  const hueBand = ({ c, h }: Oklch) => (c < 0.03 ? "grey" : String(Math.round(h / 30) % 12));
+
+  /** A theme's colour character: dark-first, monochrome with one accent, vivid or muted. */
+  const character = (theme: ThemeTokens) => {
+    const { colors } = theme;
+    if (theme.scheme === "dark") return "dark-first";
+    const grey = (role: keyof typeof colors) => colors[role].c < 0.01;
+    if (grey("base-100") && grey("base-content") && grey("secondary") && grey("accent")) {
+      return "monochrome";
+    }
+    return colors.primary.c >= 0.17 ? "vivid" : "muted";
+  };
+
+  /** What tells two themes apart at a glance, by name. */
+  const traits = (theme: ThemeTokens) => ({
+    "heading font": theme.fonts.heading.family,
+    "body font": theme.fonts.body.family,
+    "scheme lightness": theme.scheme,
+    "primary hue band": hueBand(theme.colors.primary),
+    corners: theme.radius.box,
+    "card style": theme.cards.style,
+    "heading case": theme.headings.case,
+    spacing: theme.spacing,
+    "button style": `${theme.buttons.shape} ${theme.buttons.style}`,
+  });
+
+  /** The curated themes in batches of four, as 2.13a–c make them. */
+  const batches = [0, 4, 8]
+    .map((start) => CURATED_THEMES.slice(start, start + 4))
+    .filter((batch) => batch.length > 0);
+
+  it("differ in at least 4 of their fonts, colours, corners, cards, headings, spacing and buttons", () => {
     CURATED_THEMES.forEach((theme, index) => {
       for (const other of CURATED_THEMES.slice(index + 1)) {
-        const pair = `${theme.preset} and ${other.preset}`;
-        expect(theme.fonts.heading.family, pair).not.toBe(other.fonts.heading.family);
-        expect(distance(theme.colors.primary, other.colors.primary), pair).toBeGreaterThan(0.1);
-        const shape = (t: ThemeTokens) => [
-          t.radius.box,
-          t.buttons.shape,
-          t.buttons.style,
-          t.spacing,
-        ];
-        const differences = shape(theme).filter((value, at) => value !== shape(other)[at]);
-        expect(differences.length, pair).toBeGreaterThanOrEqual(1);
+        const [mine, theirs] = [traits(theme), traits(other)];
+        const differing = Object.entries(mine).filter(
+          ([trait, value]) => theirs[trait as keyof typeof theirs] !== value,
+        );
+        expect(differing.length, `${theme.preset} and ${other.preset}`).toBeGreaterThanOrEqual(4);
       }
     });
+  });
+
+  it("share no heading font style or colour character within a batch", () => {
+    for (const theme of CURATED_THEMES) {
+      expect(HEADING_STYLES[theme.fonts.heading.family], theme.preset).toBeDefined();
+    }
+    for (const batch of batches) {
+      const names = batch.map((theme) => theme.preset).join(", ");
+      const styles = batch.map((theme) => HEADING_STYLES[theme.fonts.heading.family]);
+      expect(new Set(styles).size, names).toBe(batch.length);
+      expect(new Set(batch.map(character)).size, names).toBe(batch.length);
+    }
+    // The first batch has one of each colour character (2.13d).
+    expect(batches[0]?.map(character).toSorted()).toEqual([
+      "dark-first",
+      "monochrome",
+      "muted",
+      "vivid",
+    ]);
   });
 });
 
