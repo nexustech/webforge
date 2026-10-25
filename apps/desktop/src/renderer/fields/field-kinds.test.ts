@@ -6,8 +6,21 @@ import { FIELD_KINDS } from "./field-kinds.js";
 import { fieldRenderers } from "./field-renderers.js";
 
 // Every kind of field a component can have is drawn by a renderer (2.20, B5): the Edit panel's own,
-// or the app's (fields/<kind>/). Its story is checked in tools/src/field-kinds.test.ts, and its
-// Puck field in the engine's config test.
+// or the app's (fields/<kind>/), with a story, so Storybook's axe and screenshot checks see it. Its
+// Puck field is checked in the engine's config test.
+
+// The stories of the Edit panel's renderers and the app's, as Vite reads them: only in a test.
+const STORIES = import.meta.glob(
+  ["../../../../../packages/editor-ui/src/**/*.stories.tsx", "../**/*.stories.tsx"],
+  { query: "?raw", import: "default", eager: true },
+);
+
+/** The titles of those stories. */
+const storyTitles = new Set(
+  Object.values(STORIES).flatMap((text) =>
+    [...String(text).matchAll(/^\s+title: "([^"]+)",$/gm)].map(([, title]) => title),
+  ),
+);
 
 describe("field kinds (2.20, B5)", () => {
   const appRenderers = fieldRenderers({
@@ -29,6 +42,21 @@ describe("field kinds (2.20, B5)", () => {
         : [],
     );
 
+    expect(missing).toEqual([]);
+  });
+
+  it("has a story for the renderer of every kind", () => {
+    const missing = Object.entries(FIELD_KINDS).flatMap(([kind, editing]) =>
+      "editPanel" in editing && !storyTitles.has(editing.story)
+        ? [
+            `${kind} fields are drawn by the "${editing.editPanel}" renderer, whose story ` +
+              `"${editing.story}" (FIELD_KINDS, field-kinds.ts) doesn't exist. Add a story with ` +
+              "that title next to the renderer, as fields/link/LinkField.stories.tsx does.",
+          ]
+        : [],
+    );
+
+    expect(storyTitles).toContain("Edit/Fields/Text");
     expect(missing).toEqual([]);
   });
 
