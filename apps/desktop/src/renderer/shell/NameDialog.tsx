@@ -1,14 +1,6 @@
-import {
-  Button,
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@webforge/editor-ui";
-import { t } from "@webforge/i18n";
-import { useId, useState } from "react";
+import { FormDialog, type FormSpec } from "@webforge/editor-ui";
+import { z } from "zod";
+import "./form-messages.js";
 
 /** Props of {@link NameDialog}. */
 export type NameDialogProps = {
@@ -23,7 +15,7 @@ export type NameDialogProps = {
   readonly confirm: string;
   /** A line under the field, updated as the person types: the file name the page will get. */
   readonly describe?: (value: string) => string;
-  /** The longest name the field takes. */
+  /** The longest name the field takes: the model's limit for what is named. */
   readonly maxLength: number;
   /** Why a name can't be used, if it can't: said under the field, with the confirm button off. */
   readonly problem?: (value: string) => string | undefined;
@@ -32,27 +24,15 @@ export type NameDialogProps = {
   readonly onCancel: () => void;
 };
 
+type NameValues = { readonly name: string };
+
 /**
  * Asks for a name: a page's when adding or renaming it, a folder's when moving a page into one, a
- * shared section's when saving one.
+ * shared section's when saving one. A form (2.21): checked as the person types, against a schema
+ * of the model's limit, so the editor's words say what is wrong.
  */
-export function NameDialog({ open, onCancel, ...form }: NameDialogProps) {
-  return (
-    <Dialog
-      open={open}
-      onOpenChange={(next) => {
-        if (!next) onCancel();
-      }}
-    >
-      {/* The content mounts with each opening, so the form starts from `initialValue` every time. */}
-      <DialogContent>
-        <NameForm {...form} onCancel={onCancel} />
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function NameForm({
+export function NameDialog({
+  open,
   title,
   description,
   label,
@@ -63,64 +43,41 @@ function NameForm({
   problem,
   onSubmit,
   onCancel,
-}: Omit<NameDialogProps, "open">) {
-  const [value, setValue] = useState(initialValue);
-  const fieldId = useId();
-  const hintId = useId();
-  const name = value.trim();
-  const issue = name === "" ? undefined : problem?.(name);
-  const hint = issue ?? (describe === undefined ? undefined : name === "" ? " " : describe(name));
+}: NameDialogProps) {
+  const schema = z.string().trim().min(1).max(maxLength);
+  const spec: FormSpec<NameValues, string> = {
+    fields: ({ name }) => {
+      const typed = name.trim();
+      return [
+        {
+          kind: "text",
+          name: "name",
+          path: "",
+          label,
+          maxLength,
+          ...(describe === undefined || typed === "" ? {} : { help: describe(typed) }),
+        },
+      ];
+    },
+    schema,
+    toModel: ({ name }) => name,
+    check: ({ name }) => {
+      const typed = name.trim();
+      const issue = typed === "" ? undefined : problem?.(typed);
+      return issue === undefined ? [] : [{ path: [], message: issue }];
+    },
+    validateOn: "change",
+  };
   return (
-    <form
-      className="grid gap-3"
-      onSubmit={(event) => {
-        event.preventDefault();
-        if (name !== "" && issue === undefined) {
-          onSubmit(name);
-        }
-      }}
-    >
-      <DialogHeader>
-        <DialogTitle>{title}</DialogTitle>
-        {description !== undefined && <DialogDescription>{description}</DialogDescription>}
-      </DialogHeader>
-      <div className="grid gap-1">
-        <label htmlFor={fieldId} className="text-xs text-muted-foreground">
-          {label}
-        </label>
-        <input
-          id={fieldId}
-          value={value}
-          maxLength={maxLength}
-          // biome-ignore lint/a11y/noAutofocus: the dialog exists to type this name.
-          autoFocus
-          onFocus={(event) => event.currentTarget.select()}
-          onChange={(event) => setValue(event.currentTarget.value)}
-          aria-describedby={hint === undefined ? undefined : hintId}
-          aria-invalid={issue !== undefined}
-          className="h-7 w-full rounded-md border border-border bg-input px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        />
-        {hint !== undefined && (
-          <p
-            id={hintId}
-            className={
-              issue === undefined
-                ? "text-xs text-muted-foreground"
-                : "text-xs text-destructive-text"
-            }
-          >
-            {hint}
-          </p>
-        )}
-      </div>
-      <DialogFooter>
-        <Button type="button" variant="secondary" onClick={onCancel}>
-          {t("pages.cancel")}
-        </Button>
-        <Button type="submit" disabled={name === "" || issue !== undefined}>
-          {confirm}
-        </Button>
-      </DialogFooter>
-    </form>
+    <FormDialog
+      open={open}
+      title={title}
+      {...(description === undefined ? {} : { description })}
+      confirm={confirm}
+      spec={spec}
+      initial={{ name: initialValue }}
+      onSave={(name) => onSubmit(name)}
+      onCancel={onCancel}
+    />
   );
 }

@@ -45,6 +45,9 @@
 | **Section** | A full-width band (Hero, Features, Contact…), a top-level Puck component | Wix, Squarespace, Canva, Hostinger, Adobe | Block (ambiguous), Component |
 | **Element** | Anything inside a section (Heading, Text, Image, Button, Form, Columns…) | Wix, Hostinger, Canva, Adobe | Component, Widget, Node |
 | **Columns** | Layout element that splits a section horizontally | Universal | Grid, Row/Col, Flex |
+| **Buy button** | An element selling one thing: its price, an image and a button to a payment page from Stripe Payment Links, PayPal or a shop (F-CM-2, 2.11). A plain link, no shop of its own | Wix, Squarespace ("Buy button") | Checkout, Add to cart, Payment widget |
+| **Booking button** | A Button reading "Book now", linking to the owner's booking page on any service: a preset of the Button in the Add panel (F-CM-7, 2.11) | Wix ("Book Now") | Scheduler, Booking widget, Calendly button |
+| **Embed video · Embed map** | The Video and Map sections' click-to-load player and map as elements among a section's others (F-CM-4, 2.11) | Wix ("Embed") | iframe, Widget, Media embed |
 | **Form · Form field** | An element sending its fields to the form service in Site Settings, and each field in it: a line of text, an email address, a phone number, a message, a tick box or a choice from a list (S1, 2.11). The Contact form section is a ready-made form | Wix, Squarespace ("Form", "Form field") | Input, Control, Widget |
 | **Add column · Remove last column** | The Columns toolbar's buttons (2.17): Add puts a new column at the end; Remove last column takes away the last one, with what's in it, whichever column is selected | Says which column goes | Remove column (which one?), Delete column |
 | **Header / Footer** | Shared top/bottom of every page (C5) | Universal | Layout regions, Master page |

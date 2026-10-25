@@ -9,6 +9,17 @@ export const shell = {
   "shell.undoSteps.one": "Undoes this step",
   "shell.undoSteps.many": "Undoes {count} steps",
   "ui.close": "Close",
+  // A form dialog's button that closes it without saving (2.21).
+  "ui.form.cancel": "Cancel",
+  // What a form says is wrong with a value, unless its schema says it its own way (2.21).
+  "form.error.empty": "Fill this in.",
+  "form.error.tooShort": "Use at least {min} characters.",
+  "form.error.tooLong": "Use at most {max} characters.",
+  "form.error.atLeast": "Use {min} or more.",
+  "form.error.atMost": "Use {max} or less.",
+  "form.error.number": "Use a whole number.",
+  "form.error.email": "Use an email address, such as name@example.com.",
+  "form.error.url": "Use a web address that starts with https://.",
   // The picker dialog for images, icons and fonts (UX-15).
   "ui.picker.search": "Search",
   "ui.picker.categories": "Categories",
@@ -192,7 +203,6 @@ export const shell = {
   "canvasToolbar.addDevice.height": "Height in pixels",
   "canvasToolbar.addDevice.range": "Between {min} and {max} pixels.",
   "canvasToolbar.addDevice.confirm": "Add Device",
-  "canvasToolbar.addDevice.cancel": "Cancel",
 
   // Design | Content (M3): Design changes the layout, Content edits text and images only.
   "shell.mode": "Editing mode",

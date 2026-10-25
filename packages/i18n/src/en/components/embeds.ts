@@ -5,6 +5,12 @@
 export const embeds = {
   "section.video": "Video",
   "section.map": "Map",
+  // The same video or map as an element among a section's others (2.11).
+  "element.embedVideo": "Embed video",
+  "element.embedMap": "Embed map",
+  "field.embedName": "Name",
+  "field.embedName.help":
+    "What screen readers call the video or map once it loads: its title, or the place's name.",
   "category.contact": "Contact",
   "field.videoAddress": "Video address",
   "field.videoAddress.help": "Paste the link to a YouTube or Vimeo video.",

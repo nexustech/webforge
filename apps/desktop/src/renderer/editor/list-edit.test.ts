@@ -40,6 +40,26 @@ describe("editableList", () => {
     expect(Object.keys(list?.fields ?? {})).toEqual(["question"]);
   });
 
+  it("edits every section's repeating items as a list, with a plain field in each row (F-ED-6)", () => {
+    // A section whose slot allows one type of child (Features' features, an FAQ's questions) has
+    // its items edited in the Edit panel as a list: added, moved and removed, a row for each.
+    const repeating = Object.entries(siteLibrary.components).flatMap(([type, def]) =>
+      def.place === "section"
+        ? Object.values(def.fields)
+            .filter((field) => field.kind === "slot" && field.allow?.length === 1)
+            .map((field) => ({ type, list: editableList(field, siteLibrary) }))
+        : [],
+    );
+
+    expect(repeating.map(({ type }) => type)).toEqual(
+      expect.arrayContaining(["Faq", "Features", "Testimonials"]),
+    );
+    for (const { type, list } of repeating) {
+      expect(list?.holds, type).toBe("elements");
+      expect(Object.keys(list?.fields ?? {}).length, type).toBeGreaterThan(0);
+    }
+  });
+
   it("leaves other fields alone: plain values, slots of several types, unknown types", () => {
     const content = siteLibrary.components.Section?.fields.content;
     if (content === undefined) throw new Error("no Section content");

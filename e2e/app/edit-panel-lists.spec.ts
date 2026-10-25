@@ -6,8 +6,8 @@ import { createSite } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
 
-// Repeating lists in the Edit panel (F-ED-6): a FAQ's questions are added, moved and deleted there,
-// one labelled undo step each.
+// Repeating lists in the Edit panel (F-ED-6): a FAQ's questions, and a Testimonials section's
+// testimonials (2.7b), are added, moved, edited and deleted there, one labelled undo step each.
 
 let dir: string;
 let app: ElectronApplication;
@@ -30,6 +30,20 @@ test.beforeEach(async () => {
       items: [
         { type: "FaqItem", props: { id: "q1", question: "Open on Sunday?", answer: "<p>No</p>" } },
         { type: "FaqItem", props: { id: "q2", question: "Parking?", answer: "<p>Yes</p>" } },
+      ],
+    },
+  });
+  site.pages[site.homePageId]?.doc.content.push({
+    type: "Testimonials",
+    props: {
+      id: "testimonials",
+      title: "Kind words",
+      variant: "cards",
+      items: [
+        {
+          type: "Testimonial",
+          props: { id: "t1", quote: "Lovely bread.", name: "Priya", role: "" },
+        },
       ],
     },
   });
@@ -81,4 +95,26 @@ test("adds, moves and deletes a FAQ's questions in the Edit panel, one step each
 
   await page.keyboard.press("ControlOrMeta+z");
   await expect(questions()).toHaveCount(3);
+});
+
+test("adds a testimonial in the Edit panel and edits its name in its row (2.7b)", async () => {
+  const title = canvas().locator(".site-testimonials h2");
+  await title.scrollIntoViewIfNeeded();
+  const box = await title.boundingBox();
+  if (box === null) throw new Error("Testimonials not visible");
+  // Beside the title, not on its text, which would start editing it.
+  await title.click({ position: { x: box.width * 0.97, y: box.height / 2 } });
+  const list = panel().getByRole("group", { name: "Testimonials" });
+  await expect(list.getByRole("listitem")).toHaveCount(1);
+
+  await list.getByRole("button", { name: "Add Testimonial" }).click();
+  const names = canvas().locator(".site-testimonial figcaption span").filter({ hasText: /./ });
+  await expect(canvas().locator("figure.site-testimonial")).toHaveCount(2);
+  const name = list.getByRole("listitem").last().getByRole("textbox", { name: "Name" });
+  await name.fill("Tom");
+  await name.blur();
+
+  await expect(canvas().locator("figure.site-testimonial").last()).toContainText("Tom");
+  await expect(names.first()).toHaveText("Priya");
+  await expect(steps()).toHaveText(["Edited Testimonial name", "Added Testimonial", "Opened page"]);
 });

@@ -61,3 +61,55 @@ export const MapBesideText: Story = {
     ],
   },
 };
+
+/** An Embed video element in a Section, under a Heading and Text (2.11). */
+export const EmbedVideoElement: Story = {
+  args: {
+    nodes: [
+      {
+        type: "Section",
+        props: {
+          id: "section",
+          ...siteLibrary.components.Section?.defaults,
+          content: [
+            { type: "Heading", props: { id: "heading", text: "Our oven at work", size: "medium" } },
+            {
+              type: "Text",
+              props: { id: "text", text: "<p>Every loaf, from the dough to the shelf.</p>" },
+            },
+            {
+              type: "EmbedVideo",
+              props: {
+                id: "video",
+                address: "https://youtu.be/aqz-KE-bpKQ",
+                name: "Our oven at work",
+              },
+            },
+          ],
+        },
+      },
+    ],
+  },
+};
+
+/** An Embed map element in a Section, under a Heading (2.11). */
+export const EmbedMapElement: Story = {
+  args: {
+    nodes: [
+      {
+        type: "Section",
+        props: {
+          id: "section",
+          ...siteLibrary.components.Section?.defaults,
+          content: [
+            { type: "Heading", props: { id: "heading", text: "Find us", size: "medium" } },
+            {
+              type: "EmbedMap",
+              props: { id: "map", address: "1 High Street\nHightown\nHT1 2AB", name: "Our bakery" },
+            },
+          ],
+        },
+      },
+    ],
+  },
+};
