@@ -91,7 +91,7 @@ export function ButtonLink({
   /** A link field's value, resolved with the render context. */
   readonly link: unknown;
   readonly context: RenderContext;
-  readonly kind?: "primary" | "primarySmall" | "primaryLarge";
+  readonly kind?: "primary" | "primarySmall" | "primaryLarge" | "outline" | "outlineSmall";
   readonly className?: string;
 }) {
   if (label === "") return null;

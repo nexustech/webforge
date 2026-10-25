@@ -243,3 +243,60 @@ describe("FormDialog (2.21, B4)", () => {
     );
   });
 });
+
+describe("a form's list as rows (2.21)", () => {
+  it("adds, edits and removes rows, with each row's problem by its field", async () => {
+    const schema = z.object({
+      profiles: z.array(z.object({ url: z.url("Use a web address") })),
+    });
+    function Host() {
+      const state = useForm(
+        {
+          fields: [
+            {
+              kind: "list",
+              name: "profiles",
+              label: "Social profiles",
+              itemLabel: "Profile",
+              look: "rows",
+              addLabel: "Add a profile",
+              removeLabel: "Remove this profile",
+              itemFields: [{ kind: "text", name: "url", label: "Profile address" }],
+              newItem: () => ({ url: "" }),
+            },
+          ],
+          schema,
+          toModel: (values) => ({
+            profiles: (values.profiles as { url: string }[]).map(({ url }) => ({ url })),
+          }),
+        },
+        { profiles: [{ id: "a", url: "https://instagram.com/rosas" }] },
+      );
+      return (
+        <>
+          <Form form={state} />
+          <button type="button" onClick={() => state.submit()}>
+            Save
+          </button>
+        </>
+      );
+    }
+    render(<Host />);
+    const user = userEvent.setup({ delay: null });
+
+    await user.click(screen.getByRole("button", { name: "Add a profile" }));
+    const addresses = () => screen.getAllByRole("textbox", { name: "Profile address" });
+    expect(addresses()).toHaveLength(2);
+    await user.type(addresses()[1] as HTMLElement, "rosas");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    const second = addresses()[1] as HTMLElement;
+    expect(second.getAttribute("aria-invalid")).toBe("true");
+    expect(second.getAttribute("aria-describedby")).toBe(screen.getByText("Use a web address").id);
+    await user.click(
+      screen.getAllByRole("button", { name: "Remove this profile" })[1] as HTMLElement,
+    );
+    expect(addresses()).toHaveLength(1);
+    expect(screen.queryByText("Use a web address")).toBeNull();
+  });
+});

@@ -4,7 +4,7 @@ import { defineComponent } from "../define.js";
 import { defineSection } from "../frame.js";
 import { LucideIcon } from "../icons.js";
 import type { ComponentDef } from "../library.js";
-import { HOVER_FIELD, hoverClasses } from "../motion.js";
+import { CARD_HOVER_FIELD, hoverClasses } from "../motion.js";
 import { BodyText, SectionTitle } from "../typography.js";
 
 const FEATURES_LAYOUTS = ["cards", "centred", "list"] as const;
@@ -17,8 +17,11 @@ const GRID_CLASS = {
   list: "grid gap-8 md:grid-cols-2",
 } as const satisfies Record<FeaturesLayout, string>;
 
-/** The layout of the Features section a feature is in, which draws it. */
-const FeaturesLayoutContext = createContext<FeaturesLayout>("cards");
+/** The layout of the Features section a feature is in, and its cards' hover effect's classes. */
+const FeaturesContext = createContext<{ readonly layout: FeaturesLayout; readonly hover: string }>({
+  layout: "cards",
+  hover: "",
+});
 
 /** Starter features: what a small business most often says about itself. */
 const STARTER_ICONS = ["sparkles", "heart-handshake", "clock"] as const;
@@ -38,6 +41,8 @@ const features = defineSection({
     title: { kind: "text", label: t("field.title"), inline: true },
     text: { kind: "richtext", label: t("field.text"), inline: true },
     items: { kind: "slot", label: t("field.features"), allow: ["Feature"] },
+    // Every card alike under the pointer, those added later too (F-DS-5, 2.12).
+    hover: CARD_HOVER_FIELD,
   },
   defaults: {
     title: t("starter.featuresTitle"),
@@ -62,9 +67,9 @@ const features = defineSection({
           <SectionTitle>{values.title}</SectionTitle>
           <BodyText className="mt-4">{values.text}</BodyText>
         </div>
-        <FeaturesLayoutContext value={values.variant}>
+        <FeaturesContext value={{ layout: values.variant, hover: hoverClasses(values.hover) }}>
           <Items className={GRID_CLASS[values.variant]} />
-        </FeaturesLayoutContext>
+        </FeaturesContext>
       </div>
     );
   },
@@ -75,15 +80,12 @@ function FeatureView({
   icon,
   title,
   text,
-  hover,
 }: {
   readonly icon: string | undefined;
-  /** Its hover effect's classes, with a space before them (F-DS-5). */
-  readonly hover: string;
   readonly title: ReactNode;
   readonly text: ReactNode;
 }) {
-  const layout = useContext(FeaturesLayoutContext);
+  const { layout, hover } = useContext(FeaturesContext);
   const symbol =
     icon === undefined ? null : layout === "centred" ? (
       <span className="mx-auto grid size-14 place-items-center rounded-full bg-primary text-primary-content">
@@ -126,8 +128,6 @@ const feature = defineComponent({
     icon: { kind: "icon", label: t("field.icon") },
     title: { kind: "text", label: t("field.title"), inline: true },
     text: { kind: "richtext", label: t("field.text"), inline: true },
-    // A card lifts, grows or casts a shadow under the pointer (F-DS-5, 2.12).
-    hover: HOVER_FIELD,
   },
   // No icon: one the person removes stays removed (a default would come back in its place). The
   // section's starter features each have one.
@@ -136,12 +136,7 @@ const feature = defineComponent({
     text: `<p>${t("starter.featureText")}</p>`,
   },
   render: ({ values }) => (
-    <FeatureView
-      icon={values.icon}
-      title={values.title}
-      text={values.text}
-      hover={hoverClasses(values.hover)}
-    />
+    <FeatureView icon={values.icon} title={values.title} text={values.text} />
   ),
 });
 

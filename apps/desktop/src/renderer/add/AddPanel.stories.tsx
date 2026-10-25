@@ -71,7 +71,8 @@ export const NoSection: Story = { args: { tab: "elements", canAdd: () => false }
 /** A search that finds nothing. */
 export const NoMatch: Story = {
   play: async ({ canvasElement }) => {
-    await userEvent.type(within(canvasElement).getByRole("searchbox"), "pricing");
+    // A word no item has.
+    await userEvent.type(within(canvasElement).getByRole("searchbox"), "zebra");
   },
 };
 
