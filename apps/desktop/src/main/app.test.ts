@@ -3,9 +3,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { MEDIA_SCHEME } from "../shared/ipc/media.js";
 import { ipcContract } from "../shared/ipc-contract.js";
 import { type AppElectron, type AppParts, startApp } from "./app.js";
+import { FONT_SCHEME } from "./fonts.js";
 import { registerIpcHandler } from "./ipc.js";
+import { ProjectSession } from "./project-session.js";
 import type { RecoveryDialogs } from "./recovery.js";
 
 type Listener = (...args: unknown[]) => unknown;
@@ -95,9 +98,11 @@ function fakeElectron(options: { primary?: boolean } = {}) {
       appEvents.on(event, listener);
       return app;
     },
-    whenReady: async () => {
-      ready = true;
-    },
+    // Ready a moment later, as Electron is: after the entry point has finished evaluating.
+    whenReady: () =>
+      Promise.resolve().then(() => {
+        ready = true;
+      }),
     isReady: () => ready,
     getPath: () => userData,
     getAppPath: () => userData,
@@ -176,6 +181,7 @@ function fakeElectron(options: { primary?: boolean } = {}) {
     app,
     appEvents,
     dialog,
+    session,
     windows,
     startCrashReports,
     crashReports,
@@ -303,14 +309,58 @@ describe("startApp", () => {
 
   it("opens a site macOS hands it before it is ready, once it is", async () => {
     const fake = fakeElectron();
+    const open = vi.spyOn(ProjectSession.prototype, "open");
     const preventDefault = vi.fn();
+    const path = join(fake.parts.dir, "Missing.wforge");
     const started = fake.start();
 
-    fake.appEvents.emit("open-file", { preventDefault }, join(fake.parts.dir, "Missing.wforge"));
+    fake.appEvents.emit("open-file", { preventDefault }, path);
+    expect(fake.app.isReady()).toBe(false);
     await started;
 
     expect(preventDefault).toHaveBeenCalled();
-    // The site couldn't be opened, so the window shows the start screen.
+    // Opened as the start-up site, before the window, not handed over afterwards: no warning.
+    expect(open).toHaveBeenCalledWith(path);
+    expect(fake.dialog.showMessageBox).not.toHaveBeenCalled();
     expect(fake.windows).toHaveLength(1);
+  });
+
+  it("serves no Media or font that isn't there, and leaves the menu bar to macOS", async () => {
+    const fake = fakeElectron();
+    await fake.start();
+    const handle = vi.mocked(fake.session.defaultSession.protocol.handle);
+    const respond = (scheme: string, url: string) => {
+      const handler = handle.mock.calls.find(([name]) => name === scheme)?.[1] as
+        | ((request: { url: string }) => Promise<Response>)
+        | undefined;
+      if (handler === undefined) throw new Error(`no handler for ${scheme}`);
+      return handler({ url });
+    };
+
+    expect((await respond(MEDIA_SCHEME, `${MEDIA_SCHEME}://media/${"a".repeat(64)}`)).ok).toBe(
+      false,
+    );
+    expect((await respond(FONT_SCHEME, `${FONT_SCHEME}://fonts/missing.woff2`)).ok).toBe(false);
+    await expect(fake.invoke("app:set-native-menus", [])).resolves.toBeNull();
+  });
+
+  it("opens a window again for a site handed over while none is open", async () => {
+    const fake = fakeElectron();
+    await fake.start();
+    fake.windows[0]?.close();
+
+    fake.appEvents.emit("second-instance", {}, ["webforge"], fake.parts.dir);
+
+    await vi.waitFor(() => expect(fake.windows).toHaveLength(1));
+  });
+
+  it("keeps a second launch from releasing the lock it never held", async () => {
+    const fake = fakeElectron({ primary: false });
+    void fake.start();
+
+    fake.appEvents.emit("will-quit", { preventDefault: vi.fn() });
+    await vi.waitFor(() => expect(fake.app.exit).toHaveBeenCalledWith(0));
+
+    expect(fake.app.releaseSingleInstanceLock).not.toHaveBeenCalled();
   });
 });
