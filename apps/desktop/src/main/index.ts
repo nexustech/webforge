@@ -23,7 +23,11 @@ import {
   type WebContents,
 } from "electron";
 import { z } from "zod";
-import { thumbnailOutcomeSchema } from "../shared/export-worker-protocol.js";
+import {
+  type ThumbnailJob,
+  type ThumbnailOutcome,
+  thumbnailOutcomeSchema,
+} from "../shared/export-worker-protocol.js";
 import { appEvents } from "../shared/ipc/app.js";
 import { MEDIA_SCHEME } from "../shared/ipc/media.js";
 import { openFailureMessage } from "../shared/open-failure.js";
@@ -359,7 +363,7 @@ const runExport = async (snapshot: SiteSnapshot, destination: string) => {
 };
 
 // Media thumbnails are made in a long-lived worker too, started when first needed (1.16).
-const requestThumbnail = createWorkerRequests(
+const requestThumbnail = createWorkerRequests<ThumbnailOutcome, ThumbnailJob>(
   () =>
     crashReports.watchWorker(
       utilityProcess.fork(exportWorkerScript, [], { serviceName: "Webforge thumbnails" }),

@@ -1,7 +1,14 @@
 import type { Theme, ThemeTokens } from "@webforge/model";
 import type { CatalogueFont } from "@webforge/themes";
 import type { IpcMain } from "electron";
-import { canvasStylesOutcomeSchema } from "../shared/export-worker-protocol.js";
+import {
+  type ClassCatalogueJob,
+  type ClassCssJob,
+  type ClassesOutcome,
+  type CompileCssJob,
+  type CompileCssOutcome,
+  canvasStylesOutcomeSchema,
+} from "../shared/export-worker-protocol.js";
 import type {
   CanvasCssRequest,
   CanvasCssResult,
@@ -9,10 +16,8 @@ import type {
   ClassCssResult,
 } from "../shared/ipc/canvas.js";
 import { registerIpcHandler } from "./ipc.js";
-import { createWorkerRequests, type WorkerProcess } from "./worker-requests.js";
-
-/** The parts of an Electron `UtilityProcess` the canvas styles use; injectable for tests. */
-export type CssWorkerProcess = WorkerProcess;
+import type { WorkerProcess } from "./worker-process.js";
+import { createWorkerRequests } from "./worker-requests.js";
 
 /** What the canvas styles worker answers; see {@link createCanvasStyles}. */
 export type CanvasStyles = {
@@ -35,11 +40,14 @@ const COMPILE_TIMEOUT_MS = 60_000;
  * of trusting it.
  */
 export function createCanvasStyles(
-  startWorker: () => CssWorkerProcess,
+  startWorker: () => WorkerProcess,
   timeoutMs = COMPILE_TIMEOUT_MS,
   families?: (theme: ThemeTokens) => Promise<CatalogueFont[]>,
 ): CanvasStyles {
-  const request = createWorkerRequests(startWorker, canvasStylesOutcomeSchema, timeoutMs);
+  const request = createWorkerRequests<
+    CompileCssOutcome | ClassesOutcome,
+    CompileCssJob | ClassCatalogueJob | ClassCssJob
+  >(startWorker, canvasStylesOutcomeSchema, timeoutMs);
   return {
     compileCss: async (css) => {
       const outcome = await request({

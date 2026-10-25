@@ -1,7 +1,8 @@
 import { DEFAULT_THEME } from "@webforge/model";
 import type { IpcMain, IpcMainInvokeEvent } from "electron";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { type CssWorkerProcess, createCanvasStyles, registerCanvasHandlers } from "./canvas-css.js";
+import { createCanvasStyles, registerCanvasHandlers } from "./canvas-css.js";
+import type { WorkerProcess } from "./worker-process.js";
 
 type Listener = (value: unknown) => void;
 
@@ -9,10 +10,10 @@ type Listener = (value: unknown) => void;
 function fakeWorker() {
   const listeners = { message: [] as Listener[], exit: [] as Listener[] };
   const jobs: { id: number; candidates: string[] }[] = [];
-  const worker: CssWorkerProcess = {
+  const worker: WorkerProcess = {
     postMessage: (job) => jobs.push(job as { id: number; candidates: string[] }),
     on: ((event: "message" | "exit", listener: Listener) =>
-      listeners[event].push(listener)) as CssWorkerProcess["on"],
+      listeners[event].push(listener)) as WorkerProcess["on"],
     kill: vi.fn(() => true),
   };
   return {
@@ -97,7 +98,7 @@ describe("createCanvasStyles' compileCss", () => {
   it("fails what was pending when the worker exits, then starts a new one", async () => {
     const workers = [fakeWorker(), fakeWorker()];
     const start = vi.fn(
-      () => (workers[start.mock.calls.length - 1] ?? workers[1])?.worker as CssWorkerProcess,
+      () => (workers[start.mock.calls.length - 1] ?? workers[1])?.worker as WorkerProcess,
     );
     const compile = createCanvasStyles(start).compileCss;
 
