@@ -40,6 +40,7 @@ import {
 import { type Area, connectAreas, type EditorContext, type EditorDialogs } from "./areas.js";
 import { CanvasBreadcrumbs } from "./CanvasBreadcrumbs.js";
 import { CanvasResizeHandles } from "./CanvasResizeHandles.js";
+import type { CanvasPointerHost } from "./canvas-pointer.js";
 import { EditPanelHost, type EditPanelHostProps } from "./EditPanelHost.js";
 import { canvasPreviews, createPreviewStore } from "./edit-previews.js";
 import {
@@ -95,6 +96,8 @@ export type EditorProps = {
   readonly preferences?: PreferencesStore;
   /** The canvas toolbar's zoom and size readout (1.15), kept in step with the engine. */
   readonly canvasView?: CanvasView;
+  /** What the window's panels point at on the canvas (SP-8, SP-10), shown on the engine. */
+  readonly canvasPointer?: CanvasPointerHost;
   /**
    * Asks before what changes more than the page shown (D7): deleting or cutting an element of the
    * shared Header or Footer. Undo and Redo wait while it asks. Without it, they happen at once.
@@ -208,6 +211,7 @@ export function Editor({
   reportError = reportWithPreload,
   preferences: givenPreferences,
   canvasView,
+  canvasPointer,
   siteWide,
 }: EditorProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -394,6 +398,10 @@ export function Editor({
         ? undefined
         : connectCanvasView(engine, canvasView),
     [engine, canvasView],
+  );
+  useEffect(
+    () => (engine === null ? undefined : canvasPointer?.connect(engine)),
+    [engine, canvasPointer],
   );
 
   // "Deleted Heading · Undo" after each delete (D4, 1.11).

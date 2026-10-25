@@ -26,6 +26,7 @@ import {
   useRef,
   useState,
 } from "react";
+import type { CanvasPointer } from "../editor/canvas-pointer.js";
 import { type Layer, layerItem } from "../editor/layers.js";
 import type { MenuPoint } from "../element-menu/index.js";
 import { isMac } from "../shell/commands.js";
@@ -80,6 +81,11 @@ export type LayersPanelProps = {
      */
     readonly onCloseFocus: () => void;
   }>;
+  /**
+   * The canvas beside the panel: a row under the pointer outlines its element there with its chip
+   * (SP-10), and a dragged layer's drop point shows there too (SP-8).
+   */
+  readonly canvas?: CanvasPointer | undefined;
 };
 
 /** A layer as a row: where it sits among its siblings, so moves stay within its parent. */
@@ -171,6 +177,7 @@ export function LayersPanel({
   actions,
   layoutLocked = false,
   menu: Menu,
+  canvas,
 }: LayersPanelProps) {
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(() => new Set());
   const [filter, setFilter] = useState("");
@@ -316,7 +323,25 @@ export function LayersPanel({
       }
     },
   });
-  const { dragging } = rowDrag;
+  const { dragging, drop } = rowDrag;
+  // Where the dragged layer would land, on the canvas too (SP-8).
+  const dropMark =
+    dragging === null || drop === null || !drop.allowed || drop.place === "into"
+      ? null
+      : { nodeId: drop.key, place: drop.place, name: dragging.layer.name ?? dragging.layer.kind };
+  const dropKey = dropMark === null ? "" : `${dropMark.nodeId} ${dropMark.place}`;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: redrawn when where it lands changes.
+  useEffect(() => {
+    canvas?.markDrop(dropMark);
+  }, [canvas, dropKey]);
+  // Nothing stays outlined or marked once the panel goes.
+  useEffect(
+    () => () => {
+      canvas?.outline(null);
+      canvas?.markDrop(null);
+    },
+    [canvas],
+  );
 
   if (layers.length === 0) {
     return (
@@ -383,6 +408,9 @@ export function LayersPanel({
                   rowDrag.indicatorClass(row),
                 )}
                 style={{ paddingLeft: `${(row.depth - 1) * 12 + 4}px` }}
+                // Its element outlined on the canvas, with its chip, as a breadcrumb does (SP-10).
+                onPointerEnter={() => canvas?.outline(layer.id)}
+                onPointerLeave={() => canvas?.outline(null)}
                 onClick={(event) => {
                   const start =
                     rows.find((each) => each.layer.id === anchor.current) ?? selectedRow;
