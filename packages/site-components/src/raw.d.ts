@@ -11,3 +11,10 @@ interface ImportMeta {
     options: { readonly query: "?raw"; readonly import: "default"; readonly eager: true },
   ): Record<string, string>;
 }
+
+// Each theme preset's compiled stylesheet, by preset name, for the theme stories (2.13; written by
+// .storybook/theme-gallery.ts).
+declare module "virtual:webforge-theme-css" {
+  const stylesheets: Readonly<Record<string, string>>;
+  export default stylesheets;
+}
