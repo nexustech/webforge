@@ -9,7 +9,7 @@ test("draws its buttons, shadows and links as the theme says (#423)", async ({ p
 
   // A main button at the default size: outline, square and the theme's large height.
   const button = await page
-    .locator("a.btn.btn-primary:not(.btn-lg)")
+    .locator("a.btn.btn-primary:not(.btn-xs, .btn-sm, .btn-lg, .btn-xl, .wf-filled)")
     .first()
     .evaluate((element) => {
       const style = getComputedStyle(element);
