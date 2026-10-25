@@ -748,7 +748,7 @@ One accessible Carousel element for images, testimonials and logos: slides as a 
 - [ ] Works from file:// with no external requests
 
 **2.11 Elements: tabs, commerce, forms, embeds and custom code**  
-Stream C after 2.12, moved from B on 25 Oct 2026 to level the queues (B's was the longest; C's next item, 2.13c, waits for 2.3 and the review of themes 1–4). Days unchanged.  
+Stream C after 2.12, moved from B on 25 Oct 2026 to level the queues (B's was the longest; at the time C's next item, 2.13c, waited for 2.3; the issue review later that day dropped that dependency and gave C themes 1–4 instead). Days unchanged.  
 Tabs (ARIA), Buy button (payment link), Booking button (a Button preset with a generic URL; no presets, Q4 decided 23 Oct 2026), Form fields, Embed video and Embed map (click-to-load, reusing 2.8's `embed` behaviour), Custom Code element (Advanced, scripts off in the editor). Pasting a YouTube/Vimeo URL inserts an Embed video (F-ED-16).
 
 - [ ] Tabs meet WCAG 2.1 AA
