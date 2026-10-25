@@ -69,6 +69,22 @@ describe("AddPanel (F-ED-1)", () => {
     };
   };
 
+  it("closes a category with its triangle, and a search shows it open again (LF-6)", async () => {
+    setUp();
+    const heroes = screen.getByRole("list", { name: "Heroes" }).closest("details") as HTMLElement;
+    expect(heroes.hasAttribute("open")).toBe(true);
+
+    // As a click on its name toggles it.
+    (heroes as HTMLDetailsElement).open = false;
+    fireEvent(heroes, new Event("toggle"));
+    expect(heroes.hasAttribute("open")).toBe(false);
+
+    await userEvent.type(screen.getByRole("searchbox", { name: /Search/ }), "Hero");
+    expect(heroes.hasAttribute("open")).toBe(true);
+    await userEvent.clear(screen.getByRole("searchbox", { name: /Search/ }));
+    expect(heroes.hasAttribute("open")).toBe(false);
+  });
+
   it("lists sections by category and adds the one clicked", async () => {
     const { onAdd } = setUp();
 

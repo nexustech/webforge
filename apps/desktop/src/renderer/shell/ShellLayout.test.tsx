@@ -49,6 +49,29 @@ function renderLayout({
 }
 
 describe("ShellLayout", () => {
+  it("focuses the shown panel's search from its tab strip's magnifier (LF-5)", async () => {
+    const { panels } = renderLayout({ filled: false });
+    act(() => {
+      panels.register({
+        id: "layers",
+        slot: "left.top",
+        title: "Layers",
+        searchable: true,
+        component: () => <input type="search" aria-label="Find a layer" />,
+      });
+      panels.register({ id: "pages", slot: "left.top", title: "Pages", component: () => null });
+    });
+    const left = within(screen.getByRole("region", { name: "Left panels" }));
+    const user = userEvent.setup();
+
+    await user.click(left.getByRole("button", { name: "Search Layers" }));
+    expect(document.activeElement).toBe(left.getByRole("searchbox", { name: "Find a layer" }));
+
+    // A panel with no search has no magnifier.
+    await user.click(left.getByRole("tab", { name: "Pages" }));
+    expect(left.queryByRole("button", { name: /^Search/ })).toBeNull();
+  });
+
   it("shows a panel that throws as a fallback in its tab; the rest keeps working (R3)", async () => {
     // React reports the caught error on the console; in the app, the root reports it instead.
     const log = vi.spyOn(console, "error").mockImplementation(() => undefined);

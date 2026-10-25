@@ -453,6 +453,7 @@ export function Editor({
       slot: "right.top",
       title: t("editPanel.title"),
       icon: SlidersHorizontalIcon,
+      searchable: true,
       component: Edit,
     });
   }, [panels, session, preferences, imagePicks, host]);

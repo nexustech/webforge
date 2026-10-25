@@ -9,27 +9,30 @@ export function Tabs({ className, ...props }: ComponentProps<typeof TabsPrimitiv
   );
 }
 
-/** The strip that holds the {@link TabsTrigger}s. */
+/** The strip that holds the {@link TabsTrigger}s: the active one sits on the panel below. */
 export function TabsList({ className, ...props }: ComponentProps<typeof TabsPrimitive.List>) {
   return (
     <TabsPrimitive.List
       data-slot="tabs-list"
-      className={cn("flex h-8 shrink-0 items-stretch bg-tabs px-1", className)}
+      className={cn("flex h-8 shrink-0 items-stretch bg-tabs px-1 pt-1", className)}
       {...props}
     />
   );
 }
 
-/** One tab; the active tab is in the foreground colour with a ring-coloured underline. */
+/**
+ * One tab (LF-5): bold, in sentence case; the active tab is lifted onto the panel's own background,
+ * with no underline.
+ */
 export function TabsTrigger({ className, ...props }: ComponentProps<typeof TabsPrimitive.Trigger>) {
   return (
     <TabsPrimitive.Trigger
       data-slot="tabs-trigger"
       className={cn(
-        "inline-flex items-center gap-1.5 border-b-2 border-transparent px-2.5 text-xs font-medium",
-        "uppercase tracking-wide text-tab-inactive outline-none hover:text-foreground",
+        "inline-flex items-center gap-1.5 rounded-t-sm px-2.5 text-xs font-semibold",
+        "text-tab-inactive outline-none hover:text-foreground",
         "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset disabled:text-disabled",
-        "data-[state=active]:border-ring data-[state=active]:text-foreground [&_svg]:size-3.5",
+        "data-[state=active]:bg-panel data-[state=active]:text-foreground [&_svg]:size-3.5",
         className,
       )}
       {...props}

@@ -28,6 +28,10 @@ export type Panel = {
   readonly icon?: ComponentType<{ readonly className?: string }>;
   /** Shown only in Advanced mode (T2): Custom Code. */
   readonly advancedOnly?: boolean;
+  /**
+   * It has a search field (`<input type="search">`): its tab strip's magnifier focuses it (LF-5).
+   */
+  readonly searchable?: boolean;
   /** Tab order within the slot, lowest first; ties keep registration order. */
   readonly order?: number;
   readonly component: ComponentType;
