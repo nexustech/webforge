@@ -10,6 +10,7 @@ import { gallery } from "./gallery.js";
 import { layout } from "./layout.js";
 import { sections } from "./sections.js";
 import { shared } from "./shared.js";
+import { tabs } from "./tabs.js";
 import { testimonials } from "./testimonials.js";
 
 /**
@@ -31,6 +32,7 @@ export const componentFamilies = {
   features,
   testimonials,
   commerce,
+  tabs,
 } as const;
 
 /** Site components: element names, their fields, exported-site text and the starter page. */
@@ -48,4 +50,5 @@ export const components = {
   ...features,
   ...testimonials,
   ...commerce,
+  ...tabs,
 } as const;
