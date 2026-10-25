@@ -17,7 +17,7 @@ A second connection can do the write on another thread. But under the rollback j
    - It reads the file in 1 MB chunks (or takes transferred bytes), checks it is one Media takes, and hashes it.
    - It writes the blob, the asset row and the content fingerprint (#295) in one transaction, as `ProjectStore.putAsset` does. Nothing of an import is written on the main thread, not even the asset row, whose commit would wait for the disk there.
    - The thread starts when a site opens, so the first import doesn't pay for starting it.
-   - Measured by `performance.eventLoopUtilization()`, a 50 MB import keeps the main thread busy for 1.5 s when stored on it, and for 11–24 ms in all with the writer (`storage-writer.test.ts`).
+   - Measured by the main thread's CPU time (`process.threadCpuUsage()`), a 50 MB import costs it 563 ms when stored on it, and 0–16 ms with the writer (`storage-writer.test.ts`). CPU time, because wall and event-loop time stretch on a loaded machine. Since CPU time doesn't count waiting for the disk, the import writes nothing on the main thread.
 2. **One store gate** (`apps/desktop/src/main/store-gate.ts`) decides who uses the file:
    - **Shared:** the main process's work (reads, commits, backups) runs alongside other shared work.
    - **Exclusive:** the writer, and closing or replacing the site, run alone.
