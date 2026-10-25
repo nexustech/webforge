@@ -104,6 +104,17 @@ const DEVICES: FormSpec<DeviceValues, z.infer<typeof devicesSchema>> = {
   }),
 };
 
+/** Whether two device lists are the same devices, in the same order (#432 review). */
+const sameDevices = (a: readonly CustomDevice[], b: readonly CustomDevice[]) =>
+  a.length === b.length &&
+  a.every(
+    (device, index) =>
+      device.id === b[index]?.id &&
+      device.name === b[index]?.name &&
+      device.width === b[index]?.width &&
+      device.height === b[index]?.height,
+  );
+
 /** A device as its row starts. */
 const itemOf = (device: CustomDevice): DeviceItem => ({
   id: device.id,
@@ -154,7 +165,7 @@ export function registerAppSettings(
           initial: { devices: now().canvas.devices.map(itemOf) },
           save: ({ devices }) => {
             const { canvas } = now();
-            if (JSON.stringify(devices) !== JSON.stringify(canvas.devices)) {
+            if (!sameDevices(devices, canvas.devices)) {
               preferences.change({ canvas: { ...canvas, devices } });
             }
           },

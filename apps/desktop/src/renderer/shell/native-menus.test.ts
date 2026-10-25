@@ -1,7 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { appChannels, type NativeMenus } from "../../shared/ipc/app.js";
+import { reportFailure } from "../log.js";
 import { createCommandRegistry, electronAccelerator } from "./commands.js";
 import { nativeMenusOf, syncNativeMenus } from "./native-menus.js";
+
+vi.mock("../log.js", () => ({ reportFailure: vi.fn() }));
 
 describe("electronAccelerator (LF-13)", () => {
   it("writes a shortcut as Electron's menus take it", () => {
@@ -84,6 +87,16 @@ describe("macOS's menu bar (LF-13)", () => {
     expect(menus.find((menu) => menu.id === "file")?.items.map((item) => item.id)).toEqual([
       "site.settings",
     ]);
+  });
+
+  it("reports menus main refuses, rather than leaving the menu bar stale in silence", async () => {
+    const { registry, app, doc } = setUp();
+    const refused = new Error("refused");
+    app.setNativeMenus.mockRejectedValueOnce(refused);
+
+    const stop = syncNativeMenus(registry, app, doc);
+    await vi.waitFor(() => expect(reportFailure).toHaveBeenCalledWith("menus.native", refused));
+    stop();
   });
 
   it("sends menus main accepts, one of each kind at most (#432 review)", () => {

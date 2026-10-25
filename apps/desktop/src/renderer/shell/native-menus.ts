@@ -1,5 +1,6 @@
 import { t } from "@webforge/i18n";
 import type { AppApi, NativeMenus } from "../../shared/ipc/app.js";
+import { reportFailure } from "../log.js";
 import { COMMAND_IDS } from "./command-ids.js";
 import {
   type CommandRegistry,
@@ -88,7 +89,8 @@ export function syncNativeMenus(
     const key = JSON.stringify(menus);
     if (key === sent) return;
     sent = key;
-    void app.setNativeMenus(menus).catch(() => undefined);
+    // Refused (main's check), the menu bar would stay as it was: reported, never silent (#432).
+    void app.setNativeMenus(menus).catch((error: unknown) => reportFailure("menus.native", error));
   };
   const schedule = () => {
     if (pending === undefined) pending = setTimeout(send, 50);

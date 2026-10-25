@@ -85,7 +85,11 @@ describe("LinkField and LinkDialog (F-ED-18)", () => {
     await user.click(dialog.getByRole("radio", { name: "Email" }));
     await user.click(dialog.getByRole("textbox", { name: "Email address" }));
     await user.paste("not an address");
-    expect(dialog.getByRole("status").textContent).toMatch(/Enter an email address/);
+    // Under the field, which it describes (#391).
+    expect(
+      dialog.getByRole("textbox", { name: "Email address" }).getAttribute("aria-invalid"),
+    ).toBe("true");
+    expect(dialog.getByText(/Enter an email address/)).toBeTruthy();
     expect((dialog.getByRole("button", { name: "Save Link" }) as HTMLButtonElement).disabled).toBe(
       true,
     );
@@ -189,9 +193,7 @@ describe("LinkField and LinkDialog (F-ED-18)", () => {
       const dialog = within(screen.getByRole("dialog", { name: "Link" }));
       await user.click(dialog.getByRole("radio", { name: "File" }));
 
-      expect(dialog.getByRole("status").textContent).toBe(
-        "Add a document to Media first, then link to it.",
-      );
+      expect(dialog.getByText("Add a document to Media first, then link to it.")).toBeTruthy();
       expect(
         (dialog.getByRole("button", { name: "Save Link" }) as HTMLButtonElement).disabled,
       ).toBe(true);
