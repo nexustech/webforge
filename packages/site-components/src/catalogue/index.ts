@@ -13,6 +13,7 @@ import { formsComponents } from "./forms.js";
 import { galleryComponents } from "./gallery.js";
 import { layoutComponents } from "./layout.js";
 import { sectionsComponents } from "./sections.js";
+import { tabsComponents } from "./tabs.js";
 import { testimonialsComponents } from "./testimonials.js";
 
 /**
@@ -34,6 +35,7 @@ export const siteLibrary: ComponentLibrary = createLibrary(
   featuresComponents,
   testimonialsComponents,
   commerceComponents,
+  tabsComponents,
 );
 
 /** The page a new site starts with. */
