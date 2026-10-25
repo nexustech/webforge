@@ -1,6 +1,7 @@
 import {
   COLOR_ROLES,
   DEFAULT_THEME,
+  HIDDEN_ATTRIBUTE,
   INVERSE_THEME,
   type Oklch,
   SHADE_STEPS,
@@ -8,6 +9,7 @@ import {
   themeTokensSchema,
 } from "@webforge/model";
 import fc from "fast-check";
+import { Window } from "happy-dom";
 import { describe, expect, it } from "vitest";
 import {
   contrastRatio,
@@ -21,7 +23,7 @@ import { AA_LARGE, AA_TEXT, contrastIssues } from "./contrast.js";
 import { CURATED_THEMES } from "./curated/index.js";
 import { FONT_CATALOGUE, FONT_PAIRINGS } from "./fonts/catalogue.js";
 import { THEME_PRESETS, themePreset } from "./presets.js";
-import { oklchCss, themeCss } from "./theme-css.js";
+import { evenSections, oklchCss, themeCss } from "./theme-css.js";
 
 const BLACK: Oklch = { l: 0, c: 0, h: 0 };
 const WHITE: Oklch = { l: 1, c: 0, h: 0 };
@@ -461,16 +463,46 @@ describe("themeCss (2.1)", () => {
     expect(css({ images: { corners: "soft" } })).toContain("border-radius: 1.5rem;");
     // Every second section on the second surface, under sections' own colours, with flat cards
     // on the page's surface there.
-    const even =
-      ":is(#main > section:nth-child(even), .wf-sections > :nth-child(even) > section):not([data-theme])";
     const alternating = css({ sections: { rhythm: "alternating" } });
     expect(alternating).toContain(
-      lines("@layer components {", `  ${even} {`, "    background-color: var(--color-base-200);"),
+      lines(
+        "@layer components {",
+        `  ${evenSections()} {`,
+        "    background-color: var(--color-base-200);",
+      ),
     );
-    expect(alternating).toContain(`${even} .wf-card {`);
+    expect(alternating).toContain(`${evenSections(" .wf-card")} {`);
     expect(css({ sections: { rhythm: "alternating" }, cards: { style: "raised" } })).not.toContain(
-      `${even} .wf-card {`,
+      `${evenSections(" .wf-card")} {`,
     );
+  });
+
+  it("stripes the sections a visitor sees, on the canvas as on the exported page (2.13d)", () => {
+    const happy = new Window();
+    const { document } = happy;
+    // The exported page: no hidden sections, and maybe something besides sections in `main`.
+    // The canvas: each section in Puck's wrapper, the second hidden in Layers, and Puck's place
+    // for a section being dragged.
+    document.body.innerHTML = [
+      '<main id="main">',
+      '<section id="a"></section><div></div><section id="c"></section>',
+      '<section id="e"></section><section id="d" data-theme="wf_inverse"></section>',
+      "</main>",
+      '<div class="wf-sections">',
+      '<div><section id="canvas-a"></section></div>',
+      `<div><section id="canvas-b" ${HIDDEN_ATTRIBUTE}></section></div>`,
+      '<div><section id="canvas-c"></section></div>',
+      '<div class="placeholder"></div>',
+      '<div><section id="canvas-e"></section></div>',
+      '<div><section id="canvas-d" data-theme="wf_inverse"></section></div>',
+      "</div>",
+    ].join("");
+
+    const striped = [...document.querySelectorAll(evenSections())].map((section) => section.id);
+    void happy.happyDOM.close();
+
+    // The second and fourth shown sections, c and d; d keeps its reversed colours.
+    expect(striped).toEqual(["c", "canvas-c"]);
   });
 
   it("sets the page title a size smaller on phones, never above 4xl (#419)", () => {

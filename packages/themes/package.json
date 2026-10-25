@@ -10,6 +10,7 @@
   "devDependencies": {
     "@webforge/i18n": "workspace:*",
     "fast-check": "4.10.2",
+    "happy-dom": "21.0.4",
     "vitest": "catalog:"
   },
   "dependencies": {

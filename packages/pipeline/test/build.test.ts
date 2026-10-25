@@ -680,7 +680,7 @@ describe("buildSite: the theme's style (2.13d)", () => {
     // In the components layer, under the classes of sections with colours of their own, which
     // are utilities.
     const rhythm = css.indexOf(
-      ":is(#main > section:nth-child(even), .wf-sections > :nth-child(even) > section):not([data-theme]) { background-color: var(--color-base-200); }",
+      "#main > section:nth-child(even of section):not([data-theme]), .wf-sections > :nth-child(even of :has(> section:not([data-webforge-hidden]))) > section:not([data-theme]) { background-color: var(--color-base-200); }",
     );
     expect(rhythm).toBeGreaterThan(-1);
     expect(

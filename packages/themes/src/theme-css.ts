@@ -1,6 +1,7 @@
 import {
   COLOR_ROLES,
   type FontRef,
+  HIDDEN_ATTRIBUTE,
   INVERSE_THEME,
   type Oklch,
   SHADE_STEPS,
@@ -133,12 +134,25 @@ const IMAGE_RADIUS: Readonly<Record<ThemeTokens["images"]["corners"], string | u
 };
 
 /**
- * The sections every second one of a page is (2.13d): on the exported page, `main`'s; on the
- * canvas, those in the page's drop zone (`wf-sections`), where each is in a wrapper of its own.
- * Not a section on reversed colours, which keeps its own.
+ * Every second section of a page (2.13d), counting only the sections a visitor sees, so the canvas
+ * stripes as the exported page does:
+ * - on the exported page, `main`'s sections, whatever else it holds;
+ * - on the canvas, the page's drop zone (`wf-sections`), where each section is in a wrapper of its
+ *   own: wrappers of a shown section, never one hidden in Layers (which the export leaves out) or
+ *   Puck's place for a dragged one.
+ *
+ * Not a section on reversed colours, which keeps its own. A browser without `:nth-child(… of …)`
+ * (before Chromium 111, Safari 9 and Firefox 113) drops the rule: its sections are all on the
+ * page's surface.
  */
-const EVEN_SECTIONS =
-  ":is(#main > section:nth-child(even), .wf-sections > :nth-child(even) > section):not([data-theme])";
+const EVEN_SECTION_SELECTORS = [
+  "#main > section:nth-child(even of section):not([data-theme])",
+  `.wf-sections > :nth-child(even of :has(> section:not([${HIDDEN_ATTRIBUTE}]))) > section:not([data-theme])`,
+];
+
+/** {@link EVEN_SECTION_SELECTORS}, each followed by `then` (" .wf-card"), as one selector list. */
+export const evenSections = (then = ""): string =>
+  EVEN_SECTION_SELECTORS.map((selector) => `${selector}${then}`).join(", ");
 
 /** daisyUI's look the theme gives its main buttons (#423): their own, or outline or ghost. */
 const BUTTON_LOOK: Readonly<Record<ThemeTokens["buttons"]["style"], string | undefined>> = {
@@ -276,14 +290,14 @@ function styleRules(tokens: ThemeTokens): string[] {
       ? []
       : ["  img.rounded-box {", `    border-radius: ${imageRadius};`, "  }"]),
     ...(alternating && cards.style === "flat"
-      ? [`  ${EVEN_SECTIONS} .wf-card {`, "    background-color: var(--color-base-100);", "  }"]
+      ? [`  ${evenSections(" .wf-card")} {`, "    background-color: var(--color-base-100);", "  }"]
       : []),
   ];
   return [
     ...(alternating
       ? [
           "@layer components {",
-          `  ${EVEN_SECTIONS} {`,
+          `  ${evenSections()} {`,
           "    background-color: var(--color-base-200);",
           "  }",
           "}",
