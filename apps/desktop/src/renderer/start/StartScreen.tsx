@@ -128,6 +128,7 @@ export function StartScreen({ info, project, templates, app, restart, locale }: 
           </main>
         </div>
         <SiteCommands
+          example
           project={api}
           {...(templates === undefined ? {} : { templates })}
           {...(restart === undefined ? {} : { restart })}
