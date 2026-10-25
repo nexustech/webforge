@@ -150,6 +150,25 @@ function stringsOf(folder: string) {
   return { path: `${STRINGS}/${name}.ts`, name };
 }
 
+/**
+ * Where an area's strings are (packages/i18n/src/en/), when it isn't `<area>.ts`: the areas from
+ * before the scaffold share files. An area that keeps none (`fields`, `perf`) isn't listed, and is
+ * refused. A scaffolded area gets a file of its own. docs/extending.md lists the same.
+ */
+export const STRINGS_FILES: Readonly<Record<string, string>> = {
+  add: "panels",
+  clipboard: "site",
+  "element-menu": "panels",
+  layers: "panels",
+  links: "panels",
+  media: "site",
+  menu: "panels",
+  "shared-sections": "canvas",
+  site: "panels",
+  "site-settings": "site",
+  start: "site",
+};
+
 /** A new strings file, for renderer folder `folder`, with `entries`. */
 export function stringsFile(folder: string, label: string, entries: readonly string[]): string {
   const { name } = stringsOf(folder);
@@ -184,8 +203,19 @@ export const addStrings = (entries: readonly string[]) => (text: string) =>
  * added to the folder's file.
  */
 function stringsPlan(root: string, folder: string, label: string, entries: readonly string[]) {
+  const shared = STRINGS_FILES[folder];
+  if (shared !== undefined) {
+    return { files: {}, edits: { [`${STRINGS}/${shared}.ts`]: [addStrings(entries)] } };
+  }
   const { path } = stringsOf(folder);
   if (existsSync(join(root, path))) return { files: {}, edits: { [path]: [addStrings(entries)] } };
+  // An area there is, whose strings are somewhere this doesn't know: never split them.
+  if (existsSync(join(root, RENDERER, folder))) {
+    throw new Error(
+      `renderer/${folder} keeps its strings in a file the scaffold doesn't know: add it to ` +
+        "STRINGS_FILES in tools/src/scaffold.ts (and docs/extending.md's list)",
+    );
+  }
   return {
     files: { [path]: stringsFile(folder, label, entries) },
     edits: { [STRINGS_INDEX]: [(text: string) => registerStrings(text, folder)] },

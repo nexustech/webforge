@@ -6,10 +6,9 @@ import { copiedNodeId, type MediaId, type PageDoc } from "@webforge/model";
 import { type ComponentLibrary, type FieldDef, siteLibrary } from "@webforge/site-components";
 import { Profiler } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { linkFieldRenderer } from "../links/LinkField.js";
-import { imageFieldRenderer } from "../media/ImageField.js";
-import { addMedia } from "../media/media-commands.js";
-import { saveAsSharedSection } from "../shared-sections/shared-sections.js";
+import { linkFieldRenderer } from "../links/index.js";
+import { addMedia, imageFieldRenderer } from "../media/index.js";
+import { saveAsSharedSection } from "../shared-sections/index.js";
 import { sessionWith } from "../testing/fixtures.js";
 import { EditPanelHost } from "./EditPanelHost.js";
 import {
