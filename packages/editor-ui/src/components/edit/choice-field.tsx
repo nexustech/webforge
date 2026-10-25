@@ -16,7 +16,7 @@ export function ChoiceField({
   value,
   onChange,
   onCommit,
-}: FieldRendererProps<"color" | "spacing">) {
+}: FieldRendererProps<"color" | "spacing" | "choice">) {
   const { options } = field;
   return (
     <ToggleGroup
