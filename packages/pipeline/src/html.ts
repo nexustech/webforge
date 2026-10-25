@@ -66,7 +66,10 @@ ${page.backToTop ?? ""}
   return formatHtml(html);
 }
 
-/** Pretty-prints HTML with two-space indentation and no line wrapping (X4). */
+/**
+ * Pretty-prints HTML with two-space indentation and no line wrapping (X4). What's in a script or
+ * style element (Custom Code's, 2.11), a `pre` or a `textarea` is left as written.
+ */
 function formatHtml(html: string): string {
   return `${beautify.html(html, {
     indent_size: 2,
@@ -75,5 +78,6 @@ function formatHtml(html: string): string {
     preserve_newlines: false,
     indent_inner_html: false,
     extra_liners: [],
+    content_unformatted: ["pre", "textarea", "script", "style"],
   })}\n`;
 }
