@@ -422,6 +422,55 @@ describe("themeCss (2.1)", () => {
     );
   });
 
+  it("writes the theme's style only when it isn't as sites always looked (2.13d)", () => {
+    const css = (change: Partial<ThemeTokens>) => themeCss({ ...DEFAULT_THEME, ...change });
+    const lines = (...each: string[]) => each.join("\n");
+
+    // As always: nothing written, so the default theme's stylesheet is as it was.
+    expect(themeCss(DEFAULT_THEME)).not.toMatch(
+      /\.font-heading|\.wf-card|img\.rounded-box|nth-child/,
+    );
+    // Headings: capitals or small capitals, with tracking of their own on top of the theme's.
+    expect(css({ headings: { case: "uppercase", tracking: "normal" } })).toContain(
+      lines(".font-heading {", "    text-transform: uppercase;", "    letter-spacing: 0.06em;"),
+    );
+    expect(css({ headings: { case: "small-caps", tracking: "wide" } })).toContain(
+      lines("    font-variant-caps: all-small-caps;", "    letter-spacing: 0.1em;"),
+    );
+    expect(css({ headings: { case: "normal", tracking: "tight" } })).toContain(
+      lines(".font-heading {", "    letter-spacing: -0.02em;", "  }"),
+    );
+    // Cards on the page's surface, outlined or raised; a raised card keeps a shadow under a
+    // theme without shadows.
+    expect(css({ cards: { style: "outlined" } })).toContain(
+      lines(
+        "section .wf-card {",
+        "    background-color: var(--color-base-100);",
+        "    border: var(--border) solid var(--color-base-300);",
+      ),
+    );
+    expect(css({ cards: { style: "raised" }, shadow: "none" })).toContain(
+      "    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);",
+    );
+    // Photos square or softer.
+    expect(css({ images: { corners: "square" } })).toContain(
+      lines("img.rounded-box {", "    border-radius: 0;"),
+    );
+    expect(css({ images: { corners: "soft" } })).toContain("border-radius: 1.5rem;");
+    // Every second section on the second surface, under sections' own colours, with flat cards
+    // on the page's surface there.
+    const even =
+      ":is(#main > section:nth-child(even), .wf-sections > :nth-child(even) > section):not([data-theme])";
+    const alternating = css({ sections: { rhythm: "alternating" } });
+    expect(alternating).toContain(
+      lines("@layer components {", `  ${even} {`, "    background-color: var(--color-base-200);"),
+    );
+    expect(alternating).toContain(`${even} .wf-card {`);
+    expect(css({ sections: { rhythm: "alternating" }, cards: { style: "raised" } })).not.toContain(
+      `${even} .wf-card {`,
+    );
+  });
+
   it("sets the page title a size smaller on phones, never above 4xl (#419)", () => {
     const phone = (size: ThemeTokens["typeScale"]["h1"]["size"]) =>
       /@media \(width < 48rem\) \{\s*:root \{\s*--text-h1: ([^;]+);/.exec(

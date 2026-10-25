@@ -652,3 +652,41 @@ describe("buildSite: the theme's buttons, shadows and links (#423)", () => {
     expect(css).toContain("text-decoration-line: var(--wf-link-decoration,underline);");
   }, 60_000);
 });
+
+describe("buildSite: the theme's style (2.13d)", () => {
+  it("draws headings, cards, photos and the sections' rhythm as the theme says", async () => {
+    const site: SiteSnapshot = {
+      ...sampleSite(),
+      theme: {
+        ...DEFAULT_THEME,
+        preset: "styled",
+        headings: { case: "uppercase", tracking: "wide" },
+        cards: { style: "outlined" },
+        images: { corners: "square" },
+        sections: { rhythm: "alternating" },
+      },
+    };
+
+    const exported = await buildSite(site, siteLibrary, resources);
+
+    const css = text(exported, fileNamed(exported, /^assets\/css\//)).replace(/\s+/g, " ");
+    expect(css).toContain(".font-heading { text-transform: uppercase; letter-spacing: 0.1em; }");
+    expect(css).toContain(
+      "section .wf-card { background-color: var(--color-base-100); border: var(--border) solid var(--color-base-300); }",
+    );
+    expect(css).toContain("img.rounded-box { border-radius: 0; }");
+    // In the components layer, under the classes of sections with colours of their own, which
+    // are utilities.
+    const rhythm = css.indexOf(
+      ":is(#main > section:nth-child(even), .wf-sections > :nth-child(even) > section):not([data-theme]) { background-color: var(--color-base-200); }",
+    );
+    expect(rhythm).toBeGreaterThan(-1);
+    expect(
+      css
+        .slice(0, rhythm)
+        .match(/@layer (\w+) \{/g)
+        ?.at(-1),
+    ).toBe("@layer components {");
+    expect(css).toContain("@layer theme, base, components, utilities;");
+  }, 60_000);
+});
