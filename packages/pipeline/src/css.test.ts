@@ -1,4 +1,5 @@
 import { DEFAULT_THEME } from "@webforge/model";
+import { entranceClasses, hoverClasses } from "@webforge/site-components";
 import { beforeAll, describe, expect, it } from "vitest";
 import { buildSiteCss, classCandidates, siteStylesheetSource } from "./css.js";
 import { loadNodeResources } from "./node-resources.js";
@@ -68,6 +69,28 @@ describe("siteStylesheetSource", () => {
 });
 
 describe("buildSiteCss", () => {
+  it("hides an entrance only once the page is marked, and only where motion is welcome (2.12)", async () => {
+    const candidates =
+      `${entranceClasses({ entrance: "slideLeft", entranceDelay: "long" })}${hoverClasses("lift")}`
+        .trim()
+        .split(" ");
+    const css = await buildSiteCss(resources, {
+      theme: DEFAULT_THEME,
+      candidates,
+      fontsUrl: "../fonts/",
+    });
+
+    const motionSafe = css.slice(css.indexOf("@media (prefers-reduced-motion: no-preference)"));
+    expect(motionSafe).toMatch(
+      /:root\[data-wf-animate\] \.[^{]*opacity-0:not\(\[data-wf-shown\]\) \{\s*opacity: 0%;/,
+    );
+    expect(motionSafe).toMatch(
+      /:root\[data-wf-animate\] \.[^{]*-translate-x-8:not\(\[data-wf-shown\]\)/,
+    );
+    expect(motionSafe).toContain("transition-delay: 600ms;");
+    expect(motionSafe).toContain(String.raw`.motion-safe\:hover\:-translate-y-1:hover`);
+  });
+
   it("compiles only the candidates it is given, with the site's theme", async () => {
     const css = await buildSiteCss(resources, {
       theme: { ...DEFAULT_THEME, preset: "dracula" },
