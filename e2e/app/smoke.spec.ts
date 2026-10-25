@@ -175,7 +175,10 @@ test.describe("desktop shell", () => {
     };
 
     const created = await page.evaluate(() =>
-      (window as unknown as RendererWindow).webforge.project.create(),
+      (window as unknown as RendererWindow).webforge.project.create({
+        name: "Rosa's Bakery",
+        theme: "light",
+      }),
     );
     expect(created).toEqual({ status: "opened", project });
     expect(readFileSync(path).subarray(0, 16).toString("latin1")).toBe("SQLite format 3\0");
@@ -218,7 +221,7 @@ test.describe("desktop shell", () => {
     const result = await page.evaluate(
       async ({ changes }) => {
         const { project } = (window as unknown as RendererWindow).webforge;
-        await project.create();
+        await project.create({ name: "Rosa's Bakery", theme: "light" });
         const empty = await project.readSite();
         const saved = await project.commit((await project.getCurrent())?.sessionId ?? "", changes);
         await project.open();

@@ -1,5 +1,6 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 import {
+  isMessageKey,
   type MessageKey,
   type ParamsOf,
   type PluralKey,
@@ -39,6 +40,15 @@ describe("t", () => {
       t(any, { version: "1" });
     };
     expect(checks).toBeTypeOf("function");
+  });
+});
+
+describe("isMessageKey", () => {
+  it("tells a key the catalogue has from one built from data that it doesn't", () => {
+    expect(isMessageKey("app.version")).toBe(true);
+    expect(isMessageKey("theme.preset.nonexistent")).toBe(false);
+    // Only the catalogue's own keys, never the prototype's.
+    expect(isMessageKey("toString")).toBe(false);
   });
 });
 

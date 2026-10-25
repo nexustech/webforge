@@ -3,7 +3,7 @@ import type { Call } from "./call.js";
 
 /** `window.webforge.project`. */
 export const projectApi = (call: Call): ProjectApi => ({
-  create: () => call("createProject"),
+  create: (request) => call("createProject", request),
   open: () => call("openProject"),
   getCurrent: () => call("getCurrentProject"),
   readSite: () => call("readSite"),

@@ -193,7 +193,10 @@ test("answers the native file dialogs from the test's file in e2e builds (ADR 00
   writeFileSync(dialogAnswers, JSON.stringify({ save: path }));
 
   const result = await page.evaluate(() =>
-    (window as unknown as { webforge: { project: ProjectApi } }).webforge.project.create(),
+    (window as unknown as { webforge: { project: ProjectApi } }).webforge.project.create({
+      name: "From the dialog",
+      theme: "light",
+    }),
   );
 
   expect(result).toEqual({ status: "opened", project: summary("From the dialog") });

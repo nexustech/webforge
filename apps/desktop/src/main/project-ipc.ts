@@ -7,11 +7,33 @@ import { openOrRecover, type RecoveryDialogs } from "./recovery.js";
 
 /** Native file dialogs, injected so the handlers can be tested without Electron. */
 export type ProjectDialogs = {
-  /** Asks where to save a new site; `undefined` if the user cancels. */
-  chooseNewProjectPath(): Promise<string | undefined>;
+  /**
+   * Asks where to save a new site, offering a file named after it (`siteFileName`); `undefined` if
+   * the user cancels.
+   */
+  chooseNewProjectPath(siteName: string): Promise<string | undefined>;
   /** Asks which site to open; `undefined` if the user cancels. */
   chooseProjectToOpen(): Promise<string | undefined>;
 };
+
+/** Characters no file name may have on Windows, macOS or Linux. */
+const UNSAFE_IN_FILE_NAMES = /[<>:"/\\|?*\p{Cc}]/gu;
+
+/** Names Windows keeps for devices, which no file may have, whatever its extension. */
+const RESERVED_FILE_NAMES = /^(con|prn|aux|nul|com\d|lpt\d)$/i;
+
+/**
+ * The file name New Site's save dialog offers for a site called `name` (2.14a), without the
+ * extension: characters a file name can't have become "-", and trailing dots and spaces go, as
+ * Windows drops them. `fallback` when nothing usable is left.
+ */
+export function siteFileName(name: string, fallback: string): string {
+  const cleaned = name
+    .replace(UNSAFE_IN_FILE_NAMES, "-")
+    .trim()
+    .replace(/[. ]+$/, "");
+  return cleaned === "" || RESERVED_FILE_NAMES.test(cleaned) ? fallback : cleaned;
+}
 
 /**
  * Registers the site IPC calls. The renderer never sends a file path: the main process asks the
@@ -44,8 +66,8 @@ export function registerProjectHandlers(
       ? session.open(path)
       : openOrRecover(session, path, recovery.backups, recovery.dialogs);
   };
-  registerIpcHandler(ipc, "createProject", isTrustedSender, async () => {
-    const path = await dialogs.chooseNewProjectPath();
+  registerIpcHandler(ipc, "createProject", isTrustedSender, async (request) => {
+    const path = await dialogs.chooseNewProjectPath(request.name);
     if (path === undefined) {
       return { status: "canceled" };
     }

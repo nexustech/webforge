@@ -1,12 +1,16 @@
 /** New Site (2.14a, F-SITE-1): the templates, their business types, and the themes to start in. */
 export const templates = {
   // The New Site dialog (LF-11).
+  "newSite.title": "New Site",
+  "newSite.description":
+    "Name your site, choose a theme, and start from scratch or from a template.",
   "newSite.name": "Site name",
   "newSite.theme": "Theme",
   "newSite.blankHeading": "Start from scratch",
   "newSite.blank": "Blank site",
   "newSite.blankDescription": "One empty page, a Header and a Footer",
   "newSite.templatesHeading": "Templates",
+  "newSite.categories": "Business type",
   "newSite.category.all": "All",
   "newSite.sort": "Sort",
   "newSite.sort.name": "Name",

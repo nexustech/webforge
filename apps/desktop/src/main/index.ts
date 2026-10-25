@@ -58,7 +58,7 @@ import {
   type PreferencesStore,
   registerPreferencesHandlers,
 } from "./preferences.js";
-import { type ProjectDialogs, registerProjectHandlers } from "./project-ipc.js";
+import { type ProjectDialogs, registerProjectHandlers, siteFileName } from "./project-ipc.js";
 import { findProjectArgument, PROJECT_EXTENSION, ProjectSession } from "./project-session.js";
 import { createRecentSites } from "./recent-sites.js";
 import { openOrRecover } from "./recovery.js";
@@ -247,12 +247,12 @@ async function testDialogAnswer(
 // Dialogs are modal to the focused window. E2E tests replace dialog.showSaveDialog and
 // dialog.showOpenDialog, so look them up on the module at call time.
 const projectDialogs: ProjectDialogs = {
-  chooseNewProjectPath: async () => {
+  chooseNewProjectPath: async (siteName) => {
     const answer = await testDialogAnswer("save");
     if (answer !== undefined) return answer.path;
     const options: SaveDialogOptions = {
       title: t("site.newDialogTitle"),
-      defaultPath: `${t("site.untitledName")}${PROJECT_EXTENSION}`,
+      defaultPath: `${siteFileName(siteName, t("site.untitledName"))}${PROJECT_EXTENSION}`,
       filters: projectFilters,
     };
     const parent = BrowserWindow.getFocusedWindow();

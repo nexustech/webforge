@@ -54,10 +54,13 @@ test("creates a blank site, keeps an edit and reopens it from the Recent list", 
   let page = await startWithoutSite();
   await expect(page.getByText("Sites you open or create appear here.")).toBeVisible();
 
-  // Blank site: the save dialog (stubbed) names the file, and the editor opens on it.
+  // New Site, Blank: the save dialog (stubbed) names the file, and the editor opens on it.
   const sitePath = join(dir, "Rosa's Bakery.wforge");
   await stubFileDialogs(running(), sitePath);
-  await page.getByRole("button", { name: "Blank site" }).click();
+  await page.getByRole("button", { name: "New site…" }).click();
+  const newSite = page.getByRole("dialog", { name: "New Site" });
+  await newSite.getByRole("textbox", { name: "Site name" }).fill("Rosa's Bakery");
+  await newSite.getByRole("button", { name: "Create" }).click();
   await waitForCanvas(page);
   await expect(page.getByRole("banner").getByRole("status")).toHaveText("Saved");
 
