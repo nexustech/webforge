@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { t } from "@webforge/i18n";
-import { userEvent, within } from "storybook/test";
 import type { TemplateSummary } from "../../shared/ipc/templates.js";
 import { NewSiteDialog } from "./NewSiteDialog.js";
 
@@ -33,23 +32,29 @@ export const Templates: Story = {};
 /** No templates yet: only Blank. */
 export const NoTemplates: Story = { args: { templates: [] } };
 
+/** The dialog's control labelled `name`, in its portal on the page. */
+function control(canvasElement: HTMLElement, selector: string, name: string): HTMLElement {
+  const found = [...canvasElement.ownerDocument.querySelectorAll<HTMLElement>(selector)].find(
+    (element) => (element.getAttribute("aria-label") ?? element.textContent ?? "").includes(name),
+  );
+  if (found === undefined) throw new Error(`No ${selector} ${name}`);
+  return found;
+}
+
 /** A template chosen: the theme switches to the template's. */
 export const TemplateChosen: Story = {
-  play: async () => {
-    // The dialog is in a portal on the body.
-    await userEvent.click(
-      within(document.body).getByRole("radio", { name: new RegExp(t("template.sample.name")) }),
-    );
+  play: ({ canvasElement }) => {
+    control(canvasElement, "label", t("template.sample.name")).click();
   },
 };
 
 /** A template's Details: its larger preview and description. */
 export const DetailsOpen: Story = {
-  play: async () => {
-    await userEvent.click(
-      within(document.body).getByRole("button", {
-        name: t("newSite.detailsOf", { name: t("template.sample.name") }),
-      }),
-    );
+  play: ({ canvasElement }) => {
+    control(
+      canvasElement,
+      "button",
+      t("newSite.detailsOf", { name: t("template.sample.name") }),
+    ).click();
   },
 };

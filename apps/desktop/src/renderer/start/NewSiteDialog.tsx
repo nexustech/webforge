@@ -330,9 +330,9 @@ function Card({
         <span className="flex aspect-video w-full items-center justify-center bg-muted">
           {preview}
         </span>
-        <span className="flex flex-col gap-0.5 p-2 pr-20">
+        <span className={cn("flex flex-col gap-0.5 p-2", details !== undefined && "pr-20")}>
           <span className="truncate text-sm font-medium">{title}</span>
-          <span className="truncate text-xs text-muted-foreground">{subtitle}</span>
+          <span className="line-clamp-2 text-xs text-muted-foreground">{subtitle}</span>
         </span>
       </label>
       {details === undefined ? null : (
