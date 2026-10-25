@@ -65,6 +65,64 @@ describe("siteClasses", () => {
     expect(classes).toEqual([...new Set(classes)].sort());
   });
 
+  it("collects an Image's classes as the canvas shows it, with or without its picture (#371)", () => {
+    const session = sessionWith();
+    session.history.run("Added Images", (draft) => {
+      const section = draft.pages[draft.homePageId]?.doc.content[0];
+      const content = section?.props.content;
+      if (!Array.isArray(content)) throw new Error("no section");
+      content.push(
+        { type: "Image", props: { id: "empty", width: "small", alignment: "centre" } },
+        {
+          type: "Image",
+          props: { id: "placed", image: { mediaId: "photo" }, width: "large", alignment: "right" },
+        },
+      );
+    });
+
+    const classes = siteClasses(session.history.document.getState(), session);
+
+    // The hint's frame and the empty Image's width; the placed Image's picture, width and
+    // alignment, whatever its image (one not in Media here).
+    expect(classes).toEqual(
+      expect.arrayContaining([
+        "site-image",
+        "aspect-video",
+        "max-w-xs",
+        "h-auto",
+        "max-w-2xl",
+        "ml-auto",
+      ]),
+    );
+  });
+
+  it("collects an image's classes with and without it, styled before it changes (#371)", () => {
+    const session = sessionWith();
+    session.history.run("Added Gallery", (draft) => {
+      const content = draft.pages[draft.homePageId]?.doc.content[0]?.props.content;
+      if (!Array.isArray(content)) throw new Error("no section");
+      content.push({
+        type: "Image",
+        props: { id: "placed", image: { mediaId: "photo" }, width: "full", alignment: "centre" },
+      });
+      draft.pages[draft.homePageId]?.doc.content.push({
+        type: "Gallery",
+        props: {
+          id: "gallery",
+          images: [{ type: "GalleryImage", props: { id: "g1", image: { mediaId: "photo" } } }],
+        },
+      });
+    });
+
+    const classes = siteClasses(session.history.document.getState(), session);
+
+    // Only placed images here, yet an empty Image's hint and an empty gallery square are styled
+    // at once when one shows: a picture removed, or a gallery image added.
+    expect(classes).toEqual(
+      expect.arrayContaining(["h-auto", "aspect-video", "block", "bg-base-200"]),
+    );
+  });
+
   it("adds every spacing class a handle can drag to, styled before the next compile (1.32)", () => {
     const session = sessionWith();
 

@@ -12,7 +12,6 @@ import {
   COLUMN_LAYOUTS,
   type ColumnLayout,
   columnLayoutsFor,
-  MAX_COLUMNS,
   MIN_COLUMNS,
 } from "@webforge/site-components";
 import { MinusIcon, PlusIcon } from "lucide-react";
@@ -118,8 +117,9 @@ const OUTLINES = "outlines";
  * Add and Remove; its layout on the device shown, from the presets that fit that number; and
  * *Show column outlines*, an edit-only preview.
  */
-function ColumnsTools({
+export function ColumnsTools({
   count,
+  canAdd,
   layout,
   device,
   outlines,
@@ -129,6 +129,8 @@ function ColumnsTools({
   onOutlines,
 }: {
   readonly count: number;
+  /** Whether a Columns has room for another column (its slot's `max`). */
+  readonly canAdd: boolean;
   /** The layout on the device shown. */
   readonly layout: ColumnLayout;
   /** The device view the layout is set for. */
@@ -158,11 +160,7 @@ function ColumnsTools({
           <MinusIcon aria-hidden />
         </IconButton>
         <span className="w-4 text-center text-xs tabular-nums">{count}</span>
-        <IconButton
-          name={t("columnsToolbar.addColumn")}
-          disabled={count >= MAX_COLUMNS}
-          onClick={onAdd}
-        >
+        <IconButton name={t("columnsToolbar.addColumn")} disabled={!canAdd} onClick={onAdd}>
           <PlusIcon aria-hidden />
         </IconButton>
       </fieldset>
@@ -222,6 +220,22 @@ const columnsIn = (node: NodeDoc | undefined): NodeDoc[] => {
   return Array.isArray(stored) ? stored.filter(isNodeDoc) : [];
 };
 
+/** The column a new Columns has first: what Add column adds a copy of. */
+function columnTemplate(library: EditorSession["library"]): NodeDoc | undefined {
+  const placed = library.components.Columns?.defaults.columns;
+  return Array.isArray(placed) ? placed.find(isNodeDoc) : undefined;
+}
+
+/**
+ * How many columns a Columns holds at most: its `columns` slot's `max`, which every way of adding
+ * keeps to. Its own count is compared with it, so a column too many inside one of its columns (a
+ * nested Columns from an old file) neither blocks nor allows one more here.
+ */
+function maxColumns(library: EditorSession["library"]): number {
+  const slot = library.components.Columns?.fields.columns;
+  return slot?.kind === "slot" && slot.max !== undefined ? slot.max : Number.POSITIVE_INFINITY;
+}
+
 /**
  * Adds a column at the end of the Columns `nodeId` is or is in, as one "Added Column" step that
  * selects it: with a Text in it, as a new Columns' columns have, every element with an id of its
@@ -235,14 +249,14 @@ function addColumn(session: EditorSession, flush: () => void, nodeId: string): v
   const { pageId, viewport } = session.ui.getState();
   const target =
     found === undefined ? undefined : fieldTarget(site, session.library, pageId, found.holderId);
-  const placed = session.library.components.Columns?.defaults.columns;
-  const [template] = Array.isArray(placed) ? placed.filter(isNodeDoc) : [];
+  const template = columnTemplate(session.library);
   if (found === undefined || target === undefined || template === undefined) return;
-  if (columnsIn(target.node).length >= MAX_COLUMNS) return;
   const id = newId("node");
   const ids = [id];
   const [column] = pastedCopies([template], new Set(), () => ids.shift() ?? newId("node"));
-  if (column === undefined) return;
+  if (column === undefined || columnsIn(target.node).length >= maxColumns(session.library)) {
+    return;
+  }
   const label =
     target.copyLabel ??
     labelFor(
@@ -341,12 +355,14 @@ export function columnsToolbar({
         session,
         (site) => columnsIn(fieldTarget(site, session.library, pageId, columnsId)?.node).length,
       );
+      const canAdd = count < maxColumns(session.library);
       const stored = useFieldValue(session, columnsId, "layout");
       const outlines = useStore(previews, (choices) => choices.columnOutlines);
       const layout = COLUMN_LAYOUTS.find((each) => each === stored);
       return (
         <ColumnsTools
           count={count}
+          canAdd={canAdd}
           layout={layout ?? "equal"}
           device={device}
           outlines={outlines}

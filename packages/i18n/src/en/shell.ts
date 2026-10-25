@@ -170,7 +170,7 @@ export const shell = {
   // The selected Columns' toolbar (2.17): its columns, its layout on the device shown, and outlines.
   "columnsToolbar.columns": "Columns",
   "columnsToolbar.addColumn": "Add column",
-  "columnsToolbar.removeColumn": "Remove column",
+  "columnsToolbar.removeColumn": "Remove last column",
   // {device} is a device view: "Column widths on Mobile", as the Edit panel calls the field.
   "columnsToolbar.layoutOn": "Column widths on {device}",
   "columnsToolbar.previewLabel": "Columns preview",

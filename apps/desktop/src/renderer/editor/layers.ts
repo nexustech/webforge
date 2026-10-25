@@ -12,7 +12,7 @@ import {
   type SharedCopyNode,
   type SharedSectionsDoc,
 } from "@webforge/model";
-import { type ComponentLibrary, slotsOverfull } from "@webforge/site-components";
+import { type ComponentLibrary, overfillsSlots } from "@webforge/site-components";
 import type { EditorSession } from "../editor/editor-session.js";
 import { elementKind, givenElementName, quotedName } from "../editor/labels.js";
 import { findNode } from "../editor/nodes.js";
@@ -343,7 +343,7 @@ export function copyLayer(
   // No more than its list's slot holds (a Columns' four).
   const after = structuredClone(content) as NodeDoc[];
   placeOf(after, found.own, session.library)?.list.splice(index, 0, added);
-  if (slotsOverfull(session.library, after) && !slotsOverfull(session.library, content)) return;
+  if (overfillsSlots(session.library, content, after)) return;
   const selectionAfter = { ...current, nodeId: shown, others: [] };
   session.edit(
     "duplicate",
