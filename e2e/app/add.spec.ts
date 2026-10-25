@@ -45,6 +45,17 @@ test("adds sections and elements by click, never the Header, Footer or a questio
   await expect(canvas().locator(".site-section [contenteditable]")).toHaveCount(2);
 });
 
+test("adds a Booking button, a Button preset reading Book now, as one step (2.11)", async () => {
+  await left().getByRole("tab", { name: "Elements" }).click();
+
+  await item("Booking button").click();
+
+  const button = canvas().locator(".site-button a");
+  await expect(button).toHaveText("Book now");
+  await left().getByRole("tab", { name: "Undo History" }).click();
+  await expect(steps()).toHaveText(["Added Button", "Opened page"]);
+});
+
 test("the canvas's + opens Add at its place, even with the left panels hidden", async () => {
   await page.keyboard.press("ControlOrMeta+Alt+b");
   await expect(left()).toBeHidden();

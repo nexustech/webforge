@@ -237,7 +237,18 @@ export type SiteBindings = {
   readonly formService?: FormService;
   /** What a form that can't send shows, by why: a hint on the canvas; nothing in the export. */
   readonly formHint?: (reason: FormUnset) => ReactNode;
+  /**
+   * What an element shows while it lacks what it needs (an Embed video without its address, 2.11):
+   * a hint on the canvas, so it can be found and filled in; nothing in the export.
+   */
+  readonly elementHint?: (missing: ElementHint) => ReactNode;
 };
+
+/**
+ * What an element is missing, for {@link SiteBindings.elementHint}: a video's or a map's address,
+ * a Buy button's payment link.
+ */
+export type ElementHint = "videoAddress" | "mapAddress" | "paymentLink";
 
 /**
  * Why a form has nowhere to send to (2.8): no form service chosen in Site Settings, Netlify Forms

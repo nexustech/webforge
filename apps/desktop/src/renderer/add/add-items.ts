@@ -43,14 +43,54 @@ export type AddItem = {
    * so it can't be a favourite.
    */
   readonly suggested?: true;
+  /**
+   * Set for a component's preset (the Booking button, a Button, 2.11), whose `type` is
+   * {@link presetKey}'s. A click places it; it can't be dragged, as the canvas drags in components.
+   */
+  readonly preset?: true;
 };
 
-/** The components `tab` offers, in library order. */
+/** What joins a preset's component and its id in its item's `type`: "Button#booking". */
+const PRESET_MARK = "#";
+
+/** The `type` of an Add item for component `type`'s preset `id`: "Button#booking". */
+export function presetKey(type: string, id: string): string {
+  return `${type}${PRESET_MARK}${id}`;
+}
+
+/**
+ * What an Add item's `type` places: its component, with its preset's values over its defaults if
+ * it is a preset's ({@link presetKey}). `undefined` for a component or preset the library lacks.
+ */
+function placed(
+  library: ComponentLibrary,
+  key: string,
+): { readonly type: string; readonly values: Readonly<Record<string, unknown>> } | undefined {
+  const [type = key, id] = key.split(PRESET_MARK);
+  const definition = library.components[type];
+  if (definition === undefined) return undefined;
+  if (id === undefined) return { type, values: {} };
+  const preset = definition.presets?.find((each) => each.id === id);
+  return preset === undefined ? undefined : { type, values: preset.values };
+}
+
+/** The components `tab` offers, in library order, each followed by its presets. */
 export function addItems(library: ComponentLibrary, tab: AddTab): AddItem[] {
   const place = tab === "sections" ? "section" : "element";
   return Object.entries(library.components)
     .filter(([, def]) => (def.place ?? "element") === place)
-    .map(([type, def]) => ({ type, label: def.label, category: def.category ?? "" }));
+    .flatMap(([type, def]) => {
+      const category = def.category ?? "";
+      return [
+        { type, label: def.label, category },
+        ...(def.presets ?? []).map((preset) => ({
+          type: presetKey(type, preset.id),
+          label: preset.label,
+          category,
+          preset: true as const,
+        })),
+      ];
+    });
 }
 
 /** The site's shared sections, by name, as the Sections tab offers them first (F-ED-23). */
@@ -273,25 +313,38 @@ export function insertAt(content: NodeDoc[], target: AddTarget, nodes: readonly 
 /** The parts of an editor session adding uses. */
 export type AddSession = Pick<EditorSession, "history" | "ui" | "edit" | "library">;
 
-/** Where a click on `type` would add it on the shown page, if anywhere. */
+/**
+ * Where a click on `type` (a component's, or a preset's, {@link presetKey}) would add it on the
+ * shown page, if anywhere.
+ */
 export function addTargetFor(
   session: AddSession,
   type: string,
   point?: InsertPoint,
 ): AddTarget | undefined {
+  const component = placed(session.library, type)?.type;
+  if (component === undefined) return undefined;
   const content = currentPage(session)?.doc.content ?? [];
-  return addTarget(session.library, content, type, session.ui.getState().nodeId, point);
+  return addTarget(session.library, content, component, session.ui.getState().nodeId, point);
 }
 
 /**
- * Adds a new `type`, with its defaults, to the shown page where {@link addTarget} puts it, as one
- * "Added …" step that selects it. Returns whether it was added.
+ * Adds a new `key` (a component's type, or a preset's, {@link presetKey}), with its defaults and
+ * a preset's values, to the shown page where {@link addTarget} puts it, as one "Added …" step that
+ * selects it. Returns whether it was added.
  */
-export function addComponent(session: AddSession, type: string, point?: InsertPoint): boolean {
+export function addComponent(session: AddSession, key: string, point?: InsertPoint): boolean {
+  const added = placed(session.library, key);
+  const type = added?.type ?? key;
   const definition = session.library.components[type];
   const page = currentPage(session)?.doc;
-  const target = addTargetFor(session, type, point);
-  if (definition === undefined || page === undefined || target === undefined) {
+  const target = addTargetFor(session, key, point);
+  if (
+    added === undefined ||
+    definition === undefined ||
+    page === undefined ||
+    target === undefined
+  ) {
     return false;
   }
   const { pageId, viewport } = session.ui.getState();
@@ -309,7 +362,7 @@ export function addComponent(session: AddSession, type: string, point?: InsertPo
       // Every element in its defaults (a Columns' columns) gets an id of its own too.
       const ids = [id];
       const [node] = pastedCopies(
-        [{ type, props: { ...definition.defaults, id } } as NodeDoc],
+        [{ type, props: { ...definition.defaults, ...added.values, id } } as NodeDoc],
         new Set(),
         () => ids.shift() ?? newId("node"),
       );

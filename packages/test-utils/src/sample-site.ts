@@ -331,6 +331,30 @@ export function sampleSite(): SiteSnapshot {
                     type: "Heading",
                     props: { id: "thanks-heading", text: "Thank you", size: "large" },
                   },
+                  // What happens next, in Tabs (2.11): tabs with the script, panels without.
+                  {
+                    type: "Tabs",
+                    props: {
+                      id: "next",
+                      tabs: [
+                        ["order", "Your order", "We bake it the day before you collect it."],
+                        ["collect", "Collecting", "Come to the shop from 9 am."],
+                        ["questions", "Questions", "Call us, or reply to our email."],
+                      ].map(([id, label, words]) => ({
+                        type: "Tab",
+                        props: {
+                          id: `next-${id}`,
+                          label,
+                          content: [
+                            {
+                              type: "Text",
+                              props: { id: `next-${id}-text`, text: `<p>${words}</p>` },
+                            },
+                          ],
+                        },
+                      })),
+                    },
+                  },
                   ...Array.from({ length: 16 }, (_, index) => ({
                     type: "Spacer",
                     props: { id: `thanks-space-${index}`, height: "xlarge" },

@@ -1,5 +1,6 @@
 import { basic } from "./basic.js";
 import { carousel } from "./carousel.js";
+import { commerce } from "./commerce.js";
 import { contactDetails } from "./contactDetails.js";
 import { elements } from "./elements.js";
 import { embeds } from "./embeds.js";
@@ -9,6 +10,7 @@ import { gallery } from "./gallery.js";
 import { layout } from "./layout.js";
 import { sections } from "./sections.js";
 import { shared } from "./shared.js";
+import { tabs } from "./tabs.js";
 import { testimonials } from "./testimonials.js";
 
 /**
@@ -29,6 +31,8 @@ export const componentFamilies = {
   forms,
   features,
   testimonials,
+  commerce,
+  tabs,
 } as const;
 
 /** Site components: element names, their fields, exported-site text and the starter page. */
@@ -45,4 +49,6 @@ export const components = {
   ...forms,
   ...features,
   ...testimonials,
+  ...commerce,
+  ...tabs,
 } as const;

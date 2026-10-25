@@ -151,6 +151,11 @@ export const site = {
   "site.binding.formHint.insecure": "The form address must start with https://",
   "site.binding.formHint.noAddress":
     "Add the form address your newsletter service gives you, in the Edit panel",
+  // An element without what it needs yet (2.11), on the canvas.
+  "site.binding.elementHint.videoAddress": "Add a YouTube or Vimeo address in the Edit panel",
+  "site.binding.elementHint.mapAddress": "Add an address or a map link in the Edit panel",
+  "site.binding.elementHint.paymentLink":
+    "Add the payment link (https://…) from Stripe, PayPal or your shop, in the Edit panel",
   "site.settings.title": "Site Settings",
   "site.settings.description": "Details that apply to the whole site, wherever they appear.",
   "site.settings.sections": "Site Settings sections",

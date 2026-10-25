@@ -29,7 +29,7 @@ import {
 
 const ALIGNMENTS = ["left", "centre", "right"] as const;
 /** Where an element sits across its section: Left, Centre or Right. */
-const ALIGNMENT_FIELD = {
+export const ALIGNMENT_FIELD = {
   kind: "select",
   label: t("field.alignment"),
   options: ALIGNMENTS.map((value) => ({ label: t(`field.alignment.${value}`), value })),
@@ -149,8 +149,8 @@ const BUTTON_KIND = {
   secondary: { small: "secondarySmall", medium: "secondary", large: "secondaryLarge" },
   outline: { small: "outlineSmall", medium: "outline", large: "outlineLarge" },
 } as const satisfies Record<string, Record<string, keyof typeof BUTTON_CLASSES>>;
-/** A Button across its section, by its alignment. */
-const BUTTON_ALIGN_CLASS = {
+/** A Button across its section, by its alignment (the Buy button's too). */
+export const BUTTON_ALIGN_CLASS = {
   left: "justify-start",
   centre: "justify-center",
   right: "justify-end",
@@ -187,6 +187,15 @@ const button = defineComponent({
     size: "medium",
     alignment: "left",
   },
+  // A Booking button (F-CM-7): a Button to the owner's booking page, whatever service it is on.
+  // No provider presets and no script of theirs (GA3, Q4).
+  presets: [
+    {
+      id: "booking",
+      label: t("element.bookingButton"),
+      values: { label: t("starter.bookingLabel") },
+    },
+  ],
   render: ({ values, context }) => {
     const label = values.label.trim();
     return (
