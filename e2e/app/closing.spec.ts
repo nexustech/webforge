@@ -26,6 +26,28 @@ test("kills an app whose process hasn't exited once closing has taken too long",
   expect(ended(child)).toBe(true);
 });
 
+test("kills a process outright that doesn't end when told to", async () => {
+  // Ignores SIGTERM where it can (macOS, Linux); Windows ends a process at once either way.
+  const child = spawn(
+    process.execPath,
+    ["-e", "process.on('SIGTERM', () => {}); setInterval(() => {}, 1000)"],
+    { stdio: "ignore" },
+  );
+  // Started, so its SIGTERM handler is in place.
+  await new Promise((resolve) => setTimeout(resolve, 500));
+  const app = closingWithin(
+    { close: () => new Promise<void>(() => undefined), process: () => child },
+    200,
+    500,
+  );
+
+  const start = Date.now();
+  await app.close();
+
+  expect(Date.now() - start).toBeLessThan(5_000);
+  expect(ended(child)).toBe(true);
+});
+
 test("closes once, however often it's asked: a test, then its afterEach", async () => {
   const child = endless();
   let closes = 0;
