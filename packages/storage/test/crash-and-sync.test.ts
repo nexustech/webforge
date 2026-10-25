@@ -73,7 +73,9 @@ describe("cloud-synced folders", () => {
     await writer.waitForCommits(2);
     const copyDir = tempDir();
     const copies: string[] = [];
-    while (copies.length < 60) {
+    // 30 copies: the writer grows the file with every commit, so each later copy is larger to copy
+    // and to integrity-check. Locally a third to a half of them are torn and refused (#392).
+    while (copies.length < 30) {
       const copy = join(copyDir, `copy-${copies.length}.wforge`);
       copyFileSync(path, copy);
       copies.push(copy);
@@ -99,7 +101,7 @@ describe("cloud-synced folders", () => {
     const store = ProjectStore.open(path);
     expect(seqOf(store, "menu")).toBeGreaterThanOrEqual(writer.lastAcknowledged());
     store.close();
-    // 60 copies, each opened and integrity-checked: about 80 s on CI's macOS runners.
+    // 60 copies took 80–132 s on CI's macOS runners (#392); 30 take about half the time.
   }, 120_000);
 
   it("keeps every commit in the .wforge itself, unlike WAL (why we use the rollback journal)", () => {
