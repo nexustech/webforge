@@ -92,3 +92,65 @@ describe("the Map (F-CM-4, 1.17)", () => {
     expect(html(map({}))).not.toContain("data-wf-embed");
   });
 });
+
+describe("the Embed video and Embed map elements (2.11, F-CM-4)", () => {
+  const element = (type: string, props: Record<string, unknown>): NodeDoc => ({
+    type,
+    props: { id: "embed", ...siteLibrary.components[type]?.defaults, ...props },
+  });
+  /** The canvas's context: a hint where an element lacks what it needs. */
+  const canvas: RenderContext = {
+    ...EDITOR_RENDER_CONTEXT,
+    elementHint: (missing) => `Missing: ${missing}`,
+  };
+
+  it("shows the sections' click-to-load player among a section's elements, named as given", () => {
+    const drawn = html(
+      element("EmbedVideo", { address: "https://vimeo.com/76979871", name: "Our oven" }),
+    );
+
+    expect(drawn).toContain('class="site-embed-video');
+    expect(drawn).toContain('data-src="https://player.vimeo.com/video/76979871?dnt=1"');
+    expect(drawn).toContain('data-title="Our oven"');
+    expect(drawn).toContain("Play the video from Vimeo");
+  });
+
+  it("shows a map of the address in Site Settings when bound to it", () => {
+    const drawn = html(element("EmbedMap", { bindings: { address: "contact.address" } }), {
+      ...EDITOR_RENDER_CONTEXT,
+      setting: () => "1 High Street, Hightown",
+    });
+
+    expect(drawn).toContain("https://www.google.com/maps?q=1%20High%20Street%2C%20Hightown");
+    expect(drawn).toContain(`data-title="${t("siteText.embed.mapTitle")}"`);
+  });
+
+  it("shows nothing without an address, and on the canvas a hint saying what to add", () => {
+    expect(html(element("EmbedVideo", {}))).toBe("");
+    expect(html(element("EmbedMap", {}))).toBe("");
+    expect(html(element("EmbedMap", {}), canvas)).toContain("Missing: mapAddress");
+    // Any text is a map's address, but only a YouTube or Vimeo link is a video.
+    const notVideo = html(element("EmbedVideo", { address: "https://example.com/film" }), canvas);
+    expect(notVideo).toContain("Missing: videoAddress");
+    expect(notVideo).not.toContain("data-wf-embed");
+  });
+
+  it("says on the canvas to fill in Site Settings when bound to an empty address", () => {
+    const bound = element("EmbedMap", { bindings: { address: "contact.address" } });
+
+    const drawn = html(bound, { ...canvas, emptySetting: (key) => `Empty: ${key}` });
+
+    expect(drawn).toContain("Empty: contact.address");
+    expect(drawn).not.toContain("Missing");
+  });
+
+  it("needs the embed behaviour, and animate for an entrance", () => {
+    const behavioursOf = (values: Record<string, unknown>) => {
+      const behaviours = siteLibrary.components.EmbedVideo?.behaviours;
+      return typeof behaviours === "function" ? behaviours(values) : behaviours;
+    };
+
+    expect(behavioursOf({})).toEqual(["embed"]);
+    expect(behavioursOf({ entrance: "fade" })).toEqual(["embed", "animate"]);
+  });
+});
