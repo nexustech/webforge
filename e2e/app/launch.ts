@@ -193,11 +193,14 @@ export function closingWithin<App extends Pick<ElectronApplication, "close" | "p
 const CANVAS_START_TIMEOUT_MS = 30_000;
 
 /**
- * Waits until `page`'s canvas shows the site with its compiled CSS (1.12). The CSS changes the
- * layout when it arrives, so clicks, drags and measurements wait for it.
+ * Waits until `page`'s canvas shows the site with its compiled CSS (1.12) and the fonts it uses.
+ * Both change the layout when they arrive (a heading set in its font is wider or narrower), so
+ * clicks, hovers, drags and measurements wait for them.
  */
 export async function waitForCanvas(page: Page): Promise<void> {
-  await expect(
-    page.frameLocator(".editor__canvas iframe").locator("style[data-webforge-site-css]"),
-  ).toHaveCount(1, { timeout: CANVAS_START_TIMEOUT_MS });
+  const canvas = page.frameLocator(".editor__canvas iframe");
+  await expect(canvas.locator("style[data-webforge-site-css]")).toHaveCount(1, {
+    timeout: CANVAS_START_TIMEOUT_MS,
+  });
+  await canvas.locator("body").evaluate(() => document.fonts.ready.then(() => undefined));
 }
