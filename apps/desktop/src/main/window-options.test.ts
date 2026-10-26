@@ -1,9 +1,9 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { TITLE_BAR_HEIGHT } from "../shared/title-bar.js";
 import {
   mainWindowPlacement,
-  TITLE_BAR_HEIGHT,
   titleBarOptions,
   titleBarOverlay,
   windowBackground,
