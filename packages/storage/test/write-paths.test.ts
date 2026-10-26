@@ -4,7 +4,7 @@ import { createSite } from "@webforge/model";
 import { tempDirFactory } from "@webforge/test-utils";
 import Database from "better-sqlite3";
 import { describe, expect, it } from "vitest";
-import { ProjectStore } from "../src/index.js";
+import { DEFAULT_EXPORT_CHOICES, ProjectStore } from "../src/index.js";
 
 // Opening checks a project's content against the fingerprint every write records (#295). A write
 // that changed documents, assets or versions without recording it would make a healthy file open
@@ -29,6 +29,7 @@ const READERS = [
   "readAsset",
   "listAssets",
   "readEditorMode",
+  "readExportChoices",
   "backupTo",
   "close",
 ];
@@ -51,6 +52,7 @@ const WRITERS: Record<string, (store: ProjectStore) => unknown> = {
     }),
   saveVersion: (store) => store.saveVersion("Before the change", "manual"),
   writeEditorMode: (store) => store.writeEditorMode("content"),
+  writeExportChoices: (store) => store.writeExportChoices(DEFAULT_EXPORT_CHOICES),
   collectGarbage: (store) => store.collectGarbage(),
 };
 
