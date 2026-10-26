@@ -20,6 +20,26 @@ const PAIRS = [
   ["accent", "accent-content", "colour.role.secondAccent"],
 ] as const;
 
+/** A Media image's thumbnail, which is all a palette needs. */
+const thumbnailUrl = (item: ImageMeta) => mediaImageUrl(item, "thumbnail");
+
+/** What choosing `image` shows: the colours it proposes for `theme`, or why there are none. */
+async function proposalFor(
+  image: ImageMeta,
+  theme: ThemeTokens,
+  imageUrl: (item: ImageMeta) => string,
+  read: (url: string) => Promise<ArrayLike<number>>,
+): Promise<Shown> {
+  let pixels: ArrayLike<number>;
+  try {
+    pixels = await read(imageUrl(image));
+  } catch {
+    return { problem: t("theme.image.unreadable") };
+  }
+  const proposal = brandFromImage(imageColours(pixels), theme);
+  return proposal === undefined ? { problem: t("theme.image.noColours") } : { image, proposal };
+}
+
 /** Props of {@link StudioImagePalette}. */
 export type StudioImagePaletteProps = {
   readonly media: SiteDoc["media"];
@@ -42,7 +62,7 @@ export function StudioImagePalette({
   media,
   theme,
   onUse,
-  imageUrl = (item) => mediaImageUrl(item, "thumbnail"),
+  imageUrl = thumbnailUrl,
   read = readPixels,
 }: StudioImagePaletteProps) {
   const [picking, setPicking] = useState(false);
@@ -53,14 +73,7 @@ export function StudioImagePalette({
 
   const propose = async (image: ImageMeta) => {
     setPicking(false);
-    try {
-      const proposal = brandFromImage(imageColours(await read(imageUrl(image))), theme);
-      setShown(
-        proposal === undefined ? { problem: t("theme.image.noColours") } : { image, proposal },
-      );
-    } catch {
-      setShown({ problem: t("theme.image.unreadable") });
-    }
+    setShown(await proposalFor(image, theme, imageUrl, read));
   };
 
   return (
