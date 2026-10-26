@@ -24,12 +24,18 @@ function templateSummary({ template, thumbnail }: TemplateFolder): TemplateSumma
 
 /**
  * Registers the `templates` IPC calls (2.14a): the templates the app ships, as `templates` gives
- * them (read once, from the folder the installer puts beside app.asar).
+ * them (read once, from the folder the installer puts beside app.asar). Their summaries, thumbnails
+ * and all, are made once too, when first listed: they never change while the app runs, and each
+ * New Site would otherwise read and encode every thumbnail again on the main thread (#456 review).
  */
 export function registerTemplatesHandlers(
   ipc: Pick<IpcMain, "handle">,
   isTrustedSender: (senderUrl: string) => boolean,
   templates: () => readonly TemplateFolder[],
 ): void {
-  registerIpcHandler(ipc, "listTemplates", isTrustedSender, () => templates().map(templateSummary));
+  let summaries: readonly TemplateSummary[] | undefined;
+  registerIpcHandler(ipc, "listTemplates", isTrustedSender, () => {
+    summaries ??= templates().map(templateSummary);
+    return [...summaries];
+  });
 }

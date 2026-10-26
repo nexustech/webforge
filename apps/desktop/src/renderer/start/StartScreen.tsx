@@ -56,7 +56,9 @@ export type StartScreenProps = {
  */
 export function StartScreen({ info, project, templates, app, restart, locale }: StartScreenProps) {
   const [registry] = useState(createCommandRegistry);
-  const [recent, setRecent] = useState<readonly RecentSite[]>([]);
+  // Unknown until main first answers: neither the welcome nor the list shows before then, so a
+  // returning user never sees the first start's welcome flash past (#456 review).
+  const [recent, setRecent] = useState<readonly RecentSite[]>();
   const [message, setMessage] = useState<string>();
   // Read once: the effects below must not run again just because this component re-renders.
   const [api] = useState(() => project ?? window.webforge.project);
@@ -72,7 +74,10 @@ export function StartScreen({ info, project, templates, app, restart, locale }: 
       (sites) => {
         if (current) setRecent(sites);
       },
-      () => undefined,
+      // A list that can't be read is an empty one: the welcome says how to start.
+      () => {
+        if (current) setRecent([]);
+      },
     );
     return () => {
       current = false;
@@ -82,7 +87,7 @@ export function StartScreen({ info, project, templates, app, restart, locale }: 
   const run = async (request: () => ReturnType<ProjectApi["open"]>) => {
     setMessage(await openSiteWith(request, restart));
     // A site that turned out to be missing has left the list.
-    setRecent(await api.listRecent().catch(() => recent));
+    setRecent(await api.listRecent().catch(() => recent ?? []));
   };
 
   /** Changes the Recent list with `change`, saying so if it can't, as Open's failures are. */
@@ -95,7 +100,7 @@ export function StartScreen({ info, project, templates, app, restart, locale }: 
       setMessage(t("site.start.listFailed"));
     }
     // Main orders the list: pinned sites first.
-    setRecent(await api.listRecent().catch(() => recent));
+    setRecent(await api.listRecent().catch(() => recent ?? []));
   };
 
   return (
@@ -121,7 +126,7 @@ export function StartScreen({ info, project, templates, app, restart, locale }: 
                   </TabsTrigger>
                 </TabsList>
                 <TabsContent value="recent" className="bg-transparent">
-                  {recent.length === 0 ? (
+                  {recent === undefined ? null : recent.length === 0 ? (
                     <Welcome info={info} onOpen={() => void run(() => api.open())} />
                   ) : (
                     <RecentSites
