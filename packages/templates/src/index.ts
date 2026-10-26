@@ -1,5 +1,6 @@
 export type { Template, TemplateCategory, TemplateId, TemplateImage } from "./template.js";
 export {
+  BLANK_TEMPLATE_ID,
   imageManifestSchema,
   siteFromTemplate,
   TEMPLATE_CATEGORIES,

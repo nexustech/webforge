@@ -100,6 +100,7 @@ describe("registerClipboardHandlers (1.25)", () => {
         new Promise((resolve) => {
           answer = resolve;
         }),
+      holdsElements: async () => true,
     };
     const invoke = handlers(createElementClipboard(system, join(dir, "kept")), project);
     // Nothing reaches the file, whichever way the bytes would be stored.

@@ -11,6 +11,10 @@ describe("buildContentSecurityPolicy", () => {
     expect(csp).not.toContain("unsafe-eval");
   });
 
+  it("lets no frame load anything (R13d)", () => {
+    expect(buildContentSecurityPolicy()).toMatch(/(^|; )frame-src 'none'(;|$)/);
+  });
+
   it("allows inline styles, which the canvas engine injects, but no inline scripts", () => {
     const csp = buildContentSecurityPolicy();
 

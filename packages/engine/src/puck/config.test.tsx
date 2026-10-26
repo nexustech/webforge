@@ -81,6 +81,8 @@ describe("toPuckConfig", () => {
         contentEditable: true,
         options: RICH_TEXT_OPTIONS,
         renderInlineMenu: FormatToolbar,
+        // The editor's name (#465).
+        tiptap: { extensions: [expect.objectContaining({ name: "webforgeEditorName" })] },
       },
       size: { type: "select", label: "Size", options: [{ label: "Large", value: "large" }] },
       any: { type: "slot", label: "Anything" },

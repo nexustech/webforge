@@ -1,11 +1,10 @@
 import { join } from "node:path";
 import { DEFAULT_THEME } from "@webforge/model";
 import type { ProjectStore } from "@webforge/storage";
-import { siteFromTemplate } from "@webforge/templates";
-import type { TemplateFolder } from "@webforge/templates/node";
+import { BLANK_TEMPLATE_ID, siteFromTemplate, type TemplateId } from "@webforge/templates";
+import { readTemplate, type TemplateFolder } from "@webforge/templates/node";
 import { themePreset } from "@webforge/themes";
 import type { NewSiteRequest } from "../shared/ipc/project.js";
-import { starterSite } from "../shared/starter-site.js";
 import type { StorageWriter } from "./storage-writer.js";
 
 /** What New Site makes of a new site (2.14a): its name, and what writes its content. */
@@ -13,6 +12,18 @@ export type NewSiteFill = {
   readonly name: string;
   readonly fill: (target: NewSiteTarget) => Promise<void>;
 };
+
+/** Reads the shipped template `id`, or throws when it is missing or doesn't pass its schemas. */
+export type TemplateReader = (id: TemplateId) => TemplateFolder;
+
+/**
+ * Reads templates one at a time from `dir`, the folder the app ships them in: New Site reads only
+ * the template it makes, so a damaged one never stops another, Blank included (2.15c).
+ */
+export const shippedTemplateReader =
+  (dir: string): TemplateReader =>
+  (id) =>
+    readTemplate(id, dir);
 
 /** What came of putting a file into the new site: stored under `hash`, or not. */
 type NewSiteImport =
@@ -46,9 +57,9 @@ export function newSiteImporter(
 
 /**
  * Writes the site New Site asked for into a new site's file (2.14a, F-SITE-1): the template's
- * pages, Header and Footer, menu and settings, with its images as Media assets, or the Blank site
- * without one. Named as typed, in the chosen theme preset (the default theme for a preset this
- * build doesn't have). Main does it, since the images go into the site file.
+ * pages, Header and Footer, menu and settings, with its images as Media assets, or the Blank
+ * template's without one (2.15c). Named as typed, in the chosen theme preset (the default theme
+ * for a preset this build doesn't have). Main does it, since the images go into the site file.
  *
  * The images go through the storage writer, off the main thread as imports do (R13b), and each
  * must be stored under the hash its manifest gives, which the site's Media items name: a shipped
@@ -58,17 +69,10 @@ export function newSiteImporter(
 export async function fillNewSite(
   target: NewSiteTarget,
   request: NewSiteRequest,
-  templates: () => readonly TemplateFolder[],
+  template: TemplateReader,
 ): Promise<void> {
   const theme = themePreset(request.theme) ?? DEFAULT_THEME;
-  if (request.template === undefined) {
-    target.store.saveSite(starterSite({ name: request.name, theme }));
-    return;
-  }
-  const folder = templates().find((each) => each.template.id === request.template);
-  if (folder === undefined) {
-    throw new Error(`No template ${request.template}`);
-  }
+  const folder = template(request.template ?? BLANK_TEMPLATE_ID);
   for (const image of folder.images) {
     const outcome = await target.importFile(
       image.mediaId,

@@ -15,6 +15,7 @@
     { "path": "./packages/publish" },
     { "path": "./packages/site-components" },
     { "path": "./packages/site-components/tsconfig.behaviours.json" },
+    { "path": "./packages/site-components/tsconfig.storybook.json" },
     { "path": "./packages/storage" },
     { "path": "./packages/templates" },
     { "path": "./packages/test-utils" },

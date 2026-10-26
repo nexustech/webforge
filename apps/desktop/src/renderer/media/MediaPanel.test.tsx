@@ -97,6 +97,13 @@ const lastLabel = () => {
 const media = () => session.history.document.getState().media;
 
 describe("MediaPanel", () => {
+  it("draws without the preload API, which only its actions use (Storybook, 2.16)", async () => {
+    // As in Storybook: no window.webforge, and no media API given.
+    await act(async () => root.render(<MediaPanel session={session} />));
+
+    expect(container.textContent).toContain("No images or files yet.");
+  });
+
   it("says when there is nothing yet, and adds files from the dialog", async () => {
     const { media: api } = await render();
     expect(container.textContent).toContain("No images or files yet.");

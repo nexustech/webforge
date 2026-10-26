@@ -16,6 +16,7 @@ import { THEME_PRESETS } from "@webforge/themes";
 import { describe, expect, it } from "vitest";
 import { readTemplate, readTemplates, TEMPLATES_DIR } from "../src/node.js";
 import {
+  BLANK_TEMPLATE_ID,
   imageManifestSchema,
   siteFromTemplate,
   TEMPLATE_IDS,
@@ -51,9 +52,9 @@ describe("the shipped templates (2.14a)", () => {
 
   it("list every image they have, as the files are: hash, type and size (S5)", () => {
     for (const { template, images, imagesDir } of templates) {
-      expect(readdirSync(imagesDir).toSorted(), template.id).toEqual(
-        images.map((image) => image.file).toSorted(),
-      );
+      // Blank has no photos, so no images/ folder (git keeps no empty folder).
+      const files = existsSync(imagesDir) ? readdirSync(imagesDir) : [];
+      expect(files.toSorted(), template.id).toEqual(images.map((image) => image.file).toSorted());
       for (const image of images) {
         const bytes = new Uint8Array(readFileSync(join(imagesDir, image.file)));
         expect(createHash("sha256").update(bytes).digest("hex"), image.file).toBe(image.hash);
@@ -117,6 +118,53 @@ describe("the shipped templates (2.14a)", () => {
 
   it("offer at least one example for Try an example (PG-3)", () => {
     expect(templates.some(({ template }) => template.example)).toBe(true);
+  });
+
+  it("have a business type, all but Blank (2.15c)", () => {
+    for (const { template } of templates) {
+      expect(template.category === null, template.id).toBe(template.id === BLANK_TEMPLATE_ID);
+    }
+    const [{ template }] = templates as [(typeof templates)[number]];
+    expect(templateSchema.safeParse({ ...template, category: null }).success).toBe(false);
+    expect(
+      templateSchema.safeParse({ ...template, id: BLANK_TEMPLATE_ID, category: "food" }).success,
+    ).toBe(false);
+  });
+
+  it("have generated placeholders until their real photos are chosen (Q6, refined 26 Oct 2026)", () => {
+    for (const { images } of templates) {
+      for (const image of images) {
+        if (image.source.startsWith("http")) continue;
+        expect(image.source, image.file).toMatch(/^Generated for Webforge/);
+        expect(image.licence, image.file).toBe("CC0-1.0");
+      }
+    }
+  });
+});
+
+describe("the Blank template (2.15c)", () => {
+  const blank = readTemplate(BLANK_TEMPLATE_ID);
+
+  it("is Home, About and Contact, each a short skeleton, with no photos", () => {
+    const { site } = blank.template;
+    const pages = site.pageOrder.flatMap((id) => {
+      const page = site.pages[id];
+      return page?.kind === "page" ? [page] : [];
+    });
+    expect(pages.map((page) => [page.slug, page.title])).toEqual([
+      ["home", "Home"],
+      ["about", "About"],
+      ["contact", "Contact"],
+    ]);
+    for (const page of pages) {
+      expect(
+        page.doc.content.map((node) => node.type),
+        page.slug,
+      ).toEqual(["Section"]);
+    }
+    expect(site.menu.items).toHaveLength(pages.length);
+    expect(blank.images).toEqual([]);
+    expect(blank.template.example).toBe(false);
   });
 });
 

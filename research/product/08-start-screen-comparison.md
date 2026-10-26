@@ -1,6 +1,6 @@
 # Start screen comparison (2.14b)
 
-**Status:** 🟡 Proposed (SC-1…SC-4, 26 Oct 2026), for the product owner's review with 2.14b's screenshots; within LF-10 ([07](07-look-and-feel-pass.md)) and the product owner's feedback of 25 Oct 2026 on #430: compare the start screen with other builders', not only Bootstrap Studio's; give it larger type than the editor's compact density (UI1); put the logo, name and version block on the left. No days change.
+**Status:** ✅ Decided (SC-1…SC-4, product owner, 26 Oct 2026), after reviewing 2.14b's screenshots (#456); within LF-10 ([07](07-look-and-feel-pass.md)) and the product owner's feedback of 25 Oct 2026 on #430: compare the start screen with other builders', not only Bootstrap Studio's; give it larger type than the editor's compact density (UI1); put the logo, name and version block on the left. No days change.
 
 The start screen is the first thing a person sees. It isn't an editing surface, so it should read at a comfortable size and say plainly what to do next.
 
@@ -20,9 +20,9 @@ The start screen is the first thing a person sees. It isn't an editing surface, 
 - the first start, with nothing made yet, says how to begin rather than showing an empty list: Mobirise asks, Pinegrow points at a template, Elements shows the starting points;
 - help is one click from the first screen.
 
-## Proposals
+## Decisions
 
-| ID | Proposal |
+| ID | Decision |
 |---|---|
 | SC-1 | **Larger type.** The start screen uses a reading density, not the editor's compact one. The name block, the section headings and the actions are a size or two up from the panels, with full-height buttons (40 px) and larger card text. The title bar keeps the editor's size, as it is the same window chrome. |
 | SC-2 | **The logo, name and version block** at the top of the left column, as LF-10 describes. Webforge has no logo yet, so a placeholder mark (`AppMark`: a Lucide icon in the brand colour, in a rounded tile) stands in until one is designed: [#454](https://github.com/nexustech/webforge/issues/454), with the app icon and the installer art, needs the product owner's design decision. |

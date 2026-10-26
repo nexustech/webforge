@@ -2,6 +2,7 @@ import type { BrowserWindow } from "electron";
 import type { createFlushOnClose } from "./flush-on-close.js";
 import { log, logFailure } from "./log.js";
 import type { PreferencesStore } from "./preferences.js";
+import { defaultTimers, type Timers } from "./timers.js";
 
 /** The parts of a window the lifecycle brings forward; a fake in tests. */
 type MainWindow = Pick<BrowserWindow, "isMinimized" | "restore" | "show" | "focus">;
@@ -52,17 +53,6 @@ export class AppLifecycle<W extends MainWindow = BrowserWindow> {
 
 /** How long quitting waits for the site to close before it exits anyway. */
 const QUIT_CLOSE_WAIT_MS = 10_000;
-
-/** Timers, injectable so tests can use fake ones. */
-type Timers = {
-  setTimeout(callback: () => void, ms: number): unknown;
-  clearTimeout(handle: unknown): void;
-};
-
-const defaultTimers: Timers = {
-  setTimeout: (callback, ms) => globalThis.setTimeout(callback, ms),
-  clearTimeout: (handle) => globalThis.clearTimeout(handle as ReturnType<typeof setTimeout>),
-};
 
 /**
  * Closes the site, then exits, whatever closing does: at most {@link QUIT_CLOSE_WAIT_MS}, and a

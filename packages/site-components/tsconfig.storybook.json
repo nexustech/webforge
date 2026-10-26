@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // The Storybook's preview and keyboard check run in the stories' browser (2.16).
+    "lib": ["es2024", "dom", "dom.iterable"],
+    "jsx": "react-jsx",
+    "outDir": "${configDir}/dist/storybook"
+  },
+  "include": [".storybook/preview.tsx", ".storybook/keyboard.ts", "src/raw.d.ts"],
+  "references": [{ "path": "." }, { "path": "../themes" }]
+}

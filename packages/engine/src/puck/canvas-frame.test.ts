@@ -5,20 +5,48 @@ import { NO_VIEW_OPTIONS } from "./engine-support.js";
 
 const stopEnabled = vi.fn();
 const stopViewOptions = vi.fn();
+const stopGroups = vi.fn();
 vi.mock("./enabled-elements.js", () => ({ keepElementsEnabled: vi.fn(() => stopEnabled) }));
 vi.mock("./view-options.js", () => ({ applyViewOptions: vi.fn(() => stopViewOptions) }));
+vi.mock("./element-roles.js", () => ({ keepElementsGroups: vi.fn(() => stopGroups) }));
 const { keepElementsEnabled } = await import("./enabled-elements.js");
+const { keepElementsGroups } = await import("./element-roles.js");
 const { applyViewOptions } = await import("./view-options.js");
 
 afterEach(() => {
   vi.clearAllMocks();
   document.head.replaceChildren();
   document.body.className = "";
+  document.title = "";
+  document.documentElement.removeAttribute("lang");
 });
 
 const siteCss = () => document.head.querySelector("[data-webforge-site-css]")?.textContent;
 
 describe("CanvasFrame (R8)", () => {
+  it("names its document after the site, in the site's language, set before or after (#465)", () => {
+    const frame = createCanvasFrame(() => undefined);
+
+    frame.setDocumentInfo({ title: "Rosa's Bakery", language: "en-GB" });
+    expect(document.title).toBe("");
+    frame.attach(document);
+    expect(document.title).toBe("Rosa's Bakery");
+    expect(document.documentElement.lang).toBe("en-GB");
+
+    frame.setDocumentInfo({ title: "Rosa's" });
+    expect(document.title).toBe("Rosa's");
+    expect(document.documentElement.hasAttribute("lang")).toBe(false);
+  });
+
+  it("keeps the elements' wrappers groups while there is a document (#465)", () => {
+    const frame = createCanvasFrame(() => undefined);
+
+    frame.attach(document);
+    expect(keepElementsGroups).toHaveBeenCalledWith(document);
+    frame.detach();
+    expect(stopGroups).toHaveBeenCalledOnce();
+  });
+
   it("shows the site's CSS set before the canvas has a document, and later changes at once", () => {
     const frame = createCanvasFrame(() => undefined);
 

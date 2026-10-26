@@ -10,7 +10,7 @@ import { defineConfig } from "@playwright/test";
 // The templates' thumbnails (2.14b) are a project of their own: each template's home page, built by
 // the pipeline, screenshotted beside the template (`packages/templates/templates/<id>/`), in the
 // same container, so CI checks them as it does the stories. `pnpm template-thumbnails` rewrites
-// them.
+// them. Every page of every template is another (2.16): axe and screenshots on Desktop and Mobile.
 const EDITOR_PORT = 6107;
 const SITE_PORT = 6108;
 
@@ -42,6 +42,9 @@ export default defineConfig({
       // A desktop page's first screen; cards show it scaled down.
       use: { viewport: { width: 1280, height: 800 } },
     },
+    // Every page of every template, on Desktop and Mobile (2.16): axe, and screenshots beside the
+    // stories'.
+    { name: "template-pages", testMatch: /template-pages\.spec\.ts$/, timeout: 120_000 },
   ],
   webServer: [
     {

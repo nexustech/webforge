@@ -1,6 +1,7 @@
 import type { BrowserWindow } from "electron";
 import { logFailure } from "./log.js";
 import type { PreferencesStore } from "./preferences.js";
+import { defaultTimers, type Timers } from "./timers.js";
 
 /** The parts of a `BrowserWindow` remembering its state uses; a fake in tests. */
 export type StatefulWindow = Pick<
@@ -18,17 +19,6 @@ export type StatefulWindow = Pick<
       | "close",
     listener: () => void,
   ): unknown;
-};
-
-/** Timers, injectable so tests can use fake ones. */
-type Timers = {
-  setTimeout(callback: () => void, ms: number): unknown;
-  clearTimeout(handle: unknown): void;
-};
-
-const defaultTimers: Timers = {
-  setTimeout: (callback, ms) => globalThis.setTimeout(callback, ms),
-  clearTimeout: (handle) => globalThis.clearTimeout(handle as ReturnType<typeof setTimeout>),
 };
 
 /** How long after the last move or resize the window's state is saved. */

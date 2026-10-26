@@ -97,7 +97,8 @@ export function MediaPanel({
     pages: number;
     shared: readonly string[];
   }>();
-  const api = media ?? window.webforge.media;
+  // Read when the panel acts, not as it draws: Storybook draws it without the preload API (2.16).
+  const api = () => media ?? window.webforge.media;
   const list = Object.values(items);
   // Undo or another change can take the chosen item away.
   const selected = selectedId === undefined ? undefined : items[selectedId];
@@ -114,7 +115,7 @@ export function MediaPanel({
     setDragging(false);
     const files = [...event.dataTransfer.files];
     if (files.length > 0) {
-      void importWith(() => importDrop(files, api));
+      void importWith(() => importDrop(files, api()));
     }
   };
 
@@ -142,7 +143,7 @@ export function MediaPanel({
           type="button"
           size="sm"
           variant="outline"
-          onClick={() => void importWith(() => api.choose(siteSession()))}
+          onClick={() => void importWith(() => api().choose(siteSession()))}
         >
           <ImagePlusIcon />
           {t("site.media.add")}
@@ -193,7 +194,7 @@ export function MediaPanel({
             imageUrl={imageUrl}
             onReplace={() =>
               // The first chosen file takes the item's place; it isn't added as an item of its own.
-              void importItems(() => api.choose(siteSession()), notify).then(([replacement]) => {
+              void importItems(() => api().choose(siteSession()), notify).then(([replacement]) => {
                 if (replacement !== undefined) replaceMedia(session, selected.id, replacement);
               })
             }

@@ -1,4 +1,5 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { clickOnCanvas } from "./canvas-click.js";
 import { placeCaret } from "./caret.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
 
@@ -49,7 +50,7 @@ async function selectHeading(): Promise<void> {
   const heading = canvas().locator("h1");
   const box = await heading.boundingBox();
   if (box === null) throw new Error("Heading not visible");
-  await heading.click({ position: { x: box.width * 0.97, y: box.height - 2 } });
+  await clickOnCanvas(heading, { position: { x: box.width * 0.97, y: box.height - 2 } });
   await expect(quickAction("Move down")).toBeVisible();
 }
 
@@ -308,7 +309,10 @@ test.describe("keyboard and floating add", () => {
     const header = canvas().locator("header").first();
     const box = await header.boundingBox();
     if (box === null) throw new Error("Header not visible");
-    await header.click({ modifiers: ["ControlOrMeta"], position: { x: 4, y: box.height - 4 } });
+    await clickOnCanvas(header, {
+      modifiers: ["ControlOrMeta"],
+      position: { x: 4, y: box.height - 4 },
+    });
     await expect(
       page.getByRole("region", { name: "Right panels" }).getByText("2 elements selected"),
     ).toBeVisible();
