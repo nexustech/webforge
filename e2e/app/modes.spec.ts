@@ -5,6 +5,7 @@ import { type ElectronApplication, expect, type Page, test } from "@playwright/t
 import { createSite, type MediaId } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
 import { heroPhoto } from "@webforge/test-utils";
+import { clickOnCanvas } from "./canvas-click.js";
 import { placeCaret } from "./caret.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
 import { chooseFromMenu, hasMenuItem } from "./menus.js";
@@ -45,7 +46,7 @@ const action = (page: Page, title: "Duplicate" | "Delete") =>
 
 /** Selects the starter heading, so Puck shows its action bar for it. */
 async function selectHeading(page: Page): Promise<void> {
-  await canvas(page).locator("h1").click();
+  await clickOnCanvas(canvas(page).locator("h1"));
   await expect(action(page, "Duplicate")).toBeVisible();
 }
 
@@ -203,7 +204,7 @@ test.describe("editor modes", () => {
     await expect(edit.getByText("https://book.example")).toBeVisible();
 
     // A list item added to the FAQ.
-    await frame.locator(".site-faq h2").click();
+    await clickOnCanvas(frame.locator(".site-faq h2"));
     await edit.getByRole("button", { name: "Add Question" }).click();
     await expect(frame.locator(".site-faq-item")).toHaveCount(2);
   });

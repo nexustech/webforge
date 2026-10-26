@@ -1,0 +1,809 @@
+{
+  "id": "consultant",
+  "category": "services",
+  "example": false,
+  "site": {
+    "formatVersion": 7,
+    "settings": {
+      "general": {
+        "name": "Hartley Advisory",
+        "language": "en"
+      },
+      "address": {},
+      "social": {
+        "profiles": []
+      },
+      "contact": {
+        "openingHours": [],
+        "email": "hello@example.com",
+        "phone": "+44 20 7946 0000"
+      },
+      "search": {
+        "allowIndexing": true,
+        "includeSitemap": true
+      },
+      "analytics": {
+        "consentBanner": true
+      },
+      "forms": {},
+      "publish": {
+        "destinations": []
+      },
+      "allowedExternalUrls": []
+    },
+    "theme": {
+      "preset": "meridian",
+      "scheme": "light",
+      "colors": {
+        "base-100": {
+          "l": 0.975,
+          "c": 0.006,
+          "h": 90
+        },
+        "base-200": {
+          "l": 0.945,
+          "c": 0.01,
+          "h": 90
+        },
+        "base-300": {
+          "l": 0.9,
+          "c": 0.014,
+          "h": 90
+        },
+        "base-content": {
+          "l": 0.25,
+          "c": 0.02,
+          "h": 240
+        },
+        "primary": {
+          "l": 0.45,
+          "c": 0.07,
+          "h": 215
+        },
+        "primary-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        },
+        "secondary": {
+          "l": 0.48,
+          "c": 0.06,
+          "h": 60
+        },
+        "secondary-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        },
+        "accent": {
+          "l": 0.47,
+          "c": 0.05,
+          "h": 160
+        },
+        "accent-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        },
+        "neutral": {
+          "l": 0.27,
+          "c": 0.02,
+          "h": 240
+        },
+        "neutral-content": {
+          "l": 0.975,
+          "c": 0.006,
+          "h": 90
+        },
+        "info": {
+          "l": 0.45,
+          "c": 0.14,
+          "h": 245
+        },
+        "info-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        },
+        "success": {
+          "l": 0.45,
+          "c": 0.12,
+          "h": 150
+        },
+        "success-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        },
+        "warning": {
+          "l": 0.84,
+          "c": 0.15,
+          "h": 85
+        },
+        "warning-content": {
+          "l": 0.2,
+          "c": 0.02,
+          "h": 85
+        },
+        "error": {
+          "l": 0.48,
+          "c": 0.19,
+          "h": 27
+        },
+        "error-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        }
+      },
+      "inverse": {
+        "base-100": {
+          "l": 0.26,
+          "c": 0.03,
+          "h": 225
+        },
+        "base-200": {
+          "l": 0.3,
+          "c": 0.033,
+          "h": 225
+        },
+        "base-300": {
+          "l": 0.35,
+          "c": 0.036,
+          "h": 225
+        },
+        "base-content": {
+          "l": 0.96,
+          "c": 0.006,
+          "h": 90
+        },
+        "primary": {
+          "l": 0.82,
+          "c": 0.06,
+          "h": 215
+        },
+        "primary-content": {
+          "l": 0.22,
+          "c": 0.03,
+          "h": 225
+        },
+        "secondary": {
+          "l": 0.84,
+          "c": 0.06,
+          "h": 70
+        },
+        "secondary-content": {
+          "l": 0.22,
+          "c": 0.03,
+          "h": 225
+        },
+        "accent": {
+          "l": 0.83,
+          "c": 0.05,
+          "h": 160
+        },
+        "accent-content": {
+          "l": 0.22,
+          "c": 0.03,
+          "h": 225
+        },
+        "neutral": {
+          "l": 0.95,
+          "c": 0.006,
+          "h": 90
+        },
+        "neutral-content": {
+          "l": 0.26,
+          "c": 0.03,
+          "h": 225
+        },
+        "info": {
+          "l": 0.78,
+          "c": 0.1,
+          "h": 245
+        },
+        "info-content": {
+          "l": 0.2,
+          "c": 0.03,
+          "h": 245
+        },
+        "success": {
+          "l": 0.78,
+          "c": 0.12,
+          "h": 150
+        },
+        "success-content": {
+          "l": 0.2,
+          "c": 0.03,
+          "h": 150
+        },
+        "warning": {
+          "l": 0.84,
+          "c": 0.15,
+          "h": 85
+        },
+        "warning-content": {
+          "l": 0.2,
+          "c": 0.02,
+          "h": 85
+        },
+        "error": {
+          "l": 0.75,
+          "c": 0.13,
+          "h": 27
+        },
+        "error-content": {
+          "l": 0.2,
+          "c": 0.03,
+          "h": 27
+        }
+      },
+      "fonts": {
+        "heading": {
+          "family": "Lora",
+          "fallback": "serif"
+        },
+        "body": {
+          "family": "Work Sans",
+          "fallback": "sans-serif"
+        }
+      },
+      "radius": {
+        "box": "m",
+        "field": "m",
+        "selector": "m"
+      },
+      "border": "thin",
+      "effects": {
+        "depth": false,
+        "noise": false
+      },
+      "spacing": "normal",
+      "typeScale": {
+        "h1": {
+          "size": "5xl",
+          "weight": 600,
+          "leading": "tight"
+        },
+        "h2": {
+          "size": "3xl",
+          "weight": 600,
+          "leading": "tight"
+        },
+        "h3": {
+          "size": "xl",
+          "weight": 600,
+          "leading": "tight"
+        },
+        "h4": {
+          "size": "lg",
+          "weight": 600,
+          "leading": "normal"
+        },
+        "h5": {
+          "size": "base",
+          "weight": 600,
+          "leading": "normal"
+        },
+        "h6": {
+          "size": "sm",
+          "weight": 600,
+          "leading": "normal"
+        },
+        "body": {
+          "size": "lg",
+          "weight": 400,
+          "leading": "relaxed"
+        },
+        "small": {
+          "size": "sm",
+          "weight": 400,
+          "leading": "normal"
+        }
+      },
+      "links": {
+        "underline": "always"
+      },
+      "buttons": {
+        "shape": "rounded",
+        "size": "m",
+        "style": "filled"
+      },
+      "shadow": "soft",
+      "headings": {
+        "case": "normal",
+        "tracking": "normal"
+      },
+      "cards": {
+        "style": "raised"
+      },
+      "images": {
+        "corners": "rounded"
+      },
+      "sections": {
+        "rhythm": "alternating"
+      }
+    },
+    "layout": {
+      "header": [
+        {
+          "type": "Header",
+          "props": {
+            "id": "header",
+            "siteName": "Hartley Advisory",
+            "bindings": {
+              "siteName": "general.name"
+            }
+          }
+        }
+      ],
+      "footer": [
+        {
+          "type": "Footer",
+          "props": {
+            "id": "footer",
+            "text": "Hartley Advisory · Business advice for small firms"
+          }
+        }
+      ]
+    },
+    "pages": {
+      "jCUMUx5lXz9bV2pE": {
+        "id": "jCUMUx5lXz9bV2pE",
+        "kind": "page",
+        "slug": "home",
+        "title": "Home",
+        "settings": {
+          "hideHeader": false,
+          "hideFooter": false,
+          "hideFromNavigation": false
+        },
+        "doc": {
+          "root": {
+            "props": {}
+          },
+          "content": [
+            {
+              "type": "Hero",
+              "props": {
+                "variant": "split",
+                "colors": "page",
+                "alignment": "left",
+                "title": "Clear advice for growing businesses",
+                "text": "I help owners of small businesses plan, price and grow, with straight answers and no jargon.",
+                "buttonLabel": "Book a free call",
+                "buttonLink": {
+                  "kind": "page",
+                  "pageId": "5pvnZYpDDLeQ1PJz",
+                  "newTab": false
+                },
+                "image": {
+                  "mediaId": "M2aG1VvmAmNFa5X2"
+                },
+                "id": "hero-1"
+              }
+            },
+            {
+              "type": "Features",
+              "props": {
+                "variant": "cards",
+                "colors": "page",
+                "title": "How I can help",
+                "text": "<p>Practical help with the parts of running a business that keep you up at night.</p>",
+                "items": [
+                  {
+                    "type": "Feature",
+                    "props": {
+                      "id": "feature-0",
+                      "icon": "compass",
+                      "title": "Planning",
+                      "text": "<p>A one-page plan for the year ahead, with goals you can measure and steps you can take on Monday.</p>"
+                    }
+                  },
+                  {
+                    "type": "Feature",
+                    "props": {
+                      "id": "feature-1",
+                      "icon": "piggy-bank",
+                      "title": "Pricing",
+                      "text": "<p>Prices that cover your costs, reward your time and still win the work you want.</p>"
+                    }
+                  },
+                  {
+                    "type": "Feature",
+                    "props": {
+                      "id": "feature-2",
+                      "icon": "users",
+                      "title": "People",
+                      "text": "<p>Hiring your first employee, writing roles and keeping a small team pulling the same way.</p>"
+                    }
+                  }
+                ],
+                "id": "features-2"
+              }
+            },
+            {
+              "type": "Testimonials",
+              "props": {
+                "variant": "cards",
+                "colors": "page",
+                "title": "What clients say",
+                "items": [
+                  {
+                    "type": "Testimonial",
+                    "props": {
+                      "id": "testimonial-0",
+                      "quote": "Jo helped us raise our prices with confidence. We lost no customers and gained a day a week.",
+                      "name": "Sam Patel",
+                      "role": "Owner, Patel Joinery"
+                    }
+                  },
+                  {
+                    "type": "Testimonial",
+                    "props": {
+                      "id": "testimonial-1",
+                      "quote": "The planning day was the best money we spent all year. We still use the one-page plan.",
+                      "name": "Rachel Moore",
+                      "role": "Director, Little Steps Nursery"
+                    }
+                  },
+                  {
+                    "type": "Testimonial",
+                    "props": {
+                      "id": "testimonial-2",
+                      "quote": "Straight answers, no jargon, and always on the end of the phone when it mattered.",
+                      "name": "Owen Price",
+                      "role": "Founder, Price & Daughters"
+                    }
+                  }
+                ],
+                "id": "testimonials-3"
+              }
+            },
+            {
+              "type": "CallToAction",
+              "props": {
+                "variant": "banner",
+                "colors": "inverse",
+                "title": "Not sure where to start?",
+                "text": "Book a free 30-minute call. We'll talk about your business and I'll tell you honestly whether I can help.",
+                "buttonLabel": "Book a free call",
+                "buttonLink": {
+                  "kind": "page",
+                  "pageId": "5pvnZYpDDLeQ1PJz",
+                  "newTab": false
+                },
+                "id": "calltoaction-4"
+              }
+            }
+          ]
+        }
+      },
+      "MHAAJ27xf6DhgbHd": {
+        "id": "MHAAJ27xf6DhgbHd",
+        "kind": "not-found",
+        "slug": "page-not-found",
+        "title": "Page not found",
+        "settings": {
+          "hideHeader": false,
+          "hideFooter": false,
+          "hideFromNavigation": true
+        },
+        "doc": {
+          "root": {
+            "props": {}
+          },
+          "content": [
+            {
+              "type": "Section",
+              "props": {
+                "id": "section-1",
+                "padding": {
+                  "top": "l",
+                  "bottom": "l"
+                },
+                "content": [
+                  {
+                    "type": "Heading",
+                    "props": {
+                      "id": "heading-1",
+                      "text": "Sorry, this page doesn't exist",
+                      "size": "large"
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "id": "text-1",
+                      "text": "<p>It may have moved or been renamed. Use the menu above to find what you're looking for.</p>"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "HPBEA4fY5A4bVDE0": {
+        "id": "HPBEA4fY5A4bVDE0",
+        "kind": "page",
+        "slug": "services",
+        "title": "Services",
+        "settings": {
+          "hideHeader": false,
+          "hideFooter": false,
+          "hideFromNavigation": false
+        },
+        "doc": {
+          "root": {
+            "props": {}
+          },
+          "content": [
+            {
+              "type": "Pricing",
+              "props": {
+                "variant": "cards",
+                "colors": "page",
+                "title": "Ways to work together",
+                "text": "<p>Fixed prices, agreed before we start. No hourly surprises.</p>",
+                "items": [
+                  {
+                    "type": "PricingPlan",
+                    "props": {
+                      "id": "plan-0",
+                      "name": "Health check",
+                      "price": "£450",
+                      "period": "one-off",
+                      "details": "<p>A half-day review of your numbers, prices and plans, with a written report and three things to do first.</p>",
+                      "buttonLabel": "Get in touch",
+                      "link": {
+                        "kind": "page",
+                        "pageId": "5pvnZYpDDLeQ1PJz",
+                        "newTab": false
+                      },
+                      "featured": false,
+                      "badge": ""
+                    }
+                  },
+                  {
+                    "type": "PricingPlan",
+                    "props": {
+                      "id": "plan-1",
+                      "name": "Monthly adviser",
+                      "price": "£600",
+                      "period": "a month",
+                      "details": "<p>A monthly meeting, help between meetings by phone and email, and a quarterly review of your plan.</p>",
+                      "buttonLabel": "Get in touch",
+                      "link": {
+                        "kind": "page",
+                        "pageId": "5pvnZYpDDLeQ1PJz",
+                        "newTab": false
+                      },
+                      "featured": true,
+                      "badge": "Most chosen"
+                    }
+                  },
+                  {
+                    "type": "PricingPlan",
+                    "props": {
+                      "id": "plan-2",
+                      "name": "Strategy day",
+                      "price": "£1,200",
+                      "period": "a day",
+                      "details": "<p>A full day with you and your team to agree where the business is going and how it gets there.</p>",
+                      "buttonLabel": "Get in touch",
+                      "link": {
+                        "kind": "page",
+                        "pageId": "5pvnZYpDDLeQ1PJz",
+                        "newTab": false
+                      },
+                      "featured": false,
+                      "badge": ""
+                    }
+                  }
+                ],
+                "id": "pricing-5"
+              }
+            },
+            {
+              "type": "Faq",
+              "props": {
+                "variant": "accordion",
+                "colors": "page",
+                "title": "Questions",
+                "items": [
+                  {
+                    "type": "FaqItem",
+                    "props": {
+                      "id": "faq-0",
+                      "question": "Who do you work with?",
+                      "answer": "<p>Owners of businesses with up to 50 people: shops, trades, nurseries, studios and services.</p>"
+                    }
+                  },
+                  {
+                    "type": "FaqItem",
+                    "props": {
+                      "id": "faq-1",
+                      "question": "Do you work remotely?",
+                      "answer": "<p>Yes. Most meetings are by video, and I visit in person when it helps.</p>"
+                    }
+                  },
+                  {
+                    "type": "FaqItem",
+                    "props": {
+                      "id": "faq-2",
+                      "question": "Is the first call really free?",
+                      "answer": "<p>Yes. Thirty minutes, no obligation and no sales pitch.</p>"
+                    }
+                  },
+                  {
+                    "type": "FaqItem",
+                    "props": {
+                      "id": "faq-3",
+                      "question": "How do I pay?",
+                      "answer": "<p>By bank transfer, monthly for the adviser service and on completion for the rest.</p>"
+                    }
+                  }
+                ],
+                "id": "faq-6"
+              }
+            }
+          ]
+        }
+      },
+      "W6X2OTQVLebmagIt": {
+        "id": "W6X2OTQVLebmagIt",
+        "kind": "page",
+        "slug": "about",
+        "title": "About",
+        "settings": {
+          "hideHeader": false,
+          "hideFooter": false,
+          "hideFromNavigation": false
+        },
+        "doc": {
+          "root": {
+            "props": {}
+          },
+          "content": [
+            {
+              "type": "TextImage",
+              "props": {
+                "variant": "imageLeft",
+                "colors": "page",
+                "title": "About me",
+                "text": "<p>I'm Jo Hartley. I ran a family business for twelve years before I started advising others, so I know what it's like to sign the cheques.</p><p>Since 2015 I've helped more than 200 small businesses plan better, price with confidence and grow without losing what makes them good.</p>",
+                "image": {
+                  "mediaId": "ut1J6IfE4SpnxU8G"
+                },
+                "id": "textimage-7"
+              }
+            },
+            {
+              "type": "Stats",
+              "props": {
+                "variant": "row",
+                "colors": "inverse",
+                "title": "In numbers",
+                "text": "<p>Results from the businesses I've worked with.</p>",
+                "items": [
+                  {
+                    "type": "Stat",
+                    "props": {
+                      "id": "stat-0",
+                      "number": "200+",
+                      "label": "businesses advised"
+                    }
+                  },
+                  {
+                    "type": "Stat",
+                    "props": {
+                      "id": "stat-1",
+                      "number": "18%",
+                      "label": "average rise in profit in year one"
+                    }
+                  },
+                  {
+                    "type": "Stat",
+                    "props": {
+                      "id": "stat-2",
+                      "number": "4.9",
+                      "label": "average review"
+                    }
+                  }
+                ],
+                "id": "stats-8"
+              }
+            }
+          ]
+        }
+      },
+      "5pvnZYpDDLeQ1PJz": {
+        "id": "5pvnZYpDDLeQ1PJz",
+        "kind": "page",
+        "slug": "contact",
+        "title": "Contact",
+        "settings": {
+          "hideHeader": false,
+          "hideFooter": false,
+          "hideFromNavigation": false
+        },
+        "doc": {
+          "root": {
+            "props": {}
+          },
+          "content": [
+            {
+              "type": "ContactForm",
+              "props": {
+                "colors": "page",
+                "title": "Book a free call",
+                "text": "<p>Tell me a little about your business and what's on your mind. I'll reply within one working day.</p>",
+                "askPhone": true,
+                "buttonLabel": "Send",
+                "id": "contactform-9"
+              }
+            },
+            {
+              "type": "ContactDetails",
+              "props": {
+                "variant": "split",
+                "colors": "inverse",
+                "title": "Or get in touch directly",
+                "text": "<p>I'm happy to talk things through on the phone.</p>",
+                "showHours": false,
+                "showContact": true,
+                "id": "contactdetails-10"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "pageOrder": [
+      "jCUMUx5lXz9bV2pE",
+      "HPBEA4fY5A4bVDE0",
+      "W6X2OTQVLebmagIt",
+      "5pvnZYpDDLeQ1PJz",
+      "MHAAJ27xf6DhgbHd"
+    ],
+    "homePageId": "jCUMUx5lXz9bV2pE",
+    "media": {},
+    "code": {
+      "css": "",
+      "js": "",
+      "head": "",
+      "bodyEnd": ""
+    },
+    "menu": {
+      "follows": "pages",
+      "items": [
+        {
+          "id": "jB4JIUmrtrSmfHvK",
+          "kind": "page",
+          "pageId": "jCUMUx5lXz9bV2pE",
+          "hidden": false
+        },
+        {
+          "id": "HKUoXkAUGUtoi3Pn",
+          "kind": "page",
+          "pageId": "HPBEA4fY5A4bVDE0",
+          "hidden": false
+        },
+        {
+          "id": "Ff9QwevPqEIq3yLV",
+          "kind": "page",
+          "pageId": "W6X2OTQVLebmagIt",
+          "hidden": false
+        },
+        {
+          "id": "SwKUW4dQpqNWrPvd",
+          "kind": "page",
+          "pageId": "5pvnZYpDDLeQ1PJz",
+          "hidden": false
+        }
+      ]
+    },
+    "sharedSections": {}
+  }
+}

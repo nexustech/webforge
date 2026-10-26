@@ -49,7 +49,7 @@ const customCode = defineComponent({
       <div className={className} style={CONTAINED}>
         <span style={LABEL_STYLE}>{t("element.customCode")}</span>
         {code.trim() === "" ? (
-          <p style={{ opacity: 0.6, fontStyle: "italic" }}>{t("field.customCode.empty")}</p>
+          <p style={{ opacity: 0.75, fontStyle: "italic" }}>{t("field.customCode.empty")}</p>
         ) : (
           // biome-ignore lint/security/noDangerouslySetInnerHtml: sanitised, for the editor's view.
           <div dangerouslySetInnerHTML={{ __html: sanitizeCustomCode(code) }} />

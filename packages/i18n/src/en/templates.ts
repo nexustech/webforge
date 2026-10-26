@@ -36,6 +36,15 @@ export const templates = {
   "template.sample.name": "Sample bakery",
   "template.sample.description":
     "A bakery's home page and About page: a photo, what it offers, what customers say and an invitation to visit.",
+  "template.consultant.name": "Consultant",
+  "template.consultant.description":
+    "An adviser's site: what they help with, what clients say, services and prices with questions answered, their story and a contact form.",
+  "template.photographer.name": "Photographer / Portfolio",
+  "template.photographer.description":
+    "A photographer's site: a full-width photo, recent work, a portfolio gallery, sessions and prices, their story and a contact form.",
+  "template.shop.name": "Shop",
+  "template.shop.description":
+    "A small shop's site: bestsellers with Buy buttons, why to buy, a page of products, the makers' story, opening hours and a contact form.",
   "template.personal.name": "Personal / CV",
   "template.personal.description":
     "A freelancer's site: a portrait, what they do and what clients say, their experience, a gallery of work and a contact form.",
@@ -50,6 +59,10 @@ export const templates = {
   "theme.preset.atelier": "Atelier",
   "theme.preset.workshop": "Workshop",
   "theme.preset.clarity": "Clarity",
+  "theme.preset.meridian": "Meridian",
+  "theme.preset.darkroom": "Darkroom",
+  "theme.preset.market": "Market",
+  "theme.preset.gazette": "Gazette",
   "theme.preset.harbour": "Harbour",
   "theme.preset.linen": "Linen",
   "theme.preset.studio": "Studio",

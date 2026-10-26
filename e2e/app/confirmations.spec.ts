@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { createSite, type PageId } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
+import { clickOnCanvas } from "./canvas-click.js";
 import { placeCaret } from "./caret.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
 
@@ -108,7 +109,7 @@ test("deleting an element of the shared Footer asks first; undo waits for the an
   // Selected by clicking past the end of its text (clicking the text edits it), then deleted.
   const box = await hours.boundingBox();
   if (box === null) throw new Error("Heading not visible");
-  await hours.click({ position: { x: box.width * 0.97, y: box.height - 2 } });
+  await clickOnCanvas(hours, { position: { x: box.width * 0.97, y: box.height - 2 } });
   await quickAction("Delete").click();
   await expect(confirmation()).toHaveAccessibleName("Delete Heading from the shared Footer?");
   await expect(confirmation()).toContainText("This changes 3 pages.");
@@ -144,7 +145,7 @@ test("deleting an element of the shared Footer asks first; undo waits for the an
   // Esc cancels the question, and the element stays.
   const openBox = await open.boundingBox();
   if (openBox === null) throw new Error("Heading not visible");
-  await open.click({ position: { x: openBox.width * 0.97, y: openBox.height - 2 } });
+  await clickOnCanvas(open, { position: { x: openBox.width * 0.97, y: openBox.height - 2 } });
   await quickAction("Delete").click();
   await expect(confirmation()).toBeVisible();
   await page.keyboard.press("Escape");

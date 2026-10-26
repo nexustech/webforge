@@ -18,7 +18,14 @@ import { z } from "zod";
  * `t("template.<id>.name")` and `t("template.<id>.description")`; 2.15 adds its eight here, and
  * {@link BLANK_TEMPLATE_ID}.
  */
-export const TEMPLATE_IDS = ["sample", "personal", "blank"] as const;
+export const TEMPLATE_IDS = [
+  "sample",
+  "consultant",
+  "photographer",
+  "shop",
+  "personal",
+  "blank",
+] as const;
 
 /** One of {@link TEMPLATE_IDS}. */
 export type TemplateId = (typeof TEMPLATE_IDS)[number];

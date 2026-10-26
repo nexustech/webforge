@@ -1,29 +1,13 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { createRequire } from "node:module";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { canvasAxe } from "./canvas-axe.js";
 import { placeCaret } from "./caret.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
 import { type RendererWindow, stubFileDialogs } from "./sites.js";
 
 // The start screen (F-SITE-1, F-SITE-2): new → edit → quit → reopen from the Recent list.
-
-/**
- * axe-core, as `@axe-core/playwright` has it: run in the canvas's own frame (2.15c), which
- * AxeBuilder's frame handling in Electron doesn't reach on every platform.
- */
-const AXE_SOURCE = readFileSync(
-  createRequire(createRequire(import.meta.url).resolve("@axe-core/playwright")).resolve(
-    "axe-core/axe.min.js",
-  ),
-  "utf8",
-);
-
-type AxeResults = {
-  readonly violations: readonly { readonly id: string; readonly help: string }[];
-  readonly passes: readonly unknown[];
-};
 
 // The Blank template's home page (2.15c).
 const STARTER_HEADING = "Welcome";
@@ -160,29 +144,8 @@ test("makes a Personal / CV site in under 3 s, accessible on the canvas (2.15c)"
   await expect(canvas(page).locator("section img").first()).not.toHaveJSProperty("naturalWidth", 0);
 
   // The page as the canvas draws it, inside its frame, what the editor adds to it included (#465):
-  // the frame's title and language, and the inline editors' names. One rule stays off: dnd-kit
-  // makes Puck's wrapper around each element a button, with the element's links and text inside
-  // (nested-interactive). As a group the canvas tests' clicks no longer reach the elements (#465).
-  const frame = await page.locator(".editor__canvas iframe").elementHandle();
-  const canvasFrame = await frame?.contentFrame();
-  if (canvasFrame === null || canvasFrame === undefined) throw new Error("No canvas frame");
-  await canvasFrame.evaluate(AXE_SOURCE);
-  const results = await canvasFrame.evaluate(
-    async (tags) => {
-      const { axe } = window as unknown as {
-        axe: { run(context: Document, options: object): Promise<AxeResults> };
-      };
-      const { violations, passes } = await axe.run(document, {
-        runOnly: { type: "tag", values: tags },
-        rules: { "nested-interactive": { enabled: false } },
-      });
-      return {
-        violations: violations.map(({ id, help }) => ({ id, help })),
-        passes: passes.length,
-      };
-    },
-    ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"],
-  );
+  // the frame's title and language, the inline editors' names and the elements' wrappers.
+  const results = await canvasAxe(page);
   expect(results.violations.map((violation) => `${violation.id}: ${violation.help}`)).toEqual([]);
   // It checked the page: rules passed inside the frame.
   expect(results.passes).toBeGreaterThan(5);
