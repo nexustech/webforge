@@ -94,7 +94,7 @@ Research 08 flagged this as unverified. `listForms` (`GET /sites/:id/forms`) and
   - `fileTransferError` maps FTP reply codes, SSH sign-in levels, SFTP status codes, socket and DNS codes, and TLS certificate codes to `PublishError` codes, with `untrusted-host` added for both protocols.
   - The host's reply can echo the user name or a path, so it stays in `cause` only.
 - **Tested** against local servers in `packages/publish` (`ftp.test.ts`, `sftp.test.ts`):
-  - `ftp-srv` for FTP and FTPS, with a self-signed certificate `openssl` makes when the tests load (the repository keeps no keys; without `openssl` the tests run over plain FTP and the certificate test skips);
+  - a small FTP server of the tests' own (`ftp-server.test-helper.ts`, on Node's `net` and `tls`: the commands `basic-ftp` sends, with `AUTH TLS` and `PROT P`) for FTP and FTPS, with a self-signed certificate `openssl` makes when the tests load (the repository keeps no keys; without `openssl` the tests run over plain FTP and the certificate test skips). Not `ftp-srv`: it is unmaintained, and its `ip` dependency has an unpatched high advisory;
   - `ssh2`'s `Server` over a temporary folder for SFTP.
 
   They cover a second publish sending only the changed file, removals that leave other people's files alone, cancel mid-publish, a wrong password, a missing folder, an unreachable host, and an untrusted certificate or host key.
