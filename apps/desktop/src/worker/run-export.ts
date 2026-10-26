@@ -1,24 +1,25 @@
 import {
   BuildError,
-  buildSite,
-  type ImageCache,
+  type Pipeline,
   type PipelineResources,
   type StoredMedia,
   WriteError,
   writeSiteFolder,
 } from "@webforge/pipeline";
-import { siteLibrary } from "@webforge/site-components";
 import { FONT_CATALOGUE } from "@webforge/themes";
 import type { ExportJob, ExportOutcome } from "../shared/export-worker-protocol.js";
+import type { ExportProgress } from "../shared/ipc/site.js";
 
-/** What an export reaches outside the worker: the site's stored bytes, a cancel, a cache. */
+/** What an export reaches outside the worker: the site's stored bytes, a cancel, its pipeline. */
 export type ExportChannel = {
   /** The bytes the open site stores under a hash, asked of the main process one at a time (R15). */
   readonly readMedia: (hash: string) => Promise<StoredMedia | undefined>;
   /** Aborted when the main process cancels the export. */
   readonly signal: AbortSignal;
-  /** Encoded images of earlier exports, so an unchanged image isn't encoded again. */
-  readonly imageCache?: ImageCache | undefined;
+  /** The open site's pipeline, which keeps what earlier exports made that this one can use (3.1). */
+  readonly pipeline: Pipeline;
+  /** Told as the export reaches each stage. */
+  readonly onProgress?: ((progress: ExportProgress) => void) | undefined;
 };
 
 /** Builds the site of `job` and writes it to its destination; never throws. */
@@ -37,18 +38,29 @@ export async function runExport(
       readFont: async (face: { readonly file: string }) => fonts.get(face.file),
       fonts: [...FONT_CATALOGUE, ...job.families],
       readMedia: channel.readMedia,
-      ...(channel.imageCache === undefined ? {} : { imageCache: channel.imageCache }),
     };
-    const built = await buildSite(job.snapshot, siteLibrary, resources, { signal: channel.signal });
-    await writeSiteFolder(built.files, job.destination, channel.signal);
-    return {
-      type: "exported",
-      pages: built.report.pages,
-      files: built.report.files,
-      bytes: built.report.bytes,
-      warnings: built.report.warnings.length,
-      durationMs: Math.round(performance.now() - started),
-    };
+    const events = channel.pipeline.build(job.snapshot, resources, {
+      mode: "export",
+      signal: channel.signal,
+    });
+    for await (const event of events) {
+      if (event.stage !== "done") {
+        channel.onProgress?.(event);
+        continue;
+      }
+      const built = event.site;
+      channel.onProgress?.({ stage: "writing" });
+      await writeSiteFolder(built.files, job.destination, channel.signal);
+      return {
+        type: "exported",
+        pages: built.report.pages,
+        files: built.report.files,
+        bytes: built.report.bytes,
+        warnings: built.report.warnings.length,
+        durationMs: Math.round(performance.now() - started),
+      };
+    }
+    return { type: "failed", code: "build-failed", detail: "unexpected" };
   } catch (error) {
     if (
       (error instanceof BuildError || error instanceof WriteError) &&

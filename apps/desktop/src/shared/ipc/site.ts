@@ -75,6 +75,22 @@ const exportResultSchema = z.discriminatedUnion("status", [
 /** Outcome of exporting the site to a folder. */
 export type ExportResult = z.infer<typeof exportResultSchema>;
 
+/**
+ * How far an export has come (3.1): the stage it has started, and for images and pages which one
+ * (from 0) of how many. `writing` is the folder being written.
+ */
+export const exportProgressSchema = z.discriminatedUnion("stage", [
+  z.strictObject({
+    stage: z.enum(["images", "pages"]),
+    done: z.int().nonnegative(),
+    total: z.int().nonnegative(),
+  }),
+  z.strictObject({ stage: z.enum(["styles", "fonts", "writing"]) }),
+]);
+
+/** How far an export has come. */
+export type ExportProgress = z.infer<typeof exportProgressSchema>;
+
 /** IPC channels of the `site` domain (`site:*`). */
 export const siteChannels = {
   /**
@@ -86,10 +102,29 @@ export const siteChannels = {
     request: z.tuple([exportRequestSchema]),
     response: exportResultSchema,
   },
+  /**
+   * Cancels the export under way, if there is one (3.1): it stops before its next image or page
+   * and answers `canceled`, changing nothing on disk.
+   */
+  cancelExport: {
+    channel: "site:cancel-export",
+    request: z.tuple([]),
+    response: z.null(),
+  },
+} as const;
+
+/** Messages the main process sends to the renderer in the `site` domain. */
+export const siteEvents = {
+  /** How far the export under way has come. */
+  exportProgress: { channel: "site:export-progress", args: z.tuple([exportProgressSchema]) },
 } as const;
 
 /** `window.webforge.site`. */
 export interface SiteApi {
   /** Shows a folder dialog, then builds the site and writes it there. */
   export(request: ExportRequest): Promise<ExportResult>;
+  /** Cancels the export under way, if there is one. */
+  cancelExport(): Promise<null>;
+  /** Tells `listener` how far exports come, until the returned function is called. */
+  onExportProgress(listener: (progress: ExportProgress) => void): () => void;
 }
