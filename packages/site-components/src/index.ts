@@ -57,7 +57,7 @@ export {
   UnknownComponentError,
   walkNodes,
 } from "./render-static.js";
-export { sanitizeRichText } from "./rich-text.js";
+export { sanitizeRichText } from "./rich-text-html.js";
 export type {
   BehaviourName,
   ComponentPlace,

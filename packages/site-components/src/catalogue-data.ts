@@ -14,6 +14,9 @@ import {
 import { z } from "zod";
 import data from "./catalogue-data.json" with { type: "json" };
 
+// Rich text from outside the editor is cleaned as the editor's is (4.8).
+export { sanitizeStoredRichText } from "./rich-text-html.js";
+
 const optionSchema = z.strictObject({ label: z.string(), value: z.string() });
 
 /** What every field has, whatever its kind. */

@@ -23,6 +23,9 @@ export type AiWindow = {
   };
 };
 
+/** The environment variable E2E tests launch Webforge with, to ask it as an AI app would. */
+export const E2E_AI_VARIABLE = "WEBFORGE_E2E_AI";
+
 /** Forwards AI apps' requests to the open site's window (F-AI-1); the MCP server (4.9) uses it. */
 export type AiBridge = {
   /**
@@ -38,6 +41,20 @@ export type AiBridge = {
  * (`@webforge/commands`) and answers with `ai:answer`. The renderer says with `ai:listening`
  * whether a site is open to ask.
  */
+/**
+ * Puts `ai` on main's globals (`webforgeAi`) for the E2E tests, which reach main through
+ * Playwright's Electron launcher: only in an unpackaged app launched with `WEBFORGE_E2E_AI=1`, as
+ * the tests launch it. Never in the installed app, nor in `pnpm dev`. Only main's own code can
+ * read its globals.
+ */
+export function exposeForE2eTests(
+  ai: AiBridge,
+  packaged: boolean,
+  env: NodeJS.ProcessEnv = process.env,
+): void {
+  if (!packaged && env[E2E_AI_VARIABLE] === "1") Object.assign(globalThis, { webforgeAi: ai });
+}
+
 export function registerAiHandlers(
   ipc: Pick<IpcMain, "handle">,
   isTrustedSender: (senderUrl: string) => boolean,
