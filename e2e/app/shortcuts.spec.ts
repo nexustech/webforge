@@ -1,4 +1,5 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { clickOnCanvas } from "./canvas-click.js";
 import { placeCaret } from "./caret.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
 import { chooseFromMenu } from "./menus.js";
@@ -37,7 +38,7 @@ async function selectHeading(): Promise<void> {
   const heading = canvas().locator(".site-heading");
   const box = await heading.boundingBox();
   if (box === null) throw new Error("Heading not visible");
-  await heading.click({ position: { x: box.width * 0.97, y: box.height - 2 } });
+  await clickOnCanvas(heading, { position: { x: box.width * 0.97, y: box.height - 2 } });
 }
 
 test("lists every shortcut in a sheet, from the Help menu and from ?", async () => {

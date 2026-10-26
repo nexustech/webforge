@@ -1,4 +1,5 @@
 import { type ElectronApplication, expect, type Locator, type Page, test } from "@playwright/test";
+import { clickOnCanvas } from "./canvas-click.js";
 import { type Box, below, boxOf, drag } from "./drag.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
 import { chooseFromMenu } from "./menus.js";
@@ -67,7 +68,7 @@ async function selectHeading(index: number): Promise<void> {
   const heading = headings().nth(index);
   const box = await heading.boundingBox();
   if (box === null) throw new Error("Heading not visible");
-  await heading.click({ position: { x: box.width * 0.97, y: box.height - 2 } });
+  await clickOnCanvas(heading, { position: { x: box.width * 0.97, y: box.height - 2 } });
   await expect(panel().getByRole("heading", { name: "Heading", exact: true })).toBeVisible();
 }
 

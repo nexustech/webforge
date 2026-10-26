@@ -160,9 +160,7 @@ test("makes a Personal / CV site in under 3 s, accessible on the canvas (2.15c)"
   await expect(canvas(page).locator("section img").first()).not.toHaveJSProperty("naturalWidth", 0);
 
   // The page as the canvas draws it, inside its frame, what the editor adds to it included (#465):
-  // the frame's title and language, and the inline editors' names. One rule stays off: dnd-kit
-  // makes Puck's wrapper around each element a button, with the element's links and text inside
-  // (nested-interactive). As a group the canvas tests' clicks no longer reach the elements (#465).
+  // the frame's title and language, the inline editors' names and the elements' wrappers.
   const frame = await page.locator(".editor__canvas iframe").elementHandle();
   const canvasFrame = await frame?.contentFrame();
   if (canvasFrame === null || canvasFrame === undefined) throw new Error("No canvas frame");
@@ -174,7 +172,6 @@ test("makes a Personal / CV site in under 3 s, accessible on the canvas (2.15c)"
       };
       const { violations, passes } = await axe.run(document, {
         runOnly: { type: "tag", values: tags },
-        rules: { "nested-interactive": { enabled: false } },
       });
       return {
         violations: violations.map(({ id, help }) => ({ id, help })),
