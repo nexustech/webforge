@@ -208,7 +208,7 @@ test("ships the templates beside app.asar, and New Site lists them (2.14a)", asy
   test.skip(child === undefined, "Needs the running packaged app");
   const dir = resourcesDir();
   if (dir !== undefined) {
-    expect(existsSync(join(dir, "templates", "sample", "template.json"))).toBe(true);
+    expect(existsSync(join(dir, "templates", "cafe", "template.json"))).toBe(true);
     // New Site makes the Blank template when no template is chosen (2.15c).
     expect(existsSync(join(dir, "templates", "blank", "template.json"))).toBe(true);
   }

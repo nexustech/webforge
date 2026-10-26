@@ -93,10 +93,10 @@ describe("the shipped templates (2.14a)", () => {
   });
 
   it("migrate a site of an older format as a site file is, and refuse a newer one", () => {
-    const raw = JSON.parse(
-      readFileSync(join(TEMPLATES_DIR, "sample", "template.json"), "utf8"),
-    ) as { site: Record<string, unknown> };
-    // Format 5 → 6 only changes a Section's padding sizes, which the sample doesn't use.
+    const raw = JSON.parse(readFileSync(join(TEMPLATES_DIR, "blank", "template.json"), "utf8")) as {
+      site: Record<string, unknown>;
+    };
+    // Format 5 → 6 only changes a Section's padding sizes, which Blank's don't depend on.
     const older = templateSchema.parse({ ...raw, site: { ...raw.site, formatVersion: 5 } });
 
     expect(older.site.formatVersion).toBe(SITE_FORMAT_VERSION);
@@ -170,17 +170,17 @@ describe("the Blank template (2.15c)", () => {
 
 describe("readTemplate (2.14a)", () => {
   it("reads a shipped template from the package's folder by default", () => {
-    expect(readTemplate("sample").template.id).toBe("sample");
+    expect(readTemplate("cafe").template.id).toBe("cafe");
   });
 
   it("refuses a folder whose template says it is another, or that has none", () => {
     const dir = mkdtempSync(join(tmpdir(), "webforge-templates-"));
     try {
-      cpSync(join(TEMPLATES_DIR, "sample"), join(dir, "other"), { recursive: true });
-      expect(() => readTemplate("other", dir)).toThrow("says it is sample");
+      cpSync(join(TEMPLATES_DIR, "cafe"), join(dir, "other"), { recursive: true });
+      expect(() => readTemplate("other", dir)).toThrow("says it is cafe");
       expect(() => readTemplate("missing", dir)).toThrow();
       // A template.json that fails its schema.
-      writeFileSync(join(dir, "other", "template.json"), JSON.stringify({ id: "sample" }));
+      writeFileSync(join(dir, "other", "template.json"), JSON.stringify({ id: "cafe" }));
       expect(() => readTemplate("other", dir)).toThrow();
     } finally {
       rmSync(dir, { recursive: true, force: true });

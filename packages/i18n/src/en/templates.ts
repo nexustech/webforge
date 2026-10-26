@@ -33,9 +33,6 @@ export const templates = {
   "template.category.shop": "Shop",
   "template.category.personal": "Personal",
   // The templates, by id (packages/templates).
-  "template.sample.name": "Sample bakery",
-  "template.sample.description":
-    "A bakery's home page and About page: a photo, what it offers, what customers say and an invitation to visit.",
   "template.consultant.name": "Consultant",
   "template.consultant.description":
     "An adviser's site: what they help with, what clients say, services and prices with questions answered, their story and a contact form.",
@@ -48,6 +45,15 @@ export const templates = {
   "template.personal.name": "Personal / CV",
   "template.personal.description":
     "A freelancer's site: a portrait, what they do and what clients say, their experience, a gallery of work and a contact form.",
+  "template.cafe.name": "Café / Restaurant",
+  "template.cafe.description":
+    "A café's site: a photo, why people come back, food from the counter, what regulars say, the menu with prices, its story and how to find it.",
+  "template.salon.name": "Salon / Beauty",
+  "template.salon.description":
+    "A salon's site: what it does, recent work and kind words, treatments and prices with questions answered, the team and a booking form.",
+  "template.trades.name": "Trades",
+  "template.trades.description":
+    "A tradesperson's site: why choose them, what they do with fixed prices, a gallery of jobs, the team and a form for a free quote.",
   "template.blank.name": "Blank site",
   "template.blank.description":
     "Home, About and Contact pages, each a heading and a line of text to replace.",

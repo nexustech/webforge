@@ -234,7 +234,7 @@ describe("StartScreen", () => {
 
   it("tries the app's example, named after it, without New Site's dialog (2.14b, PG-3)", async () => {
     const example: TemplateSummary = {
-      id: "sample",
+      id: "cafe",
       category: "food",
       example: true,
       pages: 2,
@@ -250,9 +250,9 @@ describe("StartScreen", () => {
     await act(async () => button("Try an example")?.click());
 
     expect(project.create).toHaveBeenCalledWith({
-      name: "Sample bakery",
+      name: "Café / Restaurant",
       theme: "bistro",
-      template: "sample",
+      template: "cafe",
     });
     expect(restart).toHaveBeenCalled();
   });
@@ -265,7 +265,7 @@ describe("StartScreen", () => {
 
   it("lists the shortcuts and the example on the Help tab, and runs them (2.14b)", async () => {
     const example: TemplateSummary = {
-      id: "sample",
+      id: "cafe",
       category: "food",
       example: true,
       pages: 2,
@@ -291,12 +291,12 @@ describe("StartScreen", () => {
       each.textContent?.includes("Try an Example"),
     );
     await act(async () => tryIt?.click());
-    expect(project.create).toHaveBeenCalledWith(expect.objectContaining({ template: "sample" }));
+    expect(project.create).toHaveBeenCalledWith(expect.objectContaining({ template: "cafe" }));
   });
 
   it("welcomes a first start with the ways in, each saying what it does (SC-3)", async () => {
     const example: TemplateSummary = {
-      id: "sample",
+      id: "cafe",
       category: "food",
       example: true,
       pages: 2,
