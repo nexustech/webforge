@@ -126,6 +126,14 @@ for (const build of BUILDS) {
             page.locator('[data-story-state="drawing"]'),
             `${story.title} › ${story.name} is still drawing: its panels never registered`,
           ).toHaveCount(0, { timeout: 15_000 });
+          // A play function, or the keyboard check every site component's story ends with (2.16),
+          // that fails shows Storybook's error display, not the story.
+          const failed = await page.evaluate(() =>
+            document.body.classList.contains("sb-show-errordisplay")
+              ? (document.querySelector("#error-message")?.textContent ?? "an error")
+              : null,
+          );
+          expect(failed, `${story.title} › ${story.name} failed its checks`).toBeNull();
           await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
           await page.evaluate(() => document.fonts.ready);
 

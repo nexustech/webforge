@@ -1,6 +1,7 @@
 import stylesheets from "virtual:webforge-theme-css/lazy";
 import type { Loader, Preview } from "@storybook/react-vite";
 import { THEME_PRESETS } from "@webforge/themes";
+import { checkKeyboard } from "./keyboard.js";
 
 /**
  * The themes stories show components in (2.16): Webforge's presets, each the whole stylesheet an
@@ -38,6 +39,10 @@ const applyTheme: Loader = async ({ globals }) => {
 
 const preview: Preview = {
   loaders: [applyTheme],
+  // Every story ends with the keyboard check (2.16); the theme stories' pages are in frames.
+  afterEach: async ({ canvasElement, tags }) => {
+    if (!tags.includes("own-theme")) await checkKeyboard(canvasElement);
+  },
   globalTypes: {
     theme: {
       description: "Theme",
