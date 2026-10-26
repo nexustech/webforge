@@ -44,7 +44,7 @@ Still open in Phase 0: the publishing spikes (Netlify, FTP/SFTP). The Puck large
 Current code size (approx. lines): desktop 2.7k · engine 1.6k · history 1.6k · pipeline 1.1k · site-components 1.0k · storage 0.6k · model 0.3k. `editor-ui`, `publish` and `themes` are placeholders.
 
 ## 3. Timeline
-**Total: 386.5 working days** (≈ 76 weeks of effort; 335 before the 22–27 Oct additions) including the 4-week beta. Baseline v1.0 (sequential, for the original 277 days, before the Phase 1 re-plan) at 100% of estimates: **19 Nov 2027**; with +25% contingency: **25 Feb 2028**. Re-planned at the Phase 1 exit (25 Oct 2026, below): v1.0 about **22 Jan 2027**.
+**Total: 386.5 working days** (≈ 77 weeks of effort; 335 before the 22–27 Oct additions) including the 4-week beta. Baseline v1.0 (sequential, for the original 277 days, before the Phase 1 re-plan) at 100% of estimates: **19 Nov 2027**; with +25% contingency: **25 Feb 2028**. Re-planned at the Phase 1 exit (25 Oct 2026, below): v1.0 about **22 Jan 2027**.
 
 **Re-plan, 20 Oct 2026:** Phase 1 runs in three concurrent streams (82 days of effort in about 28 working days, see [Phase 1](#phase-1-editor-core)). Phase 2–5 dates and the v1.0 date are re-planned at the Phase 1 exit review.
 
@@ -92,11 +92,11 @@ Current code size (approx. lines): desktop 2.7k · engine 1.6k · history 1.6k �
 Phase 2 is 137 days and the total 378. Neither item is on a §7 chain.
 
 **Scope change, 26 Oct 2026 (styling first, ST-8, product owner):** +8.5 days. Styling is a core concept, so it becomes a block of Phase 2 that all three streams work on before more Phase 3 work, and the three styling items planned for v1.1 join the MVP ([product/08](../research/product/08-component-styling.md) ST-8):
-- **2.22** ([#494](https://github.com/nexustech/webforge/issues/494)) splits, its 4 days unchanged: **2.22a**, the framework (2.5 days, stream A, first), and **2.22b**, its mapping across the component families with the hover row (1.5 days: the elements in stream A, the sections and cards in stream C).
+- **2.22** ([#494](https://github.com/nexustech/webforge/issues/494)) splits, its 4 days unchanged: **2.22a**, the framework (2.5 days, stream A, first), and **2.22b**, its mapping across the component families with the hover row (1.5 days, stream A, which had built 2.22 whole by then).
 - **2.25 Text marks** ([#495](https://github.com/nexustech/webforge/issues/495), 1 day, stream C after the E2E timing fix): the chore becomes a plan item (ST-3).
 - **2.26 Backgrounds for every section** ([#503](https://github.com/nexustech/webforge/issues/503), 2 days, stream B after 3.3 and 2.22a): an image with an overlay (ST-5).
 - **2.27 Apply this look to every element of its kind** ([#504](https://github.com/nexustech/webforge/issues/504), 3 days, stream A after 2.22b): ST-4.
-- **2.28 Transition and transform presets** ([#505](https://github.com/nexustech/webforge/issues/505), 1 day, stream C after 2.22b): ST-7, extending 2.12's hover effects.
+- **2.28 Transition and transform presets** ([#505](https://github.com/nexustech/webforge/issues/505), 1 day, stream C once stream A's 2.22b has merged): ST-7, extending 2.12's hover effects.
 - **2.29 Templates use the new styling** ([#506](https://github.com/nexustech/webforge/issues/506), 1.5 days, stream C after 2.22b, 2.25 and 2.26).
 
 Phase 2 is 145.5 days and the total 386.5. Phase 2's exit criteria gain the Appearance group. At the measured pace, the block takes about four working days of stream time, so Phase 2's code-complete date (6 Nov) holds.
@@ -185,15 +185,15 @@ gantt
     2.19 Component primitives and scaffolding :t2_19, after t2_6, 3d
     2.20 Editor building blocks :t2_20, after t2_4, 7d
     2.21 One form engine :t2_21, after t2_9, 5d
-    2.22a Appearance group framework :t2_22a, after t2_23, 2.5d
-    2.22b Appearance mapping and hover row :t2_22b, after t2_22a, 1.5d
     2.23 Your own themes :t2_23, after t2_18, 2.5d
     2.24 Desktop fills the canvas :t2_24, after t2_17, 1d
+    2.22a Appearance group framework :t2_22a, after t2_23, 2.5d
+    2.22b Appearance mapping and hover row :t2_22b, after t2_22a, 1.5d
     2.25 Text marks :t2_25, after t2_24, 1d
     2.26 Section backgrounds :t2_26, after t2_22a, 2d
     2.27 Apply this look to every element :t2_27, after t2_22b, 3d
     2.28 Transition and transform presets :t2_28, after t2_22b, 1d
-    2.29 Templates use the new styling :t2_29, after t2_28, 1.5d
+    2.29 Templates use the new styling :t2_29, after t2_28 t2_26, 1.5d
     section Phase 3
     3.1 Pipeline API – progress events, worker, caches :crit, t3_1, 2027-07-15, 4d
     3.2 Preview server with live reload and phone prev… :t3_2, 2027-07-21, 3d
@@ -669,7 +669,7 @@ Close the visible gap to Bootstrap Studio 9.0.1 within the IP rule ([product/07]
 | 2.23 | Your own themes: save a changed built-in theme under a name, New theme, My themes | [#485](https://github.com/nexustech/webforge/issues/485) | themes | PH2-17, F-DS-2, F-DS-7, D7 | 2.5 | 2.3 |
 | 2.24 | Canvas: the Desktop view fills the canvas, as the site fills a browser | [#486](https://github.com/nexustech/webforge/issues/486) | engine | PH2-18, F-ED-25, 1.15 | 1 | – |
 | 2.25 | Text toolbar: underline, highlight and theme-colour marks | [#495](https://github.com/nexustech/webforge/issues/495) | engine | [product/08](../research/product/08-component-styling.md) ST-3, ST-8, F-ED-3, C1 | 1 | 1.23 |
-| 2.26 | Backgrounds for every section: an image with an overlay | [#503](https://github.com/nexustech/webforge/issues/503) | components | [product/08](../research/product/08-component-styling.md) ST-5, ST-8, F-DS-3, F-ED-4 | 2 | 2.22 |
+| 2.26 | Backgrounds for every section: an image with an overlay | [#503](https://github.com/nexustech/webforge/issues/503) | components | [product/08](../research/product/08-component-styling.md) ST-5, ST-8, F-DS-3, F-ED-4 | 2 | 2.22a, 3.3 |
 | 2.27 | Apply this look to every element of its kind | [#504](https://github.com/nexustech/webforge/issues/504) | components | [product/08](../research/product/08-component-styling.md) ST-4, ST-8, F-ED-4, D2, D7 | 3 | 2.22, 1.37 |
 | 2.28 | Transition and transform presets on hover | [#505](https://github.com/nexustech/webforge/issues/505) | components | [product/08](../research/product/08-component-styling.md) ST-7, ST-8, F-DS-5 | 1 | 2.22, 2.12 |
 | 2.29 | Templates use the new styling | [#506](https://github.com/nexustech/webforge/issues/506) | content | [product/08](../research/product/08-component-styling.md) ST-8, F-SITE-1, R4 | 1.5 | 2.22, 2.25, 2.26 |
@@ -678,11 +678,11 @@ Close the visible gap to Bootstrap Studio 9.0.1 within the IP rule ([product/07]
 
 | Stream | Items, in order (after its Phase 1 items) |
 |---|---|
-| A: Shell & panels | ~~R9 → R10 → R11 → 2.9 → 2.21~~ → 1.39 → 2.3 (2.3a → 2.3b → 2.3c) → 2.15a (Café/Restaurant, Salon/Beauty, Trades) → 2.18 → #484 (title bar, 26 Oct) → 2.23 (your own themes, 27 Oct) → 2.22 (Appearance group, 26 Oct; after 2.23, 27 Oct) → **styling block (ST-8, 26 Oct):** 2.22a → 2.22b (elements) → 2.27 |
+| A: Shell & panels | ~~R9 → R10 → R11 → 2.9 → 2.21~~ → 1.39 → 2.3 (2.3a → 2.3b → 2.3c) → 2.15a (Café/Restaurant, Salon/Beauty, Trades) → 2.18 → #484 (title bar, 26 Oct) → 2.23 (your own themes, 27 Oct) → ~~2.22~~ (split into 2.22a and 2.22b below) → **styling block (ST-8, 26 Oct):** 2.22a → 2.22b → 2.27 |
 | B: Data & site | ~~2.1 → 2.2 → R12 → R14 → 2.4 → 2.20 → 2.8 → 2.7b~~ → R13 (R13a → R13b → R13c → R13d) → 0.2 (Netlify spike, 25 Oct) → 0.3 (FTP/FTPS/SFTP spike, 25 Oct) → 0.5 (once enrolment is through, 25 Oct) → 0.6 → **styling block (ST-8, 26 Oct):** 2.26 (after 3.3 and 2.22a) |
-| C: History & canvas | ~~2.5 (before 1.30) → R7 → R8 (part 2 before 2.17) → 2.6 → 2.10 → 2.19 → 2.7a → 2.17 → 2.12 → 2.11 (from B, 25 Oct)~~ → 2.13a (themes 1–4, from A, 25 Oct) → 2.14a (2.14, from B, 25 Oct) → 2.13d (theme range, 25 Oct) → 2.14b → 2.13c (themes 9–12, from A, 25 Oct) → 2.15c (Personal/CV, Blank) → 2.16 → #465 → 2.13b (themes 5–8, from B, 26 Oct) → 2.15b (Consultant, Photographer/Portfolio, Shop, from B, 26 Oct) → #311 → 2.24 (Desktop fills the canvas, 27 Oct) → **styling block (ST-8, 26 Oct):** 2.25 (after the E2E timing fix) → 2.22b (sections and cards) → 2.28 → 2.29 |
+| C: History & canvas | ~~2.5 (before 1.30) → R7 → R8 (part 2 before 2.17) → 2.6 → 2.10 → 2.19 → 2.7a → 2.17 → 2.12 → 2.11 (from B, 25 Oct)~~ → 2.13a (themes 1–4, from A, 25 Oct) → 2.14a (2.14, from B, 25 Oct) → 2.13d (theme range, 25 Oct) → 2.14b → 2.13c (themes 9–12, from A, 25 Oct) → 2.15c (Personal/CV, Blank) → 2.16 → #465 → 2.13b (themes 5–8, from B, 26 Oct) → 2.15b (Consultant, Photographer/Portfolio, Shop, from B, 26 Oct) → #311 → 2.24 (Desktop fills the canvas, 27 Oct) → **styling block (ST-8, 26 Oct):** 2.25 (after the E2E timing fix) → 2.28 (once A's 2.22b has merged) → 2.29 |
 
-**Scope change, 26 Oct 2026 (styling research, ST-1…7):** +4 days for 2.22 ([#494](https://github.com/nexustech/webforge/issues/494), stream A after 2.3 and before 2.15a, so the templates and the sweep see the final Style tab): the Appearance group of token controls on every section and element (ST-1, 3 days) with a hover row (ST-2, 1 day), from [product/08](../research/product/08-component-styling.md). Underline, highlight and theme-colour marks in the text toolbar are chore [#495](https://github.com/nexustech/webforge/issues/495) (ST-3, 1 day, stream C after 2.13a, out of plan). The tokens-only rule stays for Simple mode (ST-6); apply a look to all of a kind, section backgrounds for every section and transition presets are v1.1 (ST-4, ST-5, ST-7).
+**Scope change, 26 Oct 2026 (styling research, ST-1…7; ST-4, ST-5, ST-7 and #495's place superseded by ST-8 below):** +4 days for 2.22 ([#494](https://github.com/nexustech/webforge/issues/494), stream A after 2.3 and before 2.15a, so the templates and the sweep see the final Style tab): the Appearance group of token controls on every section and element (ST-1, 3 days) with a hover row (ST-2, 1 day), from [product/08](../research/product/08-component-styling.md). Underline, highlight and theme-colour marks in the text toolbar are chore [#495](https://github.com/nexustech/webforge/issues/495) (ST-3, 1 day, stream C after 2.13a, out of plan). The tokens-only rule stays for Simple mode (ST-6); apply a look to all of a kind, section backgrounds for every section and transition presets are v1.1 (ST-4, ST-5, ST-7).
 
 **Issue review, 25 Oct 2026.** Every Phase 2 item except 2.3, 2.13, 2.14, 2.15, 2.16, 2.18 and R13 is merged, and 1.39 is stream A's next item. Two corrections: **2.13 no longer depends on 2.3.** The curated themes are presets in `packages/themes` (2.1, merged), reviewed side by side in Storybook against the merged components; the Theme panel is the UI for editing a site's theme and nothing in 2.13 needs it, so the three theme batches are unblocked today instead of waiting about 16 raw days for stream A's 1.39, 2.3 and 2.18. **2.13a and 2.13c swap streams:** stream C's queue was empty until 2.13c, so it takes themes 1–4 (#210) now, and the product owner's review of that batch feeds the other two as the 23 Oct review intended; stream A takes themes 9–12 (#212) after 2.18. The template batches keep their issue dependencies (2.15a waits for #210, 2.15c for #212). Nothing else was blocked: 2.14, R13 and the 2.21 follow-up chore (#391) have their dependencies met, and 1.39's are all closed. The theme issues' contrast criterion is brought in line with the 24 Oct decision (reported, not a gate), and 2.18's issue now lists only 1.37 as a dependency, with 1.39 and 2.3 as queue order, as this plan says.
 
@@ -874,7 +874,7 @@ A field is described three ways today (`FieldDef`, editor-ui's loose `FieldSpec`
 - [ ] Stories for `Form` with every field kind and for `FormDialog`'s states
 
 **2.22 Appearance group on every section and element, with a hover row** (added 26 Oct 2026, [product/08](../research/product/08-component-styling.md) ST-1, ST-2)  
-One collapsible group at the top of every Style tab, added centrally by `defineSection` and `defineComponent`: Text (size from the type scale, weight, italic, underline, case, alignment), Colour (text and background from the theme roles with shade), Corners, Border, Shadow and Opacity, every control a design token and per device with the changed cue and dots (UX-19); a section's Text controls apply to its title. A *When hovered* row under Colour and Shadow on Button, Image, Icon and the cards of the Cards, Features and Pricing sections, with token values and no JavaScript in the export. Simple mode takes tokens only; Advanced mode keeps ADR 0009's off-theme hex (ST-6). **In two parts (ST-8, 26 Oct 2026):** 2.22a, the framework (2.5 days, stream A, first: the fields added centrally, the token-to-class mapping, the Style tab's group; with every control unset the export is unchanged), then 2.22b, its mapping across the component families with the hover row (1.5 days: the elements in stream A, the sections and cards in stream C, each in its own component-family files).
+One collapsible group at the top of every Style tab, added centrally by `defineSection` and `defineComponent`: Text (size from the type scale, weight, italic, underline, case, alignment), Colour (text and background from the theme roles with shade), Corners, Border, Shadow and Opacity, every control a design token and per device with the changed cue and dots (UX-19); a section's Text controls apply to its title. A *When hovered* row under Colour and Shadow on Button, Image, Icon and the cards of the Cards, Features and Pricing sections, with token values and no JavaScript in the export. Simple mode takes tokens only; Advanced mode keeps ADR 0009's off-theme hex (ST-6). **In two parts (ST-8, 26 Oct 2026):** 2.22a, the framework (2.5 days, stream A, first: the fields added centrally, the token-to-class mapping, the Style tab's group; with every control unset the export is unchanged), then 2.22b, its mapping across the component families with the hover row (1.5 days, stream A).
 
 - [ ] Every section and element shows the group; a component adds nothing to get it
 - [ ] Select a section, turn on *Underline*: its title is underlined, one labelled undo step
@@ -959,7 +959,7 @@ The eight templates were built before the Appearance group. A light pass uses it
 |---|---|
 | A: Shell & panels | 3.2 (preview server) → 3.5 (site files) → 3.10 (compatibility E2E) |
 | B: Data & site | ~~3.1~~ → 3.3 (export to folder/ZIP) → 2.26 (styling block) → 3.4 (images) → 3.7 (forms, once 3.6 has merged) |
-| C: History & canvas | 2.24 ([#486](https://github.com/nexustech/webforge/issues/486)) → the E2E timing fix ([#446](https://github.com/nexustech/webforge/issues/446), [#489](https://github.com/nexustech/webforge/issues/489)) → the styling block (2.25 → 2.22b → 2.28 → 2.29) → 3.6 (Site Check) → 3.9 (custom code) → 3.8 (Google Analytics) |
+| C: History & canvas | 2.24 ([#486](https://github.com/nexustech/webforge/issues/486)) → the E2E timing fix ([#446](https://github.com/nexustech/webforge/issues/446), [#489](https://github.com/nexustech/webforge/issues/489)) → the styling block (2.25 → 2.28 → 2.29) → 3.6 (Site Check) → 3.9 (custom code) → 3.8 (Google Analytics) |
 
 Two items wait on another stream: 3.7 (B) on 3.6 (C), and 3.10 (A) on 3.3 and 3.4 (B). **Styling first (ST-8, 26 Oct 2026):** streams A and C finish Phase 2's styling block before their Phase 3 items, and B does 2.26 after 3.3.
 
