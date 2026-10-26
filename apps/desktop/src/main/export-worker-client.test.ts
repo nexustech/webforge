@@ -142,6 +142,46 @@ describe("createExportRunner", () => {
     await vi.waitFor(() => expect(workers).toHaveLength(2));
   });
 
+  it("fails an export whose worker can't start, and runs the next one (3.1 review)", async () => {
+    const made = fakeWorker();
+    let starts = 0;
+    const runner = createExportRunner(() => {
+      starts += 1;
+      if (starts === 1) throw new Error("fork failed");
+      return made.worker;
+    });
+
+    await expect(runner.run(job, options())).resolves.toEqual({
+      type: "failed",
+      code: "build-failed",
+      detail: "worker-start-failed",
+    });
+    const next = runner.run(job, options());
+    await vi.waitFor(() => expect(made.worker.posted).toEqual([job]));
+    made.reply(exported);
+    await expect(next).resolves.toEqual(exported);
+  });
+
+  it("fails an export its worker can't be sent, and starts a fresh one next time", async () => {
+    const { runner, workers, latest, sent } = runnerOf();
+    const first = runner.run(job, options());
+    await sent();
+    latest().reply(exported);
+    await first;
+    latest().worker.postMessage = () => {
+      throw new Error("channel closed");
+    };
+
+    await expect(runner.run(job, options())).resolves.toEqual({
+      type: "failed",
+      code: "build-failed",
+      detail: "worker-unreachable",
+    });
+    expect(latest().worker.kill).toHaveBeenCalled();
+    void runner.run(job, options());
+    await vi.waitFor(() => expect(workers).toHaveLength(2));
+  });
+
   it("stops a worker that does not answer in time", async () => {
     vi.useFakeTimers();
     try {
