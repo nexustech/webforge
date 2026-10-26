@@ -1,5 +1,4 @@
 import type { EditorMode, ViewOptions } from "../canvas-engine.js";
-import { keepElementsGroups } from "./element-roles.js";
 import { keepElementsEnabled } from "./enabled-elements.js";
 import { NO_VIEW_OPTIONS } from "./engine-support.js";
 import { applySiteStyles, type SiteStyles } from "./site-styles.js";
@@ -10,9 +9,8 @@ type CanvasDocumentInfo = { readonly title: string; readonly language?: string }
 
 /**
  * The canvas iframe's document and what the editor shows in it: the site's CSS, the View menu's
- * options (F-ED-25), Content mode's enabled elements, its title and language, and the elements'
- * wrappers kept as groups (#465). Each is set any time, and applied to the document whenever there
- * is one.
+ * options (F-ED-25), Content mode's enabled elements, and its title and language (#465). Each is
+ * set any time, and applied to the document whenever there is one.
  */
 export type CanvasFrame = {
   /** The canvas iframe's document, once Puck has created it. */
@@ -39,7 +37,6 @@ export function createCanvasFrame(nameOf: (id: string) => string | undefined): C
   /** Stops keeping the canvas's elements enabled; set in Content mode (see `keepElementsEnabled`). */
   let stopKeepingEnabled: (() => void) | null = null;
   let stopViewOptions: (() => void) | null = null;
-  let stopGroups: (() => void) | null = null;
   let documentInfo: CanvasDocumentInfo | null = null;
 
   /** Gives `document` the site's name as its title, and its language (#465). */
@@ -70,14 +67,10 @@ export function createCanvasFrame(nameOf: (id: string) => string | undefined): C
       if (document !== undefined && siteStyles !== null) applySiteStyles(document, siteStyles);
       if (document !== undefined && documentInfo !== null)
         applyDocumentInfo(document, documentInfo);
-      stopGroups?.();
-      stopGroups = document === undefined ? null : keepElementsGroups(document);
       followMode();
       followViewOptions();
     },
     detach() {
-      stopGroups?.();
-      stopGroups = null;
       stopKeepingEnabled?.();
       stopKeepingEnabled = null;
       stopViewOptions?.();

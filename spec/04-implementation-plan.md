@@ -789,7 +789,7 @@ Café/Restaurant, Salon/Beauty, Trades, Consultant, Photographer/Portfolio, Shop
 - [ ] Export checks run on every template in Phase 3
 
 **2.16 Component accessibility and visual regression sweep**  
-Screenshot baselines for every component × 3 themes × Desktop/Mobile (PR; the 3 development presets from 2.1), and axe in all themes (nightly; screenshots stay in the 3, PH2-16); axe with zero serious/critical violations; keyboard checks via Storybook play functions; the 8 templates' pages are screenshotted once 2.15 lands (MVP §6). Also fixes the canvas's own accessibility findings from 2.15c (#465): the canvas frame's title and language, the inline editors' names and Puck's nested controls (days unchanged).
+Screenshot baselines for every component × 3 themes × Desktop/Mobile (PR; the 3 development presets from 2.1), and axe in all themes (nightly; screenshots stay in the 3, PH2-16); axe with zero serious/critical violations; keyboard checks via Storybook play functions; the 8 templates' pages are screenshotted once 2.15 lands (MVP §6). Also fixes the canvas's own accessibility findings from 2.15c (#465): the canvas frame's title and language and the inline editors' names; Puck's controls nested in its draggable wrappers stay open on #465 (days unchanged).
 
 - [ ] Visual + a11y suites green in CI
 - [ ] Nightly full-theme run configured
