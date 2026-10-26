@@ -4,7 +4,9 @@ import {
   type ExportMessage,
   type ExportOutcome,
   exportOutcomeSchema,
+  exportProgressMessageSchema,
 } from "../shared/export-worker-protocol.js";
+import type { ExportProgress } from "../shared/ipc/site.js";
 import type { WorkerProcess } from "./worker-process.js";
 
 /** How long an export may take before the worker is stopped (large sites encode many images). */
@@ -21,6 +23,8 @@ export type ExportOptions = {
   ) => Promise<{ readonly data: Uint8Array; readonly mime: string } | undefined>;
   /** Cancels the export: the worker stops before its next image or page and writes nothing. */
   readonly signal?: AbortSignal | undefined;
+  /** Told how far the export has come, as the worker reaches each stage (3.1). */
+  readonly onProgress?: ((progress: ExportProgress) => void) | undefined;
 };
 
 /** Runs exports of the open site in one utility process; see {@link createExportRunner}. */
@@ -82,6 +86,11 @@ export function createExportRunner(
                 : { type: "blob", id, blob: { data: blob.data, mime: blob.mime } },
             );
           });
+        return;
+      }
+      const progress = exportProgressMessageSchema.safeParse(message);
+      if (progress.success) {
+        running?.options.onProgress?.(progress.data.progress);
         return;
       }
       const outcome = exportOutcomeSchema.safeParse(message);

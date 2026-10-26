@@ -202,6 +202,24 @@ describe("createExportRunner", () => {
     ]);
   });
 
+  it("passes the worker's progress on, for the export under way only (3.1)", async () => {
+    const { runner, latest, sent } = runnerOf();
+    const onProgress = vi.fn();
+    const outcome = runner.run(job, options({ onProgress }));
+    await sent();
+
+    latest().reply({ type: "progress", progress: { stage: "pages", done: 0, total: 1 } });
+    latest().reply({ type: "progress", progress: { stage: "writing" } });
+    latest().reply(exported);
+    await outcome;
+    latest().reply({ type: "progress", progress: { stage: "fonts" } });
+
+    expect(onProgress.mock.calls).toEqual([
+      [{ stage: "pages", done: 0, total: 1 }],
+      [{ stage: "writing" }],
+    ]);
+  });
+
   it("tells the worker to stop when cancelled, and resolves with its cancelled outcome (R15)", async () => {
     const { runner, latest } = runnerOf();
     const controller = new AbortController();

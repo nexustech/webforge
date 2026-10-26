@@ -1,6 +1,7 @@
 import { IMAGE_MIME_TYPES, siteSnapshotSchema, themeSchema } from "@webforge/model";
 import { catalogueFontSchema } from "@webforge/themes";
 import { z } from "zod";
+import { exportProgressSchema } from "./ipc/site.js";
 
 /**
  * The downloaded families a site's theme uses (2.2), as the main process keeps them: its heading
@@ -85,6 +86,12 @@ export const blobRequestSchema = z.strictObject({
   /** Matches the answer to the request. */
   id: z.int().nonnegative(),
   hash: z.string().regex(/^[0-9a-f]{64}$/),
+});
+
+/** The export worker tells how far its export has come (3.1); main passes it to the window. */
+export const exportProgressMessageSchema = z.strictObject({
+  type: z.literal("progress"),
+  progress: exportProgressSchema,
 });
 
 /**

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import type { StoreApi } from "zustand/vanilla";
 import type { AiApi } from "../../shared/ipc/ai.js";
-import type { ExportRequest } from "../../shared/ipc/site.js";
+import type { ExportProgress, ExportRequest } from "../../shared/ipc/site.js";
 import type { ExportResult } from "../../shared/ipc-contract.js";
 import type { AddItem } from "../add/index.js";
 import type { SettingsRegistry } from "../settings/index.js";
@@ -41,6 +41,12 @@ type AreaContext = {
   readonly preferences: PreferencesStore;
 };
 
+/** Exports a site, telling `onProgress` how far it has come. */
+export type ExportSite = (
+  request: ExportRequest,
+  onProgress: (progress: ExportProgress) => void,
+) => Promise<ExportResult>;
+
 /**
  * What the window gives the areas it registers (App): its own registries and stores, made once,
  * so its areas register once and a panel keeps what it shows (Layers' collapsed layers and filter).
@@ -56,8 +62,10 @@ export type WindowContext = AreaContext & {
   readonly settings: SettingsRegistry;
   /** Dialogs the window draws once, whatever the panels show (Theme Studio, 2.3b). */
   readonly windowDialogs: WindowDialogRegistry;
-  /** Exports a site. */
-  readonly exportSite: (request: ExportRequest) => Promise<ExportResult>;
+  /** Exports a site, telling `onProgress` how far it has come (3.1). */
+  readonly exportSite: ExportSite;
+  /** Cancels the export under way. */
+  readonly cancelExport: () => Promise<null>;
   /** Answers AI apps' requests (F-AI-1) until the returned function is called. */
   readonly answerAi: AiApi["onRequest"];
 };

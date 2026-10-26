@@ -2,7 +2,7 @@ import { basename } from "node:path";
 import type { SiteSnapshot } from "@webforge/model";
 import type { IpcMain } from "electron";
 import type { ExportOutcome } from "../shared/export-worker-protocol.js";
-import type { ExportRequest } from "../shared/ipc/site.js";
+import type { ExportProgress, ExportRequest } from "../shared/ipc/site.js";
 import type { ExportResult } from "../shared/ipc-contract.js";
 import { registerIpcHandler } from "./ipc.js";
 import { log } from "./log.js";
@@ -13,8 +13,18 @@ export type ExportDialogs = {
   chooseExportFolder(): Promise<string | undefined>;
 };
 
+/** How one export runs: a signal that cancels it, and what to tell of its progress (3.1). */
+export type RunExportOptions = {
+  readonly signal: AbortSignal;
+  readonly onProgress: (progress: ExportProgress) => void;
+};
+
 /** Builds and writes the site; in the app, in a utility process. */
-export type RunExport = (snapshot: SiteSnapshot, destination: string) => Promise<ExportOutcome>;
+export type RunExport = (
+  snapshot: SiteSnapshot,
+  destination: string,
+  options: RunExportOptions,
+) => Promise<ExportOutcome>;
 
 /** Turns the worker's outcome into what the renderer may see: counts and the folder's name. */
 export function toExportResult(outcome: ExportOutcome, destination: string): ExportResult {
@@ -53,22 +63,39 @@ function snapshotOf(request: ExportRequest): SiteSnapshot {
 }
 
 /**
- * Registers the export IPC call. The renderer sends the site snapshot but never a path: the main
+ * Registers the export IPC calls. The renderer sends the site snapshot but never a path: the main
  * process asks the user for the folder, so a compromised renderer cannot write anywhere it likes.
  * Image bytes come from the open site's file, as the export worker asks for them, never from the
- * renderer.
+ * renderer. Its progress goes to `sendProgress`, and the renderer can cancel it (3.1).
  */
 export function registerExportHandlers(
   ipc: Pick<IpcMain, "handle">,
   isTrustedSender: (senderUrl: string) => boolean,
   dialogs: ExportDialogs,
   runExport: RunExport,
+  sendProgress: (progress: ExportProgress) => void,
 ): void {
+  // The exports under way (or waiting for the one before): a cancel stops them all.
+  const underWay = new Set<AbortController>();
   registerIpcHandler(ipc, "exportSite", isTrustedSender, async (request) => {
     const destination = await dialogs.chooseExportFolder();
     if (destination === undefined) {
       return { status: "canceled" };
     }
-    return toExportResult(await runExport(snapshotOf(request), destination), destination);
+    const controller = new AbortController();
+    underWay.add(controller);
+    try {
+      const outcome = await runExport(snapshotOf(request), destination, {
+        signal: controller.signal,
+        onProgress: sendProgress,
+      });
+      return toExportResult(outcome, destination);
+    } finally {
+      underWay.delete(controller);
+    }
+  });
+  registerIpcHandler(ipc, "cancelExport", isTrustedSender, () => {
+    for (const controller of underWay) controller.abort();
+    return null;
   });
 }
