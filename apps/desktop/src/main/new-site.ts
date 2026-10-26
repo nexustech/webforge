@@ -1,8 +1,8 @@
 import { join } from "node:path";
 import { DEFAULT_THEME } from "@webforge/model";
 import type { ProjectStore } from "@webforge/storage";
-import { BLANK_TEMPLATE_ID, siteFromTemplate } from "@webforge/templates";
-import type { TemplateFolder } from "@webforge/templates/node";
+import { BLANK_TEMPLATE_ID, siteFromTemplate, type TemplateId } from "@webforge/templates";
+import { readTemplate, type TemplateFolder } from "@webforge/templates/node";
 import { themePreset } from "@webforge/themes";
 import type { NewSiteRequest } from "../shared/ipc/project.js";
 import type { StorageWriter } from "./storage-writer.js";
@@ -12,6 +12,18 @@ export type NewSiteFill = {
   readonly name: string;
   readonly fill: (target: NewSiteTarget) => Promise<void>;
 };
+
+/** Reads the shipped template `id`, or throws when it is missing or doesn't pass its schemas. */
+export type TemplateReader = (id: TemplateId) => TemplateFolder;
+
+/**
+ * Reads templates one at a time from `dir`, the folder the app ships them in: New Site reads only
+ * the template it makes, so a damaged one never stops another, Blank included (2.15c).
+ */
+export const shippedTemplateReader =
+  (dir: string): TemplateReader =>
+  (id) =>
+    readTemplate(id, dir);
 
 /** What came of putting a file into the new site: stored under `hash`, or not. */
 type NewSiteImport =
@@ -57,14 +69,10 @@ export function newSiteImporter(
 export async function fillNewSite(
   target: NewSiteTarget,
   request: NewSiteRequest,
-  templates: () => readonly TemplateFolder[],
+  template: TemplateReader,
 ): Promise<void> {
   const theme = themePreset(request.theme) ?? DEFAULT_THEME;
-  const id = request.template ?? BLANK_TEMPLATE_ID;
-  const folder = templates().find((each) => each.template.id === id);
-  if (folder === undefined) {
-    throw new Error(`No template ${id}`);
-  }
+  const folder = template(request.template ?? BLANK_TEMPLATE_ID);
   for (const image of folder.images) {
     const outcome = await target.importFile(
       image.mediaId,
