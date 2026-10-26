@@ -1,0 +1,908 @@
+{
+  "id": "photographer",
+  "category": "creative",
+  "example": false,
+  "site": {
+    "formatVersion": 7,
+    "settings": {
+      "general": {
+        "name": "Rowan Hale Photography",
+        "language": "en"
+      },
+      "address": {},
+      "social": {
+        "profiles": []
+      },
+      "contact": {
+        "openingHours": [],
+        "email": "hello@example.com"
+      },
+      "search": {
+        "allowIndexing": true,
+        "includeSitemap": true
+      },
+      "analytics": {
+        "consentBanner": true
+      },
+      "forms": {},
+      "publish": {
+        "destinations": []
+      },
+      "allowedExternalUrls": []
+    },
+    "theme": {
+      "preset": "darkroom",
+      "scheme": "dark",
+      "colors": {
+        "base-100": {
+          "l": 0.18,
+          "c": 0.005,
+          "h": 60
+        },
+        "base-200": {
+          "l": 0.22,
+          "c": 0.006,
+          "h": 60
+        },
+        "base-300": {
+          "l": 0.27,
+          "c": 0.008,
+          "h": 60
+        },
+        "base-content": {
+          "l": 0.95,
+          "c": 0.008,
+          "h": 80
+        },
+        "primary": {
+          "l": 0.8,
+          "c": 0.12,
+          "h": 75
+        },
+        "primary-content": {
+          "l": 0.2,
+          "c": 0.02,
+          "h": 60
+        },
+        "secondary": {
+          "l": 0.86,
+          "c": 0.02,
+          "h": 80
+        },
+        "secondary-content": {
+          "l": 0.2,
+          "c": 0.01,
+          "h": 60
+        },
+        "accent": {
+          "l": 0.76,
+          "c": 0.08,
+          "h": 40
+        },
+        "accent-content": {
+          "l": 0.2,
+          "c": 0.02,
+          "h": 60
+        },
+        "neutral": {
+          "l": 0.95,
+          "c": 0.008,
+          "h": 80
+        },
+        "neutral-content": {
+          "l": 0.18,
+          "c": 0.005,
+          "h": 60
+        },
+        "info": {
+          "l": 0.78,
+          "c": 0.1,
+          "h": 245
+        },
+        "info-content": {
+          "l": 0.2,
+          "c": 0.03,
+          "h": 245
+        },
+        "success": {
+          "l": 0.78,
+          "c": 0.12,
+          "h": 150
+        },
+        "success-content": {
+          "l": 0.2,
+          "c": 0.03,
+          "h": 150
+        },
+        "warning": {
+          "l": 0.84,
+          "c": 0.15,
+          "h": 85
+        },
+        "warning-content": {
+          "l": 0.2,
+          "c": 0.02,
+          "h": 85
+        },
+        "error": {
+          "l": 0.75,
+          "c": 0.13,
+          "h": 27
+        },
+        "error-content": {
+          "l": 0.2,
+          "c": 0.03,
+          "h": 27
+        }
+      },
+      "inverse": {
+        "base-100": {
+          "l": 0.96,
+          "c": 0.008,
+          "h": 80
+        },
+        "base-200": {
+          "l": 0.93,
+          "c": 0.01,
+          "h": 80
+        },
+        "base-300": {
+          "l": 0.89,
+          "c": 0.012,
+          "h": 80
+        },
+        "base-content": {
+          "l": 0.22,
+          "c": 0.006,
+          "h": 60
+        },
+        "primary": {
+          "l": 0.47,
+          "c": 0.1,
+          "h": 65
+        },
+        "primary-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        },
+        "secondary": {
+          "l": 0.35,
+          "c": 0.01,
+          "h": 60
+        },
+        "secondary-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        },
+        "accent": {
+          "l": 0.5,
+          "c": 0.11,
+          "h": 40
+        },
+        "accent-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        },
+        "neutral": {
+          "l": 0.22,
+          "c": 0.006,
+          "h": 60
+        },
+        "neutral-content": {
+          "l": 0.96,
+          "c": 0.008,
+          "h": 80
+        },
+        "info": {
+          "l": 0.45,
+          "c": 0.14,
+          "h": 245
+        },
+        "info-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        },
+        "success": {
+          "l": 0.45,
+          "c": 0.12,
+          "h": 150
+        },
+        "success-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        },
+        "warning": {
+          "l": 0.84,
+          "c": 0.15,
+          "h": 85
+        },
+        "warning-content": {
+          "l": 0.2,
+          "c": 0.02,
+          "h": 85
+        },
+        "error": {
+          "l": 0.48,
+          "c": 0.19,
+          "h": 27
+        },
+        "error-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        }
+      },
+      "fonts": {
+        "heading": {
+          "family": "Space Grotesk",
+          "fallback": "sans-serif"
+        },
+        "body": {
+          "family": "Figtree",
+          "fallback": "sans-serif"
+        }
+      },
+      "radius": {
+        "box": "s",
+        "field": "s",
+        "selector": "s"
+      },
+      "border": "thin",
+      "effects": {
+        "depth": false,
+        "noise": false
+      },
+      "spacing": "roomy",
+      "typeScale": {
+        "h1": {
+          "size": "6xl",
+          "weight": 500,
+          "leading": "tight"
+        },
+        "h2": {
+          "size": "3xl",
+          "weight": 500,
+          "leading": "tight"
+        },
+        "h3": {
+          "size": "xl",
+          "weight": 500,
+          "leading": "tight"
+        },
+        "h4": {
+          "size": "lg",
+          "weight": 500,
+          "leading": "normal"
+        },
+        "h5": {
+          "size": "base",
+          "weight": 500,
+          "leading": "normal"
+        },
+        "h6": {
+          "size": "sm",
+          "weight": 500,
+          "leading": "normal"
+        },
+        "body": {
+          "size": "lg",
+          "weight": 400,
+          "leading": "relaxed"
+        },
+        "small": {
+          "size": "sm",
+          "weight": 400,
+          "leading": "normal"
+        }
+      },
+      "links": {
+        "underline": "always"
+      },
+      "buttons": {
+        "shape": "rounded",
+        "size": "m",
+        "style": "outline"
+      },
+      "shadow": "none",
+      "headings": {
+        "case": "normal",
+        "tracking": "tight"
+      },
+      "cards": {
+        "style": "flat"
+      },
+      "images": {
+        "corners": "square"
+      },
+      "sections": {
+        "rhythm": "plain"
+      }
+    },
+    "layout": {
+      "header": [
+        {
+          "type": "Header",
+          "props": {
+            "id": "header",
+            "siteName": "Rowan Hale Photography",
+            "bindings": {
+              "siteName": "general.name"
+            }
+          }
+        }
+      ],
+      "footer": [
+        {
+          "type": "Footer",
+          "props": {
+            "id": "footer",
+            "text": "Rowan Hale Photography · Landscapes and portraits"
+          }
+        }
+      ]
+    },
+    "pages": {
+      "Md0NeLN7ljy5uXIM": {
+        "id": "Md0NeLN7ljy5uXIM",
+        "kind": "page",
+        "slug": "home",
+        "title": "Home",
+        "settings": {
+          "hideHeader": false,
+          "hideFooter": false,
+          "hideFromNavigation": false
+        },
+        "doc": {
+          "root": {
+            "props": {}
+          },
+          "content": [
+            {
+              "type": "Hero",
+              "props": {
+                "variant": "background",
+                "colors": "page",
+                "alignment": "centre",
+                "title": "Light, land and people",
+                "text": "Landscape and portrait photography from the north coast.",
+                "buttonLabel": "See the portfolio",
+                "buttonLink": {
+                  "kind": "page",
+                  "pageId": "fipURVrKOnLgfdI1",
+                  "newTab": false
+                },
+                "image": {
+                  "mediaId": "ynkHvS0gLrPIvhYA"
+                },
+                "id": "hero-11"
+              }
+            },
+            {
+              "type": "Gallery",
+              "props": {
+                "variant": "featured",
+                "colors": "page",
+                "title": "Recent work",
+                "images": [
+                  {
+                    "type": "GalleryImage",
+                    "props": {
+                      "id": "image-work-1-0",
+                      "image": {
+                        "mediaId": "YlwjdqDMVtAsGUUU"
+                      },
+                      "caption": "Dawn over the bay"
+                    }
+                  },
+                  {
+                    "type": "GalleryImage",
+                    "props": {
+                      "id": "image-work-4-1",
+                      "image": {
+                        "mediaId": "U0xiOxBX9WzgBqP0"
+                      },
+                      "caption": "Last light on the headland"
+                    }
+                  },
+                  {
+                    "type": "GalleryImage",
+                    "props": {
+                      "id": "image-portrait-1-2",
+                      "image": {
+                        "mediaId": "ip8EnEqRFswHBijT"
+                      },
+                      "caption": "A family on the beach"
+                    }
+                  },
+                  {
+                    "type": "GalleryImage",
+                    "props": {
+                      "id": "image-work-6-3",
+                      "image": {
+                        "mediaId": "r6ThU8kAtDN9M0FN"
+                      },
+                      "caption": "Stars over the old lighthouse"
+                    }
+                  },
+                  {
+                    "type": "GalleryImage",
+                    "props": {
+                      "id": "image-work-3-4",
+                      "image": {
+                        "mediaId": "tn0Q51r5wVQl5asQ"
+                      },
+                      "caption": "Heather on the moor"
+                    }
+                  }
+                ],
+                "id": "gallery-12"
+              }
+            },
+            {
+              "type": "Testimonials",
+              "props": {
+                "variant": "large",
+                "colors": "inverse",
+                "title": "Kind words",
+                "items": [
+                  {
+                    "type": "Testimonial",
+                    "props": {
+                      "id": "testimonial-0",
+                      "quote": "Rowan put us all at ease, even the dog. The photos are on every wall of the house now.",
+                      "name": "Ellie Ward",
+                      "role": "Family portrait session"
+                    }
+                  }
+                ],
+                "id": "testimonials-13"
+              }
+            },
+            {
+              "type": "CallToAction",
+              "props": {
+                "variant": "split",
+                "colors": "page",
+                "title": "Planning a shoot?",
+                "text": "Portraits, weddings on the coast and prints of my landscapes. Tell me what you have in mind.",
+                "buttonLabel": "Get in touch",
+                "buttonLink": {
+                  "kind": "page",
+                  "pageId": "ge5fzHNPTYnWir82",
+                  "newTab": false
+                },
+                "id": "calltoaction-14"
+              }
+            }
+          ]
+        }
+      },
+      "qoPfmKWbqiwQwCS7": {
+        "id": "qoPfmKWbqiwQwCS7",
+        "kind": "not-found",
+        "slug": "page-not-found",
+        "title": "Page not found",
+        "settings": {
+          "hideHeader": false,
+          "hideFooter": false,
+          "hideFromNavigation": true
+        },
+        "doc": {
+          "root": {
+            "props": {}
+          },
+          "content": [
+            {
+              "type": "Section",
+              "props": {
+                "id": "section-1",
+                "padding": {
+                  "top": "l",
+                  "bottom": "l"
+                },
+                "content": [
+                  {
+                    "type": "Heading",
+                    "props": {
+                      "id": "heading-1",
+                      "text": "Sorry, this page doesn't exist",
+                      "size": "large"
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "id": "text-1",
+                      "text": "<p>It may have moved or been renamed. Use the menu above to find what you're looking for.</p>"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "fipURVrKOnLgfdI1": {
+        "id": "fipURVrKOnLgfdI1",
+        "kind": "page",
+        "slug": "portfolio",
+        "title": "Portfolio",
+        "settings": {
+          "hideHeader": false,
+          "hideFooter": false,
+          "hideFromNavigation": false
+        },
+        "doc": {
+          "root": {
+            "props": {}
+          },
+          "content": [
+            {
+              "type": "Gallery",
+              "props": {
+                "variant": "masonry",
+                "colors": "page",
+                "title": "Portfolio",
+                "images": [
+                  {
+                    "type": "GalleryImage",
+                    "props": {
+                      "id": "image-work-1-0",
+                      "image": {
+                        "mediaId": "YlwjdqDMVtAsGUUU"
+                      },
+                      "caption": "Dawn over the bay"
+                    }
+                  },
+                  {
+                    "type": "GalleryImage",
+                    "props": {
+                      "id": "image-portrait-2-1",
+                      "image": {
+                        "mediaId": "29IcGP88S1GioHHM"
+                      },
+                      "caption": "A fisherman on the quay"
+                    }
+                  },
+                  {
+                    "type": "GalleryImage",
+                    "props": {
+                      "id": "image-work-2-2",
+                      "image": {
+                        "mediaId": "ABvBK4Kr5Oh876oo"
+                      },
+                      "caption": "The harbour wall at high tide"
+                    }
+                  },
+                  {
+                    "type": "GalleryImage",
+                    "props": {
+                      "id": "image-work-3-3",
+                      "image": {
+                        "mediaId": "tn0Q51r5wVQl5asQ"
+                      },
+                      "caption": "Heather on the moor in August"
+                    }
+                  },
+                  {
+                    "type": "GalleryImage",
+                    "props": {
+                      "id": "image-work-4-4",
+                      "image": {
+                        "mediaId": "U0xiOxBX9WzgBqP0"
+                      },
+                      "caption": "Last light on the headland"
+                    }
+                  },
+                  {
+                    "type": "GalleryImage",
+                    "props": {
+                      "id": "image-portrait-1-5",
+                      "image": {
+                        "mediaId": "ip8EnEqRFswHBijT"
+                      },
+                      "caption": "A family on the beach"
+                    }
+                  },
+                  {
+                    "type": "GalleryImage",
+                    "props": {
+                      "id": "image-work-5-6",
+                      "image": {
+                        "mediaId": "rTG2aarcE1CngnLJ"
+                      },
+                      "caption": "First snow on the fells"
+                    }
+                  },
+                  {
+                    "type": "GalleryImage",
+                    "props": {
+                      "id": "image-work-6-7",
+                      "image": {
+                        "mediaId": "r6ThU8kAtDN9M0FN"
+                      },
+                      "caption": "Stars over the old lighthouse"
+                    }
+                  }
+                ],
+                "id": "gallery-15"
+              }
+            }
+          ]
+        }
+      },
+      "WuVP9a7vXRsqtesp": {
+        "id": "WuVP9a7vXRsqtesp",
+        "kind": "page",
+        "slug": "about",
+        "title": "About",
+        "settings": {
+          "hideHeader": false,
+          "hideFooter": false,
+          "hideFromNavigation": false
+        },
+        "doc": {
+          "root": {
+            "props": {}
+          },
+          "content": [
+            {
+              "type": "TextImage",
+              "props": {
+                "variant": "imageRight",
+                "colors": "page",
+                "title": "About me",
+                "text": "<p>I'm Rowan Hale. I've walked the north coast with a camera for fifteen years, waiting for the light to do something worth keeping.</p><p>Alongside my landscapes I photograph people: families, couples and the people who work by the sea. I like pictures that feel like the day felt.</p>",
+                "image": {
+                  "mediaId": "MmunpxZS0esQCty3"
+                },
+                "id": "textimage-16"
+              }
+            },
+            {
+              "type": "Stats",
+              "props": {
+                "variant": "row",
+                "colors": "inverse",
+                "title": "Along the way",
+                "text": "<p>A few things I'm proud of.</p>",
+                "items": [
+                  {
+                    "type": "Stat",
+                    "props": {
+                      "id": "stat-0",
+                      "number": "15",
+                      "label": "years behind the camera"
+                    }
+                  },
+                  {
+                    "type": "Stat",
+                    "props": {
+                      "id": "stat-1",
+                      "number": "300+",
+                      "label": "portrait sessions"
+                    }
+                  },
+                  {
+                    "type": "Stat",
+                    "props": {
+                      "id": "stat-2",
+                      "number": "3",
+                      "label": "national awards"
+                    }
+                  }
+                ],
+                "id": "stats-17"
+              }
+            }
+          ]
+        }
+      },
+      "SKDmn7x2HAgocDkQ": {
+        "id": "SKDmn7x2HAgocDkQ",
+        "kind": "page",
+        "slug": "sessions",
+        "title": "Sessions",
+        "settings": {
+          "hideHeader": false,
+          "hideFooter": false,
+          "hideFromNavigation": false
+        },
+        "doc": {
+          "root": {
+            "props": {}
+          },
+          "content": [
+            {
+              "type": "Pricing",
+              "props": {
+                "variant": "cards",
+                "colors": "page",
+                "title": "Sessions and prints",
+                "text": "<p>Every session includes a gallery of edited photos to download.</p>",
+                "items": [
+                  {
+                    "type": "PricingPlan",
+                    "props": {
+                      "id": "plan-0",
+                      "name": "Portrait session",
+                      "price": "£180",
+                      "period": "one hour",
+                      "details": "<p>One location, up to six people, and 25 edited photos.</p>",
+                      "buttonLabel": "Book a session",
+                      "link": {
+                        "kind": "page",
+                        "pageId": "ge5fzHNPTYnWir82",
+                        "newTab": false
+                      },
+                      "featured": false,
+                      "badge": ""
+                    }
+                  },
+                  {
+                    "type": "PricingPlan",
+                    "props": {
+                      "id": "plan-1",
+                      "name": "Family half-day",
+                      "price": "£350",
+                      "period": "four hours",
+                      "details": "<p>Two locations, the whole family and the dog, and 60 edited photos.</p>",
+                      "buttonLabel": "Book a session",
+                      "link": {
+                        "kind": "page",
+                        "pageId": "ge5fzHNPTYnWir82",
+                        "newTab": false
+                      },
+                      "featured": true,
+                      "badge": "Most booked"
+                    }
+                  },
+                  {
+                    "type": "PricingPlan",
+                    "props": {
+                      "id": "plan-2",
+                      "name": "Fine art print",
+                      "price": "From £65",
+                      "period": "",
+                      "details": "<p>Any landscape from the portfolio, printed on archival paper and signed.</p>",
+                      "buttonLabel": "Ask about prints",
+                      "link": {
+                        "kind": "page",
+                        "pageId": "ge5fzHNPTYnWir82",
+                        "newTab": false
+                      },
+                      "featured": false,
+                      "badge": ""
+                    }
+                  }
+                ],
+                "id": "pricing-18"
+              }
+            },
+            {
+              "type": "Faq",
+              "props": {
+                "variant": "accordion",
+                "colors": "page",
+                "title": "Questions",
+                "items": [
+                  {
+                    "type": "FaqItem",
+                    "props": {
+                      "id": "faq-0",
+                      "question": "What if it rains?",
+                      "answer": "<p>We move the session to another day, at no cost. Some of my favourite photos were taken just after rain.</p>"
+                    }
+                  },
+                  {
+                    "type": "FaqItem",
+                    "props": {
+                      "id": "faq-1",
+                      "question": "When will I get my photos?",
+                      "answer": "<p>Within two weeks, in an online gallery you can download from and share.</p>"
+                    }
+                  },
+                  {
+                    "type": "FaqItem",
+                    "props": {
+                      "id": "faq-2",
+                      "question": "Do you travel?",
+                      "answer": "<p>Yes, anywhere on the coast. Further afield, I add travel costs.</p>"
+                    }
+                  }
+                ],
+                "id": "faq-19"
+              }
+            }
+          ]
+        }
+      },
+      "ge5fzHNPTYnWir82": {
+        "id": "ge5fzHNPTYnWir82",
+        "kind": "page",
+        "slug": "contact",
+        "title": "Contact",
+        "settings": {
+          "hideHeader": false,
+          "hideFooter": false,
+          "hideFromNavigation": false
+        },
+        "doc": {
+          "root": {
+            "props": {}
+          },
+          "content": [
+            {
+              "type": "ContactForm",
+              "props": {
+                "colors": "page",
+                "title": "Get in touch",
+                "text": "<p>Tell me what you'd like photographed, where and roughly when. I'll reply within two days.</p>",
+                "askPhone": false,
+                "buttonLabel": "Send",
+                "id": "contactform-20"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "pageOrder": [
+      "Md0NeLN7ljy5uXIM",
+      "fipURVrKOnLgfdI1",
+      "WuVP9a7vXRsqtesp",
+      "SKDmn7x2HAgocDkQ",
+      "ge5fzHNPTYnWir82",
+      "qoPfmKWbqiwQwCS7"
+    ],
+    "homePageId": "Md0NeLN7ljy5uXIM",
+    "media": {},
+    "code": {
+      "css": "",
+      "js": "",
+      "head": "",
+      "bodyEnd": ""
+    },
+    "menu": {
+      "follows": "pages",
+      "items": [
+        {
+          "id": "M5H12L2S9d4XbTe7",
+          "kind": "page",
+          "pageId": "Md0NeLN7ljy5uXIM",
+          "hidden": false
+        },
+        {
+          "id": "XPANXffaVT47DHaQ",
+          "kind": "page",
+          "pageId": "fipURVrKOnLgfdI1",
+          "hidden": false
+        },
+        {
+          "id": "wyXQ0U5KV2WAQolt",
+          "kind": "page",
+          "pageId": "WuVP9a7vXRsqtesp",
+          "hidden": false
+        },
+        {
+          "id": "fntFTgHvdF254ULB",
+          "kind": "page",
+          "pageId": "SKDmn7x2HAgocDkQ",
+          "hidden": false
+        },
+        {
+          "id": "I3bgi7SWeKEOIEuJ",
+          "kind": "page",
+          "pageId": "ge5fzHNPTYnWir82",
+          "hidden": false
+        }
+      ]
+    },
+    "sharedSections": {}
+  }
+}

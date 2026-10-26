@@ -29,6 +29,13 @@ describe("template placeholders (2.15, Q6 refined)", () => {
     expect(placeholderPng({ ...shapes, seed: 8 })).not.toEqual(placeholderPng(shapes));
   });
 
+  it("draws landscapes and products that differ by seed (2.15b)", () => {
+    for (const motif of ["landscape", "product"] as const) {
+      const at = (seed: number) => placeholderPng({ ...spec, motif, seed });
+      expect(at(1), motif).not.toEqual(at(2));
+    }
+  });
+
   it("uses only the colours given, blended at the shapes' edges", () => {
     const pixels = drawPlaceholder({ ...spec, motif: "portrait" });
     // The top-left corner is the background.

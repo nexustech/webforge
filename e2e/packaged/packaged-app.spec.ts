@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type Browser, chromium, expect, type Page, test } from "@playwright/test";
 import { ProjectStore } from "@webforge/storage";
+import { BLANK_TEMPLATE_ID, TEMPLATE_IDS } from "@webforge/templates";
 import { FONT_BUDGET_BYTES, FONT_CATALOGUE } from "@webforge/themes";
 import { desktopVersion } from "../app/launch.js";
 
@@ -218,7 +219,10 @@ test("ships the templates beside app.asar, and New Site lists them (2.14a)", asy
     ).webforge.templates.list(),
   );
 
-  expect(listed.map((template) => template.id)).toEqual(["sample", "personal"]);
+  // Every template but Blank, which New Site offers on its own (2.15c).
+  expect(listed.map((template) => template.id)).toEqual(
+    TEMPLATE_IDS.filter((id) => id !== BLANK_TEMPLATE_ID),
+  );
 });
 
 // Last: it quits the app.
