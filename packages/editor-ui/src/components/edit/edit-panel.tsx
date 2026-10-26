@@ -109,6 +109,11 @@ export type EditPanelProps = {
   /** Shows the Content tab only, without Style and Advanced (Content mode, M3). */
   readonly contentOnly?: boolean | undefined;
   /**
+   * Shows the Content tab's fields as the panel's one list, without tabs: for what isn't an
+   * element (the Theme tab, 2.3a).
+   */
+  readonly single?: boolean | undefined;
+  /**
    * Which element the fields are for (its id). The fields start afresh for another element, so
    * nothing typed for one (an unfinished anchor) shows up on the next.
    */
@@ -714,6 +719,7 @@ export function EditPanel({
   onClosedGroupsChange,
   advanced = false,
   contentOnly = false,
+  single = false,
   itemKey,
 }: EditPanelProps) {
   const idPrefix = useId();
@@ -827,7 +833,7 @@ export function EditPanel({
           // another type starts on its first tab with fields.
           key={`${heading}${contentOnly ? ":content" : ""}`}
           defaultValue={
-            contentOnly || content.length > 0
+            contentOnly || single || content.length > 0
               ? "content"
               : style.length > 0
                 ? "style"
@@ -837,16 +843,18 @@ export function EditPanel({
           }
           className="min-h-0 flex-1"
         >
-          <TabsList aria-label={t("editPanel.tabs")}>
-            <TabsTrigger value="content">{t("editPanel.content")}</TabsTrigger>
-            {contentOnly ? null : <TabsTrigger value="style">{t("editPanel.style")}</TabsTrigger>}
-            {advanced && !contentOnly ? (
-              <TabsTrigger value="advanced">{t("editPanel.advanced")}</TabsTrigger>
-            ) : null}
-          </TabsList>
+          {single ? null : (
+            <TabsList aria-label={t("editPanel.tabs")}>
+              <TabsTrigger value="content">{t("editPanel.content")}</TabsTrigger>
+              {contentOnly ? null : <TabsTrigger value="style">{t("editPanel.style")}</TabsTrigger>}
+              {advanced && !contentOnly ? (
+                <TabsTrigger value="advanced">{t("editPanel.advanced")}</TabsTrigger>
+              ) : null}
+            </TabsList>
+          )}
           {list("content", content)}
-          {contentOnly ? null : list("style", style)}
-          {advanced && !contentOnly ? list("advanced", advancedFields) : null}
+          {contentOnly || single ? null : list("style", style)}
+          {advanced && !contentOnly && !single ? list("advanced", advancedFields) : null}
         </Tabs>
       </div>
     </FieldRenderersProvider>

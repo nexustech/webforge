@@ -22,4 +22,13 @@ export const fonts = {
   "fonts.pairing.handmade": "Handmade",
   "fonts.pairing.strong": "Strong",
   "fonts.pairing.luxury": "Luxury",
+  // A theme font's field and the font picker (2.3a, UX-15).
+  "fonts.choose": "Choose a font…",
+  "fonts.change": "{name}",
+  "fonts.picker.title": "Choose a font",
+  "fonts.picker.description": "Double-click a font, or press Enter, to use it.",
+  "fonts.picker.none": "No font matches.",
+  "fonts.picker.tile": "Aa",
+  "fonts.picker.sampleLabel": "Sample text",
+  "fonts.picker.sample": "The quick brown fox jumps over the lazy dog",
 } as const;
