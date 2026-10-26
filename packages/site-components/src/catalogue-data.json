@@ -7,7 +7,10 @@
         "kind": "text",
         "label": "Site name",
         "inline": true,
-        "bindable": ["general.name", "contact.businessName"]
+        "bindable": [
+          "general.name",
+          "contact.businessName"
+        ]
       },
       "sticky": {
         "kind": "toggle",
@@ -183,7 +186,10 @@
         "label": "Margin",
         "property": "margin",
         "responsive": true,
-        "sides": ["top", "bottom"]
+        "sides": [
+          "top",
+          "bottom"
+        ]
       },
       "entrance": {
         "kind": "select",
@@ -311,7 +317,10 @@
         "label": "Margin",
         "property": "margin",
         "responsive": true,
-        "sides": ["top", "bottom"]
+        "sides": [
+          "top",
+          "bottom"
+        ]
       },
       "entrance": {
         "kind": "select",
@@ -390,7 +399,10 @@
         "label": "Margin",
         "property": "margin",
         "responsive": true,
-        "sides": ["top", "bottom"]
+        "sides": [
+          "top",
+          "bottom"
+        ]
       },
       "entrance": {
         "kind": "select",
@@ -522,7 +534,10 @@
         "label": "Margin",
         "property": "margin",
         "responsive": true,
-        "sides": ["top", "bottom"]
+        "sides": [
+          "top",
+          "bottom"
+        ]
       },
       "entrance": {
         "kind": "select",
@@ -699,7 +714,10 @@
         "label": "Margin",
         "property": "margin",
         "responsive": true,
-        "sides": ["top", "bottom"]
+        "sides": [
+          "top",
+          "bottom"
+        ]
       },
       "entrance": {
         "kind": "select",
@@ -811,7 +829,10 @@
         "label": "Margin",
         "property": "margin",
         "responsive": true,
-        "sides": ["top", "bottom"]
+        "sides": [
+          "top",
+          "bottom"
+        ]
       }
     },
     "defaults": {
@@ -826,7 +847,9 @@
       "columns": {
         "kind": "slot",
         "label": "Columns",
-        "allow": ["Column"],
+        "allow": [
+          "Column"
+        ],
         "max": 4
       },
       "layout": {
@@ -880,7 +903,10 @@
         "label": "Margin",
         "property": "margin",
         "responsive": true,
-        "sides": ["top", "bottom"]
+        "sides": [
+          "top",
+          "bottom"
+        ]
       },
       "entrance": {
         "kind": "select",
@@ -1021,7 +1047,9 @@
       "items": {
         "kind": "slot",
         "label": "Items",
-        "allow": ["ListItem"]
+        "allow": [
+          "ListItem"
+        ]
       },
       "style": {
         "kind": "select",
@@ -1051,7 +1079,10 @@
         "label": "Margin",
         "property": "margin",
         "responsive": true,
-        "sides": ["top", "bottom"]
+        "sides": [
+          "top",
+          "bottom"
+        ]
       },
       "entrance": {
         "kind": "select",
@@ -1232,7 +1263,10 @@
         "label": "Margin",
         "property": "margin",
         "responsive": true,
-        "sides": ["top", "bottom"]
+        "sides": [
+          "top",
+          "bottom"
+        ]
       },
       "entrance": {
         "kind": "select",
@@ -1367,7 +1401,10 @@
         "label": "Margin",
         "property": "margin",
         "responsive": true,
-        "sides": ["top", "bottom"]
+        "sides": [
+          "top",
+          "bottom"
+        ]
       }
     },
     "defaults": {
@@ -1444,7 +1481,10 @@
         "label": "Margin",
         "property": "margin",
         "responsive": true,
-        "sides": ["top", "bottom"]
+        "sides": [
+          "top",
+          "bottom"
+        ]
       },
       "entrance": {
         "kind": "select",
@@ -1576,7 +1616,10 @@
         "label": "Margin",
         "property": "margin",
         "responsive": true,
-        "sides": ["top", "bottom"]
+        "sides": [
+          "top",
+          "bottom"
+        ]
       },
       "entrance": {
         "kind": "select",
@@ -1686,7 +1729,10 @@
         "label": "Margin",
         "property": "margin",
         "responsive": true,
-        "sides": ["top", "bottom"]
+        "sides": [
+          "top",
+          "bottom"
+        ]
       },
       "entrance": {
         "kind": "select",
@@ -1816,7 +1862,10 @@
         "label": "Margin",
         "property": "margin",
         "responsive": true,
-        "sides": ["top", "bottom"]
+        "sides": [
+          "top",
+          "bottom"
+        ]
       },
       "entrance": {
         "kind": "select",
@@ -1911,7 +1960,9 @@
       "items": {
         "kind": "slot",
         "label": "Questions",
-        "allow": ["FaqItem"]
+        "allow": [
+          "FaqItem"
+        ]
       },
       "colors": {
         "kind": "select",
@@ -1939,7 +1990,10 @@
         "label": "Margin",
         "property": "margin",
         "responsive": true,
-        "sides": ["top", "bottom"]
+        "sides": [
+          "top",
+          "bottom"
+        ]
       },
       "entrance": {
         "kind": "select",
@@ -2057,7 +2111,9 @@
       "images": {
         "kind": "slot",
         "label": "Images",
-        "allow": ["GalleryImage"]
+        "allow": [
+          "GalleryImage"
+        ]
       },
       "colors": {
         "kind": "select",
@@ -2085,7 +2141,10 @@
         "label": "Margin",
         "property": "margin",
         "responsive": true,
-        "sides": ["top", "bottom"]
+        "sides": [
+          "top",
+          "bottom"
+        ]
       },
       "entrance": {
         "kind": "select",
@@ -2199,7 +2258,9 @@
       "slides": {
         "kind": "slot",
         "label": "Slides",
-        "allow": ["CarouselSlide"]
+        "allow": [
+          "CarouselSlide"
+        ]
       },
       "autoplay": {
         "kind": "toggle",
@@ -2237,7 +2298,10 @@
         "label": "Margin",
         "property": "margin",
         "responsive": true,
-        "sides": ["top", "bottom"]
+        "sides": [
+          "top",
+          "bottom"
+        ]
       },
       "variant": {
         "kind": "select",
@@ -2338,7 +2402,10 @@
         "label": "Margin",
         "property": "margin",
         "responsive": true,
-        "sides": ["top", "bottom"]
+        "sides": [
+          "top",
+          "bottom"
+        ]
       },
       "entrance": {
         "kind": "select",
@@ -2439,7 +2506,9 @@
         "kind": "text",
         "label": "Address",
         "help": "The place's address, or a link to it from OpenStreetMap. An address shows on Google Maps.",
-        "bindable": ["contact.address"]
+        "bindable": [
+          "contact.address"
+        ]
       },
       "colors": {
         "kind": "select",
@@ -2467,7 +2536,10 @@
         "label": "Margin",
         "property": "margin",
         "responsive": true,
-        "sides": ["top", "bottom"]
+        "sides": [
+          "top",
+          "bottom"
+        ]
       },
       "entrance": {
         "kind": "select",
@@ -2568,7 +2640,10 @@
         "label": "Margin",
         "property": "margin",
         "responsive": true,
-        "sides": ["top", "bottom"]
+        "sides": [
+          "top",
+          "bottom"
+        ]
       },
       "entrance": {
         "kind": "select",
@@ -2640,7 +2715,9 @@
         "kind": "text",
         "label": "Address",
         "help": "The place's address, or a link to it from OpenStreetMap. An address shows on Google Maps.",
-        "bindable": ["contact.address"]
+        "bindable": [
+          "contact.address"
+        ]
       },
       "name": {
         "kind": "text",
@@ -2652,7 +2729,10 @@
         "label": "Margin",
         "property": "margin",
         "responsive": true,
-        "sides": ["top", "bottom"]
+        "sides": [
+          "top",
+          "bottom"
+        ]
       },
       "entrance": {
         "kind": "select",
@@ -2767,7 +2847,10 @@
         "label": "Margin",
         "property": "margin",
         "responsive": true,
-        "sides": ["top", "bottom"]
+        "sides": [
+          "top",
+          "bottom"
+        ]
       },
       "entrance": {
         "kind": "select",
@@ -2899,7 +2982,10 @@
         "label": "Margin",
         "property": "margin",
         "responsive": true,
-        "sides": ["top", "bottom"]
+        "sides": [
+          "top",
+          "bottom"
+        ]
       },
       "entrance": {
         "kind": "select",
@@ -3041,7 +3127,10 @@
         "label": "Margin",
         "property": "margin",
         "responsive": true,
-        "sides": ["top", "bottom"]
+        "sides": [
+          "top",
+          "bottom"
+        ]
       },
       "entrance": {
         "kind": "select",
@@ -3133,7 +3222,9 @@
       "fields": {
         "kind": "slot",
         "label": "Fields",
-        "allow": ["FormField"]
+        "allow": [
+          "FormField"
+        ]
       },
       "label": {
         "kind": "text",
@@ -3149,7 +3240,10 @@
         "label": "Margin",
         "property": "margin",
         "responsive": true,
-        "sides": ["top", "bottom"]
+        "sides": [
+          "top",
+          "bottom"
+        ]
       },
       "entrance": {
         "kind": "select",
@@ -3327,7 +3421,9 @@
       "items": {
         "kind": "slot",
         "label": "Features",
-        "allow": ["Feature"]
+        "allow": [
+          "Feature"
+        ]
       },
       "hover": {
         "kind": "select",
@@ -3378,7 +3474,10 @@
         "label": "Margin",
         "property": "margin",
         "responsive": true,
-        "sides": ["top", "bottom"]
+        "sides": [
+          "top",
+          "bottom"
+        ]
       },
       "entrance": {
         "kind": "select",
@@ -3529,7 +3628,9 @@
       "items": {
         "kind": "slot",
         "label": "Testimonials",
-        "allow": ["Testimonial"]
+        "allow": [
+          "Testimonial"
+        ]
       },
       "hover": {
         "kind": "select",
@@ -3580,7 +3681,10 @@
         "label": "Margin",
         "property": "margin",
         "responsive": true,
-        "sides": ["top", "bottom"]
+        "sides": [
+          "top",
+          "bottom"
+        ]
       },
       "entrance": {
         "kind": "select",
@@ -3741,7 +3845,9 @@
       "items": {
         "kind": "slot",
         "label": "Team members",
-        "allow": ["TeamMember"]
+        "allow": [
+          "TeamMember"
+        ]
       },
       "hover": {
         "kind": "select",
@@ -3792,7 +3898,10 @@
         "label": "Margin",
         "property": "margin",
         "responsive": true,
-        "sides": ["top", "bottom"]
+        "sides": [
+          "top",
+          "bottom"
+        ]
       },
       "entrance": {
         "kind": "select",
@@ -3954,7 +4063,9 @@
       "items": {
         "kind": "slot",
         "label": "Plans",
-        "allow": ["PricingPlan"]
+        "allow": [
+          "PricingPlan"
+        ]
       },
       "hover": {
         "kind": "select",
@@ -4005,7 +4116,10 @@
         "label": "Margin",
         "property": "margin",
         "responsive": true,
-        "sides": ["top", "bottom"]
+        "sides": [
+          "top",
+          "bottom"
+        ]
       },
       "entrance": {
         "kind": "select",
@@ -4248,7 +4362,10 @@
         "label": "Margin",
         "property": "margin",
         "responsive": true,
-        "sides": ["top", "bottom"]
+        "sides": [
+          "top",
+          "bottom"
+        ]
       },
       "entrance": {
         "kind": "select",
@@ -4321,14 +4438,19 @@
       "tabs": {
         "kind": "slot",
         "label": "Tabs",
-        "allow": ["Tab"]
+        "allow": [
+          "Tab"
+        ]
       },
       "margin": {
         "kind": "box",
         "label": "Margin",
         "property": "margin",
         "responsive": true,
-        "sides": ["top", "bottom"]
+        "sides": [
+          "top",
+          "bottom"
+        ]
       },
       "entrance": {
         "kind": "select",
@@ -4476,7 +4598,9 @@
       "items": {
         "kind": "slot",
         "label": "Logos",
-        "allow": ["Logo"]
+        "allow": [
+          "Logo"
+        ]
       },
       "colors": {
         "kind": "select",
@@ -4504,7 +4628,10 @@
         "label": "Margin",
         "property": "margin",
         "responsive": true,
-        "sides": ["top", "bottom"]
+        "sides": [
+          "top",
+          "bottom"
+        ]
       },
       "entrance": {
         "kind": "select",
@@ -4649,7 +4776,9 @@
       "items": {
         "kind": "slot",
         "label": "Stats",
-        "allow": ["Stat"]
+        "allow": [
+          "Stat"
+        ]
       },
       "colors": {
         "kind": "select",
@@ -4677,7 +4806,10 @@
         "label": "Margin",
         "property": "margin",
         "responsive": true,
-        "sides": ["top", "bottom"]
+        "sides": [
+          "top",
+          "bottom"
+        ]
       },
       "entrance": {
         "kind": "select",
@@ -4823,7 +4955,10 @@
         "label": "Margin",
         "property": "margin",
         "responsive": true,
-        "sides": ["top", "bottom"]
+        "sides": [
+          "top",
+          "bottom"
+        ]
       }
     },
     "defaults": {
