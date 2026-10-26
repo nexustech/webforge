@@ -40,6 +40,7 @@ import { registerIpcHandler } from "./ipc.js";
 import { logFailure } from "./log.js";
 import { registerMediaHandlers } from "./media-ipc.js";
 import { createMediaResponder } from "./media-protocol.js";
+import { shippedTemplateReader } from "./new-site.js";
 import {
   openPreferencesStore,
   type PreferencesStore,
@@ -248,7 +249,8 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
   );
 
   // The templates New Site offers (2.14a), outside app.asar: in the packaged app's resources, or
-  // where the build copied them while developing. Read once, when first listed or used.
+  // where the build copied them while developing. The list is read once, when first shown; New Site
+  // reads only the template it makes (2.15c), so a damaged one never stops Blank.
   const templatesDir = app.isPackaged
     ? join(process.resourcesPath, "templates")
     : join(app.getAppPath(), "out", "templates");
@@ -393,7 +395,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       recovery: { backups, dialogs: parts.recoveryDialogs },
       recent: recentSites,
       beforeSwitch: () => siteSwitch.leaveSite(),
-      templates,
+      template: shippedTemplateReader(templatesDir),
     });
     registerCanvasHandlers(ipcMain, isTrustedSender, canvasStyles);
     registerFontHandlers(ipcMain, isTrustedSender, fonts.downloaded());

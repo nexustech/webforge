@@ -1,8 +1,7 @@
-import type { TemplateFolder } from "@webforge/templates/node";
 import type { IpcMain } from "electron";
 import type { Backups } from "./backups.js";
 import { registerIpcHandler } from "./ipc.js";
-import { fillNewSite } from "./new-site.js";
+import { fillNewSite, type TemplateReader } from "./new-site.js";
 import type { ProjectSession } from "./project-session.js";
 import type { RecentSites } from "./recent-sites.js";
 import { openOrRecover, type RecoveryDialogs } from "./recovery.js";
@@ -59,11 +58,18 @@ export function registerProjectHandlers(
      * the canvas is captured for the Recent list.
      */
     readonly beforeSwitch?: () => Promise<void>;
-    /** The templates the app ships, which New Site makes sites from (2.14a); read when needed. */
-    readonly templates?: () => readonly TemplateFolder[];
+    /** Reads a template the app ships, which New Site makes a site from (2.14a, 2.15c). */
+    readonly template?: TemplateReader;
   } = {},
 ): void {
-  const { recovery, recent, beforeSwitch, templates = () => [] } = options;
+  const {
+    recovery,
+    recent,
+    beforeSwitch,
+    template = (id) => {
+      throw new Error(`No template ${id}`);
+    },
+  } = options;
   const open = async (path: string) => {
     await beforeSwitch?.();
     return recovery === undefined
@@ -78,7 +84,7 @@ export function registerProjectHandlers(
     await beforeSwitch?.();
     return session.create(path, {
       name: request.name,
-      fill: (target) => fillNewSite(target, request, templates),
+      fill: (target) => fillNewSite(target, request, template),
     });
   });
   registerIpcHandler(ipc, "openProject", isTrustedSender, async () => {

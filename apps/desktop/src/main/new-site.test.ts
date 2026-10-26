@@ -1,20 +1,31 @@
 import { createHash } from "node:crypto";
-import { mkdtempSync, rmSync } from "node:fs";
+import { cpSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DEFAULT_THEME } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
-import { readTemplates, type TemplateFolder } from "@webforge/templates/node";
+import { readTemplates, TEMPLATES_DIR, type TemplateFolder } from "@webforge/templates/node";
 import { themePreset } from "@webforge/themes";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createImportJobs } from "../worker/store-import.js";
-import { fillNewSite, newSiteImporter } from "./new-site.js";
+import { fillNewSite, newSiteImporter, shippedTemplateReader } from "./new-site.js";
 import { createInlineStorageWriter } from "./storage-writer.js";
 
 let dir: string;
 let sitePath: string;
 let store: ProjectStore;
 const templates = readTemplates();
+
+/** Reads the shipped templates, as main does. */
+const shipped = shippedTemplateReader(TEMPLATES_DIR);
+
+/** A reader that has only `folder`, as if it were the template asked for. */
+const only =
+  (folder: TemplateFolder) =>
+  (id: string): TemplateFolder => {
+    if (id !== folder.template.id) throw new Error(`No template ${id}`);
+    return folder;
+  };
 
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), "webforge-new-site-"));
@@ -40,7 +51,7 @@ describe("fillNewSite (2.14a)", () => {
     await fillNewSite(
       into,
       { name: "Rosa's Bakery", theme: "atelier", template: "sample" },
-      () => templates,
+      shipped,
     );
 
     const site = store.readSite();
@@ -79,22 +90,20 @@ describe("fillNewSite (2.14a)", () => {
     const changed = { ...folder, images: [{ ...first, hash: "0".repeat(64) }] };
 
     await expect(
-      fillNewSite(target(), { name: "Bakery", theme: "light", template: "sample" }, () => [
-        changed,
-      ]),
+      fillNewSite(target(), { name: "Bakery", theme: "light", template: "sample" }, only(changed)),
     ).rejects.toThrow(`image ${first.file} isn't as its manifest says (stored)`);
     expect(store.isEmpty()).toBe(true);
 
     const failed = { ...target(), importFile: async () => ({ status: "failed" }) as const };
     await expect(
-      fillNewSite(failed, { name: "Bakery", theme: "light", template: "sample" }, () => templates),
+      fillNewSite(failed, { name: "Bakery", theme: "light", template: "sample" }, shipped),
     ).rejects.toThrow("(failed)");
   });
 
   it("writes the Blank template without a template chosen, named and in the chosen theme (2.15c)", async () => {
     const into = target();
 
-    await fillNewSite(into, { name: "Hightown Plumbing", theme: "workshop" }, () => templates);
+    await fillNewSite(into, { name: "Hightown Plumbing", theme: "workshop" }, shipped);
 
     const site = store.readSite();
     expect(site.settings.general.name).toBe("Hightown Plumbing");
@@ -112,18 +121,38 @@ describe("fillNewSite (2.14a)", () => {
   });
 
   it("refuses when the Blank template is missing", async () => {
-    await expect(
-      fillNewSite(target(), { name: "Bakery", theme: "light" }, () => []),
-    ).rejects.toThrow("No template blank");
-    expect(store.isEmpty()).toBe(true);
+    const empty = mkdtempSync(join(tmpdir(), "webforge-no-templates-"));
+    try {
+      await expect(
+        fillNewSite(target(), { name: "Bakery", theme: "light" }, shippedTemplateReader(empty)),
+      ).rejects.toThrow();
+      expect(store.isEmpty()).toBe(true);
+    } finally {
+      rmSync(empty, { recursive: true, force: true });
+    }
+  });
+
+  it("makes Blank when another template is damaged, reading only the one it makes", async () => {
+    // A copy of the shipped templates with the sample's template.json broken.
+    const copy = mkdtempSync(join(tmpdir(), "webforge-damaged-templates-"));
+    try {
+      cpSync(TEMPLATES_DIR, copy, { recursive: true });
+      writeFileSync(join(copy, "sample", "template.json"), "{ not json");
+      const reader = shippedTemplateReader(copy);
+
+      await fillNewSite(target(), { name: "Hightown Plumbing", theme: "light" }, reader);
+
+      expect(store.readSite().settings.general.name).toBe("Hightown Plumbing");
+      await expect(
+        fillNewSite(target(), { name: "Bakery", theme: "light", template: "sample" }, reader),
+      ).rejects.toThrow();
+    } finally {
+      rmSync(copy, { recursive: true, force: true });
+    }
   });
 
   it("starts in the default theme for a preset this build doesn't have", async () => {
-    await fillNewSite(
-      target(),
-      { name: "Bakery", theme: "from-a-newer-webforge" },
-      () => templates,
-    );
+    await fillNewSite(target(), { name: "Bakery", theme: "from-a-newer-webforge" }, shipped);
 
     expect(store.readSite().theme).toEqual(DEFAULT_THEME);
   });
