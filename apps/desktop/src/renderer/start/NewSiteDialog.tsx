@@ -353,10 +353,20 @@ function Card({
 }
 
 /**
- * A template's picture: its theme's colours until 2.14b's thumbnails, so cards in different themes
- * already look different.
+ * A template's picture: its thumbnail (2.14b), its home page at desktop width; or, for one without,
+ * its theme's colours, so cards in different themes still look different.
  */
 function TemplatePreview({ template }: { readonly template: TemplateSummary }) {
+  if (template.thumbnail !== null) {
+    return (
+      <img
+        src={template.thumbnail}
+        alt=""
+        className="size-full object-cover object-top"
+        draggable={false}
+      />
+    );
+  }
   const colors = (THEME_PRESETS.find((preset) => preset.preset === template.theme) ?? DEFAULT_THEME)
     .colors;
   return (

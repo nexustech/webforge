@@ -11,6 +11,7 @@ const bakery: TemplateSummary = {
   example: true,
   pages: 2,
   theme: "bistro",
+  thumbnail: null,
 };
 
 const meta = {

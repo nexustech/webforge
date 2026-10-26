@@ -39,8 +39,8 @@ export default defineConfig({
       name: "template-thumbnails",
       testMatch: /template-thumbnails\.spec\.ts$/,
       snapshotPathTemplate: "../packages/templates/templates/{arg}{ext}",
-      // A desktop page, drawn at half size: a card's thumbnail, 640×400.
-      use: { viewport: { width: 1280, height: 800 }, deviceScaleFactor: 0.5 },
+      // A desktop page's first screen; cards show it scaled down.
+      use: { viewport: { width: 1280, height: 800 } },
     },
   ],
   webServer: [

@@ -37,6 +37,7 @@ const example: TemplateSummary = {
   example: true,
   pages: 2,
   theme: "light",
+  thumbnail: null,
 };
 
 const many = [

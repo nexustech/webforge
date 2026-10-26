@@ -220,6 +220,7 @@ describe("StartScreen", () => {
       example: true,
       pages: 2,
       theme: "bistro",
+      thumbnail: null,
     };
     const project = api([]);
     const restart = await render(project, vi.fn(), async () => [
@@ -250,6 +251,7 @@ describe("StartScreen", () => {
       example: true,
       pages: 2,
       theme: "light",
+      thumbnail: null,
     };
     const project = api([]);
     await render(project, vi.fn(), async () => [example]);

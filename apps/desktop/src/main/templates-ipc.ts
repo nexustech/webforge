@@ -1,10 +1,14 @@
+import { existsSync, readFileSync } from "node:fs";
 import type { TemplateFolder } from "@webforge/templates/node";
 import type { IpcMain } from "electron";
 import type { TemplateSummary } from "../shared/ipc/templates.js";
 import { registerIpcHandler } from "./ipc.js";
 
-/** What New Site shows of a template (2.14a): never its content, which only main reads. */
-function templateSummary({ template }: TemplateFolder): TemplateSummary {
+/**
+ * What New Site shows of a template (2.14a): never its content, which only main reads, but its
+ * thumbnail (2.14b) as a data URL, or none if the folder has none.
+ */
+function templateSummary({ template, thumbnail }: TemplateFolder): TemplateSummary {
   const pages = Object.values(template.site.pages).filter((page) => page.kind === "page");
   return {
     id: template.id,
@@ -12,6 +16,9 @@ function templateSummary({ template }: TemplateFolder): TemplateSummary {
     example: template.example,
     pages: pages.length,
     theme: template.site.theme.preset,
+    thumbnail: existsSync(thumbnail)
+      ? `data:image/png;base64,${readFileSync(thumbnail).toString("base64")}`
+      : null,
   };
 }
 
