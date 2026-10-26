@@ -1,5 +1,4 @@
 import { t } from "@webforge/i18n";
-import { APPEARANCE_GROUP } from "./appearance.js";
 import type { BehaviourName } from "./behaviours/index.js";
 import type { FieldDef } from "./schema.js";
 
@@ -105,23 +104,18 @@ export function hasEntrance(values: EntranceValues): boolean {
   return entranceOf(values) !== undefined;
 }
 
-/**
- * What a button, image, icon or card does under the pointer (F-DS-5, ST-2); `none` nothing. Darken
- * and Underline came with the Appearance group's hover row (2.22).
- */
-const HOVERS = ["none", "lift", "grow", "shadow", "darken", "underline"] as const;
+/** What a button or card does under the pointer (F-DS-5); `none` nothing. */
+const HOVERS = ["none", "lift", "grow", "shadow"] as const;
 type Hover = (typeof HOVERS)[number];
 
 /**
- * The hover row (F-DS-5, ST-2): *When hovered*, in the Appearance group under its colours and
- * shadow, on the Button, the Image and the Icon (2.22). CSS only, with no script; Lift and Grow
- * move, so only under `motion-safe`.
+ * The hover effect field (F-DS-5), on the Button. CSS only; Lift and Grow move, so only under
+ * `motion-safe`.
  */
 export const HOVER_FIELD = {
   kind: "select",
   label: t("field.hoverEffect"),
   group: "style",
-  optionGroup: APPEARANCE_GROUP,
   options: HOVERS.map((value) => ({ label: t(`field.hoverEffect.${value}`), value })),
 } as const satisfies FieldDef;
 
@@ -141,8 +135,6 @@ const HOVER_CLASS: Readonly<Record<Hover, string>> = {
   // Its own shadow (`--wf-hover-shadow`), so a theme without shadows doesn't take away an
   // effect the person chose.
   shadow: " transition-all hover:shadow-(--wf-hover-shadow)",
-  darken: " transition-[filter] hover:brightness-90",
-  underline: " hover:underline",
 };
 
 /** A hover effect's classes, with a space before them to append to others, or "" for none. */

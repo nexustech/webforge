@@ -83,8 +83,6 @@ describe("hover effects (2.12, F-DS-5)", () => {
       "lift",
       "grow",
       "shadow",
-      "darken",
-      "underline",
     ]);
     expect(hoverClasses("lift")).toContain("motion-safe:hover:-translate-y-1");
     expect(hoverClasses("grow")).toContain("motion-safe:hover:scale-105");
@@ -95,27 +93,5 @@ describe("hover effects (2.12, F-DS-5)", () => {
     expect(html("Button", { label: "Book", hover: "lift" })).toContain(
       "motion-safe:hover:-translate-y-1",
     );
-  });
-
-  it("darkens or underlines, without moving, in the Appearance group's hover row (2.22, ST-2)", () => {
-    expect(hoverClasses("darken")).toBe(" transition-[filter] hover:brightness-90");
-    expect(hoverClasses("underline")).toBe(" hover:underline");
-    expect(HOVER_FIELD.optionGroup.id).toBe("appearance");
-    expect(HOVER_FIELD.label).toBe("When hovered");
-    expect(html("Icon", { icon: "star", hover: "darken" })).toContain("hover:brightness-90");
-    const photo = {
-      sources: [],
-      src: "assets/img/photo-640.jpg",
-      fallback: { type: "image/jpeg" as const, srcset: "assets/img/photo-640.jpg 640w" },
-      width: 640,
-      height: 480,
-      alt: "A photo",
-    };
-    const image = renderNodesToHtml(
-      [{ type: "Image", props: { id: "n", image: { mediaId: "photo" }, hover: "grow" } }],
-      siteLibrary,
-      { ...EDITOR_RENDER_CONTEXT, image: () => photo },
-    );
-    expect(image).toMatch(/<figure class="[^"]*motion-safe:hover:scale-105/);
   });
 });
