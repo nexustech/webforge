@@ -4,7 +4,12 @@ import jpegEncode from "@jsquash/jpeg/codec/enc/mozjpeg_enc.wasm?base64";
 import png from "@jsquash/png/codec/pkg/squoosh_png_bg.wasm?base64";
 import resize from "@jsquash/resize/lib/resize/pkg/squoosh_resize_bg.wasm?base64";
 import webpEncode from "@jsquash/webp/codec/enc/webp_enc_simd.wasm?base64";
-import { compileCodecs, type PipelineResources, type StyleResources } from "@webforge/pipeline";
+import {
+  compileCodecs,
+  onceUntilFailure,
+  type PipelineResources,
+  type StyleResources,
+} from "@webforge/pipeline";
 import daisyui from "daisyui";
 import daisyuiTheme from "daisyui/theme";
 import preflight from "tailwindcss/preflight.css?raw";
@@ -21,7 +26,6 @@ function bytesOf(base64: string): Uint8Array<ArrayBuffer> {
 }
 
 let styles: StyleResources | null = null;
-let resources: Promise<PipelineResources> | null = null;
 
 /** What compiling CSS needs: stylesheets and daisyUI, loaded once per worker. */
 export function loadStyleResources(): StyleResources {
@@ -39,19 +43,17 @@ export function loadStyleResources(): StyleResources {
 
 /**
  * The pipeline's resources, decoded and compiled once per worker. The image codecs are compiled
- * only here, so a worker that only compiles canvas CSS never pays for them.
+ * only here, so a worker that only compiles canvas CSS never pays for them. A failed load isn't
+ * kept: the long-lived workers try again with their next job (R15).
  */
-export function loadBundledResources(): Promise<PipelineResources> {
-  resources ??= (async () => {
-    const codecs = await compileCodecs({
-      jpegDecode: bytesOf(jpegDecode),
-      jpegEncode: bytesOf(jpegEncode),
-      png: bytesOf(png),
-      webpEncode: bytesOf(webpEncode),
-      resize: bytesOf(resize),
-    });
-    // An export's fonts come with its job (`runExport`); no other job needs any.
-    return { ...loadStyleResources(), codecs, readFont: async () => undefined };
-  })();
-  return resources;
-}
+export const loadBundledResources: () => Promise<PipelineResources> = onceUntilFailure(async () => {
+  const codecs = await compileCodecs({
+    jpegDecode: bytesOf(jpegDecode),
+    jpegEncode: bytesOf(jpegEncode),
+    png: bytesOf(png),
+    webpEncode: bytesOf(webpEncode),
+    resize: bytesOf(resize),
+  });
+  // An export's fonts come with its job (`runExport`); no other job needs any.
+  return { ...loadStyleResources(), codecs, readFont: async () => undefined };
+});

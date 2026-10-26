@@ -45,7 +45,13 @@ const exportRequestSchema = z.strictObject({
 export type ExportRequest = z.infer<typeof exportRequestSchema>;
 
 /** Why an export failed; the renderer shows a translated message for each. */
-const exportFailureReasonSchema = z.enum(["folder-not-empty", "build-failed", "write-failed"]);
+const exportFailureReasonSchema = z.enum([
+  "folder-not-empty",
+  "build-failed",
+  "write-failed",
+  // A page or its folder is named after a Windows device: `page` says which, to rename (R16).
+  "reserved-name",
+]);
 
 /** Outcome of exporting the site to a folder. */
 const exportResultSchema = z.discriminatedUnion("status", [
@@ -58,7 +64,12 @@ const exportResultSchema = z.discriminatedUnion("status", [
     warnings: z.int().nonnegative(),
   }),
   z.strictObject({ status: z.literal("canceled") }),
-  z.strictObject({ status: z.literal("failed"), reason: exportFailureReasonSchema }),
+  z.strictObject({
+    status: z.literal("failed"),
+    reason: exportFailureReasonSchema,
+    /** The page to fix, by its title, for `reserved-name`. */
+    page: z.string().max(500).optional(),
+  }),
 ]);
 
 /** Outcome of exporting the site to a folder. */

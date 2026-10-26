@@ -4,7 +4,7 @@ import { describe, expect, expectTypeOf, it } from "vitest";
 import { BEHAVIOUR_SCRIPTS } from "./behaviours.js";
 import { siteLibrary } from "./catalogue/index.js";
 import { type ComponentSpec, createLibrary, defineComponent } from "./define.js";
-import { type ComponentDef, EDITOR_RENDER_CONTEXT } from "./library.js";
+import { type ComponentDef, EDITOR_RENDER_CONTEXT, fieldsHiddenBy } from "./library.js";
 import type { FieldDef } from "./schema.js";
 
 /**
@@ -190,6 +190,42 @@ describe("defineComponent (2.5)", () => {
         variants: [{ label: "A", value: "a" }],
       }),
     ).toThrow(`'Card' has variants and a field named "variant"`);
+  });
+
+  it("hides the fields a layout doesn't use, and refuses one that isn't a field (#311)", () => {
+    const def = defineComponent({
+      ...base,
+      variants: [
+        { label: "Big", value: "big" },
+        { label: "Plain", value: "plain", hides: ["size", "size"] },
+      ],
+    });
+
+    expect(def.variantHides).toEqual({ plain: ["size"] });
+    // The Layout choice offers the layouts only.
+    expect(def.fields.variant).toMatchObject({
+      options: [
+        { label: "Big", value: "big" },
+        { label: "Plain", value: "plain" },
+      ],
+    });
+    expect(fieldsHiddenBy(def, { ...def.defaults })).toEqual(new Set());
+    expect(fieldsHiddenBy(def, { ...def.defaults, variant: "plain" })).toEqual(new Set(["size"]));
+    expect(fieldsHiddenBy(defineComponent(base), { variant: "plain" })).toEqual(new Set());
+    expect(() =>
+      defineComponent({
+        ...base,
+        variants: [{ label: "Plain", value: "plain", hides: ["colour"] }],
+      }),
+    ).toThrow(`'Card' hides "colour" in its "plain" layout, which isn't a field`);
+  });
+
+  it("hides the Hero's image in its text-only layout, and its alignment when centred", () => {
+    const hero = siteLibrary.components.Hero;
+    if (hero === undefined) throw new Error("no Hero");
+    expect(fieldsHiddenBy(hero, { variant: "minimal" })).toEqual(new Set(["image"]));
+    expect(fieldsHiddenBy(hero, { variant: "centred" })).toEqual(new Set(["alignment"]));
+    expect(fieldsHiddenBy(hero, { variant: "split" })).toEqual(new Set());
   });
 
   it("knows the behaviours of behaviours/, by file name", () => {

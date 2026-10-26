@@ -25,9 +25,11 @@ export function exportMessage(
         text:
           result.reason === "folder-not-empty"
             ? t("export.failed.folderNotEmpty")
-            : result.reason === "write-failed"
-              ? t("export.failed.writeFailed")
-              : t("export.failed.buildFailed"),
+            : result.reason === "reserved-name"
+              ? t("export.failed.reservedName", { page: result.page ?? "" })
+              : result.reason === "write-failed"
+                ? t("export.failed.writeFailed")
+                : t("export.failed.buildFailed"),
       };
   }
 }

@@ -8,7 +8,11 @@ import { z } from "zod";
  */
 const downloadedFamiliesSchema = z.array(catalogueFontSchema).max(2);
 
-/** What the main process asks the export worker to do. */
+/**
+ * What the main process asks the export worker to do. The snapshot names its images and
+ * documents by hash: the worker asks for each one's bytes as the build reaches it
+ * ({@link blobRequestSchema}), so neither process holds them all (R15).
+ */
 const exportJobSchema = z.strictObject({
   type: z.literal("export"),
   snapshot: siteSnapshotSchema,
@@ -74,6 +78,30 @@ export type ClassCssJob = z.infer<typeof classCssJobSchema>;
 
 /** Bytes of any buffer kind (a Node `Buffer` too), which `z.instanceof` would narrow. */
 const bytesSchema = z.custom<Uint8Array>((value) => value instanceof Uint8Array);
+
+/** The export worker asks for the bytes the open site stores under `hash` (R15). */
+export const blobRequestSchema = z.strictObject({
+  type: z.literal("read-blob"),
+  /** Matches the answer to the request. */
+  id: z.int().nonnegative(),
+  hash: z.string().regex(/^[0-9a-f]{64}$/),
+});
+
+/**
+ * What the main process sends the export worker during its export: the bytes it asked for (none
+ * if the site doesn't store them), or that the export is cancelled.
+ */
+export const exportMessageSchema = z.discriminatedUnion("type", [
+  z.strictObject({
+    type: z.literal("blob"),
+    id: z.int().nonnegative(),
+    blob: z.strictObject({ data: bytesSchema, mime: z.string().max(255) }).optional(),
+  }),
+  z.strictObject({ type: z.literal("cancel") }),
+]);
+
+/** What the main process sends the export worker during its export. */
+export type ExportMessage = z.infer<typeof exportMessageSchema>;
 
 /** Makes the editor's preview of a Media image (1.16); a long-lived worker answers many. */
 const thumbnailJobSchema = z.strictObject({
@@ -161,11 +189,15 @@ export const exportOutcomeSchema = z.discriminatedUnion("type", [
     warnings: z.int().nonnegative(),
     durationMs: z.number().nonnegative(),
   }),
+  /** Cancelled: nothing was changed on disk (R15). */
+  z.strictObject({ type: z.literal("cancelled") }),
   z.strictObject({
     type: z.literal("failed"),
-    code: z.enum(["folder-not-empty", "write-failed", "build-failed"]),
+    code: z.enum(["folder-not-empty", "write-failed", "build-failed", "reserved-name"]),
     /** A machine-readable detail such as a BuildError code; safe to log. */
     detail: z.string(),
+    /** The title of the page to fix, for `reserved-name`: shown to the person, never logged. */
+    page: z.string().max(500).optional(),
   }),
 ]);
 

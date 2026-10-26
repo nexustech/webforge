@@ -1,4 +1,5 @@
 import { RESERVED_SLUGS } from "./site-doc.js";
+import { isDeviceName } from "./site-path.js";
 
 /** The longest slug {@link slugSchema} accepts. */
 const MAX_SLUG_LENGTH = 80;
@@ -24,11 +25,13 @@ export function slugify(name: string): string {
 }
 
 /**
- * `slug`, or `slug-2`, `slug-3`… when it is reserved (`index`, `404`, `assets`) or in `taken`
- * (the slugs already used in the same folder). Shortened first if the number would make it too long.
+ * `slug`, or `slug-2`, `slug-3`… when it is reserved (`index`, `404`, `assets`), a Windows device
+ * name (`con`, `com1`: no such file can be written there) or in `taken` (the slugs already used in
+ * the same folder). Shortened first if the number would make it too long.
  */
 export function uniqueSlug(slug: string, taken: ReadonlySet<string>): string {
-  const free = (candidate: string) => !RESERVED_SLUGS.has(candidate) && !taken.has(candidate);
+  const free = (candidate: string) =>
+    !RESERVED_SLUGS.has(candidate) && !isDeviceName(candidate) && !taken.has(candidate);
   if (free(slug)) {
     return slug;
   }
