@@ -1,6 +1,6 @@
 # Template photos: 2.15a (Café/Restaurant, Salon/Beauty, Trades)
 
-**Status:** 🟡 Shortlist for the product owner's review (2.15a, 26 Oct 2026). Nothing is downloaded until it is approved; a small PR then swaps the approved photos in.
+**Status:** ✅ Decided (product owner, 26 Oct 2026; see *Decision* below). The approved photos replace the generated placeholders in the Café, Salon and Trades templates, as **960 px copies** for now, to be replaced by full-size ones later.
 **Decision:** Q6, refined 26 Oct 2026 ([spec/04 §9](../../spec/04-implementation-plan.md#9-open-questions), [spec/02 §7](../../spec/02-mvp-spec.md)): templates ship with generated placeholders (CC0, made by `tools/src/template-placeholder.ts`), and each batch shortlists real CC0 or public-domain photos.
 
 ## How these were found
@@ -60,7 +60,29 @@ The same way as [stream C's shortlist](template-photos-c.md) and [2.15b's](templ
 
 **The jobs' captions can change to fit the photos.** StockSnap has no CC0 photo of an electric car charging or a wall charger (searches for "electric car", "electric vehicle", "charging", "charger" and "tesla" found phones and batteries), so row 3 is a wall socket and its caption becomes something like "New sockets throughout a house"; the product owner may prefer to keep the generated picture there until a CC0 charger photo turns up. Rows 2, 4, 6 and 7 show the room or garden rather than the fitting itself (a kitchen, a patio at dusk, a bathroom ceiling, a deck with string lights), and the swap PR rewords those captions to match. The hero and Dan's photo are from one series by the same author; Dan's alternate is from another, if the two look too alike side by side.
 
-## For the product owner
-1. **Approve:** the 27 choices, or name an alternate per row.
-2. **The portraits:** use the photos that may show a face (Salon rows 1, 4, 6 and 8; the alternate for Trades row 1), or keep the generated ones until there are photos with model releases. Every team photo's first choice is hands at work.
-3. **The captions:** reworded to fit the photos where the subject has no exact match (Café rows 3, 5 and 6; Salon rows 3–6; Trades rows 2–4, 6 and 7), or keep the generated picture for the EV charger (Trades row 3).
+## Decision (product owner, 26 Oct 2026)
+1. **Photos.** The first choice in every row, except four alternates:
+   - Café 2: Fried Egg, Pawel Kadysz.
+   - Café 8: Food Cook, Timur Saglambilek.
+   - Salon 2: Barbershop Chair, Skitter Photo.
+   - Salon 3: Blonde Hair, Alex Holyoake.
+2. **Portraits.** The rows that may show a face (Salon 1, 4, 6 and 8) use their first choices.
+   - **Trades 5 (the fuse box) keeps its generated picture.** Both its first choice (Breaker Electrical) and its alternate (Wires Electrical) have been taken down from StockSnap since the shortlist: their pages now redirect to StockSnap's home page, so neither still says CC0. Openverse still lists them. The full-size swap can look for another photo.
+3. **Captions and alt text** are reworded to fit each photo, Trades 3's socket included:
+
+   | Template | Gallery captions now |
+   |---|---|
+   | Café | Eggs and seeded toast, Lemon cake, every day |
+   | Salon | Soft blonde ends, A short, sharp cut, Manicures, Lashes and eye make-up |
+   | Trades | Kitchen rewire, New sockets, Patio power, Bathroom refit, Outdoor power (New fuse box stays) |
+
+   Every image's alt text now describes its photo.
+
+### How they were fetched
+- **Only a 960 px copy.** StockSnap's pages and image CDN put scripted requests through a Cloudflare challenge, which isn't to be got around. Openverse's API serves each photo's 960-pixel-wide copy. The product owner chose to use these for now (26 Oct 2026), with full-size photos later.
+- **Not upscaled.** Each photo is cropped to its placeholder's shape at the largest size its copy allows, so the photos are smaller than the placeholders:
+  - squares: 640 px, against the 800–1200 px placeholders;
+  - 4:3: about 850 × 640, against 1000 × 750 or 1200 × 900;
+  - 4:5 from landscape photos: 512 × 640.
+- **Licence check.** Openverse lists each photo as CC0 1.0. All 26 photos used have StockSnap pages that, opened in a browser on 26 Oct 2026, still say CC0.
+- **What `images.json` records:** the StockSnap page as each image's source, with the Openverse record it was fetched through, plus its author and `CC0-1.0`.
