@@ -366,7 +366,7 @@
               "type": "Hero",
               "props": {
                 "variant": "background",
-                "colors": "page",
+                "colors": "inverse",
                 "alignment": "centre",
                 "title": "Light, land and people",
                 "text": "Landscape and portrait photography from the north coast.",
