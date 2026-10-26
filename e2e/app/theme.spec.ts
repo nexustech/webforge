@@ -100,7 +100,7 @@ test("a colour hard to read says so under it, and a readable one doesn't", async
   await hex.selectText();
   await page.keyboard.type("d8d4ff");
   await page.keyboard.press("Enter");
-  // A built-in theme is read-only (2.22): the first change saves the person's own version.
+  // A built-in theme is read-only (2.23): the first change saves the person's own version.
   await page
     .getByRole("dialog", { name: "Save your own version of 'Light'?" })
     .getByRole("button", { name: "Save Theme" })
@@ -169,7 +169,7 @@ test("a photo in Media proposes brand colours, read on this computer, used as on
   await expect(studio.getByRole("list", { name: "Colours from Shop front.jpg" })).toBeVisible();
   const before = (await themeOf(page)).colors.primary;
   await studio.getByRole("button", { name: "Use These Colours" }).click();
-  // A built-in theme is read-only (2.22): the first change saves the person's own version.
+  // A built-in theme is read-only (2.23): the first change saves the person's own version.
   await page
     .getByRole("dialog", { name: "Save your own version of 'Light'?" })
     .getByRole("button", { name: "Save Theme" })
@@ -184,7 +184,7 @@ test("a photo in Media proposes brand colours, read on this computer, used as on
   );
 });
 
-test("a change to a built-in theme saves the person's own, which another site can use (2.22)", async () => {
+test("a change to a built-in theme saves the person's own, which another site can use (2.23)", async () => {
   // Both sites on one computer: the same user data.
   const userData = join(dir, "user-data");
   app = await launchDesktopApp({ args: [sitePath], userDataDir: userData });

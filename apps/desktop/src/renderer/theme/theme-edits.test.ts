@@ -247,7 +247,7 @@ function naming(name: string | undefined) {
   return { names: { askName }, askName };
 }
 
-describe("your own themes (2.22, PH2-17)", () => {
+describe("your own themes (2.23, PH2-17)", () => {
   it("asks for a name before the first change to a built-in theme, and saves the person's own", async () => {
     const { session, labels, theme } = setUp();
     const builtIn = JSON.stringify(THEME_PRESETS);
@@ -303,6 +303,13 @@ describe("your own themes (2.22, PH2-17)", () => {
 
     expect(theme()).toEqual({ ...bistro, own: { id: expect.any(String), name: "Shop" } });
     expect(labels()).toEqual(["Created theme 'Shop'"]);
+
+    // From the site's theme as it is, nothing on the page changes: nothing to ask.
+    const site = answering(false);
+    expect(await createOwnTheme(session, site, theme(), "Shop, again")).toBe(true);
+    expect(site.confirmSiteWide).not.toHaveBeenCalled();
+    expect(theme().own?.name).toBe("Shop, again");
+    expect(labels()).toEqual(["Created theme 'Shop'", "Created theme 'Shop, again'"]);
   });
 
   it("renames one: the site's theme in one step if it's that one, My themes either way", async () => {
@@ -315,9 +322,8 @@ describe("your own themes (2.22, PH2-17)", () => {
     renameOwnTheme(session, { ...theme(), own }, "Corner shop", keep);
     expect(theme().own?.name).toBe("Corner shop");
     expect(labels()).toEqual(["Created theme 'Shop'", "Renamed theme to 'Corner shop'"]);
-    expect(keep).toHaveBeenLastCalledWith(
-      expect.objectContaining({ own: { id: own.id, name: "Corner shop" } }),
-    );
+    // The window keeps the site's theme as it changes (register-own-themes).
+    expect(keep).not.toHaveBeenCalled();
 
     // Another of theirs: only My themes changes.
     const other = {

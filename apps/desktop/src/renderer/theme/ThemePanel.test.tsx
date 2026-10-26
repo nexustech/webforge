@@ -123,7 +123,7 @@ describe("the Theme tab (2.3a)", () => {
   });
 });
 
-describe("the Theme tab's own themes (2.22, PH2-17)", () => {
+describe("the Theme tab's own themes (2.23, PH2-17)", () => {
   it("lists the person's own themes first, and asks for a name before changing a built-in one", async () => {
     const session = sessionWith();
     const night = {

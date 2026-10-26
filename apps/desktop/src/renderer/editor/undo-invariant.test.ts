@@ -296,7 +296,7 @@ const menuCommands: fc.Arbitrary<Command>[] = [
   fc.constant<Command>({ name: "follow the page order", run: (ctx) => followPages(ctx.session) }),
 ];
 
-/** One of the person's own themes' id, for the edits that save or rename it (2.22). */
+/** One of the person's own themes' id, for the edits that save or rename it (2.23). */
 const OWN_THEME_ID = themeIdSchema.parse("theme0000000000a");
 
 /**
@@ -333,7 +333,7 @@ const themeCommands: fc.Arbitrary<Command>[] = [
         draft.theme = { ...draft.theme, shadow };
       }),
   })),
-  // The person's own themes (2.22): a built-in theme saved under a name with its first change, a
+  // The person's own themes (2.23): a built-in theme saved under a name with its first change, a
   // rename, and back to a built-in one.
   fc
     .record({

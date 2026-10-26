@@ -40,7 +40,7 @@ function mine(preset: string, id: string, name: string): OwnTheme {
   };
 }
 
-/** My themes (2.22): the person's own first, with Rename and Delete, after New theme. */
+/** My themes (2.23): the person's own first, with Rename and Delete, after New theme. */
 export const MyThemes: Story = dialogStory((session) => {
   const studio = createStudio();
   studio.setState({ open: true, section: "themes" });

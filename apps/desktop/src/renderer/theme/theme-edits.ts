@@ -24,7 +24,7 @@ type ThemeSession = Pick<EditorSession, "edit"> & {
 
 /**
  * What a theme change asks first, if given: before a change to every page (D7), and for a name
- * before the first change to a built-in theme, which is read-only (2.22, PH2-17). Without them,
+ * before the first change to a built-in theme, which is read-only (2.23, PH2-17). Without them,
  * changes happen at once.
  */
 export type ThemeAsks =
@@ -111,7 +111,7 @@ export function presetName(preset: string): string {
   return isMessageKey(key) ? t(key) : preset;
 }
 
-/** A theme's name: the person's own name for it (2.22), or its preset's. */
+/** A theme's name: the person's own name for it (2.23), or its preset's. */
 export const themeName = (tokens: ThemeTokens): string =>
   tokens.own?.name ?? presetName(tokens.preset);
 
@@ -132,7 +132,7 @@ async function confirmed(
 }
 
 /**
- * Changes the theme by `recipe`: one step, `label`. A built-in theme is read-only (2.22, PH2-17):
+ * Changes the theme by `recipe`: one step, `label`. A built-in theme is read-only (2.23, PH2-17):
  * with `asks.names`, the first change to one asks for a name for the person's own version, and
  * the same step makes it theirs ("Saved theme 'Light (my version)'"); cancelling changes nothing.
  * A change to every page asks `question` first too (D7). False if nothing changed.
@@ -408,9 +408,16 @@ export function setPairing(
   return setFonts(session, asks, { heading: fontRefOf(heading), body: fontRefOf(body) });
 }
 
+/** `tokens` as the page shows them: without the name the person gave them (2.23). */
+function looks(tokens: ThemeTokens): string {
+  const { own: _, ...rest } = tokens;
+  return JSON.stringify(rest);
+}
+
 /**
- * Creates one of the person's own themes (Theme Studio's *New theme*, 2.22): `base`'s tokens under
- * `name`, as the site's theme. Asked first (D7), then one step, "Created theme 'Shop'".
+ * Creates one of the person's own themes (Theme Studio's *New theme*, 2.23): `base`'s tokens under
+ * `name`, as the site's theme. Asked first when it changes how every page looks (D7), not when it
+ * starts from the site's theme as it is; then one step, "Created theme 'Shop'".
  */
 export async function createOwnTheme(
   session: ThemeSession,
@@ -418,11 +425,13 @@ export async function createOwnTheme(
   base: ThemeTokens,
   name: string,
 ): Promise<boolean> {
-  const ok = await confirmed(session, asks, {
-    action: t("theme.preset.confirm", { name }),
-    description: t("theme.preset.confirmDescription"),
-    confirm: t("theme.preset.confirmButton"),
-  });
+  const ok =
+    looks(base) === looks(theme(session)) ||
+    (await confirmed(session, asks, {
+      action: t("theme.preset.confirm", { name }),
+      description: t("theme.preset.confirmDescription"),
+      confirm: t("theme.preset.confirmButton"),
+    }));
   if (!ok) return false;
   session.edit("props", t("theme.history.created", { name }), (draft) => {
     draft.theme = { ...copyTheme(base), own: { id: newId("theme"), name } };
@@ -431,8 +440,9 @@ export async function createOwnTheme(
 }
 
 /**
- * Renames one of the person's own themes (2.22). The site's theme, if it's that one, is renamed in
- * one step, "Renamed theme to 'Shop'"; My themes keeps the new name either way (`keep`).
+ * Renames one of the person's own themes (2.23). The site's theme, if it's that one, is renamed in
+ * one step, "Renamed theme to 'Shop'", which the window keeps in My themes as it keeps every change
+ * to it; another of theirs is renamed in My themes only (`keep`).
  */
 export function renameOwnTheme(
   session: ThemeSession,
@@ -445,6 +455,7 @@ export function renameOwnTheme(
     session.edit("props", t("theme.history.renamed", { name }), (draft) => {
       if (draft.theme.own !== undefined) draft.theme.own.name = name;
     });
+    return;
   }
   keep({ ...copyTheme(own), own: { ...own.own, name } });
 }

@@ -18,7 +18,7 @@ const own = (id: string, name: string): OwnTheme => ({
   own: { id: themeIdSchema.parse(id), name },
 });
 
-describe("My themes (2.22)", () => {
+describe("My themes (2.23)", () => {
   it("keeps the person's own themes, most recently kept first, one per id", () => {
     const themes = createMyThemes({ dir });
     expect(themes.list()).toEqual([]);

@@ -4,7 +4,7 @@ import { dialogStory } from "../testing/stories.js";
 import { OwnThemeDialogs } from "./OwnThemeDialogs.js";
 import { createOwnThemes, type OwnThemes } from "./own-themes.js";
 
-// My themes' questions (2.22, PH2-17), each open, on a new site's theme.
+// My themes' questions (2.23, PH2-17), each open, on a new site's theme.
 const meta = { title: "Dialogs/My themes" } satisfies Meta;
 export default meta;
 type Story = StoryObj<typeof meta>;

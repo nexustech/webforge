@@ -92,12 +92,12 @@ const pairingOf = (theme: ThemeTokens) =>
       catalogueFont(pairing.body)?.family === theme.fonts.body.family,
   );
 
-/** The theme list's value of one of the person's own themes (2.22): `own:<id>`. */
+/** The theme list's value of one of the person's own themes (2.23): `own:<id>`. */
 const ownValue = (theme: Pick<OwnTheme, "own">) => `own:${theme.own.id}`;
 
 /**
  * The Theme tab's fields for `theme`, in its groups. Its theme list has the person's own themes
- * first (`own`, 2.22), then the built-in ones.
+ * first (`own`, 2.23), then the built-in ones.
  */
 function themeFields(theme: ThemeTokens, own: readonly OwnTheme[]): EditPanelField[] {
   const field = (spec: EditPanelField) => spec;
@@ -207,7 +207,7 @@ export type ThemePanelProps = {
   /** Theme Studio's state (2.3b): the tab's button opens it; the window draws it. */
   readonly studio?: StoreApi<StudioState> | undefined;
   /**
-   * My themes (2.22): listed first, and asked for a name before the first change to a built-in
+   * My themes (2.23): listed first, and asked for a name before the first change to a built-in
    * theme, which is read-only. Without them, a built-in theme changes in place.
    */
   readonly ownThemes?: OwnThemes | undefined;
@@ -219,7 +219,7 @@ export type ThemePanelProps = {
  * in the font picker; its text sizes; then each token the theme has, by group. A preset, a colour or
  * the fonts change every page, so they're asked first (D7); each change is one labelled step. The
  * person's own themes are listed first; the first change to a built-in one saves their own version
- * of it, by a name they choose (2.22, PH2-17).
+ * of it, by a name they choose (2.23, PH2-17).
  */
 export function ThemePanel({ session, siteWide, studio, ownThemes }: ThemePanelProps) {
   const theme = useDocument(session, (site) => site.theme);

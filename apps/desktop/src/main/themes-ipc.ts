@@ -3,7 +3,7 @@ import { registerIpcHandler } from "./ipc.js";
 import type { MyThemes } from "./my-themes.js";
 
 /**
- * Registers the `themes` IPC calls (2.22): My themes, the person's own themes kept on this
+ * Registers the `themes` IPC calls (2.23): My themes, the person's own themes kept on this
  * computer, listed, kept and removed in `themes` (main checks each theme against the model).
  */
 export function registerThemesHandlers(

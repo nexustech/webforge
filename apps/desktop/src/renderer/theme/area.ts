@@ -8,7 +8,7 @@ import { registerThemeCommands } from "./theme-commands.js";
 
 /**
  * The Theme tab (2.3a) and Theme Studio (2.3b), View → Theme… and Theme Studio… (#452), and My
- * themes (2.22): the person's own themes, kept on this computer.
+ * themes (2.23): the person's own themes, kept on this computer.
  */
 export const themePanelArea: Area<WindowContext> = {
   id: "themePanel",

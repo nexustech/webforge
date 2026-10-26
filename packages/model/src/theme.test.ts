@@ -125,7 +125,7 @@ describe("theme tokens (2.1)", () => {
     }).toThrow();
   });
 
-  it("may be the person's own, with an id and a name of up to 60 characters (2.22)", () => {
+  it("may be the person's own, with an id and a name of up to 60 characters (2.23)", () => {
     const own = (value: unknown) => changed((theme) => Object.assign(theme, { own: value }));
 
     expect(DEFAULT_THEME.own).toBeUndefined();

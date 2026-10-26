@@ -28,7 +28,7 @@ function fakeApi(listed: OwnTheme[] = []) {
   } satisfies ThemesApi;
 }
 
-describe("My themes (2.22)", () => {
+describe("My themes (2.23)", () => {
   it("lists, keeps and removes the person's own themes, most recent first", async () => {
     const api = fakeApi([own(1, "Bakery"), own(2, "Shop")]);
     const themes = createOwnThemes(() => api);
@@ -71,7 +71,10 @@ describe("My themes (2.22)", () => {
   it("lists the site's own theme first when this computer doesn't have it", () => {
     const library = [own(1, "Bakery")];
     expect(ownThemeList(library, DEFAULT_THEME)).toBe(library);
-    expect(ownThemeList(library, own(1, "Bakery"))).toBe(library);
+    // The site's copy is the latest of it.
+    expect(ownThemeList(library, own(1, "Bakery, renamed")).map((each) => each.own.name)).toEqual([
+      "Bakery, renamed",
+    ]);
     expect(
       ownThemeList(library, own(3, "From another computer")).map((each) => each.own.name),
     ).toEqual(["From another computer", "Bakery"]);

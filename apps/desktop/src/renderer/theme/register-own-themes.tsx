@@ -5,7 +5,7 @@ import { OwnThemeDialogs } from "./OwnThemeDialogs.js";
 import type { OwnThemes } from "./own-themes.js";
 
 /**
- * My themes for the window (2.22, PH2-17): its dialogs, drawn once whatever the panels show, and
+ * My themes for the window (2.23, PH2-17): its dialogs, drawn once whatever the panels show, and
  * the site's theme kept in My themes whenever it changes while it's the person's own, an undo or
  * redo included, so their other sites have it as it is. Returns a function that removes them.
  */

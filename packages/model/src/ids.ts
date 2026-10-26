@@ -14,7 +14,7 @@ export type MediaId = Brand<string, "MediaId">;
 export type MenuItemId = Brand<string, "MenuItemId">;
 /** Identifies a shared section (F-ED-23): its linked copies point at it. */
 export type SharedSectionId = Brand<string, "SharedSectionId">;
-/** Identifies one of the person's own themes (2.22): in a site, and in My themes on a computer. */
+/** Identifies one of the person's own themes (2.23): in a site, and in My themes on a computer. */
 export type ThemeId = Brand<string, "ThemeId">;
 
 type IdTypes = {

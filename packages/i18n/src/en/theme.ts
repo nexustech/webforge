@@ -224,7 +224,7 @@ export const theme = {
   "theme.history.created": "Created theme '{name}'",
   "theme.history.renamed": "Renamed theme to '{name}'",
 
-  // Your own themes (2.22, PH2-17): built-in themes are read-only, so the first change to one
+  // Your own themes (2.23, PH2-17): built-in themes are read-only, so the first change to one
   // saves the person's own version, by a name they choose.
   "theme.own.title": "Save your own version of '{name}'?",
   "theme.own.description":

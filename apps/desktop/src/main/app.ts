@@ -435,7 +435,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     // AI apps' requests go to the open site's window (F-AI-1); the MCP server (4.9) asks through it.
     const ai = registerAiHandlers(ipcMain, isTrustedSender, () => lifecycle.mainWindow());
     exposeForE2eTests(ai, app.isPackaged);
-    // My themes (2.22): the person's own themes, for every site on this computer.
+    // My themes (2.23): the person's own themes, for every site on this computer.
     registerThemesHandlers(
       ipcMain,
       isTrustedSender,

@@ -29,13 +29,13 @@ export type OwnThemesState = {
   readonly question: OwnThemeQuestion | null;
 };
 
-/** What a theme change asks of My themes (2.22): a name for the person's own version. */
+/** What a theme change asks of My themes (2.23): a name for the person's own version. */
 export type OwnThemeNames = {
   /** Asks for a name; `undefined` if the person cancels. */
   askName(question: NameQuestion): Promise<string | undefined>;
 };
 
-/** My themes (2.22, PH2-17): see {@link createOwnThemes}. */
+/** My themes (2.23, PH2-17): see {@link createOwnThemes}. */
 export type OwnThemes = OwnThemeNames & {
   readonly store: StoreApi<OwnThemesState>;
   /** Reads the list again from this computer. */
@@ -53,7 +53,7 @@ export type OwnThemes = OwnThemeNames & {
 };
 
 /**
- * My themes for the window (2.22, PH2-17): the person's own themes, kept on this computer through
+ * My themes for the window (2.23, PH2-17): the person's own themes, kept on this computer through
  * `api` (`window.webforge.themes`, asked for when it's needed), and the questions their dialogs
  * ask, one at a time: asking again cancels the one open. Not site content, so never an undo step.
  */

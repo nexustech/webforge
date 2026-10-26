@@ -7,7 +7,7 @@ import { MAX_OWN_THEMES, type OwnTheme, ownThemeSchema } from "../shared/ipc/the
 const fileSchema = z.strictObject({ version: z.literal(1), themes: z.array(z.unknown()) });
 
 /**
- * My themes (2.22, PH2-17): the person's own themes, kept in `userData/themes.json` so every site
+ * My themes (2.23, PH2-17): the person's own themes, kept in `userData/themes.json` so every site
  * on this computer can use them. Not site content (each site keeps its own copy of its theme), and
  * nothing of it is logged. A theme this build can't read is skipped, the rest kept; a damaged or
  * unknown file just means none.

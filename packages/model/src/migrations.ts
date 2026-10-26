@@ -258,7 +258,7 @@ function themeStyleTokens(site: RawSite): RawSite {
 }
 
 /**
- * Format 7 → 8 (2.22, PH2-17): a theme may be the person's own, with an id and a name (`own`).
+ * Format 7 → 8 (2.23, PH2-17): a theme may be the person's own, with an id and a name (`own`).
  * Every older site's theme is a built-in one, as it was, so nothing changes but the version: a
  * build that reads only format 7 refuses an own theme as from a newer version, not as broken.
  */

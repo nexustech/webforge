@@ -3,7 +3,7 @@ import { t } from "@webforge/i18n";
 import type { ThemeTokens } from "@webforge/model";
 import { inverseColors, oklchCss, radiusCss, THEME_PRESETS } from "@webforge/themes";
 import { PencilIcon, PlusIcon, Trash2Icon } from "lucide-react";
-import type { CSSProperties } from "react";
+import { type CSSProperties, useId } from "react";
 import type { OwnTheme } from "../../../shared/ipc/themes.js";
 import { previewFamily } from "../../fields/index.js";
 import { themeName } from "../theme-edits.js";
@@ -98,7 +98,7 @@ function ThemeCard({
 type StudioThemesProps = {
   /** The site's theme. */
   readonly theme: ThemeTokens;
-  /** The person's own themes (2.22), listed first; none without My themes. */
+  /** The person's own themes (2.23), listed first; none without My themes. */
   readonly own?: readonly OwnTheme[];
   /** Uses a theme: one of the person's own or a built-in one (asked first, D7). */
   readonly onChoose: (theme: ThemeTokens) => void;
@@ -124,7 +124,7 @@ const GRID = "m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(10.5rem,1fr)
 
 /**
  * Theme Studio's themes (F-DS-7): a card per theme, live in its own colours, fonts and corners, the
- * site's own marked. The person's own themes come first (2.22, PH2-17), each with Rename and
+ * site's own marked. The person's own themes come first (2.23, PH2-17), each with Rename and
  * Delete, after *New theme…*; then the built-in ones, which are read-only. Choosing one switches to
  * it (asked first, D7).
  */
@@ -137,12 +137,14 @@ export function StudioThemes({
   onDelete,
 }: StudioThemesProps) {
   const mine = onNew !== undefined || own.length > 0;
+  const mineId = useId();
+  const builtInId = useId();
   return (
     <div className="flex flex-col gap-2">
       {mine ? (
-        <section aria-labelledby="studio-own-themes" className="flex flex-col gap-1">
+        <section aria-labelledby={mineId} className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
-            <GroupHeading id="studio-own-themes">{t("theme.own.mine")}</GroupHeading>
+            <GroupHeading id={mineId}>{t("theme.own.mine")}</GroupHeading>
             {onNew === undefined ? null : (
               <Button
                 type="button"
@@ -160,7 +162,7 @@ export function StudioThemes({
           {own.length === 0 ? (
             <p className="m-0 px-1 text-xs text-muted-foreground">{t("theme.own.none")}</p>
           ) : (
-            <ul aria-labelledby="studio-own-themes" className={GRID}>
+            <ul aria-labelledby={mineId} className={GRID}>
               {own.map((each) => (
                 <li key={each.own.id} className="flex flex-col gap-0.5">
                   <ThemeCard
@@ -202,13 +204,11 @@ export function StudioThemes({
           )}
         </section>
       ) : null}
-      <section aria-labelledby="studio-built-in-themes" className="flex flex-col gap-1">
-        {mine ? (
-          <GroupHeading id="studio-built-in-themes">{t("theme.own.builtIn")}</GroupHeading>
-        ) : null}
+      <section aria-labelledby={builtInId} className="flex flex-col gap-1">
+        {mine ? <GroupHeading id={builtInId}>{t("theme.own.builtIn")}</GroupHeading> : null}
         <ul
           aria-label={mine ? undefined : t("theme.studio.section.themes")}
-          aria-labelledby={mine ? "studio-built-in-themes" : undefined}
+          aria-labelledby={mine ? builtInId : undefined}
           // Room around the cards for the chosen one's ring.
           className={GRID}
         >

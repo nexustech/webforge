@@ -212,7 +212,7 @@ test("the font picker lists the fonts to download only when asked, and uses one 
   await picker.getByRole("button", { name: "Browse all fonts" }).click();
   await picker.getByRole("button", { name: "To download" }).click();
   await picker.getByRole("option", { name: /Test Script/ }).dblclick();
-  // A built-in theme is read-only (2.22): the first change saves the person's own version.
+  // A built-in theme is read-only (2.23): the first change saves the person's own version.
   await page
     .getByRole("dialog", { name: "Save your own version of 'Light'?" })
     .getByRole("button", { name: "Save Theme" })

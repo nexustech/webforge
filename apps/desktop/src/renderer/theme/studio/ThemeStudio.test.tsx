@@ -115,7 +115,7 @@ describe("Theme Studio (2.3b, F-DS-7)", () => {
   });
 });
 
-describe("Theme Studio's My themes (2.22, PH2-17)", () => {
+describe("Theme Studio's My themes (2.23, PH2-17)", () => {
   /** Theme Studio on its themes, with My themes holding a "Night" theme, and its dialogs. */
   async function withMyThemes() {
     const session = sessionWith();

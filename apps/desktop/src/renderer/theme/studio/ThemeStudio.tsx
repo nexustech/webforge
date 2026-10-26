@@ -47,7 +47,7 @@ export type ThemeStudioProps = {
   /** Asks before a change to every page (D7): a preset, a colour. */
   readonly siteWide?: Pick<SiteWideConfirm, "confirmSiteWide"> | undefined;
   /**
-   * My themes (2.22): listed first, with New theme, Rename and Delete, and asked for a name before
+   * My themes (2.23): listed first, with New theme, Rename and Delete, and asked for a name before
    * the first change to a built-in theme, which is read-only.
    */
   readonly ownThemes?: OwnThemes | undefined;
@@ -61,7 +61,7 @@ export type ThemeStudioProps = {
  * and shadow scales drawn as samples. A theme or a colour is asked about first (D7); every change
  * is one labelled step in the site's history, so Ctrl/Cmd+Z undoes it here too (P5). The person's
  * own themes come first; the first change to a built-in theme saves their own version of it, by a
- * name they choose (2.22, PH2-17).
+ * name they choose (2.23, PH2-17).
  */
 export function ThemeStudio({ session, studio, siteWide, ownThemes }: ThemeStudioProps) {
   const { open, section } = useStore(studio);

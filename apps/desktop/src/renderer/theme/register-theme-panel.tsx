@@ -15,7 +15,7 @@ export const THEME_PANEL_ID = "theme";
  * Adds the Theme tab to the right column, after Site (2.3a, ADR 0008), in Simple and Advanced
  * mode. A preset, a colour or the fonts are asked about first with `siteWide` (D7), if given. With
  * `studio`, the tab has a button that opens Theme Studio (2.3b), which the window draws. With
- * `ownThemes`, it lists My themes first and keeps built-in themes read-only (2.22).
+ * `ownThemes`, it lists My themes first and keeps built-in themes read-only (2.23).
  * Returns a function that removes it.
  */
 export function registerThemePanel(

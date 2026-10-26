@@ -4,7 +4,7 @@ import { z } from "zod";
 /** The most themes My themes keeps on a computer. */
 export const MAX_OWN_THEMES = 200;
 
-/** One of the person's own themes (2.22): a theme with its id and name in My themes. */
+/** One of the person's own themes (2.23): a theme with its id and name in My themes. */
 export const ownThemeSchema = themeTokensSchema.extend({
   own: themeTokensSchema.shape.own.unwrap(),
 });
@@ -35,7 +35,7 @@ export const themesChannels = {
 } as const;
 
 /**
- * `window.webforge.themes`: My themes (2.22, PH2-17), the person's own themes kept on this computer
+ * `window.webforge.themes`: My themes (2.23, PH2-17), the person's own themes kept on this computer
  * so their other sites can use them. Not site content: each site keeps its own copy of its theme.
  */
 export interface ThemesApi {

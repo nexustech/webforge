@@ -162,7 +162,7 @@ export const INVERSE_THEME = "wf_inverse";
  */
 export const HIDDEN_ATTRIBUTE = "data-webforge-hidden";
 
-/** The longest name one of the person's own themes may have (2.22). */
+/** The longest name one of the person's own themes may have (2.23). */
 export const THEME_NAME_MAX = 60;
 
 /** See {@link themeTokensSchema}. */
@@ -223,7 +223,7 @@ export const themeTokensSchema = z.strictObject({
   /** How a page's sections follow one another (2.13d). */
   sections: z.strictObject({ rhythm: z.enum(SECTION_RHYTHMS) }),
   /**
-   * The person's own theme (2.22, PH2-17): its id in their My themes and its name. A theme without
+   * The person's own theme (2.23, PH2-17): its id in their My themes and its name. A theme without
    * it is a built-in one, which is read-only: the first change to it makes it the person's own.
    * The site keeps its own copy either way, so it opens the same on any computer.
    */

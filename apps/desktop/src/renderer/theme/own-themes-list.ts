@@ -8,13 +8,17 @@ import type { OwnThemes, OwnThemesState } from "./own-themes.js";
 const NONE = createStore<OwnThemesState>()(() => ({ themes: [], question: null }));
 
 /**
- * The person's own themes to list (2.22): those in My themes on this computer, and the site's own
- * theme first if they aren't there (a site made on another computer), so it's always listed.
+ * The person's own themes to list (2.23): those in My themes on this computer, the site's own
+ * theme as the site has it (the latest of it, which My themes is given as it changes), and first if
+ * My themes doesn't have it (a site made on another computer), so it's always listed.
  */
 export function ownThemeList(library: readonly OwnTheme[], site: ThemeTokens): readonly OwnTheme[] {
   const own = site.own;
-  if (own === undefined || library.some((theme) => theme.own.id === own.id)) return library;
-  return [{ ...site, own }, ...library];
+  if (own === undefined) return library;
+  const mine = { ...site, own };
+  return library.some((theme) => theme.own.id === own.id)
+    ? library.map((theme) => (theme.own.id === own.id ? mine : theme))
+    : [mine, ...library];
 }
 
 /** {@link ownThemeList} from `ownThemes`' store, as it changes. */

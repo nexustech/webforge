@@ -24,7 +24,7 @@ function invoker(themes: MyThemes, channel: string, trusted = true) {
 
 const mine = { ...DEFAULT_THEME, own: { id: "theme0000000000a", name: "Bakery" } };
 
-describe("registerThemesHandlers (2.22)", () => {
+describe("registerThemesHandlers (2.23)", () => {
   it("lists, keeps and removes the person's own themes", async () => {
     const themes = fakeThemes();
     expect(await invoker(themes, "themes:list")()).toEqual([]);

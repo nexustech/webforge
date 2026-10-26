@@ -64,7 +64,7 @@ function latest(site: Record<string, unknown> & { formatVersion: 5 }): unknown {
 const v7AsLatest = { ...v7Site, formatVersion: 8 };
 
 describe("migrateSite", () => {
-  it("opens the format 8 fixture unchanged, its theme the person's own (2.22)", () => {
+  it("opens the format 8 fixture unchanged, its theme the person's own (2.23)", () => {
     const site = migrateSite(v8Site);
 
     expect(site).toEqual(v8Site);
@@ -72,7 +72,7 @@ describe("migrateSite", () => {
     expect(site.theme.own).toEqual({ id: "theme00000000001", name: "Cupcake (my version)" });
   });
 
-  it("opens the format 7 fixture as format 8, its theme a built-in one as it was (2.22)", () => {
+  it("opens the format 7 fixture as format 8, its theme a built-in one as it was (2.23)", () => {
     const site = migrateSite(v7Site);
 
     expect(site).toEqual(v7AsLatest);

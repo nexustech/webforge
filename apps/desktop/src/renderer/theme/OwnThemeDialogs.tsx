@@ -40,7 +40,7 @@ function baseOf(value: string, site: ThemeTokens, own: readonly OwnTheme[]): The
 }
 
 /**
- * Theme Studio's *New theme* (2.22, PH2-17): what it starts from (the site's theme, one of the
+ * Theme Studio's *New theme* (2.23, PH2-17): what it starts from (the site's theme, one of the
  * person's own, or a built-in one) and its name, checked as it's typed.
  */
 function NewThemeDialog({
@@ -94,7 +94,7 @@ function NewThemeDialog({
 }
 
 /**
- * The questions My themes asks (2.22), drawn once for the window: a name for the person's own
+ * The questions My themes asks (2.23), drawn once for the window: a name for the person's own
  * version of a built-in theme or for a rename, whether to delete one of their themes, and New
  * theme. `site` is the site's theme now, for New theme's first choice.
  */
