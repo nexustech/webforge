@@ -1,5 +1,6 @@
 import type { NodeDoc } from "@webforge/model";
 import { describe, expect, it } from "vitest";
+import { APPEARANCE_FIELDS } from "./appearance.js";
 import { siteLibrary } from "./catalogue/index.js";
 import { defineComponent } from "./define.js";
 import { COLORS_FIELD, defineSection, PADDING_FIELD } from "./frame.js";
@@ -50,6 +51,8 @@ function everything(): string {
         const props: NodeDoc["props"] = { id: `n${next++}` };
         if (variant !== undefined) props.variant = variant;
         for (const [name, field] of Object.entries(def.fields)) {
+          // The Appearance group adds classes of its own on purpose (2.22): its tests are below.
+          if (name.startsWith("look")) continue;
           if (field.kind === "media") props[name] = { mediaId: "photo" };
           if (field.kind === "link") props[name] = "about";
           if (field.kind === "toggle") props[name] = true;
@@ -147,6 +150,7 @@ describe("the section frame (2.19)", () => {
     );
 
     expect(Object.keys(band.fields)).toEqual([
+      ...Object.keys(APPEARANCE_FIELDS),
       "colors",
       "padding",
       "margin",

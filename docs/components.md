@@ -94,6 +94,16 @@ Every section is defined with `defineSection` (`src/frame.tsx`), and `defineComp
 - **Its inside:** `render` draws what goes in the frame.
 - **Elements:** an element takes `margin: MARGIN_FIELD` (from `frame.tsx`) and draws `marginClasses(values.margin)` itself.
 
+### The Appearance group
+
+Every section and element has the same *Appearance* group (2.22, ST-1), first in the Style tab, so a person can style one item without classes. `defineSection` and `defineComponent` add it (`src/appearance.ts`); a component adds nothing to get it, and declaring a field of its names (`lookSize`, `lookColor`…) is refused.
+- **Its controls:** Text (size from the type scale, weight, italic, underline, letter case, alignment), Colour (text and background, from the theme's colours with shades), Corners (the theme's radius scale), Border (none, thin or thick, in a theme colour), Shadow (the theme's shadow scale) and Opacity. Each is a design token, set per device, with *Theme's* as its default: the item as it draws itself.
+- **Where it lands:** an element's classes go on its root element, through a fragment or a context's provider around it (a test renders every element and checks). A section's go on its `<section>`, except Text, which styles its title: `SectionTitle` (the page's or the section's size, never `small`) reads them from `SectionTitleAppearance`. Every element resets that context for what it holds, so a section's title styling reaches no other title.
+- **Why `!`:** the group's classes are marked to win (`underline!`, `shadow-lg!`), since a person's choice for this one item outranks how the component looks by default.
+- **Its hover row (ST-2):** *When hovered* (`HOVER_FIELD`, and `CARD_HOVER_FIELD` for a card section's cards) sits in the same group, on the Button, the Image, the Icon and the card sections only: none, lift, grow, shadow, darken or underline. CSS only; the moving ones only under `motion-safe`.
+- **What a component may still do:** keep its own style fields (a Heading's size and colour), which come after the group in the *Options* group. It can't hide the group or a control of it.
+- **The token rule (ST-6):** no free value in Simple mode; Advanced mode keeps ADR 0009's off-theme hex on the colour controls.
+
 ### Titles, text and buttons
 
 `src/typography.tsx` is the one source of the catalogue's title, body-text and button classes, where the theme's type scale (2.3) lands. A test renders every component in each layout and fails on any other title, running-text or button classes.

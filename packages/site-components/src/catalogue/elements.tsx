@@ -102,10 +102,11 @@ const image = defineComponent({
     alignment: ALIGNMENT_FIELD,
     rounded: { kind: "toggle", label: t("field.rounded"), group: "style" },
     caption: { kind: "text", label: t("field.caption") },
+    hover: HOVER_FIELD,
     margin: MARGIN_FIELD,
     ...ENTRANCE_FIELDS,
   },
-  defaults: { width: "full", alignment: "centre", rounded: false, caption: "" },
+  defaults: { width: "full", alignment: "centre", rounded: false, caption: "", hover: "none" },
   behaviours: entranceBehaviours,
   render: ({ values, context }) => {
     const placed = values.image;
@@ -126,7 +127,7 @@ const image = defineComponent({
     }
     const caption = values.caption.trim();
     return (
-      <figure className={frame} {...entrance}>
+      <figure className={`${frame}${hoverClasses(values.hover)}`} {...entrance}>
         <ImagePicture
           image={resolved}
           alt={placed?.alt ?? resolved.alt}
@@ -473,10 +474,18 @@ const icon = defineComponent({
       options: ICON_COLOURS.map((value) => ({ label: t(`field.color.${value}`), value })),
     },
     alignment: ALIGNMENT_FIELD,
+    hover: HOVER_FIELD,
     margin: MARGIN_FIELD,
     ...ENTRANCE_FIELDS,
   },
-  defaults: { icon: "star", label: "", size: "medium", color: "primary", alignment: "left" },
+  defaults: {
+    icon: "star",
+    label: "",
+    size: "medium",
+    color: "primary",
+    alignment: "left",
+    hover: "none",
+  },
   behaviours: entranceBehaviours,
   render: ({ values }) => {
     const size = responsiveClasses(values.size, (value) => ICON_SIZE_CLASS[value]);
@@ -489,7 +498,7 @@ const icon = defineComponent({
         {values.icon === undefined ? null : (
           <LucideIcon
             name={values.icon}
-            className={colour === "" ? size : `${size} ${colour}`}
+            className={`${colour === "" ? size : `${size} ${colour}`}${hoverClasses(values.hover)}`}
             label={values.label}
           />
         )}
