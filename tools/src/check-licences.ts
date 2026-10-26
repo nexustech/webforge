@@ -81,6 +81,14 @@ export const LICENCE_EXCEPTIONS: ReadonlyMap<string, LicenceException> = new Map
       reason: "Permissive. Build-time only (electron-builder → sanitize-filename).",
     },
   ],
+  [
+    "tweetnacl",
+    {
+      licence: "Unlicense",
+      reason:
+        "Public-domain dedication, as permissive as CC0. Shipped: SFTP publishing (0.3) uses ssh2, whose bcrypt-pbkdf decrypts passphrase-protected private keys with it; no other SFTP library is permissive.",
+    },
+  ],
 ]);
 
 const reportSchema = z.record(

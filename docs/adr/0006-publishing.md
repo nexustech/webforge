@@ -1,6 +1,6 @@
 # 0006. Publishing: publisher core, Netlify, credentials
 
-- Status: Proposed. Started in spec/04 item 0.2 (Netlify, #12); item 0.3 (FTP/FTPS/SFTP, #13) adds its part and the live-check results
+- Status: Proposed. Started in spec/04 item 0.2 (Netlify, #12); item 0.3 (FTP/FTPS/SFTP, #13) added its part (decision 7). It is accepted once 0.2's live Netlify check is recorded
 - Date: 2026-10-20
 - Related: [research 08](../../research/stack/08-publishing.md) (B1, B5, B6), [architecture §6, §7, §9](../../spec/01-architecture.md#6-key-interfaces), `packages/publish`, `apps/desktop/src/main/credential-store.ts`, `apps/desktop/src/main/netlify-auth.ts`
 
@@ -68,11 +68,44 @@ Why:
 ### 6. Netlify Forms on API deploys
 Research 08 flagged this as unverified. `listForms` (`GET /sites/:id/forms`) and the live check (`packages/publish/src/netlify.live.test.ts`) deploy a page with a `data-netlify="true"` form and report whether Netlify registered it. **Result: pending the live run.** If Netlify doesn't detect forms on API deploys, Netlify profiles fall back to the Formspree, Web3Forms and FormSubmit presets (B6), and the Form setting doesn't offer "Netlify Forms".
 
+### 7. FTP, FTPS and SFTP: one publish flow over a remote folder (0.3)
+- **One flow, two adapters.** `publishToFolder` does what every file-transfer host needs:
+  - read `.webforge-publish.json`, diff it against the build, upload assets → pages → `index.html`, then remove what the site dropped, pages first;
+  - write the new manifest;
+  - work through a small `RemoteFolder` (read, write, remove).
+
+  `ftpPublisher` (FTPS and FTP, `basic-ftp`) and `sftpPublisher` (`ssh2`) only give it a folder, so the logic is tested once, in memory.
+- **No half-written files.** Each file goes to a hidden `.<name>.webforge-upload` beside its place, then replaces it:
+  - FTP renames over the file, or removes it first on a server that won't;
+  - SFTP uses OpenSSH's `posix-rename`, or removes the file and renames it on a plain SFTP v3 server.
+- **Cancelling.**
+  - Cancelling closes the connection and stops before the next file. A file cut off mid-transfer is only its upload file, and the home page goes last, so the live site keeps working.
+  - Once every upload is done, the manifest lists the new files plus those still to be removed, so a publish cancelled during clean-up still removes them next time.
+  - A missing or damaged manifest counts as a first publish: everything is uploaded and nothing removed.
+- **FTPS first (B5).** `ftps` is explicit TLS (`AUTH TLS`) against the computer's trusted certificates. A certificate it doesn't trust fails as `untrusted-host` before signing in. Plain `ftp` is allowed; the app warns first (B5).
+  - **Not covered:** many shared hosts present a certificate for the host's own name rather than the customer's domain. For a mismatch the person accepts, the Phase 4 UI can store the certificate's fingerprint, as SFTP does with host keys.
+- **SFTP trusts a host key once.** The destination stores the server's key fingerprint as OpenSSH shows it (`SHA256:…`).
+  - `readSftpHostKey` reads the key without signing in, for the person to compare and trust the first time.
+  - After that, `ssh2`'s `hostVerifier` refuses any other key before the password is sent (`untrusted-host`).
+- **`ssh2` directly, not `ssh2-sftp-client`.**
+  - Research 08 named `ssh2-sftp-client`. Its types lag three major versions, and `ssh2` itself has every SFTP call needed, plus the `Server` the tests use.
+  - `ssh2` pulls in `tweetnacl` (Unlicense, a public-domain dedication; a reviewed exception in `tools/src/check-licences.ts`) to decrypt passphrase-protected private keys.
+- **Errors by kind, never the reply.**
+  - `fileTransferError` maps FTP reply codes, SSH sign-in levels, SFTP status codes, socket and DNS codes, and TLS certificate codes to `PublishError` codes, with `untrusted-host` added for both protocols.
+  - The host's reply can echo the user name or a path, so it stays in `cause` only.
+- **Tested** against local servers in `packages/publish` (`ftp.test.ts`, `sftp.test.ts`):
+  - `ftp-srv` with a test-only certificate for FTP and FTPS;
+  - `ssh2`'s `Server` over a temporary folder for SFTP.
+
+  They cover a second publish sending only the changed file, removals that leave other people's files alone, cancel mid-publish, a wrong password, a missing folder, an unreachable host, and an untrusted certificate or host key.
+- **Not yet run against real hosts.** The live checks with cPanel or Plesk FTP and an OpenSSH host are for the Phase 4 E2E (local FTP and SFTP servers in CI, 4.3).
+- **`safeStorage` round trip:** `e2e/app/credentials.spec.ts` encrypts a test secret in one run and decrypts it in the next, on Windows (DPAPI) and macOS (Keychain), in CI.
+
 ## Consequences
 - `packages/publish` is the shared core for 0.3 (FTP/FTPS/SFTP use `diffManifest`, `uploadOrder` and `manifestSchema` for `.webforge-publish.json`) and for the Phase 4 publish UI.
 - **To finish this ADR:**
   1. run the live Netlify check with a throwaway site and token, and record the re-deploy, restore and forms results above;
   2. register Webforge's Netlify OAuth application and try the ticket sign-in once;
-  3. add 0.3's FTP/FTPS/SFTP decisions and the `safeStorage` round trip on Windows and macOS.
+  3. ~~add 0.3's FTP/FTPS/SFTP decisions and the `safeStorage` round trip on Windows and macOS~~: done, decision 7.
 - The desktop modules (`credential-store.ts`, `netlify-auth.ts`) have no IPC yet. The publish UI (Phase 4) adds typed channels that never return a token to the renderer.
 - Research 08's "OAuth … with a loopback redirect" is superseded by decision 4. Update the research note in the Phase 0 wrap-up (0.6).
