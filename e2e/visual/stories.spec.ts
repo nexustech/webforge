@@ -135,11 +135,21 @@ for (const build of BUILDS) {
           );
           expect(failed, `${story.title} › ${story.name} failed its checks`).toBeNull();
           await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+          if (build.package === "site-components" && !story.tags.includes("own-theme")) {
+            // The preset's stylesheet is on the page (2.16): a theme that fails to load fails here,
+            // nightly too, where most presets have no screenshots to show it (PH2-16).
+            const stylesheet = await page
+              .locator("style#webforge-theme")
+              .evaluate((style) => style.textContent?.length ?? 0);
+            expect(stylesheet, `${theme}'s stylesheet`).toBeGreaterThan(1000);
+          }
           await page.evaluate(() => document.fonts.ready);
 
           const results = await new AxeBuilder({ page })
             .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
             .analyze();
+          // axe checked the story: a story that drew nothing passes no rule (PH2-16).
+          expect(results.passes.length, "axe checked the story").toBeGreaterThan(0);
           const describe = (violation: (typeof results.violations)[number]) =>
             `${violation.id}: ${violation.nodes.map((node) => node.target).join(", ")}`;
           const serious = results.violations.filter(

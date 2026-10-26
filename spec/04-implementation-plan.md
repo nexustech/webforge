@@ -677,6 +677,7 @@ Shared files are split in 2.5 so that streams add files instead of editing the s
 - PH2-13 (2026-10-25, product owner): Site Settings' profile and opening-hours rows use the Edit panel's list look (ListField), as decided for 2.21's decision 3.
 - PH2-14 (2026-10-25, product owner): a Button's Style gains *Theme's style*, the default for new Buttons and Booking buttons, which draws it as the theme's buttons are; Filled, Second colour and Outline still override the theme, and existing Buttons keep Filled (#423).
 - PH2-15 (2026-10-25, product owner): themes differ in style, not layout (A). A wider range of fonts, colour schemes and style tokens (heading case and tracking, card style, photo corners, the sections' rhythm); section layouts come from the templates (2.15) and each section's own settings, so switching theme never rearranges a site. 2.13d (#434) adds the tokens and redoes themes 1–4.
+- PH2-16 (2026-10-26, coordinator; a planning decision the product owner may overrule, and reversible): 2.16's nightly run checks every site component story with axe in every theme preset, but takes screenshots only in the three development presets that every pull request screenshots (light, dark, high-contrast-rounded). Each curated theme's look stays covered by the theme gallery's full-page stories (2.13). Full baselines in every preset would add about 30–50 MB of PNGs and 22–30 screenshots to rewrite per story change. The nightly run fails loudly when a story errors, its preset's stylesheet doesn't load or axe checks nothing.
 
 <details><summary>Scope and acceptance criteria</summary>
 
@@ -788,7 +789,7 @@ Café/Restaurant, Salon/Beauty, Trades, Consultant, Photographer/Portfolio, Shop
 - [ ] Export checks run on every template in Phase 3
 
 **2.16 Component accessibility and visual regression sweep**  
-Screenshot baselines for every component × 3 themes × Desktop/Mobile (PR; the 3 development presets from 2.1) and all themes (nightly); axe with zero serious/critical violations; keyboard checks via Storybook play functions; the 8 templates' pages are screenshotted once 2.15 lands (MVP §6).
+Screenshot baselines for every component × 3 themes × Desktop/Mobile (PR; the 3 development presets from 2.1), and axe in all themes (nightly; screenshots stay in the 3, PH2-16); axe with zero serious/critical violations; keyboard checks via Storybook play functions; the 8 templates' pages are screenshotted once 2.15 lands (MVP §6). Also fixes the canvas's own accessibility findings from 2.15c (#465): the canvas frame's title and language, the inline editors' names and Puck's nested controls (days unchanged).
 
 - [ ] Visual + a11y suites green in CI
 - [ ] Nightly full-theme run configured
