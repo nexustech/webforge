@@ -6,8 +6,10 @@ import resize, { initResize } from "@jsquash/resize";
 import encodeWebp, { init as initWebpEncode } from "@jsquash/webp/encode.js";
 import type { MediaItem } from "@webforge/model";
 import type { ImageSource, ResolvedImage } from "@webforge/site-components";
+import { z } from "zod";
 import type {} from "./codec-globals.js";
-import type { CodecModules } from "./resources.js";
+import { onceUntilFailure } from "./once.js";
+import type { CodecModules, ImageCache } from "./resources.js";
 
 /** Widths exported for each image, never wider than the original (X2). */
 const IMAGE_WIDTHS = [640, 1280, 1920] as const;
@@ -32,14 +34,29 @@ class NodeImageData {
   }
 }
 
-let ready: Promise<void> | null = null;
+/**
+ * Gives jSquash the `ImageData` it constructs, where the runtime has none (Node). Only then:
+ * a browser's own is never replaced, and nothing else on the global changes.
+ */
+function provideImageData(): void {
+  if (!("ImageData" in globalThis)) {
+    Object.defineProperty(globalThis, "ImageData", {
+      value: NodeImageData,
+      configurable: true,
+      writable: true,
+    });
+  }
+}
 
-/** Prepares the codecs once per process. jSquash keeps its modules in module-level state. */
+let prepare: (() => Promise<void>) | undefined;
+
+/**
+ * Prepares the codecs once per process: jSquash keeps its modules in module-level state. A failed
+ * preparation isn't kept, so the next image tries again (R15).
+ */
 function initCodecs(codecs: CodecModules): Promise<void> {
-  ready ??= (async () => {
-    if (!("ImageData" in globalThis)) {
-      Object.assign(globalThis, { ImageData: NodeImageData });
-    }
+  prepare ??= onceUntilFailure(async () => {
+    provideImageData();
     await Promise.all([
       initJpegDecode(codecs.jpegDecode),
       initJpegEncode(codecs.jpegEncode),
@@ -47,8 +64,8 @@ function initCodecs(codecs: CodecModules): Promise<void> {
       initWebpEncode(codecs.webpEncode),
       initResize(codecs.resize),
     ]);
-  })();
-  return ready;
+  });
+  return prepare();
 }
 
 /** Decodes an original JPEG or PNG. */
@@ -122,53 +139,170 @@ function hasTransparency(image: ImageData): boolean {
 }
 
 /**
+ * What an image's encoding depends on besides the original: change any setting here and every
+ * cached image is encoded again.
+ */
+const ENCODING = `webp${WEBP_QUALITY}-jpeg${JPEG_QUALITY}-widths${IMAGE_WIDTHS.join(".")}`;
+
+/** The cut-to-crop size of an image, and whether its fallback is a PNG for its transparency. */
+const planSchema = z.strictObject({
+  width: z.int().positive(),
+  height: z.int().positive(),
+  transparent: z.boolean(),
+});
+type Plan = z.infer<typeof planSchema>;
+
+/** The original of an image to process: its SHA-256, and its bytes, read only when needed. */
+export type ImageOriginal = {
+  readonly hash: string;
+  readonly read: () => Promise<Uint8Array | undefined>;
+};
+
+/** The cache key of `item`'s `part`: its plan, or one width in one format. */
+function cacheKey(original: ImageOriginal, item: MediaItem, part: string): string {
+  const crop =
+    item.crop === undefined
+      ? "whole"
+      : [item.crop.x, item.crop.y, item.crop.width, item.crop.height]
+          .map((value) => value.toFixed(6))
+          .join(",");
+  return `${ENCODING}/${original.hash}/${crop}/${part}`;
+}
+
+/** The widths an image of `plan`'s size is exported at, smallest first (X2). */
+function widthsFor(plan: Plan): number[] {
+  return [
+    ...new Set([
+      ...IMAGE_WIDTHS.filter((width) => width < plan.width),
+      Math.min(plan.width, IMAGE_WIDTHS.at(-1) ?? plan.width),
+    ]),
+  ].sort((a, b) => a - b);
+}
+
+/** One encoded width: its WebP and its fallback. */
+type Encoded = {
+  readonly width: number;
+  readonly height: number;
+  readonly webp: Uint8Array;
+  readonly fallback: Uint8Array;
+};
+
+/** An image's plan and encodings. */
+type Encodings = { readonly plan: Plan; readonly encoded: readonly Encoded[] };
+
+/** The extension of an image's fallback files. */
+const fallbackExtensionOf = (plan: Plan) => (plan.transparent ? "png" : "jpg");
+
+/** `item`'s encodings from `cache`, or `undefined` unless every one is there. */
+async function fromCache(
+  cache: ImageCache,
+  original: ImageOriginal,
+  item: MediaItem,
+): Promise<Encodings | undefined> {
+  const stored = await cache.get(cacheKey(original, item, "plan"));
+  if (stored === undefined) return undefined;
+  let plan: Plan;
+  try {
+    const parsed = planSchema.safeParse(JSON.parse(new TextDecoder().decode(stored)));
+    if (!parsed.success) return undefined;
+    plan = parsed.data;
+  } catch {
+    return undefined;
+  }
+  const encoded: Encoded[] = [];
+  for (const width of widthsFor(plan)) {
+    const webp = await cache.get(cacheKey(original, item, `${width}.webp`));
+    const fallback = await cache.get(
+      cacheKey(original, item, `${width}.${fallbackExtensionOf(plan)}`),
+    );
+    if (webp === undefined || fallback === undefined) return undefined;
+    encoded.push({ width, height: Math.round((plan.height * width) / plan.width), webp, fallback });
+  }
+  return { plan, encoded };
+}
+
+/** Decodes, crops and encodes `data` at every width. */
+async function encode(data: Uint8Array, item: MediaItem): Promise<Encodings> {
+  const decoded = await decodeOriginal(data, item.mimeType);
+  // The crop is cut before resizing, so every width shows the same part of the image (G14).
+  const original = item.crop === undefined ? decoded : cropPixels(decoded, item.crop);
+  const plan: Plan = {
+    width: original.width,
+    height: original.height,
+    transparent: item.mimeType === "image/png" && hasTransparency(original),
+  };
+  const encoded: Encoded[] = [];
+  for (const width of widthsFor(plan)) {
+    const height = Math.round((original.height * width) / original.width);
+    const scaled = width === original.width ? original : await resize(original, { width, height });
+    encoded.push({
+      width,
+      height,
+      webp: new Uint8Array(await encodeWebp(scaled, { quality: WEBP_QUALITY })),
+      fallback: new Uint8Array(
+        plan.transparent
+          ? await encodePng(scaled)
+          : await encodeJpeg(scaled, { quality: JPEG_QUALITY }),
+      ),
+    });
+  }
+  return { plan, encoded };
+}
+
+/** Keeps `item`'s encodings in `cache`, the plan last: a plan is only there with all its files. */
+async function remember(
+  cache: ImageCache,
+  original: ImageOriginal,
+  item: MediaItem,
+  { plan, encoded }: Encodings,
+): Promise<void> {
+  for (const { width, webp, fallback } of encoded) {
+    await cache.set(cacheKey(original, item, `${width}.webp`), webp);
+    await cache.set(cacheKey(original, item, `${width}.${fallbackExtensionOf(plan)}`), fallback);
+  }
+  await cache.set(cacheKey(original, item, "plan"), new TextEncoder().encode(JSON.stringify(plan)));
+}
+
+/**
  * Converts an original image into responsive WebP files plus a JPEG fallback (PNG when the image
  * has transparency), at each of {@link IMAGE_WIDTHS} up to the original's width (X2), cut to the
  * image's crop first. The result carries the image's alt text and its focal point.
  * `assetsUrl` is the path from a page at the site root to `assets/img/`.
+ *
+ * With a `cache`, an image encoded before (the same original, crop and settings) comes from it:
+ * its bytes aren't read and nothing is encoded (R15). `undefined` if the original can't be read.
  */
 export async function processImage(
   item: MediaItem,
+  original: ImageOriginal,
   codecs: CodecModules,
-  assetsUrl = "assets/img/",
-): Promise<ProcessedImage> {
-  await initCodecs(codecs);
-  const decoded = await decodeOriginal(item.data, item.mimeType);
-  // The crop is cut before resizing, so every width shows the same part of the image (G14).
-  const original = item.crop === undefined ? decoded : cropPixels(decoded, item.crop);
-  const transparent = item.mimeType === "image/png" && hasTransparency(original);
-  const fallbackType = transparent ? "image/png" : "image/jpeg";
-  const fallbackExtension = transparent ? "png" : "jpg";
+  options: { readonly cache?: ImageCache | undefined; readonly assetsUrl?: string } = {},
+): Promise<ProcessedImage | undefined> {
+  const assetsUrl = options.assetsUrl ?? "assets/img/";
+  let encodings =
+    options.cache === undefined ? undefined : await fromCache(options.cache, original, item);
+  if (encodings === undefined) {
+    const data = await original.read();
+    if (data === undefined) return undefined;
+    await initCodecs(codecs);
+    encodings = await encode(data, item);
+    if (options.cache !== undefined) await remember(options.cache, original, item, encodings);
+  }
 
-  const widths = [
-    ...new Set([
-      ...IMAGE_WIDTHS.filter((width) => width < original.width),
-      Math.min(original.width, IMAGE_WIDTHS.at(-1) ?? original.width),
-    ]),
-  ].sort((a, b) => a - b);
-
+  const { plan, encoded } = encodings;
+  const fallbackType = plan.transparent ? "image/png" : "image/jpeg";
+  const fallbackExtension = fallbackExtensionOf(plan);
   const files: ImageFile[] = [];
   const webp: string[] = [];
   const fallback: string[] = [];
-  let largest = { width: original.width, height: original.height };
-  for (const width of widths) {
-    const height = Math.round((original.height * width) / original.width);
-    const scaled = width === original.width ? original : await resize(original, { width, height });
-    const webpName = `${item.name}-${width}.webp`;
-    const fallbackName = `${item.name}-${width}.${fallbackExtension}`;
-    files.push({
-      path: webpName,
-      data: new Uint8Array(await encodeWebp(scaled, { quality: WEBP_QUALITY })),
-    });
-    files.push({
-      path: fallbackName,
-      data: new Uint8Array(
-        transparent ? await encodePng(scaled) : await encodeJpeg(scaled, { quality: JPEG_QUALITY }),
-      ),
-    });
-    webp.push(`${assetsUrl}${webpName} ${width}w`);
-    fallback.push(`${assetsUrl}${fallbackName} ${width}w`);
-    largest = { width, height };
+  let largest = { width: plan.width, height: plan.height };
+  for (const entry of encoded) {
+    const webpName = `${item.name}-${entry.width}.webp`;
+    const fallbackName = `${item.name}-${entry.width}.${fallbackExtension}`;
+    files.push({ path: webpName, data: entry.webp }, { path: fallbackName, data: entry.fallback });
+    webp.push(`${assetsUrl}${webpName} ${entry.width}w`);
+    fallback.push(`${assetsUrl}${fallbackName} ${entry.width}w`);
+    largest = { width: entry.width, height: entry.height };
   }
 
   const fallbackSource: ImageSource = { type: fallbackType, srcset: fallback.join(", ") };

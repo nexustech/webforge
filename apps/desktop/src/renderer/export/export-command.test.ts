@@ -30,6 +30,14 @@ describe("exportMessage", () => {
     ).toEqual({ kind: "success", text: "Site exported to “my-site” (12 files)." });
   });
 
+  it("names the page to rename when Windows keeps its name (R16)", () => {
+    expect(
+      exportMessage({ status: "failed", reason: "reserved-name", page: "Contact us" })?.text,
+    ).toBe(
+      "The page “Contact us” can't be exported: Windows keeps its name, or its folder's, for itself. Rename it in the Pages panel and export again.",
+    );
+  });
+
   it("says nothing when the user cancels", () => {
     expect(exportMessage({ status: "canceled" })).toBeNull();
   });

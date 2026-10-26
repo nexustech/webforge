@@ -40,8 +40,8 @@ async function holdsOnlyAnEarlierExport(folder: string): Promise<boolean> {
     });
 }
 
-/** Why the site could not be written. */
-export type WriteErrorCode = "folder-not-empty" | "write-failed";
+/** Why the site could not be written; `cancelled`: the write's signal was aborted (R15). */
+export type WriteErrorCode = "folder-not-empty" | "write-failed" | "cancelled";
 
 /** Writing the export to disk failed; the destination is left as it was. */
 export class WriteError extends WebforgeError<WriteErrorCode> {
@@ -91,11 +91,13 @@ async function renameWithRetry(from: string, to: string): Promise<void> {
 /**
  * Writes the site's files into `destination`, replacing a previous export there. The files go to
  * a temporary sibling folder first, which is then swapped in, so a failure never leaves a
- * half-written site (export pipeline stage 10).
+ * half-written site (export pipeline stage 10). Aborting `signal` stops before the next file and
+ * removes the temporary folder: the destination is left as it was (R15).
  */
 export async function writeSiteFolder(
   files: ReadonlyMap<string, Uint8Array>,
   destination: string,
+  signal?: AbortSignal,
 ): Promise<void> {
   // A file's path decides where it goes: one that leaves the folder is refused before anything is
   // written (R16). The snapshot schema checks pages' paths too; this holds for any caller.
@@ -116,6 +118,7 @@ export async function writeSiteFolder(
   try {
     await mkdir(staging, { recursive: true });
     for (const [path, data] of files) {
+      if (signal?.aborted === true) throw new WriteError("cancelled", "The export was cancelled");
       const target = join(staging, ...path.split("/"));
       await mkdir(dirname(target), { recursive: true });
       await writeFile(target, data);
@@ -124,6 +127,7 @@ export async function writeSiteFolder(
     await writeFile(join(staging, EXPORT_MARKER), `${JSON.stringify(marker, null, 2)}\n`);
   } catch (error) {
     await rm(staging, { recursive: true, force: true });
+    if (error instanceof WriteError) throw error;
     throw new WriteError("write-failed", "Could not write the site files", { cause: error });
   }
 

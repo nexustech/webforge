@@ -25,7 +25,7 @@ import type { startCrashReports } from "./crash-wiring.js";
 import { createNativeDialogs } from "./dialogs.js";
 import type { E2eDialog } from "./e2e-dialogs.js";
 import { registerExportHandlers } from "./export-ipc.js";
-import { runExportInWorker } from "./export-worker-client.js";
+import { createExportRunner } from "./export-worker-client.js";
 import { registerFailureLog } from "./failure-ipc.js";
 import { createFlushOnClose } from "./flush-on-close.js";
 import { createFontLibrary, type FontLibrary, registerFontHandlers } from "./font-library.js";
@@ -182,7 +182,11 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
         const path = projectSession.currentPath();
         if (path !== undefined) recentSites.edited(path);
       },
-      closed: () => backupSchedule.closed(),
+      closed: () => {
+        backupSchedule.closed();
+        // The export worker goes, and the images it kept in memory with it (R15).
+        exports.close();
+      },
     },
     // Imports are read, hashed and stored in a thread of their own (R13b, ADR 0013).
     { writer: createStorageWriter(() => parts.startStorageWriter(storageWriterScript)) },
@@ -262,22 +266,28 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
   };
 
   // Each export runs in its own utility process, so building never blocks the window (07). The
-  // worker resolves nothing itself: it gets the site's font files, read and checked here. Every
-  // worker's crash becomes a local report (R3).
+  // worker resolves nothing itself: it gets the site's font files, read and checked here, and asks
+  // for each image and document as it reaches it, read from the open site (R15). Every worker's
+  // crash becomes a local report (R3).
   const forkWorker = (serviceName: string) =>
     crashReports.watchWorker(electron.utilityProcess.fork(exportWorkerScript, [], { serviceName }));
+  // One export worker while the site is open, keeping the images it encoded in memory (R15).
+  const exports = createExportRunner(() => forkWorker("Webforge export"));
   const runExport = async (snapshot: SiteSnapshot, destination: string) => {
     const families = await fonts.downloadedFamiliesOf(snapshot.theme);
-    return runExportInWorker(() => forkWorker("Webforge export"), {
-      type: "export",
-      snapshot,
-      destination,
-      fonts: fontFacesFor(snapshot.theme, [...FONT_CATALOGUE, ...families]).flatMap((face) => {
-        const data = fonts.reader.read(face);
-        return data === undefined ? [] : [{ file: face.file, data }];
-      }),
-      families,
-    });
+    return exports.run(
+      {
+        type: "export",
+        snapshot,
+        destination,
+        fonts: fontFacesFor(snapshot.theme, [...FONT_CATALOGUE, ...families]).flatMap((face) => {
+          const data = fonts.reader.read(face);
+          return data === undefined ? [] : [{ file: face.file, data }];
+        }),
+        families,
+      },
+      { readMedia: (hash) => projectSession.readMedia(hash) },
+    );
   };
 
   // Media thumbnails are made in a long-lived worker too, started when first needed (1.16).
@@ -418,9 +428,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
         if (lifecycle.quitting) app.quit();
       },
     });
-    registerExportHandlers(ipcMain, isTrustedSender, dialogs.export, runExport, (hash) =>
-      projectSession.readMedia(hash),
-    );
+    registerExportHandlers(ipcMain, isTrustedSender, dialogs.export, runExport);
     registerTemplatesHandlers(ipcMain, isTrustedSender, templates);
     // AI apps' requests go to the open site's window (F-AI-1); the MCP server (4.9) asks through it.
     const ai = registerAiHandlers(ipcMain, isTrustedSender, () => lifecycle.mainWindow());
