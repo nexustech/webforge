@@ -19,7 +19,12 @@ import {
   type SiteDoc,
   SPACING_TOKENS,
 } from "@webforge/model";
-import { type ComponentLibrary, type FieldDef, isIconName } from "@webforge/site-components";
+import {
+  type ComponentLibrary,
+  type FieldDef,
+  fieldsHiddenBy,
+  isIconName,
+} from "@webforge/site-components";
 import { useEffect, useRef } from "react";
 import { applyAnchor, asLinkFieldChange } from "../links/index.js";
 import { anchorsTakenInSection } from "../shared-sections/index.js";
@@ -352,7 +357,10 @@ export function EditPanelHost({
 
   // What a field's `unavailable` is asked about: the element's values, with its defaults.
   const values = { ...component.defaults, ...node.props };
+  // A layout that doesn't use a field hides it; its value stays for the layouts that do (#311).
+  const hidden = fieldsHiddenBy(component, values);
   const fields = Object.entries(component.fields).flatMap(([name, field]): EditPanelField[] => {
+    if (hidden.has(name)) return [];
     const list = editableList(field, library);
     if (list !== undefined) {
       return [listField(name, field, list, node.props[name])];

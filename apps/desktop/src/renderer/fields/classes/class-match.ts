@@ -7,9 +7,18 @@ export type ClassCatalogue = {
 /** The most suggestions the field shows at once: enough to choose from, quick to draw. */
 export const MAX_SUGGESTIONS = 50;
 
-/** `word` split at its last `:`: the variants before it (`md:hover:`) and the class after. */
-function splitVariants(word: string): { readonly prefix: string; readonly part: string } {
-  const at = word.lastIndexOf(":");
+/**
+ * `word` split at its last `:` outside brackets: the variants before it (`md:hover:`) and the class
+ * after. A colon in an arbitrary value or variant (`bg-[url(https://…)]`, `[&:hover]:`) isn't one.
+ */
+export function splitVariants(word: string): { readonly prefix: string; readonly part: string } {
+  let at = -1;
+  let depth = 0;
+  for (const [index, letter] of [...word].entries()) {
+    if (letter === "[") depth += 1;
+    else if (letter === "]") depth = Math.max(0, depth - 1);
+    else if (letter === ":" && depth === 0) at = index;
+  }
   return at === -1
     ? { prefix: "", part: word }
     : { prefix: word.slice(0, at + 1), part: word.slice(at + 1) };
