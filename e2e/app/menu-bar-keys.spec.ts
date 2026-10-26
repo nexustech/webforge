@@ -1,4 +1,5 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { clickOnCanvas } from "./canvas-click.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
 
 // On macOS the editor's menus are the menu bar's (LF-13), and Edit's Undo and Redo there register
@@ -47,7 +48,7 @@ async function focusCanvas(): Promise<void> {
   const heading = canvas().locator("h1").first();
   const box = await heading.boundingBox();
   if (box === null) throw new Error("Heading not visible");
-  await heading.click({ position: { x: box.width * 0.97, y: box.height - 2 } });
+  await clickOnCanvas(heading, { position: { x: box.width * 0.97, y: box.height - 2 } });
 }
 
 /** Puts the focus in the Edit panel, on its search field. */
