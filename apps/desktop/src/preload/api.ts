@@ -25,6 +25,7 @@ export function createWebforgeApi(
 ): WebforgeApi {
   const call = createCall(invoke);
   return {
+    ai: aiApi(call, subscribe),
     app: appApi(call, subscribe),
     canvas: canvasApi(call),
     clipboard: clipboardApi(call),
@@ -34,6 +35,5 @@ export function createWebforgeApi(
     project: projectApi(call),
     site: siteApi(call),
     templates: templatesApi(call),
-    ai: aiApi(call, subscribe),
   };
 }
