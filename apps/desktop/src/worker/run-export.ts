@@ -56,6 +56,14 @@ export async function runExport(
     ) {
       return { type: "cancelled" };
     }
+    if (error instanceof BuildError && error.code === "reserved-name") {
+      return {
+        type: "failed",
+        code: "reserved-name",
+        detail: error.code,
+        ...(error.page === undefined ? {} : { page: error.page }),
+      };
+    }
     if (error instanceof BuildError) {
       return { type: "failed", code: "build-failed", detail: error.code };
     }

@@ -116,6 +116,20 @@ describe("registerExportHandlers", () => {
 });
 
 describe("toExportResult", () => {
+  it("passes on the page to rename, but logs only the codes (R16)", () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const result = toExportResult(
+      { type: "failed", code: "reserved-name", detail: "reserved-name", page: "Contact us" },
+      "/sites/my-site",
+    );
+
+    expect(result).toEqual({ status: "failed", reason: "reserved-name", page: "Contact us" });
+    expect(error).toHaveBeenCalledWith(
+      "Webforge could not export a site (code=reserved-name, detail=reserved-name)",
+    );
+  });
+
   it("reports a cancelled export as the dialog's cancel: nothing changed on disk (R15)", () => {
     expect(toExportResult({ type: "cancelled" }, "/sites/my-site")).toEqual({ status: "canceled" });
   });

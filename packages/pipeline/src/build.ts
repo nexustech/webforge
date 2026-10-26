@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { WebforgeError } from "@webforge/errors";
 import {
   DOCUMENT_EXTENSIONS,
+  isDeviceName,
   type NodeDoc,
   type SitePage,
   type SiteSnapshot,
@@ -31,15 +32,34 @@ import type { PipelineResources } from "./resources.js";
  * Why a build failed (X5 errors). The app shows a translated message for each code.
  * `missing-font`: a font the theme uses isn't installed as the catalogue lists it (2.2).
  * `cancelled`: the build's signal was aborted (R15).
+ * `reserved-name`: a page or its folder is named after a Windows device (`con`, `aux`, `nul`…), so
+ * its file can't be written there (R16).
  */
-export type BuildErrorCode = "invalid-site" | "unknown-component" | "missing-font" | "cancelled";
+export type BuildErrorCode =
+  | "invalid-site"
+  | "unknown-component"
+  | "missing-font"
+  | "cancelled"
+  | "reserved-name";
 
 /** A build that cannot produce a working site. */
 export class BuildError extends WebforgeError<BuildErrorCode> {
   override readonly name = "BuildError";
+  /** The title of the page the build stopped at, for the message telling the person to fix it. */
+  readonly page: string | undefined;
 
-  constructor(code: BuildErrorCode, message: string, options?: ErrorOptions) {
-    super(code, "export.failed.buildFailed", message, options);
+  constructor(
+    code: BuildErrorCode,
+    message: string,
+    options?: ErrorOptions & { readonly page?: string },
+  ) {
+    super(
+      code,
+      code === "reserved-name" ? "export.failed.reservedName" : "export.failed.buildFailed",
+      message,
+      options,
+    );
+    this.page = options?.page;
   }
 }
 
@@ -149,6 +169,14 @@ export async function buildSite(
     throw new BuildError("invalid-site", parsed.error.message);
   }
   const site = parsed.data;
+  // A page whose file Windows won't write (`con.html`, a folder `aux/`) stops the build before
+  // anything else, naming the page, so the person can rename it (R16).
+  const unwritable = site.pages.find((page) => page.path.split("/").some(isDeviceName));
+  if (unwritable !== undefined) {
+    throw new BuildError("reserved-name", "A page's name is one Windows keeps for a device", {
+      page: unwritable.title,
+    });
+  }
   const text = new TextEncoder();
   const files = new Map<string, Uint8Array>();
   const warnings: BuildWarning[] = [];

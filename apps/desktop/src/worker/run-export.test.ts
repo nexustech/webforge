@@ -115,4 +115,25 @@ describe("runExport", () => {
     expect(outcome).toEqual({ type: "cancelled" });
     expect(existsSync(destination)).toBe(false);
   }, 60_000);
+
+  it("names the page to rename when Windows keeps its name, writing nothing (R16)", async () => {
+    const destination = join(tempDir(), "site");
+    const site = sampleSite();
+    const named = {
+      ...site,
+      pages: site.pages.map((page) =>
+        page.path === "about" ? { ...page, path: "con", title: "Contact" } : page,
+      ),
+    };
+
+    const outcome = await runExport(await job(named, destination), loadNodeResources, channel());
+
+    expect(outcome).toEqual({
+      type: "failed",
+      code: "reserved-name",
+      detail: "reserved-name",
+      page: "Contact",
+    });
+    expect(existsSync(destination)).toBe(false);
+  }, 60_000);
 });

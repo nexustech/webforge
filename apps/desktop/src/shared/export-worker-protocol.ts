@@ -87,9 +87,6 @@ export const blobRequestSchema = z.strictObject({
   hash: z.string().regex(/^[0-9a-f]{64}$/),
 });
 
-/** The export worker's request for stored bytes. */
-export type BlobRequest = z.infer<typeof blobRequestSchema>;
-
 /**
  * What the main process sends the export worker during its export: the bytes it asked for (none
  * if the site doesn't store them), or that the export is cancelled.
@@ -196,9 +193,11 @@ export const exportOutcomeSchema = z.discriminatedUnion("type", [
   z.strictObject({ type: z.literal("cancelled") }),
   z.strictObject({
     type: z.literal("failed"),
-    code: z.enum(["folder-not-empty", "write-failed", "build-failed"]),
+    code: z.enum(["folder-not-empty", "write-failed", "build-failed", "reserved-name"]),
     /** A machine-readable detail such as a BuildError code; safe to log. */
     detail: z.string(),
+    /** The title of the page to fix, for `reserved-name`: shown to the person, never logged. */
+    page: z.string().max(500).optional(),
   }),
 ]);
 

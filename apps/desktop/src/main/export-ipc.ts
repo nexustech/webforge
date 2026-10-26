@@ -23,7 +23,12 @@ export function toExportResult(outcome: ExportOutcome, destination: string): Exp
   if (outcome.type === "failed") {
     // Codes only: never paths or site content (standards §4).
     log.error("Webforge could not export a site", { code: outcome.code, detail: outcome.detail });
-    return { status: "failed", reason: outcome.code };
+    // The page's title goes to the renderer, which has the site anyway; never to the log.
+    return {
+      status: "failed",
+      reason: outcome.code,
+      ...(outcome.page === undefined ? {} : { page: outcome.page }),
+    };
   }
   return {
     status: "exported",

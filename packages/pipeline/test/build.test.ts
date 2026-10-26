@@ -379,6 +379,28 @@ describe("buildSite: checks (X5)", () => {
     expect(text(result, "index.html")).not.toContain("<script");
   });
 
+  it("refuses a page or folder named after a Windows device, naming the page (R16)", async () => {
+    const page = (path: string, title: string) => ({
+      id: path.replaceAll("/", "-"),
+      path,
+      title,
+      doc: { root: { props: {} }, content: [] },
+    });
+    for (const [path, title] of [
+      ["con", "Contact us"],
+      ["aux/team", "Our team"],
+      ["company/lpt1", "Printing"],
+    ] as const) {
+      const site = siteWith([], { pages: [page("index", "Home"), page(path, title)] });
+
+      await expect(buildSite(site, siteLibrary, resources)).rejects.toMatchObject({
+        name: "BuildError",
+        code: "reserved-name",
+        page: title,
+      });
+    }
+  });
+
   it("fails for an invalid site", async () => {
     const site = siteWith([], { pages: [] });
 
