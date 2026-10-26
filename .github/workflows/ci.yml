@@ -496,14 +496,16 @@ jobs:
   visual:
     # Editor UI and site component stories (Storybook): axe in each theme (and, for site
     # components, on Desktop and Mobile), and screenshots compared in a pinned Linux container so
-    # fonts and anti-aliasing match the committed images (R8). Linux only, always.
+    # fonts and anti-aliasing match the committed images (R8). Linux only, always. A pull request
+    # shows the site components in the three development presets; the nightly run (and a manual
+    # one) in every preset too, with axe (2.16).
     name: Storybook (axe and screenshots)
     needs: changes
     if: needs.changes.outputs.storybook == 'true'
     runs-on: ubuntu-latest
     # Keep in step with @playwright/test in e2e/package.json.
     container: mcr.microsoft.com/playwright:v1.64.1-noble
-    timeout-minutes: 20
+    timeout-minutes: ${{ github.event_name == 'pull_request' && 20 || 60 }}
     steps:
       - name: Check out
         uses: actions/checkout@v7
@@ -532,6 +534,7 @@ jobs:
         run: pnpm --filter @webforge/e2e e2e:visual --update-snapshots=missing
         env:
           VISUAL_SCREENSHOTS: "1"
+          VISUAL_ALL_THEMES: ${{ github.event_name == 'pull_request' && '0' || '1' }}
 
       - name: Require committed screenshots
         shell: bash

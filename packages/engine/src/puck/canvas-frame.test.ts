@@ -14,11 +14,27 @@ afterEach(() => {
   vi.clearAllMocks();
   document.head.replaceChildren();
   document.body.className = "";
+  document.title = "";
+  document.documentElement.removeAttribute("lang");
 });
 
 const siteCss = () => document.head.querySelector("[data-webforge-site-css]")?.textContent;
 
 describe("CanvasFrame (R8)", () => {
+  it("names its document after the site, in the site's language, set before or after (#465)", () => {
+    const frame = createCanvasFrame(() => undefined);
+
+    frame.setDocumentInfo({ title: "Rosa's Bakery", language: "en-GB" });
+    expect(document.title).toBe("");
+    frame.attach(document);
+    expect(document.title).toBe("Rosa's Bakery");
+    expect(document.documentElement.lang).toBe("en-GB");
+
+    frame.setDocumentInfo({ title: "Rosa's" });
+    expect(document.title).toBe("Rosa's");
+    expect(document.documentElement.hasAttribute("lang")).toBe(false);
+  });
+
   it("shows the site's CSS set before the canvas has a document, and later changes at once", () => {
     const frame = createCanvasFrame(() => undefined);
 

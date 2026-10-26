@@ -1,0 +1,22 @@
+/*
+ * What every theme preset's Storybook stylesheet compiles (2.16): the components' sources, and the
+ * classes they build from tokens, which no source file writes out. Not a stylesheet of its own:
+ * theme-gallery.ts writes each preset's stylesheet as an export's would be (Tailwind, the theme and
+ * its fonts) with these lines, and the stories show components in it.
+ */
+@source "../src";
+/*
+ * The spacing classes boxClasses builds from tokens (pt-32, max-md:mt-24…), which no source file
+ * writes out: the export compiles the classes its pages use, this compiles them all. A test
+ * (src/storybook-css.test.ts) checks every class boxClasses can give is here.
+ */
+@source inline("{,md:,lg:,max-md:,md:max-lg:,max-lg:}{p,m}{x,y,t,r,b,l}-{0,4,8,16,24,32}");
+/*
+ * The Columns layouts per device (2.9), which responsiveClasses prefixes with md: and lg:; a test
+ * (src/storybook-css.test.ts) checks every class it can give is here.
+ */
+@source inline("{,md:,lg:}{grid-flow-col,grid-flow-row,auto-cols-fr}");
+@source inline("{,md:,lg:}[&>*:first-child:nth-last-child(-n+3)]:col-span-{1,2}");
+@source inline("{,md:,lg:}[&>*:last-child:nth-child(-n+3)]:col-span-{1,2}");
+@source inline("{,md:,lg:}[&>*:nth-child(2):nth-last-child(2)]:col-span-{1,2}");
+@source inline("{,md:,lg:}gap-{4,8,12}");

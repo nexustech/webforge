@@ -1,9 +1,14 @@
-import { withThemeByDataAttribute } from "@storybook/addon-themes";
-import type { Preview } from "@storybook/react-vite";
-import "./preview.css";
+import stylesheets from "virtual:webforge-theme-css/lazy";
+import type { Loader, Preview } from "@storybook/react-vite";
+import { THEME_PRESETS } from "@webforge/themes";
+import { checkKeyboard } from "./keyboard.js";
 
-/** The themes stories show components in: daisyUI's, until 2.3 brings the curated themes. */
-const THEMES = { light: "light", dark: "dark", cupcake: "cupcake" } as const;
+/**
+ * The themes stories show components in (2.16): Webforge's presets, each the whole stylesheet an
+ * export with that theme has (Tailwind, the theme and its fonts). The visual tests use the three
+ * development presets on every pull request, and every preset nightly.
+ */
+const PRESETS = THEME_PRESETS.map((preset) => preset.preset);
 
 /** The device widths of the canvas toolbar (1.15). */
 const DEVICES = {
@@ -12,22 +17,45 @@ const DEVICES = {
   mobile: { name: "Mobile", styles: { width: "375px", height: "812px" }, type: "mobile" },
 } as const;
 
+/**
+ * Puts the toolbar's preset on the page before the story renders: its stylesheet, and its name as
+ * `<html>`'s `data-theme`, as the export's pages have them. A theme's settings (fonts, spacing, type
+ * scale) apply to the whole page, so a page has one theme at a time.
+ */
+const applyTheme: Loader = async ({ globals }) => {
+  const chosen = typeof globals.theme === "string" ? globals.theme : "";
+  const preset = PRESETS.includes(chosen) ? chosen : "light";
+  const css = (await stylesheets[preset]?.()) ?? "";
+  let style = document.getElementById("webforge-theme");
+  if (style === null) {
+    style = document.createElement("style");
+    style.id = "webforge-theme";
+    document.head.append(style);
+  }
+  style.textContent = css;
+  document.documentElement.dataset.theme = preset;
+  return {};
+};
+
 const preview: Preview = {
-  decorators: [
-    withThemeByDataAttribute({
-      themes: THEMES,
-      defaultTheme: "light",
-      attributeName: "data-theme",
-      parentSelector: "html",
-    }),
-  ],
+  loaders: [applyTheme],
+  // Every story ends with the keyboard check (2.16); the theme stories' pages are in frames.
+  afterEach: async ({ canvasElement, tags }) => {
+    if (!tags.includes("own-theme")) await checkKeyboard(canvasElement);
+  },
+  globalTypes: {
+    theme: {
+      description: "Theme",
+      toolbar: { title: "Theme", icon: "paintbrush", items: PRESETS, dynamicTitle: true },
+    },
+  },
   parameters: {
     // A site's sections run edge to edge, as on a page.
     layout: "fullscreen",
     backgrounds: { disable: true },
     viewport: { options: DEVICES },
   },
-  initialGlobals: { viewport: { value: "desktop", isRotated: false } },
+  initialGlobals: { theme: "light", viewport: { value: "desktop", isRotated: false } },
 };
 
 export default preview;

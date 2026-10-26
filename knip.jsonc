@@ -27,6 +27,11 @@
       // Run by hand to write a format's .wforge fixture (see the script's header).
       "entry": ["test/support/make-v1-fixture.ts"]
     },
+    "packages/site-components": {
+      // The Storybook's stylesheets import them (`@import "tailwindcss"`, `@plugin "daisyui"`):
+      // .storybook/theme-gallery.ts writes one per theme preset, ignored by git (2.16).
+      "ignoreDependencies": ["daisyui", "tailwindcss"]
+    },
     "packages/pipeline": {
       // The font catalogue's packages (2.2): their files are read by path, never imported
       // (src/node-resources.ts, and the desktop build's copy into out/fonts).

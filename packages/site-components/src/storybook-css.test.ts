@@ -1,8 +1,7 @@
-import { BOX_SIDES, DEFAULT_THEME, SPACING_TOKENS } from "@webforge/model";
-import { themeCss } from "@webforge/themes";
+import { BOX_SIDES, SPACING_TOKENS } from "@webforge/model";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import previewCss from "../.storybook/preview.css?raw";
+import sourcesCss from "../.storybook/sources.css?raw";
 import { COLUMN_LAYOUT_CLASS, COLUMN_LAYOUTS } from "./catalogue/column-layouts.js";
 import { SECTION_PADDING } from "./frame.js";
 import { boxClasses, responsiveClasses } from "./library.js";
@@ -17,7 +16,7 @@ function expand(pattern: string): string[] {
 
 /** The classes the Storybook's CSS compiles whatever the stories' sources say. */
 const inline = new Set(
-  [...previewCss.matchAll(/@source inline\("([^"]*)"\)/g)].flatMap(([, pattern = ""]) =>
+  [...sourcesCss.matchAll(/@source inline\("([^"]*)"\)/g)].flatMap(([, pattern = ""]) =>
     expand(pattern),
   ),
 );
@@ -74,29 +73,5 @@ describe("the site Storybook's CSS", () => {
       }),
       { numRuns: 200 },
     );
-  });
-});
-
-describe("the Storybook's type scale (#419)", () => {
-  it("is the default theme's, a size smaller page title on phones included", () => {
-    const declarations = (css: string) =>
-      css
-        .split("\n")
-        .map((line) => line.trim())
-        .filter((line) => line.startsWith("--text-"));
-    expect(declarations(previewCss)).toEqual(declarations(themeCss(DEFAULT_THEME)));
-  });
-
-  it("sets headings in the default theme's heading font: its body font", () => {
-    // The default theme uses one family for both, and Storybook loads no font files: its
-    // headings take the body text's font, as an export with the default theme shows them.
-    expect(DEFAULT_THEME.fonts.heading).toEqual(DEFAULT_THEME.fonts.body);
-    expect(previewCss).toContain("--font-heading: var(--font-sans);");
-  });
-
-  it("gives the Shadow hover effect the default theme's shadow (2.12, 2.13a)", () => {
-    const hoverShadow = (css: string) => /--wf-hover-shadow: ([^;]+);/.exec(css)?.[1];
-    expect(hoverShadow(previewCss)).toBeDefined();
-    expect(hoverShadow(previewCss)).toBe(hoverShadow(themeCss(DEFAULT_THEME)));
   });
 });

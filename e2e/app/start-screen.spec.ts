@@ -159,9 +159,10 @@ test("makes a Personal / CV site in under 3 s, accessible on the canvas (2.15c)"
   expect(Date.now() - started).toBeLessThan(3_000);
   await expect(canvas(page).locator("section img").first()).not.toHaveJSProperty("naturalWidth", 0);
 
-  // The page as the canvas draws it, inside its frame. Four rules fail on what the editor adds to
-  // every site's canvas, not on the template, and are off until #465 fixes them: the frame's title
-  // and language, the inline editors' names and Puck's draggable wrappers.
+  // The page as the canvas draws it, inside its frame, what the editor adds to it included (#465):
+  // the frame's title and language, and the inline editors' names. One rule stays off: dnd-kit
+  // makes Puck's wrapper around each element a button, with the element's links and text inside
+  // (nested-interactive). As a group the canvas tests' clicks no longer reach the elements (#465).
   const frame = await page.locator(".editor__canvas iframe").elementHandle();
   const canvasFrame = await frame?.contentFrame();
   if (canvasFrame === null || canvasFrame === undefined) throw new Error("No canvas frame");
@@ -173,11 +174,7 @@ test("makes a Personal / CV site in under 3 s, accessible on the canvas (2.15c)"
       };
       const { violations, passes } = await axe.run(document, {
         runOnly: { type: "tag", values: tags },
-        rules: Object.fromEntries(
-          ["document-title", "html-has-lang", "aria-input-field-name", "nested-interactive"].map(
-            (rule) => [rule, { enabled: false }],
-          ),
-        ),
+        rules: { "nested-interactive": { enabled: false } },
       });
       return {
         violations: violations.map(({ id, help }) => ({ id, help })),

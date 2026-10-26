@@ -18,3 +18,10 @@ declare module "virtual:webforge-theme-css" {
   const stylesheets: Readonly<Record<string, string>>;
   export default stylesheets;
 }
+
+// A loader of each theme preset's compiled stylesheet, by preset name, for the stories' theme
+// (2.16; written by .storybook/theme-gallery.ts).
+declare module "virtual:webforge-theme-css/lazy" {
+  const loaders: Readonly<Record<string, () => Promise<string>>>;
+  export default loaders;
+}

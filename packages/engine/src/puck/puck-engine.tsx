@@ -1,6 +1,7 @@
 import { type Config, Puck, type PuckAction, type useGetPuck } from "@puckeditor/core";
 // Puck's default stylesheet loads the Inter font from rsms.me; Webforge makes no external requests.
 import "@puckeditor/core/no-external.css";
+import { t } from "@webforge/i18n";
 import {
   type ComponentLibrary,
   EDITOR_RENDER_CONTEXT,
@@ -365,7 +366,15 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     setLinkPicker: richText.setLinkPicker,
 
     // Replaces every binding: one left out goes. The other parts stay as they are.
-    setSettings: (next) => changeContext({ bindings: next }),
+    setSettings: (next) => {
+      // The canvas's document is named after the site, in its language (#465).
+      const name = next.setting("general.name")?.trim() ?? "";
+      frame.setDocumentInfo({
+        title: name === "" ? t("site.untitledName") : name,
+        ...(next.language === undefined ? {} : { language: next.language }),
+      });
+      changeContext({ bindings: next });
+    },
 
     setZoom: view.zoom,
     onCanvasSize: view.onSize,
