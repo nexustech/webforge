@@ -1,9 +1,9 @@
 import { DEFAULT_THEME, type Oklch } from "@webforge/model";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { contrastRatio, hexToOklch } from "./colors.js";
+import { contrastRatio, hexToOklch, inverseColors } from "./colors.js";
 import { AA_LARGE, AA_TEXT } from "./contrast.js";
-import { brandFromImage, type ImageColour, imageColours } from "./image-palette.js";
+import { brandFromImage, type ImageColour, imageColours, reversedBrand } from "./image-palette.js";
 import { themePreset } from "./presets.js";
 
 /** RGBA pixels: `count` of each `[r, g, b, a]`, in order. */
@@ -102,6 +102,35 @@ describe("brand colours from an image (PG-2, F-DS-7)", () => {
         },
       ),
     );
+  });
+});
+
+describe("reversed sections' brand colours from an image (#462 review)", () => {
+  it("keep the proposal's hues, readable on the reversed surface, with their text", () => {
+    fc.assert(
+      fc.property(
+        fc.array(
+          fc.record({ color: colour, share: fc.double({ min: 0.01, max: 1, noNaN: true }) }),
+          {
+            minLength: 1,
+            maxLength: 6,
+          },
+        ),
+        (colours: ImageColour[]) => {
+          const proposal = brandFromImage(colours, DEFAULT_THEME) ?? never();
+          const reversed = reversedBrand(proposal, DEFAULT_THEME) ?? never();
+          expect(readable(reversed, inverseColors(DEFAULT_THEME)["base-100"])).toBe(true);
+          expect(reversed.secondary.h).toBeCloseTo(proposal.secondary.h);
+        },
+      ),
+    );
+  });
+
+  it("are none for a theme without reversed colours of its own", () => {
+    const { inverse: _none, ...plain } = DEFAULT_THEME;
+    const proposal = brandFromImage([{ color: hexToOklch("#dc1e28"), share: 1 }], plain) ?? never();
+
+    expect(reversedBrand(proposal, plain)).toBeUndefined();
   });
 });
 

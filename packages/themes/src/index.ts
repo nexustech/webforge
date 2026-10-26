@@ -28,7 +28,7 @@ export {
   fontRefOf,
 } from "./fonts/catalogue.js";
 export type { FontFace } from "./fonts/faces.js";
-export { fontFacesFor } from "./fonts/faces.js";
+export { fontFacesFor, previewFileOf } from "./fonts/faces.js";
 export type {
   FontCategory,
   FontFallback,
@@ -51,6 +51,6 @@ export {
   planFamily,
 } from "./fonts/plan.js";
 export type { BrandProposal, ImageColour } from "./image-palette.js";
-export { brandFromImage, imageColours } from "./image-palette.js";
+export { brandFromImage, imageColours, reversedBrand } from "./image-palette.js";
 export { THEME_PRESETS, themePreset } from "./presets.js";
 export { oklchCss, radiusCss, shadowCss, themeCss } from "./theme-css.js";

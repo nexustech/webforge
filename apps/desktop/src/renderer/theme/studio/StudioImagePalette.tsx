@@ -1,17 +1,27 @@
 import { Button, Picker } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { type ImageMeta, isImageMeta, type SiteDoc, type ThemeTokens } from "@webforge/model";
-import { type BrandProposal, brandFromImage, imageColours, oklchCss } from "@webforge/themes";
+import {
+  type BrandProposal,
+  brandFromImage,
+  type ImageColour,
+  imageColours,
+  oklchCss,
+} from "@webforge/themes";
 import { ImageIcon } from "lucide-react";
 import { type CSSProperties, useState } from "react";
 import { mediaImageUrl } from "../../../shared/ipc/media.js";
 import { readPixels } from "./image-pixels.js";
 
-/** The colours a palette proposes, with the image they came from. */
-type Proposed = { readonly image: ImageMeta; readonly proposal: BrandProposal };
+/**
+ * An image's main colours, read when it's chosen. The brand colours they propose are worked out
+ * from them for the theme as it is each time they're shown and used, so a theme changed meanwhile
+ * (another preset) gets colours fitted to its own surfaces (#462 review).
+ */
+type Read = { readonly image: ImageMeta; readonly colours: readonly ImageColour[] };
 
-/** What the palette from an image shows: nothing yet, a proposal, or why there's none. */
-type Shown = Proposed | { readonly problem: string } | null;
+/** What the palette from an image shows: nothing yet, an image's proposal, or why there's none. */
+type Shown = Read | { readonly problem: string } | null;
 
 /** The proposal's colours in order, by the glossary's names, each with its text. */
 const PAIRS = [
@@ -23,10 +33,9 @@ const PAIRS = [
 /** A Media image's thumbnail, which is all a palette needs. */
 const thumbnailUrl = (item: ImageMeta) => mediaImageUrl(item, "thumbnail");
 
-/** What choosing `image` shows: the colours it proposes for `theme`, or why there are none. */
-async function proposalFor(
+/** What choosing `image` shows: its main colours, or why it has none. */
+async function coloursOf(
   image: ImageMeta,
-  theme: ThemeTokens,
   imageUrl: (item: ImageMeta) => string,
   read: (url: string) => Promise<ArrayLike<number>>,
 ): Promise<Shown> {
@@ -36,8 +45,8 @@ async function proposalFor(
   } catch {
     return { problem: t("theme.image.unreadable") };
   }
-  const proposal = brandFromImage(imageColours(pixels), theme);
-  return proposal === undefined ? { problem: t("theme.image.noColours") } : { image, proposal };
+  const colours = imageColours(pixels);
+  return colours.length === 0 ? { problem: t("theme.image.noColours") } : { image, colours };
 }
 
 /** Props of {@link StudioImagePalette}. */
@@ -67,13 +76,16 @@ export function StudioImagePalette({
 }: StudioImagePaletteProps) {
   const [picking, setPicking] = useState(false);
   const [shown, setShown] = useState<Shown>(null);
+  // Worked out for the theme as it is now: fitted to its surfaces when shown and when used.
+  const proposal: BrandProposal | undefined =
+    shown !== null && "colours" in shown ? brandFromImage(shown.colours, theme) : undefined;
   const images = Object.values(media)
     .filter(isImageMeta)
     .map((each) => ({ id: each.id, label: each.fileName, keywords: [each.alt], image: each }));
 
   const propose = async (image: ImageMeta) => {
     setPicking(false);
-    setShown(await proposalFor(image, theme, imageUrl, read));
+    setShown(await coloursOf(image, imageUrl, read));
   };
 
   return (
@@ -97,7 +109,7 @@ export function StudioImagePalette({
       <div aria-live="polite" className="empty:hidden">
         {shown === null ? null : "problem" in shown ? (
           <p className="m-0 text-xs">{shown.problem}</p>
-        ) : (
+        ) : proposal === undefined ? null : (
           <div className="flex flex-wrap items-center gap-3">
             <img
               src={imageUrl(shown.image)}
@@ -114,8 +126,8 @@ export function StudioImagePalette({
                   className="flex min-w-20 flex-col items-start gap-0.5 rounded-sm bg-(--swatch) px-2 py-1.5 text-xs text-(--swatch-text)"
                   style={
                     {
-                      "--swatch": oklchCss(shown.proposal[role]),
-                      "--swatch-text": oklchCss(shown.proposal[text]),
+                      "--swatch": oklchCss(proposal[role]),
+                      "--swatch-text": oklchCss(proposal[text]),
                     } as CSSProperties
                   }
                 >
@@ -131,7 +143,7 @@ export function StudioImagePalette({
                 type="button"
                 size="sm"
                 onClick={() => {
-                  void onUse(shown.proposal, shown.image).then((used) => {
+                  void onUse(proposal, shown.image).then((used) => {
                     if (used) setShown(null);
                   });
                 }}

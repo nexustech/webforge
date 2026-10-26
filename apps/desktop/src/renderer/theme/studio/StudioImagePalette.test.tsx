@@ -2,6 +2,7 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { DEFAULT_THEME, type ImageMeta, type MediaId, type SiteDoc } from "@webforge/model";
+import { brandFromImage, imageColours, themePreset } from "@webforge/themes";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { StudioImagePalette } from "./StudioImagePalette.js";
 
@@ -76,6 +77,28 @@ describe("a palette from an image (2.3b, PG-2)", () => {
       logo,
     );
     await vi.waitFor(() => expect(screen.queryByRole("list", { name: /Colours from/ })).toBeNull());
+  });
+
+  it("fits the proposal to the theme as it is when it's used, not when it was chosen (#462)", async () => {
+    const onUse = vi.fn(() => Promise.resolve(true));
+    const props = {
+      media: { [logo.id]: logo },
+      onUse,
+      imageUrl: (item: ImageMeta) => `test://${item.hash}`,
+      read: () => Promise.resolve(LOGO_PIXELS),
+    };
+    const user = userEvent.setup({ delay: null });
+    const { rerender } = render(<StudioImagePalette {...props} theme={DEFAULT_THEME} />);
+    await chooseLogo(user);
+    await screen.findByRole("list", { name: "Colours from Logo.png" });
+
+    // Another theme meanwhile: a dark one.
+    const dark = themePreset("dark");
+    if (dark === undefined) throw new Error("no dark preset");
+    rerender(<StudioImagePalette {...props} theme={dark} />);
+    await user.click(screen.getByRole("button", { name: "Use These Colours" }));
+
+    expect(onUse).toHaveBeenCalledWith(brandFromImage(imageColours(LOGO_PIXELS), dark), logo);
   });
 
   it("puts a proposal away unused", async () => {

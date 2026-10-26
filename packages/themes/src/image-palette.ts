@@ -113,13 +113,13 @@ function adjusted(color: Oklch, darker: boolean, passes: (color: Oklch) => boole
 }
 
 /**
- * `color` as a brand colour on `theme`'s page, with its text: readable as `needed` contrast on the
- * page's surface (the main colour is text on it, outline buttons' labels; the accents are large
+ * `color` as a brand colour on `surface`, with its text: readable as `needed` contrast on the
+ * surface (the main colour is text on it, outline buttons' labels; the accents are large
  * text), and its text, the lighter or darker of two in its own hue, readable on it (4.5:1).
  */
-function asBrand(color: Oklch, theme: ThemeTokens, needed: number): readonly [Oklch, Oklch] {
-  const surface = theme.colors["base-100"];
-  const darker = theme.scheme === "light";
+function asBrand(color: Oklch, surface: Oklch, needed: number): readonly [Oklch, Oklch] {
+  // On a light surface a colour reads by being darker; on a dark one, lighter.
+  const darker = surface.l > 0.5;
   const onSurface = adjusted(color, darker, (each) => contrastRatio(each, surface) >= needed);
   const light: Oklch = { l: 0.98, c: Math.min(0.02, color.c), h: color.h };
   const dark: Oklch = { l: 0.22, c: Math.min(0.04, color.c), h: color.h };
@@ -162,9 +162,17 @@ export function brandFromImage(
     const turn = turns[chosen.length - 1] ?? 180;
     chosen.push({ l: brand.l, c: Math.max(brand.c, GREY * 2), h: (brand.h + turn) % 360 });
   }
-  const [primary, primaryText] = asBrand(chosen[0] as Oklch, theme, AA_TEXT);
-  const [secondary, secondaryText] = asBrand(chosen[1] as Oklch, theme, AA_LARGE);
-  const [accent, accentText] = asBrand(chosen[2] as Oklch, theme, AA_LARGE);
+  return fitted([chosen[0], chosen[1], chosen[2]] as const, theme.colors["base-100"]);
+}
+
+/** Brand, Accent and Second accent `colours`, each fitted to `surface` with its text (asBrand). */
+function fitted(
+  colours: readonly [Oklch | undefined, Oklch | undefined, Oklch | undefined],
+  surface: Oklch,
+): BrandProposal {
+  const [primary, primaryText] = asBrand(colours[0] as Oklch, surface, AA_TEXT);
+  const [secondary, secondaryText] = asBrand(colours[1] as Oklch, surface, AA_LARGE);
+  const [accent, accentText] = asBrand(colours[2] as Oklch, surface, AA_LARGE);
   return {
     primary,
     "primary-content": primaryText,
@@ -173,4 +181,24 @@ export function brandFromImage(
     accent,
     "accent-content": accentText,
   };
+}
+
+/**
+ * The brand colours of reversed sections for a `proposal` on `theme` (#462 review): each in the
+ * proposal's hue and chroma at the lightness reversed sections have it (#200), then fitted to the
+ * reversed surface with its text, as the page's are. Undefined for a theme without reversed colours
+ * of its own, which shows its page colours there.
+ */
+export function reversedBrand(
+  proposal: BrandProposal,
+  theme: ThemeTokens,
+): BrandProposal | undefined {
+  const reversed = theme.inverse;
+  if (reversed === undefined) return undefined;
+  const at = (role: "primary" | "secondary" | "accent"): Oklch => ({
+    l: reversed[role].l,
+    c: proposal[role].c,
+    h: proposal[role].h,
+  });
+  return fitted([at("primary"), at("secondary"), at("accent")], reversed["base-100"]);
 }
