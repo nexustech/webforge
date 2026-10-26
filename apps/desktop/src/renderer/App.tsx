@@ -44,6 +44,7 @@ import { ShellLayout } from "./shell/ShellLayout.js";
 import { ShortcutSheet } from "./shell/ShortcutSheet.js";
 import { TitleBar } from "./shell/TitleBar.js";
 import { UndoStepsMenu } from "./shell/UndoStepsMenu.js";
+import { createWindowDialogs, WindowDialogs } from "./shell/window-dialogs.js";
 import { SiteCommands } from "./start/SiteCommands.js";
 import { AutosaveStatus } from "./storage/AutosaveStatus.js";
 import type { LoadedSite } from "./storage/load-site.js";
@@ -104,6 +105,7 @@ export function App({
   const [canvasView] = useState(createCanvasView);
   const [canvasPointer] = useState(createCanvasPointer);
   const [settings] = useState(createSettingsRegistry);
+  const [windowDialogs] = useState(createWindowDialogs);
   // Actions that change more than the page shown ask first (D7); one dialog for the window.
   const [siteWide] = useState(createSiteWideConfirm);
   // The person's preferences, and Design or Content mode (M3) remembered with the open site (R9).
@@ -148,6 +150,7 @@ export function App({
     canvasView,
     canvasPointer,
     settings,
+    windowDialogs,
     exportSite: (request) => exportSiteRef.current(request),
   }));
   useEffect(() => connectAreas(WINDOW_AREAS, windowContext), [windowContext]);
@@ -276,6 +279,7 @@ export function App({
             <ShortcutSheet />
             <SiteCommands />
             <SettingsHost registry={settings} />
+            <WindowDialogs registry={windowDialogs} />
             <SiteWideConfirmDialog confirm={siteWide} />
             <Toaster theme={theme} />
           </TooltipProvider>

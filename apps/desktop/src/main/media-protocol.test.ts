@@ -56,6 +56,8 @@ describe("createMediaResponder", () => {
     const second = await respond(`webforge-media://thumbnail/${PHOTO}`);
 
     expect(first.headers.get("Content-Type")).toBe("image/webp");
+    // Readable on a canvas, for Theme Studio's palette from an image (2.3b).
+    expect(first.headers.get("Access-Control-Allow-Origin")).toBe("*");
     expect(await bytes(second)).toEqual(new Uint8Array([1, 2, 3]));
     expect(makeThumbnail).toHaveBeenCalledTimes(1);
     expect(makeThumbnail).toHaveBeenCalledWith(photo.data, "image/jpeg");

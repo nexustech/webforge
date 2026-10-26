@@ -32,6 +32,10 @@ function image(data: Uint8Array, type: string): Response {
       // The URL names the bytes by their hash, so they never change.
       "Cache-Control": "private, max-age=31536000, immutable",
       "X-Content-Type-Options": "nosniff",
+      // Readable in CORS mode, as the fonts are: Theme Studio draws a thumbnail on a canvas to read
+      // its colours (2.3b, PG-2), and the editor's page is a file: one, whose origin is `null`.
+      // Only the app's own pages reach the scheme, and they show these images anyway.
+      "Access-Control-Allow-Origin": "*",
     },
   });
 }

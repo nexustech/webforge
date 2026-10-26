@@ -5,6 +5,7 @@ export {
   inverseColors,
   oklchToSrgb,
   resolveColorRef,
+  rgbToOklch,
   shadeOf,
 } from "./colors.js";
 export type { ContrastIssue } from "./contrast.js";
@@ -49,5 +50,7 @@ export {
   PACKAGE_LISTINGS,
   planFamily,
 } from "./fonts/plan.js";
+export type { BrandProposal, ImageColour } from "./image-palette.js";
+export { brandFromImage, imageColours } from "./image-palette.js";
 export { THEME_PRESETS, themePreset } from "./presets.js";
 export { oklchCss, radiusCss, shadowCss, themeCss } from "./theme-css.js";

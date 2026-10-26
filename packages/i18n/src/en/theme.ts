@@ -178,6 +178,24 @@ export const theme = {
   "theme.studio.linkText": "our opening times",
   "theme.studio.linkAfter": "before you visit.",
 
+  // A palette from an image (2.3b, PG-2): brand colours proposed from a logo or photo in Media.
+  "theme.image.title": "Colours from an image",
+  "theme.image.choose": "Colours from an image…",
+  "theme.image.hint": "Choose your logo or a photo, and see the brand colours it suggests.",
+  "theme.image.pickerTitle": "Choose an image",
+  "theme.image.pickerDescription":
+    "Double-click an image, or press Enter, to see the colours it suggests. It stays on this computer.",
+  "theme.image.noImages": "Add your logo or a photo to Media first.",
+  "theme.image.proposal": "Colours from {name}",
+  "theme.image.noColours": "That image has no colours to suggest: it's all clear.",
+  "theme.image.unreadable": "That image couldn't be read. Try another.",
+  "theme.image.use": "Use These Colours",
+  "theme.image.dismiss": "Not Now",
+  "theme.image.confirm": "Use the colours from '{name}'?",
+  "theme.image.confirmDescription":
+    "Brand, Accent and Second accent change, with their text, on every page.",
+  "theme.image.confirmButton": "Use Colours",
+
   // Undo steps (D2): one per change, named for what changed.
   "theme.history.preset": "Changed theme to '{name}'",
   "theme.history.color.brand": "Changed brand colour",
@@ -190,6 +208,7 @@ export const theme = {
   "theme.history.textStyle": "Changed text style for {style}",
   "theme.history.color": "Changed {name} colour",
   "theme.history.colorReversed": "Changed {name} colour in reversed sections",
+  "theme.history.image": "Changed brand colours from '{name}'",
   "theme.history.headings": "Changed heading style",
   "theme.history.buttons": "Changed button style",
   "theme.history.links": "Changed link style",

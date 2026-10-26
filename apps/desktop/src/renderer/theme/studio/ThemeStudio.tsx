@@ -18,8 +18,15 @@ import { useDocument } from "../../editor/use-document.js";
 import { addFontPreviews } from "../../fields/index.js";
 import type { SiteWideConfirm } from "../../shell/confirm-site-wide.js";
 import { TOKEN_CONTROLS, tokenKey } from "../theme-controls.js";
-import { setPaletteColor, setTextStep, setToken, switchPreset } from "../theme-edits.js";
+import {
+  setBrandColours,
+  setPaletteColor,
+  setTextStep,
+  setToken,
+  switchPreset,
+} from "../theme-edits.js";
 import { StudioColours } from "./StudioColours.js";
+import { StudioImagePalette } from "./StudioImagePalette.js";
 import { StudioStyles } from "./StudioStyles.js";
 import { StudioText } from "./StudioText.js";
 import { StudioThemes } from "./StudioThemes.js";
@@ -40,13 +47,14 @@ export type ThemeStudioProps = {
  * Theme Studio (F-DS-7, UI2): the site's theme in full, in a large dialog in the window (not a
  * window of its own, decided 2026-10-23). Its sections: the themes as cards, live in their own
  * colours, fonts and corners; every colour, the page's and reversed sections' side by side, with
- * shades and what their contrast lacks; the text styles and links; and the other styles, the corner
+ * shades and what their contrast lacks, and brand colours proposed from an image (PG-2); the text styles and links; and the other styles, the corner
  * and shadow scales drawn as samples. A theme or a colour is asked about first (D7); every change
  * is one labelled step in the site's history, so Ctrl/Cmd+Z undoes it here too (P5).
  */
 export function ThemeStudio({ session, studio, siteWide }: ThemeStudioProps) {
   const { open, section } = useStore(studio);
   const theme = useDocument(session, (site) => site.theme);
+  const media = useDocument(session, (site) => site.media);
   // The cards and text styles show each font in itself.
   useEffect(() => {
     if (open) addFontPreviews(document);
@@ -84,6 +92,13 @@ export function ThemeStudio({ session, studio, siteWide }: ThemeStudioProps) {
             />
           </TabsContent>
           <TabsContent value="colors" className="min-h-0 overflow-auto pr-1">
+            <StudioImagePalette
+              media={media}
+              theme={theme}
+              onUse={(proposal, image) =>
+                setBrandColours(session, siteWide, proposal, image.fileName)
+              }
+            />
             <StudioColours
               theme={theme}
               onChange={(palette, role, color) =>

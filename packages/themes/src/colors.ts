@@ -86,8 +86,17 @@ export function contrastRatio(foreground: Oklch, background: Oklch, opacity = 1)
 
 /** A `#rrggbb` colour (sRGB, as an arbitrary class writes it) in OKLCH, through OKLab. */
 export function hexToOklch(hex: string): Oklch {
-  const channel = (at: number) => decode(Number.parseInt(hex.slice(at, at + 2), 16) / 255);
-  const [r, g, b] = [channel(1), channel(3), channel(5)];
+  const channel = (at: number) => Number.parseInt(hex.slice(at, at + 2), 16);
+  return rgbToOklch(channel(1), channel(3), channel(5));
+}
+
+/** An sRGB colour, each channel 0–255 (a pixel's), in OKLCH, through OKLab. */
+export function rgbToOklch(red: number, green: number, blue: number): Oklch {
+  const [r, g, b] = [red, green, blue].map((channel) => decode(channel / 255)) as [
+    number,
+    number,
+    number,
+  ];
   const long = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
   const medium = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
   const short = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
