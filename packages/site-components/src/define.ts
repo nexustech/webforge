@@ -56,7 +56,9 @@ type Fields = Readonly<Record<string, FieldDef>>;
  * What {@link defineComponent} takes: a {@link ComponentDef} whose `defaults`, `render` and
  * `textStyle` are typed by its `fields` (R7), and optionally its layout variants (a Hero with the
  * image on the left or right, a grid of two or three columns), which become a Style choice named
- * `variant`, defaulting to the first. The component renders each one.
+ * `variant`, defaulting to the first. The component renders each one. A variant that leaves some
+ * fields out (a text-only Hero has no image) names them in `hides`, and the Edit panel hides them
+ * while that layout is chosen (#311).
  */
 export type ComponentSpec<F extends Fields, Variant extends string = never> = Omit<
   ComponentDef,
@@ -64,7 +66,12 @@ export type ComponentSpec<F extends Fields, Variant extends string = never> = Om
 > & {
   readonly fields: F;
   readonly defaults: DefaultsOf<F>;
-  readonly variants?: readonly { readonly label: string; readonly value: Variant }[];
+  readonly variants?: readonly {
+    readonly label: string;
+    readonly value: Variant;
+    /** The fields this layout doesn't use: hidden in the Edit panel, their values kept. */
+    readonly hides?: readonly (keyof F & string)[];
+  }[];
   readonly render: (props: RenderPropsOf<F, Variant>) => ReactNode;
   /**
    * The theme's text style its text is set in (h1–h6, body, small), from its values; none for a
@@ -224,18 +231,28 @@ function build<const F extends Fields, const Variant extends string = never>(
   }
   let fields: Fields = def.fields;
   let defaults: Readonly<Record<string, unknown>> = def.defaults;
+  let variantHides: Record<string, readonly string[]> | undefined;
   if (variants !== undefined) {
     if (Object.hasOwn(fields, VARIANT_FIELD))
       fail(`has variants and a field named "${VARIANT_FIELD}"`);
     const [first] = variants;
     if (first === undefined) fail("has no variants");
+    for (const { value, hides = [] } of variants) {
+      for (const hidden of hides) {
+        // Named by the type too; a component built from data could still name one it lacks.
+        if (!Object.hasOwn(fields, hidden)) {
+          fail(`hides "${hidden}" in its "${value}" layout, which isn't a field`);
+        }
+      }
+      if (hides.length > 0) variantHides = { ...variantHides, [value]: [...new Set(hides)] };
+    }
     fields = {
       ...fields,
       [VARIANT_FIELD]: {
         kind: "select",
         group: "style",
         label: t("field.variant"),
-        options: variants,
+        options: variants.map(({ label, value }) => ({ label, value })),
       },
     };
     defaults = { [VARIANT_FIELD]: first.value, ...defaults };
@@ -308,6 +325,7 @@ function build<const F extends Fields, const Variant extends string = never>(
     ...(framed ? { framed: true } : {}),
     fields,
     defaults,
+    ...(variantHides === undefined ? {} : { variantHides }),
     render: (props: ComponentRenderProps) =>
       render({
         id: props.id,

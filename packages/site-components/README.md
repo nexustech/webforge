@@ -18,6 +18,7 @@ const html = renderNodesToHtml(page.content, siteLibrary, context);
 ```
 
 ## Conventions
+- A layout variant that doesn't use a field names it in `hides` (`defineComponent`'s `variants`, #311): the Edit panel hides it while that layout is chosen (`fieldsHiddenBy`), and its value stays for the layouts that use it. The Hero's text-only layout hides Image, and its centred one Alignment.
 - Each component keeps a `site-<name>` class (`site-section`, `site-text`…) as a stable hook for tests and for developers reading the export.
 - Style options are design tokens (Padding: Small/Medium/Large → `py-8/16/24`), never free values.
 - Interactive parts use native HTML first (`<details>` for the FAQ); `webforge.js` adds ARIA state and keyboard handling where HTML can't (the mobile menu).

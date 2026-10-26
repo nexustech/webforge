@@ -75,6 +75,11 @@ export type ComponentDef = {
   readonly framed?: true;
   readonly fields: Readonly<Record<string, FieldDef>>;
   readonly defaults: Readonly<Record<string, unknown>>;
+  /**
+   * The fields each layout variant doesn't use (#311), by the variant's value: the Edit panel
+   * hides them while it is chosen ({@link fieldsHiddenBy}). Their values stay in the document.
+   */
+  readonly variantHides?: Readonly<Record<string, readonly string[]>>;
   readonly render: (props: ComponentRenderProps) => ReactNode;
   /**
    * Scripts the exported site must include when this component is used: always, or as its values
@@ -120,6 +125,18 @@ export function textStylesOf(node: NodeDoc, library: ComponentLibrary): TextStyl
     ),
   );
   return [...new Set(styles.filter((style) => style !== undefined))];
+}
+
+/**
+ * The fields `def`'s chosen layout doesn't use (#311), from its `values` (with its defaults): the
+ * Edit panel hides them, and shows them again with their values once a layout uses them.
+ */
+export function fieldsHiddenBy(
+  def: Pick<ComponentDef, "variantHides">,
+  values: Readonly<Record<string, unknown>>,
+): ReadonlySet<string> {
+  const variant = values.variant;
+  return new Set(typeof variant === "string" ? (def.variantHides?.[variant] ?? []) : []);
 }
 
 /** The components available on the canvas and in exported sites, by component type. */
