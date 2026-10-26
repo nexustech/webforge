@@ -23,21 +23,15 @@ import {
   type TextStyle,
   type ThemeTokens,
 } from "@webforge/model";
-import {
-  AA_LARGE,
-  AA_TEXT,
-  contrastRatio,
-  oklchCss,
-  oklchToSrgb,
-  resolveColorRef,
-} from "@webforge/themes";
+import { AA_LARGE, AA_TEXT, contrastRatio, oklchCss, resolveColorRef } from "@webforge/themes";
 import { type CSSProperties, useId } from "react";
 import type { EditorSession } from "../../editor/editor-session.js";
 import { useDocument } from "../../editor/use-document.js";
 import { type EditorPreferences, usePreferences } from "../../shell/preferences-store.js";
+import { hexOf } from "./hex.js";
 
 /** Tailwind's text sizes in CSS pixels, as the type scale names them. */
-const TEXT_PX: Readonly<Record<ThemeTokens["typeScale"][TextStyle]["size"], number>> = {
+export const TEXT_PX: Readonly<Record<ThemeTokens["typeScale"][TextStyle]["size"], number>> = {
   xs: 12,
   sm: 14,
   base: 16,
@@ -130,18 +124,6 @@ function roleOfOption(value: string): ColorRole | undefined {
 }
 
 const isShaded = (role: ColorRole) => (SHADED_ROLES as readonly string[]).includes(role);
-
-/** `color` as the six lower-case hex digits a field's own colour is stored in: `#1f6feb`. */
-const hexOf = (color: Parameters<typeof oklchToSrgb>[0]) => {
-  const { r, g, b } = oklchToSrgb(color);
-  return `#${[r, g, b]
-    .map((channel) =>
-      Math.round(channel * 255)
-        .toString(16)
-        .padStart(2, "0"),
-    )
-    .join("")}`;
-};
 
 /**
  * A contrast ratio as the warning shows it: rounded down to one decimal, so a ratio that fails

@@ -91,6 +91,8 @@ const FORM_KINDS = {
       { value: "cakes", label: "cakes", thumbnail: swatch("#85cdca") },
     ],
   },
+  themeColor: { kind: "themeColor", name: "themeColor", label: "Brand", warnings: [] },
+  font: { kind: "font", name: "font", label: "Headings" },
 } satisfies { readonly [K in FieldKind]: FormField & { readonly kind: K } };
 
 const VALUES: FormValues = {
@@ -109,9 +111,12 @@ const VALUES: FormValues = {
   choice: "email",
 };
 
-/** The app draws these kinds (a link, a Media image, an icon, code): a stand-in shows where. */
+/**
+ * The app draws these kinds (a link, a Media image, an icon, code, a theme's colour and font): a
+ * stand-in shows where.
+ */
 const APP_DRAWN: FieldRenderers = Object.fromEntries(
-  (["link", "image", "icon", "code"] as const).map((kind) => [
+  (["link", "image", "icon", "code", "themeColor", "font"] as const).map((kind) => [
     kind,
     ({ id }: { readonly id: string }) => (
       <output id={id} className="text-xs text-muted-foreground">
