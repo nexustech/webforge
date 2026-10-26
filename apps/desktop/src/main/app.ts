@@ -42,6 +42,7 @@ import { registerIpcHandler } from "./ipc.js";
 import { logFailure } from "./log.js";
 import { registerMediaHandlers } from "./media-ipc.js";
 import { createMediaResponder } from "./media-protocol.js";
+import { createMyThemes } from "./my-themes.js";
 import { shippedTemplateReader } from "./new-site.js";
 import {
   openPreferencesStore,
@@ -66,6 +67,7 @@ import {
 } from "./spellcheck.js";
 import { createStorageWriter, type WriterThread } from "./storage-writer.js";
 import { registerTemplatesHandlers } from "./templates-ipc.js";
+import { registerThemesHandlers } from "./themes-ipc.js";
 import {
   MIN_WINDOW_SIZE,
   mainWindowPlacement,
@@ -172,6 +174,8 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
   const backupSchedule = createBackupSchedule(backups);
   // The start screen's Recent list (F-SITE-2, 1.8).
   const recentSites = createRecentSites({ dir: app.getPath("userData") });
+  // My themes (2.23): the person's own themes, for every site on this computer.
+  const myThemes = createMyThemes({ dir: app.getPath("userData") });
   const projectSession = new ProjectSession(
     {
       opened: (access, path) => {
@@ -449,6 +453,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     // AI apps' requests go to the open site's window (F-AI-1); the MCP server (4.9) asks through it.
     const ai = registerAiHandlers(ipcMain, isTrustedSender, () => lifecycle.mainWindow());
     exposeForE2eTests(ai, app.isPackaged);
+    registerThemesHandlers(ipcMain, isTrustedSender, myThemes);
     // A site double-clicked in Explorer arrives as a command-line argument (P1).
     const projectToOpen = lifecycle.projectFromFinder ?? findProjectArgument(process.argv);
     if (projectToOpen !== undefined) {
@@ -504,7 +509,11 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     // quit: the images are the running Webforge's, in the same user data.
     if (primaryInstance) elementClipboard.forgetKept();
     void closeThenExit({
-      close: () => projectSession.close(),
+      // And My themes' last write, if one is under way (2.23).
+      close: async () => {
+        await projectSession.close();
+        await myThemes.idle();
+      },
       // The site is saved and closed: a launch from now on opens Webforge itself, rather than
       // handing its site to this one, which on a busy computer can take up to a minute more to
       // end (#413).
