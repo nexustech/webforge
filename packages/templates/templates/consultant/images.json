@@ -1,0 +1,28 @@
+[
+  {
+    "file": "portrait.png",
+    "mediaId": "M2aG1VvmAmNFa5X2",
+    "name": "portrait",
+    "mimeType": "image/png",
+    "hash": "3baca82a37bad0d7ba2fe0b2305813ff1dd86f57b5de26fa2a05e6b5a2fb6daf",
+    "width": 1200,
+    "height": 1200,
+    "alt": "Portrait of Jo Hartley",
+    "source": "Generated for Webforge by tools/src/template-placeholder.ts (portrait, seed 1)",
+    "author": "Webforge",
+    "licence": "CC0-1.0"
+  },
+  {
+    "file": "office.png",
+    "mediaId": "ut1J6IfE4SpnxU8G",
+    "name": "office",
+    "mimeType": "image/png",
+    "hash": "203e275f8375692fea0fc8d60b53b7011f203c647ab318d9a0ae0bfcf6cedc18",
+    "width": 1600,
+    "height": 1200,
+    "alt": "A tidy desk with a laptop and a plant",
+    "source": "Generated for Webforge by tools/src/template-placeholder.ts (desk, seed 2)",
+    "author": "Webforge",
+    "licence": "CC0-1.0"
+  }
+]
