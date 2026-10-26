@@ -8,8 +8,8 @@ import type { StudioState } from "./studio/studio-state.js";
 /**
  * View → Theme… (#452), which shows the Theme tab, opening the right column if it's closed, so the
  * site's theme is found from the menu bar, the command box and the shortcut sheet too; and View →
- * Theme Studio… (2.3b), which shows the tab and opens Theme Studio from it. Returns a function that
- * removes them.
+ * Theme Studio… (2.3b), which opens Theme Studio, drawn by the window whatever the panels show.
+ * Returns a function that removes them.
  */
 export function registerThemeCommands(
   commands: CommandRegistry,
@@ -26,10 +26,7 @@ export function registerThemeCommands(
     id: "theme.studio",
     label: t("theme.studio.command"),
     menu: "view",
-    run: () => {
-      panels.show(THEME_PANEL_ID);
-      studio.setState({ open: true });
-    },
+    run: () => studio.setState({ open: true }),
   });
   return () => {
     removeStudio();
