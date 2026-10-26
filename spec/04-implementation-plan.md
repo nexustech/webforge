@@ -860,7 +860,7 @@ A field is described three ways today (`FieldDef`, editor-ui's loose `FieldSpec`
 <details><summary>Scope and acceptance criteria</summary>
 
 **3.1 Pipeline API: progress events, worker, caches**  
-Pipeline.build(snapshot, mode) as AsyncIterable events in the utilityProcess; cached page HTML by content hash; persistent image-derivative cache; persistent Tailwind compiler + candidate set; cancellation.
+Pipeline.build(snapshot, mode) as AsyncIterable events in the utilityProcess; cached page HTML by content hash; image-derivative cache kept in memory while the site is open, never on disk (R15, 26 Oct 2026; ADR 0005); Tailwind compiler + candidate set kept between builds; cancellation, with progress and Cancel in the export toast.
 
 - [ ] Full export of 20 cached pages < 5 s
 - [ ] UI never blocks during builds

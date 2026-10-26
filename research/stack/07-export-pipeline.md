@@ -323,7 +323,7 @@ Effort: roughly **2–3 days**. Exported HTML keeps working as-is.
 ## Live preview (same pipeline, in memory)
 - **Stages 3–6 only**, kept in memory; images served as originals (no optimisation) for speed.
 - Served by a small HTTP server in the main process, plus SSE live reload with CSS-only hot swap (the Bootstrap Studio pattern, see [../bootstrap-studio/02-architecture.md](../bootstrap-studio/02-architecture.md)). Viewable on phones on the same Wi-Fi.
-- **Incremental:** cache rendered HTML per page by content hash. Keep one Tailwind compiler instance and grow the candidate set (only rebuild CSS when new classes appear or the theme changes). Cache image derivatives by blob hash in the app cache folder.
+- **Incremental:** cache rendered HTML per page by content hash. Keep one Tailwind compiler instance and grow the candidate set (only rebuild CSS when new classes appear or the theme changes). Cache image derivatives by blob hash, in the export worker's memory while the site is open (first planned for the app cache folder; R15 and ADR 0005 moved it, since a copy on disk would outlive the site).
 - **Targets:** CSS-only change in the browser in under 100 ms; page re-render in under 200 ms.
 
 ## Where the work runs
