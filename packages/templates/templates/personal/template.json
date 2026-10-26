@@ -1,0 +1,834 @@
+{
+  "id": "personal",
+  "category": "personal",
+  "example": false,
+  "site": {
+    "formatVersion": 7,
+    "settings": {
+      "general": {
+        "name": "Alex Morgan",
+        "language": "en"
+      },
+      "address": {},
+      "social": {
+        "profiles": []
+      },
+      "contact": {
+        "openingHours": [],
+        "email": "hello@example.com"
+      },
+      "search": {
+        "allowIndexing": true,
+        "includeSitemap": true
+      },
+      "analytics": {
+        "consentBanner": true
+      },
+      "forms": {},
+      "publish": {
+        "destinations": []
+      },
+      "allowedExternalUrls": []
+    },
+    "theme": {
+      "preset": "studio",
+      "scheme": "light",
+      "colors": {
+        "base-100": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        },
+        "base-200": {
+          "l": 0.965,
+          "c": 0,
+          "h": 0
+        },
+        "base-300": {
+          "l": 0.92,
+          "c": 0,
+          "h": 0
+        },
+        "base-content": {
+          "l": 0.17,
+          "c": 0,
+          "h": 0
+        },
+        "primary": {
+          "l": 0.48,
+          "c": 0.13,
+          "h": 160
+        },
+        "primary-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        },
+        "secondary": {
+          "l": 0.25,
+          "c": 0,
+          "h": 0
+        },
+        "secondary-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        },
+        "accent": {
+          "l": 0.4,
+          "c": 0,
+          "h": 0
+        },
+        "accent-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        },
+        "neutral": {
+          "l": 0.17,
+          "c": 0,
+          "h": 0
+        },
+        "neutral-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        },
+        "info": {
+          "l": 0.45,
+          "c": 0.14,
+          "h": 245
+        },
+        "info-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        },
+        "success": {
+          "l": 0.45,
+          "c": 0.12,
+          "h": 150
+        },
+        "success-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        },
+        "warning": {
+          "l": 0.84,
+          "c": 0.15,
+          "h": 85
+        },
+        "warning-content": {
+          "l": 0.2,
+          "c": 0.02,
+          "h": 85
+        },
+        "error": {
+          "l": 0.48,
+          "c": 0.19,
+          "h": 27
+        },
+        "error-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        }
+      },
+      "inverse": {
+        "base-100": {
+          "l": 0.16,
+          "c": 0,
+          "h": 0
+        },
+        "base-200": {
+          "l": 0.2,
+          "c": 0,
+          "h": 0
+        },
+        "base-300": {
+          "l": 0.25,
+          "c": 0,
+          "h": 0
+        },
+        "base-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        },
+        "primary": {
+          "l": 0.8,
+          "c": 0.13,
+          "h": 160
+        },
+        "primary-content": {
+          "l": 0.18,
+          "c": 0.03,
+          "h": 160
+        },
+        "secondary": {
+          "l": 0.9,
+          "c": 0,
+          "h": 0
+        },
+        "secondary-content": {
+          "l": 0.17,
+          "c": 0,
+          "h": 0
+        },
+        "accent": {
+          "l": 0.8,
+          "c": 0,
+          "h": 0
+        },
+        "accent-content": {
+          "l": 0.17,
+          "c": 0,
+          "h": 0
+        },
+        "neutral": {
+          "l": 0.95,
+          "c": 0,
+          "h": 0
+        },
+        "neutral-content": {
+          "l": 0.16,
+          "c": 0,
+          "h": 0
+        },
+        "info": {
+          "l": 0.78,
+          "c": 0.1,
+          "h": 245
+        },
+        "info-content": {
+          "l": 0.2,
+          "c": 0.03,
+          "h": 245
+        },
+        "success": {
+          "l": 0.78,
+          "c": 0.12,
+          "h": 150
+        },
+        "success-content": {
+          "l": 0.2,
+          "c": 0.03,
+          "h": 150
+        },
+        "warning": {
+          "l": 0.84,
+          "c": 0.15,
+          "h": 85
+        },
+        "warning-content": {
+          "l": 0.2,
+          "c": 0.02,
+          "h": 85
+        },
+        "error": {
+          "l": 0.75,
+          "c": 0.13,
+          "h": 27
+        },
+        "error-content": {
+          "l": 0.2,
+          "c": 0.03,
+          "h": 27
+        }
+      },
+      "fonts": {
+        "heading": {
+          "family": "Plus Jakarta Sans",
+          "fallback": "sans-serif"
+        },
+        "body": {
+          "family": "DM Sans",
+          "fallback": "sans-serif"
+        }
+      },
+      "radius": {
+        "box": "none",
+        "field": "none",
+        "selector": "none"
+      },
+      "border": "thick",
+      "effects": {
+        "depth": false,
+        "noise": false
+      },
+      "spacing": "compact",
+      "typeScale": {
+        "h1": {
+          "size": "6xl",
+          "weight": 800,
+          "leading": "tight"
+        },
+        "h2": {
+          "size": "3xl",
+          "weight": 800,
+          "leading": "tight"
+        },
+        "h3": {
+          "size": "xl",
+          "weight": 800,
+          "leading": "tight"
+        },
+        "h4": {
+          "size": "lg",
+          "weight": 800,
+          "leading": "normal"
+        },
+        "h5": {
+          "size": "base",
+          "weight": 800,
+          "leading": "normal"
+        },
+        "h6": {
+          "size": "sm",
+          "weight": 800,
+          "leading": "normal"
+        },
+        "body": {
+          "size": "lg",
+          "weight": 400,
+          "leading": "relaxed"
+        },
+        "small": {
+          "size": "sm",
+          "weight": 400,
+          "leading": "normal"
+        }
+      },
+      "links": {
+        "underline": "always"
+      },
+      "buttons": {
+        "shape": "square",
+        "size": "m",
+        "style": "filled"
+      },
+      "shadow": "none",
+      "headings": {
+        "case": "uppercase",
+        "tracking": "normal"
+      },
+      "cards": {
+        "style": "flat"
+      },
+      "images": {
+        "corners": "square"
+      },
+      "sections": {
+        "rhythm": "alternating"
+      }
+    },
+    "layout": {
+      "header": [
+        {
+          "type": "Header",
+          "props": {
+            "id": "header",
+            "siteName": "Alex Morgan",
+            "bindings": {
+              "siteName": "general.name"
+            }
+          }
+        }
+      ],
+      "footer": [
+        {
+          "type": "Footer",
+          "props": {
+            "id": "footer",
+            "text": "Alex Morgan · Designer and illustrator"
+          }
+        }
+      ]
+    },
+    "pages": {
+      "F0FsPQtiejn9HlKU": {
+        "id": "F0FsPQtiejn9HlKU",
+        "kind": "page",
+        "slug": "home",
+        "title": "Home",
+        "settings": {
+          "hideHeader": false,
+          "hideFooter": false,
+          "hideFromNavigation": false
+        },
+        "doc": {
+          "root": {
+            "props": {}
+          },
+          "content": [
+            {
+              "type": "Hero",
+              "props": {
+                "variant": "split",
+                "colors": "page",
+                "title": "Hello, I'm Alex Morgan",
+                "text": "A freelance designer and illustrator. I help small businesses look their best, in print and online.",
+                "buttonLabel": "See my work",
+                "buttonLink": {
+                  "kind": "page",
+                  "pageId": "GK87jx1B0n7wMn7F",
+                  "newTab": false
+                },
+                "alignment": "centre",
+                "image": {
+                  "mediaId": "17sEwJXo82O6Coqq"
+                },
+                "id": "hero-10"
+              }
+            },
+            {
+              "type": "Stats",
+              "props": {
+                "variant": "row",
+                "colors": "inverse",
+                "title": "In numbers",
+                "text": "<p>Twelve years of work for shops, cafés, studios and charities.</p>",
+                "items": [
+                  {
+                    "type": "Stat",
+                    "props": {
+                      "id": "stat-0",
+                      "number": "12",
+                      "label": "years designing"
+                    }
+                  },
+                  {
+                    "type": "Stat",
+                    "props": {
+                      "id": "stat-1",
+                      "number": "150+",
+                      "label": "projects finished"
+                    }
+                  },
+                  {
+                    "type": "Stat",
+                    "props": {
+                      "id": "stat-2",
+                      "number": "40",
+                      "label": "regular clients"
+                    }
+                  }
+                ],
+                "id": "stats-11"
+              }
+            },
+            {
+              "type": "Features",
+              "props": {
+                "variant": "cards",
+                "colors": "page",
+                "title": "What I can do for you",
+                "text": "<p>From a first sketch to the finished thing, done properly and on time.</p>",
+                "items": [
+                  {
+                    "type": "Feature",
+                    "props": {
+                      "id": "feature-0",
+                      "icon": "sparkles",
+                      "title": "Branding",
+                      "text": "<p>A logo, colours and type that say who you are, and a short guide to using them.</p>"
+                    }
+                  },
+                  {
+                    "type": "Feature",
+                    "props": {
+                      "id": "feature-1",
+                      "icon": "monitor-smartphone",
+                      "title": "Websites",
+                      "text": "<p>Simple, fast websites that look good on every screen and are easy to keep up to date.</p>"
+                    }
+                  },
+                  {
+                    "type": "Feature",
+                    "props": {
+                      "id": "feature-2",
+                      "icon": "palette",
+                      "title": "Illustration",
+                      "text": "<p>Drawings for books, packaging, menus and walls, in a warm, hand-made style.</p>"
+                    }
+                  }
+                ],
+                "id": "features-12"
+              }
+            },
+            {
+              "type": "Testimonials",
+              "props": {
+                "variant": "cards",
+                "colors": "page",
+                "title": "What clients say",
+                "items": [
+                  {
+                    "type": "Testimonial",
+                    "props": {
+                      "id": "testimonial-0",
+                      "quote": "Alex understood what we wanted straight away. Our new sign has customers stopping to take photos.",
+                      "name": "Priya Shah",
+                      "role": "Owner, Rise Bakery"
+                    }
+                  },
+                  {
+                    "type": "Testimonial",
+                    "props": {
+                      "id": "testimonial-1",
+                      "quote": "Clear, quick and lovely to work with. The website was ready a week early.",
+                      "name": "Tom Becker",
+                      "role": "Architect"
+                    }
+                  },
+                  {
+                    "type": "Testimonial",
+                    "props": {
+                      "id": "testimonial-2",
+                      "quote": "The illustrations brought our book to life. We've already asked Alex to do the next one.",
+                      "name": "Hannah Lowe",
+                      "role": "Editor, Little Acorn Books"
+                    }
+                  }
+                ],
+                "id": "testimonials-13"
+              }
+            },
+            {
+              "type": "CallToAction",
+              "props": {
+                "variant": "banner",
+                "colors": "inverse",
+                "title": "Have a project in mind?",
+                "text": "I'm taking on new work from next month. Tell me about yours.",
+                "buttonLabel": "Get in touch",
+                "buttonLink": {
+                  "kind": "page",
+                  "pageId": "nSol0HopYKvtpYSy",
+                  "newTab": false
+                },
+                "id": "calltoaction-14"
+              }
+            }
+          ]
+        }
+      },
+      "gjh2YOkTJez02vfs": {
+        "id": "gjh2YOkTJez02vfs",
+        "kind": "not-found",
+        "slug": "page-not-found",
+        "title": "Page not found",
+        "settings": {
+          "hideHeader": false,
+          "hideFooter": false,
+          "hideFromNavigation": true
+        },
+        "doc": {
+          "root": {
+            "props": {}
+          },
+          "content": [
+            {
+              "type": "Section",
+              "props": {
+                "id": "section-1",
+                "padding": {
+                  "top": "l",
+                  "bottom": "l"
+                },
+                "content": [
+                  {
+                    "type": "Heading",
+                    "props": {
+                      "id": "heading-1",
+                      "text": "Sorry, this page doesn't exist",
+                      "size": "large"
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "id": "text-1",
+                      "text": "<p>It may have moved or been renamed. Use the menu above to find what you're looking for.</p>"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "f6YidfNWtilI2x4W": {
+        "id": "f6YidfNWtilI2x4W",
+        "kind": "page",
+        "slug": "about",
+        "title": "About me",
+        "settings": {
+          "hideHeader": false,
+          "hideFooter": false,
+          "hideFromNavigation": false
+        },
+        "doc": {
+          "root": {
+            "props": {}
+          },
+          "content": [
+            {
+              "type": "TextImage",
+              "props": {
+                "variant": "imageLeft",
+                "colors": "page",
+                "title": "About me",
+                "text": "<p>I'm a designer and illustrator working from a small studio by the river. I grew up drawing on everything, and I still start every project with a pencil.</p><p>I work best with people who care about what they make: bakers, makers, shop owners and small teams. I keep things simple, explain my choices, and stay in touch from the first call to the last file.</p>",
+                "image": {
+                  "mediaId": "UhhqOwXG7qQQnUdF"
+                },
+                "id": "textimage-15"
+              }
+            },
+            {
+              "type": "Features",
+              "props": {
+                "variant": "list",
+                "colors": "page",
+                "title": "Experience",
+                "text": "<p>Where I've worked, and what I did there.</p>",
+                "items": [
+                  {
+                    "type": "Feature",
+                    "props": {
+                      "id": "experience-0",
+                      "icon": "briefcase",
+                      "title": "Freelance designer · 2019 to now",
+                      "text": "<p>Branding, websites and illustration for more than 40 small businesses and charities.</p>"
+                    }
+                  },
+                  {
+                    "type": "Feature",
+                    "props": {
+                      "id": "experience-1",
+                      "icon": "building",
+                      "title": "Senior designer, Northgate Studio · 2015 to 2019",
+                      "text": "<p>Led the design of shop interiors, signs and packaging for local and national brands.</p>"
+                    }
+                  },
+                  {
+                    "type": "Feature",
+                    "props": {
+                      "id": "experience-2",
+                      "icon": "graduation-cap",
+                      "title": "BA in Graphic Design · 2011 to 2014",
+                      "text": "<p>Studied type, print and illustration, with a final project on hand-painted shop signs.</p>"
+                    }
+                  }
+                ],
+                "id": "features-16"
+              }
+            },
+            {
+              "type": "TextSection",
+              "props": {
+                "colors": "inverse",
+                "title": "Skills and tools",
+                "text": "<p>Logo and brand design · Web design · Illustration, by hand and on screen · Print and packaging · Sign painting</p><p>Figma · Adobe Illustrator and Photoshop · Procreate · Webforge</p>",
+                "id": "textsection-17"
+              }
+            }
+          ]
+        }
+      },
+      "GK87jx1B0n7wMn7F": {
+        "id": "GK87jx1B0n7wMn7F",
+        "kind": "page",
+        "slug": "work",
+        "title": "Work",
+        "settings": {
+          "hideHeader": false,
+          "hideFooter": false,
+          "hideFromNavigation": false
+        },
+        "doc": {
+          "root": {
+            "props": {}
+          },
+          "content": [
+            {
+              "type": "Gallery",
+              "props": {
+                "variant": "grid",
+                "colors": "page",
+                "title": "Selected work",
+                "images": [
+                  {
+                    "type": "GalleryImage",
+                    "props": {
+                      "id": "work-1",
+                      "image": {
+                        "mediaId": "SLqPEjnXOIzLLY7j"
+                      },
+                      "caption": "A logo and shop sign for a family bakery"
+                    }
+                  },
+                  {
+                    "type": "GalleryImage",
+                    "props": {
+                      "id": "work-2",
+                      "image": {
+                        "mediaId": "RImyEa70oVxyd4ij"
+                      },
+                      "caption": "Posters for a summer music festival"
+                    }
+                  },
+                  {
+                    "type": "GalleryImage",
+                    "props": {
+                      "id": "work-3",
+                      "image": {
+                        "mediaId": "kzLdkWcxV5Ks0X9T"
+                      },
+                      "caption": "A website for a local architect"
+                    }
+                  },
+                  {
+                    "type": "GalleryImage",
+                    "props": {
+                      "id": "work-4",
+                      "image": {
+                        "mediaId": "kzggx8wEt5Vc8lo2"
+                      },
+                      "caption": "Illustrations for a children's book"
+                    }
+                  },
+                  {
+                    "type": "GalleryImage",
+                    "props": {
+                      "id": "work-5",
+                      "image": {
+                        "mediaId": "gs3WoUl1g9HJ2QRZ"
+                      },
+                      "caption": "Packaging for a small tea company"
+                    }
+                  },
+                  {
+                    "type": "GalleryImage",
+                    "props": {
+                      "id": "work-6",
+                      "image": {
+                        "mediaId": "l9DXDYHm0wsKA8y4"
+                      },
+                      "caption": "A menu and branding for a neighbourhood café"
+                    }
+                  }
+                ],
+                "id": "gallery-18"
+              }
+            },
+            {
+              "type": "CallToAction",
+              "props": {
+                "variant": "split",
+                "colors": "inverse",
+                "title": "Like what you see?",
+                "text": "Let's talk about what I can make for you.",
+                "buttonLabel": "Get in touch",
+                "buttonLink": {
+                  "kind": "page",
+                  "pageId": "nSol0HopYKvtpYSy",
+                  "newTab": false
+                },
+                "id": "calltoaction-19"
+              }
+            }
+          ]
+        }
+      },
+      "nSol0HopYKvtpYSy": {
+        "id": "nSol0HopYKvtpYSy",
+        "kind": "page",
+        "slug": "contact",
+        "title": "Contact",
+        "settings": {
+          "hideHeader": false,
+          "hideFooter": false,
+          "hideFromNavigation": false
+        },
+        "doc": {
+          "root": {
+            "props": {}
+          },
+          "content": [
+            {
+              "type": "ContactForm",
+              "props": {
+                "colors": "page",
+                "title": "Let's talk",
+                "text": "<p>Tell me a little about your project and when you need it. I reply within two working days.</p>",
+                "askPhone": false,
+                "buttonLabel": "Send message",
+                "id": "contactform-20"
+              }
+            },
+            {
+              "type": "ContactDetails",
+              "props": {
+                "variant": "stacked",
+                "colors": "inverse",
+                "title": "Or write to me",
+                "text": "<p>I'm happy to meet for a coffee if you're nearby.</p>",
+                "showHours": false,
+                "showContact": true,
+                "id": "contactdetails-21"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "pageOrder": [
+      "F0FsPQtiejn9HlKU",
+      "gjh2YOkTJez02vfs",
+      "f6YidfNWtilI2x4W",
+      "GK87jx1B0n7wMn7F",
+      "nSol0HopYKvtpYSy"
+    ],
+    "homePageId": "F0FsPQtiejn9HlKU",
+    "media": {},
+    "code": {
+      "css": "",
+      "js": "",
+      "head": "",
+      "bodyEnd": ""
+    },
+    "menu": {
+      "follows": "pages",
+      "items": [
+        {
+          "id": "XsCQhBDAQZocCrp8",
+          "kind": "page",
+          "pageId": "F0FsPQtiejn9HlKU",
+          "hidden": false
+        },
+        {
+          "id": "9m4UKtgAyj3RpTIk",
+          "kind": "page",
+          "pageId": "f6YidfNWtilI2x4W",
+          "hidden": false
+        },
+        {
+          "id": "X7gnTNmAjNbKwXps",
+          "kind": "page",
+          "pageId": "GK87jx1B0n7wMn7F",
+          "hidden": false
+        },
+        {
+          "id": "G6lWAJofBulaEek9",
+          "kind": "page",
+          "pageId": "nSol0HopYKvtpYSy",
+          "hidden": false
+        }
+      ]
+    },
+    "sharedSections": {}
+  }
+}

@@ -1,0 +1,564 @@
+{
+  "id": "blank",
+  "category": null,
+  "example": false,
+  "site": {
+    "formatVersion": 7,
+    "settings": {
+      "general": {
+        "name": "My site",
+        "language": "en"
+      },
+      "address": {},
+      "social": {
+        "profiles": []
+      },
+      "contact": {
+        "openingHours": []
+      },
+      "search": {
+        "allowIndexing": true,
+        "includeSitemap": true
+      },
+      "analytics": {
+        "consentBanner": true
+      },
+      "forms": {},
+      "publish": {
+        "destinations": []
+      },
+      "allowedExternalUrls": []
+    },
+    "theme": {
+      "preset": "light",
+      "scheme": "light",
+      "colors": {
+        "base-100": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        },
+        "base-200": {
+          "l": 0.98,
+          "c": 0,
+          "h": 0
+        },
+        "base-300": {
+          "l": 0.95,
+          "c": 0,
+          "h": 0
+        },
+        "base-content": {
+          "l": 0.21,
+          "c": 0.006,
+          "h": 285.885
+        },
+        "primary": {
+          "l": 0.45,
+          "c": 0.24,
+          "h": 277.023
+        },
+        "primary-content": {
+          "l": 0.93,
+          "c": 0.034,
+          "h": 272.788
+        },
+        "secondary": {
+          "l": 0.53,
+          "c": 0.241,
+          "h": 354.308
+        },
+        "secondary-content": {
+          "l": 0.94,
+          "c": 0.028,
+          "h": 342.258
+        },
+        "accent": {
+          "l": 0.5,
+          "c": 0.152,
+          "h": 181.912
+        },
+        "accent-content": {
+          "l": 0.98,
+          "c": 0.063,
+          "h": 188.416
+        },
+        "neutral": {
+          "l": 0.14,
+          "c": 0.005,
+          "h": 285.823
+        },
+        "neutral-content": {
+          "l": 0.92,
+          "c": 0.004,
+          "h": 286.32
+        },
+        "info": {
+          "l": 0.74,
+          "c": 0.16,
+          "h": 232.661
+        },
+        "info-content": {
+          "l": 0.29,
+          "c": 0.066,
+          "h": 243.157
+        },
+        "success": {
+          "l": 0.76,
+          "c": 0.177,
+          "h": 163.223
+        },
+        "success-content": {
+          "l": 0.37,
+          "c": 0.077,
+          "h": 168.94
+        },
+        "warning": {
+          "l": 0.82,
+          "c": 0.189,
+          "h": 84.429
+        },
+        "warning-content": {
+          "l": 0.41,
+          "c": 0.112,
+          "h": 45.904
+        },
+        "error": {
+          "l": 0.71,
+          "c": 0.194,
+          "h": 13.428
+        },
+        "error-content": {
+          "l": 0.27,
+          "c": 0.105,
+          "h": 12.094
+        }
+      },
+      "inverse": {
+        "base-100": {
+          "l": 0.2533,
+          "c": 0.016,
+          "h": 252.42
+        },
+        "base-200": {
+          "l": 0.2326,
+          "c": 0.014,
+          "h": 253.1
+        },
+        "base-300": {
+          "l": 0.2115,
+          "c": 0.012,
+          "h": 254.09
+        },
+        "base-content": {
+          "l": 0.97807,
+          "c": 0.029,
+          "h": 256.847
+        },
+        "primary": {
+          "l": 0.555,
+          "c": 0.233,
+          "h": 277.117
+        },
+        "primary-content": {
+          "l": 0.96,
+          "c": 0.018,
+          "h": 272.314
+        },
+        "secondary": {
+          "l": 0.67,
+          "c": 0.241,
+          "h": 354.308
+        },
+        "secondary-content": {
+          "l": 0.25,
+          "c": 0.028,
+          "h": 342.258
+        },
+        "accent": {
+          "l": 0.77,
+          "c": 0.152,
+          "h": 181.912
+        },
+        "accent-content": {
+          "l": 0.38,
+          "c": 0.063,
+          "h": 188.416
+        },
+        "neutral": {
+          "l": 0.14,
+          "c": 0.005,
+          "h": 285.823
+        },
+        "neutral-content": {
+          "l": 0.92,
+          "c": 0.004,
+          "h": 286.32
+        },
+        "info": {
+          "l": 0.74,
+          "c": 0.16,
+          "h": 232.661
+        },
+        "info-content": {
+          "l": 0.29,
+          "c": 0.066,
+          "h": 243.157
+        },
+        "success": {
+          "l": 0.76,
+          "c": 0.177,
+          "h": 163.223
+        },
+        "success-content": {
+          "l": 0.37,
+          "c": 0.077,
+          "h": 168.94
+        },
+        "warning": {
+          "l": 0.82,
+          "c": 0.189,
+          "h": 84.429
+        },
+        "warning-content": {
+          "l": 0.41,
+          "c": 0.112,
+          "h": 45.904
+        },
+        "error": {
+          "l": 0.71,
+          "c": 0.194,
+          "h": 13.428
+        },
+        "error-content": {
+          "l": 0.27,
+          "c": 0.105,
+          "h": 12.094
+        }
+      },
+      "fonts": {
+        "heading": {
+          "family": "Inter",
+          "fallback": "sans-serif"
+        },
+        "body": {
+          "family": "Inter",
+          "fallback": "sans-serif"
+        }
+      },
+      "radius": {
+        "box": "m",
+        "field": "s",
+        "selector": "m"
+      },
+      "border": "thin",
+      "effects": {
+        "depth": true,
+        "noise": false
+      },
+      "spacing": "normal",
+      "typeScale": {
+        "h1": {
+          "size": "5xl",
+          "weight": 700,
+          "leading": "tight"
+        },
+        "h2": {
+          "size": "3xl",
+          "weight": 700,
+          "leading": "tight"
+        },
+        "h3": {
+          "size": "xl",
+          "weight": 600,
+          "leading": "tight"
+        },
+        "h4": {
+          "size": "lg",
+          "weight": 600,
+          "leading": "normal"
+        },
+        "h5": {
+          "size": "base",
+          "weight": 600,
+          "leading": "normal"
+        },
+        "h6": {
+          "size": "sm",
+          "weight": 600,
+          "leading": "normal"
+        },
+        "body": {
+          "size": "lg",
+          "weight": 400,
+          "leading": "relaxed"
+        },
+        "small": {
+          "size": "sm",
+          "weight": 400,
+          "leading": "normal"
+        }
+      },
+      "links": {
+        "underline": "always"
+      },
+      "buttons": {
+        "shape": "rounded",
+        "size": "m",
+        "style": "filled"
+      },
+      "shadow": "soft",
+      "headings": {
+        "case": "normal",
+        "tracking": "normal"
+      },
+      "cards": {
+        "style": "flat"
+      },
+      "images": {
+        "corners": "rounded"
+      },
+      "sections": {
+        "rhythm": "plain"
+      }
+    },
+    "layout": {
+      "header": [
+        {
+          "type": "Header",
+          "props": {
+            "id": "header",
+            "siteName": "My site",
+            "bindings": {
+              "siteName": "general.name"
+            }
+          }
+        }
+      ],
+      "footer": [
+        {
+          "type": "Footer",
+          "props": {
+            "id": "footer",
+            "text": "Thanks for visiting."
+          }
+        }
+      ]
+    },
+    "pages": {
+      "rGHPx2spN9bt6gzT": {
+        "id": "rGHPx2spN9bt6gzT",
+        "kind": "page",
+        "slug": "home",
+        "title": "Home",
+        "settings": {
+          "hideHeader": false,
+          "hideFooter": false,
+          "hideFromNavigation": false
+        },
+        "doc": {
+          "root": {
+            "props": {}
+          },
+          "content": [
+            {
+              "type": "Section",
+              "props": {
+                "padding": {
+                  "top": "l",
+                  "bottom": "l"
+                },
+                "content": [
+                  {
+                    "type": "Heading",
+                    "props": {
+                      "text": "Welcome",
+                      "size": "large",
+                      "id": "heading-1"
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "text": "<p>Say in a sentence or two who you are and what you offer.</p><p>Then add sections from the Add panel: photos, opening hours, prices, a contact form.</p>",
+                      "id": "text-2"
+                    }
+                  }
+                ],
+                "id": "section-3"
+              }
+            }
+          ]
+        }
+      },
+      "IlRfAB4sOmk68SoW": {
+        "id": "IlRfAB4sOmk68SoW",
+        "kind": "not-found",
+        "slug": "page-not-found",
+        "title": "Page not found",
+        "settings": {
+          "hideHeader": false,
+          "hideFooter": false,
+          "hideFromNavigation": true
+        },
+        "doc": {
+          "root": {
+            "props": {}
+          },
+          "content": [
+            {
+              "type": "Section",
+              "props": {
+                "id": "section-1",
+                "padding": {
+                  "top": "l",
+                  "bottom": "l"
+                },
+                "content": [
+                  {
+                    "type": "Heading",
+                    "props": {
+                      "id": "heading-1",
+                      "text": "Sorry, this page doesn't exist",
+                      "size": "large"
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "id": "text-1",
+                      "text": "<p>It may have moved or been renamed. Use the menu above to find what you're looking for.</p>"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "K4cfSv8BKMoOABI8": {
+        "id": "K4cfSv8BKMoOABI8",
+        "kind": "page",
+        "slug": "about",
+        "title": "About",
+        "settings": {
+          "hideHeader": false,
+          "hideFooter": false,
+          "hideFromNavigation": false
+        },
+        "doc": {
+          "root": {
+            "props": {}
+          },
+          "content": [
+            {
+              "type": "Section",
+              "props": {
+                "padding": {
+                  "top": "l",
+                  "bottom": "l"
+                },
+                "content": [
+                  {
+                    "type": "Heading",
+                    "props": {
+                      "text": "About",
+                      "size": "large",
+                      "id": "heading-4"
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "text": "<p>Tell visitors your story: how you started, and what you care about.</p>",
+                      "id": "text-5"
+                    }
+                  }
+                ],
+                "id": "section-6"
+              }
+            }
+          ]
+        }
+      },
+      "ldcll6V6B7wXrS1t": {
+        "id": "ldcll6V6B7wXrS1t",
+        "kind": "page",
+        "slug": "contact",
+        "title": "Contact",
+        "settings": {
+          "hideHeader": false,
+          "hideFooter": false,
+          "hideFromNavigation": false
+        },
+        "doc": {
+          "root": {
+            "props": {}
+          },
+          "content": [
+            {
+              "type": "Section",
+              "props": {
+                "padding": {
+                  "top": "l",
+                  "bottom": "l"
+                },
+                "content": [
+                  {
+                    "type": "Heading",
+                    "props": {
+                      "text": "Contact",
+                      "size": "large",
+                      "id": "heading-7"
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "text": "<p>Say how visitors can reach you, and when.</p>",
+                      "id": "text-8"
+                    }
+                  }
+                ],
+                "id": "section-9"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "pageOrder": ["rGHPx2spN9bt6gzT", "IlRfAB4sOmk68SoW", "K4cfSv8BKMoOABI8", "ldcll6V6B7wXrS1t"],
+    "homePageId": "rGHPx2spN9bt6gzT",
+    "media": {},
+    "code": {
+      "css": "",
+      "js": "",
+      "head": "",
+      "bodyEnd": ""
+    },
+    "menu": {
+      "follows": "pages",
+      "items": [
+        {
+          "id": "9gS2Heh9OTl6p6VL",
+          "kind": "page",
+          "pageId": "rGHPx2spN9bt6gzT",
+          "hidden": false
+        },
+        {
+          "id": "GEUKi3EtzQNtW0kv",
+          "kind": "page",
+          "pageId": "K4cfSv8BKMoOABI8",
+          "hidden": false
+        },
+        {
+          "id": "LpnWAOlo4CMLfyJx",
+          "kind": "page",
+          "pageId": "ldcll6V6B7wXrS1t",
+          "hidden": false
+        }
+      ]
+    },
+    "sharedSections": {}
+  }
+}

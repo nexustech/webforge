@@ -19,7 +19,9 @@ function invoker(channel: string, trusted = true) {
 
 describe("registerTemplatesHandlers (2.14a)", () => {
   it("lists the templates the app ships, without their content, with their thumbnails", async () => {
-    const [sample] = readTemplates();
+    const [sample, personal] = readTemplates();
+    const thumbnail = (path = "") =>
+      `data:image/png;base64,${readFileSync(path).toString("base64")}`;
     expect(await invoker("templates:list")()).toEqual([
       {
         id: "sample",
@@ -27,9 +29,22 @@ describe("registerTemplatesHandlers (2.14a)", () => {
         example: true,
         pages: 2,
         theme: "light",
-        thumbnail: `data:image/png;base64,${readFileSync(sample?.thumbnail ?? "").toString("base64")}`,
+        thumbnail: thumbnail(sample?.thumbnail),
+      },
+      {
+        id: "personal",
+        category: "personal",
+        example: false,
+        pages: 4,
+        theme: "studio",
+        thumbnail: thumbnail(personal?.thumbnail),
       },
     ]);
+  });
+
+  it("leaves Blank out: New Site offers it on its own (2.15c)", async () => {
+    const listed = (await invoker("templates:list")()) as { id: string }[];
+    expect(listed.map((each) => each.id)).not.toContain("blank");
   });
 
   it("sends no thumbnail for a template without one (2.14b)", async () => {
@@ -45,7 +60,10 @@ describe("registerTemplatesHandlers (2.14a)", () => {
     const listed = await registered.get("templates:list")?.({
       senderFrame: { url: "app" },
     } as IpcMainInvokeEvent);
-    expect(listed).toEqual([expect.objectContaining({ id: "sample", thumbnail: null })]);
+    expect(listed).toEqual([
+      expect.objectContaining({ id: "sample", thumbnail: null }),
+      expect.objectContaining({ id: "personal", thumbnail: null }),
+    ]);
   });
 
   it("refuses a renderer it does not trust", async () => {

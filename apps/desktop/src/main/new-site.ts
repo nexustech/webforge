@@ -1,11 +1,10 @@
 import { join } from "node:path";
 import { DEFAULT_THEME } from "@webforge/model";
 import type { ProjectStore } from "@webforge/storage";
-import { siteFromTemplate } from "@webforge/templates";
+import { BLANK_TEMPLATE_ID, siteFromTemplate } from "@webforge/templates";
 import type { TemplateFolder } from "@webforge/templates/node";
 import { themePreset } from "@webforge/themes";
 import type { NewSiteRequest } from "../shared/ipc/project.js";
-import { starterSite } from "../shared/starter-site.js";
 import type { StorageWriter } from "./storage-writer.js";
 
 /** What New Site makes of a new site (2.14a): its name, and what writes its content. */
@@ -46,9 +45,9 @@ export function newSiteImporter(
 
 /**
  * Writes the site New Site asked for into a new site's file (2.14a, F-SITE-1): the template's
- * pages, Header and Footer, menu and settings, with its images as Media assets, or the Blank site
- * without one. Named as typed, in the chosen theme preset (the default theme for a preset this
- * build doesn't have). Main does it, since the images go into the site file.
+ * pages, Header and Footer, menu and settings, with its images as Media assets, or the Blank
+ * template's without one (2.15c). Named as typed, in the chosen theme preset (the default theme
+ * for a preset this build doesn't have). Main does it, since the images go into the site file.
  *
  * The images go through the storage writer, off the main thread as imports do (R13b), and each
  * must be stored under the hash its manifest gives, which the site's Media items name: a shipped
@@ -61,13 +60,10 @@ export async function fillNewSite(
   templates: () => readonly TemplateFolder[],
 ): Promise<void> {
   const theme = themePreset(request.theme) ?? DEFAULT_THEME;
-  if (request.template === undefined) {
-    target.store.saveSite(starterSite({ name: request.name, theme }));
-    return;
-  }
-  const folder = templates().find((each) => each.template.id === request.template);
+  const id = request.template ?? BLANK_TEMPLATE_ID;
+  const folder = templates().find((each) => each.template.id === id);
   if (folder === undefined) {
-    throw new Error(`No template ${request.template}`);
+    throw new Error(`No template ${id}`);
   }
   for (const image of folder.images) {
     const outcome = await target.importFile(
