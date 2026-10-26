@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { CLASS_CATEGORIES, classCategory, usesThemeColour } from "./class-categories.js";
-import { closestClass, MAX_SUGGESTIONS, suggestClasses } from "./class-match.js";
+import { closestClass, MAX_SUGGESTIONS, splitVariants, suggestClasses } from "./class-match.js";
 
 const CATALOGUE = {
   classes: [
@@ -18,6 +18,31 @@ const CATALOGUE = {
   ],
   variants: ["md", "hover", "dark"],
 };
+
+describe("a class's variants (#483)", () => {
+  it("are what comes before its last colon outside brackets", () => {
+    expect(splitVariants("md:hover:p-4")).toEqual({ prefix: "md:hover:", part: "p-4" });
+    expect(splitVariants("p-4")).toEqual({ prefix: "", part: "p-4" });
+    // Colons in an arbitrary value or variant are part of it.
+    expect(splitVariants("bg-[url(https://example.com/a.png)]")).toEqual({
+      prefix: "",
+      part: "bg-[url(https://example.com/a.png)]",
+    });
+    expect(splitVariants("[&:hover]:underline")).toEqual({
+      prefix: "[&:hover]:",
+      part: "underline",
+    });
+    expect(splitVariants("md:[&:hover]:bg-[color:red]")).toEqual({
+      prefix: "md:[&:hover]:",
+      part: "bg-[color:red]",
+    });
+  });
+
+  it("leave an arbitrary class alone: no suggestion splits it, no correction changes it", () => {
+    expect(suggestClasses(CATALOGUE, "[&:ho")).toEqual([]);
+    expect(closestClass(CATALOGUE, "bg-[x:p-4]")).toBeUndefined();
+  });
+});
 
 describe("suggestions for the class being typed (#276)", () => {
   it("starts with the classes that start with it, shortest first, then fuzzy matches", () => {

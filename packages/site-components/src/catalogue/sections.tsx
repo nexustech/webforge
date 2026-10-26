@@ -31,7 +31,13 @@ const hero = defineSection({
   label: t("section.hero"),
   name: "hero",
   category: t("category.heroes"),
-  variants: HERO_LAYOUTS.map((value) => ({ label: t(`field.heroLayout.${value}`), value })),
+  variants: HERO_LAYOUTS.map((value) => ({
+    label: t(`field.heroLayout.${value}`),
+    value,
+    // Text only has no image; centred is always centred (#311).
+    ...(value === "minimal" ? { hides: ["image"] as const } : {}),
+    ...(value === "centred" ? { hides: ["alignment"] as const } : {}),
+  })),
   fields: {
     title: { kind: "text", label: t("field.title"), inline: true },
     text: { kind: "text", label: t("field.text"), inline: true },

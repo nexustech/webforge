@@ -998,3 +998,38 @@ describe("EditPanelHost", () => {
     });
   });
 });
+
+describe("EditPanelHost with a layout that leaves fields out (#311)", () => {
+  it("hides the Hero's Image while it is text only, and shows it again with its value", async () => {
+    const { session, user } = setup("hero", (session) => ({
+      image: imageFieldRenderer({
+        session,
+        media: { choose: async () => ({ status: "canceled" }) },
+        imageUrl: (item) => `test://${item.name}`,
+      }),
+    }));
+    const image = { mediaId: "shop", alt: "A loaf" };
+    act(() =>
+      session.edit("props", "Changed Hero image", (draft) => {
+        const page = draft.pages[draft.homePageId]?.doc.content;
+        const hero = page?.find((node) => node.props.id === "hero");
+        if (hero !== undefined) hero.props.image = image;
+      }),
+    );
+    const imageField = () => screen.queryAllByRole("button", { name: /^Image/ })[0] ?? null;
+    const layout = async (variant: string) => {
+      await user.click(screen.getByRole("tab", { name: "Style" }));
+      await user.selectOptions(screen.getByLabelText("Layout"), variant);
+      await user.click(screen.getByRole("tab", { name: "Content" }));
+    };
+
+    await user.click(screen.getByRole("tab", { name: "Content" }));
+    expect(imageField()).not.toBeNull();
+    await layout("minimal");
+    expect(imageField()).toBeNull();
+    await layout("split");
+    expect(imageField()).not.toBeNull();
+    const hero = currentPage(session)?.doc.content.find((node) => node.props.id === "hero");
+    expect(hero?.props.image).toEqual(image);
+  });
+});
