@@ -469,8 +469,9 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     event.preventDefault();
     if (lifecycle.exiting) return;
     lifecycle.exiting = true;
-    // No site's images stay on disk outside it once Webforge has quit (R13d).
-    elementClipboard.forgetKept();
+    // No site's images stay on disk outside it once Webforge has quit (R13d). Not a second launch's
+    // quit: the images are the running Webforge's, in the same user data.
+    if (primaryInstance) elementClipboard.forgetKept();
     void closeThenExit({
       close: () => projectSession.close(),
       // The site is saved and closed: a launch from now on opens Webforge itself, rather than

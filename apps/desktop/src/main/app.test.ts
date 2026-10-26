@@ -378,13 +378,16 @@ describe("startApp", () => {
     await vi.waitFor(() => expect(fake.windows).toHaveLength(1));
   });
 
-  it("keeps a second launch from releasing the lock it never held", async () => {
+  it("keeps a second launch from releasing the lock it never held, or the copied images", async () => {
     const fake = fakeElectron({ primary: false });
     void fake.start();
+    const kept = keepCopiedImage(fake.userData);
 
     fake.appEvents.emit("will-quit", { preventDefault: vi.fn() });
     await vi.waitFor(() => expect(fake.app.exit).toHaveBeenCalledWith(0));
 
     expect(fake.app.releaseSingleInstanceLock).not.toHaveBeenCalled();
+    // The running Webforge's, in the same user data.
+    expect(existsSync(kept)).toBe(true);
   });
 });
