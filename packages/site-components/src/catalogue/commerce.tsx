@@ -82,7 +82,11 @@ const buyButton = defineComponent({
           <div className={`flex w-full ${BUTTON_ALIGN_CLASS[values.alignment]}`}>
             {link === undefined ? (
               // On the canvas only, nowhere to pay yet: its text, drawn as a disabled button.
-              <span className={`${button} btn-disabled`}>{label}</span>
+              // Disabled until it has a payment link, and said to be (2.15b), so it isn't taken
+              // for text that should be read at full contrast.
+              <span className={`${button} btn-disabled`} aria-disabled="true">
+                {label}
+              </span>
             ) : (
               <a
                 className={button}

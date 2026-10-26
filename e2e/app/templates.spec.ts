@@ -39,8 +39,14 @@ for (const template of TEMPLATES) {
     // Exactly: the title bar's New Site… button has the same name in another case.
     await page.getByRole("button", { name: "New site…", exact: true }).click();
     const newSite = page.getByRole("dialog", { name: "New Site" });
-    // The card, named with its pages, not the business type's chip of the same name.
-    await newSite.getByRole("radio", { name: new RegExp(`^${template.title}.*pages`) }).click();
+    // The card (its radio is visually hidden, so its label), named with its pages: not the business
+    // type's chip of the same name.
+    await newSite
+      .locator("label")
+      .filter({
+        has: page.getByRole("radio", { name: new RegExp(`^${template.title}.*pages`) }),
+      })
+      .click();
     await expect(newSite.getByRole("radio", { name: template.theme })).toBeChecked();
 
     const started = Date.now();
