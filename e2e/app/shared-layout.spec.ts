@@ -1,4 +1,5 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { clickOnCanvas } from "./canvas-click.js";
 import { placeCaret } from "./caret.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
 
@@ -63,9 +64,7 @@ test("says how far a change reaches, edits the Footer in the Edit panel, and hid
   await expect(banner).toHaveCount(0);
 
   // Its edge, not its text: clicking the text edits it.
-  await canvas()
-    .locator(".site-footer")
-    .click({ position: { x: 4, y: 4 } });
+  await clickOnCanvas(canvas().locator(".site-footer"), { position: { x: 4, y: 4 } });
   await expect(banner).toHaveText("Editing shared Footer: changes apply to all 2 pages");
   const panel = page.getByRole("region", { name: "Right panels" });
   await panel.getByRole("textbox", { name: "Text" }).fill("See you soon");
