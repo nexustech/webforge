@@ -16,7 +16,7 @@ const BUNDLED: readonly InstalledFont[] = FONT_CATALOGUE.map((font) => {
 });
 
 /** A font downloaded on this computer before. */
-export const DOWNLOADED: InstalledFont = {
+const DOWNLOADED: InstalledFont = {
   id: "comic-neue",
   family: "Comic Neue",
   fallback: "sans-serif",
@@ -27,7 +27,7 @@ export const DOWNLOADED: InstalledFont = {
 };
 
 /** Fonts *Browse all fonts* finds: one to download, and one the computer has. */
-export const TO_BROWSE: readonly BrowsableFont[] = [
+const TO_BROWSE: readonly BrowsableFont[] = [
   { id: "lobster", family: "Lobster", category: "display", variable: false, installed: false },
   {
     id: "comic-neue",
