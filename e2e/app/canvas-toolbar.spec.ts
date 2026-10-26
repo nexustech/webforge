@@ -32,8 +32,21 @@ const pageWidth = () =>
     .evaluate((body) => body.ownerDocument.documentElement.clientWidth);
 const steps = () => page.locator(".undo-history__step");
 
+/** The size readout's text: "1600 × 640 @ 100%". */
+const readout = () => toolbar().getByRole("button", { name: /^Page size/ });
+
+/** Sets the window's content to `width` × 900 and waits until Desktop has taken the new room. */
+async function windowWidth(width: number): Promise<void> {
+  await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.unmaximize());
+  await app.evaluate(
+    ({ BrowserWindow }, size) => BrowserWindow.getAllWindows()[0]?.setContentSize(size, 900),
+    width,
+  );
+}
+
 test("switches device views and widths at once, without undo steps", async () => {
-  await expect.poll(pageWidth).toBe(1280);
+  // Desktop fills the canvas (PH2-18), never under the desktop layout's 1024 px.
+  await expect.poll(pageWidth).toBeGreaterThanOrEqual(1024);
 
   await toolbar().getByRole("radio", { name: "Mobile" }).click();
   await expect.poll(pageWidth).toBe(375);
@@ -58,12 +71,12 @@ test("switches device views and widths at once, without undo steps", async () =>
 
 test("zooms the canvas and shows the size and scale, back to Fit when the view changes", async () => {
   const zoom = toolbar().getByRole("combobox", { name: "Zoom" });
-  // The readout appears once the canvas has measured the page: "1280 × 640 @ 52%".
-  await expect(toolbar().getByText(/^1280 × \d+ @ \d+%$/)).toBeVisible();
+  // The readout appears once the canvas has measured the page: "1600 × 640 @ 100%".
+  await expect(toolbar().getByText(/^\d{4} × \d+ @ \d+%$/)).toBeVisible();
 
   // Smaller than Fit, so the page never overflows the canvas and makes it fit again.
   await zoom.selectOption("25%");
-  await expect(toolbar().getByText(/^1280 × \d+ @ 25%$/)).toBeVisible();
+  await expect(toolbar().getByText(/^\d{4} × \d+ @ 25%$/)).toBeVisible();
   await expect(zoom).toHaveValue("0.25");
 
   // Another view fits the page again.
@@ -80,7 +93,8 @@ test("keeps a zoom above Fit, though the page then overflows the canvas (#134)",
     BrowserWindow.getAllWindows()[0]?.setBounds({ x: 40, y: 40, width: 1280, height: 800 }),
   );
   const zoom = toolbar().getByRole("combobox", { name: "Zoom" });
-  const readout = toolbar().getByText(/^1280 × \d+ @ \d+%$/);
+  // Desktop is 1024 px at least, wider than this window's canvas: Fit zooms it out.
+  const readout = toolbar().getByText(/^\d{4} × \d+ @ \d+%$/);
   // Let the window finish resizing (a resize does make the canvas fit the page again): the
   // readout shows the same small Fit four times in a row.
   const seen: string[] = [];
@@ -97,7 +111,7 @@ test("keeps a zoom above Fit, though the page then overflows the canvas (#134)",
 
   await zoom.selectOption("150%");
 
-  await expect(toolbar().getByText(/^1280 × \d+ @ 150%$/)).toBeVisible();
+  await expect(toolbar().getByText(/^\d{4} × \d+ @ 150%$/)).toBeVisible();
   // The scrollbars the overflow adds don't make the canvas fit the page again: the zoom stays at
   // 150% for five samples over a second.
   const zooms: string[] = [];
@@ -110,6 +124,34 @@ test("keeps a zoom above Fit, though the page then overflows the canvas (#134)",
       { intervals: [250], timeout: 5_000 },
     )
     .toEqual(["1.5", "1.5", "1.5", "1.5", "1.5"]);
+});
+
+test("fills the canvas in Desktop view as the window grows and shrinks, and keeps fixed widths (PH2-18)", async () => {
+  const width = toolbar().getByRole("spinbutton", { name: "Canvas width in pixels" });
+  await windowWidth(1800);
+  await expect.poll(pageWidth).toBeGreaterThan(1100);
+  const wide = await pageWidth();
+  await expect(readout()).toHaveText(new RegExp(`^${wide} × [0-9]+ @ 100%$`));
+  await expect(width).toHaveValue(String(wide));
+
+  await windowWidth(2200);
+  await expect.poll(pageWidth).toBeGreaterThan(wide);
+  const wider = await pageWidth();
+  await expect(readout()).toHaveText(new RegExp(`^${wider} × [0-9]+ @ 100%$`));
+
+  // A window narrower than the desktop layout: Desktop stays 1024 px, zoomed out to fit.
+  await windowWidth(1100);
+  await expect.poll(pageWidth).toBe(1024);
+  await expect(readout()).toHaveText(/^1024 × \d+ @ [1-9]\d%$/);
+
+  // A fixed width from the size menu keeps its width as the window changes.
+  await readout().click();
+  await page.getByRole("menuitem", { name: "Desktop (1440)" }).click();
+  await expect.poll(pageWidth).toBe(1440);
+  await windowWidth(2200);
+  await expect(readout()).toHaveText(/^1440 × \d+ @ \d+%$/);
+  expect(await pageWidth()).toBe(1440);
+  await expect(steps()).toHaveText(["Opened page"]);
 });
 
 /** The canvas's scale, from the size readout ("1280 × 900 @ 50%"). */

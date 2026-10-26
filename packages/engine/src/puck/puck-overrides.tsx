@@ -13,7 +13,7 @@ import type { CanvasView } from "./canvas-view.js";
 import { applyChromeStyles, createSelectionOutline } from "./chrome.js";
 import type { DragSources } from "./drag-sources.js";
 import type { Emitter } from "./engine-support.js";
-import { CANVAS_ROOT } from "./puck-dom.js";
+import { CANVAS_INNER, CANVAS_ROOT } from "./puck-dom.js";
 import { boxHandleFields } from "./spacing-handles.js";
 import { widthHandleField } from "./width-handles.js";
 
@@ -101,6 +101,19 @@ export function createPuckOverrides(options: PuckOverridesOptions): Partial<Over
         observer.disconnect();
         view.stopMeasuring();
       };
+    }, []);
+    // The room the canvas has for the page, which Desktop fills (PH2-18): the content box Puck
+    // measures to fit the page into.
+    useEffect(() => {
+      const area = options.host()?.querySelector(CANVAS_INNER);
+      if (!area) {
+        return;
+      }
+      const observer = new ResizeObserver(([entry]) => {
+        if (entry !== undefined && entry.contentRect.width > 0) view.fit(entry.contentRect.width);
+      });
+      observer.observe(area);
+      return () => observer.disconnect();
     }, []);
     return (
       <>

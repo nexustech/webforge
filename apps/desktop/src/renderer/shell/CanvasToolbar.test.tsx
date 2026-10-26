@@ -57,10 +57,17 @@ function setUp(
 
 describe("CanvasToolbar (F-ED-8)", () => {
   it("names device widths, and treats other widths as custom", () => {
-    expect(widthOf("tablet")).toBe(768);
-    expect(widthOf(1000)).toBe(1000);
+    expect(widthOf("tablet", 1600)).toBe(768);
+    expect(widthOf(1000, 1600)).toBe(1000);
     expect(viewportFor(375)).toBe("mobile");
     expect(viewportFor(900)).toBe(900);
+  });
+
+  it("gives Desktop the canvas's width, at least the desktop layout's, and keeps 1280 fixed (PH2-18)", () => {
+    expect(widthOf("desktop", 1600)).toBe(1600);
+    expect(widthOf("desktop", 900)).toBe(1024);
+    expect(widthOf("desktop", undefined)).toBe(1024);
+    expect(viewportFor(1280)).toBe(1280);
   });
 
   it("shows another page", async () => {
@@ -72,12 +79,13 @@ describe("CanvasToolbar (F-ED-8)", () => {
   });
 
   it("switches device views, and shows the view's width", async () => {
-    const { onViewportChange, width } = setUp();
+    // Desktop fills the canvas (PH2-18): the width it shows is the canvas's.
+    const { onViewportChange, width } = setUp("desktop", { width: 1600, height: 900, zoom: 1 });
 
     expect(screen.getByRole("radio", { name: "Desktop" }).getAttribute("aria-checked")).toBe(
       "true",
     );
-    expect((width() as HTMLInputElement).value).toBe("1280");
+    expect((width() as HTMLInputElement).value).toBe("1600");
     await userEvent.click(screen.getByRole("radio", { name: "Mobile" }));
     // Clicking the chosen view again keeps it.
     await userEvent.click(screen.getByRole("radio", { name: "Desktop" }));
@@ -261,17 +269,25 @@ describe("View menu and devices (F-ED-25)", () => {
       screen.getByRole("button", { name: "Page size 1280 × 900 @ 50%: choose a device" }),
     );
     expect(screen.getAllByRole("menuitem").map((item) => item.textContent)).toEqual([
-      "Desktop (1280)",
+      "Desktop (fills the canvas)",
       "Tablet (768)",
       "Mobile (375)",
+      "Desktop (1280)",
+      "Desktop (1440)",
+      "Desktop (1920)",
       "Old laptop (1024 × 600)",
       "Add device…",
     ]);
     await user().click(screen.getByRole("menuitem", { name: "Old laptop (1024 × 600)" }));
     await user().click(screen.getByRole("button", { name: /Page size/ }));
     await user().click(screen.getByRole("menuitem", { name: "Mobile (375)" }));
+    // A fixed desktop width, to check a particular screen (PH2-18).
+    await user().click(screen.getByRole("button", { name: /Page size/ }));
+    await user().click(screen.getByRole("menuitem", { name: "Desktop (1440)" }));
+    await user().click(screen.getByRole("button", { name: /Page size/ }));
+    await user().click(screen.getByRole("menuitem", { name: "Desktop (fills the canvas)" }));
 
-    expect(onViewportChange.mock.calls).toEqual([[1024], ["mobile"]]);
+    expect(onViewportChange.mock.calls).toEqual([[1024], ["mobile"], [1440], ["desktop"]]);
   });
 
   it("rotates a device, and is off for a width that is no device's", async () => {
@@ -280,7 +296,7 @@ describe("View menu and devices (F-ED-25)", () => {
     expect(onViewportChange).toHaveBeenCalledExactlyOnceWith(812);
     cleanup();
 
-    setUp(900);
+    setUp(950);
     expect((screen.getByRole("button", { name: "Rotate" }) as HTMLButtonElement).disabled).toBe(
       true,
     );

@@ -64,7 +64,7 @@ test("lists every shortcut in a sheet, from the Help menu and from ?", async () 
 
 test("switches device views and zooms the canvas from the keyboard, not the window", async () => {
   const zoom = toolbar().getByRole("combobox", { name: "Zoom" });
-  await expect(toolbar().getByText(/^1280 × \d+ @ \d+%$/)).toBeVisible();
+  await expect(toolbar().getByText(/^\d{4} × \d+ @ \d+%$/)).toBeVisible();
 
   await page.keyboard.press("ControlOrMeta+2");
   await expect(device("Tablet")).toHaveAttribute("aria-checked", "true");

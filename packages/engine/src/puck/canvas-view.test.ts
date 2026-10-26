@@ -85,6 +85,49 @@ describe("canvas view (R8)", () => {
     expect(chosen).toEqual(["mobile", 900]);
   });
 
+  it("fills the canvas in Desktop view, never under the desktop layout's width (PH2-18)", () => {
+    const { state, api } = fakePuck(1280, { zoom: 1, autoZoom: 1, rootHeight: 800 });
+    const dispatch = vi.fn<(action: PuckAction) => void>((action) => {
+      state.width = widthOf(action) ?? state.width;
+    });
+    const view = createCanvasView(() => api, dispatch);
+    const shownWidths = () => dispatch.mock.calls.map(([action]) => widthOf(action));
+
+    // Unmeasured, Puck starts filling the canvas, and nothing is sent until the room is known.
+    expect(view.startWidth()).toBe("100%");
+    view.show();
+    expect(dispatch).not.toHaveBeenCalled();
+    view.fit(1500.6);
+    expect(view.startWidth()).toBe(1500);
+    expect(view.width()).toBe(1500);
+    view.fit(1500);
+    view.fit(900);
+    // Narrower than the desktop layout: still desktop, zoomed out by Puck.
+    expect(view.width()).toBe(1024);
+    expect(shownWidths()).toEqual([1500, 1024]);
+
+    // Tablet and fixed widths keep their width as the canvas changes.
+    view.setViewport("tablet");
+    view.fit(1700);
+    view.setViewport(1440);
+    view.fit(1800);
+    expect(view.width()).toBe(1440);
+    view.setViewport("desktop");
+    expect(view.width()).toBe(1800);
+    expect(shownWidths()).toEqual([1500, 1024, 768, 1440, 1800]);
+  });
+
+  it("takes a fixed width chosen in Puck for that width, not for Desktop", () => {
+    const { api } = fakePuck(1280, { zoom: 1, autoZoom: 1, rootHeight: 800 });
+    const view = createCanvasView(() => api, vi.fn());
+    const chosen: Viewport[] = [];
+    view.onViewport((viewport) => chosen.push(viewport));
+    view.shown(1440);
+    view.fit(1900);
+    expect(chosen).toEqual([1440]);
+    expect(view.width()).toBe(1440);
+  });
+
   it("waits for Puck: nothing shown before it is ready", () => {
     const dispatch = vi.fn();
     const view = createCanvasView(() => null, dispatch);
