@@ -2,12 +2,14 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, test } from "@playwright/test";
+import { budgetTests, expectWithinBudget, OPEN_WAIT } from "./budget.js";
 import { canvasAxe } from "./canvas-axe.js";
 import { launchDesktopApp } from "./launch.js";
 import { stubFileDialogs } from "./sites.js";
 
 // The templates of 2.15a and 2.15b, made from New Site (F-SITE-1): each opens in under 3 s, with
-// its photos, and its home page passes axe on the canvas, what the editor adds to it included.
+// its photos, and its home page passes axe on the canvas, what the editor adds to it included. The
+// 3 s is a budget measured under whatever else the machine runs: one retry after a miss (ADR 0014).
 
 /** Each template: its card's title, the theme it brings, and its home page's heading. */
 const TEMPLATES = [
@@ -21,6 +23,8 @@ const TEMPLATES = [
 
 let dir: string;
 let app: ElectronApplication | undefined;
+
+budgetTests();
 
 test.beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), "webforge-templates-"));
@@ -55,8 +59,10 @@ for (const template of TEMPLATES) {
     const started = Date.now();
     await newSite.getByRole("button", { name: "Create" }).click();
     const canvas = page.frameLocator(".editor__canvas iframe");
-    await expect(canvas.locator("h1", { hasText: template.heading })).toBeVisible();
-    expect(Date.now() - started).toBeLessThan(3_000);
+    await expect(canvas.locator("h1", { hasText: template.heading })).toBeVisible({
+      timeout: OPEN_WAIT,
+    });
+    expectWithinBudget(started, 3_000, `Opening the ${template.title} site`);
     await expect(canvas.locator("main img, section img").first()).not.toHaveJSProperty(
       "naturalWidth",
       0,

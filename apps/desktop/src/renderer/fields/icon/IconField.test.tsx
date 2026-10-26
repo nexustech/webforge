@@ -36,7 +36,7 @@ function setUp() {
 }
 
 // Typing through a dialog, as the Picker's own tests do: slower beside the suite's other tests.
-describe("the icon field (F-ED-22)", { timeout: 15_000 }, () => {
+describe("the icon field (F-ED-22)", () => {
   it("chooses an icon in the picker, searched by what it shows, as one step", async () => {
     const { button, labels, user } = setUp();
 
@@ -68,7 +68,7 @@ describe("the icon field (F-ED-22)", { timeout: 15_000 }, () => {
   });
 });
 
-describe("a List's icon (F-ED-22)", { timeout: 15_000 }, () => {
+describe("a List's icon (F-ED-22)", () => {
   it("makes its style unavailable, saying why, until the icon is removed", async () => {
     const site = starterSite();
     const section = site.pages[site.homePageId]?.doc.content[0];

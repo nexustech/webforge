@@ -63,7 +63,7 @@ function setUp(
 
 // Each test types and moves through a dialog: about a second alone, but slower beside the whole
 // suite's other tests (coverage, parallel workers), so the 5 s default isn't always enough.
-describe("Picker (UX-15)", { timeout: 15_000 }, () => {
+describe("Picker (UX-15)", () => {
   it("searches by name, category or keyword, and says when nothing matches", async () => {
     const { opener, options } = setUp();
     await userEvent.click(opener);

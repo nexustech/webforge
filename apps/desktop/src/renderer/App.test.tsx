@@ -1,7 +1,11 @@
 // @vitest-environment happy-dom
 import { act, cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { createFakeEngine, type FakeEngine } from "@webforge/test-utils/renderer";
+import {
+  createFakeEngine,
+  type FakeEngine,
+  scaledTestTimeout,
+} from "@webforge/test-utils/renderer";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { AiApi, AiRequest, AiResponse } from "../shared/ipc/ai.js";
 import { applyPreferencesChange, DEFAULT_PREFERENCES } from "../shared/ipc/prefs.js";
@@ -10,7 +14,7 @@ import { App, type AppProps } from "./App.js";
 
 // Each test renders the whole window (title bar, panels, Radix menus); on a busy machine that can
 // take longer than Vitest's default 5 s.
-vi.setConfig({ testTimeout: 20_000 });
+vi.setConfig({ testTimeout: scaledTestTimeout(20_000) });
 
 afterEach(() => {
   cleanup();

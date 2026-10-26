@@ -126,6 +126,7 @@ Coverage is a floor, not a goal. Every bug fix adds a regression test.
 - **Fixtures:** `packages/test-utils/fixtures/`: sample sites and **one `.wforge` file per released format version** (never deleted, guaranteeing old files open).
 - **Mocking:** don't mock what you own; mock only boundaries (network via msw, clock via fake timers, filesystem via temp dirs).
 - **Flakiness:** no flaky tests on `main`. A flaky test is quarantined within 24 h with an issue, and fixed or deleted within a week.
+- **Time in tests** ([ADR 0014](../docs/adr/0014-time-budgets-under-load.md)): measure the work itself where a clock isn't the point (CPU time, what was read or encoded); check a budget from the spec with `budgetTests()` and `expectWithinBudget()`, which retry once after a miss only; wait generously (`OPEN_WAIT`, `BACKGROUND_WAIT`); and scale unit timeouts to the run's workers (`vitest.load.ts`). Never a bare `Date.now()` comparison.
 
 ## 6. Git workflow
 - **Trunk-based:** short-lived branches (`feat/…`, `fix/…`, `chore/…`), PRs into `main`, **squash merge**.
