@@ -879,6 +879,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 24.19.2
+      '@webforge/templates':
+        specifier: workspace:*
+        version: link:../templates
       '@webforge/test-utils':
         specifier: workspace:*
         version: link:../test-utils

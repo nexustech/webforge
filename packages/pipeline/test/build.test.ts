@@ -1,6 +1,13 @@
 import { createHash } from "node:crypto";
-import type { MediaId, MenuItemId, NodeDoc, PageId, SiteSnapshot } from "@webforge/model";
-import { DEFAULT_THEME } from "@webforge/model";
+import type {
+  MediaId,
+  MenuItemId,
+  NodeDoc,
+  PageId,
+  SharedSectionId,
+  SiteSnapshot,
+} from "@webforge/model";
+import { createSite, DEFAULT_THEME, newSharedCopy, siteToSnapshot } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { sampleSite } from "@webforge/test-utils";
 import { transform } from "lightningcss";
@@ -909,5 +916,58 @@ describe("buildSite: what the export writes (3.3)", () => {
     expect(text(withFiles, "developer/README.md")).toContain(
       `npx @tailwindcss/cli -i developer/input.css -o ${fileNamed(withFiles, /^assets\/css\//)}`,
     );
+  }, 60_000);
+});
+
+describe("buildSite: shared sections (F-ED-23, 3.3)", () => {
+  it("writes each copy inline, as its section, a second copy on a page with anchors of its own", async () => {
+    const site = createSite({
+      name: "Bakery",
+      language: "en",
+      homeTitle: "Home",
+      notFoundTitle: "Page not found",
+    });
+    const hoursId = "shared-hours" as SharedSectionId;
+    const shared = {
+      [hoursId]: {
+        id: hoursId,
+        name: "Opening hours",
+        section: {
+          type: "Section",
+          props: {
+            id: "hours",
+            advanced: { anchorId: "opening-hours" },
+            content: [{ type: "Heading", props: { id: "title", text: "Open every day" } }],
+          },
+        },
+      },
+    };
+    const [home, notFound] = Object.values(site.pages);
+    if (home === undefined || notFound === undefined) throw new Error("No pages");
+    const copies = (count: number) => {
+      const content: NodeDoc[] = [];
+      for (let made = 0; made < count; made++) {
+        content.push(newSharedCopy(content, hoursId, shared, site.layout) as NodeDoc);
+      }
+      return content;
+    };
+    const withCopies = {
+      ...site,
+      sharedSections: shared,
+      pages: {
+        [home.id]: { ...home, doc: { ...home.doc, content: copies(2) } },
+        [notFound.id]: { ...notFound, doc: { ...notFound.doc, content: copies(1) } },
+      },
+    };
+
+    const exported = await buildSite(siteToSnapshot(withCopies, new Map()), siteLibrary, resources);
+
+    await expect(text(exported, "index.html")).toMatchFileSnapshot(
+      "golden/shared-sections/index.html",
+    );
+    await expect(text(exported, "404.html")).toMatchFileSnapshot("golden/shared-sections/404.html");
+    expect(text(exported, "index.html")).toContain('id="opening-hours"');
+    expect(text(exported, "index.html")).toContain('id="opening-hours-2"');
+    expect(text(exported, "index.html")).not.toContain("SharedSectionCopy");
   }, 60_000);
 });

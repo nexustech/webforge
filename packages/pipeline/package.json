@@ -11,6 +11,7 @@
     "@types/html-minifier-terser": "7.0.2",
     "@types/js-beautify": "1.14.3",
     "@types/node": "catalog:",
+    "@webforge/templates": "workspace:*",
     "@webforge/test-utils": "workspace:*",
     "fast-check": "4.10.2",
     "lightningcss": "1.32.0",
