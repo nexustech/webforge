@@ -1,0 +1,4833 @@
+{
+  "Header": {
+    "label": "Header",
+    "place": "layout",
+    "fields": {
+      "siteName": {
+        "kind": "text",
+        "label": "Site name",
+        "inline": true,
+        "bindable": ["general.name", "contact.businessName"]
+      },
+      "sticky": {
+        "kind": "toggle",
+        "label": "Stay at the top when scrolling"
+      },
+      "scrollStyle": {
+        "kind": "select",
+        "label": "Change style when scrolling",
+        "options": [
+          {
+            "label": "Shadow",
+            "value": "shadow"
+          },
+          {
+            "label": "Shrink",
+            "value": "shrink"
+          },
+          {
+            "label": "Solid background",
+            "value": "solid"
+          },
+          {
+            "label": "None",
+            "value": "none"
+          }
+        ]
+      },
+      "variant": {
+        "kind": "select",
+        "group": "style",
+        "label": "Layout",
+        "options": [
+          {
+            "label": "Name left, menu right",
+            "value": "left"
+          },
+          {
+            "label": "Centred",
+            "value": "centred"
+          },
+          {
+            "label": "With a button",
+            "value": "split"
+          }
+        ]
+      }
+    },
+    "defaults": {
+      "variant": "left",
+      "siteName": "My site",
+      "sticky": false,
+      "scrollStyle": "shadow"
+    }
+  },
+  "Footer": {
+    "label": "Footer",
+    "place": "layout",
+    "fields": {
+      "text": {
+        "kind": "text",
+        "label": "Text",
+        "inline": true,
+        "bindable": [
+          "contact.businessName",
+          "contact.address",
+          "contact.phone",
+          "contact.email",
+          "contact.openingHoursNote"
+        ]
+      },
+      "variant": {
+        "kind": "select",
+        "group": "style",
+        "label": "Layout",
+        "options": [
+          {
+            "label": "Centred",
+            "value": "centred"
+          },
+          {
+            "label": "Columns",
+            "value": "columns"
+          }
+        ]
+      }
+    },
+    "defaults": {
+      "variant": "centred",
+      "text": "Thanks for visiting."
+    }
+  },
+  "Section": {
+    "label": "Section",
+    "place": "section",
+    "category": "Basic",
+    "framed": true,
+    "fields": {
+      "gap": {
+        "kind": "slider",
+        "label": "Space between elements",
+        "responsive": true,
+        "steps": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Small",
+            "value": "small"
+          },
+          {
+            "label": "Medium",
+            "value": "medium"
+          },
+          {
+            "label": "Large",
+            "value": "large"
+          }
+        ]
+      },
+      "fullWidth": {
+        "kind": "toggle",
+        "label": "Full width",
+        "group": "style"
+      },
+      "content": {
+        "kind": "slot",
+        "label": "Content",
+        "accepts": "element",
+        "allow": [
+          "Heading",
+          "Text",
+          "Image",
+          "Button",
+          "Spacer",
+          "Divider",
+          "Columns",
+          "List",
+          "Icon",
+          "SocialLinks",
+          "Carousel",
+          "EmbedVideo",
+          "EmbedMap",
+          "Form",
+          "BuyButton",
+          "Tabs",
+          "CustomCode"
+        ]
+      },
+      "colors": {
+        "kind": "select",
+        "label": "Colours",
+        "help": "Reversed swaps the theme's light and dark colours: a dark band on a light page, a light one on a dark page.",
+        "options": [
+          {
+            "label": "Page colours",
+            "value": "page"
+          },
+          {
+            "label": "Reversed",
+            "value": "inverse"
+          }
+        ]
+      },
+      "padding": {
+        "kind": "box",
+        "label": "Padding",
+        "property": "padding",
+        "responsive": true
+      },
+      "margin": {
+        "kind": "box",
+        "label": "Margin",
+        "property": "margin",
+        "responsive": true,
+        "sides": ["top", "bottom"]
+      },
+      "entrance": {
+        "kind": "select",
+        "label": "Entrance animation",
+        "help": "Plays once as visitors scroll to it. Visitors who prefer less motion never see it move.",
+        "group": "style",
+        "options": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Fade in",
+            "value": "fade"
+          },
+          {
+            "label": "Slide up",
+            "value": "slideUp"
+          },
+          {
+            "label": "Slide in from the left",
+            "value": "slideLeft"
+          },
+          {
+            "label": "Slide in from the right",
+            "value": "slideRight"
+          },
+          {
+            "label": "Zoom in",
+            "value": "zoom"
+          }
+        ]
+      },
+      "entranceDelay": {
+        "kind": "slider",
+        "label": "Delay",
+        "group": "style",
+        "steps": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Short",
+            "value": "short"
+          },
+          {
+            "label": "Medium",
+            "value": "medium"
+          },
+          {
+            "label": "Long",
+            "value": "long"
+          }
+        ]
+      }
+    },
+    "defaults": {
+      "colors": "page",
+      "gap": "medium",
+      "fullWidth": false,
+      "content": []
+    }
+  },
+  "Heading": {
+    "label": "Heading",
+    "place": "element",
+    "category": "Text",
+    "fields": {
+      "text": {
+        "kind": "text",
+        "label": "Text",
+        "inline": true,
+        "bindable": [
+          "general.name",
+          "contact.businessName",
+          "contact.phone",
+          "contact.email",
+          "contact.address",
+          "contact.openingHoursNote"
+        ]
+      },
+      "size": {
+        "kind": "select",
+        "label": "Size",
+        "options": [
+          {
+            "label": "Large",
+            "value": "large"
+          },
+          {
+            "label": "Medium",
+            "value": "medium"
+          },
+          {
+            "label": "Small",
+            "value": "small"
+          }
+        ]
+      },
+      "color": {
+        "kind": "color",
+        "label": "Colour",
+        "options": [
+          {
+            "label": "Text colour",
+            "value": "default"
+          },
+          {
+            "label": "Primary",
+            "value": "primary"
+          },
+          {
+            "label": "Secondary",
+            "value": "secondary"
+          },
+          {
+            "label": "Accent",
+            "value": "accent"
+          }
+        ]
+      },
+      "margin": {
+        "kind": "box",
+        "label": "Margin",
+        "property": "margin",
+        "responsive": true,
+        "sides": ["top", "bottom"]
+      },
+      "entrance": {
+        "kind": "select",
+        "label": "Entrance animation",
+        "help": "Plays once as visitors scroll to it. Visitors who prefer less motion never see it move.",
+        "group": "style",
+        "options": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Fade in",
+            "value": "fade"
+          },
+          {
+            "label": "Slide up",
+            "value": "slideUp"
+          },
+          {
+            "label": "Slide in from the left",
+            "value": "slideLeft"
+          },
+          {
+            "label": "Slide in from the right",
+            "value": "slideRight"
+          },
+          {
+            "label": "Zoom in",
+            "value": "zoom"
+          }
+        ]
+      },
+      "entranceDelay": {
+        "kind": "slider",
+        "label": "Delay",
+        "group": "style",
+        "steps": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Short",
+            "value": "short"
+          },
+          {
+            "label": "Medium",
+            "value": "medium"
+          },
+          {
+            "label": "Long",
+            "value": "long"
+          }
+        ]
+      }
+    },
+    "defaults": {
+      "text": "Heading",
+      "size": "medium",
+      "color": "default"
+    }
+  },
+  "Text": {
+    "label": "Text",
+    "place": "element",
+    "category": "Text",
+    "fields": {
+      "text": {
+        "kind": "richtext",
+        "label": "Text",
+        "inline": true
+      },
+      "margin": {
+        "kind": "box",
+        "label": "Margin",
+        "property": "margin",
+        "responsive": true,
+        "sides": ["top", "bottom"]
+      },
+      "entrance": {
+        "kind": "select",
+        "label": "Entrance animation",
+        "help": "Plays once as visitors scroll to it. Visitors who prefer less motion never see it move.",
+        "group": "style",
+        "options": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Fade in",
+            "value": "fade"
+          },
+          {
+            "label": "Slide up",
+            "value": "slideUp"
+          },
+          {
+            "label": "Slide in from the left",
+            "value": "slideLeft"
+          },
+          {
+            "label": "Slide in from the right",
+            "value": "slideRight"
+          },
+          {
+            "label": "Zoom in",
+            "value": "zoom"
+          }
+        ]
+      },
+      "entranceDelay": {
+        "kind": "slider",
+        "label": "Delay",
+        "group": "style",
+        "steps": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Short",
+            "value": "short"
+          },
+          {
+            "label": "Medium",
+            "value": "medium"
+          },
+          {
+            "label": "Long",
+            "value": "long"
+          }
+        ]
+      }
+    },
+    "defaults": {
+      "text": "<p>Text</p>"
+    }
+  },
+  "Image": {
+    "label": "Image",
+    "place": "element",
+    "category": "Images and media",
+    "fields": {
+      "image": {
+        "kind": "media",
+        "label": "Image"
+      },
+      "width": {
+        "kind": "slider",
+        "label": "Width",
+        "responsive": true,
+        "steps": [
+          {
+            "label": "Small",
+            "value": "small"
+          },
+          {
+            "label": "Medium",
+            "value": "medium"
+          },
+          {
+            "label": "Large",
+            "value": "large"
+          },
+          {
+            "label": "Full width",
+            "value": "full"
+          }
+        ],
+        "widths": {
+          "small": 320,
+          "medium": 448,
+          "large": 672,
+          "full": null
+        }
+      },
+      "alignment": {
+        "kind": "select",
+        "label": "Alignment",
+        "options": [
+          {
+            "label": "Left",
+            "value": "left"
+          },
+          {
+            "label": "Centre",
+            "value": "centre"
+          },
+          {
+            "label": "Right",
+            "value": "right"
+          }
+        ]
+      },
+      "rounded": {
+        "kind": "toggle",
+        "label": "Rounded corners",
+        "group": "style"
+      },
+      "caption": {
+        "kind": "text",
+        "label": "Caption"
+      },
+      "margin": {
+        "kind": "box",
+        "label": "Margin",
+        "property": "margin",
+        "responsive": true,
+        "sides": ["top", "bottom"]
+      },
+      "entrance": {
+        "kind": "select",
+        "label": "Entrance animation",
+        "help": "Plays once as visitors scroll to it. Visitors who prefer less motion never see it move.",
+        "group": "style",
+        "options": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Fade in",
+            "value": "fade"
+          },
+          {
+            "label": "Slide up",
+            "value": "slideUp"
+          },
+          {
+            "label": "Slide in from the left",
+            "value": "slideLeft"
+          },
+          {
+            "label": "Slide in from the right",
+            "value": "slideRight"
+          },
+          {
+            "label": "Zoom in",
+            "value": "zoom"
+          }
+        ]
+      },
+      "entranceDelay": {
+        "kind": "slider",
+        "label": "Delay",
+        "group": "style",
+        "steps": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Short",
+            "value": "short"
+          },
+          {
+            "label": "Medium",
+            "value": "medium"
+          },
+          {
+            "label": "Long",
+            "value": "long"
+          }
+        ]
+      }
+    },
+    "defaults": {
+      "width": "full",
+      "alignment": "centre",
+      "rounded": false,
+      "caption": ""
+    }
+  },
+  "Button": {
+    "label": "Button",
+    "place": "element",
+    "category": "Basic",
+    "presets": [
+      {
+        "id": "booking",
+        "label": "Booking button",
+        "values": {
+          "label": "Book now"
+        }
+      }
+    ],
+    "fields": {
+      "label": {
+        "kind": "text",
+        "label": "Button text"
+      },
+      "link": {
+        "kind": "link",
+        "label": "Button link"
+      },
+      "icon": {
+        "kind": "icon",
+        "label": "Icon"
+      },
+      "style": {
+        "kind": "select",
+        "label": "Style",
+        "options": [
+          {
+            "label": "Theme's style",
+            "value": "theme"
+          },
+          {
+            "label": "Filled",
+            "value": "primary"
+          },
+          {
+            "label": "Second colour",
+            "value": "secondary"
+          },
+          {
+            "label": "Outline",
+            "value": "outline"
+          }
+        ]
+      },
+      "size": {
+        "kind": "select",
+        "label": "Size",
+        "options": [
+          {
+            "label": "Small",
+            "value": "small"
+          },
+          {
+            "label": "Medium",
+            "value": "medium"
+          },
+          {
+            "label": "Large",
+            "value": "large"
+          }
+        ]
+      },
+      "alignment": {
+        "kind": "select",
+        "label": "Alignment",
+        "options": [
+          {
+            "label": "Left",
+            "value": "left"
+          },
+          {
+            "label": "Centre",
+            "value": "centre"
+          },
+          {
+            "label": "Right",
+            "value": "right"
+          }
+        ]
+      },
+      "hover": {
+        "kind": "select",
+        "label": "Hover effect",
+        "group": "style",
+        "options": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Lift",
+            "value": "lift"
+          },
+          {
+            "label": "Grow",
+            "value": "grow"
+          },
+          {
+            "label": "Shadow",
+            "value": "shadow"
+          }
+        ]
+      },
+      "margin": {
+        "kind": "box",
+        "label": "Margin",
+        "property": "margin",
+        "responsive": true,
+        "sides": ["top", "bottom"]
+      },
+      "entrance": {
+        "kind": "select",
+        "label": "Entrance animation",
+        "help": "Plays once as visitors scroll to it. Visitors who prefer less motion never see it move.",
+        "group": "style",
+        "options": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Fade in",
+            "value": "fade"
+          },
+          {
+            "label": "Slide up",
+            "value": "slideUp"
+          },
+          {
+            "label": "Slide in from the left",
+            "value": "slideLeft"
+          },
+          {
+            "label": "Slide in from the right",
+            "value": "slideRight"
+          },
+          {
+            "label": "Zoom in",
+            "value": "zoom"
+          }
+        ]
+      },
+      "entranceDelay": {
+        "kind": "slider",
+        "label": "Delay",
+        "group": "style",
+        "steps": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Short",
+            "value": "short"
+          },
+          {
+            "label": "Medium",
+            "value": "medium"
+          },
+          {
+            "label": "Long",
+            "value": "long"
+          }
+        ]
+      }
+    },
+    "defaults": {
+      "label": "Find out more",
+      "style": "theme",
+      "size": "medium",
+      "alignment": "left"
+    }
+  },
+  "Spacer": {
+    "label": "Spacer",
+    "place": "element",
+    "category": "Basic",
+    "fields": {
+      "height": {
+        "kind": "slider",
+        "label": "Height",
+        "responsive": true,
+        "steps": [
+          {
+            "label": "Small",
+            "value": "small"
+          },
+          {
+            "label": "Medium",
+            "value": "medium"
+          },
+          {
+            "label": "Large",
+            "value": "large"
+          },
+          {
+            "label": "Extra large",
+            "value": "xlarge"
+          }
+        ]
+      }
+    },
+    "defaults": {
+      "height": "medium"
+    }
+  },
+  "Divider": {
+    "label": "Divider",
+    "place": "element",
+    "category": "Basic",
+    "fields": {
+      "text": {
+        "kind": "text",
+        "label": "Text on the line"
+      },
+      "margin": {
+        "kind": "box",
+        "label": "Margin",
+        "property": "margin",
+        "responsive": true,
+        "sides": ["top", "bottom"]
+      }
+    },
+    "defaults": {
+      "text": ""
+    }
+  },
+  "Columns": {
+    "label": "Columns",
+    "place": "element",
+    "category": "Layout",
+    "fields": {
+      "columns": {
+        "kind": "slot",
+        "label": "Columns",
+        "allow": ["Column"],
+        "max": 4
+      },
+      "layout": {
+        "kind": "select",
+        "label": "Column widths",
+        "responsive": true,
+        "options": [
+          {
+            "label": "Equal",
+            "value": "equal"
+          },
+          {
+            "label": "First one wider",
+            "value": "wideFirst"
+          },
+          {
+            "label": "Last one wider",
+            "value": "wideLast"
+          },
+          {
+            "label": "Middle one wider",
+            "value": "wideMiddle"
+          },
+          {
+            "label": "One under another",
+            "value": "stacked"
+          }
+        ]
+      },
+      "gap": {
+        "kind": "slider",
+        "label": "Space between columns",
+        "responsive": true,
+        "steps": [
+          {
+            "label": "Small",
+            "value": "small"
+          },
+          {
+            "label": "Medium",
+            "value": "medium"
+          },
+          {
+            "label": "Large",
+            "value": "large"
+          }
+        ]
+      },
+      "margin": {
+        "kind": "box",
+        "label": "Margin",
+        "property": "margin",
+        "responsive": true,
+        "sides": ["top", "bottom"]
+      },
+      "entrance": {
+        "kind": "select",
+        "label": "Entrance animation",
+        "help": "Plays once as visitors scroll to it. Visitors who prefer less motion never see it move.",
+        "group": "style",
+        "options": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Fade in",
+            "value": "fade"
+          },
+          {
+            "label": "Slide up",
+            "value": "slideUp"
+          },
+          {
+            "label": "Slide in from the left",
+            "value": "slideLeft"
+          },
+          {
+            "label": "Slide in from the right",
+            "value": "slideRight"
+          },
+          {
+            "label": "Zoom in",
+            "value": "zoom"
+          }
+        ]
+      },
+      "entranceDelay": {
+        "kind": "slider",
+        "label": "Delay",
+        "group": "style",
+        "steps": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Short",
+            "value": "short"
+          },
+          {
+            "label": "Medium",
+            "value": "medium"
+          },
+          {
+            "label": "Long",
+            "value": "long"
+          }
+        ]
+      }
+    },
+    "defaults": {
+      "columns": [
+        {
+          "type": "Column",
+          "props": {
+            "id": "column-0",
+            "content": [
+              {
+                "type": "Text",
+                "props": {
+                  "id": "column-0-text",
+                  "text": "<p>Write something for this column.</p>"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "Column",
+          "props": {
+            "id": "column-1",
+            "content": [
+              {
+                "type": "Text",
+                "props": {
+                  "id": "column-1-text",
+                  "text": "<p>Write something for this column.</p>"
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "layout": {
+        "$responsive": {
+          "desktop": "equal",
+          "mobile": "stacked"
+        }
+      },
+      "gap": "medium"
+    }
+  },
+  "Column": {
+    "label": "Column",
+    "place": "child",
+    "fields": {
+      "content": {
+        "kind": "slot",
+        "label": "Content",
+        "accepts": "element",
+        "allow": [
+          "Heading",
+          "Text",
+          "Image",
+          "Button",
+          "Spacer",
+          "Divider",
+          "Columns",
+          "List",
+          "Icon",
+          "SocialLinks",
+          "Carousel",
+          "EmbedVideo",
+          "EmbedMap",
+          "Form",
+          "BuyButton",
+          "Tabs",
+          "CustomCode"
+        ]
+      }
+    },
+    "defaults": {
+      "content": []
+    }
+  },
+  "List": {
+    "label": "List",
+    "place": "element",
+    "category": "Text",
+    "fields": {
+      "items": {
+        "kind": "slot",
+        "label": "Items",
+        "allow": ["ListItem"]
+      },
+      "style": {
+        "kind": "select",
+        "label": "Style",
+        "options": [
+          {
+            "label": "Bullets",
+            "value": "bullets"
+          },
+          {
+            "label": "Numbers",
+            "value": "numbers"
+          },
+          {
+            "label": "No markers",
+            "value": "plain"
+          }
+        ]
+      },
+      "icon": {
+        "kind": "icon",
+        "label": "Icon instead of markers",
+        "help": "Shown before each item in place of bullets or numbers."
+      },
+      "margin": {
+        "kind": "box",
+        "label": "Margin",
+        "property": "margin",
+        "responsive": true,
+        "sides": ["top", "bottom"]
+      },
+      "entrance": {
+        "kind": "select",
+        "label": "Entrance animation",
+        "help": "Plays once as visitors scroll to it. Visitors who prefer less motion never see it move.",
+        "group": "style",
+        "options": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Fade in",
+            "value": "fade"
+          },
+          {
+            "label": "Slide up",
+            "value": "slideUp"
+          },
+          {
+            "label": "Slide in from the left",
+            "value": "slideLeft"
+          },
+          {
+            "label": "Slide in from the right",
+            "value": "slideRight"
+          },
+          {
+            "label": "Zoom in",
+            "value": "zoom"
+          }
+        ]
+      },
+      "entranceDelay": {
+        "kind": "slider",
+        "label": "Delay",
+        "group": "style",
+        "steps": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Short",
+            "value": "short"
+          },
+          {
+            "label": "Medium",
+            "value": "medium"
+          },
+          {
+            "label": "Long",
+            "value": "long"
+          }
+        ]
+      }
+    },
+    "defaults": {
+      "items": [
+        {
+          "type": "ListItem",
+          "props": {
+            "id": "list-item-0",
+            "text": "List item"
+          }
+        },
+        {
+          "type": "ListItem",
+          "props": {
+            "id": "list-item-1",
+            "text": "List item"
+          }
+        },
+        {
+          "type": "ListItem",
+          "props": {
+            "id": "list-item-2",
+            "text": "List item"
+          }
+        }
+      ],
+      "style": "bullets"
+    }
+  },
+  "ListItem": {
+    "label": "List item",
+    "place": "child",
+    "fields": {
+      "text": {
+        "kind": "text",
+        "label": "Text",
+        "inline": true
+      }
+    },
+    "defaults": {
+      "text": "List item"
+    }
+  },
+  "Icon": {
+    "label": "Icon",
+    "place": "element",
+    "category": "Basic",
+    "fields": {
+      "icon": {
+        "kind": "icon",
+        "label": "Icon"
+      },
+      "label": {
+        "kind": "text",
+        "label": "Name for screen readers",
+        "help": "What the icon means, if nothing beside it says so (\"Phone\"). Leave it empty for an icon that only decorates."
+      },
+      "size": {
+        "kind": "slider",
+        "label": "Size",
+        "responsive": true,
+        "steps": [
+          {
+            "label": "Small",
+            "value": "small"
+          },
+          {
+            "label": "Medium",
+            "value": "medium"
+          },
+          {
+            "label": "Large",
+            "value": "large"
+          },
+          {
+            "label": "Extra large",
+            "value": "xlarge"
+          }
+        ]
+      },
+      "color": {
+        "kind": "color",
+        "label": "Colour",
+        "options": [
+          {
+            "label": "Text colour",
+            "value": "default"
+          },
+          {
+            "label": "Primary",
+            "value": "primary"
+          },
+          {
+            "label": "Secondary",
+            "value": "secondary"
+          },
+          {
+            "label": "Accent",
+            "value": "accent"
+          }
+        ]
+      },
+      "alignment": {
+        "kind": "select",
+        "label": "Alignment",
+        "options": [
+          {
+            "label": "Left",
+            "value": "left"
+          },
+          {
+            "label": "Centre",
+            "value": "centre"
+          },
+          {
+            "label": "Right",
+            "value": "right"
+          }
+        ]
+      },
+      "margin": {
+        "kind": "box",
+        "label": "Margin",
+        "property": "margin",
+        "responsive": true,
+        "sides": ["top", "bottom"]
+      },
+      "entrance": {
+        "kind": "select",
+        "label": "Entrance animation",
+        "help": "Plays once as visitors scroll to it. Visitors who prefer less motion never see it move.",
+        "group": "style",
+        "options": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Fade in",
+            "value": "fade"
+          },
+          {
+            "label": "Slide up",
+            "value": "slideUp"
+          },
+          {
+            "label": "Slide in from the left",
+            "value": "slideLeft"
+          },
+          {
+            "label": "Slide in from the right",
+            "value": "slideRight"
+          },
+          {
+            "label": "Zoom in",
+            "value": "zoom"
+          }
+        ]
+      },
+      "entranceDelay": {
+        "kind": "slider",
+        "label": "Delay",
+        "group": "style",
+        "steps": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Short",
+            "value": "short"
+          },
+          {
+            "label": "Medium",
+            "value": "medium"
+          },
+          {
+            "label": "Long",
+            "value": "long"
+          }
+        ]
+      }
+    },
+    "defaults": {
+      "icon": "star",
+      "label": "",
+      "size": "medium",
+      "color": "primary",
+      "alignment": "left"
+    }
+  },
+  "SocialLinks": {
+    "label": "Social links",
+    "place": "element",
+    "category": "Basic",
+    "fields": {
+      "size": {
+        "kind": "slider",
+        "label": "Size",
+        "steps": [
+          {
+            "label": "Small",
+            "value": "small"
+          },
+          {
+            "label": "Medium",
+            "value": "medium"
+          },
+          {
+            "label": "Large",
+            "value": "large"
+          }
+        ]
+      },
+      "color": {
+        "kind": "color",
+        "label": "Colour",
+        "help": "Logos show in one colour, as their brands' guidelines allow. Add profiles in Site Settings, under Social & sharing.",
+        "options": [
+          {
+            "label": "Text colour",
+            "value": "default"
+          },
+          {
+            "label": "Primary",
+            "value": "primary"
+          },
+          {
+            "label": "Secondary",
+            "value": "secondary"
+          },
+          {
+            "label": "Accent",
+            "value": "accent"
+          }
+        ]
+      },
+      "alignment": {
+        "kind": "select",
+        "label": "Alignment",
+        "options": [
+          {
+            "label": "Left",
+            "value": "left"
+          },
+          {
+            "label": "Centre",
+            "value": "centre"
+          },
+          {
+            "label": "Right",
+            "value": "right"
+          }
+        ]
+      },
+      "margin": {
+        "kind": "box",
+        "label": "Margin",
+        "property": "margin",
+        "responsive": true,
+        "sides": ["top", "bottom"]
+      }
+    },
+    "defaults": {
+      "size": "medium",
+      "color": "default",
+      "alignment": "left"
+    }
+  },
+  "Hero": {
+    "label": "Hero",
+    "place": "section",
+    "category": "Heroes",
+    "framed": true,
+    "fields": {
+      "title": {
+        "kind": "text",
+        "label": "Title",
+        "inline": true
+      },
+      "text": {
+        "kind": "text",
+        "label": "Text",
+        "inline": true
+      },
+      "buttonLabel": {
+        "kind": "text",
+        "label": "Button text"
+      },
+      "buttonLink": {
+        "kind": "link",
+        "label": "Button link"
+      },
+      "alignment": {
+        "kind": "select",
+        "label": "Alignment",
+        "options": [
+          {
+            "label": "Centre",
+            "value": "centre"
+          },
+          {
+            "label": "Left",
+            "value": "left"
+          }
+        ]
+      },
+      "image": {
+        "kind": "media",
+        "label": "Image"
+      },
+      "colors": {
+        "kind": "select",
+        "label": "Colours",
+        "help": "Reversed swaps the theme's light and dark colours: a dark band on a light page, a light one on a dark page.",
+        "options": [
+          {
+            "label": "Page colours",
+            "value": "page"
+          },
+          {
+            "label": "Reversed",
+            "value": "inverse"
+          }
+        ]
+      },
+      "padding": {
+        "kind": "box",
+        "label": "Padding",
+        "property": "padding",
+        "responsive": true
+      },
+      "margin": {
+        "kind": "box",
+        "label": "Margin",
+        "property": "margin",
+        "responsive": true,
+        "sides": ["top", "bottom"]
+      },
+      "entrance": {
+        "kind": "select",
+        "label": "Entrance animation",
+        "help": "Plays once as visitors scroll to it. Visitors who prefer less motion never see it move.",
+        "group": "style",
+        "options": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Fade in",
+            "value": "fade"
+          },
+          {
+            "label": "Slide up",
+            "value": "slideUp"
+          },
+          {
+            "label": "Slide in from the left",
+            "value": "slideLeft"
+          },
+          {
+            "label": "Slide in from the right",
+            "value": "slideRight"
+          },
+          {
+            "label": "Zoom in",
+            "value": "zoom"
+          }
+        ]
+      },
+      "entranceDelay": {
+        "kind": "slider",
+        "label": "Delay",
+        "group": "style",
+        "steps": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Short",
+            "value": "short"
+          },
+          {
+            "label": "Medium",
+            "value": "medium"
+          },
+          {
+            "label": "Long",
+            "value": "long"
+          }
+        ]
+      },
+      "variant": {
+        "kind": "select",
+        "group": "style",
+        "label": "Layout",
+        "options": [
+          {
+            "label": "Image beside the text",
+            "value": "split"
+          },
+          {
+            "label": "Centred, image below",
+            "value": "centred"
+          },
+          {
+            "label": "Image behind the text",
+            "value": "background"
+          },
+          {
+            "label": "Text only",
+            "value": "minimal"
+          }
+        ]
+      }
+    },
+    "defaults": {
+      "variant": "split",
+      "colors": "page",
+      "title": "Fresh ideas, made by hand",
+      "text": "Say in one sentence what makes your business special.",
+      "buttonLabel": "Get in touch",
+      "alignment": "centre"
+    }
+  },
+  "TextSection": {
+    "label": "Text",
+    "place": "section",
+    "category": "Text",
+    "framed": true,
+    "fields": {
+      "title": {
+        "kind": "text",
+        "label": "Title",
+        "inline": true
+      },
+      "text": {
+        "kind": "richtext",
+        "label": "Text",
+        "inline": true
+      },
+      "colors": {
+        "kind": "select",
+        "label": "Colours",
+        "help": "Reversed swaps the theme's light and dark colours: a dark band on a light page, a light one on a dark page.",
+        "options": [
+          {
+            "label": "Page colours",
+            "value": "page"
+          },
+          {
+            "label": "Reversed",
+            "value": "inverse"
+          }
+        ]
+      },
+      "padding": {
+        "kind": "box",
+        "label": "Padding",
+        "property": "padding",
+        "responsive": true
+      },
+      "margin": {
+        "kind": "box",
+        "label": "Margin",
+        "property": "margin",
+        "responsive": true,
+        "sides": ["top", "bottom"]
+      },
+      "entrance": {
+        "kind": "select",
+        "label": "Entrance animation",
+        "help": "Plays once as visitors scroll to it. Visitors who prefer less motion never see it move.",
+        "group": "style",
+        "options": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Fade in",
+            "value": "fade"
+          },
+          {
+            "label": "Slide up",
+            "value": "slideUp"
+          },
+          {
+            "label": "Slide in from the left",
+            "value": "slideLeft"
+          },
+          {
+            "label": "Slide in from the right",
+            "value": "slideRight"
+          },
+          {
+            "label": "Zoom in",
+            "value": "zoom"
+          }
+        ]
+      },
+      "entranceDelay": {
+        "kind": "slider",
+        "label": "Delay",
+        "group": "style",
+        "steps": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Short",
+            "value": "short"
+          },
+          {
+            "label": "Medium",
+            "value": "medium"
+          },
+          {
+            "label": "Long",
+            "value": "long"
+          }
+        ]
+      }
+    },
+    "defaults": {
+      "colors": "page",
+      "title": "Our story",
+      "text": "<p>Tell visitors who you are, what you do and why you do it.</p>"
+    }
+  },
+  "TextImage": {
+    "label": "Text + Image",
+    "place": "section",
+    "category": "Text",
+    "framed": true,
+    "fields": {
+      "title": {
+        "kind": "text",
+        "label": "Title",
+        "inline": true
+      },
+      "text": {
+        "kind": "richtext",
+        "label": "Text",
+        "inline": true
+      },
+      "image": {
+        "kind": "media",
+        "label": "Image"
+      },
+      "colors": {
+        "kind": "select",
+        "label": "Colours",
+        "help": "Reversed swaps the theme's light and dark colours: a dark band on a light page, a light one on a dark page.",
+        "options": [
+          {
+            "label": "Page colours",
+            "value": "page"
+          },
+          {
+            "label": "Reversed",
+            "value": "inverse"
+          }
+        ]
+      },
+      "padding": {
+        "kind": "box",
+        "label": "Padding",
+        "property": "padding",
+        "responsive": true
+      },
+      "margin": {
+        "kind": "box",
+        "label": "Margin",
+        "property": "margin",
+        "responsive": true,
+        "sides": ["top", "bottom"]
+      },
+      "entrance": {
+        "kind": "select",
+        "label": "Entrance animation",
+        "help": "Plays once as visitors scroll to it. Visitors who prefer less motion never see it move.",
+        "group": "style",
+        "options": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Fade in",
+            "value": "fade"
+          },
+          {
+            "label": "Slide up",
+            "value": "slideUp"
+          },
+          {
+            "label": "Slide in from the left",
+            "value": "slideLeft"
+          },
+          {
+            "label": "Slide in from the right",
+            "value": "slideRight"
+          },
+          {
+            "label": "Zoom in",
+            "value": "zoom"
+          }
+        ]
+      },
+      "entranceDelay": {
+        "kind": "slider",
+        "label": "Delay",
+        "group": "style",
+        "steps": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Short",
+            "value": "short"
+          },
+          {
+            "label": "Medium",
+            "value": "medium"
+          },
+          {
+            "label": "Long",
+            "value": "long"
+          }
+        ]
+      },
+      "variant": {
+        "kind": "select",
+        "group": "style",
+        "label": "Layout",
+        "options": [
+          {
+            "label": "Image on the right",
+            "value": "imageRight"
+          },
+          {
+            "label": "Image on the left",
+            "value": "imageLeft"
+          }
+        ]
+      }
+    },
+    "defaults": {
+      "variant": "imageRight",
+      "colors": "page",
+      "title": "What we do",
+      "text": "<p>Describe what you offer, and add a photo that shows it.</p>"
+    }
+  },
+  "CallToAction": {
+    "label": "Call to action",
+    "place": "section",
+    "category": "Calls to action",
+    "framed": true,
+    "fields": {
+      "title": {
+        "kind": "text",
+        "label": "Title",
+        "inline": true
+      },
+      "text": {
+        "kind": "text",
+        "label": "Text",
+        "inline": true
+      },
+      "buttonLabel": {
+        "kind": "text",
+        "label": "Button text"
+      },
+      "buttonLink": {
+        "kind": "link",
+        "label": "Button link"
+      },
+      "colors": {
+        "kind": "select",
+        "label": "Colours",
+        "help": "Reversed swaps the theme's light and dark colours: a dark band on a light page, a light one on a dark page.",
+        "options": [
+          {
+            "label": "Page colours",
+            "value": "page"
+          },
+          {
+            "label": "Reversed",
+            "value": "inverse"
+          }
+        ]
+      },
+      "padding": {
+        "kind": "box",
+        "label": "Padding",
+        "property": "padding",
+        "responsive": true
+      },
+      "margin": {
+        "kind": "box",
+        "label": "Margin",
+        "property": "margin",
+        "responsive": true,
+        "sides": ["top", "bottom"]
+      },
+      "entrance": {
+        "kind": "select",
+        "label": "Entrance animation",
+        "help": "Plays once as visitors scroll to it. Visitors who prefer less motion never see it move.",
+        "group": "style",
+        "options": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Fade in",
+            "value": "fade"
+          },
+          {
+            "label": "Slide up",
+            "value": "slideUp"
+          },
+          {
+            "label": "Slide in from the left",
+            "value": "slideLeft"
+          },
+          {
+            "label": "Slide in from the right",
+            "value": "slideRight"
+          },
+          {
+            "label": "Zoom in",
+            "value": "zoom"
+          }
+        ]
+      },
+      "entranceDelay": {
+        "kind": "slider",
+        "label": "Delay",
+        "group": "style",
+        "steps": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Short",
+            "value": "short"
+          },
+          {
+            "label": "Medium",
+            "value": "medium"
+          },
+          {
+            "label": "Long",
+            "value": "long"
+          }
+        ]
+      },
+      "variant": {
+        "kind": "select",
+        "group": "style",
+        "label": "Layout",
+        "options": [
+          {
+            "label": "Banner",
+            "value": "banner"
+          },
+          {
+            "label": "Button beside the text",
+            "value": "split"
+          }
+        ]
+      }
+    },
+    "defaults": {
+      "variant": "banner",
+      "colors": "page",
+      "title": "Ready to visit?",
+      "text": "Tell visitors the one thing you would like them to do next.",
+      "buttonLabel": "Contact us"
+    }
+  },
+  "Faq": {
+    "label": "FAQ",
+    "place": "section",
+    "category": "Questions and answers",
+    "framed": true,
+    "fields": {
+      "title": {
+        "kind": "text",
+        "label": "Title",
+        "inline": true
+      },
+      "items": {
+        "kind": "slot",
+        "label": "Questions",
+        "allow": ["FaqItem"]
+      },
+      "colors": {
+        "kind": "select",
+        "label": "Colours",
+        "help": "Reversed swaps the theme's light and dark colours: a dark band on a light page, a light one on a dark page.",
+        "options": [
+          {
+            "label": "Page colours",
+            "value": "page"
+          },
+          {
+            "label": "Reversed",
+            "value": "inverse"
+          }
+        ]
+      },
+      "padding": {
+        "kind": "box",
+        "label": "Padding",
+        "property": "padding",
+        "responsive": true
+      },
+      "margin": {
+        "kind": "box",
+        "label": "Margin",
+        "property": "margin",
+        "responsive": true,
+        "sides": ["top", "bottom"]
+      },
+      "entrance": {
+        "kind": "select",
+        "label": "Entrance animation",
+        "help": "Plays once as visitors scroll to it. Visitors who prefer less motion never see it move.",
+        "group": "style",
+        "options": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Fade in",
+            "value": "fade"
+          },
+          {
+            "label": "Slide up",
+            "value": "slideUp"
+          },
+          {
+            "label": "Slide in from the left",
+            "value": "slideLeft"
+          },
+          {
+            "label": "Slide in from the right",
+            "value": "slideRight"
+          },
+          {
+            "label": "Zoom in",
+            "value": "zoom"
+          }
+        ]
+      },
+      "entranceDelay": {
+        "kind": "slider",
+        "label": "Delay",
+        "group": "style",
+        "steps": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Short",
+            "value": "short"
+          },
+          {
+            "label": "Medium",
+            "value": "medium"
+          },
+          {
+            "label": "Long",
+            "value": "long"
+          }
+        ]
+      },
+      "variant": {
+        "kind": "select",
+        "group": "style",
+        "label": "Layout",
+        "options": [
+          {
+            "label": "Questions that open",
+            "value": "accordion"
+          },
+          {
+            "label": "Two columns",
+            "value": "columns"
+          },
+          {
+            "label": "All answers shown",
+            "value": "open"
+          }
+        ]
+      }
+    },
+    "defaults": {
+      "variant": "accordion",
+      "colors": "page",
+      "title": "Frequently asked questions",
+      "items": []
+    }
+  },
+  "FaqItem": {
+    "label": "Question",
+    "place": "child",
+    "fields": {
+      "question": {
+        "kind": "text",
+        "label": "Question",
+        "inline": true
+      },
+      "answer": {
+        "kind": "richtext",
+        "label": "Answer",
+        "inline": true
+      }
+    },
+    "defaults": {
+      "question": "When are you open?",
+      "answer": "<p>Add your opening hours here.</p>"
+    }
+  },
+  "Gallery": {
+    "label": "Gallery",
+    "place": "section",
+    "category": "Galleries",
+    "framed": true,
+    "fields": {
+      "title": {
+        "kind": "text",
+        "label": "Title",
+        "inline": true
+      },
+      "images": {
+        "kind": "slot",
+        "label": "Images",
+        "allow": ["GalleryImage"]
+      },
+      "colors": {
+        "kind": "select",
+        "label": "Colours",
+        "help": "Reversed swaps the theme's light and dark colours: a dark band on a light page, a light one on a dark page.",
+        "options": [
+          {
+            "label": "Page colours",
+            "value": "page"
+          },
+          {
+            "label": "Reversed",
+            "value": "inverse"
+          }
+        ]
+      },
+      "padding": {
+        "kind": "box",
+        "label": "Padding",
+        "property": "padding",
+        "responsive": true
+      },
+      "margin": {
+        "kind": "box",
+        "label": "Margin",
+        "property": "margin",
+        "responsive": true,
+        "sides": ["top", "bottom"]
+      },
+      "entrance": {
+        "kind": "select",
+        "label": "Entrance animation",
+        "help": "Plays once as visitors scroll to it. Visitors who prefer less motion never see it move.",
+        "group": "style",
+        "options": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Fade in",
+            "value": "fade"
+          },
+          {
+            "label": "Slide up",
+            "value": "slideUp"
+          },
+          {
+            "label": "Slide in from the left",
+            "value": "slideLeft"
+          },
+          {
+            "label": "Slide in from the right",
+            "value": "slideRight"
+          },
+          {
+            "label": "Zoom in",
+            "value": "zoom"
+          }
+        ]
+      },
+      "entranceDelay": {
+        "kind": "slider",
+        "label": "Delay",
+        "group": "style",
+        "steps": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Short",
+            "value": "short"
+          },
+          {
+            "label": "Medium",
+            "value": "medium"
+          },
+          {
+            "label": "Long",
+            "value": "long"
+          }
+        ]
+      },
+      "variant": {
+        "kind": "select",
+        "group": "style",
+        "label": "Layout",
+        "options": [
+          {
+            "label": "Grid",
+            "value": "grid"
+          },
+          {
+            "label": "Natural shapes",
+            "value": "masonry"
+          },
+          {
+            "label": "First image large",
+            "value": "featured"
+          }
+        ]
+      }
+    },
+    "defaults": {
+      "variant": "grid",
+      "colors": "page",
+      "title": "Our work",
+      "images": []
+    }
+  },
+  "GalleryImage": {
+    "label": "Image",
+    "place": "child",
+    "fields": {
+      "image": {
+        "kind": "media",
+        "label": "Image"
+      },
+      "caption": {
+        "kind": "text",
+        "label": "Caption",
+        "inline": true
+      }
+    },
+    "defaults": {
+      "caption": ""
+    }
+  },
+  "Carousel": {
+    "label": "Carousel",
+    "place": "element",
+    "category": "Images and media",
+    "fields": {
+      "label": {
+        "kind": "text",
+        "label": "Name for screen readers"
+      },
+      "slides": {
+        "kind": "slot",
+        "label": "Slides",
+        "allow": ["CarouselSlide"]
+      },
+      "autoplay": {
+        "kind": "toggle",
+        "label": "Play automatically",
+        "help": "Visitors can stop the slides, and they never move by themselves for visitors who prefer less motion.",
+        "optionGroup": {
+          "id": "autoplay",
+          "label": "Autoplay"
+        }
+      },
+      "interval": {
+        "kind": "select",
+        "label": "Next slide after",
+        "optionGroup": {
+          "id": "autoplay",
+          "label": "Autoplay"
+        },
+        "options": [
+          {
+            "label": "5 seconds",
+            "value": "5"
+          },
+          {
+            "label": "7 seconds",
+            "value": "7"
+          },
+          {
+            "label": "10 seconds",
+            "value": "10"
+          }
+        ]
+      },
+      "margin": {
+        "kind": "box",
+        "label": "Margin",
+        "property": "margin",
+        "responsive": true,
+        "sides": ["top", "bottom"]
+      },
+      "variant": {
+        "kind": "select",
+        "group": "style",
+        "label": "Layout",
+        "options": [
+          {
+            "label": "Images",
+            "value": "images"
+          },
+          {
+            "label": "Testimonials",
+            "value": "testimonials"
+          },
+          {
+            "label": "Logos",
+            "value": "logos"
+          }
+        ]
+      }
+    },
+    "defaults": {
+      "variant": "images",
+      "label": "Highlights",
+      "slides": [],
+      "autoplay": false,
+      "interval": "7"
+    }
+  },
+  "CarouselSlide": {
+    "label": "Slide",
+    "place": "child",
+    "fields": {
+      "image": {
+        "kind": "media",
+        "label": "Image"
+      },
+      "text": {
+        "kind": "text",
+        "label": "Text",
+        "inline": true
+      },
+      "name": {
+        "kind": "text",
+        "label": "Name",
+        "inline": true
+      }
+    },
+    "defaults": {
+      "text": "Say what this slide shows.",
+      "name": ""
+    }
+  },
+  "Video": {
+    "label": "Video",
+    "place": "section",
+    "category": "Images and media",
+    "framed": true,
+    "fields": {
+      "title": {
+        "kind": "text",
+        "label": "Title",
+        "inline": true
+      },
+      "text": {
+        "kind": "richtext",
+        "label": "Text",
+        "inline": true
+      },
+      "address": {
+        "kind": "text",
+        "label": "Video address",
+        "help": "Paste the link to a YouTube or Vimeo video."
+      },
+      "colors": {
+        "kind": "select",
+        "label": "Colours",
+        "help": "Reversed swaps the theme's light and dark colours: a dark band on a light page, a light one on a dark page.",
+        "options": [
+          {
+            "label": "Page colours",
+            "value": "page"
+          },
+          {
+            "label": "Reversed",
+            "value": "inverse"
+          }
+        ]
+      },
+      "padding": {
+        "kind": "box",
+        "label": "Padding",
+        "property": "padding",
+        "responsive": true
+      },
+      "margin": {
+        "kind": "box",
+        "label": "Margin",
+        "property": "margin",
+        "responsive": true,
+        "sides": ["top", "bottom"]
+      },
+      "entrance": {
+        "kind": "select",
+        "label": "Entrance animation",
+        "help": "Plays once as visitors scroll to it. Visitors who prefer less motion never see it move.",
+        "group": "style",
+        "options": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Fade in",
+            "value": "fade"
+          },
+          {
+            "label": "Slide up",
+            "value": "slideUp"
+          },
+          {
+            "label": "Slide in from the left",
+            "value": "slideLeft"
+          },
+          {
+            "label": "Slide in from the right",
+            "value": "slideRight"
+          },
+          {
+            "label": "Zoom in",
+            "value": "zoom"
+          }
+        ]
+      },
+      "entranceDelay": {
+        "kind": "slider",
+        "label": "Delay",
+        "group": "style",
+        "steps": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Short",
+            "value": "short"
+          },
+          {
+            "label": "Medium",
+            "value": "medium"
+          },
+          {
+            "label": "Long",
+            "value": "long"
+          }
+        ]
+      },
+      "variant": {
+        "kind": "select",
+        "group": "style",
+        "label": "Layout",
+        "options": [
+          {
+            "label": "Text above",
+            "value": "stacked"
+          },
+          {
+            "label": "Text beside",
+            "value": "split"
+          }
+        ]
+      }
+    },
+    "defaults": {
+      "variant": "stacked",
+      "colors": "page",
+      "title": "See us at work",
+      "text": "<p>Say what this video shows.</p>",
+      "address": ""
+    }
+  },
+  "Map": {
+    "label": "Map",
+    "place": "section",
+    "category": "Contact",
+    "framed": true,
+    "fields": {
+      "title": {
+        "kind": "text",
+        "label": "Title",
+        "inline": true
+      },
+      "text": {
+        "kind": "richtext",
+        "label": "Text",
+        "inline": true
+      },
+      "address": {
+        "kind": "text",
+        "label": "Address",
+        "help": "The place's address, or a link to it from OpenStreetMap. An address shows on Google Maps.",
+        "bindable": ["contact.address"]
+      },
+      "colors": {
+        "kind": "select",
+        "label": "Colours",
+        "help": "Reversed swaps the theme's light and dark colours: a dark band on a light page, a light one on a dark page.",
+        "options": [
+          {
+            "label": "Page colours",
+            "value": "page"
+          },
+          {
+            "label": "Reversed",
+            "value": "inverse"
+          }
+        ]
+      },
+      "padding": {
+        "kind": "box",
+        "label": "Padding",
+        "property": "padding",
+        "responsive": true
+      },
+      "margin": {
+        "kind": "box",
+        "label": "Margin",
+        "property": "margin",
+        "responsive": true,
+        "sides": ["top", "bottom"]
+      },
+      "entrance": {
+        "kind": "select",
+        "label": "Entrance animation",
+        "help": "Plays once as visitors scroll to it. Visitors who prefer less motion never see it move.",
+        "group": "style",
+        "options": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Fade in",
+            "value": "fade"
+          },
+          {
+            "label": "Slide up",
+            "value": "slideUp"
+          },
+          {
+            "label": "Slide in from the left",
+            "value": "slideLeft"
+          },
+          {
+            "label": "Slide in from the right",
+            "value": "slideRight"
+          },
+          {
+            "label": "Zoom in",
+            "value": "zoom"
+          }
+        ]
+      },
+      "entranceDelay": {
+        "kind": "slider",
+        "label": "Delay",
+        "group": "style",
+        "steps": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Short",
+            "value": "short"
+          },
+          {
+            "label": "Medium",
+            "value": "medium"
+          },
+          {
+            "label": "Long",
+            "value": "long"
+          }
+        ]
+      },
+      "variant": {
+        "kind": "select",
+        "group": "style",
+        "label": "Layout",
+        "options": [
+          {
+            "label": "Text above",
+            "value": "stacked"
+          },
+          {
+            "label": "Text beside",
+            "value": "split"
+          }
+        ]
+      }
+    },
+    "defaults": {
+      "variant": "stacked",
+      "colors": "page",
+      "title": "Find us",
+      "text": "<p>Tell visitors how to get here, and where to park.</p>",
+      "address": ""
+    }
+  },
+  "EmbedVideo": {
+    "label": "Embed video",
+    "place": "element",
+    "category": "Images and media",
+    "fields": {
+      "address": {
+        "kind": "text",
+        "label": "Video address",
+        "help": "Paste the link to a YouTube or Vimeo video."
+      },
+      "name": {
+        "kind": "text",
+        "label": "Name",
+        "help": "What screen readers call the video or map once it loads: its title, or the place's name."
+      },
+      "margin": {
+        "kind": "box",
+        "label": "Margin",
+        "property": "margin",
+        "responsive": true,
+        "sides": ["top", "bottom"]
+      },
+      "entrance": {
+        "kind": "select",
+        "label": "Entrance animation",
+        "help": "Plays once as visitors scroll to it. Visitors who prefer less motion never see it move.",
+        "group": "style",
+        "options": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Fade in",
+            "value": "fade"
+          },
+          {
+            "label": "Slide up",
+            "value": "slideUp"
+          },
+          {
+            "label": "Slide in from the left",
+            "value": "slideLeft"
+          },
+          {
+            "label": "Slide in from the right",
+            "value": "slideRight"
+          },
+          {
+            "label": "Zoom in",
+            "value": "zoom"
+          }
+        ]
+      },
+      "entranceDelay": {
+        "kind": "slider",
+        "label": "Delay",
+        "group": "style",
+        "steps": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Short",
+            "value": "short"
+          },
+          {
+            "label": "Medium",
+            "value": "medium"
+          },
+          {
+            "label": "Long",
+            "value": "long"
+          }
+        ]
+      }
+    },
+    "defaults": {
+      "address": "",
+      "name": ""
+    }
+  },
+  "EmbedMap": {
+    "label": "Embed map",
+    "place": "element",
+    "category": "Contact",
+    "fields": {
+      "address": {
+        "kind": "text",
+        "label": "Address",
+        "help": "The place's address, or a link to it from OpenStreetMap. An address shows on Google Maps.",
+        "bindable": ["contact.address"]
+      },
+      "name": {
+        "kind": "text",
+        "label": "Name",
+        "help": "What screen readers call the video or map once it loads: its title, or the place's name."
+      },
+      "margin": {
+        "kind": "box",
+        "label": "Margin",
+        "property": "margin",
+        "responsive": true,
+        "sides": ["top", "bottom"]
+      },
+      "entrance": {
+        "kind": "select",
+        "label": "Entrance animation",
+        "help": "Plays once as visitors scroll to it. Visitors who prefer less motion never see it move.",
+        "group": "style",
+        "options": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Fade in",
+            "value": "fade"
+          },
+          {
+            "label": "Slide up",
+            "value": "slideUp"
+          },
+          {
+            "label": "Slide in from the left",
+            "value": "slideLeft"
+          },
+          {
+            "label": "Slide in from the right",
+            "value": "slideRight"
+          },
+          {
+            "label": "Zoom in",
+            "value": "zoom"
+          }
+        ]
+      },
+      "entranceDelay": {
+        "kind": "slider",
+        "label": "Delay",
+        "group": "style",
+        "steps": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Short",
+            "value": "short"
+          },
+          {
+            "label": "Medium",
+            "value": "medium"
+          },
+          {
+            "label": "Long",
+            "value": "long"
+          }
+        ]
+      }
+    },
+    "defaults": {
+      "address": "",
+      "name": ""
+    }
+  },
+  "ContactDetails": {
+    "label": "Opening hours and contact",
+    "place": "section",
+    "category": "Contact",
+    "framed": true,
+    "fields": {
+      "title": {
+        "kind": "text",
+        "label": "Title",
+        "inline": true
+      },
+      "text": {
+        "kind": "richtext",
+        "label": "Text",
+        "inline": true
+      },
+      "showHours": {
+        "kind": "toggle",
+        "label": "Show opening hours",
+        "help": "The hours, and their note, come from Site Settings."
+      },
+      "showContact": {
+        "kind": "toggle",
+        "label": "Show contact details",
+        "help": "The address, phone number and email address come from Site Settings."
+      },
+      "colors": {
+        "kind": "select",
+        "label": "Colours",
+        "help": "Reversed swaps the theme's light and dark colours: a dark band on a light page, a light one on a dark page.",
+        "options": [
+          {
+            "label": "Page colours",
+            "value": "page"
+          },
+          {
+            "label": "Reversed",
+            "value": "inverse"
+          }
+        ]
+      },
+      "padding": {
+        "kind": "box",
+        "label": "Padding",
+        "property": "padding",
+        "responsive": true
+      },
+      "margin": {
+        "kind": "box",
+        "label": "Margin",
+        "property": "margin",
+        "responsive": true,
+        "sides": ["top", "bottom"]
+      },
+      "entrance": {
+        "kind": "select",
+        "label": "Entrance animation",
+        "help": "Plays once as visitors scroll to it. Visitors who prefer less motion never see it move.",
+        "group": "style",
+        "options": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Fade in",
+            "value": "fade"
+          },
+          {
+            "label": "Slide up",
+            "value": "slideUp"
+          },
+          {
+            "label": "Slide in from the left",
+            "value": "slideLeft"
+          },
+          {
+            "label": "Slide in from the right",
+            "value": "slideRight"
+          },
+          {
+            "label": "Zoom in",
+            "value": "zoom"
+          }
+        ]
+      },
+      "entranceDelay": {
+        "kind": "slider",
+        "label": "Delay",
+        "group": "style",
+        "steps": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Short",
+            "value": "short"
+          },
+          {
+            "label": "Medium",
+            "value": "medium"
+          },
+          {
+            "label": "Long",
+            "value": "long"
+          }
+        ]
+      },
+      "variant": {
+        "kind": "select",
+        "group": "style",
+        "label": "Layout",
+        "options": [
+          {
+            "label": "Side by side",
+            "value": "split"
+          },
+          {
+            "label": "One above the other",
+            "value": "stacked"
+          }
+        ]
+      }
+    },
+    "defaults": {
+      "variant": "split",
+      "colors": "page",
+      "title": "Visit us",
+      "text": "<p>We'd love to see you.</p>",
+      "showHours": true,
+      "showContact": true
+    }
+  },
+  "ContactForm": {
+    "label": "Contact form",
+    "place": "section",
+    "category": "Contact",
+    "framed": true,
+    "fields": {
+      "title": {
+        "kind": "text",
+        "label": "Title",
+        "inline": true
+      },
+      "text": {
+        "kind": "richtext",
+        "label": "Text",
+        "inline": true
+      },
+      "askPhone": {
+        "kind": "toggle",
+        "label": "Ask for a phone number"
+      },
+      "buttonLabel": {
+        "kind": "text",
+        "label": "Button text"
+      },
+      "colors": {
+        "kind": "select",
+        "label": "Colours",
+        "help": "Reversed swaps the theme's light and dark colours: a dark band on a light page, a light one on a dark page.",
+        "options": [
+          {
+            "label": "Page colours",
+            "value": "page"
+          },
+          {
+            "label": "Reversed",
+            "value": "inverse"
+          }
+        ]
+      },
+      "padding": {
+        "kind": "box",
+        "label": "Padding",
+        "property": "padding",
+        "responsive": true
+      },
+      "margin": {
+        "kind": "box",
+        "label": "Margin",
+        "property": "margin",
+        "responsive": true,
+        "sides": ["top", "bottom"]
+      },
+      "entrance": {
+        "kind": "select",
+        "label": "Entrance animation",
+        "help": "Plays once as visitors scroll to it. Visitors who prefer less motion never see it move.",
+        "group": "style",
+        "options": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Fade in",
+            "value": "fade"
+          },
+          {
+            "label": "Slide up",
+            "value": "slideUp"
+          },
+          {
+            "label": "Slide in from the left",
+            "value": "slideLeft"
+          },
+          {
+            "label": "Slide in from the right",
+            "value": "slideRight"
+          },
+          {
+            "label": "Zoom in",
+            "value": "zoom"
+          }
+        ]
+      },
+      "entranceDelay": {
+        "kind": "slider",
+        "label": "Delay",
+        "group": "style",
+        "steps": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Short",
+            "value": "short"
+          },
+          {
+            "label": "Medium",
+            "value": "medium"
+          },
+          {
+            "label": "Long",
+            "value": "long"
+          }
+        ]
+      },
+      "variant": {
+        "kind": "select",
+        "group": "style",
+        "label": "Layout",
+        "options": [
+          {
+            "label": "Text above",
+            "value": "stacked"
+          },
+          {
+            "label": "Text beside",
+            "value": "split"
+          }
+        ]
+      }
+    },
+    "defaults": {
+      "variant": "stacked",
+      "colors": "page",
+      "title": "Get in touch",
+      "text": "<p>Send us a message and we'll reply within a day.</p>",
+      "askPhone": false,
+      "buttonLabel": "Send message"
+    }
+  },
+  "Newsletter": {
+    "label": "Newsletter signup",
+    "place": "section",
+    "category": "Contact",
+    "framed": true,
+    "fields": {
+      "title": {
+        "kind": "text",
+        "label": "Title",
+        "inline": true
+      },
+      "text": {
+        "kind": "richtext",
+        "label": "Text",
+        "inline": true
+      },
+      "askName": {
+        "kind": "toggle",
+        "label": "Ask for a name"
+      },
+      "buttonLabel": {
+        "kind": "text",
+        "label": "Button text"
+      },
+      "action": {
+        "kind": "text",
+        "label": "Form address",
+        "help": "The address your newsletter service gives its signup form, starting with https://."
+      },
+      "emailName": {
+        "kind": "text",
+        "label": "Email field's name",
+        "help": "What your newsletter service calls the email address, such as EMAIL. Leave it as email if unsure."
+      },
+      "colors": {
+        "kind": "select",
+        "label": "Colours",
+        "help": "Reversed swaps the theme's light and dark colours: a dark band on a light page, a light one on a dark page.",
+        "options": [
+          {
+            "label": "Page colours",
+            "value": "page"
+          },
+          {
+            "label": "Reversed",
+            "value": "inverse"
+          }
+        ]
+      },
+      "padding": {
+        "kind": "box",
+        "label": "Padding",
+        "property": "padding",
+        "responsive": true
+      },
+      "margin": {
+        "kind": "box",
+        "label": "Margin",
+        "property": "margin",
+        "responsive": true,
+        "sides": ["top", "bottom"]
+      },
+      "entrance": {
+        "kind": "select",
+        "label": "Entrance animation",
+        "help": "Plays once as visitors scroll to it. Visitors who prefer less motion never see it move.",
+        "group": "style",
+        "options": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Fade in",
+            "value": "fade"
+          },
+          {
+            "label": "Slide up",
+            "value": "slideUp"
+          },
+          {
+            "label": "Slide in from the left",
+            "value": "slideLeft"
+          },
+          {
+            "label": "Slide in from the right",
+            "value": "slideRight"
+          },
+          {
+            "label": "Zoom in",
+            "value": "zoom"
+          }
+        ]
+      },
+      "entranceDelay": {
+        "kind": "slider",
+        "label": "Delay",
+        "group": "style",
+        "steps": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Short",
+            "value": "short"
+          },
+          {
+            "label": "Medium",
+            "value": "medium"
+          },
+          {
+            "label": "Long",
+            "value": "long"
+          }
+        ]
+      },
+      "variant": {
+        "kind": "select",
+        "group": "style",
+        "label": "Layout",
+        "options": [
+          {
+            "label": "Text above",
+            "value": "stacked"
+          },
+          {
+            "label": "Text beside",
+            "value": "split"
+          }
+        ]
+      }
+    },
+    "defaults": {
+      "variant": "stacked",
+      "colors": "page",
+      "title": "Stay in the loop",
+      "text": "<p>News and offers, once a month. Unsubscribe at any time.</p>",
+      "askName": false,
+      "buttonLabel": "Sign up",
+      "action": "",
+      "emailName": "email"
+    }
+  },
+  "Form": {
+    "label": "Form",
+    "place": "element",
+    "category": "Contact",
+    "fields": {
+      "fields": {
+        "kind": "slot",
+        "label": "Fields",
+        "allow": ["FormField"]
+      },
+      "label": {
+        "kind": "text",
+        "label": "What the form is for",
+        "help": "Screen readers name the form by it, such as Booking request."
+      },
+      "buttonLabel": {
+        "kind": "text",
+        "label": "Button text"
+      },
+      "margin": {
+        "kind": "box",
+        "label": "Margin",
+        "property": "margin",
+        "responsive": true,
+        "sides": ["top", "bottom"]
+      },
+      "entrance": {
+        "kind": "select",
+        "label": "Entrance animation",
+        "help": "Plays once as visitors scroll to it. Visitors who prefer less motion never see it move.",
+        "group": "style",
+        "options": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Fade in",
+            "value": "fade"
+          },
+          {
+            "label": "Slide up",
+            "value": "slideUp"
+          },
+          {
+            "label": "Slide in from the left",
+            "value": "slideLeft"
+          },
+          {
+            "label": "Slide in from the right",
+            "value": "slideRight"
+          },
+          {
+            "label": "Zoom in",
+            "value": "zoom"
+          }
+        ]
+      },
+      "entranceDelay": {
+        "kind": "slider",
+        "label": "Delay",
+        "group": "style",
+        "steps": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Short",
+            "value": "short"
+          },
+          {
+            "label": "Medium",
+            "value": "medium"
+          },
+          {
+            "label": "Long",
+            "value": "long"
+          }
+        ]
+      }
+    },
+    "defaults": {
+      "fields": [
+        {
+          "type": "FormField",
+          "props": {
+            "id": "form-name",
+            "kind": "text",
+            "label": "Name",
+            "required": true,
+            "options": []
+          }
+        },
+        {
+          "type": "FormField",
+          "props": {
+            "id": "form-email",
+            "kind": "email",
+            "label": "Email address",
+            "required": true,
+            "options": []
+          }
+        },
+        {
+          "type": "FormField",
+          "props": {
+            "id": "form-message",
+            "kind": "message",
+            "label": "Message",
+            "required": true,
+            "options": []
+          }
+        }
+      ],
+      "label": "Enquiry form",
+      "buttonLabel": "Send"
+    }
+  },
+  "FormField": {
+    "label": "Form field",
+    "place": "child",
+    "fields": {
+      "kind": {
+        "kind": "select",
+        "label": "Asks for",
+        "options": [
+          {
+            "label": "A line of text",
+            "value": "text"
+          },
+          {
+            "label": "An email address",
+            "value": "email"
+          },
+          {
+            "label": "A phone number",
+            "value": "phone"
+          },
+          {
+            "label": "A message",
+            "value": "message"
+          },
+          {
+            "label": "A tick box",
+            "value": "checkbox"
+          },
+          {
+            "label": "A choice from a list",
+            "value": "select"
+          }
+        ]
+      },
+      "label": {
+        "kind": "text",
+        "label": "Label"
+      },
+      "required": {
+        "kind": "toggle",
+        "label": "Required"
+      },
+      "options": {
+        "kind": "list",
+        "label": "Choices",
+        "itemLabel": "Choice",
+        "fields": {
+          "label": {
+            "kind": "text",
+            "label": "Choice"
+          }
+        },
+        "defaults": {
+          "label": ""
+        }
+      }
+    },
+    "defaults": {
+      "kind": "text",
+      "label": "Your question",
+      "required": false,
+      "options": []
+    }
+  },
+  "Features": {
+    "label": "Features",
+    "place": "section",
+    "category": "Features and services",
+    "framed": true,
+    "fields": {
+      "title": {
+        "kind": "text",
+        "label": "Title",
+        "inline": true
+      },
+      "text": {
+        "kind": "richtext",
+        "label": "Text",
+        "inline": true
+      },
+      "items": {
+        "kind": "slot",
+        "label": "Features",
+        "allow": ["Feature"]
+      },
+      "hover": {
+        "kind": "select",
+        "label": "Card hover effect",
+        "group": "style",
+        "options": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Lift",
+            "value": "lift"
+          },
+          {
+            "label": "Grow",
+            "value": "grow"
+          },
+          {
+            "label": "Shadow",
+            "value": "shadow"
+          }
+        ]
+      },
+      "colors": {
+        "kind": "select",
+        "label": "Colours",
+        "help": "Reversed swaps the theme's light and dark colours: a dark band on a light page, a light one on a dark page.",
+        "options": [
+          {
+            "label": "Page colours",
+            "value": "page"
+          },
+          {
+            "label": "Reversed",
+            "value": "inverse"
+          }
+        ]
+      },
+      "padding": {
+        "kind": "box",
+        "label": "Padding",
+        "property": "padding",
+        "responsive": true
+      },
+      "margin": {
+        "kind": "box",
+        "label": "Margin",
+        "property": "margin",
+        "responsive": true,
+        "sides": ["top", "bottom"]
+      },
+      "entrance": {
+        "kind": "select",
+        "label": "Entrance animation",
+        "help": "Plays once as visitors scroll to it. Visitors who prefer less motion never see it move.",
+        "group": "style",
+        "options": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Fade in",
+            "value": "fade"
+          },
+          {
+            "label": "Slide up",
+            "value": "slideUp"
+          },
+          {
+            "label": "Slide in from the left",
+            "value": "slideLeft"
+          },
+          {
+            "label": "Slide in from the right",
+            "value": "slideRight"
+          },
+          {
+            "label": "Zoom in",
+            "value": "zoom"
+          }
+        ]
+      },
+      "entranceDelay": {
+        "kind": "slider",
+        "label": "Delay",
+        "group": "style",
+        "steps": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Short",
+            "value": "short"
+          },
+          {
+            "label": "Medium",
+            "value": "medium"
+          },
+          {
+            "label": "Long",
+            "value": "long"
+          }
+        ]
+      },
+      "variant": {
+        "kind": "select",
+        "group": "style",
+        "label": "Layout",
+        "options": [
+          {
+            "label": "Cards",
+            "value": "cards"
+          },
+          {
+            "label": "Centred icons",
+            "value": "centred"
+          },
+          {
+            "label": "List",
+            "value": "list"
+          }
+        ]
+      }
+    },
+    "defaults": {
+      "variant": "cards",
+      "colors": "page",
+      "title": "What we offer",
+      "text": "<p>A few good reasons to choose us.</p>",
+      "items": [
+        {
+          "type": "Feature",
+          "props": {
+            "id": "feature-0",
+            "icon": "sparkles",
+            "title": "A good reason",
+            "text": "<p>Say in a sentence or two what it means for your customers.</p>"
+          }
+        },
+        {
+          "type": "Feature",
+          "props": {
+            "id": "feature-1",
+            "icon": "heart-handshake",
+            "title": "A good reason",
+            "text": "<p>Say in a sentence or two what it means for your customers.</p>"
+          }
+        },
+        {
+          "type": "Feature",
+          "props": {
+            "id": "feature-2",
+            "icon": "clock",
+            "title": "A good reason",
+            "text": "<p>Say in a sentence or two what it means for your customers.</p>"
+          }
+        }
+      ]
+    }
+  },
+  "Feature": {
+    "label": "Feature",
+    "place": "child",
+    "fields": {
+      "icon": {
+        "kind": "icon",
+        "label": "Icon"
+      },
+      "title": {
+        "kind": "text",
+        "label": "Title",
+        "inline": true
+      },
+      "text": {
+        "kind": "richtext",
+        "label": "Text",
+        "inline": true
+      }
+    },
+    "defaults": {
+      "title": "A good reason",
+      "text": "<p>Say in a sentence or two what it means for your customers.</p>"
+    }
+  },
+  "Testimonials": {
+    "label": "Testimonials",
+    "place": "section",
+    "category": "Testimonials",
+    "framed": true,
+    "fields": {
+      "title": {
+        "kind": "text",
+        "label": "Title",
+        "inline": true
+      },
+      "items": {
+        "kind": "slot",
+        "label": "Testimonials",
+        "allow": ["Testimonial"]
+      },
+      "hover": {
+        "kind": "select",
+        "label": "Card hover effect",
+        "group": "style",
+        "options": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Lift",
+            "value": "lift"
+          },
+          {
+            "label": "Grow",
+            "value": "grow"
+          },
+          {
+            "label": "Shadow",
+            "value": "shadow"
+          }
+        ]
+      },
+      "colors": {
+        "kind": "select",
+        "label": "Colours",
+        "help": "Reversed swaps the theme's light and dark colours: a dark band on a light page, a light one on a dark page.",
+        "options": [
+          {
+            "label": "Page colours",
+            "value": "page"
+          },
+          {
+            "label": "Reversed",
+            "value": "inverse"
+          }
+        ]
+      },
+      "padding": {
+        "kind": "box",
+        "label": "Padding",
+        "property": "padding",
+        "responsive": true
+      },
+      "margin": {
+        "kind": "box",
+        "label": "Margin",
+        "property": "margin",
+        "responsive": true,
+        "sides": ["top", "bottom"]
+      },
+      "entrance": {
+        "kind": "select",
+        "label": "Entrance animation",
+        "help": "Plays once as visitors scroll to it. Visitors who prefer less motion never see it move.",
+        "group": "style",
+        "options": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Fade in",
+            "value": "fade"
+          },
+          {
+            "label": "Slide up",
+            "value": "slideUp"
+          },
+          {
+            "label": "Slide in from the left",
+            "value": "slideLeft"
+          },
+          {
+            "label": "Slide in from the right",
+            "value": "slideRight"
+          },
+          {
+            "label": "Zoom in",
+            "value": "zoom"
+          }
+        ]
+      },
+      "entranceDelay": {
+        "kind": "slider",
+        "label": "Delay",
+        "group": "style",
+        "steps": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Short",
+            "value": "short"
+          },
+          {
+            "label": "Medium",
+            "value": "medium"
+          },
+          {
+            "label": "Long",
+            "value": "long"
+          }
+        ]
+      },
+      "variant": {
+        "kind": "select",
+        "group": "style",
+        "label": "Layout",
+        "options": [
+          {
+            "label": "Cards",
+            "value": "cards"
+          },
+          {
+            "label": "Large quotes",
+            "value": "large"
+          },
+          {
+            "label": "Photo beside each quote",
+            "value": "photos"
+          }
+        ]
+      }
+    },
+    "defaults": {
+      "variant": "cards",
+      "colors": "page",
+      "title": "What our customers say",
+      "items": [
+        {
+          "type": "Testimonial",
+          "props": {
+            "id": "testimonial-0",
+            "quote": "Friendly, quick and good value. We'll be back.",
+            "name": "A happy customer",
+            "role": "Regular customer"
+          }
+        },
+        {
+          "type": "Testimonial",
+          "props": {
+            "id": "testimonial-1",
+            "quote": "Friendly, quick and good value. We'll be back.",
+            "name": "A happy customer",
+            "role": "Regular customer"
+          }
+        },
+        {
+          "type": "Testimonial",
+          "props": {
+            "id": "testimonial-2",
+            "quote": "Friendly, quick and good value. We'll be back.",
+            "name": "A happy customer",
+            "role": "Regular customer"
+          }
+        }
+      ]
+    }
+  },
+  "Testimonial": {
+    "label": "Testimonial",
+    "place": "child",
+    "fields": {
+      "quote": {
+        "kind": "text",
+        "label": "Quote",
+        "inline": true
+      },
+      "name": {
+        "kind": "text",
+        "label": "Name",
+        "inline": true
+      },
+      "role": {
+        "kind": "text",
+        "label": "Who they are",
+        "inline": true
+      },
+      "photo": {
+        "kind": "media",
+        "label": "Photo"
+      }
+    },
+    "defaults": {
+      "quote": "Friendly, quick and good value. We'll be back.",
+      "name": "A happy customer",
+      "role": "Regular customer"
+    }
+  },
+  "Team": {
+    "label": "Team",
+    "place": "section",
+    "category": "Team",
+    "framed": true,
+    "fields": {
+      "title": {
+        "kind": "text",
+        "label": "Title",
+        "inline": true
+      },
+      "text": {
+        "kind": "richtext",
+        "label": "Text",
+        "inline": true
+      },
+      "items": {
+        "kind": "slot",
+        "label": "Team members",
+        "allow": ["TeamMember"]
+      },
+      "hover": {
+        "kind": "select",
+        "label": "Card hover effect",
+        "group": "style",
+        "options": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Lift",
+            "value": "lift"
+          },
+          {
+            "label": "Grow",
+            "value": "grow"
+          },
+          {
+            "label": "Shadow",
+            "value": "shadow"
+          }
+        ]
+      },
+      "colors": {
+        "kind": "select",
+        "label": "Colours",
+        "help": "Reversed swaps the theme's light and dark colours: a dark band on a light page, a light one on a dark page.",
+        "options": [
+          {
+            "label": "Page colours",
+            "value": "page"
+          },
+          {
+            "label": "Reversed",
+            "value": "inverse"
+          }
+        ]
+      },
+      "padding": {
+        "kind": "box",
+        "label": "Padding",
+        "property": "padding",
+        "responsive": true
+      },
+      "margin": {
+        "kind": "box",
+        "label": "Margin",
+        "property": "margin",
+        "responsive": true,
+        "sides": ["top", "bottom"]
+      },
+      "entrance": {
+        "kind": "select",
+        "label": "Entrance animation",
+        "help": "Plays once as visitors scroll to it. Visitors who prefer less motion never see it move.",
+        "group": "style",
+        "options": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Fade in",
+            "value": "fade"
+          },
+          {
+            "label": "Slide up",
+            "value": "slideUp"
+          },
+          {
+            "label": "Slide in from the left",
+            "value": "slideLeft"
+          },
+          {
+            "label": "Slide in from the right",
+            "value": "slideRight"
+          },
+          {
+            "label": "Zoom in",
+            "value": "zoom"
+          }
+        ]
+      },
+      "entranceDelay": {
+        "kind": "slider",
+        "label": "Delay",
+        "group": "style",
+        "steps": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Short",
+            "value": "short"
+          },
+          {
+            "label": "Medium",
+            "value": "medium"
+          },
+          {
+            "label": "Long",
+            "value": "long"
+          }
+        ]
+      },
+      "variant": {
+        "kind": "select",
+        "group": "style",
+        "label": "Layout",
+        "options": [
+          {
+            "label": "Cards",
+            "value": "cards"
+          },
+          {
+            "label": "Round photos",
+            "value": "round"
+          },
+          {
+            "label": "List",
+            "value": "list"
+          }
+        ]
+      }
+    },
+    "defaults": {
+      "variant": "cards",
+      "colors": "page",
+      "title": "Meet the team",
+      "text": "<p>The people you'll see when you visit.</p>",
+      "items": [
+        {
+          "type": "TeamMember",
+          "props": {
+            "id": "team-member-0",
+            "name": "Your name",
+            "role": "What you do",
+            "text": "<p>A sentence or two about them: what they love about the job.</p>"
+          }
+        },
+        {
+          "type": "TeamMember",
+          "props": {
+            "id": "team-member-1",
+            "name": "Your name",
+            "role": "What you do",
+            "text": "<p>A sentence or two about them: what they love about the job.</p>"
+          }
+        },
+        {
+          "type": "TeamMember",
+          "props": {
+            "id": "team-member-2",
+            "name": "Your name",
+            "role": "What you do",
+            "text": "<p>A sentence or two about them: what they love about the job.</p>"
+          }
+        }
+      ]
+    }
+  },
+  "TeamMember": {
+    "label": "Team member",
+    "place": "child",
+    "fields": {
+      "photo": {
+        "kind": "media",
+        "label": "Photo"
+      },
+      "name": {
+        "kind": "text",
+        "label": "Name",
+        "inline": true
+      },
+      "role": {
+        "kind": "text",
+        "label": "What they do",
+        "inline": true
+      },
+      "text": {
+        "kind": "richtext",
+        "label": "Text",
+        "inline": true
+      }
+    },
+    "defaults": {
+      "name": "Your name",
+      "role": "What you do",
+      "text": "<p>A sentence or two about them: what they love about the job.</p>"
+    }
+  },
+  "Pricing": {
+    "label": "Pricing",
+    "place": "section",
+    "category": "Prices",
+    "framed": true,
+    "fields": {
+      "title": {
+        "kind": "text",
+        "label": "Title",
+        "inline": true
+      },
+      "text": {
+        "kind": "richtext",
+        "label": "Text",
+        "inline": true
+      },
+      "items": {
+        "kind": "slot",
+        "label": "Plans",
+        "allow": ["PricingPlan"]
+      },
+      "hover": {
+        "kind": "select",
+        "label": "Card hover effect",
+        "group": "style",
+        "options": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Lift",
+            "value": "lift"
+          },
+          {
+            "label": "Grow",
+            "value": "grow"
+          },
+          {
+            "label": "Shadow",
+            "value": "shadow"
+          }
+        ]
+      },
+      "colors": {
+        "kind": "select",
+        "label": "Colours",
+        "help": "Reversed swaps the theme's light and dark colours: a dark band on a light page, a light one on a dark page.",
+        "options": [
+          {
+            "label": "Page colours",
+            "value": "page"
+          },
+          {
+            "label": "Reversed",
+            "value": "inverse"
+          }
+        ]
+      },
+      "padding": {
+        "kind": "box",
+        "label": "Padding",
+        "property": "padding",
+        "responsive": true
+      },
+      "margin": {
+        "kind": "box",
+        "label": "Margin",
+        "property": "margin",
+        "responsive": true,
+        "sides": ["top", "bottom"]
+      },
+      "entrance": {
+        "kind": "select",
+        "label": "Entrance animation",
+        "help": "Plays once as visitors scroll to it. Visitors who prefer less motion never see it move.",
+        "group": "style",
+        "options": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Fade in",
+            "value": "fade"
+          },
+          {
+            "label": "Slide up",
+            "value": "slideUp"
+          },
+          {
+            "label": "Slide in from the left",
+            "value": "slideLeft"
+          },
+          {
+            "label": "Slide in from the right",
+            "value": "slideRight"
+          },
+          {
+            "label": "Zoom in",
+            "value": "zoom"
+          }
+        ]
+      },
+      "entranceDelay": {
+        "kind": "slider",
+        "label": "Delay",
+        "group": "style",
+        "steps": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Short",
+            "value": "short"
+          },
+          {
+            "label": "Medium",
+            "value": "medium"
+          },
+          {
+            "label": "Long",
+            "value": "long"
+          }
+        ]
+      },
+      "variant": {
+        "kind": "select",
+        "group": "style",
+        "label": "Layout",
+        "options": [
+          {
+            "label": "Cards",
+            "value": "cards"
+          },
+          {
+            "label": "Price list",
+            "value": "list"
+          }
+        ]
+      }
+    },
+    "defaults": {
+      "variant": "cards",
+      "colors": "page",
+      "title": "Prices",
+      "text": "<p>Simple prices, no surprises.</p>",
+      "items": [
+        {
+          "type": "PricingPlan",
+          "props": {
+            "id": "pricing-plan-0",
+            "name": "Basic",
+            "price": "£20",
+            "period": "a visit",
+            "details": "<p>Say what's included, so customers can compare.</p>",
+            "buttonLabel": "Book now",
+            "featured": false,
+            "badge": "Recommended"
+          }
+        },
+        {
+          "type": "PricingPlan",
+          "props": {
+            "id": "pricing-plan-1",
+            "name": "Standard",
+            "price": "£35",
+            "period": "a visit",
+            "details": "<p>Say what's included, so customers can compare.</p>",
+            "buttonLabel": "Book now",
+            "featured": true,
+            "badge": "Recommended"
+          }
+        },
+        {
+          "type": "PricingPlan",
+          "props": {
+            "id": "pricing-plan-2",
+            "name": "Premium",
+            "price": "£50",
+            "period": "a visit",
+            "details": "<p>Say what's included, so customers can compare.</p>",
+            "buttonLabel": "Book now",
+            "featured": false,
+            "badge": "Recommended"
+          }
+        }
+      ]
+    }
+  },
+  "PricingPlan": {
+    "label": "Plan",
+    "place": "child",
+    "fields": {
+      "name": {
+        "kind": "text",
+        "label": "Plan name",
+        "inline": true
+      },
+      "price": {
+        "kind": "text",
+        "label": "Price",
+        "inline": true
+      },
+      "period": {
+        "kind": "text",
+        "label": "Per",
+        "inline": true
+      },
+      "details": {
+        "kind": "richtext",
+        "label": "What's included",
+        "inline": true
+      },
+      "buttonLabel": {
+        "kind": "text",
+        "label": "Button text"
+      },
+      "link": {
+        "kind": "link",
+        "label": "Button link"
+      },
+      "featured": {
+        "kind": "toggle",
+        "label": "Highlight this plan",
+        "help": "Shows it in your brand colour, for the plan most customers choose."
+      },
+      "badge": {
+        "kind": "text",
+        "label": "Badge",
+        "help": "Says why it's highlighted, beside its name: empty for none."
+      }
+    },
+    "defaults": {
+      "name": "Standard",
+      "price": "£35",
+      "period": "a visit",
+      "details": "<p>Say what's included, so customers can compare.</p>",
+      "buttonLabel": "Book now",
+      "featured": false,
+      "badge": "Recommended"
+    }
+  },
+  "BuyButton": {
+    "label": "Buy button",
+    "place": "element",
+    "category": "Shop",
+    "fields": {
+      "label": {
+        "kind": "text",
+        "label": "Button text"
+      },
+      "price": {
+        "kind": "text",
+        "label": "Price",
+        "help": "As visitors should read it, with its currency: £12, or From €40."
+      },
+      "image": {
+        "kind": "media",
+        "label": "Image"
+      },
+      "link": {
+        "kind": "text",
+        "label": "Payment link",
+        "help": "The https:// link from Stripe Payment Links, PayPal or your shop, which takes the payment."
+      },
+      "alignment": {
+        "kind": "select",
+        "label": "Alignment",
+        "options": [
+          {
+            "label": "Left",
+            "value": "left"
+          },
+          {
+            "label": "Centre",
+            "value": "centre"
+          },
+          {
+            "label": "Right",
+            "value": "right"
+          }
+        ]
+      },
+      "hover": {
+        "kind": "select",
+        "label": "Hover effect",
+        "group": "style",
+        "options": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Lift",
+            "value": "lift"
+          },
+          {
+            "label": "Grow",
+            "value": "grow"
+          },
+          {
+            "label": "Shadow",
+            "value": "shadow"
+          }
+        ]
+      },
+      "margin": {
+        "kind": "box",
+        "label": "Margin",
+        "property": "margin",
+        "responsive": true,
+        "sides": ["top", "bottom"]
+      },
+      "entrance": {
+        "kind": "select",
+        "label": "Entrance animation",
+        "help": "Plays once as visitors scroll to it. Visitors who prefer less motion never see it move.",
+        "group": "style",
+        "options": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Fade in",
+            "value": "fade"
+          },
+          {
+            "label": "Slide up",
+            "value": "slideUp"
+          },
+          {
+            "label": "Slide in from the left",
+            "value": "slideLeft"
+          },
+          {
+            "label": "Slide in from the right",
+            "value": "slideRight"
+          },
+          {
+            "label": "Zoom in",
+            "value": "zoom"
+          }
+        ]
+      },
+      "entranceDelay": {
+        "kind": "slider",
+        "label": "Delay",
+        "group": "style",
+        "steps": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Short",
+            "value": "short"
+          },
+          {
+            "label": "Medium",
+            "value": "medium"
+          },
+          {
+            "label": "Long",
+            "value": "long"
+          }
+        ]
+      }
+    },
+    "defaults": {
+      "label": "Buy now",
+      "price": "£12",
+      "link": "",
+      "alignment": "left"
+    }
+  },
+  "Tabs": {
+    "label": "Tabs",
+    "place": "element",
+    "category": "Layout",
+    "fields": {
+      "tabs": {
+        "kind": "slot",
+        "label": "Tabs",
+        "allow": ["Tab"]
+      },
+      "margin": {
+        "kind": "box",
+        "label": "Margin",
+        "property": "margin",
+        "responsive": true,
+        "sides": ["top", "bottom"]
+      },
+      "entrance": {
+        "kind": "select",
+        "label": "Entrance animation",
+        "help": "Plays once as visitors scroll to it. Visitors who prefer less motion never see it move.",
+        "group": "style",
+        "options": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Fade in",
+            "value": "fade"
+          },
+          {
+            "label": "Slide up",
+            "value": "slideUp"
+          },
+          {
+            "label": "Slide in from the left",
+            "value": "slideLeft"
+          },
+          {
+            "label": "Slide in from the right",
+            "value": "slideRight"
+          },
+          {
+            "label": "Zoom in",
+            "value": "zoom"
+          }
+        ]
+      },
+      "entranceDelay": {
+        "kind": "slider",
+        "label": "Delay",
+        "group": "style",
+        "steps": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Short",
+            "value": "short"
+          },
+          {
+            "label": "Medium",
+            "value": "medium"
+          },
+          {
+            "label": "Long",
+            "value": "long"
+          }
+        ]
+      }
+    },
+    "defaults": {
+      "tabs": [
+        {
+          "type": "Tab",
+          "props": {
+            "id": "tab-1",
+            "label": "Tab 1",
+            "content": [
+              {
+                "type": "Text",
+                "props": {
+                  "id": "tab-1-text",
+                  "text": "<p>Say what this tab is about.</p>"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "Tab",
+          "props": {
+            "id": "tab-2",
+            "label": "Tab 2",
+            "content": [
+              {
+                "type": "Text",
+                "props": {
+                  "id": "tab-2-text",
+                  "text": "<p>Say what this tab is about.</p>"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "Tab": {
+    "label": "Tab",
+    "place": "child",
+    "fields": {
+      "label": {
+        "kind": "text",
+        "label": "Label",
+        "inline": true
+      },
+      "content": {
+        "kind": "slot",
+        "label": "Content",
+        "accepts": "element",
+        "allow": [
+          "Heading",
+          "Text",
+          "Image",
+          "Button",
+          "Spacer",
+          "Divider",
+          "Columns",
+          "List",
+          "Icon",
+          "SocialLinks",
+          "Carousel",
+          "EmbedVideo",
+          "EmbedMap",
+          "Form",
+          "BuyButton",
+          "Tabs",
+          "CustomCode"
+        ]
+      }
+    },
+    "defaults": {
+      "label": "Tab 1",
+      "content": []
+    }
+  },
+  "Logos": {
+    "label": "Logos",
+    "place": "section",
+    "category": "Logos",
+    "framed": true,
+    "fields": {
+      "title": {
+        "kind": "text",
+        "label": "Title",
+        "inline": true
+      },
+      "items": {
+        "kind": "slot",
+        "label": "Logos",
+        "allow": ["Logo"]
+      },
+      "colors": {
+        "kind": "select",
+        "label": "Colours",
+        "help": "Reversed swaps the theme's light and dark colours: a dark band on a light page, a light one on a dark page.",
+        "options": [
+          {
+            "label": "Page colours",
+            "value": "page"
+          },
+          {
+            "label": "Reversed",
+            "value": "inverse"
+          }
+        ]
+      },
+      "padding": {
+        "kind": "box",
+        "label": "Padding",
+        "property": "padding",
+        "responsive": true
+      },
+      "margin": {
+        "kind": "box",
+        "label": "Margin",
+        "property": "margin",
+        "responsive": true,
+        "sides": ["top", "bottom"]
+      },
+      "entrance": {
+        "kind": "select",
+        "label": "Entrance animation",
+        "help": "Plays once as visitors scroll to it. Visitors who prefer less motion never see it move.",
+        "group": "style",
+        "options": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Fade in",
+            "value": "fade"
+          },
+          {
+            "label": "Slide up",
+            "value": "slideUp"
+          },
+          {
+            "label": "Slide in from the left",
+            "value": "slideLeft"
+          },
+          {
+            "label": "Slide in from the right",
+            "value": "slideRight"
+          },
+          {
+            "label": "Zoom in",
+            "value": "zoom"
+          }
+        ]
+      },
+      "entranceDelay": {
+        "kind": "slider",
+        "label": "Delay",
+        "group": "style",
+        "steps": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Short",
+            "value": "short"
+          },
+          {
+            "label": "Medium",
+            "value": "medium"
+          },
+          {
+            "label": "Long",
+            "value": "long"
+          }
+        ]
+      },
+      "variant": {
+        "kind": "select",
+        "group": "style",
+        "label": "Layout",
+        "options": [
+          {
+            "label": "Row",
+            "value": "row"
+          },
+          {
+            "label": "Grid of tiles",
+            "value": "grid"
+          }
+        ]
+      }
+    },
+    "defaults": {
+      "variant": "row",
+      "colors": "page",
+      "title": "As seen in",
+      "items": [
+        {
+          "type": "Logo",
+          "props": {
+            "id": "logo-0"
+          }
+        },
+        {
+          "type": "Logo",
+          "props": {
+            "id": "logo-1"
+          }
+        },
+        {
+          "type": "Logo",
+          "props": {
+            "id": "logo-2"
+          }
+        },
+        {
+          "type": "Logo",
+          "props": {
+            "id": "logo-3"
+          }
+        }
+      ]
+    }
+  },
+  "Logo": {
+    "label": "Logo",
+    "place": "child",
+    "fields": {
+      "image": {
+        "kind": "media",
+        "label": "Image"
+      },
+      "name": {
+        "kind": "text",
+        "label": "Company name",
+        "help": "Read out in place of the logo when its image has no alt text."
+      },
+      "link": {
+        "kind": "link",
+        "label": "Link",
+        "help": "Where the logo goes when clicked."
+      }
+    },
+    "defaults": {}
+  },
+  "Stats": {
+    "label": "Stats",
+    "place": "section",
+    "category": "Numbers",
+    "framed": true,
+    "fields": {
+      "title": {
+        "kind": "text",
+        "label": "Title",
+        "inline": true
+      },
+      "text": {
+        "kind": "richtext",
+        "label": "Text",
+        "inline": true
+      },
+      "items": {
+        "kind": "slot",
+        "label": "Stats",
+        "allow": ["Stat"]
+      },
+      "colors": {
+        "kind": "select",
+        "label": "Colours",
+        "help": "Reversed swaps the theme's light and dark colours: a dark band on a light page, a light one on a dark page.",
+        "options": [
+          {
+            "label": "Page colours",
+            "value": "page"
+          },
+          {
+            "label": "Reversed",
+            "value": "inverse"
+          }
+        ]
+      },
+      "padding": {
+        "kind": "box",
+        "label": "Padding",
+        "property": "padding",
+        "responsive": true
+      },
+      "margin": {
+        "kind": "box",
+        "label": "Margin",
+        "property": "margin",
+        "responsive": true,
+        "sides": ["top", "bottom"]
+      },
+      "entrance": {
+        "kind": "select",
+        "label": "Entrance animation",
+        "help": "Plays once as visitors scroll to it. Visitors who prefer less motion never see it move.",
+        "group": "style",
+        "options": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Fade in",
+            "value": "fade"
+          },
+          {
+            "label": "Slide up",
+            "value": "slideUp"
+          },
+          {
+            "label": "Slide in from the left",
+            "value": "slideLeft"
+          },
+          {
+            "label": "Slide in from the right",
+            "value": "slideRight"
+          },
+          {
+            "label": "Zoom in",
+            "value": "zoom"
+          }
+        ]
+      },
+      "entranceDelay": {
+        "kind": "slider",
+        "label": "Delay",
+        "group": "style",
+        "steps": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Short",
+            "value": "short"
+          },
+          {
+            "label": "Medium",
+            "value": "medium"
+          },
+          {
+            "label": "Long",
+            "value": "long"
+          }
+        ]
+      },
+      "variant": {
+        "kind": "select",
+        "group": "style",
+        "label": "Layout",
+        "options": [
+          {
+            "label": "Row",
+            "value": "row"
+          },
+          {
+            "label": "Cards",
+            "value": "cards"
+          },
+          {
+            "label": "Beside the text",
+            "value": "split"
+          }
+        ]
+      }
+    },
+    "defaults": {
+      "variant": "row",
+      "colors": "page",
+      "title": "In numbers",
+      "text": "<p>A few things we're proud of.</p>",
+      "items": [
+        {
+          "type": "Stat",
+          "props": {
+            "id": "stat-0",
+            "number": "15",
+            "label": "years in business"
+          }
+        },
+        {
+          "type": "Stat",
+          "props": {
+            "id": "stat-1",
+            "number": "500+",
+            "label": "happy customers"
+          }
+        },
+        {
+          "type": "Stat",
+          "props": {
+            "id": "stat-2",
+            "number": "4.9",
+            "label": "average review"
+          }
+        }
+      ]
+    }
+  },
+  "Stat": {
+    "label": "Stat",
+    "place": "child",
+    "fields": {
+      "number": {
+        "kind": "text",
+        "label": "Number",
+        "inline": true
+      },
+      "label": {
+        "kind": "text",
+        "label": "What it counts",
+        "inline": true
+      }
+    },
+    "defaults": {
+      "number": "500+",
+      "label": "happy customers"
+    }
+  },
+  "CustomCode": {
+    "label": "Custom Code",
+    "place": "element",
+    "category": "Advanced",
+    "advancedOnly": true,
+    "fields": {
+      "code": {
+        "kind": "code",
+        "label": "HTML",
+        "help": "Your own HTML, written into the page as it is. The editor shows it without scripts, styles or anything from the web."
+      },
+      "margin": {
+        "kind": "box",
+        "label": "Margin",
+        "property": "margin",
+        "responsive": true,
+        "sides": ["top", "bottom"]
+      }
+    },
+    "defaults": {
+      "code": ""
+    }
+  }
+}
