@@ -109,8 +109,11 @@ export function createCanvasView(
     },
     show,
     fit(next) {
+      const measured = room !== null;
       room = Math.floor(next);
-      if (chosen !== "desktop" || widthFor(chosen) === width) return;
+      if (chosen !== "desktop") return;
+      // The first measurement always goes to Puck, which shows "100%" until then.
+      if (measured && widthFor(chosen) === width) return;
       width = widthFor(chosen);
       show();
     },

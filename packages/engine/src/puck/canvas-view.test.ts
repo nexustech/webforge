@@ -117,6 +117,15 @@ describe("canvas view (R8)", () => {
     expect(shownWidths()).toEqual([1500, 1024, 768, 1440, 1800]);
   });
 
+  it("sends Desktop's first measured width even when it is the width it started with", () => {
+    const { state, api } = fakePuck(1280, { zoom: 1, autoZoom: 1, rootHeight: 800 });
+    (state as { width: number | string }).width = "100%";
+    const dispatch = vi.fn<(action: PuckAction) => void>();
+    const view = createCanvasView(() => api, dispatch);
+    view.fit(1280);
+    expect(dispatch.mock.calls.map(([action]) => widthOf(action))).toEqual([1280]);
+  });
+
   it("takes a fixed width chosen in Puck for that width, not for Desktop", () => {
     const { api } = fakePuck(1280, { zoom: 1, autoZoom: 1, rootHeight: 800 });
     const view = createCanvasView(() => api, vi.fn());
