@@ -61,6 +61,8 @@ describe("publishToFolder", () => {
     const events = await run(folder, site);
 
     expect(log).toEqual([
+      // Lists the new files before they go (see the cancel tests).
+      `write ${MANIFEST_FILE}`,
       "write assets/css/site.css",
       "write assets/images/shop.webp",
       "write about.html",
@@ -142,6 +144,48 @@ describe("publishToFolder", () => {
     expect(text(host.stored.get(MANIFEST_FILE))).toBe(before);
     // The live home page is still the published one.
     expect(text(host.stored.get("index.html"))).toBe("home");
+  });
+
+  it("removes a new page a cancel left on the host once the site drops it", async () => {
+    const host = memoryFolder();
+    await run(host.folder, { "index.html": "home" });
+    const controller = new AbortController();
+    const write = host.folder.write;
+    host.folder.write = async (path, data) => {
+      await write(path, data);
+      // Cancelled once the new page has landed, before the home page goes.
+      if (path === "offers.html") controller.abort();
+    };
+
+    const publishing = run(
+      host.folder,
+      { "index.html": "home, v2", "offers.html": "offers" },
+      controller.signal,
+    );
+    await expect(publishing).rejects.toMatchObject({ code: "cancelled" });
+    host.folder.write = write;
+    expect(text(host.stored.get("offers.html"))).toBe("offers");
+
+    // The person deletes the page, then publishes again.
+    const events = await run(host.folder, { "index.html": "home, v2" });
+
+    expect(host.stored.has("offers.html")).toBe(false);
+    expect(events.at(-1)).toMatchObject({ uploaded: 1, removed: 1 });
+  });
+
+  it("sends again a new file a cancel may have cut off", async () => {
+    const host = memoryFolder();
+    await run(host.folder, { "index.html": "home" });
+    const controller = new AbortController();
+    controller.abort();
+
+    await expect(
+      run(host.folder, { "index.html": "home", "offers.html": "offers" }, controller.signal),
+    ).rejects.toMatchObject({ code: "cancelled" });
+    const events = await run(host.folder, { "index.html": "home", "offers.html": "offers" });
+
+    expect(events.at(-1)).toMatchObject({ uploaded: 1, unchanged: 1 });
+    expect(text(host.stored.get("offers.html"))).toBe("offers");
   });
 
   it("still removes next time the files a cancel left behind", async () => {

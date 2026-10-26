@@ -61,7 +61,9 @@ const site = {
   "assets/css/site.css": "body {}",
 };
 
-describe("sftpPublisher (0.3)", () => {
+// Each test talks to a real SSH server over the network stack, several publishes in some: more
+// than a unit test's time, on a loaded CI runner especially.
+describe("sftpPublisher (0.3)", { timeout: 30_000 }, () => {
   it("publishes, then sends only what changed and removes what the site dropped", async () => {
     const first = await publish(site);
     expect(first.at(-1)).toMatchObject({ type: "published", uploaded: 3, removed: 0 });
