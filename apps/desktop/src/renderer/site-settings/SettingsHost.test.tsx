@@ -94,7 +94,7 @@ describe("SettingsHost (LF-12)", () => {
       );
       expect(screen.getByRole("tab", { name: "Devices" })).toBeDefined();
       expect(screen.getByRole("tab", { name: "General" })).toBeDefined();
-      await user.selectOptions(screen.getByLabelText("Theme"), "light");
+      await user.selectOptions(screen.getByLabelText("Appearance"), "light");
       await user.click(screen.getByRole("button", { name: "Save" }));
 
       expect(preferences.getState().preferences.theme).toBe("light");

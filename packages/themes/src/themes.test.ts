@@ -23,7 +23,7 @@ import { AA_LARGE, AA_TEXT, contrastIssues } from "./contrast.js";
 import { CURATED_THEMES } from "./curated/index.js";
 import { FONT_CATALOGUE, FONT_PAIRINGS } from "./fonts/catalogue.js";
 import { THEME_PRESETS, themePreset } from "./presets.js";
-import { EVEN_SECTION_SELECTORS, oklchCss, themeCss } from "./theme-css.js";
+import { EVEN_SECTION_SELECTORS, oklchCss, radiusCss, shadowCss, themeCss } from "./theme-css.js";
 
 const BLACK: Oklch = { l: 0, c: 0, h: 0 };
 const WHITE: Oklch = { l: 1, c: 0, h: 0 };
@@ -607,5 +607,15 @@ describe("themeCss (2.1)", () => {
     expect(css("Rock 'n' Roll One", "M PLUS 1p")).toContain(
       "--font-heading: \"Rock 'n' Roll One\", ui-monospace, monospace;",
     );
+  });
+});
+
+describe("the scales' CSS for Theme Studio (2.3b)", () => {
+  it("draws corners and shadows as the site's CSS does", () => {
+    expect(radiusCss("none")).toBe("0rem");
+    expect(radiusCss("full")).toBe("9999px");
+    expect(shadowCss("none")).toBe("none");
+    expect(shadowCss("soft")).toMatch(/rgb\(0 0 0 \/ 0\.1\)/);
+    expect(shadowCss("strong")).toMatch(/rgb\(0 0 0 \/ 0\.2\)/);
   });
 });

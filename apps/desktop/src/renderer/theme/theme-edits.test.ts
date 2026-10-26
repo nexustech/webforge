@@ -8,7 +8,9 @@ import {
   setColor,
   setFont,
   setPairing,
+  setPaletteColor,
   setTextSize,
+  setTextStep,
   setToken,
   switchPreset,
 } from "./theme-edits.js";
@@ -138,6 +140,50 @@ describe("the Theme tab's edits (2.3a)", () => {
     expect(await setPairing(session, answering(true), classic)).toBe(false);
 
     expect(labels()).toEqual(["Changed fonts", "Changed fonts"]);
+  });
+
+  it("sets a text style's size, weight and line height as one step naming it", () => {
+    const { session, labels, theme } = setUp();
+
+    setTextStep(session, "h2", { weight: 800, leading: "normal" });
+    setTextStep(session, "h2", { weight: 800 });
+
+    expect(theme().typeScale.h2).toEqual({ size: "3xl", weight: 800, leading: "normal" });
+    expect(labels()).toEqual(["Changed text style for Heading 2"]);
+  });
+
+  it("sets either palette's colours on their own in Theme Studio (F-DS-7)", async () => {
+    const { session, labels, theme } = setUp();
+    const reversed = theme().inverse?.primary;
+
+    await setPaletteColor(session, answering(true), "colors", "primary", BRAND);
+    expect(theme().inverse?.primary).toEqual(reversed);
+    await setPaletteColor(session, answering(true), "inverse", "info-content", BRAND);
+    expect(theme().inverse?.["info-content"]).toEqual(BRAND);
+
+    expect(labels()).toEqual([
+      "Changed Brand colour",
+      "Changed Text on Information colour in reversed sections",
+    ]);
+  });
+
+  it("gives a theme without reversed colours its own, from those it showed, once one changes", async () => {
+    const site = starterSite();
+    delete site.theme.inverse;
+    const { session, theme } = setUp(site);
+    const shown = theme().colors.neutral;
+
+    const confirm = answering(true);
+    await setPaletteColor(session, confirm, "inverse", "primary", BRAND);
+
+    expect(confirm.confirmSiteWide).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "Change the Brand colour in reversed sections?" }),
+    );
+    expect(theme().inverse?.primary).toEqual(BRAND);
+    // Its surface was the neutral colour, as such a theme shows reversed sections.
+    expect(theme().inverse?.["base-100"]).toEqual(shown);
+    session.history.undo();
+    expect(theme().inverse).toBeUndefined();
   });
 
   it("undoes them all back to the theme it started with", async () => {

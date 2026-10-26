@@ -1,5 +1,6 @@
 import { isMessageKey, type MessageKey, t } from "@webforge/i18n";
 import {
+  type ColorRole,
   copyTheme,
   type FontRef,
   type Oklch,
@@ -8,7 +9,7 @@ import {
   type ThemeTokens,
 } from "@webforge/model";
 import type { FontPairing } from "@webforge/themes";
-import { catalogueFont, fontRefOf } from "@webforge/themes";
+import { catalogueFont, fontRefOf, inverseColors } from "@webforge/themes";
 import type { EditorSession } from "../editor/editor-session.js";
 import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
 import { setTokenValue, type TokenControl, tokenValue } from "./theme-controls.js";
@@ -39,6 +40,33 @@ export const COLOR_WORDS: Readonly<
   accent: { name: "colour.role.secondAccent", history: "theme.history.color.secondAccent" },
   "base-100": { name: "colour.role.surface", history: "theme.history.color.surface" },
   "base-content": { name: "colour.role.text", history: "theme.history.color.text" },
+};
+
+/**
+ * Every colour role's name, as Theme Studio's palette rows show it: the glossary's Brand, Accent,
+ * Second accent, Surface and Text, the surfaces after them, and each colour's text.
+ */
+export const ROLE_NAMES: Readonly<Record<ColorRole, MessageKey>> = {
+  "base-100": "colour.role.surface",
+  "base-200": "theme.role.surface2",
+  "base-300": "theme.role.surface3",
+  "base-content": "colour.role.text",
+  primary: "colour.role.brand",
+  "primary-content": "theme.role.onBrand",
+  secondary: "colour.role.accent",
+  "secondary-content": "theme.role.onAccent",
+  accent: "colour.role.secondAccent",
+  "accent-content": "theme.role.onSecondAccent",
+  neutral: "theme.role.neutral",
+  "neutral-content": "theme.role.onNeutral",
+  info: "theme.role.info",
+  "info-content": "theme.role.onInfo",
+  success: "theme.role.success",
+  "success-content": "theme.role.onSuccess",
+  warning: "theme.role.warning",
+  "warning-content": "theme.role.onWarning",
+  error: "theme.role.error",
+  "error-content": "theme.role.onError",
 };
 
 /** A preset's name (`theme.preset.<name>`); its own name for one the catalogue hasn't named yet. */
@@ -85,6 +113,73 @@ export function setTextSize(
       draft.theme.typeScale[style].size = size;
     },
   );
+}
+
+/** How a text style looks: its size, weight and line height. */
+type TextStep = ThemeTokens["typeScale"][TextStyle];
+
+/**
+ * Sets text style `style`'s size, weight or line height (Theme Studio): one step, "Changed text
+ * style for Heading 1", or none if nothing changes.
+ */
+export function setTextStep(
+  session: ThemeSession,
+  style: TextStyle,
+  change: Partial<TextStep>,
+): void {
+  const now = theme(session).typeScale[style];
+  const next = { ...now, ...change };
+  if (next.size === now.size && next.weight === now.weight && next.leading === now.leading) return;
+  session.edit(
+    "props",
+    t("theme.history.textStyle", { style: t(`theme.textStyle.${style}`) }),
+    (draft) => {
+      draft.theme.typeScale[style] = next;
+    },
+  );
+}
+
+/**
+ * Sets colour `role` of the page's colours or reversed sections' (Theme Studio, F-DS-7): asked
+ * first (D7), then one step, "Changed Brand colour in reversed sections". A theme without colours of
+ * its own for reversed sections starts them from those it shows there ({@link inverseColors}).
+ * Theme Studio edits each palette on its own: the page's Brand leaves reversed sections' as it is.
+ */
+export async function setPaletteColor(
+  session: ThemeSession,
+  confirm: Confirm,
+  palette: "colors" | "inverse",
+  role: ColorRole,
+  color: Oklch,
+): Promise<boolean> {
+  const tokens = theme(session);
+  const now = (palette === "colors" ? tokens.colors : inverseColors(tokens))[role];
+  if (now.l === color.l && now.c === color.c && now.h === color.h) return false;
+  const name = t(ROLE_NAMES[role]);
+  const reversed = palette === "inverse";
+  const ok = await confirmed(session, confirm, {
+    action: reversed
+      ? t("theme.color.confirmReversed", { name })
+      : t("theme.color.confirm", { name }),
+    description: t("theme.color.confirmDescription"),
+    confirm: t("theme.color.confirmButton"),
+  });
+  if (!ok) return false;
+  // Reversed sections' colours as the theme shows them now, copied, for a theme without its own.
+  const start = JSON.parse(JSON.stringify(inverseColors(theme(session)))) as ThemeTokens["colors"];
+  session.edit(
+    "props",
+    reversed ? t("theme.history.colorReversed", { name }) : t("theme.history.color", { name }),
+    (draft) => {
+      if (!reversed) {
+        draft.theme.colors[role] = { ...color };
+        return;
+      }
+      draft.theme.inverse ??= start;
+      draft.theme.inverse[role] = { ...color };
+    },
+  );
+  return true;
 }
 
 /**

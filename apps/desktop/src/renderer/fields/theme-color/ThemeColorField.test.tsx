@@ -69,6 +69,20 @@ describe("a theme colour's field (2.3a)", () => {
     expect(onCommit).toHaveBeenCalledOnce();
   });
 
+  it("shows the stored colour again when the one offered isn't taken (declined at D7)", () => {
+    const { onChange } = setUp();
+    const picker = () =>
+      screen.getByLabelText("Brand", { selector: 'input[type="color"]' }) as HTMLInputElement;
+
+    fireEvent.change(picker(), { target: { value: "#00ff00" } });
+
+    // The value it was given hasn't changed: the change was declined.
+    expect(onChange).toHaveBeenCalledOnce();
+    expect(picker().value).toBe("#1f6feb");
+    fireEvent.change(picker(), { target: { value: "#00ff00" } });
+    expect(onChange).toHaveBeenCalledTimes(2);
+  });
+
   it("lists what its contrast lacks, which the picker is described by", () => {
     setUp(BLUE, ["Hard to read with Surface: 2.1:1, needs 4.5:1."]);
 

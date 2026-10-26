@@ -45,4 +45,4 @@ export {
   planFamily,
 } from "./fonts/plan.js";
 export { THEME_PRESETS, themePreset } from "./presets.js";
-export { oklchCss, themeCss } from "./theme-css.js";
+export { oklchCss, radiusCss, shadowCss, themeCss } from "./theme-css.js";
