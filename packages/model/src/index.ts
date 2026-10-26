@@ -86,6 +86,8 @@ export type {
   SiteMigration,
 } from "./migrations.js";
 export { MIGRATIONS, migrateSite, migrateSiteWith, SiteFormatError } from "./migrations.js";
+export { findNode, removeNode } from "./node-tree.js";
+export { insertPage, pageSlugFor, pageTitle, slugsInFolder } from "./pages.js";
 export type { Breakpoint, Responsive, ResponsiveValue } from "./responsive.js";
 export {
   breakpointForWidth,
