@@ -6,3 +6,5 @@
 
 export { shownRatio, TEXT_PX } from "./color/ColourField.js";
 export { fieldRenderers, themeFieldRenderers } from "./field-renderers.js";
+export { addFontPreviews, previewFamily } from "./font/font-previews.js";
+export { ThemeColorField } from "./theme-color/ThemeColorField.js";

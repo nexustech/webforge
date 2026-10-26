@@ -1,8 +1,8 @@
 import { copyTheme, DEFAULT_THEME, TEXT_STYLES } from "@webforge/model";
 import { FONT_PAIRINGS, THEME_PRESETS } from "@webforge/themes";
 import { describe, expect, it } from "vitest";
-import { named } from "./ThemePanel.js";
 import { setTokenValue, TOKEN_CONTROLS, tokenKey, tokenValue } from "./theme-controls.js";
+import { named } from "./theme-words.js";
 
 describe("the Theme tab's tokens (2.3a, PH2-15)", () => {
   it("offers every choice the theme has, from its schema, the most visible first", () => {
