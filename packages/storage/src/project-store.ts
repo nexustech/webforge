@@ -54,6 +54,31 @@ export type SiteEditorMode = "design" | "content";
 
 const siteEditorModeSchema = z.enum(["design", "content"]);
 
+/**
+ * What the person last chose when exporting this site (3.3): a folder or a ZIP, and the options.
+ * Remembered per site, but UI state, like the editor mode.
+ */
+export const exportChoicesSchema = z.strictObject({
+  format: z.enum(["folder", "zip"]),
+  /** *Minify output* (X4). */
+  minify: z.boolean(),
+  /** *Include developer files* (X6, Advanced mode). */
+  developerFiles: z.boolean(),
+  /** Whether to ask for the web address before exporting while it's empty (X3). */
+  askWebAddress: z.boolean(),
+});
+
+/** What the person last chose when exporting this site. */
+export type ExportChoices = z.infer<typeof exportChoicesSchema>;
+
+/** The choices of a site that has never been exported. */
+export const DEFAULT_EXPORT_CHOICES: ExportChoices = {
+  format: "folder",
+  minify: false,
+  developerFiles: false,
+  askWebAddress: true,
+};
+
 /** A saved version of the project (snapshot of the working copy). */
 export type VersionInfo = {
   readonly id: string;
@@ -133,6 +158,8 @@ const metaSchema = z.strictObject({
   created_at: z.iso.datetime(),
   /** Checked when read (see `readEditorMode`), so a bad value never stops the file opening. */
   editor_mode: z.string().optional(),
+  /** JSON, checked when read (see `readExportChoices`), likewise. */
+  export_choices: z.string().optional(),
 });
 
 /** A version's documents in `readDocuments` order. An array, so any id (even "__proto__") works. */
@@ -758,6 +785,32 @@ export class ProjectStore {
         `INSERT INTO meta (key, value) VALUES ('editor_mode', ?)
          ON CONFLICT (key) DO UPDATE SET value = excluded.value`,
       ).run(siteEditorModeSchema.parse(mode));
+    });
+  }
+
+  /** What the person last chose when exporting this site; the defaults until then. */
+  readExportChoices(): ExportChoices {
+    const row = this.#prepare("SELECT value FROM meta WHERE key = 'export_choices'").get() as
+      | { value: unknown }
+      | undefined;
+    let stored: unknown;
+    try {
+      stored = typeof row?.value === "string" ? JSON.parse(row.value) : undefined;
+    } catch {
+      stored = undefined;
+    }
+    const choices = exportChoicesSchema.safeParse(stored);
+    return choices.success ? choices.data : DEFAULT_EXPORT_CHOICES;
+  }
+
+  /** Remembers what the person chose when exporting this site. */
+  writeExportChoices(choices: ExportChoices): void {
+    const value = JSON.stringify(exportChoicesSchema.parse(choices));
+    this.#write(() => {
+      this.#prepare(
+        `INSERT INTO meta (key, value) VALUES ('export_choices', ?)
+         ON CONFLICT (key) DO UPDATE SET value = excluded.value`,
+      ).run(value);
     });
   }
 

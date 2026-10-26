@@ -31,14 +31,30 @@ const exportDocumentSchema = z.strictObject({
 });
 
 /**
- * What the renderer sends to export the site: its snapshot, and the Media images and documents it
- * may use.
+ * What the person chose for an export (3.3): a folder or a ZIP, *Minify output* (X4), *Include
+ * developer files* (X6), and whether to ask for the web address while it's empty (X3). The site
+ * remembers them for its next export.
+ */
+export const exportChoicesSchema = z.strictObject({
+  format: z.enum(["folder", "zip"]),
+  minify: z.boolean(),
+  developerFiles: z.boolean(),
+  askWebAddress: z.boolean(),
+});
+
+/** What the person chose for an export. */
+export type ExportChoices = z.infer<typeof exportChoicesSchema>;
+
+/**
+ * What the renderer sends to export the site: its snapshot, the Media images and documents it may
+ * use, and the person's choices.
  */
 const exportRequestSchema = z.strictObject({
   /** The site, without image or document bytes (the main process fills them in). */
   snapshot: siteSnapshotSchema,
   media: z.array(exportMediaSchema).max(10_000),
   documents: z.array(exportDocumentSchema).max(10_000).optional(),
+  choices: exportChoicesSchema,
 });
 
 /** What the renderer sends to export the site. */
@@ -53,15 +69,37 @@ const exportFailureReasonSchema = z.enum([
   "reserved-name",
 ]);
 
-/** Outcome of exporting the site to a folder. */
+/**
+ * A problem the export found that didn't stop it (X5), for the export report: a link to a page or
+ * file that isn't there, or an image deleted from Media. `page` is the page's path; `detail` what
+ * the link pointed at, or the image's id.
+ */
+export const exportWarningSchema = z.strictObject({
+  code: z.enum(["broken-link", "missing-image"]),
+  page: z.string().max(1024),
+  detail: z.string().max(2048),
+});
+
+/** A problem the export found that didn't stop it. */
+export type ExportWarning = z.infer<typeof exportWarningSchema>;
+
+/** At most this many warnings reach the report; it says how many more there were. */
+export const MAX_REPORTED_WARNINGS = 500;
+
+/** Outcome of exporting the site to a folder or a ZIP. */
 const exportResultSchema = z.discriminatedUnion("status", [
   z.strictObject({
     status: z.literal("exported"),
-    /** The chosen folder's name; never the full path. */
-    folderName: z.string().min(1),
+    format: z.enum(["folder", "zip"]),
+    /** The chosen folder's or ZIP file's name; never the full path. */
+    name: z.string().min(1),
     pages: z.int().nonnegative(),
     files: z.int().nonnegative(),
-    warnings: z.int().nonnegative(),
+    /** The site's size, before a ZIP compresses it. */
+    bytes: z.int().nonnegative(),
+    warnings: z.array(exportWarningSchema).max(MAX_REPORTED_WARNINGS),
+    /** How many warnings there were, those left out of `warnings` included. */
+    warningCount: z.int().nonnegative(),
   }),
   z.strictObject({ status: z.literal("canceled") }),
   z.strictObject({
@@ -72,7 +110,7 @@ const exportResultSchema = z.discriminatedUnion("status", [
   }),
 ]);
 
-/** Outcome of exporting the site to a folder. */
+/** Outcome of exporting the site to a folder or a ZIP. */
 export type ExportResult = z.infer<typeof exportResultSchema>;
 
 /**
@@ -102,6 +140,21 @@ export const siteChannels = {
     request: z.tuple([exportRequestSchema]),
     response: exportResultSchema,
   },
+  /** What the person chose for the open site's last export: the defaults until there was one. */
+  exportChoices: {
+    channel: "site:export-choices",
+    request: z.tuple([]),
+    response: exportChoicesSchema,
+  },
+  /**
+   * *Preview from disk* (07): opens the last export's home page in the default browser, or shows
+   * its ZIP file in the file manager. `none` when nothing was exported since the site opened.
+   */
+  openExport: {
+    channel: "site:open-export",
+    request: z.tuple([]),
+    response: z.enum(["opened", "none"]),
+  },
   /**
    * Cancels the export under way, if there is one (3.1): it stops before its next image or page
    * and answers `canceled`, changing nothing on disk.
@@ -121,8 +174,12 @@ export const siteEvents = {
 
 /** `window.webforge.site`. */
 export interface SiteApi {
-  /** Shows a folder dialog, then builds the site and writes it there. */
+  /** Shows a folder or save dialog, then builds the site and writes it there. */
   export(request: ExportRequest): Promise<ExportResult>;
+  /** What the person chose for the open site's last export. */
+  exportChoices(): Promise<ExportChoices>;
+  /** Opens the last export from disk. */
+  openExport(): Promise<"opened" | "none">;
   /** Cancels the export under way, if there is one. */
   cancelExport(): Promise<null>;
   /** Tells `listener` how far exports come, until the returned function is called. */

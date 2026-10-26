@@ -1,7 +1,7 @@
 import { IMAGE_MIME_TYPES, siteSnapshotSchema, themeSchema } from "@webforge/model";
 import { catalogueFontSchema } from "@webforge/themes";
 import { z } from "zod";
-import { exportProgressSchema } from "./ipc/site.js";
+import { exportProgressSchema, exportWarningSchema, MAX_REPORTED_WARNINGS } from "./ipc/site.js";
 
 /**
  * The downloaded families a site's theme uses (2.2), as the main process keeps them: its heading
@@ -17,8 +17,11 @@ const downloadedFamiliesSchema = z.array(catalogueFontSchema).max(2);
 const exportJobSchema = z.strictObject({
   type: z.literal("export"),
   snapshot: siteSnapshotSchema,
-  /** Absolute path of the folder to write; chosen by the user in a native dialog. */
+  /** Absolute path of the folder or ZIP file to write; chosen by the user in a native dialog. */
   destination: z.string().min(1),
+  format: z.enum(["folder", "zip"]),
+  /** *Minify output* and *Include developer files* (3.3). */
+  output: z.strictObject({ minify: z.boolean(), developerFiles: z.boolean() }),
   /** The site's font files (2.2), read and checked by the main process: the worker reads none. */
   fonts: z
     .array(
@@ -193,7 +196,9 @@ export const exportOutcomeSchema = z.discriminatedUnion("type", [
     pages: z.int().nonnegative(),
     files: z.int().nonnegative(),
     bytes: z.int().nonnegative(),
-    warnings: z.int().nonnegative(),
+    /** For the export report: never logged, as they name the site's pages. */
+    warnings: z.array(exportWarningSchema).max(MAX_REPORTED_WARNINGS),
+    warningCount: z.int().nonnegative(),
     durationMs: z.number().nonnegative(),
   }),
   /** Cancelled: nothing was changed on disk (R15). */

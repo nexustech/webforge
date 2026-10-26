@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import type { StoreApi } from "zustand/vanilla";
 import type { AiApi } from "../../shared/ipc/ai.js";
-import type { ExportProgress, ExportRequest } from "../../shared/ipc/site.js";
+import type { ExportChoices, ExportProgress, ExportRequest } from "../../shared/ipc/site.js";
 import type { ExportResult } from "../../shared/ipc-contract.js";
 import type { AddItem } from "../add/index.js";
 import type { SettingsRegistry } from "../settings/index.js";
@@ -66,6 +66,10 @@ export type WindowContext = AreaContext & {
   readonly exportSite: ExportSite;
   /** Cancels the export under way. */
   readonly cancelExport: () => Promise<null>;
+  /** What the person chose for the open site's last export (3.3). */
+  readonly exportChoices: () => Promise<ExportChoices>;
+  /** Opens the last export from disk (Preview from disk, 3.3). */
+  readonly openExport: () => Promise<"opened" | "none">;
   /** Answers AI apps' requests (F-AI-1) until the returned function is called. */
   readonly answerAi: AiApi["onRequest"];
 };

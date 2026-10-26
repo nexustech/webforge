@@ -11,7 +11,9 @@ import {
   validateSiteChanges,
 } from "@webforge/model";
 import {
+  DEFAULT_EXPORT_CHOICES,
   detectSyncFolder,
+  type ExportChoices,
   ProjectFileError,
   type ProjectFileErrorCode,
   ProjectStore,
@@ -383,6 +385,33 @@ export class ProjectSession {
     return this.#shared<SiteUiState | null>(
       (store) => ({ editorMode: store.readEditorMode() }),
       () => null,
+    );
+  }
+
+  /** What the person chose for the open site's last export (3.3); the defaults without a site. */
+  exportChoices(): Promise<ExportChoices> {
+    return this.#shared<ExportChoices>(
+      (store) => store.readExportChoices(),
+      () => DEFAULT_EXPORT_CHOICES,
+    );
+  }
+
+  /**
+   * Remembers what the person chose for an export with the open site, like the editor state. A
+   * read-only site keeps its earlier choices: that never stops the export.
+   */
+  setExportChoices(choices: ExportChoices): Promise<void> {
+    return this.#shared<void>(
+      (store) => {
+        try {
+          store.writeExportChoices(choices);
+        } catch (error) {
+          if (!(error instanceof ReadOnlyProjectError)) {
+            logFailure("Webforge could not remember the export choices", error);
+          }
+        }
+      },
+      () => undefined,
     );
   }
 

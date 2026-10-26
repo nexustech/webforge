@@ -4,6 +4,7 @@ import { siteLibrary } from "@webforge/site-components";
 import { PanelBottomIcon, PanelLeftIcon, PanelRightIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { AiApi } from "../shared/ipc/ai.js";
+import type { ExportChoices } from "../shared/ipc/site.js";
 import type {
   AppInfo,
   Preferences,
@@ -64,6 +65,10 @@ export type AppProps = {
   readonly exportSite?: ExportSite;
   /** Cancels the export under way; injectable for tests. Defaults to the preload API. */
   readonly cancelExport?: () => Promise<null>;
+  /** The open site's last export choices; injectable for tests. Defaults to the preload API. */
+  readonly exportChoices?: () => Promise<ExportChoices>;
+  /** Opens the last export from disk; injectable for tests. Defaults to the preload API. */
+  readonly openExport?: () => Promise<"opened" | "none">;
   /** The site read from the open site file at start-up (1.6); the starter site otherwise. */
   readonly loaded?: LoadedSite;
   /** The open site's editor state (Design or Content mode) as main loaded it; none for no site. */
@@ -85,6 +90,8 @@ const exportWithPreload: ExportSite = async (request, onProgress) => {
   }
 };
 const cancelExportWithPreload = () => window.webforge.site.cancelExport();
+const exportChoicesWithPreload = () => window.webforge.site.exportChoices();
+const openExportWithPreload = () => window.webforge.site.openExport();
 const saveWithPreload = (change: PreferencesChange) => window.webforge.prefs.set(change);
 const saveUiStateWithPreload = (state: SiteUiState) =>
   window.webforge.project.setUiState(siteSession(), state);
@@ -106,6 +113,8 @@ export function App({
   compileCss,
   exportSite = exportWithPreload,
   cancelExport = cancelExportWithPreload,
+  exportChoices = exportChoicesWithPreload,
+  openExport = openExportWithPreload,
   loaded,
   uiState,
   saveUiState = saveUiStateWithPreload,
@@ -151,10 +160,10 @@ export function App({
   // The window's areas (2.20, B1): the Site and Layers panels, Go to page, Open Crash Reports,
   // the View menu's zoom and device views, and Export, after the shell's own commands. Their
   // context is made once, so they register once: Export reads the latest exportSite as it runs.
-  const exportSiteRef = useRef({ exportSite, cancelExport });
+  const exportSiteRef = useRef({ exportSite, cancelExport, exportChoices, openExport });
   useEffect(() => {
-    exportSiteRef.current = { exportSite, cancelExport };
-  }, [exportSite, cancelExport]);
+    exportSiteRef.current = { exportSite, cancelExport, exportChoices, openExport };
+  }, [exportSite, cancelExport, exportChoices, openExport]);
   const [windowContext] = useState<WindowContext>(() => ({
     session,
     commands: registry,
@@ -167,6 +176,8 @@ export function App({
     windowDialogs,
     exportSite: (request, onProgress) => exportSiteRef.current.exportSite(request, onProgress),
     cancelExport: () => exportSiteRef.current.cancelExport(),
+    exportChoices: () => exportSiteRef.current.exportChoices(),
+    openExport: () => exportSiteRef.current.openExport(),
     answerAi,
   }));
   useEffect(() => connectAreas(WINDOW_AREAS, windowContext), [windowContext]);

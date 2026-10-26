@@ -25,6 +25,15 @@ type SettingsEntry = {
   readonly open: () => OpenSettings | undefined;
 };
 
+/** A request to open the Settings dialog on one section, and what to tell when it closes. */
+export type SettingsShowRequest = {
+  /** The part's id ("site"), and the id of the section (its form's group) to open on. */
+  readonly part: string;
+  readonly group: string;
+  /** Called once the dialog closes: `true` if the person saved. */
+  readonly closed: (saved: boolean) => void;
+};
+
 /** The registry: the window's Settings dialog shows what areas register here. */
 export type SettingsRegistry = {
   /** Adds a part and returns a function that removes it. Ids must be unique. */
@@ -33,12 +42,21 @@ export type SettingsRegistry = {
   list(): readonly SettingsEntry[];
   /** Calls `listener` after a part is added or removed; returns a function that stops it. */
   subscribe(listener: () => void): () => void;
+  /**
+   * Opens the Settings dialog on `group` of the part `part`, as a step that needs a setting does
+   * (the export's web address, X3), and resolves once it closes: `true` if the person saved. With
+   * no dialog to open (none drawn yet), resolves `false` at once.
+   */
+  show(part: string, group: string): Promise<boolean>;
+  /** The dialog's host: told of each {@link show}. Returns a function that stops it. */
+  onShow(listener: (request: SettingsShowRequest) => void): () => void;
 };
 
 /** Creates an empty registry. */
 export function createSettingsRegistry(): SettingsRegistry {
   const entries = new Map<string, SettingsEntry>();
   const listeners = new Set<() => void>();
+  let host: ((request: SettingsShowRequest) => void) | undefined;
   const changed = () => {
     for (const listener of listeners) listener();
   };
@@ -60,6 +78,17 @@ export function createSettingsRegistry(): SettingsRegistry {
       listeners.add(listener);
       return () => {
         listeners.delete(listener);
+      };
+    },
+    show(part, group) {
+      const shows = host;
+      if (shows === undefined) return Promise.resolve(false);
+      return new Promise((resolve) => shows({ part, group, closed: resolve }));
+    },
+    onShow(listener) {
+      host = listener;
+      return () => {
+        if (host === listener) host = undefined;
       };
     },
     list: () =>
