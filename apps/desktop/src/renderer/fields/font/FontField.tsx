@@ -23,7 +23,8 @@ const categoryName = (category: string) => {
 
 /** The bundled fonts, as the computer lists them: what the picker shows until it has the list. */
 const BUNDLED: readonly InstalledFont[] = FONT_CATALOGUE.map((font) => {
-  const preview = previewFileOf(font)?.file;
+  const file = previewFileOf(font);
+  const preview = file === undefined ? undefined : { file: file.file, weight: file.weight };
   return {
     id: font.id,
     family: font.family,
@@ -63,6 +64,23 @@ type FontFieldContext = {
   /** `window.webforge.fonts`, asked for as it's needed. */
   readonly fonts: () => FontsApi;
 };
+
+/**
+ * Reads the fonts this computer has through `fonts`, downloaded ones too, adds their previews (on
+ * the editor's page) and gives them to `then`. Without the app's fonts (a story, a test), nothing.
+ */
+function listInstalled(
+  fonts: () => FontsApi,
+  then: (list: readonly InstalledFont[]) => void,
+): void {
+  void Promise.resolve()
+    .then(() => fonts().list())
+    .then((list) => {
+      addFontPreviews(document, list);
+      then(list);
+    })
+    .catch(() => undefined);
+}
 
 /** Downloads font `id` through `fonts`, a failure of any kind answered as one. */
 async function downloaded(fonts: () => FontsApi, id: string) {
@@ -114,19 +132,13 @@ export function FontField({
   const current = parsed.success ? parsed.data : undefined;
   const shown = installed.find((font) => font.family === current?.family);
 
-  // The fonts this computer has, downloaded ones too, and their previews (on the editor's page).
+  // The computer's fonts as the field shows, so its font is found and shown in itself.
   useEffect(() => {
     addFontPreviews(document);
     let live = true;
-    // Without the app's fonts (a story, a test) the bundled ones stay listed.
-    void Promise.resolve()
-      .then(() => fonts().list())
-      .then((list) => {
-        if (!live) return;
-        setInstalled(list);
-        addFontPreviews(document, list);
-      })
-      .catch(() => undefined);
+    listInstalled(fonts, (list) => {
+      if (live) setInstalled(list);
+    });
     return () => {
       live = false;
     };
@@ -208,6 +220,9 @@ export function FontField({
         onClick={() => {
           setStatus(null);
           setPicking(true);
+          // Again as the picker opens: a font another field downloaded since is listed, and isn't
+          // offered for download again (#463 review).
+          listInstalled(fonts, setInstalled);
         }}
       >
         <span
