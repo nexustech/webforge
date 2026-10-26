@@ -1,6 +1,6 @@
 # Styling One Section or Element: What Competitors Offer
 
-**Status:** ⏳ Proposed 2026-10-26, awaiting the product owner's decision ([§6](#6-decisions))
+**Status:** ✅ Decided 2026-10-26: all proposals adopted ([§6](#6-decisions)); plan item 2.22 (#494) and the text-marks chore (#495)
 **Date:** 2026-10-26
 **Goal (product owner, 2026-10-26):** "Theming and styling of components is a key requirement; we should be able to style an individual component, e.g. select a section and allow it to be underlined." This note looks at how Pinegrow, Webflow, RapidWeaver Elements and Bootstrap Studio let a user style one component, how much freedom each gives, and what Webforge should take from them.
 **Builds on:** the theme model (F-DS-1…7, [03-starting-content](03-starting-content.md)), the Edit panel's token rule (F-ED-4, `docs/components.md`), the parity note ([06](06-editor-ui-ux-parity.md)) and the competitor reviews ([Webflow](../competitors/01-webflow.md), [Pinegrow](../competitors/02-pinegrow.md), [Bootstrap Studio 9.0](../bootstrap-studio/06-bootstrap-studio-9.md), Elements in the [gap analysis §3.7](05-feature-gap-analysis.md#37-rapidweaver-elements-30-update-2026-10-22)).
@@ -111,15 +111,15 @@ Effort: **S** ≈ days · **M** ≈ 1–2 weeks.
 - **Elements' Static/Hover/start/end pattern on every group:** too much repetition. One hover row on the elements that need it (ST-2) is enough.
 
 ## 6. Decisions
-Awaiting the product owner.
+Product owner, 2026-10-26: all proposals adopted as written.
 
-| # | Proposed decision |
+| # | Decision |
 |---|---|
-| ST-1 | **MVP:** a common Appearance group (Text, Colour, Corners, Border, Shadow, Opacity) on every section and element, tokens only, per device; new plan item 2.22 (3 days) |
-| ST-2 | **MVP:** a hover row on Button, Image, Icon and the card sections (+1 day on 2.22) |
-| ST-3 | **MVP:** underline, highlight and theme-colour marks in the text toolbar, with a Site Check tip (1 day, a chore on 1.23's code) |
-| ST-6 | **Rule:** the Style tab stays tokens only in Simple mode; one-off colours go into the theme's palette, or Advanced mode's off-theme hex (ADR 0009) |
-| ST-4, ST-5, ST-7 | **v1.1:** apply to all of this kind; section backgrounds for every section; transition and transform presets |
+| ST-1 | ✅ **MVP:** a common Appearance group (Text, Colour, Corners, Border, Shadow, Opacity) on every section and element, tokens only, per device; new plan item 2.22 (3 days, #494) |
+| ST-2 | ✅ **MVP:** a hover row on Button, Image, Icon and the card sections (+1 day on 2.22) |
+| ST-3 | ✅ **MVP:** underline, highlight and theme-colour marks in the text toolbar, with a Site Check tip (1 day, chore #495 on 1.23's code) |
+| ST-6 | ✅ **Rule:** the Style tab stays tokens only in Simple mode; one-off colours go into the theme's palette, or Advanced mode's off-theme hex (ADR 0009) |
+| ST-4, ST-5, ST-7 | ✅ **v1.1:** apply to all of this kind; section backgrounds for every section; transition and transform presets |
 
 ## Sources
 - Webflow: [Style panel overview](https://help.webflow.com/hc/en-us/articles/33961362040723-Style-panel-overview) · [Classes](https://help.webflow.com/hc/en-us/articles/33961311094419-Classes) · [States](https://help.webflow.com/hc/en-us/articles/33961301727251-States) · [Style labels](https://help.webflow.com/hc/en-us/articles/33961332425875-Style-labels-in-the-Designer) · [Variables](https://help.webflow.com/hc/en-us/articles/33961268146323) · [Component style variants](https://webflow.com/updates/component-style-variants-now-available) · [Text styling (tenten)](https://webflow.tenten.co/en/text-styling/) · [Text spans (Digidop)](https://digidop.com/blog/text-span-weflow)
