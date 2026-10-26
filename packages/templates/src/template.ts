@@ -20,6 +20,9 @@ import { z } from "zod";
  */
 export const TEMPLATE_IDS = [
   "sample",
+  "cafe",
+  "salon",
+  "trades",
   "consultant",
   "photographer",
   "shop",

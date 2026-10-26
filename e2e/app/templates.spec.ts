@@ -6,11 +6,14 @@ import { canvasAxe } from "./canvas-axe.js";
 import { launchDesktopApp } from "./launch.js";
 import { stubFileDialogs } from "./sites.js";
 
-// The templates of 2.15b, made from New Site (F-SITE-1): each opens in under 3 s, with its photos,
-// and its home page passes axe on the canvas, what the editor adds to it included.
+// The templates of 2.15a and 2.15b, made from New Site (F-SITE-1): each opens in under 3 s, with
+// its photos, and its home page passes axe on the canvas, what the editor adds to it included.
 
 /** Each template: its card's title, the theme it brings, and its home page's heading. */
 const TEMPLATES = [
+  { title: "Café / Restaurant", theme: "Bistro", heading: "Good coffee and proper breakfasts" },
+  { title: "Salon / Beauty", theme: "Atelier", heading: "Hair and beauty, with time to talk" },
+  { title: "Trades", theme: "Workshop", heading: "Safe, tidy electrical work in Leeds" },
   { title: "Consultant", theme: "Meridian", heading: "Clear advice for growing businesses" },
   { title: "Photographer / Portfolio", theme: "Darkroom", heading: "Light, land and people" },
   { title: "Shop", theme: "Market", heading: "Handmade pots for happy plants" },
@@ -30,7 +33,7 @@ test.afterEach(async () => {
 });
 
 for (const template of TEMPLATES) {
-  test(`makes a ${template.title} site in under 3 s, accessible on the canvas (2.15b)`, async () => {
+  test(`makes a ${template.title} site in under 3 s, accessible on the canvas (2.15)`, async () => {
     app = await launchDesktopApp({ userDataDir: join(dir, "user-data"), site: false });
     const page = await app.firstWindow();
     await expect(page.getByRole("heading", { name: "Start a site" })).toBeVisible();
