@@ -1,4 +1,5 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { clickOnCanvas } from "./canvas-click.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
 
 // Spacing handles on the canvas (1.32, F-ED-25): grips on the selected element's edges set its
@@ -42,7 +43,7 @@ async function selectHeading(): Promise<void> {
   const heading = canvas().locator(".site-heading");
   const box = await heading.boundingBox();
   if (box === null) throw new Error("Heading not visible");
-  await heading.click({ position: { x: box.width * 0.97, y: box.height - 2 } });
+  await clickOnCanvas(heading, { position: { x: box.width * 0.97, y: box.height - 2 } });
   await expect(panel().getByRole("heading", { name: "Heading", exact: true })).toBeVisible();
 }
 

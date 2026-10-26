@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, test } from "@playwright/test";
 import { ProjectStore } from "@webforge/storage";
+import { clickOnCanvas } from "./canvas-click.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
 import { chooseFromMenu } from "./menus.js";
 import { stubFileDialogs } from "./sites.js";
@@ -118,7 +119,7 @@ test("shows Site Settings values in bound elements, on the canvas and in the exp
   const heading = canvas.locator(".site-heading");
   const box = await heading.boundingBox();
   if (box === null) throw new Error("Heading not visible");
-  await heading.click({ position: { x: box.width * 0.97, y: 2 } });
+  await clickOnCanvas(heading, { position: { x: box.width * 0.97, y: 2 } });
   await panel.getByLabel("Text shows").selectOption("contact.phone");
 
   // Until the phone number is added, the canvas says where to add it.
