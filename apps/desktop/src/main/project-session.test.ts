@@ -112,14 +112,14 @@ describe("ProjectSession", () => {
       notFoundTitle: "Page not found",
     });
 
-    const photo = join(TEMPLATES_DIR, "cafe", "images", "hero.png");
+    const photo = join(TEMPLATES_DIR, "cafe", "images", "hero.jpg");
     let stored: Awaited<ReturnType<NewSiteTarget["importFile"]>> | undefined;
 
     const result = await session.create(join(dir, "bakery.wforge"), {
       name: "Rosa's Bakery",
       fill: async ({ store, importFile }) => {
         // Into the new file, through the storage writer, before it opens.
-        stored = await importFile("photo00000000000", "hero.png", photo);
+        stored = await importFile("photo00000000000", "hero.jpg", photo);
         store.saveSite(site);
       },
     });
