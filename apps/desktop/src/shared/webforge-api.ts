@@ -1,3 +1,4 @@
+import type { AiApi } from "./ipc/ai.js";
 import type { AppApi } from "./ipc/app.js";
 import type { CanvasApi } from "./ipc/canvas.js";
 import type { ClipboardApi } from "./ipc/clipboard.js";
@@ -23,4 +24,5 @@ export interface WebforgeApi {
   readonly project: ProjectApi;
   readonly site: SiteApi;
   readonly templates: TemplatesApi;
+  readonly ai: AiApi;
 }

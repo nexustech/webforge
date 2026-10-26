@@ -1,4 +1,5 @@
 import type { z } from "zod";
+import { aiChannels } from "./ipc/ai.js";
 import { appChannels } from "./ipc/app.js";
 import { canvasChannels } from "./ipc/canvas.js";
 import { clipboardChannels } from "./ipc/clipboard.js";
@@ -43,6 +44,7 @@ export const ipcContract = {
   ...projectChannels,
   ...siteChannels,
   ...templatesChannels,
+  ...aiChannels,
 } as const;
 
 /** The channels of each domain, keyed by domain; the tests check none overwrites another. */
@@ -56,6 +58,7 @@ export const ipcDomains = {
   project: projectChannels,
   site: siteChannels,
   templates: templatesChannels,
+  ai: aiChannels,
 } as const;
 
 /** Name of an entry in {@link ipcContract}. */

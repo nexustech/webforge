@@ -18,11 +18,11 @@ export type CommandApi = {
   run(name: string, input: unknown, actor: Actor): Promise<CommandResult>;
 };
 
-const BUSY = "The person is editing (a drag, a slider or typing): try again in a moment.";
+const BUSY = "The person is editing (a drag, a slider, typing or a question): try again shortly.";
 
-/** Whether the person is in the middle of a gesture or typing, when nothing else may change. */
+/** Whether the person is in the middle of a gesture, typing or a question: nothing else may change. */
 const busy = (host: CommandHost) =>
-  host.history.state.getState().transaction !== null || host.typing();
+  host.history.state.getState().transaction !== null || host.editing();
 
 /**
  * The command layer over `host`: every command validated with zod, refused while the person is
@@ -100,7 +100,7 @@ export function createCommandApi(host: CommandHost): CommandApi {
       if ("status" in plan) return plan;
       if (busy(host)) return { status: "busy", message: BUSY };
       const label = t("ai.history", { app: actor.app, action: plan.action });
-      host.history.run(label, plan.recipe);
+      host.run(label, plan.recipe, plan.kind);
       return { status: "done", label, ...(plan.id === undefined ? {} : { id: plan.id }) };
     },
   };

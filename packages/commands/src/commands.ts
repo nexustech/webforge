@@ -26,7 +26,7 @@ import {
   type Placed,
   pagesShowing,
 } from "./locations.js";
-import type { Confirmation, Refusal } from "./types.js";
+import type { ChangeKind, Confirmation, Refusal } from "./types.js";
 
 /** What a command will do: one undo step, and the confirmation it waits for, if any (D7). */
 export type Plan = {
@@ -34,6 +34,8 @@ export type Plan = {
   readonly action: string;
   /** Changes the page's structure: refused in Content mode (1.26). */
   readonly structural: boolean;
+  /** What kind of change it is, as the editor's own are: a removal offers Undo in a toast (D4). */
+  readonly kind: ChangeKind;
   /** Asked first, for a change to more than one page (D7); `{app}` is the app's name. */
   readonly confirm?: ((app: string) => Confirmation) | undefined;
   readonly recipe: (draft: SiteDoc) => void;
@@ -133,17 +135,20 @@ function find(site: SiteDoc, location: Location, nodeId: string): Placed | Failu
 function confirmationAt(site: SiteDoc, location: Location): Plan["confirm"] {
   const count = pagesShowing(site, location);
   if (location.kind === "page" || count <= 1) return undefined;
+  const confirm = t("ai.confirm.allow");
   if (location.kind === "layout") {
     const part = t(`ai.part.${location.part}`);
     return (app) => ({
-      title: t("ai.confirm.title", { app }),
-      message: t("ai.confirm.layout", { app, part, count }),
+      action: t("ai.confirm.layout", { app, part }),
+      confirm,
+      affectedPages: count,
     });
   }
   const name = site.sharedSections[location.sharedSectionId as never]?.name ?? "";
   return (app) => ({
-    title: t("ai.confirm.title", { app }),
-    message: t("ai.confirm.shared", { app, name, count }),
+    action: t("ai.confirm.shared", { app, name }),
+    confirm,
+    affectedPages: count,
   });
 }
 
@@ -198,6 +203,7 @@ export const COMMANDS = {
       return {
         action: t("history.added", { item: component.label }),
         structural: true,
+        kind: "insert",
         confirm: confirmationAt(site, location),
         id: node.props.id,
         recipe: (draft) => {
@@ -235,6 +241,7 @@ export const COMMANDS = {
             ? t("history.editedField", { item: component.label, field: only.label })
             : t("ai.history.fields", { item: component.label }),
         structural: fields.some((field) => !isContent(field)),
+        kind: "props",
         confirm: confirmationAt(site, location),
         recipe: (draft) => {
           const top = nodesAt(draft, location);
@@ -268,6 +275,7 @@ export const COMMANDS = {
       return {
         action: t("history.editedText", { item: component.label }),
         structural: false,
+        kind: "text",
         confirm: confirmationAt(site, location),
         recipe: (draft) => {
           const top = nodesAt(draft, location);
@@ -314,6 +322,7 @@ export const COMMANDS = {
       return {
         action: t("history.moved", { item: label }),
         structural: true,
+        kind: "move",
         confirm: confirmationAt(site, location),
         recipe: (draft) => {
           const top = nodesAt(draft, location);
@@ -348,6 +357,7 @@ export const COMMANDS = {
       return {
         action: t("history.deleted", { item: label }),
         structural: true,
+        kind: "remove",
         confirm: confirmationAt(site, location),
         recipe: (draft) => {
           const top = nodesAt(draft, location);
@@ -367,6 +377,7 @@ export const COMMANDS = {
       return {
         action: t("history.added", { item: t("pages.item", { name: title }) }),
         structural: true,
+        kind: "insert",
         id,
         recipe: (draft) => insertPage(draft, id, title),
       };
@@ -382,9 +393,11 @@ export const COMMANDS = {
       return {
         action: t("ai.history.theme"),
         structural: true,
+        kind: "props",
         confirm: (app) => ({
-          title: t("ai.confirm.title", { app }),
-          message: t("ai.confirm.theme", { app }),
+          action: t("ai.confirm.theme", { app }),
+          confirm: t("ai.confirm.allow"),
+          affectedPages: site.pageOrder.length,
         }),
         recipe: (draft) => {
           draft.theme = structuredClone(next);

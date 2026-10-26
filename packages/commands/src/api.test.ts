@@ -53,7 +53,7 @@ function site(): SiteDoc {
 
 type Setup = {
   readonly history: HistoryManager<SiteDoc, null>;
-  readonly host: CommandHost & { typing: () => boolean; mode: () => "design" | "content" };
+  readonly host: CommandHost & { editing: () => boolean; mode: () => "design" | "content" };
   readonly confirm: ReturnType<typeof vi.fn<CommandHost["confirm"]>>;
 };
 
@@ -64,7 +64,13 @@ function setup(answer: boolean | "never" = true, edit?: (doc: SiteDoc) => void):
   const confirm = vi.fn<CommandHost["confirm"]>(async () =>
     answer === "never" ? new Promise<boolean>(() => undefined) : answer,
   );
-  const host = { history, typing: () => false, mode: () => "design" as const, confirm };
+  const host = {
+    history,
+    run: vi.fn<CommandHost["run"]>((label, recipe) => history.run(label, recipe)),
+    editing: () => false,
+    mode: () => "design" as const,
+    confirm,
+  };
   return { history, host, confirm };
 }
 
@@ -335,6 +341,12 @@ describe("the command API's commands (4.8)", () => {
       ).status,
     ).toBe("refused");
     expect((await api.run("removeNode", { location, nodeId: "heading" }, app)).status).toBe("done");
+    expect(vi.mocked(host.run).mock.calls.map(([, , kind]) => kind)).toEqual([
+      "text",
+      "props",
+      "move",
+      "remove",
+    ]);
     expect(content(history)[1]?.props.content).toEqual([]);
     expect(
       (
@@ -365,8 +377,9 @@ describe("the command API's commands (4.8)", () => {
       label: "AI (Claude): Changed the theme",
     });
     expect(allowed.confirm.mock.calls[0]?.[0]).toEqual<Confirmation>({
-      title: "Allow Claude to make this change?",
-      message: "Claude wants to change the theme. It changes every page.",
+      action: "Allow Claude to change the theme?",
+      confirm: "Allow",
+      affectedPages: 3,
     });
 
     const refused = setup(false);
@@ -393,9 +406,10 @@ describe("the command API's commands (4.8)", () => {
       },
       app,
     );
-    expect(header.confirm.mock.calls[0]?.[0].message).toBe(
-      "Claude wants to change the Header. It is on 3 pages.",
-    );
+    expect(header.confirm.mock.calls[0]?.[0]).toMatchObject({
+      action: "Allow Claude to change the Header?",
+      affectedPages: 3,
+    });
     await api.run(
       "editText",
       { location: home(header.history), nodeId: "heading", field: "text", text: "Hi" },
@@ -413,7 +427,7 @@ describe("the command API's commands (4.8)", () => {
     expect((await api.run("editText", edit, app)).status).toBe("busy");
     gesture.cancel();
 
-    host.typing = () => true;
+    host.editing = () => true;
     expect((await api.run("editText", edit, app)).status).toBe("busy");
     expect(history.state.getState().entries).toEqual([]);
   });
@@ -460,9 +474,10 @@ describe("the command API's commands on shared parts (4.8)", () => {
         app,
       ),
     ).toMatchObject({ status: "done", label: "AI (Claude): Edited Heading text" });
-    expect(confirm.mock.calls[0]?.[0].message).toBe(
-      "Claude wants to change the shared section Opening hours. It is on 2 pages.",
-    );
+    expect(confirm.mock.calls[0]?.[0]).toMatchObject({
+      action: "Allow Claude to change the shared section Opening hours?",
+      affectedPages: 2,
+    });
     expect((await api.run("removeNode", { location: shared, nodeId: "hours" }, app)).status).toBe(
       "refused",
     );
@@ -491,9 +506,7 @@ describe("the command API's commands on shared parts (4.8)", () => {
       { location: header, nodeId: "header", values: { siteName: "Rosa's" } },
       app,
     );
-    expect(confirm.mock.calls[0]?.[0].message).toBe(
-      "Claude wants to change the Header. It is on 2 pages.",
-    );
+    expect(confirm.mock.calls[0]?.[0].affectedPages).toBe(2);
     expect((await api.run("addNode", { location: header, type: "Text" }, app)).status).toBe(
       "refused",
     );

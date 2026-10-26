@@ -5,13 +5,12 @@ export const ai = {
   "ai.history.theme": "Changed the theme",
   // Several fields of one element at once: "AI (Claude): Edited Hero".
   "ai.history.fields": "Edited {item}",
-  // The D7 confirmation an AI app's change to more than one page waits for.
-  "ai.confirm.title": "Allow {app} to make this change?",
-  "ai.confirm.theme": "{app} wants to change the theme. It changes every page.",
-  "ai.confirm.layout": "{app} wants to change the {part}. It is on {count} pages.",
-  "ai.confirm.shared": "{app} wants to change the shared section {name}. It is on {count} pages.",
+  // The D7 question an AI app's change to more than one page waits for; the dialog then says how
+  // many pages change ("This changes 3 pages.").
+  "ai.confirm.theme": "Allow {app} to change the theme?",
+  "ai.confirm.layout": "Allow {app} to change the {part}?",
+  "ai.confirm.shared": "Allow {app} to change the shared section {name}?",
   "ai.confirm.allow": "Allow",
-  "ai.confirm.decline": "Don't allow",
   "ai.part.header": "Header",
   "ai.part.footer": "Footer",
 } as const;

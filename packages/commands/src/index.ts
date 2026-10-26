@@ -5,4 +5,11 @@ export { COMMANDS } from "./commands.js";
 export type { Location } from "./locations.js";
 export type { QueryName } from "./queries.js";
 export { QUERIES } from "./queries.js";
-export type { Actor, CommandHost, CommandResult, Confirmation, Refusal } from "./types.js";
+export type {
+  Actor,
+  ChangeKind,
+  CommandHost,
+  CommandResult,
+  Confirmation,
+  Refusal,
+} from "./types.js";

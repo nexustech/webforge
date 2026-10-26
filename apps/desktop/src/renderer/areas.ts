@@ -1,4 +1,5 @@
 import { addPanelArea } from "./add/area.js";
+import { aiRequestsArea } from "./ai/area.js";
 import { clipboardCommandsArea, styleCommandsArea } from "./clipboard/area.js";
 import type { Area, EditorContext, WindowContext } from "./editor/areas.js";
 import {
@@ -64,4 +65,5 @@ export const WINDOW_AREAS: readonly Area<WindowContext>[] = [
   settingsArea,
   siteSettingsArea,
   themePanelArea,
+  aiRequestsArea,
 ];
