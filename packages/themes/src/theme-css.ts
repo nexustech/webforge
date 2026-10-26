@@ -113,6 +113,17 @@ const RAISED_SHADOW: Readonly<Record<ThemeTokens["shadow"], string>> = {
   strong: "0 4px 6px -1px rgb(0 0 0 / 0.2), 0 2px 4px -2px rgb(0 0 0 / 0.2)",
 };
 
+/** A corner token in CSS, as the site draws it: for Theme Studio's corner scale (2.3b). */
+export const radiusCss = (token: ThemeTokens["radius"]["box"]): string => RADIUS[token];
+
+/** A shadow token's medium shadow in CSS, as the site draws it: for Theme Studio's scale (2.3b). */
+export function shadowCss(token: ThemeTokens["shadow"]): string {
+  if (token === "none") return "none";
+  return (
+    SHADOW_SCALE[token].md ?? "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)"
+  );
+}
+
 /** Headings' letter spacing for each tracking token (2.13d). */
 const HEADING_TRACKING: Readonly<Record<ThemeTokens["headings"]["tracking"], number>> = {
   tight: -0.02,

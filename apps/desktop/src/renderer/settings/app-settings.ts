@@ -29,7 +29,7 @@ const INTERFACE: FormSpec<InterfaceValues, z.infer<typeof interfaceSchema>> = {
     {
       kind: "select",
       name: "theme",
-      label: t("settings.interface.theme"),
+      label: t("settings.interface.appearance"),
       options: [
         { label: t("settings.interface.dark"), value: "dark" },
         { label: t("settings.interface.light"), value: "light" },

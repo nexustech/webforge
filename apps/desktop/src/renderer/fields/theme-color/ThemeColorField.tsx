@@ -3,7 +3,7 @@ import { t } from "@webforge/i18n";
 import { oklchSchema } from "@webforge/model";
 import { hexToOklch } from "@webforge/themes";
 import { TriangleAlertIcon } from "lucide-react";
-import { useEffect, useEffectEvent, useId, useRef, useState } from "react";
+import { useId, useState } from "react";
 import { hexOf } from "../color/hex.js";
 
 /** Six hex digits, with or without the `#`: what the hex box takes. */
@@ -26,41 +26,44 @@ export function ThemeColorField({
   const hexId = useId();
   const hexLabelId = useId();
   const warningsId = useId();
-  const picker = useRef<HTMLInputElement>(null);
   const parsed = oklchSchema.safeParse(value);
   const hex = parsed.success ? hexOf(parsed.data) : "#000000";
   // What's typed in the hex box, until it's used; another colour starts it afresh.
   const [typed, setTyped] = useState<{ readonly from: string; readonly text: string } | null>(null);
   const text = typed?.from === hex ? typed.text : hex;
+  // Each colour offered: the picker starts afresh after it, showing the stored colour, also when the
+  // change was declined (D7) and the colour stayed as it was.
+  const [offers, setOffers] = useState(0);
 
   /** Uses `next`, a hex code, if it's another colour: one change. */
   const choose = (next: string) => {
     const digits = HEX.exec(next.trim())?.[1]?.toLowerCase();
     setTyped(null);
     if (digits === undefined || `#${digits}` === hex) return;
+    setOffers(offers + 1);
     onChange(hexToOklch(`#${digits}`));
     onCommit();
   };
-  const picked = useEffectEvent((input: HTMLInputElement) => choose(input.value));
-
-  // The picker's colour is used once it closes ("change"), not at every step of a drag ("input").
-  // A new colour draws a new picker (its key), which gets its own listener.
-  useEffect(() => {
-    const input = picker.current;
-    if (input === null || hex === "") return;
-    const done = () => picked(input);
+  /**
+   * The picker's colour is used once it closes ("change"), not at every step of a drag ("input"),
+   * which React's onChange reports. Its listener follows each render's `choose`.
+   */
+  const listen = (input: HTMLInputElement | null) => {
+    if (input === null) return;
+    const done = () => choose(input.value);
     input.addEventListener("change", done);
     return () => input.removeEventListener("change", done);
-  }, [hex]);
+  };
 
   const warnings = field.warnings;
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex min-w-0 items-center gap-1.5">
         <input
-          // Uncontrolled, so dragging in the picker moves freely; it starts again at a new colour.
-          key={hex}
-          ref={picker}
+          // Uncontrolled, so dragging in the picker moves freely; it starts again at a new colour,
+          // and after each colour offered.
+          key={`${hex} ${offers}`}
+          ref={listen}
           id={id}
           type="color"
           aria-labelledby={labelId}

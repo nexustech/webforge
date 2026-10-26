@@ -1,10 +1,11 @@
 import {
+  Button,
   EditPanel,
   type EditPanelField,
   FieldRenderersProvider,
   type OptionGroup,
 } from "@webforge/editor-ui";
-import { isMessageKey, type MessageKey, t } from "@webforge/i18n";
+import { t } from "@webforge/i18n";
 import {
   type ColorRole,
   fontRefSchema,
@@ -21,15 +22,20 @@ import {
   THEME_PRESETS,
   themePreset,
 } from "@webforge/themes";
+import { PaletteIcon } from "lucide-react";
+import type { StoreApi } from "zustand/vanilla";
 import type { EditorSession } from "../editor/editor-session.js";
 import { useDocument } from "../editor/use-document.js";
 import { shownRatio, TEXT_PX, themeFieldRenderers } from "../fields/index.js";
 import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
+import type { StudioState } from "./studio/studio-state.js";
+import { ThemeStudio } from "./studio/ThemeStudio.js";
 import { TOKEN_CONTROLS, tokenKey, tokenValue } from "./theme-controls.js";
 import {
   COLOR_WORDS,
   presetName,
   QUICK_COLORS,
+  ROLE_NAMES,
   setColor,
   setFont,
   setPairing,
@@ -37,29 +43,10 @@ import {
   setToken,
   switchPreset,
 } from "./theme-edits.js";
-
-/** A message whose key is made at run time, if it has one: a test checks every key the tab makes. */
-export const named = (key: string): string | undefined => (isMessageKey(key) ? t(key) : undefined);
+import { named } from "./theme-words.js";
 
 /** The pairing value of fonts that are no pairing: the person's own choice. */
 const OWN_PAIRING = "own";
-
-/**
- * The names of the colours a quick colour is checked against (2.1's pairs), for its contrast
- * warning: the surfaces, the text, and each brand colour and the text on it.
- */
-const OTHER_NAMES: Partial<Record<ColorRole, MessageKey>> = {
-  "base-100": "colour.role.surface",
-  "base-200": "theme.role.surface2",
-  "base-300": "theme.role.surface3",
-  "base-content": "colour.role.text",
-  primary: "colour.role.brand",
-  "primary-content": "theme.role.onBrand",
-  secondary: "colour.role.accent",
-  "secondary-content": "theme.role.onAccent",
-  accent: "colour.role.secondAccent",
-  "accent-content": "theme.role.onSecondAccent",
-};
 
 const RENDERERS = themeFieldRenderers();
 
@@ -81,8 +68,7 @@ function contrastWarnings(issues: readonly ContrastIssue[], role: ColorRole): st
   return issues.flatMap((issue) => {
     if (issue.palette !== "colors") return [];
     if (issue.background !== role && issue.foreground !== role) return [];
-    const other = OTHER_NAMES[issue.background === role ? issue.foreground : issue.background];
-    if (other === undefined) return [];
+    const other = ROLE_NAMES[issue.background === role ? issue.foreground : issue.background];
     return [
       t("theme.contrast.low", {
         other: t(other),
@@ -205,6 +191,8 @@ export type ThemePanelProps = {
   readonly session: EditorSession;
   /** Asks before a change to every page (D7): a preset, a colour, the fonts. */
   readonly siteWide?: Pick<SiteWideConfirm, "confirmSiteWide"> | undefined;
+  /** Theme Studio's state (2.3b): the tab opens it, and draws it. */
+  readonly studio?: StoreApi<StudioState> | undefined;
 };
 
 /**
@@ -213,7 +201,7 @@ export type ThemePanelProps = {
  * in the font picker; its text sizes; then each token the theme has, by group. A preset, a colour or
  * the fonts change every page, so they're asked first (D7); each change is one labelled step.
  */
-export function ThemePanel({ session, siteWide }: ThemePanelProps) {
+export function ThemePanel({ session, siteWide, studio }: ThemePanelProps) {
   const theme = useDocument(session, (site) => site.theme);
   const onChange = (name: string, value: unknown) => {
     const [kind, rest = ""] = name.split(/\.(.*)/s);
@@ -246,17 +234,37 @@ export function ThemePanel({ session, siteWide }: ThemePanelProps) {
   };
   return (
     <FieldRenderersProvider renderers={RENDERERS}>
-      <EditPanel
-        heading={t("theme.heading", {
-          name: presetName(theme.preset),
-        })}
-        itemKey="theme"
-        single
-        fields={themeFields(theme)}
-        onChange={onChange}
-        // Each change is its own step as it's made: nothing waits for the field to be left.
-        onCommit={() => undefined}
-      />
+      <div className="flex h-full flex-col">
+        {studio === undefined ? null : (
+          <div className="px-3 pt-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="w-full"
+              aria-haspopup="dialog"
+              onClick={() => studio.setState({ open: true })}
+            >
+              <PaletteIcon aria-hidden className="size-3.5" />
+              {t("theme.studio.open")}
+            </Button>
+            <ThemeStudio session={session} studio={studio} siteWide={siteWide} />
+          </div>
+        )}
+        <div className="min-h-0 flex-1">
+          <EditPanel
+            heading={t("theme.heading", {
+              name: presetName(theme.preset),
+            })}
+            itemKey="theme"
+            single
+            fields={themeFields(theme)}
+            onChange={onChange}
+            // Each change is its own step as it's made: nothing waits for the field to be left.
+            onCommit={() => undefined}
+          />
+        </div>
+      </div>
     </FieldRenderersProvider>
   );
 }
