@@ -42,6 +42,7 @@ export type {
   MenuItemId,
   PageId,
   SharedSectionId,
+  ThemeId,
 } from "./ids.js";
 export {
   mediaIdSchema,
@@ -50,6 +51,7 @@ export {
   nodeIdSchema,
   pageIdSchema,
   sharedSectionIdSchema,
+  themeIdSchema,
 } from "./ids.js";
 export type { LinkValue } from "./link.js";
 export { anchorIdSchema, EMAIL_SUBJECT_MAX, linkValueSchema, webUrlSchema } from "./link.js";
@@ -203,6 +205,7 @@ export {
   SHADED_ROLES,
   TEXT_SIZES,
   TEXT_STYLES,
+  THEME_NAME_MAX,
   themeTokensSchema,
 } from "./theme.js";
 export { siteToSnapshot } from "./to-snapshot.js";

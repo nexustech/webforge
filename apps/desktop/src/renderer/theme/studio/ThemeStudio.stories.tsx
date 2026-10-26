@@ -1,5 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { DEFAULT_THEME, themeIdSchema } from "@webforge/model";
+import { themePreset } from "@webforge/themes";
+import type { OwnTheme } from "../../../shared/ipc/themes.js";
 import { dialogStory } from "../../testing/stories.js";
+import { createOwnThemes } from "../own-themes.js";
 import { createStudio, type StudioSection } from "./studio-state.js";
 import { ThemeStudio } from "./ThemeStudio.js";
 
@@ -27,3 +31,27 @@ export const Text: Story = openOn("text");
 
 /** The other styles by group, the corner and shadow scales as samples. */
 export const Styles: Story = openOn("styles");
+
+/** One of the person's own themes, from `preset`, named `name`. */
+function mine(preset: string, id: string, name: string): OwnTheme {
+  return {
+    ...structuredClone(themePreset(preset) ?? DEFAULT_THEME),
+    own: { id: themeIdSchema.parse(id), name },
+  };
+}
+
+/** My themes (2.22): the person's own first, with Rename and Delete, after New theme. */
+export const MyThemes: Story = dialogStory((session) => {
+  const studio = createStudio();
+  studio.setState({ open: true, section: "themes" });
+  const ownThemes = createOwnThemes(() => ({
+    list: () =>
+      Promise.resolve([
+        mine("bistro", "theme0000000000a", "Bakery"),
+        mine("clarity", "theme0000000000b", "Corner shop"),
+      ]),
+    keep: () => Promise.resolve(null),
+    remove: () => Promise.resolve(null),
+  }));
+  return <ThemeStudio session={session} studio={studio} ownThemes={ownThemes} />;
+});

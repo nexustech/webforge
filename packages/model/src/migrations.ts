@@ -52,6 +52,7 @@ export const MIGRATIONS: Readonly<Record<number, SiteMigration>> = {
   4: themeTokens,
   5: sectionPaddingBoxes,
   6: themeStyleTokens,
+  7: ownThemes,
 };
 
 type RawNode = { type: string; props: Record<string, unknown> };
@@ -254,6 +255,15 @@ function themeStyleTokens(site: RawSite): RawSite {
     ? { ...JSON.parse(JSON.stringify(FORMAT_7_DEFAULTS)), ...site.theme }
     : site.theme;
   return { ...site, theme, formatVersion: 7 };
+}
+
+/**
+ * Format 7 → 8 (2.22, PH2-17): a theme may be the person's own, with an id and a name (`own`).
+ * Every older site's theme is a built-in one, as it was, so nothing changes but the version: a
+ * build that reads only format 7 refuses an own theme as from a newer version, not as broken.
+ */
+function ownThemes(site: RawSite): RawSite {
+  return { ...site, formatVersion: 8 };
 }
 
 /** Options of {@link migrateSiteWith}; the defaults are this build's chain and version. */

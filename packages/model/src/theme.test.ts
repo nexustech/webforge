@@ -125,6 +125,27 @@ describe("theme tokens (2.1)", () => {
     }).toThrow();
   });
 
+  it("may be the person's own, with an id and a name of up to 60 characters (2.22)", () => {
+    const own = (value: unknown) => changed((theme) => Object.assign(theme, { own: value }));
+
+    expect(DEFAULT_THEME.own).toBeUndefined();
+    expect(
+      themeTokensSchema.parse(own({ id: "theme0000000000a", name: "  Bakery  " })).own,
+    ).toEqual({ id: "theme0000000000a", name: "Bakery" });
+    expect(
+      themeTokensSchema.safeParse(own({ id: "theme0000000000a", name: "x".repeat(60) })).success,
+    ).toBe(true);
+    for (const wrong of [
+      { id: "theme0000000000a", name: "   " },
+      { id: "theme0000000000a", name: "x".repeat(61) },
+      { id: "../themes", name: "Bakery" },
+      { id: "theme0000000000a" },
+      { id: "theme0000000000a", name: "Bakery", builtIn: false },
+    ]) {
+      expect(themeTokensSchema.safeParse(own(wrong)).success, JSON.stringify(wrong)).toBe(false);
+    }
+  });
+
   it("copies a theme sharing nothing with it", () => {
     const copy: ThemeTokens = copyTheme(DEFAULT_THEME);
 

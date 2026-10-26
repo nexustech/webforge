@@ -100,6 +100,11 @@ test("a colour hard to read says so under it, and a readable one doesn't", async
   await hex.selectText();
   await page.keyboard.type("d8d4ff");
   await page.keyboard.press("Enter");
+  // A built-in theme is read-only (2.22): the first change saves the person's own version.
+  await page
+    .getByRole("dialog", { name: "Save your own version of 'Light'?" })
+    .getByRole("button", { name: "Save Theme" })
+    .click();
   await page.getByRole("alertdialog").getByRole("button", { name: "Change Colour" }).click();
 
   await expect(
@@ -107,7 +112,9 @@ test("a colour hard to read says so under it, and a readable one doesn't", async
   ).toBeVisible();
   await expect(hex).toHaveValue("#d8d4ff");
   await page.getByRole("tab", { name: "Undo History" }).click();
-  await expect(page.locator(".undo-history__step").first()).toHaveText("Changed brand colour");
+  await expect(page.locator(".undo-history__step").first()).toHaveText(
+    "Saved theme 'Light (my version)'",
+  );
 });
 
 test("Theme Studio opens from the View menu, switches theme from a card, and undoes it there", async () => {
@@ -162,12 +169,58 @@ test("a photo in Media proposes brand colours, read on this computer, used as on
   await expect(studio.getByRole("list", { name: "Colours from Shop front.jpg" })).toBeVisible();
   const before = (await themeOf(page)).colors.primary;
   await studio.getByRole("button", { name: "Use These Colours" }).click();
+  // A built-in theme is read-only (2.22): the first change saves the person's own version.
+  await page
+    .getByRole("dialog", { name: "Save your own version of 'Light'?" })
+    .getByRole("button", { name: "Save Theme" })
+    .click();
   await page.getByRole("alertdialog").getByRole("button", { name: "Use Colours" }).click();
   await expect.poll(async () => (await themeOf(page)).colors.primary).not.toEqual(before);
 
   await page.keyboard.press("Escape");
   await page.getByRole("tab", { name: "Undo History" }).click();
   await expect(page.locator(".undo-history__step").first()).toHaveText(
-    "Changed brand colours from 'Shop front.jpg'",
+    "Saved theme 'Light (my version)'",
   );
+});
+
+test("a change to a built-in theme saves the person's own, which another site can use (2.22)", async () => {
+  // Both sites on one computer: the same user data.
+  const userData = join(dir, "user-data");
+  app = await launchDesktopApp({ args: [sitePath], userDataDir: userData });
+  let page = await app.firstWindow();
+  await waitForCanvas(page);
+  await page
+    .getByRole("region", { name: "Right panels" })
+    .getByRole("tab", { name: "Theme", exact: true })
+    .click();
+
+  await page.getByRole("combobox", { name: "Card style" }).selectOption("raised");
+  const save = page.getByRole("dialog", { name: "Save your own version of 'Light'?" });
+  await save.getByRole("textbox", { name: "Theme name" }).fill("Bakery");
+  await save.getByRole("button", { name: "Save Theme" }).click();
+  await expect(page.getByRole("heading", { name: "Theme: Bakery" })).toBeVisible();
+  await expect
+    .poll(async () => (await themeOf(page)) as unknown)
+    .toMatchObject({ preset: "light", own: { name: "Bakery" } });
+  await app.close();
+
+  // Another site on the same computer lists it first, and uses it.
+  const other = join(dir, "Other.wforge");
+  ProjectStore.create(other, { name: "Other" }).close();
+  app = await launchDesktopApp({ args: [other], userDataDir: userData });
+  page = await app.firstWindow();
+  await waitForCanvas(page);
+  await page
+    .getByRole("region", { name: "Right panels" })
+    .getByRole("tab", { name: "Theme", exact: true })
+    .click();
+  const themes = page.getByRole("combobox", { name: "Theme", exact: true });
+  await expect(themes.locator("option").first()).toHaveText("Bakery");
+  await themes.selectOption({ label: "Bakery" });
+  await page.getByRole("alertdialog").getByRole("button", { name: "Switch Theme" }).click();
+  await expect(page.getByRole("heading", { name: "Theme: Bakery" })).toBeVisible();
+  await expect
+    .poll(async () => (await themeOf(page)) as unknown)
+    .toMatchObject({ own: { name: "Bakery" } });
 });

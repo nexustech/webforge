@@ -2,9 +2,11 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { t } from "@webforge/i18n";
+import { DEFAULT_THEME, themeIdSchema } from "@webforge/model";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
 import { registriesForTest, sessionWith } from "../testing/fixtures.js";
+import { createOwnThemes } from "./own-themes.js";
 import { registerThemePanel } from "./register-theme-panel.js";
 import { ThemePanel } from "./ThemePanel.js";
 
@@ -118,5 +120,31 @@ describe("the Theme tab (2.3a)", () => {
     expect(siteWide.confirmSiteWide).toHaveBeenCalledWith(
       expect.objectContaining({ action: "Change the Accent colour?" }),
     );
+  });
+});
+
+describe("the Theme tab's own themes (2.22, PH2-17)", () => {
+  it("lists the person's own themes first, and asks for a name before changing a built-in one", async () => {
+    const session = sessionWith();
+    const night = {
+      ...structuredClone(DEFAULT_THEME),
+      own: { id: themeIdSchema.parse("theme0000000000n"), name: "Night" },
+    };
+    const ownThemes = createOwnThemes(() => ({
+      list: () => Promise.resolve([night]),
+      keep: () => Promise.resolve(null),
+      remove: () => Promise.resolve(null),
+    }));
+    const askName = vi.spyOn(ownThemes, "askName").mockResolvedValue("Light, roomier");
+    render(<ThemePanel session={session} ownThemes={ownThemes} />);
+
+    const preset = screen.getByRole("combobox", { name: "Theme" }) as HTMLSelectElement;
+    await vi.waitFor(() => expect(preset.options[0]?.textContent).toBe("Night"));
+    expect(preset.options[1]?.textContent).toBe("Light");
+
+    await userEvent.selectOptions(screen.getByRole("combobox", { name: "Card style" }), "raised");
+    await vi.waitFor(() => expect(labels(session)).toEqual(["Saved theme 'Light, roomier'"]));
+    expect(askName).toHaveBeenCalledOnce();
+    expect(screen.getByRole("heading", { name: /Light, roomier/ })).toBeDefined();
   });
 });

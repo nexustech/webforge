@@ -14,6 +14,7 @@ import {
   type SiteDoc,
   TEXT_SIZES,
   TEXT_STYLES,
+  themeIdSchema,
 } from "@webforge/model";
 import { siteLibrary, starterPage } from "@webforge/site-components";
 import { createFakeEngine, type FakeEngine } from "@webforge/test-utils/renderer";
@@ -295,6 +296,9 @@ const menuCommands: fc.Arbitrary<Command>[] = [
   fc.constant<Command>({ name: "follow the page order", run: (ctx) => followPages(ctx.session) }),
 ];
 
+/** One of the person's own themes' id, for the edits that save or rename it (2.22). */
+const OWN_THEME_ID = themeIdSchema.parse("theme0000000000a");
+
 /**
  * Theme edits (2.1): a colour role, the type scale or the shadow changed site-wide, each one step,
  * as the Theme panel (2.3) will make them.
@@ -329,6 +333,28 @@ const themeCommands: fc.Arbitrary<Command>[] = [
         draft.theme = { ...draft.theme, shadow };
       }),
   })),
+  // The person's own themes (2.22): a built-in theme saved under a name with its first change, a
+  // rename, and back to a built-in one.
+  fc
+    .record({
+      name: fc.constantFrom("Bakery", "Light (my version)", "Shop"),
+      l: fc.double({ min: 0, max: 1, noNaN: true }),
+    })
+    .map(({ name, l }) => ({
+      name: `own theme ${name} ${l}`,
+      run: (ctx) =>
+        ctx.session.edit("root", `Saved theme '${name}'`, (draft) => {
+          draft.theme.colors.primary = { l, c: 0.1, h: 30 };
+          draft.theme.own = { id: OWN_THEME_ID, name };
+        }),
+    })),
+  fc.constant<Command>({
+    name: "built-in theme",
+    run: (ctx) =>
+      ctx.session.edit("root", "Changed theme to 'Light'", (draft) => {
+        delete draft.theme.own;
+      }),
+  }),
 ];
 
 const commands: fc.Arbitrary<Command>[] = [

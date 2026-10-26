@@ -1,8 +1,12 @@
 // @vitest-environment happy-dom
 import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { DEFAULT_THEME, themeIdSchema } from "@webforge/model";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import type { OwnTheme, ThemesApi } from "../../../shared/ipc/themes.js";
 import { sessionWith } from "../../testing/fixtures.js";
+import { OwnThemeDialogs } from "../OwnThemeDialogs.js";
+import { createOwnThemes } from "../own-themes.js";
 import { ThemePanel } from "../ThemePanel.js";
 import { createStudio, type StudioSection } from "./studio-state.js";
 import { ThemeStudio } from "./ThemeStudio.js";
@@ -108,5 +112,96 @@ describe("Theme Studio (2.3b, F-DS-7)", () => {
     expect(theme().effects.noise).toBe(true);
     expect(theme().cards.style).toBe("raised");
     expect(labels()).toEqual(["Changed corner style", "Changed effects", "Changed card style"]);
+  });
+});
+
+describe("Theme Studio's My themes (2.22, PH2-17)", () => {
+  /** Theme Studio on its themes, with My themes holding a "Night" theme, and its dialogs. */
+  async function withMyThemes() {
+    const session = sessionWith();
+    const studio = createStudio();
+    studio.setState({ open: true, section: "themes" });
+    const night: OwnTheme = {
+      ...structuredClone(DEFAULT_THEME),
+      scheme: "dark",
+      own: { id: themeIdSchema.parse("theme0000000000n"), name: "Night" },
+    };
+    const api = {
+      list: vi.fn(() => Promise.resolve([night])),
+      keep: vi.fn(() => Promise.resolve(null)),
+      remove: vi.fn(() => Promise.resolve(null)),
+    } satisfies ThemesApi;
+    const ownThemes = createOwnThemes(() => api);
+    function Window() {
+      return (
+        <>
+          <ThemeStudio session={session} studio={studio} ownThemes={ownThemes} />
+          <OwnThemeDialogs ownThemes={ownThemes} site={session.history.document.getState().theme} />
+        </>
+      );
+    }
+    render(<Window />);
+    const dialog = () => within(screen.getByRole("dialog", { name: "Theme Studio" }));
+    await dialog().findByRole("button", { name: /^Night/ });
+    return {
+      session,
+      api,
+      dialog,
+      labels: () => session.history.entries().map((entry) => entry.label),
+      theme: () => session.history.document.getState().theme,
+      user: userEvent.setup({ delay: null }),
+    };
+  }
+
+  it("lists the person's own themes first, then the built-in ones, and uses one", async () => {
+    const { dialog, labels, theme, user } = await withMyThemes();
+
+    const mine = dialog().getByRole("list", { name: "My themes" });
+    expect(within(mine).getAllByRole("button", { name: /^Night/ })).toHaveLength(1);
+    expect(dialog().getByRole("list", { name: "Built-in themes" })).toBeDefined();
+    await user.click(within(mine).getByRole("button", { name: /^Night/ }));
+
+    await vi.waitFor(() => expect(theme().own?.name).toBe("Night"));
+    expect(labels()).toEqual(["Changed theme to 'Night'"]);
+  });
+
+  it("creates a new theme from a built-in one, by name", async () => {
+    const { dialog, labels, theme, user } = await withMyThemes();
+
+    await user.click(dialog().getByRole("button", { name: "New theme…" }));
+    const form = within(await screen.findByRole("dialog", { name: "New theme" }));
+    await user.selectOptions(form.getByRole("combobox", { name: "Start from" }), "bistro");
+    const name = form.getByRole("textbox", { name: "Theme name" });
+    await user.clear(name);
+    await user.type(name, "Shop");
+    await user.click(form.getByRole("button", { name: "Create Theme" }));
+
+    await vi.waitFor(() => expect(theme().own?.name).toBe("Shop"));
+    expect(theme().preset).toBe("bistro");
+    expect(labels()).toEqual(["Created theme 'Shop'"]);
+  });
+
+  it("renames and deletes one of the person's own; the site keeps its copy", async () => {
+    const { dialog, api, labels, theme, user } = await withMyThemes();
+    await user.click(dialog().getByRole("button", { name: /^Night/ }));
+    await vi.waitFor(() => expect(theme().own?.name).toBe("Night"));
+
+    await user.click(dialog().getByRole("button", { name: "Rename Night" }));
+    const rename = within(await screen.findByRole("dialog", { name: "Rename theme" }));
+    const name = rename.getByRole("textbox", { name: "Theme name" });
+    await user.clear(name);
+    await user.type(name, "Late night");
+    await user.click(rename.getByRole("button", { name: "Rename" }));
+    await vi.waitFor(() => expect(theme().own?.name).toBe("Late night"));
+    expect(labels()).toEqual(["Changed theme to 'Night'", "Renamed theme to 'Late night'"]);
+
+    await user.click(dialog().getByRole("button", { name: "Delete Late night" }));
+    const remove = within(await screen.findByRole("alertdialog"));
+    expect(remove.getByText(/This site keeps its copy/)).toBeDefined();
+    await user.click(remove.getByRole("button", { name: "Delete Theme" }));
+
+    expect(api.remove).toHaveBeenCalledWith("theme0000000000n");
+    expect(theme().own?.name).toBe("Late night");
+    expect(labels()).toHaveLength(2);
   });
 });

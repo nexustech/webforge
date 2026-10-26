@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { themeIdSchema } from "./ids.js";
 
 /**
  * A site's theme (2.1, F-DS-1): the design tokens every page is styled from, which the themes
@@ -161,6 +162,9 @@ export const INVERSE_THEME = "wf_inverse";
  */
 export const HIDDEN_ATTRIBUTE = "data-webforge-hidden";
 
+/** The longest name one of the person's own themes may have (2.22). */
+export const THEME_NAME_MAX = 60;
+
 /** See {@link themeTokensSchema}. */
 export const themeTokensSchema = z.strictObject({
   /** The preset the theme started from ("light"): the name it is listed under. */
@@ -218,6 +222,17 @@ export const themeTokensSchema = z.strictObject({
   images: z.strictObject({ corners: z.enum(IMAGE_CORNERS) }),
   /** How a page's sections follow one another (2.13d). */
   sections: z.strictObject({ rhythm: z.enum(SECTION_RHYTHMS) }),
+  /**
+   * The person's own theme (2.22, PH2-17): its id in their My themes and its name. A theme without
+   * it is a built-in one, which is read-only: the first change to it makes it the person's own.
+   * The site keeps its own copy either way, so it opens the same on any computer.
+   */
+  own: z
+    .strictObject({
+      id: themeIdSchema,
+      name: z.string().trim().min(1).max(THEME_NAME_MAX),
+    })
+    .optional(),
 });
 
 /** The site's theme tokens; see {@link themeTokensSchema}. */

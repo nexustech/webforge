@@ -1,10 +1,12 @@
-import { cn } from "@webforge/editor-ui";
+import { Button, cn } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import type { ThemeTokens } from "@webforge/model";
 import { inverseColors, oklchCss, radiusCss, THEME_PRESETS } from "@webforge/themes";
+import { PencilIcon, PlusIcon, Trash2Icon } from "lucide-react";
 import type { CSSProperties } from "react";
+import type { OwnTheme } from "../../../shared/ipc/themes.js";
 import { previewFamily } from "../../fields/index.js";
-import { presetName } from "../theme-edits.js";
+import { themeName } from "../theme-edits.js";
 
 /** A theme's colours, fonts and corners as CSS variables, for its card's preview. */
 function cardStyle(theme: ThemeTokens): CSSProperties {
@@ -37,7 +39,7 @@ function ThemeCard({
   readonly current: boolean;
   readonly onChoose: () => void;
 }) {
-  const name = presetName(theme.preset);
+  const name = themeName(theme);
   return (
     <button
       type="button"
@@ -92,32 +94,135 @@ function ThemeCard({
   );
 }
 
+/** Props of {@link StudioThemes}. */
+type StudioThemesProps = {
+  /** The site's theme. */
+  readonly theme: ThemeTokens;
+  /** The person's own themes (2.22), listed first; none without My themes. */
+  readonly own?: readonly OwnTheme[];
+  /** Uses a theme: one of the person's own or a built-in one (asked first, D7). */
+  readonly onChoose: (theme: ThemeTokens) => void;
+  /** *New theme…*: starts one of the person's own; not offered without it. */
+  readonly onNew?: () => void;
+  /** Renames one of the person's own themes. */
+  readonly onRename?: (theme: OwnTheme) => void;
+  /** Deletes one of the person's own themes from this computer. */
+  readonly onDelete?: (theme: OwnTheme) => void;
+};
+
+/** A heading over a group of theme cards. */
+function GroupHeading({ id, children }: { readonly id: string; readonly children: string }) {
+  return (
+    <h3 id={id} className="m-0 px-1 pt-1 text-xs font-semibold text-muted-foreground">
+      {children}
+    </h3>
+  );
+}
+
+/** The grid the theme cards are in, named by its heading. */
+const GRID = "m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(10.5rem,1fr))] gap-2 p-1";
+
 /**
- * Theme Studio's themes (F-DS-7): a card per preset, live in its own colours, fonts and corners,
- * the theme's own marked. Choosing one switches to it (asked first, D7).
+ * Theme Studio's themes (F-DS-7): a card per theme, live in its own colours, fonts and corners, the
+ * site's own marked. The person's own themes come first (2.22, PH2-17), each with Rename and
+ * Delete, after *New theme…*; then the built-in ones, which are read-only. Choosing one switches to
+ * it (asked first, D7).
  */
 export function StudioThemes({
   theme,
+  own = [],
   onChoose,
-}: {
-  readonly theme: ThemeTokens;
-  readonly onChoose: (preset: ThemeTokens) => void;
-}) {
+  onNew,
+  onRename,
+  onDelete,
+}: StudioThemesProps) {
+  const mine = onNew !== undefined || own.length > 0;
   return (
-    <ul
-      aria-label={t("theme.studio.section.themes")}
-      // Room around the cards for the chosen one's ring.
-      className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(10.5rem,1fr))] gap-2 p-1"
-    >
-      {THEME_PRESETS.map((preset) => (
-        <li key={preset.preset} className="flex">
-          <ThemeCard
-            theme={preset}
-            current={preset.preset === theme.preset}
-            onChoose={() => onChoose(preset)}
-          />
-        </li>
-      ))}
-    </ul>
+    <div className="flex flex-col gap-2">
+      {mine ? (
+        <section aria-labelledby="studio-own-themes" className="flex flex-col gap-1">
+          <div className="flex items-center gap-2">
+            <GroupHeading id="studio-own-themes">{t("theme.own.mine")}</GroupHeading>
+            {onNew === undefined ? null : (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="ml-auto"
+                aria-haspopup="dialog"
+                onClick={onNew}
+              >
+                <PlusIcon aria-hidden className="size-3.5" />
+                {t("theme.own.new")}
+              </Button>
+            )}
+          </div>
+          {own.length === 0 ? (
+            <p className="m-0 px-1 text-xs text-muted-foreground">{t("theme.own.none")}</p>
+          ) : (
+            <ul aria-labelledby="studio-own-themes" className={GRID}>
+              {own.map((each) => (
+                <li key={each.own.id} className="flex flex-col gap-0.5">
+                  <ThemeCard
+                    theme={each}
+                    current={theme.own?.id === each.own.id}
+                    onChoose={() => onChoose(each)}
+                  />
+                  <span className="flex justify-end gap-0.5">
+                    {onRename === undefined ? null : (
+                      <Button
+                        type="button"
+                        size="icon-sm"
+                        variant="ghost"
+                        aria-label={t("theme.own.rename", { name: each.own.name })}
+                        title={t("theme.own.rename", { name: each.own.name })}
+                        aria-haspopup="dialog"
+                        onClick={() => onRename(each)}
+                      >
+                        <PencilIcon aria-hidden />
+                      </Button>
+                    )}
+                    {onDelete === undefined ? null : (
+                      <Button
+                        type="button"
+                        size="icon-sm"
+                        variant="ghost"
+                        aria-label={t("theme.own.delete", { name: each.own.name })}
+                        title={t("theme.own.delete", { name: each.own.name })}
+                        aria-haspopup="dialog"
+                        onClick={() => onDelete(each)}
+                      >
+                        <Trash2Icon aria-hidden />
+                      </Button>
+                    )}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      ) : null}
+      <section aria-labelledby="studio-built-in-themes" className="flex flex-col gap-1">
+        {mine ? (
+          <GroupHeading id="studio-built-in-themes">{t("theme.own.builtIn")}</GroupHeading>
+        ) : null}
+        <ul
+          aria-label={mine ? undefined : t("theme.studio.section.themes")}
+          aria-labelledby={mine ? "studio-built-in-themes" : undefined}
+          // Room around the cards for the chosen one's ring.
+          className={GRID}
+        >
+          {THEME_PRESETS.map((preset) => (
+            <li key={preset.preset} className="flex">
+              <ThemeCard
+                theme={preset}
+                current={theme.own === undefined && preset.preset === theme.preset}
+                onChoose={() => onChoose(preset)}
+              />
+            </li>
+          ))}
+        </ul>
+      </section>
+    </div>
   );
 }

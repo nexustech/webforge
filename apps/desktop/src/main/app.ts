@@ -41,6 +41,7 @@ import { registerIpcHandler } from "./ipc.js";
 import { logFailure } from "./log.js";
 import { registerMediaHandlers } from "./media-ipc.js";
 import { createMediaResponder } from "./media-protocol.js";
+import { createMyThemes } from "./my-themes.js";
 import { shippedTemplateReader } from "./new-site.js";
 import {
   openPreferencesStore,
@@ -65,6 +66,7 @@ import {
 } from "./spellcheck.js";
 import { createStorageWriter, type WriterThread } from "./storage-writer.js";
 import { registerTemplatesHandlers } from "./templates-ipc.js";
+import { registerThemesHandlers } from "./themes-ipc.js";
 import {
   MIN_WINDOW_SIZE,
   mainWindowPlacement,
@@ -433,6 +435,12 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     // AI apps' requests go to the open site's window (F-AI-1); the MCP server (4.9) asks through it.
     const ai = registerAiHandlers(ipcMain, isTrustedSender, () => lifecycle.mainWindow());
     exposeForE2eTests(ai, app.isPackaged);
+    // My themes (2.22): the person's own themes, for every site on this computer.
+    registerThemesHandlers(
+      ipcMain,
+      isTrustedSender,
+      createMyThemes({ dir: app.getPath("userData") }),
+    );
     // A site double-clicked in Explorer arrives as a command-line argument (P1).
     const projectToOpen = lifecycle.projectFromFinder ?? findProjectArgument(process.argv);
     if (projectToOpen !== undefined) {

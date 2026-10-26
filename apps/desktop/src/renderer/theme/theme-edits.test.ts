@@ -1,10 +1,12 @@
-import type { SiteDoc } from "@webforge/model";
-import { contrastRatio, FONT_PAIRINGS, themePreset } from "@webforge/themes";
+import { DEFAULT_THEME, type SiteDoc, themeIdSchema } from "@webforge/model";
+import { contrastRatio, FONT_PAIRINGS, THEME_PRESETS, themePreset } from "@webforge/themes";
 import { describe, expect, it, vi } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
 import { sessionWith } from "../testing/fixtures.js";
 import { TOKEN_CONTROLS, tokenKey } from "./theme-controls.js";
 import {
+  createOwnTheme,
+  renameOwnTheme,
   setBrandColours,
   setColor,
   setFont,
@@ -26,10 +28,11 @@ function setUp(site: SiteDoc = starterSite()) {
   };
 }
 
-/** A site-wide confirmation that answers `answer`, and what it was asked. */
-const answering = (answer: boolean) => ({
-  confirmSiteWide: vi.fn(() => Promise.resolve(answer)),
-});
+/** Asks with a site-wide confirmation that answers `answer`; `confirmSiteWide` is what it was asked. */
+function answering(answer: boolean) {
+  const confirmSiteWide = vi.fn(() => Promise.resolve(answer));
+  return { siteWide: { confirmSiteWide }, confirmSiteWide };
+}
 
 const control = (key: string) => {
   const found = TOKEN_CONTROLS.find((each) => tokenKey(each) === key);
@@ -40,13 +43,13 @@ const control = (key: string) => {
 const BRAND = { l: 0.5, c: 0.2, h: 30 };
 
 describe("the Theme tab's edits (2.3a)", () => {
-  it("sets a token as one step named for its group, and none for the value it has", () => {
+  it("sets a token as one step named for its group, and none for the value it has", async () => {
     const { session, labels, theme } = setUp();
 
-    setToken(session, control("cards.style"), "raised");
-    setToken(session, control("headings.case"), "uppercase");
-    setToken(session, control("headings.case"), "uppercase");
-    setToken(session, control("effects.depth"), false);
+    await setToken(session, undefined, control("cards.style"), "raised");
+    await setToken(session, undefined, control("headings.case"), "uppercase");
+    await setToken(session, undefined, control("headings.case"), "uppercase");
+    await setToken(session, undefined, control("effects.depth"), false);
 
     expect(theme().cards.style).toBe("raised");
     expect(theme().headings.case).toBe("uppercase");
@@ -54,10 +57,10 @@ describe("the Theme tab's edits (2.3a)", () => {
     expect(labels()).toEqual(["Changed card style", "Changed heading style", "Changed effects"]);
   });
 
-  it("sets a text style's size as one step naming it", () => {
+  it("sets a text style's size as one step naming it", async () => {
     const { session, labels, theme } = setUp();
 
-    setTextSize(session, "h1", "6xl");
+    await setTextSize(session, undefined, "h1", "6xl");
 
     expect(theme().typeScale.h1.size).toBe("6xl");
     expect(labels()).toEqual(["Changed text size for Heading 1"]);
@@ -143,11 +146,11 @@ describe("the Theme tab's edits (2.3a)", () => {
     expect(labels()).toEqual(["Changed fonts", "Changed fonts"]);
   });
 
-  it("sets a text style's size, weight and line height as one step naming it", () => {
+  it("sets a text style's size, weight and line height as one step naming it", async () => {
     const { session, labels, theme } = setUp();
 
-    setTextStep(session, "h2", { weight: 800, leading: "normal" });
-    setTextStep(session, "h2", { weight: 800 });
+    await setTextStep(session, undefined, "h2", { weight: 800, leading: "normal" });
+    await setTextStep(session, undefined, "h2", { weight: 800 });
 
     expect(theme().typeScale.h2).toEqual({ size: "3xl", weight: 800, leading: "normal" });
     expect(labels()).toEqual(["Changed text style for Heading 2"]);
@@ -228,12 +231,117 @@ describe("the Theme tab's edits (2.3a)", () => {
 
     await switchPreset(session, undefined, bistro);
     await setColor(session, undefined, "primary", BRAND);
-    setToken(session, control("sections.rhythm"), "alternating");
-    setTextSize(session, "body", "base");
+    await setToken(session, undefined, control("sections.rhythm"), "alternating");
+    await setTextSize(session, undefined, "body", "base");
     while (session.history.undo()) {
       // Every step, back to the start.
     }
 
     expect(theme()).toEqual(start);
+  });
+});
+
+/** Asks for names, answering `name` (or cancelling, `undefined`); `askName` is what it was asked. */
+function naming(name: string | undefined) {
+  const askName = vi.fn(() => Promise.resolve(name));
+  return { names: { askName }, askName };
+}
+
+describe("your own themes (2.22, PH2-17)", () => {
+  it("asks for a name before the first change to a built-in theme, and saves the person's own", async () => {
+    const { session, labels, theme } = setUp();
+    const builtIn = JSON.stringify(THEME_PRESETS);
+    const asks = naming("Light, warmer");
+
+    expect(await setColor(session, asks, "primary", BRAND)).toBe(true);
+
+    expect(asks.askName).toHaveBeenCalledWith({
+      title: "Save your own version of 'Light'?",
+      description: expect.stringContaining("Built-in themes stay as they are."),
+      initial: "Light (my version)",
+      confirm: "Save Theme",
+    });
+    expect(theme().colors.primary).toEqual(BRAND);
+    expect(theme().own).toEqual({ id: expect.any(String), name: "Light, warmer" });
+    expect(theme().preset).toBe("light");
+    // One step: the change and the new theme together. The built-in themes are as they were.
+    expect(labels()).toEqual(["Saved theme 'Light, warmer'"]);
+    expect(JSON.stringify(THEME_PRESETS)).toBe(builtIn);
+    expect(DEFAULT_THEME.own).toBeUndefined();
+
+    // The person's own theme changes as any change does, without asking again.
+    await setToken(session, asks, control("cards.style"), "raised");
+    expect(asks.askName).toHaveBeenCalledTimes(1);
+    expect(labels()).toEqual(["Saved theme 'Light, warmer'", "Changed card style"]);
+
+    session.history.undo();
+    session.history.undo();
+    expect(theme().own).toBeUndefined();
+    expect(theme().colors.primary).not.toEqual(BRAND);
+  });
+
+  it("changes nothing when the name is cancelled, or the change to every page refused", async () => {
+    const { session, labels, theme } = setUp();
+
+    expect(await setTextSize(session, naming(undefined), "h1", "6xl")).toBe(false);
+    const refused = { ...naming("Mine"), siteWide: answering(false).siteWide };
+    expect(await setColor(session, refused, "primary", BRAND)).toBe(false);
+    // The name is asked first: a refusal after it still changes nothing.
+    expect(refused.askName).toHaveBeenCalledTimes(1);
+
+    expect(theme().own).toBeUndefined();
+    expect(labels()).toEqual([]);
+  });
+
+  it("creates one from a built-in theme, the site's or one of the person's own", async () => {
+    const { session, labels, theme } = setUp();
+    const bistro = themePreset("bistro");
+    if (bistro === undefined) throw new Error("no Bistro");
+
+    expect(await createOwnTheme(session, answering(false), bistro, "Shop")).toBe(false);
+    expect(await createOwnTheme(session, answering(true), bistro, "Shop")).toBe(true);
+
+    expect(theme()).toEqual({ ...bistro, own: { id: expect.any(String), name: "Shop" } });
+    expect(labels()).toEqual(["Created theme 'Shop'"]);
+  });
+
+  it("renames one: the site's theme in one step if it's that one, My themes either way", async () => {
+    const { session, labels, theme } = setUp();
+    await createOwnTheme(session, undefined, DEFAULT_THEME, "Shop");
+    const own = theme().own;
+    if (own === undefined) throw new Error("no own theme");
+    const keep = vi.fn();
+
+    renameOwnTheme(session, { ...theme(), own }, "Corner shop", keep);
+    expect(theme().own?.name).toBe("Corner shop");
+    expect(labels()).toEqual(["Created theme 'Shop'", "Renamed theme to 'Corner shop'"]);
+    expect(keep).toHaveBeenLastCalledWith(
+      expect.objectContaining({ own: { id: own.id, name: "Corner shop" } }),
+    );
+
+    // Another of theirs: only My themes changes.
+    const other = {
+      ...DEFAULT_THEME,
+      own: { id: themeIdSchema.parse("theme0000000000b"), name: "B" },
+    };
+    renameOwnTheme(session, other, "Bakery", keep);
+    expect(labels()).toHaveLength(2);
+    expect(keep).toHaveBeenLastCalledWith(
+      expect.objectContaining({ own: { id: other.own.id, name: "Bakery" } }),
+    );
+  });
+
+  it("switches to one of the person's own themes as one step named for it", async () => {
+    const { session, labels, theme } = setUp();
+    const mine = {
+      ...DEFAULT_THEME,
+      scheme: "dark" as const,
+      own: { id: themeIdSchema.parse("theme0000000000c"), name: "Night" },
+    };
+
+    await switchPreset(session, naming("never asked"), mine);
+
+    expect(theme()).toEqual(mine);
+    expect(labels()).toEqual(["Changed theme to 'Night'"]);
   });
 });

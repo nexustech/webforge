@@ -220,4 +220,36 @@ export const theme = {
   "theme.history.shadow": "Changed shadows",
   "theme.history.border": "Changed border width",
   "theme.history.effects": "Changed effects",
+  "theme.history.saved": "Saved theme '{name}'",
+  "theme.history.created": "Created theme '{name}'",
+  "theme.history.renamed": "Renamed theme to '{name}'",
+
+  // Your own themes (2.22, PH2-17): built-in themes are read-only, so the first change to one
+  // saves the person's own version, by a name they choose.
+  "theme.own.title": "Save your own version of '{name}'?",
+  "theme.own.description":
+    "Built-in themes stay as they are. Your change is saved in a theme of your own, which your other sites on this computer can use too.",
+  "theme.own.name": "Theme name",
+  "theme.own.defaultName": "{name} (my version)",
+  "theme.own.save": "Save Theme",
+  "theme.own.mine": "My themes",
+  "theme.own.builtIn": "Built-in themes",
+  "theme.own.none": "Themes you save or create are listed here.",
+  "theme.own.new": "New theme…",
+  "theme.own.newTitle": "New theme",
+  "theme.own.newDescription":
+    "Start from a built-in theme or the site's theme, then change it as you like.",
+  "theme.own.startFrom": "Start from",
+  "theme.own.siteTheme": "The site's theme ({name})",
+  "theme.own.newName": "{name} copy",
+  "theme.own.create": "Create Theme",
+  "theme.own.rename": "Rename {name}",
+  "theme.own.renameTitle": "Rename theme",
+  "theme.own.renameButton": "Rename",
+  "theme.own.delete": "Delete {name}",
+  "theme.own.deleteTitle": "Delete the theme '{name}'?",
+  "theme.own.deleteDescription": "It's removed from My themes on this computer.",
+  "theme.own.deleteInUse":
+    "It's removed from My themes on this computer. This site keeps its copy, so it looks the same.",
+  "theme.own.deleteButton": "Delete Theme",
 } as const;

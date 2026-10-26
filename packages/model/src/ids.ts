@@ -14,6 +14,8 @@ export type MediaId = Brand<string, "MediaId">;
 export type MenuItemId = Brand<string, "MenuItemId">;
 /** Identifies a shared section (F-ED-23): its linked copies point at it. */
 export type SharedSectionId = Brand<string, "SharedSectionId">;
+/** Identifies one of the person's own themes (2.22): in a site, and in My themes on a computer. */
+export type ThemeId = Brand<string, "ThemeId">;
 
 type IdTypes = {
   page: PageId;
@@ -23,6 +25,7 @@ type IdTypes = {
   media: MediaId;
   menuItem: MenuItemId;
   sharedSection: SharedSectionId;
+  theme: ThemeId;
 };
 
 /** The kinds of id {@link newId} creates. */
@@ -73,3 +76,5 @@ export const mediaIdSchema = idString().brand<"MediaId">();
 export const menuItemIdSchema = idString().brand<"MenuItemId">();
 /** Validates a {@link SharedSectionId}. */
 export const sharedSectionIdSchema = idString().brand<"SharedSectionId">();
+/** Validates a {@link ThemeId}. */
+export const themeIdSchema = idString().brand<"ThemeId">();

@@ -3,6 +3,7 @@ import {
   type ColorRole,
   copyTheme,
   type FontRef,
+  newId,
   type Oklch,
   type TEXT_SIZES,
   type TextStyle,
@@ -10,8 +11,10 @@ import {
 } from "@webforge/model";
 import type { BrandProposal, FontPairing } from "@webforge/themes";
 import { catalogueFont, fontRefOf, inverseColors, reversedBrand } from "@webforge/themes";
+import type { OwnTheme } from "../../shared/ipc/themes.js";
 import type { EditorSession } from "../editor/editor-session.js";
 import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
+import type { OwnThemeNames } from "./own-themes.js";
 import { setTokenValue, type TokenControl, tokenValue } from "./theme-controls.js";
 
 /** What the theme's edits change the site through: its history, as labelled undo steps. */
@@ -19,8 +22,24 @@ type ThemeSession = Pick<EditorSession, "edit"> & {
   readonly history: Pick<EditorSession["history"], "document">;
 };
 
-/** Asks before a change to every page (D7); without it, changes happen at once. */
-type Confirm = Pick<SiteWideConfirm, "confirmSiteWide"> | undefined;
+/**
+ * What a theme change asks first, if given: before a change to every page (D7), and for a name
+ * before the first change to a built-in theme, which is read-only (2.22, PH2-17). Without them,
+ * changes happen at once.
+ */
+export type ThemeAsks =
+  | {
+      readonly siteWide?: Pick<SiteWideConfirm, "confirmSiteWide"> | undefined;
+      readonly names?: OwnThemeNames | undefined;
+    }
+  | undefined;
+
+/** A question before a change to every page (D7): its title, what it does and its button. */
+type SiteWideQuestion = {
+  readonly action: string;
+  readonly description: string;
+  readonly confirm: string;
+};
 
 /** The colours the Theme tab offers by the glossary's names (23 Oct 2026). */
 export const QUICK_COLORS = ["primary", "secondary", "accent", "base-100", "base-content"] as const;
@@ -92,42 +111,96 @@ export function presetName(preset: string): string {
   return isMessageKey(key) ? t(key) : preset;
 }
 
+/** A theme's name: the person's own name for it (2.22), or its preset's. */
+export const themeName = (tokens: ThemeTokens): string =>
+  tokens.own?.name ?? presetName(tokens.preset);
+
 /** How many pages a theme change changes: all of them. */
 const pageCount = (session: ThemeSession) =>
   Object.keys(session.history.document.getState().pages).length;
 
 const theme = (session: ThemeSession) => session.history.document.getState().theme;
 
-/** Asks `confirm`, if there is one, before `action` changes every page. */
+/** Asks `asks.siteWide`, if there is one, before `action` changes every page. */
 async function confirmed(
   session: ThemeSession,
-  confirm: Confirm,
-  action: { readonly action: string; readonly description: string; readonly confirm: string },
+  asks: ThemeAsks,
+  action: SiteWideQuestion,
 ): Promise<boolean> {
-  if (confirm === undefined) return true;
-  return confirm.confirmSiteWide({ ...action, affectedPages: pageCount(session) });
+  if (asks?.siteWide === undefined) return true;
+  return asks.siteWide.confirmSiteWide({ ...action, affectedPages: pageCount(session) });
+}
+
+/**
+ * Changes the theme by `recipe`: one step, `label`. A built-in theme is read-only (2.22, PH2-17):
+ * with `asks.names`, the first change to one asks for a name for the person's own version, and
+ * the same step makes it theirs ("Saved theme 'Light (my version)'"); cancelling changes nothing.
+ * A change to every page asks `question` first too (D7). False if nothing changed.
+ */
+async function changeTheme(
+  session: ThemeSession,
+  asks: ThemeAsks,
+  label: string,
+  question: SiteWideQuestion | undefined,
+  recipe: (tokens: ThemeTokens) => void,
+): Promise<boolean> {
+  const now = theme(session);
+  let own: ThemeTokens["own"];
+  if (asks?.names !== undefined && now.own === undefined) {
+    const name = presetName(now.preset);
+    const chosen = await asks.names.askName({
+      title: t("theme.own.title", { name }),
+      description: t("theme.own.description"),
+      initial: t("theme.own.defaultName", { name }),
+      confirm: t("theme.own.save"),
+    });
+    if (chosen === undefined) return false;
+    own = { id: newId("theme"), name: chosen };
+  }
+  if (question !== undefined && !(await confirmed(session, asks, question))) return false;
+  session.edit(
+    "props",
+    own === undefined ? label : t("theme.history.saved", { name: own.name }),
+    (draft) => {
+      recipe(draft.theme);
+      if (own !== undefined) draft.theme.own = { ...own };
+    },
+  );
+  return true;
 }
 
 /** Sets a token the Theme tab offers as a choice: one step, named for its group. */
-export function setToken(session: ThemeSession, control: TokenControl, value: unknown): void {
-  if (tokenValue(theme(session), control) === value) return;
-  session.edit("props", t(`theme.history.${control.group}` as MessageKey), (draft) => {
-    setTokenValue(draft.theme, control, value);
-  });
+export function setToken(
+  session: ThemeSession,
+  asks: ThemeAsks,
+  control: TokenControl,
+  value: unknown,
+): Promise<boolean> {
+  if (tokenValue(theme(session), control) === value) return Promise.resolve(false);
+  return changeTheme(
+    session,
+    asks,
+    t(`theme.history.${control.group}` as MessageKey),
+    undefined,
+    (tokens) => setTokenValue(tokens, control, value),
+  );
 }
 
 /** Sets the size of text style `style`: one step, "Changed text size for Heading 1". */
 export function setTextSize(
   session: ThemeSession,
+  asks: ThemeAsks,
   style: TextStyle,
   size: (typeof TEXT_SIZES)[number],
-): void {
-  if (theme(session).typeScale[style].size === size) return;
-  session.edit(
-    "props",
+): Promise<boolean> {
+  if (theme(session).typeScale[style].size === size) return Promise.resolve(false);
+  return changeTheme(
+    session,
+    asks,
     t("theme.history.textSize", { style: t(`theme.textStyle.${style}`) }),
-    (draft) => {
-      draft.theme.typeScale[style].size = size;
+    undefined,
+    (tokens) => {
+      tokens.typeScale[style].size = size;
     },
   );
 }
@@ -141,17 +214,22 @@ type TextStep = ThemeTokens["typeScale"][TextStyle];
  */
 export function setTextStep(
   session: ThemeSession,
+  asks: ThemeAsks,
   style: TextStyle,
   change: Partial<TextStep>,
-): void {
+): Promise<boolean> {
   const now = theme(session).typeScale[style];
   const next = { ...now, ...change };
-  if (next.size === now.size && next.weight === now.weight && next.leading === now.leading) return;
-  session.edit(
-    "props",
+  if (next.size === now.size && next.weight === now.weight && next.leading === now.leading) {
+    return Promise.resolve(false);
+  }
+  return changeTheme(
+    session,
+    asks,
     t("theme.history.textStyle", { style: t(`theme.textStyle.${style}`) }),
-    (draft) => {
-      draft.theme.typeScale[style] = next;
+    undefined,
+    (tokens) => {
+      tokens.typeScale[style] = next;
     },
   );
 }
@@ -165,7 +243,7 @@ export function setTextStep(
  */
 export async function setPaletteColor(
   session: ThemeSession,
-  confirm: Confirm,
+  asks: ThemeAsks,
   palette: "colors" | "inverse",
   role: ColorRole,
   color: Oklch,
@@ -175,29 +253,27 @@ export async function setPaletteColor(
   if (now.l === color.l && now.c === color.c && now.h === color.h) return false;
   const name = t(ROLE_NAMES[role]);
   const reversed = palette === "inverse";
-  const ok = await confirmed(session, confirm, {
-    action: reversed
-      ? t("theme.color.confirmReversed", { name })
-      : t("theme.color.confirm", { name }),
-    description: t("theme.color.confirmDescription"),
-    confirm: t("theme.color.confirmButton"),
-  });
-  if (!ok) return false;
-  // Reversed sections' colours as the theme shows them now, copied, for a theme without its own.
-  const start = JSON.parse(JSON.stringify(inverseColors(theme(session)))) as ThemeTokens["colors"];
-  session.edit(
-    "props",
+  return changeTheme(
+    session,
+    asks,
     reversed ? t("theme.history.colorReversed", { name }) : t("theme.history.color", { name }),
-    (draft) => {
+    {
+      action: reversed
+        ? t("theme.color.confirmReversed", { name })
+        : t("theme.color.confirm", { name }),
+      description: t("theme.color.confirmDescription"),
+      confirm: t("theme.color.confirmButton"),
+    },
+    (tokens) => {
       if (!reversed) {
-        setPageColor(draft.theme, role, color);
+        setPageColor(tokens, role, color);
         return;
       }
-      draft.theme.inverse ??= start;
-      draft.theme.inverse[role] = { ...color };
+      // Reversed sections' colours as the theme shows them, for a theme without its own.
+      tokens.inverse ??= JSON.parse(JSON.stringify(inverseColors(tokens))) as ThemeTokens["colors"];
+      tokens.inverse[role] = { ...color };
     },
   );
-  return true;
 }
 
 /**
@@ -209,27 +285,30 @@ export async function setPaletteColor(
  */
 export async function setBrandColours(
   session: ThemeSession,
-  confirm: Confirm,
+  asks: ThemeAsks,
   proposal: BrandProposal,
   image: string,
 ): Promise<boolean> {
-  const ok = await confirmed(session, confirm, {
-    action: t("theme.image.confirm", { name: image }),
-    description: t("theme.image.confirmDescription"),
-    confirm: t("theme.image.confirmButton"),
-  });
-  if (!ok) return false;
-  const reversed = reversedBrand(proposal, theme(session));
-  session.edit("props", t("theme.history.image", { name: image }), (draft) => {
-    for (const [role, color] of Object.entries(proposal) as [keyof BrandProposal, Oklch][]) {
-      setPageColor(draft.theme, role, color);
-    }
-    if (reversed === undefined || draft.theme.inverse === undefined) return;
-    for (const [role, color] of Object.entries(reversed) as [keyof BrandProposal, Oklch][]) {
-      draft.theme.inverse[role] = { ...color };
-    }
-  });
-  return true;
+  return changeTheme(
+    session,
+    asks,
+    t("theme.history.image", { name: image }),
+    {
+      action: t("theme.image.confirm", { name: image }),
+      description: t("theme.image.confirmDescription"),
+      confirm: t("theme.image.confirmButton"),
+    },
+    (tokens) => {
+      const reversed = reversedBrand(proposal, tokens);
+      for (const [role, color] of Object.entries(proposal) as [keyof BrandProposal, Oklch][]) {
+        setPageColor(tokens, role, color);
+      }
+      if (reversed === undefined || tokens.inverse === undefined) return;
+      for (const [role, color] of Object.entries(reversed) as [keyof BrandProposal, Oklch][]) {
+        tokens.inverse[role] = { ...color };
+      }
+    },
+  );
 }
 
 /**
@@ -238,11 +317,11 @@ export async function setBrandColours(
  */
 export async function switchPreset(
   session: ThemeSession,
-  confirm: Confirm,
+  asks: ThemeAsks,
   preset: ThemeTokens,
 ): Promise<boolean> {
-  const name = presetName(preset.preset);
-  const ok = await confirmed(session, confirm, {
+  const name = themeName(preset);
+  const ok = await confirmed(session, asks, {
     action: t("theme.preset.confirm", { name }),
     description: t("theme.preset.confirmDescription"),
     confirm: t("theme.preset.confirmButton"),
@@ -262,65 +341,110 @@ export async function switchPreset(
  */
 export async function setColor(
   session: ThemeSession,
-  confirm: Confirm,
+  asks: ThemeAsks,
   role: QuickColor,
   color: Oklch,
 ): Promise<boolean> {
   const now = theme(session).colors[role];
   if (now.l === color.l && now.c === color.c && now.h === color.h) return false;
   const name = t(COLOR_WORDS[role].name);
-  const ok = await confirmed(session, confirm, {
-    action: t("theme.color.confirm", { name }),
-    description: t("theme.color.confirmDescription"),
-    confirm: t("theme.color.confirmButton"),
-  });
-  if (!ok) return false;
-  session.edit("props", t(COLOR_WORDS[role].history), (draft) => {
-    setPageColor(draft.theme, role, color);
-  });
-  return true;
+  return changeTheme(
+    session,
+    asks,
+    t(COLOR_WORDS[role].history),
+    {
+      action: t("theme.color.confirm", { name }),
+      description: t("theme.color.confirmDescription"),
+      confirm: t("theme.color.confirmButton"),
+    },
+    (tokens) => setPageColor(tokens, role, color),
+  );
 }
 
 /** Sets the fonts (D7): asked first, then one step, "Changed fonts". */
 async function setFonts(
   session: ThemeSession,
-  confirm: Confirm,
+  asks: ThemeAsks,
   fonts: { readonly heading: FontRef; readonly body: FontRef },
 ): Promise<boolean> {
   const now = theme(session).fonts;
   if (now.heading.family === fonts.heading.family && now.body.family === fonts.body.family) {
     return false;
   }
-  const ok = await confirmed(session, confirm, {
-    action: t("theme.fonts.confirm"),
-    description: t("theme.fonts.confirmDescription"),
-    confirm: t("theme.fonts.confirmButton"),
-  });
-  if (!ok) return false;
-  session.edit("props", t("theme.history.fonts"), (draft) => {
-    draft.theme.fonts = { heading: { ...fonts.heading }, body: { ...fonts.body } };
-  });
-  return true;
+  return changeTheme(
+    session,
+    asks,
+    t("theme.history.fonts"),
+    {
+      action: t("theme.fonts.confirm"),
+      description: t("theme.fonts.confirmDescription"),
+      confirm: t("theme.fonts.confirmButton"),
+    },
+    (tokens) => {
+      tokens.fonts = { heading: { ...fonts.heading }, body: { ...fonts.body } };
+    },
+  );
 }
 
 /** Sets the headings' or the body text's font: see {@link setFonts}. */
 export function setFont(
   session: ThemeSession,
-  confirm: Confirm,
+  asks: ThemeAsks,
   which: "heading" | "body",
   font: FontRef,
 ): Promise<boolean> {
-  return setFonts(session, confirm, { ...theme(session).fonts, [which]: font });
+  return setFonts(session, asks, { ...theme(session).fonts, [which]: font });
 }
 
 /** Sets both fonts to a tested pairing's (F-DS-2): see {@link setFonts}. */
 export function setPairing(
   session: ThemeSession,
-  confirm: Confirm,
+  asks: ThemeAsks,
   pairing: FontPairing,
 ): Promise<boolean> {
   const heading = catalogueFont(pairing.heading);
   const body = catalogueFont(pairing.body);
   if (heading === undefined || body === undefined) return Promise.resolve(false);
-  return setFonts(session, confirm, { heading: fontRefOf(heading), body: fontRefOf(body) });
+  return setFonts(session, asks, { heading: fontRefOf(heading), body: fontRefOf(body) });
+}
+
+/**
+ * Creates one of the person's own themes (Theme Studio's *New theme*, 2.22): `base`'s tokens under
+ * `name`, as the site's theme. Asked first (D7), then one step, "Created theme 'Shop'".
+ */
+export async function createOwnTheme(
+  session: ThemeSession,
+  asks: ThemeAsks,
+  base: ThemeTokens,
+  name: string,
+): Promise<boolean> {
+  const ok = await confirmed(session, asks, {
+    action: t("theme.preset.confirm", { name }),
+    description: t("theme.preset.confirmDescription"),
+    confirm: t("theme.preset.confirmButton"),
+  });
+  if (!ok) return false;
+  session.edit("props", t("theme.history.created", { name }), (draft) => {
+    draft.theme = { ...copyTheme(base), own: { id: newId("theme"), name } };
+  });
+  return true;
+}
+
+/**
+ * Renames one of the person's own themes (2.22). The site's theme, if it's that one, is renamed in
+ * one step, "Renamed theme to 'Shop'"; My themes keeps the new name either way (`keep`).
+ */
+export function renameOwnTheme(
+  session: ThemeSession,
+  own: OwnTheme,
+  name: string,
+  keep: (theme: OwnTheme) => void,
+): void {
+  if (name === own.own.name) return;
+  if (theme(session).own?.id === own.own.id) {
+    session.edit("props", t("theme.history.renamed", { name }), (draft) => {
+      if (draft.theme.own !== undefined) draft.theme.own.name = name;
+    });
+  }
+  keep({ ...copyTheme(own), own: { ...own.own, name } });
 }
