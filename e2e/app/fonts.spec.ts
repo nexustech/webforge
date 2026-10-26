@@ -212,11 +212,18 @@ test("the font picker lists the fonts to download only when asked, and uses one 
   await picker.getByRole("button", { name: "Browse all fonts" }).click();
   await picker.getByRole("button", { name: "To download" }).click();
   await picker.getByRole("option", { name: /Test Script/ }).dblclick();
+  // A built-in theme is read-only (2.23): the first change saves the person's own version.
+  await page
+    .getByRole("dialog", { name: "Save your own version of 'Light'?" })
+    .getByRole("button", { name: "Save Theme" })
+    .click();
   await page.getByRole("alertdialog").getByRole("button", { name: "Change Fonts" }).click();
 
   await expect(page.getByRole("button", { name: "Headings Test Script" })).toBeVisible();
   await expect(canvas(page).locator("h1").first()).toHaveCSS("font-family", /Test Script/);
   await page.getByRole("tab", { name: "Undo History" }).click();
-  await expect(page.locator(".undo-history__step").first()).toHaveText("Changed fonts");
+  await expect(page.locator(".undo-history__step").first()).toHaveText(
+    "Saved theme 'Light (my version)'",
+  );
   expect((await requestsTried(app))[0]).toBe(`${FONTSOURCE_API}/fonts`);
 });

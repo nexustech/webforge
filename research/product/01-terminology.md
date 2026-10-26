@@ -56,6 +56,7 @@
 | **AI apps** | AI apps on the user's computer (Claude, ChatGPT…) connected to Webforge through MCP (F-AI-1). UI: *Connect AI apps* | Plain English | MCP server, connector, integration |
 | **File** | A non-image item in Media (PDF, Word, Excel…), linked for download with the link dialog's *File* option (F-ED-24). "Document" is avoided in the UI because specs use it for the site's data | Plain English | Resource, asset, attachment, document |
 | **Theme Studio** | The larger window for editing a theme: palettes, text styles, spacing, corners (F-DS-7) | Elements | Design system, tokens |
+| **My themes** · **Built-in themes** | The person's own themes, kept on this computer for all their sites, and the themes Webforge ships, which are read-only (2.23, PH2-17). The first change to a built-in theme saves *your own version*, by a name you choose ("Light (my version)") | Canva (Brand Kit), Squarespace (saved palettes) | Custom themes, User presets, Forks |
 | **Favourites** | Sections and elements the user pins at the top of the Add panel (F-ED-26) | Bootstrap Studio | Pinned components |
 | **Select parent** | Select the section or element that contains the current one (F-ED-25) | Bootstrap Studio | Go up the DOM |
 | **Detach** | Turn one copy of a shared section into a normal section | Wix, Squarespace | Unlink, break link |
