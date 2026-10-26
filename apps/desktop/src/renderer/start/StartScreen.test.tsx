@@ -330,4 +330,31 @@ describe("StartScreen", () => {
     expect(container.textContent).not.toContain("Welcome to Webforge");
     expect(container.querySelector('input[type="search"]')).not.toBeNull();
   });
+
+  it("never shows the welcome to a returning user while their sites load (#456 review)", async () => {
+    const project = api([]);
+    let answer: (sites: RecentSite[]) => void = () => undefined;
+    project.listRecent.mockReturnValueOnce(
+      new Promise<RecentSite[]>((resolve) => {
+        answer = resolve;
+      }),
+    );
+    await render(project);
+
+    // Main hasn't answered yet: neither the welcome nor the list.
+    expect(container.textContent).not.toContain("Welcome to Webforge");
+    expect(container.querySelector('input[type="search"]')).toBeNull();
+
+    await act(async () => answer([bakery]));
+    expect(container.textContent).not.toContain("Welcome to Webforge");
+    expect(container.textContent).toContain("Rosa's Bakery.wforge");
+  });
+
+  it("welcomes a first start whose list can't be read", async () => {
+    const project = api([]);
+    project.listRecent.mockRejectedValueOnce(new Error("unreadable"));
+    await render(project);
+
+    expect(container.textContent).toContain("Welcome to Webforge");
+  });
 });
