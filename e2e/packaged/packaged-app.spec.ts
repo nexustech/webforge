@@ -208,6 +208,8 @@ test("ships the templates beside app.asar, and New Site lists them (2.14a)", asy
   const dir = resourcesDir();
   if (dir !== undefined) {
     expect(existsSync(join(dir, "templates", "sample", "template.json"))).toBe(true);
+    // New Site makes the Blank template when no template is chosen (2.15c).
+    expect(existsSync(join(dir, "templates", "blank", "template.json"))).toBe(true);
   }
 
   const listed = await page.evaluate(() =>
@@ -216,5 +218,5 @@ test("ships the templates beside app.asar, and New Site lists them (2.14a)", asy
     ).webforge.templates.list(),
   );
 
-  expect(listed.map((template) => template.id)).toEqual(["sample"]);
+  expect(listed.map((template) => template.id)).toEqual(["sample", "personal"]);
 });

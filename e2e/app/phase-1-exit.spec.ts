@@ -85,7 +85,7 @@ function built(read: unknown) {
   return { pages, pageOrder, settings, sharedSections, layout };
 }
 
-test("a three-page site built from blank comes back as it was, page by page", async () => {
+test("a five-page site built from blank comes back as it was, page by page", async () => {
   const testInfo = test.info();
   test.setTimeout(240_000);
   let page = await startWithoutSite();
@@ -171,7 +171,7 @@ test("a three-page site built from blank comes back as it was, page by page", as
   await heading.click();
   await placeCaret(heading, "end");
   await page.keyboard.type(" today", { delay: 20 });
-  await expect(canvas().locator("h1")).toHaveText("Welcome to our business today");
+  await expect(canvas().locator("h1")).toHaveText("Welcome today");
 
   await selectSection();
   await add("Elements", "Image");
@@ -201,8 +201,9 @@ test("a three-page site built from blank comes back as it was, page by page", as
   await save.getByRole("button", { name: "Save" }).click();
   await expect(save).toHaveCount(0);
 
-  // Page 2: a Hero, then a linked copy of the shared section, and a page setting.
-  await addPage("About us");
+  // Blank's About and Contact (2.15c) stay as they are. A new page: a Hero, then a linked copy of
+  // the shared section, and a page setting.
+  await addPage("Our story");
   await add("Sections", "Hero");
   await expect(sections()).toHaveCount(1);
   await showTab(left, "Add");
@@ -212,15 +213,15 @@ test("a three-page site built from blank comes back as it was, page by page", as
     .getByRole("button", { name: "Welcome", exact: true })
     .click();
   await expect(sections()).toHaveCount(2);
-  await pages().getByRole("button", { name: "Actions for About us" }).click();
+  await pages().getByRole("button", { name: "Actions for Our story" }).click();
   await page.getByRole("menuitem", { name: "Page Settings…" }).click();
-  const pageSettings = page.getByRole("dialog", { name: "Settings for 'About us'" });
+  const pageSettings = page.getByRole("dialog", { name: "Settings for 'Our story'" });
   await pageSettings.getByRole("textbox", { name: "Description" }).fill("How we started");
   await pageSettings.getByRole("button", { name: "Save" }).click();
   await expect(pageSettings).toHaveCount(0);
 
-  // Page 3: a Text section of its own.
-  await addPage("Contact");
+  // Another: a Text section of its own.
+  await addPage("Visit us");
   await add("Sections", "Text");
   await expect(sections()).toHaveCount(1);
 
@@ -287,12 +288,14 @@ test("a three-page site built from blank comes back as it was, page by page", as
   await showTab(right, "Site");
   await expect(pages().getByRole("button", { name: /^(?!Actions)/ })).toHaveText([
     startsWith(home),
-    /^About us/,
+    /^About/,
     /^Contact/,
+    /^Our story/,
+    /^Visit us/,
     /^Page not found/,
   ]);
   await showPage(home);
-  await expect(canvas().locator("h1")).toHaveText("Welcome to our business today");
+  await expect(canvas().locator("h1")).toHaveText("Welcome today");
   // The home page's section is a linked copy now, which Layers lists as one row: its renamed Text
   // and hidden Image are the shared section's, in the site and on the canvas (dimmed).
   const reopened = built(await readSite(page));
@@ -302,10 +305,10 @@ test("a three-page site built from blank comes back as it was, page by page", as
   await expect(canvas().locator("[data-webforge-hidden] img")).toHaveCount(1);
   await showTab(left, "Layers");
   await expect(sections()).toHaveText([/^Linked copy of 'Welcome'/]);
-  await showPage("About us");
+  await showPage("Our story");
   await expect(sections()).toHaveCount(2);
   await expect(tree().getByRole("treeitem", { name: /Welcome/ })).toBeVisible();
-  await showPage("Contact");
+  await showPage("Visit us");
   await expect(sections()).toHaveCount(1);
   await page.getByRole("tab", { name: "Media" }).click();
   await expect(

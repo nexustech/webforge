@@ -1,6 +1,7 @@
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import AxeBuilder from "@axe-core/playwright";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { placeCaret } from "./caret.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
@@ -8,7 +9,8 @@ import { type RendererWindow, stubFileDialogs } from "./sites.js";
 
 // The start screen (F-SITE-1, F-SITE-2): new → edit → quit → reopen from the Recent list.
 
-const STARTER_HEADING = "Welcome to our business";
+// The Blank template's home page (2.15c).
+const STARTER_HEADING = "Welcome";
 
 let dir: string;
 let userData: string;
@@ -64,6 +66,12 @@ test("creates a blank site, keeps an edit and reopens it from the Recent list", 
   await newSite.getByRole("button", { name: "Create" }).click();
   await waitForCanvas(page);
   await expect(page.getByRole("banner").getByRole("status")).toHaveText("Saved");
+  // The Blank template: Home, About and Contact, and its "Page not found" page.
+  const blank = await page.evaluate(async () => {
+    const read = await (window as unknown as RendererWindow).webforge.project.readSite();
+    return read as { site: { pageOrder: string[] } };
+  });
+  expect(blank.site.pageOrder).toHaveLength(4);
 
   const heading = canvas(page).locator("h1 [contenteditable]");
   await heading.hover();
@@ -116,6 +124,36 @@ test("makes a site from a template, named as typed and in the chosen theme, in u
   });
   expect(site.site.settings.general.name).toBe("Rosa's Bakery");
   expect(site.site.theme.preset).toBe("atelier");
+});
+
+test("makes a Personal / CV site in under 3 s, accessible on the canvas (2.15c)", async () => {
+  const page = await startWithoutSite();
+  await stubFileDialogs(running(), join(dir, "Sam Lee.wforge"));
+
+  await page.getByRole("button", { name: "New site…", exact: true }).click();
+  const newSite = page.getByRole("dialog", { name: "New Site" });
+  await newSite.getByRole("textbox", { name: "Site name" }).fill("Sam Lee");
+  await newSite.getByText("Personal / CV", { exact: true }).click();
+  await expect(newSite.getByRole("radio", { name: "Studio" })).toBeChecked();
+
+  const started = Date.now();
+  await newSite.getByRole("button", { name: "Create" }).click();
+  const hero = canvas(page).locator("h1", { hasText: "Hello, I'm Alex Morgan" });
+  await expect(hero).toBeVisible();
+  expect(Date.now() - started).toBeLessThan(3_000);
+  await expect(canvas(page).locator("section img").first()).not.toHaveJSProperty("naturalWidth", 0);
+
+  // The page as the canvas draws it, the editor's chrome aside. Legacy mode runs axe in each frame
+  // without opening a page of its own, which Electron can't.
+  const results = await new AxeBuilder({ page })
+    .setLegacyMode()
+    // Inside the canvas's frame: the page, not the frame element, which is the editor's.
+    .include([".editor__canvas iframe", "body"])
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+    .analyze();
+  expect(results.violations.map((violation) => `${violation.id}: ${violation.help}`)).toEqual([]);
+  // It checked the page: rules passed inside the frame.
+  expect(results.passes.length).toBeGreaterThan(5);
 });
 
 test("tries the example: a pre-filled site named after it, in under 3 s (2.14b, PG-3)", async () => {
