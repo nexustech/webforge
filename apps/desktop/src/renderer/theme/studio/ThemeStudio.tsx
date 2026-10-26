@@ -17,13 +17,18 @@ import type { EditorSession } from "../../editor/editor-session.js";
 import { useDocument } from "../../editor/use-document.js";
 import { addFontPreviews } from "../../fields/index.js";
 import type { SiteWideConfirm } from "../../shell/confirm-site-wide.js";
+import type { OwnThemes } from "../own-themes.js";
+import { useOwnThemeList } from "../own-themes-list.js";
 import { TOKEN_CONTROLS, tokenKey } from "../theme-controls.js";
 import {
+  createOwnTheme,
+  renameOwnTheme,
   setBrandColours,
   setPaletteColor,
   setTextStep,
   setToken,
   switchPreset,
+  type ThemeAsks,
 } from "../theme-edits.js";
 import { StudioColours } from "./StudioColours.js";
 import { StudioImagePalette } from "./StudioImagePalette.js";
@@ -41,6 +46,11 @@ export type ThemeStudioProps = {
   readonly studio: StoreApi<StudioState>;
   /** Asks before a change to every page (D7): a preset, a colour. */
   readonly siteWide?: Pick<SiteWideConfirm, "confirmSiteWide"> | undefined;
+  /**
+   * My themes (2.23): listed first, with New theme, Rename and Delete, and asked for a name before
+   * the first change to a built-in theme, which is read-only.
+   */
+  readonly ownThemes?: OwnThemes | undefined;
 };
 
 /**
@@ -49,16 +59,22 @@ export type ThemeStudioProps = {
  * colours, fonts and corners; every colour, the page's and reversed sections' side by side, with
  * shades and what their contrast lacks, and brand colours proposed from an image (PG-2); the text styles and links; and the other styles, the corner
  * and shadow scales drawn as samples. A theme or a colour is asked about first (D7); every change
- * is one labelled step in the site's history, so Ctrl/Cmd+Z undoes it here too (P5).
+ * is one labelled step in the site's history, so Ctrl/Cmd+Z undoes it here too (P5). The person's
+ * own themes come first; the first change to a built-in theme saves their own version of it, by a
+ * name they choose (2.23, PH2-17).
  */
-export function ThemeStudio({ session, studio, siteWide }: ThemeStudioProps) {
+export function ThemeStudio({ session, studio, siteWide, ownThemes }: ThemeStudioProps) {
   const { open, section } = useStore(studio);
   const theme = useDocument(session, (site) => site.theme);
   const media = useDocument(session, (site) => site.media);
-  // The cards and text styles show each font in itself.
+  const own = useOwnThemeList(ownThemes, theme);
+  const asks: ThemeAsks = { siteWide, names: ownThemes };
+  // The cards and text styles show each font in itself; My themes is read again as it opens.
   useEffect(() => {
-    if (open) addFontPreviews(document);
-  }, [open]);
+    if (!open) return;
+    addFontPreviews(document);
+    void ownThemes?.refresh();
+  }, [open, ownThemes]);
   return (
     <Dialog open={open} onOpenChange={(next) => studio.setState({ open: next })}>
       <DialogContent className="flex h-[min(46rem,calc(100dvh-2rem))] max-w-[calc(100%-2rem)] flex-col gap-3 sm:max-w-5xl">
@@ -88,37 +104,62 @@ export function ThemeStudio({ session, studio, siteWide }: ThemeStudioProps) {
           <TabsContent value="themes" className="min-h-0 overflow-auto pr-1">
             <StudioThemes
               theme={theme}
-              onChoose={(preset) => void switchPreset(session, siteWide, preset)}
+              own={own}
+              onChoose={(chosen) => void switchPreset(session, asks, chosen)}
+              {...(ownThemes === undefined
+                ? {}
+                : {
+                    onNew: async () => {
+                      const created = await ownThemes.askNew();
+                      if (created !== undefined) {
+                        await createOwnTheme(session, asks, created.base, created.name);
+                      }
+                    },
+                    onRename: async (mine) => {
+                      const name = await ownThemes.askName({
+                        title: t("theme.own.renameTitle"),
+                        initial: mine.own.name,
+                        confirm: t("theme.own.renameButton"),
+                      });
+                      if (name !== undefined) {
+                        renameOwnTheme(session, mine, name, (kept) => ownThemes.keep(kept));
+                      }
+                    },
+                    onDelete: async (mine) => {
+                      const inUse = theme.own?.id === mine.own.id;
+                      if (await ownThemes.confirmDelete(mine.own.name, inUse)) {
+                        ownThemes.remove(mine.own.id);
+                      }
+                    },
+                  })}
             />
           </TabsContent>
           <TabsContent value="colors" className="min-h-0 overflow-auto pr-1">
             <StudioImagePalette
               media={media}
               theme={theme}
-              onUse={(proposal, image) =>
-                setBrandColours(session, siteWide, proposal, image.fileName)
-              }
+              onUse={(proposal, image) => setBrandColours(session, asks, proposal, image.fileName)}
             />
             <StudioColours
               theme={theme}
               onChange={(palette, role, color) =>
-                void setPaletteColor(session, siteWide, palette, role, color)
+                void setPaletteColor(session, asks, palette, role, color)
               }
             />
           </TabsContent>
           <TabsContent value="text" className="min-h-0 overflow-auto pr-1">
             <StudioText
               theme={theme}
-              onStep={(style, change) => setTextStep(session, style, change)}
+              onStep={(style, change) => void setTextStep(session, asks, style, change)}
               onLinks={(underline) => {
-                if (LINKS !== undefined) setToken(session, LINKS, underline);
+                if (LINKS !== undefined) void setToken(session, asks, LINKS, underline);
               }}
             />
           </TabsContent>
           <TabsContent value="styles" className="min-h-0 overflow-auto pr-1">
             <StudioStyles
               theme={theme}
-              onChange={(control, value) => setToken(session, control, value)}
+              onChange={(control, value) => void setToken(session, asks, control, value)}
             />
           </TabsContent>
         </Tabs>
