@@ -7,6 +7,7 @@ The sections and elements users put on their pages: their fields, daisyUI 5 mark
 
 - **Library contract:** `ComponentLibrary`, `ComponentDef` (label, fields, defaults, `render`, optional `behaviours`) and `FieldDef` (`text`, `richtext`, `select`, `slot`, `media`). Helpers: `textValue`, `stringValue`, `optionValue`, `slotComponent`.
 - **`RenderContext`:** what components may need from outside their props: site navigation, page links and resolved images. `EDITOR_RENDER_CONTEXT` is the canvas version (no navigation, links go nowhere, no images yet).
+- **Navigation and links:** `navigationFor(site, page, prefix, …)` gives the Header's menu items with URLs relative to the page, and `hrefFor(link, …)` where a link field goes (F-ED-17, F-ED-18). Both are pure, for the export pipeline and the canvas alike (moved from the pipeline, R16).
 - **Catalogue:** `siteLibrary` (Header, Footer, Section, Hero, FAQ, FAQ item, Heading, Text), `starterPage()` and `starterLayout(siteName)`.
 - **Static rendering:** `renderNodesToHtml(nodes, library, context)` renders a page or the Header/Footer to HTML without editor wrappers. Rich text is sanitised (`sanitizeRichText`). `walkNodes`, `mediaUsedBy` and `behavioursUsedBy` inspect a tree. `UnknownComponentError` is thrown for a type the library lacks.
 - **Behaviours:** `BEHAVIOUR_SCRIPTS`, the readable classic scripts behind `webforge.js` (currently the Header's mobile menu).

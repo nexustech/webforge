@@ -36,6 +36,7 @@ export {
   textValue,
   withAdvanced,
 } from "./library.js";
+export { hrefFor } from "./links.js";
 export {
   ENTRANCE_FIELDS,
   entranceAttributes,
@@ -44,6 +45,7 @@ export {
   hasEntrance,
   hoverClasses,
 } from "./motion.js";
+export { type NavigationPage, type NavigationSite, navigationFor } from "./navigation.js";
 export { type EditPreviews, PREVIEW_ATTRIBUTE, samePreviews } from "./previews.js";
 export type { RenderedPage } from "./render-static.js";
 export {

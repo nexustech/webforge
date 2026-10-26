@@ -1,4 +1,5 @@
 import type { CatalogueFont, FontFace } from "@webforge/themes";
+import type {} from "./codec-globals.js";
 
 /**
  * Everything file-based the pipeline needs, passed in by whoever runs it. The pipeline itself never

@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import { mkdir, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { basename, dirname, join, relative, sep } from "node:path";
 import { WebforgeError } from "@webforge/errors";
+import { sitePathSchema } from "@webforge/model";
 import { z } from "zod";
 
 /**
@@ -96,6 +97,13 @@ export async function writeSiteFolder(
   files: ReadonlyMap<string, Uint8Array>,
   destination: string,
 ): Promise<void> {
+  // A file's path decides where it goes: one that leaves the folder is refused before anything is
+  // written (R16). The snapshot schema checks pages' paths too; this holds for any caller.
+  for (const path of files.keys()) {
+    if (!sitePathSchema.safeParse(path).success) {
+      throw new WriteError("write-failed", "A site file's path leads outside the site's folder");
+    }
+  }
   const existing = await entriesOf(destination);
   if (existing !== null && existing.length > 0 && !(await holdsOnlyAnEarlierExport(destination))) {
     throw new WriteError("folder-not-empty", "The folder contains files that are not an export");
