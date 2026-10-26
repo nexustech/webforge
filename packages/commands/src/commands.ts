@@ -88,6 +88,33 @@ function checkedValues(
   return undefined;
 }
 
+/**
+ * The first page or file in Media that `value` names (a link, an image, a list's items, a value
+ * per device) and `site` doesn't have, as a message.
+ */
+function missingReference(site: SiteDoc, value: unknown): string | undefined {
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const missing = missingReference(site, item);
+      if (missing !== undefined) return missing;
+    }
+    return undefined;
+  }
+  if (typeof value !== "object" || value === null) return undefined;
+  const named = value as Record<string, unknown>;
+  if (typeof named.mediaId === "string" && site.media[named.mediaId as never] === undefined) {
+    return `There is no file "${named.mediaId}" in Media.`;
+  }
+  if (
+    named.kind === "page" &&
+    typeof named.pageId === "string" &&
+    site.pages[named.pageId as PageId] === undefined
+  ) {
+    return `There is no page "${named.pageId}".`;
+  }
+  return missingReference(site, Object.values(named));
+}
+
 /** `node` and everything in its slots, with new ids: a component's defaults keep theirs. */
 function withNewIds(node: NodeDoc): NodeDoc {
   const props = Object.fromEntries(
@@ -188,6 +215,8 @@ export const COMMANDS = {
       if (failed(component)) return component;
       const invalid = checkedValues(component, input.values);
       if (invalid !== undefined) return fail("invalid", invalid);
+      const missing = missingReference(site, input.values);
+      if (missing !== undefined) return fail("not-found", missing);
       const nodes = nodesAt(site, input.location);
       if (nodes === undefined) return fail("not-found", "That page or shared section isn't there.");
       const parent = input.parentId === null ? null : locate(nodes, input.parentId)?.node;
@@ -230,6 +259,8 @@ export const COMMANDS = {
       if (failed(component)) return component;
       const invalid = checkedValues(component, input.values);
       if (invalid !== undefined) return fail("invalid", invalid);
+      const missing = missingReference(site, input.values);
+      if (missing !== undefined) return fail("not-found", missing);
       const names = Object.keys(input.values);
       if (names.length === 0) return fail("invalid", "Give at least one field to set.");
       const fields = names.map((name) => component.fields[name]).filter((f) => f !== undefined);

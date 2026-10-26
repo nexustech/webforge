@@ -592,6 +592,34 @@ describe("the command API's moves and fields (4.8)", () => {
     ).toBe("refused");
   });
 
+  it("refuses a link or image to a page or file the site doesn't have", async () => {
+    const { history, host } = setup();
+    const api = createCommandApi(host);
+    const location = home(history);
+    const about = history.document.getState().pageOrder.at(-1);
+    const set = (values: object) =>
+      api.run("updateFields", { location, nodeId: "hero", values }, app);
+
+    expect(await set({ buttonLink: { kind: "page", pageId: "page-gone" } })).toMatchObject({
+      status: "not-found",
+      message: 'There is no page "page-gone".',
+    });
+    expect(await set({ image: { mediaId: "a".repeat(64) } })).toMatchObject({
+      status: "not-found",
+    });
+    expect(
+      (
+        await api.run(
+          "addNode",
+          { location, type: "Hero", values: { buttonLink: { kind: "page", pageId: "page-gone" } } },
+          app,
+        )
+      ).status,
+    ).toBe("not-found");
+    expect((await set({ buttonLink: { kind: "page", pageId: about } })).status).toBe("done");
+    expect(history.state.getState().entries).toHaveLength(1);
+  });
+
   it("names a change to several fields after the element, and leaves Custom Code alone", async () => {
     const { history, host } = setup(true, nested);
     const api = createCommandApi(host);
