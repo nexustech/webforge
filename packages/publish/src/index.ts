@@ -1,3 +1,4 @@
+export { type FtpDestination, type FtpOptions, ftpPublisher } from "./ftp.js";
 export {
   diffManifest,
   type Manifest,
@@ -33,3 +34,11 @@ export {
   type TestResult,
   throwIfCancelled,
 } from "./publisher.js";
+export { MANIFEST_FILE } from "./remote-folder.js";
+export {
+  hostKeyFingerprint,
+  readSftpHostKey,
+  type SftpDestination,
+  type SftpOptions,
+  sftpPublisher,
+} from "./sftp.js";

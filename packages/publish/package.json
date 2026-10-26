@@ -8,11 +8,14 @@
   },
   "devDependencies": {
     "@types/node": "catalog:",
+    "@types/ssh2": "1.15.6",
     "fast-check": "4.10.2",
     "vitest": "catalog:"
   },
   "dependencies": {
     "@webforge/errors": "workspace:*",
+    "basic-ftp": "6.2.3",
+    "ssh2": "1.17.0",
     "zod": "catalog:"
   }
 }
