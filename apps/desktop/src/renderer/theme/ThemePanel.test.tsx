@@ -54,12 +54,13 @@ describe("the Theme tab (2.3a)", () => {
 
   it("keeps a preset it doesn't list as the theme's, by its name in the file", () => {
     const site = starterSite();
-    site.theme.preset = "harbour";
+    // A name no preset has (2.13c added a Harbour), as a site from a newer Webforge may have.
+    site.theme.preset = "from-a-newer-webforge";
     render(<ThemePanel session={sessionWith(site)} />);
 
     const preset = screen.getByRole("combobox", { name: "Theme" }) as HTMLSelectElement;
-    expect(preset.value).toBe("harbour");
-    expect(screen.getByRole("heading", { name: "Theme: harbour" })).toBeTruthy();
+    expect(preset.value).toBe("from-a-newer-webforge");
+    expect(screen.getByRole("heading", { name: "Theme: from-a-newer-webforge" })).toBeTruthy();
   });
 
   it("makes a token's change one labelled step", async () => {

@@ -44,4 +44,8 @@ export const templates = {
   "theme.preset.atelier": "Atelier",
   "theme.preset.workshop": "Workshop",
   "theme.preset.clarity": "Clarity",
+  "theme.preset.harbour": "Harbour",
+  "theme.preset.linen": "Linen",
+  "theme.preset.studio": "Studio",
+  "theme.preset.playground": "Playground",
 } as const;

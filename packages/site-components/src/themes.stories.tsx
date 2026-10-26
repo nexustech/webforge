@@ -1,7 +1,7 @@
 import stylesheets from "virtual:webforge-theme-css";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { type NodeDoc, pastedCopies } from "@webforge/model";
-import { CURATED_THEMES } from "@webforge/themes";
+import { type NodeDoc, pastedCopies, type ThemeTokens } from "@webforge/model";
+import { CURATED_THEMES_A, CURATED_THEMES_C } from "@webforge/themes";
 import { siteLibrary, starterLayout } from "./catalogue/index.js";
 import { EDITOR_RENDER_CONTEXT } from "./library.js";
 import { renderNodesToHtml } from "./render-static.js";
@@ -143,17 +143,21 @@ export const Bistro: Story = pageOf("bistro");
 export const Atelier: Story = pageOf("atelier");
 export const Workshop: Story = pageOf("workshop");
 export const Clarity: Story = pageOf("clarity");
+export const Harbour: Story = pageOf("harbour");
+export const Linen: Story = pageOf("linen");
+export const Studio: Story = pageOf("studio");
+export const Playground: Story = pageOf("playground");
 
 /**
  * A batch of curated themes side by side on the comparison page, each as narrow as a phone, for
  * comparing at a glance. A batch at a time (four themes, never more than six), so each story stays
  * well inside the visual tests' time.
  */
-const sideBySide = (first: number, last: number): Story => ({
-  name: `Side by side: ${first}–${last}`,
+const sideBySide = (numbers: string, batch: readonly ThemeTokens[]): Story => ({
+  name: `Side by side: ${numbers}`,
   render: () => {
     const page = comparisonPage();
-    const themes = CURATED_THEMES.slice(first - 1, last);
+    const themes = batch;
     return (
       <div
         style={{
@@ -170,5 +174,8 @@ const sideBySide = (first: number, last: number): Story => ({
   },
 });
 
-/** Themes 1–4 (2.13a, redone in 2.13d); themes 5–8 and 9–12 add a story each. */
-export const SideBySide1to4: Story = sideBySide(1, 4);
+/** Themes 1–4 (2.13a, redone in 2.13d). */
+export const SideBySide1to4: Story = sideBySide("1–4", CURATED_THEMES_A);
+
+/** Themes 9–12 (2.13c); 2.13b adds themes 5–8 as a story of its own. */
+export const SideBySide9to12: Story = sideBySide("9–12", CURATED_THEMES_C);
