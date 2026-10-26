@@ -21,6 +21,17 @@ const PACKAGE = "@fontsource/test-script";
 
 /** What Fontsource and jsDelivr answer for the font `test-script`, by URL, as the real ones do. */
 const ANSWERS: Readonly<Record<string, unknown>> = {
+  // Fontsource's whole list, for Browse all fonts (2.3c): Test Script only.
+  [`${FONTSOURCE_API}/fonts`]: [
+    {
+      id: "test-script",
+      family: "Test Script",
+      subsets: ["latin"],
+      category: "handwriting",
+      license: "OFL-1.1",
+      variable: false,
+    },
+  ],
   [`${FONTSOURCE_API}/fonts/test-script`]: {
     id: "test-script",
     family: "Test Script",
@@ -48,8 +59,11 @@ const ANSWERS: Readonly<Record<string, unknown>> = {
 async function standInForFontsource(app: ElectronApplication): Promise<void> {
   await app.evaluate(
     ({ net }, { answers, fontUrl, font }) => {
+      const requests: string[] = [];
+      Object.assign(globalThis, { fontRequests: requests });
       net.fetch = async (input: string | Request) => {
         const url = typeof input === "string" ? input : input.url;
+        requests.push(url);
         if (url === fontUrl) return new Response(Buffer.from(font, "base64"));
         const answer = answers[url];
         return answer === undefined
@@ -175,4 +189,34 @@ test("a downloaded font shows and exports offline, after a restart", async () =>
   );
   // Everything came from the computer: nothing was even tried over the network.
   expect(await requestsTried(app)).toEqual([]);
+});
+
+test("the font picker lists the fonts to download only when asked, and uses one once downloaded", async () => {
+  const sitePath = join(dir, "Picker.wforge");
+  ProjectStore.create(sitePath, { name: "Picker" }).close();
+  app = await launchDesktopApp({ args: [sitePath], userDataDir: join(dir, "user-data") });
+  await standInForFontsource(app);
+  const page = await app.firstWindow();
+  await waitForCanvas(page);
+
+  await page
+    .getByRole("region", { name: "Right panels" })
+    .getByRole("tab", { name: "Theme", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Headings Inter" }).click();
+  const picker = page.getByRole("dialog", { name: "Choose a font" });
+  await expect(picker.getByRole("option", { name: /Inter/ }).first()).toBeVisible();
+  // P8: Fontsource is reached only when the person browses all fonts.
+  expect(await requestsTried(app)).toEqual([]);
+
+  await picker.getByRole("button", { name: "Browse all fonts" }).click();
+  await picker.getByRole("button", { name: "To download" }).click();
+  await picker.getByRole("option", { name: /Test Script/ }).dblclick();
+  await page.getByRole("alertdialog").getByRole("button", { name: "Change Fonts" }).click();
+
+  await expect(page.getByRole("button", { name: "Headings Test Script" })).toBeVisible();
+  await expect(canvas(page).locator("h1").first()).toHaveCSS("font-family", /Test Script/);
+  await page.getByRole("tab", { name: "Undo History" }).click();
+  await expect(page.locator(".undo-history__step").first()).toHaveText("Changed fonts");
+  expect((await requestsTried(app))[0]).toBe(`${FONTSOURCE_API}/fonts`);
 });

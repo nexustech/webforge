@@ -1,5 +1,5 @@
 import type { SiteDoc } from "@webforge/model";
-import { FONT_PAIRINGS, themePreset } from "@webforge/themes";
+import { contrastRatio, FONT_PAIRINGS, themePreset } from "@webforge/themes";
 import { describe, expect, it, vi } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
 import { sessionWith } from "../testing/fixtures.js";
@@ -207,11 +207,15 @@ describe("the Theme tab's edits (2.3a)", () => {
 
     expect(theme().colors.secondary).toEqual(proposal.secondary);
     expect(theme().colors["accent-content"]).toEqual(proposal["accent-content"]);
-    expect(theme().inverse?.secondary).toEqual({
-      l: before.inverse?.secondary.l,
-      c: proposal.secondary.c,
-      h: proposal.secondary.h,
-    });
+    // Reversed sections: the proposal's hues, fitted to their surface with their text (#462).
+    const reversed = theme().inverse;
+    const surface = reversed?.["base-100"] ?? BRAND;
+    expect(reversed?.secondary.h).toBeCloseTo(proposal.secondary.h);
+    expect(contrastRatio(reversed?.secondary ?? BRAND, surface)).toBeGreaterThanOrEqual(3);
+    expect(
+      contrastRatio(reversed?.["secondary-content"] ?? BRAND, reversed?.secondary ?? BRAND),
+    ).toBeGreaterThanOrEqual(4.5);
+    expect(reversed?.["base-100"]).toEqual(before.inverse?.["base-100"]);
     expect(theme().colors["base-100"]).toEqual(before.colors["base-100"]);
     expect(labels()).toEqual(["Changed brand colours from 'Logo.png'"]);
   });
