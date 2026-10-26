@@ -1,4 +1,5 @@
 import type { BrowserWindowConstructorOptions, TitleBarOverlayOptions } from "electron";
+import { TITLE_BAR_HEIGHT } from "../shared/title-bar.js";
 
 /** The editor themes (UI1); the renderer sets the same name as `data-theme`. */
 export type EditorTheme = "dark" | "light";
@@ -7,9 +8,6 @@ export type EditorTheme = "dark" | "light";
 export function windowBackground(theme: EditorTheme): string {
   return theme === "dark" ? "#2c3134" : "#edf0f4";
 }
-
-/** Height of the custom title bar (UI1), so the native controls line up with it. */
-export const TITLE_BAR_HEIGHT = 40;
 
 /**
  * The native window controls' colours: the title bar's `--titlebar` and `--foreground` tokens

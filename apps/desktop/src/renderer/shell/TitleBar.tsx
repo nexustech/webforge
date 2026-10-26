@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { type ReactNode, useEffect } from "react";
 import type { AppApi } from "../../shared/ipc/app.js";
+import { TITLE_BAR_HEIGHT } from "../../shared/title-bar.js";
 import { AppMenu } from "./AppMenu.js";
 import { CommandBox } from "./CommandBox.js";
 import { CommandButton } from "./CommandButton.js";
@@ -37,7 +38,7 @@ export type TitleBarProps = {
 const NO_DRAG = "[-webkit-app-region:no-drag]";
 
 /**
- * The 40 px custom title bar (UI1, LF-13): app menu, New and Open, save status, Undo (with its
+ * The 40 px custom title bar (UI1, LF-13, {@link TITLE_BAR_HEIGHT}): app menu, New and Open, save status, Undo (with its
  * latest steps) and Redo, the command box with the site name, then panel tools and the
  * colour-coded Preview, Export and Publish, which get a caret once there is more to choose. Its
  * buttons are icons, each named by its command and with a tooltip that gives the shortcut. The
@@ -54,7 +55,9 @@ export function TitleBar({ siteName, saveStatus, undoSteps, tools, menuBar }: Ti
   return (
     <header
       data-slot="title-bar"
-      className="flex h-10 shrink-0 items-center gap-2 border-b border-border-strong bg-titlebar pr-[calc(100vw-env(titlebar-area-x,0px)-env(titlebar-area-width,100vw))] pl-[max(env(titlebar-area-x,0px),4px)] select-none [-webkit-app-region:drag]"
+      // As tall as the native window controls, whatever the type scale makes a rem (#484).
+      style={{ height: TITLE_BAR_HEIGHT }}
+      className="flex shrink-0 items-center gap-2 border-b border-border-strong bg-titlebar pr-[calc(100vw-env(titlebar-area-x,0px)-env(titlebar-area-width,100vw))] pl-[max(env(titlebar-area-x,0px),4px)] select-none [-webkit-app-region:drag]"
     >
       {/* The window's heading for screen readers; the window title says the same. */}
       <h1 className="sr-only">{t("app.name")}</h1>
