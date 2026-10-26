@@ -143,7 +143,7 @@ As the module loads:
 - **Markup:** daisyUI 5 component classes and Tailwind utilities only, chosen from the field's token, never built from what the person typed.
 - **Class names in full:** write each class out (`"md:grid-cols-3"`), never assembled (`` `md:grid-cols-${n}` ``), so the Storybook's Tailwind scan finds it, and so the code reads as the HTML it gives.
   - The export and the canvas compile the classes in the rendered HTML, so they don't need it.
-  - `boxClasses` is the one exception: its classes are listed for the Storybook (`@source inline` in `.storybook/preview.css`, which a test keeps complete).
+  - `boxClasses` is the one exception: its classes are listed for the Storybook (`@source inline` in `.storybook/sources.css`, which a test keeps complete).
 - **Static HTML that works without JavaScript:** an FAQ is a `<details>`, and a menu shows on focus until its script runs.
 - **Reading order is the document's order:** the keyboard and screen readers follow the HTML, not where the layout puts things. CSS columns (the Gallery's "Natural shapes") fill down each column, so its items read down the first column, then the next; a grid reads along each row. Prefer a grid where the order matters, and say so in the component's description where it doesn't.
 - **Behaviours:** a component that needs a script names it in `behaviours`. Each is a plain, readable classic script in `src/behaviours/<name>.js`, a self-contained IIFE (decisions X1, X4). The export's `webforge.js` includes only the behaviours its pages use.
