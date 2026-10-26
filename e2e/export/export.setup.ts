@@ -13,6 +13,7 @@ type ExportRequest = {
   snapshot: SiteSnapshot;
   media: { id: string; name: string; mimeType: string; hash: string; alt: string }[];
   documents: { id: string; name: string; mimeType: string; hash: string }[];
+  choices: { format: "folder"; minify: false; developerFiles: false; askWebAddress: true };
 };
 type ExportingWindow = { webforge: { site: { export(request: ExportRequest): Promise<unknown> } } };
 
@@ -103,6 +104,13 @@ setup("export the fixture site from the app", async () => {
   }));
   store.close();
 
+  // A readable folder, as an export is unless the person chooses otherwise (3.3).
+  const choices = {
+    format: "folder",
+    minify: false,
+    developerFiles: false,
+    askWebAddress: true,
+  } as const;
   const app = await launchDesktopApp({ args: [sitePath] });
   try {
     const page = await app.firstWindow();
@@ -111,18 +119,18 @@ setup("export the fixture site from the app", async () => {
 
     const result = await page.evaluate(
       (request) => (window as unknown as ExportingWindow).webforge.site.export(request),
-      { snapshot: { ...site, media: [], documents: [] }, media, documents },
+      { snapshot: { ...site, media: [], documents: [] }, media, documents, choices },
     );
 
-    expect(result).toMatchObject({ status: "exported", pages: 3, warnings: 0 });
+    expect(result).toMatchObject({ status: "exported", pages: 3, warningCount: 0 });
 
     // Again in a theme of its own, into a folder inside the first.
     await stubFileDialogs(app, THEMED_SITE_DIR);
     const again = await page.evaluate(
       (request) => (window as unknown as ExportingWindow).webforge.site.export(request),
-      { snapshot: { ...themed(site), media: [], documents: [] }, media, documents },
+      { snapshot: { ...themed(site), media: [], documents: [] }, media, documents, choices },
     );
-    expect(again).toMatchObject({ status: "exported", pages: 3, warnings: 0 });
+    expect(again).toMatchObject({ status: "exported", pages: 3, warningCount: 0 });
   } finally {
     await app.close();
     rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });

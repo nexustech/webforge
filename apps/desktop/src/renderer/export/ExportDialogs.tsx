@@ -150,7 +150,7 @@ function Report({
         )}
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
-            {t("export.report.close")}
+            {t("export.report.done")}
           </Button>
           <Button onClick={onOpen}>
             {report.format === "zip" ? t("export.report.showZip") : t("export.report.openFolder")}
