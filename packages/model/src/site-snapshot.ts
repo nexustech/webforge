@@ -65,8 +65,14 @@ export type MediaItem = {
   /** Base name for exported files, e.g. `hero` → `assets/img/hero-640.webp`. */
   readonly name: string;
   readonly mimeType: (typeof IMAGE_MIME_TYPES)[number];
-  /** The original file, never modified (X2). */
-  readonly data: Uint8Array;
+  /**
+   * The original file, never modified (X2), or, instead, its SHA-256 `hash`: the build then reads
+   * the bytes when it needs them (`PipelineResources.readMedia`), so a snapshot of a large site
+   * doesn't carry every image (R15). One of the two is there.
+   */
+  readonly data?: Uint8Array | undefined;
+  /** The SHA-256 of the original, by which the open site's file stores it. */
+  readonly hash?: string | undefined;
   /** The image's own alt text from Media; a placement may override it (G15). */
   readonly alt?: string | undefined;
   /** The part kept in view where the image is cut to fit, as fractions of the original (G14). */
@@ -84,8 +90,9 @@ export type DocumentItem = {
   /** Base name of the exported file, e.g. `price-list` → `files/price-list.pdf`. */
   readonly name: string;
   readonly mimeType: FileMimeType;
-  /** The original file, never modified. */
-  readonly data: Uint8Array;
+  /** The original file, never modified, or its SHA-256 `hash` instead, as for a {@link MediaItem}. */
+  readonly data?: Uint8Array | undefined;
+  readonly hash?: string | undefined;
 };
 
 /**
@@ -132,22 +139,38 @@ const sitePageSchema = z.object({
   doc: pageDocSchema,
 });
 
-const mediaItemSchema = z.object({
-  id: z.string().regex(/^[A-Za-z0-9_-]+$/),
-  name: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
-  mimeType: z.enum(IMAGE_MIME_TYPES),
-  data: z.instanceof(Uint8Array),
-  alt: z.string().optional(),
-  focal: focalPointSchema.optional(),
-  crop: cropSchema.optional(),
-});
+/** A file's bytes, or the hash to read them by: one of the two (R15). */
+const contentSchema = {
+  data: z.instanceof(Uint8Array).optional(),
+  hash: z
+    .string()
+    .regex(/^[0-9a-f]{64}$/)
+    .optional(),
+};
+const hasContent = (item: { data?: Uint8Array | undefined; hash?: string | undefined }) =>
+  item.data !== undefined || item.hash !== undefined;
+const CONTENT_MISSING = { message: "Neither the file's bytes nor its hash" };
 
-const documentItemSchema = z.object({
-  id: z.string().regex(/^[A-Za-z0-9_-]+$/),
-  name: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
-  mimeType: z.enum(FILE_MIME_TYPES),
-  data: z.instanceof(Uint8Array),
-});
+const mediaItemSchema = z
+  .object({
+    id: z.string().regex(/^[A-Za-z0-9_-]+$/),
+    name: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+    mimeType: z.enum(IMAGE_MIME_TYPES),
+    ...contentSchema,
+    alt: z.string().optional(),
+    focal: focalPointSchema.optional(),
+    crop: cropSchema.optional(),
+  })
+  .refine(hasContent, CONTENT_MISSING);
+
+const documentItemSchema = z
+  .object({
+    id: z.string().regex(/^[A-Za-z0-9_-]+$/),
+    name: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+    mimeType: z.enum(FILE_MIME_TYPES),
+    ...contentSchema,
+  })
+  .refine(hasContent, CONTENT_MISSING);
 
 /**
  * Validates a {@link SiteSnapshot} arriving from outside (IPC, worker messages). Page paths must be

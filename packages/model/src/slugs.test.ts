@@ -31,6 +31,12 @@ describe("slugify (X1)", () => {
 });
 
 describe("uniqueSlug", () => {
+  it("numbers a Windows device name like a reserved slug, so its file can be written (R16)", () => {
+    expect(uniqueSlug("con", new Set())).toBe("con-2");
+    expect(uniqueSlug("com1", new Set(["com1-2"]))).toBe("com1-3");
+    expect(uniqueSlug("console", new Set())).toBe("console");
+  });
+
   it("keeps a free slug and numbers a taken or reserved one", () => {
     expect(uniqueSlug("about", new Set())).toBe("about");
     expect(uniqueSlug("about", new Set(["about", "about-2"]))).toBe("about-3");

@@ -64,3 +64,38 @@ test("sets an element's anchor and classes on the Advanced tab, in Advanced mode
     "Opened page",
   ]);
 });
+
+test("suggests the site's classes as one is typed, and warns about one that makes no style (#276)", async () => {
+  await chooseFromMenu(app, page, "View", "Use Advanced Mode");
+  await selectHeading();
+  await panel().getByRole("tab", { name: "Advanced" }).click();
+  const classes = panel().getByRole("combobox", { name: "CSS classes" });
+  const heading = canvas().locator(".site-heading");
+  const before = await heading.evaluate((element) => getComputedStyle(element).backgroundColor);
+
+  // Suggested from every class the site's styles support, the theme's colours included, once the
+  // canvas styles worker has listed them.
+  await expect(panel().getByRole("button", { name: "Browse classes…" })).toBeEnabled();
+  await classes.click();
+  await page.keyboard.type("bg-pri");
+  await expect(panel().getByRole("option", { name: "bg-primary", exact: true })).toBeVisible();
+  await page.keyboard.press("Enter");
+  await expect(classes).toHaveValue("bg-primary ");
+  await page.keyboard.press("Enter");
+
+  await expect(heading).toHaveClass(/(^| )bg-primary$/);
+  await expect
+    .poll(() => heading.evaluate((element) => getComputedStyle(element).backgroundColor))
+    .not.toBe(before);
+  await page.getByRole("tab", { name: "Undo History" }).click();
+  await expect(steps()).toHaveText(["Changed Heading CSS classes", "Opened page"]);
+
+  // A typo still saves, with a warning that says what was meant.
+  await classes.click();
+  await page.keyboard.press("End");
+  await page.keyboard.type(" pading-4");
+  if (await panel().getByRole("listbox").isVisible()) await page.keyboard.press("Escape");
+  await page.keyboard.press("Enter");
+  await expect(panel().getByText("No style called pading-4. Did you mean p-4?")).toBeVisible();
+  await expect(heading).toHaveClass(/(^| )pading-4$/);
+});

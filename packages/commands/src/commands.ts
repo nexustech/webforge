@@ -6,6 +6,8 @@ import {
   newId,
   type PageId,
   pageTitle,
+  richTextFileLinks,
+  richTextPageLinks,
   type SiteDoc,
   themeTokensSchema,
 } from "@webforge/model";
@@ -14,6 +16,7 @@ import {
   type CatalogueComponent,
   type CatalogueField,
   fieldValueSchema,
+  sanitizeStoredRichText,
 } from "@webforge/site-components/catalogue-data";
 import { z } from "zod";
 import {
@@ -93,6 +96,13 @@ function checkedValues(
  * per device) and `site` doesn't have, as a message.
  */
 function missingReference(site: SiteDoc, value: unknown): string | undefined {
+  if (typeof value === "string") {
+    // Rich text's links to the site's pages and documents (`webforge:page/…`, `webforge:file/…`).
+    const page = richTextPageLinks(value).find(({ pageId }) => site.pages[pageId] === undefined);
+    if (page !== undefined) return `There is no page "${page.pageId}".`;
+    const file = richTextFileLinks(value).find(({ mediaId }) => site.media[mediaId] === undefined);
+    return file === undefined ? undefined : `There is no file "${file.mediaId}" in Media.`;
+  }
   if (Array.isArray(value)) {
     for (const item of value) {
       const missing = missingReference(site, item);
@@ -113,6 +123,30 @@ function missingReference(site: SiteDoc, value: unknown): string | undefined {
     return `There is no page "${named.pageId}".`;
   }
   return missingReference(site, Object.values(named));
+}
+
+/**
+ * `values` for `component` as the site will hold them, or why not: each checked against its
+ * field's schema, rich text cleaned as the editor's is, and no link or image to a page or file the
+ * site doesn't have. Nothing an AI app sets is what no person could have set.
+ */
+function storedValues(
+  site: SiteDoc,
+  component: CatalogueComponent,
+  values: Readonly<Record<string, unknown>>,
+): { readonly values: Record<string, unknown> } | Failure {
+  const invalid = checkedValues(component, values);
+  if (invalid !== undefined) return fail("invalid", invalid);
+  const stored = Object.fromEntries(
+    Object.entries(values).map(([name, value]) => [
+      name,
+      component.fields[name]?.kind === "richtext" && typeof value === "string"
+        ? sanitizeStoredRichText(value)
+        : value,
+    ]),
+  );
+  const missing = missingReference(site, stored);
+  return missing === undefined ? { values: stored } : fail("not-found", missing);
 }
 
 /** `node` and everything in its slots, with new ids: a component's defaults keep theirs. */
@@ -213,10 +247,9 @@ export const COMMANDS = {
     ): Plan | Failure {
       const component = componentOf(input.type);
       if (failed(component)) return component;
-      const invalid = checkedValues(component, input.values);
-      if (invalid !== undefined) return fail("invalid", invalid);
-      const missing = missingReference(site, input.values);
-      if (missing !== undefined) return fail("not-found", missing);
+      const stored = storedValues(site, component, input.values);
+      if (failed(stored)) return stored;
+      const { values } = stored;
       const nodes = nodesAt(site, input.location);
       if (nodes === undefined) return fail("not-found", "That page or shared section isn't there.");
       const parent = input.parentId === null ? null : locate(nodes, input.parentId)?.node;
@@ -226,7 +259,7 @@ export const COMMANDS = {
       if (wrong !== undefined) return fail("refused", wrong);
       const node = withNewIds({
         type: input.type,
-        props: { ...structuredClone(component.defaults), ...input.values, id: "" },
+        props: { ...structuredClone(component.defaults), ...values, id: "" },
       });
       const { location, slot, index } = input;
       return {
@@ -257,11 +290,10 @@ export const COMMANDS = {
       if (failed(placed)) return placed;
       const component = componentOf(placed.node.type);
       if (failed(component)) return component;
-      const invalid = checkedValues(component, input.values);
-      if (invalid !== undefined) return fail("invalid", invalid);
-      const missing = missingReference(site, input.values);
-      if (missing !== undefined) return fail("not-found", missing);
-      const names = Object.keys(input.values);
+      const stored = storedValues(site, component, input.values);
+      if (failed(stored)) return stored;
+      const { values } = stored;
+      const names = Object.keys(values);
       if (names.length === 0) return fail("invalid", "Give at least one field to set.");
       const fields = names.map((name) => component.fields[name]).filter((f) => f !== undefined);
       const [only] = fields;
@@ -277,7 +309,7 @@ export const COMMANDS = {
         recipe: (draft) => {
           const top = nodesAt(draft, location);
           const node = top === undefined ? undefined : locate(top, id)?.node;
-          if (node !== undefined) Object.assign(node.props, structuredClone(input.values));
+          if (node !== undefined) Object.assign(node.props, structuredClone(values));
         },
       };
     },
@@ -302,6 +334,10 @@ export const COMMANDS = {
       if (field?.kind !== "text" && field?.kind !== "richtext") {
         return fail("invalid", `${component.label} has no text field "${input.field}".`);
       }
+      // As updateFields sets it: the field's own schema, rich text cleaned, its links checked.
+      const stored = storedValues(site, component, { [input.field]: input.text });
+      if (failed(stored)) return stored;
+      const text = stored.values[input.field];
       const { location, nodeId: id } = input;
       return {
         action: t("history.editedText", { item: component.label }),
@@ -311,7 +347,7 @@ export const COMMANDS = {
         recipe: (draft) => {
           const top = nodesAt(draft, location);
           const node = top === undefined ? undefined : locate(top, id)?.node;
-          if (node !== undefined) node.props[input.field] = input.text;
+          if (node !== undefined) node.props[input.field] = text;
         },
       };
     },

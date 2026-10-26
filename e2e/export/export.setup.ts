@@ -73,6 +73,11 @@ setup("export the fixture site from the app", async () => {
   const dir = mkdtempSync(join(tmpdir(), "webforge-e2e-fixture-"));
   const sitePath = join(dir, "Fixture.wforge");
   const store = ProjectStore.create(sitePath, { name: "Fixture" });
+  /** The fixture's own bytes: sampleSite carries every file's. */
+  const bytes = (item: { readonly data?: Uint8Array | undefined }) => {
+    if (item.data === undefined) throw new Error("The fixture site has a file without bytes");
+    return item.data;
+  };
   const media = site.media.map((item) => ({
     id: item.id,
     name: item.name,
@@ -80,7 +85,7 @@ setup("export the fixture site from the app", async () => {
     alt: item.alt ?? "",
     hash: store.putAsset({
       mediaId: item.id,
-      data: item.data,
+      data: bytes(item),
       mime: item.mimeType,
       originalName: `${item.name}.jpg`,
     }).hash,
@@ -91,7 +96,7 @@ setup("export the fixture site from the app", async () => {
     mimeType: item.mimeType,
     hash: store.putAsset({
       mediaId: item.id,
-      data: item.data,
+      data: bytes(item),
       mime: item.mimeType,
       originalName: `${item.name}.pdf`,
     }).hash,

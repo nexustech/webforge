@@ -13,7 +13,8 @@ The command layer for AI apps (F-AI-1, plan item 4.8): typed queries that read t
 - `CONFIRM_TIMEOUT_MS`: how long a change to more than one page waits for the person (D7).
 
 ## Rules
-- Every input is checked with zod, and a field's value against its field's own schema (`@webforge/site-components/catalogue-data`); invalid input changes nothing.
+- Every input is checked with zod, and a field's value against its field's own schema (`@webforge/site-components/catalogue-data`), whichever command sets it; invalid input changes nothing.
+- Rich text is cleaned as the editor's is (`sanitizeStoredRichText`), and a link or image to a page or file in Media the site doesn't have is `not-found`: the site never holds what no person could have set.
 - `busy` while a gesture (a drag, a slider) is open, the person is typing in a text (D1), or a question is open.
 - Content mode (1.26) refuses structural commands: adding, moving and removing, pages, the theme, and style fields.
 - A change shown on more than one page (the Header or Footer, a shared section with several copies, the theme) asks the person first (D7), and is `declined` after a minute.
