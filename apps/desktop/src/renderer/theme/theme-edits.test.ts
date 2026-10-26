@@ -5,6 +5,7 @@ import { starterSite } from "../../shared/starter-site.js";
 import { sessionWith } from "../testing/fixtures.js";
 import { TOKEN_CONTROLS, tokenKey } from "./theme-controls.js";
 import {
+  setBrandColours,
   setColor,
   setFont,
   setPairing,
@@ -184,6 +185,32 @@ describe("the Theme tab's edits (2.3a)", () => {
     expect(theme().inverse?.["base-100"]).toEqual(shown);
     session.history.undo();
     expect(theme().inverse).toBeUndefined();
+  });
+
+  it("uses colours from an image once asked, as one step, reversed sections following (PG-2)", async () => {
+    const { session, labels, theme } = setUp();
+    const before = theme();
+    const proposal = {
+      primary: BRAND,
+      "primary-content": { l: 0.98, c: 0.02, h: 30 },
+      secondary: { l: 0.45, c: 0.15, h: 250 },
+      "secondary-content": { l: 0.98, c: 0.02, h: 250 },
+      accent: { l: 0.5, c: 0.12, h: 150 },
+      "accent-content": { l: 0.98, c: 0.02, h: 150 },
+    };
+
+    expect(await setBrandColours(session, answering(false), proposal, "Logo.png")).toBe(false);
+    expect(await setBrandColours(session, answering(true), proposal, "Logo.png")).toBe(true);
+
+    expect(theme().colors.secondary).toEqual(proposal.secondary);
+    expect(theme().colors["accent-content"]).toEqual(proposal["accent-content"]);
+    expect(theme().inverse?.secondary).toEqual({
+      l: before.inverse?.secondary.l,
+      c: proposal.secondary.c,
+      h: proposal.secondary.h,
+    });
+    expect(theme().colors["base-100"]).toEqual(before.colors["base-100"]);
+    expect(labels()).toEqual(["Changed brand colours from 'Logo.png'"]);
   });
 
   it("undoes them all back to the theme it started with", async () => {

@@ -8,7 +8,7 @@ import {
   type TextStyle,
   type ThemeTokens,
 } from "@webforge/model";
-import type { FontPairing } from "@webforge/themes";
+import type { BrandProposal, FontPairing } from "@webforge/themes";
 import { catalogueFont, fontRefOf, inverseColors } from "@webforge/themes";
 import type { EditorSession } from "../editor/editor-session.js";
 import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
@@ -179,6 +179,38 @@ export async function setPaletteColor(
       draft.theme.inverse[role] = { ...color };
     },
   );
+  return true;
+}
+
+/**
+ * Uses the brand colours a palette from image `image` proposes (PG-2, F-DS-7): asked first (D7),
+ * then one step, "Changed brand colours from 'Logo.png'": Brand, Accent and Second accent, each
+ * with its text. Reversed sections take each brand colour's hue and chroma at their own lightness,
+ * as the Theme tab's colours do (#200).
+ */
+export async function setBrandColours(
+  session: ThemeSession,
+  confirm: Confirm,
+  proposal: BrandProposal,
+  image: string,
+): Promise<boolean> {
+  const ok = await confirmed(session, confirm, {
+    action: t("theme.image.confirm", { name: image }),
+    description: t("theme.image.confirmDescription"),
+    confirm: t("theme.image.confirmButton"),
+  });
+  if (!ok) return false;
+  session.edit("props", t("theme.history.image", { name: image }), (draft) => {
+    for (const [role, color] of Object.entries(proposal) as [keyof BrandProposal, Oklch][]) {
+      draft.theme.colors[role] = { ...color };
+    }
+    for (const role of BRAND_COLORS) {
+      const reversed = draft.theme.inverse?.[role];
+      if (reversed === undefined) continue;
+      reversed.c = proposal[role as keyof BrandProposal].c;
+      reversed.h = proposal[role as keyof BrandProposal].h;
+    }
+  });
   return true;
 }
 
