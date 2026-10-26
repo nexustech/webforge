@@ -1,7 +1,7 @@
 import stylesheets from "virtual:webforge-theme-css";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { type NodeDoc, pastedCopies, type ThemeTokens } from "@webforge/model";
-import { CURATED_THEMES_A, CURATED_THEMES_C } from "@webforge/themes";
+import { CURATED_THEMES_A, CURATED_THEMES_B, CURATED_THEMES_C } from "@webforge/themes";
 import { siteLibrary, starterLayout } from "./catalogue/index.js";
 import { EDITOR_RENDER_CONTEXT } from "./library.js";
 import { renderNodesToHtml } from "./render-static.js";
@@ -143,6 +143,10 @@ export const Bistro: Story = pageOf("bistro");
 export const Atelier: Story = pageOf("atelier");
 export const Workshop: Story = pageOf("workshop");
 export const Clarity: Story = pageOf("clarity");
+export const Meridian: Story = pageOf("meridian");
+export const Darkroom: Story = pageOf("darkroom");
+export const Market: Story = pageOf("market");
+export const Gazette: Story = pageOf("gazette");
 export const Harbour: Story = pageOf("harbour");
 export const Linen: Story = pageOf("linen");
 export const Studio: Story = pageOf("studio");
@@ -177,5 +181,8 @@ const sideBySide = (numbers: string, batch: readonly ThemeTokens[]): Story => ({
 /** Themes 1–4 (2.13a, redone in 2.13d). */
 export const SideBySide1to4: Story = sideBySide("1–4", CURATED_THEMES_A);
 
-/** Themes 9–12 (2.13c); 2.13b adds themes 5–8 as a story of its own. */
+/** Themes 5–8 (2.13b). */
+export const SideBySide5to8: Story = sideBySide("5–8", CURATED_THEMES_B);
+
+/** Themes 9–12 (2.13c). */
 export const SideBySide9to12: Story = sideBySide("9–12", CURATED_THEMES_C);

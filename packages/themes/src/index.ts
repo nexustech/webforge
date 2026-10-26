@@ -14,6 +14,7 @@ export {
   CURATED_BATCHES,
   CURATED_THEMES,
   CURATED_THEMES_A,
+  CURATED_THEMES_B,
   CURATED_THEMES_C,
 } from "./curated/index.js";
 export type { CatalogueFont, FontPairing } from "./fonts/catalogue.js";
