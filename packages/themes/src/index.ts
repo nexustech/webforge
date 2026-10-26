@@ -23,7 +23,7 @@ export {
   fontRefOf,
 } from "./fonts/catalogue.js";
 export type { FontFace } from "./fonts/faces.js";
-export { fontFacesFor } from "./fonts/faces.js";
+export { fontFacesFor, previewFileOf } from "./fonts/faces.js";
 export type {
   FontCategory,
   FontFallback,

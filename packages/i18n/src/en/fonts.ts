@@ -31,4 +31,19 @@ export const fonts = {
   "fonts.picker.tile": "Aa",
   "fonts.picker.sampleLabel": "Sample text",
   "fonts.picker.sample": "The quick brown fox jumps over the lazy dog",
+  // Fonts to download (2.3c, S4, P8): Fontsource is reached only when the person asks.
+  "fonts.category.toDownload": "To download",
+  "fonts.browse": "Browse all fonts",
+  "fonts.browse.loading": "Listing the fonts there are to download…",
+  "fonts.browse.listed": "{count} more fonts to download, under To download.",
+  "fonts.browse.offline": "You're offline, so the fonts to download can't be listed now.",
+  "fonts.browse.failed": "The fonts to download couldn't be listed. Try again later.",
+  "fonts.picker.notDownloaded":
+    "Downloads when you choose it, then works offline. It can't be previewed until then.",
+  "fonts.download.progress": "Downloading {name}…",
+  "fonts.download.offline": "You're offline, so {name} can't be downloaded. Nothing changed.",
+  "fonts.download.notAllowed":
+    "{name} can't be used: its licence doesn't allow it in your sites. Nothing changed.",
+  "fonts.download.damaged": "{name} didn't download properly. Try again. Nothing changed.",
+  "fonts.download.unknown": "{name} couldn't be downloaded. Nothing changed.",
 } as const;

@@ -21,6 +21,7 @@ import {
   PACKAGE_FILES,
   PACKAGE_LISTINGS,
   planFamily,
+  previewFileOf,
 } from "@webforge/themes";
 import type { IpcMain } from "electron";
 import { z } from "zod";
@@ -142,14 +143,18 @@ const listingSchema = z.object({
 });
 
 /** `families` as the picker lists them. */
-const installed = (family: CatalogueFont, source: InstalledFont["source"]): InstalledFont => ({
-  id: family.id,
-  family: family.family,
-  fallback: family.fallback,
-  category: family.category,
-  variable: family.variable,
-  source,
-});
+const installed = (family: CatalogueFont, source: InstalledFont["source"]): InstalledFont => {
+  const preview = previewFileOf(family)?.file;
+  return {
+    id: family.id,
+    family: family.family,
+    fallback: family.fallback,
+    category: family.category,
+    variable: family.variable,
+    source,
+    ...(preview === undefined ? {} : { preview }),
+  };
+};
 
 /** Fontsource's whole list, without the fonts the app can't use (C1, Latin only, listed categories). */
 function usableFonts(list: readonly unknown[]): KeptFont[] {
