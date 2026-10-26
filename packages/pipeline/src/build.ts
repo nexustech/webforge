@@ -18,12 +18,13 @@ import {
   mediaUsedBy,
   navigationFor,
   type RenderContext,
+  type RenderedPage,
   type ResolvedImage,
   renderPage,
   UnknownComponentError,
 } from "@webforge/site-components";
 import { fontFacesFor } from "@webforge/themes";
-import { buildSiteCss, classCandidates } from "./css.js";
+import { buildSiteCss, classCandidates, type SiteCssOptions, type StyleCompiler } from "./css.js";
 import { BODY_CLASS, pageDocument } from "./html.js";
 import { imageForDepth, processImage } from "./images.js";
 import type { PipelineResources } from "./resources.js";
@@ -101,6 +102,32 @@ export type BuildOptions = {
   readonly onProgress?: ((event: BuildEvent) => void) | undefined;
 };
 
+/**
+ * What a build is for (architecture §6). An export and a publish build the same files; a preview
+ * (3.2) lets its stylesheet keep classes between builds, so an edit's CSS is ready at once.
+ */
+export type BuildMode = "preview" | "export" | "publish";
+
+/** A page's rendered regions, with the problems found rendering them. */
+type RenderedRegions = RenderedPage & { readonly warnings: readonly BuildWarning[] };
+
+/**
+ * What a pipeline keeps between builds (3.1, `createPipeline`): its Tailwind compiler, and each
+ * page's HTML under a hash of everything its render reads, so an unchanged page isn't rendered
+ * again. Only the last finished build's pages are kept.
+ */
+export type BuildCaches = {
+  readonly styles: StyleCompiler;
+  readonly pages: Map<string, RenderedRegions>;
+};
+
+/** How {@link buildEvents} runs: what for, its cancel signal, and the caches it may use. */
+type BuildRun = {
+  readonly mode: BuildMode;
+  readonly signal?: AbortSignal | undefined;
+  readonly caches?: BuildCaches | undefined;
+};
+
 const EXTERNAL_LINK = /^(?:https?:|mailto:|tel:)/i;
 
 const sha256 = (data: string | Uint8Array) => createHash("sha256").update(data).digest("hex");
@@ -155,7 +182,8 @@ function allNodes(site: SiteSnapshot): NodeDoc[] {
  *
  * Images and documents the snapshot names by hash are read through `resources.readMedia`, one at a
  * time; with `resources.imageCache`, an image encoded before isn't encoded again (R15). `options`
- * can cancel the build and follow its progress.
+ * can cancel the build and follow its progress. `createPipeline` builds the same way, keeping what
+ * it can between builds (3.1).
  */
 export async function buildSite(
   snapshot: SiteSnapshot,
@@ -163,7 +191,28 @@ export async function buildSite(
   resources: PipelineResources,
   options: BuildOptions = {},
 ): Promise<BuiltSite> {
-  const { signal, onProgress } = options;
+  const events = buildEvents(snapshot, library, resources, {
+    mode: "export",
+    signal: options.signal,
+  });
+  for (;;) {
+    const next = await events.next();
+    if (next.done === true) return next.value;
+    options.onProgress?.(next.value);
+  }
+}
+
+/**
+ * The build of {@link buildSite}, as the events it goes through, finishing with the site. With
+ * `run.caches`, a page or stylesheet unchanged since the last build is taken from them.
+ */
+export async function* buildEvents(
+  snapshot: SiteSnapshot,
+  library: ComponentLibrary,
+  resources: PipelineResources,
+  run: BuildRun,
+): AsyncGenerator<BuildEvent, BuiltSite> {
+  const { signal, caches } = run;
   const parsed = siteSnapshotSchema.safeParse(snapshot);
   if (!parsed.success) {
     throw new BuildError("invalid-site", parsed.error.message);
@@ -213,7 +262,7 @@ export async function buildSite(
   const imageIds = [...mediaIds].sort();
   for (const [done, id] of imageIds.entries()) {
     stopIfCancelled(signal);
-    onProgress?.({ stage: "images", done, total: imageIds.length });
+    yield { stage: "images", done, total: imageIds.length };
     const item = site.media.find((media) => media.id === id);
     if (item === undefined) {
       missing.add(id);
@@ -268,15 +317,14 @@ export async function buildSite(
   // Render every page, then compile one stylesheet from all the classes they use.
   const paths = new Set(site.pages.map((page) => page.path));
   const pathById = new Map(site.pages.map((page) => [page.id as string, page.path]));
-  const rendered = site.pages.map((page, done) => {
-    stopIfCancelled(signal);
-    onProgress?.({ stage: "pages", done, total: site.pages.length });
-    const prefix = "../".repeat(depthOf(page.path));
+  /** Renders `page`'s regions: its Header, content and Footer. */
+  const render = (page: SitePage, prefix: string): RenderedRegions => {
+    const found: BuildWarning[] = [];
     const navigation = navigationFor(
       site,
       page,
       prefix,
-      (detail) => warnings.push({ code: "broken-link", page: page.path, detail }),
+      (detail) => found.push({ code: "broken-link", page: page.path, detail }),
       (id) => documentPaths.get(id),
     );
     const context: RenderContext = {
@@ -288,7 +336,7 @@ export async function buildSite(
         if (paths.has(target)) {
           return `${prefix}${target}.html`;
         }
-        warnings.push({ code: "broken-link", page: page.path, detail: target });
+        found.push({ code: "broken-link", page: page.path, detail: target });
         return "#";
       },
       href: (link) => {
@@ -301,7 +349,7 @@ export async function buildSite(
         if (href === undefined) {
           const detail =
             link.kind === "page" ? link.pageId : link.kind === "file" ? link.mediaId : link.kind;
-          warnings.push({ code: "broken-link", page: page.path, detail });
+          found.push({ code: "broken-link", page: page.path, detail });
           return "#";
         }
         return href;
@@ -309,8 +357,7 @@ export async function buildSite(
       image: (id) => {
         const image = images.get(id);
         if (image === undefined) {
-          if (missing.has(id))
-            warnings.push({ code: "missing-image", page: page.path, detail: id });
+          if (missing.has(id)) found.push({ code: "missing-image", page: page.path, detail: id });
           return null;
         }
         return imageForDepth(image, depthOf(page.path));
@@ -330,8 +377,40 @@ export async function buildSite(
       content: page.doc.content,
       footer: page.hideFooter === true ? [] : site.layout.footer,
     };
-    return { page, prefix, ...renderPage(regions, library, context) };
-  });
+    return { ...renderPage(regions, library, context), warnings: found };
+  };
+  // Everything a page's render reads besides the page itself, hashed once for the page cache: the
+  // site without its pages' content and without Media, whose images and documents a page reaches
+  // only as they were resolved above. A new input of rendering must be added here too.
+  const sharedKey =
+    caches === undefined
+      ? ""
+      : sha256(
+          JSON.stringify({
+            site: {
+              ...site,
+              media: undefined,
+              documents: undefined,
+              pages: site.pages.map((page) => ({ ...page, doc: undefined })),
+            },
+            images: [...images],
+            missing: [...missing],
+            documents: [...documentPaths],
+          }),
+        );
+  const keptPages = new Map<string, RenderedRegions>();
+  const rendered: (RenderedRegions & { readonly page: SitePage; readonly prefix: string })[] = [];
+  for (const [done, page] of site.pages.entries()) {
+    stopIfCancelled(signal);
+    yield { stage: "pages", done, total: site.pages.length };
+    const prefix = "../".repeat(depthOf(page.path));
+    const key = caches === undefined ? undefined : sha256(`${sharedKey}\n${JSON.stringify(page)}`);
+    const regions =
+      (key === undefined ? undefined : caches?.pages.get(key)) ?? render(page, prefix);
+    if (key !== undefined) keptPages.set(key, regions);
+    warnings.push(...regions.warnings);
+    rendered.push({ ...regions, page, prefix });
+  }
 
   // The back-to-top button (F-CM-9) on the pages that show it, its classes compiled with theirs.
   const backToTop = backToTopHtml();
@@ -342,13 +421,17 @@ export async function buildSite(
     showsBackToTop(site, entry.page) ? backToTop : "",
   ]);
   stopIfCancelled(signal);
-  onProgress?.({ stage: "styles" });
-  const css = await buildSiteCss(resources, {
+  yield { stage: "styles" };
+  const cssOptions: SiteCssOptions = {
     theme: site.theme,
     candidates: classCandidates([`<body class="${BODY_CLASS}">`, ...markup].join("\n")),
     fontsUrl: "../fonts/",
     ...(resources.fonts === undefined ? {} : { fonts: resources.fonts }),
-  });
+  };
+  const css =
+    caches === undefined
+      ? await buildSiteCss(resources, cssOptions)
+      : await caches.styles.css(cssOptions, run.mode === "preview");
   const cssPath = `assets/css/site.${contentHash(css)}.css`;
   files.set(cssPath, text.encode(css));
   for (const entry of rendered) {
@@ -371,7 +454,7 @@ export async function buildSite(
   }
   // Only the fonts the theme uses (2.2), each exactly the file the catalogue (or the download) lists.
   stopIfCancelled(signal);
-  onProgress?.({ stage: "fonts" });
+  yield { stage: "fonts" };
   for (const face of fontFacesFor(site.theme, resources.fonts)) {
     const data = await resources.readFont(face);
     if (data === undefined || data.byteLength !== face.bytes || sha256(data) !== face.sha256) {
@@ -380,6 +463,11 @@ export async function buildSite(
     files.set(`assets/fonts/${face.file}`, data);
   }
 
+  // This build's pages replace the last one's, so the cache holds no page that's gone.
+  if (caches !== undefined) {
+    caches.pages.clear();
+    for (const [key, regions] of keptPages) caches.pages.set(key, regions);
+  }
   const sorted = new Map([...files].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
   let bytes = 0;
   for (const data of sorted.values()) bytes += data.length;

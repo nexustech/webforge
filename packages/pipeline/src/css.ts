@@ -73,6 +73,53 @@ export async function buildSiteCss(
 }
 
 /**
+ * Compiles the site's CSS like {@link buildSiteCss}, keeping its Tailwind compiler between builds
+ * (3.1): preparing one takes about 100 ms, building from it a few.
+ */
+export type StyleCompiler = {
+  /**
+   * The CSS for `options`. A Tailwind compiler only ever adds the classes it is given to its CSS,
+   * so with `grow` (a preview, 3.2) a class no page uses any more stays in until the theme changes.
+   * Without it (an export), the CSS is always exactly {@link buildSiteCss}'s: the kept compiler is
+   * used only when none of the classes it has seen are gone.
+   */
+  css(options: SiteCssOptions, grow?: boolean): Promise<string>;
+};
+
+/** A {@link StyleCompiler} over `resources`, which must stay the same for its lifetime. */
+export function createStyleCompiler(resources: StyleResources): StyleCompiler {
+  let kept:
+    | {
+        readonly source: string;
+        readonly compiler: Awaited<ReturnType<typeof compile>>;
+        readonly seen: Set<string>;
+      }
+    | undefined;
+  return {
+    async css(options, grow = false) {
+      const source = siteStylesheetSource(options);
+      const wanted = new Set(options.candidates);
+      // Checked and built in one go, with no await between: another build can't change it meanwhile.
+      const reusable =
+        kept !== undefined &&
+        kept.source === source &&
+        (grow || [...kept.seen].every((name) => wanted.has(name)));
+      const current =
+        reusable && kept !== undefined
+          ? kept
+          : {
+              source,
+              compiler: await compile(source, tailwindLoaders(resources)),
+              seen: new Set<string>(),
+            };
+      kept = current;
+      for (const name of wanted) current.seen.add(name);
+      return current.compiler.build([...options.candidates]);
+    },
+  };
+}
+
+/**
  * How Tailwind gets the stylesheets and plugins the site's stylesheet names: from `resources`,
  * never from disk or the network. Shared with the class catalogue (class-catalogue.ts).
  */
