@@ -44,7 +44,7 @@ Still open in Phase 0: the publishing spikes (Netlify, FTP/SFTP). The Puck large
 Current code size (approx. lines): desktop 2.7k · engine 1.6k · history 1.6k · pipeline 1.1k · site-components 1.0k · storage 0.6k · model 0.3k. `editor-ui`, `publish` and `themes` are placeholders.
 
 ## 3. Timeline
-**Total: 374 working days** (≈ 75 weeks of effort; 335 before the 22–25 Oct additions) including the 4-week beta. Baseline v1.0 (sequential, for the original 277 days, before the Phase 1 re-plan) at 100% of estimates: **19 Nov 2027**; with +25% contingency: **25 Feb 2028**. Re-planned at the Phase 1 exit (25 Oct 2026, below): v1.0 about **22 Jan 2027**.
+**Total: 378 working days** (≈ 76 weeks of effort; 335 before the 22–27 Oct additions) including the 4-week beta. Baseline v1.0 (sequential, for the original 277 days, before the Phase 1 re-plan) at 100% of estimates: **19 Nov 2027**; with +25% contingency: **25 Feb 2028**. Re-planned at the Phase 1 exit (25 Oct 2026, below): v1.0 about **22 Jan 2027**.
 
 **Re-plan, 20 Oct 2026:** Phase 1 runs in three concurrent streams (82 days of effort in about 28 working days, see [Phase 1](#phase-1-editor-core)). Phase 2–5 dates and the v1.0 date are re-planned at the Phase 1 exit review.
 
@@ -86,16 +86,16 @@ Current code size (approx. lines): desktop 2.7k · engine 1.6k · history 1.6k �
 **Scope change, 25 Oct 2026 (2.3c, product owner):** 2.3c +1.5: the font picker reaches 2.2's downloaded and on-demand fonts, found in [#447](https://github.com/nexustech/webforge/pull/447)'s review. A new sub-issue of 2.3, [#449](https://github.com/nexustech/webforge/issues/449), in stream A after 2.3b. 2.3 is 8.5 days, Phase 2 129.5 and the total 370.5; no §7 chain includes 2.3.
 
 **Scope change, 27 Oct 2026 (product owner's testing, PH2-17 and PH2-18):** +3.5 days. Two new Phase 2 items from the product owner's testing on 26 Oct:
-- **2.22 Your own themes** ([#485](https://github.com/nexustech/webforge/issues/485), 2.5 days, stream A after #484). Built-in themes become read-only; the first change to one asks for a name for the person's own version. Theme Studio gains *New theme*, and *My themes* keeps them on this computer (PH2-17).
-- **2.23 Desktop fills the canvas** ([#486](https://github.com/nexustech/webforge/issues/486), 1 day, stream C after #311). The Desktop view stretches to the canvas's width, with fixed widths in the size menu (PH2-18).
+- **2.23 Your own themes** ([#485](https://github.com/nexustech/webforge/issues/485), 2.5 days, stream A after #484). Built-in themes become read-only; the first change to one asks for a name for the person's own version. Theme Studio gains *New theme*, and *My themes* keeps them on this computer (PH2-17).
+- **2.24 Desktop fills the canvas** ([#486](https://github.com/nexustech/webforge/issues/486), 1 day, stream C after #311). The Desktop view stretches to the canvas's width, with fixed widths in the size menu (PH2-18).
 
-Phase 2 is 133 days and the total 374. Neither item is on a §7 chain.
+Phase 2 is 137 days and the total 378. Neither item is on a §7 chain.
 
 | Phase | Effort (days) | Starts | Ends (100%) | Ends (+25%) | Exit criteria |
 |---|---|---|---|---|---|
 | [Phase 0: Prototype (finish)](#phase-0-prototype-finish) | 7 | 26 Oct 2026 | 13 Nov 2026 (0.2 and 0.3) | – | Netlify and SFTP/FTPS publish spikes meet the spike criteria in research/stack/08<br>A large page (200+ elements) stays within the editing performance budget |
 | [Phase 1: Editor core](#phase-1-editor-core) | 128 | 22 Oct 2026 | 25 Oct 2026 (exit criteria met; closed 26 Oct 2026 on the product owner's sign-off) | – | Build a 3-page site from blank, close, reopen: everything restored<br>Undo-all property tests green; every edit has a meaningful label<br>Shell matches UI1 as amended by UI6 in dark and light (Storybook screenshots) |
-| [Phase 2: Design & components](#phase-2-design--components) | 133 | 23 Oct 2026 | 6 Nov 2026 (code-complete) | – | Every component has stories × 3 themes × Desktop/Mobile, axe-clean (colour contrast in site themes reported, not blocking)<br>New Site from each of the 8 templates works and looks distinct<br>Theme changes restyle every component; contrast warnings work |
+| [Phase 2: Design & components](#phase-2-design--components) | 137 | 23 Oct 2026 | 6 Nov 2026 (code-complete) | – | Every component has stories × 3 themes × Desktop/Mobile, axe-clean (colour contrast in site themes reported, not blocking)<br>New Site from each of the 8 templates works and looks distinct<br>Theme changes restyle every component; contrast warnings work |
 | [Phase 3: Output](#phase-3-output) | 32 | 9 Nov 2026 | 20 Nov 2026 | – | Exported templates open from disk in Chromium, Firefox, WebKit (+ Edge on Windows) with no external requests<br>Site Check blocks only Must-fix issues on export<br>Preview CSS hot-swap < 100 ms; phone preview via QR works |
 | [Phase 4: Publish & versions](#phase-4-publish--versions) | 30 | 23 Nov 2026 | 4 Dec 2026 | – | Publish + rollback on all targets in E2E tests (mock Netlify, local FTP/SFTP)<br>A paired AI app's edits are undoable, and the MCP server can't be reached from another computer<br>Version History: save, auto-retention, preview, restore, open as new site, republish |
 | [Phase 5: Beta hardening](#phase-5-beta-hardening) | 44 | 7 Dec 2026 | 22 Jan 2027 (hardening by mid-December, then the 4-week beta) | – | All performance budgets met on Windows and macOS<br>Signed NSIS and DMG builds install, and auto-update from a test feed on both OSes (0.5)<br>Signed, notarised builds auto-update from the production feed<br>ADRs written; architecture §6 interfaces updated (0.6)<br>Beta running with 10–20 users; no open Must-fix bugs |
@@ -175,8 +175,9 @@ gantt
     2.19 Component primitives and scaffolding :t2_19, after t2_6, 3d
     2.20 Editor building blocks :t2_20, after t2_4, 7d
     2.21 One form engine :t2_21, after t2_9, 5d
-    2.22 Your own themes :t2_22, after t2_18, 2.5d
-    2.23 Desktop fills the canvas :t2_23, after t2_17, 1d
+    2.22 Appearance group and hover row :t2_22, after t2_3, 4d
+    2.23 Your own themes :t2_23, after t2_18, 2.5d
+    2.24 Desktop fills the canvas :t2_24, after t2_17, 1d
     section Phase 3
     3.1 Pipeline API – progress events, worker, caches :crit, t3_1, 2027-07-15, 4d
     3.2 Preview server with live reload and phone prev… :t3_2, 2027-07-21, 3d
@@ -622,7 +623,7 @@ Close the visible gap to Bootstrap Studio 9.0.1 within the IP rule ([product/07]
 
 ### Phase 2: Design & components
 **Goal:** The full component catalogue (19 sections with ~45 layout variants, 17 elements), 10–12 curated themes, fonts and the 8 templates, all accessible and visually tested.  
-**Effort:** 133 days · **Scheduled:** 23 Oct 2026 → 6 Nov 2026 (Phase 1 exit re-plan; baseline 2 Mar → 14 Jul 2027; 22 Oct 2026: 2.6 and 2.9 +1 day each, 2.3 +2, 2.14 +1, 2.17 added; 23 Oct: 2.9 +1, 2.14 +2, 2.18 added; 24 Oct: 2.19–2.21 added, 2.3 +1 and 2.14 +1 for PG-2 and PG-3; 25 Oct: 2.13 +3 for 2.13d, PH2-15; 2.3c +1.5; 27 Oct: 2.22 and 2.23 added, PH2-17 and PH2-18)  
+**Effort:** 137 days · **Scheduled:** 23 Oct 2026 → 6 Nov 2026 (Phase 1 exit re-plan; baseline 2 Mar → 14 Jul 2027; 22 Oct 2026: 2.6 and 2.9 +1 day each, 2.3 +2, 2.14 +1, 2.17 added; 23 Oct: 2.9 +1, 2.14 +2, 2.18 added; 24 Oct: 2.19–2.21 added, 2.3 +1 and 2.14 +1 for PG-2 and PG-3; 25 Oct: 2.13 +3 for 2.13d, PH2-15; 2.3c +1.5; 26 Oct: 2.22 added, ST-1 and ST-2; 27 Oct: 2.23 and 2.24 added, PH2-17 and PH2-18)  
 **Re-plan, 23 Oct 2026:** three streams, each starting as soon as its queue allows, Phase 1 items included (stream A takes 2.9 before 1.39). Phase 1's actuals run at 0.39 of the estimates; this plan uses 0.5 for engineering items and 0.7 for content (2.13, 2.15; risk R4). Code-complete about **1 Dec 2026** (9 Dec with +25%) after the plan review's levelling and the 24 Oct building-block items; Phase 1's exit review about 9 Nov 2026.
 
 | ID | Item | Issue | Area | Refs | Est | Depends on |
@@ -648,16 +649,19 @@ Close the visible gap to Bootstrap Studio 9.0.1 within the IP rule ([product/07]
 | 2.19 | Component primitives and scaffolding: section frame, typography, buttons, per-family strings, new-component command | [#320](https://github.com/nexustech/webforge/issues/320) | components | standards §5, ADR 0005, R7, R10 | 3 | 2.5, 2.6 |
 | 2.20 | Editor building blocks: area modules, boundaries, test kit, scaffolds, extension-points guide | [#322](https://github.com/nexustech/webforge/issues/322) | shell | extensibility review E1, E2, E4, E6–E8, E11, standards §4, §5 | 7 | 2.19, R11 |
 | 2.21 | One form engine for the Edit panel and dialogs | [#323](https://github.com/nexustech/webforge/issues/323) | shell | extensibility review E3, E5, E12, F-SET-1, F-ED-26 | 5 | R10, R11, 1.36 |
-| 2.22 | Your own themes: save a changed built-in theme under a name, New theme, My themes | [#485](https://github.com/nexustech/webforge/issues/485) | themes | PH2-17, F-DS-2, F-DS-7, D7 | 2.5 | 2.3 |
-| 2.23 | Canvas: the Desktop view fills the canvas, as the site fills a browser | [#486](https://github.com/nexustech/webforge/issues/486) | engine | PH2-18, F-ED-25, 1.15 | 1 | – |
+| 2.22 | Appearance group on every section and element, with a hover row | [#494](https://github.com/nexustech/webforge/issues/494) | components | [product/08](../research/product/08-component-styling.md) ST-1, ST-2, ST-6, F-ED-4, UX-19, PH2-14 | 4 | 2.5, 2.19, 1.14, 1.36, 1.37, 2.7b |
+| 2.23 | Your own themes: save a changed built-in theme under a name, New theme, My themes | [#485](https://github.com/nexustech/webforge/issues/485) | themes | PH2-17, F-DS-2, F-DS-7, D7 | 2.5 | 2.3 |
+| 2.24 | Canvas: the Desktop view fills the canvas, as the site fills a browser | [#486](https://github.com/nexustech/webforge/issues/486) | engine | PH2-18, F-ED-25, 1.15 | 1 | – |
 
 **Streams (plan of 23 Oct 2026, product owner approved).** The Phase 1 stream rules carry over. PRs open as drafts and are marked ready only once `pnpm check` (and `pnpm e2e` or `pnpm visual` where needed) and the code review pass; marking a PR ready leads to its merge review and auto-merge (CLAUDE.md, spec/03 §6). Items over 5 days are split into sub-issues on GitHub.
 
 | Stream | Items, in order (after its Phase 1 items) |
 |---|---|
-| A: Shell & panels | ~~R9 → R10 → R11 → 2.9 → 2.21~~ → 1.39 → 2.3 (2.3a → 2.3b → 2.3c) → 2.15a (Café/Restaurant, Salon/Beauty, Trades) → 2.18 → #484 (title bar, 26 Oct) → 2.22 (your own themes, 27 Oct) |
+| A: Shell & panels | ~~R9 → R10 → R11 → 2.9 → 2.21~~ → 1.39 → 2.3 (2.3a → 2.3b → 2.3c) → 2.22 (Appearance group, 26 Oct) → 2.15a (Café/Restaurant, Salon/Beauty, Trades) → 2.18 → #484 (title bar, 26 Oct) → 2.23 (your own themes, 27 Oct) |
 | B: Data & site | ~~2.1 → 2.2 → R12 → R14 → 2.4 → 2.20 → 2.8 → 2.7b~~ → R13 (R13a → R13b → R13c → R13d) → 0.2 (Netlify spike, 25 Oct) → 0.3 (FTP/FTPS/SFTP spike, 25 Oct) → 0.5 (once enrolment is through, 25 Oct) → 0.6 |
-| C: History & canvas | ~~2.5 (before 1.30) → R7 → R8 (part 2 before 2.17) → 2.6 → 2.10 → 2.19 → 2.7a → 2.17 → 2.12 → 2.11 (from B, 25 Oct)~~ → 2.13a (themes 1–4, from A, 25 Oct) → 2.14a (2.14, from B, 25 Oct) → 2.13d (theme range, 25 Oct) → 2.14b → 2.13c (themes 9–12, from A, 25 Oct) → 2.15c (Personal/CV, Blank) → 2.16 → #465 → 2.13b (themes 5–8, from B, 26 Oct) → 2.15b (Consultant, Photographer/Portfolio, Shop, from B, 26 Oct) → #311 → 2.23 (Desktop fills the canvas, 27 Oct) |
+| C: History & canvas | ~~2.5 (before 1.30) → R7 → R8 (part 2 before 2.17) → 2.6 → 2.10 → 2.19 → 2.7a → 2.17 → 2.12 → 2.11 (from B, 25 Oct)~~ → 2.13a (themes 1–4, from A, 25 Oct) → 2.14a (2.14, from B, 25 Oct) → 2.13d (theme range, 25 Oct) → 2.14b → 2.13c (themes 9–12, from A, 25 Oct) → 2.15c (Personal/CV, Blank) → 2.16 → #465 → 2.13b (themes 5–8, from B, 26 Oct) → 2.15b (Consultant, Photographer/Portfolio, Shop, from B, 26 Oct) → #311 → 2.24 (Desktop fills the canvas, 27 Oct) |
+
+**Scope change, 26 Oct 2026 (styling research, ST-1…7):** +4 days for 2.22 ([#494](https://github.com/nexustech/webforge/issues/494), stream A after 2.3 and before 2.15a, so the templates and the sweep see the final Style tab): the Appearance group of token controls on every section and element (ST-1, 3 days) with a hover row (ST-2, 1 day), from [product/08](../research/product/08-component-styling.md). Underline, highlight and theme-colour marks in the text toolbar are chore [#495](https://github.com/nexustech/webforge/issues/495) (ST-3, 1 day, stream C after 2.13a, out of plan). The tokens-only rule stays for Simple mode (ST-6); apply a look to all of a kind, section backgrounds for every section and transition presets are v1.1 (ST-4, ST-5, ST-7).
 
 **Issue review, 25 Oct 2026.** Every Phase 2 item except 2.3, 2.13, 2.14, 2.15, 2.16, 2.18 and R13 is merged, and 1.39 is stream A's next item. Two corrections: **2.13 no longer depends on 2.3.** The curated themes are presets in `packages/themes` (2.1, merged), reviewed side by side in Storybook against the merged components; the Theme panel is the UI for editing a site's theme and nothing in 2.13 needs it, so the three theme batches are unblocked today instead of waiting about 16 raw days for stream A's 1.39, 2.3 and 2.18. **2.13a and 2.13c swap streams:** stream C's queue was empty until 2.13c, so it takes themes 1–4 (#210) now, and the product owner's review of that batch feeds the other two as the 23 Oct review intended; stream A takes themes 9–12 (#212) after 2.18. The template batches keep their issue dependencies (2.15a waits for #210, 2.15c for #212). Nothing else was blocked: 2.14, R13 and the 2.21 follow-up chore (#391) have their dependencies met, and 1.39's are all closed. The theme issues' contrast criterion is brought in line with the 24 Oct decision (reported, not a gate), and 2.18's issue now lists only 1.37 as a dependency, with 1.39 and 2.3 as queue order, as this plan says.
 
@@ -690,8 +694,8 @@ Shared files are split in 2.5 so that streams add files instead of editing the s
 - PH2-14 (2026-10-25, product owner): a Button's Style gains *Theme's style*, the default for new Buttons and Booking buttons, which draws it as the theme's buttons are; Filled, Second colour and Outline still override the theme, and existing Buttons keep Filled (#423).
 - PH2-15 (2026-10-25, product owner): themes differ in style, not layout (A). A wider range of fonts, colour schemes and style tokens (heading case and tracking, card style, photo corners, the sections' rhythm); section layouts come from the templates (2.15) and each section's own settings, so switching theme never rearranges a site. 2.13d (#434) adds the tokens and redoes themes 1–4.
 - PH2-16 (2026-10-26, coordinator; a planning decision the product owner may overrule, and reversible): 2.16's nightly run checks every site component story with axe in every theme preset, but takes screenshots only in the three development presets that every pull request screenshots (light, dark, high-contrast-rounded). Each curated theme's look stays covered by the theme gallery's full-page stories (2.13). Full baselines in every preset would add about 30–50 MB of PNGs and 22–30 screenshots to rewrite per story change. The nightly run fails loudly when a story errors, its preset's stylesheet doesn't load or axe checks nothing.
-- PH2-17 (2026-10-27, product owner): your own themes (b). Built-in themes are read-only. The first change to one asks for a name for the person's own version (prefilled, "Dark (my version)"); the change and the new theme are one undo step. Theme Studio gains *New theme*, from a built-in theme or the site's current one. *My themes* lists the person's own themes first, and they can be renamed and deleted. The site always keeps its own copy of its theme, so it opens the same anywhere; a library on this computer (the app's user data, not site content) also keeps each one for the person's other sites. 2.22 (#485).
-- PH2-18 (2026-10-27, product owner): the Desktop view fills the canvas (a), as the site fills a browser. Tablet (768) and Mobile (375) stay fixed, the size menu keeps fixed widths (1280, 1440, 1920) for checking particular screens, and the size readout shows the width in use. 2.23 (#486).
+- PH2-17 (2026-10-27, product owner): your own themes (b). Built-in themes are read-only. The first change to one asks for a name for the person's own version (prefilled, "Dark (my version)"); the change and the new theme are one undo step. Theme Studio gains *New theme*, from a built-in theme or the site's current one. *My themes* lists the person's own themes first, and they can be renamed and deleted. The site always keeps its own copy of its theme, so it opens the same anywhere; a library on this computer (the app's user data, not site content) also keeps each one for the person's other sites. 2.23 (#485).
+- PH2-18 (2026-10-27, product owner): the Desktop view fills the canvas (a), as the site fills a browser. Tablet (768) and Mobile (375) stay fixed, the size menu keeps fixed widths (1280, 1440, 1920) for checking particular screens, and the size readout shows the width in use. 2.24 (#486).
 
 <details><summary>Scope and acceptance criteria</summary>
 
@@ -848,7 +852,16 @@ A field is described three ways today (`FieldDef`, editor-ui's loose `FieldSpec`
 - [ ] Saving a form is one labelled undo step; one way to open a dialog from a menu
 - [ ] Stories for `Form` with every field kind and for `FormDialog`'s states
 
-**2.22 Your own themes: save a changed built-in theme under a name, New theme, My themes** (added 27 Oct 2026, PH2-17, from the product owner's testing)
+**2.22 Appearance group on every section and element, with a hover row** (added 26 Oct 2026, [product/08](../research/product/08-component-styling.md) ST-1, ST-2)  
+One collapsible group at the top of every Style tab, added centrally by `defineSection` and `defineComponent`: Text (size from the type scale, weight, italic, underline, case, alignment), Colour (text and background from the theme roles with shade), Corners, Border, Shadow and Opacity, every control a design token and per device with the changed cue and dots (UX-19); a section's Text controls apply to its title. A *When hovered* row under Colour and Shadow on Button, Image, Icon and the cards of the Cards, Features and Pricing sections, with token values and no JavaScript in the export. Simple mode takes tokens only; Advanced mode keeps ADR 0009's off-theme hex (ST-6). The text-marks chore [#495](https://github.com/nexustech/webforge/issues/495) (underline, highlight and theme-colour inside text, ST-3, 1 day, stream C) is out of plan and not in the totals.
+
+- [ ] Every section and element shows the group; a component adds nothing to get it
+- [ ] Select a section, turn on *Underline*: its title is underlined, one labelled undo step
+- [ ] Every control is a token, per device; a theme switch restyles the result
+- [ ] The hover row only where listed; the exported site shows it without JavaScript
+- [ ] Stories, axe and `pnpm visual:docker` screenshots for the group and the hover row
+
+**2.23 Your own themes: save a changed built-in theme under a name, New theme, My themes** (added 27 Oct 2026, PH2-17, from the product owner's testing)
 Editing a built-in theme changed it in place, and Theme Studio couldn't make a new theme. Built-in themes become read-only: the first change to one (a colour, a font, any token) asks for a name for the person's own version, prefilled with one they can keep ("Dark (my version)"), and the change and the new theme are one undo step; cancelling changes nothing. Theme Studio's *New theme* starts from any built-in theme or the site's current one. *My themes* are listed first in the Theme tab and Theme Studio, and can be renamed and deleted (deleting one the site uses asks first and keeps the site's copy). The site always keeps its own copy of its theme; a *My themes* library on this computer (the app's user data, not site content) keeps each one for the person's other sites, and the site format records the theme's name and that it is the person's own. Undo labels: "Saved theme '…'", "Created theme '…'", "Renamed theme to '…'", "Deleted theme '…'".
 
 - [ ] Changing a built-in theme asks for a name first (prefilled), then saves it as the person's own; the built-in theme is unchanged
@@ -858,7 +871,7 @@ Editing a built-in theme changed it in place, and Theme Studio couldn't make a n
 - [ ] Every change is one labelled undo step; a site opens with its theme on a computer without the library
 - [ ] Model migration with a fixture if the site format changes; fast-check undo invariants extended
 
-**2.23 Canvas: the Desktop view fills the canvas, as the site fills a browser** (added 27 Oct 2026, PH2-18, from the product owner's testing)
+**2.24 Canvas: the Desktop view fills the canvas, as the site fills a browser** (added 27 Oct 2026, PH2-18, from the product owner's testing)
 The exported site is full width, but the canvas's Desktop view was a fixed 1280 px frame, so the site looked fixed-width. The Desktop view stretches to the canvas's width; Tablet (768) and Mobile (375) stay fixed. The canvas toolbar's size menu keeps fixed widths for particular screens (1280, 1440, 1920), and the size readout shows the width in use. The Add panel's section previews, drawn at 1280, still look right.
 
 - [ ] In Desktop view the page fills the canvas's width at any window size, and the size readout shows it
@@ -886,6 +899,16 @@ The exported site is full width, but the canvas's Desktop view was a fixed 1280 
 | 3.8 | Google Analytics with consent banner | [#66](https://github.com/nexustech/webforge/issues/66) | pipeline | F-CM-3, B4, B7 | 2 | 1.17, 3.1 |
 | 3.9 | Custom code bundling and external-resource check | [#67](https://github.com/nexustech/webforge/issues/67) | pipeline | F-ED-15, C7, C8, [ADR 0005](../docs/adr/0005-export-pipeline-spike.md) | 4 | 3.1, 2.11, 3.6 |
 | 3.10 | Exported-site compatibility E2E | [#68](https://github.com/nexustech/webforge/issues/68) | pipeline | X1, C8, MVP §6 Phase 3 exit | 2 | 3.3, 3.4, 3.5, 2.15 |
+
+**Streams (assigned 27 Oct 2026, after 3.1).** 3.1 unblocks the rest of the phase, so its items are shared across the three streams, each after its Phase 2 items. The Phase 1 and Phase 2 stream rules carry over. Days are unchanged, so there is no scope change.
+
+| Stream | Items, in order |
+|---|---|
+| A: Shell & panels | 3.2 (preview server) → 3.5 (site files) → 3.10 (compatibility E2E) |
+| B: Data & site | ~~3.1~~ → 3.3 (export to folder/ZIP) → 3.4 (images) → 3.7 (forms, once 3.6 has merged) |
+| C: History & canvas | 2.23 ([#486](https://github.com/nexustech/webforge/issues/486)) → the E2E timing fix ([#446](https://github.com/nexustech/webforge/issues/446), [#489](https://github.com/nexustech/webforge/issues/489)) → 3.6 (Site Check) → 3.9 (custom code) → 3.8 (Google Analytics) |
+
+Two items wait on another stream: 3.7 (B) on 3.6 (C), and 3.10 (A) on 3.3 and 3.4 (B).
 
 <details><summary>Scope and acceptance criteria</summary>
 
@@ -1151,8 +1174,8 @@ Every MVP feature ID maps to at least one work item (checked when this plan was 
 | F-SITE-7 | Local crash reports | 1.7 |
 | F-ED-1 | Add panel | 1.13 |
 | F-ED-2 | Select, move, duplicate, delete | 1.12 |
-| F-ED-3 | Click-to-edit text | 1.23 |
-| F-ED-4 | Edit panel | 1.14 |
+| F-ED-3 | Click-to-edit text | 1.23, #495 (text marks) |
+| F-ED-4 | Edit panel | 1.14, 2.22 |
 | F-ED-5 | Images | 1.16 |
 | F-ED-6 | Repeating lists | 1.14, 2.7 |
 | F-ED-7 | Header & Footer | 1.20 |
