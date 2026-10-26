@@ -2,7 +2,7 @@ import type { SiteSnapshot } from "@webforge/model";
 import { type SiteCssOptions, siteStylesheetSource } from "./css.js";
 
 /** The folder of the export the developer files go in. */
-export const DEVELOPER_FOLDER = "developer";
+const DEVELOPER_FOLDER = "developer";
 
 /**
  * *Include developer files* (F-EX-4, X6): what a developer needs to rebuild or extend the site's
