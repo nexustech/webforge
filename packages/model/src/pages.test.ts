@@ -21,7 +21,8 @@ describe("adding pages (4.8)", () => {
 
     expect(draft.pages[first]?.slug).toBe("about-us");
     expect(draft.pages[second]?.slug).toBe("about-us-2");
-    expect(draft.pages[draft.pageOrder.at(-1) ?? ""]?.kind).toBe("not-found");
+    const last = draft.pageOrder.at(-1);
+    expect(last === undefined ? undefined : draft.pages[last]?.kind).toBe("not-found");
     expect(draft.menu.items.map((item) => "pageId" in item && item.pageId)).toEqual([
       draft.homePageId,
       first,
