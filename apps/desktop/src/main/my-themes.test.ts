@@ -1,8 +1,9 @@
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import * as fs from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DEFAULT_THEME, themeIdSchema } from "@webforge/model";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { OwnTheme } from "../shared/ipc/themes.js";
 import { createMyThemes } from "./my-themes.js";
 
@@ -97,5 +98,31 @@ describe("My themes (2.23)", () => {
     };
     expect(stored.themes).toHaveLength(2);
     expect(stored.themes[1]).toEqual(newer);
+  });
+
+  it("fails, writing nothing, when the file is there but locked, and renames past a brief lock", async () => {
+    await createMyThemes({ dir }).keep(own("theme0000000000a", "Bakery"));
+    const locked = Object.assign(new Error("busy"), { code: "EBUSY" });
+    const readFile = vi.fn((_path: string, _encoding: "utf8") => Promise.reject<string>(locked));
+    const busy = createMyThemes({ dir, files: { ...fs, readFile } });
+
+    await expect(busy.list()).rejects.toThrow("busy");
+    await expect(busy.keep(own("theme0000000000b", "Shop"))).rejects.toThrow("busy");
+    await expect(busy.remove("theme0000000000a")).rejects.toThrow("busy");
+    // The list is as it was: nothing was written over it.
+    expect((await createMyThemes({ dir }).list()).map((theme) => theme.own.name)).toEqual([
+      "Bakery",
+    ]);
+
+    // A rename that meets a lock once is tried again.
+    const rename = vi
+      .fn((from: string, to: string) => fs.rename(from, to))
+      .mockRejectedValueOnce(Object.assign(new Error("locked"), { code: "EPERM" }));
+    await createMyThemes({ dir, files: { ...fs, rename } }).keep(own("theme0000000000b", "Shop"));
+    expect(rename).toHaveBeenCalledTimes(2);
+    expect((await createMyThemes({ dir }).list()).map((theme) => theme.own.name)).toEqual([
+      "Shop",
+      "Bakery",
+    ]);
   });
 });
