@@ -73,7 +73,7 @@ Added 2026-10-26. They sit at the two ends of the same spectrum as the four tool
 - **Per-device dots and a changed cue** on every control (UX-19, 1.36), *Copy style* and *Paste style* between elements (1.37).
 
 ## 3. Comparison
-| Capability on one section or element | Webflow | Pinegrow | Elements | Bootstrap Studio | **Webforge MVP (today)** | Wix | Squarespace |
+| Capability on one section or element | Webflow | Pinegrow | Elements | Bootstrap Studio | Wix | Squarespace | **Webforge MVP (today)** |
 |---|---|---|---|---|---|---|---|
 | Where a style lives | A class (shared by default) | A CSS rule or inline style; Tailwind classes | The element's own token choices (classes generated) | Inline style by default, or a chosen rule | The element (free values; Studio: linked style or override) | The section's colour theme and site styles; little on a block | The element's own token choices |
 | Text: size, weight, italic, alignment | ✅ | ✅ | ✅ tokens | ✅ | ✅ any | Size via Heading 1–4 / Paragraph 1–3 only | Partly: per component (Heading size, alignment on some) |
@@ -93,7 +93,7 @@ Added 2026-10-26. They sit at the two ends of the same spectrum as the four tool
 | Escape hatch | Custom properties, Embed | The stylesheet | Classes, ID, page CSS | Styles editor, SCSS | Studio CSS, Velo | Custom CSS by block ID | Classes field (Advanced), site CSS |
 | Needs CSS or class literacy | Yes, from the start | Yes | No | For reuse and hover | No | No, until one block must differ | No |
 
-**Reading the table.** Three of the four give every element a full appearance inspector. Two of those (Webflow, Pinegrow) make the user pay in CSS concepts; Bootstrap Studio hides CSS behind forms but leaks it through the style target. **Elements is the one that reaches Webforge's audience:** the same groups on every component, every value a theme token, hover and dark mode built in, no class in sight. Its gap is prose: no inline formatting at all. Webforge is the mirror image today: good inline text and a strong theme, but the thinnest per-element styling of the five, and no underline anywhere. Wix and Squarespace (§2.5) bracket the range: Squarespace is tokens only and refuses per-block exceptions; Wix is free values with a brand kit on top.
+**Reading the table.** Three of the four give every element a full appearance inspector. Two of those (Webflow, Pinegrow) make the user pay in CSS concepts; Bootstrap Studio hides CSS behind forms but leaks it through the style target. **Elements is the one that reaches Webforge's audience:** the same groups on every component, every value a theme token, hover and dark mode built in, no class in sight. Its gap is prose: no inline formatting at all. Webforge is the mirror image today: good inline text and a strong theme, but the thinnest per-element styling in the table, and no underline anywhere. Wix and Squarespace (§2.5) bracket the range: Squarespace is tokens only and refuses per-block exceptions; Wix is free values with a brand kit on top.
 
 ## 4. What "select a section and underline it" needs
 The request is a per-item **appearance** layer between the theme and the Advanced tab. For a section, "underline" most often means underlining its title, or a word inside its text; for a heading or a button it means the element itself. Both must be reachable without classes. The layers Webforge should have:
