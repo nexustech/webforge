@@ -1,6 +1,7 @@
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { BLANK_TEMPLATE_ID, TEMPLATE_IDS } from "@webforge/templates";
 import { readTemplates } from "@webforge/templates/node";
 import type { IpcMain, IpcMainInvokeEvent } from "electron";
 import { describe, expect, it, vi } from "vitest";
@@ -19,29 +20,23 @@ function invoker(channel: string, trusted = true) {
     registered.get(channel)?.({ senderFrame: { url: "app" } } as IpcMainInvokeEvent, ...args);
 }
 
+/** The templates New Site lists: every one the app ships but Blank, which it offers on its own. */
+const LISTED = TEMPLATE_IDS.filter((id) => id !== BLANK_TEMPLATE_ID);
+
 describe("registerTemplatesHandlers (2.14a)", () => {
   it("lists the templates the app ships, without their content, with their thumbnails", async () => {
-    const [sample, personal] = readTemplates();
-    const thumbnail = (path = "") =>
-      `data:image/png;base64,${readFileSync(path).toString("base64")}`;
-    expect(await invoker("templates:list")()).toEqual([
-      {
-        id: "sample",
-        category: "food",
-        example: true,
-        pages: 2,
-        theme: "light",
-        thumbnail: thumbnail(sample?.thumbnail),
-      },
-      {
-        id: "personal",
-        category: "personal",
-        example: false,
-        pages: 4,
-        theme: "studio",
-        thumbnail: thumbnail(personal?.thumbnail),
-      },
-    ]);
+    const [cafe] = readTemplates();
+    const listed = (await invoker("templates:list")()) as { id: string }[];
+    expect(listed[0]).toEqual({
+      id: "cafe",
+      category: "food",
+      example: true,
+      pages: 4,
+      theme: "bistro",
+      thumbnail: `data:image/png;base64,${readFileSync(cafe?.thumbnail ?? "").toString("base64")}`,
+    });
+    // Every other template too, in the order the app ships them.
+    expect(listed.map((each) => each.id)).toEqual(LISTED);
   });
 
   it("leaves Blank out: New Site offers it on its own (2.15c)", async () => {
@@ -62,10 +57,7 @@ describe("registerTemplatesHandlers (2.14a)", () => {
     const listed = await registered.get("templates:list")?.({
       senderFrame: { url: "app" },
     } as IpcMainInvokeEvent);
-    expect(listed).toEqual([
-      expect.objectContaining({ id: "sample", thumbnail: null }),
-      expect.objectContaining({ id: "personal", thumbnail: null }),
-    ]);
+    expect(listed).toEqual(LISTED.map((id) => expect.objectContaining({ id, thumbnail: null })));
   });
 
   it("refuses a renderer it does not trust", async () => {
@@ -92,11 +84,12 @@ describe("registerTemplatesHandlers (2.14a)", () => {
       const second = await list();
 
       expect(second).toEqual(first);
-      // Sample and Personal / CV, not Blank (2.15c).
-      expect(second).toEqual([
-        expect.objectContaining({ id: "sample", thumbnail: "data:image/png;base64,iVBORw==" }),
-        expect.objectContaining({ id: "personal", thumbnail: "data:image/png;base64,iVBORw==" }),
-      ]);
+      // Every template but Blank (2.15c).
+      expect(second).toEqual(
+        LISTED.map((id) =>
+          expect.objectContaining({ id, thumbnail: "data:image/png;base64,iVBORw==" }),
+        ),
+      );
       expect(read).toHaveBeenCalledOnce();
     } finally {
       rmSync(dir, { recursive: true, force: true });

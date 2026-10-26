@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { createSite } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
+import { clickOnCanvas } from "./canvas-click.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
 
 // Repeating lists in the Edit panel (F-ED-6): a FAQ's questions, and a Testimonials section's
@@ -75,7 +76,7 @@ test("adds, moves and deletes a FAQ's questions in the Edit panel, one step each
   const title = canvas().locator(".site-faq h2");
   const box = await title.boundingBox();
   if (box === null) throw new Error("FAQ not visible");
-  await title.click({ position: { x: box.width * 0.97, y: box.height / 2 } });
+  await clickOnCanvas(title, { position: { x: box.width * 0.97, y: box.height / 2 } });
   const list = panel().getByRole("group", { name: "Questions" });
   await expect(list.getByRole("listitem")).toHaveCount(2);
 
@@ -103,7 +104,7 @@ test("adds a testimonial in the Edit panel and edits its name in its row (2.7b)"
   const box = await title.boundingBox();
   if (box === null) throw new Error("Testimonials not visible");
   // Beside the title, not on its text, which would start editing it.
-  await title.click({ position: { x: box.width * 0.97, y: box.height / 2 } });
+  await clickOnCanvas(title, { position: { x: box.width * 0.97, y: box.height / 2 } });
   const list = panel().getByRole("group", { name: "Testimonials" });
   await expect(list.getByRole("listitem")).toHaveCount(1);
 

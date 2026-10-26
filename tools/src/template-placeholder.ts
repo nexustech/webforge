@@ -4,7 +4,7 @@
 // and is the same every time for the same arguments.
 //
 // Usage: node tools/src/template-placeholder.ts <out.png> <width>x<height> <motif> <seed> <colours…>
-//   motif: portrait | landscape | desk | shapes; colours: hex, background first (#e8eef2 #1f6f5c …)
+//   motif: portrait | landscape | desk | shapes | product; colours: hex, background first (#e8eef2 …)
 //
 // Its images.json entry: source "Generated for Webforge by tools/src/template-placeholder.ts
 // (<motif>, seed <seed>)", author "Webforge", licence "CC0-1.0".
@@ -13,7 +13,7 @@ import { writeFileSync } from "node:fs";
 import { crc32, deflateSync } from "node:zlib";
 
 /** What a placeholder shows. */
-export const MOTIFS = ["portrait", "landscape", "desk", "shapes"] as const;
+export const MOTIFS = ["portrait", "landscape", "desk", "shapes", "product"] as const;
 type Motif = (typeof MOTIFS)[number];
 
 type Rgb = readonly [number, number, number];
@@ -92,12 +92,63 @@ function shapes(spec: PlaceholderSpec, aspect: number): Shape[] {
         { kind: "ellipse", x: middle, y: 0.98, rx: 0.4, ry: 0.33, colour: a },
         { kind: "circle", x: middle, y: 0.45, r: 0.15, colour: b },
       ];
-    case "landscape":
+    case "landscape": {
+      // A sun over two hills, placed by the seed: a gallery of them isn't one picture repeated.
+      const next = random(spec.seed);
       return [
-        { kind: "circle", x: aspect * 0.72, y: 0.3, r: 0.12, colour: c },
-        { kind: "ellipse", x: aspect * 0.25, y: 1.05, rx: aspect * 0.55, ry: 0.42, colour: a },
-        { kind: "ellipse", x: aspect * 0.85, y: 1.12, rx: aspect * 0.5, ry: 0.4, colour: b },
+        {
+          kind: "circle",
+          x: aspect * (0.2 + next() * 0.6),
+          y: 0.2 + next() * 0.2,
+          r: 0.1,
+          colour: c,
+        },
+        {
+          kind: "ellipse",
+          x: aspect * (0.1 + next() * 0.3),
+          y: 0.95 + next() * 0.15,
+          rx: aspect * (0.45 + next() * 0.2),
+          ry: 0.35 + next() * 0.15,
+          colour: a,
+        },
+        {
+          kind: "ellipse",
+          x: aspect * (0.7 + next() * 0.3),
+          y: 1 + next() * 0.15,
+          rx: aspect * (0.4 + next() * 0.2),
+          ry: 0.3 + next() * 0.15,
+          colour: b,
+        },
       ];
+    }
+    case "product": {
+      // One thing for sale on a plain ground, by the seed: a jar, a mug or a box.
+      const kind = spec.seed % 3;
+      const shadow: Shape = { kind: "ellipse", x: middle, y: 0.84, rx: 0.26, ry: 0.04, colour: c };
+      if (kind === 0) {
+        return [
+          shadow,
+          { kind: "rect", x: middle - 0.18, y: 0.34, w: 0.36, h: 0.5, colour: a },
+          { kind: "rect", x: middle - 0.2, y: 0.26, w: 0.4, h: 0.1, colour: b },
+          { kind: "rect", x: middle - 0.12, y: 0.48, w: 0.24, h: 0.16, colour: d },
+        ];
+      }
+      if (kind === 1) {
+        return [
+          shadow,
+          { kind: "circle", x: middle + 0.2, y: 0.56, r: 0.1, colour: a },
+          { kind: "circle", x: middle + 0.2, y: 0.56, r: 0.055, colour: spec.colours[0] ?? a },
+          { kind: "rect", x: middle - 0.2, y: 0.38, w: 0.36, h: 0.46, colour: a },
+          { kind: "rect", x: middle - 0.2, y: 0.38, w: 0.36, h: 0.06, colour: b },
+        ];
+      }
+      return [
+        shadow,
+        { kind: "rect", x: middle - 0.26, y: 0.42, w: 0.52, h: 0.42, colour: a },
+        { kind: "rect", x: middle - 0.03, y: 0.42, w: 0.06, h: 0.42, colour: b },
+        { kind: "rect", x: middle - 0.26, y: 0.6, w: 0.52, h: 0.06, colour: b },
+      ];
+    }
     case "desk":
       // A table, a laptop, a cup and a plant: a workplace.
       return [

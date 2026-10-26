@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { heroPhoto } from "@webforge/test-utils";
+import { clickOnCanvas } from "./canvas-click.js";
 import { placeCaret } from "./caret.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
 import { chooseFromMenu } from "./menus.js";
@@ -258,9 +259,9 @@ test("a five-page site built from blank comes back as it was, page by page", asy
   const box = await canvas().locator("h1").boundingBox();
   if (box === null) throw new Error("Heading not visible");
   await showTab(right, "Edit");
-  await canvas()
-    .locator("h1")
-    .click({ position: { x: box.width * 0.97, y: box.height - 2 } });
+  await clickOnCanvas(canvas().locator("h1"), {
+    position: { x: box.width * 0.97, y: box.height - 2 },
+  });
   await expect(right().getByRole("heading", { name: "Heading", exact: true })).toBeVisible();
   for (const theme of ["dark", "light"] as const) {
     if (theme === "light") await chooseFromMenu(running(), page, "View", "Use Light Appearance");

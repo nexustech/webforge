@@ -6,6 +6,7 @@ import { type ElectronApplication, expect, type Page, test } from "@playwright/t
 import { changedDocuments, createSite, type MediaId, type SiteDoc } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
 import { heroPhoto } from "@webforge/test-utils";
+import { clickOnCanvas } from "./canvas-click.js";
 import { launchDesktopApp, launchSecondInstance, waitForCanvas } from "./launch.js";
 import type { RendererWindow } from "./sites.js";
 
@@ -81,9 +82,7 @@ test("pastes a Hero copied in another site with its photo, as one undo step", as
   await waitForCanvas(page);
 
   // Select the Hero by clicking its padding (clicking its text edits the text), then copy.
-  await canvas(page)
-    .locator(".site-hero")
-    .click({ position: { x: 6, y: 6 } });
+  await clickOnCanvas(canvas(page).locator(".site-hero"), { position: { x: 6, y: 6 } });
   await expect(
     page.getByRole("region", { name: "Right panels" }).getByRole("heading", { name: "Hero" }),
   ).toBeVisible();
@@ -154,7 +153,7 @@ test("keeps the shared Header out of copying, and pastes into the page while it 
   // Copy the heading (selected by clicking past the end of its text).
   const box = await headings.first().boundingBox();
   if (box === null) throw new Error("Heading not visible");
-  await headings.first().click({ position: { x: box.width * 0.97, y: 2 } });
+  await clickOnCanvas(headings.first(), { position: { x: box.width * 0.97, y: 2 } });
   await page.keyboard.press("ControlOrMeta+c");
   await expect
     .poll(() =>
@@ -166,7 +165,7 @@ test("keeps the shared Header out of copying, and pastes into the page while it 
   const header = canvas(page).locator(".site-header");
   const headerBox = await header.boundingBox();
   if (headerBox === null) throw new Error("Header not visible");
-  await header.click({ position: { x: headerBox.width / 2, y: 4 } });
+  await clickOnCanvas(header, { position: { x: headerBox.width / 2, y: 4 } });
   await expect(
     page.getByRole("region", { name: "Right panels" }).getByRole("heading", { name: "Header" }),
   ).toBeVisible();
@@ -185,9 +184,7 @@ test("pastes a copied image into the selected Hero, as one step with its Media i
   app = await launchDesktopApp({ args: [bakery], userDataDir: userData });
   const page = await app.firstWindow();
   await waitForCanvas(page);
-  await canvas(page)
-    .locator(".site-hero")
-    .click({ position: { x: 6, y: 6 } });
+  await clickOnCanvas(canvas(page).locator(".site-hero"), { position: { x: 6, y: 6 } });
   // A screenshot on the clipboard: an image, as PNG.
   await app.evaluate(
     async ({ clipboard, ClipboardItem, nativeImage }, jpeg) => {

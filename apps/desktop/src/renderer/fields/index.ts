@@ -4,6 +4,7 @@
  * this file (`pnpm deps`, B2); everything else here is the area's own.
  */
 
+export { classesFieldRenderer } from "./classes/ClassesField.js";
 export { shownRatio, TEXT_PX } from "./color/ColourField.js";
 export { fieldRenderers, themeFieldRenderers } from "./field-renderers.js";
 export { addFontPreviews, previewFamily } from "./font/font-previews.js";

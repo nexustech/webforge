@@ -13,9 +13,12 @@ function emptySettingHint(key: BindableSetting) {
   return hint(t(`site.binding.empty.${key}`));
 }
 
-/** A faint hint on the canvas, saying what to fill in where. */
+/**
+ * A faint hint on the canvas, saying what to fill in where: faint enough to tell from the site's
+ * text, and still readable at WCAG AA on a theme's surfaces (2.15b).
+ */
 function hint(text: string) {
-  return <span style={{ opacity: 0.6, fontStyle: "italic" }}>{text}</span>;
+  return <span style={{ opacity: 0.75, fontStyle: "italic" }}>{text}</span>;
 }
 
 /**

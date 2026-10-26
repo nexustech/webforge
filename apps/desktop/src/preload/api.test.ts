@@ -263,3 +263,55 @@ describe("createWebforgeApi app events", () => {
     expect(save).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("createWebforgeApi AI requests (4.8)", () => {
+  function withEvents() {
+    const listeners = new Map<string, (...args: unknown[]) => void>();
+    const subscribe: Subscribe = (channel, listener) => {
+      listeners.set(channel, listener);
+      return () => listeners.delete(channel);
+    };
+    const invoke = vi.fn(async (_channel: string, ..._args: unknown[]) => null);
+    return { api: createWebforgeApi(invoke, subscribe), invoke, listeners };
+  }
+
+  it("answers an AI app's request with its id, and says when it listens", async () => {
+    const { api, invoke, listeners } = withEvents();
+    const answer = vi.fn(async () => ({ status: "done" as const, data: { name: "Bakery" } }));
+    const stop = api.ai.onRequest(answer);
+    expect(invoke).toHaveBeenCalledWith("ai:listening", true);
+
+    const request = { kind: "query", name: "outline", input: {} };
+    listeners.get("ai:request")?.(4, request);
+    await vi.waitFor(() =>
+      expect(invoke).toHaveBeenCalledWith("ai:answer", 4, {
+        status: "done",
+        data: { name: "Bakery" },
+      }),
+    );
+    expect(answer).toHaveBeenCalledWith(request);
+
+    stop();
+    expect(listeners.has("ai:request")).toBe(false);
+    expect(invoke).toHaveBeenLastCalledWith("ai:listening", false);
+  });
+
+  it("answers busy when answering fails, and ignores malformed requests", async () => {
+    const { api, invoke, listeners } = withEvents();
+    const answer = vi.fn(async () => {
+      throw new Error("no session");
+    });
+    api.ai.onRequest(answer);
+
+    listeners.get("ai:request")?.(5, { kind: "delete everything" });
+    listeners.get("ai:request")?.(6, { kind: "query", name: "outline", input: {} });
+    await vi.waitFor(() =>
+      expect(invoke).toHaveBeenCalledWith(
+        "ai:answer",
+        6,
+        expect.objectContaining({ status: "busy" }),
+      ),
+    );
+    expect(answer).toHaveBeenCalledTimes(1);
+  });
+});

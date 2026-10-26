@@ -27,6 +27,7 @@
     "behaviours": "node tools/src/build-behaviours.ts && biome format --write packages/site-components/src/behaviours/index.ts",
     "new-component": "node tools/src/new-component.ts",
     "scaffold": "node tools/src/scaffold.ts",
+    "catalogue-data": "pnpm --filter @webforge/site-components exec vitest run src/catalogue-data.test.ts -u -t \"is the library\"",
     "font-catalogue": "node tools/src/build-font-catalogue.ts && biome format --write packages/themes/src/fonts/catalogue.json",
     "ui-strings": "node tools/src/check-ui-strings.ts apps/desktop/src/renderer packages/editor-ui/src packages/engine/src packages/site-components/src",
     "react-compiler": "node tools/src/check-react-compiler.ts apps/desktop/src/renderer packages/editor-ui/src packages/engine/src",

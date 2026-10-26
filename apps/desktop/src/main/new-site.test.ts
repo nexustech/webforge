@@ -48,11 +48,7 @@ describe("fillNewSite (2.14a)", () => {
   it("writes a template's site, named and in the chosen theme, its images in Media", async () => {
     const into = target();
 
-    await fillNewSite(
-      into,
-      { name: "Rosa's Bakery", theme: "atelier", template: "sample" },
-      shipped,
-    );
+    await fillNewSite(into, { name: "Rosa's Bakery", theme: "atelier", template: "cafe" }, shipped);
 
     const site = store.readSite();
     const [{ template, images, imagesDir }] = templates as [TemplateFolder];
@@ -85,18 +81,18 @@ describe("fillNewSite (2.14a)", () => {
   it("refuses a template whose image isn't as its manifest says, writing no site", async () => {
     const [folder] = templates as [TemplateFolder];
     const [first] = folder.images;
-    if (first === undefined) throw new Error("The sample template has no image");
+    if (first === undefined) throw new Error("The café template has no image");
     // A re-encoded or stale copy of the file: stored under another hash than the Media item names.
     const changed = { ...folder, images: [{ ...first, hash: "0".repeat(64) }] };
 
     await expect(
-      fillNewSite(target(), { name: "Bakery", theme: "light", template: "sample" }, only(changed)),
+      fillNewSite(target(), { name: "Bakery", theme: "light", template: "cafe" }, only(changed)),
     ).rejects.toThrow(`image ${first.file} isn't as its manifest says (stored)`);
     expect(store.isEmpty()).toBe(true);
 
     const failed = { ...target(), importFile: async () => ({ status: "failed" }) as const };
     await expect(
-      fillNewSite(failed, { name: "Bakery", theme: "light", template: "sample" }, shipped),
+      fillNewSite(failed, { name: "Bakery", theme: "light", template: "cafe" }, shipped),
     ).rejects.toThrow("(failed)");
   });
 
@@ -133,18 +129,18 @@ describe("fillNewSite (2.14a)", () => {
   });
 
   it("makes Blank when another template is damaged, reading only the one it makes", async () => {
-    // A copy of the shipped templates with the sample's template.json broken.
+    // A copy of the shipped templates with the café's template.json broken.
     const copy = mkdtempSync(join(tmpdir(), "webforge-damaged-templates-"));
     try {
       cpSync(TEMPLATES_DIR, copy, { recursive: true });
-      writeFileSync(join(copy, "sample", "template.json"), "{ not json");
+      writeFileSync(join(copy, "cafe", "template.json"), "{ not json");
       const reader = shippedTemplateReader(copy);
 
       await fillNewSite(target(), { name: "Hightown Plumbing", theme: "light" }, reader);
 
       expect(store.readSite().settings.general.name).toBe("Hightown Plumbing");
       await expect(
-        fillNewSite(target(), { name: "Bakery", theme: "light", template: "sample" }, reader),
+        fillNewSite(target(), { name: "Bakery", theme: "light", template: "cafe" }, reader),
       ).rejects.toThrow();
     } finally {
       rmSync(copy, { recursive: true, force: true });

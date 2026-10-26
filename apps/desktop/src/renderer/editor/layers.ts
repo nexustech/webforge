@@ -1,6 +1,7 @@
 import { t } from "@webforge/i18n";
 import {
   copiedNodeId,
+  findNode,
   isNodeDoc,
   isSharedCopy,
   LAYER_NAME_MAX,
@@ -20,7 +21,6 @@ import {
 } from "@webforge/site-components";
 import type { EditorSession } from "../editor/editor-session.js";
 import { elementKind, givenElementName, quotedName } from "../editor/labels.js";
-import { findNode } from "../editor/nodes.js";
 import { shownLayout } from "../editor/shared-layout.js";
 
 /**

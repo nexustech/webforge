@@ -36,4 +36,6 @@ Research supporting [`ideas.md`](../ideas.md).
 | # | Topic | Status | Outcome |
 |---|---|---|---|
 | C1 | [Template photos: stream C](content/template-photos-c.md) | 🟡 Shortlist for review | Personal / CV's eight photos: a CC0 choice and an alternate each (StockSnap, via Openverse), nothing downloaded; generated placeholders until approved (Q6, refined 26 Oct 2026). Blank has no photos |
+| C2 | [Template photos: 2.15b](content/template-photos-b.md) | 🟡 Shortlist for review | Consultant, Photographer/Portfolio and Shop: 22 photos with a CC0 choice and an alternate each (StockSnap, via Openverse), nothing downloaded; generated placeholders until approved, the photographer's marked as placeholders |
+| C3 | [Template photos: 2.15a](content/template-photos-a.md) | 🟡 Shortlist for review | Café/Restaurant, Salon/Beauty and Trades: 27 photos with a CC0 choice and an alternate each (StockSnap, via Openverse), nothing downloaded; generated placeholders until approved |
 

@@ -2,12 +2,12 @@
 // Run with `pnpm deps`. Paths are relative to the repository root.
 
 /** Packages that hold core logic and stay framework-free. */
-const CORE = "^packages/(errors|model|history|storage|pipeline|publish)/";
+const CORE = "^packages/(errors|model|history|storage|pipeline|publish|commands)/";
 
 /** Code that runs in a renderer (or must render without Node): no Node built-ins, no Electron. */
 const RENDERER_SAFE = [
   "^apps/desktop/src/(renderer|shared)/",
-  "^packages/(model|history|engine|site-components|themes|editor-ui|i18n)/",
+  "^packages/(model|history|engine|site-components|themes|editor-ui|i18n|commands)/",
 ];
 
 const REACT = "^(react|react-dom)(/|$)|(^|/)node_modules/(react|react-dom)/";
@@ -43,7 +43,7 @@ export default {
       name: "core-no-react-or-electron",
       severity: "error",
       comment:
-        "errors, model, history, storage, pipeline and publish are framework-free (standards §3).",
+        "errors, model, history, storage, pipeline, publish and commands are framework-free (standards §3).",
       from: { path: CORE },
       to: { path: [REACT, ELECTRON] },
     },
@@ -136,7 +136,39 @@ export default {
           "^packages/templates/src/node\\.ts$",
           // Declared subpath export: @webforge/test-utils/renderer (the renderer's test kit, B6).
           "^packages/test-utils/src/renderer\\.ts$",
+          // Declared subpath export: @webforge/site-components/catalogue-data (the catalogue as
+          // plain data, without React, for the command layer, 4.8).
+          "^packages/site-components/src/catalogue-data\\.(ts|json)$",
         ],
+      },
+    },
+    {
+      name: "commands-only-catalogue-data",
+      severity: "error",
+      comment:
+        "packages/commands reads the catalogue as plain data, never the components, the canvas engine or the editor (architecture §4, 4.8).",
+      from: { path: "^packages/commands/" },
+      to: {
+        path: [
+          "^packages/(site-components|engine|editor-ui|storage|pipeline|publish)/",
+          "(^|/)node_modules/@puckeditor/",
+        ],
+        pathNot: "^packages/site-components/src/catalogue-data\\.(ts|json)$",
+      },
+    },
+    {
+      name: "catalogue-data-no-react",
+      severity: "error",
+      comment:
+        "The catalogue as data, and the rich-text cleaning it offers, load without React or the " +
+        "components (4.8).",
+      from: {
+        path: "^packages/site-components/src/(catalogue-data|rich-text-html|document-path)\\.ts$",
+      },
+      to: {
+        path: [REACT, "^packages/site-components/src/"],
+        pathNot:
+          "^packages/site-components/src/(catalogue-data\\.(ts|json)|rich-text-html\\.ts|document-path\\.ts)$",
       },
     },
     {

@@ -92,6 +92,7 @@ test.describe("desktop shell", () => {
       require: "undefined",
       process: "undefined",
       webforgeKeys: [
+        "ai",
         "app",
         "canvas",
         "clipboard",

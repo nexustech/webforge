@@ -5,9 +5,12 @@ import { NO_VIEW_OPTIONS } from "./engine-support.js";
 
 const stopEnabled = vi.fn();
 const stopViewOptions = vi.fn();
+const stopGroups = vi.fn();
 vi.mock("./enabled-elements.js", () => ({ keepElementsEnabled: vi.fn(() => stopEnabled) }));
 vi.mock("./view-options.js", () => ({ applyViewOptions: vi.fn(() => stopViewOptions) }));
+vi.mock("./element-roles.js", () => ({ keepElementsGroups: vi.fn(() => stopGroups) }));
 const { keepElementsEnabled } = await import("./enabled-elements.js");
+const { keepElementsGroups } = await import("./element-roles.js");
 const { applyViewOptions } = await import("./view-options.js");
 
 afterEach(() => {
@@ -33,6 +36,15 @@ describe("CanvasFrame (R8)", () => {
     frame.setDocumentInfo({ title: "Rosa's" });
     expect(document.title).toBe("Rosa's");
     expect(document.documentElement.hasAttribute("lang")).toBe(false);
+  });
+
+  it("keeps the elements' wrappers groups while there is a document (#465)", () => {
+    const frame = createCanvasFrame(() => undefined);
+
+    frame.attach(document);
+    expect(keepElementsGroups).toHaveBeenCalledWith(document);
+    frame.detach();
+    expect(stopGroups).toHaveBeenCalledOnce();
   });
 
   it("shows the site's CSS set before the canvas has a document, and later changes at once", () => {

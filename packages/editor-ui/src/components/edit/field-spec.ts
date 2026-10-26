@@ -98,6 +98,17 @@ type FieldSpecs = {
   readonly themeColor: { readonly warnings: readonly string[] };
   /** Drawn by the app: one of the fonts the app has, chosen in the font picker (2.3a, UX-15). */
   readonly font: Nothing;
+  /**
+   * Drawn by the app: CSS classes (Advanced mode, F-ED-11, #276), with suggestions from the classes
+   * the site's styles support as they're typed, a browser of them, and a warning for a class that
+   * makes no style.
+   */
+  readonly classes: {
+    /** Shown while the field is empty, already translated. */
+    readonly placeholder?: string;
+    /** Why a value isn't acceptable (translated), or undefined if it is: checked when it's done. */
+    readonly validate: (value: string) => string | undefined;
+  };
 };
 
 /** A kind of field: the renderer that draws it. */

@@ -1,0 +1,1149 @@
+{
+  "id": "shop",
+  "category": "shop",
+  "example": false,
+  "site": {
+    "formatVersion": 7,
+    "settings": {
+      "general": {
+        "name": "Fern & Clay",
+        "language": "en"
+      },
+      "address": {},
+      "social": {
+        "profiles": []
+      },
+      "contact": {
+        "openingHours": [
+          {
+            "days": ["wed", "thu", "fri", "sat"],
+            "opens": "10:00",
+            "closes": "17:00"
+          },
+          {
+            "days": ["sun"],
+            "opens": "11:00",
+            "closes": "16:00"
+          }
+        ],
+        "email": "hello@example.com",
+        "phone": "+44 117 496 0000",
+        "address": "12 Mill Lane, Bristol BS1 4AA",
+        "openingHoursNote": "Closed on bank holidays."
+      },
+      "search": {
+        "allowIndexing": true,
+        "includeSitemap": true
+      },
+      "analytics": {
+        "consentBanner": true
+      },
+      "forms": {},
+      "publish": {
+        "destinations": []
+      },
+      "allowedExternalUrls": []
+    },
+    "theme": {
+      "preset": "market",
+      "scheme": "light",
+      "colors": {
+        "base-100": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        },
+        "base-200": {
+          "l": 0.97,
+          "c": 0.015,
+          "h": 30
+        },
+        "base-300": {
+          "l": 0.93,
+          "c": 0.025,
+          "h": 30
+        },
+        "base-content": {
+          "l": 0.22,
+          "c": 0.03,
+          "h": 20
+        },
+        "primary": {
+          "l": 0.53,
+          "c": 0.2,
+          "h": 25
+        },
+        "primary-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        },
+        "secondary": {
+          "l": 0.48,
+          "c": 0.13,
+          "h": 150
+        },
+        "secondary-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        },
+        "accent": {
+          "l": 0.48,
+          "c": 0.14,
+          "h": 330
+        },
+        "accent-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        },
+        "neutral": {
+          "l": 0.24,
+          "c": 0.03,
+          "h": 20
+        },
+        "neutral-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        },
+        "info": {
+          "l": 0.45,
+          "c": 0.14,
+          "h": 245
+        },
+        "info-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        },
+        "success": {
+          "l": 0.45,
+          "c": 0.12,
+          "h": 150
+        },
+        "success-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        },
+        "warning": {
+          "l": 0.84,
+          "c": 0.15,
+          "h": 85
+        },
+        "warning-content": {
+          "l": 0.2,
+          "c": 0.02,
+          "h": 85
+        },
+        "error": {
+          "l": 0.48,
+          "c": 0.19,
+          "h": 27
+        },
+        "error-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        }
+      },
+      "inverse": {
+        "base-100": {
+          "l": 0.26,
+          "c": 0.07,
+          "h": 10
+        },
+        "base-200": {
+          "l": 0.3,
+          "c": 0.075,
+          "h": 10
+        },
+        "base-300": {
+          "l": 0.35,
+          "c": 0.08,
+          "h": 10
+        },
+        "base-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        },
+        "primary": {
+          "l": 0.8,
+          "c": 0.13,
+          "h": 25
+        },
+        "primary-content": {
+          "l": 0.22,
+          "c": 0.05,
+          "h": 15
+        },
+        "secondary": {
+          "l": 0.82,
+          "c": 0.13,
+          "h": 150
+        },
+        "secondary-content": {
+          "l": 0.22,
+          "c": 0.05,
+          "h": 150
+        },
+        "accent": {
+          "l": 0.82,
+          "c": 0.1,
+          "h": 330
+        },
+        "accent-content": {
+          "l": 0.22,
+          "c": 0.05,
+          "h": 330
+        },
+        "neutral": {
+          "l": 0.95,
+          "c": 0.01,
+          "h": 30
+        },
+        "neutral-content": {
+          "l": 0.26,
+          "c": 0.07,
+          "h": 10
+        },
+        "info": {
+          "l": 0.78,
+          "c": 0.1,
+          "h": 245
+        },
+        "info-content": {
+          "l": 0.2,
+          "c": 0.03,
+          "h": 245
+        },
+        "success": {
+          "l": 0.78,
+          "c": 0.12,
+          "h": 150
+        },
+        "success-content": {
+          "l": 0.2,
+          "c": 0.03,
+          "h": 150
+        },
+        "warning": {
+          "l": 0.84,
+          "c": 0.15,
+          "h": 85
+        },
+        "warning-content": {
+          "l": 0.2,
+          "c": 0.02,
+          "h": 85
+        },
+        "error": {
+          "l": 0.75,
+          "c": 0.13,
+          "h": 27
+        },
+        "error-content": {
+          "l": 0.2,
+          "c": 0.03,
+          "h": 27
+        }
+      },
+      "fonts": {
+        "heading": {
+          "family": "Caveat",
+          "fallback": "sans-serif"
+        },
+        "body": {
+          "family": "Rubik",
+          "fallback": "sans-serif"
+        }
+      },
+      "radius": {
+        "box": "m",
+        "field": "m",
+        "selector": "m"
+      },
+      "border": "thin",
+      "effects": {
+        "depth": false,
+        "noise": false
+      },
+      "spacing": "compact",
+      "typeScale": {
+        "h1": {
+          "size": "6xl",
+          "weight": 700,
+          "leading": "tight"
+        },
+        "h2": {
+          "size": "3xl",
+          "weight": 700,
+          "leading": "tight"
+        },
+        "h3": {
+          "size": "xl",
+          "weight": 700,
+          "leading": "tight"
+        },
+        "h4": {
+          "size": "lg",
+          "weight": 700,
+          "leading": "normal"
+        },
+        "h5": {
+          "size": "base",
+          "weight": 700,
+          "leading": "normal"
+        },
+        "h6": {
+          "size": "sm",
+          "weight": 700,
+          "leading": "normal"
+        },
+        "body": {
+          "size": "lg",
+          "weight": 400,
+          "leading": "relaxed"
+        },
+        "small": {
+          "size": "sm",
+          "weight": 400,
+          "leading": "normal"
+        }
+      },
+      "links": {
+        "underline": "always"
+      },
+      "buttons": {
+        "shape": "rounded",
+        "size": "l",
+        "style": "filled"
+      },
+      "shadow": "strong",
+      "headings": {
+        "case": "normal",
+        "tracking": "tight"
+      },
+      "cards": {
+        "style": "raised"
+      },
+      "images": {
+        "corners": "rounded"
+      },
+      "sections": {
+        "rhythm": "plain"
+      }
+    },
+    "layout": {
+      "header": [
+        {
+          "type": "Header",
+          "props": {
+            "id": "header",
+            "siteName": "Fern & Clay",
+            "bindings": {
+              "siteName": "general.name"
+            }
+          }
+        }
+      ],
+      "footer": [
+        {
+          "type": "Footer",
+          "props": {
+            "id": "footer",
+            "text": "Fern & Clay · Handmade pots for happy plants"
+          }
+        }
+      ]
+    },
+    "pages": {
+      "doA1OiSblHrn4UJ4": {
+        "id": "doA1OiSblHrn4UJ4",
+        "kind": "page",
+        "slug": "home",
+        "title": "Home",
+        "settings": {
+          "hideHeader": false,
+          "hideFooter": false,
+          "hideFromNavigation": false
+        },
+        "doc": {
+          "root": {
+            "props": {}
+          },
+          "content": [
+            {
+              "type": "Hero",
+              "props": {
+                "variant": "split",
+                "colors": "page",
+                "alignment": "left",
+                "title": "Handmade pots for happy plants",
+                "text": "Small-batch ceramics, thrown and glazed in our Bristol studio.",
+                "buttonLabel": "Shop the range",
+                "buttonLink": {
+                  "kind": "page",
+                  "pageId": "3L0ZvilIfwnseyYV",
+                  "newTab": false
+                },
+                "image": {
+                  "mediaId": "8vHAebOnGm3fegki"
+                },
+                "id": "hero-21"
+              }
+            },
+            {
+              "type": "Section",
+              "props": {
+                "content": [
+                  {
+                    "type": "Heading",
+                    "props": {
+                      "id": "bestsellers-title",
+                      "text": "Bestsellers",
+                      "size": "medium"
+                    }
+                  },
+                  {
+                    "type": "Columns",
+                    "props": {
+                      "id": "home-products-0",
+                      "columns": [
+                        {
+                          "type": "Column",
+                          "props": {
+                            "id": "home-column-0",
+                            "content": [
+                              {
+                                "type": "Heading",
+                                "props": {
+                                  "id": "home-0-name",
+                                  "text": "Speckled planter",
+                                  "size": "small"
+                                }
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "id": "home-0-text",
+                                  "text": "<p>A small speckled planter with a drainage hole and saucer.</p>"
+                                }
+                              },
+                              {
+                                "type": "BuyButton",
+                                "props": {
+                                  "id": "home-0-buy",
+                                  "label": "Buy now",
+                                  "price": "£24",
+                                  "image": {
+                                    "mediaId": "mZ2QC3LEY9HhC3vY"
+                                  },
+                                  "link": "",
+                                  "alignment": "left"
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "type": "Column",
+                          "props": {
+                            "id": "home-column-1",
+                            "content": [
+                              {
+                                "type": "Heading",
+                                "props": {
+                                  "id": "home-1-name",
+                                  "text": "Tea mug",
+                                  "size": "small"
+                                }
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "id": "home-1-text",
+                                  "text": "<p>A hand-thrown mug that holds a proper cup of tea.</p>"
+                                }
+                              },
+                              {
+                                "type": "BuyButton",
+                                "props": {
+                                  "id": "home-1-buy",
+                                  "label": "Buy now",
+                                  "price": "£18",
+                                  "image": {
+                                    "mediaId": "wXAt6GTcEc9PU3pi"
+                                  },
+                                  "link": "",
+                                  "alignment": "left"
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "type": "Column",
+                          "props": {
+                            "id": "home-column-2",
+                            "content": [
+                              {
+                                "type": "Heading",
+                                "props": {
+                                  "id": "home-2-name",
+                                  "text": "Seedling set",
+                                  "size": "small"
+                                }
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "id": "home-2-text",
+                                  "text": "<p>Three tiny pots in a gift box, for windowsill herbs.</p>"
+                                }
+                              },
+                              {
+                                "type": "BuyButton",
+                                "props": {
+                                  "id": "home-2-buy",
+                                  "label": "Buy now",
+                                  "price": "£32",
+                                  "image": {
+                                    "mediaId": "YRv32JT9K5YvcAKC"
+                                  },
+                                  "link": "",
+                                  "alignment": "left"
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ],
+                      "layout": {
+                        "$responsive": {
+                          "desktop": "equal",
+                          "mobile": "stacked"
+                        }
+                      },
+                      "gap": "medium"
+                    }
+                  }
+                ],
+                "id": "section-22"
+              }
+            },
+            {
+              "type": "Features",
+              "props": {
+                "variant": "centred",
+                "colors": "page",
+                "title": "Why shop with us",
+                "text": "<p>Made slowly, sent carefully.</p>",
+                "items": [
+                  {
+                    "type": "Feature",
+                    "props": {
+                      "id": "feature-0",
+                      "icon": "truck",
+                      "title": "Free delivery over £40",
+                      "text": "<p>Sent in two to three working days, anywhere in the UK.</p>"
+                    }
+                  },
+                  {
+                    "type": "Feature",
+                    "props": {
+                      "id": "feature-1",
+                      "icon": "leaf",
+                      "title": "Plastic-free packing",
+                      "text": "<p>Recycled card and paper, and nothing you can't put in the recycling.</p>"
+                    }
+                  },
+                  {
+                    "type": "Feature",
+                    "props": {
+                      "id": "feature-2",
+                      "icon": "rotate-ccw",
+                      "title": "30-day returns",
+                      "text": "<p>If it isn't right, send it back and we'll refund you.</p>"
+                    }
+                  }
+                ],
+                "id": "features-23"
+              }
+            },
+            {
+              "type": "Testimonials",
+              "props": {
+                "variant": "cards",
+                "colors": "inverse",
+                "title": "Happy customers",
+                "items": [
+                  {
+                    "type": "Testimonial",
+                    "props": {
+                      "id": "testimonial-0",
+                      "quote": "The planter is even lovelier in person. My fern has never looked better.",
+                      "name": "Priya",
+                      "role": "Bought a speckled planter"
+                    }
+                  },
+                  {
+                    "type": "Testimonial",
+                    "props": {
+                      "id": "testimonial-1",
+                      "quote": "Beautifully packed and here in two days. The mug is my new favourite.",
+                      "name": "Daniel",
+                      "role": "Bought a tea mug"
+                    }
+                  },
+                  {
+                    "type": "Testimonial",
+                    "props": {
+                      "id": "testimonial-2",
+                      "quote": "Bought the gift box for my mum. She keeps telling everyone where it's from.",
+                      "name": "Grace",
+                      "role": "Bought a gift box"
+                    }
+                  }
+                ],
+                "id": "testimonials-24"
+              }
+            },
+            {
+              "type": "Newsletter",
+              "props": {
+                "colors": "page",
+                "title": "New pots, first",
+                "text": "<p>A short email when a new batch comes out of the kiln. No more than once a month.</p>",
+                "id": "newsletter-25"
+              }
+            }
+          ]
+        }
+      },
+      "vHASKa2WCb5gB5cG": {
+        "id": "vHASKa2WCb5gB5cG",
+        "kind": "not-found",
+        "slug": "page-not-found",
+        "title": "Page not found",
+        "settings": {
+          "hideHeader": false,
+          "hideFooter": false,
+          "hideFromNavigation": true
+        },
+        "doc": {
+          "root": {
+            "props": {}
+          },
+          "content": [
+            {
+              "type": "Section",
+              "props": {
+                "id": "section-1",
+                "padding": {
+                  "top": "l",
+                  "bottom": "l"
+                },
+                "content": [
+                  {
+                    "type": "Heading",
+                    "props": {
+                      "id": "heading-1",
+                      "text": "Sorry, this page doesn't exist",
+                      "size": "large"
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "id": "text-1",
+                      "text": "<p>It may have moved or been renamed. Use the menu above to find what you're looking for.</p>"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "3L0ZvilIfwnseyYV": {
+        "id": "3L0ZvilIfwnseyYV",
+        "kind": "page",
+        "slug": "shop",
+        "title": "Shop",
+        "settings": {
+          "hideHeader": false,
+          "hideFooter": false,
+          "hideFromNavigation": false
+        },
+        "doc": {
+          "root": {
+            "props": {}
+          },
+          "content": [
+            {
+              "type": "Section",
+              "props": {
+                "content": [
+                  {
+                    "type": "Heading",
+                    "props": {
+                      "id": "shop-title",
+                      "text": "All our pots",
+                      "size": "large"
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "id": "shop-text",
+                      "text": "<p>Every piece is made by hand, so each one is a little different. Free delivery on orders over £40.</p>"
+                    }
+                  },
+                  {
+                    "type": "Columns",
+                    "props": {
+                      "id": "shop-products-0",
+                      "columns": [
+                        {
+                          "type": "Column",
+                          "props": {
+                            "id": "shop-column-0",
+                            "content": [
+                              {
+                                "type": "Heading",
+                                "props": {
+                                  "id": "shop-0-name",
+                                  "text": "Speckled planter",
+                                  "size": "small"
+                                }
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "id": "shop-0-text",
+                                  "text": "<p>A small speckled planter with a drainage hole and saucer.</p>"
+                                }
+                              },
+                              {
+                                "type": "BuyButton",
+                                "props": {
+                                  "id": "shop-0-buy",
+                                  "label": "Buy now",
+                                  "price": "£24",
+                                  "image": {
+                                    "mediaId": "mZ2QC3LEY9HhC3vY"
+                                  },
+                                  "link": "",
+                                  "alignment": "left"
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "type": "Column",
+                          "props": {
+                            "id": "shop-column-1",
+                            "content": [
+                              {
+                                "type": "Heading",
+                                "props": {
+                                  "id": "shop-1-name",
+                                  "text": "Tea mug",
+                                  "size": "small"
+                                }
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "id": "shop-1-text",
+                                  "text": "<p>A hand-thrown mug that holds a proper cup of tea.</p>"
+                                }
+                              },
+                              {
+                                "type": "BuyButton",
+                                "props": {
+                                  "id": "shop-1-buy",
+                                  "label": "Buy now",
+                                  "price": "£18",
+                                  "image": {
+                                    "mediaId": "wXAt6GTcEc9PU3pi"
+                                  },
+                                  "link": "",
+                                  "alignment": "left"
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "type": "Column",
+                          "props": {
+                            "id": "shop-column-2",
+                            "content": [
+                              {
+                                "type": "Heading",
+                                "props": {
+                                  "id": "shop-2-name",
+                                  "text": "Seedling set",
+                                  "size": "small"
+                                }
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "id": "shop-2-text",
+                                  "text": "<p>Three tiny pots in a gift box, for windowsill herbs.</p>"
+                                }
+                              },
+                              {
+                                "type": "BuyButton",
+                                "props": {
+                                  "id": "shop-2-buy",
+                                  "label": "Buy now",
+                                  "price": "£32",
+                                  "image": {
+                                    "mediaId": "YRv32JT9K5YvcAKC"
+                                  },
+                                  "link": "",
+                                  "alignment": "left"
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ],
+                      "layout": {
+                        "$responsive": {
+                          "desktop": "equal",
+                          "mobile": "stacked"
+                        }
+                      },
+                      "gap": "medium"
+                    }
+                  },
+                  {
+                    "type": "Columns",
+                    "props": {
+                      "id": "shop-products-3",
+                      "columns": [
+                        {
+                          "type": "Column",
+                          "props": {
+                            "id": "shop-column-3",
+                            "content": [
+                              {
+                                "type": "Heading",
+                                "props": {
+                                  "id": "shop-3-name",
+                                  "text": "Hanging pot",
+                                  "size": "small"
+                                }
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "id": "shop-3-text",
+                                  "text": "<p>A glazed pot on a jute hanger, for trailing plants.</p>"
+                                }
+                              },
+                              {
+                                "type": "BuyButton",
+                                "props": {
+                                  "id": "shop-3-buy",
+                                  "label": "Buy now",
+                                  "price": "£28",
+                                  "image": {
+                                    "mediaId": "WixueiIAo10WDreK"
+                                  },
+                                  "link": "",
+                                  "alignment": "left"
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "type": "Column",
+                          "props": {
+                            "id": "shop-column-4",
+                            "content": [
+                              {
+                                "type": "Heading",
+                                "props": {
+                                  "id": "shop-4-name",
+                                  "text": "Coffee cup",
+                                  "size": "small"
+                                }
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "id": "shop-4-text",
+                                  "text": "<p>A small cup for an espresso or a flat white.</p>"
+                                }
+                              },
+                              {
+                                "type": "BuyButton",
+                                "props": {
+                                  "id": "shop-4-buy",
+                                  "label": "Buy now",
+                                  "price": "£16",
+                                  "image": {
+                                    "mediaId": "oHhQG0s5KIPd4AiG"
+                                  },
+                                  "link": "",
+                                  "alignment": "left"
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "type": "Column",
+                          "props": {
+                            "id": "shop-column-5",
+                            "content": [
+                              {
+                                "type": "Heading",
+                                "props": {
+                                  "id": "shop-5-name",
+                                  "text": "Gift box",
+                                  "size": "small"
+                                }
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "id": "shop-5-text",
+                                  "text": "<p>A planter, a mug and a card, wrapped and ready to give.</p>"
+                                }
+                              },
+                              {
+                                "type": "BuyButton",
+                                "props": {
+                                  "id": "shop-5-buy",
+                                  "label": "Buy now",
+                                  "price": "£45",
+                                  "image": {
+                                    "mediaId": "AnDIxSsAEB1TkAIT"
+                                  },
+                                  "link": "",
+                                  "alignment": "left"
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ],
+                      "layout": {
+                        "$responsive": {
+                          "desktop": "equal",
+                          "mobile": "stacked"
+                        }
+                      },
+                      "gap": "medium"
+                    }
+                  }
+                ],
+                "id": "section-26"
+              }
+            }
+          ]
+        }
+      },
+      "Sz6KP5ZuACmyqmbf": {
+        "id": "Sz6KP5ZuACmyqmbf",
+        "kind": "page",
+        "slug": "about",
+        "title": "About",
+        "settings": {
+          "hideHeader": false,
+          "hideFooter": false,
+          "hideFromNavigation": false
+        },
+        "doc": {
+          "root": {
+            "props": {}
+          },
+          "content": [
+            {
+              "type": "TextImage",
+              "props": {
+                "variant": "imageLeft",
+                "colors": "page",
+                "title": "Our story",
+                "text": "<p>Fern & Clay started on a kitchen table in 2019, with one second-hand wheel and a lot of wonky pots.</p><p>Now we make everything in a small studio by the river: thrown, trimmed, glazed and fired by the two of us, a batch at a time.</p>",
+                "image": {
+                  "mediaId": "PCze3dO4SkCTVacH"
+                },
+                "id": "textimage-27"
+              }
+            },
+            {
+              "type": "Team",
+              "props": {
+                "variant": "cards",
+                "colors": "page",
+                "title": "The makers",
+                "text": "<p>Two people, one kiln and a lot of tea.</p>",
+                "items": [
+                  {
+                    "type": "TeamMember",
+                    "props": {
+                      "id": "maker-0",
+                      "name": "Mia",
+                      "role": "Potter",
+                      "text": "<p>Throws every pot on the wheel, and names most of them.</p>",
+                      "photo": {
+                        "mediaId": "26AOvXVXEOrqwAYq"
+                      }
+                    }
+                  },
+                  {
+                    "type": "TeamMember",
+                    "props": {
+                      "id": "maker-1",
+                      "name": "Tom",
+                      "role": "Glazes and packing",
+                      "text": "<p>Mixes the glazes, packs your orders and answers your emails.</p>",
+                      "photo": {
+                        "mediaId": "ZmP8JDLfMeg9ZANS"
+                      }
+                    }
+                  }
+                ],
+                "id": "team-28"
+              }
+            }
+          ]
+        }
+      },
+      "i46n43SI6BqNiPF5": {
+        "id": "i46n43SI6BqNiPF5",
+        "kind": "page",
+        "slug": "visit",
+        "title": "Visit us",
+        "settings": {
+          "hideHeader": false,
+          "hideFooter": false,
+          "hideFromNavigation": false
+        },
+        "doc": {
+          "root": {
+            "props": {}
+          },
+          "content": [
+            {
+              "type": "ContactDetails",
+              "props": {
+                "variant": "split",
+                "colors": "page",
+                "title": "Visit the studio shop",
+                "text": "<p>Come and see the pots, and the kiln if it's a firing day.</p>",
+                "showHours": true,
+                "showContact": true,
+                "id": "contactdetails-29"
+              }
+            },
+            {
+              "type": "Faq",
+              "props": {
+                "variant": "accordion",
+                "colors": "page",
+                "title": "Delivery and returns",
+                "items": [
+                  {
+                    "type": "FaqItem",
+                    "props": {
+                      "id": "faq-0",
+                      "question": "How long does delivery take?",
+                      "answer": "<p>Two to three working days in the UK, and it's free on orders over £40.</p>"
+                    }
+                  },
+                  {
+                    "type": "FaqItem",
+                    "props": {
+                      "id": "faq-1",
+                      "question": "Can I return something?",
+                      "answer": "<p>Yes, within 30 days. Send it back in its packing and we'll refund you in full.</p>"
+                    }
+                  },
+                  {
+                    "type": "FaqItem",
+                    "props": {
+                      "id": "faq-2",
+                      "question": "Do you take custom orders?",
+                      "answer": "<p>Sometimes. Get in touch with what you have in mind and we'll tell you if we can make it.</p>"
+                    }
+                  }
+                ],
+                "id": "faq-30"
+              }
+            },
+            {
+              "type": "ContactForm",
+              "props": {
+                "colors": "inverse",
+                "title": "Ask us anything",
+                "text": "<p>We reply within a working day.</p>",
+                "askPhone": false,
+                "buttonLabel": "Send",
+                "id": "contactform-31"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "pageOrder": [
+      "doA1OiSblHrn4UJ4",
+      "3L0ZvilIfwnseyYV",
+      "Sz6KP5ZuACmyqmbf",
+      "i46n43SI6BqNiPF5",
+      "vHASKa2WCb5gB5cG"
+    ],
+    "homePageId": "doA1OiSblHrn4UJ4",
+    "media": {},
+    "code": {
+      "css": "",
+      "js": "",
+      "head": "",
+      "bodyEnd": ""
+    },
+    "menu": {
+      "follows": "pages",
+      "items": [
+        {
+          "id": "8H5gGRsOvBydmqOS",
+          "kind": "page",
+          "pageId": "doA1OiSblHrn4UJ4",
+          "hidden": false
+        },
+        {
+          "id": "dkc4O3Vtj97lzuvD",
+          "kind": "page",
+          "pageId": "3L0ZvilIfwnseyYV",
+          "hidden": false
+        },
+        {
+          "id": "SbL1MaJxBMFtCMwY",
+          "kind": "page",
+          "pageId": "Sz6KP5ZuACmyqmbf",
+          "hidden": false
+        },
+        {
+          "id": "J8osZWANXbq0VPZx",
+          "kind": "page",
+          "pageId": "i46n43SI6BqNiPF5",
+          "hidden": false
+        }
+      ]
+    },
+    "sharedSections": {}
+  }
+}
