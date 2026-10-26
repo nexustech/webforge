@@ -7,6 +7,9 @@
   "include": ["src/renderer", "src/shared"],
   "references": [
     {
+      "path": "../../packages/commands"
+    },
+    {
       "path": "../../packages/editor-ui"
     },
     {

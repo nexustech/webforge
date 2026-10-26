@@ -2,6 +2,7 @@ import type { EngineEdit } from "@webforge/engine";
 import { t } from "@webforge/i18n";
 import {
   type Breakpoint,
+  findNode,
   type NodeDoc,
   type PageDoc,
   type PageId,
@@ -12,7 +13,6 @@ import type { ComponentDef, ComponentLibrary, FieldDef } from "@webforge/site-co
 import { type CopySelection, copySelection, updateSectionField } from "../shared-sections/index.js";
 import { updateField } from "./apply-patch.js";
 import { deviceLabelFor, labelFor } from "./labels.js";
-import { findNode } from "./nodes.js";
 import {
   type SharedRegion,
   sharedRegionOf,

@@ -1,10 +1,15 @@
 import type { CanvasEngine, RichTextAt } from "@webforge/engine";
-import { type RichTextLink, richTextHref, richTextLinkValue, type SiteDoc } from "@webforge/model";
+import {
+  findNode,
+  type RichTextLink,
+  richTextHref,
+  richTextLinkValue,
+  type SiteDoc,
+} from "@webforge/model";
 import { useEffect, useRef, useState } from "react";
 import { ADVANCED_FIELDS, advancedFieldLabel } from "../editor/advanced-fields.js";
 import { currentPage, type EditorSession, textSessionKey } from "../editor/editor-session.js";
 import { changedLabel, labelFor } from "../editor/labels.js";
-import { findNode } from "../editor/nodes.js";
 import { LinkDialog } from "./LinkDialog.js";
 import { applyAnchor, type LinkFieldChange } from "./link-change.js";
 import { linkTargets } from "./link-targets.js";

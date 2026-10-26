@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "include": ["src"],
+  "references": [
+    { "path": "../history" },
+    { "path": "../i18n" },
+    { "path": "../model" },
+    { "path": "../site-components" }
+  ]
+}

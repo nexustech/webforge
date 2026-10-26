@@ -3,6 +3,7 @@ import { t } from "@webforge/i18n";
 import { siteLibrary } from "@webforge/site-components";
 import { PanelBottomIcon, PanelLeftIcon, PanelRightIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import type { AiApi } from "../shared/ipc/ai.js";
 import type { ExportRequest } from "../shared/ipc/site.js";
 import type {
   AppInfo,
@@ -71,6 +72,8 @@ export type AppProps = {
   readonly saveUiState?: (state: SiteUiState) => Promise<UiStateResult>;
   /** Spell checks text in the site's language (F-ED-19); injectable for tests. */
   readonly setSpellCheckLanguage?: (language: string) => Promise<null>;
+  /** Answers AI apps' requests (F-AI-1); injectable for tests. Defaults to the preload API. */
+  readonly answerAi?: AiApi["onRequest"];
 };
 
 const exportWithPreload = (request: ExportRequest) => window.webforge.site.export(request);
@@ -79,6 +82,7 @@ const saveUiStateWithPreload = (state: SiteUiState) =>
   window.webforge.project.setUiState(siteSession(), state);
 const spellCheckWithPreload = (language: string) =>
   window.webforge.app.setSpellCheckLanguage(language);
+const answerAiWithPreload: AiApi["onRequest"] = (answer) => window.webforge.ai.onRequest(answer);
 
 /** The perf check's hooks (ADR 0007), loaded only in perf builds. */
 const installPerf = (session: EditorSession) => {
@@ -97,6 +101,7 @@ export function App({
   uiState,
   saveUiState = saveUiStateWithPreload,
   setSpellCheckLanguage = spellCheckWithPreload,
+  answerAi = answerAiWithPreload,
 }: AppProps) {
   const [session] = useState(() => createEditorSession(siteLibrary, loaded?.site ?? starterSite()));
   const [registry] = useState(createCommandRegistry);
@@ -152,6 +157,7 @@ export function App({
     settings,
     windowDialogs,
     exportSite: (request) => exportSiteRef.current(request),
+    answerAi,
   }));
   useEffect(() => connectAreas(WINDOW_AREAS, windowContext), [windowContext]);
 

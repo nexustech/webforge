@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { StoreApi } from "zustand/vanilla";
+import type { AiApi } from "../../shared/ipc/ai.js";
 import type { ExportRequest } from "../../shared/ipc/site.js";
 import type { ExportResult } from "../../shared/ipc-contract.js";
 import type { AddItem } from "../add/index.js";
@@ -45,8 +46,8 @@ type AreaContext = {
  * so its areas register once and a panel keeps what it shows (Layers' collapsed layers and filter).
  */
 export type WindowContext = AreaContext & {
-  /** Asks before what changes more than the page shown (D7). */
-  readonly siteWide: Pick<SiteWideConfirm, "confirmSiteWide">;
+  /** Asks before what changes more than the page shown (D7); AI apps' changes too, and close it. */
+  readonly siteWide: Pick<SiteWideConfirm, "confirmSiteWide" | "current" | "answer">;
   /** The canvas toolbar's zoom and size readout (1.15). */
   readonly canvasView: CanvasView;
   /** What a panel points at on the canvas: an element to outline, a drop point (SP-8, SP-10). */
@@ -57,6 +58,8 @@ export type WindowContext = AreaContext & {
   readonly windowDialogs: WindowDialogRegistry;
   /** Exports a site. */
   readonly exportSite: (request: ExportRequest) => Promise<ExportResult>;
+  /** Answers AI apps' requests (F-AI-1) until the returned function is called. */
+  readonly answerAi: AiApi["onRequest"];
 };
 
 /** What the editor gives the areas it registers, around its canvas (Editor). */

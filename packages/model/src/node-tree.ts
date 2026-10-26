@@ -1,4 +1,4 @@
-import { isNodeDoc, type NodeDoc } from "@webforge/model";
+import { isNodeDoc, type NodeDoc } from "./documents.js";
 
 /** The first node in `nodes` or their slots, in document order, that `matches`. */
 export function findNode(

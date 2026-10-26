@@ -1,8 +1,13 @@
 import type { EngineEdit } from "@webforge/engine";
 import { t } from "@webforge/i18n";
-import { isSharedCopy, type NodeDoc, type PageDoc, type SharedSectionsDoc } from "@webforge/model";
+import {
+  findNode,
+  isSharedCopy,
+  type NodeDoc,
+  type PageDoc,
+  type SharedSectionsDoc,
+} from "@webforge/model";
 import type { ComponentLibrary, FieldDef } from "@webforge/site-components";
-import { findNode } from "./nodes.js";
 
 /** The shared section a linked copy shows (F-ED-23), if the site has it. */
 function sharedOf(node: NodeDoc, shared: SharedSectionsDoc) {

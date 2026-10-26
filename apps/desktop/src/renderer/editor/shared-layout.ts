@@ -1,6 +1,6 @@
 import type { LayoutDoc, NodeDoc, PageDoc, PageId, SiteDoc } from "@webforge/model";
+import { findNode } from "@webforge/model";
 import { updateField } from "./apply-patch.js";
-import { findNode } from "./nodes.js";
 
 /** The shared Header or Footer (F-ED-7, C5). */
 export type SharedRegion = keyof LayoutDoc;
