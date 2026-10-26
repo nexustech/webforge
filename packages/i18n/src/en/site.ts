@@ -268,9 +268,18 @@ export const site = {
   "site.start.tryExample": "Try an example",
   "site.start.search": "Search sites",
   "site.start.noMatch": "No site matches “{query}”.",
-  "site.start.pin": "Pin {name} to the top",
+  // The pin is a toggle: its name stays "Pin …" whether pressed or not; its tooltip says what a
+  // click does.
+  "site.start.pin": "Pin {name}",
+  "site.start.pinTip": "Pin {name} to the top",
   "site.start.unpin": "Unpin {name}",
-  "site.start.pinned": "Pinned",
+  "site.start.listFailed": "The list of recent sites couldn't be changed. Try again.",
+  // The first start, with no recent sites yet (2.14b, SC-3): what to do next.
+  "site.start.welcome": "Welcome to {name}",
+  "site.start.welcomeText": "Start your website in a few clicks.",
+  "site.start.new.description": "A blank site, or one from a template for your kind of business.",
+  "site.start.tryExample.description": "A finished example site, to look around and change.",
+  "site.start.open.description": "A site you've saved on this computer.",
   "site.start.help": "Help",
   "site.start.help.shortcuts": "Every keyboard shortcut, by what it does.",
   "site.start.help.example": "Open a finished example site to look around and change.",

@@ -57,7 +57,7 @@ export function arrangeTemplates<T extends { readonly category: string }>(
 }
 
 /** A template's name, from its id. */
-const templateName = (id: TemplateId): string => t(`template.${id}.name`);
+export const templateName = (id: TemplateId): string => t(`template.${id}.name`);
 
 /** A theme preset's name; the preset's own name for one the catalogue hasn't named yet. */
 function presetLabel(preset: string): string {
