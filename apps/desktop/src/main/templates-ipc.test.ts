@@ -25,15 +25,15 @@ const LISTED = TEMPLATE_IDS.filter((id) => id !== BLANK_TEMPLATE_ID);
 
 describe("registerTemplatesHandlers (2.14a)", () => {
   it("lists the templates the app ships, without their content, with their thumbnails", async () => {
-    const [sample] = readTemplates();
+    const [cafe] = readTemplates();
     const listed = (await invoker("templates:list")()) as { id: string }[];
     expect(listed[0]).toEqual({
-      id: "sample",
+      id: "cafe",
       category: "food",
       example: true,
-      pages: 2,
-      theme: "light",
-      thumbnail: `data:image/png;base64,${readFileSync(sample?.thumbnail ?? "").toString("base64")}`,
+      pages: 4,
+      theme: "bistro",
+      thumbnail: `data:image/png;base64,${readFileSync(cafe?.thumbnail ?? "").toString("base64")}`,
     });
     // Every other template too, in the order the app ships them.
     expect(listed.map((each) => each.id)).toEqual(LISTED);

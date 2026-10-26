@@ -32,7 +32,7 @@ const project = (sites: readonly RecentSite[]): NonNullable<StartScreenProps["pr
 
 /** The development example, so Try an example shows. */
 const example: TemplateSummary = {
-  id: "sample",
+  id: "cafe",
   category: "food",
   example: true,
   pages: 2,

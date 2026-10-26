@@ -17,11 +17,14 @@ const installedFontSchema = z.strictObject({
   source: z.enum(["bundled", "downloaded"]),
   /**
    * The file the font picker previews it with (2.3c), served as `webforge-font://fonts/<file>`:
-   * its Latin regular, or the nearest upright file it has.
+   * its Latin regular, or the nearest upright file, and the weight or range of weights it has (a
+   * variable font's whole range, so the preview isn't made bolder by the browser).
    */
   preview: z
-    .string()
-    .regex(/^[a-z0-9-]+\.woff2$/)
+    .strictObject({
+      file: z.string().regex(/^[a-z0-9-]+\.woff2$/),
+      weight: z.union([z.number().int(), z.tuple([z.number().int(), z.number().int()])]),
+    })
     .optional(),
 });
 

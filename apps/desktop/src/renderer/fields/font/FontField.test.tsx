@@ -108,6 +108,17 @@ describe("the font field (2.3a)", { timeout: 15_000 }, () => {
     expect(browse).toHaveBeenCalledOnce();
   });
 
+  it("reads the computer's fonts again as the picker opens: another field's download is listed (#463)", async () => {
+    const fonts = fakeFonts();
+    const list = vi.spyOn(fonts, "list");
+    const { user } = setUp(undefined, fonts);
+    await vi.waitFor(() => expect(list).toHaveBeenCalledOnce());
+
+    await user.click(screen.getByRole("button", { name: "Headings Inter" }));
+
+    expect(list).toHaveBeenCalledTimes(2);
+  });
+
   it("says why a font didn't download, and changes nothing", async () => {
     for (const [reason, message] of [
       ["offline", "You're offline, so Lobster can't be downloaded. Nothing changed."],
@@ -164,6 +175,8 @@ describe("the font previews (2.3a)", () => {
     expect(fontPreviewCss([{ family: "No File" }])).toBe("");
     expect(css).toContain('font-family: "Webforge preview Inter";');
     expect(css).toMatch(/src: url\("webforge-font:\/\/fonts\/inter-latin-wght-normal\.woff2"\)/);
+    // A variable font's whole range (#463 review).
+    expect(css).toContain("font-weight: 100 900;");
     expect(previewFamily({ family: "Lora", fallback: "serif" })).toBe(
       '"Webforge preview Lora", serif',
     );

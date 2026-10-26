@@ -42,6 +42,12 @@ async function previousManifest(folder: RemoteFolder): Promise<Manifest | null> 
   }
 }
 
+/**
+ * The digest a pending manifest gives a file that may or may not have arrived: it matches no
+ * file's content, so the next publish sends the file again, or removes it if the site dropped it.
+ */
+const UNCONFIRMED = "0".repeat(40);
+
 const encodeManifest = (manifest: Manifest) =>
   new TextEncoder().encode(`${JSON.stringify(manifest, null, 2)}\n`);
 
@@ -62,6 +68,15 @@ export async function* publishToFolder(
   const previous = await previousManifest(folder);
   const next = manifestOf(build.files);
   const diff = diffManifest(previous, next);
+
+  // Files the host never had: listed before they go, so that if the publish stops part-way and
+  // the site drops one of them before the next, that publish still removes it from the host.
+  const added = diff.upload.filter((path) => previous?.files[path] === undefined);
+  if (added.length > 0) {
+    const pending: Manifest = { version: 1, files: { ...previous?.files } };
+    for (const path of added) pending.files[path] = UNCONFIRMED;
+    await folder.write(MANIFEST_FILE, encodeManifest(pending));
+  }
 
   for (const [done, path] of diff.upload.entries()) {
     throwIfCancelled(signal);

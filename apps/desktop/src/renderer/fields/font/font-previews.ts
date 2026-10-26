@@ -7,18 +7,29 @@ import { CANVAS_FONT_URL } from "../../../shared/ipc/canvas.js";
  */
 const PREVIEW_PREFIX = "Webforge preview ";
 
-/** A font the editor can preview: its family, and the file it's previewed with, if it has one. */
-export type PreviewFont = { readonly family: string; readonly preview?: string | undefined };
+/**
+ * A font the editor can preview: its family, and the file it's previewed with, if it has one, with
+ * the weight or range of weights the file has.
+ */
+export type PreviewFont = {
+  readonly family: string;
+  readonly preview?:
+    | { readonly file: string; readonly weight: number | readonly [number, number] }
+    | undefined;
+};
 
 /** The `font-family` that shows `font` in the editor (its preview's file, then its fallback). */
 export const previewFamily = (font: { readonly family: string; readonly fallback: string }) =>
   `"${PREVIEW_PREFIX}${font.family}", ${font.fallback}`;
 
 /** The bundled fonts, each with its preview file. */
-const BUNDLED: readonly PreviewFont[] = FONT_CATALOGUE.map((font) => ({
-  family: font.family,
-  preview: previewFileOf(font)?.file,
-}));
+const BUNDLED: readonly PreviewFont[] = FONT_CATALOGUE.map((font) => {
+  const file = previewFileOf(font);
+  return {
+    family: font.family,
+    preview: file === undefined ? undefined : { file: file.file, weight: file.weight },
+  };
+});
 
 /**
  * `@font-face` rules for previewing `fonts` (2.3a, 2.3c): one file each, loaded from the app's own
@@ -34,7 +45,9 @@ export function fontPreviewCss(fonts: readonly PreviewFont[] = BUNDLED): string 
             [
               "@font-face {",
               `  font-family: "${PREVIEW_PREFIX}${font.family}";`,
-              `  src: url("${CANVAS_FONT_URL}${font.preview}") format("woff2");`,
+              `  src: url("${CANVAS_FONT_URL}${font.preview.file}") format("woff2");`,
+              // A variable font's whole range, so other weights aren't made up by the browser.
+              `  font-weight: ${typeof font.preview.weight === "number" ? font.preview.weight : font.preview.weight.join(" ")};`,
               "  font-display: swap;",
               "}",
             ].join("\n"),

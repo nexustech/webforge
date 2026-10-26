@@ -6,7 +6,7 @@ import { NewSiteDialog } from "./NewSiteDialog.js";
 // New Site (2.14a, LF-11): name and theme, then Blank or a template. Creating does nothing here.
 
 const bakery: TemplateSummary = {
-  id: "sample",
+  id: "cafe",
   category: "food",
   example: true,
   pages: 2,
@@ -45,7 +45,7 @@ function control(canvasElement: HTMLElement, selector: string, name: string): HT
 /** A template chosen: the theme switches to the template's. */
 export const TemplateChosen: Story = {
   play: ({ canvasElement }) => {
-    control(canvasElement, "label", t("template.sample.name")).click();
+    control(canvasElement, "label", t("template.cafe.name")).click();
   },
 };
 
@@ -55,7 +55,7 @@ export const DetailsOpen: Story = {
     control(
       canvasElement,
       "button",
-      t("newSite.detailsOf", { name: t("template.sample.name") }),
+      t("newSite.detailsOf", { name: t("template.cafe.name") }),
     ).click();
   },
 };
