@@ -24,7 +24,7 @@ export type AiWindow = {
 };
 
 /** The environment variable E2E tests launch Webforge with, to ask it as an AI app would. */
-export const E2E_AI_VARIABLE = "WEBFORGE_E2E_AI";
+const E2E_AI_VARIABLE = "WEBFORGE_E2E_AI";
 
 /** Forwards AI apps' requests to the open site's window (F-AI-1); the MCP server (4.9) uses it. */
 export type AiBridge = {
