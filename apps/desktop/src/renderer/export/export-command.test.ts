@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { ExportProgress } from "../../shared/ipc/site.js";
 import type { ExportResult } from "../../shared/ipc-contract.js";
 import { setFailureLog } from "../log.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { createCommandRegistry } from "../shell/commands.js";
-import { exportMessage, registerExportCommand } from "./export-command.js";
+import { exportMessage, progressText, registerExportCommand } from "./export-command.js";
 
 const EXPORT_COMMAND_ID = COMMAND_IDS.exportSite;
 
@@ -54,10 +55,22 @@ describe("exportMessage", () => {
   });
 });
 
+describe("progressText", () => {
+  it("counts images and pages from 1, and names the other stages", () => {
+    expect(progressText({ stage: "images", done: 0, total: 3 })).toBe("Preparing image 1 of 3");
+    expect(progressText({ stage: "pages", done: 2, total: 3 })).toBe("Building page 3 of 3");
+    expect(progressText({ stage: "styles" })).toBe("Building the styles");
+    expect(progressText({ stage: "fonts" })).toBe("Adding the fonts");
+    expect(progressText({ stage: "writing" })).toBe("Saving the files");
+  });
+});
+
+const cancelNothing = async () => null;
+
 describe("registerExportCommand", () => {
   async function runExport(onExport: () => Promise<ExportResult>) {
     const registry = createCommandRegistry();
-    registerExportCommand(registry, onExport);
+    registerExportCommand(registry, onExport, cancelNothing);
     expect(registry.get(EXPORT_COMMAND_ID)).toMatchObject({ menu: "file", shortcut: "Mod+E" });
     registry.run(EXPORT_COMMAND_ID);
     await vi.waitFor(() => expect(registry.get(EXPORT_COMMAND_ID)?.enabled).toBe(true));
@@ -73,9 +86,14 @@ describe("registerExportCommand", () => {
       warnings: 0,
     }));
 
-    expect(toast.loading).toHaveBeenCalledWith("Exporting…");
+    expect(toast.loading).toHaveBeenCalledWith("Exporting…", {
+      action: expect.objectContaining({ label: "Cancel" }),
+    });
+    // In place of the progress, without its line or its Cancel button.
     expect(toast.success).toHaveBeenCalledWith("Site exported to “my-site” (3 files).", {
       id: "progress",
+      description: null,
+      action: null,
     });
   });
 
@@ -88,6 +106,7 @@ describe("registerExportCommand", () => {
         new Promise((resolve) => {
           finish = resolve;
         }),
+      cancelNothing,
     );
 
     registry.run(EXPORT_COMMAND_ID);
@@ -97,6 +116,49 @@ describe("registerExportCommand", () => {
     finish({ status: "canceled" });
     await vi.waitFor(() => expect(toast.dismiss).toHaveBeenCalledWith("progress"));
     expect(registry.get(EXPORT_COMMAND_ID)?.enabled).toBe(true);
+  });
+
+  it("shows how far the export has come, and its Cancel button stops it (3.1)", async () => {
+    const registry = createCommandRegistry();
+    const cancel = vi.fn(async () => null);
+    let tell: (progress: ExportProgress) => void = () => {};
+    let finish: (result: ExportResult) => void = () => {};
+    registerExportCommand(
+      registry,
+      (onProgress) =>
+        new Promise((resolve) => {
+          tell = onProgress;
+          finish = resolve;
+        }),
+      cancel,
+    );
+    registry.run(EXPORT_COMMAND_ID);
+
+    tell({ stage: "pages", done: 0, total: 2 });
+    expect(toast.loading).toHaveBeenLastCalledWith(
+      "Exporting…",
+      expect.objectContaining({ id: "progress", description: "Building page 1 of 2" }),
+    );
+    const [, options] = toast.loading.mock.lastCall as unknown as [
+      string,
+      { action: { onClick: (event: { preventDefault(): void }) => void } },
+    ];
+    const preventDefault = vi.fn();
+    options.action.onClick({ preventDefault });
+
+    expect(cancel).toHaveBeenCalledOnce();
+    // The toast stays, saying it's stopping, and later progress doesn't bring the button back.
+    expect(preventDefault).toHaveBeenCalled();
+    expect(toast.loading).toHaveBeenLastCalledWith("Cancelling…", {
+      id: "progress",
+      description: null,
+      action: null,
+    });
+    tell({ stage: "pages", done: 1, total: 2 });
+    expect(toast.loading).toHaveBeenLastCalledWith("Cancelling…", expect.anything());
+
+    finish({ status: "canceled" });
+    await vi.waitFor(() => expect(toast.dismiss).toHaveBeenCalledWith("progress"));
   });
 
   it("treats a rejected export as a failed build, and logs it by its code (R12)", async () => {
@@ -110,7 +172,7 @@ describe("registerExportCommand", () => {
 
     expect(toast.error).toHaveBeenCalledWith(
       expect.stringContaining("Your site could not be built."),
-      { id: "progress" },
+      { id: "progress", description: null, action: null },
     );
   });
 });

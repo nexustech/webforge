@@ -119,3 +119,12 @@ The architecture review asked for a build that can be cancelled and followed, th
   - **Not on disk:** a cache of encoded copies of the person's photos in the user data would outlive the site, survive its deletion and be a second copy outside the file they control. That breaks "never store site content" and R13d. If measurements show that first exports are too slow, the place is the `.wforge` itself (format 2, a derivatives table), so the copies live and die with the site. That's the product owner's call, for the file-size trade-off.
 - **Codecs.** A failed codec preparation, or a failed load of the worker's bundled resources, is forgotten (`onceUntilFailure`), so the long-lived workers try again with their next job. The `ImageData` stand-in is defined only where the runtime has none.
 
+## Amendment, 26 Oct 2026 (3.1, #59)
+The §6 `Pipeline` interface, as `createPipeline(library)`: one per open site, in the export worker.
+- **`build(snapshot, resources, { mode, signal })`** is an `AsyncIterable` of the R15 `BuildEvent`s, ending with `{ stage: "done", site }`. `buildSite` is the same build without the caches below. `check()` is 3.6's.
+- **Modes.** `export` and `publish` build the same files. `preview` (3.2) lets the stylesheet keep classes a page no longer uses, so an edit's CSS is ready at once.
+- **Kept between builds, in memory only:**
+  - the R15 image cache (256 MB);
+  - each page's rendered Header, content and Footer, keyed by a hash of the page and of everything else its render reads (the site without its pages' content or Media, the resolved images and the documents' paths). Only the last finished build's pages are kept, and a cancelled build leaves them as they were;
+  - the Tailwind compiler. Preparing one takes about 120 ms and building from it about 10. A compiler only adds the classes it's given to its CSS, so an export uses the kept one only when no class it has seen is gone; otherwise it prepares a new one. An export's CSS is therefore always exactly what a fresh compiler makes.
+- **Progress and cancel in the app.** The worker reports each stage (`progress`), then `writing`. Main passes them to the window (`site:export-progress`), and `site:cancel-export` aborts the exports under way. The export toast shows the stage, with a Cancel button.

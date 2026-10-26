@@ -4,10 +4,8 @@ import { siteLibrary } from "@webforge/site-components";
 import { PanelBottomIcon, PanelLeftIcon, PanelRightIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { AiApi } from "../shared/ipc/ai.js";
-import type { ExportRequest } from "../shared/ipc/site.js";
 import type {
   AppInfo,
-  ExportResult,
   Preferences,
   PreferencesChange,
   SiteUiState,
@@ -15,7 +13,7 @@ import type {
 } from "../shared/ipc-contract.js";
 import { starterSite } from "../shared/starter-site.js";
 import { EDITOR_AREAS, WINDOW_AREAS } from "./areas.js";
-import { connectAreas, type WindowContext } from "./editor/areas.js";
+import { connectAreas, type ExportSite, type WindowContext } from "./editor/areas.js";
 import { createCanvasPointer } from "./editor/canvas-pointer.js";
 import { Editor, type EditorProps } from "./editor/Editor.js";
 import { createEditorSession, type EditorSession } from "./editor/editor-session.js";
@@ -63,7 +61,9 @@ export type AppProps = {
   /** Compiles the canvas's site CSS; injectable for tests. */
   readonly compileCss?: EditorProps["compileCss"];
   /** Exports a site; injectable for tests. Defaults to the preload API. */
-  readonly exportSite?: (request: ExportRequest) => Promise<ExportResult>;
+  readonly exportSite?: ExportSite;
+  /** Cancels the export under way; injectable for tests. Defaults to the preload API. */
+  readonly cancelExport?: () => Promise<null>;
   /** The site read from the open site file at start-up (1.6); the starter site otherwise. */
   readonly loaded?: LoadedSite;
   /** The open site's editor state (Design or Content mode) as main loaded it; none for no site. */
@@ -76,7 +76,15 @@ export type AppProps = {
   readonly answerAi?: AiApi["onRequest"];
 };
 
-const exportWithPreload = (request: ExportRequest) => window.webforge.site.export(request);
+const exportWithPreload: ExportSite = async (request, onProgress) => {
+  const stop = window.webforge.site.onExportProgress(onProgress);
+  try {
+    return await window.webforge.site.export(request);
+  } finally {
+    stop();
+  }
+};
+const cancelExportWithPreload = () => window.webforge.site.cancelExport();
 const saveWithPreload = (change: PreferencesChange) => window.webforge.prefs.set(change);
 const saveUiStateWithPreload = (state: SiteUiState) =>
   window.webforge.project.setUiState(siteSession(), state);
@@ -97,6 +105,7 @@ export function App({
   createEngine,
   compileCss,
   exportSite = exportWithPreload,
+  cancelExport = cancelExportWithPreload,
   loaded,
   uiState,
   saveUiState = saveUiStateWithPreload,
@@ -142,10 +151,10 @@ export function App({
   // The window's areas (2.20, B1): the Site and Layers panels, Go to page, Open Crash Reports,
   // the View menu's zoom and device views, and Export, after the shell's own commands. Their
   // context is made once, so they register once: Export reads the latest exportSite as it runs.
-  const exportSiteRef = useRef(exportSite);
+  const exportSiteRef = useRef({ exportSite, cancelExport });
   useEffect(() => {
-    exportSiteRef.current = exportSite;
-  }, [exportSite]);
+    exportSiteRef.current = { exportSite, cancelExport };
+  }, [exportSite, cancelExport]);
   const [windowContext] = useState<WindowContext>(() => ({
     session,
     commands: registry,
@@ -156,7 +165,8 @@ export function App({
     canvasPointer,
     settings,
     windowDialogs,
-    exportSite: (request) => exportSiteRef.current(request),
+    exportSite: (request, onProgress) => exportSiteRef.current.exportSite(request, onProgress),
+    cancelExport: () => exportSiteRef.current.cancelExport(),
     answerAi,
   }));
   useEffect(() => connectAreas(WINDOW_AREAS, windowContext), [windowContext]);

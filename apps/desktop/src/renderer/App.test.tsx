@@ -90,11 +90,15 @@ describe("App", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "Export Site…" }));
 
-    expect(exportSite).toHaveBeenCalledWith({
-      snapshot: expect.objectContaining({ pages: expect.any(Array), media: [] }),
-      media: [],
-      documents: [],
-    });
+    expect(exportSite).toHaveBeenCalledWith(
+      {
+        snapshot: expect.objectContaining({ pages: expect.any(Array), media: [] }),
+        media: [],
+        documents: [],
+      },
+      // Told how far the export has come, for the toast (3.1).
+      expect.any(Function),
+    );
     expect(await screen.findByText("Site exported to “my-site” (6 files).")).toBeTruthy();
   });
 
