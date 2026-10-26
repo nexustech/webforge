@@ -67,15 +67,17 @@ const exportFailureReasonSchema = z.enum([
   "write-failed",
   // A page or its folder is named after a Windows device: `page` says which, to rename (R16).
   "reserved-name",
+  // Too large for a ZIP file (3.3): a folder takes it.
+  "too-large",
 ]);
 
 /**
  * A problem the export found that didn't stop it (X5), for the export report: a link to a page or
  * file that isn't there, or an image deleted from Media. `page` is the page's path; `detail` what
- * the link pointed at, or the image's id.
+ * the link pointed at, or the image's id. `not-minified`: *Minify output* left the page readable.
  */
 export const exportWarningSchema = z.strictObject({
-  code: z.enum(["broken-link", "missing-image"]),
+  code: z.enum(["broken-link", "missing-image", "not-minified"]),
   page: z.string().max(1024),
   detail: z.string().max(2048),
 });

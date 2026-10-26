@@ -42,6 +42,8 @@ export const exportSite = {
   "export.report.issues": "Worth a look",
   "export.report.brokenLink": "On “{page}”, a link goes to a page or file that isn't there.",
   "export.report.missingImage": "On “{page}”, an image deleted from Media was left out.",
+  "export.report.notMinified":
+    "“{page}” wasn't made smaller: its Custom Code isn't valid HTML. It was saved as it is.",
   "export.report.more": "And {count} more.",
   "export.report.noWebAddress":
     "Your site has no web address, so search engines get no sitemap and link previews may show no image. You can add it in Site Settings.",
@@ -52,6 +54,7 @@ export const exportSite = {
     "That folder already contains other files. Choose an empty folder or a previous export.",
   "export.failed.buildFailed": "Your site could not be built. Nothing was changed on disk.",
   "export.failed.writeFailed": "Your site could not be saved there.",
+  "export.failed.tooLarge": "Your site is too large for a ZIP file. Export it to a folder instead.",
   "export.failed.reservedName":
     "The page “{page}” can't be exported: Windows keeps its name, or its folder's, for itself. Rename it in the Pages panel and export again.",
 } as const;

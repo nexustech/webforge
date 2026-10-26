@@ -205,7 +205,13 @@ export const exportOutcomeSchema = z.discriminatedUnion("type", [
   z.strictObject({ type: z.literal("cancelled") }),
   z.strictObject({
     type: z.literal("failed"),
-    code: z.enum(["folder-not-empty", "write-failed", "build-failed", "reserved-name"]),
+    code: z.enum([
+      "folder-not-empty",
+      "write-failed",
+      "build-failed",
+      "reserved-name",
+      "too-large",
+    ]),
     /** A machine-readable detail such as a BuildError code; safe to log. */
     detail: z.string(),
     /** The title of the page to fix, for `reserved-name`: shown to the person, never logged. */

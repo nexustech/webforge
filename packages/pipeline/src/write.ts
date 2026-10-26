@@ -46,8 +46,11 @@ async function holdsOnlyAnEarlierExport(folder: string): Promise<boolean> {
     });
 }
 
-/** Why the site could not be written; `cancelled`: the write's signal was aborted (R15). */
-export type WriteErrorCode = "folder-not-empty" | "write-failed" | "cancelled";
+/**
+ * Why the site could not be written. `cancelled`: the write's signal was aborted (R15).
+ * `too-large`: the site won't fit in a ZIP file (3.3); a folder takes it.
+ */
+export type WriteErrorCode = "folder-not-empty" | "write-failed" | "cancelled" | "too-large";
 
 /** Writing the export to disk failed; the destination is left as it was. */
 export class WriteError extends WebforgeError<WriteErrorCode> {
@@ -56,7 +59,11 @@ export class WriteError extends WebforgeError<WriteErrorCode> {
   constructor(code: WriteErrorCode, message: string, options?: ErrorOptions) {
     super(
       code,
-      code === "folder-not-empty" ? "export.failed.folderNotEmpty" : "export.failed.writeFailed",
+      code === "folder-not-empty"
+        ? "export.failed.folderNotEmpty"
+        : code === "too-large"
+          ? "export.failed.tooLarge"
+          : "export.failed.writeFailed",
       message,
       options,
     );

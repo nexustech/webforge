@@ -25,6 +25,8 @@ export function exportFailure(
       return t("export.failed.reservedName", { page: result.page ?? "" });
     case "write-failed":
       return t("export.failed.writeFailed");
+    case "too-large":
+      return t("export.failed.tooLarge");
     case "build-failed":
       return t("export.failed.buildFailed");
   }
@@ -57,6 +59,13 @@ export function sizeText(bytes: number): string {
 /** Whether `site` has its web address in Site Settings (X3). */
 const hasWebAddress = (site: SiteDoc) => (site.settings.address.url ?? "") !== "";
 
+/** What the report says of each kind of warning, about its page. */
+const WARNING_TEXTS = {
+  "broken-link": "export.report.brokenLink",
+  "missing-image": "export.report.missingImage",
+  "not-minified": "export.report.notMinified",
+} as const;
+
 /** The report of `result`, an export of `site` (07): each warning by the title of its page. */
 export function exportReport(
   result: Extract<ExportResult, { status: "exported" }>,
@@ -73,12 +82,9 @@ export function exportReport(
       files: result.files,
       size: sizeText(result.bytes),
     }),
-    issues: result.warnings.map((warning) => {
-      const page = titles.get(warning.page) ?? warning.page;
-      return warning.code === "broken-link"
-        ? t("export.report.brokenLink", { page })
-        : t("export.report.missingImage", { page });
-    }),
+    issues: result.warnings.map((warning) =>
+      t(WARNING_TEXTS[warning.code], { page: titles.get(warning.page) ?? warning.page }),
+    ),
     more: Math.max(0, result.warningCount - result.warnings.length),
     noWebAddress: !hasWebAddress(site),
   };

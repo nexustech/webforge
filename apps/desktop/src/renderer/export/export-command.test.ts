@@ -69,6 +69,7 @@ describe("exportFailure", () => {
     ["folder-not-empty", "That folder already contains other files."],
     ["write-failed", "Your site could not be saved there."],
     ["build-failed", "Your site could not be built."],
+    ["too-large", "Your site is too large for a ZIP file. Export it to a folder instead."],
   ] as const)("explains a %s failure", (reason, text) => {
     expect(exportFailure({ status: "failed", reason })).toContain(text);
   });
@@ -107,6 +108,21 @@ describe("exportReport", () => {
       more: 3,
       noWebAddress: false,
     });
+  });
+
+  it("names a page Minify output left readable (3.3)", () => {
+    const report = exportReport(
+      {
+        ...exported,
+        warnings: [{ code: "not-minified", page: "index", detail: "" }],
+        warningCount: 1,
+      },
+      bakery(),
+    );
+
+    expect(report.issues).toEqual([
+      "“Home” wasn't made smaller: its Custom Code isn't valid HTML. It was saved as it is.",
+    ]);
   });
 
   it("says when the site has no web address (X3)", () => {

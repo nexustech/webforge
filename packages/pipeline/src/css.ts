@@ -42,7 +42,8 @@ function fontFaces(faces: readonly FontFace[], fontsUrl: string): string {
  * The Tailwind entry stylesheet: theme, base styles and utilities, daisyUI with the site's theme,
  * and the fonts its theme uses. No `@import "tailwindcss"`: each layer is loaded from the resources.
  * With `tailwind: "package"`, the same stylesheet as a developer rebuilds it with Tailwind's CLI
- * from the `tailwindcss` package, reading the classes from the exported pages (developer files, X6).
+ * from the `tailwindcss` package (developer files, X6): the site's classes listed in it, and those
+ * of the exported pages read again, for classes a developer adds there.
  */
 export function siteStylesheetSource(
   options: SiteCssOptions,
@@ -56,7 +57,19 @@ export function siteStylesheetSource(
           '@import "tailwindcss/preflight.css" layer(base);',
           '@import "tailwindcss/utilities.css" layer(utilities);',
         ]
-      : ['@import "tailwindcss" source(none);', '@source "../**/*.html";']),
+      : [
+          '@import "tailwindcss" source(none);',
+          '@source "../**/*.html";',
+          // Tailwind reads classes from HTML without decoding its entities, so a class the page
+          // escapes (`[&amp;:focus-within&gt;ul]:block`) would be missed there: each is listed as it
+          // is. Brace expansion has no escape, so a class with a brace is left to the pages.
+          ...options.candidates
+            .filter((name) => !/[{}]/.test(name))
+            .map(
+              (name) =>
+                `@source inline("${name.replaceAll("\\", "\\\\").replaceAll('"', '\\"')}");`,
+            ),
+        ]),
     // An element waiting for its entrance animation (2.12, `entranceClasses` in site-components):
     // once webforge.js has marked the page, until it has moved in.
     "@custom-variant wf-waiting (:root[data-wf-animate] &:not([data-wf-shown]));",
