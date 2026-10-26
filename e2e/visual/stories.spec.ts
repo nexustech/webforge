@@ -2,11 +2,14 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import { THEME_PRESETS } from "@webforge/themes";
 import { z } from "zod";
 
 // Every story of the editor UI in both themes, and of the site components in each theme on Desktop
 // and Mobile (standards §5): no serious or critical axe violations, and (in CI's Linux container)
-// a screenshot that matches the committed one. The site components' colour contrast is reported,
+// a screenshot that matches the committed one. The site components are shown in Webforge's own
+// presets (2.16): the three development presets on every pull request, and with
+// VISUAL_ALL_THEMES=1 (the nightly run) in every preset, screenshots kept for the first three. The site components' colour contrast is reported,
 // not enforced: their colours come from the site's theme, which the site owner controls, and
 // contrast is a warning they may override (product owner, #312). The editor's own UI stays strict.
 
@@ -37,6 +40,13 @@ type Build = {
   readonly contrastReported: boolean;
 };
 
+/** The development presets (S3) every pull request checks the site components in (2.16). */
+const PR_PRESETS: readonly string[] = ["light", "dark", "high-contrast-rounded"];
+
+/** Every preset, checked nightly (2.16); a pull request checks {@link PR_PRESETS}. */
+const SITE_THEMES: readonly string[] =
+  process.env.VISUAL_ALL_THEMES === "1" ? THEME_PRESETS.map((preset) => preset.preset) : PR_PRESETS;
+
 /** Keep the ports in step with playwright.visual.config.ts. */
 const BUILDS: readonly Build[] = [
   {
@@ -49,7 +59,7 @@ const BUILDS: readonly Build[] = [
   {
     package: "site-components",
     port: 6108,
-    themes: ["light", "dark", "cupcake"],
+    themes: SITE_THEMES,
     devices: [
       { name: "desktop", width: 1280, height: 800 },
       { name: "mobile", width: 375, height: 812 },
@@ -139,7 +149,10 @@ for (const build of BUILDS) {
           ).toEqual([]);
           expect(errors).toEqual([]);
 
-          if (SCREENSHOTS) {
+          // Screenshots in the development presets; the curated themes' look is the theme
+          // stories' own screenshots (2.13), and the nightly run checks them with axe.
+          const screenshot = build.package !== "site-components" || PR_PRESETS.includes(theme);
+          if (SCREENSHOTS && screenshot) {
             const name =
               device === undefined
                 ? `${story.id}--${theme}.png`
