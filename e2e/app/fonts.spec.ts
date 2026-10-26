@@ -7,7 +7,7 @@ import { changedDocuments, createSite } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
 import { FONTSOURCE_API, PACKAGE_FILES, PACKAGE_LISTINGS } from "@webforge/themes/font-plan";
 import { desktopDir, launchDesktopApp, waitForCanvas } from "./launch.js";
-import { stubFileDialogs } from "./sites.js";
+import { exportFromEditor, stubFileDialogs } from "./sites.js";
 
 // A font downloaded on demand (2.2, S4, PH2-8) works offline. It comes once from a stand-in for
 // Fontsource and jsDelivr, then shows on the canvas and goes into an export after the app has
@@ -180,8 +180,7 @@ test("a downloaded font shows and exports offline, after a restart", async () =>
 
   const folder = join(dir, "export");
   await stubFileDialogs(app, folder);
-  await page.getByRole("button", { name: "Export Site…", exact: true }).click();
-  await expect(page.getByText(/^Site exported to “export”/)).toBeVisible({ timeout: 30_000 });
+  expect(await exportFromEditor(page)).toContain("Saved in the folder “export”.");
   expect(readFileSync(join(folder, "assets", "fonts", FILE))).toEqual(BYTES);
   const [css] = readdirSync(join(folder, "assets", "css"));
   expect(readFileSync(join(folder, "assets", "css", css ?? ""), "utf8")).toContain(

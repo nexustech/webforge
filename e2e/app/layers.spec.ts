@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { launchDesktopApp } from "./launch.js";
 import { chooseFromMenu } from "./menus.js";
-import { stubFileDialogs } from "./sites.js";
+import { exportFromEditor, stubFileDialogs } from "./sites.js";
 
 // Layers (1.24, F-ED-12): always shown under Add and Undo History, in Simple and Advanced mode
 // (ADR 0011), read-only in Content mode; selection in step with the canvas both ways; a move or a
@@ -94,8 +94,7 @@ test("leaves a hidden layer out of the exported site (F-ED-12)", async () => {
 
     const folder = join(parent, "site");
     await stubFileDialogs(app, folder);
-    await page.getByRole("button", { name: "Export Site…", exact: true }).click();
-    await expect(page.getByText(/^Site exported to/)).toBeVisible({ timeout: 30_000 });
+    await exportFromEditor(page);
 
     const index = readFileSync(join(folder, "index.html"), "utf8");
     expect(index).not.toContain(STARTER_HEADING);
