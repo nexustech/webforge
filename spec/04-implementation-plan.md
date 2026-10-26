@@ -657,7 +657,7 @@ Close the visible gap to Bootstrap Studio 9.0.1 within the IP rule ([product/07]
 
 | Stream | Items, in order (after its Phase 1 items) |
 |---|---|
-| A: Shell & panels | ~~R9 → R10 → R11 → 2.9 → 2.21~~ → 1.39 → 2.3 (2.3a → 2.3b → 2.3c) → 2.22 (Appearance group, 26 Oct) → 2.15a (Café/Restaurant, Salon/Beauty, Trades) → 2.18 → #484 (title bar, 26 Oct) → 2.23 (your own themes, 27 Oct) |
+| A: Shell & panels | ~~R9 → R10 → R11 → 2.9 → 2.21~~ → 1.39 → 2.3 (2.3a → 2.3b → 2.3c) → 2.15a (Café/Restaurant, Salon/Beauty, Trades) → 2.18 → #484 (title bar, 26 Oct) → 2.23 (your own themes, 27 Oct) → 2.22 (Appearance group, 26 Oct; after 2.23, 27 Oct) |
 | B: Data & site | ~~2.1 → 2.2 → R12 → R14 → 2.4 → 2.20 → 2.8 → 2.7b~~ → R13 (R13a → R13b → R13c → R13d) → 0.2 (Netlify spike, 25 Oct) → 0.3 (FTP/FTPS/SFTP spike, 25 Oct) → 0.5 (once enrolment is through, 25 Oct) → 0.6 |
 | C: History & canvas | ~~2.5 (before 1.30) → R7 → R8 (part 2 before 2.17) → 2.6 → 2.10 → 2.19 → 2.7a → 2.17 → 2.12 → 2.11 (from B, 25 Oct)~~ → 2.13a (themes 1–4, from A, 25 Oct) → 2.14a (2.14, from B, 25 Oct) → 2.13d (theme range, 25 Oct) → 2.14b → 2.13c (themes 9–12, from A, 25 Oct) → 2.15c (Personal/CV, Blank) → 2.16 → #465 → 2.13b (themes 5–8, from B, 26 Oct) → 2.15b (Consultant, Photographer/Portfolio, Shop, from B, 26 Oct) → #311 → 2.24 (Desktop fills the canvas, 27 Oct) |
 
