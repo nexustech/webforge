@@ -10,7 +10,7 @@ import type { WorkerProcess } from "./worker-process.js";
 /** How long an export may take before the worker is stopped (large sites encode many images). */
 const EXPORT_TIMEOUT_MS = 10 * 60_000;
 
-/** What the export worker can ask of the main process while it runs, and how it's cancelled. */
+/** What the export worker can ask of the main process during one export, and how it's cancelled. */
 export type ExportOptions = {
   /**
    * The bytes and type the open site stores under a hash, for the image or document the build has
@@ -21,48 +21,60 @@ export type ExportOptions = {
   ) => Promise<{ readonly data: Uint8Array; readonly mime: string } | undefined>;
   /** Cancels the export: the worker stops before its next image or page and writes nothing. */
   readonly signal?: AbortSignal | undefined;
-  readonly timeoutMs?: number | undefined;
+};
+
+/** Runs exports of the open site in one utility process; see {@link createExportRunner}. */
+export type ExportRunner = {
+  /** Runs `job` once the exports before it are done, and resolves with its validated outcome. */
+  run(job: ExportJob, options: ExportOptions): Promise<ExportOutcome>;
+  /** Stops the worker, and its images cached in memory go with it: the site is closing (R15). */
+  close(): void;
+};
+
+/** The export under way: how it ends, and how it reads the site's stored bytes. */
+type Running = {
+  readonly finish: (outcome: ExportOutcome) => void;
+  readonly options: ExportOptions;
 };
 
 /**
- * Runs one export job in a fresh utility process and resolves with its validated outcome. A worker
- * that exits early or answers with anything unexpected counts as a failed build, so the main
- * process never trusts its messages blindly. A worker that takes longer than `timeoutMs` (e.g. a
- * codec stuck on a corrupt image) is stopped, so the export can never hang forever. While it runs,
- * the worker asks for the site's stored images and documents (`readMedia`) one by one.
+ * Runs exports in a utility process kept while the site is open, so the images it encoded stay
+ * cached in its memory for the next export (R15), and nothing about them is kept on disk. Exports
+ * run one at a time. A worker that exits, answers with anything unexpected or takes longer than
+ * `timeoutMs` (e.g. a codec stuck on a corrupt image) fails that export and is replaced for the
+ * next, so the main process never trusts its messages blindly and an export never hangs forever.
  */
-export function runExportInWorker(
+export function createExportRunner(
   startWorker: () => WorkerProcess,
-  job: ExportJob,
-  options: ExportOptions,
-): Promise<ExportOutcome> {
-  return new Promise((resolve) => {
-    const worker = startWorker();
-    const send = (message: ExportMessage) => worker.postMessage(message);
-    let settled = false;
-    const cancel = () => send({ type: "cancel" });
-    const finish = (outcome: ExportOutcome) => {
-      if (!settled) {
-        settled = true;
-        clearTimeout(timer);
-        options.signal?.removeEventListener("abort", cancel);
-        resolve(outcome);
-      }
-    };
-    const timer = setTimeout(() => {
-      finish({ type: "failed", code: "build-failed", detail: "timeout" });
-      worker.kill();
-    }, options.timeoutMs ?? EXPORT_TIMEOUT_MS);
-    worker.on("message", (message) => {
+  timeoutMs = EXPORT_TIMEOUT_MS,
+): ExportRunner {
+  let worker: WorkerProcess | undefined;
+  let running: Running | undefined;
+  let queue: Promise<unknown> = Promise.resolve();
+
+  /** Stops `stopping` and forgets it, so the next export starts a fresh worker. */
+  const discard = (stopping: WorkerProcess) => {
+    if (worker === stopping) worker = undefined;
+    stopping.kill();
+  };
+
+  /** The worker, started with its listeners on first use. */
+  const ready = (): WorkerProcess => {
+    if (worker !== undefined) return worker;
+    const started = startWorker();
+    worker = started;
+    const send = (message: ExportMessage) => started.postMessage(message);
+    started.on("message", (message) => {
+      if (worker !== started) return;
       const request = blobRequestSchema.safeParse(message);
       if (request.success) {
+        const current = running;
         const { id, hash } = request.data;
         // A failed read is a missing file: the build leaves it out, with a warning.
-        void options
-          .readMedia(hash)
+        void (current?.options.readMedia(hash) ?? Promise.resolve(undefined))
           .catch(() => undefined)
           .then((blob) => {
-            if (settled) return;
+            if (running !== current || worker !== started) return;
             // Only the bytes and their type: the worker's schema takes nothing else.
             send(
               blob === undefined
@@ -73,18 +85,49 @@ export function runExportInWorker(
         return;
       }
       const outcome = exportOutcomeSchema.safeParse(message);
-      finish(
-        outcome.success
-          ? outcome.data
-          : { type: "failed", code: "build-failed", detail: "invalid-worker-message" },
-      );
-      worker.kill();
+      if (outcome.success) {
+        running?.finish(outcome.data);
+      } else {
+        running?.finish({ type: "failed", code: "build-failed", detail: "invalid-worker-message" });
+        discard(started);
+      }
     });
-    worker.on("exit", (code) => {
-      finish({ type: "failed", code: "build-failed", detail: `worker-exit-${code}` });
+    started.on("exit", (code) => {
+      if (worker === started) worker = undefined;
+      running?.finish({ type: "failed", code: "build-failed", detail: `worker-exit-${code}` });
     });
-    worker.postMessage(job);
-    if (options.signal?.aborted === true) cancel();
-    else options.signal?.addEventListener("abort", cancel, { once: true });
-  });
+    return started;
+  };
+
+  const runOne = (job: ExportJob, options: ExportOptions) =>
+    new Promise<ExportOutcome>((resolve) => {
+      const current = ready();
+      const cancel = () => current.postMessage({ type: "cancel" } satisfies ExportMessage);
+      const timer = setTimeout(() => {
+        finish({ type: "failed", code: "build-failed", detail: "timeout" });
+        discard(current);
+      }, timeoutMs);
+      const finish = (outcome: ExportOutcome) => {
+        if (running?.finish !== finish) return;
+        running = undefined;
+        clearTimeout(timer);
+        options.signal?.removeEventListener("abort", cancel);
+        resolve(outcome);
+      };
+      running = { finish, options };
+      current.postMessage(job);
+      if (options.signal?.aborted === true) cancel();
+      else options.signal?.addEventListener("abort", cancel, { once: true });
+    });
+
+  return {
+    run(job, options) {
+      const outcome = queue.then(() => runOne(job, options));
+      queue = outcome;
+      return outcome;
+    },
+    close() {
+      if (worker !== undefined) discard(worker);
+    },
+  };
 }
