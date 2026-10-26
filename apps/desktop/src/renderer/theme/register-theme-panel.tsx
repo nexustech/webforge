@@ -5,6 +5,9 @@ import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
 import type { PanelRegistry } from "../shell/panels.js";
 import { ThemePanel } from "./ThemePanel.js";
 
+/** The Theme tab's id, which View → Theme… shows. */
+export const THEME_PANEL_ID = "theme";
+
 /**
  * Adds the Theme tab to the right column, after Site (2.3a, ADR 0008), in Simple and Advanced
  * mode. A preset, a colour or the fonts are asked about first with `siteWide` (D7), if given.
@@ -19,7 +22,7 @@ export function registerThemePanel(
     return <ThemePanel session={session} siteWide={siteWide} />;
   }
   return panels.register({
-    id: "theme",
+    id: THEME_PANEL_ID,
     slot: "right.bottom",
     title: t("theme.panelTitle"),
     icon: PaletteIcon,

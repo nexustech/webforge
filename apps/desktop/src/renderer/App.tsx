@@ -152,12 +152,12 @@ export function App({
   }));
   useEffect(() => connectAreas(WINDOW_AREAS, windowContext), [windowContext]);
 
-  // View → Use Light/Dark Theme, labelled for the theme shown; it reads that when it runs.
+  // View → Use Light/Dark Appearance (the editor's look, not the site's theme), labelled for the theme shown; it reads that when it runs.
   useEffect(
     () =>
       registry.register({
         id: COMMAND_IDS.theme,
-        label: theme === "dark" ? t("command.lightTheme") : t("command.darkTheme"),
+        label: theme === "dark" ? t("command.lightAppearance") : t("command.darkAppearance"),
         menu: "view",
         run: () => {
           const shown = preferences.getState().preferences.theme;
