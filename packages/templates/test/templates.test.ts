@@ -1,5 +1,13 @@
 import { createHash } from "node:crypto";
-import { cpSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  cpSync,
+  existsSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DEFAULT_THEME, SITE_FORMAT_VERSION, siteDocSchema } from "@webforge/model";
@@ -95,6 +103,16 @@ describe("the shipped templates (2.14a)", () => {
       templateSchema.safeParse({ ...raw, site: { ...raw.site, formatVersion: 99 } }).success,
     ).toBe(false);
     expect(templateSchema.safeParse({ ...raw, site: "not a site" }).success).toBe(false);
+  });
+
+  it("each have a thumbnail of their home page at desktop width (2.14b)", () => {
+    for (const { template, thumbnail } of templates) {
+      expect(existsSync(thumbnail), `${template.id}: run pnpm template-thumbnails`).toBe(true);
+      expect(dimensions(new Uint8Array(readFileSync(thumbnail))), template.id).toEqual({
+        width: 1280,
+        height: 800,
+      });
+    }
   });
 
   it("offer at least one example for Try an example (PG-3)", () => {
