@@ -13,7 +13,9 @@ import {
   behavioursUsedBy,
   type ComponentLibrary,
   documentsLinkedBy,
+  hrefFor,
   mediaUsedBy,
+  navigationFor,
   type RenderContext,
   type ResolvedImage,
   renderPage,
@@ -23,8 +25,6 @@ import { fontFacesFor } from "@webforge/themes";
 import { buildSiteCss, classCandidates } from "./css.js";
 import { BODY_CLASS, pageDocument } from "./html.js";
 import { imageForDepth, processImage } from "./images.js";
-import { hrefFor } from "./links.js";
-import { navigationFor } from "./navigation.js";
 import type { PipelineResources } from "./resources.js";
 
 /** Why a build failed (X5 errors). The app shows a translated message for each code. */

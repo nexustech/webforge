@@ -854,6 +854,9 @@ importers:
       '@webforge/errors':
         specifier: workspace:*
         version: link:../errors
+      '@webforge/model':
+        specifier: workspace:*
+        version: link:../model
       basic-ftp:
         specifier: 6.2.3
         version: 6.2.3

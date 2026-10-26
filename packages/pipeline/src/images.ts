@@ -6,6 +6,7 @@ import resize, { initResize } from "@jsquash/resize";
 import encodeWebp, { init as initWebpEncode } from "@jsquash/webp/encode.js";
 import type { MediaItem } from "@webforge/model";
 import type { ImageSource, ResolvedImage } from "@webforge/site-components";
+import type {} from "./codec-globals.js";
 import type { CodecModules } from "./resources.js";
 
 /** Widths exported for each image, never wider than the original (X2). */
