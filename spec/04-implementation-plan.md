@@ -870,6 +870,16 @@ One collapsible group at the top of every Style tab, added centrally by `defineS
 | 3.9 | Custom code bundling and external-resource check | [#67](https://github.com/nexustech/webforge/issues/67) | pipeline | F-ED-15, C7, C8, [ADR 0005](../docs/adr/0005-export-pipeline-spike.md) | 4 | 3.1, 2.11, 3.6 |
 | 3.10 | Exported-site compatibility E2E | [#68](https://github.com/nexustech/webforge/issues/68) | pipeline | X1, C8, MVP §6 Phase 3 exit | 2 | 3.3, 3.4, 3.5, 2.15 |
 
+**Streams (assigned 27 Oct 2026, after 3.1).** 3.1 unblocks the rest of the phase, so its items are shared across the three streams, each after its Phase 2 items. The Phase 1 and Phase 2 stream rules carry over. Days are unchanged, so there is no scope change.
+
+| Stream | Items, in order |
+|---|---|
+| A: Shell & panels | 3.2 (preview server) → 3.5 (site files) → 3.10 (compatibility E2E) |
+| B: Data & site | ~~3.1~~ → 3.3 (export to folder/ZIP) → 3.4 (images) → 3.7 (forms, once 3.6 has merged) |
+| C: History & canvas | 2.23 ([#486](https://github.com/nexustech/webforge/issues/486)) → the E2E timing fix ([#446](https://github.com/nexustech/webforge/issues/446), [#489](https://github.com/nexustech/webforge/issues/489)) → 3.6 (Site Check) → 3.9 (custom code) → 3.8 (Google Analytics) |
+
+Two items wait on another stream: 3.7 (B) on 3.6 (C), and 3.10 (A) on 3.3 and 3.4 (B).
+
 <details><summary>Scope and acceptance criteria</summary>
 
 **3.1 Pipeline API: progress events, worker, caches**  
