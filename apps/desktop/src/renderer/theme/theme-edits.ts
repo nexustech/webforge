@@ -408,10 +408,26 @@ export function setPairing(
   return setFonts(session, asks, { heading: fontRefOf(heading), body: fontRefOf(body) });
 }
 
-/** `tokens` as the page shows them: without the name the person gave them (2.23). */
-function looks(tokens: ThemeTokens): string {
-  const { own: _, ...rest } = tokens;
-  return JSON.stringify(rest);
+/** Whether `a` and `b` are the same JSON value, whatever the order of their keys. */
+function sameValue(a: unknown, b: unknown): boolean {
+  if (typeof a !== "object" || typeof b !== "object" || a === null || b === null) return a === b;
+  if (Array.isArray(a) !== Array.isArray(b)) return false;
+  // Keys whose value is `undefined` are absent from JSON, so they don't count.
+  const entries = (value: object) =>
+    Object.entries(value).filter(([, inner]) => inner !== undefined);
+  const aEntries = entries(a);
+  const bValues = new Map(entries(b));
+  return (
+    aEntries.length === bValues.size &&
+    aEntries.every(([key, inner]) => bValues.has(key) && sameValue(inner, bValues.get(key)))
+  );
+}
+
+/** Whether `a` and `b` look the same on the page: the same tokens, whatever they're named (2.23). */
+function looksTheSame(a: ThemeTokens, b: ThemeTokens): boolean {
+  const { own: _a, ...aTokens } = a;
+  const { own: _b, ...bTokens } = b;
+  return sameValue(aTokens, bTokens);
 }
 
 /**
@@ -426,7 +442,7 @@ export async function createOwnTheme(
   name: string,
 ): Promise<boolean> {
   const ok =
-    looks(base) === looks(theme(session)) ||
+    looksTheSame(base, theme(session)) ||
     (await confirmed(session, asks, {
       action: t("theme.preset.confirm", { name }),
       description: t("theme.preset.confirmDescription"),

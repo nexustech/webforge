@@ -252,4 +252,9 @@ export const theme = {
   "theme.own.deleteInUse":
     "It's removed from My themes on this computer. This site keeps its copy, so it looks the same.",
   "theme.own.deleteButton": "Delete Theme",
+  "theme.own.full":
+    "My themes is full, so this theme wasn't saved there. The site keeps it. Delete a theme you don't need to make room.",
+  "theme.own.keepFailed":
+    "The theme '{name}' couldn't be saved in My themes. The site keeps it, and it's saved there with your next change.",
+  "theme.own.removeFailed": "The theme couldn't be removed from My themes. Try again.",
 } as const;

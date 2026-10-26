@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DEFAULT_THEME, themeIdSchema } from "@webforge/model";
@@ -18,44 +18,80 @@ const own = (id: string, name: string): OwnTheme => ({
   own: { id: themeIdSchema.parse(id), name },
 });
 
+const at = () => new Date("2026-10-27T09:30:00.000Z");
+
 describe("My themes (2.23)", () => {
-  it("keeps the person's own themes, most recently kept first, one per id", () => {
+  it("keeps the person's own themes, most recently kept first, one per id", async () => {
     const themes = createMyThemes({ dir });
-    expect(themes.list()).toEqual([]);
+    expect(await themes.list()).toEqual([]);
 
-    themes.keep(own("theme0000000000a", "Bakery"));
-    themes.keep(own("theme0000000000b", "Shop"));
-    themes.keep({ ...own("theme0000000000a", "Bakery, warmer"), scheme: "dark" });
+    await themes.keep(own("theme0000000000a", "Bakery"));
+    await themes.keep(own("theme0000000000b", "Shop"));
+    await themes.keep({ ...own("theme0000000000a", "Bakery, warmer"), scheme: "dark" });
 
-    expect(themes.list().map((theme) => [theme.own.name, theme.scheme])).toEqual([
+    expect((await themes.list()).map((theme) => [theme.own.name, theme.scheme])).toEqual([
       ["Bakery, warmer", "dark"],
       ["Shop", "light"],
     ]);
     // Another window, or the next run, reads the same.
-    expect(createMyThemes({ dir }).list()).toHaveLength(2);
+    expect(await createMyThemes({ dir }).list()).toHaveLength(2);
   });
 
-  it("removes one, and keeps no more than its most", () => {
+  it("writes one at a time, in the order asked, and says when it's done (before the app exits)", async () => {
+    const themes = createMyThemes({ dir });
+    for (const letter of ["a", "b", "c", "d"]) {
+      void themes.keep(own(`theme000000000${letter}`, letter));
+    }
+    await themes.idle();
+    expect((await createMyThemes({ dir }).list()).map((theme) => theme.own.name)).toEqual([
+      "d",
+      "c",
+      "b",
+      "a",
+    ]);
+  });
+
+  it("removes one, and refuses a new one once it holds its most, keeping the rest", async () => {
     const themes = createMyThemes({ dir, max: 2 });
-    themes.keep(own("theme0000000000a", "One"));
-    themes.keep(own("theme0000000000b", "Two"));
-    themes.keep(own("theme0000000000c", "Three"));
-    expect(themes.list().map((theme) => theme.own.name)).toEqual(["Three", "Two"]);
+    expect(await themes.keep(own("theme0000000000a", "One"))).toBe("kept");
+    expect(await themes.keep(own("theme0000000000b", "Two"))).toBe("kept");
+    expect(await themes.keep(own("theme0000000000c", "Three"))).toBe("full");
+    // One it holds can still change.
+    expect(await themes.keep(own("theme0000000000a", "One, again"))).toBe("kept");
+    expect((await themes.list()).map((theme) => theme.own.name)).toEqual(["One, again", "Two"]);
 
-    themes.remove("theme0000000000b");
-    themes.remove("theme0000000000z");
-    expect(themes.list().map((theme) => theme.own.name)).toEqual(["Three"]);
+    await themes.remove("theme0000000000b");
+    await themes.remove("theme0000000000z");
+    expect((await themes.list()).map((theme) => theme.own.name)).toEqual(["One, again"]);
   });
 
-  it("reads a damaged file as none, and skips a theme it can't read but keeps it", () => {
-    writeFileSync(join(dir, "themes.json"), "{ not json");
-    expect(createMyThemes({ dir }).list()).toEqual([]);
+  it("moves a file it can't read aside before writing, so no theme is lost", async () => {
+    for (const unreadable of [
+      "{ not json",
+      JSON.stringify({ version: 2, themes: [{ from: "a newer version" }] }),
+    ]) {
+      rmSync(dir, { recursive: true, force: true });
+      mkdirSync(dir);
+      writeFileSync(join(dir, "themes.json"), unreadable);
+      const themes = createMyThemes({ dir, now: at });
+      expect(await themes.list()).toEqual([]);
 
+      await themes.keep(own("theme0000000000a", "Bakery"));
+
+      expect((await themes.list()).map((theme) => theme.own.name)).toEqual(["Bakery"]);
+      const aside = readdirSync(dir).filter((name) => name.startsWith("themes.damaged-"));
+      expect(aside).toEqual(["themes.damaged-2026-10-27T09-30-00-000Z.json"]);
+      expect(readFileSync(join(dir, aside[0] ?? ""), "utf8")).toBe(unreadable);
+    }
+  });
+
+  it("skips a theme it can't read but keeps it", async () => {
     const newer = { own: { id: "theme0000000000n", name: "From a newer version" }, glow: 1 };
     writeFileSync(join(dir, "themes.json"), JSON.stringify({ version: 1, themes: [newer] }));
     const themes = createMyThemes({ dir });
-    expect(themes.list()).toEqual([]);
-    themes.keep(own("theme0000000000a", "Bakery"));
+    expect(await themes.list()).toEqual([]);
+
+    await themes.keep(own("theme0000000000a", "Bakery"));
     const stored = JSON.parse(readFileSync(join(dir, "themes.json"), "utf8")) as {
       themes: unknown[];
     };

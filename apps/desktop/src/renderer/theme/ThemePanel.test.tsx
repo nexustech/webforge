@@ -132,7 +132,7 @@ describe("the Theme tab's own themes (2.23, PH2-17)", () => {
     };
     const ownThemes = createOwnThemes(() => ({
       list: () => Promise.resolve([night]),
-      keep: () => Promise.resolve(null),
+      keep: () => Promise.resolve("kept" as const),
       remove: () => Promise.resolve(null),
     }));
     const askName = vi.spyOn(ownThemes, "askName").mockResolvedValue("Light, roomier");

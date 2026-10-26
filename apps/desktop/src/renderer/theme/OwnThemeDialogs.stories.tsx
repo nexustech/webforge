@@ -14,7 +14,7 @@ const asking = (ask: (themes: OwnThemes) => void): Story =>
   dialogStory((session) => {
     const ownThemes = createOwnThemes(() => ({
       list: () => Promise.resolve([]),
-      keep: () => Promise.resolve(null),
+      keep: () => Promise.resolve("kept" as const),
       remove: () => Promise.resolve(null),
     }));
     ask(ownThemes);

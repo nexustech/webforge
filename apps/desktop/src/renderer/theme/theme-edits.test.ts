@@ -241,6 +241,12 @@ describe("the Theme tab's edits (2.3a)", () => {
   });
 });
 
+/** Every key in `value`, at any depth: a replacer list that keeps all of them. */
+function collectKeys(value: unknown): string[] {
+  if (typeof value !== "object" || value === null) return [];
+  return Object.entries(value).flatMap(([key, inner]) => [key, ...collectKeys(inner)]);
+}
+
 /** Asks for names, answering `name` (or cancelling, `undefined`); `askName` is what it was asked. */
 function naming(name: string | undefined) {
   const askName = vi.fn(() => Promise.resolve(name));
@@ -304,12 +310,32 @@ describe("your own themes (2.23, PH2-17)", () => {
     expect(theme()).toEqual({ ...bistro, own: { id: expect.any(String), name: "Shop" } });
     expect(labels()).toEqual(["Created theme 'Shop'"]);
 
+    // From the site's theme as it is, nothing on the page changes: nothing to ask, whatever order
+    // its tokens' keys are in (a theme's reversed colours are added last, #500 review).
+    await setPaletteColor(session, undefined, "inverse", "info", BRAND);
+    const reordered = JSON.parse(
+      JSON.stringify(
+        theme(),
+        Object.keys(theme())
+          .sort()
+          .concat(...collectKeys(theme())),
+      ),
+    ) as typeof bistro;
+    expect(Object.keys(reordered)).not.toEqual(Object.keys(theme()));
+    const same = answering(false);
+    expect(await createOwnTheme(session, same, reordered, "Shop, reordered")).toBe(true);
+    expect(same.confirmSiteWide).not.toHaveBeenCalled();
     // From the site's theme as it is, nothing on the page changes: nothing to ask.
     const site = answering(false);
     expect(await createOwnTheme(session, site, theme(), "Shop, again")).toBe(true);
     expect(site.confirmSiteWide).not.toHaveBeenCalled();
     expect(theme().own?.name).toBe("Shop, again");
-    expect(labels()).toEqual(["Created theme 'Shop'", "Created theme 'Shop, again'"]);
+    expect(labels()).toEqual([
+      "Created theme 'Shop'",
+      "Changed Information colour in reversed sections",
+      "Created theme 'Shop, reordered'",
+      "Created theme 'Shop, again'",
+    ]);
   });
 
   it("renames one: the site's theme in one step if it's that one, My themes either way", async () => {

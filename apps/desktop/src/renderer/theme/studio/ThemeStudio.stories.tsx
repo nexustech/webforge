@@ -50,7 +50,7 @@ export const MyThemes: Story = dialogStory((session) => {
         mine("bistro", "theme0000000000a", "Bakery"),
         mine("clarity", "theme0000000000b", "Corner shop"),
       ]),
-    keep: () => Promise.resolve(null),
+    keep: () => Promise.resolve("kept" as const),
     remove: () => Promise.resolve(null),
   }));
   return <ThemeStudio session={session} studio={studio} ownThemes={ownThemes} />;

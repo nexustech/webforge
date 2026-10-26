@@ -8,7 +8,12 @@ type Handler = (event: IpcMainInvokeEvent, ...args: unknown[]) => Promise<unknow
 
 /** My themes as a fake that records what it's asked. */
 function fakeThemes(): MyThemes {
-  return { list: vi.fn(() => []), keep: vi.fn(), remove: vi.fn() };
+  return {
+    list: vi.fn(() => Promise.resolve([])),
+    keep: vi.fn(() => Promise.resolve("kept" as const)),
+    remove: vi.fn(() => Promise.resolve()),
+    idle: vi.fn(() => Promise.resolve()),
+  };
 }
 
 /** The handler of `channel`, called as from a renderer that `trusted` says it trusts or not. */
@@ -28,7 +33,7 @@ describe("registerThemesHandlers (2.23)", () => {
   it("lists, keeps and removes the person's own themes", async () => {
     const themes = fakeThemes();
     expect(await invoker(themes, "themes:list")()).toEqual([]);
-    expect(await invoker(themes, "themes:keep")(mine)).toBeNull();
+    expect(await invoker(themes, "themes:keep")(mine)).toBe("kept");
     expect(themes.keep).toHaveBeenCalledWith(mine);
     expect(await invoker(themes, "themes:remove")("theme0000000000a")).toBeNull();
     expect(themes.remove).toHaveBeenCalledWith("theme0000000000a");

@@ -128,7 +128,7 @@ describe("Theme Studio's My themes (2.23, PH2-17)", () => {
     };
     const api = {
       list: vi.fn(() => Promise.resolve([night])),
-      keep: vi.fn(() => Promise.resolve(null)),
+      keep: vi.fn(() => Promise.resolve("kept" as const)),
       remove: vi.fn(() => Promise.resolve(null)),
     } satisfies ThemesApi;
     const ownThemes = createOwnThemes(() => api);

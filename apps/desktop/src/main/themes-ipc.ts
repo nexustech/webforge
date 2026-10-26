@@ -12,12 +12,9 @@ export function registerThemesHandlers(
   themes: MyThemes,
 ): void {
   registerIpcHandler(ipc, "listThemes", isTrustedSender, () => themes.list());
-  registerIpcHandler(ipc, "keepTheme", isTrustedSender, (theme) => {
-    themes.keep(theme);
-    return null;
-  });
-  registerIpcHandler(ipc, "removeTheme", isTrustedSender, (id) => {
-    themes.remove(id);
+  registerIpcHandler(ipc, "keepTheme", isTrustedSender, (theme) => themes.keep(theme));
+  registerIpcHandler(ipc, "removeTheme", isTrustedSender, async (id) => {
+    await themes.remove(id);
     return null;
   });
 }

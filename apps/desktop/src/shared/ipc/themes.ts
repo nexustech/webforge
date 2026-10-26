@@ -20,11 +20,14 @@ export const themesChannels = {
     request: z.tuple([]),
     response: z.array(ownThemeSchema).max(MAX_OWN_THEMES),
   },
-  /** Keeps one of the person's own themes, by its id: new, or in place of the one kept before. */
+  /**
+   * Keeps one of the person's own themes, by its id: new, or in place of the one kept before; a new
+   * one isn't kept once My themes holds {@link MAX_OWN_THEMES} ("full").
+   */
   keepTheme: {
     channel: "themes:keep",
     request: z.tuple([ownThemeSchema]),
-    response: z.null(),
+    response: z.enum(["kept", "full"]),
   },
   /** Removes one of the person's own themes from this computer; sites keep their copies. */
   removeTheme: {
@@ -41,8 +44,8 @@ export const themesChannels = {
 export interface ThemesApi {
   /** The person's own themes on this computer, most recently kept first. */
   list(): Promise<OwnTheme[]>;
-  /** Keeps `theme`, new or in place of the one with its id. */
-  keep(theme: OwnTheme): Promise<null>;
+  /** Keeps `theme`, new or in place of the one with its id; "full" if there's no room for it. */
+  keep(theme: OwnTheme): Promise<"kept" | "full">;
   /** Removes the theme with `id` from this computer. */
   remove(id: OwnTheme["own"]["id"]): Promise<null>;
 }

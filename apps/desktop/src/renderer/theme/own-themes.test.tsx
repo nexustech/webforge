@@ -9,12 +9,15 @@ import { sessionWith } from "../testing/fixtures.js";
 import { createOwnThemes } from "./own-themes.js";
 import { ownThemeList } from "./own-themes-list.js";
 import { registerOwnThemes } from "./register-own-themes.js";
-import { setColor } from "./theme-edits.js";
+import { setColor, switchPreset } from "./theme-edits.js";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+});
 
 /** One of the person's own themes, `name`d, with id `theme000000000<n>`. */
-const own = (n: number, name: string): OwnTheme => ({
+const own = (n: number | string, name: string): OwnTheme => ({
   ...structuredClone(DEFAULT_THEME),
   own: { id: themeIdSchema.parse(`theme000000000${n}`), name },
 });
@@ -23,33 +26,96 @@ const own = (n: number, name: string): OwnTheme => ({
 function fakeApi(listed: OwnTheme[] = []) {
   return {
     list: vi.fn(() => Promise.resolve(listed)),
-    keep: vi.fn(() => Promise.resolve(null)),
-    remove: vi.fn(() => Promise.resolve(null)),
+    keep: vi.fn((_theme: OwnTheme) => Promise.resolve<"kept" | "full">("kept")),
+    remove: vi.fn((_id: string) => Promise.resolve(null)),
   } satisfies ThemesApi;
 }
+
+const names = (themes: readonly OwnTheme[]) => themes.map((each) => each.own.name);
 
 describe("My themes (2.23)", () => {
   it("lists, keeps and removes the person's own themes, most recent first", async () => {
     const api = fakeApi([own(1, "Bakery"), own(2, "Shop")]);
     const themes = createOwnThemes(() => api);
     await themes.refresh();
-    expect(themes.store.getState().themes.map((each) => each.own.name)).toEqual(["Bakery", "Shop"]);
+    expect(names(themes.store.getState().themes)).toEqual(["Bakery", "Shop"]);
 
     themes.keep(own(2, "Corner shop"));
     themes.remove(themeIdSchema.parse("theme0000000001"));
+    await themes.flush();
 
-    expect(themes.store.getState().themes.map((each) => each.own.name)).toEqual(["Corner shop"]);
+    expect(names(themes.store.getState().themes)).toEqual(["Corner shop"]);
     expect(api.keep).toHaveBeenCalledWith(own(2, "Corner shop"));
     expect(api.remove).toHaveBeenCalledWith("theme0000000001");
   });
 
-  it("keeps its list when My themes can't be read", async () => {
-    const themes = createOwnThemes(() => ({
+  it("keeps a run of changes to a theme as one write, after the last (#500 review)", async () => {
+    vi.useFakeTimers();
+    const api = fakeApi();
+    const themes = createOwnThemes(() => api);
+
+    themes.keep(own(1, "Bakery"));
+    themes.keep(own(1, "Bakery, warmer"));
+    themes.keep(own(1, "Bakery, warmest"));
+    // Listed as it is at once; written once, after a pause.
+    expect(names(themes.store.getState().themes)).toEqual(["Bakery, warmest"]);
+    expect(api.keep).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(500);
+
+    expect(api.keep).toHaveBeenCalledOnce();
+    expect(api.keep).toHaveBeenCalledWith(own(1, "Bakery, warmest"));
+  });
+
+  it("drops a list read before a change, and lists a change still waiting to be kept", async () => {
+    let answer: (themes: OwnTheme[]) => void = () => undefined;
+    const api = {
       ...fakeApi(),
-      list: () => Promise.reject(new Error()),
-    }));
-    await themes.refresh();
-    expect(themes.store.getState().themes).toEqual([]);
+      list: vi.fn(
+        () =>
+          new Promise<OwnTheme[]>((resolve) => {
+            answer = resolve;
+          }),
+      ),
+    };
+    const themes = createOwnThemes(() => api, { delayMs: 60_000 });
+
+    const stale = themes.refresh();
+    themes.keep(own(1, "Bakery"));
+    answer([own(2, "Shop")]);
+    await stale;
+    expect(names(themes.store.getState().themes)).toEqual(["Bakery"]);
+
+    // A list read after it comes with the change in front, until it's kept.
+    const fresh = themes.refresh();
+    answer([own(2, "Shop")]);
+    await fresh;
+    expect(names(themes.store.getState().themes)).toEqual(["Bakery", "Shop"]);
+  });
+
+  it("says when a theme couldn't be kept or removed, or My themes is full, and reads the list again", async () => {
+    const notify = vi.fn();
+    const api = fakeApi([own(2, "Shop")]);
+    const themes = createOwnThemes(() => api, { notify });
+    const listed = () => names(themes.store.getState().themes);
+
+    api.keep.mockRejectedValueOnce(new Error("disk"));
+    themes.keep(own(1, "Bakery"));
+    await themes.flush();
+    expect(notify).toHaveBeenLastCalledWith(expect.stringContaining("'Bakery' couldn't be saved"));
+    await waitFor(() => expect(listed()).toEqual(["Shop"]));
+
+    api.keep.mockResolvedValueOnce("full");
+    themes.keep(own(3, "One too many"));
+    await themes.flush();
+    expect(notify).toHaveBeenLastCalledWith(expect.stringContaining("My themes is full"));
+    await waitFor(() => expect(listed()).toEqual(["Shop"]));
+
+    api.remove.mockRejectedValueOnce(new Error("disk"));
+    themes.remove(themeIdSchema.parse("theme0000000002"));
+    await waitFor(() =>
+      expect(notify).toHaveBeenLastCalledWith(expect.stringContaining("couldn't be removed")),
+    );
+    await waitFor(() => expect(listed()).toEqual(["Shop"]));
   });
 
   it("asks one question at a time: asking again cancels the one open", async () => {
@@ -68,24 +134,25 @@ describe("My themes (2.23)", () => {
     expect(themes.store.getState().question).toBeNull();
   });
 
-  it("lists the site's own theme first when this computer doesn't have it", () => {
+  it("lists the site's own theme first when this computer doesn't have it, as the site has it", () => {
     const library = [own(1, "Bakery")];
     expect(ownThemeList(library, DEFAULT_THEME)).toBe(library);
     // The site's copy is the latest of it.
-    expect(ownThemeList(library, own(1, "Bakery, renamed")).map((each) => each.own.name)).toEqual([
-      "Bakery, renamed",
+    expect(names(ownThemeList(library, own(1, "Bakery, renamed")))).toEqual(["Bakery, renamed"]);
+    expect(names(ownThemeList(library, own(3, "From another computer")))).toEqual([
+      "From another computer",
+      "Bakery",
     ]);
-    expect(
-      ownThemeList(library, own(3, "From another computer")).map((each) => each.own.name),
-    ).toEqual(["From another computer", "Bakery"]);
+    // Not one deleted from My themes in this window.
+    expect(ownThemeList(library, own(3, "Deleted"), ["theme0000000003"])).toBe(library);
   });
 
   it("keeps the site's theme whenever it changes while it's the person's own, undo included", async () => {
     const api = fakeApi();
-    const themes = createOwnThemes(() => api);
+    const themes = createOwnThemes(() => api, { delayMs: 0 });
     const session = sessionWith();
     const dialogs = createWindowDialogs();
-    const remove = registerOwnThemes(dialogs, session, themes);
+    const remove = registerOwnThemes(dialogs, session, themes, new EventTarget());
     render(<WindowDialogs registry={dialogs} />);
 
     // The first change to the built-in theme asks for a name, in the window's dialog.
@@ -98,7 +165,7 @@ describe("My themes (2.23)", () => {
     await userEvent.click(within(dialog).getByRole("button", { name: "Save Theme" }));
     expect(await changed).toBe(true);
 
-    expect(api.keep).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(api.keep).toHaveBeenCalledTimes(1));
     expect(api.keep).toHaveBeenLastCalledWith(
       expect.objectContaining({ own: { id: expect.any(String), name: "Bakery" } }),
     );
@@ -106,7 +173,6 @@ describe("My themes (2.23)", () => {
     act(() => {
       session.history.undo();
     });
-    expect(api.keep).toHaveBeenCalledTimes(1);
     act(() => {
       session.history.redo();
     });
@@ -117,6 +183,52 @@ describe("My themes (2.23)", () => {
       session.history.undo();
       session.history.redo();
     });
+    await themes.flush();
     expect(api.keep).toHaveBeenCalledTimes(2);
+  });
+
+  it("sends what's waiting as the window closes", async () => {
+    const api = fakeApi();
+    const themes = createOwnThemes(() => api, { delayMs: 60_000 });
+    const unload = new EventTarget();
+    registerOwnThemes(createWindowDialogs(), sessionWith(), themes, unload);
+
+    themes.keep(own(1, "Bakery"));
+    expect(api.keep).not.toHaveBeenCalled();
+    unload.dispatchEvent(new Event("beforeunload"));
+
+    await waitFor(() => expect(api.keep).toHaveBeenCalledWith(own(1, "Bakery")));
+  });
+
+  it("deletes the theme the site uses for good, until the site uses another (#500 review)", async () => {
+    const api = fakeApi();
+    const themes = createOwnThemes(() => api, { delayMs: 0 });
+    const session = sessionWith();
+    registerOwnThemes(createWindowDialogs(), session, themes, new EventTarget());
+    const night = own(1, "Night");
+    await switchPreset(session, undefined, night);
+    await waitFor(() => expect(api.keep).toHaveBeenCalledTimes(1));
+
+    themes.remove(night.own.id);
+    const site = () => session.history.document.getState().theme;
+    const { themes: library, deleted } = themes.store.getState();
+    expect(ownThemeList(library, site(), deleted)).toEqual([]);
+    // A change to the site's theme, its undo and redo, don't bring it back.
+    await setColor(session, undefined, "primary", { l: 0.5, c: 0.2, h: 30 });
+    act(() => {
+      session.history.undo();
+      session.history.redo();
+    });
+    await themes.flush();
+    expect(api.keep).toHaveBeenCalledTimes(1);
+
+    // Once the site uses another theme, the deleted one is forgotten: coming back keeps it again.
+    await switchPreset(session, undefined, own(2, "Day"));
+    act(() => {
+      session.history.undo();
+    });
+    await waitFor(() =>
+      expect(api.keep).toHaveBeenLastCalledWith(expect.objectContaining({ own: night.own })),
+    );
   });
 });

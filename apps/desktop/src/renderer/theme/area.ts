@@ -1,3 +1,4 @@
+import { toast } from "@webforge/editor-ui";
 import type { Area, WindowContext } from "../editor/areas.js";
 import { createOwnThemes } from "./own-themes.js";
 import { registerOwnThemes } from "./register-own-themes.js";
@@ -14,7 +15,9 @@ export const themePanelArea: Area<WindowContext> = {
   id: "themePanel",
   register: ({ panels, commands, windowDialogs, session, siteWide }) => {
     const studio = createStudio();
-    const ownThemes = createOwnThemes(() => window.webforge.themes);
+    const ownThemes = createOwnThemes(() => window.webforge.themes, {
+      notify: (message) => toast.error(message),
+    });
     const removePanel = registerThemePanel(panels, session, siteWide, studio, ownThemes);
     const removeCommands = registerThemeCommands(commands, panels, studio);
     const removeStudio = registerThemeStudio(windowDialogs, session, studio, siteWide, ownThemes);
