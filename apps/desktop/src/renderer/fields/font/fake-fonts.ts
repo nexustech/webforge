@@ -3,7 +3,8 @@ import type { BrowsableFont, FontsApi, InstalledFont } from "../../../shared/ipc
 
 /** The bundled fonts, as main lists them. */
 const BUNDLED: readonly InstalledFont[] = FONT_CATALOGUE.map((font) => {
-  const preview = previewFileOf(font)?.file;
+  const file = previewFileOf(font);
+  const preview = file === undefined ? undefined : { file: file.file, weight: file.weight };
   return {
     id: font.id,
     family: font.family,
@@ -23,7 +24,7 @@ const DOWNLOADED: InstalledFont = {
   category: "handwriting",
   variable: false,
   source: "downloaded",
-  preview: "comic-neue-latin-400-normal.woff2",
+  preview: { file: "comic-neue-latin-400-normal.woff2", weight: 400 },
 };
 
 /** Fonts *Browse all fonts* finds: one to download, and one the computer has. */
@@ -53,7 +54,7 @@ export function fakeFonts(
         category: "display",
         variable: false,
         source: "downloaded",
-        preview: "lobster-latin-400-normal.woff2",
+        preview: { file: "lobster-latin-400-normal.woff2", weight: 400 },
       },
     }),
   browse: FontsApi["browse"] = () => Promise.resolve({ status: "listed", fonts: [...TO_BROWSE] }),
