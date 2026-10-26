@@ -1,9 +1,9 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    // "dom" only for the WebAssembly and ImageData types that jSquash's codecs use; the
-    // pipeline runs in Node (a utilityProcess) and must not touch document or window.
-    "lib": ["es2024", "dom"],
+    // No "dom": the pipeline runs in Node (a utilityProcess), so a `document` or `window` in it is
+    // a type error. The one browser type jSquash's codecs use, ImageData, is in image-data.d.ts.
+    "lib": ["es2024"],
     "types": ["node"]
   },
   "include": ["src", "test"],

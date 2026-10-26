@@ -60,31 +60,20 @@ export default {
       to: { dependencyTypes: ["core"] },
     },
     {
-      name: "pipeline-navigation-no-node",
-      severity: "error",
-      comment:
-        "@webforge/pipeline/navigation runs in the renderer (the canvas's Header): no Node built-ins.",
-      from: { path: "^packages/pipeline/src/(navigation|links).ts$" },
-      to: { dependencyTypes: ["core"] },
-    },
-    {
-      name: "pipeline-navigation-self-contained",
-      severity: "error",
-      comment:
-        "@webforge/pipeline/navigation imports no other pipeline module, which may use Node.",
-      from: { path: "^packages/pipeline/src/(navigation|links).ts$" },
-      to: {
-        path: "^packages/pipeline/src/",
-        pathNot: "^packages/pipeline/src/(navigation|links).ts$",
-      },
-    },
-    {
       name: "renderer-no-electron",
       severity: "error",
       comment:
         "Renderer code never imports Node built-ins or Electron; it uses the typed window.webforge API.",
       from: { path: RENDERER_SAFE },
       to: { path: ELECTRON },
+    },
+    {
+      name: "renderer-no-node-packages",
+      severity: "error",
+      comment:
+        "Renderer code never imports the packages that run in the main process or a worker: the pipeline, storage and publishing (R16).",
+      from: { path: RENDERER_SAFE },
+      to: { path: "^packages/(pipeline|storage|publish)/" },
     },
     {
       name: "main-no-react",
@@ -140,8 +129,6 @@ export default {
           "^packages/[^/]+/src/index\\.tsx?$",
           // Declared subpath export: @webforge/pipeline/node (the Node-only resource loader).
           "^packages/pipeline/src/node-resources\\.ts$",
-          // Declared subpath export: @webforge/pipeline/navigation (no Node; the canvas uses it).
-          "^packages/pipeline/src/navigation\\.ts$",
           // Declared subpath export: @webforge/themes/font-plan (zod only: no font catalogue, so
           // the preload and the catalogue build under plain Node can take it).
           "^packages/themes/src/fonts/plan\\.ts$",

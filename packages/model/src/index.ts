@@ -171,6 +171,7 @@ export {
   siteFromDocuments,
   validateSiteChanges,
 } from "./site-documents.js";
+export { sitePathSchema } from "./site-path.js";
 export type { DocumentItem, MediaItem, SitePage, SiteSnapshot } from "./site-snapshot.js";
 export { siteSnapshotSchema } from "./site-snapshot.js";
 export { slugify, uniqueSlug } from "./slugs.js";

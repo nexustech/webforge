@@ -182,7 +182,7 @@ interface Pipeline {
 
 // packages/publish
 interface Publisher {
-  test(dest: Destination): Promise<TestResult>
+  test(dest: Destination, signal?: AbortSignal): Promise<TestResult>
   publish(build: BuildOutput, dest: Destination, signal: AbortSignal): AsyncIterable<PublishEvent>
 }
 ```
