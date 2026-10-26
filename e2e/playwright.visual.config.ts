@@ -6,6 +6,11 @@ import { defineConfig } from "@playwright/test";
 // both Storybooks first: `pnpm visual` at the repository root does all of it. Screenshots are
 // compared only when VISUAL_SCREENSHOTS=1, so local runs on Windows or macOS check accessibility
 // only. Keep the ports in step with visual/stories.spec.ts.
+//
+// The templates' thumbnails (2.14b) are a project of their own: each template's home page, built by
+// the pipeline, screenshotted beside the template (`packages/templates/templates/<id>/`), in the
+// same container, so CI checks them as it does the stories. `pnpm template-thumbnails` rewrites
+// them.
 const EDITOR_PORT = 6107;
 const SITE_PORT = 6108;
 
@@ -28,6 +33,16 @@ export default defineConfig({
     reducedMotion: "reduce",
     trace: "retain-on-failure",
   },
+  projects: [
+    { name: "stories", testMatch: /stories\.spec\.ts$/ },
+    {
+      name: "template-thumbnails",
+      testMatch: /template-thumbnails\.spec\.ts$/,
+      snapshotPathTemplate: "../packages/templates/templates/{arg}{ext}",
+      // A desktop page's first screen; cards show it scaled down.
+      use: { viewport: { width: 1280, height: 800 } },
+    },
+  ],
   webServer: [
     {
       command: `node visual/serve-storybook.ts editor-ui ${EDITOR_PORT}`,

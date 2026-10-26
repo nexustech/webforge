@@ -17,6 +17,7 @@
     "e2e:perf": "pnpm --filter @webforge/desktop build:perf && pnpm --filter @webforge/e2e e2e:perf",
     "visual": "pnpm --filter @webforge/editor-ui --filter @webforge/site-components build-storybook && pnpm --filter @webforge/e2e e2e:visual",
     "visual:docker": "node tools/src/visual-docker.ts",
+    "template-thumbnails": "node tools/src/visual-docker.ts --update -- --project=template-thumbnails",
     "lint": "biome ci .",
     "format": "biome check --write .",
     "typecheck": "tsc -b",

@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { readTemplates } from "@webforge/templates/node";
 import type { IpcMain, IpcMainInvokeEvent } from "electron";
 import { describe, expect, it } from "vitest";
@@ -17,10 +18,34 @@ function invoker(channel: string, trusted = true) {
 }
 
 describe("registerTemplatesHandlers (2.14a)", () => {
-  it("lists the templates the app ships, without their content", async () => {
+  it("lists the templates the app ships, without their content, with their thumbnails", async () => {
+    const [sample] = readTemplates();
     expect(await invoker("templates:list")()).toEqual([
-      { id: "sample", category: "food", example: true, pages: 2, theme: "light" },
+      {
+        id: "sample",
+        category: "food",
+        example: true,
+        pages: 2,
+        theme: "light",
+        thumbnail: `data:image/png;base64,${readFileSync(sample?.thumbnail ?? "").toString("base64")}`,
+      },
     ]);
+  });
+
+  it("sends no thumbnail for a template without one (2.14b)", async () => {
+    const registered = new Map<string, Handler>();
+    const ipc = {
+      handle: (name: string, handler: Handler) => registered.set(name, handler),
+    } as unknown as Pick<IpcMain, "handle">;
+    registerTemplatesHandlers(
+      ipc,
+      () => true,
+      () => readTemplates().map((folder) => ({ ...folder, thumbnail: "/no/such/thumbnail.png" })),
+    );
+    const listed = await registered.get("templates:list")?.({
+      senderFrame: { url: "app" },
+    } as IpcMainInvokeEvent);
+    expect(listed).toEqual([expect.objectContaining({ id: "sample", thumbnail: null })]);
   });
 
   it("refuses a renderer it does not trust", async () => {
