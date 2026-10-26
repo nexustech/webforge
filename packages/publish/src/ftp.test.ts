@@ -2,7 +2,7 @@ import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { type FtpDestination, ftpPublisher } from "./ftp.js";
-import { startFtpServer, TEST_CERTIFICATE } from "./ftp-server.test-helper.js";
+import { startFtpServer, TEST_TLS } from "./ftp-server.test-helper.js";
 import type { BuildOutput, PublishEvent } from "./publisher.js";
 import { MANIFEST_FILE } from "./remote-folder.js";
 
@@ -19,6 +19,9 @@ afterAll(async () => {
   await server?.stop();
 });
 
+/** FTPS where openssl could make the test certificate, plain FTP where it couldn't. */
+const secure: FtpDestination["protocol"] = TEST_TLS === undefined ? "ftp" : "ftps";
+
 const destination = (protocol: FtpDestination["protocol"]): FtpDestination => ({
   protocol,
   host: "127.0.0.1",
@@ -30,14 +33,11 @@ const destination = (protocol: FtpDestination["protocol"]): FtpDestination => ({
 /** FTPS trusting the test certificate, as a host's real certificate is trusted. */
 const trusted = {
   password: "test-only-password",
-  tls: { ca: TEST_CERTIFICATE },
+  tls: { ca: TEST_TLS?.cert ?? "" },
   timeoutMs: 10_000,
 };
 
-async function publish(
-  files: Record<string, string>,
-  protocol: FtpDestination["protocol"] = "ftps",
-) {
+async function publish(files: Record<string, string>, protocol = secure) {
   const events: PublishEvent[] = [];
   for await (const event of ftpPublisher(trusted).publish(
     build(files),
@@ -58,7 +58,7 @@ const site = {
 };
 
 describe("ftpPublisher (0.3)", () => {
-  it("publishes over FTPS, then sends only what changed and removes what the site dropped", async () => {
+  it("publishes, then sends only what changed and removes what the site dropped", async () => {
     const first = await publish(site);
     expect(first.at(-1)).toMatchObject({ type: "published", uploaded: 3, removed: 0 });
     expect(onHost("assets/css/site.css")).toBe("body {}");
@@ -108,7 +108,7 @@ describe("ftpPublisher (0.3)", () => {
     );
     const publishing = ftpPublisher(trusted).publish(
       build(changed),
-      destination("ftps"),
+      destination(secure),
       controller.signal,
     );
 
@@ -129,7 +129,7 @@ describe("ftpPublisher (0.3)", () => {
   });
 
   it("tells a wrong password, a missing folder and an unreachable host apart", async () => {
-    const dest = destination("ftps");
+    const dest = destination(secure);
 
     expect(await ftpPublisher(trusted).test(dest)).toEqual({ ok: true });
     expect(await ftpPublisher({ ...trusted, password: "wrong" }).test(dest)).toEqual({
@@ -146,21 +146,24 @@ describe("ftpPublisher (0.3)", () => {
     });
   });
 
-  it("refuses an FTPS certificate the computer doesn't trust, before signing in", async () => {
-    const untrusted = ftpPublisher({ password: "test-only-password", timeoutMs: 10_000 });
+  it.skipIf(TEST_TLS === undefined)(
+    "refuses an FTPS certificate the computer doesn't trust, before signing in",
+    async () => {
+      const untrusted = ftpPublisher({ password: "test-only-password", timeoutMs: 10_000 });
 
-    expect(await untrusted.test(destination("ftps"))).toEqual({
-      ok: false,
-      code: "untrusted-host",
-    });
-  });
+      expect(await untrusted.test(destination(secure))).toEqual({
+        ok: false,
+        code: "untrusted-host",
+      });
+    },
+  );
 
   it("never puts the password in an error", async () => {
     let caught: unknown;
     try {
       for await (const _event of ftpPublisher({ ...trusted, password: "wrong-secret" }).publish(
         build(site),
-        destination("ftps"),
+        destination(secure),
         AbortSignal.timeout(30_000),
       )) {
         // Signing in fails before any file.
