@@ -33,9 +33,6 @@ export const templates = {
   "template.category.shop": "Shop",
   "template.category.personal": "Personal",
   // The templates, by id (packages/templates).
-  "template.sample.name": "Sample bakery",
-  "template.sample.description":
-    "A bakery's home page and About page: a photo, what it offers, what customers say and an invitation to visit.",
   "template.consultant.name": "Consultant",
   "template.consultant.description":
     "An adviser's site: what they help with, what clients say, services and prices with questions answered, their story and a contact form.",

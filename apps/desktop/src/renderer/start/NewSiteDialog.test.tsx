@@ -14,7 +14,7 @@ declare global {
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
 const bakery: TemplateSummary = {
-  id: "sample",
+  id: "cafe",
   category: "food",
   example: true,
   pages: 2,
@@ -99,13 +99,13 @@ describe("NewSiteDialog (2.14a, LF-11)", () => {
   it("starts from a template in its theme, which can then be changed", async () => {
     const { onCreate } = await render();
 
-    await act(async () => radio(t("template.sample.name"))?.click());
+    await act(async () => radio(t("template.cafe.name"))?.click());
     expect(radio(t("theme.preset.bistro"))?.checked).toBe(true);
     await create();
     expect(onCreate).toHaveBeenLastCalledWith({
       name: t("site.untitledName"),
       theme: "bistro",
-      template: "sample",
+      template: "cafe",
     });
 
     await act(async () => radio(t("theme.preset.dark"))?.click());
@@ -113,7 +113,7 @@ describe("NewSiteDialog (2.14a, LF-11)", () => {
     expect(onCreate).toHaveBeenLastCalledWith({
       name: t("site.untitledName"),
       theme: "dark",
-      template: "sample",
+      template: "cafe",
     });
 
     // Back to Blank: no template, and the theme stays as chosen.
@@ -126,27 +126,27 @@ describe("NewSiteDialog (2.14a, LF-11)", () => {
     const thumbnail = "data:image/png;base64,iVBORw0KGgo=";
     await render([{ ...bakery, thumbnail }]);
 
-    const card = radio(t("template.sample.name"))?.closest("label");
+    const card = radio(t("template.cafe.name"))?.closest("label");
     expect(card?.querySelector("img")?.getAttribute("src")).toBe(thumbnail);
     await act(async () =>
-      button(t("newSite.detailsOf", { name: t("template.sample.name") }))?.click(),
+      button(t("newSite.detailsOf", { name: t("template.cafe.name") }))?.click(),
     );
     expect(document.querySelector('[role="dialog"] img')?.getAttribute("src")).toBe(thumbnail);
   });
 
   it("shows a template's details, and Use this template chooses it", async () => {
     const { onCreate } = await render();
-    const details = t("newSite.detailsOf", { name: t("template.sample.name") });
+    const details = t("newSite.detailsOf", { name: t("template.cafe.name") });
 
     await act(async () => button(details)?.click());
-    expect(document.body.textContent).toContain(t("template.sample.description"));
+    expect(document.body.textContent).toContain(t("template.cafe.description"));
     // Opening the details chooses nothing.
     expect(radio(t("newSite.blank"))?.checked).toBe(true);
 
     await act(async () => button(t("newSite.useTemplate"))?.click());
-    expect(document.body.textContent).not.toContain(t("template.sample.description"));
+    expect(document.body.textContent).not.toContain(t("template.cafe.description"));
     await create();
-    expect(onCreate).toHaveBeenCalledWith(expect.objectContaining({ template: "sample" }));
+    expect(onCreate).toHaveBeenCalledWith(expect.objectContaining({ template: "cafe" }));
   });
 
   it("offers chips for the business types the templates have, and says when there are none", async () => {

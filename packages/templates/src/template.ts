@@ -19,7 +19,6 @@ import { z } from "zod";
  * {@link BLANK_TEMPLATE_ID}.
  */
 export const TEMPLATE_IDS = [
-  "sample",
   "cafe",
   "salon",
   "trades",
