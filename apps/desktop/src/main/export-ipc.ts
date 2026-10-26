@@ -1,6 +1,5 @@
 import { basename } from "node:path";
-import type { DocumentItem, MediaItem, SiteSnapshot } from "@webforge/model";
-import type { StoredBlob } from "@webforge/storage";
+import type { SiteSnapshot } from "@webforge/model";
 import type { IpcMain } from "electron";
 import type { ExportOutcome } from "../shared/export-worker-protocol.js";
 import type { ExportRequest } from "../shared/ipc/site.js";
@@ -19,6 +18,8 @@ export type RunExport = (snapshot: SiteSnapshot, destination: string) => Promise
 
 /** Turns the worker's outcome into what the renderer may see: counts and the folder's name. */
 export function toExportResult(outcome: ExportOutcome, destination: string): ExportResult {
+  // Cancelled: as when the folder dialog was, nothing changed on disk (R15).
+  if (outcome.type === "cancelled") return { status: "canceled" };
   if (outcome.type === "failed") {
     // Codes only: never paths or site content (standards §4).
     log.error("Webforge could not export a site", { code: outcome.code, detail: outcome.detail });
@@ -34,48 +35,35 @@ export function toExportResult(outcome: ExportOutcome, destination: string): Exp
 }
 
 /**
- * The snapshot to build: the renderer's, with the bytes of its images and documents read from the
- * open site's file. One whose bytes aren't there is left out: a page placing that image shows
- * none, and a link to that document goes nowhere, each with a warning.
+ * The snapshot to build: the renderer's, its images and documents named by hash. The export
+ * worker asks for each one's bytes from the open site's file as it reaches it (R15), so this
+ * process never holds them all; one the site no longer stores is left out, with a warning.
  */
-async function snapshotWithMedia(
-  request: ExportRequest,
-  readMedia: (hash: string) => Promise<StoredBlob | undefined>,
-): Promise<SiteSnapshot> {
-  // One at a time: each read takes its turn at the site's file with the saves (R13b).
-  const media: MediaItem[] = [];
-  for (const { hash, ...image } of request.media) {
-    const blob = await readMedia(hash);
-    if (blob !== undefined) media.push({ ...image, data: blob.data });
-  }
-  // A document is exported under its type's extension, so its stored bytes must be that type.
-  const documents: DocumentItem[] = [];
-  for (const { hash, ...file } of request.documents ?? []) {
-    const blob = await readMedia(hash);
-    if (blob !== undefined && blob.mime === file.mimeType)
-      documents.push({ ...file, data: blob.data });
-  }
-  return { ...request.snapshot, media, documents };
+function snapshotOf(request: ExportRequest): SiteSnapshot {
+  return {
+    ...request.snapshot,
+    media: request.media.map((image) => ({ ...image })),
+    documents: (request.documents ?? []).map((file) => ({ ...file })),
+  };
 }
 
 /**
  * Registers the export IPC call. The renderer sends the site snapshot but never a path: the main
  * process asks the user for the folder, so a compromised renderer cannot write anywhere it likes.
- * Image bytes come from the open site's file (`readMedia`), not from the renderer.
+ * Image bytes come from the open site's file, as the export worker asks for them, never from the
+ * renderer.
  */
 export function registerExportHandlers(
   ipc: Pick<IpcMain, "handle">,
   isTrustedSender: (senderUrl: string) => boolean,
   dialogs: ExportDialogs,
   runExport: RunExport,
-  readMedia: (hash: string) => Promise<StoredBlob | undefined>,
 ): void {
   registerIpcHandler(ipc, "exportSite", isTrustedSender, async (request) => {
     const destination = await dialogs.chooseExportFolder();
     if (destination === undefined) {
       return { status: "canceled" };
     }
-    const snapshot = await snapshotWithMedia(request, readMedia);
-    return toExportResult(await runExport(snapshot, destination), destination);
+    return toExportResult(await runExport(snapshotOf(request), destination), destination);
   });
 }

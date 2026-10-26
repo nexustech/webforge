@@ -27,9 +27,12 @@ import { BODY_CLASS, pageDocument } from "./html.js";
 import { imageForDepth, processImage } from "./images.js";
 import type { PipelineResources } from "./resources.js";
 
-/** Why a build failed (X5 errors). The app shows a translated message for each code. */
-/** `missing-font`: a font the theme uses isn't installed as the catalogue lists it (2.2). */
-export type BuildErrorCode = "invalid-site" | "unknown-component" | "missing-font";
+/**
+ * Why a build failed (X5 errors). The app shows a translated message for each code.
+ * `missing-font`: a font the theme uses isn't installed as the catalogue lists it (2.2).
+ * `cancelled`: the build's signal was aborted (R15).
+ */
+export type BuildErrorCode = "invalid-site" | "unknown-component" | "missing-font" | "cancelled";
 
 /** A build that cannot produce a working site. */
 export class BuildError extends WebforgeError<BuildErrorCode> {
@@ -63,6 +66,21 @@ export type BuiltSite = {
   };
 };
 
+/**
+ * How far a build has come (R15), for a progress bar: each image and page as it starts, then the
+ * stylesheet and the fonts.
+ */
+export type BuildEvent =
+  | { readonly stage: "images" | "pages"; readonly done: number; readonly total: number }
+  | { readonly stage: "styles" | "fonts" };
+
+/** How a build is run: a signal that cancels it, and what to tell of its progress. */
+export type BuildOptions = {
+  /** Stops the build before its next image or page; it then throws a `cancelled` {@link BuildError}. */
+  readonly signal?: AbortSignal | undefined;
+  readonly onProgress?: ((event: BuildEvent) => void) | undefined;
+};
+
 const EXTERNAL_LINK = /^(?:https?:|mailto:|tel:)/i;
 
 const sha256 = (data: string | Uint8Array) => createHash("sha256").update(data).digest("hex");
@@ -80,6 +98,28 @@ function showsBackToTop(site: SiteSnapshot, page: SitePage): boolean {
   return site.backToTop === true && page.hideBackToTop !== true;
 }
 
+/** Throws a `cancelled` {@link BuildError} once `signal` is aborted. */
+function stopIfCancelled(signal: AbortSignal | undefined): void {
+  if (signal?.aborted === true) throw new BuildError("cancelled", "The build was cancelled");
+}
+
+/**
+ * The original bytes of an image or document: the snapshot's own, or those the site stores under
+ * its hash (R15). `mime`, when given, must be the stored type: a document is exported under its
+ * type's extension. `undefined` when there are none.
+ */
+async function bytesOf(
+  item: { readonly data?: Uint8Array | undefined; readonly hash?: string | undefined },
+  resources: PipelineResources,
+  mime?: string,
+): Promise<Uint8Array | undefined> {
+  if (item.data !== undefined) return item.data;
+  if (item.hash === undefined || resources.readMedia === undefined) return undefined;
+  const stored = await resources.readMedia(item.hash);
+  if (stored === undefined || (mime !== undefined && stored.mime !== mime)) return undefined;
+  return stored.data;
+}
+
 function allNodes(site: SiteSnapshot): NodeDoc[] {
   return [
     ...site.layout.header,
@@ -92,12 +132,18 @@ function allNodes(site: SiteSnapshot): NodeDoc[] {
  * Builds a self-contained static site from a snapshot (export pipeline stages 2–9): flat
  * `page.html` files with relative links (X1), readable CSS compiled from the classes used,
  * `webforge.js` only if needed, fonts, and responsive WebP + JPEG/PNG images (X2).
+ *
+ * Images and documents the snapshot names by hash are read through `resources.readMedia`, one at a
+ * time; with `resources.imageCache`, an image encoded before isn't encoded again (R15). `options`
+ * can cancel the build and follow its progress.
  */
 export async function buildSite(
   snapshot: SiteSnapshot,
   library: ComponentLibrary,
   resources: PipelineResources,
+  options: BuildOptions = {},
 ): Promise<BuiltSite> {
+  const { signal, onProgress } = options;
   const parsed = siteSnapshotSchema.safeParse(snapshot);
   if (!parsed.success) {
     throw new BuildError("invalid-site", parsed.error.message);
@@ -136,13 +182,29 @@ export async function buildSite(
   // still places it is left out there, with a warning, rather than failing the export (1.16).
   const images = new Map<string, ResolvedImage>();
   const missing = new Set<string>();
-  for (const id of [...mediaIds].sort()) {
+  const imageIds = [...mediaIds].sort();
+  for (const [done, id] of imageIds.entries()) {
+    stopIfCancelled(signal);
+    onProgress?.({ stage: "images", done, total: imageIds.length });
     const item = site.media.find((media) => media.id === id);
     if (item === undefined) {
       missing.add(id);
       continue;
     }
-    const processed = await processImage(item, resources.codecs);
+    // The hash keys the cache, so an image found there is never read.
+    const processed = await processImage(
+      item,
+      {
+        hash: item.hash ?? sha256(item.data ?? new Uint8Array()),
+        read: () => bytesOf(item, resources),
+      },
+      resources.codecs,
+      { cache: resources.imageCache },
+    );
+    if (processed === undefined) {
+      missing.add(id);
+      continue;
+    }
     for (const file of processed.files) {
       files.set(`assets/img/${file.path}`, file.data);
     }
@@ -153,10 +215,13 @@ export async function buildSite(
   // links to aren't exported; a link to one deleted from Media goes nowhere, with a warning.
   const documentPaths = new Map<string, string>();
   for (const id of [...documentIds].sort()) {
+    stopIfCancelled(signal);
     const item = site.documents?.find((document) => document.id === id);
     if (item === undefined) continue;
+    const data = await bytesOf(item, resources, item.mimeType);
+    if (data === undefined) continue;
     const path = `files/${item.name}.${DOCUMENT_EXTENSIONS[item.mimeType]}`;
-    files.set(path, item.data);
+    files.set(path, data);
     documentPaths.set(id, path);
   }
 
@@ -175,7 +240,9 @@ export async function buildSite(
   // Render every page, then compile one stylesheet from all the classes they use.
   const paths = new Set(site.pages.map((page) => page.path));
   const pathById = new Map(site.pages.map((page) => [page.id as string, page.path]));
-  const rendered = site.pages.map((page) => {
+  const rendered = site.pages.map((page, done) => {
+    stopIfCancelled(signal);
+    onProgress?.({ stage: "pages", done, total: site.pages.length });
     const prefix = "../".repeat(depthOf(page.path));
     const navigation = navigationFor(
       site,
@@ -246,6 +313,8 @@ export async function buildSite(
     entry.footer,
     showsBackToTop(site, entry.page) ? backToTop : "",
   ]);
+  stopIfCancelled(signal);
+  onProgress?.({ stage: "styles" });
   const css = await buildSiteCss(resources, {
     theme: site.theme,
     candidates: classCandidates([`<body class="${BODY_CLASS}">`, ...markup].join("\n")),
@@ -273,6 +342,8 @@ export async function buildSite(
     files.set(scriptPath, text.encode(script));
   }
   // Only the fonts the theme uses (2.2), each exactly the file the catalogue (or the download) lists.
+  stopIfCancelled(signal);
+  onProgress?.({ stage: "fonts" });
   for (const face of fontFacesFor(site.theme, resources.fonts)) {
     const data = await resources.readFont(face);
     if (data === undefined || data.byteLength !== face.bytes || sha256(data) !== face.sha256) {

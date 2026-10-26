@@ -26,6 +26,27 @@ export type PipelineResources = {
   readonly fonts?: readonly CatalogueFont[];
   /** WebAssembly modules of the image codecs (jSquash). */
   readonly codecs: CodecModules;
+  /**
+   * The bytes and type the open site stores under a SHA-256, for images and documents the
+   * snapshot names by `hash` instead of carrying (R15); `undefined` if the site has none. Read one
+   * at a time, as the build reaches each.
+   */
+  readonly readMedia?: (hash: string) => Promise<StoredMedia | undefined>;
+  /** Where the encoded images of earlier builds are kept, so an unchanged image isn't encoded again. */
+  readonly imageCache?: ImageCache;
+};
+
+/** An image's or document's stored bytes, with the type they were stored as. */
+export type StoredMedia = { readonly data: Uint8Array; readonly mime: string };
+
+/**
+ * Encoded images by key (R15): the pipeline names each one by its original's SHA-256, its crop,
+ * its width, its format and the encoder's settings, so a key never stands for other bytes. What
+ * keeps them, and how many, is the caller's: the app keeps them on disk; tests in memory.
+ */
+export type ImageCache = {
+  get(key: string): Promise<Uint8Array | undefined>;
+  set(key: string, data: Uint8Array): Promise<void>;
 };
 
 /** Compiled WebAssembly modules for decoding, resizing and encoding images. */

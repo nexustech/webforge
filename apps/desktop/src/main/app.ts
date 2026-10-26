@@ -261,22 +261,27 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
   };
 
   // Each export runs in its own utility process, so building never blocks the window (07). The
-  // worker resolves nothing itself: it gets the site's font files, read and checked here. Every
-  // worker's crash becomes a local report (R3).
+  // worker resolves nothing itself: it gets the site's font files, read and checked here, and asks
+  // for each image and document as it reaches it, read from the open site (R15). Every worker's
+  // crash becomes a local report (R3).
   const forkWorker = (serviceName: string) =>
     crashReports.watchWorker(electron.utilityProcess.fork(exportWorkerScript, [], { serviceName }));
   const runExport = async (snapshot: SiteSnapshot, destination: string) => {
     const families = await fonts.downloadedFamiliesOf(snapshot.theme);
-    return runExportInWorker(() => forkWorker("Webforge export"), {
-      type: "export",
-      snapshot,
-      destination,
-      fonts: fontFacesFor(snapshot.theme, [...FONT_CATALOGUE, ...families]).flatMap((face) => {
-        const data = fonts.reader.read(face);
-        return data === undefined ? [] : [{ file: face.file, data }];
-      }),
-      families,
-    });
+    return runExportInWorker(
+      () => forkWorker("Webforge export"),
+      {
+        type: "export",
+        snapshot,
+        destination,
+        fonts: fontFacesFor(snapshot.theme, [...FONT_CATALOGUE, ...families]).flatMap((face) => {
+          const data = fonts.reader.read(face);
+          return data === undefined ? [] : [{ file: face.file, data }];
+        }),
+        families,
+      },
+      { readMedia: (hash) => projectSession.readMedia(hash) },
+    );
   };
 
   // Media thumbnails are made in a long-lived worker too, started when first needed (1.16).
@@ -417,9 +422,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
         if (lifecycle.quitting) app.quit();
       },
     });
-    registerExportHandlers(ipcMain, isTrustedSender, dialogs.export, runExport, (hash) =>
-      projectSession.readMedia(hash),
-    );
+    registerExportHandlers(ipcMain, isTrustedSender, dialogs.export, runExport);
     registerTemplatesHandlers(ipcMain, isTrustedSender, templates);
     // A site double-clicked in Explorer arrives as a command-line argument (P1).
     const projectToOpen = lifecycle.projectFromFinder ?? findProjectArgument(process.argv);

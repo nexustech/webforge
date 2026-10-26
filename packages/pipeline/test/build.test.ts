@@ -1,11 +1,12 @@
+import { createHash } from "node:crypto";
 import type { MediaId, MenuItemId, NodeDoc, PageId, SiteSnapshot } from "@webforge/model";
 import { DEFAULT_THEME } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { sampleSite } from "@webforge/test-utils";
 import { beforeAll, describe, expect, it } from "vitest";
-import { type BuiltSite, buildSite } from "../src/build.js";
+import { type BuildEvent, type BuiltSite, buildSite } from "../src/build.js";
 import { loadNodeResources } from "../src/node-resources.js";
-import type { PipelineResources } from "../src/resources.js";
+import type { ImageCache, PipelineResources } from "../src/resources.js";
 
 let resources: PipelineResources;
 let built: BuiltSite;
@@ -698,5 +699,129 @@ describe("buildSite: the theme's style (2.13d)", () => {
     // And over the page's surface that any section framed on it sets by its class.
     expect(css).toContain(`${onPage}.bg-base-100 { background-color: var(--color-base-200); }`);
     expect(css).toContain(`${canvas}.bg-base-100 { background-color: var(--color-base-200); }`);
+  }, 60_000);
+});
+
+describe("buildSite: cancelled, followed, and reading bytes when needed (R15)", () => {
+  /** sampleSite with its files named by hash, their bytes served by `readMedia` and counted. */
+  function byHash() {
+    const site = sampleSite();
+    const stored = new Map<string, { data: Uint8Array; mime: string }>();
+    const reads: string[] = [];
+    const named = <T extends { readonly data?: Uint8Array | undefined; readonly mimeType: string }>(
+      item: T,
+    ) => {
+      const data = item.data ?? new Uint8Array();
+      const hash = createHash("sha256").update(data).digest("hex");
+      stored.set(hash, { data, mime: item.mimeType });
+      const { data: _bytes, ...rest } = item;
+      return { ...rest, hash };
+    };
+    const snapshot: SiteSnapshot = {
+      ...site,
+      media: site.media.map(named),
+      documents: (site.documents ?? []).map(named),
+    };
+    const readMedia: PipelineResources["readMedia"] = async (hash) => {
+      reads.push(hash);
+      return stored.get(hash);
+    };
+    return { snapshot, readMedia, reads, stored };
+  }
+
+  it("builds the same site from hashes, reading each file once, one at a time", async () => {
+    const { snapshot, readMedia, reads, stored } = byHash();
+
+    const fromHashes = await buildSite(snapshot, siteLibrary, { ...resources, readMedia });
+
+    expect([...fromHashes.files.keys()]).toEqual([...built.files.keys()]);
+    for (const [path, data] of built.files) expect(fromHashes.files.get(path), path).toEqual(data);
+    expect(reads.sort()).toEqual([...stored.keys()].sort());
+  }, 60_000);
+
+  it("reads nothing and encodes nothing for images the cache has (a second export)", async () => {
+    const { snapshot, readMedia, reads } = byHash();
+    const entries = new Map<string, Uint8Array>();
+    const imageCache: ImageCache = {
+      get: async (key) => entries.get(key),
+      set: async (key, data) => {
+        entries.set(key, data);
+      },
+    };
+    const first = await buildSite(snapshot, siteLibrary, { ...resources, readMedia, imageCache });
+    const kept = entries.size;
+    reads.length = 0;
+
+    const started = performance.now();
+    const second = await buildSite(snapshot, siteLibrary, { ...resources, readMedia, imageCache });
+
+    // Only the document is read again: images come from the cache, as they were encoded.
+    expect(reads).toHaveLength(snapshot.documents?.length ?? 0);
+    expect(entries.size).toBe(kept);
+    for (const [path, data] of first.files) expect(second.files.get(path), path).toEqual(data);
+    // Without encoding, the build is quick (§10: 20 cached pages under 5 s).
+    expect(performance.now() - started).toBeLessThan(5_000);
+  }, 60_000);
+
+  it("leaves out an image or document the site no longer stores, with a warning", async () => {
+    const { snapshot, readMedia } = byHash();
+
+    const result = await buildSite(snapshot, siteLibrary, {
+      ...resources,
+      readMedia: async (hash) => (hash === snapshot.media[0]?.hash ? undefined : readMedia?.(hash)),
+    });
+
+    expect(result.report.warnings).toContainEqual(
+      expect.objectContaining({ code: "missing-image", detail: snapshot.media[0]?.id }),
+    );
+  }, 60_000);
+
+  it("refuses a document stored as another type than the snapshot says", async () => {
+    const { snapshot, readMedia } = byHash();
+    const document = snapshot.documents?.[0];
+
+    const result = await buildSite(snapshot, siteLibrary, {
+      ...resources,
+      readMedia: async (hash) => {
+        const stored = await readMedia?.(hash);
+        return hash === document?.hash && stored !== undefined
+          ? { ...stored, mime: "text/html" }
+          : stored;
+      },
+    });
+
+    expect([...result.files.keys()].some((path) => path.startsWith("files/"))).toBe(false);
+  }, 60_000);
+
+  it("tells its progress: each image and page, then the styles and the fonts", async () => {
+    const events: BuildEvent[] = [];
+
+    await buildSite(sampleSite(), siteLibrary, resources, {
+      onProgress: (event) => events.push(event),
+    });
+
+    const stages = events.map((event) => event.stage);
+    expect(stages.indexOf("pages")).toBeGreaterThan(stages.lastIndexOf("images"));
+    expect(stages.slice(-2)).toEqual(["styles", "fonts"]);
+    expect(events.filter((event) => event.stage === "pages")).toEqual(
+      sampleSite().pages.map((_page, done) => ({ stage: "pages", done, total: 3 })),
+    );
+  }, 60_000);
+
+  it("stops at the next image or page once cancelled", async () => {
+    const controller = new AbortController();
+    const events: BuildEvent[] = [];
+
+    const building = buildSite(sampleSite(), siteLibrary, resources, {
+      signal: controller.signal,
+      onProgress: (event) => {
+        events.push(event);
+        if (event.stage === "images" && event.done === 0) controller.abort();
+      },
+    });
+
+    await expect(building).rejects.toMatchObject({ name: "BuildError", code: "cancelled" });
+    // The first image was under way when it was cancelled; nothing after it started.
+    expect(events).toEqual([expect.objectContaining({ stage: "images", done: 0 })]);
   }, 60_000);
 });

@@ -17,9 +17,7 @@ const snapshot: SiteSnapshot = {
   media: [],
 };
 const PHOTO = "a".repeat(64);
-const photo = { mime: "image/jpeg", data: new Uint8Array([0xff, 0xd8, 0xff]) };
 const PDF = "d".repeat(64);
-const pdf = { mime: "application/pdf", data: new TextEncoder().encode("%PDF-1.7") };
 const request = {
   snapshot,
   media: [
@@ -51,10 +49,7 @@ function setUp(dialogs: ExportDialogs, outcome: ExportOutcome = exported) {
     },
   } as unknown as Pick<IpcMain, "handle">;
   const runExport = vi.fn(async () => outcome);
-  const readMedia = vi.fn(async (hash: string) =>
-    hash === PHOTO ? photo : hash === PDF ? pdf : undefined,
-  );
-  registerExportHandlers(ipc, (url) => url === APP_URL, dialogs, runExport, readMedia);
+  registerExportHandlers(ipc, (url) => url === APP_URL, dialogs, runExport);
   const invoke = (...args: unknown[]) => {
     const handler = handlers.get("site:export");
     if (handler === undefined) {
@@ -83,52 +78,20 @@ describe("registerExportHandlers", () => {
     expect(runExport).toHaveBeenCalledWith({ ...snapshot, documents: [] }, "/sites/my-site");
   });
 
-  it("builds with image bytes read from the open site, leaving out images without them", async () => {
+  it("names images and documents by hash: their bytes are read only as the worker asks (R15)", async () => {
     const { invoke, runExport } = setUp({ chooseExportFolder: async () => "/sites/my-site" });
+    const document = {
+      id: "prices",
+      name: "prices",
+      mimeType: "application/pdf",
+      hash: PDF,
+    } as const;
 
-    await invoke(request);
+    await invoke({ ...request, documents: [document] });
 
+    // No bytes in this process: the build leaves out a file the site doesn't store, with a warning.
     expect(runExport).toHaveBeenCalledWith(
-      {
-        ...snapshot,
-        media: [
-          {
-            id: "hero",
-            name: "hero",
-            mimeType: "image/jpeg",
-            alt: "Our shop",
-            crop: { x: 0, y: 0, width: 1, height: 0.5 },
-            data: photo.data,
-          },
-        ],
-        documents: [],
-      },
-      "/sites/my-site",
-    );
-  });
-
-  it("reads linked documents' bytes from the open site, leaving out missing or mislabelled ones (1.28)", async () => {
-    const { invoke, runExport } = setUp({ chooseExportFolder: async () => "/sites/my-site" });
-    const document = { id: "prices", name: "prices", mimeType: "application/pdf" } as const;
-
-    await invoke({
-      snapshot,
-      media: [],
-      documents: [
-        { ...document, hash: PDF },
-        { ...document, id: "gone", name: "gone", hash: "e".repeat(64) },
-        // The photo's bytes named as a spreadsheet: not what they are, so left out.
-        {
-          id: "fake",
-          name: "fake",
-          mimeType: "application/vnd.ms-excel",
-          hash: PHOTO,
-        },
-      ],
-    });
-
-    expect(runExport).toHaveBeenCalledWith(
-      { ...snapshot, media: [], documents: [{ ...document, data: pdf.data }] },
+      { ...snapshot, media: request.media, documents: [document] },
       "/sites/my-site",
     );
   });
@@ -153,6 +116,10 @@ describe("registerExportHandlers", () => {
 });
 
 describe("toExportResult", () => {
+  it("reports a cancelled export as the dialog's cancel: nothing changed on disk (R15)", () => {
+    expect(toExportResult({ type: "cancelled" }, "/sites/my-site")).toEqual({ status: "canceled" });
+  });
+
   it("passes on the failure reason and logs only codes", () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
 
