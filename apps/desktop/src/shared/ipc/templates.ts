@@ -12,6 +12,11 @@ const templateSummarySchema = z.strictObject({
   example: z.boolean(),
   pages: z.int().min(1).max(100),
   theme: z.string().max(40),
+  /** Its home page as a PNG data URL (2.14b); `null` for a template without one. */
+  thumbnail: z
+    .string()
+    .regex(/^data:image\/png;base64,[A-Za-z0-9+/=]+$/)
+    .nullable(),
 });
 
 /** See {@link templateSummarySchema}. */

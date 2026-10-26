@@ -6,7 +6,7 @@ import type { TemplateSummary, TemplatesApi } from "../../shared/ipc/templates.j
 import { reportFailure } from "../log.js";
 import { useCommandRegistry } from "../shell/command-context.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
-import { NewSiteDialog } from "./NewSiteDialog.js";
+import { NewSiteDialog, templateName } from "./NewSiteDialog.js";
 import { openSiteWith } from "./open-site.js";
 
 /** Props of {@link SiteCommands}. */
@@ -86,7 +86,7 @@ export function SiteCommands({
       run: () =>
         openWith(restart, () =>
           (project ?? window.webforge.project).create({
-            name: t(`template.${example.id}.name`),
+            name: templateName(example.id),
             theme: example.theme,
             template: example.id,
           }),

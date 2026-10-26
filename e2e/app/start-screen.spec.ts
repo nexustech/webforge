@@ -124,7 +124,8 @@ test("tries the example: a pre-filled site named after it, in under 3 s (2.14b, 
 
   const started = Date.now();
   // Straight from the start screen: no New Site dialog, the example's own name and theme.
-  await page.getByRole("button", { name: "Try an example" }).click();
+  // Exactly: the first start's welcome has a Try an example card too.
+  await page.getByRole("button", { name: "Try an example", exact: true }).click();
   const hero = canvas(page).locator("h1", { hasText: "Fresh bread, baked every morning" });
   await expect(hero).toBeVisible();
   expect(Date.now() - started).toBeLessThan(3_000);
@@ -154,13 +155,13 @@ test("pins a site to the top of the Recent list, which it keeps after a restart 
   let page = await startWithoutSite();
   const cards = page.getByRole("listitem");
   await expect(cards.first()).toContainText("Newer");
-  await page.getByRole("button", { name: "Pin Older to the top" }).click();
+  await page.getByRole("button", { name: "Pin Older" }).click();
   await expect(cards.first()).toContainText("Older");
   await closeWindow();
 
   page = await startWithoutSite();
   await expect(page.getByRole("listitem").first()).toContainText("Older");
-  await expect(page.getByRole("button", { name: "Unpin Older" })).toHaveAttribute(
+  await expect(page.getByRole("button", { name: "Pin Older" })).toHaveAttribute(
     "aria-pressed",
     "true",
   );
@@ -180,13 +181,16 @@ test("says when a site can't be opened, and removes sites from the list", async 
   const card = page.getByRole("listitem");
   await expect(card).toHaveCount(1);
   await page.getByRole("button", { name: /^Remove .+ from the list$/ }).click();
-  await expect(card).toHaveCount(0);
+  // With none left, the first start's welcome says what to do next (SC-3).
+  await expect(page.getByRole("heading", { name: "Welcome to Webforge" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Remove .+ from the list$/ })).toHaveCount(0);
 
   // A file that isn't a site.
   const notes = join(dir, "notes.wforge");
   writeFileSync(notes, "just text");
   await stubFileDialogs(running(), notes);
-  await page.getByRole("button", { name: "Open a site…" }).click();
+  // Exactly: the welcome has an Open a site card too.
+  await page.getByRole("button", { name: "Open a site…", exact: true }).click();
   await expect(page.getByRole("alert")).toHaveText("This file isn't a Webforge site.");
 
   // With nothing to save, closing doesn't wait for a save that never comes (5 s timeout).
