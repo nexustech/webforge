@@ -5,10 +5,13 @@ import { type ElectronApplication, expect, type Page, test } from "@playwright/t
 import { ProjectStore } from "@webforge/storage";
 import { themePreset } from "@webforge/themes";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
+import { chooseFromMenu } from "./menus.js";
 import type { RendererWindow } from "./sites.js";
 
 // The Theme tab (2.3a): switching the theme asks first, saying how many pages it changes, and is
-// one undo step; a colour hard to read says so under it (WCAG AA).
+// one undo step; a colour hard to read says so under it (WCAG AA). Theme Studio (2.3b): opened
+// from the View menu, a theme card switches the theme the same way, and Ctrl/Cmd+Z undoes it from
+// inside the dialog, which shares the site's history (P5).
 
 let dir: string;
 let sitePath: string;
@@ -32,6 +35,12 @@ async function themeOf(page: Page): Promise<{ preset: string; colors: Record<str
     (window as unknown as RendererWindow).webforge.project.readSite(),
   )) as { site: { theme: { preset: string; colors: Record<string, unknown> } } };
   return read.site.theme;
+}
+
+/** The running app; a test calls it once it has launched one. */
+function running(): ElectronApplication {
+  if (app === undefined) throw new Error("The app is not running");
+  return app;
 }
 
 /** The app on the site, its Theme tab shown. */
@@ -97,4 +106,30 @@ test("a colour hard to read says so under it, and a readable one doesn't", async
   await expect(hex).toHaveValue("#d8d4ff");
   await page.getByRole("tab", { name: "Undo History" }).click();
   await expect(page.locator(".undo-history__step").first()).toHaveText("Changed brand colour");
+});
+
+test("Theme Studio opens from the View menu, switches theme from a card, and undoes it there", async () => {
+  const page = await openTheme();
+  await chooseFromMenu(running(), page, "View", "Theme Studio…");
+  const studio = page.getByRole("dialog", { name: "Theme Studio" });
+  await expect(studio.getByRole("button", { name: /Light/ })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+
+  await studio.getByRole("button", { name: /Atelier/ }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "Switch Theme" }).click();
+  await expect(studio.getByRole("button", { name: /Atelier/ })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect.poll(async () => (await themeOf(page)).preset).toBe("atelier");
+
+  // The card keeps the focus: the site's undo, from inside Theme Studio.
+  await page.keyboard.press("ControlOrMeta+z");
+  await expect(studio.getByRole("button", { name: /Light/ })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect.poll(async () => (await themeOf(page)).preset).toBe("light");
 });

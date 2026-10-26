@@ -1,8 +1,18 @@
 import type { Area, WindowContext } from "../editor/areas.js";
 import { registerThemePanel } from "./register-theme-panel.js";
+import { createStudio } from "./studio/studio-state.js";
+import { registerThemeCommands } from "./theme-commands.js";
 
-/** The Theme tab (2.3a): the site's theme, its colours, fonts and styles. */
+/** The Theme tab (2.3a) and Theme Studio (2.3b), and View → Theme… and Theme Studio… (#452). */
 export const themePanelArea: Area<WindowContext> = {
   id: "themePanel",
-  register: ({ panels, session, siteWide }) => registerThemePanel(panels, session, siteWide),
+  register: ({ panels, commands, session, siteWide }) => {
+    const studio = createStudio();
+    const removePanel = registerThemePanel(panels, session, siteWide, studio);
+    const removeCommands = registerThemeCommands(commands, panels, studio);
+    return () => {
+      removeCommands();
+      removePanel();
+    };
+  },
 };
