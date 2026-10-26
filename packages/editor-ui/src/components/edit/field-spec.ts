@@ -91,6 +91,13 @@ type FieldSpecs = {
   };
   /** Drawn by the app: code (fields/code/). */
   readonly code: Nothing;
+  /**
+   * Drawn by the app: one of the theme's colours (the Theme tab, 2.3a), and what it says about the
+   * colour's contrast with those it is used with, already translated: nothing when it passes AA.
+   */
+  readonly themeColor: { readonly warnings: readonly string[] };
+  /** Drawn by the app: one of the fonts the app has, chosen in the font picker (2.3a, UX-15). */
+  readonly font: Nothing;
 };
 
 /** A kind of field: the renderer that draws it. */

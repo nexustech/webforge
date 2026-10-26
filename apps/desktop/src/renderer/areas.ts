@@ -20,6 +20,7 @@ import { viewCommandsArea } from "./shell/area.js";
 import { pageCommandsArea, sitePanelArea } from "./site/area.js";
 import { canvasSettingsArea, siteSettingsArea } from "./site-settings/area.js";
 import { crashReportsArea } from "./storage/area.js";
+import { themePanelArea } from "./theme/area.js";
 
 /*
  * The composition root (2.20, B1): every area the editor window registers, in order. Menus, the
@@ -62,4 +63,5 @@ export const WINDOW_AREAS: readonly Area<WindowContext>[] = [
   exportCommandArea,
   settingsArea,
   siteSettingsArea,
+  themePanelArea,
 ];

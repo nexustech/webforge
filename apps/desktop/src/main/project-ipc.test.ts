@@ -207,6 +207,7 @@ describe("registerProjectHandlers", () => {
       list: vi.fn(() => []),
       pathOf: vi.fn((asked: string) => (asked === id ? "/sites/Bakery.wforge" : undefined)),
       remove: vi.fn(),
+      setPinned: vi.fn(),
     };
     const { invoke, session } = setUp({}, { recent });
 
@@ -220,11 +221,19 @@ describe("registerProjectHandlers", () => {
     await expect(invoke("project:open-recent", APP_URL, "/etc/passwd")).rejects.toThrow();
     await expect(invoke("project:remove-recent", APP_URL, id)).resolves.toBeNull();
     expect(recent.remove).toHaveBeenCalledWith(id);
+    await expect(invoke("project:pin-recent", APP_URL, id, true)).resolves.toBeNull();
+    expect(recent.setPinned).toHaveBeenCalledWith(id, true);
+    await expect(invoke("project:pin-recent", APP_URL, id, "yes")).rejects.toThrow();
   });
 
   it("takes a recent site whose file has gone off the list", async () => {
     const id = "a".repeat(32);
-    const recent = { list: vi.fn(() => []), pathOf: vi.fn(() => "/gone.wforge"), remove: vi.fn() };
+    const recent = {
+      list: vi.fn(() => []),
+      pathOf: vi.fn(() => "/gone.wforge"),
+      remove: vi.fn(),
+      setPinned: vi.fn(),
+    };
     const { invoke, session } = setUp({}, { recent });
     session.open.mockReturnValueOnce({ status: "failed", reason: "not-found" } as never);
 

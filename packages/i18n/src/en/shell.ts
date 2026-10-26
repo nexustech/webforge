@@ -113,6 +113,7 @@ export const shell = {
   "command.tabletView": "Tablet View",
   "command.mobileView": "Mobile View",
   "command.shortcuts": "Keyboard Shortcuts",
+  "command.tryExample": "Try an Example",
 
   // Key names as Windows and Linux show them (macOS shows symbols: ⌘ ⌥ ⇧ ⌫).
   "keys.ctrl": "Ctrl",
