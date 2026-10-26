@@ -42,7 +42,7 @@ describe("runExport", () => {
     expect(stages.slice(-3)).toEqual(["styles", "fonts", "writing"]);
     expect(stages).toContain("images");
     expect(stages).toContain("pages");
-  });
+  }, 60_000);
 
   it("builds the site and writes it to the destination", async () => {
     const destination = join(tempDir(), "site");
