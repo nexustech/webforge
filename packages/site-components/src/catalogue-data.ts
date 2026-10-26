@@ -130,13 +130,10 @@ const optionValues = (options: readonly { readonly value: string }[]) => {
 
 /**
  * What `field` may hold, as a zod schema: a select's value one of its options, a link a link, an
- * image an image… A slot holds elements (checked by type elsewhere: `nodes` says how), and `code`
+ * image an image… A slot holds elements (whose types its `allow` checks elsewhere), and `code`
  * none, as nothing outside the editor may write Custom Code.
  */
-export function fieldValueSchema(
-  field: CatalogueField,
-  nodes: z.ZodType = z.array(z.unknown()),
-): z.ZodType {
+export function fieldValueSchema(field: CatalogueField): z.ZodType {
   const value = ((): z.ZodType => {
     switch (field.kind) {
       case "text":
@@ -159,7 +156,7 @@ export function fieldValueSchema(
       case "link":
         return linkValueSchema;
       case "slot":
-        return nodes;
+        return z.array(z.unknown());
       case "code":
         return z.never();
       case "list": {

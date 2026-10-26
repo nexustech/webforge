@@ -424,8 +424,9 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     registerTemplatesHandlers(ipcMain, isTrustedSender, templates);
     // AI apps' requests go to the open site's window (F-AI-1); the MCP server (4.9) asks through it.
     const ai = registerAiHandlers(ipcMain, isTrustedSender, () => lifecycle.mainWindow());
-    // E2E tests ask as an AI app would, in `--mode e2e` builds only.
-    if (import.meta.env.MODE === "e2e") Object.assign(globalThis, { webforgeAi: ai });
+    // E2E tests ask as an AI app would, through main's globals (only main's own code reaches
+    // them), in the unpackaged app they launch; never in the installed one.
+    if (!app.isPackaged) Object.assign(globalThis, { webforgeAi: ai });
     // A site double-clicked in Explorer arrives as a command-line argument (P1).
     const projectToOpen = lifecycle.projectFromFinder ?? findProjectArgument(process.argv);
     if (projectToOpen !== undefined) {
