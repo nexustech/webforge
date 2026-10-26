@@ -92,7 +92,7 @@ describe("the font field (2.3a)", { timeout: 15_000 }, () => {
     const picker = within(screen.getByRole("dialog", { name: "Choose a font" }));
     expect(browse).not.toHaveBeenCalled();
     await user.click(picker.getByRole("button", { name: "Browse all fonts" }));
-    expect(await picker.findByText("1 more fonts to download, under To download.")).toBeTruthy();
+    expect(await picker.findByText("1 more font to download, under To download.")).toBeTruthy();
     await user.click(picker.getByRole("button", { name: "To download" }));
     // Comic Neue is already on this computer: only Lobster is to download.
     expect(picker.getAllByRole("option").map((option) => option.textContent)).toEqual([

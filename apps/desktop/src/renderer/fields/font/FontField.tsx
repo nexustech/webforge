@@ -7,7 +7,7 @@ import {
   Picker,
   type PickerItem,
 } from "@webforge/editor-ui";
-import { isMessageKey, type MessageKey, t } from "@webforge/i18n";
+import { isMessageKey, type MessageKey, plural, t } from "@webforge/i18n";
 import { type FontRef, fontRefSchema } from "@webforge/model";
 import { FONT_CATALOGUE, previewFileOf } from "@webforge/themes";
 import { DownloadIcon } from "lucide-react";
@@ -188,7 +188,7 @@ export function FontField({
       : browse.status === "failed"
         ? t(browse.reason === "offline" ? "fonts.browse.offline" : "fonts.browse.failed")
         : browse.status === "listed"
-          ? t("fonts.browse.listed", { count: toDownload.length })
+          ? plural("fonts.browse.listed", toDownload.length)
           : undefined;
   const busy = status !== null && "downloading" in status;
 

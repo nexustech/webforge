@@ -35,7 +35,8 @@ export const fonts = {
   "fonts.category.toDownload": "To download",
   "fonts.browse": "Browse all fonts",
   "fonts.browse.loading": "Listing the fonts there are to download…",
-  "fonts.browse.listed": "{count} more fonts to download, under To download.",
+  "fonts.browse.listed.one": "1 more font to download, under To download.",
+  "fonts.browse.listed.other": "{count} more fonts to download, under To download.",
   "fonts.browse.offline": "You're offline, so the fonts to download can't be listed now.",
   "fonts.browse.failed": "The fonts to download couldn't be listed. Try again later.",
   "fonts.picker.notDownloaded":
