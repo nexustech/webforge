@@ -1,5 +1,5 @@
 import { type Field, RichTextMenu } from "@puckeditor/core";
-import type { Extensions } from "@tiptap/core";
+import { Extension, type Extensions } from "@tiptap/core";
 import { t } from "@webforge/i18n";
 import { RICH_TEXT_FILE_LINK, RICH_TEXT_PAGE_LINK } from "@webforge/model";
 import { LinkIcon, UnlinkIcon } from "lucide-react";
@@ -115,8 +115,22 @@ export function createFormatToolbar(picker: () => PickLink | null) {
 export const FormatToolbar = createFormatToolbar(() => null);
 
 /**
+ * Names rich text's editor after its field (#465), as the Edit panel labels it ("Text"): an editor
+ * is a text box to assistive technology, which announces it by its name. ProseMirror keeps the
+ * attribute, as it changes only the ones it sets itself.
+ */
+function editorName(label: string) {
+  return Extension.create({
+    name: "webforgeEditorName",
+    onCreate() {
+      this.editor.view.dom.setAttribute("aria-label", label);
+    },
+  });
+}
+
+/**
  * Puck's field for rich text, edited on the canvas when `inline`, with `toolbar` over it and
- * `extensions` in its editor (the text keys).
+ * `extensions` in its editor (the text keys), named after its field.
  */
 export function richTextField(
   label: string,
@@ -130,6 +144,6 @@ export function richTextField(
     contentEditable: inline,
     options: RICH_TEXT_OPTIONS,
     renderInlineMenu: toolbar,
-    ...(extensions.length === 0 ? {} : { tiptap: { extensions } }),
+    tiptap: { extensions: [editorName(label), ...extensions] },
   };
 }
