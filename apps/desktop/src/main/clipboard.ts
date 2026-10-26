@@ -343,6 +343,8 @@ export function createElementClipboard(system: SystemClipboard, dir: string) {
      * them: the next paste or quit decides.
      */
     async forgetIfReplaced(): Promise<void> {
+      // Nothing kept, nothing to forget: the clipboard isn't asked, as it isn't on most focuses.
+      if (!existsSync(dir)) return;
       const before = copiesBegun;
       let holds: boolean;
       try {

@@ -190,6 +190,15 @@ describe("element clipboard (1.25)", () => {
     expect(readdirSync(dir)).toEqual([photo.hash]);
   });
 
+  it("doesn't ask the clipboard when no copied images are kept", async () => {
+    const holdsElements = vi.fn(async () => false);
+    const made = createElementClipboard({ ...system, holdsElements }, dir);
+
+    await made.forgetIfReplaced();
+
+    expect(holdsElements).not.toHaveBeenCalled();
+  });
+
   it("keeps the copied images when it can't tell what the clipboard holds", async () => {
     const made = createElementClipboard(
       { ...system, holdsElements: () => Promise.reject(new Error("busy")) },
