@@ -122,10 +122,14 @@ test("a five-page site built from blank comes back as it was, page by page", asy
   const selectSection = async () => {
     await showTab(right, "Edit");
     const section = canvas().locator(".site-section").first();
-    // In the frame's own pixels, as a click's position is: `boundingBox` is the window's, which
-    // the canvas's zoom scales (Desktop zooms out on a narrow canvas, PH2-18).
+    // A click's position is added to the element's box in the window's pixels, which the canvas's
+    // zoom scales (Desktop zooms out on a narrow canvas, PH2-18): 8 of the frame's pixels inside the
+    // bottom padding (64 px), at any zoom.
+    const box = await section.boundingBox();
+    if (box === null) throw new Error("Section not visible");
     const height = await section.evaluate((element) => element.getBoundingClientRect().height);
-    await section.click({ force: true, position: { x: 10, y: height - 16 } });
+    const scale = box.height / height;
+    await section.click({ force: true, position: { x: 10 * scale, y: box.height - 8 * scale } });
     await expect(right().getByRole("heading", { name: "Section", exact: true })).toBeVisible();
   };
   /** Adds a page named `name` from the Site panel; the canvas then shows it. */
