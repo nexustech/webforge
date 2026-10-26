@@ -1,7 +1,7 @@
 import { DEFAULT_THEME } from "@webforge/model";
 import { entranceClasses, hoverClasses } from "@webforge/site-components";
 import { beforeAll, describe, expect, it } from "vitest";
-import { buildSiteCss, classCandidates, siteStylesheetSource } from "./css.js";
+import { buildSiteCss, classCandidates, createStyleCompiler, siteStylesheetSource } from "./css.js";
 import { loadNodeResources } from "./node-resources.js";
 import type { PipelineResources } from "./resources.js";
 
@@ -134,5 +134,42 @@ describe("buildSiteCss", () => {
     await expect(buildSiteCss({ ...resources, stylesheets: {} }, options)).rejects.toThrow(
       'Unknown stylesheet "tailwindcss/theme.css"',
     );
+  });
+});
+
+describe("createStyleCompiler (3.1)", () => {
+  const options = (candidates: readonly string[], theme = DEFAULT_THEME) => ({
+    theme,
+    candidates,
+    fontsUrl: "../fonts/",
+  });
+  const some = ["btn", "p-4", "md:grid-cols-3", "text-[#1f6feb]/50"];
+  const more = [...some, "skew-x-12", "hover:underline"];
+
+  it("compiles exactly what buildSiteCss does, as classes come and go", async () => {
+    const styles = createStyleCompiler(resources);
+
+    // The kept compiler for the first two; a fresh one once a class is gone, and for a new theme.
+    for (const [candidates, theme] of [
+      [some, DEFAULT_THEME],
+      [more, DEFAULT_THEME],
+      [some, DEFAULT_THEME],
+      [some, { ...DEFAULT_THEME, preset: "dark" as const }],
+    ] as const) {
+      expect(await styles.css(options(candidates, theme))).toBe(
+        await buildSiteCss(resources, options(candidates, theme)),
+      );
+    }
+  });
+
+  it("keeps a class no page uses any more while it grows, for a preview", async () => {
+    const styles = createStyleCompiler(resources);
+    await styles.css(options(more), true);
+
+    const css = await styles.css(options(some), true);
+
+    expect(css).toContain(".skew-x-12");
+    // An export after it is exact again.
+    expect(await styles.css(options(some))).not.toContain(".skew-x-12");
   });
 });

@@ -1,5 +1,6 @@
 import { toast } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
+import type { ExportProgress } from "../../shared/ipc/site.js";
 import type { ExportResult } from "../../shared/ipc-contract.js";
 import { reportFailure } from "../log.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
@@ -34,32 +35,75 @@ export function exportMessage(
   }
 }
 
+/** What an export has reached, under the toast's "Exporting…"; images and pages count from 1. */
+export function progressText(progress: ExportProgress): string {
+  switch (progress.stage) {
+    case "images":
+    case "pages":
+      return t(`export.progress.${progress.stage}`, {
+        done: Math.min(progress.done + 1, progress.total),
+        total: progress.total,
+      });
+    default:
+      return t(`export.progress.${progress.stage}`);
+  }
+}
+
 /**
  * Registers File → Export Site…: asks main for a folder and exports there (`onExport`), showing
- * progress and the outcome as a toast. The command is disabled while an export runs.
+ * its progress and the outcome as a toast, whose Cancel button stops it (`cancel`, 3.1). The
+ * export runs in a worker, so the window stays usable meanwhile; the command is disabled while
+ * one runs.
  */
 export function registerExportCommand(
   registry: CommandRegistry,
-  onExport: () => Promise<ExportResult>,
+  onExport: (onProgress: (progress: ExportProgress) => void) => Promise<ExportResult>,
+  cancel: () => Promise<null>,
 ): () => void {
   const run = async () => {
     registry.update(EXPORT_COMMAND_ID, { enabled: false });
-    const progress = toast.loading(t("export.working"));
+    // Once it's cancelling or done, progress no longer changes the toast.
+    let quiet = false;
+    const cancelButton = {
+      label: t("export.cancel"),
+      onClick: (event: { preventDefault(): void }) => {
+        // The toast stays until the export answers; it says it's stopping meanwhile.
+        event.preventDefault();
+        quiet = true;
+        toast.loading(t("export.cancelling"), { id: progress, description: null, action: null });
+        cancel().catch((error: unknown) => {
+          reportFailure("export.cancel", error);
+        });
+      },
+    };
+    const progress = toast.loading(t("export.working"), { action: cancelButton });
+    const show = (reached: ExportProgress) => {
+      if (quiet) return;
+      toast.loading(t("export.working"), {
+        id: progress,
+        description: progressText(reached),
+        action: cancelButton,
+      });
+    };
     let message: ReturnType<typeof exportMessage>;
     try {
-      message = exportMessage(await onExport());
+      message = exportMessage(await onExport(show));
     } catch (error) {
       reportFailure("export", error);
       message = { kind: "error", text: t("export.failed.buildFailed") };
     } finally {
+      quiet = true;
       registry.update(EXPORT_COMMAND_ID, { enabled: true });
     }
+    // A toast updated in place keeps what it isn't given: the outcome drops the progress line and
+    // the Cancel button.
+    const outcome = { id: progress, description: null, action: null };
     if (message === null) {
       toast.dismiss(progress);
     } else if (message.kind === "success") {
-      toast.success(message.text, { id: progress });
+      toast.success(message.text, outcome);
     } else {
-      toast.error(message.text, { id: progress });
+      toast.error(message.text, outcome);
     }
   };
   return registry.register({

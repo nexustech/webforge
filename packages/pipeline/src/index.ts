@@ -1,6 +1,7 @@
 export type {
   BuildErrorCode,
   BuildEvent,
+  BuildMode,
   BuildOptions,
   BuildWarning,
   BuiltSite,
@@ -13,6 +14,13 @@ export { BODY_CLASS } from "./html.js";
 export { makeThumbnail } from "./images.js";
 export { createMemoryImageCache } from "./memory-image-cache.js";
 export { onceUntilFailure } from "./once.js";
+export type {
+  Pipeline,
+  PipelineBuildOptions,
+  PipelineEvent,
+  PipelineOptions,
+} from "./pipeline.js";
+export { createPipeline } from "./pipeline.js";
 export type {
   CodecBytes,
   CodecModules,

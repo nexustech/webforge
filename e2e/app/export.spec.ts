@@ -33,6 +33,10 @@ test.describe("Export site", () => {
     await expect(page.getByText("Site exported to “my-site” (8 files).")).toBeVisible({
       timeout: 30_000,
     });
+    // The outcome takes the progress toast's place, without its Cancel button (3.1).
+    await expect(
+      page.locator("[data-sonner-toast]").getByRole("button", { name: "Cancel" }),
+    ).toHaveCount(0);
     const index = readFileSync(join(folder, "index.html"), "utf8");
     expect(index).toContain("<!doctype html>");
     expect(index).toContain("Welcome to our business");

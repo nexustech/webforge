@@ -4,7 +4,9 @@ import {
   type ExportMessage,
   type ExportOutcome,
   exportOutcomeSchema,
+  exportProgressMessageSchema,
 } from "../shared/export-worker-protocol.js";
+import type { ExportProgress } from "../shared/ipc/site.js";
 import type { WorkerProcess } from "./worker-process.js";
 
 /** How long an export may take before the worker is stopped (large sites encode many images). */
@@ -21,6 +23,8 @@ export type ExportOptions = {
   ) => Promise<{ readonly data: Uint8Array; readonly mime: string } | undefined>;
   /** Cancels the export: the worker stops before its next image or page and writes nothing. */
   readonly signal?: AbortSignal | undefined;
+  /** Told how far the export has come, as the worker reaches each stage (3.1). */
+  readonly onProgress?: ((progress: ExportProgress) => void) | undefined;
 };
 
 /** Runs exports of the open site in one utility process; see {@link createExportRunner}. */
@@ -84,6 +88,11 @@ export function createExportRunner(
           });
         return;
       }
+      const progress = exportProgressMessageSchema.safeParse(message);
+      if (progress.success) {
+        running?.options.onProgress?.(progress.data.progress);
+        return;
+      }
       const outcome = exportOutcomeSchema.safeParse(message);
       if (outcome.success) {
         running?.finish(outcome.data);
@@ -101,8 +110,21 @@ export function createExportRunner(
 
   const runOne = (job: ExportJob, options: ExportOptions) =>
     new Promise<ExportOutcome>((resolve) => {
-      const current = ready();
-      const cancel = () => current.postMessage({ type: "cancel" } satisfies ExportMessage);
+      let current: WorkerProcess;
+      try {
+        current = ready();
+      } catch {
+        // The worker couldn't start: this export fails, and the next one tries again.
+        resolve({ type: "failed", code: "build-failed", detail: "worker-start-failed" });
+        return;
+      }
+      const cancel = () => {
+        // From an abort listener, where a throw would be uncaught: a worker that's gone has
+        // stopped anyway, and its exit fails the export.
+        try {
+          current.postMessage({ type: "cancel" } satisfies ExportMessage);
+        } catch {}
+      };
       const timer = setTimeout(() => {
         finish({ type: "failed", code: "build-failed", detail: "timeout" });
         discard(current);
@@ -115,15 +137,23 @@ export function createExportRunner(
         resolve(outcome);
       };
       running = { finish, options };
-      current.postMessage(job);
-      if (options.signal?.aborted === true) cancel();
-      else options.signal?.addEventListener("abort", cancel, { once: true });
+      try {
+        current.postMessage(job);
+        if (options.signal?.aborted === true) cancel();
+        else options.signal?.addEventListener("abort", cancel, { once: true });
+      } catch {
+        // A worker that can't take messages any more is replaced for the next export.
+        finish({ type: "failed", code: "build-failed", detail: "worker-unreachable" });
+        discard(current);
+      }
     });
 
   return {
     run(job, options) {
       const outcome = queue.then(() => runOne(job, options));
-      queue = outcome;
+      // The next export waits for this one to settle, however it ends: a failure here never
+      // fails the exports after it.
+      queue = outcome.catch(() => undefined);
       return outcome;
     },
     close() {

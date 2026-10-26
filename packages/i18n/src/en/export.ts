@@ -2,6 +2,13 @@
 export const exportSite = {
   "export.dialogTitle": "Choose a folder for your site",
   "export.working": "Exporting…",
+  "export.progress.images": "Preparing image {done} of {total}",
+  "export.progress.pages": "Building page {done} of {total}",
+  "export.progress.styles": "Building the styles",
+  "export.progress.fonts": "Adding the fonts",
+  "export.progress.writing": "Saving the files",
+  "export.cancel": "Cancel",
+  "export.cancelling": "Cancelling…",
   "export.done": "Site exported to “{folder}” ({files} files).",
   "export.failed.folderNotEmpty":
     "That folder already contains other files. Choose an empty folder or a previous export.",

@@ -3,7 +3,12 @@ import { DEFAULT_THEME } from "@webforge/model";
 import type { IpcMain, IpcMainInvokeEvent } from "electron";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ExportOutcome } from "../shared/export-worker-protocol.js";
-import { type ExportDialogs, registerExportHandlers, toExportResult } from "./export-ipc.js";
+import {
+  type ExportDialogs,
+  type RunExport,
+  registerExportHandlers,
+  toExportResult,
+} from "./export-ipc.js";
 
 type Handler = (event: IpcMainInvokeEvent, ...args: unknown[]) => Promise<unknown>;
 
@@ -41,23 +46,31 @@ const exported: ExportOutcome = {
   durationMs: 900,
 };
 
-function setUp(dialogs: ExportDialogs, outcome: ExportOutcome = exported) {
+function setUp(dialogs: ExportDialogs, run: RunExport | ExportOutcome = exported) {
   const handlers = new Map<string, Handler>();
   const ipc = {
     handle: (channel: string, handler: Handler) => {
       handlers.set(channel, handler);
     },
   } as unknown as Pick<IpcMain, "handle">;
-  const runExport = vi.fn(async () => outcome);
-  registerExportHandlers(ipc, (url) => url === APP_URL, dialogs, runExport);
-  const invoke = (...args: unknown[]) => {
-    const handler = handlers.get("site:export");
-    if (handler === undefined) {
-      throw new Error("No export handler");
-    }
-    return handler({ senderFrame: { url: APP_URL } } as unknown as IpcMainInvokeEvent, ...args);
+  const runExport = vi.fn<RunExport>(typeof run === "function" ? run : async () => run);
+  const sendProgress = vi.fn();
+  registerExportHandlers(ipc, (url) => url === APP_URL, dialogs, runExport, sendProgress);
+  const call =
+    (channel: string) =>
+    (...args: unknown[]) => {
+      const handler = handlers.get(channel);
+      if (handler === undefined) {
+        throw new Error(`No handler for ${channel}`);
+      }
+      return handler({ senderFrame: { url: APP_URL } } as unknown as IpcMainInvokeEvent, ...args);
+    };
+  return {
+    invoke: call("site:export"),
+    cancel: call("site:cancel-export"),
+    runExport,
+    sendProgress,
   };
-  return { invoke, runExport };
 }
 
 afterEach(() => {
@@ -75,7 +88,32 @@ describe("registerExportHandlers", () => {
       files: 5,
       warnings: 0,
     });
-    expect(runExport).toHaveBeenCalledWith({ ...snapshot, documents: [] }, "/sites/my-site");
+    expect(runExport).toHaveBeenCalledWith(
+      { ...snapshot, documents: [] },
+      "/sites/my-site",
+      expect.anything(),
+    );
+  });
+
+  it("passes the export's progress on to the window, and cancels it when asked (3.1)", async () => {
+    const { invoke, cancel, sendProgress } = setUp(
+      { chooseExportFolder: async () => "/sites/my-site" },
+      (_snapshot, _destination, { signal, onProgress }) =>
+        new Promise((resolve) => {
+          onProgress({ stage: "images", done: 0, total: 2 });
+          signal.addEventListener("abort", () => resolve({ type: "cancelled" }));
+        }),
+    );
+
+    const result = invoke(request);
+    await vi.waitFor(() =>
+      expect(sendProgress).toHaveBeenCalledWith({ stage: "images", done: 0, total: 2 }),
+    );
+    await expect(cancel()).resolves.toBeNull();
+
+    await expect(result).resolves.toEqual({ status: "canceled" });
+    // With nothing under way, a cancel does nothing.
+    await expect(cancel()).resolves.toBeNull();
   });
 
   it("names images and documents by hash: their bytes are read only as the worker asks (R15)", async () => {
@@ -93,6 +131,7 @@ describe("registerExportHandlers", () => {
     expect(runExport).toHaveBeenCalledWith(
       { ...snapshot, media: request.media, documents: [document] },
       "/sites/my-site",
+      expect.anything(),
     );
   });
 

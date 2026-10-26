@@ -1,7 +1,9 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { SiteSnapshot } from "@webforge/model";
+import { createPipeline } from "@webforge/pipeline";
 import { loadNodeResources } from "@webforge/pipeline/node";
+import { siteLibrary } from "@webforge/site-components";
 import { sampleSite, tempDirFactory } from "@webforge/test-utils";
 import { fontFacesFor } from "@webforge/themes";
 import { describe, expect, it } from "vitest";
@@ -12,7 +14,7 @@ const tempDir = tempDirFactory("webforge-run-export-");
 
 /** The main process's side of an export: no stored bytes, and a signal it may abort. */
 function channel(signal = new AbortController().signal): ExportChannel {
-  return { readMedia: async () => undefined, signal };
+  return { readMedia: async () => undefined, signal, pipeline: createPipeline(siteLibrary) };
 }
 
 /** An export of `snapshot`, with the site's font files as the main process sends them (2.2). */
@@ -28,6 +30,20 @@ async function job(snapshot: SiteSnapshot, destination: string): Promise<ExportJ
 }
 
 describe("runExport", () => {
+  it("tells its progress through the build, then the writing (3.1)", async () => {
+    const destination = join(tempDir(), "site");
+    const stages: string[] = [];
+
+    await runExport(await job(sampleSite(), destination), loadNodeResources, {
+      ...channel(),
+      onProgress: (progress) => stages.push(progress.stage),
+    });
+
+    expect(stages.slice(-3)).toEqual(["styles", "fonts", "writing"]);
+    expect(stages).toContain("images");
+    expect(stages).toContain("pages");
+  });
+
   it("builds the site and writes it to the destination", async () => {
     const destination = join(tempDir(), "site");
 
