@@ -30,7 +30,7 @@ const meta = {
   title: "Dialogs/Theme Studio/Colours from an image",
   component: StudioImagePalette,
   args: {
-    media: { logo },
+    media: { [logo.id]: logo },
     theme: DEFAULT_THEME,
     onUse: () => Promise.resolve(false),
     imageUrl: () => LOGO_URL,

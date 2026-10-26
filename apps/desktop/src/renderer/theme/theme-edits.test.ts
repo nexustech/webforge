@@ -153,14 +153,17 @@ describe("the Theme tab's edits (2.3a)", () => {
     expect(labels()).toEqual(["Changed text style for Heading 2"]);
   });
 
-  it("sets either palette's colours on their own in Theme Studio (F-DS-7)", async () => {
+  it("sets the page's colours by the one rule, and reversed sections' on their own (F-DS-7)", async () => {
     const { session, labels, theme } = setUp();
     const reversed = theme().inverse?.primary;
+    const page = theme().colors["info-content"];
 
+    // A page brand colour in Theme Studio, as in the Theme tab: reversed sections take its hue.
     await setPaletteColor(session, answering(true), "colors", "primary", BRAND);
-    expect(theme().inverse?.primary).toEqual(reversed);
+    expect(theme().inverse?.primary).toEqual({ l: reversed?.l, c: BRAND.c, h: BRAND.h });
     await setPaletteColor(session, answering(true), "inverse", "info-content", BRAND);
     expect(theme().inverse?.["info-content"]).toEqual(BRAND);
+    expect(theme().colors["info-content"]).toEqual(page);
 
     expect(labels()).toEqual([
       "Changed Brand colour",

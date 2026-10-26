@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { DEFAULT_THEME, type ImageMeta, type MediaId } from "@webforge/model";
+import { DEFAULT_THEME, type ImageMeta, type MediaId, type SiteDoc } from "@webforge/model";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { StudioImagePalette } from "./StudioImagePalette.js";
 
@@ -28,7 +28,7 @@ const LOGO_PIXELS = Uint8ClampedArray.from([
 
 /** The palette with Media holding `media`, its images read by `read`. */
 function setUp(
-  media: Record<string, ImageMeta> = { logo },
+  media: SiteDoc["media"] = { [logo.id]: logo },
   read: (url: string) => Promise<ArrayLike<number>> = () => Promise.resolve(LOGO_PIXELS),
 ) {
   const onUse = vi.fn(() => Promise.resolve(true));
@@ -89,14 +89,16 @@ describe("a palette from an image (2.3b, PG-2)", () => {
   });
 
   it("says why there's no proposal: an image all clear, or one that can't be read", async () => {
-    const clear = setUp({ logo }, () => Promise.resolve(Uint8ClampedArray.from([0, 0, 0, 0])));
+    const clear = setUp({ [logo.id]: logo }, () =>
+      Promise.resolve(Uint8ClampedArray.from([0, 0, 0, 0])),
+    );
     await chooseLogo(clear.user);
     expect(
       await screen.findByText("That image has no colours to suggest: it's all clear."),
     ).toBeTruthy();
     cleanup();
 
-    const broken = setUp({ logo }, () => Promise.reject(new Error("tainted")));
+    const broken = setUp({ [logo.id]: logo }, () => Promise.reject(new Error("tainted")));
     await chooseLogo(broken.user);
     expect(await screen.findByText("That image couldn't be read. Try another.")).toBeTruthy();
   });
