@@ -46,7 +46,7 @@ describe("advancedFields", () => {
   });
 
   it("accepts only what a site file accepts", () => {
-    const classes = fieldNamed(ADVANCED_FIELDS.className, "text").validate;
+    const classes = fieldNamed(ADVANCED_FIELDS.className, "classes").validate;
     const anchor = fieldNamed(ADVANCED_FIELDS.anchorId, "text").validate;
     const [name, value] = fieldNamed(ADVANCED_FIELDS.attributes, "list", {
       attributes: { "data-a": "1" },
