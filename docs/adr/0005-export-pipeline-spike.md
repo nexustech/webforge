@@ -100,3 +100,22 @@ The build has to run off the UI thread, in an Electron `utilityProcess`, and wor
   - `pnpm e2e` now also needs Playwright's browsers (`playwright install chromium firefox webkit`), which CI installs;
   - golden output lives in `packages/pipeline/test/golden/` and is excluded from Biome;
   - `tempDirFactory` moved to `@webforge/test-utils` and is shared by the storage and pipeline tests.
+
+## Amendment, 26 Oct 2026 (R15, #248)
+The architecture review asked for a build that can be cancelled and followed, that doesn't encode the same image twice, and that doesn't carry every image through the main process.
+- **Cancel and progress.** `buildSite(snapshot, library, resources, { signal, onProgress })`:
+  - it checks `signal` before each image, document and page, and before the stylesheet and the fonts, then throws a `cancelled` `BuildError`;
+  - `onProgress` gets `BuildEvent`s (each image and page as it starts, then `styles` and `fonts`);
+  - `writeSiteFolder(files, destination, signal)` stops between files and removes its temporary folder, so the destination is left as it was.
+
+  The full §6 `Pipeline` interface (an `AsyncIterable`, preview mode, `check()`) is still 3.1's.
+- **Bytes when needed.** A snapshot's images and documents may carry `hash` instead of `data`. The build reads each one through `resources.readMedia(hash)` as it reaches it.
+  - In the app, the export worker asks the main process (`read-blob`), which reads it from the open site through the store gate. Main never holds more than the one being read; before, it read every image into its heap and sent them all in one message.
+  - The worker doesn't open the `.wforge` itself. The main process's connection uses a rollback journal, so a second process reading would block saves, and the gate only coordinates access within main.
+- **Image cache, in memory only.**
+  - `PipelineResources.imageCache` takes an `ImageCache`, keyed by the original's SHA-256, its crop, the width, the format and the encoder's settings, so a key never stands for other bytes.
+  - On a hit for every file, the original is neither read nor decoded.
+  - In the app, the export worker now lives while the site is open (`createExportRunner`) and keeps a 256 MB cache, least recently used first out (`createMemoryImageCache`). It's stopped when the site closes, so the cache goes with it.
+  - **Not on disk:** a cache of encoded copies of the person's photos in the user data would outlive the site, survive its deletion and be a second copy outside the file they control. That breaks "never store site content" and R13d. If measurements show that first exports are too slow, the place is the `.wforge` itself (format 2, a derivatives table), so the copies live and die with the site. That's the product owner's call, for the file-size trade-off.
+- **Codecs.** A failed codec preparation, or a failed load of the worker's bundled resources, is forgotten (`onceUntilFailure`), so the long-lived workers try again with their next job. The `ImageData` stand-in is defined only where the runtime has none.
+

@@ -6,9 +6,14 @@ import { sampleSite, tempDirFactory } from "@webforge/test-utils";
 import { fontFacesFor } from "@webforge/themes";
 import { describe, expect, it } from "vitest";
 import type { ExportJob } from "../shared/export-worker-protocol.js";
-import { runExport } from "./run-export.js";
+import { type ExportChannel, runExport } from "./run-export.js";
 
 const tempDir = tempDirFactory("webforge-run-export-");
+
+/** The main process's side of an export: no stored bytes, and a signal it may abort. */
+function channel(signal = new AbortController().signal): ExportChannel {
+  return { readMedia: async () => undefined, signal };
+}
 
 /** An export of `snapshot`, with the site's font files as the main process sends them (2.2). */
 async function job(snapshot: SiteSnapshot, destination: string): Promise<ExportJob> {
@@ -26,7 +31,11 @@ describe("runExport", () => {
   it("builds the site and writes it to the destination", async () => {
     const destination = join(tempDir(), "site");
 
-    const outcome = await runExport(await job(sampleSite(), destination), loadNodeResources);
+    const outcome = await runExport(
+      await job(sampleSite(), destination),
+      loadNodeResources,
+      channel(),
+    );
 
     expect(outcome).toMatchObject({ type: "exported", pages: 3, files: 16, warnings: 0 });
     expect(readFileSync(join(destination, "about.html"), "utf8")).toContain(
@@ -44,7 +53,7 @@ describe("runExport", () => {
       layout: { header: [{ type: "NoSuchComponent", props: { id: "c" } }], footer: [] },
     };
 
-    const outcome = await runExport(await job(broken, destination), loadNodeResources);
+    const outcome = await runExport(await job(broken, destination), loadNodeResources, channel());
 
     expect(outcome).toEqual({ type: "failed", code: "build-failed", detail: "unknown-component" });
     expect(existsSync(destination)).toBe(false);
@@ -54,7 +63,11 @@ describe("runExport", () => {
     const destination = tempDir();
     writeFileSync(join(destination, "notes.txt"), "mine");
 
-    const outcome = await runExport(await job(sampleSite(), destination), loadNodeResources);
+    const outcome = await runExport(
+      await job(sampleSite(), destination),
+      loadNodeResources,
+      channel(),
+    );
 
     expect(outcome).toEqual({
       type: "failed",
@@ -69,6 +82,7 @@ describe("runExport", () => {
     const outcome = await runExport(
       { ...(await job(sampleSite(), destination)), fonts: [] },
       loadNodeResources,
+      channel(),
     );
 
     expect(outcome).toEqual({ type: "failed", code: "build-failed", detail: "missing-font" });
@@ -76,10 +90,50 @@ describe("runExport", () => {
   }, 60_000);
 
   it("reports anything unexpected as a failed build", async () => {
-    const outcome = await runExport(await job(sampleSite(), tempDir()), async () => {
-      throw new Error("resources missing");
-    });
+    const outcome = await runExport(
+      await job(sampleSite(), tempDir()),
+      async () => {
+        throw new Error("resources missing");
+      },
+      channel(),
+    );
 
     expect(outcome).toEqual({ type: "failed", code: "build-failed", detail: "unexpected" });
   });
+
+  it("stops when the main process cancels, writing nothing (R15)", async () => {
+    const destination = join(tempDir(), "site");
+    const controller = new AbortController();
+    controller.abort();
+
+    const outcome = await runExport(
+      await job(sampleSite(), destination),
+      loadNodeResources,
+      channel(controller.signal),
+    );
+
+    expect(outcome).toEqual({ type: "cancelled" });
+    expect(existsSync(destination)).toBe(false);
+  }, 60_000);
+
+  it("names the page to rename when Windows keeps its name, writing nothing (R16)", async () => {
+    const destination = join(tempDir(), "site");
+    const site = sampleSite();
+    const named = {
+      ...site,
+      pages: site.pages.map((page) =>
+        page.path === "about" ? { ...page, path: "con", title: "Contact" } : page,
+      ),
+    };
+
+    const outcome = await runExport(await job(named, destination), loadNodeResources, channel());
+
+    expect(outcome).toEqual({
+      type: "failed",
+      code: "reserved-name",
+      detail: "reserved-name",
+      page: "Contact",
+    });
+    expect(existsSync(destination)).toBe(false);
+  }, 60_000);
 });

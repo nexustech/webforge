@@ -117,6 +117,21 @@ describe("writeSiteFolder", { timeout: 15_000 }, () => {
     expect(readdirSync(parent)).toEqual(["my-site"]);
   });
 
+  it("stops when cancelled, removing what it wrote and keeping the previous export (R15)", async () => {
+    const parent = tempDir();
+    const destination = join(parent, "my-site");
+    await writeSiteFolder(site("v1"), destination);
+    const controller = new AbortController();
+    controller.abort();
+
+    await expect(writeSiteFolder(site("v2"), destination, controller.signal)).rejects.toMatchObject(
+      { code: "cancelled" },
+    );
+    expect(readFileSync(join(destination, "index.html"), "utf8")).toBe("<p>v1</p>");
+    // Its temporary folder, made before the first file, is gone.
+    expect(readdirSync(parent)).toEqual(["my-site"]);
+  });
+
   it("refuses a file whose path leads outside the folder, writing nothing (R16)", async () => {
     const parent = tempDir();
     const destination = join(parent, "my-site");
