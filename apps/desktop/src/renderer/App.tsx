@@ -4,10 +4,8 @@ import { siteLibrary } from "@webforge/site-components";
 import { PanelBottomIcon, PanelLeftIcon, PanelRightIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { AiApi } from "../shared/ipc/ai.js";
-import type { ExportRequest } from "../shared/ipc/site.js";
 import type {
   AppInfo,
-  ExportResult,
   Preferences,
   PreferencesChange,
   SiteUiState,

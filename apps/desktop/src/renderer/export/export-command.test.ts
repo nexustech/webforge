@@ -86,16 +86,14 @@ describe("registerExportCommand", () => {
       warnings: 0,
     }));
 
-    expect(toast.loading).toHaveBeenCalledWith("Exporting…");
-    expect(toast.loading).toHaveBeenCalledWith(
-      "Exporting…",
-      expect.objectContaining({
-        id: "progress",
-        action: expect.objectContaining({ label: "Cancel" }),
-      }),
-    );
+    expect(toast.loading).toHaveBeenCalledWith("Exporting…", {
+      action: expect.objectContaining({ label: "Cancel" }),
+    });
+    // In place of the progress, without its line or its Cancel button.
     expect(toast.success).toHaveBeenCalledWith("Site exported to “my-site” (3 files).", {
       id: "progress",
+      description: null,
+      action: null,
     });
   });
 
@@ -153,7 +151,8 @@ describe("registerExportCommand", () => {
     expect(preventDefault).toHaveBeenCalled();
     expect(toast.loading).toHaveBeenLastCalledWith("Cancelling…", {
       id: "progress",
-      description: undefined,
+      description: null,
+      action: null,
     });
     tell({ stage: "pages", done: 1, total: 2 });
     expect(toast.loading).toHaveBeenLastCalledWith("Cancelling…", expect.anything());
@@ -173,7 +172,7 @@ describe("registerExportCommand", () => {
 
     expect(toast.error).toHaveBeenCalledWith(
       expect.stringContaining("Your site could not be built."),
-      { id: "progress" },
+      { id: "progress", description: null, action: null },
     );
   });
 });

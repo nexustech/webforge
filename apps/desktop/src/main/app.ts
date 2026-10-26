@@ -1,7 +1,7 @@
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { t } from "@webforge/i18n";
-import type { SiteSnapshot, ThemeTokens } from "@webforge/model";
+import type { ThemeTokens } from "@webforge/model";
 import { readTemplates, type TemplateFolder } from "@webforge/templates/node";
 import { type CatalogueFont, FONT_CATALOGUE, fontFacesFor } from "@webforge/themes";
 import {

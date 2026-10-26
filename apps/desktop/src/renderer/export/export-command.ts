@@ -62,43 +62,48 @@ export function registerExportCommand(
 ): () => void {
   const run = async () => {
     registry.update(EXPORT_COMMAND_ID, { enabled: false });
-    const progress = toast.loading(t("export.working"));
-    let cancelling = false;
-    const show = (description: string | undefined) => {
-      if (cancelling) return;
+    // Once it's cancelling or done, progress no longer changes the toast.
+    let quiet = false;
+    const cancelButton = {
+      label: t("export.cancel"),
+      onClick: (event: { preventDefault(): void }) => {
+        // The toast stays until the export answers; it says it's stopping meanwhile.
+        event.preventDefault();
+        quiet = true;
+        toast.loading(t("export.cancelling"), { id: progress, description: null, action: null });
+        cancel().catch((error: unknown) => {
+          reportFailure("export.cancel", error);
+        });
+      },
+    };
+    const progress = toast.loading(t("export.working"), { action: cancelButton });
+    const show = (reached: ExportProgress) => {
+      if (quiet) return;
       toast.loading(t("export.working"), {
         id: progress,
-        description,
-        action: {
-          label: t("export.cancel"),
-          onClick: (event) => {
-            // The toast stays until the export answers; it says it's stopping meanwhile.
-            event.preventDefault();
-            toast.loading(t("export.cancelling"), { id: progress, description: undefined });
-            cancelling = true;
-            cancel().catch((error: unknown) => {
-              reportFailure("export.cancel", error);
-            });
-          },
-        },
+        description: progressText(reached),
+        action: cancelButton,
       });
     };
-    show(undefined);
     let message: ReturnType<typeof exportMessage>;
     try {
-      message = exportMessage(await onExport((reached) => show(progressText(reached))));
+      message = exportMessage(await onExport(show));
     } catch (error) {
       reportFailure("export", error);
       message = { kind: "error", text: t("export.failed.buildFailed") };
     } finally {
+      quiet = true;
       registry.update(EXPORT_COMMAND_ID, { enabled: true });
     }
+    // A toast updated in place keeps what it isn't given: the outcome drops the progress line and
+    // the Cancel button.
+    const outcome = { id: progress, description: null, action: null };
     if (message === null) {
       toast.dismiss(progress);
     } else if (message.kind === "success") {
-      toast.success(message.text, { id: progress });
+      toast.success(message.text, outcome);
     } else {
-      toast.error(message.text, { id: progress });
+      toast.error(message.text, outcome);
     }
   };
   return registry.register({

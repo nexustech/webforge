@@ -14,7 +14,7 @@ export type ExportDialogs = {
 };
 
 /** How one export runs: a signal that cancels it, and what to tell of its progress (3.1). */
-export type RunExportOptions = {
+type RunExportOptions = {
   readonly signal: AbortSignal;
   readonly onProgress: (progress: ExportProgress) => void;
 };
