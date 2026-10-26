@@ -3,6 +3,7 @@ import type { MediaId, MenuItemId, NodeDoc, PageId, SiteSnapshot } from "@webfor
 import { DEFAULT_THEME } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { sampleSite } from "@webforge/test-utils";
+import { transform } from "lightningcss";
 import { beforeAll, describe, expect, it } from "vitest";
 import { type BuildEvent, type BuiltSite, buildSite } from "../src/build.js";
 import { loadNodeResources } from "../src/node-resources.js";
@@ -842,5 +843,71 @@ describe("buildSite: cancelled, followed, and reading bytes when needed (R15)", 
     await expect(building).rejects.toMatchObject({ name: "BuildError", code: "cancelled" });
     // The first image was under way when it was cancelled; nothing after it started.
     expect(events).toEqual([expect.objectContaining({ stage: "images", done: 0 })]);
+  }, 60_000);
+});
+
+describe("buildSite: what the export writes (3.3)", () => {
+  const css = (site: BuiltSite) =>
+    text(site, fileNamed(site, /^assets\/css\/site\.[0-9a-f]{10}\.css$/));
+
+  it("writes the same site minified: CSS that means the same, HTML without comments, a shorter script", async () => {
+    const small = await buildSite(sampleSite(), siteLibrary, resources, {
+      output: { minify: true },
+    });
+
+    // The same files, the CSS and script under the names of their minified content.
+    const named = (site: BuiltSite) =>
+      [...site.files.keys()].map((path) => path.replace(/\.[0-9a-f]{10}\./, ".#."));
+    expect(named(small)).toEqual(named(built));
+    // Parsed and minified again, both stylesheets are the same CSS. lightningcss keeps what it
+    // doesn't parse fully (`color-mix(in lab, red, red)` in `@supports`) as written, so whitespace
+    // beside commas and brackets, which never matters there, is left out of the comparison.
+    const normalised = (code: string) =>
+      new TextDecoder()
+        .decode(
+          transform({ filename: "site.css", code: new TextEncoder().encode(code), minify: true })
+            .code,
+        )
+        .replace(/\s*([,()])\s*/g, "$1");
+    expect(normalised(css(small))).toBe(normalised(css(built)));
+    expect(css(small).length).toBeLessThan(css(built).length * 0.85);
+    const home = text(small, "index.html");
+    expect(home).not.toContain("<!--");
+    expect(home.length).toBeLessThan(text(built, "index.html").length);
+    expect(home).toContain(`href="${fileNamed(small, /^assets\/css\//)}"`);
+    expect(home).toContain(`src="${fileNamed(small, /^assets\/js\//)}"`);
+    expect(text(small, fileNamed(small, /^assets\/js\//)).length).toBeLessThan(
+      text(built, fileNamed(built, /^assets\/js\//)).length,
+    );
+  }, 60_000);
+
+  it("adds developer files only when asked: the stylesheet's source, the theme, the settings, a README", async () => {
+    expect([...built.files.keys()].some((path) => path.startsWith("developer/"))).toBe(false);
+
+    const withFiles = await buildSite(sampleSite(), siteLibrary, resources, {
+      output: { developerFiles: true },
+    });
+
+    expect([...withFiles.files.keys()].filter((path) => path.startsWith("developer/"))).toEqual([
+      "developer/README.md",
+      "developer/design-tokens.json",
+      "developer/input.css",
+      "developer/site.json",
+    ]);
+    // Everything else is as without them.
+    for (const [path, data] of built.files) expect(withFiles.files.get(path), path).toEqual(data);
+    const input = text(withFiles, "developer/input.css");
+    expect(input.startsWith('@import "tailwindcss" source(none);\n@source "../**/*.html";\n')).toBe(
+      true,
+    );
+    expect(input).toContain('@plugin "daisyui"');
+    expect(JSON.parse(text(withFiles, "developer/design-tokens.json"))).toEqual(sampleSite().theme);
+    expect(JSON.parse(text(withFiles, "developer/site.json"))).toMatchObject({
+      name: "Rosa's Bakery",
+      settings: { "contact.phone": "+44 1234 567890" },
+    });
+    expect(text(withFiles, "developer/README.md")).toContain(
+      `npx @tailwindcss/cli -i developer/input.css -o ${fileNamed(withFiles, /^assets\/css\//)}`,
+    );
   }, 60_000);
 });
