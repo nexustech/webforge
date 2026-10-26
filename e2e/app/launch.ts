@@ -40,7 +40,8 @@ function electronCommand(): { executablePath: string; env: Record<string, string
         entry[1] !== undefined && entry[0] !== "ELECTRON_RENDERER_URL",
     ),
   );
-  return { executablePath, env };
+  // Main's AI bridge on its globals, for ai-commands.spec.ts (E2E_AI_VARIABLE in main's ai-ipc.ts).
+  return { executablePath, env: { ...env, WEBFORGE_E2E_AI: "1" } };
 }
 
 /**

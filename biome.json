@@ -6,7 +6,15 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!**/out", "!**/release", "!**/dist", "!**/coverage", "!**/test/golden"]
+    "includes": [
+      "**",
+      "!**/out",
+      "!**/release",
+      "!**/dist",
+      "!**/coverage",
+      "!**/test/golden",
+      "!packages/site-components/src/catalogue-data.json"
+    ]
   },
   "formatter": {
     "enabled": true,

@@ -103,15 +103,15 @@ test("makes a site from a template, named as typed and in the chosen theme, in u
   await page.getByRole("button", { name: "New site…", exact: true }).click();
   const newSite = page.getByRole("dialog", { name: "New Site" });
   await newSite.getByRole("textbox", { name: "Site name" }).fill("Rosa's Bakery");
-  await newSite.getByText("Sample bakery", { exact: true }).click();
-  await expect(newSite.getByRole("radio", { name: "Light" })).toBeChecked();
+  await newSite.getByText("Café / Restaurant", { exact: true }).click();
+  await expect(newSite.getByRole("radio", { name: "Bistro" })).toBeChecked();
   await newSite.getByText("Atelier", { exact: true }).click();
 
   const started = Date.now();
   await newSite.getByRole("button", { name: "Create" }).click();
   // Open in under 3 s (F-SITE-1): the template's home page on the canvas. Nearly all of it is the
   // editor starting again on the new site, as for every site opened; the fill itself is quick.
-  const hero = canvas(page).locator("h1", { hasText: "Fresh bread, baked every morning" });
+  const hero = canvas(page).locator("h1", { hasText: "Good coffee and proper breakfasts" });
   await expect(hero).toBeVisible();
   expect(Date.now() - started).toBeLessThan(3_000);
   // With its photo, which came into the site's Media.
@@ -153,13 +153,14 @@ test("makes a Personal / CV site in under 3 s, accessible on the canvas (2.15c)"
 
 test("tries the example: a pre-filled site named after it, in under 3 s (2.14b, PG-3)", async () => {
   const page = await startWithoutSite();
-  await stubFileDialogs(running(), join(dir, "Sample bakery.wforge"));
+  await stubFileDialogs(running(), join(dir, "Café - Restaurant.wforge"));
 
   const started = Date.now();
   // Straight from the start screen: no New Site dialog, the example's own name and theme.
   // Exactly: the first start's welcome has a Try an example card too.
   await page.getByRole("button", { name: "Try an example", exact: true }).click();
-  const hero = canvas(page).locator("h1", { hasText: "Fresh bread, baked every morning" });
+  // The first example the app ships: Café / Restaurant (Trades is the second).
+  const hero = canvas(page).locator("h1", { hasText: "Good coffee and proper breakfasts" });
   await expect(hero).toBeVisible();
   expect(Date.now() - started).toBeLessThan(3_000);
 
@@ -167,7 +168,7 @@ test("tries the example: a pre-filled site named after it, in under 3 s (2.14b, 
     const read = await (window as unknown as RendererWindow).webforge.project.readSite();
     return read as { site: { settings: { general: { name: string } }; pageOrder: string[] } };
   });
-  expect(site.site.settings.general.name).toBe("Sample bakery");
+  expect(site.site.settings.general.name).toBe("Café / Restaurant");
   expect(site.site.pageOrder.length).toBeGreaterThan(1);
 });
 

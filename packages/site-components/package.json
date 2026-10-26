@@ -9,7 +9,8 @@
   },
   "exports": {
     ".": "./src/index.ts",
-    "./schema": "./src/schema.ts"
+    "./schema": "./src/schema.ts",
+    "./catalogue-data": "./src/catalogue-data.ts"
   },
   "devDependencies": {
     "@storybook/addon-a11y": "10.6.2",
@@ -35,6 +36,7 @@
     "lucide-static": "1.59.0",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "sanitize-html": "2.18.1"
+    "sanitize-html": "2.18.1",
+    "zod": "catalog:"
   }
 }

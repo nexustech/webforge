@@ -1,0 +1,1011 @@
+{
+  "id": "trades",
+  "category": "trades",
+  "example": true,
+  "site": {
+    "formatVersion": 7,
+    "settings": {
+      "general": {
+        "name": "Brightside Electrical",
+        "language": "en"
+      },
+      "address": {},
+      "social": {
+        "profiles": []
+      },
+      "contact": {
+        "openingHours": [
+          {
+            "days": ["mon", "tue", "wed", "thu", "fri"],
+            "opens": "08:00",
+            "closes": "18:00"
+          },
+          {
+            "days": ["sat"],
+            "opens": "09:00",
+            "closes": "13:00"
+          }
+        ],
+        "email": "hello@example.com",
+        "phone": "+44 1632 960 789",
+        "address": "Unit 3, Canal Works, Leeds LS11 5QR",
+        "openingHoursNote": "For emergencies out of hours, ring and leave a message: we'll call you back."
+      },
+      "search": {
+        "allowIndexing": true,
+        "includeSitemap": true
+      },
+      "analytics": {
+        "consentBanner": true
+      },
+      "forms": {},
+      "publish": {
+        "destinations": []
+      },
+      "allowedExternalUrls": []
+    },
+    "theme": {
+      "preset": "workshop",
+      "scheme": "light",
+      "colors": {
+        "base-100": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        },
+        "base-200": {
+          "l": 0.955,
+          "c": 0.008,
+          "h": 250
+        },
+        "base-300": {
+          "l": 0.92,
+          "c": 0.012,
+          "h": 250
+        },
+        "base-content": {
+          "l": 0.22,
+          "c": 0.035,
+          "h": 255
+        },
+        "primary": {
+          "l": 0.52,
+          "c": 0.2,
+          "h": 38
+        },
+        "primary-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        },
+        "secondary": {
+          "l": 0.32,
+          "c": 0.08,
+          "h": 255
+        },
+        "secondary-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        },
+        "accent": {
+          "l": 0.48,
+          "c": 0.14,
+          "h": 235
+        },
+        "accent-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        },
+        "neutral": {
+          "l": 0.25,
+          "c": 0.04,
+          "h": 255
+        },
+        "neutral-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        },
+        "info": {
+          "l": 0.45,
+          "c": 0.14,
+          "h": 245
+        },
+        "info-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        },
+        "success": {
+          "l": 0.45,
+          "c": 0.12,
+          "h": 150
+        },
+        "success-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        },
+        "warning": {
+          "l": 0.84,
+          "c": 0.15,
+          "h": 85
+        },
+        "warning-content": {
+          "l": 0.2,
+          "c": 0.02,
+          "h": 85
+        },
+        "error": {
+          "l": 0.48,
+          "c": 0.19,
+          "h": 27
+        },
+        "error-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        }
+      },
+      "inverse": {
+        "base-100": {
+          "l": 0.24,
+          "c": 0.045,
+          "h": 255
+        },
+        "base-200": {
+          "l": 0.28,
+          "c": 0.05,
+          "h": 255
+        },
+        "base-300": {
+          "l": 0.33,
+          "c": 0.055,
+          "h": 255
+        },
+        "base-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        },
+        "primary": {
+          "l": 0.74,
+          "c": 0.17,
+          "h": 50
+        },
+        "primary-content": {
+          "l": 0.18,
+          "c": 0.03,
+          "h": 255
+        },
+        "secondary": {
+          "l": 0.85,
+          "c": 0.05,
+          "h": 255
+        },
+        "secondary-content": {
+          "l": 0.22,
+          "c": 0.04,
+          "h": 255
+        },
+        "accent": {
+          "l": 0.78,
+          "c": 0.11,
+          "h": 235
+        },
+        "accent-content": {
+          "l": 0.2,
+          "c": 0.04,
+          "h": 255
+        },
+        "neutral": {
+          "l": 0.93,
+          "c": 0.005,
+          "h": 250
+        },
+        "neutral-content": {
+          "l": 0.22,
+          "c": 0.035,
+          "h": 255
+        },
+        "info": {
+          "l": 0.78,
+          "c": 0.1,
+          "h": 245
+        },
+        "info-content": {
+          "l": 0.2,
+          "c": 0.03,
+          "h": 245
+        },
+        "success": {
+          "l": 0.78,
+          "c": 0.12,
+          "h": 150
+        },
+        "success-content": {
+          "l": 0.2,
+          "c": 0.03,
+          "h": 150
+        },
+        "warning": {
+          "l": 0.84,
+          "c": 0.15,
+          "h": 85
+        },
+        "warning-content": {
+          "l": 0.2,
+          "c": 0.02,
+          "h": 85
+        },
+        "error": {
+          "l": 0.75,
+          "c": 0.13,
+          "h": 27
+        },
+        "error-content": {
+          "l": 0.2,
+          "c": 0.03,
+          "h": 27
+        }
+      },
+      "fonts": {
+        "heading": {
+          "family": "Bebas Neue",
+          "fallback": "sans-serif"
+        },
+        "body": {
+          "family": "Roboto",
+          "fallback": "sans-serif"
+        }
+      },
+      "radius": {
+        "box": "s",
+        "field": "s",
+        "selector": "s"
+      },
+      "border": "thick",
+      "effects": {
+        "depth": false,
+        "noise": false
+      },
+      "spacing": "compact",
+      "typeScale": {
+        "h1": {
+          "size": "6xl",
+          "weight": 400,
+          "leading": "tight"
+        },
+        "h2": {
+          "size": "3xl",
+          "weight": 400,
+          "leading": "tight"
+        },
+        "h3": {
+          "size": "xl",
+          "weight": 400,
+          "leading": "tight"
+        },
+        "h4": {
+          "size": "lg",
+          "weight": 400,
+          "leading": "normal"
+        },
+        "h5": {
+          "size": "base",
+          "weight": 400,
+          "leading": "normal"
+        },
+        "h6": {
+          "size": "sm",
+          "weight": 400,
+          "leading": "normal"
+        },
+        "body": {
+          "size": "lg",
+          "weight": 400,
+          "leading": "relaxed"
+        },
+        "small": {
+          "size": "sm",
+          "weight": 400,
+          "leading": "normal"
+        }
+      },
+      "links": {
+        "underline": "always"
+      },
+      "buttons": {
+        "shape": "square",
+        "size": "l",
+        "style": "filled"
+      },
+      "shadow": "strong",
+      "headings": {
+        "case": "uppercase",
+        "tracking": "wide"
+      },
+      "cards": {
+        "style": "raised"
+      },
+      "images": {
+        "corners": "rounded"
+      },
+      "sections": {
+        "rhythm": "alternating"
+      }
+    },
+    "layout": {
+      "header": [
+        {
+          "type": "Header",
+          "props": {
+            "id": "header",
+            "siteName": "Brightside Electrical",
+            "bindings": {
+              "siteName": "general.name"
+            }
+          }
+        }
+      ],
+      "footer": [
+        {
+          "type": "Footer",
+          "props": {
+            "id": "footer",
+            "text": "Brightside Electrical · Registered and insured electricians in Leeds"
+          }
+        }
+      ]
+    },
+    "pages": {
+      "trades-home": {
+        "id": "trades-home",
+        "kind": "page",
+        "slug": "home",
+        "title": "Home",
+        "settings": {
+          "hideHeader": false,
+          "hideFooter": false,
+          "hideFromNavigation": false
+        },
+        "doc": {
+          "root": {
+            "props": {}
+          },
+          "content": [
+            {
+              "type": "Hero",
+              "props": {
+                "id": "hero",
+                "variant": "split",
+                "colors": "page",
+                "alignment": "left",
+                "title": "Safe, tidy electrical work in Leeds",
+                "text": "Rewires, lighting, fuse boxes and car chargers, from a small local team that turns up when we say we will.",
+                "buttonLabel": "Get a free quote",
+                "buttonLink": {
+                  "kind": "page",
+                  "pageId": "trades-contact",
+                  "newTab": false
+                },
+                "image": {
+                  "mediaId": "trades-hero"
+                }
+              }
+            },
+            {
+              "type": "Stats",
+              "props": {
+                "id": "stats",
+                "variant": "row",
+                "colors": "inverse",
+                "title": "Since 2010",
+                "text": "<p>Homes and small businesses across Leeds and nearby.</p>",
+                "items": [
+                  {
+                    "type": "Stat",
+                    "props": {
+                      "id": "stat-0",
+                      "number": "1,200+",
+                      "label": "jobs done"
+                    }
+                  },
+                  {
+                    "type": "Stat",
+                    "props": {
+                      "id": "stat-1",
+                      "number": "15",
+                      "label": "years in business"
+                    }
+                  },
+                  {
+                    "type": "Stat",
+                    "props": {
+                      "id": "stat-2",
+                      "number": "4.9",
+                      "label": "average review"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "Features",
+              "props": {
+                "id": "features",
+                "variant": "centred",
+                "colors": "page",
+                "title": "Why choose us",
+                "text": "<p>The things people tell us they value most.</p>",
+                "items": [
+                  {
+                    "type": "Feature",
+                    "props": {
+                      "id": "feature-0",
+                      "icon": "shield-check",
+                      "title": "Registered and insured",
+                      "text": "<p>Every job is certified, and we give you the paperwork when we finish.</p>"
+                    }
+                  },
+                  {
+                    "type": "Feature",
+                    "props": {
+                      "id": "feature-1",
+                      "icon": "clock",
+                      "title": "On time, or we call ahead",
+                      "text": "<p>You get a time slot, and a call if anything changes.</p>"
+                    }
+                  },
+                  {
+                    "type": "Feature",
+                    "props": {
+                      "id": "feature-2",
+                      "icon": "sparkles",
+                      "title": "We clean up after ourselves",
+                      "text": "<p>Dust sheets down, and everything swept up before we go.</p>"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "Testimonials",
+              "props": {
+                "id": "testimonials",
+                "variant": "cards",
+                "colors": "page",
+                "title": "What customers say",
+                "items": [
+                  {
+                    "type": "Testimonial",
+                    "props": {
+                      "id": "testimonial-0",
+                      "quote": "Rewired our whole house in four days and left it spotless. Clear prices from the start.",
+                      "name": "Gareth",
+                      "role": "Full rewire, Headingley"
+                    }
+                  },
+                  {
+                    "type": "Testimonial",
+                    "props": {
+                      "id": "testimonial-1",
+                      "quote": "Fitted our car charger the week after we asked. Neat job, and they showed us how the app works.",
+                      "name": "Nadia",
+                      "role": "EV charger, Roundhay"
+                    }
+                  },
+                  {
+                    "type": "Testimonial",
+                    "props": {
+                      "id": "testimonial-2",
+                      "quote": "Came out the same day when our power kept tripping, and found the fault in an hour.",
+                      "name": "Chris",
+                      "role": "Fault finding, Morley"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "CallToAction",
+              "props": {
+                "id": "call-to-action",
+                "variant": "banner",
+                "colors": "inverse",
+                "title": "Need an electrician this week?",
+                "text": "Ring us and we'll tell you when we can come, and roughly what it will cost.",
+                "buttonLabel": "Call us",
+                "buttonLink": {
+                  "kind": "phone",
+                  "number": "+44 1632 960 789"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "trades-services": {
+        "id": "trades-services",
+        "kind": "page",
+        "slug": "services",
+        "title": "Services",
+        "settings": {
+          "hideHeader": false,
+          "hideFooter": false,
+          "hideFromNavigation": false
+        },
+        "doc": {
+          "root": {
+            "props": {}
+          },
+          "content": [
+            {
+              "type": "Features",
+              "props": {
+                "id": "services",
+                "variant": "cards",
+                "colors": "page",
+                "title": "What we do",
+                "text": "<p>For homes, landlords and small businesses.</p>",
+                "items": [
+                  {
+                    "type": "Feature",
+                    "props": {
+                      "id": "service-0",
+                      "icon": "house",
+                      "title": "Rewires",
+                      "text": "<p>Whole or part rewires, planned around you so you're never without power for long.</p>"
+                    }
+                  },
+                  {
+                    "type": "Feature",
+                    "props": {
+                      "id": "service-1",
+                      "icon": "lightbulb",
+                      "title": "Lighting",
+                      "text": "<p>New lights inside and out, spotlights, dimmers and garden lighting.</p>"
+                    }
+                  },
+                  {
+                    "type": "Feature",
+                    "props": {
+                      "id": "service-2",
+                      "icon": "zap",
+                      "title": "Fuse boxes",
+                      "text": "<p>New consumer units with the latest safety switches.</p>"
+                    }
+                  },
+                  {
+                    "type": "Feature",
+                    "props": {
+                      "id": "service-3",
+                      "icon": "plug-zap",
+                      "title": "Car chargers",
+                      "text": "<p>Home chargers fitted, with help to get the grant if you can.</p>"
+                    }
+                  },
+                  {
+                    "type": "Feature",
+                    "props": {
+                      "id": "service-4",
+                      "icon": "wrench",
+                      "title": "Fault finding",
+                      "text": "<p>Tripping power, dead sockets and flickering lights, found and fixed.</p>"
+                    }
+                  },
+                  {
+                    "type": "Feature",
+                    "props": {
+                      "id": "service-5",
+                      "icon": "clipboard-check",
+                      "title": "Safety checks",
+                      "text": "<p>Electrical reports for homeowners, landlords and buyers.</p>"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "Pricing",
+              "props": {
+                "id": "prices",
+                "variant": "cards",
+                "colors": "inverse",
+                "title": "Prices for common jobs",
+                "text": "<p>Fixed prices, agreed before we start. Bigger jobs get a free written quote.</p>",
+                "items": [
+                  {
+                    "type": "PricingPlan",
+                    "props": {
+                      "id": "price-0",
+                      "name": "Safety check",
+                      "price": "£160",
+                      "period": "up to 10 circuits",
+                      "details": "<p>A full electrical report with any faults explained in plain English.</p>",
+                      "buttonLabel": "Book a check",
+                      "link": {
+                        "kind": "page",
+                        "pageId": "trades-contact",
+                        "newTab": false
+                      },
+                      "featured": false,
+                      "badge": ""
+                    }
+                  },
+                  {
+                    "type": "PricingPlan",
+                    "props": {
+                      "id": "price-1",
+                      "name": "New fuse box",
+                      "price": "£550",
+                      "period": "fitted",
+                      "details": "<p>A new consumer unit, tested and certified, usually in a day.</p>",
+                      "buttonLabel": "Get a quote",
+                      "link": {
+                        "kind": "page",
+                        "pageId": "trades-contact",
+                        "newTab": false
+                      },
+                      "featured": true,
+                      "badge": "Most asked for"
+                    }
+                  },
+                  {
+                    "type": "PricingPlan",
+                    "props": {
+                      "id": "price-2",
+                      "name": "Car charger",
+                      "price": "from £850",
+                      "period": "fitted",
+                      "details": "<p>A 7 kW home charger on your wall, set up and tested.</p>",
+                      "buttonLabel": "Get a quote",
+                      "link": {
+                        "kind": "page",
+                        "pageId": "trades-contact",
+                        "newTab": false
+                      },
+                      "featured": false,
+                      "badge": ""
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "Faq",
+              "props": {
+                "id": "faq",
+                "variant": "accordion",
+                "colors": "page",
+                "title": "Questions we're often asked",
+                "items": [
+                  {
+                    "type": "FaqItem",
+                    "props": {
+                      "id": "faq-0",
+                      "question": "Do you give free quotes?",
+                      "answer": "<p>Yes. For anything bigger than a small job we'll come and look, then send a written quote.</p>"
+                    }
+                  },
+                  {
+                    "type": "FaqItem",
+                    "props": {
+                      "id": "faq-1",
+                      "question": "Which areas do you cover?",
+                      "answer": "<p>Leeds and anywhere within about 15 miles: Wakefield, Bradford and Harrogate included.</p>"
+                    }
+                  },
+                  {
+                    "type": "FaqItem",
+                    "props": {
+                      "id": "faq-2",
+                      "question": "Will I get a certificate?",
+                      "answer": "<p>Yes. Every job that needs one is certified, and we send it to you and to building control.</p>"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "trades-work": {
+        "id": "trades-work",
+        "kind": "page",
+        "slug": "our-work",
+        "title": "Our work",
+        "settings": {
+          "hideHeader": false,
+          "hideFooter": false,
+          "hideFromNavigation": false
+        },
+        "doc": {
+          "root": {
+            "props": {}
+          },
+          "content": [
+            {
+              "type": "Gallery",
+              "props": {
+                "id": "gallery",
+                "variant": "grid",
+                "colors": "page",
+                "title": "Recent jobs",
+                "images": [
+                  {
+                    "type": "GalleryImage",
+                    "props": {
+                      "id": "image-0",
+                      "image": {
+                        "mediaId": "trades-job-1"
+                      },
+                      "caption": "Kitchen lighting, Chapel Allerton"
+                    }
+                  },
+                  {
+                    "type": "GalleryImage",
+                    "props": {
+                      "id": "image-1",
+                      "image": {
+                        "mediaId": "trades-job-2"
+                      },
+                      "caption": "Car charger, Roundhay"
+                    }
+                  },
+                  {
+                    "type": "GalleryImage",
+                    "props": {
+                      "id": "image-2",
+                      "image": {
+                        "mediaId": "trades-job-3"
+                      },
+                      "caption": "Garden lights, Horsforth"
+                    }
+                  },
+                  {
+                    "type": "GalleryImage",
+                    "props": {
+                      "id": "image-3",
+                      "image": {
+                        "mediaId": "trades-job-4"
+                      },
+                      "caption": "New fuse box, Armley"
+                    }
+                  },
+                  {
+                    "type": "GalleryImage",
+                    "props": {
+                      "id": "image-4",
+                      "image": {
+                        "mediaId": "trades-job-5"
+                      },
+                      "caption": "Bathroom spotlights, Otley"
+                    }
+                  },
+                  {
+                    "type": "GalleryImage",
+                    "props": {
+                      "id": "image-5",
+                      "image": {
+                        "mediaId": "trades-job-6"
+                      },
+                      "caption": "Outdoor sockets, Pudsey"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "trades-about": {
+        "id": "trades-about",
+        "kind": "page",
+        "slug": "about",
+        "title": "About us",
+        "settings": {
+          "hideHeader": false,
+          "hideFooter": false,
+          "hideFromNavigation": false
+        },
+        "doc": {
+          "root": {
+            "props": {}
+          },
+          "content": [
+            {
+              "type": "TextImage",
+              "props": {
+                "id": "story",
+                "variant": "imageLeft",
+                "colors": "page",
+                "title": "A small, local team",
+                "text": "<p>Dan started Brightside in 2010 with one van and a toolbag. Today there are two of us, and most of our work comes from people who've used us before or been told about us by a neighbour.</p><p>We'd rather do fewer jobs well than rush, so we'll always tell you honestly when we can fit you in.</p>",
+                "image": {
+                  "mediaId": "trades-van"
+                }
+              }
+            },
+            {
+              "type": "Team",
+              "props": {
+                "id": "team",
+                "variant": "cards",
+                "colors": "page",
+                "title": "Who'll turn up",
+                "text": "<p>Both of us are fully qualified electricians.</p>",
+                "items": [
+                  {
+                    "type": "TeamMember",
+                    "props": {
+                      "id": "member-0",
+                      "name": "Dan",
+                      "role": "Owner and electrician",
+                      "text": "<p>Rewires, fuse boxes and anything tricky.</p>",
+                      "photo": {
+                        "mediaId": "trades-dan"
+                      }
+                    }
+                  },
+                  {
+                    "type": "TeamMember",
+                    "props": {
+                      "id": "member-1",
+                      "name": "Priya",
+                      "role": "Electrician",
+                      "text": "<p>Lighting, car chargers and safety checks.</p>",
+                      "photo": {
+                        "mediaId": "trades-priya"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "trades-contact": {
+        "id": "trades-contact",
+        "kind": "page",
+        "slug": "contact",
+        "title": "Contact",
+        "settings": {
+          "hideHeader": false,
+          "hideFooter": false,
+          "hideFromNavigation": false
+        },
+        "doc": {
+          "root": {
+            "props": {}
+          },
+          "content": [
+            {
+              "type": "ContactDetails",
+              "props": {
+                "id": "contact-details",
+                "variant": "split",
+                "colors": "page",
+                "title": "Get a free quote",
+                "text": "<p>Ring, email or send the form below. Photos of the job help us give you a price quickly.</p>",
+                "showHours": true,
+                "showContact": true
+              }
+            },
+            {
+              "type": "ContactForm",
+              "props": {
+                "id": "contact-form",
+                "colors": "inverse",
+                "title": "Tell us about the job",
+                "text": "<p>What needs doing, where, and when suits you. We reply within a working day.</p>",
+                "askPhone": true,
+                "buttonLabel": "Send"
+              }
+            }
+          ]
+        }
+      },
+      "trades-not-found": {
+        "id": "trades-not-found",
+        "kind": "not-found",
+        "slug": "page-not-found",
+        "title": "Page not found",
+        "settings": {
+          "hideHeader": false,
+          "hideFooter": false,
+          "hideFromNavigation": true
+        },
+        "doc": {
+          "root": {
+            "props": {}
+          },
+          "content": [
+            {
+              "type": "Section",
+              "props": {
+                "id": "section-1",
+                "padding": {
+                  "top": "l",
+                  "bottom": "l"
+                },
+                "content": [
+                  {
+                    "type": "Heading",
+                    "props": {
+                      "id": "heading-1",
+                      "text": "Sorry, this page doesn't exist",
+                      "size": "large"
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "id": "text-1",
+                      "text": "<p>It may have moved or been renamed. Use the menu above to find what you're looking for.</p>"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    "pageOrder": [
+      "trades-home",
+      "trades-services",
+      "trades-work",
+      "trades-about",
+      "trades-contact",
+      "trades-not-found"
+    ],
+    "homePageId": "trades-home",
+    "media": {},
+    "code": {
+      "css": "",
+      "js": "",
+      "head": "",
+      "bodyEnd": ""
+    },
+    "menu": {
+      "follows": "pages",
+      "items": [
+        {
+          "id": "menu-home",
+          "kind": "page",
+          "pageId": "trades-home",
+          "hidden": false
+        },
+        {
+          "id": "menu-services",
+          "kind": "page",
+          "pageId": "trades-services",
+          "hidden": false
+        },
+        {
+          "id": "menu-work",
+          "kind": "page",
+          "pageId": "trades-work",
+          "hidden": false
+        },
+        {
+          "id": "menu-about",
+          "kind": "page",
+          "pageId": "trades-about",
+          "hidden": false
+        },
+        {
+          "id": "menu-contact",
+          "kind": "page",
+          "pageId": "trades-contact",
+          "hidden": false
+        }
+      ]
+    },
+    "sharedSections": {}
+  }
+}

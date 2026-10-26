@@ -1,0 +1,837 @@
+{
+  "id": "salon",
+  "category": "beauty",
+  "example": false,
+  "site": {
+    "formatVersion": 7,
+    "settings": {
+      "general": {
+        "name": "Willow Hair & Beauty",
+        "language": "en"
+      },
+      "address": {},
+      "social": {
+        "profiles": []
+      },
+      "contact": {
+        "openingHours": [
+          {
+            "days": ["tue", "wed", "fri"],
+            "opens": "09:00",
+            "closes": "17:30"
+          },
+          {
+            "days": ["thu"],
+            "opens": "10:00",
+            "closes": "20:00"
+          },
+          {
+            "days": ["sat"],
+            "opens": "09:00",
+            "closes": "16:00"
+          }
+        ],
+        "email": "hello@example.com",
+        "phone": "+44 1632 960 456",
+        "address": "22 High Street, Harrogate HG1 1AB",
+        "openingHoursNote": "Late opening on Thursdays. Closed Sunday and Monday."
+      },
+      "search": {
+        "allowIndexing": true,
+        "includeSitemap": true
+      },
+      "analytics": {
+        "consentBanner": true
+      },
+      "forms": {},
+      "publish": {
+        "destinations": []
+      },
+      "allowedExternalUrls": []
+    },
+    "theme": {
+      "preset": "atelier",
+      "scheme": "dark",
+      "colors": {
+        "base-100": {
+          "l": 0.19,
+          "c": 0.015,
+          "h": 340
+        },
+        "base-200": {
+          "l": 0.23,
+          "c": 0.018,
+          "h": 340
+        },
+        "base-300": {
+          "l": 0.28,
+          "c": 0.02,
+          "h": 340
+        },
+        "base-content": {
+          "l": 0.94,
+          "c": 0.012,
+          "h": 70
+        },
+        "primary": {
+          "l": 0.78,
+          "c": 0.08,
+          "h": 0
+        },
+        "primary-content": {
+          "l": 0.2,
+          "c": 0.03,
+          "h": 0
+        },
+        "secondary": {
+          "l": 0.84,
+          "c": 0.05,
+          "h": 80
+        },
+        "secondary-content": {
+          "l": 0.2,
+          "c": 0.02,
+          "h": 80
+        },
+        "accent": {
+          "l": 0.76,
+          "c": 0.06,
+          "h": 300
+        },
+        "accent-content": {
+          "l": 0.2,
+          "c": 0.03,
+          "h": 300
+        },
+        "neutral": {
+          "l": 0.94,
+          "c": 0.012,
+          "h": 70
+        },
+        "neutral-content": {
+          "l": 0.19,
+          "c": 0.015,
+          "h": 340
+        },
+        "info": {
+          "l": 0.78,
+          "c": 0.1,
+          "h": 245
+        },
+        "info-content": {
+          "l": 0.2,
+          "c": 0.03,
+          "h": 245
+        },
+        "success": {
+          "l": 0.78,
+          "c": 0.12,
+          "h": 150
+        },
+        "success-content": {
+          "l": 0.2,
+          "c": 0.03,
+          "h": 150
+        },
+        "warning": {
+          "l": 0.84,
+          "c": 0.15,
+          "h": 85
+        },
+        "warning-content": {
+          "l": 0.2,
+          "c": 0.02,
+          "h": 85
+        },
+        "error": {
+          "l": 0.75,
+          "c": 0.13,
+          "h": 27
+        },
+        "error-content": {
+          "l": 0.2,
+          "c": 0.03,
+          "h": 27
+        }
+      },
+      "inverse": {
+        "base-100": {
+          "l": 0.97,
+          "c": 0.01,
+          "h": 70
+        },
+        "base-200": {
+          "l": 0.94,
+          "c": 0.014,
+          "h": 60
+        },
+        "base-300": {
+          "l": 0.9,
+          "c": 0.018,
+          "h": 50
+        },
+        "base-content": {
+          "l": 0.24,
+          "c": 0.03,
+          "h": 345
+        },
+        "primary": {
+          "l": 0.47,
+          "c": 0.11,
+          "h": 0
+        },
+        "primary-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        },
+        "secondary": {
+          "l": 0.44,
+          "c": 0.06,
+          "h": 70
+        },
+        "secondary-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        },
+        "accent": {
+          "l": 0.45,
+          "c": 0.08,
+          "h": 300
+        },
+        "accent-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        },
+        "neutral": {
+          "l": 0.24,
+          "c": 0.03,
+          "h": 345
+        },
+        "neutral-content": {
+          "l": 0.97,
+          "c": 0.01,
+          "h": 70
+        },
+        "info": {
+          "l": 0.45,
+          "c": 0.14,
+          "h": 245
+        },
+        "info-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        },
+        "success": {
+          "l": 0.45,
+          "c": 0.12,
+          "h": 150
+        },
+        "success-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        },
+        "warning": {
+          "l": 0.84,
+          "c": 0.15,
+          "h": 85
+        },
+        "warning-content": {
+          "l": 0.2,
+          "c": 0.02,
+          "h": 85
+        },
+        "error": {
+          "l": 0.48,
+          "c": 0.19,
+          "h": 27
+        },
+        "error-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        }
+      },
+      "fonts": {
+        "heading": {
+          "family": "Montserrat",
+          "fallback": "sans-serif"
+        },
+        "body": {
+          "family": "Open Sans",
+          "fallback": "sans-serif"
+        }
+      },
+      "radius": {
+        "box": "none",
+        "field": "none",
+        "selector": "none"
+      },
+      "border": "thin",
+      "effects": {
+        "depth": false,
+        "noise": false
+      },
+      "spacing": "roomy",
+      "typeScale": {
+        "h1": {
+          "size": "5xl",
+          "weight": 300,
+          "leading": "tight"
+        },
+        "h2": {
+          "size": "3xl",
+          "weight": 300,
+          "leading": "tight"
+        },
+        "h3": {
+          "size": "xl",
+          "weight": 300,
+          "leading": "tight"
+        },
+        "h4": {
+          "size": "lg",
+          "weight": 300,
+          "leading": "normal"
+        },
+        "h5": {
+          "size": "base",
+          "weight": 300,
+          "leading": "normal"
+        },
+        "h6": {
+          "size": "sm",
+          "weight": 300,
+          "leading": "normal"
+        },
+        "body": {
+          "size": "lg",
+          "weight": 400,
+          "leading": "relaxed"
+        },
+        "small": {
+          "size": "sm",
+          "weight": 400,
+          "leading": "normal"
+        }
+      },
+      "links": {
+        "underline": "always"
+      },
+      "buttons": {
+        "shape": "square",
+        "size": "m",
+        "style": "outline"
+      },
+      "shadow": "none",
+      "headings": {
+        "case": "uppercase",
+        "tracking": "wide"
+      },
+      "cards": {
+        "style": "outlined"
+      },
+      "images": {
+        "corners": "square"
+      },
+      "sections": {
+        "rhythm": "plain"
+      }
+    },
+    "layout": {
+      "header": [
+        {
+          "type": "Header",
+          "props": {
+            "id": "header",
+            "siteName": "Willow Hair & Beauty",
+            "bindings": {
+              "siteName": "general.name"
+            }
+          }
+        }
+      ],
+      "footer": [
+        {
+          "type": "Footer",
+          "props": {
+            "id": "footer",
+            "text": "Willow Hair & Beauty · Hair, nails, brows and lashes"
+          }
+        }
+      ]
+    },
+    "pages": {
+      "salon-home": {
+        "id": "salon-home",
+        "kind": "page",
+        "slug": "home",
+        "title": "Home",
+        "settings": {
+          "hideHeader": false,
+          "hideFooter": false,
+          "hideFromNavigation": false
+        },
+        "doc": {
+          "root": {
+            "props": {}
+          },
+          "content": [
+            {
+              "type": "Hero",
+              "props": {
+                "id": "hero",
+                "variant": "split",
+                "colors": "page",
+                "alignment": "left",
+                "title": "Hair and beauty, with time to talk",
+                "text": "A friendly salon on Harrogate high street, for cuts, colour, nails, brows and lashes.",
+                "buttonLabel": "See treatments",
+                "buttonLink": {
+                  "kind": "page",
+                  "pageId": "salon-treatments",
+                  "newTab": false
+                },
+                "image": {
+                  "mediaId": "salon-hero"
+                }
+              }
+            },
+            {
+              "type": "Features",
+              "props": {
+                "id": "features",
+                "variant": "centred",
+                "colors": "page",
+                "title": "What we do",
+                "text": "<p>Everything takes as long as it needs, never longer.</p>",
+                "items": [
+                  {
+                    "type": "Feature",
+                    "props": {
+                      "id": "feature-0",
+                      "icon": "scissors",
+                      "title": "Cuts and colour",
+                      "text": "<p>For every length and type of hair, with a proper chat first about what you want.</p>"
+                    }
+                  },
+                  {
+                    "type": "Feature",
+                    "props": {
+                      "id": "feature-1",
+                      "icon": "sparkles",
+                      "title": "Nails, brows and lashes",
+                      "text": "<p>Gel and natural nails, brow shaping and tinting, and lash lifts.</p>"
+                    }
+                  },
+                  {
+                    "type": "Feature",
+                    "props": {
+                      "id": "feature-2",
+                      "icon": "calendar-check",
+                      "title": "Easy to book",
+                      "text": "<p>Ring us, send a message, or ask at the desk. Late appointments on Thursdays.</p>"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "Gallery",
+              "props": {
+                "id": "gallery",
+                "variant": "grid",
+                "colors": "page",
+                "title": "Recent work",
+                "images": [
+                  {
+                    "type": "GalleryImage",
+                    "props": {
+                      "id": "image-0",
+                      "image": {
+                        "mediaId": "salon-work-1"
+                      },
+                      "caption": "Soft balayage"
+                    }
+                  },
+                  {
+                    "type": "GalleryImage",
+                    "props": {
+                      "id": "image-1",
+                      "image": {
+                        "mediaId": "salon-work-2"
+                      },
+                      "caption": "Short and textured"
+                    }
+                  },
+                  {
+                    "type": "GalleryImage",
+                    "props": {
+                      "id": "image-2",
+                      "image": {
+                        "mediaId": "salon-work-3"
+                      },
+                      "caption": "Gel nails"
+                    }
+                  },
+                  {
+                    "type": "GalleryImage",
+                    "props": {
+                      "id": "image-3",
+                      "image": {
+                        "mediaId": "salon-work-4"
+                      },
+                      "caption": "Brow shape and tint"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "Testimonials",
+              "props": {
+                "id": "testimonials",
+                "variant": "cards",
+                "colors": "inverse",
+                "title": "Kind words",
+                "items": [
+                  {
+                    "type": "Testimonial",
+                    "props": {
+                      "id": "testimonial-0",
+                      "quote": "Ella listened to exactly what I wanted, and it's the best my hair has looked in years.",
+                      "name": "Rachel",
+                      "role": "Cut and colour"
+                    }
+                  },
+                  {
+                    "type": "Testimonial",
+                    "props": {
+                      "id": "testimonial-1",
+                      "quote": "Relaxed, welcoming and never rushed. My nails lasted three weeks.",
+                      "name": "Holly",
+                      "role": "Gel nails"
+                    }
+                  },
+                  {
+                    "type": "Testimonial",
+                    "props": {
+                      "id": "testimonial-2",
+                      "quote": "The Thursday evening slots are a lifesaver when you work full time.",
+                      "name": "Sophie",
+                      "role": "Brows and lashes"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "CallToAction",
+              "props": {
+                "id": "call-to-action",
+                "variant": "banner",
+                "colors": "page",
+                "title": "New to Willow?",
+                "text": "Tell us what you'd like and we'll find a time that suits you.",
+                "buttonLabel": "Book an appointment",
+                "buttonLink": {
+                  "kind": "page",
+                  "pageId": "salon-book",
+                  "newTab": false
+                }
+              }
+            }
+          ]
+        }
+      },
+      "salon-treatments": {
+        "id": "salon-treatments",
+        "kind": "page",
+        "slug": "treatments",
+        "title": "Treatments",
+        "settings": {
+          "hideHeader": false,
+          "hideFooter": false,
+          "hideFromNavigation": false
+        },
+        "doc": {
+          "root": {
+            "props": {}
+          },
+          "content": [
+            {
+              "type": "TextSection",
+              "props": {
+                "id": "hair",
+                "colors": "page",
+                "title": "Hair",
+                "text": "<p><strong>Cut and finish</strong> · from £38<br>Includes a consultation, wash and blow-dry.</p><p><strong>Restyle</strong> · from £48<br>For a big change, with extra time to plan it.</p><p><strong>Blow-dry</strong> · from £25<br>Smooth, curled or textured.</p><p><strong>Children's cut</strong> · from £18<br>Up to the age of 12.</p>"
+              }
+            },
+            {
+              "type": "TextSection",
+              "props": {
+                "id": "colour",
+                "colors": "inverse",
+                "title": "Colour",
+                "text": "<p><strong>Root tint</strong> · from £55<br>Covers up to an inch of regrowth.</p><p><strong>Half head of highlights</strong> · from £70<br>Foils through the top and sides.</p><p><strong>Balayage</strong> · from £95<br>Hand-painted, soft colour that grows out gently.</p><p><strong>Gloss</strong> · from £30<br>Adds shine and tones brassiness between colours.</p>"
+              }
+            },
+            {
+              "type": "TextSection",
+              "props": {
+                "id": "beauty",
+                "colors": "page",
+                "title": "Nails, brows and lashes",
+                "text": "<p><strong>Gel manicure</strong> · £30<br>Shaping, cuticle care and gel colour that lasts two to three weeks.</p><p><strong>Brow shape and tint</strong> · £20<br>Waxed and tinted to suit your face.</p><p><strong>Lash lift and tint</strong> · £45<br>Curls and darkens your own lashes for six to eight weeks.</p>"
+              }
+            },
+            {
+              "type": "Faq",
+              "props": {
+                "id": "faq",
+                "variant": "accordion",
+                "colors": "page",
+                "title": "Before you come in",
+                "items": [
+                  {
+                    "type": "FaqItem",
+                    "props": {
+                      "id": "faq-0",
+                      "question": "Do I need a patch test?",
+                      "answer": "<p>Yes, for any colour, tint or lash lift: pop in for a quick test at least 48 hours before your appointment.</p>"
+                    }
+                  },
+                  {
+                    "type": "FaqItem",
+                    "props": {
+                      "id": "faq-1",
+                      "question": "How much notice do you need to cancel?",
+                      "answer": "<p>Please give us 24 hours, so someone else can have the appointment.</p>"
+                    }
+                  },
+                  {
+                    "type": "FaqItem",
+                    "props": {
+                      "id": "faq-2",
+                      "question": "Do you do bridal hair?",
+                      "answer": "<p>We do. Get in touch with the date and we'll plan a trial with you.</p>"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "salon-about": {
+        "id": "salon-about",
+        "kind": "page",
+        "slug": "about",
+        "title": "About us",
+        "settings": {
+          "hideHeader": false,
+          "hideFooter": false,
+          "hideFromNavigation": false
+        },
+        "doc": {
+          "root": {
+            "props": {}
+          },
+          "content": [
+            {
+              "type": "TextImage",
+              "props": {
+                "id": "story",
+                "variant": "imageLeft",
+                "colors": "page",
+                "title": "Our salon",
+                "text": "<p>Ella opened Willow in 2018 after twelve years of working in city salons. She wanted somewhere calmer, where every appointment comes with a cup of tea and nobody is rushed.</p><p>We use cruelty-free products, recycle our foils and colour tubes, and keep learning: every one of us trains for at least a week a year.</p>",
+                "image": {
+                  "mediaId": "salon-salon"
+                }
+              }
+            },
+            {
+              "type": "Team",
+              "props": {
+                "id": "team",
+                "variant": "cards",
+                "colors": "page",
+                "title": "Meet the team",
+                "text": "<p>Three of us, and a very good kettle.</p>",
+                "items": [
+                  {
+                    "type": "TeamMember",
+                    "props": {
+                      "id": "member-0",
+                      "name": "Ella",
+                      "role": "Owner and senior stylist",
+                      "text": "<p>Cuts, restyles and bridal hair.</p>",
+                      "photo": {
+                        "mediaId": "salon-ella"
+                      }
+                    }
+                  },
+                  {
+                    "type": "TeamMember",
+                    "props": {
+                      "id": "member-1",
+                      "name": "Maya",
+                      "role": "Colourist",
+                      "text": "<p>Balayage, highlights and colour corrections.</p>",
+                      "photo": {
+                        "mediaId": "salon-maya"
+                      }
+                    }
+                  },
+                  {
+                    "type": "TeamMember",
+                    "props": {
+                      "id": "member-2",
+                      "name": "Jess",
+                      "role": "Beauty therapist",
+                      "text": "<p>Nails, brows and lashes.</p>",
+                      "photo": {
+                        "mediaId": "salon-jess"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "salon-book": {
+        "id": "salon-book",
+        "kind": "page",
+        "slug": "book",
+        "title": "Book",
+        "settings": {
+          "hideHeader": false,
+          "hideFooter": false,
+          "hideFromNavigation": false
+        },
+        "doc": {
+          "root": {
+            "props": {}
+          },
+          "content": [
+            {
+              "type": "ContactDetails",
+              "props": {
+                "id": "contact-details",
+                "variant": "split",
+                "colors": "page",
+                "title": "Book an appointment",
+                "text": "<p>Ring us or send a message with what you'd like and when, and we'll find a time.</p>",
+                "showHours": true,
+                "showContact": true
+              }
+            },
+            {
+              "type": "ContactForm",
+              "props": {
+                "id": "contact-form",
+                "colors": "inverse",
+                "title": "Ask for an appointment",
+                "text": "<p>Tell us the treatment and a few times that suit you. We'll reply within a working day.</p>",
+                "askPhone": true,
+                "buttonLabel": "Send"
+              }
+            }
+          ]
+        }
+      },
+      "salon-not-found": {
+        "id": "salon-not-found",
+        "kind": "not-found",
+        "slug": "page-not-found",
+        "title": "Page not found",
+        "settings": {
+          "hideHeader": false,
+          "hideFooter": false,
+          "hideFromNavigation": true
+        },
+        "doc": {
+          "root": {
+            "props": {}
+          },
+          "content": [
+            {
+              "type": "Section",
+              "props": {
+                "id": "section-1",
+                "padding": {
+                  "top": "l",
+                  "bottom": "l"
+                },
+                "content": [
+                  {
+                    "type": "Heading",
+                    "props": {
+                      "id": "heading-1",
+                      "text": "Sorry, this page doesn't exist",
+                      "size": "large"
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "id": "text-1",
+                      "text": "<p>It may have moved or been renamed. Use the menu above to find what you're looking for.</p>"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    "pageOrder": ["salon-home", "salon-treatments", "salon-about", "salon-book", "salon-not-found"],
+    "homePageId": "salon-home",
+    "media": {},
+    "code": {
+      "css": "",
+      "js": "",
+      "head": "",
+      "bodyEnd": ""
+    },
+    "menu": {
+      "follows": "pages",
+      "items": [
+        {
+          "id": "menu-home",
+          "kind": "page",
+          "pageId": "salon-home",
+          "hidden": false
+        },
+        {
+          "id": "menu-treatments",
+          "kind": "page",
+          "pageId": "salon-treatments",
+          "hidden": false
+        },
+        {
+          "id": "menu-about",
+          "kind": "page",
+          "pageId": "salon-about",
+          "hidden": false
+        },
+        {
+          "id": "menu-book",
+          "kind": "page",
+          "pageId": "salon-book",
+          "hidden": false
+        }
+      ]
+    },
+    "sharedSections": {}
+  }
+}

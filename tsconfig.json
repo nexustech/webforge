@@ -5,6 +5,7 @@
     { "path": "./apps/desktop" },
     { "path": "./e2e" },
     { "path": "./tools" },
+    { "path": "./packages/commands" },
     { "path": "./packages/editor-ui" },
     { "path": "./packages/engine" },
     { "path": "./packages/errors" },

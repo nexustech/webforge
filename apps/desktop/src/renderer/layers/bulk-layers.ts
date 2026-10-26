@@ -1,6 +1,7 @@
 import { t } from "@webforge/i18n";
 import {
   copiedNodeId,
+  findNode,
   isNodeDoc,
   isSharedCopy,
   type NodeDoc,
@@ -17,7 +18,6 @@ import {
   placeOf,
   shownLayer,
 } from "../editor/layers.js";
-import { findNode } from "../editor/nodes.js";
 import { selectedIds } from "../editor/selection.js";
 import { shownLayout } from "../editor/shared-layout.js";
 

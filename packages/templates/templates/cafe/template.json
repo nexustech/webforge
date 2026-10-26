@@ -1,0 +1,850 @@
+{
+  "id": "cafe",
+  "category": "food",
+  "example": true,
+  "site": {
+    "formatVersion": 7,
+    "settings": {
+      "general": {
+        "name": "The Copper Kettle",
+        "language": "en"
+      },
+      "address": {},
+      "social": {
+        "profiles": []
+      },
+      "contact": {
+        "openingHours": [
+          {
+            "days": ["mon", "tue", "wed", "thu", "fri"],
+            "opens": "08:00",
+            "closes": "16:00"
+          },
+          {
+            "days": ["sat"],
+            "opens": "09:00",
+            "closes": "17:00"
+          },
+          {
+            "days": ["sun"],
+            "opens": "10:00",
+            "closes": "15:00"
+          }
+        ],
+        "email": "hello@example.com",
+        "phone": "+44 1632 960 123",
+        "address": "7 Bridge Street, Kendal LA9 7DD",
+        "openingHoursNote": "The kitchen closes half an hour before we do."
+      },
+      "search": {
+        "allowIndexing": true,
+        "includeSitemap": true
+      },
+      "analytics": {
+        "consentBanner": true
+      },
+      "forms": {},
+      "publish": {
+        "destinations": []
+      },
+      "allowedExternalUrls": []
+    },
+    "theme": {
+      "preset": "bistro",
+      "scheme": "light",
+      "colors": {
+        "base-100": {
+          "l": 0.975,
+          "c": 0.014,
+          "h": 85
+        },
+        "base-200": {
+          "l": 0.94,
+          "c": 0.024,
+          "h": 80
+        },
+        "base-300": {
+          "l": 0.9,
+          "c": 0.032,
+          "h": 75
+        },
+        "base-content": {
+          "l": 0.27,
+          "c": 0.035,
+          "h": 50
+        },
+        "primary": {
+          "l": 0.45,
+          "c": 0.07,
+          "h": 140
+        },
+        "primary-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        },
+        "secondary": {
+          "l": 0.5,
+          "c": 0.12,
+          "h": 40
+        },
+        "secondary-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        },
+        "accent": {
+          "l": 0.47,
+          "c": 0.08,
+          "h": 80
+        },
+        "accent-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        },
+        "neutral": {
+          "l": 0.3,
+          "c": 0.035,
+          "h": 50
+        },
+        "neutral-content": {
+          "l": 0.975,
+          "c": 0.014,
+          "h": 85
+        },
+        "info": {
+          "l": 0.45,
+          "c": 0.14,
+          "h": 245
+        },
+        "info-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        },
+        "success": {
+          "l": 0.45,
+          "c": 0.12,
+          "h": 150
+        },
+        "success-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        },
+        "warning": {
+          "l": 0.84,
+          "c": 0.15,
+          "h": 85
+        },
+        "warning-content": {
+          "l": 0.2,
+          "c": 0.02,
+          "h": 85
+        },
+        "error": {
+          "l": 0.48,
+          "c": 0.19,
+          "h": 27
+        },
+        "error-content": {
+          "l": 1,
+          "c": 0,
+          "h": 0
+        }
+      },
+      "inverse": {
+        "base-100": {
+          "l": 0.25,
+          "c": 0.03,
+          "h": 50
+        },
+        "base-200": {
+          "l": 0.29,
+          "c": 0.032,
+          "h": 50
+        },
+        "base-300": {
+          "l": 0.34,
+          "c": 0.034,
+          "h": 50
+        },
+        "base-content": {
+          "l": 0.96,
+          "c": 0.016,
+          "h": 85
+        },
+        "primary": {
+          "l": 0.8,
+          "c": 0.07,
+          "h": 140
+        },
+        "primary-content": {
+          "l": 0.22,
+          "c": 0.03,
+          "h": 140
+        },
+        "secondary": {
+          "l": 0.76,
+          "c": 0.1,
+          "h": 45
+        },
+        "secondary-content": {
+          "l": 0.22,
+          "c": 0.04,
+          "h": 45
+        },
+        "accent": {
+          "l": 0.8,
+          "c": 0.08,
+          "h": 80
+        },
+        "accent-content": {
+          "l": 0.22,
+          "c": 0.03,
+          "h": 80
+        },
+        "neutral": {
+          "l": 0.92,
+          "c": 0.02,
+          "h": 80
+        },
+        "neutral-content": {
+          "l": 0.25,
+          "c": 0.03,
+          "h": 50
+        },
+        "info": {
+          "l": 0.78,
+          "c": 0.1,
+          "h": 245
+        },
+        "info-content": {
+          "l": 0.2,
+          "c": 0.03,
+          "h": 245
+        },
+        "success": {
+          "l": 0.78,
+          "c": 0.12,
+          "h": 150
+        },
+        "success-content": {
+          "l": 0.2,
+          "c": 0.03,
+          "h": 150
+        },
+        "warning": {
+          "l": 0.84,
+          "c": 0.15,
+          "h": 85
+        },
+        "warning-content": {
+          "l": 0.2,
+          "c": 0.02,
+          "h": 85
+        },
+        "error": {
+          "l": 0.75,
+          "c": 0.13,
+          "h": 27
+        },
+        "error-content": {
+          "l": 0.2,
+          "c": 0.03,
+          "h": 27
+        }
+      },
+      "fonts": {
+        "heading": {
+          "family": "Playfair Display",
+          "fallback": "serif"
+        },
+        "body": {
+          "family": "Source Sans 3",
+          "fallback": "sans-serif"
+        }
+      },
+      "radius": {
+        "box": "l",
+        "field": "full",
+        "selector": "m"
+      },
+      "border": "thin",
+      "effects": {
+        "depth": false,
+        "noise": false
+      },
+      "spacing": "normal",
+      "typeScale": {
+        "h1": {
+          "size": "6xl",
+          "weight": 700,
+          "leading": "tight"
+        },
+        "h2": {
+          "size": "3xl",
+          "weight": 700,
+          "leading": "tight"
+        },
+        "h3": {
+          "size": "xl",
+          "weight": 700,
+          "leading": "tight"
+        },
+        "h4": {
+          "size": "lg",
+          "weight": 700,
+          "leading": "normal"
+        },
+        "h5": {
+          "size": "base",
+          "weight": 700,
+          "leading": "normal"
+        },
+        "h6": {
+          "size": "sm",
+          "weight": 700,
+          "leading": "normal"
+        },
+        "body": {
+          "size": "lg",
+          "weight": 400,
+          "leading": "relaxed"
+        },
+        "small": {
+          "size": "sm",
+          "weight": 400,
+          "leading": "normal"
+        }
+      },
+      "links": {
+        "underline": "always"
+      },
+      "buttons": {
+        "shape": "pill",
+        "size": "m",
+        "style": "filled"
+      },
+      "shadow": "soft",
+      "headings": {
+        "case": "normal",
+        "tracking": "tight"
+      },
+      "cards": {
+        "style": "flat"
+      },
+      "images": {
+        "corners": "soft"
+      },
+      "sections": {
+        "rhythm": "alternating"
+      }
+    },
+    "layout": {
+      "header": [
+        {
+          "type": "Header",
+          "props": {
+            "id": "header",
+            "siteName": "The Copper Kettle",
+            "bindings": {
+              "siteName": "general.name"
+            }
+          }
+        }
+      ],
+      "footer": [
+        {
+          "type": "Footer",
+          "props": {
+            "id": "footer",
+            "text": "The Copper Kettle · Coffee, breakfast and lunch by the river"
+          }
+        }
+      ]
+    },
+    "pages": {
+      "cafe-home": {
+        "id": "cafe-home",
+        "kind": "page",
+        "slug": "home",
+        "title": "Home",
+        "settings": {
+          "hideHeader": false,
+          "hideFooter": false,
+          "hideFromNavigation": false
+        },
+        "doc": {
+          "root": {
+            "props": {}
+          },
+          "content": [
+            {
+              "type": "Hero",
+              "props": {
+                "id": "hero",
+                "variant": "split",
+                "colors": "page",
+                "alignment": "left",
+                "title": "Good coffee and proper breakfasts",
+                "text": "A small café by the river in Kendal, open seven days a week.",
+                "buttonLabel": "See the menu",
+                "buttonLink": {
+                  "kind": "page",
+                  "pageId": "cafe-menu",
+                  "newTab": false
+                },
+                "image": {
+                  "mediaId": "cafe-hero"
+                }
+              }
+            },
+            {
+              "type": "Features",
+              "props": {
+                "id": "features",
+                "variant": "centred",
+                "colors": "page",
+                "title": "Why people come back",
+                "text": "<p>Simple food, cooked well, and a seat by the window if you're quick.</p>",
+                "items": [
+                  {
+                    "type": "Feature",
+                    "props": {
+                      "id": "feature-0",
+                      "icon": "coffee",
+                      "title": "Coffee roasted down the road",
+                      "text": "<p>Our beans come from a roaster two miles away, and change with the seasons.</p>"
+                    }
+                  },
+                  {
+                    "type": "Feature",
+                    "props": {
+                      "id": "feature-1",
+                      "icon": "croissant",
+                      "title": "Baked every morning",
+                      "text": "<p>Bread, scones and cakes from our own oven, ready when we open.</p>"
+                    }
+                  },
+                  {
+                    "type": "Feature",
+                    "props": {
+                      "id": "feature-2",
+                      "icon": "dog",
+                      "title": "Dogs and muddy boots welcome",
+                      "text": "<p>Water bowls by the door, and biscuits behind the counter.</p>"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "Gallery",
+              "props": {
+                "id": "gallery",
+                "variant": "featured",
+                "colors": "page",
+                "title": "From the counter",
+                "images": [
+                  {
+                    "type": "GalleryImage",
+                    "props": {
+                      "id": "image-0",
+                      "image": {
+                        "mediaId": "cafe-breakfast"
+                      },
+                      "caption": "The full breakfast"
+                    }
+                  },
+                  {
+                    "type": "GalleryImage",
+                    "props": {
+                      "id": "image-1",
+                      "image": {
+                        "mediaId": "cafe-cake"
+                      },
+                      "caption": "Lemon drizzle, every day"
+                    }
+                  },
+                  {
+                    "type": "GalleryImage",
+                    "props": {
+                      "id": "image-2",
+                      "image": {
+                        "mediaId": "cafe-coffee"
+                      },
+                      "caption": "A flat white"
+                    }
+                  },
+                  {
+                    "type": "GalleryImage",
+                    "props": {
+                      "id": "image-3",
+                      "image": {
+                        "mediaId": "cafe-lunch"
+                      },
+                      "caption": "Soup of the day"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "Testimonials",
+              "props": {
+                "id": "testimonials",
+                "variant": "cards",
+                "colors": "inverse",
+                "title": "What our regulars say",
+                "items": [
+                  {
+                    "type": "Testimonial",
+                    "props": {
+                      "id": "testimonial-0",
+                      "quote": "The best breakfast in town, and they always remember how I take my coffee.",
+                      "name": "Margaret",
+                      "role": "Comes in every Saturday"
+                    }
+                  },
+                  {
+                    "type": "Testimonial",
+                    "props": {
+                      "id": "testimonial-1",
+                      "quote": "We stop here after every walk. The dog gets a biscuit and we get the cake.",
+                      "name": "Owen",
+                      "role": "Walks the river path"
+                    }
+                  },
+                  {
+                    "type": "Testimonial",
+                    "props": {
+                      "id": "testimonial-2",
+                      "quote": "Friendly, quick and never rushed. Lovely spot to work for an hour.",
+                      "name": "Aisha",
+                      "role": "Works from the window seat"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "CallToAction",
+              "props": {
+                "id": "call-to-action",
+                "variant": "banner",
+                "colors": "page",
+                "title": "Coming with six or more?",
+                "text": "Call us the day before and we'll keep a table for you.",
+                "buttonLabel": "Call us",
+                "buttonLink": {
+                  "kind": "phone",
+                  "number": "+44 1632 960 123"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "cafe-menu": {
+        "id": "cafe-menu",
+        "kind": "page",
+        "slug": "menu",
+        "title": "Menu",
+        "settings": {
+          "hideHeader": false,
+          "hideFooter": false,
+          "hideFromNavigation": false
+        },
+        "doc": {
+          "root": {
+            "props": {}
+          },
+          "content": [
+            {
+              "type": "TextSection",
+              "props": {
+                "id": "breakfast",
+                "colors": "page",
+                "title": "Breakfast, until 11:30",
+                "text": "<p><strong>Full breakfast</strong> · £10.50<br>Two eggs, bacon or mushrooms, sausage, beans, tomato and sourdough toast.</p><p><strong>Eggs on toast</strong> · £6.50<br>Poached, fried or scrambled, on sourdough or seeded toast.</p><p><strong>Porridge</strong> · £5.00<br>With berries and honey, or brown sugar and cream.</p><p><strong>Bacon roll</strong> · £4.50<br>Smoked bacon in a soft white roll. Add an egg for £1.</p>"
+              }
+            },
+            {
+              "type": "TextSection",
+              "props": {
+                "id": "lunch",
+                "colors": "inverse",
+                "title": "Lunch, from 11:30",
+                "text": "<p><strong>Soup of the day</strong> · £6.50<br>Made fresh each morning, with bread and butter.</p><p><strong>Toasted sandwiches</strong> · £7.50<br>Cheese and onion, ham and mustard, or mushroom and spinach.</p><p><strong>Jacket potato</strong> · £7.00<br>With cheese and beans, tuna mayonnaise or chilli.</p><p><strong>Ploughman's</strong> · £9.50<br>Local cheese, ham, pickle, apple and a crusty roll.</p>"
+              }
+            },
+            {
+              "type": "TextSection",
+              "props": {
+                "id": "cakes",
+                "colors": "page",
+                "title": "Cakes and bakes",
+                "text": "<p><strong>Scone with jam and cream</strong> · £4.00<br>Plain or fruit, still warm in the morning.</p><p><strong>Lemon drizzle</strong> · £3.50<br>Our most asked-for cake.</p><p><strong>Chocolate brownie</strong> · £3.50<br>Gluten-free, and nobody can tell.</p><p><strong>Cake of the day</strong> · £3.75<br>Ask at the counter, or look at the board.</p>"
+              }
+            },
+            {
+              "type": "TextSection",
+              "props": {
+                "id": "drinks",
+                "colors": "page",
+                "title": "Drinks",
+                "text": "<p><strong>Coffee</strong> · from £2.80<br>Espresso, americano, flat white, latte and cappuccino. Oat milk at no extra cost.</p><p><strong>Tea</strong> · £2.50<br>A pot of breakfast tea, Earl Grey, green or peppermint.</p><p><strong>Hot chocolate</strong> · £3.50<br>With cream and marshmallows if you like.</p><p><strong>Cold drinks</strong> · from £2.20<br>Fresh orange juice, local apple juice and sparkling water.</p>"
+              }
+            },
+            {
+              "type": "TextSection",
+              "props": {
+                "id": "allergies",
+                "colors": "page",
+                "title": "Allergies",
+                "text": "<p>Please tell us about any allergies when you order. Our kitchen handles nuts, gluten, dairy and eggs, so we can't promise that a dish is free of them.</p>"
+              }
+            }
+          ]
+        }
+      },
+      "cafe-about": {
+        "id": "cafe-about",
+        "kind": "page",
+        "slug": "about",
+        "title": "About us",
+        "settings": {
+          "hideHeader": false,
+          "hideFooter": false,
+          "hideFromNavigation": false
+        },
+        "doc": {
+          "root": {
+            "props": {}
+          },
+          "content": [
+            {
+              "type": "TextImage",
+              "props": {
+                "id": "story",
+                "variant": "imageLeft",
+                "colors": "page",
+                "title": "Our story",
+                "text": "<p>Hannah opened The Copper Kettle in 2016, in what used to be the town's ironmonger. The old copper kettle on the counter came with the building.</p><p>We cook everything here, we buy from farms and bakers nearby, and we try to make every visit feel like coming round to a friend's for breakfast.</p>",
+                "image": {
+                  "mediaId": "cafe-riverside"
+                }
+              }
+            },
+            {
+              "type": "Team",
+              "props": {
+                "id": "team",
+                "variant": "cards",
+                "colors": "page",
+                "title": "Who you'll meet",
+                "text": "<p>A small team, most mornings.</p>",
+                "items": [
+                  {
+                    "type": "TeamMember",
+                    "props": {
+                      "id": "member-0",
+                      "name": "Hannah",
+                      "role": "Owner",
+                      "text": "<p>Makes the coffee, knows everyone's order, and bakes the scones.</p>",
+                      "photo": {
+                        "mediaId": "cafe-hannah"
+                      }
+                    }
+                  },
+                  {
+                    "type": "TeamMember",
+                    "props": {
+                      "id": "member-1",
+                      "name": "Sam",
+                      "role": "Cook",
+                      "text": "<p>Runs the kitchen, and has opinions about how to fry an egg.</p>",
+                      "photo": {
+                        "mediaId": "cafe-sam"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "cafe-visit": {
+        "id": "cafe-visit",
+        "kind": "page",
+        "slug": "visit",
+        "title": "Visit us",
+        "settings": {
+          "hideHeader": false,
+          "hideFooter": false,
+          "hideFromNavigation": false
+        },
+        "doc": {
+          "root": {
+            "props": {}
+          },
+          "content": [
+            {
+              "type": "ContactDetails",
+              "props": {
+                "id": "contact-details",
+                "variant": "split",
+                "colors": "page",
+                "title": "Find us",
+                "text": "<p>On Bridge Street, by the river. There's a car park two minutes' walk away.</p>",
+                "showHours": true,
+                "showContact": true
+              }
+            },
+            {
+              "type": "Faq",
+              "props": {
+                "id": "faq",
+                "variant": "accordion",
+                "colors": "page",
+                "title": "Good to know",
+                "items": [
+                  {
+                    "type": "FaqItem",
+                    "props": {
+                      "id": "faq-0",
+                      "question": "Do you take bookings?",
+                      "answer": "<p>For six or more, yes: call us the day before. Otherwise just come in, and we'll find you a seat.</p>"
+                    }
+                  },
+                  {
+                    "type": "FaqItem",
+                    "props": {
+                      "id": "faq-1",
+                      "question": "Can I bring my dog?",
+                      "answer": "<p>Of course. Dogs on leads are welcome inside and out.</p>"
+                    }
+                  },
+                  {
+                    "type": "FaqItem",
+                    "props": {
+                      "id": "faq-2",
+                      "question": "Is there step-free access?",
+                      "answer": "<p>Yes, through the front door, and there's an accessible toilet.</p>"
+                    }
+                  },
+                  {
+                    "type": "FaqItem",
+                    "props": {
+                      "id": "faq-3",
+                      "question": "Do you do vegan food?",
+                      "answer": "<p>Yes. Ask for the vegan breakfast, or the soup, which is usually vegan too.</p>"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "ContactForm",
+              "props": {
+                "id": "contact-form",
+                "colors": "inverse",
+                "title": "Send us a message",
+                "text": "<p>Questions about catering, parties or anything else. We reply within a day.</p>",
+                "askPhone": false,
+                "buttonLabel": "Send"
+              }
+            }
+          ]
+        }
+      },
+      "cafe-not-found": {
+        "id": "cafe-not-found",
+        "kind": "not-found",
+        "slug": "page-not-found",
+        "title": "Page not found",
+        "settings": {
+          "hideHeader": false,
+          "hideFooter": false,
+          "hideFromNavigation": true
+        },
+        "doc": {
+          "root": {
+            "props": {}
+          },
+          "content": [
+            {
+              "type": "Section",
+              "props": {
+                "id": "section-1",
+                "padding": {
+                  "top": "l",
+                  "bottom": "l"
+                },
+                "content": [
+                  {
+                    "type": "Heading",
+                    "props": {
+                      "id": "heading-1",
+                      "text": "Sorry, this page doesn't exist",
+                      "size": "large"
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "id": "text-1",
+                      "text": "<p>It may have moved or been renamed. Use the menu above to find what you're looking for.</p>"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    "pageOrder": ["cafe-home", "cafe-menu", "cafe-about", "cafe-visit", "cafe-not-found"],
+    "homePageId": "cafe-home",
+    "media": {},
+    "code": {
+      "css": "",
+      "js": "",
+      "head": "",
+      "bodyEnd": ""
+    },
+    "menu": {
+      "follows": "pages",
+      "items": [
+        {
+          "id": "menu-home",
+          "kind": "page",
+          "pageId": "cafe-home",
+          "hidden": false
+        },
+        {
+          "id": "menu-menu",
+          "kind": "page",
+          "pageId": "cafe-menu",
+          "hidden": false
+        },
+        {
+          "id": "menu-about",
+          "kind": "page",
+          "pageId": "cafe-about",
+          "hidden": false
+        },
+        {
+          "id": "menu-visit",
+          "kind": "page",
+          "pageId": "cafe-visit",
+          "hidden": false
+        }
+      ]
+    },
+    "sharedSections": {}
+  }
+}

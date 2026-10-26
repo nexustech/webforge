@@ -3,6 +3,7 @@ import { act, cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createFakeEngine, type FakeEngine } from "@webforge/test-utils/renderer";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import type { AiApi, AiRequest, AiResponse } from "../shared/ipc/ai.js";
 import { applyPreferencesChange, DEFAULT_PREFERENCES } from "../shared/ipc/prefs.js";
 import type { ExportResult, PreferencesChange, UiStateResult } from "../shared/ipc-contract.js";
 import { App, type AppProps } from "./App.js";
@@ -26,6 +27,15 @@ const saveUiState = vi.fn(async (): Promise<UiStateResult> => ({ status: "saved"
 
 const setSpellCheckLanguage = vi.fn(async () => null);
 
+/** What main forwards AI apps' requests to: the window's answer while it listens. */
+const ai = { answer: undefined as ((request: AiRequest) => Promise<AiResponse>) | undefined };
+const answerAi = vi.fn<AiApi["onRequest"]>((answer) => {
+  ai.answer = answer;
+  return () => {
+    ai.answer = undefined;
+  };
+});
+
 function renderApp(
   exportSite = vi.fn(async (): Promise<ExportResult> => ({ status: "canceled" })),
   extra: Partial<AppProps> = {},
@@ -34,6 +44,7 @@ function renderApp(
     <App
       saveUiState={saveUiState}
       setSpellCheckLanguage={setSpellCheckLanguage}
+      answerAi={answerAi}
       info={{ name: "Webforge", version: "1.2.0" }}
       preferences={DEFAULT_PREFERENCES}
       savePreferences={savePreferences}
@@ -91,6 +102,7 @@ describe("App", () => {
     const props = {
       saveUiState,
       setSpellCheckLanguage,
+      answerAi,
       info: { name: "Webforge", version: "1.2.0" },
       preferences: DEFAULT_PREFERENCES,
       savePreferences,
@@ -119,6 +131,46 @@ describe("App", () => {
     });
 
     expect(await screen.findByRole("combobox")).toBeTruthy();
+  });
+});
+
+describe("App's AI apps (4.8)", () => {
+  it("answers AI apps while the site is open: each change an undo step, D7 asked in the window", async () => {
+    renderApp();
+    const ask = (request: AiRequest) => {
+      if (ai.answer === undefined) throw new Error("not listening");
+      return act(() => ai.answer?.(request) ?? Promise.reject(new Error("not listening")));
+    };
+
+    const outline = await ask({ kind: "query", name: "outline", input: {} });
+    expect(outline).toMatchObject({ status: "done", data: { name: "My site" } });
+    const pages = (outline as { data: { pages: { id: string }[] } }).data.pages;
+    const added = await ask({
+      kind: "command",
+      name: "addNode",
+      input: { location: { kind: "page", pageId: pages[0]?.id }, type: "Hero" },
+      app: "Claude",
+    });
+    expect(added).toMatchObject({ status: "done", label: "AI (Claude): Added Hero" });
+    const left = screen.getByRole("region", { name: "Left panels" });
+    await userEvent.click(within(left).getByRole("tab", { name: "Undo History" }));
+    expect(within(left).getByText("AI (Claude): Added Hero")).toBeTruthy();
+
+    // A change to every page waits for the person, in the window's site-wide question (D7).
+    const theme = ask({
+      kind: "command",
+      name: "setThemeTokens",
+      input: { tokens: { spacing: "roomy" } },
+      app: "Claude",
+    });
+    const dialog = await screen.findByRole("alertdialog");
+    expect(within(dialog).getByText("Allow Claude to change the theme?")).toBeTruthy();
+    // Radix keeps pointer events off the page under the dialog, which happy-dom applies to it too.
+    await act(async () => within(dialog).getByRole("button", { name: "Allow" }).click());
+    expect(await theme).toMatchObject({ status: "done", label: "AI (Claude): Changed the theme" });
+
+    cleanup();
+    expect(ai.answer).toBeUndefined();
   });
 });
 

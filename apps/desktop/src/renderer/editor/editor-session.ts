@@ -110,6 +110,15 @@ export function textSessionKey(pageId: PageId, nodeId: string, field: string): s
   return `text:${pageId}:${nodeId}:${field}`;
 }
 
+/**
+ * Whether a text-editing session on the canvas is open (D1): its step still takes what is typed,
+ * until the person selects something else.
+ */
+export function textSessionOpen(history: Pick<HistoryManager<SiteDoc, unknown>, "state">): boolean {
+  const { entries, cursor } = history.state.getState();
+  return entries[cursor - 1]?.coalesceKey?.startsWith("text:") === true;
+}
+
 /** The page the editor shows. */
 export function currentPage(session: Pick<EditorSession, "history" | "ui">): PageEntry | undefined {
   return session.history.document.getState().pages[session.ui.getState().pageId];

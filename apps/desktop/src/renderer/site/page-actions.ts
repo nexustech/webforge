@@ -2,14 +2,17 @@ import type { Recipe } from "@webforge/history";
 import { t } from "@webforge/i18n";
 import {
   findBrokenLinks,
+  insertPage,
   type MediaId,
   newId,
   PAGE_DESCRIPTION_MAX,
-  PAGE_TITLE_MAX,
   type PageEntry,
   type PageId,
+  pageSlugFor,
+  pageTitle,
   type SiteDoc,
   slugify,
+  slugsInFolder,
   syncMenuWithPages,
   uniqueSlug,
 } from "@webforge/model";
@@ -26,25 +29,8 @@ import type { EditKind, EditorSelection, EditorSession } from "../editor/editor-
 /** The parts of an editor session the actions use. */
 export type PagesSession = Pick<EditorSession, "history" | "ui" | "edit">;
 
-/** A name as a page title: trimmed, and short enough to save. */
-const titleOf = (name: string) => name.trim().slice(0, PAGE_TITLE_MAX).trim();
-
 /** "page 'About'", for the history's "Added {item}" labels. */
 const pageItem = (name: string) => t("pages.item", { name });
-
-/** Slugs other pages already use in `folder` (undefined for the top level). */
-function slugsInFolder(site: SiteDoc, folder: string | undefined, except?: PageId): Set<string> {
-  return new Set(
-    Object.values(site.pages)
-      .filter((page) => page.folder === folder && page.id !== except)
-      .map((page) => page.slug),
-  );
-}
-
-/** A free slug for `name` in `folder`. */
-function slugFor(site: SiteDoc, name: string, folder: string | undefined, except?: PageId): string {
-  return uniqueSlug(slugify(name), slugsInFolder(site, folder, except));
-}
 
 /**
  * The file a page named `name` in `folder` would get (`services/about.html`), as the add, rename
@@ -63,7 +49,7 @@ export function fileNameFor(
   if (page?.kind === "not-found") {
     return "404.html";
   }
-  const slug = slugFor(site, name, folder, pageId);
+  const slug = pageSlugFor(site, name, folder, pageId);
   return folder === undefined ? `${slug}.html` : `${folder}/${slug}.html`;
 }
 
@@ -114,26 +100,14 @@ function editShowing(
 
 /** Adds an empty page called `name` and shows it. Returns its id, or null for an empty name. */
 export function addPage(session: PagesSession, name: string): PageId | null {
-  const title = titleOf(name);
+  const title = pageTitle(name);
   if (title === "") {
     return null;
   }
   const id = newId("page");
-  editShowing(session, "insert", t("history.added", { item: pageItem(title) }), id, (draft) => {
-    draft.pages[id] = {
-      id,
-      kind: "page",
-      slug: slugFor(draft, title, undefined),
-      title,
-      settings: { hideHeader: false, hideFooter: false, hideFromNavigation: false },
-      doc: { root: { props: {} }, content: [] },
-    };
-    // New pages go at the end, but stay before a "Page not found" page that is last.
-    const last = draft.pageOrder.at(-1);
-    const beforeNotFound = last !== undefined && draft.pages[last]?.kind === "not-found";
-    draft.pageOrder.splice(beforeNotFound ? -1 : draft.pageOrder.length, 0, id);
-    draft.menu = syncMenuWithPages(draft, id);
-  });
+  editShowing(session, "insert", t("history.added", { item: pageItem(title) }), id, (draft) =>
+    insertPage(draft, id, title),
+  );
   return id;
 }
 
@@ -143,8 +117,8 @@ export function addPage(session: PagesSession, name: string): PageId | null {
  * a rename never breaks links to a file name the person chose.
  */
 function slugAfterRename(site: SiteDoc, page: PageEntry, title: string): string {
-  const followsName = page.slug === slugFor(site, page.title, page.folder, page.id);
-  return followsName ? slugFor(site, title, page.folder, page.id) : page.slug;
+  const followsName = page.slug === pageSlugFor(site, page.title, page.folder, page.id);
+  return followsName ? pageSlugFor(site, title, page.folder, page.id) : page.slug;
 }
 
 /** The file a page would get if renamed to `name`, as the rename dialog shows it. */
@@ -153,7 +127,7 @@ export function renamedFileName(site: SiteDoc, pageId: PageId, name: string): st
   if (page === undefined || page.id === site.homePageId || page.kind === "not-found") {
     return fileNameFor(site, name, page?.folder, pageId);
   }
-  const slug = slugAfterRename(site, page, titleOf(name));
+  const slug = slugAfterRename(site, page, pageTitle(name));
   return page.folder === undefined ? `${slug}.html` : `${page.folder}/${slug}.html`;
 }
 
@@ -161,7 +135,7 @@ export function renamedFileName(site: SiteDoc, pageId: PageId, name: string): st
 export function renamePage(session: PagesSession, pageId: PageId, name: string): void {
   const site = session.history.document.getState();
   const page = site.pages[pageId];
-  const title = titleOf(name);
+  const title = pageTitle(name);
   if (page === undefined || title === "" || title === page.title) {
     return;
   }
@@ -186,7 +160,7 @@ export function duplicatePage(session: PagesSession, pageId: PageId): PageId | n
     return null;
   }
   const id = newId("page");
-  const title = titleOf(t("pages.copyName", { name: page.title }));
+  const title = pageTitle(t("pages.copyName", { name: page.title }));
   const label = t("history.duplicated", { item: pageItem(page.title) });
   // The home page's copy is an ordinary page, so it goes to the top level like the home page.
   const folder = pageId === site.homePageId ? undefined : page.folder;
@@ -194,7 +168,7 @@ export function duplicatePage(session: PagesSession, pageId: PageId): PageId | n
     draft.pages[id] = {
       id,
       kind: "page",
-      slug: slugFor(draft, title, folder),
+      slug: pageSlugFor(draft, title, folder),
       ...(folder === undefined ? {} : { folder }),
       title,
       settings: structuredClone(page.settings),
@@ -384,12 +358,12 @@ export function changePageSettings(
   if (page === undefined) {
     return;
   }
-  const title = titleOf(change.title) || page.title;
+  const title = pageTitle(change.title) || page.title;
   // An emptied file name keeps the current one, as an emptied title does.
   const slug =
     change.slug.trim() === "" || slugify(change.slug) === page.slug
       ? page.slug
-      : slugFor(site, change.slug, page.folder, pageId);
+      : pageSlugFor(site, change.slug, page.folder, pageId);
   const description = change.description.trim().slice(0, PAGE_DESCRIPTION_MAX);
   const shareImage =
     change.shareImage !== undefined && site.media[change.shareImage]?.kind === "image"

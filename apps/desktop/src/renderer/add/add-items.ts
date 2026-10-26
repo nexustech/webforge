@@ -3,6 +3,7 @@ import { t } from "@webforge/i18n";
 import {
   copiedNodeId,
   copyHolding,
+  findNode,
   isNodeDoc,
   type NodeDoc,
   newId,
@@ -14,7 +15,6 @@ import {
 import type { ComponentLibrary } from "@webforge/site-components";
 import { currentPage, type EditorSession } from "../editor/editor-session.js";
 import { labelFor } from "../editor/labels.js";
-import { findNode } from "../editor/nodes.js";
 
 /**
  * The Add panel's catalogue (F-ED-1) and where a click adds to the page: sections between

@@ -1,4 +1,5 @@
 import type { WebforgeApi } from "../shared/webforge-api.js";
+import { aiApi } from "./api/ai.js";
 import { appApi } from "./api/app.js";
 import { createCall, type Invoke, type Subscribe } from "./api/call.js";
 import { canvasApi } from "./api/canvas.js";
@@ -24,6 +25,7 @@ export function createWebforgeApi(
 ): WebforgeApi {
   const call = createCall(invoke);
   return {
+    ai: aiApi(call, subscribe),
     app: appApi(call, subscribe),
     canvas: canvasApi(call),
     clipboard: clipboardApi(call),

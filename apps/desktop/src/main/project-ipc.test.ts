@@ -15,7 +15,7 @@ const project = {
   sessionId: "9b2f6c1e-4d3a-4f7b-8e21-5c6d7a8b9c0d",
 };
 const opened: ProjectResult = { status: "opened", project };
-const bakery = { name: "Rosa's Bakery", theme: "bistro", template: "sample" };
+const bakery = { name: "Rosa's Bakery", theme: "bistro", template: "cafe" };
 
 function setUp(
   dialogs: Partial<ProjectDialogs> = {},

@@ -1,0 +1,20 @@
+{
+  "name": "@webforge/commands",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "devDependencies": {
+    "fast-check": "4.10.2",
+    "vitest": "catalog:"
+  },
+  "dependencies": {
+    "@webforge/history": "workspace:*",
+    "@webforge/i18n": "workspace:*",
+    "@webforge/model": "workspace:*",
+    "@webforge/site-components": "workspace:*",
+    "zod": "catalog:"
+  }
+}
