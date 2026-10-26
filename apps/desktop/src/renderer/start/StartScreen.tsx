@@ -14,6 +14,7 @@ import type { AppApi } from "../../shared/ipc/app.js";
 import type { ProjectApi } from "../../shared/ipc/project.js";
 import type { TemplatesApi } from "../../shared/ipc/templates.js";
 import type { AppInfo, RecentSite } from "../../shared/ipc-contract.js";
+import { reportFailure } from "../log.js";
 import { AboutDialog } from "../shell/AboutDialog.js";
 import {
   CommandRegistryProvider,
@@ -24,6 +25,7 @@ import { COMMAND_IDS } from "../shell/command-ids.js";
 import { createCommandRegistry, installCommandShortcuts, isMac } from "../shell/commands.js";
 import { ShortcutSheet } from "../shell/ShortcutSheet.js";
 import { TitleBar } from "../shell/TitleBar.js";
+import { AppMark } from "./AppMark.js";
 import { openSiteWith } from "./open-site.js";
 import { RecentSites } from "./RecentSites.js";
 import { SiteCommands } from "./SiteCommands.js";
@@ -83,13 +85,15 @@ export function StartScreen({ info, project, templates, app, restart, locale }: 
     setRecent(await api.listRecent().catch(() => recent));
   };
 
-  const remove = async (site: RecentSite) => {
-    await api.removeRecent(site.id);
-    setRecent((sites) => sites.filter((each) => each.id !== site.id));
-  };
-
-  const pin = async (site: RecentSite, pinned: boolean) => {
-    await api.pinRecent(site.id, pinned);
+  /** Changes the Recent list with `change`, saying so if it can't, as Open's failures are. */
+  const changeList = async (change: () => Promise<unknown>) => {
+    try {
+      await change();
+      setMessage(undefined);
+    } catch (error) {
+      reportFailure("site.recent", error);
+      setMessage(t("site.start.listFailed"));
+    }
     // Main orders the list: pinned sites first.
     setRecent(await api.listRecent().catch(() => recent));
   };
@@ -103,22 +107,33 @@ export function StartScreen({ info, project, templates, app, restart, locale }: 
             // On macOS the menus are the menu bar's (LF-13).
             menuBar={isMac() ? window.webforge.app : undefined}
           />
-          <main className="flex min-h-0 flex-1">
+          {/* Not an editing surface: a reading size, larger than the editor's panels (SC-1). */}
+          <main className="flex min-h-0 flex-1 text-base">
             <StartActions info={info} message={message} onOpen={() => void run(() => api.open())} />
-            <section className="flex min-w-0 flex-1 flex-col overflow-y-auto p-8">
-              <Tabs defaultValue="recent" className="flex w-full max-w-5xl flex-col gap-4">
-                <TabsList aria-label={t("site.start.title")} className="self-start">
-                  <TabsTrigger value="recent">{t("site.start.recent")}</TabsTrigger>
-                  <TabsTrigger value="help">{t("site.start.help")}</TabsTrigger>
+            <section className="flex min-w-0 flex-1 flex-col overflow-y-auto px-10 py-10">
+              <Tabs defaultValue="recent" className="flex w-full max-w-5xl flex-col gap-6">
+                <TabsList aria-label={t("site.start.title")} className="h-10 self-start">
+                  <TabsTrigger value="recent" className="px-4 text-sm">
+                    {t("site.start.recent")}
+                  </TabsTrigger>
+                  <TabsTrigger value="help" className="px-4 text-sm">
+                    {t("site.start.help")}
+                  </TabsTrigger>
                 </TabsList>
                 <TabsContent value="recent" className="bg-transparent">
-                  <RecentSites
-                    sites={recent}
-                    locale={locale}
-                    onOpen={(site) => void run(() => api.openRecent(site.id))}
-                    onPin={(site, pinned) => void pin(site, pinned)}
-                    onRemove={(site) => void remove(site)}
-                  />
+                  {recent.length === 0 ? (
+                    <Welcome info={info} onOpen={() => void run(() => api.open())} />
+                  ) : (
+                    <RecentSites
+                      sites={recent}
+                      locale={locale}
+                      onOpen={(site) => void run(() => api.openRecent(site.id))}
+                      onPin={(site, pinned) =>
+                        void changeList(() => api.pinRecent(site.id, pinned))
+                      }
+                      onRemove={(site) => void changeList(() => api.removeRecent(site.id))}
+                    />
+                  )}
                 </TabsContent>
                 <TabsContent value="help" className="bg-transparent">
                   <StartHelp />
@@ -141,9 +156,12 @@ export function StartScreen({ info, project, templates, app, restart, locale }: 
   );
 }
 
+/** The start screen's actions: larger than the editor's buttons (SC-1). */
+const ACTION = "h-10 justify-start px-4 text-base [&_svg:not([class*='size-'])]:size-5";
+
 /**
- * The start screen's left column: the app and its version, New Site, Open and, when the app ships
- * an example, Try an Example; and why a site couldn't be opened.
+ * The start screen's left column (LF-10, SC-2): Webforge's mark, name and version, then New Site,
+ * Open and, when the app ships an example, Try an Example; and why something couldn't be done.
  */
 function StartActions({
   info,
@@ -157,24 +175,32 @@ function StartActions({
   const registry = useCommandRegistry();
   const example = useCommand(COMMAND_IDS.tryExample);
   return (
-    <aside className="flex w-64 shrink-0 flex-col gap-3 border-r border-border bg-panel px-6 py-8">
-      <div className="flex flex-col gap-0.5 pb-3">
-        <h1 className="m-0 text-xl font-semibold">{info.name}</h1>
-        <p className="m-0 text-xs text-muted-foreground">
-          {t("site.start.version", { version: info.version })}
-        </p>
+    <aside className="flex w-80 shrink-0 flex-col gap-3 border-r border-border bg-panel px-8 py-10">
+      <div className="flex items-center gap-3 pb-6">
+        <AppMark />
+        <div className="flex flex-col">
+          <h1 className="m-0 text-2xl font-semibold">{info.name}</h1>
+          <p className="m-0 text-sm text-muted-foreground">
+            {t("site.start.version", { version: info.version })}
+          </p>
+        </div>
       </div>
-      <h2 className="m-0 text-sm font-medium text-muted-foreground">{t("site.start.title")}</h2>
-      <Button type="button" onClick={() => registry.run(COMMAND_IDS.newSite)}>
+      <h2 className="m-0 text-base font-medium text-muted-foreground">{t("site.start.title")}</h2>
+      <Button type="button" className={ACTION} onClick={() => registry.run(COMMAND_IDS.newSite)}>
         <FilePlusIcon />
         {t("site.start.new")}
       </Button>
-      <Button type="button" variant="outline" onClick={onOpen}>
+      <Button type="button" variant="outline" className={ACTION} onClick={onOpen}>
         <FolderOpenIcon className="text-warning" />
         {t("site.start.open")}
       </Button>
       {example === undefined ? null : (
-        <Button type="button" variant="outline" onClick={() => registry.run(example.id)}>
+        <Button
+          type="button"
+          variant="outline"
+          className={ACTION}
+          onClick={() => registry.run(example.id)}
+        >
           <SparklesIcon />
           {t("site.start.tryExample")}
         </Button>
@@ -185,5 +211,67 @@ function StartActions({
         </p>
       )}
     </aside>
+  );
+}
+
+/**
+ * The first start, with no recent sites yet (SC-3): a welcome, and the ways in, each saying what
+ * it does, instead of an empty list.
+ */
+function Welcome({ info, onOpen }: { readonly info: AppInfo; readonly onOpen: () => void }) {
+  const registry = useCommandRegistry();
+  const example = useCommand(COMMAND_IDS.tryExample);
+  const choices = [
+    {
+      id: "new",
+      label: t("site.start.new"),
+      description: t("site.start.new.description"),
+      icon: <FilePlusIcon className="size-6 text-primary" />,
+      run: () => registry.run(COMMAND_IDS.newSite),
+    },
+    ...(example === undefined
+      ? []
+      : [
+          {
+            id: "example",
+            label: t("site.start.tryExample"),
+            description: t("site.start.tryExample.description"),
+            icon: <SparklesIcon className="size-6 text-primary" />,
+            run: () => registry.run(example.id),
+          },
+        ]),
+    {
+      id: "open",
+      label: t("site.start.open"),
+      description: t("site.start.open.description"),
+      icon: <FolderOpenIcon className="size-6 text-warning" />,
+      run: onOpen,
+    },
+  ];
+  return (
+    <div className="flex max-w-3xl flex-col gap-6">
+      <div className="flex flex-col gap-2">
+        <h2 className="m-0 text-3xl font-semibold">
+          {t("site.start.welcome", { name: info.name })}
+        </h2>
+        <p className="m-0 text-lg text-muted-foreground">{t("site.start.welcomeText")}</p>
+      </div>
+      <ul className="m-0 grid list-none gap-3 p-0 sm:grid-cols-3">
+        {choices.map((choice) => (
+          <li key={choice.id}>
+            <button
+              type="button"
+              className="flex size-full flex-col gap-2 rounded-lg border border-border bg-panel p-5 text-left hover:border-border-strong focus-visible:outline-2 focus-visible:outline-ring"
+              onClick={() => void choice.run()}
+            >
+              {choice.icon}
+              <span className="text-base font-medium">{choice.label}</span>
+              <span className="text-sm text-muted-foreground">{choice.description}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      <p className="m-0 text-sm text-muted-foreground">{t("site.start.noRecent")}</p>
+    </div>
   );
 }

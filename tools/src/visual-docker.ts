@@ -101,6 +101,8 @@ export function containerScript(options: VisualDockerOptions): string {
     "status=0",
     `pnpm --filter @webforge/e2e e2e:visual --update-snapshots=${update} ${extra} || status=$?`,
     "cp -r /work/e2e/visual/__screenshots__/. /src/e2e/visual/__screenshots__/",
+    // The templates' thumbnails (2.14b), each in its template's folder.
+    "(cd /work/packages/templates/templates && find . -name thumbnail.png -exec cp --parents {} /src/packages/templates/templates/ \\;)",
     'if [ "$status" -ne 0 ]; then',
     "  rm -rf /src/e2e/test-results /src/e2e/playwright-report",
     "  cp -r /work/e2e/test-results /work/e2e/playwright-report /src/e2e/ 2>/dev/null || true",
