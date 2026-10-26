@@ -118,7 +118,7 @@ Effort: **S** ≈ days · **M** ≈ 1–2 weeks.
 | ST-3 | **Underline, highlight and colour inside text:** three buttons in the text toolbar; colour and highlight pick from the theme roles (Brand, Accent, Text) so dark mode and a theme switch still work; strikethrough stays off. Pasted formatting is still reduced to the allowed marks. Site Check tip: *underlined text that isn't a link* | Select a word, press U, or choose a colour chip | S (1 day) | 1.23 follow-up, Phase 2 chore |
 | ST-6 | **The token rule stays** (F-ED-4, `docs/components.md`): no free values in the Style tab in Simple mode. A one-off colour is added to the theme's palette in Theme Studio, as in Elements; Advanced mode keeps the off-theme hex colour of ADR 0009 (1.37), marked as such | — | — | Rule, no scope |
 
-### 5.2 Proposed for v1.1
+### 5.2 Proposed for v1.1 (moved to the MVP, ST-8)
 | # | Proposal | Effort | Note |
 |---|---|---|---|
 | ST-4 | **Apply to all of this kind:** a menu action on a styled element, *Apply this look to every Button on the site* (or on this page), which copies its Appearance tokens to the others as one undo step; the reverse, *Reset to theme's look*, already exists per control | M | The small-business version of Webflow's class and Pinegrow's Styles, without a class. Builds on 1.37's Copy/Paste style |
@@ -140,7 +140,8 @@ Product owner, 2026-10-26: all proposals adopted as written.
 | ST-2 | ✅ **MVP:** a hover row on Button, Image, Icon and the card sections (+1 day on 2.22) |
 | ST-3 | ✅ **MVP:** underline, highlight and theme-colour marks in the text toolbar, with a Site Check tip (1 day, chore #495 on 1.23's code) |
 | ST-6 | ✅ **Rule:** the Style tab stays tokens only in Simple mode; one-off colours go into the theme's palette, or Advanced mode's off-theme hex (ADR 0009) |
-| ST-4, ST-5, ST-7 | ✅ **v1.1:** apply to all of this kind; section backgrounds for every section; transition and transform presets |
+| ST-4, ST-5, ST-7 | ✅ ~~**v1.1**~~ → **MVP** (ST-8): apply to all of this kind (2.27, 3 days); backgrounds for every section, the image and overlay beside ST-1's colour (2.26, 2 days); transition and transform presets on the hover row (2.28, 1 day) |
+| ST-8 | ✅ **Styling first** (product owner, 2026-10-26): styling is a core concept, so it is a block of Phase 2 that all three streams work on before more Phase 3 work. 2.22 splits into the framework (2.22a, stream A) and its mapping across the component families (2.22b, streams A and C). The text marks become plan item 2.25 (from chore #495), and the eight templates get a pass to use the new styling (2.29, 1.5 days). Phase 2's exit criteria include the Appearance group |
 
 ## Sources
 - Webflow: [Style panel overview](https://help.webflow.com/hc/en-us/articles/33961362040723-Style-panel-overview) · [Classes](https://help.webflow.com/hc/en-us/articles/33961311094419-Classes) · [States](https://help.webflow.com/hc/en-us/articles/33961301727251-States) · [Style labels](https://help.webflow.com/hc/en-us/articles/33961332425875-Style-labels-in-the-Designer) · [Variables](https://help.webflow.com/hc/en-us/articles/33961268146323) · [Component style variants](https://webflow.com/updates/component-style-variants-now-available) · [Text styling (tenten)](https://webflow.tenten.co/en/text-styling/) · [Text spans (Digidop)](https://digidop.com/blog/text-span-weflow)
