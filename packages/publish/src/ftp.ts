@@ -71,6 +71,8 @@ async function connect(dest: FtpDestination, options: FtpOptions): Promise<Clien
 /** The destination's folder over `client`, by absolute paths: `ensureDir` moves the cwd. */
 function remoteFolder(client: Client, root: string): RemoteFolder {
   const at = (path: string) => posix.join(root, path);
+  /** Folders known to be there: `ensureDir` walks the path a folder at a time, every call. */
+  const made = new Set<string>();
   return {
     async read(path) {
       const chunks: Buffer[] = [];
@@ -91,7 +93,11 @@ function remoteFolder(client: Client, root: string): RemoteFolder {
     async write(path, data) {
       const target = at(path);
       const upload = at(uploadPathFor(path));
-      await client.ensureDir(posix.dirname(target));
+      const folder = posix.dirname(target);
+      if (!made.has(folder)) {
+        await client.ensureDir(folder);
+        made.add(folder);
+      }
       await client.uploadFrom(Readable.from([Buffer.from(data)]), upload);
       try {
         await client.rename(upload, target);

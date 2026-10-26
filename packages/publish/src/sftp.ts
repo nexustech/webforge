@@ -127,11 +127,16 @@ function remoteFolder(sftp: SFTPWrapper, root: string): RemoteFolder {
         throw error;
       },
     );
+  /** Folders known to be there, so each is looked up once a publish. */
+  const made = new Set<string>([".", "/"]);
   /** Makes `folder` and the folders above it that are missing. */
-  const makeFolders = async (folder: string) => {
-    if (folder === "." || folder === "/" || (await exists(folder))) return;
-    await makeFolders(posix.dirname(folder));
-    await call((done) => sftp.mkdir(folder, done));
+  const makeFolders = async (folder: string): Promise<void> => {
+    if (made.has(folder)) return;
+    if (!(await exists(folder))) {
+      await makeFolders(posix.dirname(folder));
+      await call((done) => sftp.mkdir(folder, done));
+    }
+    made.add(folder);
   };
   const unlink = (path: string) =>
     call((done) => sftp.unlink(path, done)).catch((error: unknown) => {
