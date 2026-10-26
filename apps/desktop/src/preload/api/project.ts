@@ -9,6 +9,7 @@ export const projectApi = (call: Call): ProjectApi => ({
   readSite: () => call("readSite"),
   listRecent: () => call("listRecentSites"),
   openRecent: (id) => call("openRecentSite", id),
+  pinRecent: (id, pinned) => call("pinRecentSite", id, pinned),
   removeRecent: (id) => call("removeRecentSite", id),
   commit: (sessionId, changes) => call("commitSite", sessionId, [...changes]),
   getUiState: () => call("getUiState"),

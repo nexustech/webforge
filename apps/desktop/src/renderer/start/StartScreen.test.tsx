@@ -24,10 +24,12 @@ const bakery: RecentSite = {
   id: "a".repeat(32),
   name: "Rosa's Bakery",
   fileName: "Rosa's Bakery.wforge",
+  folder: "Sites",
   lastOpened: "2026-10-20T09:00:00.000Z",
   lastEdited: "2026-10-21T09:30:00.000Z",
   thumbnail: "data:image/jpeg;base64,/9j/",
   missing: false,
+  pinned: false,
 };
 const florist: RecentSite = {
   ...bakery,
@@ -61,6 +63,7 @@ function api(recent: RecentSite[], result: ProjectResult = { status: "opened", p
     open: vi.fn(async () => result),
     listRecent: vi.fn(async () => recent),
     openRecent: vi.fn(async (_id: string) => result),
+    pinRecent: vi.fn(async (_id: string, _pinned: boolean) => null),
     removeRecent: vi.fn(async (_id: string) => null),
   };
 }
@@ -135,7 +138,7 @@ describe("StartScreen", () => {
     const items = [...container.querySelectorAll("li")].map((item) => item.textContent);
     expect(items[0]).toContain("Rosa's Bakery");
     expect(items[0]).toContain("Edited 21 Oct 2026");
-    expect(items[0]).toContain("Rosa's Bakery.wforge");
+    expect(items[0]).toContain("Sites › Rosa's Bakery.wforge");
     expect(items[1]).toContain("Opened 20 Oct 2026");
     expect(items[2]).toContain("The file has been moved or deleted");
     expect(container.querySelector("li img")?.getAttribute("src")).toBe(bakery.thumbnail);
@@ -166,5 +169,107 @@ describe("StartScreen", () => {
     expect(container.querySelector('[role="alert"]')?.textContent).toBe(
       "This site was saved by a newer version of Webforge. Update Webforge to open it.",
     );
+  });
+
+  it("pins a site to the top of the list, and unpins it (2.14b)", async () => {
+    const project = api([bakery, florist]);
+    await render(project);
+    project.listRecent.mockResolvedValueOnce([{ ...florist, pinned: true }, bakery]);
+
+    const pin = container.querySelector<HTMLButtonElement>('[aria-label="Pin Florist to the top"]');
+    expect(pin?.getAttribute("aria-pressed")).toBe("false");
+    await act(async () => pin?.click());
+
+    expect(project.pinRecent).toHaveBeenCalledWith(florist.id, true);
+    const names = [...container.querySelectorAll("li")].map((item) => item.textContent);
+    expect(names[0]).toContain("Florist");
+    const unpin = container.querySelector<HTMLButtonElement>('[aria-label="Unpin Florist"]');
+    expect(unpin?.getAttribute("aria-pressed")).toBe("true");
+    await act(async () => unpin?.click());
+    expect(project.pinRecent).toHaveBeenLastCalledWith(florist.id, false);
+  });
+
+  it("searches the recent sites by name, file and folder (2.14b)", async () => {
+    await render(api([bakery, { ...florist, folder: "Flowers" }, gone]));
+    const search = container.querySelector<HTMLInputElement>('input[type="search"]');
+    const type = (text: string) =>
+      act(async () => {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(
+          search,
+          text,
+        );
+        search?.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+    const shown = () => [...container.querySelectorAll("li")].map((item) => item.textContent);
+
+    await type("ROSA");
+    expect(shown()).toEqual([expect.stringContaining("Rosa's Bakery")]);
+    await type("flowers");
+    expect(shown()).toEqual([expect.stringContaining("Florist")]);
+    await type("old site");
+    expect(shown()).toEqual([expect.stringContaining("Old site")]);
+    await type("cupcakes");
+    expect(shown()).toEqual([]);
+    expect(container.textContent).toContain("No site matches “cupcakes”.");
+  });
+
+  it("tries the app's example, named after it, without New Site's dialog (2.14b, PG-3)", async () => {
+    const example: TemplateSummary = {
+      id: "sample",
+      category: "food",
+      example: true,
+      pages: 2,
+      theme: "bistro",
+    };
+    const project = api([]);
+    const restart = await render(project, vi.fn(), async () => [
+      { ...example, example: false },
+      example,
+    ]);
+
+    await act(async () => button("Try an example")?.click());
+
+    expect(project.create).toHaveBeenCalledWith({
+      name: "Sample bakery",
+      theme: "bistro",
+      template: "sample",
+    });
+    expect(restart).toHaveBeenCalled();
+  });
+
+  it("offers no example when the app ships none", async () => {
+    await render(api([]));
+
+    expect(button("Try an example")).toBeUndefined();
+  });
+
+  it("lists the shortcuts and the example on the Help tab, and runs them (2.14b)", async () => {
+    const example: TemplateSummary = {
+      id: "sample",
+      category: "food",
+      example: true,
+      pages: 2,
+      theme: "light",
+    };
+    const project = api([]);
+    await render(project, vi.fn(), async () => [example]);
+    const help = [...container.querySelectorAll<HTMLButtonElement>('[role="tab"]')].find(
+      (tab) => tab.textContent === "Help",
+    );
+
+    await act(async () => {
+      help?.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0 }));
+    });
+    const panel = container.querySelector('[role="tabpanel"][data-state="active"]');
+    expect([...(panel?.querySelectorAll("li") ?? [])].map((item) => item.textContent)).toEqual([
+      expect.stringContaining("Keyboard Shortcuts"),
+      expect.stringContaining("Try an Example"),
+    ]);
+
+    const tryIt = [...(panel?.querySelectorAll("button") ?? [])].find((each) =>
+      each.textContent?.includes("Try an Example"),
+    );
+    await act(async () => tryIt?.click());
+    expect(project.create).toHaveBeenCalledWith(expect.objectContaining({ template: "sample" }));
   });
 });

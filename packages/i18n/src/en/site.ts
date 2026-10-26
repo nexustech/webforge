@@ -263,6 +263,17 @@ export const site = {
   "site.start.opened": "Opened {when}",
   "site.start.missing": "The file has been moved or deleted",
   "site.start.remove": "Remove {name} from the list",
+  // The start screen (2.14b, LF-10): its actions, the Recent list's search and pins, and Help.
+  "site.start.version": "Version {version}",
+  "site.start.tryExample": "Try an example",
+  "site.start.search": "Search sites",
+  "site.start.noMatch": "No site matches “{query}”.",
+  "site.start.pin": "Pin {name} to the top",
+  "site.start.unpin": "Unpin {name}",
+  "site.start.pinned": "Pinned",
+  "site.start.help": "Help",
+  "site.start.help.shortcuts": "Every keyboard shortcut, by what it does.",
+  "site.start.help.example": "Open a finished example site to look around and change.",
   "site.openFailed.notASite": "This file isn't a Webforge site.",
   "site.openFailed.damaged": "This site file is damaged and can't be opened.",
   "site.openFailed.newer":

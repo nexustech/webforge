@@ -23,7 +23,7 @@ import { AA_LARGE, AA_TEXT, contrastIssues } from "./contrast.js";
 import { CURATED_THEMES } from "./curated/index.js";
 import { FONT_CATALOGUE, FONT_PAIRINGS } from "./fonts/catalogue.js";
 import { THEME_PRESETS, themePreset } from "./presets.js";
-import { evenSections, oklchCss, radiusCss, shadowCss, themeCss } from "./theme-css.js";
+import { EVEN_SECTION_SELECTORS, oklchCss, radiusCss, shadowCss, themeCss } from "./theme-css.js";
 
 const BLACK: Oklch = { l: 0, c: 0, h: 0 };
 const WHITE: Oklch = { l: 1, c: 0, h: 0 };
@@ -517,21 +517,32 @@ describe("themeCss (2.1)", () => {
     // Every second section on the second surface, under sections' own colours, with flat cards
     // on the page's surface there.
     const alternating = css({ sections: { rhythm: "alternating" } });
+    const [exported, canvas] = EVEN_SECTION_SELECTORS;
     expect(alternating).toContain(
       lines(
         "@layer components {",
-        `  ${evenSections()} {`,
+        `  ${exported} {`,
         "    background-color: var(--color-base-200);",
       ),
     );
-    expect(alternating).toContain(`${evenSections(" .wf-card")} {`);
-    // Sections on the page's surface by their own class (Features, Stats, Testimonials) too.
-    expect(alternating).toContain(
-      lines(`  ${evenSections(".bg-base-100")} {`, "    background-color: var(--color-base-200);"),
-    );
+    for (const selector of EVEN_SECTION_SELECTORS) {
+      expect(alternating).toContain(`  ${selector} .wf-card {`);
+      // Any section framed on the page's surface by its own class too.
+      expect(alternating).toContain(
+        lines(`  ${selector}.bg-base-100 {`, "    background-color: var(--color-base-200);"),
+      );
+    }
     expect(css({ sections: { rhythm: "alternating" }, cards: { style: "raised" } })).not.toContain(
-      `${evenSections(" .wf-card")} {`,
+      `${exported} .wf-card {`,
     );
+    // A rule per selector, never a list: a browser without :has() (Firefox ESR 115) would drop a
+    // list whole, the exported page's stripes with the canvas's.
+    expect(
+      alternating
+        .split(lines("", ""))
+        .filter((line) => line.includes("nth-child") && line.includes(", ")),
+    ).toEqual([]);
+    expect(alternating).toContain(`  ${canvas} {`);
   });
 
   it("stripes the sections a visitor sees, on the canvas as on the exported page (2.13d)", () => {
@@ -555,7 +566,9 @@ describe("themeCss (2.1)", () => {
       "</div>",
     ].join("");
 
-    const striped = [...document.querySelectorAll(evenSections())].map((section) => section.id);
+    const striped = EVEN_SECTION_SELECTORS.flatMap((selector) =>
+      [...document.querySelectorAll(selector)].map((section) => section.id),
+    );
     void happy.happyDOM.close();
 
     // The second and fourth shown sections, c and d; d keeps its reversed colours.

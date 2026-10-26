@@ -47,8 +47,10 @@ describe("createRecentSites", () => {
         fileName: "Florist.wforge",
         lastOpened: "2026-10-21T10:00:00.000Z",
         lastEdited: null,
+        folder: "sites",
         thumbnail: null,
         missing: false,
+        pinned: false,
       },
       expect.objectContaining({ name: "Rosa's Bakery", fileName: "Rosa's Bakery.wforge" }),
     ]);
@@ -146,6 +148,66 @@ describe("createRecentSites", () => {
     const saved = JSON.parse(readFileSync(join(dir, "user-data", "recent.json"), "utf8"));
     expect(saved).toMatchObject({ version: 1, sites: [{ name: "Bakery" }] });
     expect(existsSync(join(dir, "user-data", "recent.json.tmp"))).toBe(false);
+  });
+});
+
+describe("pinned recent sites (2.14b, LF-10)", () => {
+  const names = (list: ReturnType<typeof recent>) => list.list().map((each) => each.name);
+
+  it("come first, stay pinned when reopened, and unpin", () => {
+    const list = recent();
+    for (const [at, name] of ["Bakery", "Florist", "Plumber"].entries()) {
+      clock = new Date(Date.UTC(2026, 9, 21, 9 + at));
+      list.opened(site(name), name);
+    }
+    list.setPinned(recentSiteId(site("Bakery")), true);
+
+    expect(names(list)).toEqual(["Bakery", "Plumber", "Florist"]);
+    expect(list.list()[0]?.pinned).toBe(true);
+
+    // Reopening a site keeps its pin, and an unpinned one moves up among the rest.
+    clock = new Date("2026-10-21T13:00:00.000Z");
+    list.opened(site("Bakery"), "Bakery");
+    list.opened(site("Florist"), "Florist");
+    expect(names(list)).toEqual(["Bakery", "Florist", "Plumber"]);
+    expect(list.list()[0]?.pinned).toBe(true);
+
+    list.setPinned(recentSiteId(site("Bakery")), false);
+    expect(list.list().map((each) => each.pinned)).toEqual([false, false, false]);
+    // Pinning a site that isn't listed changes nothing.
+    list.setPinned("f".repeat(32), true);
+    expect(names(list)).toEqual(["Florist", "Bakery", "Plumber"]);
+  });
+
+  it("are never dropped to keep the list short", () => {
+    const list = recent(2);
+    list.opened(site("Bakery"), "Bakery");
+    list.setPinned(recentSiteId(site("Bakery")), true);
+    for (const name of ["Florist", "Plumber", "Cafe"]) list.opened(site(name), name);
+
+    expect(names(list)).toEqual(["Bakery", "Cafe", "Plumber"]);
+  });
+
+  it("read as unpinned from a list written before pinning", () => {
+    const path = site("Bakery");
+    mkdirSync(join(dir, "user-data"), { recursive: true });
+    writeFileSync(
+      join(dir, "user-data", "recent.json"),
+      JSON.stringify({
+        version: 1,
+        sites: [
+          {
+            id: recentSiteId(path),
+            path,
+            name: "Bakery",
+            lastOpened: "2026-10-20T09:00:00.000Z",
+            lastEdited: null,
+          },
+        ],
+      }),
+    );
+
+    expect(recent().list()).toEqual([expect.objectContaining({ name: "Bakery", pinned: false })]);
   });
 });
 
