@@ -14,7 +14,7 @@ import { crc32, deflateSync } from "node:zlib";
 
 /** What a placeholder shows. */
 export const MOTIFS = ["portrait", "landscape", "desk", "shapes"] as const;
-export type Motif = (typeof MOTIFS)[number];
+type Motif = (typeof MOTIFS)[number];
 
 type Rgb = readonly [number, number, number];
 
@@ -191,7 +191,7 @@ function chunk(type: string, data: Uint8Array): Buffer {
 }
 
 /** RGB `pixels` of `width` × `height` as a PNG file. */
-export function encodePng(pixels: Uint8Array, width: number, height: number): Uint8Array {
+function encodePng(pixels: Uint8Array, width: number, height: number): Uint8Array {
   const header = Buffer.alloc(13);
   header.writeUInt32BE(width, 0);
   header.writeUInt32BE(height, 4);
