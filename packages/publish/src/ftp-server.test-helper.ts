@@ -176,8 +176,10 @@ function serve(session: Session, root: string, options: { user: string; password
       const socket = await takeData();
       if (socket === undefined) return void reply("425 No data connection");
       if (!existsSync(at) || !statSync(at).isFile()) {
-        socket.destroy();
-        return void reply("550 No such file");
+        // The reply first, then a clean close: a reset could reach the client before the 550.
+        reply("550 No such file");
+        socket.end();
+        return;
       }
       reply("150 Sending");
       createReadStream(at)
