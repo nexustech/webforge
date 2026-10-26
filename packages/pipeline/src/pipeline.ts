@@ -6,6 +6,7 @@ import {
   type BuildMode,
   type BuiltSite,
   buildEvents,
+  type OutputOptions,
 } from "./build.js";
 import { createStyleCompiler } from "./css.js";
 import { createMemoryImageCache } from "./memory-image-cache.js";
@@ -19,6 +20,8 @@ export type PipelineBuildOptions = {
   readonly mode: BuildMode;
   /** Stops the build before its next image or page; it then throws a `cancelled` `BuildError`. */
   readonly signal?: AbortSignal | undefined;
+  /** What the export writes besides the site: minified files, developer files. */
+  readonly output?: OutputOptions | undefined;
 };
 
 /** Builds one open site, as often as asked, keeping between builds what it can (3.1). */
@@ -56,13 +59,13 @@ export function createPipeline(library: ComponentLibrary, options: PipelineOptio
   const images = createMemoryImageCache(options.imageCacheBytes ?? IMAGE_CACHE_BYTES);
   let caches: BuildCaches | undefined;
   return {
-    async *build(snapshot, resources, { mode, signal }) {
+    async *build(snapshot, resources, { mode, signal, output }) {
       caches ??= { styles: createStyleCompiler(resources), pages: new Map() };
       const site = yield* buildEvents(
         snapshot,
         library,
         { ...resources, imageCache: resources.imageCache ?? images },
-        { mode, signal, caches },
+        { mode, signal, output, caches },
       );
       yield { stage: "done", site };
     },
