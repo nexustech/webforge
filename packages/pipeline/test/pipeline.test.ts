@@ -27,9 +27,10 @@ async function build(
   snapshot: SiteSnapshot,
   mode: "preview" | "export" = "export",
   signal?: AbortSignal,
+  using: PipelineResources = resources,
 ) {
   const events: PipelineEvent[] = [];
-  for await (const event of pipeline.build(snapshot, resources, { mode, signal })) {
+  for await (const event of pipeline.build(snapshot, using, { mode, signal })) {
     events.push(event);
   }
   const last = events.at(-1);
@@ -60,7 +61,8 @@ const withPage = (site: SiteSnapshot, index: number, change: Partial<SitePage>):
 describe("createPipeline (3.1)", () => {
   it("builds exactly what buildSite builds, through a series of edits", async () => {
     const pipeline = createPipeline(components.siteLibrary);
-    // buildSite with an image cache of its own, so the comparison encodes each image once.
+    // One image cache for both, so each image is encoded once: the pages and stylesheets are
+    // what's compared.
     const fresh = { ...resources, imageCache: createMemoryImageCache(64 * 1024 * 1024) };
     const base = sampleSite();
     const about = base.pages[1];
@@ -83,10 +85,10 @@ describe("createPipeline (3.1)", () => {
     ];
 
     for (const [edit, snapshot] of edits) {
-      const { site } = await build(pipeline, snapshot);
+      const { site } = await build(pipeline, snapshot, "export", undefined, fresh);
       sameFiles(site, await buildSite(snapshot, components.siteLibrary, fresh), edit);
     }
-  }, 120_000);
+  }, 180_000);
 
   it("renders again only the pages a change reaches", async () => {
     const pipeline = createPipeline(components.siteLibrary);

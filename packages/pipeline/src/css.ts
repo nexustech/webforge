@@ -41,13 +41,22 @@ function fontFaces(faces: readonly FontFace[], fontsUrl: string): string {
 /**
  * The Tailwind entry stylesheet: theme, base styles and utilities, daisyUI with the site's theme,
  * and the fonts its theme uses. No `@import "tailwindcss"`: each layer is loaded from the resources.
+ * With `tailwind: "package"`, the same stylesheet as a developer rebuilds it with Tailwind's CLI
+ * from the `tailwindcss` package, reading the classes from the exported pages (developer files, X6).
  */
-export function siteStylesheetSource(options: SiteCssOptions): string {
+export function siteStylesheetSource(
+  options: SiteCssOptions,
+  tailwind: "bundled" | "package" = "bundled",
+): string {
   return [
-    "@layer theme, base, components, utilities;",
-    '@import "tailwindcss/theme.css" layer(theme);',
-    '@import "tailwindcss/preflight.css" layer(base);',
-    '@import "tailwindcss/utilities.css" layer(utilities);',
+    ...(tailwind === "bundled"
+      ? [
+          "@layer theme, base, components, utilities;",
+          '@import "tailwindcss/theme.css" layer(theme);',
+          '@import "tailwindcss/preflight.css" layer(base);',
+          '@import "tailwindcss/utilities.css" layer(utilities);',
+        ]
+      : ['@import "tailwindcss" source(none);', '@source "../**/*.html";']),
     // An element waiting for its entrance animation (2.12, `entranceClasses` in site-components):
     // once webforge.js has marked the page, until it has moved in.
     "@custom-variant wf-waiting (:root[data-wf-animate] &:not([data-wf-shown]));",

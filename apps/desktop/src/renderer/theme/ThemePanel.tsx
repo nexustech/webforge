@@ -23,11 +23,15 @@ import {
   themePreset,
 } from "@webforge/themes";
 import { PaletteIcon } from "lucide-react";
+import { useEffect } from "react";
 import type { StoreApi } from "zustand/vanilla";
+import type { OwnTheme } from "../../shared/ipc/themes.js";
 import type { EditorSession } from "../editor/editor-session.js";
 import { useDocument } from "../editor/use-document.js";
 import { shownRatio, TEXT_PX, themeFieldRenderers } from "../fields/index.js";
 import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
+import type { OwnThemes } from "./own-themes.js";
+import { useOwnThemeList } from "./own-themes-list.js";
 import type { StudioState } from "./studio/studio-state.js";
 import { TOKEN_CONTROLS, tokenKey, tokenValue } from "./theme-controls.js";
 import {
@@ -41,6 +45,8 @@ import {
   setTextSize,
   setToken,
   switchPreset,
+  type ThemeAsks,
+  themeName,
 } from "./theme-edits.js";
 import { named } from "./theme-words.js";
 
@@ -86,13 +92,20 @@ const pairingOf = (theme: ThemeTokens) =>
       catalogueFont(pairing.body)?.family === theme.fonts.body.family,
   );
 
-/** The Theme tab's fields for `theme`, in its groups. */
-function themeFields(theme: ThemeTokens): EditPanelField[] {
+/** The theme list's value of one of the person's own themes (2.23): `own:<id>`. */
+const ownValue = (theme: Pick<OwnTheme, "own">) => `own:${theme.own.id}`;
+
+/**
+ * The Theme tab's fields for `theme`, in its groups. Its theme list has the person's own themes
+ * first (`own`, 2.23), then the built-in ones.
+ */
+function themeFields(theme: ThemeTokens, own: readonly OwnTheme[]): EditPanelField[] {
   const field = (spec: EditPanelField) => spec;
   const pairing = pairingOf(theme);
   const issues = contrastIssues(theme);
   // A preset this app doesn't list (from a newer version's file) is still shown as the theme's.
-  const listed = THEME_PRESETS.some((preset) => preset.preset === theme.preset);
+  const listed =
+    theme.own !== undefined || THEME_PRESETS.some((preset) => preset.preset === theme.preset);
   return [
     field({
       kind: "select",
@@ -101,13 +114,14 @@ function themeFields(theme: ThemeTokens): EditPanelField[] {
       optionGroup: GROUPS.preset,
       label: t("theme.preset.label"),
       options: [
+        ...own.map((each) => ({ label: each.own.name, value: ownValue(each) })),
         ...(listed ? [] : [{ label: theme.preset, value: theme.preset }]),
         ...THEME_PRESETS.map((preset) => ({
           label: presetName(preset.preset),
           value: preset.preset,
         })),
       ],
-      value: theme.preset,
+      value: theme.own === undefined ? theme.preset : ownValue({ own: theme.own }),
     }),
     ...QUICK_COLORS.map((role) =>
       field({
@@ -192,43 +206,55 @@ export type ThemePanelProps = {
   readonly siteWide?: Pick<SiteWideConfirm, "confirmSiteWide"> | undefined;
   /** Theme Studio's state (2.3b): the tab's button opens it; the window draws it. */
   readonly studio?: StoreApi<StudioState> | undefined;
+  /**
+   * My themes (2.23): listed first, and asked for a name before the first change to a built-in
+   * theme, which is read-only. Without them, a built-in theme changes in place.
+   */
+  readonly ownThemes?: OwnThemes | undefined;
 };
 
 /**
  * The Theme tab (2.3a, F-DS-2): the site's theme as the Edit panel's rows. Its preset; its colours
  * by the glossary's names, each with what its contrast lacks; its fonts, as a pairing or one by one
  * in the font picker; its text sizes; then each token the theme has, by group. A preset, a colour or
- * the fonts change every page, so they're asked first (D7); each change is one labelled step.
+ * the fonts change every page, so they're asked first (D7); each change is one labelled step. The
+ * person's own themes are listed first; the first change to a built-in one saves their own version
+ * of it, by a name they choose (2.23, PH2-17).
  */
-export function ThemePanel({ session, siteWide, studio }: ThemePanelProps) {
+export function ThemePanel({ session, siteWide, studio, ownThemes }: ThemePanelProps) {
   const theme = useDocument(session, (site) => site.theme);
+  const own = useOwnThemeList(ownThemes, theme);
+  useEffect(() => {
+    void ownThemes?.refresh();
+  }, [ownThemes]);
+  const asks: ThemeAsks = { siteWide, names: ownThemes };
   const onChange = (name: string, value: unknown) => {
     const [kind, rest = ""] = name.split(/\.(.*)/s);
     if (kind === "preset") {
-      const preset = themePreset(String(value));
-      if (preset !== undefined) void switchPreset(session, siteWide, preset);
+      const chosen = own.find((each) => ownValue(each) === value) ?? themePreset(String(value));
+      if (chosen !== undefined) void switchPreset(session, asks, chosen);
     } else if (kind === "color") {
       const role = QUICK_COLORS.find((each) => each === rest);
       const color = oklchSchema.safeParse(value);
-      if (role !== undefined && color.success) void setColor(session, siteWide, role, color.data);
+      if (role !== undefined && color.success) void setColor(session, asks, role, color.data);
     } else if (name === "fonts.pairing") {
       const pairing = FONT_PAIRINGS.find((each) => each.id === value);
-      if (pairing !== undefined) void setPairing(session, siteWide, pairing);
+      if (pairing !== undefined) void setPairing(session, asks, pairing);
     } else if (name === "fonts.heading" || name === "fonts.body") {
       const font = fontRefSchema.safeParse(value);
       if (font.success)
-        void setFont(session, siteWide, rest === "heading" ? "heading" : "body", font.data);
+        void setFont(session, asks, rest === "heading" ? "heading" : "body", font.data);
     } else if (kind === "textSize") {
       const style = TEXT_STYLES.find((each) => each === rest);
       const size = TEXT_SIZES.find((each) => each === value);
-      if (style !== undefined && size !== undefined) setTextSize(session, style, size);
+      if (style !== undefined && size !== undefined) void setTextSize(session, asks, style, size);
     } else if (kind === "token") {
       const control = TOKEN_CONTROLS.find((each) => tokenKey(each) === rest);
       const allowed =
         control?.values === "toggle"
           ? typeof value === "boolean"
           : control?.values.includes(String(value)) === true;
-      if (control !== undefined && allowed) setToken(session, control, value);
+      if (control !== undefined && allowed) void setToken(session, asks, control, value);
     }
   };
   return (
@@ -252,11 +278,11 @@ export function ThemePanel({ session, siteWide, studio }: ThemePanelProps) {
         <div className="min-h-0 flex-1">
           <EditPanel
             heading={t("theme.heading", {
-              name: presetName(theme.preset),
+              name: themeName(theme),
             })}
             itemKey="theme"
             single
-            fields={themeFields(theme)}
+            fields={themeFields(theme, own)}
             onChange={onChange}
             // Each change is its own step as it's made: nothing waits for the field to be left.
             onCommit={() => undefined}
