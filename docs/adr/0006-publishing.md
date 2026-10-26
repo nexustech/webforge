@@ -80,6 +80,7 @@ Research 08 flagged this as unverified. `listForms` (`GET /sites/:id/forms`) and
   - SFTP uses OpenSSH's `posix-rename`, or removes the file and renames it on a plain SFTP v3 server.
 - **Cancelling.**
   - Cancelling closes the connection and stops before the next file. A file cut off mid-transfer is only its upload file, and the home page goes last, so the live site keeps working.
+  - Before the first upload, the manifest lists the files the host never had, with a digest that matches nothing. If a publish stops part-way and the site drops one of them before the next, that publish still removes it, and one that may have been cut off is sent again.
   - Once every upload is done, the manifest lists the new files plus those still to be removed, so a publish cancelled during clean-up still removes them next time.
   - A missing or damaged manifest counts as a first publish: everything is uploaded and nothing removed.
 - **FTPS first (B5).** `ftps` is explicit TLS (`AUTH TLS`) against the computer's trusted certificates. A certificate it doesn't trust fails as `untrusted-host` before signing in. Plain `ftp` is allowed; the app warns first (B5).
@@ -90,6 +91,9 @@ Research 08 flagged this as unverified. `listForms` (`GET /sites/:id/forms`) and
 - **`ssh2` directly, not `ssh2-sftp-client`.**
   - Research 08 named `ssh2-sftp-client`. Its types lag three major versions, and `ssh2` itself has every SFTP call needed, plus the `Server` the tests use.
   - `ssh2` pulls in `tweetnacl` (Unlicense, a public-domain dedication; a reviewed exception in `tools/src/check-licences.ts`) to decrypt passphrase-protected private keys.
+  - **No native module ships.** `ssh2` has an optional native crypto binding and an optional `cpu-features` build. pnpm doesn't run their build scripts (they aren't allowed), and electron-builder's `npmRebuild` is off, so `ssh2` runs on its JavaScript fallback in tests and in the app. Nothing can then be built for the wrong ABI.
+    - Today `ssh2` isn't in the app at all: nothing in the main process imports the publishers yet.
+    - 4.3, which wires SFTP in, adds an `e2e:packaged` check that the packaged app publishes over SFTP.
 - **Errors by kind, never the reply.**
   - `fileTransferError` maps FTP reply codes, SSH sign-in levels, SFTP status codes, socket and DNS codes, and TLS certificate codes to `PublishError` codes, with `untrusted-host` added for both protocols.
   - The host's reply can echo the user name or a path, so it stays in `cause` only.

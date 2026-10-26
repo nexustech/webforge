@@ -958,10 +958,11 @@ OAuth (loopback) + PAT fallback, create/pick site, digest deploy, deploy history
 - [ ] Netlify Forms option only offered with a Netlify destination
 
 **4.3 FTP/FTPS/SFTP publisher**  
-FTPS first then plain FTP (one-time warning), SFTP with password or key, host presets, Test connection, hidden .webforge-publish.json manifest.
+FTPS first then plain FTP (one-time warning), SFTP with password or key, host presets, Test connection, hidden .webforge-publish.json manifest. 0.3 built the publishers (`ftpPublisher`, `sftpPublisher` and the shared manifest flow in `packages/publish`, ADR 0006 decision 7); 4.3 wires them to destinations, key sign-in and the UI.
 
 - [ ] Integration tests against containerised FTP/SFTP servers
 - [ ] Plain FTP warning shown once per destination
+- [ ] The packaged app publishes over SFTP to a local test server (`e2e:packaged`): `ssh2` ships as JavaScript, with no native module to rebuild (ADR 0006)
 
 **4.4 Publish destinations UI and keychain credentials**  
 Destinations list per site (several allowed), add/edit/test/remove; secrets via safeStorage keyed by site + destination; public URL fills Site Settings web address if empty.
