@@ -1,4 +1,5 @@
 import { type ElectronApplication, expect, type Locator, type Page, test } from "@playwright/test";
+import { clickOnCanvas } from "./canvas-click.js";
 import { placeCaret } from "./caret.js";
 import { below, boxOf, drag, lowerHalf } from "./drag.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
@@ -260,7 +261,7 @@ test.describe("Puck canvas with Webforge history", () => {
     const heading = canvas().locator("h1");
     const box = await heading.boundingBox();
     if (box === null) throw new Error("Heading not visible");
-    await heading.click({ position: { x: box.width * 0.97, y: 2 } });
+    await clickOnCanvas(heading, { position: { x: box.width * 0.97, y: 2 } });
     const panel = page.getByRole("region", { name: "Right panels" });
     await panel.getByRole("tab", { name: "Style" }).click();
     await panel.getByLabel("Size", { exact: true }).selectOption("small");
