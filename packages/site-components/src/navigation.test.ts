@@ -1,27 +1,78 @@
-import type { MediaId, MenuItemId, PageId, SitePage, SiteSnapshot } from "@webforge/model";
-import { sampleSite } from "@webforge/test-utils";
+import type { MediaId, MenuDoc, MenuItemId, PageId, SitePage } from "@webforge/model";
 import { describe, expect, it } from "vitest";
-import { navigationFor } from "./navigation.js";
+import { type NavigationSite, navigationFor } from "./navigation.js";
 
 const id = (value: string) => value as MenuItemId;
 const page = (pageId: string) => pageId as PageId;
+const emptyDoc = { root: { props: {} }, content: [] };
 
-/** The fixture with a Team page in a folder, hidden from navigation in its Page Settings. */
-function site(menu?: SiteSnapshot["menu"]): SiteSnapshot {
-  const base = sampleSite();
-  const team: SitePage = {
-    id: page("team"),
-    path: "company/team",
-    title: "Team",
-    navLabel: "Our team",
-    hideFromNavigation: true,
-    doc: { root: { props: {} }, content: [] },
-  };
-  return { ...base, pages: [...base.pages, team], menu };
+/** The bakery's menu (test-utils' sample site): both pages, a dropdown and a button. */
+const BAKERY_MENU: MenuDoc = {
+  follows: "custom",
+  items: [
+    { id: id("home"), kind: "page", pageId: page("home"), hidden: false },
+    { id: id("about"), kind: "page", pageId: page("about"), hidden: false },
+    {
+      id: id("visit"),
+      kind: "group",
+      label: "Visit us",
+      hidden: false,
+      children: [
+        {
+          id: id("questions"),
+          kind: "section",
+          label: "Questions",
+          link: { kind: "page", pageId: page("home"), anchor: "questions" },
+          hidden: false,
+        },
+        {
+          id: id("map"),
+          kind: "link",
+          label: "Find us",
+          link: { kind: "url", href: "https://example.com/map", newTab: true },
+          hidden: false,
+        },
+      ],
+    },
+    {
+      id: id("order"),
+      kind: "button",
+      label: "Order a cake",
+      link: { kind: "page", pageId: page("about") },
+      hidden: false,
+    },
+  ],
+};
+
+/**
+ * The bakery's pages, with a Thank you page hidden from navigation and a Team page in a folder,
+ * hidden in its Page Settings.
+ */
+function site(menu?: MenuDoc): NavigationSite & { readonly pages: readonly SitePage[] } {
+  const pages: SitePage[] = [
+    { id: page("home"), path: "index", title: "Home", doc: emptyDoc },
+    { id: page("about"), path: "about", title: "About us", doc: emptyDoc },
+    {
+      id: page("thanks"),
+      path: "thanks",
+      title: "Thank you",
+      hideFromNavigation: true,
+      doc: emptyDoc,
+    },
+    {
+      id: page("team"),
+      path: "company/team",
+      title: "Team",
+      navLabel: "Our team",
+      hideFromNavigation: true,
+      doc: emptyDoc,
+    },
+  ];
+  return menu === undefined ? { pages } : { pages, menu };
 }
 
 /** The navigation on page `path`, and the broken links reported while making it. */
-function navigation(snapshot: SiteSnapshot, path = "index") {
+function navigation(snapshot: ReturnType<typeof site>, path = "index") {
   const shown = snapshot.pages.find((candidate) => candidate.path === path);
   if (shown === undefined) throw new Error(`no page ${path}`);
   const broken: string[] = [];
@@ -38,7 +89,7 @@ describe("navigationFor (F-ED-17)", () => {
   });
 
   it("follows the menu: names, buttons, new tabs, dropdowns, and URLs from the page shown", () => {
-    const { items } = navigation(site(sampleSite().menu), "about");
+    const { items } = navigation(site(BAKERY_MENU), "about");
 
     expect(items).toEqual([
       { id: "home", label: "Home", href: "index.html", current: false },
@@ -123,7 +174,7 @@ describe("navigationFor (F-ED-17)", () => {
   });
 
   it("links to documents at their exported files, saved when so set, and reports deleted ones (1.28)", () => {
-    const menu: SiteSnapshot["menu"] = {
+    const menu: MenuDoc = {
       follows: "custom",
       items: [
         {

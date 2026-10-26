@@ -5,7 +5,6 @@ export {
   manifestOf,
   manifestSchema,
   sha1,
-  sitePathSchema,
 } from "./manifest.js";
 export {
   NETLIFY_API,
