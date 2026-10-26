@@ -84,7 +84,7 @@ The request is a per-item **appearance** layer between the theme and the Advance
 5. **This one or all like it**: apply the change to this element only (default) or to every element of its kind (ST-4).
 6. **Advanced**: classes, attributes, site CSS: exists; per-element CSS stays Later.
 
-The token rule stays: no raw hex, no px (ST-6). It is what keeps a theme switch, dark mode and the contrast guideline working, and it is the exact difference between Elements and the tools that lose small-business owners.
+The token rule stays: no raw hex or px in Simple mode (ST-6); Advanced mode keeps ADR 0009's off-theme hex colour. It is what keeps a theme switch, dark mode and the contrast guideline working, and it is the exact difference between Elements and the tools that lose small-business owners.
 
 ## 5. Proposals
 Effort: **S** ≈ days · **M** ≈ 1–2 weeks.
@@ -93,9 +93,9 @@ Effort: **S** ≈ days · **M** ≈ 1–2 weeks.
 | # | Proposal | What the user sees | Effort | Where |
 |---|---|---|---|---|
 | ST-1 | **A common Appearance group on every section and element**, as Elements' common controls: **Text** (size from the type scale, weight, italic, underline, case, alignment), **Colour** (text and background from the theme roles with shade), **Corners** (theme radius scale), **Border** (none, thin, thick; theme colour), **Shadow** (theme scale), **Opacity** (steps). All tokens, all per device. Components keep their own fields; the group is added by `defineSection` and `defineComponent` and rendered as one collapsible group at the top of the Style tab, with the changed cue and per-device dots. A section's Text controls apply to its title | A section selected: Style tab shows *Appearance* ▸ Text · Colour · Corners · Border · Shadow, then the section's own options. Underline is one toggle | M (3 days framework + mapping in the primitives; sections get it through the frame, elements through a shared field set) | 2.5/2.19 primitives, 1.14 renderers; new item 2.22 |
-| ST-2 | **Hover on buttons, links, cards and images:** a *When hovered* row under Colour and Shadow for the elements where it matters (Button, Card, Image, Icon), with token values | *Hovered: lift · darken · underline* | S (1 day, after ST-1) | 2.22 |
+| ST-2 | **Hover on buttons, links, cards and images:** a *When hovered* row under Colour and Shadow where it matters (Button, Image, Icon, and the cards of the Cards, Features and Pricing sections), with token values | *Hovered: lift · darken · underline* | S (1 day, after ST-1) | 2.22 |
 | ST-3 | **Underline, highlight and colour inside text:** three buttons in the text toolbar; colour and highlight pick from the theme roles (Brand, Accent, Text) so dark mode and a theme switch still work; strikethrough stays off. Pasted formatting is still reduced to the allowed marks. Site Check tip: *underlined text that isn't a link* | Select a word, press U, or choose a colour chip | S (1 day) | 1.23 follow-up, Phase 2 chore |
-| ST-6 | **The token rule stays** (F-ED-4, `docs/components.md`): no free values in the Style tab. A one-off colour is added to the theme's palette in Theme Studio, as in Elements | — | — | Rule, no scope |
+| ST-6 | **The token rule stays** (F-ED-4, `docs/components.md`): no free values in the Style tab in Simple mode. A one-off colour is added to the theme's palette in Theme Studio, as in Elements; Advanced mode keeps the off-theme hex colour of ADR 0009 (1.37), marked as such | — | — | Rule, no scope |
 
 ### 5.2 Proposed for v1.1
 | # | Proposal | Effort | Note |
@@ -106,7 +106,7 @@ Effort: **S** ≈ days · **M** ≈ 1–2 weeks.
 
 ### 5.3 Not proposed
 - **A CSS inspector, classes or a style target** in Simple mode (Webflow, Pinegrow, Bootstrap Studio): the learning curve in all three reviews. Per-element CSS stays Later (spec/02 §5).
-- **Free values** (hex, px): see ST-6.
+- **Free values** (hex, px) in Simple mode: see ST-6.
 - **Filters, blend modes, backdrop filters, 3D transforms, masks** (Webflow, Elements 3.0): designer features; Custom Code covers the rare case.
 - **Elements' Static/Hover/start/end pattern on every group:** too much repetition. One hover row on the elements that need it (ST-2) is enough.
 
@@ -116,9 +116,9 @@ Awaiting the product owner.
 | # | Proposed decision |
 |---|---|
 | ST-1 | **MVP:** a common Appearance group (Text, Colour, Corners, Border, Shadow, Opacity) on every section and element, tokens only, per device; new plan item 2.22 (3 days) |
-| ST-2 | **MVP:** a hover row on Button, Card, Image and Icon (+1 day on 2.22) |
+| ST-2 | **MVP:** a hover row on Button, Image, Icon and the card sections (+1 day on 2.22) |
 | ST-3 | **MVP:** underline, highlight and theme-colour marks in the text toolbar, with a Site Check tip (1 day, a chore on 1.23's code) |
-| ST-6 | **Rule:** the Style tab stays tokens only; one-off colours go into the theme's palette |
+| ST-6 | **Rule:** the Style tab stays tokens only in Simple mode; one-off colours go into the theme's palette, or Advanced mode's off-theme hex (ADR 0009) |
 | ST-4, ST-5, ST-7 | **v1.1:** apply to all of this kind; section backgrounds for every section; transition and transform presets |
 
 ## Sources
