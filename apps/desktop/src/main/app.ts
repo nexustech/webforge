@@ -12,7 +12,7 @@ import {
 import { appEvents } from "../shared/ipc/app.js";
 import { MEDIA_SCHEME } from "../shared/ipc/media.js";
 import { openFailureMessage } from "../shared/open-failure.js";
-import { registerAiHandlers } from "./ai-ipc.js";
+import { exposeForE2eTests, registerAiHandlers } from "./ai-ipc.js";
 import { AppLifecycle, closeThenExit } from "./app-lifecycle.js";
 import { applicationMenu } from "./app-menu.js";
 import { createBackupSchedule } from "./backup-schedule.js";
@@ -424,9 +424,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     registerTemplatesHandlers(ipcMain, isTrustedSender, templates);
     // AI apps' requests go to the open site's window (F-AI-1); the MCP server (4.9) asks through it.
     const ai = registerAiHandlers(ipcMain, isTrustedSender, () => lifecycle.mainWindow());
-    // E2E tests ask as an AI app would, through main's globals (only main's own code reaches
-    // them), in the unpackaged app they launch; never in the installed one.
-    if (!app.isPackaged) Object.assign(globalThis, { webforgeAi: ai });
+    exposeForE2eTests(ai, app.isPackaged);
     // A site double-clicked in Explorer arrives as a command-line argument (P1).
     const projectToOpen = lifecycle.projectFromFinder ?? findProjectArgument(process.argv);
     if (projectToOpen !== undefined) {

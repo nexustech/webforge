@@ -650,6 +650,94 @@ describe("the command API's moves and fields (4.8)", () => {
   });
 });
 
+describe("the command API's text and rich text (4.8)", () => {
+  const HOSTILE =
+    '<p onclick="x()">Hi<script>alert(1)</script> <a href="javascript:alert(1)">a</a></p>';
+  const CLEAN = "<p>Hi <a>a</a></p>";
+
+  /** A Text element (rich text) in the home page's section. */
+  const withText = (doc: SiteDoc) => {
+    const section = doc.pages[doc.homePageId]?.doc.content[0];
+    if (section === undefined) throw new Error("no section");
+    (section.props.content as NodeDoc[]).push({
+      type: "Text",
+      props: { id: "text", text: "<p>Hi</p>" },
+    });
+  };
+  const inSection = (history: Setup["history"], id: string) =>
+    ((content(history)[0]?.props.content ?? []) as NodeDoc[]).find((node) => node.props.id === id);
+
+  it("cleans rich text an AI app sets as the editor's is, however it sets it", async () => {
+    const { history, host } = setup(true, withText);
+    const api = createCommandApi(host);
+    const location = home(history);
+
+    const edit = { location, nodeId: "text", field: "text", text: HOSTILE };
+    expect((await api.run("editText", edit, app)).status).toBe("done");
+    expect(inSection(history, "text")?.props.text).toBe(CLEAN);
+
+    await api.run("editText", { ...edit, text: "<p>Hi</p>" }, app);
+    const fields = { location, nodeId: "text", values: { text: HOSTILE } };
+    expect((await api.run("updateFields", fields, app)).status).toBe("done");
+    expect(inSection(history, "text")?.props.text).toBe(CLEAN);
+
+    const added = await api.run(
+      "addNode",
+      { location, type: "Text", parentId: "section", slot: "content", values: { text: HOSTILE } },
+      app,
+    );
+    if (added.status !== "done" || added.id === undefined) throw new Error(added.status);
+    expect(inSection(history, added.id)?.props.text).toBe(CLEAN);
+
+    // A plain text field is shown as text, never as HTML: kept as typed.
+    await api.run(
+      "editText",
+      { location, nodeId: "heading", field: "text", text: "<b>Hi</b>" },
+      app,
+    );
+    expect(inSection(history, "heading")?.props.text).toBe("<b>Hi</b>");
+  });
+
+  it("refuses rich text linking to a page or file the site doesn't have", async () => {
+    const { history, host } = setup(true, withText);
+    const api = createCommandApi(host);
+    const location = home(history);
+    const aboutId = history.document.getState().pageOrder.at(-1);
+    const link = (href: string) => ({
+      location,
+      nodeId: "text",
+      field: "text",
+      text: `<p><a href="${href}">Us</a></p>`,
+    });
+
+    expect(await api.run("editText", link("webforge:page/page-gone"), app)).toMatchObject({
+      status: "not-found",
+      message: 'There is no page "page-gone".',
+    });
+    expect((await api.run("editText", link(`webforge:file/${"a".repeat(64)}`), app)).status).toBe(
+      "not-found",
+    );
+    expect(history.state.getState().entries).toEqual([]);
+    expect((await api.run("editText", link(`webforge:page/${aboutId}`), app)).status).toBe("done");
+    expect(inSection(history, "text")?.props.text).toBe(
+      `<p><a href="webforge:page/${aboutId}">Us</a></p>`,
+    );
+  });
+
+  it("checks text against its field's schema, and changes nothing when it's too long", async () => {
+    const { history, host } = setup(true, withText);
+    const api = createCommandApi(host);
+    const long = {
+      location: home(history),
+      nodeId: "text",
+      field: "text",
+      text: "x".repeat(20_001),
+    };
+    expect((await api.run("editText", long, app)).status).toBe("invalid");
+    expect(history.state.getState().entries).toEqual([]);
+  });
+});
+
 describe("every command (4.8, property)", () => {
   it("is one undo step labelled for its app, and undoing all of them restores the site", async () => {
     const command = fc.oneof(

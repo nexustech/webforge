@@ -1,7 +1,7 @@
 import type { IpcMain, IpcMainInvokeEvent } from "electron";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { AiRequest } from "../shared/ipc/ai.js";
-import { type AiWindow, registerAiHandlers } from "./ai-ipc.js";
+import { type AiWindow, exposeForE2eTests, registerAiHandlers } from "./ai-ipc.js";
 
 type Handler = (event: IpcMainInvokeEvent, ...args: unknown[]) => Promise<unknown>;
 
@@ -88,6 +88,21 @@ describe("registerAiHandlers", () => {
     const slow = ai.ask(addHero);
     await vi.advanceTimersByTimeAsync(2_000);
     expect((await slow).status).toBe("busy");
+  });
+
+  it("is on main's globals only in an unpackaged app the E2E tests launch", () => {
+    const { ai } = bridge();
+    const exposed = () => "webforgeAi" in globalThis;
+    try {
+      exposeForE2eTests(ai, true, { WEBFORGE_E2E_AI: "1" });
+      expect(exposed()).toBe(false);
+      exposeForE2eTests(ai, false, {});
+      expect(exposed()).toBe(false);
+      exposeForE2eTests(ai, false, { WEBFORGE_E2E_AI: "1" });
+      expect(exposed()).toBe(true);
+    } finally {
+      Reflect.deleteProperty(globalThis, "webforgeAi");
+    }
   });
 
   it("refuses a renderer it does not trust, and answers outside the contract", async () => {
