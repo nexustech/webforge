@@ -17,6 +17,10 @@
       // A system tool on macOS and Linux: a test makes a named pipe with it (R13b).
       "ignoreBinaries": ["mkfifo"]
     },
+    "packages/publish": {
+      // A system tool: the FTPS tests make their certificate with it, and skip without it (0.3).
+      "ignoreBinaries": ["openssl"]
+    },
     "e2e": {
       // The export-setup project (playwright.config.ts) runs before the exported-site tests.
       // The perf tests (perf/*.perf.ts, pnpm e2e:perf) use a custom testMatch.

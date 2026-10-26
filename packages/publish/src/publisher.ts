@@ -16,6 +16,11 @@ export type PublishErrorCode =
   | "rejected"
   /** The destination could not be reached. */
   | "network"
+  /**
+   * The server isn't the one trusted for this destination: an SFTP host key that changed, or an
+   * FTPS certificate the computer doesn't trust. Nothing was sent.
+   */
+  | "untrusted-host"
   /** The user cancelled. */
   | "cancelled"
   /** Anything else, including a response we did not understand. */

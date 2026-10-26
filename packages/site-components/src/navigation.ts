@@ -1,6 +1,6 @@
 import type { MenuDoc, MenuLeaf, SitePage } from "@webforge/model";
-import type { NavItem, NavLink } from "@webforge/site-components";
 import { hrefFor } from "./links.js";
+import type { NavItem, NavLink } from "./schema.js";
 
 /** What the navigation needs of a page: where it is, its names and whether it is hidden. */
 export type NavigationPage = Pick<

@@ -1,3 +1,4 @@
+export { type FtpDestination, type FtpOptions, ftpPublisher } from "./ftp.js";
 export {
   diffManifest,
   type Manifest,
@@ -5,7 +6,6 @@ export {
   manifestOf,
   manifestSchema,
   sha1,
-  sitePathSchema,
 } from "./manifest.js";
 export {
   NETLIFY_API,
@@ -33,3 +33,11 @@ export {
   type TestResult,
   throwIfCancelled,
 } from "./publisher.js";
+export { MANIFEST_FILE } from "./remote-folder.js";
+export {
+  hostKeyFingerprint,
+  readSftpHostKey,
+  type SftpDestination,
+  type SftpOptions,
+  sftpPublisher,
+} from "./sftp.js";

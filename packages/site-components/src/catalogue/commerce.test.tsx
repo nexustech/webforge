@@ -46,6 +46,8 @@ describe("the Buy button (2.11, F-CM-2)", () => {
       expect(exported, link).not.toContain("Buy now");
       expect(exported, link).toContain("£12");
       expect(shown, link).toContain("btn-disabled");
+      // Said to be disabled too, so it isn't held to text contrast (2.15b).
+      expect(shown, link).toContain('aria-disabled="true"');
       expect(shown, link).not.toContain("<a");
     }
   });

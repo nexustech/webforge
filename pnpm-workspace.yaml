@@ -38,6 +38,10 @@ allowBuilds:
   # Storybook's bundler; its postinstall only re-checks the platform binary that the optional
   # @esbuild/<platform> package already provides.
   esbuild: false
+  # SFTP publishing (ssh2, 0.3): its optional native crypto binding and cpu-features stay unbuilt,
+  # so ssh2 runs on its JavaScript fallback in tests and in the app alike (ADR 0006, decision 7).
+  ssh2: false
+  cpu-features: false
 
 # Puck 0.23 re-walks the whole page for permissions and re-publishes unchanged sidebar fields on
 # every change; the patch skips both when nothing uses them (ADR 0007). It also exposes the canvas
