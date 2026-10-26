@@ -316,6 +316,10 @@ describe("curated themes (2.13)", () => {
     "Plus Jakarta Sans": "humanist sans",
     "Roboto Slab": "slab",
     Bitter: "slab",
+    Lora: "transitional serif",
+    "Space Grotesk": "technical sans",
+    Caveat: "handwritten",
+    "DM Serif Display": "display serif",
   };
 
   /** The hue band of a colour, a twelfth of the wheel each; grey for a colour with little chroma. */
