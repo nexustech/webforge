@@ -144,7 +144,8 @@ const listingSchema = z.object({
 
 /** `families` as the picker lists them. */
 const installed = (family: CatalogueFont, source: InstalledFont["source"]): InstalledFont => {
-  const preview = previewFileOf(family)?.file;
+  const file = previewFileOf(family);
+  const preview = file === undefined ? undefined : { file: file.file, weight: file.weight };
   return {
     id: family.id,
     family: family.family,

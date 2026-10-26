@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { sitePathSchema } from "@webforge/model";
 import { z } from "zod";
 import { uploadOrder } from "./order.js";
 
@@ -6,26 +7,6 @@ import { uploadOrder } from "./order.js";
 export function sha1(data: Uint8Array): string {
   return createHash("sha1").update(data).digest("hex");
 }
-
-/**
- * A relative site path: `/`-separated, no leading `/`, no empty, `.` or `..` segments, no `\` or
- * `:` (a Windows drive or stream).
- * Clean-up deletes the paths a manifest lists, so a manifest read from a server must never be
- * able to point outside the site's folder.
- */
-export const sitePathSchema = z
-  .string()
-  .min(1)
-  .max(1024)
-  .refine(
-    (path) =>
-      !path.includes("\\") &&
-      !path.includes(":") &&
-      // biome-ignore lint/suspicious/noControlCharactersInRegex: control characters are what it rejects.
-      !/[\u0000-\u001f]/.test(path) &&
-      path.split("/").every((segment) => segment !== "" && segment !== "." && segment !== ".."),
-    { message: "Not a relative site path" },
-  );
 
 /** What was published: every file's path and SHA-1 digest. */
 export const manifestSchema = z.object({

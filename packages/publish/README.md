@@ -9,10 +9,10 @@ Import the package as `@webforge/publish`, never its internal files.
 
 | Export | What |
 |---|---|
-| `Publisher<D>` | `test(dest)` and `publish(build, dest, signal)`, which yields `PublishEvent`s. `D` holds the destination settings stored in the `.wforge` file; credentials go to the publisher when it is created, never into `D` |
+| `Publisher<D>` | `test(dest, signal?)` and `publish(build, dest, signal)`, which yields `PublishEvent`s. `D` holds the destination settings stored in the `.wforge` file; credentials go to the publisher when it is created, never into `D` |
 | `PublishError`, `PublishErrorCode`, `throwIfCancelled` | Failures by code (`unauthorized`, `not-found`, `rate-limited`, `rejected`, `network`, `cancelled`, `failed`); the app translates each code. Messages never contain credentials or site content |
-| `manifestOf`, `sha1`, `Manifest`, `manifestSchema`, `sitePathSchema` | What was published: path → SHA-1 digest. The schema validates manifests read back from a server; its paths can't point outside the site folder |
-| `diffManifest(previous, next)` | Files to upload (new or changed), unchanged files, and files to remove (only ones the previous publish listed) |
+| `manifestOf`, `sha1`, `Manifest`, `manifestSchema` | What was published: path → SHA-1 digest. The schema validates manifests read back from a server; its paths are `@webforge/model`'s `sitePathSchema`, so they can't point outside the site folder |
+| `diffManifest(previous, next)` | For the publishers that keep a manifest at the destination (Folder, FTP/FTPS/SFTP): files to upload (new or changed), unchanged files, and files to remove (only ones the previous publish listed). Netlify compares digests itself |
 | `uploadOrder(paths)` | Assets → pages → `index.html` last, so visitors never get a page whose files aren't there yet |
 | `netlifyPublisher({ token })` | File-digest deploy: sends every file's SHA-1, uploads only the files Netlify doesn't have (in upload order), then waits until the deploy is live. Retries 429s (honouring `Retry-After` / `X-RateLimit-Reset`) and, for GET and PUT, network errors and 5xx |
 | `netlifyClient({ token })` | The Netlify endpoints Webforge uses: user, sites, deploys, file upload, `restoreDeploy` (rollback), `listForms` (Netlify Forms). Every response is validated with zod |

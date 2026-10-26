@@ -116,6 +116,30 @@ describe("writeSiteFolder", { timeout: 15_000 }, () => {
     expect(readFileSync(join(destination, "index.html"), "utf8")).toBe("<p>v1</p>");
     expect(readdirSync(parent)).toEqual(["my-site"]);
   });
+
+  it("refuses a file whose path leads outside the folder, writing nothing (R16)", async () => {
+    const parent = tempDir();
+    const destination = join(parent, "my-site");
+
+    for (const path of [
+      "../outside.html",
+      "/etc/passwd",
+      "C:\\Windows\\x.html",
+      "a/../../b.html",
+    ]) {
+      await expect(
+        writeSiteFolder(
+          new Map([
+            ["index.html", encode("ok")],
+            [path, encode("x")],
+          ]),
+          destination,
+        ),
+      ).rejects.toMatchObject({ code: "write-failed" });
+    }
+    expect(readdirSync(parent)).toEqual([]);
+    expect(existsSync(join(parent, "outside.html"))).toBe(false);
+  });
 });
 
 describe("the pipeline's errors (R12)", () => {
