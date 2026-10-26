@@ -4,11 +4,11 @@
     "mediaId": "ynkHvS0gLrPIvhYA",
     "name": "hero",
     "mimeType": "image/png",
-    "hash": "8508abb805d3de87d83ced5f83e4fed9b77b2d75ab16dcb7ac9787127a81ce2e",
+    "hash": "f4561e08f27c1d14ef08bf404c1f1ba3b24c262e932ab0af0711508636bf5f21",
     "width": 1800,
     "height": 1000,
     "alt": "Placeholder: the coast at sunset",
-    "source": "Generated for Webforge by tools/src/template-placeholder.ts (landscape, seed 11)",
+    "source": "Generated for Webforge by tools/src/template-placeholder.ts (landscape, seed 36)",
     "author": "Webforge",
     "licence": "CC0-1.0"
   },
