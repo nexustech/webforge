@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
-import { budgetTests, expectWithinBudget, OPEN_WAIT } from "./budget.js";
+import { expectWorkWithin, measureWork, OPEN_BUDGET, OPEN_WAIT } from "./budget.js";
 import { canvasAxe } from "./canvas-axe.js";
 import { placeCaret } from "./caret.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
@@ -12,6 +12,12 @@ import { type RendererWindow, stubFileDialogs } from "./sites.js";
 
 // The Blank template's home page (2.15c).
 const STARTER_HEADING = "Welcome";
+
+/**
+ * Closing with nothing to save must not sit out the save request's 5 s timeout: well under it on
+ * any machine, as only a wait that long would pass it (ADR 0014).
+ */
+const CLOSE_WITHOUT_WAITING_MS = 4_500;
 
 let dir: string;
 let userData: string;
@@ -95,95 +101,85 @@ test("creates a blank site, keeps an edit and reopens it from the Recent list", 
   });
 });
 
-// Opening in under 3 s (F-SITE-1) is a budget: one retry after a miss (ADR 0014).
-test.describe("opening a new site", () => {
-  budgetTests();
+test("makes a site from a template, named as typed and in the chosen theme, within its opening budget", async () => {
+  const page = await startWithoutSite();
+  await stubFileDialogs(running(), join(dir, "Rosa's Bakery.wforge"));
 
-  test("makes a site from a template, named as typed and in the chosen theme, in under 3 s", async () => {
-    const page = await startWithoutSite();
-    await stubFileDialogs(running(), join(dir, "Rosa's Bakery.wforge"));
+  // New Site (2.14a, F-SITE-1): the name, a template (which brings its theme), then another theme.
+  // Exactly: the title bar's New Site… button has the same name in another case.
+  await page.getByRole("button", { name: "New site…", exact: true }).click();
+  const newSite = page.getByRole("dialog", { name: "New Site" });
+  await newSite.getByRole("textbox", { name: "Site name" }).fill("Rosa's Bakery");
+  await newSite.getByText("Café / Restaurant", { exact: true }).click();
+  await expect(newSite.getByRole("radio", { name: "Bistro" })).toBeChecked();
+  await newSite.getByText("Atelier", { exact: true }).click();
 
-    // New Site (2.14a, F-SITE-1): the name, a template (which brings its theme), then another theme.
-    // Exactly: the title bar's New Site… button has the same name in another case.
-    await page.getByRole("button", { name: "New site…", exact: true }).click();
-    const newSite = page.getByRole("dialog", { name: "New Site" });
-    await newSite.getByRole("textbox", { name: "Site name" }).fill("Rosa's Bakery");
-    await newSite.getByText("Café / Restaurant", { exact: true }).click();
-    await expect(newSite.getByRole("radio", { name: "Bistro" })).toBeChecked();
-    await newSite.getByText("Atelier", { exact: true }).click();
+  const opened = await measureWork(running());
+  await newSite.getByRole("button", { name: "Create" }).click();
+  // Opening (F-SITE-1): the template's home page on the canvas. Nearly all of it is the editor
+  // starting again on the new site, as for every site opened; the fill itself is quick. Checked
+  // here by its CPU time and a wall-clock backstop; its 3 s by `pnpm e2e:perf` (ADR 0014).
+  const hero = canvas(page).locator("h1", { hasText: "Good coffee and proper breakfasts" });
+  await expect(hero).toBeVisible({ timeout: OPEN_WAIT });
+  expectWorkWithin(await opened(), OPEN_BUDGET, "Opening the new Café site");
+  // With its photo, which came into the site's Media.
+  await expect(canvas(page).locator("section img").first()).toHaveJSProperty("complete", true);
+  await expect(canvas(page).locator("section img").first()).not.toHaveJSProperty("naturalWidth", 0);
 
-    const started = Date.now();
-    await newSite.getByRole("button", { name: "Create" }).click();
-    // Open in under 3 s (F-SITE-1): the template's home page on the canvas. Nearly all of it is the
-    // editor starting again on the new site, as for every site opened; the fill itself is quick.
-    const hero = canvas(page).locator("h1", { hasText: "Good coffee and proper breakfasts" });
-    await expect(hero).toBeVisible({ timeout: OPEN_WAIT });
-    expectWithinBudget(started, 3_000, "Opening the new Café site");
-    // With its photo, which came into the site's Media.
-    await expect(canvas(page).locator("section img").first()).toHaveJSProperty("complete", true);
-    await expect(canvas(page).locator("section img").first()).not.toHaveJSProperty(
-      "naturalWidth",
-      0,
-    );
-
-    const site = await page.evaluate(async () => {
-      const read = await (window as unknown as RendererWindow).webforge.project.readSite();
-      return read as {
-        site: { settings: { general: { name: string } }; theme: { preset: string } };
-      };
-    });
-    expect(site.site.settings.general.name).toBe("Rosa's Bakery");
-    expect(site.site.theme.preset).toBe("atelier");
+  const site = await page.evaluate(async () => {
+    const read = await (window as unknown as RendererWindow).webforge.project.readSite();
+    return read as {
+      site: { settings: { general: { name: string } }; theme: { preset: string } };
+    };
   });
+  expect(site.site.settings.general.name).toBe("Rosa's Bakery");
+  expect(site.site.theme.preset).toBe("atelier");
+});
 
-  test("makes a Personal / CV site in under 3 s, accessible on the canvas (2.15c)", async () => {
-    const page = await startWithoutSite();
-    await stubFileDialogs(running(), join(dir, "Sam Lee.wforge"));
+test("makes a Personal / CV site within its opening budget, accessible on the canvas (2.15c)", async () => {
+  const page = await startWithoutSite();
+  await stubFileDialogs(running(), join(dir, "Sam Lee.wforge"));
 
-    await page.getByRole("button", { name: "New site…", exact: true }).click();
-    const newSite = page.getByRole("dialog", { name: "New Site" });
-    await newSite.getByRole("textbox", { name: "Site name" }).fill("Sam Lee");
-    await newSite.getByText("Personal / CV", { exact: true }).click();
-    await expect(newSite.getByRole("radio", { name: "Studio" })).toBeChecked();
+  await page.getByRole("button", { name: "New site…", exact: true }).click();
+  const newSite = page.getByRole("dialog", { name: "New Site" });
+  await newSite.getByRole("textbox", { name: "Site name" }).fill("Sam Lee");
+  await newSite.getByText("Personal / CV", { exact: true }).click();
+  await expect(newSite.getByRole("radio", { name: "Studio" })).toBeChecked();
 
-    const started = Date.now();
-    await newSite.getByRole("button", { name: "Create" }).click();
-    const hero = canvas(page).locator("h1", { hasText: "Hello, I'm Alex Morgan" });
-    await expect(hero).toBeVisible({ timeout: OPEN_WAIT });
-    expectWithinBudget(started, 3_000, "Opening the new Personal / CV site");
-    await expect(canvas(page).locator("section img").first()).not.toHaveJSProperty(
-      "naturalWidth",
-      0,
-    );
+  const opened = await measureWork(running());
+  await newSite.getByRole("button", { name: "Create" }).click();
+  const hero = canvas(page).locator("h1", { hasText: "Hello, I'm Alex Morgan" });
+  await expect(hero).toBeVisible({ timeout: OPEN_WAIT });
+  expectWorkWithin(await opened(), OPEN_BUDGET, "Opening the new Personal / CV site");
+  await expect(canvas(page).locator("section img").first()).not.toHaveJSProperty("naturalWidth", 0);
 
-    // The page as the canvas draws it, inside its frame, what the editor adds to it included (#465):
-    // the frame's title and language, the inline editors' names and the elements' wrappers.
-    const results = await canvasAxe(page);
-    expect(results.violations.map((violation) => `${violation.id}: ${violation.help}`)).toEqual([]);
-    // It checked the page: rules passed inside the frame.
-    expect(results.passes).toBeGreaterThan(5);
+  // The page as the canvas draws it, inside its frame, what the editor adds to it included (#465):
+  // the frame's title and language, the inline editors' names and the elements' wrappers.
+  const results = await canvasAxe(page);
+  expect(results.violations.map((violation) => `${violation.id}: ${violation.help}`)).toEqual([]);
+  // It checked the page: rules passed inside the frame.
+  expect(results.passes).toBeGreaterThan(5);
+});
+
+test("tries the example: a pre-filled site named after it, within its opening budget (2.14b, PG-3)", async () => {
+  const page = await startWithoutSite();
+  await stubFileDialogs(running(), join(dir, "Café - Restaurant.wforge"));
+
+  const opened = await measureWork(running());
+  // Straight from the start screen: no New Site dialog, the example's own name and theme.
+  // Exactly: the first start's welcome has a Try an example card too.
+  await page.getByRole("button", { name: "Try an example", exact: true }).click();
+  // The first example the app ships: Café / Restaurant (Trades is the second).
+  const hero = canvas(page).locator("h1", { hasText: "Good coffee and proper breakfasts" });
+  await expect(hero).toBeVisible({ timeout: OPEN_WAIT });
+  expectWorkWithin(await opened(), OPEN_BUDGET, "Opening the example");
+
+  const site = await page.evaluate(async () => {
+    const read = await (window as unknown as RendererWindow).webforge.project.readSite();
+    return read as { site: { settings: { general: { name: string } }; pageOrder: string[] } };
   });
-
-  test("tries the example: a pre-filled site named after it, in under 3 s (2.14b, PG-3)", async () => {
-    const page = await startWithoutSite();
-    await stubFileDialogs(running(), join(dir, "Café - Restaurant.wforge"));
-
-    const started = Date.now();
-    // Straight from the start screen: no New Site dialog, the example's own name and theme.
-    // Exactly: the first start's welcome has a Try an example card too.
-    await page.getByRole("button", { name: "Try an example", exact: true }).click();
-    // The first example the app ships: Café / Restaurant (Trades is the second).
-    const hero = canvas(page).locator("h1", { hasText: "Good coffee and proper breakfasts" });
-    await expect(hero).toBeVisible({ timeout: OPEN_WAIT });
-    expectWithinBudget(started, 3_000, "Opening the example");
-
-    const site = await page.evaluate(async () => {
-      const read = await (window as unknown as RendererWindow).webforge.project.readSite();
-      return read as { site: { settings: { general: { name: string } }; pageOrder: string[] } };
-    });
-    expect(site.site.settings.general.name).toBe("Café / Restaurant");
-    expect(site.site.pageOrder.length).toBeGreaterThan(1);
-  });
+  expect(site.site.settings.general.name).toBe("Café / Restaurant");
+  expect(site.site.pageOrder.length).toBeGreaterThan(1);
 });
 
 test("pins a site to the top of the Recent list, which it keeps after a restart (2.14b)", async () => {
@@ -218,36 +214,32 @@ test("pins a site to the top of the Recent list, which it keeps after a restart 
   await expect(page.getByRole("listitem")).toHaveCount(1);
 });
 
-// Closing without waiting for a save is a budget too (ADR 0014).
-test.describe("closing with nothing to save", () => {
-  budgetTests();
+test("says when a site can't be opened, and removes sites from the list", async () => {
+  // Open a site once, so it is on the list, then lose the file.
+  app = await launchDesktopApp({ userDataDir: userData });
+  await app.firstWindow();
+  await app.close();
+  app = undefined;
 
-  test("says when a site can't be opened, and removes sites from the list", async () => {
-    // Open a site once, so it is on the list, then lose the file.
-    app = await launchDesktopApp({ userDataDir: userData });
-    await app.firstWindow();
-    await app.close();
-    app = undefined;
+  const page = await startWithoutSite();
+  const card = page.getByRole("listitem");
+  await expect(card).toHaveCount(1);
+  await page.getByRole("button", { name: /^Remove .+ from the list$/ }).click();
+  // With none left, the first start's welcome says what to do next (SC-3).
+  await expect(page.getByRole("heading", { name: "Welcome to Webforge" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Remove .+ from the list$/ })).toHaveCount(0);
 
-    const page = await startWithoutSite();
-    const card = page.getByRole("listitem");
-    await expect(card).toHaveCount(1);
-    await page.getByRole("button", { name: /^Remove .+ from the list$/ }).click();
-    // With none left, the first start's welcome says what to do next (SC-3).
-    await expect(page.getByRole("heading", { name: "Welcome to Webforge" })).toBeVisible();
-    await expect(page.getByRole("button", { name: /^Remove .+ from the list$/ })).toHaveCount(0);
+  // A file that isn't a site.
+  const notes = join(dir, "notes.wforge");
+  writeFileSync(notes, "just text");
+  await stubFileDialogs(running(), notes);
+  // Exactly: the welcome has an Open a site card too.
+  await page.getByRole("button", { name: "Open a site…", exact: true }).click();
+  await expect(page.getByRole("alert")).toHaveText("This file isn't a Webforge site.");
 
-    // A file that isn't a site.
-    const notes = join(dir, "notes.wforge");
-    writeFileSync(notes, "just text");
-    await stubFileDialogs(running(), notes);
-    // Exactly: the welcome has an Open a site card too.
-    await page.getByRole("button", { name: "Open a site…", exact: true }).click();
-    await expect(page.getByRole("alert")).toHaveText("This file isn't a Webforge site.");
-
-    // With nothing to save, closing doesn't wait for a save that never comes (5 s timeout).
-    const started = Date.now();
-    await closeWindow();
-    expectWithinBudget(started, 3_000, "Closing with nothing to save");
-  });
+  // With nothing to save, closing doesn't wait for a save that never comes (5 s timeout).
+  const started = Date.now();
+  await closeWindow();
+  // Under the save request's 5 s timeout, which it would otherwise sit out.
+  expect(Date.now() - started).toBeLessThan(CLOSE_WITHOUT_WAITING_MS);
 });
