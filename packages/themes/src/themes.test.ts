@@ -20,7 +20,7 @@ import {
   shadeOf,
 } from "./colors.js";
 import { AA_LARGE, AA_TEXT, contrastIssues } from "./contrast.js";
-import { CURATED_THEMES } from "./curated/index.js";
+import { CURATED_BATCHES, CURATED_THEMES } from "./curated/index.js";
 import { FONT_CATALOGUE, FONT_PAIRINGS } from "./fonts/catalogue.js";
 import { THEME_PRESETS, themePreset } from "./presets.js";
 import { EVEN_SECTION_SELECTORS, oklchCss, radiusCss, shadowCss, themeCss } from "./theme-css.js";
@@ -311,6 +311,9 @@ describe("curated themes (2.13)", () => {
     "Bebas Neue": "condensed display",
     Inter: "grotesque sans",
     Quicksand: "rounded",
+    Fraunces: "soft serif",
+    "Cormorant Garamond": "old-style serif",
+    "Plus Jakarta Sans": "humanist sans",
     "Roboto Slab": "slab",
     Bitter: "slab",
   };
@@ -342,10 +345,8 @@ describe("curated themes (2.13)", () => {
     "button style": `${theme.buttons.shape} ${theme.buttons.style}`,
   });
 
-  /** The curated themes in batches of four, as 2.13a–c make them. */
-  const batches = [0, 4, 8]
-    .map((start) => CURATED_THEMES.slice(start, start + 4))
-    .filter((batch) => batch.length > 0);
+  /** The curated themes in their batches, as 2.13a–c make them. */
+  const batches = CURATED_BATCHES;
 
   it("differ in at least 4 of their fonts, colours, corners, cards, headings, spacing and buttons", () => {
     CURATED_THEMES.forEach((theme, index) => {
@@ -369,13 +370,14 @@ describe("curated themes (2.13)", () => {
       expect(new Set(styles).size, names).toBe(batch.length);
       expect(new Set(batch.map(character)).size, names).toBe(batch.length);
     }
-    // The first batch has one of each colour character (2.13d).
-    expect(batches[0]?.map(character).toSorted()).toEqual([
-      "dark-first",
-      "monochrome",
-      "muted",
-      "vivid",
-    ]);
+    // Each batch has one of each colour character, the range the product owner approved for
+    // themes 1–4 (2.13d) and asked of the rest (2.13c).
+    for (const batch of batches) {
+      expect(
+        batch.map(character).toSorted(),
+        batch.map((theme) => theme.preset).join(", "),
+      ).toEqual(["dark-first", "monochrome", "muted", "vivid"]);
+    }
   });
 });
 
