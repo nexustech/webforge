@@ -5,6 +5,7 @@ import { starterSite } from "../../shared/starter-site.js";
 import { sessionWith } from "../testing/fixtures.js";
 import { TOKEN_CONTROLS, tokenKey } from "./theme-controls.js";
 import {
+  setBrandColours,
   setColor,
   setFont,
   setPairing,
@@ -152,14 +153,17 @@ describe("the Theme tab's edits (2.3a)", () => {
     expect(labels()).toEqual(["Changed text style for Heading 2"]);
   });
 
-  it("sets either palette's colours on their own in Theme Studio (F-DS-7)", async () => {
+  it("sets the page's colours by the one rule, and reversed sections' on their own (F-DS-7)", async () => {
     const { session, labels, theme } = setUp();
     const reversed = theme().inverse?.primary;
+    const page = theme().colors["info-content"];
 
+    // A page brand colour in Theme Studio, as in the Theme tab: reversed sections take its hue.
     await setPaletteColor(session, answering(true), "colors", "primary", BRAND);
-    expect(theme().inverse?.primary).toEqual(reversed);
+    expect(theme().inverse?.primary).toEqual({ l: reversed?.l, c: BRAND.c, h: BRAND.h });
     await setPaletteColor(session, answering(true), "inverse", "info-content", BRAND);
     expect(theme().inverse?.["info-content"]).toEqual(BRAND);
+    expect(theme().colors["info-content"]).toEqual(page);
 
     expect(labels()).toEqual([
       "Changed Brand colour",
@@ -184,6 +188,32 @@ describe("the Theme tab's edits (2.3a)", () => {
     expect(theme().inverse?.["base-100"]).toEqual(shown);
     session.history.undo();
     expect(theme().inverse).toBeUndefined();
+  });
+
+  it("uses colours from an image once asked, as one step, reversed sections following (PG-2)", async () => {
+    const { session, labels, theme } = setUp();
+    const before = theme();
+    const proposal = {
+      primary: BRAND,
+      "primary-content": { l: 0.98, c: 0.02, h: 30 },
+      secondary: { l: 0.45, c: 0.15, h: 250 },
+      "secondary-content": { l: 0.98, c: 0.02, h: 250 },
+      accent: { l: 0.5, c: 0.12, h: 150 },
+      "accent-content": { l: 0.98, c: 0.02, h: 150 },
+    };
+
+    expect(await setBrandColours(session, answering(false), proposal, "Logo.png")).toBe(false);
+    expect(await setBrandColours(session, answering(true), proposal, "Logo.png")).toBe(true);
+
+    expect(theme().colors.secondary).toEqual(proposal.secondary);
+    expect(theme().colors["accent-content"]).toEqual(proposal["accent-content"]);
+    expect(theme().inverse?.secondary).toEqual({
+      l: before.inverse?.secondary.l,
+      c: proposal.secondary.c,
+      h: proposal.secondary.h,
+    });
+    expect(theme().colors["base-100"]).toEqual(before.colors["base-100"]);
+    expect(labels()).toEqual(["Changed brand colours from 'Logo.png'"]);
   });
 
   it("undoes them all back to the theme it started with", async () => {

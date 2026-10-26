@@ -65,6 +65,10 @@ A panel is a tab in one of the window's slots: `left.top`, `left.bottom`, `left.
 - **A dialog's story** uses `dialogStory()`.
 - **An editor panel** joins the list of panels `Editor.test.tsx` expects, so a panel an area adds by mistake fails it.
 
+### Window dialogs
+
+A dialog an area opens from anywhere (Theme Studio), not from inside one of its panels, is drawn once by the window: `windowDialogs.register({ id, component })` from a window area (`shell/window-dialogs.tsx`), its open state kept by the area (a store it makes as it registers). A dialog a panel opens for itself stays in that panel.
+
 ## Commands
 
 A command is in the command box, and in a menu if it names one (`shell/commands.ts`).

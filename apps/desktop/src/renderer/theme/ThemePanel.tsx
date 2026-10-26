@@ -29,7 +29,6 @@ import { useDocument } from "../editor/use-document.js";
 import { shownRatio, TEXT_PX, themeFieldRenderers } from "../fields/index.js";
 import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
 import type { StudioState } from "./studio/studio-state.js";
-import { ThemeStudio } from "./studio/ThemeStudio.js";
 import { TOKEN_CONTROLS, tokenKey, tokenValue } from "./theme-controls.js";
 import {
   COLOR_WORDS,
@@ -191,7 +190,7 @@ export type ThemePanelProps = {
   readonly session: EditorSession;
   /** Asks before a change to every page (D7): a preset, a colour, the fonts. */
   readonly siteWide?: Pick<SiteWideConfirm, "confirmSiteWide"> | undefined;
-  /** Theme Studio's state (2.3b): the tab opens it, and draws it. */
+  /** Theme Studio's state (2.3b): the tab's button opens it; the window draws it. */
   readonly studio?: StoreApi<StudioState> | undefined;
 };
 
@@ -248,7 +247,6 @@ export function ThemePanel({ session, siteWide, studio }: ThemePanelProps) {
               <PaletteIcon aria-hidden className="size-3.5" />
               {t("theme.studio.open")}
             </Button>
-            <ThemeStudio session={session} studio={studio} siteWide={siteWide} />
           </div>
         )}
         <div className="min-h-0 flex-1">

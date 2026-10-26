@@ -150,9 +150,10 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
   app.enableSandbox();
 
   // Media images (1.16) and the site's fonts (2.2) reach the editor through schemes of their own,
-  // which must be known before "ready". Fonts load in CORS mode.
+  // which must be known before "ready". Fonts load in CORS mode; so can images, whose pixels Theme
+  // Studio reads for a palette from an image (2.3b, PG-2).
   protocol.registerSchemesAsPrivileged([
-    { scheme: MEDIA_SCHEME, privileges: { standard: true, secure: true } },
+    { scheme: MEDIA_SCHEME, privileges: { standard: true, secure: true, corsEnabled: true } },
     { scheme: FONT_SCHEME, privileges: { standard: true, secure: true, corsEnabled: true } },
   ]);
 
