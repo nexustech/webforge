@@ -92,6 +92,7 @@
 2. **Name things by what users see:** "Hero section", "Image", "Button", not technical types ("daisyUI hero", "img").
 3. **Undo step labels** follow *Verb + item name* (D2): "Edited Header text", "Moved Hero section", "Changed theme".
 4. **Advanced** tab and **Custom Code** are where technical words may appear (CSS classes, HTML), clearly labelled as advanced.
+   The CSS classes field (#276) says **class** and **style** ("No style called pading-4. Did you mean p-4?"); its **Browse classes…** groups them as daisyUI components, Colours, Borders and corners, Spacing, Size, Layout, Typography and Effects.
 5. **Consistency:** one term per concept everywhere (menus, tooltips, help, error messages). Maintain this glossary as the source of truth; translations follow it later.
 
 ## Bootstrap Studio → Webforge mapping (for reference)

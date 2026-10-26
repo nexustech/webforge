@@ -62,7 +62,8 @@ export function advancedFields(
   return [
     {
       name: ADVANCED_FIELDS.className,
-      kind: "text",
+      // Suggestions, a browser and a warning for a class that makes no style (#276).
+      kind: "classes",
       group: "advanced",
       label: t("editPanel.advanced.className"),
       placeholder: t("editPanel.advanced.classNamePlaceholder"),

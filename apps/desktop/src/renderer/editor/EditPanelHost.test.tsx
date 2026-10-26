@@ -6,7 +6,9 @@ import { copiedNodeId, type MediaId, type PageDoc } from "@webforge/model";
 import { type ComponentLibrary, type FieldDef, siteLibrary } from "@webforge/site-components";
 import { Profiler } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import type { CanvasApi } from "../../shared/ipc/canvas.js";
 import { starterSite } from "../../shared/starter-site.js";
+import { classesFieldRenderer } from "../fields/index.js";
 import { linkFieldRenderer } from "../links/index.js";
 import { addMedia, imageFieldRenderer } from "../media/index.js";
 import { saveAsSharedSection } from "../shared-sections/index.js";
@@ -819,7 +821,20 @@ describe("EditPanelHost", () => {
     function setupAdvanced() {
       const session = sessionWith(siteWithHero());
       session.select("heading-1");
-      render(<EditPanelHost session={session} flush={vi.fn()} advanced />);
+      // The CSS classes field, with no catalogue of classes to suggest and every class making a style.
+      const canvas = {
+        classCatalogue: () => Promise.resolve({ status: "failed" }),
+        classCss: (_theme, classes) =>
+          Promise.resolve({ status: "css", css: classes.map(() => ".x{}") }),
+        compileCss: () => Promise.resolve({ status: "failed" }),
+      } satisfies CanvasApi;
+      render(
+        <FieldRenderersProvider
+          renderers={{ classes: classesFieldRenderer({ session, canvas: () => canvas }) }}
+        >
+          <EditPanelHost session={session} flush={vi.fn()} advanced />
+        </FieldRenderersProvider>,
+      );
       const labels = () => session.history.entries().map((entry) => entry.label);
       const advanced = () => {
         const section = currentPage(session)?.doc.content[0];

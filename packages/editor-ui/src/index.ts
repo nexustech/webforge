@@ -2,6 +2,7 @@
 // imported separately as "@webforge/editor-ui/theme.css".
 
 export { ChoiceField } from "./components/edit/choice-field.js";
+export { ClassesInput, type ClassesInputProps } from "./components/edit/classes-input.js";
 export type {
   EditPanelField,
   EditPanelProps,
@@ -31,7 +32,7 @@ export {
   type SwatchFieldProps,
   type SwatchOption,
 } from "./components/edit/swatch-field.js";
-export { fieldControlClass, TextField } from "./components/edit/text-field.js";
+export { describedBy, fieldControlClass, TextField } from "./components/edit/text-field.js";
 export { ToggleField } from "./components/edit/toggle-field.js";
 export {
   combineForms,

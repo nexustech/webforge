@@ -143,6 +143,26 @@ export const canvas = {
   "editPanel.advanced.className": "CSS classes",
   "editPanel.advanced.classNamePlaceholder": "e.g. shadow-lg rounded-box",
   "editPanel.advanced.classNameInvalid": "Use class names separated by spaces",
+  // The CSS classes field's suggestions, browser and warning (#276).
+  "editPanel.classes.suggestions": "Suggested classes",
+  "editPanel.classes.browse": "Browse classes…",
+  "editPanel.classes.browseTitle": "Browse classes",
+  "editPanel.classes.browseDescription":
+    "Double-click a class, or press Enter, to add it to this element.",
+  "editPanel.classes.none": "No class matches.",
+  "editPanel.classes.previewLoading": "Getting its CSS…",
+  "editPanel.classes.previewNone": "This class makes no style.",
+  "editPanel.classes.unknown": "No style called {name}. Did you mean {suggestion}?",
+  "editPanel.classes.unknownNoSuggestion":
+    "No style called {name}: it does nothing unless your own code uses it.",
+  "editPanel.classes.category.components": "daisyUI components",
+  "editPanel.classes.category.colours": "Colours",
+  "editPanel.classes.category.borders": "Borders and corners",
+  "editPanel.classes.category.spacing": "Spacing",
+  "editPanel.classes.category.size": "Size",
+  "editPanel.classes.category.layout": "Layout",
+  "editPanel.classes.category.typography": "Typography",
+  "editPanel.classes.category.effects": "Effects",
   "editPanel.advanced.anchorId": "Anchor ID",
   "editPanel.advanced.anchorIdPlaceholder": "e.g. opening-times",
   "editPanel.advanced.anchorIdInvalid":
