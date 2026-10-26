@@ -3,6 +3,8 @@ export const ai = {
   // "AI (Claude): Added Hero": every change an AI app makes is one undo step, named after it.
   "ai.history": "AI ({app}): {action}",
   "ai.history.theme": "Changed the theme",
+  // Several fields of one element at once: "AI (Claude): Edited Hero".
+  "ai.history.fields": "Edited {item}",
   // The D7 confirmation an AI app's change to more than one page waits for.
   "ai.confirm.title": "Allow {app} to make this change?",
   "ai.confirm.theme": "{app} wants to change the theme. It changes every page.",

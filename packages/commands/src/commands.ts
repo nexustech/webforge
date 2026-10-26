@@ -233,7 +233,7 @@ export const COMMANDS = {
         action:
           fields.length === 1 && only !== undefined
             ? t("history.editedField", { item: component.label, field: only.label })
-            : t("history.editedPage"),
+            : t("ai.history.fields", { item: component.label }),
         structural: fields.some((field) => !isContent(field)),
         confirm: confirmationAt(site, location),
         recipe: (draft) => {
