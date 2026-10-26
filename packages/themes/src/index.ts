@@ -5,11 +5,17 @@ export {
   inverseColors,
   oklchToSrgb,
   resolveColorRef,
+  rgbToOklch,
   shadeOf,
 } from "./colors.js";
 export type { ContrastIssue } from "./contrast.js";
 export { AA_LARGE, AA_TEXT, contrastIssues } from "./contrast.js";
-export { CURATED_THEMES } from "./curated/index.js";
+export {
+  CURATED_BATCHES,
+  CURATED_THEMES,
+  CURATED_THEMES_A,
+  CURATED_THEMES_C,
+} from "./curated/index.js";
 export type { CatalogueFont, FontPairing } from "./fonts/catalogue.js";
 export {
   bundledFontBytes,
@@ -22,7 +28,7 @@ export {
   fontRefOf,
 } from "./fonts/catalogue.js";
 export type { FontFace } from "./fonts/faces.js";
-export { fontFacesFor } from "./fonts/faces.js";
+export { fontFacesFor, previewFileOf } from "./fonts/faces.js";
 export type {
   FontCategory,
   FontFallback,
@@ -44,5 +50,7 @@ export {
   PACKAGE_LISTINGS,
   planFamily,
 } from "./fonts/plan.js";
+export type { BrandProposal, ImageColour } from "./image-palette.js";
+export { brandFromImage, imageColours, reversedBrand } from "./image-palette.js";
 export { THEME_PRESETS, themePreset } from "./presets.js";
 export { oklchCss, radiusCss, shadowCss, themeCss } from "./theme-css.js";

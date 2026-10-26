@@ -170,9 +170,9 @@ The result is a fast, accessible, self-contained static website they fully own.
 5. Photographer / Portfolio
 6. Shop (Buy buttons)
 7. Personal / CV
-8. Blank
+8. Blank: Home, About and Contact as short skeletons in the chosen theme, what New Site makes when no template is chosen (2026-10-26)
 
-**Template images (S5):** public-domain (CC0) photos only, no bundled Unsplash or Pexels photos (Q6, decided 2026-10-23), with source and licence recorded per image in a manifest; the product owner does the final licence review.
+**Template images (S5):** public-domain (CC0) photos only, no bundled Unsplash or Pexels photos (Q6, decided 2026-10-23), with source and licence recorded per image in a manifest; the product owner does the final licence review. Until the product owner approves each template's photo shortlist, templates ship generated placeholders, also CC0 (Q6, refined 2026-10-26).
 
 All components must:
 - render to static HTML with daisyUI/Tailwind classes;
@@ -252,6 +252,7 @@ The detailed work breakdown (one GitHub issue per item), schedule, risks and ope
 18. ~~A Button and the theme's button style~~ → ✅ **Decided (PH2-14, product owner, 2026-10-25):** a Button's Style gains *Theme's style*, the default for new Buttons and Booking buttons, so they follow the theme's button style (F-DS-4); Filled, Second colour and Outline still override it, and existing Buttons keep Filled. The sections' buttons always follow the theme (#423).
 19. ~~How far themes differ~~ → ✅ **Decided (PH2-15, product owner, 2026-10-25):** themes differ in style, not layout (A): a wider range of fonts, colour schemes and style tokens; section layouts come from the templates (2.15) and each section's own settings, so switching theme never rearranges a site. 2.13d adds heading case and tracking, card style, photo corners and the sections' rhythm to the theme, and redoes themes 1–4. See [the implementation plan](04-implementation-plan.md), PH2-15.
 20. ~~The start screen~~ → ✅ **Decided (SC-1–SC-4, product owner, 2026-10-26):** after comparing other builders' start screens (Bootstrap Studio, Pinegrow, Mobirise, RapidWeaver Elements, Webflow), the start screen reads at a larger size than the editor's compact panels (SC-1); has the logo, name and version block on the left, with a placeholder mark until the real logo (#454) (SC-2); welcomes a first start with the ways in, each saying what it does, instead of an empty list (SC-3); and leaves the templates to New Site (SC-4). See [product/08](../research/product/08-start-screen-comparison.md); built in 2.14b (#456).
+21. ~~Template photos and Blank~~ → ✅ **Decided (Q6 refined, product owner, 2026-10-26):** all eight templates ship now with generated placeholders (flat pictures made locally, never downloaded), recorded in each template's `images.json` as generated, CC0. Each stream shortlists real CC0 or public-domain photos for its templates (link, source, author and licence per photo) in `research/content/`; the product owner approves a shortlist in one go, and a small PR per batch swaps the photos in. Blank becomes a real template (Home, About and Contact skeletons, no photos, in the chosen theme) that replaces the Blank site New Site made in code, so there is one Blank. See [the implementation plan](04-implementation-plan.md), 2.15 and Q6, and [content/template-photos-c](../research/content/template-photos-c.md).
 
 ## 8. Business & licensing model (decided 2026-10-19)
 | Item | Decision |

@@ -137,6 +137,8 @@ describe("createFontLibrary: downloads (2.2, PH2-8)", () => {
         category: "handwriting",
         variable: false,
         source: "downloaded",
+        // What the font picker previews it with (2.3c): its Latin regular.
+        preview: "comic-neue-latin-400-normal.woff2",
       },
     });
     // The bundled fonts' rules: 300–700 upright, italics at 400 and 700.

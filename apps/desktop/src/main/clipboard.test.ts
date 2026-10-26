@@ -42,6 +42,7 @@ const system: SystemClipboard = {
     if (held === undefined) return notElements;
     return held.length <= maxBytes.elements ? { kind: "elements", json: held } : { kind: "none" };
   },
+  holdsElements: async () => held !== undefined,
 };
 
 /** Imports as the main process would, recording what it was given. */
@@ -63,6 +64,8 @@ const elementClipboard = (site: ClipboardSite, clipboard = system, media = impor
   return {
     write: (elements: CopiedElements) => made.write(site, elements),
     read: () => made.read(site, media),
+    forgetKept: made.forgetKept,
+    forgetIfReplaced: made.forgetIfReplaced,
   };
 };
 
@@ -136,6 +139,76 @@ describe("element clipboard (1.25)", () => {
     await clipboard.write({ nodes: [hero], media: [photo] });
     expect(existsSync(join(dir, photo.hash))).toBe(false);
     expect(JSON.parse(held ?? "")).toEqual({ nodes: [hero], media: [] });
+  });
+
+  it("forgets the copied images once the clipboard holds something else, and on quitting (R13d)", async () => {
+    const clipboard = elementClipboard(fakeSite().site);
+    await clipboard.write({ nodes: [hero], media: [photo] });
+
+    // The window is focused while the elements are still on the clipboard: the images stay.
+    await clipboard.forgetIfReplaced();
+    expect(readdirSync(dir)).toEqual([photo.hash]);
+
+    // Text copied in another app: gone when the window is next focused.
+    held = undefined;
+    await clipboard.forgetIfReplaced();
+    expect(existsSync(dir)).toBe(false);
+
+    // Or before a paste of something else.
+    held = undefined;
+    await clipboard.write({ nodes: [hero], media: [photo] });
+    held = undefined;
+    notElements = { kind: "address", address: "https://vimeo.com/76979871" };
+    await clipboard.read();
+    expect(existsSync(dir)).toBe(false);
+
+    // And when Webforge quits, whatever the clipboard holds.
+    await clipboard.write({ nodes: [hero], media: [photo] });
+    clipboard.forgetKept();
+    expect(existsSync(dir)).toBe(false);
+  });
+
+  it("keeps the images of a copy made while it looked at the clipboard", async () => {
+    let answer: (holds: boolean) => void = () => undefined;
+    const made = createElementClipboard(
+      {
+        ...system,
+        holdsElements: () =>
+          new Promise((resolve) => {
+            answer = resolve;
+          }),
+      },
+      dir,
+    );
+
+    // The window is focused, then the person copies at once, before the look has answered.
+    const looking = made.forgetIfReplaced();
+    await made.write(fakeSite().site, { nodes: [hero], media: [photo] });
+    answer(false);
+    await looking;
+
+    expect(readdirSync(dir)).toEqual([photo.hash]);
+  });
+
+  it("doesn't ask the clipboard when no copied images are kept", async () => {
+    const holdsElements = vi.fn(async () => false);
+    const made = createElementClipboard({ ...system, holdsElements }, dir);
+
+    await made.forgetIfReplaced();
+
+    expect(holdsElements).not.toHaveBeenCalled();
+  });
+
+  it("keeps the copied images when it can't tell what the clipboard holds", async () => {
+    const made = createElementClipboard(
+      { ...system, holdsElements: () => Promise.reject(new Error("busy")) },
+      dir,
+    );
+    await made.write(fakeSite().site, { nodes: [hero], media: [photo] });
+
+    await made.forgetIfReplaced();
+
+    expect(readdirSync(dir)).toEqual([photo.hash]);
   });
 
   it("finds nothing to paste in other content, or in content that isn't valid elements", async () => {
@@ -294,6 +367,19 @@ describe("systemClipboard", () => {
   };
   const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
   const uri = "file:///C:/shop.jpg";
+
+  it("tells whether it holds elements by asking for their format alone, reading nothing", async () => {
+    const read = vi.fn(async () => []);
+    const clipboard = (types: string[]) =>
+      systemClipboard({
+        clipboard: { read, has: async (type: string) => types.includes(type) },
+        ClipboardItem: class {},
+      } as never);
+
+    expect(await clipboard(["web application/x-webforge-elements"]).holdsElements()).toBe(true);
+    expect(await clipboard(["text/plain", "image/png"]).holdsElements()).toBe(false);
+    expect(read).not.toHaveBeenCalled();
+  });
 
   it("reads elements first, then copied files, then an image", async () => {
     const all = {

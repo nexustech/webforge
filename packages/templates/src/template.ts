@@ -15,12 +15,20 @@ import { z } from "zod";
 /**
  * The templates Webforge ships (2.14a, F-SITE-1, S2), by id: each a folder of this package's
  * `templates/` with its `template.json` and `images.json`. Their names and descriptions are
- * `t("template.<id>.name")` and `t("template.<id>.description")`; 2.15 adds its eight here.
+ * `t("template.<id>.name")` and `t("template.<id>.description")`; 2.15 adds its eight here, and
+ * {@link BLANK_TEMPLATE_ID}.
  */
-export const TEMPLATE_IDS = ["sample"] as const;
+export const TEMPLATE_IDS = ["sample", "personal", "blank"] as const;
 
 /** One of {@link TEMPLATE_IDS}. */
 export type TemplateId = (typeof TEMPLATE_IDS)[number];
+
+/**
+ * The Blank site (2.15c, product owner 26 Oct 2026): what New Site makes when no template is
+ * chosen. Home, About and Contact as short skeletons, no photos, in the theme New Site chose. It has
+ * no business type, so New Site shows it as its own choice, not among the templates.
+ */
+export const BLANK_TEMPLATE_ID = "blank" satisfies TemplateId;
 
 /** The business types the New Site dialog's chips filter by (UX-29): `t("template.category.<id>")`. */
 export const TEMPLATE_CATEGORIES = [
@@ -102,13 +110,17 @@ const templateSiteSchema = z.unknown().transform((raw, context): SiteDoc => {
 export const templateSchema = z
   .strictObject({
     id: z.enum(TEMPLATE_IDS),
-    category: z.enum(TEMPLATE_CATEGORIES),
+    /** Its business type; `null` for {@link BLANK_TEMPLATE_ID} only. */
+    category: z.enum(TEMPLATE_CATEGORIES).nullable(),
     /** Offered by *Try an example*: complete sample content to edit (PG-3). */
     example: z.boolean(),
     site: templateSiteSchema,
   })
   .refine((template) => Object.keys(template.site.media).length === 0, {
     message: "A template's images belong in its images.json, not in its site's Media",
+  })
+  .refine((template) => (template.category === null) === (template.id === BLANK_TEMPLATE_ID), {
+    message: "Every template but Blank has a business type",
   });
 
 /** See {@link templateSchema}. */

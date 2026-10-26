@@ -80,3 +80,23 @@ export function fontFacesFor(
   }
   return [...faces.values()];
 }
+
+/** Whether a file has regular text: weight 400, or a range that covers it. */
+const regular = (weight: CatalogueFont["files"][number]["weight"]) =>
+  typeof weight === "number" ? weight === 400 : weight[0] <= 400 && 400 <= weight[1];
+
+/**
+ * The one file `font` is previewed with in the font picker (2.3a, 2.3c): its Latin regular, else
+ * the nearest upright one it has; undefined for a font without files.
+ */
+export function previewFileOf(
+  font: Pick<CatalogueFont, "files">,
+): CatalogueFont["files"][number] | undefined {
+  const upright = font.files.filter((file) => file.style === "normal");
+  return (
+    upright.find((file) => file.subset === "latin" && regular(file.weight)) ??
+    upright.find((file) => file.subset === "latin") ??
+    upright[0] ??
+    font.files[0]
+  );
+}

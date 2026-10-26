@@ -32,3 +32,8 @@ Research supporting [`ideas.md`](../ideas.md).
 | P6 | [Editor UI/UX parity](product/06-editor-ui-ux-parity.md) | ✅ Decided (UI2–UI5) | Bootstrap Studio interaction parity (canvas, selection, panels) and Elements ideas (Inspector cues, per-device dots, Theme Studio) in the MVP; Bootstrap Studio's shortcuts as the standard; v1.1 notes, workspaces, display modes, AI panel |
 | P8 | [Start screen comparison](product/08-start-screen-comparison.md) | ✅ Decided (SC-1–SC-4) | Compared with Bootstrap Studio, Pinegrow, Mobirise, Elements and Webflow: larger type than the editor, the logo/name/version block, a first start that says what to do next, templates kept in New Site (2.14b) |
 
+## Content
+| # | Topic | Status | Outcome |
+|---|---|---|---|
+| C1 | [Template photos: stream C](content/template-photos-c.md) | 🟡 Shortlist for review | Personal / CV's eight photos: a CC0 choice and an alternate each (StockSnap, via Openverse), nothing downloaded; generated placeholders until approved (Q6, refined 26 Oct 2026). Blank has no photos |
+

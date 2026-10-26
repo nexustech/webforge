@@ -11,6 +11,7 @@ import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
 import type { ContextualToolbarRegistry } from "../shell/contextual-toolbars.js";
 import type { PanelRegistry } from "../shell/panels.js";
 import type { PreferencesStore } from "../shell/preferences-store.js";
+import type { WindowDialogRegistry } from "../shell/window-dialogs.js";
 import type { CanvasPointer } from "./canvas-pointer.js";
 import type { PreviewChoices } from "./edit-previews.js";
 import type { EditorSession } from "./editor-session.js";
@@ -52,6 +53,8 @@ export type WindowContext = AreaContext & {
   readonly canvasPointer: CanvasPointer;
   /** The parts of the window's Settings dialog (LF-12). */
   readonly settings: SettingsRegistry;
+  /** Dialogs the window draws once, whatever the panels show (Theme Studio, 2.3b). */
+  readonly windowDialogs: WindowDialogRegistry;
   /** Exports a site. */
   readonly exportSite: (request: ExportRequest) => Promise<ExportResult>;
 };

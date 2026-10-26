@@ -91,19 +91,31 @@ describe("fillNewSite (2.14a)", () => {
     ).rejects.toThrow("(failed)");
   });
 
-  it("writes the Blank site without a template, named and in the chosen theme", async () => {
+  it("writes the Blank template without a template chosen, named and in the chosen theme (2.15c)", async () => {
     const into = target();
 
-    await fillNewSite(into, { name: "Hightown Plumbing", theme: "workshop" }, () => {
-      throw new Error("Blank needs no templates");
-    });
+    await fillNewSite(into, { name: "Hightown Plumbing", theme: "workshop" }, () => templates);
 
     const site = store.readSite();
     expect(site.settings.general.name).toBe("Hightown Plumbing");
-    expect(site.layout.header[0]?.props.siteName).toBe("Hightown Plumbing");
+    // The Header shows the site's name from its settings.
+    expect(site.layout.header[0]?.props.bindings).toEqual({ siteName: "general.name" });
     expect(site.theme).toEqual(themePreset("workshop"));
+    expect(
+      site.pageOrder.flatMap((id) =>
+        site.pages[id]?.kind === "page" ? [site.pages[id].title] : [],
+      ),
+    ).toEqual(["Home", "About", "Contact"]);
     expect(into.importFile).not.toHaveBeenCalled();
     expect(store.listAssets()).toEqual([]);
+    expect(site.media).toEqual({});
+  });
+
+  it("refuses when the Blank template is missing", async () => {
+    await expect(
+      fillNewSite(target(), { name: "Bakery", theme: "light" }, () => []),
+    ).rejects.toThrow("No template blank");
+    expect(store.isEmpty()).toBe(true);
   });
 
   it("starts in the default theme for a preset this build doesn't have", async () => {

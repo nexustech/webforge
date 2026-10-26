@@ -8,8 +8,8 @@ import {
   type TextStyle,
   type ThemeTokens,
 } from "@webforge/model";
-import type { FontPairing } from "@webforge/themes";
-import { catalogueFont, fontRefOf, inverseColors } from "@webforge/themes";
+import type { BrandProposal, FontPairing } from "@webforge/themes";
+import { catalogueFont, fontRefOf, inverseColors, reversedBrand } from "@webforge/themes";
 import type { EditorSession } from "../editor/editor-session.js";
 import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
 import { setTokenValue, type TokenControl, tokenValue } from "./theme-controls.js";
@@ -29,7 +29,24 @@ export const QUICK_COLORS = ["primary", "secondary", "accent", "base-100", "base
 export type QuickColor = (typeof QUICK_COLORS)[number];
 
 /** The brand colours, which reversed sections take in their own lightness (#200). */
-const BRAND_COLORS: readonly QuickColor[] = ["primary", "secondary", "accent"];
+const BRAND_COLORS: readonly ColorRole[] = ["primary", "secondary", "accent"];
+
+/**
+ * Sets page colour `role` in `tokens`, a draft being changed: the one rule for the page's colours,
+ * wherever they change (the Theme tab, Theme Studio's Page column, colours from an image; #200,
+ * #457 review). A brand colour carries its hue and chroma into reversed sections, at the lightness
+ * they have it, when the theme has reversed colours of its own; a theme without them shows its page
+ * colours there, so they follow as they are. Only Theme Studio's Reversed column changes reversed
+ * sections' colours on their own.
+ */
+function setPageColor(tokens: ThemeTokens, role: ColorRole, color: Oklch): void {
+  tokens.colors[role] = { ...color };
+  const reversed = tokens.inverse?.[role];
+  if (reversed !== undefined && BRAND_COLORS.includes(role)) {
+    reversed.c = color.c;
+    reversed.h = color.h;
+  }
+}
 
 /** Each colour's name (glossary) and its undo step's. */
 export const COLOR_WORDS: Readonly<
@@ -141,9 +158,10 @@ export function setTextStep(
 
 /**
  * Sets colour `role` of the page's colours or reversed sections' (Theme Studio, F-DS-7): asked
- * first (D7), then one step, "Changed Brand colour in reversed sections". A theme without colours of
- * its own for reversed sections starts them from those it shows there ({@link inverseColors}).
- * Theme Studio edits each palette on its own: the page's Brand leaves reversed sections' as it is.
+ * first (D7), then one step, "Changed Brand colour in reversed sections". A page colour follows the
+ * one rule for page colours ({@link setPageColor}): a brand colour's hue reaches reversed sections.
+ * A reversed colour changes there alone; a theme without reversed colours of its own starts them
+ * from those it shows there ({@link inverseColors}).
  */
 export async function setPaletteColor(
   session: ThemeSession,
@@ -172,13 +190,45 @@ export async function setPaletteColor(
     reversed ? t("theme.history.colorReversed", { name }) : t("theme.history.color", { name }),
     (draft) => {
       if (!reversed) {
-        draft.theme.colors[role] = { ...color };
+        setPageColor(draft.theme, role, color);
         return;
       }
       draft.theme.inverse ??= start;
       draft.theme.inverse[role] = { ...color };
     },
   );
+  return true;
+}
+
+/**
+ * Uses the brand colours a palette from image `image` proposes (PG-2, F-DS-7): asked first (D7),
+ * then one step, "Changed brand colours from 'Logo.png'": Brand, Accent and Second accent, each
+ * with its text. Reversed sections take each brand colour's hue and chroma at their own lightness
+ * (#200), fitted to their own surface with their text as the page's are ({@link reversedBrand},
+ * #462 review), so a reversed band stays readable.
+ */
+export async function setBrandColours(
+  session: ThemeSession,
+  confirm: Confirm,
+  proposal: BrandProposal,
+  image: string,
+): Promise<boolean> {
+  const ok = await confirmed(session, confirm, {
+    action: t("theme.image.confirm", { name: image }),
+    description: t("theme.image.confirmDescription"),
+    confirm: t("theme.image.confirmButton"),
+  });
+  if (!ok) return false;
+  const reversed = reversedBrand(proposal, theme(session));
+  session.edit("props", t("theme.history.image", { name: image }), (draft) => {
+    for (const [role, color] of Object.entries(proposal) as [keyof BrandProposal, Oklch][]) {
+      setPageColor(draft.theme, role, color);
+    }
+    if (reversed === undefined || draft.theme.inverse === undefined) return;
+    for (const [role, color] of Object.entries(reversed) as [keyof BrandProposal, Oklch][]) {
+      draft.theme.inverse[role] = { ...color };
+    }
+  });
   return true;
 }
 
@@ -226,12 +276,7 @@ export async function setColor(
   });
   if (!ok) return false;
   session.edit("props", t(COLOR_WORDS[role].history), (draft) => {
-    draft.theme.colors[role] = { ...color };
-    const reversed = draft.theme.inverse?.[role];
-    if (reversed !== undefined && BRAND_COLORS.includes(role)) {
-      reversed.c = color.c;
-      reversed.h = color.h;
-    }
+    setPageColor(draft.theme, role, color);
   });
   return true;
 }

@@ -1,6 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { userEvent, within } from "storybook/test";
 import { FontField } from "./FontField.js";
+import { fakeFonts } from "./fake-fonts.js";
+
+const FONTS = fakeFonts();
 
 const meta = {
   title: "Edit/Fields/Font",
@@ -12,6 +15,7 @@ const meta = {
     value: { family: "Playfair Display", fallback: "serif" },
     onChange: () => undefined,
     onCommit: () => undefined,
+    fonts: () => FONTS,
   },
   // As in the Theme tab: its label above, in the right column's width.
   render: (args) => (
@@ -37,5 +41,16 @@ export const Empty: Story = { args: { value: null } };
 export const Picker: Story = {
   play: async ({ canvasElement }) => {
     await userEvent.click(within(canvasElement).getByRole("button"));
+  },
+};
+
+/** *Browse all fonts* listed: the fonts there are to download, under To download. */
+export const Browsed: Story = {
+  play: async ({ canvasElement }) => {
+    await userEvent.click(within(canvasElement).getByRole("button"));
+    const picker = within(document.body).getByRole("dialog", { name: "Choose a font" });
+    await userEvent.click(within(picker).getByRole("button", { name: "Browse all fonts" }));
+    await within(picker).findByText(/more fonts to download/);
+    await userEvent.click(within(picker).getByRole("button", { name: "To download" }));
   },
 };

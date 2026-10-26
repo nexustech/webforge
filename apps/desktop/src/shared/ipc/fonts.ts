@@ -15,6 +15,14 @@ const installedFontSchema = z.strictObject({
   category: z.enum(FONT_CATEGORIES),
   variable: z.boolean(),
   source: z.enum(["bundled", "downloaded"]),
+  /**
+   * The file the font picker previews it with (2.3c), served as `webforge-font://fonts/<file>`:
+   * its Latin regular, or the nearest upright file it has.
+   */
+  preview: z
+    .string()
+    .regex(/^[a-z0-9-]+\.woff2$/)
+    .optional(),
 });
 
 /** A font the computer has. */

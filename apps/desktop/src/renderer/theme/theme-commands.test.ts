@@ -4,7 +4,7 @@ import { createStudio } from "./studio/studio-state.js";
 import { registerThemeCommands } from "./theme-commands.js";
 
 describe("View → Theme… and Theme Studio… (#452, 2.3b)", () => {
-  it("are in the View menu, and show the Theme tab, the second opening Theme Studio", () => {
+  it("are in the View menu: the first shows the Theme tab, the second opens Theme Studio", () => {
     const { commands, panels } = registriesForTest();
     const shown = vi.fn();
     panels.onShow(shown);
@@ -18,6 +18,8 @@ describe("View → Theme… and Theme Studio… (#452, 2.3b)", () => {
     expect(studio.getState().open).toBe(false);
     commands.run("theme.studio");
     expect(studio.getState().open).toBe(true);
+    // Theme Studio is the window's: the tab shown stays as it was.
+    expect(shown).toHaveBeenCalledOnce();
 
     remove();
     expect(commands.list().some((each) => each.id.startsWith("theme."))).toBe(false);

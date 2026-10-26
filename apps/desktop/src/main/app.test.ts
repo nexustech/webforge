@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -128,7 +128,11 @@ function fakeElectron(options: { primary?: boolean } = {}) {
     app,
     BrowserWindow: FakeWindow,
     ClipboardItem: class {},
-    clipboard: { read: vi.fn(async () => []), write: vi.fn(async () => undefined) },
+    clipboard: {
+      read: vi.fn(async () => []),
+      write: vi.fn(async () => undefined),
+      has: vi.fn(async () => false),
+    },
     dialog,
     ipcMain: {
       handle: (channel: string, handler: Listener) => {
@@ -182,6 +186,7 @@ function fakeElectron(options: { primary?: boolean } = {}) {
     appEvents,
     dialog,
     session,
+    userData,
     windows,
     startCrashReports,
     crashReports,
@@ -195,6 +200,14 @@ function fakeElectron(options: { primary?: boolean } = {}) {
     /** Starts the app, as index.ts does. */
     start: () => startApp(electron as unknown as AppElectron, parts),
   };
+}
+
+/** An image's bytes as a copy keeps them in the user's data (1.25); returns the folder. */
+function keepCopiedImage(userData: string): string {
+  const folder = join(userData, "clipboard");
+  mkdirSync(folder, { recursive: true });
+  writeFileSync(join(folder, "a".repeat(64)), "bytes");
+  return folder;
 }
 
 describe("startApp", () => {
@@ -270,14 +283,29 @@ describe("startApp", () => {
     await fake.start();
     const preventDefault = vi.fn();
 
+    const kept = keepCopiedImage(fake.userData);
+
     fake.appEvents.emit("before-quit");
     fake.appEvents.emit("will-quit", { preventDefault });
     fake.appEvents.emit("will-quit", { preventDefault });
     await vi.waitFor(() => expect(fake.app.exit).toHaveBeenCalledWith(0));
 
+    // The copied elements' images don't outlive Webforge (R13d).
+    expect(existsSync(kept)).toBe(false);
     expect(preventDefault).toHaveBeenCalledTimes(2);
     expect(fake.app.exit).toHaveBeenCalledTimes(1);
     expect(fake.app.releaseSingleInstanceLock).toHaveBeenCalledTimes(1);
+  });
+
+  it("forgets the copied images when its window is focused after something else was copied", async () => {
+    const fake = fakeElectron();
+    await fake.start();
+    // The fake system clipboard holds nothing, so no elements.
+    const kept = keepCopiedImage(fake.userData);
+
+    fake.windows[0]?.events.emit("focus");
+
+    await vi.waitFor(() => expect(existsSync(kept)).toBe(false));
   });
 
   it("quits when its window closes, and opens one again from the Dock", async () => {
@@ -354,13 +382,16 @@ describe("startApp", () => {
     await vi.waitFor(() => expect(fake.windows).toHaveLength(1));
   });
 
-  it("keeps a second launch from releasing the lock it never held", async () => {
+  it("keeps a second launch from releasing the lock it never held, or the copied images", async () => {
     const fake = fakeElectron({ primary: false });
     void fake.start();
+    const kept = keepCopiedImage(fake.userData);
 
     fake.appEvents.emit("will-quit", { preventDefault: vi.fn() });
     await vi.waitFor(() => expect(fake.app.exit).toHaveBeenCalledWith(0));
 
     expect(fake.app.releaseSingleInstanceLock).not.toHaveBeenCalled();
+    // The running Webforge's, in the same user data.
+    expect(existsSync(kept)).toBe(true);
   });
 });
