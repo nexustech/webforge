@@ -42,7 +42,8 @@ export type StoredMedia = { readonly data: Uint8Array; readonly mime: string };
 /**
  * Encoded images by key (R15): the pipeline names each one by its original's SHA-256, its crop,
  * its width, its format and the encoder's settings, so a key never stands for other bytes. What
- * keeps them, and how many, is the caller's: the app keeps them on disk; tests in memory.
+ * keeps them, and how many, is the caller's: the app's export worker keeps them in memory while the
+ * site is open, never on disk ({@link createMemoryImageCache}).
  */
 export type ImageCache = {
   get(key: string): Promise<Uint8Array | undefined>;
