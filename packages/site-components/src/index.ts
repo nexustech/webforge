@@ -24,6 +24,7 @@ export {
   boxTokenPixels,
   colorClass,
   EDITOR_RENDER_CONTEXT,
+  fieldsHiddenBy,
   holdsOverfullSlot,
   linkAttributes,
   linkValue,
