@@ -109,8 +109,8 @@ jobs:
           # What the exported site is made from: Firefox and WebKit open it in the export tests.
           export_site='^(packages/(site-components|pipeline|model|test-utils)/|e2e/export/|e2e/playwright\.config\.ts$|e2e/package\.json$)'
           # What the editor UI's and the site components' stories render (.storybook/main.ts and
-          # their imports).
-          storybook='^(packages/(editor-ui|i18n|model|history|engine|site-components)/|apps/desktop/src/renderer/|e2e/visual/|e2e/playwright\.visual\.config\.ts$|e2e/package\.json$)'
+          # their imports), and the templates' thumbnails (the pipeline's export of each, 2.14b).
+          storybook='^(packages/(editor-ui|i18n|model|history|engine|site-components|themes|pipeline|templates)/|apps/desktop/src/renderer/|e2e/visual/|e2e/playwright\.visual\.config\.ts$|e2e/package\.json$)'
           # The dependencies: any manifest, the lockfile or the workspace file (overrides, catalog).
           deps='(^|/)package.json$|^pnpm-(lock|workspace).yaml$'
           echo "run=true" >> "$GITHUB_OUTPUT"
@@ -527,7 +527,8 @@ jobs:
           STORYBOOK_DISABLE_TELEMETRY: "1"
 
       - name: Axe and screenshots
-        # A story without a committed screenshot gets one written, and the next step fails.
+        # A story or template without a committed screenshot gets one written, and the next step
+        # fails.
         run: pnpm --filter @webforge/e2e e2e:visual --update-snapshots=missing
         env:
           VISUAL_SCREENSHOTS: "1"
@@ -536,10 +537,10 @@ jobs:
         shell: bash
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          new=$(git status --porcelain --untracked-files=all -- e2e/visual/__screenshots__)
+          new=$(git status --porcelain --untracked-files=all -- e2e/visual/__screenshots__ packages/templates/templates)
           if [ -n "$new" ]; then
             echo "$new"
-            echo "::error::New stories have no screenshots yet. Download the 'visual-screenshots' artifact and commit its files to e2e/visual/__screenshots__/."
+            echo "::error::New stories or templates have no screenshots yet. Run pnpm visual:docker (or pnpm template-thumbnails) and commit what it writes, or download the 'visual-screenshots' artifact."
             exit 1
           fi
 
@@ -548,7 +549,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: visual-screenshots
-          path: e2e/visual/__screenshots__/
+          path: |
+            e2e/visual/__screenshots__/
+            packages/templates/templates/*/thumbnail.png
           if-no-files-found: ignore
           retention-days: 7
 

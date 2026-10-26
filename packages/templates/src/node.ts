@@ -14,6 +14,11 @@ export type TemplateFolder = {
   readonly images: readonly TemplateImage[];
   /** The `images/` folder the manifest's files are in. */
   readonly imagesDir: string;
+  /**
+   * The template's home page as a 1280×800 PNG (2.14b), which `pnpm template-thumbnails` writes
+   * and CI checks is current.
+   */
+  readonly thumbnail: string;
 };
 
 /** This package's templates, in its `templates/` folder in the repository. */
@@ -35,6 +40,7 @@ export function readTemplate(id: string, dir: string = TEMPLATES_DIR): TemplateF
     template,
     images: imageManifestSchema.parse(read("images.json")),
     imagesDir: join(folder, "images"),
+    thumbnail: join(folder, "thumbnail.png"),
   };
 }
 

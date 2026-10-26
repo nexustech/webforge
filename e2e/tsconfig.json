@@ -18,7 +18,11 @@
   ],
   "references": [
     { "path": "../packages/model" },
+    { "path": "../packages/pipeline" },
+    { "path": "../packages/site-components" },
     { "path": "../packages/storage" },
-    { "path": "../packages/test-utils" }
+    { "path": "../packages/templates" },
+    { "path": "../packages/test-utils" },
+    { "path": "../packages/themes" }
   ]
 }

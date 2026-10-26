@@ -131,7 +131,7 @@ test.describe("window layout", () => {
   });
 
   test("switches to the light theme and remembers it", async () => {
-    await viewMenu("Use Light Theme");
+    await viewMenu("Use Light Appearance");
     await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
     await expect.poll(() => savedPreferences().theme).toBe("light");
 

@@ -156,9 +156,25 @@ describe("StartScreen", () => {
     const remove = container.querySelector<HTMLButtonElement>(
       '[aria-label="Remove Florist from the list"]',
     );
+    // Main's list without it, which the screen reads again.
+    project.listRecent.mockResolvedValue([bakery]);
     await act(async () => remove?.click());
     expect(project.removeRecent).toHaveBeenCalledWith(florist.id);
     expect(container.textContent).not.toContain("Florist.wforge");
+  });
+
+  it("says when the list can't be changed, and changes nothing (#448 review)", async () => {
+    const project = api([bakery, florist]);
+    project.pinRecent.mockRejectedValueOnce(new Error("disk full"));
+    await render(project);
+
+    const pin = container.querySelector<HTMLButtonElement>('[aria-label="Pin Florist"]');
+    await act(async () => pin?.click());
+
+    expect(container.querySelector('[role="alert"]')?.textContent).toBe(
+      "The list of recent sites couldn't be changed. Try again.",
+    );
+    expect(pin?.getAttribute("aria-pressed")).toBe("false");
   });
 
   it("says why a site couldn't be opened", async () => {
@@ -176,16 +192,19 @@ describe("StartScreen", () => {
     await render(project);
     project.listRecent.mockResolvedValueOnce([{ ...florist, pinned: true }, bakery]);
 
-    const pin = container.querySelector<HTMLButtonElement>('[aria-label="Pin Florist to the top"]');
-    expect(pin?.getAttribute("aria-pressed")).toBe("false");
-    await act(async () => pin?.click());
+    // A toggle (APG): the same name pinned or not, pressed while pinned; the tooltip says what a
+    // click does.
+    const pin = () => container.querySelector<HTMLButtonElement>('[aria-label="Pin Florist"]');
+    expect(pin()?.getAttribute("aria-pressed")).toBe("false");
+    expect(pin()?.title).toBe("Pin Florist to the top");
+    await act(async () => pin()?.click());
 
     expect(project.pinRecent).toHaveBeenCalledWith(florist.id, true);
     const names = [...container.querySelectorAll("li")].map((item) => item.textContent);
     expect(names[0]).toContain("Florist");
-    const unpin = container.querySelector<HTMLButtonElement>('[aria-label="Unpin Florist"]');
-    expect(unpin?.getAttribute("aria-pressed")).toBe("true");
-    await act(async () => unpin?.click());
+    expect(pin()?.getAttribute("aria-pressed")).toBe("true");
+    expect(pin()?.title).toBe("Unpin Florist");
+    await act(async () => pin()?.click());
     expect(project.pinRecent).toHaveBeenLastCalledWith(florist.id, false);
   });
 
@@ -220,6 +239,7 @@ describe("StartScreen", () => {
       example: true,
       pages: 2,
       theme: "bistro",
+      thumbnail: null,
     };
     const project = api([]);
     const restart = await render(project, vi.fn(), async () => [
@@ -250,6 +270,7 @@ describe("StartScreen", () => {
       example: true,
       pages: 2,
       theme: "light",
+      thumbnail: null,
     };
     const project = api([]);
     await render(project, vi.fn(), async () => [example]);
@@ -271,5 +292,42 @@ describe("StartScreen", () => {
     );
     await act(async () => tryIt?.click());
     expect(project.create).toHaveBeenCalledWith(expect.objectContaining({ template: "sample" }));
+  });
+
+  it("welcomes a first start with the ways in, each saying what it does (SC-3)", async () => {
+    const example: TemplateSummary = {
+      id: "sample",
+      category: "food",
+      example: true,
+      pages: 2,
+      theme: "light",
+      thumbnail: null,
+    };
+    const project = api([]);
+    await render(project, vi.fn(), async () => [example]);
+
+    expect(container.querySelector("h2")?.textContent).toBe("Start a site");
+    expect(container.textContent).toContain("Welcome to Webforge");
+    const choices = [...container.querySelectorAll('[role="tabpanel"] li')].map(
+      (item) => item.textContent,
+    );
+    expect(choices).toEqual([
+      expect.stringContaining("A blank site, or one from a template"),
+      expect.stringContaining("A finished example site"),
+      expect.stringContaining("A site you've saved on this computer."),
+    ]);
+
+    const open = [...container.querySelectorAll<HTMLButtonElement>('[role="tabpanel"] button')].at(
+      -1,
+    );
+    await act(async () => open?.click());
+    expect(project.open).toHaveBeenCalled();
+  });
+
+  it("lists the recent sites instead of the welcome once there are some", async () => {
+    await render(api([bakery]));
+
+    expect(container.textContent).not.toContain("Welcome to Webforge");
+    expect(container.querySelector('input[type="search"]')).not.toBeNull();
   });
 });

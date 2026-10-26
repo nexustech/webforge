@@ -139,7 +139,7 @@ describe("App's window layout", () => {
     expect(document.documentElement.dataset.theme).toBe("dark");
 
     await userEvent.click(screen.getByRole("menuitem", { name: "View" }));
-    await userEvent.click(screen.getByRole("menuitem", { name: "Use Light Theme" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "Use Light Appearance" }));
 
     expect(document.documentElement.dataset.theme).toBe("light");
     expect(savePreferences).toHaveBeenCalledWith({ theme: "light" });

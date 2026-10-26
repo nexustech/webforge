@@ -19,6 +19,7 @@ const bakery: TemplateSummary = {
   example: true,
   pages: 2,
   theme: "bistro",
+  thumbnail: null,
 };
 
 let container: HTMLDivElement;
@@ -119,6 +120,18 @@ describe("NewSiteDialog (2.14a, LF-11)", () => {
     await act(async () => radio(t("newSite.blank"))?.click());
     await create();
     expect(onCreate).toHaveBeenLastCalledWith({ name: t("site.untitledName"), theme: "dark" });
+  });
+
+  it("shows a template's thumbnail, on its card and in its details (2.14b)", async () => {
+    const thumbnail = "data:image/png;base64,iVBORw0KGgo=";
+    await render([{ ...bakery, thumbnail }]);
+
+    const card = radio(t("template.sample.name"))?.closest("label");
+    expect(card?.querySelector("img")?.getAttribute("src")).toBe(thumbnail);
+    await act(async () =>
+      button(t("newSite.detailsOf", { name: t("template.sample.name") }))?.click(),
+    );
+    expect(document.querySelector('[role="dialog"] img')?.getAttribute("src")).toBe(thumbnail);
   });
 
   it("shows a template's details, and Use this template chooses it", async () => {

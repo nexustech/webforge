@@ -15,7 +15,7 @@ function registryWith(mac: boolean) {
   registry.register({ id: "edit.delete", label: "Delete", menu: "edit", run: vi.fn() });
   registry.register({ id: COMMAND_IDS.commandBox, label: "Search Commands…", run: vi.fn() });
   // No keys of its own: not on the sheet.
-  registry.register({ id: COMMAND_IDS.theme, label: "Use Dark Theme", run: vi.fn() });
+  registry.register({ id: COMMAND_IDS.theme, label: "Use Dark Appearance", run: vi.fn() });
   return registry;
 }
 

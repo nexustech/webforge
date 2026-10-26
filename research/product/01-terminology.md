@@ -62,6 +62,7 @@
 | **Pair** (an AI app) | Connect an AI app to Webforge with a one-time code (F-AI-1) | Plain English | Authorise, register client |
 | **Template** | A ready-made starting site chosen at "New Site" | Universal | Starter, Kit |
 | **Theme** | Site-wide colours, fonts, corner style (daisyUI theme) | Google Sites, Adobe Express, Bootstrap Studio | Design tokens, Variables, Style guide |
+| **Appearance: Dark · Light** | The editor's own look, never the site's: Settings › Interface › Appearance, and View › Use Light/Dark Appearance (#452, 2.3b; confirmed by the product owner, 26 Oct 2026) | macOS and Windows ("Appearance") | Theme, Skin, Dark mode |
 | **Entrance animation** (with **Delay**) | How a section or element moves in as visitors scroll to it: Fade in, Slide up, Slide in from the left or right, Zoom in (F-DS-5, 2.12). Plays once; never for visitors who prefer less motion | Bootstrap Studio, Wix ("Entrance animation") | Scroll effect, Reveal, AOS, Transition |
 | **Button style: Theme's style · Filled · Second colour · Outline** | How a Button is drawn: as the theme's buttons are (new Buttons' default, PH2-14, #423), or its own choice, which the theme never changes | Plain English; "Theme's style" says the theme decides | Default, Auto, Inherit, Primary |
 | **Hover effect** | What a button (later a card) does under the pointer: Lift, Grow, Shadow (F-DS-5, 2.12) | Wix, Elementor | Hover state, Hover animation, Interaction |

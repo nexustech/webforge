@@ -262,7 +262,7 @@ test("a three-page site built from blank comes back as it was, page by page", as
     .click({ position: { x: box.width * 0.97, y: box.height - 2 } });
   await expect(right().getByRole("heading", { name: "Heading", exact: true })).toBeVisible();
   for (const theme of ["dark", "light"] as const) {
-    if (theme === "light") await chooseFromMenu(running(), page, "View", "Use Light Theme");
+    if (theme === "light") await chooseFromMenu(running(), page, "View", "Use Light Appearance");
     const path = testInfo.outputPath(`phase-1-shell-${theme}.png`);
     await page.screenshot({ path });
     await testInfo.attach(`Phase 1 shell, ${theme}`, { path, contentType: "image/png" });
