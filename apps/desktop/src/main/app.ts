@@ -1,7 +1,7 @@
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { t } from "@webforge/i18n";
-import type { SiteSnapshot, ThemeTokens } from "@webforge/model";
+import type { ThemeTokens } from "@webforge/model";
 import { readTemplates, type TemplateFolder } from "@webforge/templates/node";
 import { type CatalogueFont, FONT_CATALOGUE, fontFacesFor } from "@webforge/themes";
 import {
@@ -11,6 +11,7 @@ import {
 } from "../shared/export-worker-protocol.js";
 import { appEvents } from "../shared/ipc/app.js";
 import { MEDIA_SCHEME } from "../shared/ipc/media.js";
+import { siteEvents } from "../shared/ipc/site.js";
 import { openFailureMessage } from "../shared/open-failure.js";
 import { exposeForE2eTests, registerAiHandlers } from "./ai-ipc.js";
 import { AppLifecycle, closeThenExit } from "./app-lifecycle.js";
@@ -24,7 +25,7 @@ import { registerClipboardHandlers } from "./clipboard-ipc.js";
 import type { startCrashReports } from "./crash-wiring.js";
 import { createNativeDialogs } from "./dialogs.js";
 import type { E2eDialog } from "./e2e-dialogs.js";
-import { registerExportHandlers } from "./export-ipc.js";
+import { type RunExport, registerExportHandlers } from "./export-ipc.js";
 import { createExportRunner } from "./export-worker-client.js";
 import { registerFailureLog } from "./failure-ipc.js";
 import { createFlushOnClose } from "./flush-on-close.js";
@@ -273,7 +274,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     crashReports.watchWorker(electron.utilityProcess.fork(exportWorkerScript, [], { serviceName }));
   // One export worker while the site is open, keeping the images it encoded in memory (R15).
   const exports = createExportRunner(() => forkWorker("Webforge export"));
-  const runExport = async (snapshot: SiteSnapshot, destination: string) => {
+  const runExport: RunExport = async (snapshot, destination, { signal, onProgress }) => {
     const families = await fonts.downloadedFamiliesOf(snapshot.theme);
     return exports.run(
       {
@@ -286,7 +287,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
         }),
         families,
       },
-      { readMedia: (hash) => projectSession.readMedia(hash) },
+      { readMedia: (hash) => projectSession.readMedia(hash), signal, onProgress },
     );
   };
 
@@ -428,7 +429,9 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
         if (lifecycle.quitting) app.quit();
       },
     });
-    registerExportHandlers(ipcMain, isTrustedSender, dialogs.export, runExport);
+    registerExportHandlers(ipcMain, isTrustedSender, dialogs.export, runExport, (progress) =>
+      lifecycle.mainWindow()?.webContents.send(siteEvents.exportProgress.channel, progress),
+    );
     registerTemplatesHandlers(ipcMain, isTrustedSender, templates);
     // AI apps' requests go to the open site's window (F-AI-1); the MCP server (4.9) asks through it.
     const ai = registerAiHandlers(ipcMain, isTrustedSender, () => lifecycle.mainWindow());

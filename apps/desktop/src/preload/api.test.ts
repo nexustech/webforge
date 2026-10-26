@@ -262,6 +262,21 @@ describe("createWebforgeApi app events", () => {
 
     expect(save).toHaveBeenCalledTimes(1);
   });
+
+  it("passes on an export's progress, ignoring malformed messages, and cancels it (3.1)", async () => {
+    const { api, invoke, listeners } = withEvents();
+    const listener = vi.fn();
+    const stop = api.site.onExportProgress(listener);
+
+    listeners.get("site:export-progress")?.({ stage: "pages", done: 0, total: 2 });
+    listeners.get("site:export-progress")?.({ stage: "pages", path: "/home/sam" });
+    await api.site.cancelExport();
+
+    expect(listener.mock.calls).toEqual([[{ stage: "pages", done: 0, total: 2 }]]);
+    expect(invoke).toHaveBeenCalledWith("site:cancel-export");
+    stop();
+    expect(listeners.has("site:export-progress")).toBe(false);
+  });
 });
 
 describe("createWebforgeApi AI requests (4.8)", () => {

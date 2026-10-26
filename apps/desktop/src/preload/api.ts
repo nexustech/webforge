@@ -33,7 +33,7 @@ export function createWebforgeApi(
     media: mediaApi(call, pathOf),
     prefs: prefsApi(call),
     project: projectApi(call),
-    site: siteApi(call),
+    site: siteApi(call, subscribe),
     templates: templatesApi(call),
   };
 }
