@@ -61,6 +61,7 @@ export const shared = {
   "colour.custom": "Custom",
   "colour.customValue": "Custom colour {hex}, off the theme",
   "colour.customHex": "Custom colour",
+  "colour.hexCode": "hex code",
   "colour.offTheme": "Off the theme: changing the theme leaves this colour as it is.",
   "colour.useTheme": "Use a theme colour",
   "colour.shade": "Shade",
