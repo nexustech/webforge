@@ -1,8 +1,8 @@
 import { randomBytes } from "node:crypto";
-import { rm, stat, writeFile } from "node:fs/promises";
+import { open, rm, stat } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
 import { sitePathSchema } from "@webforge/model";
-import { type Zippable, zipSync } from "fflate";
+import { Zip, ZipDeflate, ZipPassThrough } from "fflate";
 import { EXPORT_MARKER, exportMarkerFor, renameWithRetry, WriteError } from "./write.js";
 
 /** Files that are compressed already: stored as they are, which is faster and no bigger. */
@@ -11,31 +11,18 @@ const STORED = /\.(?:webp|jpe?g|png|gif|woff2|pdf|docx|xlsx|pptx|odt|ods|odp|zip
 /** Every entry's date: a fixed one, so the same site always makes the same ZIP. */
 const ENTRY_DATE = new Date(2000, 0, 1);
 
-/**
- * The site's files as a ZIP (F-EX-1, 3.3), the export's marker among them so that unpacking it and
- * exporting there again replaces it like any earlier export.
- */
-export function zipSite(files: ReadonlyMap<string, Uint8Array>): Uint8Array {
-  const entries: Zippable = {};
-  for (const [path, data] of files) {
-    entries[path] = [data, { level: STORED.test(path) ? 0 : 6, mtime: ENTRY_DATE }];
-  }
-  entries[EXPORT_MARKER] = [
-    new TextEncoder().encode(exportMarkerFor(files.keys())),
-    { level: 6, mtime: ENTRY_DATE },
-  ];
-  return zipSync(entries);
-}
-
 /** Throws a `cancelled` {@link WriteError} once `signal` is aborted. */
 function stopIfCancelled(signal: AbortSignal | undefined): void {
   if (signal?.aborted === true) throw new WriteError("cancelled", "The export was cancelled");
 }
 
 /**
- * Writes the site as a ZIP at `destination`, a file the person chose in the save dialog (which
- * asked before replacing one). It's written beside it first and then moved into place, so a
- * failure or a cancel leaves what was there as it was.
+ * Writes the site as a ZIP at `destination` (F-EX-1, 3.3), a file the person chose in the save
+ * dialog (which asked before replacing one). The export's marker goes in too, so unpacking it and
+ * exporting there again replaces it like any earlier export.
+ *
+ * It's written beside the destination one file at a time, so it never holds a second copy of the
+ * site in memory, and then moved into place: a failure or a cancel leaves what was there as it was.
  */
 export async function writeSiteZip(
   files: ReadonlyMap<string, Uint8Array>,
@@ -52,14 +39,42 @@ export async function writeSiteZip(
     throw new WriteError("write-failed", "The destination is a folder");
   }
   stopIfCancelled(signal);
-  const zip = zipSite(files);
   const staging = join(
     dirname(destination),
     `.${basename(destination)}.webforge-new-${randomBytes(4).toString("hex")}`,
   );
   try {
-    await writeFile(staging, zip);
-    stopIfCancelled(signal);
+    const handle = await open(staging, "w");
+    try {
+      // fflate hands each piece over as it makes it; they're written in order, one file's worth at
+      // a time.
+      let written: Promise<unknown> = Promise.resolve();
+      let failed: Error | null = null;
+      const zip = new Zip((error, piece) => {
+        if (error !== null) failed = error;
+        else written = written.then(() => handle.write(piece));
+      });
+      const entries: [string, Uint8Array][] = [
+        ...files,
+        [EXPORT_MARKER, new TextEncoder().encode(exportMarkerFor(files.keys()))],
+      ];
+      for (const [path, data] of entries) {
+        stopIfCancelled(signal);
+        const entry = STORED.test(path)
+          ? new ZipPassThrough(path)
+          : new ZipDeflate(path, { level: 6 });
+        entry.mtime = ENTRY_DATE;
+        zip.add(entry);
+        entry.push(data, true);
+        await written;
+        if (failed !== null) throw failed;
+      }
+      zip.end();
+      await written;
+      if (failed !== null) throw failed;
+    } finally {
+      await handle.close();
+    }
     await renameWithRetry(staging, destination);
   } catch (error) {
     await rm(staging, { force: true });

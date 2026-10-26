@@ -4,7 +4,7 @@ import { tempDirFactory } from "@webforge/test-utils";
 import { unzipSync } from "fflate";
 import { describe, expect, it } from "vitest";
 import { EXPORT_MARKER } from "./write.js";
-import { writeSiteZip, zipSite } from "./zip.js";
+import { writeSiteZip } from "./zip.js";
 
 const tempDir = tempDirFactory("webforge-zip-");
 
@@ -15,9 +15,15 @@ const site = (version: string) =>
     ["assets/img/shop-640.webp", new Uint8Array([0x52, 0x49, 0x46, 0x46])],
   ]);
 
-describe("zipSite", () => {
-  it("holds every file, and the export's marker listing them", () => {
-    const entries = unzipSync(zipSite(site("v1")));
+describe("writeSiteZip", { timeout: 20_000 }, () => {
+  const written = async (version: string) => {
+    const destination = join(tempDir(), "my-site.zip");
+    await writeSiteZip(site(version), destination);
+    return new Uint8Array(readFileSync(destination));
+  };
+
+  it("holds every file, and the export's marker listing them", async () => {
+    const entries = unzipSync(await written("v1"));
 
     expect(Object.keys(entries).sort()).toEqual([
       EXPORT_MARKER,
@@ -26,18 +32,17 @@ describe("zipSite", () => {
       "index.html",
     ]);
     expect(new TextDecoder().decode(entries["index.html"])).toBe("<p>v1</p>");
+    expect(entries["assets/img/shop-640.webp"]).toEqual(new Uint8Array([0x52, 0x49, 0x46, 0x46]));
     expect(JSON.parse(new TextDecoder().decode(entries[EXPORT_MARKER]))).toEqual({
       generator: "Webforge",
       files: ["assets/img/shop-640.webp", "company/about.html", "index.html"],
     });
   });
 
-  it("is the same for the same site", () => {
-    expect(zipSite(site("v1"))).toEqual(zipSite(site("v1")));
+  it("is the same file for the same site", async () => {
+    expect(await written("v1")).toEqual(await written("v1"));
   });
-});
 
-describe("writeSiteZip", { timeout: 20_000 }, () => {
   it("writes the ZIP, replacing the one the person chose to replace", async () => {
     const parent = tempDir();
     const destination = join(parent, "my-site.zip");

@@ -32,4 +32,4 @@ export type {
 export { compileCodecs, TAILWIND_STYLESHEETS } from "./resources.js";
 export type { WriteErrorCode } from "./write.js";
 export { EXPORT_MARKER, WriteError, writeSiteFolder } from "./write.js";
-export { writeSiteZip, zipSite } from "./zip.js";
+export { writeSiteZip } from "./zip.js";
