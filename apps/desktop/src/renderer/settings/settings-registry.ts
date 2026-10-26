@@ -26,7 +26,7 @@ type SettingsEntry = {
 };
 
 /** A request to open the Settings dialog on one section, and what to tell when it closes. */
-export type SettingsShowRequest = {
+type SettingsShowRequest = {
   /** The part's id ("site"), and the id of the section (its form's group) to open on. */
   readonly part: string;
   readonly group: string;

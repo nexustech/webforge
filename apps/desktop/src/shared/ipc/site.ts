@@ -35,7 +35,7 @@ const exportDocumentSchema = z.strictObject({
  * developer files* (X6), and whether to ask for the web address while it's empty (X3). The site
  * remembers them for its next export.
  */
-export const exportChoicesSchema = z.strictObject({
+const exportChoicesSchema = z.strictObject({
   format: z.enum(["folder", "zip"]),
   minify: z.boolean(),
   developerFiles: z.boolean(),
@@ -79,9 +79,6 @@ export const exportWarningSchema = z.strictObject({
   page: z.string().max(1024),
   detail: z.string().max(2048),
 });
-
-/** A problem the export found that didn't stop it. */
-export type ExportWarning = z.infer<typeof exportWarningSchema>;
 
 /** At most this many warnings reach the report; it says how many more there were. */
 export const MAX_REPORTED_WARNINGS = 500;

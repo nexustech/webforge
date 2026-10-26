@@ -1,7 +1,7 @@
 import type { ExportChoices } from "../../shared/ipc/site.js";
 
 /** How the person answered "Add your site's web address?" (X3); `cancel` closes it unanswered. */
-export type WebAddressAnswer = "add" | "skip" | "skip-always" | "cancel";
+type WebAddressAnswer = "add" | "skip" | "skip-always" | "cancel";
 
 /** What the export report shows (07), already translated where it's text. */
 export type ExportReport = {
