@@ -150,9 +150,10 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
   app.enableSandbox();
 
   // Media images (1.16) and the site's fonts (2.2) reach the editor through schemes of their own,
-  // which must be known before "ready". Fonts load in CORS mode.
+  // which must be known before "ready". Fonts load in CORS mode; so can images, whose pixels Theme
+  // Studio reads for a palette from an image (2.3b, PG-2).
   protocol.registerSchemesAsPrivileged([
-    { scheme: MEDIA_SCHEME, privileges: { standard: true, secure: true } },
+    { scheme: MEDIA_SCHEME, privileges: { standard: true, secure: true, corsEnabled: true } },
     { scheme: FONT_SCHEME, privileges: { standard: true, secure: true, corsEnabled: true } },
   ]);
 
@@ -239,6 +240,13 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
 
   const fonts = siteFonts(electron);
 
+  // Copied elements, with their images' bytes kept in the user's data while the clipboard holds
+  // them (1.25, R13d).
+  const elementClipboard = createElementClipboard(
+    systemClipboard(electron),
+    join(app.getPath("userData"), "clipboard"),
+  );
+
   // The templates New Site offers (2.14a), outside app.asar: in the packaged app's resources, or
   // where the build copied them while developing. Read once, when first listed or used.
   const templatesDir = app.isPackaged
@@ -323,6 +331,10 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       window.show();
     });
     rememberWindowState(window, preferences);
+    // Something copied in another app replaces the copied elements: their images go (R13d).
+    window.on("focus", () => {
+      void elementClipboard.forgetIfReplaced();
+    });
     // Autosave writes the last changes before the window closes (P2).
     lifecycle.flushOnClose?.install(window);
     const load =
@@ -393,12 +405,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       app.getPreferredSystemLanguages(),
     );
     registerMediaHandlers(ipcMain, isTrustedSender, projectSession, dialogs.media);
-    registerClipboardHandlers(
-      ipcMain,
-      isTrustedSender,
-      createElementClipboard(systemClipboard(electron), join(app.getPath("userData"), "clipboard")),
-      projectSession,
-    );
+    registerClipboardHandlers(ipcMain, isTrustedSender, elementClipboard, projectSession);
     crashReports.registerHandlers(ipcMain, isTrustedSender);
     registerFailureLog(ipcMain, isTrustedSender);
     lifecycle.flushOnClose = createFlushOnClose(ipcMain, isTrustedSender, {
@@ -463,6 +470,9 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     event.preventDefault();
     if (lifecycle.exiting) return;
     lifecycle.exiting = true;
+    // No site's images stay on disk outside it once Webforge has quit (R13d). Not a second launch's
+    // quit: the images are the running Webforge's, in the same user data.
+    if (primaryInstance) elementClipboard.forgetKept();
     void closeThenExit({
       close: () => projectSession.close(),
       // The site is saved and closed: a launch from now on opens Webforge itself, rather than

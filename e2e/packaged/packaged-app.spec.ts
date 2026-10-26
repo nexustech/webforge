@@ -1,7 +1,7 @@
 import { type ChildProcess, spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { once } from "node:events";
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type Browser, chromium, expect, type Page, test } from "@playwright/test";
@@ -219,4 +219,25 @@ test("ships the templates beside app.asar, and New Site lists them (2.14a)", asy
   );
 
   expect(listed.map((template) => template.id)).toEqual(["sample", "personal"]);
+});
+
+// Last: it quits the app.
+test("leaves no copied images in the user's data once it has quit (R13d)", async () => {
+  test.skip(child === undefined, "Needs the running packaged app");
+  const running = child;
+  if (running === undefined) return;
+  // As a copy keeps an image's bytes for pasting into another site (1.25).
+  const kept = join(userData, "clipboard");
+  mkdirSync(kept, { recursive: true });
+  writeFileSync(join(kept, "a".repeat(64)), "bytes");
+
+  // Closed as the person closes it, so Webforge quits through will-quit, not a kill.
+  const exited = once(running, "exit");
+  await page.evaluate(() => {
+    setTimeout(() => window.close(), 0);
+  });
+  const [code] = (await exited) as [number | null];
+
+  expect(code).toBe(0);
+  expect(existsSync(kept)).toBe(false);
 });

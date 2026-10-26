@@ -1,12 +1,14 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { ProjectStore } from "@webforge/storage";
+import { heroPhoto } from "@webforge/test-utils";
 import { themePreset } from "@webforge/themes";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
 import { chooseFromMenu } from "./menus.js";
 import type { RendererWindow } from "./sites.js";
+import { stubFileDialogs } from "./sites.js";
 
 // The Theme tab (2.3a): switching the theme asks first, saying how many pages it changes, and is
 // one undo step; a colour hard to read says so under it (WCAG AA). Theme Studio (2.3b): opened
@@ -132,4 +134,40 @@ test("Theme Studio opens from the View menu, switches theme from a card, and und
     "true",
   );
   await expect.poll(async () => (await themeOf(page)).preset).toBe("light");
+});
+
+test("a photo in Media proposes brand colours, read on this computer, used as one step (PG-2)", async () => {
+  const page = await openTheme();
+  const photo = join(dir, "Shop front.jpg");
+  writeFileSync(photo, heroPhoto());
+  await stubFileDialogs(running(), photo);
+  await page.getByRole("tab", { name: "Media" }).click();
+  await page
+    .getByRole("region", { name: "Media" })
+    .getByRole("button", { name: "Add images or files…" })
+    .click();
+  await expect(
+    page.getByRole("region", { name: "Media" }).getByRole("button", { name: "Shop front.jpg" }),
+  ).toBeVisible();
+
+  await chooseFromMenu(running(), page, "View", "Theme Studio…");
+  const studio = page.getByRole("dialog", { name: "Theme Studio" });
+  await studio.getByRole("tab", { name: "Colours" }).click();
+  await studio.getByRole("button", { name: "Colours from an image…" }).click();
+  const picker = page.getByRole("dialog", { name: "Choose an image" });
+  await expect(picker.getByRole("option", { name: /Shop front/ })).toBeVisible();
+  await page.keyboard.press("Enter");
+
+  // The canvas could read the thumbnail (Media's scheme allows CORS): a proposal, not a problem.
+  await expect(studio.getByRole("list", { name: "Colours from Shop front.jpg" })).toBeVisible();
+  const before = (await themeOf(page)).colors.primary;
+  await studio.getByRole("button", { name: "Use These Colours" }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "Use Colours" }).click();
+  await expect.poll(async () => (await themeOf(page)).colors.primary).not.toEqual(before);
+
+  await page.keyboard.press("Escape");
+  await page.getByRole("tab", { name: "Undo History" }).click();
+  await expect(page.locator(".undo-history__step").first()).toHaveText(
+    "Changed brand colours from 'Shop front.jpg'",
+  );
 });

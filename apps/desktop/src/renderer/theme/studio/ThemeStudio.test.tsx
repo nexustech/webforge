@@ -28,10 +28,15 @@ function setUp(section: StudioSection = "themes") {
 }
 
 describe("Theme Studio (2.3b, F-DS-7)", () => {
-  it("opens from the Theme tab, as a large dialog in the window, and closes again", async () => {
+  it("opens from the Theme tab's button, as a large dialog in the window, and closes again", async () => {
     const session = sessionWith();
     const studio = createStudio();
-    render(<ThemePanel session={session} studio={studio} />);
+    render(
+      <>
+        <ThemePanel session={session} studio={studio} />
+        <ThemeStudio session={session} studio={studio} />
+      </>,
+    );
 
     await userEvent.click(screen.getByRole("button", { name: "Open Theme Studio" }));
     const dialog = screen.getByRole("dialog", { name: "Theme Studio" });
