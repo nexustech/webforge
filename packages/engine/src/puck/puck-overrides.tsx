@@ -109,9 +109,19 @@ export function createPuckOverrides(options: PuckOverridesOptions): Partial<Over
       if (!area) {
         return;
       }
-      const observer = new ResizeObserver(([entry]) => {
-        if (entry !== undefined && entry.contentRect.width > 0) view.fit(entry.contentRect.width);
-      });
+      const fit = () => {
+        const style = area.ownerDocument.defaultView?.getComputedStyle(area);
+        const px = (name: string) => Number.parseFloat(style?.getPropertyValue(name) ?? "") || 0;
+        const room =
+          area.getBoundingClientRect().width -
+          px("padding-left") -
+          px("padding-right") -
+          px("border-left-width") -
+          px("border-right-width");
+        if (room > 0) view.fit(room);
+      };
+      fit();
+      const observer = new ResizeObserver(fit);
       observer.observe(area);
       return () => observer.disconnect();
     }, []);

@@ -128,28 +128,36 @@ test("keeps a zoom above Fit, though the page then overflows the canvas (#134)",
 
 test("fills the canvas in Desktop view as the window grows and shrinks, and keeps fixed widths (PH2-18)", async () => {
   const width = toolbar().getByRole("spinbutton", { name: "Canvas width in pixels" });
+  /** The readout's width, once it and the page agree: the window may resize in steps. */
+  const settledWidth = async () => {
+    await expect
+      .poll(async () => (await readout().textContent())?.startsWith(`${await pageWidth()} × `))
+      .toBe(true);
+    return pageWidth();
+  };
+
   await windowWidth(1800);
   await expect.poll(pageWidth).toBeGreaterThan(1100);
-  const wide = await pageWidth();
-  await expect(readout()).toHaveText(new RegExp(`^${wide} × [0-9]+ @ 100%$`));
+  const wide = await settledWidth();
+  await expect(readout()).toHaveText(/ @ 100%$/);
   await expect(width).toHaveValue(String(wide));
 
   await windowWidth(2200);
   await expect.poll(pageWidth).toBeGreaterThan(wide);
-  const wider = await pageWidth();
-  await expect(readout()).toHaveText(new RegExp(`^${wider} × [0-9]+ @ 100%$`));
+  await settledWidth();
+  await expect(readout()).toHaveText(/ @ 100%$/);
 
   // A window narrower than the desktop layout: Desktop stays 1024 px, zoomed out to fit.
   await windowWidth(1100);
   await expect.poll(pageWidth).toBe(1024);
-  await expect(readout()).toHaveText(/^1024 × \d+ @ [1-9]\d%$/);
+  await expect(readout()).toHaveText(/^1024 × [0-9]+ @ [1-9][0-9]%$/);
 
   // A fixed width from the size menu keeps its width as the window changes.
   await readout().click();
   await page.getByRole("menuitem", { name: "Desktop (1440)" }).click();
   await expect.poll(pageWidth).toBe(1440);
   await windowWidth(2200);
-  await expect(readout()).toHaveText(/^1440 × \d+ @ \d+%$/);
+  await expect(readout()).toHaveText(/^1440 × [0-9]+ @ [0-9]+%$/);
   expect(await pageWidth()).toBe(1440);
   await expect(steps()).toHaveText(["Opened page"]);
 });
