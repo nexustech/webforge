@@ -162,6 +162,38 @@ test("fills the canvas in Desktop view as the window grows and shrinks, and keep
   await expect(steps()).toHaveText(["Opened page"]);
 });
 
+test("lays a long page out in Desktop view without overflowing sideways, its scrollbar inside the frame (PH2-18)", async () => {
+  // Long enough to scroll: four Heroes after the starter page's own section.
+  const left = page.getByRole("region", { name: "Left panels" });
+  await left.getByRole("tab", { name: "Add", exact: true }).click();
+  await left.getByRole("tab", { name: "Sections" }).click();
+  for (let hero = 0; hero < 4; hero += 1) {
+    await left.getByRole("list", { name: "Heroes" }).getByRole("button", { name: "Hero" }).click();
+  }
+  await windowWidth(1700);
+  await expect.poll(pageWidth).toBeGreaterThan(1100);
+
+  const frame = await canvas()
+    .locator("body")
+    .evaluate((body) => {
+      const root = body.ownerDocument.documentElement;
+      return {
+        scrolls: root.scrollHeight > root.clientHeight,
+        overflowsSideways: root.scrollWidth > root.clientWidth,
+        width: body.ownerDocument.defaultView?.innerWidth ?? 0,
+      };
+    });
+  // The frame scrolls itself, like a browser window; nothing spills sideways.
+  expect(frame).toMatchObject({ scrolls: true, overflowsSideways: false });
+  // The box Desktop measures never scrolls, so its room, and the page's width, stay put.
+  const room = await page.evaluate(() => {
+    const inner = document.querySelector('[class*="PuckCanvas-inner"]') as HTMLElement;
+    return { scrolls: inner.scrollHeight > inner.clientHeight, width: inner.clientWidth };
+  });
+  expect(room).toEqual({ scrolls: false, width: frame.width });
+  await expect(readout()).toHaveText(new RegExp(`^${frame.width} × [0-9]+ @ 100%$`));
+});
+
 /** The canvas's scale, from the size readout ("1280 × 900 @ 50%"). */
 async function zoom(): Promise<number> {
   const readout = await toolbar()

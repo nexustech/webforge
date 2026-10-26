@@ -14,9 +14,16 @@ const AXE_SOURCE = readFileSync(
   "utf8",
 );
 
-/** What axe found on the canvas: its violations, and how many rules passed. */
+/**
+ * What axe found on the canvas: its violations, each with the elements it found them on (so a
+ * failure says where), and how many rules passed.
+ */
 type CanvasAxeResults = {
-  readonly violations: readonly { readonly id: string; readonly help: string }[];
+  readonly violations: readonly {
+    readonly id: string;
+    readonly help: string;
+    readonly targets: readonly string[];
+  }[];
   readonly passes: number;
 };
 
@@ -39,7 +46,7 @@ export async function canvasAxe(page: Page): Promise<CanvasAxeResults> {
             context: Document,
             options: object,
           ): Promise<{
-            violations: { id: string; help: string }[];
+            violations: { id: string; help: string; nodes: { target: unknown[] }[] }[];
             passes: unknown[];
           }>;
         };
@@ -48,7 +55,11 @@ export async function canvasAxe(page: Page): Promise<CanvasAxeResults> {
         runOnly: { type: "tag", values: tags },
       });
       return {
-        violations: violations.map(({ id, help }) => ({ id, help })),
+        violations: violations.map(({ id, help, nodes }) => ({
+          id,
+          help,
+          targets: nodes.map((node) => node.target.map(String).join(" ")),
+        })),
         passes: passes.length,
       };
     },
