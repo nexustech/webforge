@@ -1,9 +1,8 @@
 import { syncDraft } from "@webforge/history";
 import { t } from "@webforge/i18n";
-import { pageDocSchema } from "@webforge/model";
+import { findNode, pageDocSchema } from "@webforge/model";
 import { currentPage, type EditorSession } from "../editor/editor-session.js";
 import { labelFor } from "../editor/labels.js";
-import { findNode } from "../editor/nodes.js";
 
 // Hooks for the large-page performance check (spec/04 item 0.4, ADR 0007). Only builds made with
 // `electron-vite build --mode perf` load this module (see App.tsx); normal builds never include it.

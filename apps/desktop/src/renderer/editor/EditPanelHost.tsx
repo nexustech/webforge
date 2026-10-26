@@ -12,6 +12,7 @@ import {
   type Breakpoint,
   boxValueSchema,
   colorRefSchema,
+  findNode,
   imageValueSchema,
   type NodeAdvanced,
   type NodeDoc,
@@ -46,7 +47,6 @@ import {
   listChangeLabel,
   listItems,
 } from "./list-edit.js";
-import { findNode } from "./nodes.js";
 import {
   breakpointOf,
   DEVICES,

@@ -4,6 +4,7 @@ import {
   copiedNodeId,
   copyHolding,
   expandSharedCopies,
+  findNode,
   isSharedCopy,
   type NodeDoc,
   newId,
@@ -20,7 +21,6 @@ import {
 } from "@webforge/model";
 import { updateField } from "../editor/apply-patch.js";
 import type { EditorSession } from "../editor/editor-session.js";
-import { findNode } from "../editor/nodes.js";
 
 /**
  * Shared sections in the editor (1.29, F-ED-23): saving a section as one, finding the copy an

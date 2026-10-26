@@ -1,6 +1,7 @@
 import { t } from "@webforge/i18n";
 import {
   copiedNodeId,
+  findNode,
   MAX_COPIED_NODES,
   type MediaMeta,
   mediaItem,
@@ -9,6 +10,7 @@ import {
   newSharedCopy,
   pageAnchors,
   pastedCopies,
+  removeNode,
 } from "@webforge/model";
 import {
   holdsOverfullSlot,
@@ -25,7 +27,6 @@ import type { MediaImportResult } from "../../shared/ipc-contract.js";
 import { type AddTarget, addTarget, insertAt } from "../add/index.js";
 import { currentPage, type EditorSession } from "../editor/editor-session.js";
 import { labelFor, quotedElementName } from "../editor/labels.js";
-import { findNode, removeNode } from "../editor/nodes.js";
 import type { SharedPlace } from "../editor/shared-confirmations.js";
 import { type SharedRegion, sharedRegionOf, shownLayout } from "../editor/shared-layout.js";
 import { reportFailure } from "../log.js";
