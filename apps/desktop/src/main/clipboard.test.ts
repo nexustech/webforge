@@ -359,17 +359,17 @@ describe("systemClipboard", () => {
   const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
   const uri = "file:///C:/shop.jpg";
 
-  it("tells whether it holds elements from the items' types, without reading them", async () => {
-    const getType = vi.fn(async () => new Blob([]));
+  it("tells whether it holds elements by asking for their format alone, reading nothing", async () => {
+    const read = vi.fn(async () => []);
     const clipboard = (types: string[]) =>
       systemClipboard({
-        clipboard: { read: async () => [{ types, getType }] },
+        clipboard: { read, has: async (type: string) => types.includes(type) },
         ClipboardItem: class {},
       } as never);
 
     expect(await clipboard(["web application/x-webforge-elements"]).holdsElements()).toBe(true);
     expect(await clipboard(["text/plain", "image/png"]).holdsElements()).toBe(false);
-    expect(getType).not.toHaveBeenCalled();
+    expect(read).not.toHaveBeenCalled();
   });
 
   it("reads elements first, then copied files, then an image", async () => {

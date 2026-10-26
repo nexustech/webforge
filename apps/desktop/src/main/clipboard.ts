@@ -148,9 +148,9 @@ export function systemClipboard(
           : webAddress(await text.text());
       return address === undefined ? { kind: "none" } : { kind: "address", address };
     },
-    // Only the items' types are listed: no content is read.
-    holdsElements: async () =>
-      (await clipboard.read()).some((item) => item.types.includes(ELEMENTS_FORMAT)),
+    // Asks for the one format: reading the clipboard's items would fetch all it holds, an image
+    // too, each time the window is focused.
+    holdsElements: () => clipboard.has(ELEMENTS_FORMAT),
   };
 }
 

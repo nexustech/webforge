@@ -128,7 +128,11 @@ function fakeElectron(options: { primary?: boolean } = {}) {
     app,
     BrowserWindow: FakeWindow,
     ClipboardItem: class {},
-    clipboard: { read: vi.fn(async () => []), write: vi.fn(async () => undefined) },
+    clipboard: {
+      read: vi.fn(async () => []),
+      write: vi.fn(async () => undefined),
+      has: vi.fn(async () => false),
+    },
     dialog,
     ipcMain: {
       handle: (channel: string, handler: Listener) => {
