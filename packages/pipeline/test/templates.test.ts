@@ -7,19 +7,67 @@ import { readTemplates } from "@webforge/templates/node";
 import { themePreset } from "@webforge/themes";
 import { beforeAll, describe, expect, it } from "vitest";
 import { buildSite } from "../src/build.js";
-import { createMemoryImageCache } from "../src/memory-image-cache.js";
 import { loadNodeResources } from "../src/node-resources.js";
-import type { PipelineResources } from "../src/resources.js";
+import type { ImageCache, PipelineResources } from "../src/resources.js";
 
 // Every template's export, as a site made from it starts (3.3): its pages as reviewed golden files,
 // and the files it writes. A change to a component, a theme or the pipeline that changes an
 // exported page shows up here, to review and accept with `vitest -u`.
+//
+// A page depends on its images' sizes, not on their encoded bytes. So the image cache here answers
+// each image's plan from its file's header, and gives stand-in bytes for its encodings: the pages
+// are exactly what a real export writes, without encoding some 60 photos (about 145 s). The
+// encodings themselves are tested with the sample site (build.test.ts) and in images.test.ts. If
+// the cache's keys or plan change, nothing is found here and the build encodes for real: slower,
+// never wrong.
 
 let resources: PipelineResources;
 
 beforeAll(async () => {
-  resources = { ...(await loadNodeResources()), imageCache: createMemoryImageCache(512 << 20) };
+  resources = await loadNodeResources();
 }, 60_000);
+
+/** An image's width and height from its PNG or JPEG header; `undefined` for anything else. */
+function sizeOf(data: Uint8Array): { width: number; height: number } | undefined {
+  const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
+  if (data[0] === 0x89 && data[1] === 0x50) {
+    // PNG: IHDR is the first chunk. A colour type with alpha could be transparent: not answered.
+    const colourType = data[25];
+    if (colourType === 4 || colourType === 6) return undefined;
+    return { width: view.getUint32(16), height: view.getUint32(20) };
+  }
+  if (data[0] === 0xff && data[1] === 0xd8) {
+    let at = 2;
+    while (at + 9 < data.length) {
+      const marker = data[at + 1] ?? 0;
+      const length = view.getUint16(at + 2);
+      const isFrame = marker >= 0xc0 && marker <= 0xcf && ![0xc4, 0xc8, 0xcc].includes(marker);
+      if (isFrame) return { height: view.getUint16(at + 5), width: view.getUint16(at + 7) };
+      at += 2 + length;
+    }
+  }
+  return undefined;
+}
+
+/** A cache that knows `images`' plans, by SHA-256, and stands in for every encoding. */
+function plansOnly(images: ReadonlyMap<string, Uint8Array>): ImageCache {
+  const plans = new Map(
+    [...images].flatMap(([hash, data]) => {
+      const size = sizeOf(data);
+      return size === undefined ? [] : [[hash, { ...size, transparent: false }] as const];
+    }),
+  );
+  return {
+    async get(key) {
+      const [part, crop, hash] = key.split("/").reverse();
+      if (crop !== "whole" || hash === undefined || !plans.has(hash)) return undefined;
+      return part === "plan"
+        ? new TextEncoder().encode(JSON.stringify(plans.get(hash)))
+        : new Uint8Array([0]);
+    },
+    async set() {},
+  };
+}
 
 describe.each(readTemplates().map((folder) => [folder.template.id, folder] as const))(
   "the %s template's export",
@@ -37,7 +85,10 @@ describe.each(readTemplates().map((folder) => [folder.template.id, folder] as co
         ]),
       );
 
-      const built = await buildSite(siteToSnapshot(site, blobs), siteLibrary, resources);
+      const built = await buildSite(siteToSnapshot(site, blobs), siteLibrary, {
+        ...resources,
+        imageCache: plansOnly(blobs),
+      });
 
       expect([...built.files.keys()]).toMatchSnapshot();
       expect(built.report.warnings).toEqual([]);
@@ -47,6 +98,6 @@ describe.each(readTemplates().map((folder) => [folder.template.id, folder] as co
           `golden/templates/${id}/${path}`,
         );
       }
-    }, 120_000);
+    }, 60_000);
   },
 );
