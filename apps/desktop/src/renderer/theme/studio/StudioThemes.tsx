@@ -106,7 +106,8 @@ export function StudioThemes({
   return (
     <ul
       aria-label={t("theme.studio.section.themes")}
-      className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(10.5rem,1fr))] gap-2 p-0"
+      // Room around the cards for the chosen one's ring.
+      className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(10.5rem,1fr))] gap-2 p-1"
     >
       {THEME_PRESETS.map((preset) => (
         <li key={preset.preset} className="flex">

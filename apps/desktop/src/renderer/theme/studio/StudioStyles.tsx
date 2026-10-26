@@ -61,7 +61,7 @@ function TokenRow({
           >
             <span
               aria-hidden
-              className="block size-7 border border-border-strong bg-panel"
+              className="block h-7 w-11 border border-border-strong bg-panel"
               style={sampleStyle(control, each)}
             />
             {valueLabel(each)}
