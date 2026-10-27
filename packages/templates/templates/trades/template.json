@@ -429,7 +429,8 @@
                       "label": "average review"
                     }
                   }
-                ]
+                ],
+                "lookCase": "uppercase"
               }
             },
             {
@@ -521,7 +522,12 @@
                 "buttonLink": {
                   "kind": "phone",
                   "number": "+44 1632 960 789"
-                }
+                },
+                "backgroundImage": {
+                  "mediaId": "trades-van"
+                },
+                "overlay": "60",
+                "overlayColor": "neutral"
               }
             }
           ]
@@ -605,7 +611,8 @@
                       "text": "<p>Electrical reports for homeowners, landlords and buyers.</p>"
                     }
                   }
-                ]
+                ],
+                "hover": "lift"
               }
             },
             {

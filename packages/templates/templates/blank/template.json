@@ -374,14 +374,16 @@
                     "props": {
                       "text": "Welcome",
                       "size": "large",
-                      "id": "heading-1"
+                      "id": "heading-1",
+                      "lookAlign": "centre"
                     }
                   },
                   {
                     "type": "Text",
                     "props": {
                       "text": "<p>Say in a sentence or two who you are and what you offer.</p><p>Then add sections from the Add panel: photos, opening hours, prices, a contact form.</p>",
-                      "id": "text-2"
+                      "id": "text-2",
+                      "lookAlign": "centre"
                     }
                   }
                 ],

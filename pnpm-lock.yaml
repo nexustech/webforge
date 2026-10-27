@@ -1079,6 +1079,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 24.19.2
+      '@webforge/site-check':
+        specifier: workspace:*
+        version: link:../site-check
       '@webforge/site-components':
         specifier: workspace:*
         version: link:../site-components
