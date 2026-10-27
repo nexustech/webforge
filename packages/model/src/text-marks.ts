@@ -65,12 +65,19 @@ function underlinedIn(value: unknown): boolean {
 
 /**
  * Underlined text that isn't a link (2.25, ST-3), which a visitor can take for one. Site Check (3.6)
- * lists each as a tip; it never blocks publishing.
+ * lists each as a tip; it never blocks publishing. `skipHidden` leaves out hidden elements.
  */
-export function findUnderlinedText(site: SiteDoc): UnderlinedText[] {
+export function findUnderlinedText(
+  site: SiteDoc,
+  options: { readonly skipHidden?: boolean } = {},
+): UnderlinedText[] {
   const found: UnderlinedText[] = [];
-  eachElement(site, (node, on) => {
-    if (Object.values(node.props).some(underlinedIn)) found.push({ on, nodeId: node.props.id });
-  });
+  eachElement(
+    site,
+    (node, on) => {
+      if (Object.values(node.props).some(underlinedIn)) found.push({ on, nodeId: node.props.id });
+    },
+    options,
+  );
   return found;
 }

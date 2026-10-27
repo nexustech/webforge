@@ -51,5 +51,6 @@ describe("text marks (2.25, ST-3)", () => {
       { on: "footer", nodeId: "footer" },
       { on: site.homePageId, nodeId: "text" },
     ]);
+    expect(findUnderlinedText(site, { skipHidden: true })).toHaveLength(2);
   });
 });

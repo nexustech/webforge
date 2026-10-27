@@ -32,7 +32,7 @@ export type BrokenLink = {
 );
 
 /** What a link points at in the site: a page (and section), or a document in Media. */
-type SiteTarget =
+export type SiteTarget =
   | { readonly kind: "page"; readonly pageId: PageId; readonly anchor?: string | undefined }
   | { readonly kind: "file"; readonly mediaId: MediaId };
 
@@ -63,12 +63,44 @@ function walkLinks(value: unknown, visit: (link: SiteTarget) => void): void {
 }
 
 /**
+ * Calls `visit` for every link in `site` to one of its pages (or a section of one) or documents,
+ * with where it is: the navigation menu's items (dropdowns included), then each element's links,
+ * in {@link eachElement}'s order. An element's links are its own, not those of the elements in its
+ * slots, which are visited as themselves. `skipHidden` leaves out elements hidden in Layers.
+ */
+export function eachLink(
+  site: SiteDoc,
+  visit: (on: BrokenLink["on"], nodeId: string, link: SiteTarget) => void,
+  { skipHidden = false }: { readonly skipHidden?: boolean } = {},
+): void {
+  // The navigation menu's page and section items (F-ED-17), dropdowns included.
+  for (const item of site.menu.items.flatMap((entry) =>
+    entry.kind === "group" ? [entry, ...entry.children] : [entry],
+  )) {
+    if (item.kind === "page") visit("menu", item.id, { kind: "page", pageId: item.pageId });
+    else if (item.kind !== "group") walkLinks(item.link, (link) => visit("menu", item.id, link));
+  }
+  eachElement(
+    site,
+    (node, on) => {
+      for (const [name, value] of Object.entries(node.props)) {
+        if (name !== "advanced") walkLinks(value, (link) => visit(on, node.props.id, link));
+      }
+    },
+    { skipHidden },
+  );
+}
+
+/**
  * The links to pages, sections of pages or documents that don't exist any more (F-ED-18, 1.28):
  * the page was deleted, or the section with that anchor was, or the document was deleted from
- * Media. Site Check lists them (3.6). Links to the Header or Footer's anchors count as found on
- * every page.
+ * Media. Site Check lists them (3.6), leaving out those in hidden elements (`skipHidden`), which
+ * aren't exported. Links to the Header or Footer's anchors count as found on every page.
  */
-export function findBrokenLinks(site: SiteDoc): BrokenLink[] {
+export function findBrokenLinks(
+  site: SiteDoc,
+  options: { readonly skipHidden?: boolean } = {},
+): BrokenLink[] {
   const shared = anchorsIn([...site.layout.header, ...site.layout.footer]);
   const anchorsOf = new Map<PageId, Set<string>>();
   const anchorsOn = (pageId: PageId) => {
@@ -83,31 +115,19 @@ export function findBrokenLinks(site: SiteDoc): BrokenLink[] {
   };
 
   const broken: BrokenLink[] = [];
-  const checkLink = (on: BrokenLink["on"], id: string, link: SiteTarget) => {
-    if (link.kind === "file") {
-      const item = Object.hasOwn(site.media, link.mediaId) ? site.media[link.mediaId] : undefined;
-      if (item?.kind !== "file") broken.push({ on, nodeId: id, mediaId: link.mediaId });
-    } else if (site.pages[link.pageId] === undefined) {
-      broken.push({ on, nodeId: id, pageId: link.pageId });
-    } else if (link.anchor !== undefined && !anchorsOn(link.pageId).has(link.anchor)) {
-      broken.push({ on, nodeId: id, pageId: link.pageId, anchor: link.anchor });
-    }
-  };
-
-  // The navigation menu's page and section items (F-ED-17), dropdowns included.
-  for (const item of site.menu.items.flatMap((entry) =>
-    entry.kind === "group" ? [entry, ...entry.children] : [entry],
-  )) {
-    if (item.kind === "page") checkLink("menu", item.id, { kind: "page", pageId: item.pageId });
-    else if (item.kind !== "group")
-      walkLinks(item.link, (link) => checkLink("menu", item.id, link));
-  }
-
-  // Elements in slots are checked as themselves, so each link names its own element.
-  eachElement(site, (node, on) => {
-    for (const [name, value] of Object.entries(node.props)) {
-      if (name !== "advanced") walkLinks(value, (link) => checkLink(on, node.props.id, link));
-    }
-  });
+  eachLink(
+    site,
+    (on, id, link) => {
+      if (link.kind === "file") {
+        const item = Object.hasOwn(site.media, link.mediaId) ? site.media[link.mediaId] : undefined;
+        if (item?.kind !== "file") broken.push({ on, nodeId: id, mediaId: link.mediaId });
+      } else if (site.pages[link.pageId] === undefined) {
+        broken.push({ on, nodeId: id, pageId: link.pageId });
+      } else if (link.anchor !== undefined && !anchorsOn(link.pageId).has(link.anchor)) {
+        broken.push({ on, nodeId: id, pageId: link.pageId, anchor: link.anchor });
+      }
+    },
+    options,
+  );
   return broken;
 }
