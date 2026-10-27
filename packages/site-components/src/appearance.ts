@@ -247,7 +247,7 @@ const colourOf = (prefix: "text" | "bg" | "border") => (value: unknown) => {
 };
 
 /** The devices, smallest first, and the variant for each run of them that share a value. */
-const DEVICES: readonly Breakpoint[] = ["mobile", "tablet", "desktop"];
+export const DEVICES: readonly Breakpoint[] = ["mobile", "tablet", "desktop"];
 const DEVICE_RANGE: Readonly<Record<string, string>> = {
   mobile: "max-md:",
   tablet: "md:max-lg:",
@@ -263,7 +263,7 @@ const DEVICE_RANGE: Readonly<Record<string, string>> = {
  * *Theme's* on a device draws nothing there, whatever another device has. (`responsiveClasses` is
  * mobile first: a value drawing no class couldn't undo a smaller device's.)
  */
-function perDevice(value: unknown, one: (value: unknown) => string): string {
+export function perDevice(value: unknown, one: (value: unknown) => string): string {
   if (!isResponsiveValue(value as Responsive<unknown>)) return one(value);
   const runs: { devices: Breakpoint[]; classes: string }[] = [];
   for (const device of DEVICES) {
@@ -332,14 +332,23 @@ const ownColourOn = (values: AppearanceValues, device: Breakpoint) =>
  * `classes` on the devices where the group gives an item a colour or background of its own, and
  * on no other, with a space before them to append to others (2.22b). A Button with one darkens when
  * hovered unless its hover row says otherwise, as its own colours would have, which the group's
- * (marked to win) now outrank; device by device, as the colour's own classes are.
+ * (marked to win) now outrank; device by device, as the colour's own classes are. `classes` may
+ * differ by device too (its hover row is set per device, 2.28).
  */
-export function whereOwnColour(values: AppearanceValues, classes: string): string {
+export function whereOwnColour(
+  values: AppearanceValues,
+  classes: string | ((device: Breakpoint) => string),
+): string {
   // Most items have neither, on any device.
   if (!onAnyDevice(values.lookColor, ownColour) && !onAnyDevice(values.lookBackground, ownColour)) {
     return "";
   }
-  const own = Object.fromEntries(DEVICES.map((device) => [device, ownColourOn(values, device)]));
-  const drawn = perDevice({ $responsive: own }, when(classes.trim()));
+  const on = typeof classes === "string" ? () => classes : classes;
+  const own = Object.fromEntries(
+    DEVICES.map((device) => [device, ownColourOn(values, device) ? on(device).trim() : ""]),
+  );
+  const drawn = perDevice({ $responsive: own }, (value) =>
+    typeof value === "string" ? value : "",
+  );
   return drawn === "" ? "" : ` ${drawn}`;
 }

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Rosa's Bakery</title>
   <meta name="description" content="Fresh bread and cakes, baked every morning in Hightown.">
-  <link rel="stylesheet" href="assets/css/site.4d2f005cf0.css">
+  <link rel="stylesheet" href="assets/css/site.75c4135414.css">
   <script defer src="assets/js/webforge.e8257f84fe.js"></script>
 </head>
 <body class="flex min-h-screen flex-col bg-base-100 font-sans text-base-content">
@@ -48,7 +48,7 @@
     </nav>
   </header>
   <main id="main" class="flex-1">
-    <section class="site-hero hero bg-base-200 px-4 py-16 motion-safe:transition-[opacity,translate,scale] motion-safe:duration-700 motion-safe:ease-out motion-safe:wf-waiting:transition-none motion-safe:wf-waiting:opacity-0" data-wf-entrance="fade">
+    <section class="site-hero hero bg-base-200 px-4 py-16 motion-safe:wf-entering:transition-[opacity,translate,scale] motion-safe:wf-entering:duration-700 motion-safe:wf-entering:ease-out motion-safe:wf-waiting:transition-none motion-safe:wf-waiting:opacity-0" data-wf-entrance="fade">
       <div class="hero-content max-w-6xl flex-col gap-10 lg:flex-row-reverse text-left">
         <picture>
           <source type="image/webp" srcSet="assets/img/hero-640.webp 640w, assets/img/hero-1280.webp 1280w, assets/img/hero-1600.webp 1600w" sizes="(min-width: 1024px) 50vw, 100vw" /><img src="assets/img/hero-1600.jpg" srcSet="assets/img/hero-640.jpg 640w, assets/img/hero-1280.jpg 1280w, assets/img/hero-1600.jpg 1600w" sizes="(min-width: 1024px) 50vw, 100vw" width="1600" height="1000" alt="Green hills under a morning sun" loading="eager" decoding="async" class="h-auto w-full max-w-xl rounded-box shadow-lg" />
@@ -67,6 +67,7 @@
           <p>Find us on <a href="https://example.com/map">the map</a>.</p>
         </div>
       </div>
+      <div class="site-button flex justify-start"><a class="btn btn-primary motion-safe:transition-all motion-safe:duration-500 motion-safe:ease-spring motion-reduce:transition-none motion-safe:hover:-translate-y-1 hover:shadow-(--wf-hover-shadow)!" href="about.html">Order online</a></div>
       <section class="site-carousel group/carousel space-y-3" aria-roledescription="carousel" aria-label="What customers say" data-layout="testimonials" data-wf-carousel="" data-slide-label="slide" data-slide-of="{n} of {total}" data-slides-of="{from} to {to} of {total}" data-interval="5000">
         <div class="flex items-center justify-end gap-1" data-wf-carousel-controls="" hidden=""><button type="button" class="btn btn-circle btn-sm btn-ghost" data-wf-carousel-play="" data-label-stop="Stop the slides" data-label-start="Play the slides" aria-label="Stop the slides"><span class="hidden group-data-[playing]/carousel:inline"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M8 5v14M16 5v14"></path>
@@ -120,9 +121,9 @@
         </div>
       </section>
     </section>
-    <section class="site-section px-4 py-16 motion-safe:transition-[opacity,translate,scale] motion-safe:duration-700 motion-safe:ease-out motion-safe:wf-waiting:transition-none motion-safe:wf-waiting:opacity-0 motion-safe:wf-waiting:translate-y-8 motion-safe:wf-entering:delay-150" data-theme="wf_inverse" data-wf-entrance="slideUp">
+    <section class="site-section px-4 py-16 motion-safe:wf-entering:transition-[opacity,translate,scale] motion-safe:wf-entering:duration-700 motion-safe:wf-entering:ease-out motion-safe:wf-waiting:transition-none motion-safe:wf-waiting:opacity-0 motion-safe:wf-waiting:translate-y-8 motion-safe:wf-entering:delay-150" data-theme="wf_inverse" data-wf-entrance="slideUp">
       <div class="mx-auto max-w-4xl space-y-6">
-        <h3 class="site-heading font-heading text-h3 motion-safe:transition-[opacity,translate,scale] motion-safe:duration-700 motion-safe:ease-out motion-safe:wf-waiting:transition-none motion-safe:wf-waiting:opacity-0 motion-safe:wf-waiting:-translate-x-8" data-wf-entrance="slideLeft">Fresh every day</h3>
+        <h3 class="site-heading font-heading text-h3 motion-safe:wf-entering:transition-[opacity,translate,scale] motion-safe:wf-entering:duration-700 motion-safe:wf-entering:ease-out motion-safe:wf-waiting:transition-none motion-safe:wf-waiting:opacity-0 motion-safe:wf-waiting:-translate-x-8" data-wf-entrance="slideLeft">Fresh every day</h3>
         <div class="site-text text-body [&amp;_a:not(.btn)]:[text-decoration-line:var(--wf-link-decoration,underline)] [&amp;_a:not(.btn):hover]:[text-decoration-line:var(--wf-link-hover-decoration,underline)] [&amp;_a:not(.btn):focus-visible]:[text-decoration-line:var(--wf-link-hover-decoration,underline)] [&amp;_a:not(.btn)]:[color:var(--wf-link-color,currentColor)] [&amp;_p+p]:mt-4 [&amp;_ol]:my-3 [&amp;_ol]:list-decimal [&amp;_ol]:pl-6 [&amp;_ul]:my-3 [&amp;_ul]:list-disc [&amp;_ul]:pl-6">
           <div class="contents">
             <p>Bread from 7 am, cakes from 9.</p>
@@ -130,7 +131,7 @@
         </div>
       </div>
     </section>
-    <section class="site-cta bg-neutral text-neutral-content px-4 py-16 motion-safe:transition-[opacity,translate,scale] motion-safe:duration-700 motion-safe:ease-out motion-safe:wf-waiting:transition-none motion-safe:wf-waiting:opacity-0 motion-safe:wf-waiting:scale-95" data-wf-entrance="zoom">
+    <section class="site-cta bg-neutral text-neutral-content px-4 py-16 motion-safe:wf-entering:transition-[opacity,translate,scale] motion-safe:wf-entering:duration-700 motion-safe:wf-entering:ease-out motion-safe:wf-waiting:transition-none motion-safe:wf-waiting:opacity-0 motion-safe:wf-waiting:scale-95" data-wf-entrance="zoom">
       <div class="mx-auto max-w-3xl text-center">
         <div>
           <h2 class="font-heading text-h2">Order a cake</h2>

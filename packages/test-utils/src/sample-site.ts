@@ -20,8 +20,8 @@ export function priceList(): Uint8Array {
 }
 
 /**
- * A small site: Header and Footer, a home page with a Hero (with photo), text, a Carousel
- * of customers' quotes (2.10), an FAQ and a Call to action, and an About page with a text-only Hero
+ * A small site: Header and Footer, a home page with a Hero (with photo), text, a Button with a
+ * hover effect (2.28), a Carousel of customers' quotes (2.10), an FAQ and a Call to action, and an About page with a text-only Hero
  * linking to a price list (a document), a Text section, a Text + Image section (2.6), a Gallery
  * with its lightbox (2.7a), Opening hours and contact from Site Settings, a Video and a Map that
  * load only when clicked, and a Contact form and a Newsletter signup (2.8). Its menu has both
@@ -94,6 +94,19 @@ export function sampleSite(): SiteSnapshot {
                     props: {
                       id: "intro-text",
                       text: '<p>We have baked in Hightown since 1998.</p><p>Find us on <a href="https://example.com/map">the map</a>.</p>',
+                    },
+                  },
+                  {
+                    // Lifts with a shadow when hovered, slowly and springily (2.28), only for
+                    // visitors who don't prefer less motion.
+                    type: "Button",
+                    props: {
+                      id: "intro-order",
+                      label: "Order online",
+                      link: { kind: "page", pageId: "about" as PageId },
+                      hover: "liftShadow",
+                      hoverSpeed: "slow",
+                      hoverEasing: "springy",
                     },
                   },
                   {
