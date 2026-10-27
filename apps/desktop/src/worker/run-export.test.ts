@@ -65,7 +65,8 @@ describe("runExport", () => {
     expect(outcome).toMatchObject({
       type: "exported",
       pages: 3,
-      files: 16,
+      // With robots.txt (3.5).
+      files: 17,
       warnings: [],
       warningCount: 0,
     });

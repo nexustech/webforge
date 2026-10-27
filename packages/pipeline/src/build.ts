@@ -29,9 +29,26 @@ import { fontFacesFor } from "@webforge/themes";
 import { buildSiteCss, classCandidates, type SiteCssOptions, type StyleCompiler } from "./css.js";
 import { developerFiles } from "./developer-files.js";
 import { BODY_CLASS, iconLinks, pageDocument, type SiteIcon } from "./html.js";
-import { imageForDepth, processImage } from "./images.js";
+import { imageAt, processImage } from "./images.js";
+import { htmlToMarkdown } from "./markdown.js";
 import { minifiedCss, minifiedHtml, minifiedJs } from "./minify.js";
 import type { PipelineResources } from "./resources.js";
+import {
+  hasSitemap,
+  llmsTxt,
+  markdownPage,
+  markdownUrl,
+  NOT_FOUND_PATH,
+  pageTitle,
+  readablePages,
+  robotsTxt,
+  searchOf,
+  shareTags,
+  siteAddress,
+  sitemapXml,
+  webManifest,
+  withYear,
+} from "./site-files.js";
 import { iconFiles, shareImageFile } from "./site-images.js";
 
 /**
@@ -123,6 +140,8 @@ export type BuildOptions = {
   readonly signal?: AbortSignal | undefined;
   readonly onProgress?: ((event: BuildEvent) => void) | undefined;
   readonly output?: OutputOptions | undefined;
+  /** The year `{year}` stands for in the site's text (F-CM-8): this year when left out. */
+  readonly year?: number | undefined;
 };
 
 /**
@@ -144,12 +163,16 @@ export type BuildCaches = {
   readonly pages: Map<string, RenderedRegions>;
 };
 
-/** How {@link buildEvents} runs: what for, its cancel signal, its output, the caches it may use. */
+/**
+ * How {@link buildEvents} runs: what for, its cancel signal, its output, the caches it may use and
+ * the year `{year}` stands for (this year when left out).
+ */
 type BuildRun = {
   readonly mode: BuildMode;
   readonly signal?: AbortSignal | undefined;
   readonly output?: OutputOptions | undefined;
   readonly caches?: BuildCaches | undefined;
+  readonly year?: number | undefined;
 };
 
 const EXTERNAL_LINK = /^(?:https?:|mailto:|tel:)/i;
@@ -162,6 +185,20 @@ function contentHash(data: string | Uint8Array): string {
 
 function depthOf(pagePath: string): number {
   return pagePath.split("/").length - 1;
+}
+
+/**
+ * The site's files besides its pages (3.5): `robots.txt` always, the web app manifest with the
+ * icon set, and the sitemap with a web address, search engines allowed and the sitemap on.
+ */
+function siteFiles(site: SiteSnapshot, icons: readonly SiteIcon[]): [string, string][] {
+  const address = siteAddress(site);
+  const files: [string, string][] = [["robots.txt", robotsTxt(site)]];
+  if (icons.length > 0) files.push(["site.webmanifest", webManifest(site, icons)]);
+  if (hasSitemap(site) && address !== undefined) {
+    files.push(["sitemap.xml", sitemapXml(site, address)]);
+  }
+  return files;
 }
 
 /** Whether `page` has the back-to-top button: Site Settings ask for it, and it doesn't hide it. */
@@ -219,6 +256,7 @@ export async function buildSite(
     mode: "export",
     signal: options.signal,
     output: options.output,
+    year: options.year,
   });
   for (;;) {
     const next = await events.next();
@@ -445,7 +483,7 @@ export async function* buildEvents(
           if (missing.has(id)) found.push({ code: "missing-image", page: page.path, detail: id });
           return null;
         }
-        return imageForDepth(image, depthOf(page.path));
+        return imageAt(image, prefix);
       },
       // An empty binding has no emptySetting here: the export leaves it out (1.17).
       setting: (key) => site.settings?.[key],
@@ -487,13 +525,20 @@ export async function* buildEvents(
             documents: [...documentPaths],
           }),
         );
+  // A page links to the others and its files `../` per folder up. The "Page not found" page is
+  // served at any missing address, folders deep too, so its links start at the site's root: the
+  // web address, or `/` (F-ED-20). Not in a preview, which serves the site below a path of its own.
+  const rootPrefix = run.mode === "preview" ? "" : `${siteAddress(site) ?? ""}/`;
+  const prefixOf = (page: SitePage) =>
+    page.path === NOT_FOUND_PATH ? rootPrefix : "../".repeat(depthOf(page.path));
   const keptPages = new Map<string, RenderedRegions>();
   const rendered: (RenderedRegions & { readonly page: SitePage; readonly prefix: string })[] = [];
   for (const [done, page] of site.pages.entries()) {
     stopIfCancelled(signal);
     yield { stage: "pages", done, total: site.pages.length };
-    const prefix = "../".repeat(depthOf(page.path));
-    const key = caches === undefined ? undefined : sha256(`${sharedKey}\n${JSON.stringify(page)}`);
+    const prefix = prefixOf(page);
+    const key =
+      caches === undefined ? undefined : sha256(`${sharedKey}\n${prefix}\n${JSON.stringify(page)}`);
     const regions =
       (key === undefined ? undefined : caches?.pages.get(key)) ?? render(page, prefix);
     if (key !== undefined) keptPages.set(key, regions);
@@ -527,11 +572,12 @@ export async function* buildEvents(
   const css = minify ? minifiedCss(readableCss) : readableCss;
   const cssPath = `assets/css/site.${contentHash(css)}.css`;
   files.set(cssPath, text.encode(css));
+  const year = run.year ?? new Date().getFullYear();
   for (const entry of rendered) {
     const page = {
       language: site.language,
       theme: site.theme.preset,
-      title: entry.page.path === "index" ? site.name : `${entry.page.title} | ${site.name}`,
+      title: pageTitle(site, entry.page),
       description: entry.page.description,
       stylesheet: `${entry.prefix}${cssPath}`,
       script: scriptPath === undefined ? undefined : `${entry.prefix}${scriptPath}`,
@@ -541,7 +587,16 @@ export async function* buildEvents(
       ...(showsBackToTop(site, entry.page) ? { backToTop } : {}),
       ...(consent === undefined ? {} : { consent }),
       // The favicon set's links first (3.4); 3.5's share and search tags follow them.
-      head: iconLinks(icons, entry.prefix),
+      head: [
+        ...iconLinks(icons, entry.prefix),
+        ...shareTags({
+          site,
+          page: entry.page,
+          prefix: entry.prefix,
+          shareImage: shareImages.get(entry.page.path),
+          manifest: icons.length > 0,
+        }),
+      ],
     };
     let html = pageDocument(page);
     if (minify) {
@@ -552,7 +607,22 @@ export async function* buildEvents(
         warnings.push({ code: "not-minified", page: entry.page.path, detail: "" });
       }
     }
-    files.set(`${entry.page.path}.html`, text.encode(html));
+    files.set(`${entry.page.path}.html`, text.encode(withYear(html, year)));
+  }
+  for (const [path, content] of siteFiles(site, icons)) files.set(path, text.encode(content));
+  // AI tools' copies (F-EX-5), when Site Settings ask for them; never in a preview, which no one
+  // else reads.
+  if (searchOf(site).readableByAi && run.mode !== "preview") {
+    files.set("llms.txt", text.encode(withYear(llmsTxt(site), year)));
+    const readable = new Set(readablePages(site));
+    for (const entry of rendered) {
+      if (!readable.has(entry.page)) continue;
+      const content = htmlToMarkdown(entry.main, {
+        url: (href) => markdownUrl(site, entry.page.path, href),
+      });
+      const markdown = withYear(markdownPage(entry.page, content), year);
+      files.set(`${entry.page.path}.md`, text.encode(markdown));
+    }
   }
   if (run.output?.developerFiles === true) {
     for (const [path, content] of developerFiles(site, cssOptions, cssPath)) {
