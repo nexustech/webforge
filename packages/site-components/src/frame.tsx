@@ -8,6 +8,7 @@ import {
   appearanceTextClasses,
 } from "./appearance.js";
 import {
+  BACKGROUND_DEFAULTS,
   BACKGROUND_FIELD_NAMES,
   BACKGROUND_FIELDS,
   backgroundClasses,
@@ -168,7 +169,12 @@ export function defineSection<const F extends Fields, const Variant extends stri
       ];
     },
     // A new section has the page's colours, as one with no value has: choosing them is no change.
-    defaults: { colors: "page", ...rest.defaults },
+    // Its overlay is set too, so the Edit panel shows what a background image would get (2.26).
+    defaults: {
+      colors: "page",
+      ...(background === false ? {} : BACKGROUND_DEFAULTS),
+      ...rest.defaults,
+    },
     render: (props) => {
       const { values } = props;
       // Every section's values have the frame's fields, which generic types can't see through.
@@ -189,7 +195,12 @@ export function defineSection<const F extends Fields, const Variant extends stri
           {...entranceAttributes(stored)}
         >
           {/* The background image and its overlay, behind what the section draws (2.26). */}
-          <SectionBackground values={stored} context={props.context} />
+          <SectionBackground
+            values={stored}
+            context={props.context}
+            // The page's first section: its image is above the fold, so it loads at once.
+            eager={props.id === props.context.firstSection}
+          />
           <SectionTitleAppearance.Provider value={appearanceTextClasses(stored)}>
             {render(props)}
           </SectionTitleAppearance.Provider>

@@ -11,7 +11,7 @@ import {
 } from "./background.js";
 import { siteLibrary } from "./catalogue/index.js";
 import { EDITOR_RENDER_CONTEXT } from "./library.js";
-import { renderNodesToHtml } from "./render-static.js";
+import { renderNodesToHtml, renderPage } from "./render-static.js";
 import type { RenderContext, ResolvedImage } from "./schema.js";
 
 const shop: ResolvedImage = {
@@ -149,6 +149,34 @@ describe("the section frame's background (2.26)", () => {
       expect(names.slice(at, at + 3), type).toEqual([...BACKGROUND_FIELD_NAMES]);
       expect(at, type).toBe(Object.keys(APPEARANCE_FIELDS).length);
     }
+  });
+
+  it("gives a new section a medium overlay in the page colour, so the panel shows it", () => {
+    for (const [type, def] of sections) {
+      if (type === "Hero") continue;
+      expect(def.defaults, type).toMatchObject({ overlay: "40", overlayColor: "base" });
+    }
+  });
+
+  it("loads the page's first section's image at once, every other one lazily", () => {
+    const placed = (id: string, hidden = false) => ({
+      type: "TextSection",
+      props: { id, backgroundImage: { mediaId: "shop" }, ...(hidden ? { hidden: true } : {}) },
+    });
+    const { main } = renderPage(
+      {
+        header: [],
+        content: [placed("hidden", true), placed("first"), placed("second")],
+        footer: [],
+      },
+      siteLibrary,
+      context,
+    );
+
+    // The hidden one isn't drawn, so the first shown is the first.
+    expect(main.match(/loading="(eager|lazy)"/g)).toEqual(['loading="eager"', 'loading="lazy"']);
+    // Rendered alone (on the canvas, or a Header), none is first.
+    expect(renderNodesToHtml([placed("first")], siteLibrary, context)).toContain('loading="lazy"');
   });
 
   it("draws the image and overlay first in the section, behind its content", () => {

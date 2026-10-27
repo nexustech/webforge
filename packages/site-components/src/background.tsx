@@ -12,6 +12,12 @@ type Overlay = (typeof OVERLAYS)[number];
 const OVERLAY_COLORS = ["base", "neutral"] as const;
 type OverlayColor = (typeof OVERLAY_COLORS)[number];
 
+/**
+ * A new section's overlay, and the one a value it doesn't know falls back to: medium, in the
+ * page's colour.
+ */
+export const BACKGROUND_DEFAULTS = { overlay: "40", overlayColor: "base" } as const;
+
 /** The overlay's controls: in the Style tab's Appearance group, beside the background colour (2.22). */
 const IN_GROUP = { group: "style", optionGroup: APPEARANCE_GROUP } as const;
 
@@ -72,8 +78,10 @@ export function overlayOf(values: BackgroundValues): {
   readonly color: OverlayColor;
 } {
   return {
-    opacity: OVERLAYS.find((each) => each === values.overlay) ?? "40",
-    color: OVERLAY_COLORS.find((each) => each === values.overlayColor) ?? "base",
+    opacity: OVERLAYS.find((each) => each === values.overlay) ?? BACKGROUND_DEFAULTS.overlay,
+    color:
+      OVERLAY_COLORS.find((each) => each === values.overlayColor) ??
+      BACKGROUND_DEFAULTS.overlayColor,
   };
 }
 
@@ -114,16 +122,19 @@ export function backgroundClasses(values: BackgroundValues): string {
 
 /**
  * The background image and its overlay, behind the section's content (2.26): a responsive
- * `<picture>` (WebP with a JPEG or PNG fallback, X2), loaded lazily like any other below the fold,
- * cut to the section with its focal point kept in view, and no CSS `background-image`, so the
- * image pipeline's sizes apply. Nothing when there's no image, or it was deleted from Media.
+ * `<picture>` (WebP with a JPEG or PNG fallback, X2), loaded lazily below the fold and at once in
+ * the page's first section (`eager`), as the Hero's is, cut to the section with its focal point
+ * kept in view, and no CSS `background-image`, so the image pipeline's sizes apply. Nothing when
+ * there's no image, or it was deleted from Media.
  */
 export function SectionBackground({
   values,
   context,
+  eager = false,
 }: {
   readonly values: BackgroundValues;
   readonly context: RenderContext;
+  readonly eager?: boolean;
 }) {
   const placed = placedImage(values.backgroundImage);
   const image = placed === undefined ? null : context.image(placed.mediaId);
@@ -137,6 +148,7 @@ export function SectionBackground({
         image={image}
         alt=""
         sizes="100vw"
+        eager={eager}
         className="absolute inset-0 -z-10 h-full w-full object-cover"
       />
       {overlay === "" ? null : (
