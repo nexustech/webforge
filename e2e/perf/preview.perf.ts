@@ -92,14 +92,17 @@ test("a colour of the theme reaches the browser in under 100 ms", async () => {
     .getByRole("region", { name: "Right panels" })
     .getByRole("tab", { name: "Theme", exact: true })
     .click();
-  // The first change saves the person's own theme; the one timed is the second.
+  // The first change saves the person's own theme; the one timed is the second, once the first
+  // has reached the browser.
+  const initial = await brand();
   await brandColour("b0306a", () =>
     page.getByRole("alertdialog").getByRole("button", { name: "Change Colour" }).click(),
   );
-  await expect.poll(brand, { timeout: OPEN_WAIT }).not.toBe("");
+  await expect.poll(brand, { timeout: OPEN_WAIT }).not.toBe(initial);
   const before = await brand();
 
   let started = 0;
+  const swapped = nextEvent(site.url(), "values");
   await brandColour("2a6fb0", async () => {
     const confirm = page.getByRole("alertdialog").getByRole("button", { name: "Change Colour" });
     started = Date.now();
@@ -113,22 +116,27 @@ test("a colour of the theme reaches the browser in under 100 ms", async () => {
     { polling: "raf", timeout: OPEN_WAIT },
   );
   const took = Date.now() - started;
+  const told = (await swapped) - started;
   record("css", took);
-  console.log(`A theme colour reached the browser in ${took} ms (budget ${CSS_BUDGET_MS} ms)`);
+  record("css: editor and build", told);
+  console.log(
+    `A theme colour reached the browser in ${took} ms (budget ${CSS_BUDGET_MS} ms): ` +
+      `${told} ms to the server's values event, ${took - told} ms for the browser to take them`,
+  );
   expect(took).toBeLessThan(CSS_BUDGET_MS);
 });
 
 /**
- * When the server next tells the browsers to reload, as this process's clock has it: what the
- * editor and the build take, apart from the browser's own reload.
+ * When the server next sends `event` (a reload, or the theme's values), as this process's clock
+ * has it: what the editor and the build take, apart from what the browser does with it.
  */
-function nextReload(url: string): Promise<number> {
+function nextEvent(url: string, event: "reload" | "values"): Promise<number> {
   const { origin, pathname } = new URL(url);
   const base = pathname.slice(0, pathname.indexOf("/", 1) + 1);
   return new Promise((resolve, reject) => {
     const sent = request(`${origin}${base}__webforge/events`, (response) => {
       response.on("data", (chunk: Buffer) => {
-        if (chunk.toString("utf8").includes("event: reload")) {
+        if (chunk.toString("utf8").includes(`event: ${event}`)) {
           resolve(Date.now());
           sent.destroy();
         }
@@ -144,7 +152,7 @@ test("a changed page reaches the browser in under 200 ms", async () => {
   await canvas.locator("h1").dblclick();
   await page.keyboard.press("ControlOrMeta+a");
   await page.keyboard.type("Fresh bread daily");
-  const reloaded = nextReload(site.url());
+  const reloaded = nextEvent(site.url(), "reload");
   // The reloaded page's load, as it fires: an expect would see it only at its next poll.
   const loaded = site.waitForEvent("load", { timeout: OPEN_WAIT });
   const started = Date.now();

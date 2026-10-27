@@ -64,6 +64,7 @@ export {
   oklchCss,
   radiusCss,
   shadowCss,
+  THEME_VALUES_MARKER,
   themeCss,
   themeShape,
   themeValuesCss,

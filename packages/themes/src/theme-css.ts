@@ -475,6 +475,12 @@ function daisyValues(
 }
 
 /**
+ * The line a preview's stylesheet starts its theme's values with ({@link themeValuesCss}): the
+ * preview server sends what follows it alone when nothing before it changed (3.2).
+ */
+export const THEME_VALUES_MARKER = "/* The theme's values (Webforge preview) */";
+
+/**
  * The values of `tokens` that its shape ({@link themeShape}) leaves to custom properties, as plain
  * CSS to follow the shape's compiled stylesheet (3.2): the page's theme, then the inverse one, each
  * under its own selectors, so a change of colour or scale needs no new compile. Outside any layer,
@@ -488,7 +494,7 @@ export function themeValuesCss(tokens: ThemeTokens): string {
   const phoneStep = Math.min(Math.max(h1 - 1, 0), TEXT_SIZES.indexOf(PHONE_H1_MAX));
   const phoneH1 = TEXT_SIZE[TEXT_SIZES[phoneStep] ?? tokens.typeScale.h1.size];
   return [
-    "/* The theme's values (Webforge preview) */",
+    THEME_VALUES_MARKER,
     `:root, [data-theme="${tokens.preset}"] {`,
     ...daisyValues(tokens, tokens.colors, tokens.scheme),
     `  --spacing: ${SPACING_UNIT[tokens.spacing]};`,

@@ -3,6 +3,7 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import type { AddressInfo } from "node:net";
 import { t } from "@webforge/i18n";
 import { PREVIEW_STYLESHEET } from "@webforge/pipeline";
+import { THEME_VALUES_MARKER } from "@webforge/themes";
 import type { PreviewOutcome } from "../shared/export-worker-protocol.js";
 import { LIVE_RELOAD_SCRIPT } from "./preview-live-reload.js";
 
@@ -71,6 +72,18 @@ const COMMON_HEADERS = {
  * version as its ETag), so a reloaded page fetches only what changed: a 304 for the rest.
  */
 const FILE_HEADERS = { ...COMMON_HEADERS, "Cache-Control": "no-cache" } as const;
+
+/**
+ * The theme's values `after` ends with, if they are all that changed from `before`: both
+ * stylesheets the same up to {@link THEME_VALUES_MARKER} (3.2). A browser takes them in place,
+ * with nothing to download.
+ */
+export function changedValues(before: string, after: string): string | undefined {
+  const from = before.lastIndexOf(THEME_VALUES_MARKER);
+  const to = after.lastIndexOf(THEME_VALUES_MARKER);
+  if (from === -1 || to === -1 || before.slice(0, from) !== after.slice(0, to)) return undefined;
+  return after.slice(to);
+}
 
 /** How long a page asked for before the first build waits for it before giving up. */
 const FIRST_BUILD_WAIT_MS = 120_000;
@@ -244,6 +257,7 @@ export function createPreviewServer(): PreviewServer {
       return port;
     },
     update(build) {
+      const stylesheet = files.get(PREVIEW_STYLESHEET);
       if (build.full) files = new Map();
       for (const { path, data } of build.changed) {
         files.set(path, data);
@@ -258,7 +272,14 @@ export function createPreviewServer(): PreviewServer {
       }
       if (changed.length === 0) return;
       if (changed.every((path) => path === PREVIEW_STYLESHEET)) {
-        send("css", { href: PREVIEW_STYLESHEET });
+        // The theme's values alone (a colour, a size): sent as they are, nothing to download.
+        const next = files.get(PREVIEW_STYLESHEET);
+        const values =
+          stylesheet === undefined || next === undefined
+            ? undefined
+            : changedValues(decoder.decode(stylesheet), decoder.decode(next));
+        if (values !== undefined) send("values", { css: values });
+        else send("css", { href: PREVIEW_STYLESHEET });
         return;
       }
       // Pages that changed reload; anything else (an image, the script) reloads every page.

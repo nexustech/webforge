@@ -1,7 +1,13 @@
 import { request } from "node:http";
 import { PREVIEW_STYLESHEET } from "@webforge/pipeline";
+import { THEME_VALUES_MARKER } from "@webforge/themes";
 import { afterEach, describe, expect, it } from "vitest";
-import { createPreviewServer, type PreviewBuild, type PreviewServer } from "./preview-server.js";
+import {
+  changedValues,
+  createPreviewServer,
+  type PreviewBuild,
+  type PreviewServer,
+} from "./preview-server.js";
 
 const text = new TextEncoder();
 const page = (body: string) => text.encode(`<!doctype html><html><body>${body}</body></html>`);
@@ -213,6 +219,48 @@ describe("the preview server (3.2)", () => {
     await expect.poll(() => preview.watching(), { timeout: 2000 }).toBe(0);
   });
 
+  it("sends the theme's values alone when nothing else in the stylesheet changed", async () => {
+    const { server: preview, port } = await started();
+    const sheet = (rules: string, values: string) =>
+      text.encode(`${rules}
+${THEME_VALUES_MARKER}
+:root { ${values} }
+`);
+    const stylesheetOf = (data: Uint8Array): PreviewBuild => ({
+      type: "previewed",
+      full: false,
+      changed: [{ path: PREVIEW_STYLESHEET, data }],
+      removed: [],
+    });
+    preview.update({
+      ...FIRST,
+      changed: [
+        ...FIRST.changed.filter((file) => file.path !== PREVIEW_STYLESHEET),
+        { path: PREVIEW_STYLESHEET, data: sheet(".a{}", "--color-primary: red;") },
+      ],
+    });
+    const stream = events(port, preview.base);
+    const stop = await stream.opened;
+
+    preview.update(stylesheetOf(sheet(".a{}", "--color-primary: blue;")));
+    preview.update(stylesheetOf(sheet(".a{} .b{}", "--color-primary: blue;")));
+    await expect.poll(() => stream.received.length, { timeout: 2000 }).toBe(2);
+
+    expect(stream.received).toEqual([
+      {
+        event: "values",
+        data: {
+          css: `${THEME_VALUES_MARKER}
+:root { --color-primary: blue; }
+`,
+        },
+      },
+      // A new class too: the whole stylesheet, swapped in place.
+      { event: "css", data: { href: PREVIEW_STYLESHEET } },
+    ]);
+    stop();
+  });
+
   it("replaces every file with a full build, as a new worker's first", async () => {
     const { server: preview, port } = await started();
     preview.update(FIRST);
@@ -257,5 +305,20 @@ describe("the preview server (3.2)", () => {
     server = undefined;
 
     await expect(get(port, preview.base)).rejects.toThrow();
+  });
+});
+
+describe("changedValues (3.2)", () => {
+  const values = (colour: string) =>
+    `${THEME_VALUES_MARKER}\n:root { --color-primary: ${colour}; }`;
+
+  it("is the theme's values when they are all that changed", () => {
+    expect(changedValues(`.a{}\n${values("red")}`, `.a{}\n${values("blue")}`)).toBe(values("blue"));
+  });
+
+  it("is none when anything before them changed, or a stylesheet has none", () => {
+    expect(changedValues(`.a{}\n${values("red")}`, `.b{}\n${values("red")}`)).toBeUndefined();
+    expect(changedValues(".a{}", `.a{}\n${values("red")}`)).toBeUndefined();
+    expect(changedValues(`.a{}\n${values("red")}`, ".a{}")).toBeUndefined();
   });
 });
