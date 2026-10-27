@@ -260,6 +260,8 @@ test("drags the canvas's edge to a width that snaps to Tablet, without an undo s
 });
 
 test("keeps a device the person added, after a restart (F-ED-25)", async () => {
+  // Three launches and closes of the app: on a busy machine each takes tens of seconds (#518).
+  test.slow();
   await app.close();
   const userData = newUserDataDir();
   try {

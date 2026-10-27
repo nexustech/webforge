@@ -3,7 +3,7 @@ import type { SiteSnapshot } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { sampleSite } from "@webforge/test-utils";
 import { beforeAll, describe, expect, it } from "vitest";
-import { type BuiltSite, buildSite } from "../src/build.js";
+import { type BuildEvent, type BuiltSite, buildSite } from "../src/build.js";
 import { createMemoryImageCache } from "../src/memory-image-cache.js";
 import { loadNodeResources } from "../src/node-resources.js";
 import type { PipelineResources } from "../src/resources.js";
@@ -117,6 +117,66 @@ describe("buildSite: the favicon set and share pictures (3.4)", () => {
     expect(jpegSize(small.files.get("assets/img/hero-share.jpg"))).toEqual([40, 21]);
   }, 60_000);
 
+  it("warns of an icon too small for a favicon, known from the cache without reading it again", async () => {
+    // A 10 × 10 cut of the photo, named by its hash, its bytes read only when asked.
+    const site = withSiteImages({ crop: { x: 0, y: 0, width: 0.00625, height: 0.01 } });
+    const photo = site.media[0]?.data ?? new Uint8Array();
+    const hash = createHash("sha256").update(photo).digest("hex");
+    const byHash = {
+      ...site,
+      media: site.media.map(({ data: _data, ...item }) => ({ ...item, hash })),
+    };
+    const cache = createMemoryImageCache(16 * 1024 * 1024);
+    let reads = 0;
+    const counted = {
+      ...resources,
+      imageCache: cache,
+      readMedia: async () => {
+        reads += 1;
+        return { data: photo, mime: "image/jpeg" as const };
+      },
+    };
+
+    const first = await buildSite(byHash, siteLibrary, counted);
+    const afterFirst = reads;
+    const second = await buildSite(byHash, siteLibrary, counted);
+
+    for (const tiny of [first, second]) {
+      expect(tiny.files.has("favicon.ico")).toBe(false);
+      expect(tiny.icons).toEqual([]);
+      expect(text(tiny, "index.html")).not.toContain('rel="icon"');
+      expect(tiny.report.warnings).toContainEqual({
+        code: "small-icon",
+        page: "",
+        detail: "hero-photo",
+      });
+    }
+    // The second build knew from the icon's empty plan that it makes nothing, and read nothing
+    // (R15): the page images and share picture came from the cache too.
+    expect(afterFirst).toBeGreaterThan(0);
+    expect(reads).toBe(afterFirst);
+  }, 60_000);
+
+  it("counts the favicon set and each share picture in the images stage's progress", async () => {
+    const events: BuildEvent[] = [];
+
+    await buildSite(
+      withSiteImages(),
+      siteLibrary,
+      { ...resources, imageCache },
+      {
+        onProgress: (event) => events.push(event),
+      },
+    );
+
+    // The photo the pages place, then the icon, then the About page's share picture.
+    expect(events.filter((event) => event.stage === "images")).toEqual([
+      { stage: "images", done: 0, total: 3 },
+      { stage: "images", done: 1, total: 3 },
+      { stage: "images", done: 2, total: 3 },
+    ]);
+  }, 60_000);
+
   it("reads and encodes nothing again with the image cache", async () => {
     const site = withSiteImages();
     let reads = 0;
@@ -158,6 +218,12 @@ describe("buildSite: the favicon set and share pictures (3.4)", () => {
     });
     expect(without.shareImages.size).toBe(0);
     expect(without.files.has("favicon.ico")).toBe(false);
+    // The icon too: the site has no favicon, and the report says why.
+    expect(without.report.warnings).toContainEqual({
+      code: "missing-icon",
+      page: "",
+      detail: "hero-photo",
+    });
     // Without an icon or a share picture, nothing changes (the golden files say so too).
     const plain = await buildSite(sampleSite(), siteLibrary, { ...resources, imageCache });
     expect(text(plain, "index.html")).not.toContain('rel="icon"');

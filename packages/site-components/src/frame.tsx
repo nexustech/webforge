@@ -8,6 +8,13 @@ import {
   appearanceBoxClasses,
   appearanceTextClasses,
 } from "./appearance.js";
+import {
+  BACKGROUND_DEFAULTS,
+  BACKGROUND_FIELD_NAMES,
+  BACKGROUND_FIELDS,
+  backgroundClasses,
+  SectionBackground,
+} from "./background.js";
 import { type ComponentSpec, defineFramedSection } from "./define.js";
 import { boxClasses, type ComponentDef } from "./library.js";
 import {
@@ -73,7 +80,8 @@ type FrameFields = {
   readonly padding: typeof PADDING_FIELD;
   readonly margin: typeof MARGIN_FIELD;
 } & typeof ENTRANCE_FIELDS &
-  typeof APPEARANCE_FIELDS;
+  typeof APPEARANCE_FIELDS &
+  Partial<typeof BACKGROUND_FIELDS>;
 
 /** The names of {@link FrameFields}, which a section can't give a field of its own. */
 const FRAME_FIELDS = [
@@ -82,6 +90,7 @@ const FRAME_FIELDS = [
   "margin",
   ...ENTRANCE_FIELD_NAMES,
   ...APPEARANCE_FIELD_NAMES,
+  ...BACKGROUND_FIELD_NAMES,
 ] as const;
 
 /** The fields of a section: its own, and its frame's. */
@@ -111,6 +120,11 @@ export type SectionSpec<F extends Fields, Variant extends string = never> = Omit
   readonly titled?: false;
   /** Its name in the `site-<name>` class every exported page and test finds it by: "hero". */
   readonly name: string;
+  /**
+   * `false` for a section that draws its own background image (the Hero's behind-the-text
+   * layout), which then has no background image field (2.26).
+   */
+  readonly background?: false;
   /** The frame's classes from its values: its background and layout ("hero bg-base-200"). */
   readonly frame?: (values: ValuesOf<F & FrameFields, Variant>) => string;
   /** Attributes on the frame from its values, for its behaviour (`data-wf-gallery`). */
@@ -132,7 +146,8 @@ export type SectionSpec<F extends Fields, Variant extends string = never> = Omit
 export function defineSection<const F extends Fields, const Variant extends string = never>(
   spec: SectionSpec<F, Variant> & { readonly defaults: NoInfer<DefaultsOf<F & FrameFields>> },
 ): ComponentDef {
-  const { name, frame, frameAttributes, render, fields, behaviours, titled, ...rest } = spec;
+  const { name, frame, frameAttributes, render, fields, behaviours, titled, background, ...rest } =
+    spec;
   const appearance = titled === false ? APPEARANCE_FIELDS_WITHOUT_TEXT : APPEARANCE_FIELDS;
   for (const own of FRAME_FIELDS) {
     if (Object.hasOwn(fields, own)) {
@@ -145,6 +160,8 @@ export function defineSection<const F extends Fields, const Variant extends stri
     // The Appearance group first, so the Style tab shows it before the section's own options.
     fields: {
       ...(appearance as typeof APPEARANCE_FIELDS),
+      // A background image and its overlay (2.26), in the Appearance group too.
+      ...(background === false ? {} : BACKGROUND_FIELDS),
       ...fields,
       colors: COLORS_FIELD,
       padding: PADDING_FIELD,
@@ -161,7 +178,12 @@ export function defineSection<const F extends Fields, const Variant extends stri
       ];
     },
     // A new section has the page's colours, as one with no value has: choosing them is no change.
-    defaults: { colors: "page", ...rest.defaults },
+    // Its overlay is set too, so the Edit panel shows what a background image would get (2.26).
+    defaults: {
+      colors: "page",
+      ...(background === false ? {} : BACKGROUND_DEFAULTS),
+      ...rest.defaults,
+    },
     render: (props) => {
       const { values } = props;
       // Every section's values have the frame's fields, which generic types can't see through.
@@ -171,6 +193,7 @@ export function defineSection<const F extends Fields, const Variant extends stri
         frame?.(values) ?? "",
         `${boxClasses(stored.padding, "padding", SECTION_PADDING)}${marginClasses(stored.margin)}${entranceClasses(stored)}`,
         appearanceBoxClasses(stored),
+        backgroundClasses(stored),
       ].filter((part) => part !== "");
       const theme = stored.colors === "inverse" ? { "data-theme": INVERSE_THEME } : {};
       return (
@@ -180,6 +203,13 @@ export function defineSection<const F extends Fields, const Variant extends stri
           {...theme}
           {...entranceAttributes(stored)}
         >
+          {/* The background image and its overlay, behind what the section draws (2.26). */}
+          <SectionBackground
+            values={stored}
+            context={props.context}
+            // The page's first section: its image is above the fold, so it loads at once.
+            eager={props.id === props.context.firstSection}
+          />
           <SectionTitleAppearance.Provider value={appearanceTextClasses(stored)}>
             {render(props)}
           </SectionTitleAppearance.Provider>

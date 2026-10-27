@@ -4,6 +4,7 @@ import {
   type Breakpoint,
   bindingOf,
   formatColorRef,
+  imageValueSchema,
   isResponsiveValue,
   type LinkValue,
   linkValueSchema,
@@ -154,6 +155,14 @@ export function fieldsHiddenBy(
     !onAnyDevice(values.lookBorder, (one) => one === "thin" || one === "thick")
   ) {
     hidden.add("lookBorderColor");
+  }
+  // A section's overlay, only once it has a background image to lie over (2.26).
+  if (
+    Object.hasOwn(def.fields ?? {}, "overlay") &&
+    !imageValueSchema.safeParse(values.backgroundImage).success
+  ) {
+    hidden.add("overlay");
+    hidden.add("overlayColor");
   }
   return hidden;
 }

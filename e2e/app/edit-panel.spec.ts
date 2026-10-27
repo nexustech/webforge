@@ -170,7 +170,8 @@ test("undoes with Ctrl/Cmd+Z in a panel field through the site's history (ADR 00
 
 /**
  * Selects the first Section by clicking its bottom padding, once the canvas has finished resizing
- * to the device view (Puck animates it).
+ * to the device view (Puck animates it), and shows its Style tab: the panel opens a section on
+ * Content, where its background image is (2.26).
  */
 async function selectSection(): Promise<void> {
   const section = canvas().locator(".site-section");
@@ -188,6 +189,7 @@ async function selectSection(): Promise<void> {
   // Inside its bottom padding (32 px or more), clear of the edge: at a small zoom 4 px is a pixel.
   await section.click({ force: true, position: { x: 10, y: box.height - 16 } });
   await expect(panel().getByRole("heading", { name: "Section", exact: true })).toBeVisible();
+  await panel().getByRole("tab", { name: "Style" }).click();
 }
 
 test("sets a padding for the Mobile view only, shown and cleared with its dot (F-ED-4, UX-19)", async () => {

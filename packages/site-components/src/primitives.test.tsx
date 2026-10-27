@@ -1,6 +1,7 @@
 import type { NodeDoc } from "@webforge/model";
 import { describe, expect, it } from "vitest";
 import { APPEARANCE_FIELDS } from "./appearance.js";
+import { BACKGROUND_FIELDS } from "./background.js";
 import { siteLibrary } from "./catalogue/index.js";
 import { defineComponent } from "./define.js";
 import { COLORS_FIELD, defineSection, PADDING_FIELD } from "./frame.js";
@@ -151,6 +152,7 @@ describe("the section frame (2.19)", () => {
 
     expect(Object.keys(band.fields)).toEqual([
       ...Object.keys(APPEARANCE_FIELDS),
+      ...Object.keys(BACKGROUND_FIELDS),
       "colors",
       "padding",
       "margin",
