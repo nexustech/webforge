@@ -28,13 +28,35 @@ export const BACKGROUND_WAIT = 45_000;
 const OPEN_WALL_BACKSTOP_MS = 6_000;
 
 /**
- * The CPU time opening a site may cost, across Webforge's processes: about 30% over the most CI's
- * runners measured (ADR 0014). Provisional until CI's first run measures it.
+ * The CPU time opening a site may cost on CI's runners, across Webforge's processes, by platform:
+ * about 30% over the most CI measured (run 40408131521, 27 Oct 2026: Linux 1.75–2.05 CPU-s,
+ * Windows 2.23–2.85, macOS 2.09–3.26). See ADR 0014.
  */
-const OPEN_CPU_SECONDS = 60;
+const CI_OPEN_CPU_SECONDS: Readonly<Record<string, number>> = {
+  linux: 2.7,
+  win32: 3.7,
+  darwin: 4.3,
+};
+
+/**
+ * How much more CPU a local run may use than CI's: a development machine draws the canvas on a
+ * larger, high-DPI screen and shares its CPU with other work, and opening a site cost it 2–3 times
+ * as much (5.3–7.8 CPU-s on Windows). `WEBFORGE_E2E_CPU_SCALE` sets another factor.
+ */
+const LOCAL_CPU_SCALE = 3;
+
+/** The CPU budget for opening a site in this run: CI's for its platform, scaled when local. */
+function openCpuSeconds(): number {
+  const ci = CI_OPEN_CPU_SECONDS[process.platform];
+  if (ci === undefined) throw new Error(`No CPU budget for opening a site on ${process.platform}`);
+  if (process.env.CI === "true") return ci;
+  const scale = Number(process.env.WEBFORGE_E2E_CPU_SCALE ?? LOCAL_CPU_SCALE);
+  if (!(scale > 0)) throw new Error("WEBFORGE_E2E_CPU_SCALE must be a positive number");
+  return Math.round(ci * scale * 100) / 100;
+}
 
 /** Opening a site's budget: its CPU time, and the wall-clock backstop. */
-export const OPEN_BUDGET = { cpuSeconds: OPEN_CPU_SECONDS, wallMs: OPEN_WALL_BACKSTOP_MS } as const;
+export const OPEN_BUDGET = { cpuSeconds: openCpuSeconds(), wallMs: OPEN_WALL_BACKSTOP_MS } as const;
 
 /** CPU seconds each of Webforge's processes has used so far, by process id. */
 async function cpuSoFar(app: ElectronApplication): Promise<Map<number, number>> {
@@ -89,7 +111,11 @@ export function expectWorkWithin(
   test.info().annotations.push({ type: "work", description: line });
   console.log(`[work] ${line}`);
   if (work.cpuSeconds > budget.cpuSeconds) {
-    throw new Error(`${what} cost ${cpu} CPU-s, over its ${budget.cpuSeconds} CPU-s budget`);
+    const where =
+      process.env.CI === "true"
+        ? `CI's budget on ${process.platform}`
+        : `the local budget on ${process.platform}, CI's × ${process.env.WEBFORGE_E2E_CPU_SCALE ?? LOCAL_CPU_SCALE}`;
+    throw new Error(`${what} cost ${cpu} CPU-s, over its ${budget.cpuSeconds} CPU-s (${where})`);
   }
   if (work.wallMs > budget.wallMs) {
     throw new Error(`${what} took ${work.wallMs} ms, over its ${budget.wallMs} ms backstop`);

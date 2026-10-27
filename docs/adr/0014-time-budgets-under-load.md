@@ -22,7 +22,10 @@ Re-running a failed job hides all three, and each makes the next failure harder 
 2. **Opening a site is checked in every run by its CPU time, with a loose wall-clock backstop** (`e2e/app/budget.ts`).
    - **What is measured:** `measureWork(app)` takes each process's `cumulativeCPUUsage` (Electron's `app.getAppMetrics()`) just before Create, and again once the hero shows. A process that starts in between, such as the export worker, counts from 0. One that exits in between is lost, so the count can only come out low.
    - **The check:** `expectWorkWithin(work, OPEN_BUDGET, what)` checks the CPU budget, then the backstop, and prints both in the report and the log.
-   - **The CPU budget** (`OPEN_CPU_SECONDS`) is about 30% over the most CI's Linux, Windows and macOS runners measured. CPU-seconds scale with clock speed, and those runners are slower than a development machine. A busy machine doesn't move it, so it catches the opening doing more work.
+   - **The CPU budget** is about 30% over the most CI's runners measured for any opening, per platform. CPU-seconds scale with clock speed, and the runners differ.
+     - **CI** (`CI=true`): Linux 2.7, Windows 3.7, macOS 4.3 CPU-s. One CI run on 27 Oct 2026 measured Linux 1.75–2.05, Windows 2.23–2.85 and macOS 2.09–3.26 CPU-s, across the nine openings (six templates, a template from the start screen, Personal / CV and the example).
+     - **Locally:** three times CI's, or `WEBFORGE_E2E_CPU_SCALE` times. A development machine cost 2–3 times as much: 5.3–7.8 CPU-s on Windows. Its canvas is drawn on a larger, high-DPI screen (more pixels to raster and composite), and it shares its CPU with other work, whose switching costs our processes CPU time too.
+     - **A miss** says which budget applied, CI's or the local one, with what was measured.
    - **The backstop** (`OPEN_WALL_BACKSTOP_MS`, 6 s) catches what costs time but no CPU: an added timer, a lost event, IPC round trips in series. It is twice the target, so load doesn't trip it.
    - **If a platform's Electron gives no `cumulativeCPUUsage`** (it is optional in Electron's types), the test fails and says so. It never skips.
    - **Nothing is retried.**
@@ -37,7 +40,7 @@ Re-running a failed job hides all three, and each makes the next failure harder 
 
 ## Consequences
 - **Every run catches the opening doing more work, or waiting longer,** whatever else the machine runs. Whether it opens in 3 s is a question for a quiet machine: answer it with `pnpm e2e:perf` before a release, and after work that touches opening a site.
-- **The CPU budget follows CI's runners.** If a platform's runners get much slower or faster, re-measure from the `[work]` lines in a CI log and set the budget again.
+- **The CPU budget follows CI's runners.** If a platform's runners get much slower or faster, re-measure from the `[work]` lines in a CI log and set its budget again. A developer whose machine needs more than three times CI's sets `WEBFORGE_E2E_CPU_SCALE`.
 - **A real hang still fails, just later:** a wait after up to 45 s, a unit test after its scaled timeout.
 - **Out of scope:** storage's 30 s and the publish tests' timeouts cover slow disks and servers, not load, and stay as they are.
 - **A new check of time picks one of these:** measure the work (best), a CPU budget with a wall-clock backstop, a limit only a known wait would break, or a generous wait. A bare `expect(Date.now() - started).toBeLessThan(…)` with a target from the spec is what this replaces.
