@@ -124,7 +124,7 @@ describe("the store gate", () => {
         fc.array(
           fc.record({
             kind: fc.constantFrom<GateKind>("shared", "exclusive"),
-            ms: fc.integer({ min: 0, max: 3 }),
+            turns: fc.integer({ min: 0, max: 3 }),
           }),
           { minLength: 1, maxLength: 12 },
         ),
@@ -136,13 +136,15 @@ describe("the store gate", () => {
           let clash = false;
 
           await Promise.all(
-            works.map(({ kind, ms }, index) =>
+            works.map(({ kind, turns }, index) =>
               gate.run(kind, async () => {
                 started.push(index);
                 if (exclusiveRunning || (kind === "exclusive" && running > 0)) clash = true;
                 running += 1;
                 if (kind === "exclusive") exclusiveRunning = true;
-                await new Promise((resolve) => setTimeout(resolve, ms));
+                // Held for a few turns of the microtask queue: work of varied lengths, with no
+                // clock in it, so a busy machine can't slow the test (ADR 0014, #446).
+                for (let turn = 0; turn < turns; turn += 1) await Promise.resolve();
                 running -= 1;
                 if (kind === "exclusive") exclusiveRunning = false;
               }),

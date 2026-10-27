@@ -1,7 +1,9 @@
 // @vitest-environment happy-dom
+
 import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { PageId, SiteDoc } from "@webforge/model";
+import { scaledTestTimeout } from "@webforge/test-utils/renderer";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
 import { PagesPanel, type PagesPanelActions } from "./PagesPanel.js";
@@ -9,7 +11,7 @@ import { PagesPanel, type PagesPanelActions } from "./PagesPanel.js";
 afterEach(cleanup);
 // Menus, sub-menus and dialogs take many user-event steps; under a full parallel run they can take
 // longer than the default 5 s.
-vi.setConfig({ testTimeout: 20_000 });
+vi.setConfig({ testTimeout: scaledTestTimeout(20_000) });
 
 /** The starter site plus About (hidden from navigation) and Team in a folder. */
 function siteWithPages(): SiteDoc {
