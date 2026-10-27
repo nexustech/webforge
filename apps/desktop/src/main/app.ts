@@ -307,6 +307,9 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
   // The preview server (3.2): its builds in a worker of their own while a preview is open, so an
   // export never waits behind one; opened in the default browser, which the site's scripts run in,
   // never in an Electron window.
+  // The preview's font files, read once for the theme's fonts while every face could be read (a
+  // family still downloading is read again next time): each edit sends them to its worker again.
+  let previewFonts: { key: string; fonts: Awaited<ReturnType<typeof fontsOf>> } | undefined;
   const preview = createPreview({
     startServer: createPreviewServer,
     startBuilder: (onBuilt) =>
@@ -314,7 +317,16 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
         readMedia: (hash) => projectSession.readMedia(hash),
         onBuilt,
       }),
-    jobFor: async (snapshot) => ({ type: "preview", snapshot, ...(await fontsOf(snapshot.theme)) }),
+    jobFor: async (snapshot) => {
+      const key = JSON.stringify(snapshot.theme.fonts);
+      if (previewFonts?.key !== key) {
+        const read = await fontsOf(snapshot.theme);
+        const faces = fontFacesFor(snapshot.theme, [...FONT_CATALOGUE, ...read.families]);
+        if (read.fonts.length < faces.length) return { type: "preview", snapshot, ...read };
+        previewFonts = { key, fonts: read };
+      }
+      return { type: "preview", snapshot, ...previewFonts.fonts };
+    },
     // Only the preview's own address, which this process makes: never one from the renderer.
     openInBrowser: async (url) => {
       try {

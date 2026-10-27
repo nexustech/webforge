@@ -64,6 +64,12 @@ const COMMON_HEADERS = {
   "Referrer-Policy": "no-referrer",
 } as const;
 
+/**
+ * A built file's: kept by the browser, but checked with the server each time it's used (its
+ * version as its ETag), so a reloaded page fetches only what changed: a 304 for the rest.
+ */
+const FILE_HEADERS = { ...COMMON_HEADERS, "Cache-Control": "no-cache" } as const;
+
 /** How long a page asked for before the first build waits for it before giving up. */
 const FIRST_BUILD_WAIT_MS = 120_000;
 
@@ -92,6 +98,9 @@ export function createPreviewServer(): PreviewServer {
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
   let files = new Map<string, Uint8Array>();
+  // Each file's version, its ETag: a number that only ever goes up while the server runs.
+  const versions = new Map<string, number>();
+  let version = 0;
   let built = false;
   const waiting = new Set<() => void>();
   const streams = new Set<ServerResponse>();
@@ -108,10 +117,21 @@ export function createPreviewServer(): PreviewServer {
     response.end(t("preview.notFound"));
   };
 
-  const serveFile = (path: string, response: ServerResponse, head: boolean) => {
+  const serveFile = (
+    path: string,
+    request: IncomingMessage,
+    response: ServerResponse,
+    head: boolean,
+  ) => {
     const data = files.get(path);
     if (data === undefined) {
       notFound(response);
+      return;
+    }
+    const etag = `"${versions.get(path) ?? 0}"`;
+    if (request.headers["if-none-match"] === etag) {
+      response.writeHead(304, { ...FILE_HEADERS, ETag: etag });
+      response.end();
       return;
     }
     const type = contentTypeOf(path);
@@ -119,7 +139,8 @@ export function createPreviewServer(): PreviewServer {
       ? encoder.encode(withLiveReload(decoder.decode(data), base))
       : data;
     response.writeHead(200, {
-      ...COMMON_HEADERS,
+      ...FILE_HEADERS,
+      ETag: etag,
       "Content-Type": type,
       "Content-Length": body.byteLength,
     });
@@ -177,7 +198,7 @@ export function createPreviewServer(): PreviewServer {
     }
     const wanted = path === "" || path.endsWith("/") ? `${path}index.html` : path;
     if (built) {
-      serveFile(wanted, response, head);
+      serveFile(wanted, request, response, head);
       return;
     }
     // Before the first build: wait for it, then answer; a browser opened at once gets its page.
@@ -185,7 +206,7 @@ export function createPreviewServer(): PreviewServer {
     const answer = () => {
       clearTimeout(timer);
       waiting.delete(answer);
-      serveFile(wanted, response, head);
+      serveFile(wanted, request, response, head);
     };
     const timer = setTimeout(() => {
       waiting.delete(answer);
@@ -219,7 +240,10 @@ export function createPreviewServer(): PreviewServer {
     },
     update(build) {
       if (build.full) files = new Map();
-      for (const { path, data } of build.changed) files.set(path, data);
+      for (const { path, data } of build.changed) {
+        files.set(path, data);
+        versions.set(path, ++version);
+      }
       for (const path of build.removed) files.delete(path);
       const changed = [...build.changed.map((file) => file.path), ...build.removed];
       if (!built) {

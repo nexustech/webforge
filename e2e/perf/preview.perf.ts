@@ -69,11 +69,11 @@ function record(name: string, ms: number): void {
   writeFileSync(RESULTS, `${JSON.stringify({ ...results, [name]: ms }, null, 2)}\n`);
 }
 
-const buttonColour = () =>
-  site
-    .locator("a.btn")
-    .first()
-    .evaluate((link) => getComputedStyle(link).backgroundColor);
+/** The theme's brand colour as the page in the browser has it, from its stylesheet. */
+const brand = () =>
+  site.evaluate(() =>
+    getComputedStyle(document.documentElement).getPropertyValue("--color-primary").trim(),
+  );
 
 /** Sets the theme's brand colour to `hex` in the Theme tab, up to its last click. */
 async function brandColour(hex: string, last: () => Promise<void>) {
@@ -95,8 +95,8 @@ test("a colour of the theme reaches the browser in under 100 ms", async () => {
   await brandColour("b0306a", () =>
     page.getByRole("alertdialog").getByRole("button", { name: "Change Colour" }).click(),
   );
-  await expect.poll(buttonColour, { timeout: OPEN_WAIT }).not.toBe("");
-  const before = await buttonColour();
+  await expect.poll(brand, { timeout: OPEN_WAIT }).not.toBe("");
+  const before = await brand();
 
   let started = 0;
   await brandColour("2a6fb0", async () => {
@@ -106,7 +106,7 @@ test("a colour of the theme reaches the browser in under 100 ms", async () => {
   });
   await site.waitForFunction(
     (previous) =>
-      getComputedStyle(document.querySelector("a.btn") ?? document.body).backgroundColor !==
+      getComputedStyle(document.documentElement).getPropertyValue("--color-primary").trim() !==
       previous,
     before,
     { polling: "raf", timeout: OPEN_WAIT },

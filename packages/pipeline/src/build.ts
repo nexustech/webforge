@@ -143,6 +143,8 @@ type RenderedRegions = RenderedPage & { readonly warnings: readonly BuildWarning
 export type BuildCaches = {
   readonly styles: StyleCompiler;
   readonly pages: Map<string, RenderedRegions>;
+  /** Each font file checked against the catalogue's hash, by name: the same bytes aren't hashed again. */
+  readonly fonts: Map<string, Uint8Array>;
 };
 
 /** How {@link buildEvents} runs: what for, its cancel signal, its output, the caches it may use. */
@@ -544,9 +546,18 @@ export async function* buildEvents(
   yield { stage: "fonts" };
   for (const face of fontFacesFor(site.theme, resources.fonts)) {
     const data = await resources.readFont(face);
-    if (data === undefined || data.byteLength !== face.bytes || sha256(data) !== face.sha256) {
+    const checked = caches?.fonts.get(face.file);
+    const known =
+      checked !== undefined &&
+      data !== undefined &&
+      Buffer.from(checked.buffer, checked.byteOffset, checked.byteLength).equals(data);
+    if (
+      !known &&
+      (data === undefined || data.byteLength !== face.bytes || sha256(data) !== face.sha256)
+    ) {
       throw new BuildError("missing-font", `The font file ${face.file} is missing or damaged`);
     }
+    if (data !== undefined) caches?.fonts.set(face.file, data);
     files.set(`assets/fonts/${face.file}`, data);
   }
 

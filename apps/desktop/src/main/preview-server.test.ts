@@ -32,22 +32,25 @@ async function started() {
 }
 
 /** A request to the server; resolves its status, headers and body. */
-function get(port: number, path: string, method = "GET") {
-  return new Promise<{ status: number; type: string; body: string }>((resolve, reject) => {
-    const sent = request({ host: "127.0.0.1", port, path, method }, (response) => {
-      const chunks: Buffer[] = [];
-      response.on("data", (chunk: Buffer) => chunks.push(chunk));
-      response.on("end", () =>
-        resolve({
-          status: response.statusCode ?? 0,
-          type: String(response.headers["content-type"] ?? ""),
-          body: Buffer.concat(chunks).toString("utf8"),
-        }),
-      );
-    });
-    sent.on("error", reject);
-    sent.end();
-  });
+function get(port: number, path: string, method = "GET", headers: Record<string, string> = {}) {
+  return new Promise<{ status: number; type: string; etag: string; body: string }>(
+    (resolve, reject) => {
+      const sent = request({ host: "127.0.0.1", port, path, method, headers }, (response) => {
+        const chunks: Buffer[] = [];
+        response.on("data", (chunk: Buffer) => chunks.push(chunk));
+        response.on("end", () =>
+          resolve({
+            status: response.statusCode ?? 0,
+            type: String(response.headers["content-type"] ?? ""),
+            etag: String(response.headers.etag ?? ""),
+            body: Buffer.concat(chunks).toString("utf8"),
+          }),
+        );
+      });
+      sent.on("error", reject);
+      sent.end();
+    },
+  );
 }
 
 /** The server's event stream, collecting each event as it comes. */
@@ -209,6 +212,29 @@ describe("the preview server (3.2)", () => {
 
     expect((await get(port, preview.base)).body).toContain("Again");
     expect((await get(port, `${preview.base}services/about.html`)).status).toBe(404);
+  });
+
+  it("lets the browser keep a file until it changes: a reload fetches only what did", async () => {
+    const { server: preview, port } = await started();
+    preview.update(FIRST);
+    const css = `${preview.base}${PREVIEW_STYLESHEET}`;
+    const { etag } = await get(port, css);
+    expect(etag).toMatch(/^"\d+"$/);
+
+    expect(await get(port, css, "GET", { "If-None-Match": etag })).toMatchObject({
+      status: 304,
+      body: "",
+    });
+    preview.update({
+      type: "previewed",
+      full: false,
+      changed: [{ path: PREVIEW_STYLESHEET, data: text.encode("body{color:blue}") }],
+      removed: [],
+    });
+    expect(await get(port, css, "GET", { "If-None-Match": etag })).toMatchObject({
+      status: 200,
+      body: "body{color:blue}",
+    });
   });
 
   it("stops listening when closed", async () => {
