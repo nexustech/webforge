@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import {
   APPEARANCE_FIELD_NAMES,
   APPEARANCE_FIELDS,
+  APPEARANCE_FIELDS_WITHOUT_TEXT,
   appearanceBoxClasses,
   appearanceTextClasses,
 } from "./appearance.js";
@@ -102,6 +103,12 @@ export type SectionSpec<F extends Fields, Variant extends string = never> = Omit
     readonly entrance?: never;
     readonly entranceDelay?: never;
   } & { readonly [Name in keyof typeof APPEARANCE_FIELDS]?: never };
+  /**
+   * `false` for a section with no title of its own (a plain Section): the Appearance group's Text
+   * controls, which style a section's title, are left out (2.22b). A test checks every section
+   * that draws no title says so.
+   */
+  readonly titled?: false;
   /** Its name in the `site-<name>` class every exported page and test finds it by: "hero". */
   readonly name: string;
   /** The frame's classes from its values: its background and layout ("hero bg-base-200"). */
@@ -125,7 +132,8 @@ export type SectionSpec<F extends Fields, Variant extends string = never> = Omit
 export function defineSection<const F extends Fields, const Variant extends string = never>(
   spec: SectionSpec<F, Variant> & { readonly defaults: NoInfer<DefaultsOf<F & FrameFields>> },
 ): ComponentDef {
-  const { name, frame, frameAttributes, render, fields, behaviours, ...rest } = spec;
+  const { name, frame, frameAttributes, render, fields, behaviours, titled, ...rest } = spec;
+  const appearance = titled === false ? APPEARANCE_FIELDS_WITHOUT_TEXT : APPEARANCE_FIELDS;
   for (const own of FRAME_FIELDS) {
     if (Object.hasOwn(fields, own)) {
       throw new Error(`'${spec.label}' declares its own "${own}": defineSection adds it`);
@@ -136,7 +144,7 @@ export function defineSection<const F extends Fields, const Variant extends stri
     place: "section",
     // The Appearance group first, so the Style tab shows it before the section's own options.
     fields: {
-      ...APPEARANCE_FIELDS,
+      ...(appearance as typeof APPEARANCE_FIELDS),
       ...fields,
       colors: COLORS_FIELD,
       padding: PADDING_FIELD,
