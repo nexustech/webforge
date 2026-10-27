@@ -61,8 +61,12 @@ export function createPreview(deps: PreviewDeps): Preview {
     if (running !== undefined) return running;
     const server = deps.startServer();
     const builder = deps.startBuilder((outcome) => {
-      if (outcome.type === "previewed") server.update(outcome);
-      else log.error("Webforge could not build the preview", { detail: outcome.detail });
+      if (outcome.type === "previewed") {
+        server.update(outcome);
+        return;
+      }
+      log.error("Webforge could not build the preview", { detail: outcome.detail });
+      server.failed();
     });
     // A browser that starts watching gets the latest edits built.
     server.onWatch(build);

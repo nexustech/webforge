@@ -151,6 +151,19 @@ describe("the preview server (3.2)", () => {
     expect((await waiting).body).toContain("Home");
   });
 
+  it("tells a page waiting for the first build at once when the build failed", async () => {
+    const { server: preview, port } = await started();
+    const waiting = get(port, preview.base);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    preview.failed();
+
+    expect(await waiting).toMatchObject({
+      status: 503,
+      body: "The preview isn't ready yet. Reload this page in a moment.",
+    });
+  });
+
   it("tells the browsers what changed: the stylesheet alone, pages, anything else", async () => {
     const { server: preview, port } = await started();
     preview.update(FIRST);

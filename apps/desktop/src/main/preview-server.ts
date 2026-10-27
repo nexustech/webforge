@@ -25,6 +25,8 @@ export type PreviewServer = {
   update(build: PreviewBuild): void;
   /** Takes the editor to `page` (`about.html`): the browsers showing another page go there. */
   show(page: string): void;
+  /** A build failed: pages waiting for the first one are told it isn't ready, at once. */
+  failed(): void;
   /** How many browsers are showing the preview now. */
   watching(): number;
   /** Called when a browser starts showing the preview, so the latest edits can be built. */
@@ -102,7 +104,8 @@ export function createPreviewServer(): PreviewServer {
   const versions = new Map<string, number>();
   let version = 0;
   let built = false;
-  const waiting = new Set<() => void>();
+  /** The pages asked for before the first build, each answered with it, or as not ready. */
+  const waiting = new Set<(ready: boolean) => void>();
   const streams = new Set<ServerResponse>();
   const watchers = new Set<() => void>();
   const servers = new Map<PreviewScope, { server: Server; port: Promise<number> }>();
@@ -110,6 +113,11 @@ export function createPreviewServer(): PreviewServer {
   const send = (event: string, data: unknown) => {
     const message = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
     for (const stream of streams) stream.write(message);
+  };
+
+  const notReady = (response: ServerResponse) => {
+    response.writeHead(503, { ...COMMON_HEADERS, "Content-Type": "text/plain; charset=utf-8" });
+    response.end(t("preview.notReady"));
   };
 
   const notFound = (response: ServerResponse) => {
@@ -203,16 +211,13 @@ export function createPreviewServer(): PreviewServer {
     }
     // Before the first build: wait for it, then answer; a browser opened at once gets its page.
     for (const watcher of watchers) watcher();
-    const answer = () => {
+    const answer = (ready: boolean) => {
       clearTimeout(timer);
       waiting.delete(answer);
-      serveFile(wanted, request, response, head);
+      if (ready) serveFile(wanted, request, response, head);
+      else notReady(response);
     };
-    const timer = setTimeout(() => {
-      waiting.delete(answer);
-      response.writeHead(503, { ...COMMON_HEADERS, "Content-Type": "text/plain; charset=utf-8" });
-      response.end(t("preview.notReady"));
-    }, FIRST_BUILD_WAIT_MS);
+    const timer = setTimeout(() => answer(false), FIRST_BUILD_WAIT_MS);
     waiting.add(answer);
     request.on("close", () => {
       clearTimeout(timer);
@@ -248,7 +253,7 @@ export function createPreviewServer(): PreviewServer {
       const changed = [...build.changed.map((file) => file.path), ...build.removed];
       if (!built) {
         built = true;
-        for (const answer of [...waiting]) answer();
+        for (const answer of [...waiting]) answer(true);
         return;
       }
       if (changed.length === 0) return;
@@ -264,12 +269,15 @@ export function createPreviewServer(): PreviewServer {
     show(page) {
       send("show", { page });
     },
+    failed() {
+      for (const answer of [...waiting]) answer(false);
+    },
     watching: () => streams.size,
     onWatch(listener) {
       watchers.add(listener);
     },
     async close() {
-      for (const answer of [...waiting]) answer();
+      for (const answer of [...waiting]) answer(false);
       for (const stream of streams) stream.end();
       streams.clear();
       await Promise.all(

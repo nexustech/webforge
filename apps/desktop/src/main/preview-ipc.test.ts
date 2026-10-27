@@ -38,6 +38,7 @@ function previewOf(overrides: Partial<PreviewDeps> = {}) {
     show: vi.fn((_page: string) => undefined),
     watching: () => watching,
     onWatch: (listener: () => void) => watchers.push(listener),
+    failed: vi.fn(() => undefined),
     close: vi.fn(async () => undefined),
   } satisfies PreviewServer;
   let onBuilt: (outcome: PreviewOutcome) => void = () => undefined;
@@ -155,6 +156,8 @@ describe("createPreview (3.2)", () => {
     preview.show("about.html");
 
     expect(server.update.mock.calls).toEqual([[build]]);
+    // A failed build answers the pages waiting for the first one at once.
+    expect(server.failed).toHaveBeenCalledOnce();
     expect(server.show).toHaveBeenCalledWith("about.html");
   });
 
