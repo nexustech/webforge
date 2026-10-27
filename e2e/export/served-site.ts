@@ -13,6 +13,10 @@ const TYPES: Readonly<Record<string, string>> = {
   ".svg": "image/svg+xml",
   ".woff2": "font/woff2",
   ".pdf": "application/pdf",
+  ".webmanifest": "application/manifest+json",
+  ".xml": "application/xml",
+  ".txt": "text/plain; charset=utf-8",
+  ".md": "text/markdown; charset=utf-8",
 };
 
 /** An exported site served over http on this computer, as a host would serve it. */
