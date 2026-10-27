@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { tempDirFactory } from "@webforge/test-utils";
+import { tempDirFactory } from "@webforge/test-utils/vitest";
 import { describe, expect, it } from "vitest";
 import { AssetWriter, ProjectFileError, ProjectStore } from "../src/index.js";
 

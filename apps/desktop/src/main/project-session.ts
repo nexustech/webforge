@@ -26,6 +26,7 @@ import type {
   ProjectResult,
   ProjectSummary,
   ReadSiteResult,
+  SiteUiChange,
   SiteUiState,
   UiStateResult,
 } from "../shared/ipc-contract.js";
@@ -383,7 +384,10 @@ export class ProjectSession {
   /** The open site's editor state, or `null` without an open site. */
   uiState(): Promise<SiteUiState | null> {
     return this.#shared<SiteUiState | null>(
-      (store) => ({ editorMode: store.readEditorMode() }),
+      (store) => ({
+        editorMode: store.readEditorMode(),
+        siteCheckIgnored: store.readSiteCheckIgnored(),
+      }),
       () => null,
     );
   }
@@ -415,18 +419,24 @@ export class ProjectSession {
     );
   }
 
-  /** Remembers the editor state with the open site (not a site change: never versioned). */
-  setUiState(state: SiteUiState, sessionId?: string): Promise<UiStateResult> {
+  /**
+   * Remembers the parts of the editor state in `change` with the open site (not a site change:
+   * never versioned).
+   */
+  setUiState(change: SiteUiChange, sessionId?: string): Promise<UiStateResult> {
     return this.#shared<UiStateResult>(
       (store) => {
         try {
-          store.writeEditorMode(state.editorMode);
+          if (change.editorMode !== undefined) store.writeEditorMode(change.editorMode);
+          if (change.siteCheckIgnored !== undefined) {
+            store.writeSiteCheckIgnored(change.siteCheckIgnored);
+          }
           return { status: "saved" };
         } catch (error) {
           if (error instanceof ReadOnlyProjectError) {
             return { status: "failed", reason: "read-only" };
           }
-          logFailure("Webforge could not remember the editor mode", error);
+          logFailure("Webforge could not remember the editor state", error);
           return { status: "failed", reason: "unknown" };
         }
       },

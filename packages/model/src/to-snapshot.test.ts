@@ -114,6 +114,23 @@ describe("siteToSnapshot", () => {
     expect(snapshot.backToTop).toBeUndefined();
   });
 
+  it("passes Google Analytics on once there is a Measurement ID, with the banner's text (3.8)", () => {
+    const counted = bakery();
+    counted.settings.analytics = {
+      measurementId: "G-ABC123DEF4",
+      consentBanner: true,
+      consentMessage: "Cookies?",
+    };
+
+    expect(siteToSnapshot(counted, new Map([[HASH, bytes]])).analytics).toEqual({
+      measurementId: "G-ABC123DEF4",
+      consentBanner: true,
+      consentMessage: "Cookies?",
+    });
+    // The banner switched on with no ID counts nothing: no analytics at all.
+    expect(snapshot.analytics).toBeUndefined();
+  });
+
   it("falls back to the site description and keeps the 'Page not found' page out of navigation", () => {
     expect(snapshot.pages[0]?.description).toBe("Fresh bread in Hightown");
     expect(snapshot.pages[2]?.hideFromNavigation).toBe(true);

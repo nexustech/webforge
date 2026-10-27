@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createSite, DEFAULT_EXPORT_CHOICES } from "@webforge/model";
-import { tempDirFactory } from "@webforge/test-utils";
+import { tempDirFactory } from "@webforge/test-utils/vitest";
 import Database from "better-sqlite3";
 import { describe, expect, it } from "vitest";
 import { ProjectStore } from "../src/index.js";
@@ -30,6 +30,7 @@ const READERS = [
   "listAssets",
   "readEditorMode",
   "readExportChoices",
+  "readSiteCheckIgnored",
   "backupTo",
   "close",
 ];
@@ -53,6 +54,7 @@ const WRITERS: Record<string, (store: ProjectStore) => unknown> = {
   saveVersion: (store) => store.saveVersion("Before the change", "manual"),
   writeEditorMode: (store) => store.writeEditorMode("content"),
   writeExportChoices: (store) => store.writeExportChoices(DEFAULT_EXPORT_CHOICES),
+  writeSiteCheckIgnored: (store) => store.writeSiteCheckIgnored(["brokenLinks:a"]),
   collectGarbage: (store) => store.collectGarbage(),
 };
 

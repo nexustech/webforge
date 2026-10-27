@@ -216,4 +216,17 @@ describe("findBrokenLinks (F-ED-18)", () => {
       { on: doc.homePageId, nodeId: "text", mediaId: "lost" },
     ]);
   });
+
+  it("leaves out hidden elements' links when asked, as the export leaves them out (3.6)", () => {
+    const gone = { kind: "page", pageId: "page-gone" };
+    const doc = site([
+      button("shown", gone),
+      { type: "Section", props: { id: "hidden", hidden: true, content: [button("inside", gone)] } },
+    ]);
+
+    expect(findBrokenLinks(doc).map((link) => link.nodeId)).toEqual(["shown", "inside"]);
+    expect(findBrokenLinks(doc, { skipHidden: true }).map((link) => link.nodeId)).toEqual([
+      "shown",
+    ]);
+  });
 });

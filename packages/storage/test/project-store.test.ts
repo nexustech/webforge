@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { DEFAULT_EXPORT_CHOICES, type ExportChoices } from "@webforge/model";
-import { tempDirFactory } from "@webforge/test-utils";
+import { tempDirFactory } from "@webforge/test-utils/vitest";
 import Database from "better-sqlite3";
 import { describe, expect, it } from "vitest";
 import { hardenConnection } from "../src/connection.js";
@@ -459,6 +459,46 @@ describe("ProjectStore export choices (3.3)", () => {
     const store = ProjectStore.open(createProject(), { readOnly: true });
 
     expect(() => store.writeExportChoices(DEFAULT_EXPORT_CHOICES)).toThrow(ReadOnlyProjectError);
+    store.close();
+  });
+});
+
+describe("ProjectStore Site Check ignores (3.6)", () => {
+  it("remembers what was ignored across opens, nothing at first", () => {
+    const path = createProject();
+    const store = ProjectStore.open(path);
+    expect(store.readSiteCheckIgnored()).toEqual([]);
+
+    store.writeSiteCheckIgnored(["altText:page-1/hero/image", "underlinedText:footer/text"]);
+    store.close();
+
+    const reopened = ProjectStore.open(path);
+    expect(reopened.readSiteCheckIgnored()).toEqual([
+      "altText:page-1/hero/image",
+      "underlinedText:footer/text",
+    ]);
+    reopened.writeSiteCheckIgnored([]);
+    expect(reopened.readSiteCheckIgnored()).toEqual([]);
+    reopened.close();
+  });
+
+  it("reads nothing ignored from a value it can't use, and still opens", () => {
+    for (const value of ["not json", '{"a":1}', '[""]']) {
+      const path = createProject();
+      tamper(path, (db) =>
+        db.prepare("INSERT INTO meta (key, value) VALUES ('site_check_ignored', ?)").run(value),
+      );
+      const store = ProjectStore.open(path);
+
+      expect(store.readSiteCheckIgnored()).toEqual([]);
+      store.close();
+    }
+  });
+
+  it("refuses to change a read-only site's ignores", () => {
+    const store = ProjectStore.open(createProject(), { readOnly: true });
+
+    expect(() => store.writeSiteCheckIgnored(["a:b"])).toThrow(ReadOnlyProjectError);
     store.close();
   });
 });

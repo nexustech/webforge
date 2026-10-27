@@ -1,7 +1,8 @@
 import { execFileSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { heroPhoto, tempDirFactory } from "@webforge/test-utils";
+import { heroPhoto } from "@webforge/test-utils";
+import { tempDirFactory } from "@webforge/test-utils/vitest";
 import { describe, expect, it, vi } from "vitest";
 import { createImportJobs } from "./store-import.js";
 

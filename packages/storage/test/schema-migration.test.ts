@@ -1,5 +1,5 @@
 import { join } from "node:path";
-import { tempDirFactory } from "@webforge/test-utils";
+import { tempDirFactory } from "@webforge/test-utils/vitest";
 import Database from "better-sqlite3";
 import { describe, expect, it, vi } from "vitest";
 
