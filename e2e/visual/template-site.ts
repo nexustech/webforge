@@ -50,9 +50,19 @@ export async function withBuiltTemplate(
   }
 }
 
-/** Opens `address` and waits for its fonts and every photo, so nothing shows half loaded. */
+/**
+ * Opens `address` and waits for its fonts and every photo, so nothing shows half loaded. Lazy
+ * photos load at once: one far down a tall page (a background band on a phone, 2.29) would
+ * otherwise never start, and the full-page screenshot shows it. Each is waited for until decoded:
+ * a photo just switched to eager reads as complete before its request starts.
+ */
 export async function openPage(page: Page, address: string): Promise<void> {
   await page.goto(address);
+  await page.evaluate(async () => {
+    const images = [...document.images];
+    for (const image of images) image.loading = "eager";
+    await Promise.all(images.map((image) => image.decode().catch(() => undefined)));
+  });
   await page.evaluate(() => document.fonts.ready);
   await page.waitForFunction(() => [...document.images].every((image) => image.complete));
 }

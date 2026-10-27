@@ -10,9 +10,18 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { DEFAULT_THEME, SITE_FORMAT_VERSION, siteDocSchema } from "@webforge/model";
-import { siteLibrary, walkNodes } from "@webforge/site-components";
-import { THEME_PRESETS } from "@webforge/themes";
+import {
+  DEFAULT_THEME,
+  eachElement,
+  type NodeDoc,
+  SITE_FORMAT_VERSION,
+  type SiteDoc,
+  siteDocSchema,
+} from "@webforge/model";
+import { checkSite } from "@webforge/site-check";
+import { sectionOverlay, siteLibrary, walkNodes } from "@webforge/site-components";
+import { CATALOGUE } from "@webforge/site-components/catalogue-data";
+import { overlayContrastIssue, THEME_PRESETS } from "@webforge/themes";
 import { describe, expect, it } from "vitest";
 import { readTemplate, readTemplates, TEMPLATES_DIR } from "../src/node.js";
 import {
@@ -137,6 +146,68 @@ describe("the shipped templates (2.14a)", () => {
         if (image.source.startsWith("http")) continue;
         expect(image.source, image.file).toMatch(/^Generated for Webforge/);
         expect(image.licence, image.file).toBe("CC0-1.0");
+      }
+    }
+  });
+});
+
+/** Every element of a template's site: its pages', Header's and Footer's. */
+function elementsOf(site: SiteDoc): NodeDoc[] {
+  const found: NodeDoc[] = [];
+  eachElement(site, (node) => {
+    found.push(node);
+  });
+  return found;
+}
+
+/** A text mark in rich text (2.25): an underline, a highlight or a theme colour. */
+const TEXT_MARK = /<u>|<span class="(bg-secondary\/30|text-(primary|secondary|base-content))">/;
+
+describe("the templates' styling (2.29, ST-8)", () => {
+  it("each use the Appearance group, a hover effect, a text mark or a section background", () => {
+    for (const { template } of templates) {
+      const styled = elementsOf(template.site).filter(({ props }) =>
+        Object.entries(props).some(
+          ([name, value]) =>
+            (name.startsWith("look") && value !== "default") ||
+            (name === "hover" && value !== "none") ||
+            name === "backgroundImage" ||
+            (typeof value === "string" && TEXT_MARK.test(value)),
+        ),
+      );
+      expect(styled.length, template.id).toBeGreaterThan(0);
+    }
+  });
+
+  it("keep text readable over every section's background image, whatever the photo (2.26)", () => {
+    for (const { template } of templates) {
+      for (const { type, props } of elementsOf(template.site)) {
+        const overlay = sectionOverlay(props);
+        if (overlay === null) continue;
+        // A banner draws its text in the Neutral colours: the check below assumes the overlay's.
+        if (type === "CallToAction" && props.variant === "banner") {
+          expect(overlay.color, `${template.id} ${type}`).toBe("neutral");
+        }
+        expect(overlayContrastIssue(template.site.theme, overlay), `${template.id} ${type}`).toBe(
+          null,
+        );
+      }
+    }
+  });
+
+  it("leave Site Check nothing to say about their colours, underlines or images (3.6)", () => {
+    for (const { template, images } of templates) {
+      // As a site made from it has it: its images in Media.
+      const site = siteFromTemplate(template, images, {
+        name: template.site.settings.general.name,
+        theme: template.site.theme,
+      });
+      const report = checkSite({ site, catalogue: CATALOGUE }, "export");
+      for (const rule of ["contrast", "underlinedText", "altText", "missingImages"]) {
+        const result = report.results.find((each) => each.rule === rule);
+        // The themes' own pairs are reported, not held to AA (2.13): only what the template wrote.
+        const found = result?.findings.filter((finding) => finding.place.kind !== "theme");
+        expect(found, `${template.id} ${rule}`).toEqual([]);
       }
     }
   });

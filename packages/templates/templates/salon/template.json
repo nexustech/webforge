@@ -408,7 +408,7 @@
                 "variant": "centred",
                 "colors": "page",
                 "title": "What we do",
-                "text": "<p>Everything takes as long as it needs, never longer.</p>",
+                "text": "<p>Everything takes as long as it needs, <span class=\"bg-secondary/30\">never longer</span>.</p>",
                 "items": [
                   {
                     "type": "Feature",
@@ -437,7 +437,8 @@
                       "text": "<p>Ring us, send a message, or ask at the desk. Late appointments on Thursdays.</p>"
                     }
                   }
-                ]
+                ],
+                "hover": "grow"
               }
             },
             {
@@ -542,7 +543,12 @@
                   "kind": "page",
                   "pageId": "salon-book",
                   "newTab": false
-                }
+                },
+                "backgroundImage": {
+                  "mediaId": "salon-salon"
+                },
+                "overlay": "60",
+                "overlayColor": "neutral"
               }
             }
           ]

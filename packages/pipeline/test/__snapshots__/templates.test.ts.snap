@@ -4,7 +4,7 @@ exports[`the blank template's export > writes the reviewed pages and files 1`] =
 [
   "404.html",
   "about.html",
-  "assets/css/site.4624a5265b.css",
+  "assets/css/site.e57ee7cfda.css",
   "assets/fonts/inter-latin-ext-wght-italic.woff2",
   "assets/fonts/inter-latin-ext-wght-normal.woff2",
   "assets/fonts/inter-latin-wght-italic.woff2",
@@ -19,7 +19,7 @@ exports[`the cafe template's export > writes the reviewed pages and files 1`] = 
 [
   "404.html",
   "about.html",
-  "assets/css/site.7a688047a6.css",
+  "assets/css/site.4af23befa1.css",
   "assets/fonts/playfair-display-latin-ext-wght-normal.woff2",
   "assets/fonts/playfair-display-latin-wght-normal.woff2",
   "assets/fonts/source-sans-3-latin-ext-wght-italic.woff2",
@@ -65,7 +65,7 @@ exports[`the consultant template's export > writes the reviewed pages and files 
 [
   "404.html",
   "about.html",
-  "assets/css/site.91bc11cbb1.css",
+  "assets/css/site.95761d5167.css",
   "assets/fonts/lora-latin-ext-wght-normal.woff2",
   "assets/fonts/lora-latin-wght-normal.woff2",
   "assets/fonts/work-sans-latin-ext-wght-italic.woff2",
@@ -93,7 +93,7 @@ exports[`the personal template's export > writes the reviewed pages and files 1`
 [
   "404.html",
   "about.html",
-  "assets/css/site.38b4379f4c.css",
+  "assets/css/site.c7fe962663.css",
   "assets/fonts/dm-sans-latin-ext-wght-italic.woff2",
   "assets/fonts/dm-sans-latin-ext-wght-normal.woff2",
   "assets/fonts/dm-sans-latin-wght-italic.woff2",
@@ -145,7 +145,7 @@ exports[`the photographer template's export > writes the reviewed pages and file
 [
   "404.html",
   "about.html",
-  "assets/css/site.77230e02e8.css",
+  "assets/css/site.ea1f868681.css",
   "assets/fonts/figtree-latin-ext-wght-italic.woff2",
   "assets/fonts/figtree-latin-ext-wght-normal.woff2",
   "assets/fonts/figtree-latin-wght-italic.woff2",
@@ -206,7 +206,7 @@ exports[`the salon template's export > writes the reviewed pages and files 1`] =
 [
   "404.html",
   "about.html",
-  "assets/css/site.81a032df4f.css",
+  "assets/css/site.63bb233907.css",
   "assets/fonts/montserrat-latin-ext-wght-normal.woff2",
   "assets/fonts/montserrat-latin-wght-normal.woff2",
   "assets/fonts/open-sans-latin-ext-wght-italic.woff2",
@@ -248,7 +248,7 @@ exports[`the shop template's export > writes the reviewed pages and files 1`] = 
 [
   "404.html",
   "about.html",
-  "assets/css/site.3e9c66ae44.css",
+  "assets/css/site.054ec59c14.css",
   "assets/fonts/caveat-latin-ext-wght-normal.woff2",
   "assets/fonts/caveat-latin-wght-normal.woff2",
   "assets/fonts/rubik-latin-ext-wght-italic.woff2",
@@ -308,7 +308,7 @@ exports[`the trades template's export > writes the reviewed pages and files 1`] 
 [
   "404.html",
   "about.html",
-  "assets/css/site.00e71665bc.css",
+  "assets/css/site.916682a9c8.css",
   "assets/fonts/bebas-neue-latin-400-normal.woff2",
   "assets/fonts/bebas-neue-latin-ext-400-normal.woff2",
   "assets/fonts/roboto-latin-ext-wght-italic.woff2",

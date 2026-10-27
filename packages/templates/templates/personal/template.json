@@ -415,7 +415,8 @@
                     }
                   }
                 ],
-                "id": "stats-11"
+                "id": "stats-11",
+                "lookCase": "uppercase"
               }
             },
             {
@@ -424,7 +425,7 @@
                 "variant": "cards",
                 "colors": "page",
                 "title": "What I can do for you",
-                "text": "<p>From a first sketch to the finished thing, done properly and on time.</p>",
+                "text": "<p>From a first sketch to the finished thing, done properly and <span class=\"bg-secondary/30\">on time</span>.</p>",
                 "items": [
                   {
                     "type": "Feature",
@@ -454,7 +455,8 @@
                     }
                   }
                 ],
-                "id": "features-12"
+                "id": "features-12",
+                "hover": "lift"
               }
             },
             {
