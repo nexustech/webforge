@@ -1,6 +1,11 @@
 import { t } from "@webforge/i18n";
-import { isResponsiveValue, type Responsive } from "@webforge/model";
-import { colorClass, responsiveClasses } from "./library.js";
+import {
+  type Breakpoint,
+  isResponsiveValue,
+  type Responsive,
+  resolveResponsive,
+} from "@webforge/model";
+import { colorClass } from "./library.js";
 import type { FieldDef } from "./schema.js";
 
 /**
@@ -224,11 +229,41 @@ const colourOf = (prefix: "text" | "bg" | "border") => (value: unknown) => {
   return name === "" ? "" : `${name}!`;
 };
 
-/** The classes of a value that may be set per device, by `one`. */
+/** The devices, smallest first, and the variant for each run of them that share a value. */
+const DEVICES: readonly Breakpoint[] = ["mobile", "tablet", "desktop"];
+const DEVICE_RANGE: Readonly<Record<string, string>> = {
+  mobile: "max-md:",
+  tablet: "md:max-lg:",
+  desktop: "lg:",
+  "mobile tablet": "max-lg:",
+  "tablet desktop": "md:",
+  "mobile tablet desktop": "",
+};
+
+/**
+ * The classes of a value that may be set per device, by `one`: each device's only across its own
+ * widths (`max-md:` Mobile, `md:max-lg:` Tablet, `lg:` Desktop; joined where neighbours agree), so
+ * *Theme's* on a device draws nothing there, whatever another device has. (`responsiveClasses` is
+ * mobile first: a value drawing no class couldn't undo a smaller device's.)
+ */
 function perDevice(value: unknown, one: (value: unknown) => string): string {
-  return isResponsiveValue(value as Responsive<unknown>)
-    ? responsiveClasses(value as Responsive<unknown>, one)
-    : one(value);
+  if (!isResponsiveValue(value as Responsive<unknown>)) return one(value);
+  const runs: { devices: Breakpoint[]; classes: string }[] = [];
+  for (const device of DEVICES) {
+    const classes = one(resolveResponsive(value as Responsive<unknown>, device));
+    const last = runs.at(-1);
+    if (last !== undefined && last.classes === classes) last.devices.push(device);
+    else runs.push({ devices: [device], classes });
+  }
+  return runs
+    .flatMap(({ devices, classes }) => {
+      const range = DEVICE_RANGE[devices.join(" ")] ?? "";
+      return classes
+        .split(" ")
+        .filter((name) => name !== "")
+        .map((name) => `${range}${name}`);
+    })
+    .join(" ");
 }
 
 /** The Appearance values among a component's, as its render or the document has them. */

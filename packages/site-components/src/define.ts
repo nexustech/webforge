@@ -248,8 +248,17 @@ function withAppearance(output: ReactNode, classes: string): ReactNode {
       ? cloneElement(output, {}, withAppearance(props.children, classes))
       : output;
   }
-  const [inside, marked] =
-    props.children === undefined ? [undefined, false] : onTarget(props.children, classes);
+  // The part marked to take the Appearance, if one is, among its children at any depth.
+  const children = props.children;
+  const list: readonly ReactNode[] =
+    children === undefined ? [] : Array.isArray(children) ? children : [children];
+  let marked = false;
+  const inside = list.map((child) => {
+    if (marked) return child;
+    const [next, here] = onTarget(child, classes);
+    marked = here;
+    return next;
+  });
   const own = typeof props.className === "string" ? props.className : "";
   const changed = (
     classes === "" || marked ? {} : { className: own === "" ? classes : `${own} ${classes}` }
@@ -260,7 +269,8 @@ function withAppearance(output: ReactNode, classes: string): ReactNode {
     : cloneElement(
         output,
         changed,
-        createElement(SectionTitleAppearance.Provider, { value: "" }, inside),
+        // Spread, so several children stay a list React keys by position, as they were.
+        createElement(SectionTitleAppearance.Provider, { value: "" }, ...inside),
       );
 }
 

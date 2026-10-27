@@ -1,8 +1,9 @@
 import type { NodeDoc } from "@webforge/model";
-import { describe, expect, it } from "vitest";
+import { renderToStaticMarkup } from "react-dom/server";
+import { describe, expect, it, vi } from "vitest";
 import { APPEARANCE_FIELDS, appearanceBoxClasses, appearanceTextClasses } from "./appearance.js";
 import { siteLibrary } from "./catalogue/index.js";
-import { defineComponent } from "./define.js";
+import { defineComponent, LOOK_TARGET } from "./define.js";
 import { EDITOR_RENDER_CONTEXT } from "./library.js";
 import { renderNodesToHtml } from "./render-static.js";
 
@@ -82,7 +83,30 @@ describe("the Appearance group (2.22, ST-1)", () => {
     ).toBe("lg:underline!");
     expect(
       appearanceTextClasses({ lookSize: { $responsive: { desktop: "h1", mobile: "h3" } } }),
-    ).toBe("text-h3! md:text-h1!");
+    ).toBe("max-md:text-h3! md:text-h1!");
+  });
+
+  it("draws a device's choice across its own widths only: Theme's on another draws nothing there", () => {
+    // Mobile set, Tablet and Desktop at the theme's look.
+    expect(
+      appearanceTextClasses({
+        lookSize: { $responsive: { desktop: "default", tablet: "default", mobile: "small" } },
+        lookUnderline: { $responsive: { desktop: false, tablet: false, mobile: true } },
+      }),
+    ).toBe("max-md:text-small! max-md:underline!");
+    // And the reverse: Desktop set, the others at the theme's look.
+    expect(
+      appearanceBoxClasses({
+        lookShadow: { $responsive: { desktop: "large", tablet: "default", mobile: "default" } },
+      }),
+    ).toBe("lg:shadow-lg!");
+    // Tablet alone, and one value on every device.
+    expect(
+      appearanceBoxClasses({
+        lookOpacity: { $responsive: { desktop: "default", tablet: "50", mobile: "default" } },
+        lookCorners: { $responsive: { desktop: "full", tablet: "full", mobile: "full" } },
+      }),
+    ).toBe("rounded-full! md:max-lg:opacity-50!");
   });
 
   it("underlines a section's title, and no other title in it (the product owner's example)", () => {
@@ -137,6 +161,71 @@ describe("the Appearance group (2.22, ST-1)", () => {
     expect(html).toMatch(/<div class="site-icon [^"!]*"><svg[^>]* class="[^"]*opacity-50!"/);
     // The mark that says where never reaches a page.
     expect(html).not.toContain("data-wf-look");
+  });
+
+  it("finds the marked part among several children, at any depth", () => {
+    const card = defineComponent({
+      label: "Card",
+      fields: {},
+      defaults: {},
+      render: () => (
+        <div>
+          <h3>One</h3>
+          <p>
+            <span>Two</span>
+            <b {...{ [LOOK_TARGET]: "" }}>Three</b>
+          </p>
+        </div>
+      ),
+    });
+    const html = renderToStaticMarkup(
+      <>
+        {card.render({
+          id: "c",
+          values: { lookShadow: "small" },
+          slots: {},
+          context: EDITOR_RENDER_CONTEXT,
+        })}
+      </>,
+    );
+    expect(html).toBe(
+      '<div><h3>One</h3><p><span>Two</span><b class="shadow-sm!">Three</b></p></div>',
+    );
+  });
+
+  it("keeps an element's several children a list as they were, with no key warnings", () => {
+    const errors: unknown[] = [];
+    const spy = vi.spyOn(console, "error").mockImplementation((...args) => {
+      errors.push(args);
+    });
+    try {
+      const card = defineComponent({
+        label: "Card",
+        fields: {},
+        defaults: {},
+        render: () => (
+          <div>
+            <h3>One</h3>
+            <p>Two</p>
+            <p>Three</p>
+          </div>
+        ),
+      });
+      const html = renderToStaticMarkup(
+        <>
+          {card.render({
+            id: "c",
+            values: { lookShadow: "small" },
+            slots: {},
+            context: EDITOR_RENDER_CONTEXT,
+          })}
+        </>,
+      );
+      expect(html).toBe('<div class="shadow-sm!"><h3>One</h3><p>Two</p><p>Three</p></div>');
+    } finally {
+      spy.mockRestore();
+    }
+    expect(errors).toEqual([]);
   });
 
   it("refuses an element that declares one of its fields itself", () => {
