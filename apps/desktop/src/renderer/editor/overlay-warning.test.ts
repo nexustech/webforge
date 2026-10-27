@@ -25,4 +25,21 @@ describe("overlayWarning (2.26)", () => {
     if (title === undefined) throw new Error("The Text section has no title");
     expect(overlayWarning(title, { ...withImage, overlay: "0" }, DEFAULT_THEME)).toBeUndefined();
   });
+
+  it("checks the text a section's layout draws: a Call to action Banner's neutral-content (#544)", () => {
+    const cta = siteLibrary.components.CallToAction;
+    if (cta === undefined) throw new Error("No Call to action");
+    const banner = { ...cta.defaults, ...withImage, variant: "banner", overlay: "80" };
+    const warn = (values: Readonly<Record<string, unknown>>) =>
+      overlayWarning(BACKGROUND_FIELDS.overlay, values, DEFAULT_THEME, cta);
+
+    // Its light text over a strong layer of the light page colour: hard to read.
+    expect(warn({ ...banner, overlayColor: "base" })).toMatch(/^The text may be hard to read/);
+    // Over the neutral colour, as now: neutral-content on neutral.
+    expect(warn({ ...banner, overlayColor: "neutral" })).toBeUndefined();
+    // The Split layout draws the page's text, as any other section: as before.
+    expect(warn({ ...banner, variant: "split", overlayColor: "base" })).toBeUndefined();
+    // Text the person coloured is checked in their colour, whatever the layout draws.
+    expect(warn({ ...banner, overlayColor: "base", lookColor: "base-content" })).toBeUndefined();
+  });
 });
