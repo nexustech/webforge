@@ -1,5 +1,12 @@
 import type { ColorRole, ThemeTokens } from "@webforge/model";
-import { contrastRatio, inverseColors, oklchToSrgb, type Srgb, srgbContrast } from "./colors.js";
+import {
+  contrastRatio,
+  inverseColors,
+  oklchToSrgb,
+  resolveColorRef,
+  type Srgb,
+  srgbContrast,
+} from "./colors.js";
 
 /** WCAG AA: text, and large text or a coloured part (a heading, a button's edge) against its ground. */
 export const AA_TEXT = 4.5;
@@ -78,30 +85,50 @@ export type SectionOverlay = {
   readonly opacity: number;
   /** A section that inverts the page (2.4) has the inverse palette's colours. */
   readonly inverse?: boolean;
+  /**
+   * The section's own text colour on each device (its Appearance group's Colour, a colour ref),
+   * where the person set one; `undefined` for a device whose text is the overlay colour's own.
+   * Every one is checked. Without the list, the overlay colour's own text.
+   */
+  readonly text?: readonly (string | undefined)[];
 };
 
 const BLACK: Srgb = { r: 0, g: 0, b: 0 };
 const WHITE: Srgb = { r: 1, g: 1, b: 1 };
 
+/** `top` laid over `under` at `opacity` (0–1), as a browser blends it. */
+const laidOver = (top: Srgb, opacity: number, under: Srgb): Srgb => ({
+  r: top.r * opacity + under.r * (1 - opacity),
+  g: top.g * opacity + under.g * (1 - opacity),
+  b: top.b * opacity + under.b * (1 - opacity),
+});
+
 /**
  * The contrast of a section's text over its overlay (2.26, ST-5), whatever the image under it: the
- * worse of the overlay laid over black and over white, as a browser blends it. The text is the
- * overlay colour's own: `base-content` on the page colour, `neutral-content` on neutral.
+ * worst of the overlay laid over black and over white, as a browser blends it, for each colour its
+ * text has. The text is the section's own colour where the person set one (on any device), else
+ * the overlay colour's own: `base-content` on the page colour, `neutral-content` on neutral.
  */
 export function overlayContrast(tokens: ThemeTokens, overlay: SectionOverlay): number {
-  const colors = overlay.inverse === true ? inverseColors(tokens) : tokens.colors;
-  const [ground, text] =
+  const palette = overlay.inverse === true ? "inverse" : "colors";
+  const colors = palette === "inverse" ? inverseColors(tokens) : tokens.colors;
+  const [ground, own] =
     overlay.color === "base"
       ? [colors["base-100"], colors["base-content"]]
       : [colors.neutral, colors["neutral-content"]];
   const over = oklchToSrgb(ground);
-  const laid = (under: Srgb): Srgb => ({
-    r: over.r * overlay.opacity + under.r * (1 - overlay.opacity),
-    g: over.g * overlay.opacity + under.g * (1 - overlay.opacity),
-    b: over.b * overlay.opacity + under.b * (1 - overlay.opacity),
+  const inks = (overlay.text ?? [undefined]).map((ref) => {
+    const set = ref === undefined ? undefined : resolveColorRef(tokens, ref, palette);
+    return set ?? { color: own, opacity: 1 };
   });
-  const ink = oklchToSrgb(text);
-  return Math.min(srgbContrast(ink, laid(BLACK)), srgbContrast(ink, laid(WHITE)));
+  return Math.min(
+    ...[BLACK, WHITE].flatMap((under) => {
+      const behind = laidOver(over, overlay.opacity, under);
+      return inks.map((ink) =>
+        srgbContrast(laidOver(oklchToSrgb(ink.color), ink.opacity, behind), behind),
+      );
+    }),
+  );
 }
 
 /**

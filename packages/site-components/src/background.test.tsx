@@ -10,7 +10,7 @@ import {
   sectionOverlay,
 } from "./background.js";
 import { siteLibrary } from "./catalogue/index.js";
-import { EDITOR_RENDER_CONTEXT } from "./library.js";
+import { EDITOR_RENDER_CONTEXT, fieldsHiddenBy } from "./library.js";
 import { renderNodesToHtml, renderPage } from "./render-static.js";
 import type { RenderContext, ResolvedImage } from "./schema.js";
 
@@ -126,7 +126,21 @@ describe("overlayOf and sectionOverlay (2.26)", () => {
     expect(sectionOverlay({})).toBeNull();
     expect(
       sectionOverlay({ backgroundImage: { mediaId: "shop" }, overlay: "60", colors: "inverse" }),
-    ).toEqual({ color: "base", opacity: 0.6, inverse: true });
+    ).toEqual({ color: "base", opacity: 0.6, inverse: true, text: [undefined] });
+  });
+
+  it("gives the check the text colour the person set, on each device where they set it", () => {
+    const placed = { backgroundImage: { mediaId: "shop" } };
+
+    expect(sectionOverlay({ ...placed, lookColor: "primary-700" })?.text).toEqual(["primary-700"]);
+    expect(sectionOverlay({ ...placed, lookColor: "default" })?.text).toEqual([undefined]);
+    // Mobile's own, the larger devices keeping the section's.
+    expect(
+      sectionOverlay({
+        ...placed,
+        lookColor: { $responsive: { desktop: "default", mobile: "accent" } },
+      })?.text,
+    ).toEqual(["accent", undefined, undefined]);
   });
 });
 
@@ -147,8 +161,26 @@ describe("the section frame's background (2.26)", () => {
       }
       const at = names.indexOf("backgroundImage");
       expect(names.slice(at, at + 3), type).toEqual([...BACKGROUND_FIELD_NAMES]);
-      expect(at, type).toBe(Object.keys(APPEARANCE_FIELDS).length);
+      // Straight after the Appearance group's own fields (fewer for a section without a title).
+      const appearance = names.filter((name) => Object.hasOwn(APPEARANCE_FIELDS, name));
+      expect(names.slice(0, at), type).toEqual(appearance);
     }
+  });
+
+  it("hides the overlay's controls until the section has an image to lay it over", () => {
+    const text = siteLibrary.components.TextSection;
+    if (text === undefined) throw new Error("No Text section");
+
+    const hidden = fieldsHiddenBy(text, text.defaults);
+    expect(hidden.has("overlay")).toBe(true);
+    expect(hidden.has("overlayColor")).toBe(true);
+    const shown = fieldsHiddenBy(text, { ...text.defaults, backgroundImage: { mediaId: "shop" } });
+    expect(shown.has("overlay")).toBe(false);
+    expect(shown.has("overlayColor")).toBe(false);
+    // The Hero has no overlay of the frame's to hide.
+    const hero = siteLibrary.components.Hero;
+    if (hero === undefined) throw new Error("No Hero");
+    expect(fieldsHiddenBy(hero, hero.defaults).has("overlay")).toBe(false);
   });
 
   it("gives a new section a strong overlay in the page colour, so the panel shows it", () => {

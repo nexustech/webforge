@@ -1,5 +1,12 @@
 import { t } from "@webforge/i18n";
-import { type ImageValue, imageValueSchema } from "@webforge/model";
+import {
+  type Breakpoint,
+  type ImageValue,
+  imageValueSchema,
+  isResponsiveValue,
+  type Responsive,
+  resolveResponsive,
+} from "@webforge/model";
 import { APPEARANCE_GROUP } from "./appearance.js";
 import { Picture } from "./picture.js";
 import type { FieldDef, RenderContext } from "./schema.js";
@@ -162,14 +169,33 @@ export function SectionBackground({
 /**
  * The overlay a section's values draw, for the contrast check of its text over it (2.26: the
  * themes package's `overlayContrastIssue`), or `null` without a background image. A reversed
- * section (2.4) is checked in the reversed colours.
+ * section (2.4) is checked in the reversed colours, and a text colour the person set (the
+ * Appearance group's Colour, on any device) as well as the overlay colour's own.
  */
 export function sectionOverlay(values: BackgroundValues): {
   readonly color: OverlayColor;
   readonly opacity: number;
   readonly inverse: boolean;
+  readonly text: readonly (string | undefined)[];
 } | null {
   if (!hasBackground(values)) return null;
   const { opacity, color } = overlayOf(values);
-  return { color, opacity: Number(opacity) / 100, inverse: values.colors === "inverse" };
+  return {
+    color,
+    opacity: Number(opacity) / 100,
+    inverse: values.colors === "inverse",
+    text: textColorsOf(values.lookColor),
+  };
+}
+
+/**
+ * A section's text colour on each device, from its Appearance group's Colour (set once or per
+ * device): a colour ref, or `undefined` where it keeps its own ("default", or none).
+ */
+function textColorsOf(value: unknown): (string | undefined)[] {
+  const one = (each: unknown) =>
+    typeof each === "string" && each !== "default" ? each : undefined;
+  if (!isResponsiveValue(value as Responsive<unknown>)) return [one(value)];
+  const devices: readonly Breakpoint[] = ["mobile", "tablet", "desktop"];
+  return devices.map((device) => one(resolveResponsive(value as Responsive<unknown>, device)));
 }
