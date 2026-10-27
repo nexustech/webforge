@@ -30,6 +30,14 @@ export function exportRequestFor(
     ),
   ];
   const used = mediaUsedBy(nodes, library);
+  // The favicon set's source and the share pictures (3.4), from Site Settings and Page Settings.
+  for (const id of [
+    site.settings.general.icon,
+    site.settings.social.shareImage,
+    ...Object.values(site.pages).map((page) => page.settings.shareImage),
+  ]) {
+    if (id !== undefined) used.add(id);
+  }
   // Documents elements link to, and those the navigation menu links to.
   const linked = documentsLinkedBy(nodes, library);
   for (const id of menuFileLinks(site.menu)) linked.add(id);
