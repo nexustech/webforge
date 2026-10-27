@@ -286,6 +286,9 @@ importers:
       electron-log:
         specifier: 5.4.4
         version: 5.4.4
+      uqr:
+        specifier: 0.1.3
+        version: 0.1.3
     devDependencies:
       '@babel/core':
         specifier: 'catalog:'
@@ -848,6 +851,9 @@ importers:
       '@webforge/errors':
         specifier: workspace:*
         version: link:../errors
+      '@webforge/i18n':
+        specifier: workspace:*
+        version: link:../i18n
       '@webforge/model':
         specifier: workspace:*
         version: link:../model
@@ -1076,6 +1082,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 24.19.2
+      '@webforge/site-check':
+        specifier: workspace:*
+        version: link:../site-check
       '@webforge/site-components':
         specifier: workspace:*
         version: link:../site-components
@@ -5993,6 +6002,9 @@ packages:
     hasBin: true
     peerDependencies:
       browserslist: '>= 4.21.0'
+
+  uqr@0.1.3:
+    resolution: {integrity: sha512-0rjE8iEJe4YmT9TOhwsZtqCMRLc5DXZUI2UEYUUg63ikBkqqE5EYWaI0etFe/5KUcmcYwLih2RND1kq+hrUJXA==}
 
   use-callback-ref@1.3.3:
     resolution: {integrity: sha512-jQL3lRnocaFtu3V00JToYz/4QkNWswxijDaCVNZRiRTO3HQDLsdu1ZtmIUvV4yPp+rvWm5j0y0TG/S61cuijTg==}
@@ -11016,6 +11028,8 @@ snapshots:
       browserslist: 4.29.3
       escalade: 3.2.0
       picocolors: 1.1.1
+
+  uqr@0.1.3: {}
 
   use-callback-ref@1.3.3(@types/react@19.3.0)(react@19.3.1):
     dependencies:

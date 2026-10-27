@@ -32,6 +32,18 @@ describe("placedOverlay (2.26, ST-9)", () => {
     expect(placedOverlay(field, { ...fresh, colors: "inverse" }, image, light)).toBe("80");
   });
 
+  it("starts a Call to action Banner's overlay at what its own light text needs (#544)", () => {
+    const cta = siteLibrary.components.CallToAction;
+    if (cta === undefined) throw new Error("No Call to action");
+    const banner = { ...cta.defaults, variant: "banner" };
+
+    // No strength of the light page colour keeps light text readable: the strongest.
+    expect(placedOverlay(field, banner, image, preset("light"), cta)).toBe("80");
+    expect(
+      placedOverlay(field, { ...banner, overlayColor: "neutral" }, image, preset("light"), cta),
+    ).toBe(placedOverlay(field, { ...fresh, overlayColor: "neutral" }, image, preset("light")));
+  });
+
   it("uses the strongest when none keeps the text readable", () => {
     // A theme whose page and text colours are the same: nothing is readable.
     const light = preset("light");

@@ -54,6 +54,19 @@ const exportRequestSchema = z.strictObject({
 /** What the renderer sends to export the site. */
 export type ExportRequest = z.infer<typeof exportRequestSchema>;
 
+/**
+ * The site as a build takes it from the renderer: its snapshot, and the images and documents it
+ * may use by hash. The preview (3.2) sends this; an export adds the person's choices.
+ */
+export const siteContentSchema = exportRequestSchema.pick({
+  snapshot: true,
+  media: true,
+  documents: true,
+});
+
+/** The site as a build takes it from the renderer. */
+export type SiteContent = z.infer<typeof siteContentSchema>;
+
 /** Why an export failed; the renderer shows a translated message for each. */
 const exportFailureReasonSchema = z.enum([
   "folder-not-empty",
@@ -72,7 +85,14 @@ const exportFailureReasonSchema = z.enum([
  * output* left the page readable. `missing-icon`, `small-icon`: the site icon gave no favicon.
  */
 export const exportWarningSchema = z.strictObject({
-  code: z.enum(["broken-link", "missing-image", "not-minified", "missing-icon", "small-icon"]),
+  code: z.enum([
+    "broken-link",
+    "missing-image",
+    "not-minified",
+    "missing-icon",
+    "small-icon",
+    "form-unset",
+  ]),
   page: z.string().max(1024),
   detail: z.string().max(2048),
 });

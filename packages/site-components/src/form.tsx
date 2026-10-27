@@ -1,5 +1,5 @@
 import { t } from "@webforge/i18n";
-import type { FormService } from "@webforge/model";
+import { type FormService, formServiceUnset, httpsAddress, THANKS_FIELD } from "@webforge/model";
 import type { ReactNode } from "react";
 import type { FormUnset } from "./schema.js";
 import { BUTTON_CLASSES } from "./typography.js";
@@ -147,21 +147,37 @@ export function FormField({
 }
 
 /**
- * The name of the field people never see but spam robots fill in (B6): a submission with it filled
- * is spam. Formspree drops such submissions itself; 3.7 gives each other service its own name.
+ * The field people never see but spam robots fill in (B6), named as the form's service reads it: a
+ * submission with it filled is dropped as spam. Web3Forms asks for a checkbox.
  */
-export const HONEYPOT_NAME = "_gotcha";
+type Honeypot = { readonly name: string; readonly checkbox?: true };
+
+/** Formspree's honeypot, which a custom endpoint and a Newsletter's address get too. */
+const GOTCHA: Honeypot = { name: "_gotcha" };
+
+/** Each service's own honeypot (3.7, B6). */
+const HONEYPOTS = {
+  formspree: GOTCHA,
+  web3forms: { name: "botcheck", checkbox: true },
+  formsubmit: { name: "_honey" },
+  custom: GOTCHA,
+} as const satisfies Readonly<Record<string, Honeypot>>;
 
 /**
  * The honeypot (B6): a field hidden from visitors, screen readers and the keyboard, which robots
  * that fill in every field fill in too.
  */
-function Honeypot() {
+function HoneypotField({ honeypot }: { readonly honeypot: Honeypot }) {
   return (
     <div hidden>
       <label>
         {t("siteText.form.leaveEmpty")}
-        <input type="text" name={HONEYPOT_NAME} tabIndex={-1} autoComplete="off" />
+        <input
+          type={honeypot.checkbox === true ? "checkbox" : "text"}
+          name={honeypot.name}
+          tabIndex={-1}
+          {...(honeypot.checkbox === true ? {} : { autoComplete: "off" })}
+        />
       </label>
     </div>
   );
@@ -172,53 +188,63 @@ export type FormTarget = {
   readonly action: string;
   /** Fields the service needs that the visitor never sees, such as an access key. */
   readonly hidden: Readonly<Record<string, string>>;
+  /** The honeypot, named as the service reads it (B6). */
+  readonly honeypot: Honeypot;
 };
 
-/**
- * `value` as an address a form may post to: `https://` only, so a visitor's details never travel
- * unencrypted, and never a `javascript:` address. `undefined` for anything else. The one check for
- * the Newsletter's address and a custom form service's.
- */
-export function httpsAddress(value: unknown): string | undefined {
-  if (typeof value !== "string" || value.trim() === "") return undefined;
-  try {
-    const url = new URL(value.trim());
-    return url.protocol === "https:" ? url.href : undefined;
-  } catch {
-    return undefined;
-  }
-}
+/** `address` as a form's target, Formspree's honeypot with it: a Newsletter's own address. */
+export const addressTarget = (address: string): FormTarget => ({
+  action: address,
+  hidden: {},
+  honeypot: GOTCHA,
+});
 
 /**
  * Where Site Settings' form service takes a form's submissions (F-CM-1, B3): a plain HTML POST to
- * its address, with any field it needs, or why there's nowhere to send: no service, Netlify Forms
- * (which the Netlify publisher adds, 3.7, 4.2), or a custom address that isn't `https://`. 3.7
- * extends this with each service's own honeypot name and its thank-you page.
+ * its address, with the fields it needs and its own honeypot (B6), or why there's nowhere to send
+ * (the model's `formServiceUnset`). With `thanksPage`, the address of the site's thank-you page,
+ * the services that can send the visitor there after sending are told to (`THANKS_FIELD`, 3.7).
  *
  * FormSubmit's address is the owner's email address, which is then in the page for anyone to read;
- * FormSubmit gives a random alias instead once the address is confirmed, which Site Check (3.7)
- * suggests using.
+ * FormSubmit gives a random alias instead once the address is confirmed.
  */
-export function formAction(service: FormService | undefined): FormTarget | FormUnset {
-  switch (service?.kind) {
+export function formAction(
+  service: FormService | undefined,
+  thanksPage?: string,
+): FormTarget | FormUnset {
+  const unset = formServiceUnset(service);
+  if (unset !== undefined || service === undefined) return unset ?? "noService";
+  const thanksField = THANKS_FIELD[service.kind];
+  const thanks =
+    thanksField === undefined || thanksPage === undefined ? {} : { [thanksField]: thanksPage };
+  switch (service.kind) {
     case "formspree":
-      return { action: `https://formspree.io/f/${service.formId}`, hidden: {} };
+      return {
+        action: `https://formspree.io/f/${service.formId}`,
+        hidden: {},
+        honeypot: HONEYPOTS.formspree,
+      };
     case "web3forms":
       // Web3Forms' access key is public by design: it only lets the form send to the owner.
       return {
         action: "https://api.web3forms.com/submit",
-        hidden: { access_key: service.accessKey },
+        hidden: { access_key: service.accessKey, ...thanks },
+        honeypot: HONEYPOTS.web3forms,
       };
     case "formsubmit":
-      return { action: `https://formsubmit.co/${encodeURIComponent(service.email)}`, hidden: {} };
-    case "custom": {
-      const action = httpsAddress(service.url);
-      return action === undefined ? "insecure" : { action, hidden: {} };
-    }
-    case "netlify":
-      return "netlify";
+      return {
+        action: `https://formsubmit.co/${encodeURIComponent(service.email)}`,
+        hidden: thanks,
+        honeypot: HONEYPOTS.formsubmit,
+      };
+    case "custom":
+      return {
+        action: httpsAddress(service.url) ?? "",
+        hidden: {},
+        honeypot: HONEYPOTS.custom,
+      };
     default:
-      return "noService";
+      return "netlify";
   }
 }
 
@@ -256,16 +282,18 @@ export function SiteForm({
       method="post"
       acceptCharset="UTF-8"
       aria-label={label}
+      // A form that can send says what its status line reads while it's held (3.7): the script has
+      // no words of its own.
       {...(typeof target === "string"
         ? { "data-wf-form-unset": target }
-        : { action: target.action })}
+        : { action: target.action, "data-sending": t("siteText.form.sending") })}
     >
       {shownHint !== undefined && shownHint !== null && <p className="text-sm">{shownHint}</p>}
       {Object.entries(hidden).map(([name, value]) => (
         <input key={name} type="hidden" name={name} value={value} />
       ))}
       {children}
-      <Honeypot />
+      <HoneypotField honeypot={typeof target === "string" ? GOTCHA : target.honeypot} />
       {/* Without a target the form would post to the page itself and lose the message: no send. */}
       <button
         type="submit"
@@ -274,6 +302,8 @@ export function SiteForm({
       >
         {submitLabel}
       </button>
+      {/* Empty until the form is held for a moment before it's sent (3.7), then read out. */}
+      {unset === undefined && <p role="status" className="text-sm" data-wf-form-status="" />}
     </form>
   );
 }

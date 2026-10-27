@@ -2,8 +2,9 @@ import type { SitePage, SiteSnapshot } from "@webforge/model";
 import * as components from "@webforge/site-components";
 import { sampleSite } from "@webforge/test-utils";
 import { scaledTestTimeout } from "@webforge/test-utils/vitest";
+import * as tailwind from "tailwindcss";
 import { beforeAll, describe, expect, it, onTestFinished, vi } from "vitest";
-import { type BuiltSite, buildSite } from "../src/build.js";
+import { type BuiltSite, buildSite, PREVIEW_STYLESHEET } from "../src/build.js";
 import { createMemoryImageCache } from "../src/memory-image-cache.js";
 import { loadNodeResources } from "../src/node-resources.js";
 import { createPipeline, type Pipeline, type PipelineEvent } from "../src/pipeline.js";
@@ -15,6 +16,13 @@ vi.mock("@webforge/site-components", async (original) => {
   return { ...actual, renderPage: vi.fn(actual.renderPage) };
 });
 const renderPage = vi.mocked(components.renderPage);
+
+// Counts Tailwind's compiles, to tell a kept stylesheet compiler from a new one (3.2).
+vi.mock("tailwindcss", async (original) => {
+  const actual = await original<typeof import("tailwindcss")>();
+  return { ...actual, compile: vi.fn(actual.compile) };
+});
+const compile = vi.mocked(tailwind.compile);
 
 let resources: PipelineResources;
 
@@ -146,6 +154,51 @@ describe("createPipeline (3.1)", () => {
   );
 
   it(
+    "takes a colour or a size of the theme into a preview with no new compile and no page rendered (3.2)",
+    async () => {
+      const pipeline = createPipeline(components.siteLibrary);
+      const base = sampleSite();
+      const css = (site: BuiltSite) => new TextDecoder().decode(site.files.get(PREVIEW_STYLESHEET));
+      await build(pipeline, base, "preview");
+
+      renderPage.mockClear();
+      compile.mockClear();
+      const recoloured = {
+        ...base,
+        theme: {
+          ...base.theme,
+          colors: { ...base.theme.colors, primary: { l: 0.4, c: 0.2, h: 20 } },
+          spacing: "roomy" as const,
+        },
+      };
+      const { site } = await build(pipeline, recoloured, "preview");
+
+      expect(compile).not.toHaveBeenCalled();
+      expect(renderPage).not.toHaveBeenCalled();
+      // The new values follow the compiled stylesheet, as custom properties that win over it.
+      expect(css(site)).toMatch(
+        /--color-primary: oklch\(40% 0\.2 20\);[^}]*--spacing: 0\.275rem;/s,
+      );
+      // A change of shape (here, the shadows) compiles again.
+      await build(
+        pipeline,
+        { ...recoloured, theme: { ...recoloured.theme, shadow: "strong" } },
+        "preview",
+      );
+      expect(compile).toHaveBeenCalledOnce();
+      // An export is compiled with the theme itself, as ever.
+      compile.mockClear();
+      const exported = (await build(pipeline, recoloured, "export")).site;
+      expect(
+        [...exported.files.values()].some((data) =>
+          new TextDecoder().decode(data).includes("The theme's values"),
+        ),
+      ).toBe(false);
+    },
+    scaledTestTimeout(120_000),
+  );
+
+  it(
     "tells each stage as it starts, and gives the site last",
     async () => {
       const pipeline = createPipeline(components.siteLibrary);
@@ -222,6 +275,32 @@ describe("createPipeline (3.1)", () => {
 
       expect(css((await build(pipeline, base, "preview")).site)).toContain(".skew-x-12");
       expect(css((await build(pipeline, base, "export")).site)).not.toContain(".skew-x-12");
+    },
+    scaledTestTimeout(60_000),
+  );
+
+  it(
+    "names a preview's stylesheet the same whatever it holds, so its pages don't change (3.2)",
+    async () => {
+      const pipeline = createPipeline(components.siteLibrary);
+      const base = sampleSite();
+      const first = (await build(pipeline, base, "preview")).site;
+      const dark = (
+        await build(pipeline, { ...base, theme: { ...base.theme, preset: "dark" } }, "preview")
+      ).site;
+
+      expect(first.files.has(PREVIEW_STYLESHEET)).toBe(true);
+      expect(dark.files.get(PREVIEW_STYLESHEET)).not.toEqual(first.files.get(PREVIEW_STYLESHEET));
+      expect(new TextDecoder().decode(first.files.get("index.html"))).toContain(
+        `href="${PREVIEW_STYLESHEET}"`,
+      );
+      // An export's is named by what it holds.
+      const exported = (await build(pipeline, base, "export")).site;
+      expect(
+        [...exported.files.keys()].some((path) =>
+          /^assets\/css\/site\.[0-9a-f]{10}\.css$/.test(path),
+        ),
+      ).toBe(true);
     },
     scaledTestTimeout(60_000),
   );

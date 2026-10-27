@@ -67,8 +67,9 @@ describe("runExport", () => {
       pages: 3,
       // With robots.txt (3.5).
       files: 17,
-      warnings: [],
-      warningCount: 0,
+      // The sample's second Newsletter has no form address, on purpose (3.7).
+      warnings: [{ code: "form-unset", page: "about", detail: "noAddress" }],
+      warningCount: 1,
     });
     expect(readFileSync(join(destination, "about.html"), "utf8")).toContain(
       "A family bakery since 1998.",
@@ -128,8 +129,11 @@ describe("runExport", () => {
 
     expect(outcome).toMatchObject({
       type: "exported",
-      warnings: [{ code: "broken-link", page: "index", detail: "old-page" }],
-      warningCount: 1,
+      warnings: [
+        { code: "broken-link", page: "index", detail: "old-page" },
+        { code: "form-unset", page: "about", detail: "noAddress" },
+      ],
+      warningCount: 2,
     });
   }, 60_000);
 

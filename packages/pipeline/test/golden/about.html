@@ -9,7 +9,7 @@
   <meta property="og:site_name" content="Rosa's Bakery">
   <meta property="og:title" content="About us | Rosa's Bakery">
   <meta name="twitter:card" content="summary">
-  <script defer src="assets/js/webforge.5c1b3e604f.js"></script>
+  <script defer src="assets/js/webforge.a99d94cc97.js"></script>
 </head>
 <body class="flex min-h-screen flex-col bg-base-100 font-sans text-base-content">
   <!-- Header (shared) -->
@@ -218,12 +218,13 @@
           <h2 class="font-heading text-h2">Write to us</h2>
           <div class="mt-4 text-body [&amp;_a:not(.btn)]:[text-decoration-line:var(--wf-link-decoration,underline)] [&amp;_a:not(.btn):hover]:[text-decoration-line:var(--wf-link-hover-decoration,underline)] [&amp;_a:not(.btn):focus-visible]:[text-decoration-line:var(--wf-link-hover-decoration,underline)] [&amp;_a:not(.btn)]:[color:var(--wf-link-color,currentColor)] [&amp;_p+p]:mt-4 [&amp;_ol]:my-3 [&amp;_ol]:list-decimal [&amp;_ol]:pl-6 [&amp;_ul]:my-3 [&amp;_ul]:list-disc [&amp;_ul]:pl-6"></div>
         </div>
-        <form class="site-form space-y-4" accept-charset="UTF-8" aria-label="Contact form" action="https://formspree.io/f/xyzAbc12" method="post">
+        <form class="site-form space-y-4" accept-charset="UTF-8" aria-label="Contact form" data-sending="Sending…" action="https://formspree.io/f/xyzAbc12" method="post">
           <div class="site-form-field space-y-1"><label class="block font-medium" for="write-name">Name<span class="text-error" aria-hidden="true"> *</span></label><input id="write-name" type="text" class="input w-full" required="" aria-required="true" autoComplete="name" name="name" /></div>
           <div class="site-form-field space-y-1"><label class="block font-medium" for="write-email">Email address<span class="text-error" aria-hidden="true"> *</span></label><input id="write-email" type="email" class="input w-full" required="" aria-required="true" autoComplete="email" name="email" /></div>
           <div class="site-form-field space-y-1"><label class="block font-medium" for="write-phone">Phone number</label><input id="write-phone" type="tel" class="input w-full" autoComplete="tel" name="phone" /></div>
           <div class="site-form-field space-y-1"><label class="block font-medium" for="write-message">Message<span class="text-error" aria-hidden="true"> *</span></label><textarea id="write-message" name="message" rows="5" class="textarea w-full" required="" aria-required="true"></textarea></div>
           <div hidden=""><label>Leave this empty<input type="text" tabindex="-1" autoComplete="off" name="_gotcha" /></label></div><button type="submit" class="btn btn-primary">Send message</button>
+          <p role="status" class="text-sm" data-wf-form-status=""></p>
         </form>
       </div>
     </section>
@@ -233,9 +234,10 @@
           <h2 class="font-heading text-h2">Our newsletter</h2>
           <div class="mt-4 text-body [&amp;_a:not(.btn)]:[text-decoration-line:var(--wf-link-decoration,underline)] [&amp;_a:not(.btn):hover]:[text-decoration-line:var(--wf-link-hover-decoration,underline)] [&amp;_a:not(.btn):focus-visible]:[text-decoration-line:var(--wf-link-hover-decoration,underline)] [&amp;_a:not(.btn)]:[color:var(--wf-link-color,currentColor)] [&amp;_p+p]:mt-4 [&amp;_ol]:my-3 [&amp;_ol]:list-decimal [&amp;_ol]:pl-6 [&amp;_ul]:my-3 [&amp;_ul]:list-disc [&amp;_ul]:pl-6"></div>
         </div>
-        <form class="site-form space-y-4" accept-charset="UTF-8" aria-label="Newsletter signup" action="https://example.com/newsletter/signup" method="post">
+        <form class="site-form space-y-4" accept-charset="UTF-8" aria-label="Newsletter signup" data-sending="Sending…" action="https://example.com/newsletter/signup" method="post">
           <div class="site-form-field space-y-1"><label class="block font-medium" for="news-email">Email address<span class="text-error" aria-hidden="true"> *</span></label><input id="news-email" type="email" class="input w-full" required="" aria-required="true" autoComplete="email" name="email" /></div>
           <div hidden=""><label>Leave this empty<input type="text" tabindex="-1" autoComplete="off" name="_gotcha" /></label></div><button type="submit" class="btn btn-primary">Sign up</button>
+          <p role="status" class="text-sm" data-wf-form-status=""></p>
         </form>
       </div>
     </section>

@@ -6,6 +6,7 @@ import { clipboardChannels } from "./ipc/clipboard.js";
 import { fontsChannels } from "./ipc/fonts.js";
 import { mediaChannels } from "./ipc/media.js";
 import { prefsChannels } from "./ipc/prefs.js";
+import { previewChannels } from "./ipc/preview.js";
 import { projectChannels } from "./ipc/project.js";
 import { siteChannels } from "./ipc/site.js";
 import { templatesChannels } from "./ipc/templates.js";
@@ -48,6 +49,7 @@ export const ipcContract = {
   ...templatesChannels,
   ...aiChannels,
   ...themesChannels,
+  ...previewChannels,
 } as const;
 
 /** The channels of each domain, keyed by domain; the tests check none overwrites another. */
@@ -63,6 +65,7 @@ export const ipcDomains = {
   templates: templatesChannels,
   ai: aiChannels,
   themes: themesChannels,
+  preview: previewChannels,
 } as const;
 
 /** Name of an entry in {@link ipcContract}. */

@@ -389,7 +389,7 @@
                 "variant": "cards",
                 "colors": "page",
                 "title": "How I can help",
-                "text": "<p>Practical help with the parts of running a business that keep you up at night.</p>",
+                "text": "<p>Practical help with the parts of running a business that <span class=\"text-primary\">keep you up at night</span>.</p>",
                 "items": [
                   {
                     "type": "Feature",
@@ -419,7 +419,8 @@
                     }
                   }
                 ],
-                "id": "features-2"
+                "id": "features-2",
+                "hover": "shadow"
               }
             },
             {
@@ -712,7 +713,8 @@
                     }
                   }
                 ],
-                "id": "stats-8"
+                "id": "stats-8",
+                "lookCase": "uppercase"
               }
             }
           ]

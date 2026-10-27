@@ -571,7 +571,8 @@
                     }
                   }
                 ],
-                "id": "features-23"
+                "id": "features-23",
+                "hover": "lift"
               }
             },
             {
@@ -618,7 +619,12 @@
                 "colors": "page",
                 "title": "New pots, first",
                 "text": "<p>A short email when a new batch comes out of the kiln. No more than once a month.</p>",
-                "id": "newsletter-25"
+                "id": "newsletter-25",
+                "backgroundImage": {
+                  "mediaId": "PCze3dO4SkCTVacH"
+                },
+                "overlay": "60",
+                "overlayColor": "base"
               }
             }
           ]

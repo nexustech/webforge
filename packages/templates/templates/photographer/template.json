@@ -476,7 +476,12 @@
                   "pageId": "ge5fzHNPTYnWir82",
                   "newTab": false
                 },
-                "id": "calltoaction-14"
+                "id": "calltoaction-14",
+                "backgroundImage": {
+                  "mediaId": "U0xiOxBX9WzgBqP0"
+                },
+                "overlay": "80",
+                "overlayColor": "base"
               }
             }
           ]
@@ -697,7 +702,8 @@
                     }
                   }
                 ],
-                "id": "stats-17"
+                "id": "stats-17",
+                "lookCase": "uppercase"
               }
             }
           ]

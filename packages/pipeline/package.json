@@ -73,6 +73,7 @@
     "@jsquash/resize": "catalog:",
     "@jsquash/webp": "catalog:",
     "@webforge/errors": "workspace:*",
+    "@webforge/i18n": "workspace:*",
     "@webforge/model": "workspace:*",
     "@webforge/site-components": "workspace:*",
     "@webforge/themes": "workspace:*",

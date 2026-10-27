@@ -54,7 +54,8 @@ function withSectionBackground(site: SiteSnapshot): SiteSnapshot {
 /**
  * `site` in a theme of its own (#423): square, large, outline buttons, strong shadows and links
  * underlined only on hover, with running text that has a link in it and a Button set to Filled on the
- * home page; and Google Analytics with its consent banner (3.8).
+ * home page; Google Analytics with its consent banner (3.8); and Web3Forms with the web address,
+ * so its forms send visitors to a thank-you page (3.7).
  */
 function themed(site: SiteSnapshot): SiteSnapshot {
   const [home, ...rest] = site.pages;
@@ -93,6 +94,10 @@ function themed(site: SiteSnapshot): SiteSnapshot {
     },
     // Google Analytics behind its consent banner (3.8): consent.spec.ts opens it from disk.
     analytics: { measurementId: "G-ABC123DEF4", consentBanner: true },
+    // Web3Forms, which sends a visitor to the site's thank-you page, and the web address it needs
+    // to (3.7): forms.spec.ts opens them from disk.
+    formService: { kind: "web3forms", accessKey: "0f8fad5b-d9cb-469f-a165-70867728950e" },
+    settings: { ...site.settings, "address.url": "https://rosas-bakery.example" },
     pages: [
       { ...home, doc: { ...home.doc, content: [...home.doc.content, linked, filled, reversed] } },
       ...rest,
@@ -174,7 +179,9 @@ setup("export the fixture site from the app", async () => {
       { snapshot: { ...site, media: [], documents: [] }, media, documents, choices, output },
     );
 
-    expect(result).toMatchObject({ status: "exported", pages: 4, warningCount: 0 });
+    // With "Page not found" (3.5). One warning: the fixture's second Newsletter has no form address,
+    // on purpose (3.7).
+    expect(result).toMatchObject({ status: "exported", pages: 4, warningCount: 1 });
 
     // Again in a theme of its own, into a folder inside the first.
     await stubFileDialogs(app, THEMED_SITE_DIR);
@@ -188,7 +195,8 @@ setup("export the fixture site from the app", async () => {
         output,
       },
     );
-    expect(again).toMatchObject({ status: "exported", pages: 4, warningCount: 0 });
+    // With the thank-you page Web3Forms sends visitors to (3.7).
+    expect(again).toMatchObject({ status: "exported", pages: 5, warningCount: 1 });
   } finally {
     await app.close();
     rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });

@@ -62,7 +62,7 @@ export function createPipeline(library: ComponentLibrary, options: PipelineOptio
   let caches: BuildCaches | undefined;
   return {
     async *build(snapshot, resources, { mode, signal, output, year }) {
-      caches ??= { styles: createStyleCompiler(resources), pages: new Map() };
+      caches ??= { styles: createStyleCompiler(resources), pages: new Map(), fonts: new Map() };
       const site = yield* buildEvents(
         snapshot,
         library,

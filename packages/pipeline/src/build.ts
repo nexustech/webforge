@@ -25,7 +25,7 @@ import {
   renderPage,
   UnknownComponentError,
 } from "@webforge/site-components";
-import { fontFacesFor } from "@webforge/themes";
+import { fontFacesFor, themeShape } from "@webforge/themes";
 import { buildSiteCss, classCandidates, type SiteCssOptions, type StyleCompiler } from "./css.js";
 import { developerFiles } from "./developer-files.js";
 import { BODY_CLASS, iconLinks, pageDocument, type SiteIcon } from "./html.js";
@@ -50,6 +50,7 @@ import {
   withYear,
 } from "./site-files.js";
 import { iconFiles, shareImageFile } from "./site-images.js";
+import { withThanksPage } from "./thanks-page.js";
 
 /**
  * Why a build failed (X5 errors). The app shows a translated message for each code.
@@ -90,10 +91,19 @@ export class BuildError extends WebforgeError<BuildErrorCode> {
  * A problem that does not stop the build (X5 warnings): a link to a page that isn't there, an
  * image deleted from Media that a page still places (that place is left out), a page *Minify
  * output* couldn't make smaller, as its HTML can't be read (it's written readable, 3.3), or a site
- * icon that gives no favicon (3.4): deleted from Media, or under 16 pixels once cut square.
+ * icon that gives no favicon (3.4): deleted from Media, or under 16 pixels once cut square; or a
+ * form with nowhere to send (`form-unset`, 3.7: no form service, Netlify Forms before its
+ * publisher, an address that isn't `https://`, or a Newsletter without its address; `detail` says
+ * which).
  */
 export type BuildWarning = {
-  readonly code: "broken-link" | "missing-image" | "not-minified" | "missing-icon" | "small-icon";
+  readonly code:
+    | "broken-link"
+    | "missing-image"
+    | "not-minified"
+    | "missing-icon"
+    | "small-icon"
+    | "form-unset";
   /** The page path the problem is on; "" for the whole site (the icon's). */
   readonly page: string;
   readonly detail: string;
@@ -150,6 +160,9 @@ export type BuildOptions = {
  */
 export type BuildMode = "preview" | "export" | "publish";
 
+/** A preview's stylesheet, by one name whatever it holds (3.2). */
+export const PREVIEW_STYLESHEET = "assets/css/site.css";
+
 /** A page's rendered regions, with the problems found rendering them. */
 type RenderedRegions = RenderedPage & { readonly warnings: readonly BuildWarning[] };
 
@@ -161,6 +174,8 @@ type RenderedRegions = RenderedPage & { readonly warnings: readonly BuildWarning
 export type BuildCaches = {
   readonly styles: StyleCompiler;
   readonly pages: Map<string, RenderedRegions>;
+  /** Each font file checked against the catalogue's hash, by name: the same bytes aren't hashed again. */
+  readonly fonts: Map<string, Uint8Array>;
 };
 
 /**
@@ -281,7 +296,8 @@ export async function* buildEvents(
   if (!parsed.success) {
     throw new BuildError("invalid-site", parsed.error.message);
   }
-  const site = parsed.data;
+  // The thank-you page a form service sends visitors to (3.7), made if the site has none.
+  const { site, thanksPage } = withThanksPage(parsed.data, library);
   // A page whose file Windows won't write (`con.html`, a folder `aux/`) stops the build before
   // anything else, naming the page, so the person can rename it (R16).
   const unwritable = site.pages.find((page) => page.path.split("/").some(isDeviceName));
@@ -493,6 +509,12 @@ export async function* buildEvents(
       ...(site.formService === undefined ? {} : { formService: site.formService }),
       // Custom Code as written (F-ED-15): the export is the one place it runs (3.9 checks it).
       rawCustomCode: true,
+      // A form with nowhere to send draws without an action (2.8), and the report says so (3.7).
+      formHint: (reason) => {
+        found.push({ code: "form-unset", page: page.path, detail: reason });
+        return null;
+      },
+      ...(thanksPage === undefined ? {} : { thanksPage }),
       // The Footer's link back to the consent banner, wherever it asks (#539).
       ...(analytics?.consentBanner === true ? { cookieSettings: true } : {}),
     };
@@ -506,7 +528,8 @@ export async function* buildEvents(
   };
   // Everything a page's render reads besides the page itself, hashed once for the page cache: the
   // site without its pages' content and without Media, whose images and documents a page reaches
-  // only as they were resolved above. A new input of rendering must be added here too.
+  // only as they were resolved above, and of the theme only its shape: a render reads none of its
+  // colours or sizes, which the stylesheet sets (3.2). A new input of rendering must be added here.
   const sharedKey =
     caches === undefined
       ? ""
@@ -516,6 +539,7 @@ export async function* buildEvents(
               ...site,
               // As this build has it: none in a preview, whose pages have no Cookie settings.
               analytics,
+              theme: themeShape(site.theme),
               media: undefined,
               documents: undefined,
               pages: site.pages.map((page) => ({ ...page, doc: undefined })),
@@ -570,7 +594,10 @@ export async function* buildEvents(
       ? await buildSiteCss(resources, cssOptions)
       : await caches.styles.css(cssOptions, run.mode === "preview");
   const css = minify ? minifiedCss(readableCss) : readableCss;
-  const cssPath = `assets/css/site.${contentHash(css)}.css`;
+  // A preview's stylesheet keeps one name (3.2), so a change to the styles alone leaves every page
+  // as it was and the browser swaps the stylesheet in place; an export's is named by its content.
+  const cssPath =
+    run.mode === "preview" ? PREVIEW_STYLESHEET : `assets/css/site.${contentHash(css)}.css`;
   files.set(cssPath, text.encode(css));
   const year = run.year ?? new Date().getFullYear();
   for (const entry of rendered) {
@@ -637,9 +664,18 @@ export async function* buildEvents(
   yield { stage: "fonts" };
   for (const face of fontFacesFor(site.theme, resources.fonts)) {
     const data = await resources.readFont(face);
-    if (data === undefined || data.byteLength !== face.bytes || sha256(data) !== face.sha256) {
+    const checked = caches?.fonts.get(face.file);
+    const known =
+      checked !== undefined &&
+      data !== undefined &&
+      Buffer.from(checked.buffer, checked.byteOffset, checked.byteLength).equals(data);
+    if (
+      !known &&
+      (data === undefined || data.byteLength !== face.bytes || sha256(data) !== face.sha256)
+    ) {
       throw new BuildError("missing-font", `The font file ${face.file} is missing or damaged`);
     }
+    if (data !== undefined) caches?.fonts.set(face.file, data);
     files.set(`assets/fonts/${face.file}`, data);
   }
 

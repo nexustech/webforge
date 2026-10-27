@@ -13,6 +13,7 @@
   },
   "devDependencies": {
     "@types/node": "catalog:",
+    "@webforge/site-check": "workspace:*",
     "@webforge/site-components": "workspace:*",
     "@webforge/themes": "workspace:*",
     "vitest": "catalog:"

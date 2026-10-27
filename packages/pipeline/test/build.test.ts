@@ -43,7 +43,8 @@ describe("buildSite: golden output (X4: byte-stable, readable)", () => {
       // robots.txt (3.5).
       files: 17,
       bytes: undefined,
-      warnings: [],
+      // The second Newsletter has no form address (3.7).
+      warnings: [{ code: "form-unset", page: "about", detail: "noAddress" }],
     });
   });
 
@@ -908,7 +909,11 @@ describe("buildSite: what the export writes (3.3)", () => {
 
     const small = await buildSite(site, siteLibrary, resources, { output: { minify: true } });
 
-    expect(small.report.warnings).toEqual([{ code: "not-minified", page: "index", detail: "" }]);
+    expect(small.report.warnings).toEqual([
+      // The sample's second Newsletter has no form address (3.7).
+      { code: "form-unset", page: "about", detail: "noAddress" },
+      { code: "not-minified", page: "index", detail: "" },
+    ]);
     expect(text(small, "index.html")).toContain("<!-- Header (shared) -->");
     // The other pages are minified as asked.
     expect(text(small, "about.html")).not.toContain("<!--");
@@ -1073,7 +1078,10 @@ describe("buildSite: section backgrounds (2.26)", () => {
     for (const name of ["isolate", "-z-10", "text-neutral-content", String.raw`bg-neutral\/60`]) {
       expect(css, name).toContain(`.${name}`);
     }
-    expect(exported.report.warnings).toEqual([]);
+    // Only the sample's Newsletter without its form address (3.7).
+    expect(exported.report.warnings).toEqual([
+      { code: "form-unset", page: "about", detail: "noAddress" },
+    ]);
   }, 60_000);
 });
 

@@ -129,6 +129,21 @@ describe("exportReport", () => {
     ]);
   });
 
+  it("names a page with a form that has nowhere to send (3.7)", () => {
+    const report = exportReport(
+      {
+        ...exported,
+        warnings: [{ code: "form-unset", page: "index", detail: "noService" }],
+        warningCount: 1,
+      },
+      bakery(),
+    );
+
+    expect(report.issues).toEqual([
+      "On “Home”, a form has nowhere to send its messages. Choose a form service in Site Settings, or give the Newsletter its form address.",
+    ]);
+  });
+
   it("names a page Minify output left readable (3.3)", () => {
     const report = exportReport(
       {
