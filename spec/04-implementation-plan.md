@@ -44,7 +44,7 @@ Still open in Phase 0: the publishing spikes (Netlify, FTP/SFTP). The Puck large
 Current code size (approx. lines): desktop 2.7k · engine 1.6k · history 1.6k · pipeline 1.1k · site-components 1.0k · storage 0.6k · model 0.3k. `editor-ui`, `publish` and `themes` are placeholders.
 
 ## 3. Timeline
-**Total: 386.5 working days** (≈ 77 weeks of effort; 335 before the 22–27 Oct additions) including the 4-week beta. Baseline v1.0 (sequential, for the original 277 days, before the Phase 1 re-plan) at 100% of estimates: **19 Nov 2027**; with +25% contingency: **25 Feb 2028**. Re-planned at the Phase 1 exit (25 Oct 2026, below): v1.0 about **22 Jan 2027**.
+**Total: 392 working days** (≈ 78 weeks of effort; 335 before the 22–27 Oct additions) including the 4-week beta. Baseline v1.0 (sequential, for the original 277 days, before the Phase 1 re-plan) at 100% of estimates: **19 Nov 2027**; with +25% contingency: **25 Feb 2028**. Re-planned at the Phase 1 exit (25 Oct 2026, below): v1.0 about **22 Jan 2027**.
 
 **Re-plan, 20 Oct 2026:** Phase 1 runs in three concurrent streams (82 days of effort in about 28 working days, see [Phase 1](#phase-1-editor-core)). Phase 2–5 dates and the v1.0 date are re-planned at the Phase 1 exit review.
 
@@ -101,12 +101,14 @@ Phase 2 is 137 days and the total 378. Neither item is on a §7 chain.
 
 Phase 2 is 145.5 days and the total 386.5. Phase 2's exit criteria gain the Appearance group. At the measured pace, the block takes about four working days of stream time, so Phase 2's code-complete date (6 Nov) holds.
 
+**Scope change, 27 Oct 2026 (quick start, QS-1…QS-8):** +5.5 days for 3.11 ([#516](https://github.com/nexustech/webforge/issues/516), stream A after 3.5) from [product/09](../research/product/09-quick-start-wizard.md): a four-step quick start (QS-1), the sample business replaced on creation (QS-2), page recipes per business type (QS-3) and the start screen's primary action (QS-4); QS-5 and QS-6 are rules; the description step with the v1.1 assistant replaces G25c's Later (QS-7); 5.4's tour starts after the quick start (QS-8). Phase 3 is 37.5 days and the total 392. Phase 3's exit criteria gain the quick start. The dates hold: at the measured pace (0.4–0.5), 3.11 is about 2.5 working days of stream A's time, and A's Phase 3 queue still ends by 20 Nov 2026.
+
 | Phase | Effort (days) | Starts | Ends (100%) | Ends (+25%) | Exit criteria |
 |---|---|---|---|---|---|
 | [Phase 0: Prototype (finish)](#phase-0-prototype-finish) | 7 | 26 Oct 2026 | 13 Nov 2026 (0.2 and 0.3) | – | Netlify and SFTP/FTPS publish spikes meet the spike criteria in research/stack/08<br>A large page (200+ elements) stays within the editing performance budget |
 | [Phase 1: Editor core](#phase-1-editor-core) | 128 | 22 Oct 2026 | 25 Oct 2026 (exit criteria met; closed 26 Oct 2026 on the product owner's sign-off) | – | Build a 3-page site from blank, close, reopen: everything restored<br>Undo-all property tests green; every edit has a meaningful label<br>Shell matches UI1 as amended by UI6 in dark and light (Storybook screenshots) |
 | [Phase 2: Design & components](#phase-2-design--components) | 145.5 | 23 Oct 2026 | 6 Nov 2026 (code-complete) | – | Every component has stories × 3 themes × Desktop/Mobile, axe-clean (colour contrast in site themes reported, not blocking)<br>New Site from each of the 8 templates works and looks distinct<br>Theme changes restyle every component; contrast warnings work<br>Every section and element has the Appearance group, and a theme switch restyles it (ST-8) |
-| [Phase 3: Output](#phase-3-output) | 32 | 9 Nov 2026 | 20 Nov 2026 | – | Exported templates open from disk in Chromium, Firefox, WebKit (+ Edge on Windows) with no external requests<br>Site Check blocks only Must-fix issues on export<br>Preview CSS hot-swap < 100 ms; phone preview via QR works |
+| [Phase 3: Output](#phase-3-output) | 37.5 | 9 Nov 2026 | 20 Nov 2026 | – | Exported templates open from disk in Chromium, Firefox, WebKit (+ Edge on Windows) with no external requests<br>Site Check blocks only Must-fix issues on export<br>Preview CSS hot-swap < 100 ms; phone preview via QR works<br>A site made by the quick start carries the person's name, pages, colours and contact details (3.11) |
 | [Phase 4: Publish & versions](#phase-4-publish--versions) | 30 | 23 Nov 2026 | 4 Dec 2026 | – | Publish + rollback on all targets in E2E tests (mock Netlify, local FTP/SFTP)<br>A paired AI app's edits are undoable, and the MCP server can't be reached from another computer<br>Version History: save, auto-retention, preview, restore, open as new site, republish |
 | [Phase 5: Beta hardening](#phase-5-beta-hardening) | 44 | 7 Dec 2026 | 22 Jan 2027 (hardening by mid-December, then the 4-week beta) | – | All performance budgets met on Windows and macOS<br>Signed NSIS and DMG builds install, and auto-update from a test feed on both OSes (0.5)<br>Signed, notarised builds auto-update from the production feed<br>ADRs written; architecture §6 interfaces updated (0.6)<br>Beta running with 10–20 users; no open Must-fix bugs |
 
@@ -205,6 +207,7 @@ gantt
     3.8 Google Analytics with consent banner :t3_8, 2027-08-17, 2d
     3.9 Custom code bundling and external-resource check :t3_9, 2027-08-19, 4d
     3.10 Exported-site compatibility E2E :crit, t3_10, 2027-08-25, 2d
+    3.11 Quick start – a new site from a few questions :t3_11, 2027-08-09, 5.5d
     section Phase 4
     4.1 Publish core – Publisher interface, manifests,… :crit, t4_1, 2027-08-27, 3d
     4.2 Netlify publisher and Netlify Forms :crit, t4_2, 2027-09-02, 4d
@@ -938,7 +941,7 @@ The eight templates were built before the Appearance group. A light pass uses it
 
 ### Phase 3: Output
 **Goal:** Preview, export and Site Check: every template exports to a self-contained site that opens from disk in all browsers with zero external requests.  
-**Effort:** 32 days · **Scheduled:** 9 Nov 2026 → 20 Nov 2026 (Phase 1 exit re-plan; baseline 15 Jul → 26 Aug 2027)
+**Effort:** 37.5 days · **Scheduled:** 9 Nov 2026 → 20 Nov 2026 (Phase 1 exit re-plan; baseline 15 Jul → 26 Aug 2027)
 
 | ID | Item | Issue | Area | Refs | Est | Depends on |
 |---|---|---|---|---|---|---|
@@ -952,13 +955,14 @@ The eight templates were built before the Appearance group. A light pass uses it
 | 3.8 | Google Analytics with consent banner | [#66](https://github.com/nexustech/webforge/issues/66) | pipeline | F-CM-3, B4, B7 | 2 | 1.17, 3.1 |
 | 3.9 | Custom code bundling and external-resource check | [#67](https://github.com/nexustech/webforge/issues/67) | pipeline | F-ED-15, C7, C8, [ADR 0005](../docs/adr/0005-export-pipeline-spike.md) | 4 | 3.1, 2.11, 3.6 |
 | 3.10 | Exported-site compatibility E2E | [#68](https://github.com/nexustech/webforge/issues/68) | pipeline | X1, C8, MVP §6 Phase 3 exit | 2 | 3.3, 3.4, 3.5, 2.15 |
+| 3.11 | Quick start: a new site from a few questions | [#516](https://github.com/nexustech/webforge/issues/516) | shell | [product/09](../research/product/09-quick-start-wizard.md) QS-1…QS-6, F-SITE-1, F-SET-1, SC-3, LF-11, PG-2 | 5.5 | 2.14, 2.15, 1.17, 2.21, 2.3b |
 
-**Streams (assigned 27 Oct 2026, after 3.1).** 3.1 unblocks the rest of the phase, so its items are shared across the three streams, each after its Phase 2 items. The Phase 1 and Phase 2 stream rules carry over. Days are unchanged, so there is no scope change.
+**Streams (assigned 27 Oct 2026, after 3.1).** 3.1 unblocks the rest of the phase, so its items are shared across the three streams, each after its Phase 2 items. The Phase 1 and Phase 2 stream rules carry over. The assignment changed no days; 3.11 joined stream A's queue on 27 Oct 2026 with its own scope change (§3).
 
 | Stream | Items, in order |
 |---|---|
-| A: Shell & panels | 3.2 (preview server) → 3.5 (site files) → 3.10 (compatibility E2E) |
-| B: Data & site | ~~3.1~~ → 3.3 (export to folder/ZIP) → 2.26 (styling block) → 3.4 (images) → 3.7 (forms, once 3.6 has merged) |
+| A: Shell & panels | 3.2 (preview server) → 3.5 (site files) → 3.11 (quick start, 27 Oct) → 3.10 (compatibility E2E) |
+| B: Data & site | ~~3.1 → 3.3 → 3.4~~ → 2.26 (styling block) → 3.7 (forms, once 3.6 has merged) |
 | C: History & canvas | 2.24 ([#486](https://github.com/nexustech/webforge/issues/486)) → the E2E timing fix ([#446](https://github.com/nexustech/webforge/issues/446), [#489](https://github.com/nexustech/webforge/issues/489)) → the styling block (2.25 → 2.28 → 2.29) → 3.6 (Site Check) → 3.9 (custom code) → 3.8 (Google Analytics) |
 
 Two items wait on another stream: 3.7 (B) on 3.6 (C), and 3.10 (A) on 3.3 and 3.4 (B). **Styling first (ST-8, 26 Oct 2026):** streams A and C finish Phase 2's styling block before their Phase 3 items, and B does 2.26 after 3.3.
@@ -1030,9 +1034,20 @@ Every template exported and opened from disk in Chromium, Firefox, WebKit (+ Edg
 - [ ] Zero external requests for all templates
 - [ ] Runs in CI on PRs touching pipeline/components
 
+**3.11 Quick start: a new site from a few questions** (added 27 Oct 2026, [product/09](../research/product/09-quick-start-wizard.md) QS-1…QS-6)  
+A first-time user answers a few questions and opens the editor on a site that is already theirs. **QS-1, four steps** as a dialog on the 2.21 form engine, in New Site's layout (LF-11) at the start screen's reading density (SC-1): *Your business* (business type from the seven template categories; *Business or site name*, filling the site name and the contact business name; *What you do*, one line into Site Settings' description); *A look* (the templates of that type as pictures with Details, *Try an example* where one exists, the theme); *Pages* (the template's pages ticked, the type's extras unticked); *Colours and details* (three or four palettes derived from the theme presets, *From my logo* through PG-2's palette from an image, a brand-colour picker; then the optional phone, email, address and opening hours). Every step can be skipped, every answer can be changed later, and the editor opens in < 3 s (F-SITE-1). **QS-2:** templates mark their sample business name and contact details, and a new site gets the person's answers in the copy as well as Site Settings, by binding the headings and footer text that carry the name where the component allows it and substituting the rest on creation; Blank and the examples are unchanged. **QS-3:** page recipes per business type (catalogue sections in the chosen theme with placeholder copy in the glossary's voice), also offered by the Pages panel's *Add page*. **QS-4:** SC-3's *Start a site* opens the quick start; New Site stays one link away. Rules: nothing the MVP can't use is asked (QS-5); contact details are last and optional (QS-6). Strings through `t()`, stories per step, a Playwright path from the start screen into the editor. Stream A after 3.5 (queue order, not a dependency: everything 3.11 needs is merged).
+
+- [ ] *Start a site* opens the quick start; each step can be skipped, and Create at any step opens the editor in < 3 s
+- [ ] The name from step 1 is the site's name and the contact business name, and replaces the template's sample business in the headings and footer; step 4's contact details appear wherever the template bound them
+- [ ] Ticking an extra page builds it from its recipe in the chosen theme; unticking a template page leaves it out
+- [ ] Step 4's palettes, *From my logo* and the brand colour change the theme tokens; a later theme switch keeps working
+- [ ] Blank, *Try an example* and New Site are unchanged, and New Site is reachable from the quick start
+- [ ] No request leaves the computer; nothing typed is logged
+- [ ] Stories per step and the E2E path pass; `pnpm visual:docker` screenshots committed
+
 </details>
 
-**Phase exit:** Exported templates open from disk in Chromium, Firefox, WebKit (+ Edge on Windows) with no external requests; Site Check blocks only Must-fix issues on export; Preview CSS hot-swap < 100 ms; phone preview via QR works.
+**Phase exit:** Exported templates open from disk in Chromium, Firefox, WebKit (+ Edge on Windows) with no external requests; Site Check blocks only Must-fix issues on export; Preview CSS hot-swap < 100 ms; phone preview via QR works; a site made by the quick start carries the person's name, pages, colours and contact details (3.11, QS-1…QS-4).
 
 ### Phase 4: Publish & versions
 **Goal:** Publish to Netlify and FTP/FTPS/SFTP with incremental uploads, plus Version History with restore and republish, and connecting AI apps over MCP.  
@@ -1182,7 +1197,7 @@ Generate THIRD_PARTY_NOTICES at build; in-app 'Open-source licences' screen; inc
 - [ ] Every bundled dependency and font listed
 
 **5.4 Onboarding, help and keyboard shortcuts**  
-First-run welcome and short guided tour (pick template → edit text → change theme → preview → publish), contextual help links, keyboard shortcuts sheet, help content in glossary language. The Layers and canvas right-click menu's *Help for this element* (UX-24) lands here, opening each element type's help page (moved from 1.35 on 23 Oct 2026).
+First-run welcome and short guided tour (pick template → edit text → change theme → preview → publish), contextual help links, keyboard shortcuts sheet, help content in glossary language. **QS-8 (27 Oct 2026):** the quick start (3.11) picks the template and sets the theme, so the tour starts at editing text (edit text → preview → publish); the estimate is reviewed when 5.4 is planned. The Layers and canvas right-click menu's *Help for this element* (UX-24) lands here, opening each element type's help page (moved from 1.35 on 23 Oct 2026).
 
 - [ ] A new user can publish a template-based site in one session (usability test)
 
@@ -1218,7 +1233,7 @@ Every MVP feature ID maps to at least one work item (checked when this plan was 
 
 | Feature | Name | Items |
 |---|---|---|
-| F-SITE-1 | New Site from Template | 1.8, 2.14, 2.15 |
+| F-SITE-1 | New Site from Template | 1.8, 2.14, 2.15, 3.11 (quick start) |
 | F-SITE-2 | Open / Recent Sites | 1.8 |
 | F-SITE-3 | Periodic autosave | 1.6 |
 | F-SITE-4 | Version History | 4.6 |

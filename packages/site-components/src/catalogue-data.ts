@@ -110,8 +110,56 @@ export const catalogueSchema = z.record(z.string(), catalogueComponentSchema);
 /** See {@link catalogueSchema}. */
 export type Catalogue = z.infer<typeof catalogueSchema>;
 
-/** Webforge's site components as data (`catalogue-data.json`). */
-export const CATALOGUE: Catalogue = catalogueSchema.parse(data);
+/**
+ * The Appearance group's Text controls (2.22b): a section without a title of its own has the group
+ * without them. Their names as `appearance.ts` has them; a test checks they agree.
+ */
+export const APPEARANCE_TEXT_FIELDS = [
+  "lookSize",
+  "lookWeight",
+  "lookItalic",
+  "lookUnderline",
+  "lookCase",
+  "lookAlign",
+] as const;
+
+/**
+ * `catalogue-data.json` as written: the Appearance group's fields once (2.22), and each component
+ * with `appearance`, `"all"` or `"noText"` (a section without a title), in place of the 13 fields
+ * repeated in it. {@link CATALOGUE} puts them back.
+ */
+export const catalogueFileSchema = z.strictObject({
+  appearance: z.record(z.string(), catalogueFieldSchema),
+  components: z.record(
+    z.string(),
+    catalogueComponentSchema.extend({ appearance: z.enum(["all", "noText"]).optional() }),
+  ),
+});
+
+/** See {@link catalogueFileSchema}. */
+export type CatalogueFile = z.infer<typeof catalogueFileSchema>;
+
+/** The catalogue `file` holds, each component's Appearance fields first, as the library has them. */
+export function expandCatalogue(file: CatalogueFile): Catalogue {
+  return Object.fromEntries(
+    Object.entries(file.components).map(([type, { appearance, ...component }]) => {
+      const group =
+        appearance === undefined
+          ? {}
+          : Object.fromEntries(
+              Object.entries(file.appearance).filter(
+                ([name]) =>
+                  appearance === "all" ||
+                  !(APPEARANCE_TEXT_FIELDS as readonly string[]).includes(name),
+              ),
+            );
+      return [type, { ...component, fields: { ...group, ...component.fields } }];
+    }),
+  );
+}
+
+/** Webforge's site components as data (`catalogue-data.json`), the Appearance group put back. */
+export const CATALOGUE: Catalogue = expandCatalogue(catalogueFileSchema.parse(data));
 
 /** A value set per device (F-ED-4), or one for all. */
 const responsive = (schema: z.ZodType) =>

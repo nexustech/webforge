@@ -1,14 +1,27 @@
 import { describe, expect, it } from "vitest";
+import { APPEARANCE_FIELDS, APPEARANCE_TEXT_FIELD_NAMES } from "./appearance.js";
 import { siteLibrary } from "./catalogue/index.js";
-import { CATALOGUE, catalogueSchema, fieldValueSchema } from "./catalogue-data.js";
+import {
+  APPEARANCE_TEXT_FIELDS,
+  CATALOGUE,
+  catalogueFileSchema,
+  catalogueSchema,
+  fieldValueSchema,
+} from "./catalogue-data.js";
 
 /**
  * The library as data: every component without what only rendering needs (its render, frame and
- * behaviours) and without functions (a field's `unavailable`), as JSON keeps it.
+ * behaviours) and without functions (a field's `unavailable`), as JSON keeps it; the Appearance
+ * group's fields once, each component marked as having them (2.22b).
  */
 function libraryAsData(): unknown {
+  const group = Object.keys(APPEARANCE_FIELDS);
   const entries = Object.entries(siteLibrary.components).map(([type, def]) => {
     const { label, place, category, advancedOnly, framed, presets, fields, defaults } = def;
+    const has = group.filter((name) => Object.hasOwn(fields, name));
+    const appearance =
+      has.length === 0 ? undefined : has.length === group.length ? "all" : "noText";
+    const own = Object.fromEntries(Object.entries(fields).filter(([name]) => !has.includes(name)));
     return [
       type,
       {
@@ -18,20 +31,47 @@ function libraryAsData(): unknown {
         advancedOnly,
         framed,
         presets,
-        fields,
+        appearance,
+        fields: own,
         defaults,
       },
     ];
   });
   // Through JSON: functions and undefined go, as they would from the file.
-  return JSON.parse(JSON.stringify(Object.fromEntries(entries)));
+  return JSON.parse(
+    JSON.stringify({ appearance: APPEARANCE_FIELDS, components: Object.fromEntries(entries) }),
+  );
 }
 
 describe("the catalogue as data (4.8)", () => {
   it("is the library's: after changing a component, run `pnpm catalogue-data`", async () => {
     const data = libraryAsData();
-    expect(catalogueSchema.safeParse(data).success).toBe(true);
+    expect(catalogueFileSchema.safeParse(data).success).toBe(true);
     await expect(`${JSON.stringify(data, null, 2)}\n`).toMatchFileSnapshot("catalogue-data.json");
+  });
+
+  it("puts the Appearance group back in each component, as the library has it (2.22b)", () => {
+    expect(APPEARANCE_TEXT_FIELDS).toEqual(APPEARANCE_TEXT_FIELD_NAMES);
+    const library = JSON.parse(
+      JSON.stringify(
+        Object.fromEntries(
+          Object.entries(siteLibrary.components).map(([type, def]) => [
+            type,
+            Object.keys(def.fields),
+          ]),
+        ),
+      ),
+    ) as Record<string, string[]>;
+    for (const [type, component] of Object.entries(CATALOGUE)) {
+      expect(Object.keys(component.fields), type).toEqual(library[type]);
+    }
+    expect(catalogueSchema.safeParse(CATALOGUE).success).toBe(true);
+    // A command can set the group on a Hero, and not something it doesn't offer.
+    const underline = CATALOGUE.Hero?.fields.lookUnderline;
+    if (underline === undefined) throw new Error("No Hero underline");
+    expect(fieldValueSchema(underline).safeParse(true).success).toBe(true);
+    expect(fieldValueSchema(underline).safeParse("yes").success).toBe(false);
+    expect(CATALOGUE.Section?.fields.lookUnderline).toBeUndefined();
   });
 
   it("checks a field's value by its kind", () => {

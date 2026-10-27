@@ -37,6 +37,8 @@ const section = defineSection({
   label: t("section.section"),
   name: "section",
   category: t("category.basic"),
+  // No title of its own: no Text controls in its Appearance group (2.22b).
+  titled: false,
   fields: {
     gap: {
       kind: "slider",
