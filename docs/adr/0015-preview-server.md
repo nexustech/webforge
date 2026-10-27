@@ -43,9 +43,18 @@ The site's own scripts run in the preview. They must never run with the editor's
    - A page switch in the editor sends `show`, which moves the browser.
    - The script defers a reload or a move while its tab is hidden.
    - An export's stylesheet is still named by its content.
-7. **Timing (ADR 0014).**
-   - The spec's targets are checked on a quiet machine: CSS in the browser under 100 ms, a page under 200 ms.
-   - In every other run, tests check what load doesn't move: a colour change sends the stylesheet alone, and a text edit sends its page alone.
+7. **A theme's shape and its values (3.2, part 2).**
+   - **Compiled once per shape:** a preview compiles Tailwind for the theme's shape (`themeShape`), with its colours, corners, border, depth, noise, spacing, type scale, links and button height set to the default theme's. The real values follow the compiled stylesheet as plain custom properties (`themeValuesCss`), after `THEME_VALUES_MARKER`, outside any layer, so they win.
+   - **What stays in the shape:** the preset, fonts, shadow, buttons' shape and style, headings, cards, photos and sections' rhythm, which change the rules or the fonts the stylesheet loads. Changing one compiles again.
+   - **Safe by construction:** a test compares the theme's stylesheet source with its shape's, line by line, for a spread of themes. Only custom properties may differ, and each must be in the values block, under the same selector.
+   - **No page re-rendered:** a page's cache is keyed on the theme's shape, not the whole theme. A render reads none of the theme's values (they are the stylesheet's), so this holds for an export too.
+   - **The values alone over the wire:** when only the values block changed, the server sends it in a `values` event, and the page puts it in a style element of its own, with nothing to download. A later `css` swap removes that element once the new stylesheet has loaded.
+   - **An export is untouched:** it is still compiled with the theme itself.
+8. **Timing (ADR 0014).**
+   - **The spec's targets** are checked by `pnpm e2e:perf` (`e2e/perf/preview.perf.ts`), timed from the edit landing in the editor (the perf build's `lastChange` hook), not from the clicks and dialogs that made it:
+     - a theme colour must reach the browser in under 100 ms, the page noting the frame it changes in by its own clock;
+     - a changed page must reach the server's reload in under 200 ms. The browser's own reload of the page is the browser's, and is printed beside it.
+   - **In every other run,** tests check what load doesn't move: a colour change sends the stylesheet alone, compiles nothing and renders no page, and a text edit sends its page alone.
 
 ## Consequences
 - **Phone preview needs the network listener.** On Windows, the first *Preview on Phone…* may show the system firewall's question for Webforge; until it's allowed, the phone can't connect. The desktop preview never asks: it stays on `127.0.0.1`.
