@@ -214,7 +214,7 @@ type FallbackGroup =
   | "spacing"
   | "colours"
   | "text"
-  | "appearance";
+  | "options";
 
 const fallbackGroup = (id: FallbackGroup): OptionGroup => ({
   id,
@@ -240,7 +240,8 @@ function optionGroupOf(field: EditPanelField): OptionGroup {
     case "select":
     case "slider":
     case "toggle":
-      return fallbackGroup(field.group === "content" ? "text" : "appearance");
+      // A component's own options; "Appearance" is the group every section and element has (2.22).
+      return fallbackGroup(field.group === "content" ? "text" : "options");
     default:
       return fallbackGroup("text");
   }

@@ -27,6 +27,7 @@ import {
 import { useId, useState } from "react";
 import { type CanvasPreferences, DEVICE_SIZE, MAX_DEVICES } from "../../shared/ipc/prefs.js";
 import {
+  DESKTOP_SIZES,
   DEVICE_WIDTHS,
   type DeviceView,
   rotatedWidth,
@@ -104,7 +105,7 @@ export function CanvasToolbar({
         onZoomChange={onZoomChange}
       />
       <RotateButton
-        width={widthOf(viewport)}
+        width={widthOf(viewport, size?.width)}
         devices={canvas.devices}
         onViewportChange={onViewportChange}
       />
@@ -136,7 +137,11 @@ export function CanvasToolbar({
       <ViewMenu canvas={canvas} onCanvasChange={onCanvasChange} />
 
       {/* Keyed by the width, so it shows a width chosen elsewhere (a device, undo). */}
-      <CustomWidth key={widthOf(viewport)} width={widthOf(viewport)} onChange={onViewportChange} />
+      <CustomWidth
+        key={widthOf(viewport, size?.width)}
+        width={widthOf(viewport, size?.width)}
+        onChange={onViewportChange}
+      />
       <DeviceMenu
         size={size}
         canvas={canvas}
@@ -340,10 +345,19 @@ function DeviceMenu({
           {DEVICES.map(({ id, icon: Icon }) => (
             <DropdownMenuItem key={id} onSelect={() => onViewportChange(id)}>
               <Icon aria-hidden />
-              {t("canvasToolbar.deviceWidth", {
-                name: t(`device.${id}`),
-                width: DEVICE_WIDTHS[id],
-              })}
+              {id === "desktop"
+                ? t("canvasToolbar.desktopFills")
+                : t("canvasToolbar.deviceWidth", {
+                    name: t(`device.${id}`),
+                    width: DEVICE_WIDTHS[id],
+                  })}
+            </DropdownMenuItem>
+          ))}
+          {/* Fixed desktop widths, to check particular screens (PH2-18). */}
+          {DESKTOP_SIZES.map(({ width }) => (
+            <DropdownMenuItem key={width} onSelect={() => onViewportChange(width)}>
+              <MonitorIcon aria-hidden />
+              {t("canvasToolbar.deviceWidth", { name: t("device.desktop"), width })}
             </DropdownMenuItem>
           ))}
           {canvas.devices.map((device) => (

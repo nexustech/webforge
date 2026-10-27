@@ -182,3 +182,55 @@ describe("shownRatio", () => {
     expect(shownRatio(21)).toBe("21.0");
   });
 });
+
+describe("ColourField's Theme's choice (2.22)", () => {
+  const LOOK: FieldSpec<"color"> = {
+    kind: "color",
+    label: "Background",
+    options: [
+      { label: "Theme's", value: "theme" },
+      { label: "Surface", value: "base-100" },
+      { label: "Brand", value: "primary" },
+    ],
+  };
+
+  /** The Appearance group's Background, showing `value`. */
+  function look(value: string | undefined) {
+    const onChange = vi.fn();
+    const onCommit = vi.fn();
+    render(
+      <>
+        <span id="look-label">Background</span>
+        <ColourField
+          id="look"
+          labelId="look-label"
+          field={LOOK}
+          value={value}
+          onChange={onChange}
+          onCommit={onCommit}
+          session={sessionWith()}
+        />
+      </>,
+    );
+    return { onChange, onCommit };
+  }
+
+  it("is chosen while the colour is unset, with no shade or opacity, and stores `theme`", async () => {
+    const { onChange, onCommit } = look(undefined);
+    expect(screen.getByRole("radio", { name: "Theme's" }).getAttribute("aria-checked")).toBe(
+      "true",
+    );
+    expect(screen.queryByText("Shade")).toBeNull();
+    expect(screen.queryByLabelText("Opacity")).toBeNull();
+
+    await userEvent.click(screen.getByRole("radio", { name: "Brand" }));
+    expect(onChange).toHaveBeenLastCalledWith("primary");
+    cleanup();
+
+    const again = look("primary");
+    await userEvent.click(screen.getByRole("radio", { name: "Theme's" }));
+    expect(again.onChange).toHaveBeenLastCalledWith("theme");
+    expect(again.onCommit).toHaveBeenCalled();
+    expect(onCommit).toHaveBeenCalled();
+  });
+});

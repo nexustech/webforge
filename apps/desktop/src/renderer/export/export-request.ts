@@ -6,14 +6,20 @@ import {
   siteToSnapshot,
 } from "@webforge/model";
 import { type ComponentLibrary, documentsLinkedBy, mediaUsedBy } from "@webforge/site-components";
-import type { ExportRequest } from "../../shared/ipc/site.js";
+import type { ExportChoices, ExportRequest } from "../../shared/ipc/site.js";
 
 /**
  * What the export command sends for `site`: its snapshot, and the images its pages, Header and
  * Footer use and the documents they link to, by hash. The main process reads only those files'
- * bytes from the site file.
+ * bytes from the site file. `choices` are the person's, to remember with the site, and `output`
+ * what this export writes (3.3).
  */
-export function exportRequestFor(site: SiteDoc, library: ComponentLibrary): ExportRequest {
+export function exportRequestFor(
+  site: SiteDoc,
+  library: ComponentLibrary,
+  choices: ExportChoices,
+  output: ExportRequest["output"],
+): ExportRequest {
   const nodes = [
     ...site.layout.header,
     ...site.layout.footer,
@@ -54,5 +60,7 @@ export function exportRequestFor(site: SiteDoc, library: ComponentLibrary): Expo
         ? [{ id: item.id, name: item.name, mimeType: item.mimeType, hash: item.hash }]
         : [],
     ),
+    choices,
+    output,
   };
 }

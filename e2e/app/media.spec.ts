@@ -6,7 +6,7 @@ import { createSite, type MediaId } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
 import { heroPhoto, minimalDocx } from "@webforge/test-utils";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
-import { stubFileDialogs } from "./sites.js";
+import { exportFromEditor, stubFileDialogs } from "./sites.js";
 
 // Media import (1.16): files go into the site file unmodified, and the editor shows them through
 // the webforge-media: scheme, as thumbnails made in a worker.
@@ -230,8 +230,7 @@ test("exports a placed photo cut to its crop, as WebP with a JPEG fallback and i
   const page = await openSite();
   const folder = join(dir, "exported");
   await stubFileDialogs(running(), folder);
-  await page.getByRole("button", { name: "Export Site…", exact: true }).click();
-  await expect(page.getByText(/Site exported to “exported”/)).toBeVisible({ timeout: 60_000 });
+  expect(await exportFromEditor(page, 60_000)).toContain("Saved in the folder “exported”.");
 
   // Cut to the square crop (1000 × 1000), so exported at 640 and 1000 wide.
   expect(readdirSync(join(folder, "assets", "img")).sort()).toEqual([
@@ -323,8 +322,7 @@ test("places a Media image on the Hero from the Edit panel, shows it on the canv
 
   const folder = join(dir, "exported");
   await stubFileDialogs(running(), folder);
-  await page.getByRole("button", { name: "Export Site…", exact: true }).click();
-  await expect(page.getByText(/Site exported to “exported”/)).toBeVisible({ timeout: 60_000 });
+  expect(await exportFromEditor(page, 60_000)).toContain("Saved in the folder “exported”.");
   const index = readFileSync(join(folder, "index.html"), "utf8");
   expect(index).toContain('alt="Loaves in the window"');
   expect(index).toContain('srcSet="assets/img/shop-front-640.webp 640w');
@@ -401,8 +399,7 @@ test("warns before deleting a placed image, shows a placeholder, undoes it, and 
   await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
   const folder = join(dir, "exported");
   await stubFileDialogs(running(), folder);
-  await page.getByRole("button", { name: "Export Site…", exact: true }).click();
-  await expect(page.getByText(/Site exported to “exported”/)).toBeVisible({ timeout: 60_000 });
+  expect(await exportFromEditor(page, 60_000)).toContain("Saved in the folder “exported”.");
   const index = readFileSync(join(folder, "index.html"), "utf8");
   expect(index).toContain("Fresh bread");
   expect(index).not.toContain("<img");

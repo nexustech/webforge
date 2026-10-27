@@ -9,6 +9,15 @@ import { siteLibrary } from "@webforge/site-components";
 import { describe, expect, it } from "vitest";
 import { exportRequestFor } from "./export-request.js";
 
+/** The person's choices for an export: they go with the request as they are (3.3). */
+const CHOICES = {
+  format: "zip",
+  minify: true,
+  developerFiles: false,
+  askWebAddress: true,
+} as const;
+const OUTPUT = { minify: true, developerFiles: false } as const;
+
 describe("exportRequestFor", () => {
   it("names the images the site uses by hash, with their alt text, focal point and crop", () => {
     const site = createSite({
@@ -58,8 +67,10 @@ describe("exportRequestFor", () => {
       { type: "Hero", props: { id: "hero", title: "Fresh", image: { mediaId: "hero" } } },
     ];
 
-    const request = exportRequestFor(site, siteLibrary);
+    const request = exportRequestFor(site, siteLibrary, CHOICES, OUTPUT);
 
+    expect(request.choices).toEqual(CHOICES);
+    expect(request.output).toEqual(OUTPUT);
     // The PDF is in Media but nothing links to it: not sent.
     expect(request.documents).toEqual([]);
     expect(request.snapshot.media).toEqual([]);
@@ -137,7 +148,7 @@ describe("exportRequestFor", () => {
       },
     ];
 
-    expect(exportRequestFor(site, siteLibrary).documents).toEqual([
+    expect(exportRequestFor(site, siteLibrary, CHOICES, OUTPUT).documents).toEqual([
       { id: "a1", name: "a1", mimeType: "application/pdf", hash: "a1".padEnd(64, "0") },
     ]);
 
@@ -154,10 +165,9 @@ describe("exportRequestFor", () => {
         },
       ],
     };
-    expect(exportRequestFor(site, siteLibrary).documents?.map((item) => item.id)).toEqual([
-      "a1",
-      "b2",
-    ]);
+    expect(
+      exportRequestFor(site, siteLibrary, CHOICES, OUTPUT).documents?.map((item) => item.id),
+    ).toEqual(["a1", "b2"]);
   });
 
   it("sends the images and documents used only inside a shared section with a copy (F-ED-23)", () => {
@@ -209,7 +219,7 @@ describe("exportRequestFor", () => {
       { type: SHARED_COPY_TYPE, props: { id: "copy", sharedSectionId: "offer" } },
     ];
 
-    const request = exportRequestFor(site, siteLibrary);
+    const request = exportRequestFor(site, siteLibrary, CHOICES, OUTPUT);
 
     expect(request.media.map((item) => item.id)).toEqual(["photo"]);
     expect(request.documents?.map((item) => item.id)).toEqual(["menu"]);
@@ -220,7 +230,7 @@ describe("exportRequestFor", () => {
     home.doc.content = [
       { type: SHARED_COPY_TYPE, props: { id: "copy", sharedSectionId: "offer", hidden: true } },
     ];
-    const hidden = exportRequestFor(site, siteLibrary);
+    const hidden = exportRequestFor(site, siteLibrary, CHOICES, OUTPUT);
     expect(hidden.media).toEqual([]);
     expect(hidden.documents).toEqual([]);
   });

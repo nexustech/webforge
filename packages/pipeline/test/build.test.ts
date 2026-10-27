@@ -1,4 +1,6 @@
 import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import type {
   MediaId,
   MenuItemId,
@@ -11,10 +13,14 @@ import { createSite, DEFAULT_THEME, newSharedCopy, siteToSnapshot } from "@webfo
 import { siteLibrary } from "@webforge/site-components";
 import { sampleSite } from "@webforge/test-utils";
 import { transform } from "lightningcss";
+import { compile } from "tailwindcss";
 import { beforeAll, describe, expect, it } from "vitest";
 import { type BuildEvent, type BuiltSite, buildSite } from "../src/build.js";
+import { tailwindLoaders } from "../src/css.js";
 import { loadNodeResources } from "../src/node-resources.js";
 import type { ImageCache, PipelineResources } from "../src/resources.js";
+
+const requireFrom = createRequire(import.meta.url);
 
 let resources: PipelineResources;
 let built: BuiltSite;
@@ -888,6 +894,25 @@ describe("buildSite: what the export writes (3.3)", () => {
     );
   }, 60_000);
 
+  it("writes a page it can't minify readable, with a warning naming it", async () => {
+    const base = sampleSite();
+    const [home, ...rest] = base.pages;
+    if (home === undefined) throw new Error("no home page");
+    // A tag the person's Custom Code left broken.
+    const broken: NodeDoc = { type: "CustomCode", props: { id: "custom", code: "<a <b>Sale</b>" } };
+    const site: SiteSnapshot = {
+      ...base,
+      pages: [{ ...home, doc: { ...home.doc, content: [...home.doc.content, broken] } }, ...rest],
+    };
+
+    const small = await buildSite(site, siteLibrary, resources, { output: { minify: true } });
+
+    expect(small.report.warnings).toEqual([{ code: "not-minified", page: "index", detail: "" }]);
+    expect(text(small, "index.html")).toContain("<!-- Header (shared) -->");
+    // The other pages are minified as asked.
+    expect(text(small, "about.html")).not.toContain("<!--");
+  }, 60_000);
+
   it("adds developer files only when asked: the stylesheet's source, the theme, the settings, a README", async () => {
     expect([...built.files.keys()].some((path) => path.startsWith("developer/"))).toBe(false);
 
@@ -899,6 +924,7 @@ describe("buildSite: what the export writes (3.3)", () => {
       "developer/README.md",
       "developer/design-tokens.json",
       "developer/input.css",
+      "developer/package.json",
       "developer/site.json",
     ]);
     // Everything else is as without them.
@@ -913,8 +939,49 @@ describe("buildSite: what the export writes (3.3)", () => {
       name: "Rosa's Bakery",
       settings: { "contact.phone": "+44 1234 567890" },
     });
-    expect(text(withFiles, "developer/README.md")).toContain(
-      `npx @tailwindcss/cli -i developer/input.css -o ${fileNamed(withFiles, /^assets\/css\//)}`,
+    // The versions this export used, and a script that writes the file the pages link to.
+    expect(JSON.parse(text(withFiles, "developer/package.json"))).toEqual({
+      private: true,
+      description: expect.stringContaining("Rosa's Bakery"),
+      scripts: {
+        "build-css": `tailwindcss -i input.css -o ../${fileNamed(withFiles, /^assets\/css\//)}`,
+      },
+      devDependencies: {
+        "@tailwindcss/cli": requireFrom("tailwindcss/package.json").version,
+        daisyui: requireFrom("daisyui/package.json").version,
+        tailwindcss: requireFrom("tailwindcss/package.json").version,
+      },
+    });
+    expect(text(withFiles, "developer/README.md")).toContain("npm run build-css");
+  }, 60_000);
+
+  it("rebuilds, as Tailwind's CLI would from input.css, the very stylesheet the pages link to", async () => {
+    const withFiles = await buildSite(sampleSite(), siteLibrary, resources, {
+      output: { developerFiles: true },
+    });
+    // The `tailwindcss` package's stylesheet and the files it imports, as the CLI loads them.
+    const loaders = tailwindLoaders(resources);
+    const packaged = {
+      ...loaders,
+      loadStylesheet: async (id: string, base: string) =>
+        id === "tailwindcss"
+          ? {
+              path: id,
+              base,
+              content: readFileSync(requireFrom.resolve("tailwindcss/index.css"), "utf8"),
+            }
+          : loaders.loadStylesheet(id, base),
+    };
+
+    // No pages read: the classes `input.css` lists are the stylesheet's, escaped ones included.
+    const compiler = await compile(text(withFiles, "developer/input.css"), packaged);
+
+    // Tailwind's package writes its own defaults' strings in double quotes, the files the app
+    // bundles in single: the same CSS.
+    const same = (code: string) => code.replaceAll("'", '"').replace(/\s+/g, " ").trim();
+    expect(same(compiler.build([]))).toBe(same(css(withFiles)));
+    expect(text(withFiles, "developer/input.css")).toContain(
+      '@source inline("[&::-webkit-details-marker]:hidden");',
     );
   }, 60_000);
 });

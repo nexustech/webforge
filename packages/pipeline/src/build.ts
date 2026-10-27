@@ -69,11 +69,12 @@ export class BuildError extends WebforgeError<BuildErrorCode> {
 }
 
 /**
- * A problem that does not stop the build (X5 warnings): a link to a page that isn't there, or an
- * image deleted from Media that a page still places (that place is left out).
+ * A problem that does not stop the build (X5 warnings): a link to a page that isn't there, an
+ * image deleted from Media that a page still places (that place is left out), or a page *Minify
+ * output* couldn't make smaller, as its HTML can't be read (it's written readable, 3.3).
  */
 export type BuildWarning = {
-  readonly code: "broken-link" | "missing-image";
+  readonly code: "broken-link" | "missing-image" | "not-minified";
   /** The page path the problem is on. */
   readonly page: string;
   readonly detail: string;
@@ -513,7 +514,15 @@ export async function* buildEvents(
       // The favicon set's links first (3.4); 3.5's share and search tags follow them.
       head: iconLinks(icons, entry.prefix),
     };
-    const html = minify ? await minifiedHtml(pageDocument(page, false)) : pageDocument(page);
+    let html = pageDocument(page);
+    if (minify) {
+      try {
+        html = await minifiedHtml(pageDocument(page, false));
+      } catch {
+        // HTML the minifier can't read (a broken tag in Custom Code): the page stays readable.
+        warnings.push({ code: "not-minified", page: entry.page.path, detail: "" });
+      }
+    }
     files.set(`${entry.page.path}.html`, text.encode(html));
   }
   if (run.output?.developerFiles === true) {

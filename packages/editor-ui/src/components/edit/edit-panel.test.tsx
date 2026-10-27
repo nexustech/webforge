@@ -565,13 +565,13 @@ describe("style field renderers (1.14 part 2)", () => {
 
     expect(
       screen.getAllByRole("button", { expanded: true }).map((button) => button.textContent),
-    ).toEqual(["Spacing", "Appearance"]);
-    await user.click(group("Appearance"));
+    ).toEqual(["Spacing", "Options"]);
+    await user.click(group("Options"));
 
-    expect(group("Appearance").getAttribute("aria-expanded")).toBe("false");
+    expect(group("Options").getAttribute("aria-expanded")).toBe("false");
     expect(screen.queryByLabelText("Gap")).toBeNull();
     expect(screen.getByRole("radiogroup", { name: "Padding" })).toBeDefined();
-    await user.click(group("Appearance"));
+    await user.click(group("Options"));
     expect(screen.getByLabelText("Gap")).toBeDefined();
   });
 
@@ -590,7 +590,7 @@ describe("style field renderers (1.14 part 2)", () => {
     const spacing = screen.getByRole("button", { name: "Spacing" });
 
     expect(spacing.hasAttribute("data-changed")).toBe(true);
-    expect(screen.getByRole("button", { name: "Appearance" }).hasAttribute("data-changed")).toBe(
+    expect(screen.getByRole("button", { name: "Options" }).hasAttribute("data-changed")).toBe(
       false,
     );
     fireEvent.contextMenu(spacing);

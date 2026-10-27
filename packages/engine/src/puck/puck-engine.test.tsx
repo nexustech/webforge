@@ -714,8 +714,8 @@ describe("createPuckEngine canvas size and zoom (1.15)", () => {
   };
 
   beforeEach(async () => {
-    // happy-dom has no layout: give every element a 640 × 480 box, so Puck fits the 1280 px
-    // Desktop view at 0.5 and leaves the 375 px Mobile view at 1.
+    // happy-dom has no layout: give every element a 640 × 480 box, so Puck fits Desktop (its
+    // 1024 px least, PH2-18) at 0.625 and leaves the 375 px Mobile view at 1.
     vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue(
       DOMRect.fromRect({ width: 640, height: 480 }),
     );
@@ -778,14 +778,14 @@ describe("createPuckEngine canvas size and zoom (1.15)", () => {
     canvasWidth = 900;
     frameWidth = 900;
     await run(resize);
-    expect(zooms).toEqual([0.5, 1, 0.5]);
+    expect(zooms).toEqual([0.625, 1, 0.625]);
   });
 
   it("starts fitted and reports the size and zoom at once", () => {
     const sizes: CanvasSize[] = [];
     framed.onCanvasSize((size) => sizes.push(size));
 
-    expect(sizes).toEqual([{ width: 1280, height: 960, zoom: 0.5 }]);
+    expect(sizes).toEqual([{ width: 1024, height: 768, zoom: 0.625 }]);
   });
 
   it("zooms as asked, fits again on a view change or when asked, reporting each change", async () => {
@@ -799,8 +799,8 @@ describe("createPuckEngine canvas size and zoom (1.15)", () => {
 
     // One report per change, with the height that goes with the zoom: the 480 px in view.
     expect(sizes.map(({ width, height, zoom }) => [width, height, zoom])).toEqual([
-      [1280, 960, 0.5],
-      [1280, 1920, 0.25],
+      [1024, 768, 0.625],
+      [1024, 1920, 0.25],
       [375, 480, 1],
       [375, 240, 2],
       [375, 480, 1],
@@ -813,7 +813,8 @@ describe("createPuckEngine canvas size and zoom (1.15)", () => {
 
     await run(() => framed.setZoom(0));
     await run(() => framed.setZoom(Number.NaN));
-    await run(() => framed.setZoom(0.5));
+    // The zoom Fit already shows.
+    await run(() => framed.setZoom(0.625));
 
     expect(sizes).toHaveLength(1);
   });

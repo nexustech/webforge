@@ -1,5 +1,6 @@
 import {
   cropSchema,
+  exportChoicesSchema,
   FILE_MIME_TYPES,
   focalPointSchema,
   IMAGE_MIME_TYPES,
@@ -30,15 +31,24 @@ const exportDocumentSchema = z.strictObject({
   hash: z.string().regex(/^[0-9a-f]{64}$/),
 });
 
+import type { ExportChoices } from "@webforge/model";
+
+export type { ExportChoices };
+
 /**
- * What the renderer sends to export the site: its snapshot, and the Media images and documents it
- * may use.
+ * What the renderer sends to export the site: its snapshot, the Media images and documents it may
+ * use, the person's choices to remember with the site, and what this export writes. The two differ
+ * where an option isn't offered: Simple mode never writes developer files, but keeps the choice
+ * Advanced mode made (3.3).
  */
 const exportRequestSchema = z.strictObject({
   /** The site, without image or document bytes (the main process fills them in). */
   snapshot: siteSnapshotSchema,
   media: z.array(exportMediaSchema).max(10_000),
   documents: z.array(exportDocumentSchema).max(10_000).optional(),
+  choices: exportChoicesSchema,
+  /** *Minify output* and *Include developer files*, as this export applies them. */
+  output: z.strictObject({ minify: z.boolean(), developerFiles: z.boolean() }),
 });
 
 /** What the renderer sends to export the site. */
@@ -51,17 +61,38 @@ const exportFailureReasonSchema = z.enum([
   "write-failed",
   // A page or its folder is named after a Windows device: `page` says which, to rename (R16).
   "reserved-name",
+  // Too large for a ZIP file (3.3): a folder takes it.
+  "too-large",
 ]);
 
-/** Outcome of exporting the site to a folder. */
+/**
+ * A problem the export found that didn't stop it (X5), for the export report: a link to a page or
+ * file that isn't there, or an image deleted from Media. `page` is the page's path; `detail` what
+ * the link pointed at, or the image's id. `not-minified`: *Minify output* left the page readable.
+ */
+export const exportWarningSchema = z.strictObject({
+  code: z.enum(["broken-link", "missing-image", "not-minified"]),
+  page: z.string().max(1024),
+  detail: z.string().max(2048),
+});
+
+/** At most this many warnings reach the report; it says how many more there were. */
+export const MAX_REPORTED_WARNINGS = 500;
+
+/** Outcome of exporting the site to a folder or a ZIP. */
 const exportResultSchema = z.discriminatedUnion("status", [
   z.strictObject({
     status: z.literal("exported"),
-    /** The chosen folder's name; never the full path. */
-    folderName: z.string().min(1),
+    format: z.enum(["folder", "zip"]),
+    /** The chosen folder's or ZIP file's name; never the full path. */
+    name: z.string().min(1),
     pages: z.int().nonnegative(),
     files: z.int().nonnegative(),
-    warnings: z.int().nonnegative(),
+    /** The site's size, before a ZIP compresses it. */
+    bytes: z.int().nonnegative(),
+    warnings: z.array(exportWarningSchema).max(MAX_REPORTED_WARNINGS),
+    /** How many warnings there were, those left out of `warnings` included. */
+    warningCount: z.int().nonnegative(),
   }),
   z.strictObject({ status: z.literal("canceled") }),
   z.strictObject({
@@ -72,7 +103,7 @@ const exportResultSchema = z.discriminatedUnion("status", [
   }),
 ]);
 
-/** Outcome of exporting the site to a folder. */
+/** Outcome of exporting the site to a folder or a ZIP. */
 export type ExportResult = z.infer<typeof exportResultSchema>;
 
 /**
@@ -102,6 +133,31 @@ export const siteChannels = {
     request: z.tuple([exportRequestSchema]),
     response: exportResultSchema,
   },
+  /** What the person chose for the open site's last export: the defaults until there was one. */
+  exportChoices: {
+    channel: "site:export-choices",
+    request: z.tuple([]),
+    response: exportChoicesSchema,
+  },
+  /**
+   * Remembers the person's export choices with the open site at once (3.3): *Don't ask again for
+   * this site* holds even if the export that follows is cancelled.
+   */
+  setExportChoices: {
+    channel: "site:set-export-choices",
+    request: z.tuple([exportChoicesSchema]),
+    response: z.null(),
+  },
+  /**
+   * *Preview from disk* (07): opens the open site's last export, its home page in the default
+   * browser or its ZIP file in the file manager. `none` when this site hasn't been exported since
+   * it opened; `missing` when the export was moved or deleted since.
+   */
+  openExport: {
+    channel: "site:open-export",
+    request: z.tuple([]),
+    response: z.enum(["opened", "none", "missing"]),
+  },
   /**
    * Cancels the export under way, if there is one (3.1): it stops before its next image or page
    * and answers `canceled`, changing nothing on disk.
@@ -121,8 +177,14 @@ export const siteEvents = {
 
 /** `window.webforge.site`. */
 export interface SiteApi {
-  /** Shows a folder dialog, then builds the site and writes it there. */
+  /** Shows a folder or save dialog, then builds the site and writes it there. */
   export(request: ExportRequest): Promise<ExportResult>;
+  /** What the person chose for the open site's last export. */
+  exportChoices(): Promise<ExportChoices>;
+  /** Remembers the person's export choices with the open site. */
+  setExportChoices(choices: ExportChoices): Promise<null>;
+  /** Opens the open site's last export from disk. */
+  openExport(): Promise<"opened" | "none" | "missing">;
   /** Cancels the export under way, if there is one. */
   cancelExport(): Promise<null>;
   /** Tells `listener` how far exports come, until the returned function is called. */
