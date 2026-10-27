@@ -52,5 +52,11 @@ export const forms = {
   // A form field whose label was left empty.
   "siteText.form.untitled": "Answer",
   // The honeypot's label, which visitors never see (B6).
+  // The thank-you page the export makes for a form service to send visitors to (3.7).
+  "siteText.thanks.title": "Thank you",
+  "siteText.thanks.text": "Your message is on its way. We'll reply as soon as we can.",
+  "siteText.thanks.home": "Back to the home page",
   "siteText.form.leaveEmpty": "Leave this empty",
+  // A form sent within a few seconds of the page opening is held for a moment, then sent (3.7).
+  "siteText.form.sending": "Sending…",
 } as const;

@@ -7,7 +7,10 @@ import {
 } from "@webforge/model";
 import { Window } from "happy-dom";
 import { afterAll, describe, expect, it } from "vitest";
-import { HONEYPOT_NAME } from "../form.js";
+
+/** The sample site's service, Formspree, reads its honeypot by this name (B6). */
+const HONEYPOT_NAME = "_gotcha";
+
 import { EDITOR_RENDER_CONTEXT } from "../library.js";
 import { renderNodesToHtml } from "../render-static.js";
 import type { RenderContext } from "../schema.js";

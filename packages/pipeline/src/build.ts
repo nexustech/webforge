@@ -33,6 +33,7 @@ import { imageForDepth, processImage } from "./images.js";
 import { minifiedCss, minifiedHtml, minifiedJs } from "./minify.js";
 import type { PipelineResources } from "./resources.js";
 import { iconFiles, shareImageFile } from "./site-images.js";
+import { withThanksPage } from "./thanks-page.js";
 
 /**
  * Why a build failed (X5 errors). The app shows a translated message for each code.
@@ -73,10 +74,19 @@ export class BuildError extends WebforgeError<BuildErrorCode> {
  * A problem that does not stop the build (X5 warnings): a link to a page that isn't there, an
  * image deleted from Media that a page still places (that place is left out), a page *Minify
  * output* couldn't make smaller, as its HTML can't be read (it's written readable, 3.3), or a site
- * icon that gives no favicon (3.4): deleted from Media, or under 16 pixels once cut square.
+ * icon that gives no favicon (3.4): deleted from Media, or under 16 pixels once cut square; or a
+ * form with nowhere to send (`form-unset`, 3.7: no form service, Netlify Forms before its
+ * publisher, an address that isn't `https://`, or a Newsletter without its address; `detail` says
+ * which).
  */
 export type BuildWarning = {
-  readonly code: "broken-link" | "missing-image" | "not-minified" | "missing-icon" | "small-icon";
+  readonly code:
+    | "broken-link"
+    | "missing-image"
+    | "not-minified"
+    | "missing-icon"
+    | "small-icon"
+    | "form-unset";
   /** The page path the problem is on; "" for the whole site (the icon's). */
   readonly page: string;
   readonly detail: string;
@@ -248,7 +258,8 @@ export async function* buildEvents(
   if (!parsed.success) {
     throw new BuildError("invalid-site", parsed.error.message);
   }
-  const site = parsed.data;
+  // The thank-you page a form service sends visitors to (3.7), made if the site has none.
+  const { site, thanksPage } = withThanksPage(parsed.data, library);
   // A page whose file Windows won't write (`con.html`, a folder `aux/`) stops the build before
   // anything else, naming the page, so the person can rename it (R16).
   const unwritable = site.pages.find((page) => page.path.split("/").some(isDeviceName));
@@ -460,6 +471,12 @@ export async function* buildEvents(
       ...(site.formService === undefined ? {} : { formService: site.formService }),
       // Custom Code as written (F-ED-15): the export is the one place it runs (3.9 checks it).
       rawCustomCode: true,
+      // A form with nowhere to send draws without an action (2.8), and the report says so (3.7).
+      formHint: (reason) => {
+        found.push({ code: "form-unset", page: page.path, detail: reason });
+        return null;
+      },
+      ...(thanksPage === undefined ? {} : { thanksPage }),
       // The Footer's link back to the consent banner, wherever it asks (#539).
       ...(analytics?.consentBanner === true ? { cookieSettings: true } : {}),
     };

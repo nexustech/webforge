@@ -1,14 +1,14 @@
 import { t } from "@webforge/i18n";
-import type { NodeDoc } from "@webforge/model";
+import { httpsAddress, type NodeDoc, newsletterUnset } from "@webforge/model";
 import { createContext, type ReactNode, useContext } from "react";
 import { defineComponent } from "../define.js";
 import {
+  addressTarget,
   FORM_FIELD_KINDS,
   FormField,
   type FormFieldKind,
   type FormTarget,
   formAction,
-  httpsAddress,
   SiteForm,
 } from "../form.js";
 import { defineSection, MARGIN_FIELD, marginClasses } from "../frame.js";
@@ -78,8 +78,7 @@ export function emailFieldName(value: unknown): string {
 /** Where a Newsletter posts: its own form address, if it is an `https://` one. */
 function newsletterTarget(value: unknown): FormTarget | FormUnset {
   const action = httpsAddress(value);
-  if (action !== undefined) return { action, hidden: {} };
-  return plainText(value) === undefined ? "noAddress" : "insecure";
+  return action === undefined ? (newsletterUnset(value) ?? "insecure") : addressTarget(action);
 }
 
 /**
@@ -90,6 +89,8 @@ function newsletterTarget(value: unknown): FormTarget | FormUnset {
 const contactForm = defineSection({
   label: t("section.contactForm"),
   name: "contact-form",
+  // The check that a robot didn't send it at once (3.7, B6).
+  behaviours: ["form"],
   category: t("category.contact"),
   variants: layoutVariants,
   fields: {
@@ -112,7 +113,7 @@ const contactForm = defineSection({
       text={values.text}
       form={
         <SiteForm
-          target={formAction(context.formService)}
+          target={formAction(context.formService, context.thanksPage)}
           label={t("siteText.form.contact")}
           submitLabel={plainText(values.buttonLabel) ?? t("starter.contactFormButton")}
           hint={context.formHint}
@@ -161,6 +162,7 @@ const contactForm = defineSection({
 const newsletter = defineSection({
   label: t("section.newsletter"),
   name: "newsletter",
+  behaviours: ["form"],
   category: t("category.contact"),
   variants: layoutVariants,
   fields: {
@@ -366,7 +368,7 @@ const form = defineComponent({
     label: t("starter.formLabel"),
     buttonLabel: t("starter.formButton"),
   },
-  behaviours: entranceBehaviours,
+  behaviours: (values) => [...entranceBehaviours(values), "form"],
   render: ({ id, values, slots, context }) => {
     const Fields = slots.fields;
     return (
@@ -376,7 +378,7 @@ const form = defineComponent({
       >
         <FieldNames value={createFieldNames(id)}>
           <SiteForm
-            target={formAction(context.formService)}
+            target={formAction(context.formService, context.thanksPage)}
             label={plainText(values.label) ?? t("starter.formLabel")}
             submitLabel={plainText(values.buttonLabel) ?? t("starter.formButton")}
             hint={context.formHint}
