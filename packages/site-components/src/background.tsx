@@ -5,11 +5,11 @@ import { Picture } from "./picture.js";
 import type { FieldDef, RenderContext } from "./schema.js";
 
 /** How strongly the overlay covers a section's background image, weakest first (ST-5). */
-export const OVERLAYS = ["0", "20", "40", "60", "80"] as const;
+const OVERLAYS = ["0", "20", "40", "60", "80"] as const;
 type Overlay = (typeof OVERLAYS)[number];
 
 /** The overlay's colour: the theme's page colour (`base-100`) or its neutral one. */
-export const OVERLAY_COLORS = ["base", "neutral"] as const;
+const OVERLAY_COLORS = ["base", "neutral"] as const;
 type OverlayColor = (typeof OVERLAY_COLORS)[number];
 
 /** The overlay's controls: in the Style tab's Appearance group, beside the background colour (2.22). */
@@ -99,7 +99,7 @@ const OVERLAY_CLASSES: Readonly<Record<OverlayColor, Readonly<Record<Overlay, st
 };
 
 /** Whether `values` place a background image. */
-export const hasBackground = (values: BackgroundValues) =>
+const hasBackground = (values: BackgroundValues) =>
   placedImage(values.backgroundImage) !== undefined;
 
 /**
