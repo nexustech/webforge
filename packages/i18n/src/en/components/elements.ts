@@ -58,6 +58,8 @@ export const elements = {
     "We'd like to use cookies to count visits and see which pages are popular. Is that all right?",
   "siteText.consent.accept": "Accept all",
   "siteText.consent.decline": "Decline",
+  // In every page's Footer, reopening the banner (#539).
+  "siteText.consent.settings": "Cookie settings",
   "element.socialLinks": "Social links",
   "field.socialColor.help":
     "Logos show in one colour, as their brands' guidelines allow. Add profiles in Site Settings, under Social & sharing.",

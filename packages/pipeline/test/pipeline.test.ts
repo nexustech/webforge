@@ -1,6 +1,7 @@
 import type { SitePage, SiteSnapshot } from "@webforge/model";
 import * as components from "@webforge/site-components";
-import { sampleSite, scaledTestTimeout } from "@webforge/test-utils";
+import { sampleSite } from "@webforge/test-utils";
+import { scaledTestTimeout } from "@webforge/test-utils/vitest";
 import { beforeAll, describe, expect, it, onTestFinished, vi } from "vitest";
 import { type BuiltSite, buildSite } from "../src/build.js";
 import { createMemoryImageCache } from "../src/memory-image-cache.js";
