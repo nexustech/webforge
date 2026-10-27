@@ -148,6 +148,7 @@ function fakeElectron(options: { primary?: boolean } = {}) {
     protocol: { registerSchemesAsPrivileged: vi.fn() },
     screen: { getAllDisplays: () => [{ workArea: { x: 0, y: 0, width: 1920, height: 1080 } }] },
     session,
+    shell: { openPath: vi.fn(async () => ""), showItemInFolder: vi.fn() },
     utilityProcess: { fork: vi.fn() },
   };
   const crashReports = {

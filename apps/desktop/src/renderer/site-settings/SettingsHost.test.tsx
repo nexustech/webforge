@@ -31,10 +31,42 @@ function setUp(session = sessionWith()) {
     act(() => {
       commands.run(id);
     });
-  return { commands, preferences, session, run, user: userEvent.setup({ delay: null }) };
+  return {
+    commands,
+    preferences,
+    settings,
+    session,
+    run,
+    user: userEvent.setup({ delay: null }),
+  };
 }
 
 describe("SettingsHost (LF-12)", () => {
+  it(
+    "opens on the section a step asks for, and tells it whether the person saved (3.3)",
+    async () => {
+      const { settings, user } = setUp();
+      let saved: Promise<boolean> = Promise.resolve(false);
+
+      act(() => {
+        saved = settings.show("site", "address");
+      });
+      const tab = await screen.findByRole("tab", { name: "Web address" });
+      expect(tab.getAttribute("aria-selected")).toBe("true");
+      await user.click(screen.getByRole("button", { name: "Save" }));
+      await expect(saved).resolves.toBe(true);
+
+      act(() => {
+        saved = settings.show("site", "address");
+      });
+      await user.click(await screen.findByRole("button", { name: "Cancel" }));
+      await expect(saved).resolves.toBe(false);
+      // A part that isn't there: nothing opens.
+      await expect(settings.show("nothing", "address")).resolves.toBe(false);
+    },
+    SLOW,
+  );
+
   it("keeps Site Settings… off while no site's part is there (#432 review)", () => {
     const commands = createCommandRegistry();
     const settings = createSettingsRegistry();

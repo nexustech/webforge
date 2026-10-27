@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { DEFAULT_EXPORT_CHOICES, type ExportChoices } from "@webforge/model";
 import { tempDirFactory } from "@webforge/test-utils";
 import Database from "better-sqlite3";
 import { describe, expect, it } from "vitest";
@@ -421,6 +422,44 @@ describe("ProjectStore.open with untrusted files", () => {
     db.exec("CREATE TABLE documents (blob_hash TEXT NOT NULL REFERENCES blobs (hash))");
     expect(() => db.exec("INSERT INTO documents VALUES ('missing')")).toThrow(/FOREIGN KEY/);
     db.close();
+  });
+});
+
+describe("ProjectStore export choices (3.3)", () => {
+  it("starts from the defaults and remembers the last choices across opens", () => {
+    const path = createProject();
+    const store = ProjectStore.open(path);
+    expect(store.readExportChoices()).toEqual(DEFAULT_EXPORT_CHOICES);
+
+    const choices = { format: "zip", minify: true, developerFiles: false, askWebAddress: false };
+    store.writeExportChoices({ ...choices, format: "folder" });
+    store.writeExportChoices(choices as ExportChoices);
+    store.close();
+
+    const reopened = ProjectStore.open(path);
+    expect(reopened.readExportChoices()).toEqual(choices);
+    reopened.close();
+  });
+
+  it("falls back to the defaults for a value it doesn't know, and still opens", () => {
+    for (const value of ["not json", '{"format":"tar"}', "[]"]) {
+      const path = createProject();
+      tamper(path, (db) =>
+        db.prepare("INSERT INTO meta (key, value) VALUES ('export_choices', ?)").run(value),
+      );
+
+      const store = ProjectStore.open(path);
+
+      expect(store.readExportChoices(), value).toEqual(DEFAULT_EXPORT_CHOICES);
+      store.close();
+    }
+  });
+
+  it("refuses to change a read-only site's choices", () => {
+    const store = ProjectStore.open(createProject(), { readOnly: true });
+
+    expect(() => store.writeExportChoices(DEFAULT_EXPORT_CHOICES)).toThrow(ReadOnlyProjectError);
+    store.close();
   });
 });
 

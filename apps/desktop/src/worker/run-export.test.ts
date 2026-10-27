@@ -26,7 +26,15 @@ async function job(snapshot: SiteSnapshot, destination: string): Promise<ExportJ
       data: (await readFont(face)) ?? new Uint8Array(),
     })),
   );
-  return { type: "export", snapshot, destination, fonts, families: [] };
+  return {
+    type: "export",
+    snapshot,
+    destination,
+    format: "folder",
+    output: { minify: false, developerFiles: false },
+    fonts,
+    families: [],
+  };
 }
 
 describe("runExport", () => {
@@ -53,10 +61,74 @@ describe("runExport", () => {
       channel(),
     );
 
-    expect(outcome).toMatchObject({ type: "exported", pages: 3, files: 16, warnings: 0 });
+    expect(outcome).toMatchObject({
+      type: "exported",
+      pages: 3,
+      files: 16,
+      warnings: [],
+      warningCount: 0,
+    });
     expect(readFileSync(join(destination, "about.html"), "utf8")).toContain(
       "A family bakery since 1998.",
     );
+  }, 60_000);
+
+  it("writes a ZIP file, minified and with developer files, as the person chose (3.3)", async () => {
+    const destination = join(tempDir(), "my-site.zip");
+
+    const outcome = await runExport(
+      {
+        ...(await job(sampleSite(), destination)),
+        format: "zip",
+        output: { minify: true, developerFiles: true },
+      },
+      loadNodeResources,
+      channel(),
+    );
+
+    expect(outcome).toMatchObject({ type: "exported", pages: 3 });
+    const zip = readFileSync(destination);
+    // A ZIP: its local file header's signature, and the names it holds (stored as they are).
+    expect(zip.subarray(0, 4)).toEqual(Buffer.from([0x50, 0x4b, 0x03, 0x04]));
+    expect(zip.includes("developer/README.md")).toBe(true);
+    expect(zip.includes("index.html")).toBe(true);
+  }, 60_000);
+
+  it("passes the build's warnings on for the report, page by page (3.3)", async () => {
+    const site = sampleSite();
+    const [home, ...rest] = site.pages;
+    if (home === undefined) throw new Error("The sample site has no pages");
+    const withBrokenLink = {
+      ...site,
+      pages: [
+        {
+          ...home,
+          doc: {
+            ...home.doc,
+            content: [
+              ...home.doc.content,
+              {
+                type: "Hero",
+                props: { id: "gone", title: "Hi", buttonLabel: "Go", buttonLink: "old-page" },
+              },
+            ],
+          },
+        },
+        ...rest,
+      ],
+    };
+
+    const outcome = await runExport(
+      await job(withBrokenLink, join(tempDir(), "site")),
+      loadNodeResources,
+      channel(),
+    );
+
+    expect(outcome).toMatchObject({
+      type: "exported",
+      warnings: [{ code: "broken-link", page: "index", detail: "old-page" }],
+      warningCount: 1,
+    });
   }, 60_000);
 
   it("reports a build failure by code without writing anything", async () => {
