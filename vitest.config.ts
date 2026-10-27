@@ -1,5 +1,6 @@
 import { readdirSync } from "node:fs";
 import { defineConfig } from "vitest/config";
+import { WORKERS } from "./vitest.load.js";
 
 type Thresholds = { lines: number; branches: number; functions: number; statements: number };
 
@@ -32,7 +33,7 @@ export default defineConfig({
     // worker on almost every thread they timed out whenever anything else ran beside them (another
     // session's checks or E2E). Three runs at once: 5 timeouts before, none after, at the same
     // wall time; and a run on its own is no slower.
-    maxWorkers: "50%",
+    maxWorkers: WORKERS,
     coverage: {
       provider: "v8",
       include: workspaces.map((ws) => `${ws.path}/src/**/*.{ts,tsx}`),

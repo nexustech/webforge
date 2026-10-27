@@ -59,7 +59,7 @@ function setUp(value = "") {
   };
 }
 
-describe("the CSS classes field (#276)", { timeout: 15_000 }, () => {
+describe("the CSS classes field (#276)", () => {
   it("suggests the site's classes as one is typed, and keeps the value as one change", async () => {
     const { input, onChange, onCommit, user } = setUp();
     // The catalogue comes from the worker once.

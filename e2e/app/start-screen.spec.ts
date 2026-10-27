@@ -2,6 +2,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { expectWorkWithin, measureWork, OPEN_WAIT, openBudget } from "./budget.js";
 import { canvasAxe } from "./canvas-axe.js";
 import { placeCaret } from "./caret.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
@@ -94,7 +95,7 @@ test("creates a blank site, keeps an edit and reopens it from the Recent list", 
   });
 });
 
-test("makes a site from a template, named as typed and in the chosen theme, in under 3 s", async () => {
+test("makes a site from a template, named as typed and in the chosen theme, within its opening budget", async () => {
   const page = await startWithoutSite();
   await stubFileDialogs(running(), join(dir, "Rosa's Bakery.wforge"));
 
@@ -107,26 +108,29 @@ test("makes a site from a template, named as typed and in the chosen theme, in u
   await expect(newSite.getByRole("radio", { name: "Bistro" })).toBeChecked();
   await newSite.getByText("Atelier", { exact: true }).click();
 
-  const started = Date.now();
+  const opened = await measureWork(running());
   await newSite.getByRole("button", { name: "Create" }).click();
-  // Open in under 3 s (F-SITE-1): the template's home page on the canvas. Nearly all of it is the
-  // editor starting again on the new site, as for every site opened; the fill itself is quick.
+  // Opening (F-SITE-1): the template's home page on the canvas. Nearly all of it is the editor
+  // starting again on the new site, as for every site opened; the fill itself is quick. Checked
+  // here by its CPU time and a wall-clock backstop; its 3 s by `pnpm e2e:perf` (ADR 0014).
   const hero = canvas(page).locator("h1", { hasText: "Good coffee and proper breakfasts" });
-  await expect(hero).toBeVisible();
-  expect(Date.now() - started).toBeLessThan(3_000);
+  await expect(hero).toBeVisible({ timeout: OPEN_WAIT });
+  expectWorkWithin(await opened(), openBudget(), "Opening the new Café site");
   // With its photo, which came into the site's Media.
   await expect(canvas(page).locator("section img").first()).toHaveJSProperty("complete", true);
   await expect(canvas(page).locator("section img").first()).not.toHaveJSProperty("naturalWidth", 0);
 
   const site = await page.evaluate(async () => {
     const read = await (window as unknown as RendererWindow).webforge.project.readSite();
-    return read as { site: { settings: { general: { name: string } }; theme: { preset: string } } };
+    return read as {
+      site: { settings: { general: { name: string } }; theme: { preset: string } };
+    };
   });
   expect(site.site.settings.general.name).toBe("Rosa's Bakery");
   expect(site.site.theme.preset).toBe("atelier");
 });
 
-test("makes a Personal / CV site in under 3 s, accessible on the canvas (2.15c)", async () => {
+test("makes a Personal / CV site within its opening budget, accessible on the canvas (2.15c)", async () => {
   const page = await startWithoutSite();
   await stubFileDialogs(running(), join(dir, "Sam Lee.wforge"));
 
@@ -136,11 +140,11 @@ test("makes a Personal / CV site in under 3 s, accessible on the canvas (2.15c)"
   await newSite.getByText("Personal / CV", { exact: true }).click();
   await expect(newSite.getByRole("radio", { name: "Studio" })).toBeChecked();
 
-  const started = Date.now();
+  const opened = await measureWork(running());
   await newSite.getByRole("button", { name: "Create" }).click();
   const hero = canvas(page).locator("h1", { hasText: "Hello, I'm Alex Morgan" });
-  await expect(hero).toBeVisible();
-  expect(Date.now() - started).toBeLessThan(3_000);
+  await expect(hero).toBeVisible({ timeout: OPEN_WAIT });
+  expectWorkWithin(await opened(), openBudget(), "Opening the new Personal / CV site");
   await expect(canvas(page).locator("section img").first()).not.toHaveJSProperty("naturalWidth", 0);
 
   // The page as the canvas draws it, inside its frame, what the editor adds to it included (#465):
@@ -155,18 +159,18 @@ test("makes a Personal / CV site in under 3 s, accessible on the canvas (2.15c)"
   expect(results.passes).toBeGreaterThan(5);
 });
 
-test("tries the example: a pre-filled site named after it, in under 3 s (2.14b, PG-3)", async () => {
+test("tries the example: a pre-filled site named after it, within its opening budget (2.14b, PG-3)", async () => {
   const page = await startWithoutSite();
   await stubFileDialogs(running(), join(dir, "Café - Restaurant.wforge"));
 
-  const started = Date.now();
+  const opened = await measureWork(running());
   // Straight from the start screen: no New Site dialog, the example's own name and theme.
   // Exactly: the first start's welcome has a Try an example card too.
   await page.getByRole("button", { name: "Try an example", exact: true }).click();
   // The first example the app ships: Café / Restaurant (Trades is the second).
   const hero = canvas(page).locator("h1", { hasText: "Good coffee and proper breakfasts" });
-  await expect(hero).toBeVisible();
-  expect(Date.now() - started).toBeLessThan(3_000);
+  await expect(hero).toBeVisible({ timeout: OPEN_WAIT });
+  expectWorkWithin(await opened(), openBudget(), "Opening the example");
 
   const site = await page.evaluate(async () => {
     const read = await (window as unknown as RendererWindow).webforge.project.readSite();
@@ -231,8 +235,9 @@ test("says when a site can't be opened, and removes sites from the list", async 
   await page.getByRole("button", { name: "Open a site…", exact: true }).click();
   await expect(page.getByRole("alert")).toHaveText("This file isn't a Webforge site.");
 
-  // With nothing to save, closing doesn't wait for a save that never comes (5 s timeout).
-  const started = Date.now();
+  // With nothing to save, the window closes. That it doesn't sit out the save request's 5 s
+  // timeout is the unit tests': the start screen answers the request (StartScreen.test.tsx), and
+  // the window closes on the answer (flush-on-close.test.ts). Timed here, a busy disk's wait for
+  // the store gate (ADR 0013) looked the same (ADR 0014).
   await closeWindow();
-  expect(Date.now() - started).toBeLessThan(3_000);
 });

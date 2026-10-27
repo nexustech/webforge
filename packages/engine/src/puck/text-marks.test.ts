@@ -38,7 +38,7 @@ describe("text marks (2.25, ST-3)", () => {
       .run();
 
     expect(editor.getHTML()).toBe(
-      '<p>Fresh <span class="bg-accent/30">bread</span> <span class="text-primary">daily</span></p>',
+      '<p>Fresh <span class="bg-secondary/30">bread</span> <span class="text-primary">daily</span></p>',
     );
     editor.chain().setTextSelection({ from: 7, to: 12 }).unsetMark("themeHighlight").run();
     expect(editor.getHTML()).toBe('<p>Fresh bread <span class="text-primary">daily</span></p>');

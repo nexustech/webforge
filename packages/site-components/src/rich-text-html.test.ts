@@ -23,7 +23,7 @@ describe("sanitizeStoredRichText (4.8)", () => {
 describe("text marks in rich text (2.25, ST-3)", () => {
   it("keeps underline and the theme's highlight and colour classes, and nothing else on a span", () => {
     const html =
-      '<p><u>Read</u> <span class="bg-accent/30">this</span> <span class="text-primary">now</span></p>';
+      '<p><u>Read</u> <span class="bg-secondary/30">this</span> <span class="text-primary">now</span></p>';
     expect(sanitizeRichText(html)).toBe(html);
     expect(sanitizeStoredRichText(html)).toBe(html);
     expect(
