@@ -100,7 +100,15 @@ function themed(site: SiteSnapshot): SiteSnapshot {
 
 setup("export the fixture site from the app", async () => {
   rmSync(EXPORTED_SITE_DIR, { recursive: true, force: true });
-  const site = withSectionBackground(sampleSite());
+  // With its photo as the icon, and the About page's share picture (3.4).
+  const sample = withSectionBackground(sampleSite());
+  const site = {
+    ...sample,
+    icon: "hero-photo",
+    pages: sample.pages.map((page) =>
+      page.path === "about" ? { ...page, shareImage: "hero-photo" } : page,
+    ),
+  };
   const dir = mkdtempSync(join(tmpdir(), "webforge-e2e-fixture-"));
   const sitePath = join(dir, "Fixture.wforge");
   const store = ProjectStore.create(sitePath, { name: "Fixture" });

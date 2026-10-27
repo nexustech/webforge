@@ -3,6 +3,7 @@ import { WebforgeError } from "@webforge/errors";
 import {
   DOCUMENT_EXTENSIONS,
   isDeviceName,
+  type MediaItem,
   type NodeDoc,
   type SitePage,
   type SiteSnapshot,
@@ -26,10 +27,11 @@ import {
 import { fontFacesFor } from "@webforge/themes";
 import { buildSiteCss, classCandidates, type SiteCssOptions, type StyleCompiler } from "./css.js";
 import { developerFiles } from "./developer-files.js";
-import { BODY_CLASS, pageDocument } from "./html.js";
+import { BODY_CLASS, iconLinks, pageDocument, type SiteIcon } from "./html.js";
 import { imageForDepth, processImage } from "./images.js";
 import { minifiedCss, minifiedHtml, minifiedJs } from "./minify.js";
 import type { PipelineResources } from "./resources.js";
+import { iconFiles, shareImageFile } from "./site-images.js";
 
 /**
  * Why a build failed (X5 errors). The app shows a translated message for each code.
@@ -82,6 +84,13 @@ export type BuildWarning = {
 export type BuiltSite = {
   /** Paths use `/`, e.g. `index.html`, `assets/css/site.3f9a1c2b4d.css`. Sorted. */
   readonly files: ReadonlyMap<string, Uint8Array>;
+  /**
+   * Each page's share picture (3.4), by page path: the file among `files`, for its `og:image`
+   * (3.5). A page with none, or whose image was deleted from Media, isn't in it.
+   */
+  readonly shareImages: ReadonlyMap<string, string>;
+  /** The icon set made from Site Settings' icon (3.4), for the web app manifest (3.5). */
+  readonly icons: readonly SiteIcon[];
   readonly report: {
     readonly pages: number;
     readonly files: number;
@@ -303,6 +312,43 @@ export async function* buildEvents(
     images.set(id, processed.image);
   }
 
+  // The favicon set from Site Settings' icon, and each page's share picture (3.4).
+  const originalOf = (item: MediaItem) => ({
+    hash: item.hash ?? sha256(item.data ?? new Uint8Array()),
+    read: () => bytesOf(item, resources),
+  });
+  const mediaById = new Map(site.media.map((item) => [item.id, item]));
+  const icon = site.icon === undefined ? undefined : mediaById.get(site.icon);
+  let icons: readonly SiteIcon[] = [];
+  if (icon !== undefined) {
+    stopIfCancelled(signal);
+    const made = await iconFiles(icon, originalOf(icon), resources.codecs, resources.imageCache);
+    for (const file of made?.files ?? []) files.set(file.path, file.data);
+    icons = made?.icons ?? [];
+  }
+  const shareFiles = new Map<string, string | undefined>();
+  const shareImages = new Map<string, string>();
+  for (const page of site.pages) {
+    if (page.shareImage === undefined) continue;
+    if (!shareFiles.has(page.shareImage)) {
+      stopIfCancelled(signal);
+      const item = mediaById.get(page.shareImage);
+      const made =
+        item === undefined
+          ? undefined
+          : await shareImageFile(item, originalOf(item), resources.codecs, resources.imageCache);
+      if (made !== undefined) files.set(made.path, made.data);
+      shareFiles.set(page.shareImage, made?.path);
+    }
+    const path = shareFiles.get(page.shareImage);
+    if (path === undefined) {
+      // Deleted from Media since: the page is shared without a picture.
+      warnings.push({ code: "missing-image", page: page.path, detail: page.shareImage });
+    } else {
+      shareImages.set(page.path, path);
+    }
+  }
+
   // Documents pages link to, copied unchanged under their Media name (1.28). Documents nothing
   // links to aren't exported; a link to one deleted from Media goes nowhere, with a warning.
   const documentPaths = new Map<string, string>();
@@ -465,6 +511,8 @@ export async function* buildEvents(
       main: entry.main,
       footer: entry.footer,
       ...(showsBackToTop(site, entry.page) ? { backToTop } : {}),
+      // The favicon set's links first (3.4); 3.5's share and search tags follow them.
+      head: iconLinks(icons, entry.prefix),
     };
     let html = pageDocument(page);
     if (minify) {
@@ -506,6 +554,8 @@ export async function* buildEvents(
   for (const data of sorted.values()) bytes += data.length;
   return {
     files: sorted,
+    shareImages,
+    icons,
     report: { pages: site.pages.length, files: sorted.size, bytes, warnings },
   };
 }

@@ -15,7 +15,7 @@ import type { CodecModules, ImageCache } from "./resources.js";
 const IMAGE_WIDTHS = [640, 1280, 1920] as const;
 
 const WEBP_QUALITY = 80;
-const JPEG_QUALITY = 80;
+export const JPEG_QUALITY = 80;
 
 /** Width of the previews the editor shows of Media images (1.16). */
 const THUMBNAIL_WIDTH = 320;
@@ -54,7 +54,7 @@ let prepare: (() => Promise<void>) | undefined;
  * Prepares the codecs once per process: jSquash keeps its modules in module-level state. A failed
  * preparation isn't kept, so the next image tries again (R15).
  */
-function initCodecs(codecs: CodecModules): Promise<void> {
+export function initCodecs(codecs: CodecModules): Promise<void> {
   prepare ??= onceUntilFailure(async () => {
     provideImageData();
     await Promise.all([
@@ -69,7 +69,10 @@ function initCodecs(codecs: CodecModules): Promise<void> {
 }
 
 /** Decodes an original JPEG or PNG. */
-function decodeOriginal(data: Uint8Array, mimeType: MediaItem["mimeType"]): Promise<ImageData> {
+export function decodeOriginal(
+  data: Uint8Array,
+  mimeType: MediaItem["mimeType"],
+): Promise<ImageData> {
   // The decoders take an ArrayBuffer; copy so a view into a larger buffer cannot leak extra bytes.
   const bytes = data.slice().buffer;
   return mimeType === "image/png" ? decodePng(bytes) : decodeJpeg(bytes);
@@ -93,7 +96,7 @@ export async function makeThumbnail(
 }
 
 /** The part of `image` inside `crop` (fractions of it), as a new image; at least 1 × 1 pixel. */
-function cropPixels(image: ImageData, crop: NonNullable<MediaItem["crop"]>): ImageData {
+export function cropPixels(image: ImageData, crop: NonNullable<MediaItem["crop"]>): ImageData {
   const x = Math.min(Math.round(crop.x * image.width), image.width - 1);
   const y = Math.min(Math.round(crop.y * image.height), image.height - 1);
   const width = Math.max(1, Math.min(Math.round(crop.width * image.width), image.width - x));
@@ -158,15 +161,18 @@ export type ImageOriginal = {
   readonly read: () => Promise<Uint8Array | undefined>;
 };
 
+/** `item`'s crop as a cache key part: `whole` without one. */
+export function cropKey(item: MediaItem): string {
+  return item.crop === undefined
+    ? "whole"
+    : [item.crop.x, item.crop.y, item.crop.width, item.crop.height]
+        .map((value) => value.toFixed(6))
+        .join(",");
+}
+
 /** The cache key of `item`'s `part`: its plan, or one width in one format. */
 function cacheKey(original: ImageOriginal, item: MediaItem, part: string): string {
-  const crop =
-    item.crop === undefined
-      ? "whole"
-      : [item.crop.x, item.crop.y, item.crop.width, item.crop.height]
-          .map((value) => value.toFixed(6))
-          .join(",");
-  return `${ENCODING}/${original.hash}/${crop}/${part}`;
+  return `${ENCODING}/${original.hash}/${cropKey(item)}/${part}`;
 }
 
 /** The widths an image of `plan`'s size is exported at, smallest first (X2). */
