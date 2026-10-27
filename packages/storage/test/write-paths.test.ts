@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createSite, DEFAULT_EXPORT_CHOICES } from "@webforge/model";
-import { tempDirFactory } from "@webforge/test-utils";
+import { tempDirFactory } from "@webforge/test-utils/vitest";
 import Database from "better-sqlite3";
 import { describe, expect, it } from "vitest";
 import { ProjectStore } from "../src/index.js";

@@ -1,14 +1,9 @@
-import { describe, expect, inject, it } from "vitest";
-
-declare module "vitest" {
-  export interface ProvidedContext {
-    /** How much longer than on CI a test may take in this run (`vitest.load.ts`, ADR 0014). */
-    readonly timeoutScale: number;
-  }
-}
+import { scaledTestTimeout } from "@webforge/test-utils/vitest";
+import { describe, expect, it } from "vitest";
 
 describe("this package's test timeouts (ADR 0014, #531)", () => {
   it("are scaled to the run's workers, never shorter than CI's", () => {
-    expect(inject("timeoutScale")).toBeGreaterThanOrEqual(1);
+    // It throws when the package's vitest.config.ts provides no scale.
+    expect(scaledTestTimeout(1_000)).toBeGreaterThanOrEqual(1_000);
   });
 });

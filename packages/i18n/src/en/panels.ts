@@ -68,6 +68,8 @@ export const panels = {
   "add.noSection": "Add a section first: elements go inside sections.",
   "add.noMatch": "Nothing matches '{query}'.",
   "add.other": "Other",
+  // The Sections tab's one list, A to Z (#523).
+  "add.allSections": "All sections",
   // The site's shared sections, listed first under Sections (1.29, F-ED-23).
   "add.sharedSections": "Shared sections",
   // The person's favourites and recently added items, first in each tab (1.34, F-ED-26).

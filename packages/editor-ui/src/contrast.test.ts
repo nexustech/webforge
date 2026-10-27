@@ -60,7 +60,7 @@ const SURFACES = [
 
 /** Foreground → backgrounds it is used on as text: at least 4.5:1 (WCAG 1.4.3). */
 const TEXT_PAIRS: Readonly<Record<string, readonly string[]>> = {
-  foreground: [...SURFACES, "hover@panel", "hover@popover"],
+  foreground: [...SURFACES, "hover@panel", "hover@popover", "tab-active-top"],
   "muted-foreground": ["background", "panel", "panel-group", "tabs", "titlebar", "card", "input"],
   "tab-inactive": ["tabs"],
   "card-foreground": ["card"],
@@ -80,6 +80,8 @@ const TEXT_PAIRS: Readonly<Record<string, readonly string[]>> = {
 /** Controls, icons and outlines → what they sit on: at least 3:1 (WCAG 1.4.11). */
 const UI_PAIRS: Readonly<Record<string, readonly string[]>> = {
   ring: ["background", "panel", "panel-group", "tabs", "titlebar", "toolbar", "card", "input"],
+  // The active panel tab's edge, which tells it from the strip and from its lifted top (#524).
+  "tab-active-edge": ["tabs", "tab-active-top", "panel"],
   // Colour-coded title-bar icons (UI1).
   success: ["titlebar"],
   warning: ["titlebar"],

@@ -1,6 +1,6 @@
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { tempDirFactory } from "@webforge/test-utils";
+import { tempDirFactory } from "@webforge/test-utils/vitest";
 import { describe, expect, it } from "vitest";
 import { E2E_DIALOGS_VARIABLE, e2eDialogAnswer } from "./e2e-dialogs.js";
 

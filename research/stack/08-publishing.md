@@ -99,7 +99,7 @@ Static sites can't send email by themselves; a form needs a **form service** tha
 | B4 | **Analytics** | **Google Analytics (GA4) supported** as a built-in option. Anything else goes through Custom HTML (C7) |
 | B5 | **FTP security** | **Plain FTP allowed**; **FTPS / SFTP preferred**. Plain FTP shows a one-time warning that passwords and files are sent unencrypted, and suggests FTPS/SFTP if the host supports it ("Test connection" tries FTPS first) |
 | B6 | **Form service presets** | ✅ **Formspree, Web3Forms, FormSubmit** as presets; **Netlify Forms** automatic on Netlify profiles; **Custom endpoint** for anything else (Basin, Formcarry, Forminit…) |
-| B7 | **Consent scope** | **Consent banner covers analytics (GA4).** **Embeds (YouTube, Vimeo, Maps) use per-embed click-to-load placeholders** (05), which act as consent at the point of use. If a visitor clicks *"Accept all"* in the banner, embeds also load automatically. One small self-hosted script handles both |
+| B7 | **Consent scope** | **Consent banner covers analytics (GA4).** **Embeds (YouTube, Vimeo, Maps) use per-embed click-to-load placeholders** (05), which act as consent at the point of use. If a visitor clicks *"Accept all"* in the banner, embeds also load automatically. One small self-hosted script handles both **Amended 27 Oct 2026 (product owner, #539):** a visitor can change their choice at any time. On a site with GA and the banner, the export adds *Cookie settings* to every page's Footer; it reopens the banner, and declining after accepting stops the counting and removes Google's cookies (GDPR Art. 7(3)) |
 
 ## Form services (B3)
 

@@ -1,6 +1,7 @@
 import type { SitePage, SiteSnapshot } from "@webforge/model";
 import * as components from "@webforge/site-components";
-import { sampleSite, scaledTestTimeout } from "@webforge/test-utils";
+import { sampleSite } from "@webforge/test-utils";
+import { scaledTestTimeout } from "@webforge/test-utils/vitest";
 import * as tailwind from "tailwindcss";
 import { beforeAll, describe, expect, it, onTestFinished, vi } from "vitest";
 import { type BuiltSite, buildSite, PREVIEW_STYLESHEET } from "../src/build.js";

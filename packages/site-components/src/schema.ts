@@ -290,6 +290,11 @@ export type RenderContext = SiteBindings & {
    * stored document, so no site file can ask for its code to be written raw into the editor.
    */
   readonly rawCustomCode?: true;
+  /**
+   * The Footer's *Cookie settings* (#539, B7): set by the export for a site with Google Analytics
+   * and its consent banner, so a visitor can change their choice at any time.
+   */
+  readonly cookieSettings?: true;
 };
 
 /**

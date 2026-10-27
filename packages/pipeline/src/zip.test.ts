@@ -1,6 +1,6 @@
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { tempDirFactory } from "@webforge/test-utils";
+import { tempDirFactory } from "@webforge/test-utils/vitest";
 import { unzipSync } from "fflate";
 import { describe, expect, it } from "vitest";
 import { EXPORT_MARKER } from "./write.js";
