@@ -1,4 +1,5 @@
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { request } from "node:http";
 import { join } from "node:path";
 import {
   type Browser,
@@ -117,16 +118,46 @@ test("a colour of the theme reaches the browser in under 100 ms", async () => {
   expect(took).toBeLessThan(CSS_BUDGET_MS);
 });
 
+/**
+ * When the server next tells the browsers to reload, as this process's clock has it: what the
+ * editor and the build take, apart from the browser's own reload.
+ */
+function nextReload(url: string): Promise<number> {
+  const { origin, pathname } = new URL(url);
+  const base = pathname.slice(0, pathname.indexOf("/", 1) + 1);
+  return new Promise((resolve, reject) => {
+    const sent = request(`${origin}${base}__webforge/events`, (response) => {
+      response.on("data", (chunk: Buffer) => {
+        if (chunk.toString("utf8").includes("event: reload")) {
+          resolve(Date.now());
+          sent.destroy();
+        }
+      });
+    });
+    sent.on("error", reject);
+    sent.end();
+  });
+}
+
 test("a changed page reaches the browser in under 200 ms", async () => {
   const canvas = page.frameLocator(".editor__canvas iframe");
   await canvas.locator("h1").dblclick();
   await page.keyboard.press("ControlOrMeta+a");
   await page.keyboard.type("Fresh bread daily");
+  const reloaded = nextReload(site.url());
+  // The reloaded page's load, as it fires: an expect would see it only at its next poll.
+  const loaded = site.waitForEvent("load", { timeout: OPEN_WAIT });
   const started = Date.now();
   await canvas.locator("body").click({ position: { x: 5, y: 5 } });
-  await expect(site.locator("h1")).toHaveText("Fresh bread daily", { timeout: OPEN_WAIT });
+  await loaded;
   const took = Date.now() - started;
+  await expect(site.locator("h1")).toHaveText("Fresh bread daily");
+  const told = (await reloaded) - started;
   record("page", took);
-  console.log(`A changed page reached the browser in ${took} ms (budget ${PAGE_BUDGET_MS} ms)`);
+  record("page: editor and build", told);
+  console.log(
+    `A changed page reached the browser in ${took} ms (budget ${PAGE_BUDGET_MS} ms): ` +
+      `${told} ms to the server's reload, ${took - told} ms for the browser's`,
+  );
   expect(took).toBeLessThan(PAGE_BUDGET_MS);
 });
