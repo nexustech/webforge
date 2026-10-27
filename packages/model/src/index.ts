@@ -176,6 +176,7 @@ export {
   siteFromDocuments,
   validateSiteChanges,
 } from "./site-documents.js";
+export { type ElementPlace, eachElement } from "./site-elements.js";
 export { isDeviceName, sitePathSchema } from "./site-path.js";
 export type { DocumentItem, MediaItem, SitePage, SiteSnapshot } from "./site-snapshot.js";
 export { siteSnapshotSchema } from "./site-snapshot.js";

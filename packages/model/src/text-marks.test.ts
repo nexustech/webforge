@@ -48,8 +48,8 @@ describe("text marks (2.25, ST-3)", () => {
     });
 
     expect(findUnderlinedText(site)).toEqual([
-      { on: site.homePageId, nodeId: "text" },
       { on: "footer", nodeId: "footer" },
+      { on: site.homePageId, nodeId: "text" },
     ]);
   });
 });

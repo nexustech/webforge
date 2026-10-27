@@ -1,6 +1,6 @@
-import { isNodeDoc, type NodeDoc } from "./documents.js";
-import type { PageId, SharedSectionId } from "./ids.js";
+import { isNodeDoc } from "./documents.js";
 import type { SiteDoc } from "./site-doc.js";
+import { type ElementPlace, eachElement } from "./site-elements.js";
 
 // Text marks in rich text (2.25, ST-3): underline, and a highlight or a text colour from the
 // theme's roles, never a colour of its own, so a theme switch and dark sections keep them readable.
@@ -41,7 +41,7 @@ export const TEXT_MARK_CLASSES: readonly string[] = [
 
 /** Where underlined text that isn't a link is: the page (or the Header, Footer or a shared section) and its element. */
 export type UnderlinedText = {
-  readonly on: PageId | "header" | "footer" | SharedSectionId;
+  readonly on: ElementPlace;
   readonly nodeId: string;
 };
 
@@ -63,33 +63,14 @@ function underlinedIn(value: unknown): boolean {
   return Object.values(value).some(underlinedIn);
 }
 
-/** Every element in `nodes`, their slots included, with underlined text that isn't a link. */
-function walk(nodes: readonly NodeDoc[], found: (nodeId: string) => void): void {
-  for (const node of nodes) {
-    if (Object.values(node.props).some((value) => !isNodeDoc(value) && underlinedIn(value))) {
-      found(node.props.id);
-    }
-    for (const value of Object.values(node.props)) {
-      if (Array.isArray(value)) walk(value.filter(isNodeDoc), found);
-    }
-  }
-}
-
 /**
  * Underlined text that isn't a link (2.25, ST-3), which a visitor can take for one. Site Check (3.6)
  * lists each as a tip; it never blocks publishing.
  */
 export function findUnderlinedText(site: SiteDoc): UnderlinedText[] {
   const found: UnderlinedText[] = [];
-  for (const id of site.pageOrder) {
-    const page = site.pages[id];
-    if (page !== undefined) walk(page.doc.content, (nodeId) => found.push({ on: id, nodeId }));
-  }
-  for (const part of ["header", "footer"] as const) {
-    walk(site.layout[part], (nodeId) => found.push({ on: part, nodeId }));
-  }
-  for (const shared of Object.values(site.sharedSections)) {
-    walk([shared.section], (nodeId) => found.push({ on: shared.id, nodeId }));
-  }
+  eachElement(site, (node, on) => {
+    if (Object.values(node.props).some(underlinedIn)) found.push({ on, nodeId: node.props.id });
+  });
   return found;
 }

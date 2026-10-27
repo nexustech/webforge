@@ -1,9 +1,10 @@
-import { anchorsIn, isNodeDoc, type NodeDoc } from "./documents.js";
-import type { MediaId, PageId, SharedSectionId } from "./ids.js";
+import { anchorsIn, isNodeDoc } from "./documents.js";
+import type { MediaId, PageId } from "./ids.js";
 import { linkValueSchema } from "./link.js";
 import { richTextFileLinks, richTextPageLinks } from "./rich-text-links.js";
 import { expandSharedCopies } from "./shared-sections.js";
 import type { SiteDoc } from "./site-doc.js";
+import { type ElementPlace, eachElement } from "./site-elements.js";
 
 /**
  * Where a broken link is: the page it is on (or the Header, Footer or menu), and its element; and
@@ -14,7 +15,7 @@ export type BrokenLink = {
    * The page the link is on; `"header"` or `"footer"` for the shared layout, `"menu"`, or a shared
    * section's id (F-ED-23): a link there is on every page with a copy of it.
    */
-  readonly on: PageId | "header" | "footer" | "menu" | SharedSectionId;
+  readonly on: ElementPlace | "menu";
   /** The element holding the link, or the menu item. */
   readonly nodeId: string;
 } & (
@@ -92,21 +93,6 @@ export function findBrokenLinks(site: SiteDoc): BrokenLink[] {
       broken.push({ on, nodeId: id, pageId: link.pageId, anchor: link.anchor });
     }
   };
-  const check = (on: BrokenLink["on"], nodes: readonly NodeDoc[]) => {
-    const visitNode = (node: NodeDoc) => {
-      for (const [name, value] of Object.entries(node.props)) {
-        if (name === "advanced") continue;
-        walkLinks(value, (link) => checkLink(on, node.props.id, link));
-        // Elements in slots are checked as themselves, so each link names its own element.
-        if (Array.isArray(value)) {
-          for (const child of value) {
-            if (isNodeDoc(child)) visitNode(child);
-          }
-        }
-      }
-    };
-    for (const node of nodes) visitNode(node);
-  };
 
   // The navigation menu's page and section items (F-ED-17), dropdowns included.
   for (const item of site.menu.items.flatMap((entry) =>
@@ -117,12 +103,11 @@ export function findBrokenLinks(site: SiteDoc): BrokenLink[] {
       walkLinks(item.link, (link) => checkLink("menu", item.id, link));
   }
 
-  check("header", site.layout.header);
-  check("footer", site.layout.footer);
-  for (const id of site.pageOrder) {
-    const page = site.pages[id];
-    if (page !== undefined) check(id, page.doc.content);
-  }
-  for (const entry of Object.values(site.sharedSections)) check(entry.id, [entry.section]);
+  // Elements in slots are checked as themselves, so each link names its own element.
+  eachElement(site, (node, on) => {
+    for (const [name, value] of Object.entries(node.props)) {
+      if (name !== "advanced") walkLinks(value, (link) => checkLink(on, node.props.id, link));
+    }
+  });
   return broken;
 }
