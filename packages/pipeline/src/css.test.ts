@@ -1,5 +1,11 @@
 import { DEFAULT_THEME } from "@webforge/model";
-import { entranceClasses, hoverClasses } from "@webforge/site-components";
+import {
+  EDITOR_RENDER_CONTEXT,
+  entranceClasses,
+  hoverClasses,
+  renderNodesToHtml,
+  siteLibrary,
+} from "@webforge/site-components";
 import { beforeAll, describe, expect, it } from "vitest";
 import { buildSiteCss, classCandidates, createStyleCompiler, siteStylesheetSource } from "./css.js";
 import { loadNodeResources } from "./node-resources.js";
@@ -134,6 +140,104 @@ describe("buildSiteCss", () => {
     await expect(buildSiteCss({ ...resources, stylesheets: {} }, options)).rejects.toThrow(
       'Unknown stylesheet "tailwindcss/theme.css"',
     );
+  });
+});
+
+describe("the Appearance group's classes (2.22, ST-1)", () => {
+  /** The rule for `selector` (as CSS escapes it) in `css`, from it to its closing brace. */
+  const rule = (css: string, selector: string) => {
+    const at = css.indexOf(`${selector} {`);
+    return at === -1 ? "" : css.slice(at, css.indexOf("}", at) + 1);
+  };
+
+  /** The site's CSS for `nodes`, as the export compiles it. */
+  async function cssFor(nodes: Parameters<typeof renderNodesToHtml>[0]) {
+    const html = renderNodesToHtml(nodes, siteLibrary, EDITOR_RENDER_CONTEXT);
+    return {
+      html,
+      css: await buildSiteCss(resources, {
+        theme: DEFAULT_THEME,
+        candidates: classCandidates(html),
+        fontsUrl: "../fonts/",
+      }),
+    };
+  }
+
+  it("wins over the component's own classes, at any order, and per device", async () => {
+    const { html, css } = await cssFor([
+      {
+        type: "Section",
+        props: {
+          id: "band",
+          content: [
+            {
+              type: "Heading",
+              props: {
+                id: "h",
+                text: "Fresh bread",
+                size: "medium",
+                lookSize: { $responsive: { desktop: "h1", tablet: "h1", mobile: "h3" } },
+                lookUnderline: true,
+              },
+            },
+          ],
+        },
+      },
+    ]);
+    // The Heading's own size class is there too; the person's choice is marked to win over it.
+    expect(html).toMatch(/class="site-heading [^"]*text-h2[^"]* text-h3! md:text-h1! underline!"/);
+    expect(rule(css, String.raw`.text-h3\!`)).toContain("!important");
+    expect(rule(css, String.raw`.underline\!`)).toContain(
+      "text-decoration-line: underline !important",
+    );
+    // Tablet's value from Tablet's width up, marked to win too.
+    const tablet = css.indexOf(String.raw`.md\:text-h1\!`);
+    expect(tablet).toBeGreaterThan(-1);
+    expect(css.lastIndexOf("@media (width >= 48rem)", tablet)).toBeGreaterThan(-1);
+    expect(rule(css, String.raw`.md\:text-h1\!`)).toContain("!important");
+  });
+
+  it("keeps a focus ring with a shadow, and a reversed section's colours as the theme's", async () => {
+    const { html, css } = await cssFor([
+      {
+        type: "CallToAction",
+        props: {
+          id: "cta",
+          colors: "inverse",
+          lookShadow: "large",
+          lookColor: "primary",
+          buttonLabel: "Book",
+          buttonLink: "about",
+        },
+      },
+    ]);
+    // A shadow composes with the rings Tailwind draws focus with, rather than replacing them.
+    expect(rule(css, String.raw`.shadow-lg\!`)).toContain("var(--tw-ring-shadow)");
+    // The colour is the theme's variable, which a reversed section's `data-theme` redefines.
+    expect(html).toContain('data-theme="wf_inverse"');
+    expect(rule(css, String.raw`.text-primary\!`)).toContain(
+      "color: var(--color-primary) !important",
+    );
+    // The section's button is drawn by daisyUI as ever, its own states included: the Appearance
+    // classes are on the section, not on it.
+    expect(html).toMatch(/<a class="btn btn-primary[^"!]*"/);
+  });
+
+  it("leaves a form's button its own disabled state: the group styles the form's root only", () => {
+    const html = renderNodesToHtml(
+      [
+        {
+          type: "Newsletter",
+          props: { id: "news", lookBackground: "base-200", lookShadow: "large" },
+        },
+      ],
+      siteLibrary,
+      EDITOR_RENDER_CONTEXT,
+    );
+    // Nowhere to send: the button is disabled, with daisyUI's classes and none of the group's.
+    expect(html).toMatch(/<button[^>]*disabled[^>]*>/);
+    expect(html.match(/<button[^>]*>/)?.[0]).not.toContain("!");
+    expect(html).toMatch(/<section class="site-newsletter[^"]*bg-base-200! shadow-lg!"/);
   });
 });
 

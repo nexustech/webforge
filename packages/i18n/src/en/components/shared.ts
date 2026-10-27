@@ -104,7 +104,7 @@ export const shared = {
   "field.look.color": "Text colour",
   "field.look.background": "Background",
   "field.look.borderColor": "Border colour",
-  "field.look.colour.default": "Theme's",
+  "field.look.colour.theme": "Theme's",
   "field.look.colour.base-100": "Surface",
   "field.look.colour.base-200": "Surface, darker",
   "field.look.colour.base-300": "Surface, darkest",

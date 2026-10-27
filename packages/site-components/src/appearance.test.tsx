@@ -45,6 +45,8 @@ describe("the Appearance group (2.22, ST-1)", () => {
   it("draws nothing for the theme's look, and each choice as theme classes that win", () => {
     expect(appearanceTextClasses({})).toBe("");
     expect(appearanceBoxClasses({ lookColor: "default", lookShadow: "default" })).toBe("");
+    // The colour field's *Theme's* choice draws no class either.
+    expect(appearanceBoxClasses({ lookColor: "theme", lookBackground: "theme" })).toBe("");
     expect(
       appearanceTextClasses({
         lookSize: "h2",

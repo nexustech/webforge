@@ -20,11 +20,14 @@ const SIZES = ["default", "small", "body", "h6", "h5", "h4", "h3", "h2", "h1"] a
 const WEIGHTS = ["default", "normal", "medium", "semibold", "bold"] as const;
 const CASES = ["default", "normal", "uppercase", "lowercase", "capitalize"] as const;
 const ALIGNMENTS = ["default", "left", "centre", "right"] as const;
-/** Text colours: the theme's, Brand to Text, with shades (ADR 0009's hex in Advanced mode). */
-const TEXT_COLOURS = ["default", "primary", "secondary", "accent", "base-content"] as const;
+/**
+ * Text colours: the theme's, Text and Brand to Second accent, with shades (ADR 0009's hex in
+ * Advanced mode). `theme` leaves the item's own colour: the colour field offers it as *Theme's*.
+ */
+const TEXT_COLOURS = ["theme", "base-content", "primary", "secondary", "accent"] as const;
 /** Backgrounds: the theme's surfaces, then its colours. */
 const BACKGROUNDS = [
-  "default",
+  "theme",
   "base-100",
   "base-200",
   "base-300",
@@ -37,7 +40,7 @@ const BACKGROUNDS = [
 const CORNERS = ["default", "none", "small", "medium", "large", "full"] as const;
 const BORDERS = ["default", "none", "thin", "thick"] as const;
 const BORDER_COLOURS = [
-  "default",
+  "theme",
   "base-300",
   "base-content",
   "primary",
@@ -53,7 +56,7 @@ const IN_GROUP = { group: "style", optionGroup: APPEARANCE_GROUP, responsive: tr
 
 /** The colours' names, the glossary's (Brand, Accent, Surface, Text…). */
 const COLOUR_NAMES = {
-  default: t("field.look.colour.default"),
+  theme: t("field.look.colour.theme"),
   "base-100": t("field.look.colour.base-100"),
   "base-200": t("field.look.colour.base-200"),
   "base-300": t("field.look.colour.base-300"),
