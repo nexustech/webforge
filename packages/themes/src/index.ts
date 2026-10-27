@@ -60,4 +60,11 @@ export {
 export type { BrandProposal, ImageColour } from "./image-palette.js";
 export { brandFromImage, imageColours, reversedBrand } from "./image-palette.js";
 export { THEME_PRESETS, themePreset } from "./presets.js";
-export { oklchCss, radiusCss, shadowCss, themeCss } from "./theme-css.js";
+export {
+  oklchCss,
+  radiusCss,
+  shadowCss,
+  themeCss,
+  themeShape,
+  themeValuesCss,
+} from "./theme-css.js";

@@ -1,5 +1,12 @@
 import type { ThemeTokens } from "@webforge/model";
-import { type CatalogueFont, type FontFace, fontFacesFor, themeCss } from "@webforge/themes";
+import {
+  type CatalogueFont,
+  type FontFace,
+  fontFacesFor,
+  themeCss,
+  themeShape,
+  themeValuesCss,
+} from "@webforge/themes";
 import { compile } from "tailwindcss";
 import type { PipelineResources } from "./resources.js";
 
@@ -101,9 +108,12 @@ export async function buildSiteCss(
 export type StyleCompiler = {
   /**
    * The CSS for `options`. A Tailwind compiler only ever adds the classes it is given to its CSS,
-   * so with `grow` (a preview, 3.2) a class no page uses any more stays in until the theme changes.
-   * Without it (an export), the CSS is always exactly {@link buildSiteCss}'s: the kept compiler is
-   * used only when none of the classes it has seen are gone.
+   * so with `grow` (a preview, 3.2) a class no page uses any more stays in until the theme's shape
+   * changes. A preview is also compiled for the theme's shape (`themeShape`), its colours and
+   * scales following as custom properties (`themeValuesCss`): a change of colour or size needs no
+   * new compile, so it reaches the browser in milliseconds. Without `grow` (an export), the CSS is
+   * always exactly {@link buildSiteCss}'s: the kept compiler is used only when none of the classes
+   * it has seen are gone.
    */
   css(options: SiteCssOptions, grow?: boolean): Promise<string>;
 };
@@ -119,7 +129,9 @@ export function createStyleCompiler(resources: StyleResources): StyleCompiler {
     | undefined;
   return {
     async css(options, grow = false) {
-      const source = siteStylesheetSource(options);
+      const source = siteStylesheetSource(
+        grow ? { ...options, theme: themeShape(options.theme) } : options,
+      );
       const wanted = new Set(options.candidates);
       // Checked and built in one go, with no await between: another build can't change it meanwhile.
       const reusable =
@@ -136,7 +148,12 @@ export function createStyleCompiler(resources: StyleResources): StyleCompiler {
             };
       kept = current;
       for (const name of wanted) current.seen.add(name);
-      return current.compiler.build([...options.candidates]);
+      const css = current.compiler.build([...options.candidates]);
+      return grow
+        ? `${css}
+${themeValuesCss(options.theme)}
+`
+        : css;
     },
   };
 }
