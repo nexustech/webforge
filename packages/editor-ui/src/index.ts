@@ -7,6 +7,7 @@ export type {
   EditPanelField,
   EditPanelProps,
   FieldGroup,
+  GroupAction,
   OptionGroup,
 } from "./components/edit/edit-panel.js";
 export { EditPanel, hasBuiltInRenderer } from "./components/edit/edit-panel.js";

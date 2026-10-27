@@ -2,6 +2,7 @@ import {
   EditPanel,
   type EditPanelField,
   type FieldSpec,
+  type GroupAction,
   type ListChange,
   type PlainFieldKind,
   sameValue,
@@ -278,6 +279,8 @@ export type EditPanelHostProps = {
    */
   readonly closedGroups?: Readonly<Record<string, readonly string[]>>;
   readonly onClosedGroupsChange?: (type: string, closed: readonly string[]) => void;
+  /** The app's actions in an option group's right-click menu: Apply Look to Every… (2.27). */
+  readonly groupActions?: (id: string) => readonly GroupAction[];
 };
 
 /**
@@ -296,6 +299,7 @@ export function EditPanelHost({
   contentOnly = false,
   closedGroups,
   onClosedGroupsChange,
+  groupActions,
 }: EditPanelHostProps) {
   const { history, library } = session;
   const { pageId, nodeId, viewport, others = [] } = useUi(session, (ui) => ui);
@@ -731,6 +735,7 @@ export function EditPanelHost({
       onReset={reset}
       onResetToDefault={resetToDefault}
       onPaste={paste}
+      {...(groupActions === undefined ? {} : { groupActions })}
       {...(closedGroups === undefined
         ? {}
         : {

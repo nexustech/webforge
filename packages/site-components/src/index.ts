@@ -1,3 +1,4 @@
+export { APPEARANCE_FIELDS } from "./appearance.js";
 export { backToTopHtml } from "./back-to-top.js";
 export {
   BACKGROUND_DEFAULTS,

@@ -625,6 +625,42 @@ describe("style field renderers (1.14 part 2)", () => {
     expect(onResetToDefault).toHaveBeenCalledTimes(2);
   });
 
+  it("adds the app's actions for a group to its right-click menu, after its own (2.27)", async () => {
+    const apply = vi.fn();
+    const groupActions = vi.fn((id: string) =>
+      id === "spacing"
+        ? [
+            { label: "Apply Look to Every Section on This Page", onSelect: apply },
+            { label: "Apply Look to Every Section on the Site", enabled: false, onSelect: apply },
+          ]
+        : [],
+    );
+    render(
+      <EditPanel
+        heading="Section"
+        fields={styleFields}
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+        groupActions={groupActions}
+      />,
+    );
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("tab", { name: "Style" }));
+
+    fireEvent.contextMenu(screen.getByRole("button", { name: "Spacing" }));
+    const items = await screen.findAllByRole("menuitem");
+    expect(items.map((item) => item.textContent)).toEqual([
+      "Reset Group to Defaults",
+      "Collapse All",
+      "Apply Look to Every Section on This Page",
+      "Apply Look to Every Section on the Site",
+    ]);
+    expect(items[3]?.getAttribute("aria-disabled")).toBe("true");
+    await user.click(screen.getByRole("menuitem", { name: /on This Page/ }));
+    expect(apply).toHaveBeenCalledOnce();
+    expect(groupActions).toHaveBeenCalledWith("options");
+  });
+
   it("shows only the fields whose name has the searched text, and Esc clears it (UX-13)", async () => {
     const { user } = renderStyle();
     const search = screen.getByRole("searchbox", { name: "Search options" });
