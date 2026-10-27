@@ -7,7 +7,13 @@ import { ElementMenu } from "../element-menu/index.js";
 import { useCommand, useCommandRegistry } from "../shell/command-context.js";
 import { createSiteWideConfirm, SiteWideConfirmDialog } from "../shell/confirm-site-wide.js";
 import { dialogStory } from "../testing/stories.js";
-import { LOOK_COMMANDS, lookChange, lookConfirmation, registerLookCommands } from "./apply-look.js";
+import {
+  LOOK_COMMANDS,
+  type LookScope,
+  lookChange,
+  lookConfirmation,
+  registerLookCommands,
+} from "./apply-look.js";
 import { registerStyleCommands } from "./style-clipboard.js";
 
 // Apply Look to Every… (2.27, ST-4): in the element menu, and the question asked before it changes
@@ -99,19 +105,44 @@ export const InElementMenu: Story = dialogStory((session) => <MenuOnButton sessi
   site: siteWithButtons(),
 });
 
-/** The question it asks, as the Edit menu's command asks it for the site. */
-function Asking({ session }: { readonly session: EditorSession }) {
+/** The question it asks, as the Edit menu's command asks it for `scope`. */
+function Asking({
+  session,
+  scope,
+}: {
+  readonly session: EditorSession;
+  readonly scope: LookScope;
+}) {
   const [confirm] = useState(() => {
     const created = createSiteWideConfirm();
     session.select("styled");
-    const change = lookChange(session, "site");
-    if (change !== undefined) void created.confirmSiteWide(lookConfirmation(change, "site"));
+    const change = lookChange(session, scope);
+    if (change !== undefined) void created.confirmSiteWide(lookConfirmation(change, scope));
     return created;
   });
   return <SiteWideConfirmDialog confirm={confirm} />;
 }
 
 /** How many change, how many are hidden, on how many pages; Cancel changes nothing. */
-export const Confirmation: Story = dialogStory((session) => <Asking session={session} />, {
-  site: siteWithButtons(),
-});
+export const Confirmation: Story = dialogStory(
+  (session) => <Asking session={session} scope="site" />,
+  { site: siteWithButtons() },
+);
+
+/** The site with a Button in its shared Footer too, which every page shows. */
+function siteWithFooterButton(): SiteDoc {
+  const site = siteWithButtons();
+  site.layout.footer = [
+    { type: "Section", props: { id: "foot", content: [button("footer-button")] } },
+  ];
+  return site;
+}
+
+/**
+ * On this page, with a Button in the shared Footer: it asks, saying the Footer is on other pages
+ * too, as the Footer's Button changes everywhere.
+ */
+export const ConfirmationOnThisPage: Story = dialogStory(
+  (session) => <Asking session={session} scope="page" />,
+  { site: siteWithFooterButton() },
+);

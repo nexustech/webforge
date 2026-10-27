@@ -12,6 +12,7 @@ import { type RefObject, useEffect, useRef, useState, useSyncExternalStore } fro
 import { shallow } from "zustand/shallow";
 import type { CustomDevice, EditPanelPreferences } from "../../shared/ipc/prefs.js";
 import { createSectionPreviews } from "../add/index.js";
+import { APPEARANCE_GROUP_ID, LOOK_COMMANDS } from "../clipboard/index.js";
 import { CanvasElementMenu } from "../element-menu/CanvasElementMenu.js";
 import { createErrorReporter, type ReportError } from "../error-reporting.js";
 import { fieldRenderers } from "../fields/index.js";
@@ -135,9 +136,6 @@ function undoHistoryPanel(
   };
 }
 
-/** The Appearance group's own actions (2.27): its look given to every other one of the kind. */
-const APPEARANCE_ACTIONS = ["edit.applyLookOnPage", "edit.applyLookOnSite"] as const;
-
 /**
  * The Edit panel as the preferences have it: with the Advanced tab in Advanced mode, the Content
  * tab only in Content mode (R9), and the option groups the person closed (UX-13). The Appearance
@@ -162,8 +160,9 @@ function PreferredEditPanel({
     (state) => state.preferences.editPanel.closedGroups,
   );
   const registry = useCommandRegistry();
-  const onPage = useCommand(APPEARANCE_ACTIONS[0]);
-  const onSite = useCommand(APPEARANCE_ACTIONS[1]);
+  // The Appearance group's own actions (2.27): its look given to every other one of the kind.
+  const onPage = useCommand(LOOK_COMMANDS.page);
+  const onSite = useCommand(LOOK_COMMANDS.site);
   const appearance = [onPage, onSite].flatMap((command) =>
     command === undefined
       ? []
@@ -178,7 +177,7 @@ function PreferredEditPanel({
   return (
     <EditPanelHost
       {...props}
-      groupActions={(id) => (id === "appearance" ? appearance : [])}
+      groupActions={(id) => (id === APPEARANCE_GROUP_ID ? appearance : [])}
       advanced={advanced}
       contentOnly={contentOnly}
       closedGroups={closedGroups}

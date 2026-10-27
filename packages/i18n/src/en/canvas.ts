@@ -136,6 +136,9 @@ export const canvas = {
   "look.confirm.sections.other": "This gives {count} other {item} sections the same look.",
   "look.confirm.hidden.one": "1 of them is hidden in Layers.",
   "look.confirm.hidden.other": "{count} of them are hidden in Layers.",
+  // On this page, a shared part it changes takes other pages with it.
+  "look.confirm.reach.region": "The {region} is on other pages too.",
+  "look.confirm.reach.shared": "Shared section {name} is on other pages too.",
   "look.confirm.apply": "Apply Look",
   "look.same.page": "Every {item} on this page has this look already.",
   "look.same.site": "Every {item} on the site has this look already.",

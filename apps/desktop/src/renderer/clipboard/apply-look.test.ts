@@ -173,12 +173,11 @@ describe("Apply Look to Every… (2.27, ST-4)", () => {
 
     await applyLookToAll(session, "site", confirmer(true));
 
-    expect(lookOf(props(about, "other"))).toEqual({ lookItalic: undefined, lookShadow: undefined });
-    expect(lookOf(props(home, "styled"))).toEqual({
-      lookShadow: undefined,
-      lookBackground: undefined,
-      lookCorners: undefined,
-    });
+    // Taken off, as Reset takes a value off: no key left holding nothing.
+    expect(lookOf(props(about, "other"))).toEqual({});
+    expect(Object.hasOwn(props(about, "other") ?? {}, "lookShadow")).toBe(false);
+    expect(Object.hasOwn(props(home, "styled") ?? {}, "lookShadow")).toBe(false);
+    expect(lookOf(props(home, "styled"))).toEqual({});
   });
 
   it("changes a shared section's element once, which all its copies show, asking first", async () => {
@@ -224,11 +223,55 @@ describe("Apply Look to Every… (2.27, ST-4)", () => {
     const footer = session.history.document.getState().layout.footer;
     const inside = (footer[0]?.props.content as NodeDoc[] | undefined) ?? [];
     expect(lookOf(inside[0]?.props)).toEqual(LOOK);
+    // "On this page" says why other pages change.
     expect(siteWide.asked[0]).toMatchObject({
       action: "Give every Button on this page this look?",
+      description:
+        "This gives 2 other Button elements the same look. The Footer is on other pages too.",
       affectedPages: Object.keys(session.history.document.getState().pages).length,
     });
     expect(labels()).toEqual(["Applied the Button look to 2 others"]);
+  });
+
+  it("changes nothing on other pages when it has no way to ask", async () => {
+    const { session, about, props, labels } = setUp();
+
+    expect(await applyLookToAll(session, "site", undefined)).toBe(false);
+
+    expect(lookOf(props(about, "other"))).toEqual({});
+    expect(labels()).toEqual([]);
+  });
+
+  it("counts a shared section's elements as hidden when every copy of it is hidden", () => {
+    const { session, home, about } = setUp((site, aboutId) => {
+      const page = site.pages[aboutId];
+      if (page !== undefined) page.doc.content = [];
+    });
+    session.select("s");
+    saveAsSharedSection(session, "Booking");
+    const [shared] = Object.values(session.history.document.getState().sharedSections);
+    if (shared === undefined) throw new Error("not saved");
+    // A second copy on About; both hidden in Layers.
+    session.edit("props", "Placed and hid", (draft) => {
+      draft.pages[about]?.doc.content.push({
+        type: "SharedSectionCopy",
+        props: { id: "copy-about", sharedSectionId: shared.id },
+      });
+      for (const page of [home, about]) {
+        for (const node of draft.pages[page]?.doc.content ?? []) node.props.hidden = true;
+      }
+      draft.pages[home]?.doc.content.push(section("own", [button("mine", LOOK)]));
+    });
+    session.select("mine");
+    // The plain Button in it; the styled one has the look already.
+    expect(lookChange(session, "site")).toMatchObject({ hidden: 1 });
+
+    // One copy shown again: its elements are on a page, not hidden.
+    session.edit("props", "Showed", (draft) => {
+      const copy = draft.pages[about]?.doc.content[0];
+      if (copy !== undefined) delete copy.props.hidden;
+    });
+    expect(lookChange(session, "site")).toMatchObject({ hidden: 0 });
   });
 
   it("says so, and records nothing, when every one has the look already", async () => {

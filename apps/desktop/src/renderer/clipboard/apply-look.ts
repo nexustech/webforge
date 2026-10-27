@@ -1,25 +1,23 @@
 import { sameValue } from "@webforge/editor-ui";
 import { plural, t } from "@webforge/i18n";
 import {
+  findNode,
   isNodeDoc,
   isSharedCopy,
   type NodeDoc,
-  type PageDoc,
   type PageId,
   type SharedSectionId,
   type SiteDoc,
 } from "@webforge/model";
-import type { ComponentDef } from "@webforge/site-components";
-import { updateField } from "../editor/apply-patch.js";
+import { APPEARANCE_FIELDS, type ComponentDef } from "@webforge/site-components";
 import type { EditorSession } from "../editor/editor-session.js";
 import { type FieldTarget, fieldTarget } from "../editor/field-target.js";
-import { type SharedRegion, shownLayout, updateSharedField } from "../editor/shared-layout.js";
-import { updateSectionField } from "../shared-sections/index.js";
+import { type SharedRegion, shownLayout } from "../editor/shared-layout.js";
 import type { CommandRegistry } from "../shell/commands.js";
 import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
 
 /** The option group every section and element has (2.22): its fields are the look. */
-const APPEARANCE_GROUP_ID = "appearance";
+export const APPEARANCE_GROUP_ID = APPEARANCE_FIELDS.lookShadow.optionGroup.id;
 
 /** How far *Apply look to every…* reaches (2.27, ST-4): the page shown, or the whole site. */
 export type LookScope = "page" | "site";
@@ -38,13 +36,16 @@ export function lookFieldsOf(component: ComponentDef): string[] {
 type Place =
   | { readonly kind: "page"; readonly pageId: PageId }
   | { readonly kind: "layout"; readonly region: SharedRegion }
-  | { readonly kind: "shared"; readonly id: SharedSectionId };
+  | { readonly kind: "shared"; readonly id: SharedSectionId; readonly name: string };
 
 /** An element of the kind, where it is kept, and the pages that show it. */
 type LookTarget = {
   readonly place: Place;
   readonly node: NodeDoc;
-  /** It, or a section or element it is in, is hidden in Layers (F-ED-12). */
+  /**
+   * It, or a section or element it is in, is hidden in Layers (F-ED-12); in a shared section, also
+   * when every copy of it is hidden.
+   */
   readonly hidden: boolean;
   readonly pages: readonly PageId[];
 };
@@ -63,6 +64,8 @@ export type LookChange = {
   readonly hidden: number;
   /** The pages that show a change, the one shown included. */
   readonly pages: readonly PageId[];
+  /** The page shown, which "on this page" means. */
+  readonly pageId: PageId;
 };
 
 /** Every node of `type` in `nodes`, at any depth, with whether it or one it is in is hidden. */
@@ -132,13 +135,17 @@ function elementsOfType(
   for (const id of sharedPages.keys()) {
     const shared = Object.hasOwn(site.sharedSections, id) ? site.sharedSections[id] : undefined;
     if (shared === undefined) continue;
-    const pages = (Object.keys(site.pages) as PageId[]).filter((page) =>
-      site.pages[page]?.doc.content.some(
-        (node) => isSharedCopy(node) && node.props.sharedSectionId === id,
-      ),
+    const copies = (Object.keys(site.pages) as PageId[]).flatMap((page) =>
+      (site.pages[page]?.doc.content ?? [])
+        .filter(isSharedCopy)
+        .filter((copy) => copy.props.sharedSectionId === id)
+        .map((copy) => ({ page, hidden: copy.props.hidden === true })),
     );
-    for (const { node, hidden } of nodesOfType([shared.section], type)) {
-      found.push({ place: { kind: "shared", id }, node, hidden, pages });
+    const pages = [...new Set(copies.map((copy) => copy.page))];
+    // Hidden wherever it is shown when every copy of it is hidden.
+    const everyCopyHidden = copies.every((copy) => copy.hidden);
+    for (const { node, hidden } of nodesOfType([shared.section], type, everyCopyHidden)) {
+      found.push({ place: { kind: "shared", id, name: shared.name }, node, hidden, pages });
     }
   }
   return found;
@@ -147,7 +154,9 @@ function elementsOfType(
 /** Where `target`, the selected element, is kept. */
 function placeOf(target: FieldTarget, pageId: PageId): Place {
   if (target.region !== undefined) return { kind: "layout", region: target.region };
-  if (target.inCopy !== undefined) return { kind: "shared", id: target.inCopy.shared.id };
+  if (target.inCopy !== undefined) {
+    return { kind: "shared", id: target.inCopy.shared.id, name: target.inCopy.shared.name };
+  }
   return { kind: "page", pageId };
 }
 
@@ -190,6 +199,7 @@ export function lookChange(session: LookSession, scope: LookScope): LookChange |
     targets,
     hidden: targets.filter((target) => target.hidden).length,
     pages: [...new Set(targets.flatMap((target) => target.pages))],
+    pageId,
   };
 }
 
@@ -214,46 +224,75 @@ function appliedLookLabel(change: LookChange): string {
   return plural("history.appliedLook", change.targets.length, { item: change.item });
 }
 
+/** The nodes `place` keeps, in `site` (or a draft of it). */
+function nodesAt(site: SiteDoc, place: Place): readonly NodeDoc[] {
+  if (place.kind === "layout") return site.layout[place.region];
+  if (place.kind === "shared") {
+    const shared = Object.hasOwn(site.sharedSections, place.id)
+      ? site.sharedSections[place.id]
+      : undefined;
+    return shared === undefined ? [] : [shared.section];
+  }
+  return site.pages[place.pageId]?.doc.content ?? [];
+}
+
 /**
  * Gives every element of `change` its look, as one undo step (D2): a shared section's elements
- * once, which every copy shows. Nothing is recorded when there is nothing to change.
+ * once, which every copy shows. A field the source leaves at *Theme's* is taken off, as Reset
+ * takes it off. Nothing is recorded when there is nothing to change.
  */
 export function applyLook(session: LookSession, change: LookChange): boolean {
   if (change.targets.length === 0) return false;
-  const site = session.history.document.getState();
   const component = session.library.components[change.targets[0]?.node.type ?? ""];
   if (component === undefined) return false;
   session.edit("props", appliedLookLabel(change), (draft) => {
     for (const { place, node } of change.targets) {
+      const into = findNode(nodesAt(draft, place), (each) => each.props.id === node.props.id);
+      if (into === undefined) continue;
       for (const name of changedFields(component, node, change.values)) {
-        const next = () => structuredClone(change.values[name]);
-        const id = node.props.id;
-        if (place.kind === "layout") {
-          updateSharedField(draft.layout, site.layout, place.region, id, name, next);
-        } else if (place.kind === "shared") {
-          updateSectionField(draft, site, place.id, id, name, next);
-        } else {
-          const page: PageDoc | undefined = site.pages[place.pageId]?.doc;
-          const into = draft.pages[place.pageId];
-          if (page !== undefined && into !== undefined) updateField(into.doc, page, id, name, next);
-        }
+        const value = change.values[name];
+        if (value === undefined) delete into.props[name];
+        else into.props[name] = structuredClone(value);
       }
     }
   });
   return true;
 }
 
-/** The confirmation's text for `change`: how many elements change, and how many are hidden. */
+/**
+ * Why a change "on this page" reaches other pages: each shared part it changes that other pages
+ * show too, once ("The Footer is on other pages too.").
+ */
+function sharedReach(change: LookChange): string[] {
+  const said = new Set<string>();
+  return change.targets.flatMap(({ place, pages }) => {
+    if (place.kind === "page" || pages.every((page) => page === change.pageId)) return [];
+    const key = place.kind === "layout" ? place.region : place.id;
+    if (said.has(key)) return [];
+    said.add(key);
+    return [
+      place.kind === "layout"
+        ? t("look.confirm.reach.region", { region: t(`canvas.sharedRegion.${place.region}`) })
+        : t("look.confirm.reach.shared", { name: t("history.namedItem", { name: place.name }) }),
+    ];
+  });
+}
+
+/**
+ * The confirmation's text for `change`: how many elements change, how many are hidden, and on
+ * this page, which shared parts take other pages with them.
+ */
 export function lookConfirmation(change: LookChange, scope: LookScope) {
   const changes = plural(
     change.section ? "look.confirm.sections" : "look.confirm.elements",
     change.targets.length,
     { item: change.item },
   );
-  const hidden = change.hidden === 0 ? "" : ` ${plural("look.confirm.hidden", change.hidden)}`;
+  const hidden = change.hidden === 0 ? [] : [plural("look.confirm.hidden", change.hidden)];
+  const reach = scope === "page" ? sharedReach(change) : [];
   return {
     action: t(`look.confirm.title.${scope}`, { item: change.item }),
-    description: `${changes}${hidden}`,
+    description: [changes, ...hidden, ...reach].join(" "),
     confirm: t("look.confirm.apply"),
     affectedPages: change.pages.length,
   };
@@ -267,9 +306,10 @@ export const LOOK_COMMANDS = {
 
 /**
  * Gives every other element of the selected one's kind its look, in `scope` (2.27, ST-4). A change
- * that reaches a page other than the one shown asks first, saying how many elements change (D7);
- * one on this page alone happens at once. Either way it is one undo step. When every one has the
- * look already, `notify` says so. Resolves whether anything changed.
+ * that reaches a page other than the one shown asks first, saying how many elements change (D7),
+ * and without `siteWide` to ask with, doesn't happen; one on this page alone happens at once.
+ * Either way it is one undo step. When every one has the look already, `notify` says so. Resolves
+ * whether anything changed.
  */
 export function applyLookToAll(
   session: LookSession,
@@ -285,7 +325,8 @@ export function applyLookToAll(
   }
   const { pageId } = session.ui.getState();
   const elsewhere = change.pages.some((page) => page !== pageId);
-  if (!elsewhere || siteWide === undefined) return Promise.resolve(applyLook(session, change));
+  if (!elsewhere) return Promise.resolve(applyLook(session, change));
+  if (siteWide === undefined) return Promise.resolve(false);
   const asked = session.history.document.getState();
   return siteWide.confirmSiteWide(lookConfirmation(change, scope)).then((confirmed) => {
     // Only on the site it asked about; commands are paused while it asks.
