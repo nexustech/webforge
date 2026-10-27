@@ -74,6 +74,11 @@ export type WindowContext = AreaContext & {
   readonly openExport: () => Promise<"opened" | "none" | "missing">;
   /** Answers AI apps' requests (F-AI-1) until the returned function is called. */
   readonly answerAi: AiApi["onRequest"];
+  /** What the person ignored in Site Check for the open site (3.6), and how to remember a change. */
+  readonly siteCheckIgnored: {
+    readonly initial: readonly string[];
+    readonly save: (ignored: readonly string[]) => void;
+  };
 };
 
 /** What the editor gives the areas it registers, around its canvas (Editor). */

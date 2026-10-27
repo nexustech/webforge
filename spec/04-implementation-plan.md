@@ -956,7 +956,7 @@ The eight templates were built before the Appearance group. A light pass uses it
 | 3.3 | Export to folder/ZIP, report, readable output, developer files | [#61](https://github.com/nexustech/webforge/issues/61) | pipeline | F-EX-1, F-EX-3, F-EX-4, F-ED-23, F-ED-24, X1, X3, X4, X6, [ADR 0005](../docs/adr/0005-export-pipeline-spike.md) | 4 | 3.1, 1.17 |
 | 3.4 | Images: responsive WebP + fallback, favicons, share image | [#62](https://github.com/nexustech/webforge/issues/62) | pipeline | F-EX-2, X2 | 3 | 3.1, 1.16 |
 | 3.5 | Site files: sitemap, robots, manifest, 404, meta tags, {year}, llms.txt | [#63](https://github.com/nexustech/webforge/issues/63) | pipeline | F-ED-20, F-CM-8, X3, F-EX-5, G36 | 3 | 3.1, 1.18, 1.17 |
-| 3.6 | Site Check engine, panel and core rules | [#64](https://github.com/nexustech/webforge/issues/64) | site-check | F-CHK-1, X5, F-CM-8, UI5 | 4 | 3.1, 1.19 |
+| 3.6 | Site Check engine, panel and core rules | [#64](https://github.com/nexustech/webforge/issues/64) | site-check | F-CHK-1, X5, UI5 | 4 | 3.1, 1.19 |
 | 3.7 | Forms: services, spam protection, thank-you page | [#65](https://github.com/nexustech/webforge/issues/65) | components | F-CM-1, F-CM-6, B3, B6, GA3 | 3 | 2.8, 1.17, 3.6 |
 | 3.8 | Google Analytics with consent banner | [#66](https://github.com/nexustech/webforge/issues/66) | pipeline | F-CM-3, B4, B7 | 2 | 1.17, 3.1 |
 | 3.9 | Custom code bundling and external-resource check | [#67](https://github.com/nexustech/webforge/issues/67) | pipeline | F-ED-15, C7, C8, [ADR 0005](../docs/adr/0005-export-pipeline-spike.md) | 4 | 3.1, 2.11, 3.6 |
@@ -1012,7 +1012,7 @@ sitemap.xml + canonical + absolute OG URLs when the web address is set, robots.t
 - [ ] `llms.txt` and the `.md` copies match golden files; turning the setting off removes them
 
 **3.6 Site Check engine, panel and core rules**  
-Rule engine running in the background; Must fix · Should fix · Tips; export vs publish tiers (X5); click to jump, Fix buttons, Ignore per item; core rules: broken links, placeholders, alt text, page titles, contrast, large images, names, home page, missing media, out-of-date {year} on a published site, files over 10 MB (tip, F-ED-24). Form and external-resource rules are added by their own items. Each rule shows a green, amber or red dot with a one-line verdict and inline *Fix* (SP-13, 23 Oct 2026). **A Windows device name** (added 26 Oct 2026, R16 review, no change to the estimate): a page or folder named `con`, `aux`, `nul`, `prn`, `com1`–`9` or `lpt1`–`9` is a Must fix, with a one-click *Fix* that renames it through `uniqueSlug`; the export already refuses one, naming the page (R15).
+Rule engine running in the background; Must fix · Should fix · Tips; export vs publish tiers (X5); click to jump, Fix buttons, Ignore per item; core rules: broken links, placeholders, alt text, page titles, contrast, large images, names, home page, missing media, files over 10 MB (tip, F-ED-24); the tip for an out-of-date {year} on a published site moved to 4.5, 27 Oct 2026. Form and external-resource rules are added by their own items. Each rule shows a green, amber or red dot with a one-line verdict and inline *Fix* (SP-13, 23 Oct 2026). **A Windows device name** (added 26 Oct 2026, R16 review, no change to the estimate): a page or folder named `con`, `aux`, `nul`, `prn`, `com1`–`9` or `lpt1`–`9` is a Must fix, with a one-click *Fix* that renames it through `uniqueSlug`; the export already refuses one, naming the page (R15).
 
 - [ ] Export blocks only on Must fix
 - [ ] Publish-strict rules turn the listed warnings into errors
@@ -1092,7 +1092,7 @@ A *CSS* tab in Advanced mode, in 3.13's dialog and the Advanced tab: the markup 
 | 4.2 | Netlify publisher and Netlify Forms | [#70](https://github.com/nexustech/webforge/issues/70) | publish | B1, B6, F-PB-1, F-CM-1 | 4 | 4.1, 3.7 |
 | 4.3 | FTP/FTPS/SFTP publisher | [#71](https://github.com/nexustech/webforge/issues/71) | publish | B1, B5 | 3 | 4.1 |
 | 4.4 | Publish destinations UI and keychain credentials | [#72](https://github.com/nexustech/webforge/issues/72) | publish | F-PB-1, architecture §9 | 3 | 4.2, 4.3 |
-| 4.5 | Publish flow UI | [#73](https://github.com/nexustech/webforge/issues/73) | publish | F-PB-2, X5 | 2 | 4.4, 3.6 |
+| 4.5 | Publish flow UI | [#73](https://github.com/nexustech/webforge/issues/73) | publish | F-PB-2, X5, F-CM-8 | 2 | 4.4, 3.6, 3.5 |
 | 4.6 | Version History | [#74](https://github.com/nexustech/webforge/issues/74) | storage | F-SITE-4, F-PB-3, P3, P5, D7 | 5 | 1.5, 1.26, 4.5 |
 | 4.7 | Project export/import as ZIP | [#75](https://github.com/nexustech/webforge/issues/75) | storage | F-SITE-5 | 2 | 1.5 |
 | 4.8 | Command API for AI apps | [#170](https://github.com/nexustech/webforge/issues/170) | history | F-AI-1, G33, GA5, GA9 | 3 | 1.17, 1.18, 1.26, 1.29, 2.1, 2.3, 2.5 |
@@ -1127,7 +1127,7 @@ Destinations list per site (several allowed), add/edit/test/remove; secrets via 
 - [ ] Works on Windows DPAPI and macOS Keychain
 
 **4.5 Publish flow UI**  
-Publish button flow: strict Site Check, progress per file, cancel, success screen 'Your site is live' with open/copy link, failure guidance; creates an automatic version.
+Publish button flow: strict Site Check, progress per file, cancel, success screen 'Your site is live' with open/copy link, failure guidance; creates an automatic version. **Site Check tip for an out-of-date {year}** (moved from 3.6, 27 Oct 2026, no change to either estimate): a rule in 3.6's framework (`packages/site-check`) tips when the year a published site shows (3.5's `{year}`, F-CM-8) is older than this year, from the record of the last publish this item keeps.
 
 - [ ] Publish-strict errors stop publish with jump-to-fix
 - [ ] E2E publish to mock Netlify and local SFTP
@@ -1326,7 +1326,7 @@ Every MVP feature ID maps to at least one work item (checked when this plan was 
 | F-CM-5 | Social links | 2.9 |
 | F-CM-6 | Newsletter signup | 2.8, 3.7 |
 | F-CM-7 | Booking button | 2.11 |
-| F-CM-8 | Dynamic year | 3.5, 3.6 |
+| F-CM-8 | Dynamic year | 3.5, 4.5 |
 | F-CM-9 | Back-to-top button | 2.9 |
 | F-AI-1 | Connect AI apps | 4.8, 4.9 |
 

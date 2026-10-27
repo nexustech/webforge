@@ -164,6 +164,7 @@ describe("registerExportCommand", () => {
       dialogs,
       showSettings: vi.fn(async () => true),
       saveChoices: vi.fn(async () => null),
+      showSiteCheck: vi.fn(),
       ...overrides,
     } satisfies ExportFlow;
     registerExportCommand(registry, flow);
@@ -176,6 +177,29 @@ describe("registerExportCommand", () => {
       vi.waitFor(() => expect(registry.get(EXPORT_COMMAND_ID)?.enabled).toBe(true));
     return { registry, dialogs, flow, shown, finished };
   }
+
+  it("stops at once for what Site Check must have fixed, and shows Site Check (3.6, X5)", async () => {
+    const site = bakery();
+    const home = site.pages[site.homePageId];
+    if (home === undefined) throw new Error("no home page");
+    const con = { ...home, id: "page-con" as never, slug: "con", title: "Con" };
+    const { registry, flow, dialogs, finished } = setUp(
+      {},
+      {
+        ...site,
+        pages: { ...site.pages, [con.id]: con },
+        pageOrder: [...site.pageOrder, con.id],
+      },
+    );
+
+    registry.run(EXPORT_COMMAND_ID);
+    await finished();
+
+    expect(toast.error).toHaveBeenCalledWith("Fix 1 thing in Site Check before exporting");
+    expect(flow.showSiteCheck).toHaveBeenCalled();
+    expect(dialogs.shown()).toBeNull();
+    expect(flow.exportSite).not.toHaveBeenCalled();
+  });
 
   it("asks for the web address, exports with the chosen options, and shows the report", async () => {
     const { registry, flow, shown, finished, dialogs } = setUp();
