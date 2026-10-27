@@ -27,6 +27,15 @@ export type PageDocument = {
   readonly footer: string;
   /** The back-to-top button (F-CM-9), after the Footer, or nothing when the page has none. */
   readonly backToTop?: string;
+  /**
+   * The favicon set's files, relative to the page (3.4): `favicon.ico`, a 192-pixel PNG, and
+   * Apple's home-screen icon. Each is linked only when it was made.
+   */
+  readonly icons?: {
+    readonly ico?: string;
+    readonly png?: string;
+    readonly appleTouch?: string;
+  };
 };
 
 /** A shared region with its marker comment, or nothing when the page hides it. */
@@ -48,6 +57,13 @@ export function pageDocument(page: PageDocument, format = true): string {
       ? ""
       : `<meta name="description" content="${escapeHtml(page.description)}">`,
     `<link rel="stylesheet" href="${page.stylesheet}">`,
+    page.icons?.ico === undefined ? "" : `<link rel="icon" href="${page.icons.ico}">`,
+    page.icons?.png === undefined
+      ? ""
+      : `<link rel="icon" type="image/png" sizes="192x192" href="${page.icons.png}">`,
+    page.icons?.appleTouch === undefined
+      ? ""
+      : `<link rel="apple-touch-icon" href="${page.icons.appleTouch}">`,
     page.script === undefined ? "" : `<script defer src="${page.script}"></script>`,
   ].filter((line) => line !== "");
   const html = `<!doctype html>

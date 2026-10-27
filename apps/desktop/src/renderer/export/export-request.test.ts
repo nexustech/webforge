@@ -75,6 +75,43 @@ describe("exportRequestFor", () => {
     ]);
   });
 
+  it("sends Site Settings' icon and the share pictures too, though no page shows them (3.4)", () => {
+    const site = createSite({
+      name: "Rosa's Bakery",
+      language: "en-GB",
+      homeTitle: "Home",
+      notFoundTitle: "Page not found",
+    });
+    const image = (id: string) => ({
+      id: id as MediaId,
+      hash: id.charAt(0).repeat(64),
+      name: id,
+      fileName: `${id}.png`,
+      kind: "image" as const,
+      mimeType: "image/png" as const,
+      width: 512,
+      height: 512,
+      alt: "",
+    });
+    site.media = {
+      ["logo" as MediaId]: image("logo"),
+      ["front" as MediaId]: image("front"),
+      ["bread" as MediaId]: image("bread"),
+    };
+    site.settings.general.icon = "logo" as MediaId;
+    site.settings.social.shareImage = "front" as MediaId;
+    const home = site.pages[site.homePageId];
+    if (home === undefined) throw new Error("no home page");
+    home.settings.shareImage = "bread" as MediaId;
+
+    const request = exportRequestFor(site, siteLibrary);
+
+    expect(request.media.map((item) => item.id).sort()).toEqual(["bread", "front", "logo"]);
+    expect(request.snapshot.icon).toBe("logo");
+    // A page's own picture, or the site's.
+    expect(request.snapshot.pages.map((page) => page.shareImage)).toEqual(["bread", "front"]);
+  });
+
   it("names the documents pages link to by hash, and only those (1.28)", () => {
     const site = createSite({
       name: "Rosa's Bakery",
