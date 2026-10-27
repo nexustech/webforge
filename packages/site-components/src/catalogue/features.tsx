@@ -4,7 +4,7 @@ import { defineComponent } from "../define.js";
 import { defineSection } from "../frame.js";
 import { LucideIcon } from "../icons.js";
 import type { ComponentDef } from "../library.js";
-import { CARD_HOVER_FIELD, hoverClasses } from "../motion.js";
+import { CARD_HOVER_FIELDS, hoverClasses } from "../motion.js";
 import { BodyText, SectionTitle } from "../typography.js";
 
 const FEATURES_LAYOUTS = ["cards", "centred", "list"] as const;
@@ -42,7 +42,7 @@ const features = defineSection({
     text: { kind: "richtext", label: t("field.text"), inline: true },
     items: { kind: "slot", label: t("field.features"), allow: ["Feature"] },
     // Every card alike under the pointer, those added later too (F-DS-5, 2.12).
-    hover: CARD_HOVER_FIELD,
+    ...CARD_HOVER_FIELDS,
   },
   defaults: {
     title: t("starter.featuresTitle"),
@@ -67,7 +67,7 @@ const features = defineSection({
           <SectionTitle>{values.title}</SectionTitle>
           <BodyText className="mt-4">{values.text}</BodyText>
         </div>
-        <FeaturesContext value={{ layout: values.variant, hover: hoverClasses(values.hover) }}>
+        <FeaturesContext value={{ layout: values.variant, hover: hoverClasses(values) }}>
           <Items className={GRID_CLASS[values.variant]} />
         </FeaturesContext>
       </div>

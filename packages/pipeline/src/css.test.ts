@@ -77,7 +77,7 @@ describe("siteStylesheetSource", () => {
 describe("buildSiteCss", () => {
   it("hides an entrance only once the page is marked, and only where motion is welcome (2.12)", async () => {
     const candidates =
-      `${entranceClasses({ entrance: "slideLeft", entranceDelay: "long" })}${hoverClasses("lift")}`
+      `${entranceClasses({ entrance: "slideLeft", entranceDelay: "long" })}${hoverClasses({ hover: "lift", hoverSpeed: "slow", hoverEasing: "springy" })}`
         .trim()
         .split(" ");
     const css = await buildSiteCss(resources, {
@@ -102,7 +102,15 @@ describe("buildSiteCss", () => {
     expect(motionSafe).toMatch(
       /\.motion-safe\\:wf-entering\\:delay-600\[data-wf-shown\]:not\(\[data-wf-done\]\) \{\s*transition-delay: 600ms;/,
     );
+    // Its transition too (2.28), so after it a hover's is the element's only one.
+    expect(motionSafe).toMatch(
+      /\.motion-safe\\:wf-entering\\:duration-700\[data-wf-shown\]:not\(\[data-wf-done\]\) \{\s*--tw-duration: 700ms;/,
+    );
     expect(motionSafe).toContain(String.raw`.motion-safe\:hover\:-translate-y-1:hover`);
+    // The hover's speed and Springy movement (2.28), from the theme's token.
+    expect(motionSafe).toMatch(/\.motion-safe\\:duration-500 \{\s*--tw-duration: 500ms;/);
+    expect(motionSafe).toMatch(/\.motion-safe\\:ease-spring \{\s*--tw-ease: var\(--ease-spring\);/);
+    expect(css).toContain("--ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);");
   });
 
   it("compiles the text marks' classes from the theme, as rich text carries them (2.25, ST-3)", async () => {

@@ -102,7 +102,9 @@ describe("lookFieldsOf (2.27)", () => {
     const fields = lookFieldsOf(buttonDef);
     expect(fields).toEqual(expect.arrayContaining(["lookShadow", "lookBackground", "lookSize"]));
     expect(fields).not.toContain("label");
-    expect(fields.every((name) => name.startsWith("look") || name === "hover")).toBe(true);
+    // The hover row too: its effect, speed and movement (2.28).
+    expect(fields).toEqual(expect.arrayContaining(["hover", "hoverSpeed", "hoverEasing"]));
+    expect(fields.every((name) => name.startsWith("look") || name.startsWith("hover"))).toBe(true);
   });
 });
 
