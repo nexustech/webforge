@@ -9,10 +9,14 @@ import { loadNodeResources } from "../src/node-resources.js";
 import type { PipelineResources } from "../src/resources.js";
 
 let resources: PipelineResources;
+/** One build of the sample site with its site images, and the cache it filled, shared below. */
+let built: BuiltSite;
+const imageCache = createMemoryImageCache(64 * 1024 * 1024);
 
 beforeAll(async () => {
   resources = await loadNodeResources();
-}, 60_000);
+  built = await buildSite(withSiteImages(), siteLibrary, { ...resources, imageCache });
+}, 120_000);
 
 const text = (site: BuiltSite, path: string) => new TextDecoder().decode(site.files.get(path));
 
@@ -60,9 +64,7 @@ function withSiteImages(change: Partial<SiteSnapshot["media"][number]> = {}): Si
 }
 
 describe("buildSite: the favicon set and share pictures (3.4)", () => {
-  it("makes the favicon set from Site Settings' icon, and links it from every page", async () => {
-    const built = await buildSite(withSiteImages(), siteLibrary, resources);
-
+  it("makes the favicon set from Site Settings' icon, and links it from every page", () => {
     expect(icoSizes(built.files.get("favicon.ico"))).toEqual([16, 32, 48]);
     expect(pngSize(built.files.get("apple-touch-icon.png"))).toEqual([180, 180]);
     expect(pngSize(built.files.get("assets/icons/icon-192.png"))).toEqual([192, 192]);
@@ -89,38 +91,34 @@ describe("buildSite: the favicon set and share pictures (3.4)", () => {
       { path: "assets/icons/icon-192.png", sizes: "192x192", type: "image/png", link: "icon" },
       { path: "assets/icons/icon-512.png", sizes: "512x512", type: "image/png" },
     ]);
-  }, 60_000);
+  });
 
-  it("cuts each page's share picture to 1200 × 630, for 3.5's og:image", async () => {
-    const built = await buildSite(withSiteImages(), siteLibrary, resources);
-
+  it("cuts each page's share picture to 1200 × 630, for 3.5's og:image", () => {
     expect(jpegSize(built.files.get("assets/img/hero-share.jpg"))).toEqual([1200, 630]);
     expect([...built.shareImages]).toEqual([["about", "assets/img/hero-share.jpg"]]);
-  }, 60_000);
+  });
 
   it("never makes an image larger: a small icon gives only the sizes it covers", async () => {
     // A 40 × 40 cut of the photo.
-    const built = await buildSite(
+    const small = await buildSite(
       withSiteImages({ crop: { x: 0, y: 0, width: 0.025, height: 0.04 } }),
       siteLibrary,
       resources,
     );
 
-    expect(icoSizes(built.files.get("favicon.ico"))).toEqual([16, 32]);
-    expect(built.files.has("apple-touch-icon.png")).toBe(false);
-    expect(built.files.has("assets/icons/icon-192.png")).toBe(false);
-    expect(text(built, "index.html")).not.toContain("apple-touch-icon");
-    expect(built.icons).toEqual([
+    expect(icoSizes(small.files.get("favicon.ico"))).toEqual([16, 32]);
+    expect(small.files.has("apple-touch-icon.png")).toBe(false);
+    expect(small.files.has("assets/icons/icon-192.png")).toBe(false);
+    expect(text(small, "index.html")).not.toContain("apple-touch-icon");
+    expect(small.icons).toEqual([
       { path: "favicon.ico", sizes: "16x16 32x32", type: "image/x-icon", link: "icon" },
     ]);
     // The share picture is the cut's own size, at 1.91 : 1.
-    expect(jpegSize(built.files.get("assets/img/hero-share.jpg"))).toEqual([40, 21]);
+    expect(jpegSize(small.files.get("assets/img/hero-share.jpg"))).toEqual([40, 21]);
   }, 60_000);
 
   it("reads and encodes nothing again with the image cache", async () => {
-    const imageCache = createMemoryImageCache(64 * 1024 * 1024);
     const site = withSiteImages();
-    const first = await buildSite(site, siteLibrary, { ...resources, imageCache });
     let reads = 0;
     // The photo named by its hash, its bytes read only when asked: count the reads.
     const photo = site.media[0]?.data ?? new Uint8Array();
@@ -139,10 +137,10 @@ describe("buildSite: the favicon set and share pictures (3.4)", () => {
     });
 
     for (const path of ["favicon.ico", "apple-touch-icon.png", "assets/img/hero-share.jpg"]) {
-      expect(second.files.get(path), path).toEqual(first.files.get(path));
+      expect(second.files.get(path), path).toEqual(built.files.get(path));
     }
     // The icon set is known from the cache too.
-    expect(second.icons).toEqual(first.icons);
+    expect(second.icons).toEqual(built.icons);
     // Every icon, the share picture and the page images came from the cache.
     expect(reads).toBe(0);
   }, 60_000);
@@ -151,17 +149,17 @@ describe("buildSite: the favicon set and share pictures (3.4)", () => {
     const site = withSiteImages();
     const deleted = { ...site, media: [] };
 
-    const built = await buildSite(deleted, siteLibrary, resources);
+    const without = await buildSite(deleted, siteLibrary, resources);
 
-    expect(built.report.warnings).toContainEqual({
+    expect(without.report.warnings).toContainEqual({
       code: "missing-image",
       page: "about",
       detail: "hero-photo",
     });
-    expect(built.shareImages.size).toBe(0);
-    expect(built.files.has("favicon.ico")).toBe(false);
+    expect(without.shareImages.size).toBe(0);
+    expect(without.files.has("favicon.ico")).toBe(false);
     // Without an icon or a share picture, nothing changes (the golden files say so too).
-    const plain = await buildSite(sampleSite(), siteLibrary, resources);
+    const plain = await buildSite(sampleSite(), siteLibrary, { ...resources, imageCache });
     expect(text(plain, "index.html")).not.toContain('rel="icon"');
     expect(plain.shareImages.size).toBe(0);
   }, 60_000);
