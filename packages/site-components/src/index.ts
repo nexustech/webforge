@@ -8,6 +8,7 @@ export {
   MIN_COLUMNS,
 } from "./catalogue/column-layouts.js";
 export { siteLibrary, starterLayout, starterNotFoundPage, starterPage } from "./catalogue/index.js";
+export { consentBannerHtml } from "./consent-banner.js";
 export type { ComponentSpec } from "./define.js";
 export { createLibrary, defineComponent } from "./define.js";
 export { videoEmbed } from "./embed.js";

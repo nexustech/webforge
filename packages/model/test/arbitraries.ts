@@ -62,7 +62,10 @@ const settings: fc.Arbitrary<SiteSettings> = fc.record({
     { requiredKeys: ["openingHours"] },
   ),
   search: fc.record({ allowIndexing: fc.boolean(), includeSitemap: fc.boolean() }),
-  analytics: fc.record({ consentBanner: fc.boolean() }),
+  analytics: fc.record(
+    { consentBanner: fc.boolean(), consentMessage: fc.string({ maxLength: 40 }) },
+    { requiredKeys: ["consentBanner"] },
+  ),
   forms: fc.constant({}),
   publish: fc.constant({ destinations: [] }),
   allowedExternalUrls: fc.array(fc.constant("https://fonts.example.com"), { maxLength: 1 }),

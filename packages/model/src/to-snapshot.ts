@@ -1,5 +1,6 @@
 import { settingValues } from "./bindings.js";
 import { isImageMeta } from "./media.js";
+import type { SiteSettings } from "./settings.js";
 import { expandSharedCopies } from "./shared-sections.js";
 import { pagePath, type SiteDoc } from "./site-doc.js";
 import type { MediaItem, SitePage, SiteSnapshot } from "./site-snapshot.js";
@@ -73,5 +74,19 @@ export function siteToSnapshot(
     backToTop: site.settings.general.backToTop,
     menu: site.menu,
     ...(site.settings.general.icon === undefined ? {} : { icon: site.settings.general.icon }),
+    ...analyticsOf(site.settings.analytics),
+  };
+}
+
+/** Site Settings' Google Analytics for the export (3.8): nothing without a Measurement ID. */
+function analyticsOf(analytics: SiteSettings["analytics"]): Pick<SiteSnapshot, "analytics"> {
+  const { measurementId, consentBanner, consentMessage } = analytics;
+  if (measurementId === undefined) return {};
+  return {
+    analytics: {
+      measurementId,
+      consentBanner,
+      ...(consentMessage === undefined ? {} : { consentMessage }),
+    },
   };
 }
