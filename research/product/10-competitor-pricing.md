@@ -43,9 +43,9 @@ The cheapest plan with an own domain and no ads, for one small-business site, ov
 | Bootstrap Studio Lifetime | $59 | once |
 | **Webforge** | **$99** | once |
 | Blocs 6 Standard | $109 | once; a major upgrade would add to it |
-| Hostinger Premium | about $144, then $132 a year | 48 months prepaid at the intro price |
+| Hostinger Premium | about $144 | 48 months prepaid at the intro price, so a fourth year is included; $132 a year after that |
+| Pinegrow PRO one-off | about $200 | once, at list price; a year of updates, renewals half price (the subscription would be 3 × $99 = $297) |
 | RapidWeaver Elements Base | $297 | 3 × $99 |
-| Pinegrow PRO subscription | $297 | 3 × $99 |
 | Framer Basic | $360 | 36 × $10 |
 | Jimdo Start | $396 | 36 × $11 |
 | Durable Starter | $432 | 36 × $12 |
