@@ -219,7 +219,12 @@ function withAppearance(output: ReactNode, classes: string): ReactNode {
     : cloneElement(
         output,
         changed,
-        createElement(SectionTitleAppearance.Provider, { value: "" }, props.children),
+        // Spread, so several children stay a list React keys by position, as they were.
+        createElement(
+          SectionTitleAppearance.Provider,
+          { value: "" },
+          ...(Array.isArray(props.children) ? props.children : [props.children]),
+        ),
       );
 }
 

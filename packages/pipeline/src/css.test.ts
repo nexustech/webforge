@@ -185,8 +185,10 @@ describe("the Appearance group's classes (2.22, ST-1)", () => {
       },
     ]);
     // The Heading's own size class is there too; the person's choice is marked to win over it.
-    expect(html).toMatch(/class="site-heading [^"]*text-h2[^"]* text-h3! md:text-h1! underline!"/);
-    expect(rule(css, String.raw`.text-h3\!`)).toContain("!important");
+    expect(html).toMatch(
+      /class="site-heading [^"]*text-h2[^"]* max-md:text-h3! md:text-h1! underline!"/,
+    );
+    expect(rule(css, String.raw`.max-md\:text-h3\!`)).toContain("!important");
     expect(rule(css, String.raw`.underline\!`)).toContain(
       "text-decoration-line: underline !important",
     );
