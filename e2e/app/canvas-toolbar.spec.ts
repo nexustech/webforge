@@ -168,7 +168,10 @@ test("lays a long page out in Desktop view without overflowing sideways, its scr
   await left.getByRole("tab", { name: "Add", exact: true }).click();
   await left.getByRole("tab", { name: "Sections" }).click();
   for (let hero = 0; hero < 4; hero += 1) {
-    await left.getByRole("list", { name: "Heroes" }).getByRole("button", { name: "Hero" }).click();
+    await left
+      .getByRole("list", { name: "All sections" })
+      .getByRole("button", { name: "Hero" })
+      .click();
   }
   await windowWidth(1700);
   await expect.poll(pageWidth).toBeGreaterThan(1100);

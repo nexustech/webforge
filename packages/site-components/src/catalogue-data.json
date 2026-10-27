@@ -1003,6 +1003,7 @@
             "id": "appearance",
             "label": "Appearance"
           },
+          "responsive": true,
           "options": [
             {
               "label": "None",
@@ -1017,12 +1018,68 @@
               "value": "grow"
             },
             {
+              "label": "Tilt",
+              "value": "tilt"
+            },
+            {
+              "label": "Lift and shadow",
+              "value": "liftShadow"
+            },
+            {
               "label": "Shadow",
               "value": "shadow"
             },
             {
               "label": "Darken",
               "value": "darken"
+            }
+          ]
+        },
+        "hoverSpeed": {
+          "kind": "slider",
+          "label": "Speed",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "responsive": true,
+          "steps": [
+            {
+              "label": "Fast",
+              "value": "fast"
+            },
+            {
+              "label": "Medium",
+              "value": "medium"
+            },
+            {
+              "label": "Slow",
+              "value": "slow"
+            }
+          ]
+        },
+        "hoverEasing": {
+          "kind": "select",
+          "label": "Movement",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "responsive": true,
+          "options": [
+            {
+              "label": "Smooth",
+              "value": "smooth"
+            },
+            {
+              "label": "Gentle stop",
+              "value": "gentle"
+            },
+            {
+              "label": "Springy",
+              "value": "springy"
             }
           ]
         },
@@ -1193,6 +1250,7 @@
             "id": "appearance",
             "label": "Appearance"
           },
+          "responsive": true,
           "options": [
             {
               "label": "None",
@@ -1207,6 +1265,14 @@
               "value": "grow"
             },
             {
+              "label": "Tilt",
+              "value": "tilt"
+            },
+            {
+              "label": "Lift and shadow",
+              "value": "liftShadow"
+            },
+            {
               "label": "Shadow",
               "value": "shadow"
             },
@@ -1217,6 +1283,54 @@
             {
               "label": "Underline",
               "value": "underline"
+            }
+          ]
+        },
+        "hoverSpeed": {
+          "kind": "slider",
+          "label": "Speed",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "responsive": true,
+          "steps": [
+            {
+              "label": "Fast",
+              "value": "fast"
+            },
+            {
+              "label": "Medium",
+              "value": "medium"
+            },
+            {
+              "label": "Slow",
+              "value": "slow"
+            }
+          ]
+        },
+        "hoverEasing": {
+          "kind": "select",
+          "label": "Movement",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "responsive": true,
+          "options": [
+            {
+              "label": "Smooth",
+              "value": "smooth"
+            },
+            {
+              "label": "Gentle stop",
+              "value": "gentle"
+            },
+            {
+              "label": "Springy",
+              "value": "springy"
             }
           ]
         },
@@ -1782,6 +1896,7 @@
             "id": "appearance",
             "label": "Appearance"
           },
+          "responsive": true,
           "options": [
             {
               "label": "None",
@@ -1796,12 +1911,68 @@
               "value": "grow"
             },
             {
+              "label": "Tilt",
+              "value": "tilt"
+            },
+            {
+              "label": "Lift and shadow",
+              "value": "liftShadow"
+            },
+            {
               "label": "Shadow",
               "value": "shadow"
             },
             {
               "label": "Darken",
               "value": "darken"
+            }
+          ]
+        },
+        "hoverSpeed": {
+          "kind": "slider",
+          "label": "Speed",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "responsive": true,
+          "steps": [
+            {
+              "label": "Fast",
+              "value": "fast"
+            },
+            {
+              "label": "Medium",
+              "value": "medium"
+            },
+            {
+              "label": "Slow",
+              "value": "slow"
+            }
+          ]
+        },
+        "hoverEasing": {
+          "kind": "select",
+          "label": "Movement",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "responsive": true,
+          "options": [
+            {
+              "label": "Smooth",
+              "value": "smooth"
+            },
+            {
+              "label": "Gentle stop",
+              "value": "gentle"
+            },
+            {
+              "label": "Springy",
+              "value": "springy"
             }
           ]
         },
@@ -4645,6 +4816,7 @@
             "id": "appearance",
             "label": "Appearance"
           },
+          "responsive": true,
           "options": [
             {
               "label": "None",
@@ -4659,6 +4831,14 @@
               "value": "grow"
             },
             {
+              "label": "Tilt",
+              "value": "tilt"
+            },
+            {
+              "label": "Lift and shadow",
+              "value": "liftShadow"
+            },
+            {
               "label": "Shadow",
               "value": "shadow"
             },
@@ -4669,6 +4849,54 @@
             {
               "label": "Underline",
               "value": "underline"
+            }
+          ]
+        },
+        "hoverSpeed": {
+          "kind": "slider",
+          "label": "Speed",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "responsive": true,
+          "steps": [
+            {
+              "label": "Fast",
+              "value": "fast"
+            },
+            {
+              "label": "Medium",
+              "value": "medium"
+            },
+            {
+              "label": "Slow",
+              "value": "slow"
+            }
+          ]
+        },
+        "hoverEasing": {
+          "kind": "select",
+          "label": "Movement",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "responsive": true,
+          "options": [
+            {
+              "label": "Smooth",
+              "value": "smooth"
+            },
+            {
+              "label": "Gentle stop",
+              "value": "gentle"
+            },
+            {
+              "label": "Springy",
+              "value": "springy"
             }
           ]
         },
@@ -4924,6 +5152,7 @@
             "id": "appearance",
             "label": "Appearance"
           },
+          "responsive": true,
           "options": [
             {
               "label": "None",
@@ -4938,6 +5167,14 @@
               "value": "grow"
             },
             {
+              "label": "Tilt",
+              "value": "tilt"
+            },
+            {
+              "label": "Lift and shadow",
+              "value": "liftShadow"
+            },
+            {
               "label": "Shadow",
               "value": "shadow"
             },
@@ -4948,6 +5185,54 @@
             {
               "label": "Underline",
               "value": "underline"
+            }
+          ]
+        },
+        "hoverSpeed": {
+          "kind": "slider",
+          "label": "Speed",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "responsive": true,
+          "steps": [
+            {
+              "label": "Fast",
+              "value": "fast"
+            },
+            {
+              "label": "Medium",
+              "value": "medium"
+            },
+            {
+              "label": "Slow",
+              "value": "slow"
+            }
+          ]
+        },
+        "hoverEasing": {
+          "kind": "select",
+          "label": "Movement",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "responsive": true,
+          "options": [
+            {
+              "label": "Smooth",
+              "value": "smooth"
+            },
+            {
+              "label": "Gentle stop",
+              "value": "gentle"
+            },
+            {
+              "label": "Springy",
+              "value": "springy"
             }
           ]
         },
@@ -5213,6 +5498,7 @@
             "id": "appearance",
             "label": "Appearance"
           },
+          "responsive": true,
           "options": [
             {
               "label": "None",
@@ -5227,6 +5513,14 @@
               "value": "grow"
             },
             {
+              "label": "Tilt",
+              "value": "tilt"
+            },
+            {
+              "label": "Lift and shadow",
+              "value": "liftShadow"
+            },
+            {
               "label": "Shadow",
               "value": "shadow"
             },
@@ -5237,6 +5531,54 @@
             {
               "label": "Underline",
               "value": "underline"
+            }
+          ]
+        },
+        "hoverSpeed": {
+          "kind": "slider",
+          "label": "Speed",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "responsive": true,
+          "steps": [
+            {
+              "label": "Fast",
+              "value": "fast"
+            },
+            {
+              "label": "Medium",
+              "value": "medium"
+            },
+            {
+              "label": "Slow",
+              "value": "slow"
+            }
+          ]
+        },
+        "hoverEasing": {
+          "kind": "select",
+          "label": "Movement",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "responsive": true,
+          "options": [
+            {
+              "label": "Smooth",
+              "value": "smooth"
+            },
+            {
+              "label": "Gentle stop",
+              "value": "gentle"
+            },
+            {
+              "label": "Springy",
+              "value": "springy"
             }
           ]
         },
@@ -5503,6 +5845,7 @@
             "id": "appearance",
             "label": "Appearance"
           },
+          "responsive": true,
           "options": [
             {
               "label": "None",
@@ -5517,6 +5860,14 @@
               "value": "grow"
             },
             {
+              "label": "Tilt",
+              "value": "tilt"
+            },
+            {
+              "label": "Lift and shadow",
+              "value": "liftShadow"
+            },
+            {
               "label": "Shadow",
               "value": "shadow"
             },
@@ -5527,6 +5878,54 @@
             {
               "label": "Underline",
               "value": "underline"
+            }
+          ]
+        },
+        "hoverSpeed": {
+          "kind": "slider",
+          "label": "Speed",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "responsive": true,
+          "steps": [
+            {
+              "label": "Fast",
+              "value": "fast"
+            },
+            {
+              "label": "Medium",
+              "value": "medium"
+            },
+            {
+              "label": "Slow",
+              "value": "slow"
+            }
+          ]
+        },
+        "hoverEasing": {
+          "kind": "select",
+          "label": "Movement",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "responsive": true,
+          "options": [
+            {
+              "label": "Smooth",
+              "value": "smooth"
+            },
+            {
+              "label": "Gentle stop",
+              "value": "gentle"
+            },
+            {
+              "label": "Springy",
+              "value": "springy"
             }
           ]
         },
@@ -5785,6 +6184,7 @@
             "id": "appearance",
             "label": "Appearance"
           },
+          "responsive": true,
           "options": [
             {
               "label": "None",
@@ -5799,6 +6199,14 @@
               "value": "grow"
             },
             {
+              "label": "Tilt",
+              "value": "tilt"
+            },
+            {
+              "label": "Lift and shadow",
+              "value": "liftShadow"
+            },
+            {
               "label": "Shadow",
               "value": "shadow"
             },
@@ -5809,6 +6217,54 @@
             {
               "label": "Underline",
               "value": "underline"
+            }
+          ]
+        },
+        "hoverSpeed": {
+          "kind": "slider",
+          "label": "Speed",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "responsive": true,
+          "steps": [
+            {
+              "label": "Fast",
+              "value": "fast"
+            },
+            {
+              "label": "Medium",
+              "value": "medium"
+            },
+            {
+              "label": "Slow",
+              "value": "slow"
+            }
+          ]
+        },
+        "hoverEasing": {
+          "kind": "select",
+          "label": "Movement",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "responsive": true,
+          "options": [
+            {
+              "label": "Smooth",
+              "value": "smooth"
+            },
+            {
+              "label": "Gentle stop",
+              "value": "gentle"
+            },
+            {
+              "label": "Springy",
+              "value": "springy"
             }
           ]
         },

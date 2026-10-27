@@ -11,9 +11,11 @@ import {
   entranceAttributes,
   entranceBehaviours,
   entranceClasses,
-  HOVER_FIELD,
+  HOVER_FIELDS,
   hoverClasses,
-  PICTURE_HOVER_FIELD,
+  hoverClassesOn,
+  hoverOn,
+  PICTURE_HOVER_FIELDS,
 } from "../motion.js";
 import { Picture } from "../picture.js";
 import { PREVIEW_ATTRIBUTE } from "../previews.js";
@@ -104,7 +106,7 @@ const image = defineComponent({
     alignment: ALIGNMENT_FIELD,
     rounded: { kind: "toggle", label: t("field.rounded"), group: "style" },
     caption: { kind: "text", label: t("field.caption") },
-    hover: PICTURE_HOVER_FIELD,
+    ...PICTURE_HOVER_FIELDS,
     margin: MARGIN_FIELD,
     ...ENTRANCE_FIELDS,
   },
@@ -129,7 +131,7 @@ const image = defineComponent({
     }
     const caption = values.caption.trim();
     return (
-      <figure className={`${frame}${hoverClasses(values.hover)}`} {...entrance}>
+      <figure className={`${frame}${hoverClasses(values)}`} {...entrance}>
         <ImagePicture
           image={resolved}
           alt={placed?.alt ?? resolved.alt}
@@ -188,7 +190,7 @@ const button = defineComponent({
       options: BUTTON_SIZES.map((value) => ({ label: t(`field.size.${value}`), value })),
     },
     alignment: ALIGNMENT_FIELD,
-    hover: HOVER_FIELD,
+    ...HOVER_FIELDS,
     margin: MARGIN_FIELD,
     ...ENTRANCE_FIELDS,
   },
@@ -217,7 +219,8 @@ const button = defineComponent({
     // hide the label (`--btn-*` are daisyUI's).
     const own = whereOwnColour(
       values,
-      `${values.hover === "none" ? hoverClasses("darken") : ""}${values.style === "outline" ? OUTLINE_HELD : ""}`,
+      (device) =>
+        `${hoverOn(values, device) === "none" ? ` ${hoverClassesOn(values, device, "darken")}` : ""}${values.style === "outline" ? OUTLINE_HELD : ""}`,
     );
     return (
       <div
@@ -226,7 +229,7 @@ const button = defineComponent({
       >
         {label === "" ? null : (
           <a
-            className={`${BUTTON_CLASSES[BUTTON_KIND[values.style][values.size]]}${hoverClasses(values.hover)}${own}`}
+            className={`${BUTTON_CLASSES[BUTTON_KIND[values.style][values.size]]}${hoverClasses(values)}${own}`}
             {...linkAttributes(values.link, context)}
             // Its Appearance styles the button, not the row that aligns it (2.22b).
             {...{ [LOOK_TARGET]: "" }}
@@ -491,7 +494,7 @@ const icon = defineComponent({
       options: ICON_COLOURS.map((value) => ({ label: t(`field.color.${value}`), value })),
     },
     alignment: ALIGNMENT_FIELD,
-    hover: PICTURE_HOVER_FIELD,
+    ...PICTURE_HOVER_FIELDS,
     margin: MARGIN_FIELD,
     ...ENTRANCE_FIELDS,
   },
@@ -518,7 +521,7 @@ const icon = defineComponent({
             // Its Appearance styles the drawing, not the row that aligns it (2.22b).
             {...{ [LOOK_TARGET]: "" }}
             name={values.icon}
-            className={`${colour === "" ? size : `${size} ${colour}`}${hoverClasses(values.hover)}`}
+            className={`${colour === "" ? size : `${size} ${colour}`}${hoverClasses(values)}`}
             label={values.label}
           />
         )}
