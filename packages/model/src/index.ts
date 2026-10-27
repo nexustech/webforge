@@ -95,6 +95,7 @@ export { insertPage, pageSlugFor, pageTitle, slugsInFolder } from "./pages.js";
 export type { Breakpoint, Responsive, ResponsiveValue } from "./responsive.js";
 export {
   breakpointForWidth,
+  DESKTOP_FROM,
   isResponsiveValue,
   resolveResponsive,
   responsiveSchema,

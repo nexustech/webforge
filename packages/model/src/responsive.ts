@@ -8,7 +8,8 @@ export type Breakpoint = "desktop" | "tablet" | "mobile";
  * use, so a page shows each device's values from these widths up.
  */
 const TABLET_FROM = 768;
-const DESKTOP_FROM = 1024;
+/** From this width up a page shows its desktop values: the narrowest the Desktop view is shown. */
+export const DESKTOP_FROM = 1024;
 
 /** The device whose values a page shows when it is `width` CSS pixels wide. */
 export function breakpointForWidth(width: number): Breakpoint {

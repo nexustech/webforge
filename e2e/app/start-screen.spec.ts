@@ -150,7 +150,11 @@ test("makes a Personal / CV site within its opening budget, accessible on the ca
   // The page as the canvas draws it, inside its frame, what the editor adds to it included (#465):
   // the frame's title and language, the inline editors' names and the elements' wrappers.
   const results = await canvasAxe(page);
-  expect(results.violations.map((violation) => `${violation.id}: ${violation.help}`)).toEqual([]);
+  expect(
+    results.violations.map(
+      (violation) => `${violation.id}: ${violation.help} (${violation.targets.join(", ")})`,
+    ),
+  ).toEqual([]);
   // It checked the page: rules passed inside the frame.
   expect(results.passes).toBeGreaterThan(5);
 });

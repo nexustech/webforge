@@ -55,7 +55,11 @@ for (const template of TEMPLATES) {
     );
 
     const results = await canvasAxe(page);
-    expect(results.violations.map((violation) => `${violation.id}: ${violation.help}`)).toEqual([]);
+    expect(
+      results.violations.map(
+        (violation) => `${violation.id}: ${violation.help} (${violation.targets.join(", ")})`,
+      ),
+    ).toEqual([]);
     expect(results.passes).toBeGreaterThan(5);
   });
 }

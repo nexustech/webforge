@@ -254,9 +254,10 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
           ui={{
             leftSideBarVisible: false,
             rightSideBarVisible: false,
-            // Puck starts with the app's width; without one it picks the view nearest the window's.
+            // Puck starts with the app's width (the full canvas for Desktop, until measured);
+            // without one it picks the view nearest the window's.
             viewports: {
-              current: { width: view.width(), height: "auto" },
+              current: { width: view.startWidth(), height: "auto" },
               options: [],
               // The canvas toolbar chooses the view and zoom (1.15), not Puck's own controls.
               controlsVisible: false,
