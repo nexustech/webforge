@@ -8,10 +8,13 @@
     "./node": "./src/node-resources.ts"
   },
   "devDependencies": {
+    "@types/html-minifier-terser": "7.0.2",
     "@types/js-beautify": "1.14.3",
     "@types/node": "catalog:",
+    "@webforge/templates": "workspace:*",
     "@webforge/test-utils": "workspace:*",
     "fast-check": "4.10.2",
+    "lightningcss": "1.32.0",
     "vitest": "catalog:"
   },
   "dependencies": {
@@ -74,8 +77,11 @@
     "@webforge/site-components": "workspace:*",
     "@webforge/themes": "workspace:*",
     "daisyui": "catalog:",
+    "fflate": "0.8.3",
+    "html-minifier-terser": "7.2.0",
     "js-beautify": "2.0.3",
     "tailwindcss": "catalog:",
+    "terser": "5.51.2",
     "zod": "catalog:"
   }
 }

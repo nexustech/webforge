@@ -119,3 +119,28 @@ The architecture review asked for a build that can be cancelled and followed, th
   - **Not on disk:** a cache of encoded copies of the person's photos in the user data would outlive the site, survive its deletion and be a second copy outside the file they control. That breaks "never store site content" and R13d. If measurements show that first exports are too slow, the place is the `.wforge` itself (format 2, a derivatives table), so the copies live and die with the site. That's the product owner's call, for the file-size trade-off.
 - **Codecs.** A failed codec preparation, or a failed load of the worker's bundled resources, is forgotten (`onceUntilFailure`), so the long-lived workers try again with their next job. The `ImageData` stand-in is defined only where the runtime has none.
 
+## Amendment, 26 Oct 2026 (3.1, #59)
+The §6 `Pipeline` interface, as `createPipeline(library)`: one per open site, in the export worker.
+- **`build(snapshot, resources, { mode, signal })`** is an `AsyncIterable` of the R15 `BuildEvent`s, ending with `{ stage: "done", site }`. `buildSite` is the same build without the caches below. `check()` is 3.6's.
+- **Modes.** `export` and `publish` build the same files. `preview` (3.2) lets the stylesheet keep classes a page no longer uses, so an edit's CSS is ready at once.
+- **Kept between builds, in memory only:**
+  - the R15 image cache (256 MB);
+  - each page's rendered Header, content and Footer, keyed by a hash of the page and of everything else its render reads (the site without its pages' content or Media, the resolved images and the documents' paths). Only the last finished build's pages are kept, and a cancelled build leaves them as they were;
+  - the Tailwind compiler. Preparing one takes about 120 ms and building from it about 10. A compiler only adds the classes it's given to its CSS, so an export uses the kept one only when no class it has seen is gone; otherwise it prepares a new one. An export's CSS is therefore always exactly what a fresh compiler makes.
+- **Progress and cancel in the app.** The worker reports each stage (`progress`), then `writing`. Main passes them to the window (`site:export-progress`), and `site:cancel-export` aborts the exports under way. The export toast shows the stage, with a Cancel button.
+
+## Amendment, 27 Oct 2026 (3.3, #61)
+What an export writes, and the app's side of it.
+- **Options** (`OutputOptions`, off unless the person asks):
+  - *Minify output* (X4): HTML through html-minifier-terser, collapsed conservatively and never removing whitespace, with scripts, styles and `pre` left as written; JS through terser. CSS goes through a whitespace-only minifier, because Tailwind v4's output nests rules and rule-rewriting optimisers don't all read nesting. It keeps custom property values, `var()` fallbacks and `/*!` licence notices as written, and a test checks the result against lightningcss.
+  - *Include developer files* (X6, Advanced mode only, T2): `developer/input.css`, the stylesheet's Tailwind source loading `tailwindcss` as its CLI does, plus `design-tokens.json`, `site.json` and a README.
+- **ZIP** (`writeSiteZip`, fflate): written one file at a time beside the destination and then moved into place, so the worker never holds a second copy of the site. Fixed entry dates make it byte-stable, and it holds the export marker too.
+- **The app's flow:**
+  1. While the site has no web address, ask first (X3). *Add address* opens Settings on Site Settings' Web address section (`SettingsRegistry.show`) and goes on once it's saved. *Don't ask again for this site* is remembered.
+  2. The export dialog: a folder or a ZIP, and the options.
+  3. Main's folder or save dialog.
+  4. The build, with its progress toast (3.1).
+  5. The export report, or a toast saying what went wrong.
+- **Remembered per site:** the choices go in the site file's `meta` table (`export_choices`), as UI state like the editor mode: never versioned, and read through a schema with defaults, so a bad value never stops the file opening. Main writes them once an export goes ahead.
+- **The report:** the result carries the build's warnings (at most 500, with the count), so the report names each problem's page. They're never logged. *Open Site* (Preview from disk) asks main to open what it last exported: the folder's `index.html` in the default browser, or the ZIP shown in the file manager. The renderer never sends a path.
+- **Golden files:** every template's pages (`test/golden/templates/`). Their image plans are answered from the files' headers, so the test encodes nothing.

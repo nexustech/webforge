@@ -10,6 +10,7 @@ import { prefsApi } from "./api/prefs.js";
 import { projectApi } from "./api/project.js";
 import { siteApi } from "./api/site.js";
 import { templatesApi } from "./api/templates.js";
+import { themesApi } from "./api/themes.js";
 
 export type { Invoke, Subscribe } from "./api/call.js";
 export type { PathOfFile } from "./api/media.js";
@@ -33,7 +34,8 @@ export function createWebforgeApi(
     media: mediaApi(call, pathOf),
     prefs: prefsApi(call),
     project: projectApi(call),
-    site: siteApi(call),
+    site: siteApi(call, subscribe),
     templates: templatesApi(call),
+    themes: themesApi(call),
   };
 }

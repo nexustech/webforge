@@ -7,7 +7,7 @@ import { changedDocuments, createSite } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
 import { FONTSOURCE_API, PACKAGE_FILES, PACKAGE_LISTINGS } from "@webforge/themes/font-plan";
 import { desktopDir, launchDesktopApp, waitForCanvas } from "./launch.js";
-import { stubFileDialogs } from "./sites.js";
+import { exportFromEditor, stubFileDialogs } from "./sites.js";
 
 // A font downloaded on demand (2.2, S4, PH2-8) works offline. It comes once from a stand-in for
 // Fontsource and jsDelivr, then shows on the canvas and goes into an export after the app has
@@ -180,8 +180,7 @@ test("a downloaded font shows and exports offline, after a restart", async () =>
 
   const folder = join(dir, "export");
   await stubFileDialogs(app, folder);
-  await page.getByRole("button", { name: "Export Site…", exact: true }).click();
-  await expect(page.getByText(/^Site exported to “export”/)).toBeVisible({ timeout: 30_000 });
+  expect(await exportFromEditor(page)).toContain("Saved in the folder “export”.");
   expect(readFileSync(join(folder, "assets", "fonts", FILE))).toEqual(BYTES);
   const [css] = readdirSync(join(folder, "assets", "css"));
   expect(readFileSync(join(folder, "assets", "css", css ?? ""), "utf8")).toContain(
@@ -212,11 +211,18 @@ test("the font picker lists the fonts to download only when asked, and uses one 
   await picker.getByRole("button", { name: "Browse all fonts" }).click();
   await picker.getByRole("button", { name: "To download" }).click();
   await picker.getByRole("option", { name: /Test Script/ }).dblclick();
+  // A built-in theme is read-only (2.23): the first change saves the person's own version.
+  await page
+    .getByRole("dialog", { name: "Save your own version of 'Light'?" })
+    .getByRole("button", { name: "Save Theme" })
+    .click();
   await page.getByRole("alertdialog").getByRole("button", { name: "Change Fonts" }).click();
 
   await expect(page.getByRole("button", { name: "Headings Test Script" })).toBeVisible();
   await expect(canvas(page).locator("h1").first()).toHaveCSS("font-family", /Test Script/);
   await page.getByRole("tab", { name: "Undo History" }).click();
-  await expect(page.locator(".undo-history__step").first()).toHaveText("Changed fonts");
+  await expect(page.locator(".undo-history__step").first()).toHaveText(
+    "Saved theme 'Light (my version)'",
+  );
   expect((await requestsTried(app))[0]).toBe(`${FONTSOURCE_API}/fonts`);
 });

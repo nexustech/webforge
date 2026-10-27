@@ -1,9 +1,20 @@
+import { createSite, type SiteDoc } from "@webforge/model";
+import { siteLibrary } from "@webforge/site-components";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { ExportChoices, ExportProgress } from "../../shared/ipc/site.js";
 import type { ExportResult } from "../../shared/ipc-contract.js";
 import { setFailureLog } from "../log.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { createCommandRegistry } from "../shell/commands.js";
-import { exportMessage, registerExportCommand } from "./export-command.js";
+import {
+  type ExportFlow,
+  exportFailure,
+  exportReport,
+  progressText,
+  registerExportCommand,
+  sizeText,
+} from "./export-command.js";
+import { createExportDialogs, type ExportDialogShown } from "./export-dialogs.js";
 
 const EXPORT_COMMAND_ID = COMMAND_IDS.exportSite;
 
@@ -17,100 +28,341 @@ vi.mock("@webforge/editor-ui", () => ({ toast }));
 
 beforeEach(() => vi.clearAllMocks());
 
-describe("exportMessage", () => {
-  it("says where the site went", () => {
-    expect(
-      exportMessage({
-        status: "exported",
-        folderName: "my-site",
-        pages: 2,
-        files: 12,
-        warnings: 0,
-      }),
-    ).toEqual({ kind: "success", text: "Site exported to “my-site” (12 files)." });
-  });
+const bakery = (): SiteDoc =>
+  createSite({ name: "Bakery", language: "en", homeTitle: "Home", notFoundTitle: "Not found" });
+const withAddress = (site: SiteDoc): SiteDoc => ({
+  ...site,
+  settings: { ...site.settings, address: { url: "https://bakery.example" } },
+});
+const LAST: ExportChoices = {
+  format: "folder",
+  minify: false,
+  developerFiles: false,
+  askWebAddress: true,
+};
+const exported: Extract<ExportResult, { status: "exported" }> = {
+  status: "exported",
+  format: "folder",
+  name: "my-site",
+  pages: 2,
+  files: 9,
+  bytes: 2_400_000,
+  warnings: [
+    { code: "broken-link", page: "index", detail: "old" },
+    { code: "missing-image", page: "index", detail: "photo" },
+  ],
+  warningCount: 5,
+};
 
+describe("exportFailure", () => {
   it("names the page to rename when Windows keeps its name (R16)", () => {
-    expect(
-      exportMessage({ status: "failed", reason: "reserved-name", page: "Contact us" })?.text,
-    ).toBe(
+    expect(exportFailure({ status: "failed", reason: "reserved-name", page: "Contact us" })).toBe(
       "The page “Contact us” can't be exported: Windows keeps its name, or its folder's, for itself. Rename it in the Pages panel and export again.",
     );
   });
 
-  it("says nothing when the user cancels", () => {
-    expect(exportMessage({ status: "canceled" })).toBeNull();
+  it("says nothing when the person cancels", () => {
+    expect(exportFailure({ status: "canceled" })).toBeNull();
   });
 
   it.each([
     ["folder-not-empty", "That folder already contains other files."],
-    ["write-failed", "Your site could not be saved to that folder."],
+    ["write-failed", "Your site could not be saved there."],
     ["build-failed", "Your site could not be built."],
+    ["too-large", "Your site is too large for a ZIP file. Export it to a folder instead."],
   ] as const)("explains a %s failure", (reason, text) => {
-    expect(exportMessage({ status: "failed", reason })).toEqual({
-      kind: "error",
-      text: expect.stringContaining(text),
+    expect(exportFailure({ status: "failed", reason })).toContain(text);
+  });
+});
+
+describe("progressText", () => {
+  it("counts images and pages from 1, and names the other stages", () => {
+    expect(progressText({ stage: "images", done: 0, total: 3 })).toBe("Preparing image 1 of 3");
+    expect(progressText({ stage: "pages", done: 2, total: 3 })).toBe("Building page 3 of 3");
+    expect(progressText({ stage: "styles" })).toBe("Building the styles");
+    expect(progressText({ stage: "fonts" })).toBe("Adding the fonts");
+    expect(progressText({ stage: "writing" })).toBe("Saving the files");
+  });
+});
+
+describe("sizeText", () => {
+  it("writes kilobytes, and megabytes from one", () => {
+    expect(sizeText(400)).toMatch(/^1\s?kB$/);
+    expect(sizeText(240_000)).toMatch(/^240\s?kB$/);
+    expect(sizeText(2_400_000)).toMatch(/^2\.4\s?MB$/);
+  });
+});
+
+describe("exportReport", () => {
+  it("names each problem's page by its title, and counts those left out (3.3)", () => {
+    const report = exportReport(exported, withAddress(bakery()));
+
+    expect(report).toEqual({
+      format: "folder",
+      name: "my-site",
+      summary: expect.stringMatching(/^Pages: 2 · Files: 9 · Size: 2\.4\s?MB$/),
+      issues: [
+        "On “Home”, a link goes to a page or file that isn't there.",
+        "On “Home”, an image deleted from Media was left out.",
+      ],
+      more: 3,
+      noWebAddress: false,
     });
+  });
+
+  it("names a page Minify output left readable (3.3)", () => {
+    const report = exportReport(
+      {
+        ...exported,
+        warnings: [{ code: "not-minified", page: "index", detail: "" }],
+        warningCount: 1,
+      },
+      bakery(),
+    );
+
+    expect(report.issues).toEqual([
+      "“Home” wasn't made smaller: its Custom Code isn't valid HTML. It was saved as it is.",
+    ]);
+  });
+
+  it("says when the site has no web address (X3)", () => {
+    expect(exportReport(exported, bakery()).noWebAddress).toBe(true);
   });
 });
 
 describe("registerExportCommand", () => {
-  async function runExport(onExport: () => Promise<ExportResult>) {
+  /** A flow over `site`, with the real dialogs; the test answers them as the person would. */
+  function setUp(overrides: Partial<ExportFlow> = {}, site = bakery()) {
     const registry = createCommandRegistry();
-    registerExportCommand(registry, onExport);
-    expect(registry.get(EXPORT_COMMAND_ID)).toMatchObject({ menu: "file", shortcut: "Mod+E" });
-    registry.run(EXPORT_COMMAND_ID);
-    await vi.waitFor(() => expect(registry.get(EXPORT_COMMAND_ID)?.enabled).toBe(true));
-    return registry;
+    const dialogs = createExportDialogs();
+    const flow = {
+      site: () => site,
+      library: siteLibrary,
+      advanced: () => false,
+      exportSite: vi.fn(async (): Promise<ExportResult> => exported),
+      cancel: vi.fn(async () => null),
+      choices: async () => LAST,
+      dialogs,
+      showSettings: vi.fn(async () => true),
+      saveChoices: vi.fn(async () => null),
+      ...overrides,
+    } satisfies ExportFlow;
+    registerExportCommand(registry, flow);
+    /** Waits for the dialog of `kind`, and gives it. */
+    const shown = async <K extends ExportDialogShown["kind"]>(kind: K) => {
+      await vi.waitFor(() => expect(dialogs.shown()?.kind).toBe(kind));
+      return dialogs.shown() as Extract<ExportDialogShown, { kind: K }>;
+    };
+    const finished = () =>
+      vi.waitFor(() => expect(registry.get(EXPORT_COMMAND_ID)?.enabled).toBe(true));
+    return { registry, dialogs, flow, shown, finished };
   }
 
-  it("shows progress, then the result in the same toast", async () => {
-    await runExport(async () => ({
-      status: "exported",
-      folderName: "my-site",
-      pages: 1,
-      files: 3,
-      warnings: 0,
-    }));
-
-    expect(toast.loading).toHaveBeenCalledWith("Exporting…");
-    expect(toast.success).toHaveBeenCalledWith("Site exported to “my-site” (3 files).", {
-      id: "progress",
-    });
-  });
-
-  it("is disabled while an export runs", async () => {
-    const registry = createCommandRegistry();
-    let finish: (result: ExportResult) => void = () => {};
-    registerExportCommand(
-      registry,
-      () =>
-        new Promise((resolve) => {
-          finish = resolve;
-        }),
-    );
+  it("asks for the web address, exports with the chosen options, and shows the report", async () => {
+    const { registry, flow, shown, finished, dialogs } = setUp();
+    expect(registry.get(EXPORT_COMMAND_ID)).toMatchObject({ menu: "file", shortcut: "Mod+E" });
 
     registry.run(EXPORT_COMMAND_ID);
     expect(registry.get(EXPORT_COMMAND_ID)?.enabled).toBe(false);
-    expect(registry.run(EXPORT_COMMAND_ID)).toBe(false);
+    (await shown("web-address")).answer("skip");
+    const options = await shown("options");
+    expect(options).toMatchObject({ initial: LAST, advanced: false });
+    options.answer({ ...LAST, format: "zip", minify: true });
+    await finished();
+
+    expect(flow.exportSite).toHaveBeenCalledWith(
+      expect.objectContaining({
+        choices: { ...LAST, format: "zip", minify: true },
+        snapshot: expect.objectContaining({ name: "Bakery" }),
+      }),
+      expect.any(Function),
+    );
+    expect(toast.loading).toHaveBeenCalledWith("Exporting…", {
+      action: expect.objectContaining({ label: "Cancel" }),
+    });
+    expect(toast.dismiss).toHaveBeenCalledWith("progress");
+    expect(dialogs.shown()).toMatchObject({ kind: "report", report: { name: "my-site" } });
+  });
+
+  it("remembers at once not to ask for the web address, even if the export is cancelled", async () => {
+    const { registry, flow, shown, finished } = setUp();
+    registry.run(EXPORT_COMMAND_ID);
+
+    (await shown("web-address")).answer("skip-always");
+
+    const options = await shown("options");
+    expect(flow.saveChoices).toHaveBeenCalledWith({ ...LAST, askWebAddress: false });
+    expect(options.initial.askWebAddress).toBe(false);
+    options.answer(undefined);
+    await finished();
+    expect(flow.exportSite).not.toHaveBeenCalled();
+  });
+
+  it("exports from the defaults when the site's choices can't be read", async () => {
+    const { registry, shown, finished } = setUp({
+      choices: () => Promise.reject(new Error("IPC failed")),
+    });
+    registry.run(EXPORT_COMMAND_ID);
+
+    (await shown("web-address")).answer("skip");
+    const options = await shown("options");
+    expect(options.initial).toEqual(LAST);
+    options.answer(undefined);
+    await finished();
+  });
+
+  it("writes no developer files in Simple mode, while the site keeps Advanced mode's choice", async () => {
+    const remembered = { ...LAST, askWebAddress: false, developerFiles: true };
+    const { registry, flow, shown, finished } = setUp({ choices: async () => remembered });
+    registry.run(EXPORT_COMMAND_ID);
+
+    (await shown("options")).answer(remembered);
+    await finished();
+
+    expect(flow.exportSite).toHaveBeenCalledWith(
+      expect.objectContaining({
+        choices: remembered,
+        output: { minify: false, developerFiles: false },
+      }),
+      expect.any(Function),
+    );
+  });
+
+  it("asks nothing when the site has a web address, or was told not to", async () => {
+    for (const [site, choices] of [
+      [withAddress(bakery()), LAST],
+      [bakery(), { ...LAST, askWebAddress: false }],
+    ] as const) {
+      const { registry, dialogs, finished } = setUp({ choices: async () => choices }, site);
+      registry.run(EXPORT_COMMAND_ID);
+
+      await vi.waitFor(() => expect(dialogs.shown()?.kind).toBe("options"));
+      const options = dialogs.shown();
+      if (options?.kind === "options") options.answer(undefined);
+      await finished();
+    }
+  });
+
+  it("opens Site Settings at the web address, and goes on with the site as saved", async () => {
+    let site = bakery();
+    const showSettings = vi.fn(async () => {
+      site = withAddress(site);
+      return true;
+    });
+    const { registry, flow, shown, finished, dialogs } = setUp({ site: () => site, showSettings });
+    registry.run(EXPORT_COMMAND_ID);
+
+    (await shown("web-address")).answer("add");
+    (await shown("options")).answer(LAST);
+    await finished();
+
+    expect(showSettings).toHaveBeenCalledWith("site", "address");
+    expect(flow.exportSite).toHaveBeenCalledOnce();
+    // The report is of the site with its new web address.
+    expect(dialogs.shown()).toMatchObject({ kind: "report", report: { noWebAddress: false } });
+  });
+
+  it("stops when Site Settings is closed without saving, or a dialog is cancelled", async () => {
+    const closed = setUp({ showSettings: vi.fn(async () => false) });
+    closed.registry.run(EXPORT_COMMAND_ID);
+    (await closed.shown("web-address")).answer("add");
+    await closed.finished();
+
+    const cancelled = setUp();
+    cancelled.registry.run(EXPORT_COMMAND_ID);
+    (await cancelled.shown("web-address")).answer("cancel");
+    await cancelled.finished();
+
+    expect(closed.flow.exportSite).not.toHaveBeenCalled();
+    expect(cancelled.flow.exportSite).not.toHaveBeenCalled();
+  });
+
+  it("offers developer files in Advanced mode only (T2)", async () => {
+    const { registry, shown } = setUp({
+      advanced: () => true,
+      choices: async () => ({ ...LAST, askWebAddress: false }),
+    });
+    registry.run(EXPORT_COMMAND_ID);
+
+    expect((await shown("options")).advanced).toBe(true);
+  });
+
+  it("shows how far the export has come, and its Cancel button stops it (3.1)", async () => {
+    let tell: (progress: ExportProgress) => void = () => {};
+    let finish: (result: ExportResult) => void = () => {};
+    const { registry, flow, shown, finished } = setUp({
+      choices: async () => ({ ...LAST, askWebAddress: false }),
+      exportSite: vi.fn(
+        (_request, onProgress) =>
+          new Promise<ExportResult>((resolve) => {
+            tell = onProgress;
+            finish = resolve;
+          }),
+      ),
+    });
+    registry.run(EXPORT_COMMAND_ID);
+    (await shown("options")).answer(LAST);
+    await vi.waitFor(() => expect(flow.exportSite).toHaveBeenCalled());
+
+    tell({ stage: "pages", done: 0, total: 2 });
+    expect(toast.loading).toHaveBeenLastCalledWith(
+      "Exporting…",
+      expect.objectContaining({ id: "progress", description: "Building page 1 of 2" }),
+    );
+    const [, options] = toast.loading.mock.lastCall as unknown as [
+      string,
+      { action: { onClick: (event: { preventDefault(): void }) => void } },
+    ];
+    const preventDefault = vi.fn();
+    options.action.onClick({ preventDefault });
+
+    expect(flow.cancel).toHaveBeenCalledOnce();
+    // The toast stays, saying it's stopping, and later progress doesn't bring the button back.
+    expect(preventDefault).toHaveBeenCalled();
+    expect(toast.loading).toHaveBeenLastCalledWith("Cancelling…", {
+      id: "progress",
+      description: null,
+      action: null,
+    });
+    tell({ stage: "pages", done: 1, total: 2 });
+    expect(toast.loading).toHaveBeenLastCalledWith("Cancelling…", expect.anything());
 
     finish({ status: "canceled" });
-    await vi.waitFor(() => expect(toast.dismiss).toHaveBeenCalledWith("progress"));
-    expect(registry.get(EXPORT_COMMAND_ID)?.enabled).toBe(true);
+    await finished();
+    expect(toast.dismiss).toHaveBeenCalledWith("progress");
+  });
+
+  it("says what went wrong in the toast, without its progress line or Cancel button", async () => {
+    const { registry, shown, finished } = setUp({
+      choices: async () => ({ ...LAST, askWebAddress: false }),
+      exportSite: async () => ({ status: "failed", reason: "folder-not-empty" }),
+    });
+    registry.run(EXPORT_COMMAND_ID);
+    (await shown("options")).answer(LAST);
+    await finished();
+
+    expect(toast.error).toHaveBeenCalledWith(
+      expect.stringContaining("That folder already contains other files."),
+      { id: "progress", description: null, action: null },
+    );
   });
 
   it("treats a rejected export as a failed build, and logs it by its code (R12)", async () => {
     const failures = vi.fn(async () => null);
     setFailureLog(failures);
-
-    await runExport(() => Promise.reject(new Error("IPC failed")));
-
-    expect(failures).toHaveBeenCalledExactlyOnceWith("export", "Error");
+    const { registry, shown, finished } = setUp({
+      choices: async () => ({ ...LAST, askWebAddress: false }),
+      exportSite: () => Promise.reject(new Error("IPC failed")),
+    });
+    registry.run(EXPORT_COMMAND_ID);
+    (await shown("options")).answer(LAST);
+    await finished();
     setFailureLog(undefined);
 
+    expect(failures).toHaveBeenCalledExactlyOnceWith("export", "Error");
     expect(toast.error).toHaveBeenCalledWith(
       expect.stringContaining("Your site could not be built."),
-      { id: "progress" },
+      { id: "progress", description: null, action: null },
     );
   });
 });

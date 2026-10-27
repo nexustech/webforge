@@ -8,6 +8,7 @@ import v4Site from "../test/fixtures/v4/site.json" with { type: "json" };
 import v5Site from "../test/fixtures/v5/site.json" with { type: "json" };
 import v6Site from "../test/fixtures/v6/site.json" with { type: "json" };
 import v7Site from "../test/fixtures/v7/site.json" with { type: "json" };
+import v8Site from "../test/fixtures/v8/site.json" with { type: "json" };
 import { FORMAT_5_DAISYUI_THEMES } from "./format-5-themes.js";
 import type { PageId, SharedSectionId } from "./ids.js";
 import {
@@ -47,24 +48,46 @@ const themeStyleTokens =
     throw new Error("No migration from format 6");
   });
 
-/** Format 5 → 7, each step's own fixture tested below: what the later steps do to an older one. */
-function latest(site: Record<string, unknown> & { formatVersion: 5 }): unknown {
-  return themeStyleTokens(sectionPaddingBoxes(JSON.parse(JSON.stringify(site))));
-}
-
-describe("migrateSite", () => {
-  it("opens the format 7 fixture unchanged", () => {
-    const site = migrateSite(v7Site);
-
-    expect(site).toEqual(v7Site);
-    expect(site.formatVersion).toBe(SITE_FORMAT_VERSION);
+/** Format 7 → 8 (`MIGRATIONS[7]`). */
+const ownThemes =
+  MIGRATIONS[7] ??
+  ((): never => {
+    throw new Error("No migration from format 7");
   });
 
-  it("opens the format 6 fixture as format 7, its theme's style tokens as it looked (2.13d)", () => {
+/** Format 5 → 8, each step's own fixture tested below: what the later steps do to an older one. */
+function latest(site: Record<string, unknown> & { formatVersion: 5 }): unknown {
+  return ownThemes(themeStyleTokens(sectionPaddingBoxes(JSON.parse(JSON.stringify(site)))));
+}
+
+/** The format 7 fixture as format 8 opens it: unchanged, its theme still a built-in one. */
+const v7AsLatest = { ...v7Site, formatVersion: 8 };
+
+describe("migrateSite", () => {
+  it("opens the format 8 fixture unchanged, its theme the person's own (2.23)", () => {
+    const site = migrateSite(v8Site);
+
+    expect(site).toEqual(v8Site);
+    expect(site.formatVersion).toBe(SITE_FORMAT_VERSION);
+    expect(site.theme.own).toEqual({ id: "theme00000000001", name: "Cupcake (my version)" });
+  });
+
+  it("opens the format 7 fixture as format 8, its theme a built-in one as it was (2.23)", () => {
+    const site = migrateSite(v7Site);
+
+    expect(site).toEqual(v7AsLatest);
+    expect(site.theme.own).toBeUndefined();
+    expect(ownThemes({ formatVersion: 7, theme: "light" })).toEqual({
+      formatVersion: 8,
+      theme: "light",
+    });
+  });
+
+  it("opens the format 6 fixture as format 8, its theme's style tokens as it looked (2.13d)", () => {
     const site = migrateSite(v6Site);
 
     expect(v6Site.theme).not.toHaveProperty("cards");
-    expect(site).toEqual(v7Site);
+    expect(site).toEqual(v7AsLatest);
     expect(site.theme).toMatchObject({
       headings: { case: "normal", tracking: "normal" },
       cards: { style: "flat" },
@@ -80,7 +103,7 @@ describe("migrateSite", () => {
     });
   });
 
-  it("opens the format 5 fixture as format 7, a Section's padding size as its top and bottom (R14)", () => {
+  it("opens the format 5 fixture as format 8, a Section's padding size as its top and bottom (R14)", () => {
     const site = migrateSite(v5Site);
 
     // The fixture's Sections have format 5's sizes, one plain, one per device.
@@ -91,7 +114,7 @@ describe("migrateSite", () => {
     expect(v5Site.sharedSections["shared-hours"].section.props.padding).toEqual({
       $responsive: { desktop: "large", mobile: "small" },
     });
-    expect(site).toEqual(v7Site);
+    expect(site).toEqual(v7AsLatest);
     const padding = (id: string) =>
       site.pages["home000000000000" as PageId]?.doc.content.find((node) => node.props.id === id)
         ?.props.padding;
@@ -125,7 +148,7 @@ describe("migrateSite", () => {
     expect(hero.pages.home.doc.content[0]?.props.padding).toBe("large");
   });
 
-  it("opens the format 4 fixture as format 7, its theme as tokens named after it (2.1)", () => {
+  it("opens the format 4 fixture as format 8, its theme as tokens named after it (2.1)", () => {
     const site = migrateSite(v4Site);
 
     expect(site).toEqual(latest({ ...v4Site, formatVersion: 5, theme: cupcakeTokens }));
@@ -150,7 +173,7 @@ describe("migrateSite", () => {
     expect(migrateSite({ ...v4Site, theme: undefined }).theme.preset).toBe("light");
   });
 
-  it("opens the format 3 fixture as format 7, its shared sections' names made unique (3 → 4)", () => {
+  it("opens the format 3 fixture as format 8, its shared sections' names made unique (3 → 4)", () => {
     const site = migrateSite(v3Site);
 
     // The fixture's second shared section repeats the first's name, as format 3 allowed.
@@ -198,13 +221,13 @@ describe("migrateSite", () => {
     ]);
   });
 
-  it("opens the format 2 fixture as format 7, with no shared sections yet", () => {
+  it("opens the format 2 fixture as format 8, with no shared sections yet", () => {
     expect(migrateSite(v2Site)).toEqual(
       latest({ ...v2Site, formatVersion: 5, sharedSections: {}, theme: cupcakeTokens }),
     );
   });
 
-  it("opens the format 1 fixture as format 7, its Hero image one value with its alt text (1 → 2)", () => {
+  it("opens the format 1 fixture as format 8, its Hero image one value with its alt text (1 → 2)", () => {
     // Fixtures of released formats are never deleted: every old site must keep opening. This one
     // has its Hero image in the format 1 shape: a media id, and its alt text apart.
     const site = migrateSite(v1Site);
@@ -217,7 +240,7 @@ describe("migrateSite", () => {
       alt: "Fresh loaves on the counter",
     });
     expect(hero?.props).not.toHaveProperty("imageDescription");
-    expect(site).toMatchObject({ formatVersion: 7, sharedSections: {}, theme: cupcakeTokens });
+    expect(site).toMatchObject({ formatVersion: 8, sharedSections: {}, theme: cupcakeTokens });
   });
 
   it("opens a new site after a JSON round trip", () => {
@@ -530,6 +553,8 @@ function paddingSize(box: unknown): unknown {
 
 /** Each step's inverse, keyed by the version it goes down *to*. */
 const DOWN: Readonly<Record<number, (site: Raw) => Raw>> = {
+  // 8 → 7: every theme was a built-in one; the generated sites' themes are.
+  7: (site) => ({ ...site, formatVersion: 7 }),
   // 7 → 6: the theme had no style tokens; sites looked as their defaults do.
   6: (site) => {
     const { headings, cards, images, sections, ...theme } = site.theme as Record<string, unknown>;

@@ -36,9 +36,10 @@ function sharedRegion(name: "Header" | "Footer", html: string): string {
 
 /**
  * A complete, readable HTML document (X4): classic deferred script only, no modules (X1), and
- * comments marking the shared Header and Footer.
+ * comments marking the shared Header and Footer. Without `format`, as it is before pretty-printing,
+ * for *Minify output*.
  */
-export function pageDocument(page: PageDocument): string {
+export function pageDocument(page: PageDocument, format = true): string {
   const head = [
     '<meta charset="utf-8">',
     '<meta name="viewport" content="width=device-width, initial-scale=1">',
@@ -63,7 +64,7 @@ ${sharedRegion("Footer", page.footer)}
 ${page.backToTop ?? ""}
 </body>
 </html>`;
-  return formatHtml(html);
+  return format ? formatHtml(html) : html;
 }
 
 /**

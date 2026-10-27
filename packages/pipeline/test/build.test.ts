@@ -1,12 +1,26 @@
 import { createHash } from "node:crypto";
-import type { MediaId, MenuItemId, NodeDoc, PageId, SiteSnapshot } from "@webforge/model";
-import { DEFAULT_THEME } from "@webforge/model";
+import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
+import type {
+  MediaId,
+  MenuItemId,
+  NodeDoc,
+  PageId,
+  SharedSectionId,
+  SiteSnapshot,
+} from "@webforge/model";
+import { createSite, DEFAULT_THEME, newSharedCopy, siteToSnapshot } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { sampleSite } from "@webforge/test-utils";
+import { transform } from "lightningcss";
+import { compile } from "tailwindcss";
 import { beforeAll, describe, expect, it } from "vitest";
 import { type BuildEvent, type BuiltSite, buildSite } from "../src/build.js";
+import { tailwindLoaders } from "../src/css.js";
 import { loadNodeResources } from "../src/node-resources.js";
 import type { ImageCache, PipelineResources } from "../src/resources.js";
+
+const requireFrom = createRequire(import.meta.url);
 
 let resources: PipelineResources;
 let built: BuiltSite;
@@ -842,5 +856,185 @@ describe("buildSite: cancelled, followed, and reading bytes when needed (R15)", 
     await expect(building).rejects.toMatchObject({ name: "BuildError", code: "cancelled" });
     // The first image was under way when it was cancelled; nothing after it started.
     expect(events).toEqual([expect.objectContaining({ stage: "images", done: 0 })]);
+  }, 60_000);
+});
+
+describe("buildSite: what the export writes (3.3)", () => {
+  const css = (site: BuiltSite) =>
+    text(site, fileNamed(site, /^assets\/css\/site\.[0-9a-f]{10}\.css$/));
+
+  it("writes the same site minified: CSS that means the same, HTML without comments, a shorter script", async () => {
+    const small = await buildSite(sampleSite(), siteLibrary, resources, {
+      output: { minify: true },
+    });
+
+    // The same files, the CSS and script under the names of their minified content.
+    const named = (site: BuiltSite) =>
+      [...site.files.keys()].map((path) => path.replace(/\.[0-9a-f]{10}\./, ".#."));
+    expect(named(small)).toEqual(named(built));
+    // Parsed and minified again, both stylesheets are the same CSS. lightningcss keeps what it
+    // doesn't parse fully (`color-mix(in lab, red, red)` in `@supports`) as written, so whitespace
+    // beside commas and brackets, which never matters there, is left out of the comparison.
+    const normalised = (code: string) =>
+      new TextDecoder()
+        .decode(
+          transform({ filename: "site.css", code: new TextEncoder().encode(code), minify: true })
+            .code,
+        )
+        .replace(/\s*([,()])\s*/g, "$1");
+    expect(normalised(css(small))).toBe(normalised(css(built)));
+    expect(css(small).length).toBeLessThan(css(built).length * 0.85);
+    const home = text(small, "index.html");
+    expect(home).not.toContain("<!--");
+    expect(home.length).toBeLessThan(text(built, "index.html").length);
+    expect(home).toContain(`href="${fileNamed(small, /^assets\/css\//)}"`);
+    expect(home).toContain(`src="${fileNamed(small, /^assets\/js\//)}"`);
+    expect(text(small, fileNamed(small, /^assets\/js\//)).length).toBeLessThan(
+      text(built, fileNamed(built, /^assets\/js\//)).length,
+    );
+  }, 60_000);
+
+  it("writes a page it can't minify readable, with a warning naming it", async () => {
+    const base = sampleSite();
+    const [home, ...rest] = base.pages;
+    if (home === undefined) throw new Error("no home page");
+    // A tag the person's Custom Code left broken.
+    const broken: NodeDoc = { type: "CustomCode", props: { id: "custom", code: "<a <b>Sale</b>" } };
+    const site: SiteSnapshot = {
+      ...base,
+      pages: [{ ...home, doc: { ...home.doc, content: [...home.doc.content, broken] } }, ...rest],
+    };
+
+    const small = await buildSite(site, siteLibrary, resources, { output: { minify: true } });
+
+    expect(small.report.warnings).toEqual([{ code: "not-minified", page: "index", detail: "" }]);
+    expect(text(small, "index.html")).toContain("<!-- Header (shared) -->");
+    // The other pages are minified as asked.
+    expect(text(small, "about.html")).not.toContain("<!--");
+  }, 60_000);
+
+  it("adds developer files only when asked: the stylesheet's source, the theme, the settings, a README", async () => {
+    expect([...built.files.keys()].some((path) => path.startsWith("developer/"))).toBe(false);
+
+    const withFiles = await buildSite(sampleSite(), siteLibrary, resources, {
+      output: { developerFiles: true },
+    });
+
+    expect([...withFiles.files.keys()].filter((path) => path.startsWith("developer/"))).toEqual([
+      "developer/README.md",
+      "developer/design-tokens.json",
+      "developer/input.css",
+      "developer/package.json",
+      "developer/site.json",
+    ]);
+    // Everything else is as without them.
+    for (const [path, data] of built.files) expect(withFiles.files.get(path), path).toEqual(data);
+    const input = text(withFiles, "developer/input.css");
+    expect(input.startsWith('@import "tailwindcss" source(none);\n@source "../**/*.html";\n')).toBe(
+      true,
+    );
+    expect(input).toContain('@plugin "daisyui"');
+    expect(JSON.parse(text(withFiles, "developer/design-tokens.json"))).toEqual(sampleSite().theme);
+    expect(JSON.parse(text(withFiles, "developer/site.json"))).toMatchObject({
+      name: "Rosa's Bakery",
+      settings: { "contact.phone": "+44 1234 567890" },
+    });
+    // The versions this export used, and a script that writes the file the pages link to.
+    expect(JSON.parse(text(withFiles, "developer/package.json"))).toEqual({
+      private: true,
+      description: expect.stringContaining("Rosa's Bakery"),
+      scripts: {
+        "build-css": `tailwindcss -i input.css -o ../${fileNamed(withFiles, /^assets\/css\//)}`,
+      },
+      devDependencies: {
+        "@tailwindcss/cli": requireFrom("tailwindcss/package.json").version,
+        daisyui: requireFrom("daisyui/package.json").version,
+        tailwindcss: requireFrom("tailwindcss/package.json").version,
+      },
+    });
+    expect(text(withFiles, "developer/README.md")).toContain("npm run build-css");
+  }, 60_000);
+
+  it("rebuilds, as Tailwind's CLI would from input.css, the very stylesheet the pages link to", async () => {
+    const withFiles = await buildSite(sampleSite(), siteLibrary, resources, {
+      output: { developerFiles: true },
+    });
+    // The `tailwindcss` package's stylesheet and the files it imports, as the CLI loads them.
+    const loaders = tailwindLoaders(resources);
+    const packaged = {
+      ...loaders,
+      loadStylesheet: async (id: string, base: string) =>
+        id === "tailwindcss"
+          ? {
+              path: id,
+              base,
+              content: readFileSync(requireFrom.resolve("tailwindcss/index.css"), "utf8"),
+            }
+          : loaders.loadStylesheet(id, base),
+    };
+
+    // No pages read: the classes `input.css` lists are the stylesheet's, escaped ones included.
+    const compiler = await compile(text(withFiles, "developer/input.css"), packaged);
+
+    // Tailwind's package writes its own defaults' strings in double quotes, the files the app
+    // bundles in single: the same CSS.
+    const same = (code: string) => code.replaceAll("'", '"').replace(/\s+/g, " ").trim();
+    expect(same(compiler.build([]))).toBe(same(css(withFiles)));
+    expect(text(withFiles, "developer/input.css")).toContain(
+      '@source inline("[&::-webkit-details-marker]:hidden");',
+    );
+  }, 60_000);
+});
+
+describe("buildSite: shared sections (F-ED-23, 3.3)", () => {
+  it("writes each copy inline, as its section, a second copy on a page with anchors of its own", async () => {
+    const site = createSite({
+      name: "Bakery",
+      language: "en",
+      homeTitle: "Home",
+      notFoundTitle: "Page not found",
+    });
+    const hoursId = "shared-hours" as SharedSectionId;
+    const shared = {
+      [hoursId]: {
+        id: hoursId,
+        name: "Opening hours",
+        section: {
+          type: "Section",
+          props: {
+            id: "hours",
+            advanced: { anchorId: "opening-hours" },
+            content: [{ type: "Heading", props: { id: "title", text: "Open every day" } }],
+          },
+        },
+      },
+    };
+    const [home, notFound] = Object.values(site.pages);
+    if (home === undefined || notFound === undefined) throw new Error("No pages");
+    const copies = (count: number) => {
+      const content: NodeDoc[] = [];
+      for (let made = 0; made < count; made++) {
+        content.push(newSharedCopy(content, hoursId, shared, site.layout) as NodeDoc);
+      }
+      return content;
+    };
+    const withCopies = {
+      ...site,
+      sharedSections: shared,
+      pages: {
+        [home.id]: { ...home, doc: { ...home.doc, content: copies(2) } },
+        [notFound.id]: { ...notFound, doc: { ...notFound.doc, content: copies(1) } },
+      },
+    };
+
+    const exported = await buildSite(siteToSnapshot(withCopies, new Map()), siteLibrary, resources);
+
+    await expect(text(exported, "index.html")).toMatchFileSnapshot(
+      "golden/shared-sections/index.html",
+    );
+    await expect(text(exported, "404.html")).toMatchFileSnapshot("golden/shared-sections/404.html");
+    expect(text(exported, "index.html")).toContain('id="opening-hours"');
+    expect(text(exported, "index.html")).toContain('id="opening-hours-2"');
+    expect(text(exported, "index.html")).not.toContain("SharedSectionCopy");
   }, 60_000);
 });

@@ -1,6 +1,7 @@
 import { IMAGE_MIME_TYPES, siteSnapshotSchema, themeSchema } from "@webforge/model";
 import { catalogueFontSchema } from "@webforge/themes";
 import { z } from "zod";
+import { exportProgressSchema, exportWarningSchema, MAX_REPORTED_WARNINGS } from "./ipc/site.js";
 
 /**
  * The downloaded families a site's theme uses (2.2), as the main process keeps them: its heading
@@ -16,8 +17,11 @@ const downloadedFamiliesSchema = z.array(catalogueFontSchema).max(2);
 const exportJobSchema = z.strictObject({
   type: z.literal("export"),
   snapshot: siteSnapshotSchema,
-  /** Absolute path of the folder to write; chosen by the user in a native dialog. */
+  /** Absolute path of the folder or ZIP file to write; chosen by the user in a native dialog. */
   destination: z.string().min(1),
+  format: z.enum(["folder", "zip"]),
+  /** *Minify output* and *Include developer files* (3.3). */
+  output: z.strictObject({ minify: z.boolean(), developerFiles: z.boolean() }),
   /** The site's font files (2.2), read and checked by the main process: the worker reads none. */
   fonts: z
     .array(
@@ -85,6 +89,12 @@ export const blobRequestSchema = z.strictObject({
   /** Matches the answer to the request. */
   id: z.int().nonnegative(),
   hash: z.string().regex(/^[0-9a-f]{64}$/),
+});
+
+/** The export worker tells how far its export has come (3.1); main passes it to the window. */
+export const exportProgressMessageSchema = z.strictObject({
+  type: z.literal("progress"),
+  progress: exportProgressSchema,
 });
 
 /**
@@ -186,14 +196,22 @@ export const exportOutcomeSchema = z.discriminatedUnion("type", [
     pages: z.int().nonnegative(),
     files: z.int().nonnegative(),
     bytes: z.int().nonnegative(),
-    warnings: z.int().nonnegative(),
+    /** For the export report: never logged, as they name the site's pages. */
+    warnings: z.array(exportWarningSchema).max(MAX_REPORTED_WARNINGS),
+    warningCount: z.int().nonnegative(),
     durationMs: z.number().nonnegative(),
   }),
   /** Cancelled: nothing was changed on disk (R15). */
   z.strictObject({ type: z.literal("cancelled") }),
   z.strictObject({
     type: z.literal("failed"),
-    code: z.enum(["folder-not-empty", "write-failed", "build-failed", "reserved-name"]),
+    code: z.enum([
+      "folder-not-empty",
+      "write-failed",
+      "build-failed",
+      "reserved-name",
+      "too-large",
+    ]),
     /** A machine-readable detail such as a BuildError code; safe to log. */
     detail: z.string(),
     /** The title of the page to fix, for `reserved-name`: shown to the person, never logged. */

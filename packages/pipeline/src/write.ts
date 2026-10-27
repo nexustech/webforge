@@ -19,6 +19,12 @@ const exportMarkerSchema = z.object({
 
 type ExportMarker = z.infer<typeof exportMarkerSchema>;
 
+/** The marker of an export of `paths`: written with a folder, and into a ZIP (3.3). */
+export function exportMarkerFor(paths: Iterable<string>): string {
+  const marker: ExportMarker = { generator: "Webforge", files: [...paths].sort() };
+  return `${JSON.stringify(marker, null, 2)}\n`;
+}
+
 /** Whether every file in `folder` is one an earlier export listed in its marker. */
 async function holdsOnlyAnEarlierExport(folder: string): Promise<boolean> {
   let listed: Set<string>;
@@ -40,8 +46,11 @@ async function holdsOnlyAnEarlierExport(folder: string): Promise<boolean> {
     });
 }
 
-/** Why the site could not be written; `cancelled`: the write's signal was aborted (R15). */
-export type WriteErrorCode = "folder-not-empty" | "write-failed" | "cancelled";
+/**
+ * Why the site could not be written. `cancelled`: the write's signal was aborted (R15).
+ * `too-large`: the site won't fit in a ZIP file (3.3); a folder takes it.
+ */
+export type WriteErrorCode = "folder-not-empty" | "write-failed" | "cancelled" | "too-large";
 
 /** Writing the export to disk failed; the destination is left as it was. */
 export class WriteError extends WebforgeError<WriteErrorCode> {
@@ -50,7 +59,11 @@ export class WriteError extends WebforgeError<WriteErrorCode> {
   constructor(code: WriteErrorCode, message: string, options?: ErrorOptions) {
     super(
       code,
-      code === "folder-not-empty" ? "export.failed.folderNotEmpty" : "export.failed.writeFailed",
+      code === "folder-not-empty"
+        ? "export.failed.folderNotEmpty"
+        : code === "too-large"
+          ? "export.failed.tooLarge"
+          : "export.failed.writeFailed",
       message,
       options,
     );
@@ -73,7 +86,7 @@ async function entriesOf(folder: string): Promise<string[] | null> {
 }
 
 /** Windows briefly locks folders (antivirus, indexer): retry a rename a few times. */
-async function renameWithRetry(from: string, to: string): Promise<void> {
+export async function renameWithRetry(from: string, to: string): Promise<void> {
   for (let attempt = 1; ; attempt++) {
     try {
       await rename(from, to);
@@ -123,8 +136,7 @@ export async function writeSiteFolder(
       await mkdir(dirname(target), { recursive: true });
       await writeFile(target, data);
     }
-    const marker: ExportMarker = { generator: "Webforge", files: [...files.keys()].sort() };
-    await writeFile(join(staging, EXPORT_MARKER), `${JSON.stringify(marker, null, 2)}\n`);
+    await writeFile(join(staging, EXPORT_MARKER), exportMarkerFor(files.keys()));
   } catch (error) {
     await rm(staging, { recursive: true, force: true });
     if (error instanceof WriteError) throw error;

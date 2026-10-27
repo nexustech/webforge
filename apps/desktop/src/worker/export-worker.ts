@@ -1,4 +1,5 @@
-import { createMemoryImageCache, type StoredMedia } from "@webforge/pipeline";
+import { createPipeline, type StoredMedia } from "@webforge/pipeline";
+import { siteLibrary } from "@webforge/site-components";
 import {
   type ExportJob,
   exportMessageSchema,
@@ -27,8 +28,9 @@ installWorkerCrashHandlers(
 const classes = createClassCatalogues(loadStyleResources);
 
 // An export asks the main process for each stored image and document as the build reaches it
-// (R15), and stops when the main process cancels it. The worker lives while the site is open,
-// keeping the images it encoded in memory for the next export, and never on disk (R13d).
+// (R15), tells it how far it has come, and stops when the main process cancels it. The worker
+// lives while the site is open, its pipeline keeping the images it encoded, the pages it rendered
+// and its Tailwind compiler in memory for the next export, and never on disk (R13d, 3.1).
 const reads = new Map<number, (blob: StoredMedia | undefined) => void>();
 let nextRead = 0;
 const readMedia = (hash: string) =>
@@ -38,13 +40,17 @@ const readMedia = (hash: string) =>
     process.parentPort.postMessage({ type: "read-blob", id, hash });
   });
 let cancelled = new AbortController();
-const IMAGE_CACHE_BYTES = 256 * 1024 * 1024;
-const imageCache = createMemoryImageCache(IMAGE_CACHE_BYTES);
+const pipeline = createPipeline(siteLibrary);
 
 /** Runs one export, with a signal of its own: a late cancel of the one before can't stop it. */
 function startExport(job: ExportJob) {
   cancelled = new AbortController();
-  return runExport(job, loadBundledResources, { readMedia, signal: cancelled.signal, imageCache });
+  return runExport(job, loadBundledResources, {
+    readMedia,
+    signal: cancelled.signal,
+    pipeline,
+    onProgress: (progress) => process.parentPort.postMessage({ type: "progress", progress }),
+  });
 }
 
 process.parentPort.on("message", (event) => {

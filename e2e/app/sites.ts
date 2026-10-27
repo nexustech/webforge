@@ -1,4 +1,4 @@
-import type { ElectronApplication } from "@playwright/test";
+import { type ElectronApplication, expect, type Page } from "@playwright/test";
 
 type ProjectSummary = {
   sessionId: string;
@@ -32,4 +32,26 @@ export async function stubFileDialogs(app: ElectronApplication, filePath: string
       showOpenDialog: async () => ({ canceled: false, filePaths: [path] }),
     });
   }, filePath);
+}
+
+/**
+ * File → Export Site… as the person goes through it (3.3): past the web address prompt when it's
+ * asked, with the export dialog as it opens, until the report shows. Gives the report's text, and
+ * closes it.
+ */
+export async function exportFromEditor(page: Page, timeout = 30_000): Promise<string> {
+  await page.getByRole("button", { name: "Export Site…", exact: true }).click();
+  const prompt = page.getByRole("alertdialog", { name: "Add your site's web address?" });
+  const options = page.getByRole("dialog", { name: "Export Site" });
+  await expect(prompt.or(options)).toBeVisible();
+  if (await prompt.isVisible()) {
+    await prompt.getByRole("button", { name: "Export without it" }).click();
+  }
+  await options.getByRole("button", { name: "Export…" }).click();
+  const report = page.getByRole("dialog", { name: "Site exported" });
+  await expect(report).toBeVisible({ timeout });
+  const text = (await report.textContent()) ?? "";
+  await report.getByRole("button", { name: "Done" }).click();
+  await expect(report).toBeHidden();
+  return text;
 }

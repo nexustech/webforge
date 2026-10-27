@@ -1,7 +1,9 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { SiteSnapshot } from "@webforge/model";
+import { createPipeline } from "@webforge/pipeline";
 import { loadNodeResources } from "@webforge/pipeline/node";
+import { siteLibrary } from "@webforge/site-components";
 import { sampleSite, tempDirFactory } from "@webforge/test-utils";
 import { fontFacesFor } from "@webforge/themes";
 import { describe, expect, it } from "vitest";
@@ -12,7 +14,7 @@ const tempDir = tempDirFactory("webforge-run-export-");
 
 /** The main process's side of an export: no stored bytes, and a signal it may abort. */
 function channel(signal = new AbortController().signal): ExportChannel {
-  return { readMedia: async () => undefined, signal };
+  return { readMedia: async () => undefined, signal, pipeline: createPipeline(siteLibrary) };
 }
 
 /** An export of `snapshot`, with the site's font files as the main process sends them (2.2). */
@@ -24,10 +26,32 @@ async function job(snapshot: SiteSnapshot, destination: string): Promise<ExportJ
       data: (await readFont(face)) ?? new Uint8Array(),
     })),
   );
-  return { type: "export", snapshot, destination, fonts, families: [] };
+  return {
+    type: "export",
+    snapshot,
+    destination,
+    format: "folder",
+    output: { minify: false, developerFiles: false },
+    fonts,
+    families: [],
+  };
 }
 
 describe("runExport", () => {
+  it("tells its progress through the build, then the writing (3.1)", async () => {
+    const destination = join(tempDir(), "site");
+    const stages: string[] = [];
+
+    await runExport(await job(sampleSite(), destination), loadNodeResources, {
+      ...channel(),
+      onProgress: (progress) => stages.push(progress.stage),
+    });
+
+    expect(stages.slice(-3)).toEqual(["styles", "fonts", "writing"]);
+    expect(stages).toContain("images");
+    expect(stages).toContain("pages");
+  }, 60_000);
+
   it("builds the site and writes it to the destination", async () => {
     const destination = join(tempDir(), "site");
 
@@ -37,10 +61,74 @@ describe("runExport", () => {
       channel(),
     );
 
-    expect(outcome).toMatchObject({ type: "exported", pages: 3, files: 16, warnings: 0 });
+    expect(outcome).toMatchObject({
+      type: "exported",
+      pages: 3,
+      files: 16,
+      warnings: [],
+      warningCount: 0,
+    });
     expect(readFileSync(join(destination, "about.html"), "utf8")).toContain(
       "A family bakery since 1998.",
     );
+  }, 60_000);
+
+  it("writes a ZIP file, minified and with developer files, as the person chose (3.3)", async () => {
+    const destination = join(tempDir(), "my-site.zip");
+
+    const outcome = await runExport(
+      {
+        ...(await job(sampleSite(), destination)),
+        format: "zip",
+        output: { minify: true, developerFiles: true },
+      },
+      loadNodeResources,
+      channel(),
+    );
+
+    expect(outcome).toMatchObject({ type: "exported", pages: 3 });
+    const zip = readFileSync(destination);
+    // A ZIP: its local file header's signature, and the names it holds (stored as they are).
+    expect(zip.subarray(0, 4)).toEqual(Buffer.from([0x50, 0x4b, 0x03, 0x04]));
+    expect(zip.includes("developer/README.md")).toBe(true);
+    expect(zip.includes("index.html")).toBe(true);
+  }, 60_000);
+
+  it("passes the build's warnings on for the report, page by page (3.3)", async () => {
+    const site = sampleSite();
+    const [home, ...rest] = site.pages;
+    if (home === undefined) throw new Error("The sample site has no pages");
+    const withBrokenLink = {
+      ...site,
+      pages: [
+        {
+          ...home,
+          doc: {
+            ...home.doc,
+            content: [
+              ...home.doc.content,
+              {
+                type: "Hero",
+                props: { id: "gone", title: "Hi", buttonLabel: "Go", buttonLink: "old-page" },
+              },
+            ],
+          },
+        },
+        ...rest,
+      ],
+    };
+
+    const outcome = await runExport(
+      await job(withBrokenLink, join(tempDir(), "site")),
+      loadNodeResources,
+      channel(),
+    );
+
+    expect(outcome).toMatchObject({
+      type: "exported",
+      warnings: [{ code: "broken-link", page: "index", detail: "old-page" }],
+      warningCount: 1,
+    });
   }, 60_000);
 
   it("reports a build failure by code without writing anything", async () => {

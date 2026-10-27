@@ -41,13 +41,35 @@ function fontFaces(faces: readonly FontFace[], fontsUrl: string): string {
 /**
  * The Tailwind entry stylesheet: theme, base styles and utilities, daisyUI with the site's theme,
  * and the fonts its theme uses. No `@import "tailwindcss"`: each layer is loaded from the resources.
+ * With `tailwind: "package"`, the same stylesheet as a developer rebuilds it with Tailwind's CLI
+ * from the `tailwindcss` package (developer files, X6): the site's classes listed in it, and those
+ * of the exported pages read again, for classes a developer adds there.
  */
-export function siteStylesheetSource(options: SiteCssOptions): string {
+export function siteStylesheetSource(
+  options: SiteCssOptions,
+  tailwind: "bundled" | "package" = "bundled",
+): string {
   return [
-    "@layer theme, base, components, utilities;",
-    '@import "tailwindcss/theme.css" layer(theme);',
-    '@import "tailwindcss/preflight.css" layer(base);',
-    '@import "tailwindcss/utilities.css" layer(utilities);',
+    ...(tailwind === "bundled"
+      ? [
+          "@layer theme, base, components, utilities;",
+          '@import "tailwindcss/theme.css" layer(theme);',
+          '@import "tailwindcss/preflight.css" layer(base);',
+          '@import "tailwindcss/utilities.css" layer(utilities);',
+        ]
+      : [
+          '@import "tailwindcss" source(none);',
+          '@source "../**/*.html";',
+          // Tailwind reads classes from HTML without decoding its entities, so a class the page
+          // escapes (`[&amp;:focus-within&gt;ul]:block`) would be missed there: each is listed as it
+          // is. Brace expansion has no escape, so a class with a brace is left to the pages.
+          ...options.candidates
+            .filter((name) => !/[{}]/.test(name))
+            .map(
+              (name) =>
+                `@source inline("${name.replaceAll("\\", "\\\\").replaceAll('"', '\\"')}");`,
+            ),
+        ]),
     // An element waiting for its entrance animation (2.12, `entranceClasses` in site-components):
     // once webforge.js has marked the page, until it has moved in.
     "@custom-variant wf-waiting (:root[data-wf-animate] &:not([data-wf-shown]));",
@@ -70,6 +92,53 @@ export async function buildSiteCss(
 ): Promise<string> {
   const compiler = await compile(siteStylesheetSource(options), tailwindLoaders(resources));
   return compiler.build([...options.candidates]);
+}
+
+/**
+ * Compiles the site's CSS like {@link buildSiteCss}, keeping its Tailwind compiler between builds
+ * (3.1): preparing one takes about 100 ms, building from it a few.
+ */
+export type StyleCompiler = {
+  /**
+   * The CSS for `options`. A Tailwind compiler only ever adds the classes it is given to its CSS,
+   * so with `grow` (a preview, 3.2) a class no page uses any more stays in until the theme changes.
+   * Without it (an export), the CSS is always exactly {@link buildSiteCss}'s: the kept compiler is
+   * used only when none of the classes it has seen are gone.
+   */
+  css(options: SiteCssOptions, grow?: boolean): Promise<string>;
+};
+
+/** A {@link StyleCompiler} over `resources`, which must stay the same for its lifetime. */
+export function createStyleCompiler(resources: StyleResources): StyleCompiler {
+  let kept:
+    | {
+        readonly source: string;
+        readonly compiler: Awaited<ReturnType<typeof compile>>;
+        readonly seen: Set<string>;
+      }
+    | undefined;
+  return {
+    async css(options, grow = false) {
+      const source = siteStylesheetSource(options);
+      const wanted = new Set(options.candidates);
+      // Checked and built in one go, with no await between: another build can't change it meanwhile.
+      const reusable =
+        kept !== undefined &&
+        kept.source === source &&
+        (grow || [...kept.seen].every((name) => wanted.has(name)));
+      const current =
+        reusable && kept !== undefined
+          ? kept
+          : {
+              source,
+              compiler: await compile(source, tailwindLoaders(resources)),
+              seen: new Set<string>(),
+            };
+      kept = current;
+      for (const name of wanted) current.seen.add(name);
+      return current.compiler.build([...options.candidates]);
+    },
+  };
 }
 
 /**

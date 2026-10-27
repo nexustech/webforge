@@ -40,6 +40,12 @@ const answerAi = vi.fn<AiApi["onRequest"]>((answer) => {
   };
 });
 
+/** The site's last export choices: a folder, asking for the web address. */
+const exportChoices = vi.fn(
+  async () =>
+    ({ format: "folder", minify: false, developerFiles: false, askWebAddress: true }) as const,
+);
+
 function renderApp(
   exportSite = vi.fn(async (): Promise<ExportResult> => ({ status: "canceled" })),
   extra: Partial<AppProps> = {},
@@ -55,6 +61,7 @@ function renderApp(
       createEngine={createFakeEngine}
       compileCss={compileCss}
       exportSite={exportSite}
+      exportChoices={exportChoices}
       {...extra}
     />,
   );
@@ -79,27 +86,40 @@ describe("App", () => {
     expect(setSpellCheckLanguage).toHaveBeenCalledWith("en");
   });
 
-  it("exports the site from the title bar and says where it went", async () => {
+  it("exports the site from the title bar, asking first, and says where it went (3.3)", async () => {
     const exportSite = renderApp(
       vi.fn(
         async (): Promise<ExportResult> => ({
           status: "exported",
-          folderName: "my-site",
+          format: "folder",
+          name: "my-site",
           pages: 1,
           files: 6,
-          warnings: 0,
+          bytes: 24_000,
+          warnings: [],
+          warningCount: 0,
         }),
       ),
     );
 
     await userEvent.click(screen.getByRole("button", { name: "Export Site…" }));
+    // The starter site has no web address yet (X3).
+    await userEvent.click(await screen.findByRole("button", { name: "Export without it" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Export…" }));
 
-    expect(exportSite).toHaveBeenCalledWith({
-      snapshot: expect.objectContaining({ pages: expect.any(Array), media: [] }),
-      media: [],
-      documents: [],
-    });
-    expect(await screen.findByText("Site exported to “my-site” (6 files).")).toBeTruthy();
+    expect(exportSite).toHaveBeenCalledWith(
+      {
+        snapshot: expect.objectContaining({ pages: expect.any(Array), media: [] }),
+        media: [],
+        documents: [],
+        choices: { format: "folder", minify: false, developerFiles: false, askWebAddress: true },
+        output: { minify: false, developerFiles: false },
+      },
+      // Told how far the export has come, for the toast (3.1).
+      expect.any(Function),
+    );
+    const report = await screen.findByRole("dialog", { name: "Site exported" });
+    expect(report.textContent).toContain("Saved in the folder “my-site”.");
   });
 
   it("exports with the exportSite it was given last", async () => {
@@ -116,10 +136,12 @@ describe("App", () => {
     const canceled = async (): Promise<ExportResult> => ({ status: "canceled" });
     const first = vi.fn(canceled);
     const latest = vi.fn(canceled);
-    const { rerender } = render(<App {...props} exportSite={first} />);
+    const remembered = async () => ({ ...(await exportChoices()), askWebAddress: false });
+    const { rerender } = render(<App {...props} exportSite={first} exportChoices={remembered} />);
 
-    rerender(<App {...props} exportSite={latest} />);
+    rerender(<App {...props} exportSite={latest} exportChoices={remembered} />);
     await userEvent.click(screen.getByRole("button", { name: "Export Site…" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Export…" }));
 
     expect(latest).toHaveBeenCalledOnce();
     expect(first).not.toHaveBeenCalled();

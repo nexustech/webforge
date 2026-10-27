@@ -85,26 +85,58 @@ describe("createWebforgeApi site export", () => {
     media: [],
   };
 
+  const choices = {
+    format: "folder",
+    minify: false,
+    developerFiles: false,
+    askWebAddress: true,
+  } as const;
+  const output = { minify: false, developerFiles: false } as const;
+  const exported = {
+    status: "exported",
+    format: "folder",
+    name: "site",
+    pages: 1,
+    files: 5,
+    bytes: 1200,
+    warnings: [],
+    warningCount: 0,
+  };
+
   it("sends the snapshot on the export channel and parses the result", async () => {
-    const result = { status: "exported", folderName: "site", pages: 1, files: 5, warnings: 0 };
-    const invoke = vi.fn(async () => result);
+    const invoke = vi.fn(async () => exported);
     const api = apiWith(invoke);
 
-    await expect(api.site.export({ snapshot, media: [] })).resolves.toEqual(result);
-    expect(invoke).toHaveBeenCalledWith("site:export", { snapshot, media: [] });
+    await expect(api.site.export({ snapshot, media: [], choices, output })).resolves.toEqual(
+      exported,
+    );
+    expect(invoke).toHaveBeenCalledWith("site:export", { snapshot, media: [], choices, output });
   });
 
   it("rejects an export result that leaks a path", async () => {
-    const api = apiWith(async () => ({
-      status: "exported",
-      folderName: "site",
-      path: "C:Userssamsite",
-      pages: 1,
-      files: 5,
-      warnings: 0,
-    }));
+    const api = apiWith(async () => ({ ...exported, path: "C:Userssamsite" }));
 
-    await expect(api.site.export({ snapshot, media: [] })).rejects.toThrow();
+    await expect(api.site.export({ snapshot, media: [], choices, output })).rejects.toThrow();
+  });
+
+  it("reads the last export choices and opens the last export through their channels (3.3)", async () => {
+    const invoke = vi.fn(async (channel: string) =>
+      channel === "site:export-choices"
+        ? choices
+        : channel === "site:set-export-choices"
+          ? null
+          : "missing",
+    );
+    const api = apiWith(invoke);
+
+    await expect(api.site.exportChoices()).resolves.toEqual(choices);
+    await expect(api.site.setExportChoices(choices)).resolves.toBeNull();
+    await expect(api.site.openExport()).resolves.toBe("missing");
+    expect(invoke.mock.calls).toEqual([
+      ["site:export-choices"],
+      ["site:set-export-choices", choices],
+      ["site:open-export"],
+    ]);
   });
 
   it("reads and remembers the editor mode through the project UI-state channels", async () => {
@@ -261,6 +293,21 @@ describe("createWebforgeApi app events", () => {
     await vi.waitFor(() => expect(invoke).toHaveBeenCalledWith("project:flushed", 3));
 
     expect(save).toHaveBeenCalledTimes(1);
+  });
+
+  it("passes on an export's progress, ignoring malformed messages, and cancels it (3.1)", async () => {
+    const { api, invoke, listeners } = withEvents();
+    const listener = vi.fn();
+    const stop = api.site.onExportProgress(listener);
+
+    listeners.get("site:export-progress")?.({ stage: "pages", done: 0, total: 2 });
+    listeners.get("site:export-progress")?.({ stage: "pages", path: "/home/sam" });
+    await api.site.cancelExport();
+
+    expect(listener.mock.calls).toEqual([[{ stage: "pages", done: 0, total: 2 }]]);
+    expect(invoke).toHaveBeenCalledWith("site:cancel-export");
+    stop();
+    expect(listeners.has("site:export-progress")).toBe(false);
   });
 });
 

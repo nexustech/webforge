@@ -5,6 +5,7 @@ import { join } from "node:path";
 import {
   changedDocuments,
   createSite,
+  DEFAULT_EXPORT_CHOICES,
   DEFAULT_THEME,
   type ImageMeta,
   type MediaId,
@@ -333,6 +334,35 @@ describe("ProjectSession site documents", () => {
 
     expect(await session.readSite()).toEqual({ status: "failed", reason: "newer-format" });
     expect(await session.commit([])).toEqual({ status: "failed", reason: "invalid" });
+  });
+});
+
+describe("ProjectSession export choices (3.3)", () => {
+  it("gives the defaults without a site, and remembers them with the open site", async () => {
+    expect(await session.exportChoices()).toEqual(DEFAULT_EXPORT_CHOICES);
+    // Without a site there is nothing to remember them in, and nothing fails.
+    await session.setExportChoices({ ...DEFAULT_EXPORT_CHOICES, format: "zip" });
+
+    const path = join(dir, "Bakery.wforge");
+    await session.create(path);
+    expect(await session.exportChoices()).toEqual(DEFAULT_EXPORT_CHOICES);
+    const zip = { ...DEFAULT_EXPORT_CHOICES, format: "zip", minify: true } as const;
+    await session.setExportChoices(zip);
+
+    await session.close();
+    await session.open(path);
+    expect(await session.exportChoices()).toEqual(zip);
+  });
+
+  it("keeps the earlier choices of a site it can't write to, without failing", async () => {
+    await session.create(join(dir, "Bakery.wforge"));
+    const write = vi.spyOn(ProjectStore.prototype, "writeExportChoices");
+    write.mockImplementationOnce(() => {
+      throw new ReadOnlyProjectError();
+    });
+
+    await expect(session.setExportChoices(DEFAULT_EXPORT_CHOICES)).resolves.toBeUndefined();
+    write.mockRestore();
   });
 });
 

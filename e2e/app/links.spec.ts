@@ -5,7 +5,7 @@ import { type ElectronApplication, expect, type Page, test } from "@playwright/t
 import { createSite, type PageId } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
-import { stubFileDialogs } from "./sites.js";
+import { exportFromEditor, stubFileDialogs } from "./sites.js";
 
 // Links (1.19, F-ED-18): a button links to a section on another page; renaming that page keeps
 // the exported link working, and the section gets its anchor.
@@ -98,8 +98,7 @@ test("links a button to a section, and the exported link follows a renamed page"
 
   const folder = join(dir, "export");
   await stubFileDialogs(app, folder);
-  await page.getByRole("button", { name: "Export Site…", exact: true }).click();
-  await expect(page.getByText(/^Site exported to/)).toBeVisible({ timeout: 30_000 });
+  await exportFromEditor(page);
 
   expect(readFileSync(join(folder, "index.html"), "utf8")).toContain(
     'href="our-story.html#opening-times"',

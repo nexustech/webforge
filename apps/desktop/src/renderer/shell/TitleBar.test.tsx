@@ -3,6 +3,7 @@ import { act, cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TooltipProvider } from "@webforge/editor-ui";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { TITLE_BAR_HEIGHT } from "../../shared/title-bar.js";
 import { AboutDialog } from "./AboutDialog.js";
 import { CommandRegistryProvider } from "./command-context.js";
 import { COMMAND_IDS } from "./command-ids.js";
@@ -24,6 +25,14 @@ function renderTitleBar(registry: CommandRegistry = createCommandRegistry()) {
 }
 
 describe("TitleBar", () => {
+  it("is as tall as the native window controls, in pixels, whatever the type scale (#484)", () => {
+    renderTitleBar();
+    expect(TITLE_BAR_HEIGHT).toBe(40);
+    expect(screen.getByRole("banner").style.height).toBe(`${TITLE_BAR_HEIGHT}px`);
+    // Not a rem class, which the editor's 13 px type scale shrinks to 32.5 px.
+    expect(screen.getByRole("banner").className).not.toMatch(/(^| )h-\d/);
+  });
+
   it("leaves its menus to the system's menu bar when it has one (macOS, LF-13)", () => {
     const registry = createCommandRegistry();
     registry.register({ id: "site.settings", label: "Site Settings…", menu: "file", run: vi.fn() });

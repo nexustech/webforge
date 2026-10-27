@@ -60,6 +60,18 @@ test.describe("desktop shell", () => {
     expect(visible).toBe(true);
   });
 
+  test("is exactly as tall as the native window controls (#484)", async () => {
+    test.skip(process.platform !== "win32", "Windows draws its controls at the overlay's height");
+    const heights = await page.evaluate(() => ({
+      bar: document.querySelector("header")?.getBoundingClientRect().height,
+      controls: (
+        navigator as { windowControlsOverlay?: { getTitlebarAreaRect(): DOMRect } }
+      ).windowControlsOverlay?.getTitlebarAreaRect().height,
+    }));
+    expect(heights.controls).toBe(40);
+    expect(heights.bar).toBe(heights.controls);
+  });
+
   test("loads the production renderer from disk", () => {
     expect(page.url()).toMatch(/^file:\/\/.*\/out\/renderer\/index\.html$/);
   });
@@ -102,6 +114,7 @@ test.describe("desktop shell", () => {
         "project",
         "site",
         "templates",
+        "themes",
       ],
     });
   });

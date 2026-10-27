@@ -7,6 +7,8 @@ import type { WorkerProcess } from "./worker-process.js";
 const job: ExportJob = {
   type: "export",
   destination: "/sites/my-site",
+  format: "folder",
+  output: { minify: false, developerFiles: false },
   families: [],
   snapshot: {
     name: "Bakery",
@@ -26,7 +28,8 @@ const exported = {
   pages: 1,
   files: 5,
   bytes: 10,
-  warnings: 0,
+  warnings: [],
+  warningCount: 0,
   durationMs: 5,
 } as const;
 
@@ -142,6 +145,46 @@ describe("createExportRunner", () => {
     await vi.waitFor(() => expect(workers).toHaveLength(2));
   });
 
+  it("fails an export whose worker can't start, and runs the next one (3.1 review)", async () => {
+    const made = fakeWorker();
+    let starts = 0;
+    const runner = createExportRunner(() => {
+      starts += 1;
+      if (starts === 1) throw new Error("fork failed");
+      return made.worker;
+    });
+
+    await expect(runner.run(job, options())).resolves.toEqual({
+      type: "failed",
+      code: "build-failed",
+      detail: "worker-start-failed",
+    });
+    const next = runner.run(job, options());
+    await vi.waitFor(() => expect(made.worker.posted).toEqual([job]));
+    made.reply(exported);
+    await expect(next).resolves.toEqual(exported);
+  });
+
+  it("fails an export its worker can't be sent, and starts a fresh one next time", async () => {
+    const { runner, workers, latest, sent } = runnerOf();
+    const first = runner.run(job, options());
+    await sent();
+    latest().reply(exported);
+    await first;
+    latest().worker.postMessage = () => {
+      throw new Error("channel closed");
+    };
+
+    await expect(runner.run(job, options())).resolves.toEqual({
+      type: "failed",
+      code: "build-failed",
+      detail: "worker-unreachable",
+    });
+    expect(latest().worker.kill).toHaveBeenCalled();
+    void runner.run(job, options());
+    await vi.waitFor(() => expect(workers).toHaveLength(2));
+  });
+
   it("stops a worker that does not answer in time", async () => {
     vi.useFakeTimers();
     try {
@@ -199,6 +242,24 @@ describe("createExportRunner", () => {
       // Not stored, or not readable: the build leaves it out.
       { type: "blob", id: 1 },
       { type: "blob", id: 2 },
+    ]);
+  });
+
+  it("passes the worker's progress on, for the export under way only (3.1)", async () => {
+    const { runner, latest, sent } = runnerOf();
+    const onProgress = vi.fn();
+    const outcome = runner.run(job, options({ onProgress }));
+    await sent();
+
+    latest().reply({ type: "progress", progress: { stage: "pages", done: 0, total: 1 } });
+    latest().reply({ type: "progress", progress: { stage: "writing" } });
+    latest().reply(exported);
+    await outcome;
+    latest().reply({ type: "progress", progress: { stage: "fonts" } });
+
+    expect(onProgress.mock.calls).toEqual([
+      [{ stage: "pages", done: 0, total: 1 }],
+      [{ stage: "writing" }],
     ]);
   });
 

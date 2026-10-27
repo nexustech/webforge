@@ -6,7 +6,7 @@ import { ProjectStore } from "@webforge/storage";
 import { clickOnCanvas } from "./canvas-click.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
 import { chooseFromMenu } from "./menus.js";
-import { stubFileDialogs } from "./sites.js";
+import { exportFromEditor, stubFileDialogs } from "./sites.js";
 
 // Site Settings (1.17, F-SET-1): opened from the File menu, checked on Save, saved as one undo
 // step, and kept in the site file; elements bound to a value show it on the canvas and in the
@@ -141,8 +141,7 @@ test("shows Site Settings values in bound elements, on the canvas and in the exp
 
   const folder = join(dir, "export");
   await stubFileDialogs(app, folder);
-  await page.getByRole("button", { name: "Export Site…", exact: true }).click();
-  await expect(page.getByText(/Site exported to/)).toBeVisible({ timeout: 30_000 });
+  await exportFromEditor(page);
   const index = readFileSync(join(folder, "index.html"), "utf8");
   // A new site's Header shows the site name (the canvas doesn't show the Header yet).
   expect(index).toMatch(/<header class="site-header[\s\S]*Hightown Bakery[\s\S]*<\/header>/);
@@ -185,8 +184,7 @@ test("lists Site Settings' opening hours and contact details, on the canvas and 
 
   const folder = join(dir, "export");
   await stubFileDialogs(app, folder);
-  await page.getByRole("button", { name: "Export Site…", exact: true }).click();
-  await expect(page.getByText(/Site exported to/)).toBeVisible({ timeout: 30_000 });
+  await exportFromEditor(page);
   const index = readFileSync(join(folder, "index.html"), "utf8");
   expect(index).toContain('<dt class="font-medium">Saturday and Sunday</dt>');
   expect(index).toContain('href="tel:+441234567890"');
