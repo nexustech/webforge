@@ -10,6 +10,7 @@ import type {
   AppInfo,
   Preferences,
   PreferencesChange,
+  SiteUiChange,
   SiteUiState,
   UiStateResult,
 } from "../shared/ipc-contract.js";
@@ -77,7 +78,7 @@ export type AppProps = {
   /** The open site's editor state (Design or Content mode) as main loaded it; none for no site. */
   readonly uiState?: SiteUiState | null;
   /** Remembers the editor state with the open site; injectable for tests. */
-  readonly saveUiState?: (state: SiteUiState) => Promise<UiStateResult>;
+  readonly saveUiState?: (change: SiteUiChange) => Promise<UiStateResult>;
   /** Spell checks text in the site's language (F-ED-19); injectable for tests. */
   readonly setSpellCheckLanguage?: (language: string) => Promise<null>;
   /** Answers AI apps' requests (F-AI-1); injectable for tests. Defaults to the preload API. */
@@ -100,8 +101,8 @@ const setExportChoicesWithPreload = (choices: ExportChoices) =>
   window.webforge.site.setExportChoices(choices);
 const openExportWithPreload = () => window.webforge.site.openExport();
 const saveWithPreload = (change: PreferencesChange) => window.webforge.prefs.set(change);
-const saveUiStateWithPreload = (state: SiteUiState) =>
-  window.webforge.project.setUiState(siteSession(), state);
+const saveUiStateWithPreload = (change: SiteUiChange) =>
+  window.webforge.project.setUiState(siteSession(), change);
 const spellCheckWithPreload = (language: string) =>
   window.webforge.app.setSpellCheckLanguage(language);
 const answerAiWithPreload: AiApi["onRequest"] = (answer) => window.webforge.ai.onRequest(answer);
@@ -209,6 +210,14 @@ export function App({
     openExport: () => exportSiteRef.current.openExport(),
     answerAi,
     preview,
+    siteCheckIgnored: {
+      initial: uiState?.siteCheckIgnored ?? [],
+      save: (ignored) => {
+        saveUiState({ siteCheckIgnored: [...ignored] }).catch((error: unknown) => {
+          reportFailure("siteCheck.ignored", error);
+        });
+      },
+    },
   }));
   useEffect(() => connectAreas(WINDOW_AREAS, windowContext), [windowContext]);
 

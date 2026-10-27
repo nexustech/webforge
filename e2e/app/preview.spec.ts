@@ -96,7 +96,7 @@ test("opens the site in the browser, and every edit reaches it", async () => {
   );
 
   // Another page shown in the editor: the browser goes there. Out of the hex field first, where
-  // Ctrl/Cmd+K is the field's.
+  // Ctrl/Cmd+K is the field's; the Commands dialog's own search, among the panels' many.
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
   await page.keyboard.press("ControlOrMeta+k");
   await page

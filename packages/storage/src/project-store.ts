@@ -9,6 +9,7 @@ import {
   pageDocumentId,
   type SiteDoc,
   type SiteDocumentChange,
+  siteCheckIgnoredSchema,
   siteDocuments,
   siteFromDocuments,
 } from "@webforge/model";
@@ -138,6 +139,8 @@ const metaSchema = z.strictObject({
   editor_mode: z.string().optional(),
   /** JSON, checked when read (see `readExportChoices`), likewise. */
   export_choices: z.string().optional(),
+  /** JSON, checked when read (see `readSiteCheckIgnored`), likewise. */
+  site_check_ignored: z.string().optional(),
 });
 
 /** A version's documents in `readDocuments` order. An array, so any id (even "__proto__") works. */
@@ -787,6 +790,32 @@ export class ProjectStore {
     this.#write(() => {
       this.#prepare(
         `INSERT INTO meta (key, value) VALUES ('export_choices', ?)
+         ON CONFLICT (key) DO UPDATE SET value = excluded.value`,
+      ).run(value);
+    });
+  }
+
+  /** What the person ignored in Site Check (3.6), by finding; nothing until then. */
+  readSiteCheckIgnored(): string[] {
+    const row = this.#prepare("SELECT value FROM meta WHERE key = 'site_check_ignored'").get() as
+      | { value: unknown }
+      | undefined;
+    let stored: unknown;
+    try {
+      stored = typeof row?.value === "string" ? JSON.parse(row.value) : undefined;
+    } catch {
+      stored = undefined;
+    }
+    const ignored = siteCheckIgnoredSchema.safeParse(stored);
+    return ignored.success ? ignored.data : [];
+  }
+
+  /** Remembers what the person ignored in Site Check, replacing what was remembered. */
+  writeSiteCheckIgnored(ignored: readonly string[]): void {
+    const value = JSON.stringify(siteCheckIgnoredSchema.parse(ignored));
+    this.#write(() => {
+      this.#prepare(
+        `INSERT INTO meta (key, value) VALUES ('site_check_ignored', ?)
          ON CONFLICT (key) DO UPDATE SET value = excluded.value`,
       ).run(value);
     });
