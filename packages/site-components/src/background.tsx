@@ -1,5 +1,6 @@
 import { t } from "@webforge/i18n";
 import { type ImageValue, imageValueSchema } from "@webforge/model";
+import { APPEARANCE_GROUP } from "./appearance.js";
 import { Picture } from "./picture.js";
 import type { FieldDef, RenderContext } from "./schema.js";
 
@@ -11,9 +12,12 @@ type Overlay = (typeof OVERLAYS)[number];
 export const OVERLAY_COLORS = ["base", "neutral"] as const;
 type OverlayColor = (typeof OVERLAY_COLORS)[number];
 
+/** The overlay's controls: in the Style tab's Appearance group, beside the background colour (2.22). */
+const IN_GROUP = { group: "style", optionGroup: APPEARANCE_GROUP } as const;
+
 /**
- * A section's background image (2.26, ST-5): an image from Media behind its content, with its
- * focal point kept in view, and an overlay over it in the theme's page or neutral colour, so the
+ * A section's background image (2.26, ST-5): an image from Media behind its content (in the
+ * Content tab, as images are content), with its focal point kept in view, and an overlay over it in the theme's page or neutral colour, so the
  * text on it stays readable. The same on every section (defineSection's frame); its classes come
  * from {@link backgroundClasses}, and {@link SectionBackground} draws the image and overlay.
  */
@@ -22,19 +26,20 @@ export const BACKGROUND_FIELDS = {
     kind: "media",
     label: t("field.backgroundImage"),
     help: t("field.backgroundImage.help"),
-    group: "style",
+    // An image is content (C4): Content mode can swap it, as it can the Hero's.
+    group: "content",
   },
   overlay: {
     kind: "slider",
     label: t("field.overlay"),
     help: t("field.overlay.help"),
-    group: "style",
+    ...IN_GROUP,
     steps: OVERLAYS.map((value) => ({ label: t(`field.overlay.${value}`), value })),
   },
   overlayColor: {
     kind: "select",
     label: t("field.overlayColor"),
-    group: "style",
+    ...IN_GROUP,
     options: OVERLAY_COLORS.map((value) => ({ label: t(`field.overlayColor.${value}`), value })),
   },
 } as const satisfies Readonly<Record<string, FieldDef>>;

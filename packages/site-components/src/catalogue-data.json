@@ -508,6 +508,63 @@
           }
         ]
       },
+      "backgroundImage": {
+        "kind": "media",
+        "label": "Background image",
+        "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
+        "group": "content"
+      },
+      "overlay": {
+        "kind": "slider",
+        "label": "Overlay",
+        "help": "A layer of colour over the background image, so the text on it is easier to read.",
+        "group": "style",
+        "optionGroup": {
+          "id": "appearance",
+          "label": "Appearance"
+        },
+        "steps": [
+          {
+            "label": "None",
+            "value": "0"
+          },
+          {
+            "label": "Light",
+            "value": "20"
+          },
+          {
+            "label": "Medium",
+            "value": "40"
+          },
+          {
+            "label": "Strong",
+            "value": "60"
+          },
+          {
+            "label": "Very strong",
+            "value": "80"
+          }
+        ]
+      },
+      "overlayColor": {
+        "kind": "select",
+        "label": "Overlay colour",
+        "group": "style",
+        "optionGroup": {
+          "id": "appearance",
+          "label": "Appearance"
+        },
+        "options": [
+          {
+            "label": "Page background",
+            "value": "base"
+          },
+          {
+            "label": "Neutral",
+            "value": "neutral"
+          }
+        ]
+      },
       "gap": {
         "kind": "slider",
         "label": "Space between elements",
@@ -6780,6 +6837,63 @@
           }
         ]
       },
+      "backgroundImage": {
+        "kind": "media",
+        "label": "Background image",
+        "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
+        "group": "content"
+      },
+      "overlay": {
+        "kind": "slider",
+        "label": "Overlay",
+        "help": "A layer of colour over the background image, so the text on it is easier to read.",
+        "group": "style",
+        "optionGroup": {
+          "id": "appearance",
+          "label": "Appearance"
+        },
+        "steps": [
+          {
+            "label": "None",
+            "value": "0"
+          },
+          {
+            "label": "Light",
+            "value": "20"
+          },
+          {
+            "label": "Medium",
+            "value": "40"
+          },
+          {
+            "label": "Strong",
+            "value": "60"
+          },
+          {
+            "label": "Very strong",
+            "value": "80"
+          }
+        ]
+      },
+      "overlayColor": {
+        "kind": "select",
+        "label": "Overlay colour",
+        "group": "style",
+        "optionGroup": {
+          "id": "appearance",
+          "label": "Appearance"
+        },
+        "options": [
+          {
+            "label": "Page background",
+            "value": "base"
+          },
+          {
+            "label": "Neutral",
+            "value": "neutral"
+          }
+        ]
+      },
       "title": {
         "kind": "text",
         "label": "Title",
@@ -7286,6 +7400,63 @@
           {
             "label": "25%",
             "value": "25"
+          }
+        ]
+      },
+      "backgroundImage": {
+        "kind": "media",
+        "label": "Background image",
+        "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
+        "group": "content"
+      },
+      "overlay": {
+        "kind": "slider",
+        "label": "Overlay",
+        "help": "A layer of colour over the background image, so the text on it is easier to read.",
+        "group": "style",
+        "optionGroup": {
+          "id": "appearance",
+          "label": "Appearance"
+        },
+        "steps": [
+          {
+            "label": "None",
+            "value": "0"
+          },
+          {
+            "label": "Light",
+            "value": "20"
+          },
+          {
+            "label": "Medium",
+            "value": "40"
+          },
+          {
+            "label": "Strong",
+            "value": "60"
+          },
+          {
+            "label": "Very strong",
+            "value": "80"
+          }
+        ]
+      },
+      "overlayColor": {
+        "kind": "select",
+        "label": "Overlay colour",
+        "group": "style",
+        "optionGroup": {
+          "id": "appearance",
+          "label": "Appearance"
+        },
+        "options": [
+          {
+            "label": "Page background",
+            "value": "base"
+          },
+          {
+            "label": "Neutral",
+            "value": "neutral"
           }
         ]
       },
@@ -7815,6 +7986,63 @@
           {
             "label": "25%",
             "value": "25"
+          }
+        ]
+      },
+      "backgroundImage": {
+        "kind": "media",
+        "label": "Background image",
+        "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
+        "group": "content"
+      },
+      "overlay": {
+        "kind": "slider",
+        "label": "Overlay",
+        "help": "A layer of colour over the background image, so the text on it is easier to read.",
+        "group": "style",
+        "optionGroup": {
+          "id": "appearance",
+          "label": "Appearance"
+        },
+        "steps": [
+          {
+            "label": "None",
+            "value": "0"
+          },
+          {
+            "label": "Light",
+            "value": "20"
+          },
+          {
+            "label": "Medium",
+            "value": "40"
+          },
+          {
+            "label": "Strong",
+            "value": "60"
+          },
+          {
+            "label": "Very strong",
+            "value": "80"
+          }
+        ]
+      },
+      "overlayColor": {
+        "kind": "select",
+        "label": "Overlay colour",
+        "group": "style",
+        "optionGroup": {
+          "id": "appearance",
+          "label": "Appearance"
+        },
+        "options": [
+          {
+            "label": "Page background",
+            "value": "base"
+          },
+          {
+            "label": "Neutral",
+            "value": "neutral"
           }
         ]
       },
@@ -8349,6 +8577,63 @@
           {
             "label": "25%",
             "value": "25"
+          }
+        ]
+      },
+      "backgroundImage": {
+        "kind": "media",
+        "label": "Background image",
+        "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
+        "group": "content"
+      },
+      "overlay": {
+        "kind": "slider",
+        "label": "Overlay",
+        "help": "A layer of colour over the background image, so the text on it is easier to read.",
+        "group": "style",
+        "optionGroup": {
+          "id": "appearance",
+          "label": "Appearance"
+        },
+        "steps": [
+          {
+            "label": "None",
+            "value": "0"
+          },
+          {
+            "label": "Light",
+            "value": "20"
+          },
+          {
+            "label": "Medium",
+            "value": "40"
+          },
+          {
+            "label": "Strong",
+            "value": "60"
+          },
+          {
+            "label": "Very strong",
+            "value": "80"
+          }
+        ]
+      },
+      "overlayColor": {
+        "kind": "select",
+        "label": "Overlay colour",
+        "group": "style",
+        "optionGroup": {
+          "id": "appearance",
+          "label": "Appearance"
+        },
+        "options": [
+          {
+            "label": "Page background",
+            "value": "base"
+          },
+          {
+            "label": "Neutral",
+            "value": "neutral"
           }
         ]
       },
@@ -8900,6 +9185,63 @@
           {
             "label": "25%",
             "value": "25"
+          }
+        ]
+      },
+      "backgroundImage": {
+        "kind": "media",
+        "label": "Background image",
+        "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
+        "group": "content"
+      },
+      "overlay": {
+        "kind": "slider",
+        "label": "Overlay",
+        "help": "A layer of colour over the background image, so the text on it is easier to read.",
+        "group": "style",
+        "optionGroup": {
+          "id": "appearance",
+          "label": "Appearance"
+        },
+        "steps": [
+          {
+            "label": "None",
+            "value": "0"
+          },
+          {
+            "label": "Light",
+            "value": "20"
+          },
+          {
+            "label": "Medium",
+            "value": "40"
+          },
+          {
+            "label": "Strong",
+            "value": "60"
+          },
+          {
+            "label": "Very strong",
+            "value": "80"
+          }
+        ]
+      },
+      "overlayColor": {
+        "kind": "select",
+        "label": "Overlay colour",
+        "group": "style",
+        "optionGroup": {
+          "id": "appearance",
+          "label": "Appearance"
+        },
+        "options": [
+          {
+            "label": "Page background",
+            "value": "base"
+          },
+          {
+            "label": "Neutral",
+            "value": "neutral"
           }
         ]
       },
@@ -9961,6 +10303,63 @@
           }
         ]
       },
+      "backgroundImage": {
+        "kind": "media",
+        "label": "Background image",
+        "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
+        "group": "content"
+      },
+      "overlay": {
+        "kind": "slider",
+        "label": "Overlay",
+        "help": "A layer of colour over the background image, so the text on it is easier to read.",
+        "group": "style",
+        "optionGroup": {
+          "id": "appearance",
+          "label": "Appearance"
+        },
+        "steps": [
+          {
+            "label": "None",
+            "value": "0"
+          },
+          {
+            "label": "Light",
+            "value": "20"
+          },
+          {
+            "label": "Medium",
+            "value": "40"
+          },
+          {
+            "label": "Strong",
+            "value": "60"
+          },
+          {
+            "label": "Very strong",
+            "value": "80"
+          }
+        ]
+      },
+      "overlayColor": {
+        "kind": "select",
+        "label": "Overlay colour",
+        "group": "style",
+        "optionGroup": {
+          "id": "appearance",
+          "label": "Appearance"
+        },
+        "options": [
+          {
+            "label": "Page background",
+            "value": "base"
+          },
+          {
+            "label": "Neutral",
+            "value": "neutral"
+          }
+        ]
+      },
       "title": {
         "kind": "text",
         "label": "Title",
@@ -10489,6 +10888,63 @@
           {
             "label": "25%",
             "value": "25"
+          }
+        ]
+      },
+      "backgroundImage": {
+        "kind": "media",
+        "label": "Background image",
+        "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
+        "group": "content"
+      },
+      "overlay": {
+        "kind": "slider",
+        "label": "Overlay",
+        "help": "A layer of colour over the background image, so the text on it is easier to read.",
+        "group": "style",
+        "optionGroup": {
+          "id": "appearance",
+          "label": "Appearance"
+        },
+        "steps": [
+          {
+            "label": "None",
+            "value": "0"
+          },
+          {
+            "label": "Light",
+            "value": "20"
+          },
+          {
+            "label": "Medium",
+            "value": "40"
+          },
+          {
+            "label": "Strong",
+            "value": "60"
+          },
+          {
+            "label": "Very strong",
+            "value": "80"
+          }
+        ]
+      },
+      "overlayColor": {
+        "kind": "select",
+        "label": "Overlay colour",
+        "group": "style",
+        "optionGroup": {
+          "id": "appearance",
+          "label": "Appearance"
+        },
+        "options": [
+          {
+            "label": "Page background",
+            "value": "base"
+          },
+          {
+            "label": "Neutral",
+            "value": "neutral"
           }
         ]
       },
@@ -12001,6 +12457,63 @@
           }
         ]
       },
+      "backgroundImage": {
+        "kind": "media",
+        "label": "Background image",
+        "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
+        "group": "content"
+      },
+      "overlay": {
+        "kind": "slider",
+        "label": "Overlay",
+        "help": "A layer of colour over the background image, so the text on it is easier to read.",
+        "group": "style",
+        "optionGroup": {
+          "id": "appearance",
+          "label": "Appearance"
+        },
+        "steps": [
+          {
+            "label": "None",
+            "value": "0"
+          },
+          {
+            "label": "Light",
+            "value": "20"
+          },
+          {
+            "label": "Medium",
+            "value": "40"
+          },
+          {
+            "label": "Strong",
+            "value": "60"
+          },
+          {
+            "label": "Very strong",
+            "value": "80"
+          }
+        ]
+      },
+      "overlayColor": {
+        "kind": "select",
+        "label": "Overlay colour",
+        "group": "style",
+        "optionGroup": {
+          "id": "appearance",
+          "label": "Appearance"
+        },
+        "options": [
+          {
+            "label": "Page background",
+            "value": "base"
+          },
+          {
+            "label": "Neutral",
+            "value": "neutral"
+          }
+        ]
+      },
       "title": {
         "kind": "text",
         "label": "Title",
@@ -12538,6 +13051,63 @@
           }
         ]
       },
+      "backgroundImage": {
+        "kind": "media",
+        "label": "Background image",
+        "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
+        "group": "content"
+      },
+      "overlay": {
+        "kind": "slider",
+        "label": "Overlay",
+        "help": "A layer of colour over the background image, so the text on it is easier to read.",
+        "group": "style",
+        "optionGroup": {
+          "id": "appearance",
+          "label": "Appearance"
+        },
+        "steps": [
+          {
+            "label": "None",
+            "value": "0"
+          },
+          {
+            "label": "Light",
+            "value": "20"
+          },
+          {
+            "label": "Medium",
+            "value": "40"
+          },
+          {
+            "label": "Strong",
+            "value": "60"
+          },
+          {
+            "label": "Very strong",
+            "value": "80"
+          }
+        ]
+      },
+      "overlayColor": {
+        "kind": "select",
+        "label": "Overlay colour",
+        "group": "style",
+        "optionGroup": {
+          "id": "appearance",
+          "label": "Appearance"
+        },
+        "options": [
+          {
+            "label": "Page background",
+            "value": "base"
+          },
+          {
+            "label": "Neutral",
+            "value": "neutral"
+          }
+        ]
+      },
       "title": {
         "kind": "text",
         "label": "Title",
@@ -13070,6 +13640,63 @@
           {
             "label": "25%",
             "value": "25"
+          }
+        ]
+      },
+      "backgroundImage": {
+        "kind": "media",
+        "label": "Background image",
+        "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
+        "group": "content"
+      },
+      "overlay": {
+        "kind": "slider",
+        "label": "Overlay",
+        "help": "A layer of colour over the background image, so the text on it is easier to read.",
+        "group": "style",
+        "optionGroup": {
+          "id": "appearance",
+          "label": "Appearance"
+        },
+        "steps": [
+          {
+            "label": "None",
+            "value": "0"
+          },
+          {
+            "label": "Light",
+            "value": "20"
+          },
+          {
+            "label": "Medium",
+            "value": "40"
+          },
+          {
+            "label": "Strong",
+            "value": "60"
+          },
+          {
+            "label": "Very strong",
+            "value": "80"
+          }
+        ]
+      },
+      "overlayColor": {
+        "kind": "select",
+        "label": "Overlay colour",
+        "group": "style",
+        "optionGroup": {
+          "id": "appearance",
+          "label": "Appearance"
+        },
+        "options": [
+          {
+            "label": "Page background",
+            "value": "base"
+          },
+          {
+            "label": "Neutral",
+            "value": "neutral"
           }
         ]
       },
@@ -14208,6 +14835,63 @@
           }
         ]
       },
+      "backgroundImage": {
+        "kind": "media",
+        "label": "Background image",
+        "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
+        "group": "content"
+      },
+      "overlay": {
+        "kind": "slider",
+        "label": "Overlay",
+        "help": "A layer of colour over the background image, so the text on it is easier to read.",
+        "group": "style",
+        "optionGroup": {
+          "id": "appearance",
+          "label": "Appearance"
+        },
+        "steps": [
+          {
+            "label": "None",
+            "value": "0"
+          },
+          {
+            "label": "Light",
+            "value": "20"
+          },
+          {
+            "label": "Medium",
+            "value": "40"
+          },
+          {
+            "label": "Strong",
+            "value": "60"
+          },
+          {
+            "label": "Very strong",
+            "value": "80"
+          }
+        ]
+      },
+      "overlayColor": {
+        "kind": "select",
+        "label": "Overlay colour",
+        "group": "style",
+        "optionGroup": {
+          "id": "appearance",
+          "label": "Appearance"
+        },
+        "options": [
+          {
+            "label": "Page background",
+            "value": "base"
+          },
+          {
+            "label": "Neutral",
+            "value": "neutral"
+          }
+        ]
+      },
       "title": {
         "kind": "text",
         "label": "Title",
@@ -14820,6 +15504,63 @@
           }
         ]
       },
+      "backgroundImage": {
+        "kind": "media",
+        "label": "Background image",
+        "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
+        "group": "content"
+      },
+      "overlay": {
+        "kind": "slider",
+        "label": "Overlay",
+        "help": "A layer of colour over the background image, so the text on it is easier to read.",
+        "group": "style",
+        "optionGroup": {
+          "id": "appearance",
+          "label": "Appearance"
+        },
+        "steps": [
+          {
+            "label": "None",
+            "value": "0"
+          },
+          {
+            "label": "Light",
+            "value": "20"
+          },
+          {
+            "label": "Medium",
+            "value": "40"
+          },
+          {
+            "label": "Strong",
+            "value": "60"
+          },
+          {
+            "label": "Very strong",
+            "value": "80"
+          }
+        ]
+      },
+      "overlayColor": {
+        "kind": "select",
+        "label": "Overlay colour",
+        "group": "style",
+        "optionGroup": {
+          "id": "appearance",
+          "label": "Appearance"
+        },
+        "options": [
+          {
+            "label": "Page background",
+            "value": "base"
+          },
+          {
+            "label": "Neutral",
+            "value": "neutral"
+          }
+        ]
+      },
       "title": {
         "kind": "text",
         "label": "Title",
@@ -15429,6 +16170,63 @@
           {
             "label": "25%",
             "value": "25"
+          }
+        ]
+      },
+      "backgroundImage": {
+        "kind": "media",
+        "label": "Background image",
+        "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
+        "group": "content"
+      },
+      "overlay": {
+        "kind": "slider",
+        "label": "Overlay",
+        "help": "A layer of colour over the background image, so the text on it is easier to read.",
+        "group": "style",
+        "optionGroup": {
+          "id": "appearance",
+          "label": "Appearance"
+        },
+        "steps": [
+          {
+            "label": "None",
+            "value": "0"
+          },
+          {
+            "label": "Light",
+            "value": "20"
+          },
+          {
+            "label": "Medium",
+            "value": "40"
+          },
+          {
+            "label": "Strong",
+            "value": "60"
+          },
+          {
+            "label": "Very strong",
+            "value": "80"
+          }
+        ]
+      },
+      "overlayColor": {
+        "kind": "select",
+        "label": "Overlay colour",
+        "group": "style",
+        "optionGroup": {
+          "id": "appearance",
+          "label": "Appearance"
+        },
+        "options": [
+          {
+            "label": "Page background",
+            "value": "base"
+          },
+          {
+            "label": "Neutral",
+            "value": "neutral"
           }
         ]
       },
@@ -16047,6 +16845,63 @@
           {
             "label": "25%",
             "value": "25"
+          }
+        ]
+      },
+      "backgroundImage": {
+        "kind": "media",
+        "label": "Background image",
+        "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
+        "group": "content"
+      },
+      "overlay": {
+        "kind": "slider",
+        "label": "Overlay",
+        "help": "A layer of colour over the background image, so the text on it is easier to read.",
+        "group": "style",
+        "optionGroup": {
+          "id": "appearance",
+          "label": "Appearance"
+        },
+        "steps": [
+          {
+            "label": "None",
+            "value": "0"
+          },
+          {
+            "label": "Light",
+            "value": "20"
+          },
+          {
+            "label": "Medium",
+            "value": "40"
+          },
+          {
+            "label": "Strong",
+            "value": "60"
+          },
+          {
+            "label": "Very strong",
+            "value": "80"
+          }
+        ]
+      },
+      "overlayColor": {
+        "kind": "select",
+        "label": "Overlay colour",
+        "group": "style",
+        "optionGroup": {
+          "id": "appearance",
+          "label": "Appearance"
+        },
+        "options": [
+          {
+            "label": "Page background",
+            "value": "base"
+          },
+          {
+            "label": "Neutral",
+            "value": "neutral"
           }
         ]
       },
@@ -17790,6 +18645,63 @@
           }
         ]
       },
+      "backgroundImage": {
+        "kind": "media",
+        "label": "Background image",
+        "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
+        "group": "content"
+      },
+      "overlay": {
+        "kind": "slider",
+        "label": "Overlay",
+        "help": "A layer of colour over the background image, so the text on it is easier to read.",
+        "group": "style",
+        "optionGroup": {
+          "id": "appearance",
+          "label": "Appearance"
+        },
+        "steps": [
+          {
+            "label": "None",
+            "value": "0"
+          },
+          {
+            "label": "Light",
+            "value": "20"
+          },
+          {
+            "label": "Medium",
+            "value": "40"
+          },
+          {
+            "label": "Strong",
+            "value": "60"
+          },
+          {
+            "label": "Very strong",
+            "value": "80"
+          }
+        ]
+      },
+      "overlayColor": {
+        "kind": "select",
+        "label": "Overlay colour",
+        "group": "style",
+        "optionGroup": {
+          "id": "appearance",
+          "label": "Appearance"
+        },
+        "options": [
+          {
+            "label": "Page background",
+            "value": "base"
+          },
+          {
+            "label": "Neutral",
+            "value": "neutral"
+          }
+        ]
+      },
       "title": {
         "kind": "text",
         "label": "Title",
@@ -18360,6 +19272,63 @@
           {
             "label": "25%",
             "value": "25"
+          }
+        ]
+      },
+      "backgroundImage": {
+        "kind": "media",
+        "label": "Background image",
+        "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
+        "group": "content"
+      },
+      "overlay": {
+        "kind": "slider",
+        "label": "Overlay",
+        "help": "A layer of colour over the background image, so the text on it is easier to read.",
+        "group": "style",
+        "optionGroup": {
+          "id": "appearance",
+          "label": "Appearance"
+        },
+        "steps": [
+          {
+            "label": "None",
+            "value": "0"
+          },
+          {
+            "label": "Light",
+            "value": "20"
+          },
+          {
+            "label": "Medium",
+            "value": "40"
+          },
+          {
+            "label": "Strong",
+            "value": "60"
+          },
+          {
+            "label": "Very strong",
+            "value": "80"
+          }
+        ]
+      },
+      "overlayColor": {
+        "kind": "select",
+        "label": "Overlay colour",
+        "group": "style",
+        "optionGroup": {
+          "id": "appearance",
+          "label": "Appearance"
+        },
+        "options": [
+          {
+            "label": "Page background",
+            "value": "base"
+          },
+          {
+            "label": "Neutral",
+            "value": "neutral"
           }
         ]
       },

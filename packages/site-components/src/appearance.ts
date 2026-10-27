@@ -15,7 +15,7 @@ import type { FieldDef } from "./schema.js";
  * itself. Its classes come last and win (`!`), since a person's choice for this one item outranks
  * how the component looks by default.
  */
-const APPEARANCE_GROUP = {
+export const APPEARANCE_GROUP = {
   id: "appearance",
   label: t("editPanel.optionGroup.appearance"),
 } as const;

@@ -1,5 +1,11 @@
 import { t } from "@webforge/i18n";
-import { ChevronRightIcon, ClipboardPasteIcon, CopyIcon, RotateCcwIcon } from "lucide-react";
+import {
+  ChevronRightIcon,
+  ClipboardPasteIcon,
+  CopyIcon,
+  RotateCcwIcon,
+  TriangleAlertIcon,
+} from "lucide-react";
 import { type KeyboardEvent, type ReactNode, useId, useState } from "react";
 import { cn } from "../../lib/cn.js";
 import {
@@ -41,6 +47,12 @@ export type EditPanelField = FieldSpec & {
   readonly disabled?: boolean;
   /** Why its value isn't acceptable (translated), shown under its control. */
   readonly error?: string;
+  /**
+   * What's worth knowing about its value (translated), shown under its control with a warning sign
+   * and read with its help; it never blocks: text that may be hard to read over a section's
+   * background image (2.26).
+   */
+  readonly warning?: string;
   /**
    * Its value on each device, for a field that may differ per device (SP-5): expanding it shows a
    * row per device, in this order.
@@ -520,7 +532,8 @@ function FieldRow({
   const renderers = useFieldRenderers();
   const id = `${idPrefix}-${field.name}`;
   const labelId = `${id}-label`;
-  const helpId = field.help === undefined ? undefined : `${id}-help`;
+  // The help and the warning, read together as the control's description.
+  const helpId = field.help === undefined && field.warning === undefined ? undefined : `${id}-help`;
   const errorId = field.error === undefined ? undefined : `${id}-error`;
   const resetField =
     resettable(field) && onResetToDefault !== undefined
@@ -611,9 +624,17 @@ function FieldRow({
         </p>
       )}
       {helpId === undefined ? null : (
-        <p id={helpId} className={cn("text-xs text-muted-foreground", !wide && "col-start-2")}>
-          {field.help}
-        </p>
+        <div id={helpId} className={cn("flex flex-col gap-1", !wide && "col-start-2")}>
+          {field.warning === undefined ? null : (
+            <p className="flex items-start gap-1 text-xs text-foreground">
+              <TriangleAlertIcon aria-hidden className="mt-0.5 size-3.5 shrink-0 text-warning" />
+              {field.warning}
+            </p>
+          )}
+          {field.help === undefined ? null : (
+            <p className="text-xs text-muted-foreground">{field.help}</p>
+          )}
+        </div>
       )}
       {devices === undefined || !perDevice ? null : (
         <fieldset

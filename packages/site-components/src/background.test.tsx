@@ -1,5 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import { APPEARANCE_FIELDS } from "./appearance.js";
 import {
   BACKGROUND_FIELD_NAMES,
   BACKGROUND_FIELDS,
@@ -8,7 +9,9 @@ import {
   SectionBackground,
   sectionOverlay,
 } from "./background.js";
+import { siteLibrary } from "./catalogue/index.js";
 import { EDITOR_RENDER_CONTEXT } from "./library.js";
+import { renderNodesToHtml } from "./render-static.js";
 import type { RenderContext, ResolvedImage } from "./schema.js";
 
 const shop: ResolvedImage = {
@@ -39,13 +42,14 @@ const draw = (values: Record<string, unknown>) =>
   renderToStaticMarkup(<SectionBackground values={values} context={context} />);
 
 describe("BACKGROUND_FIELDS (2.26)", () => {
-  it("are an image, an overlay's strength and its colour, in the Style group", () => {
+  it("are an image, as content, and an overlay's strength and colour, as Appearance tokens", () => {
     expect(BACKGROUND_FIELD_NAMES).toEqual(["backgroundImage", "overlay", "overlayColor"]);
     expect(Object.values(BACKGROUND_FIELDS).map((field) => [field.kind, field.group])).toEqual([
-      ["media", "style"],
+      ["media", "content"],
       ["slider", "style"],
       ["select", "style"],
     ]);
+    expect(BACKGROUND_FIELDS.overlay.optionGroup.id).toBe("appearance");
     expect(BACKGROUND_FIELDS.overlay.steps.map((step) => step.value)).toEqual([
       "0",
       "20",
@@ -119,5 +123,57 @@ describe("overlayOf and sectionOverlay (2.26)", () => {
     expect(
       sectionOverlay({ backgroundImage: { mediaId: "shop" }, overlay: "60", colors: "inverse" }),
     ).toEqual({ color: "base", opacity: 0.6, inverse: true });
+  });
+});
+
+describe("the section frame's background (2.26)", () => {
+  const sections = Object.entries(siteLibrary.components).filter(
+    ([, def]) => def.place === "section",
+  );
+
+  it("is on every section, after the Appearance group, but the Hero, which draws its own", () => {
+    for (const [type, def] of sections) {
+      const names = Object.keys(def.fields);
+      if (type === "Hero") {
+        expect(
+          names.some((name) => BACKGROUND_FIELD_NAMES.includes(name as never)),
+          type,
+        ).toBe(false);
+        continue;
+      }
+      const at = names.indexOf("backgroundImage");
+      expect(names.slice(at, at + 3), type).toEqual([...BACKGROUND_FIELD_NAMES]);
+      expect(at, type).toBe(Object.keys(APPEARANCE_FIELDS).length);
+    }
+  });
+
+  it("draws the image and overlay first in the section, behind its content", () => {
+    const html = renderNodesToHtml(
+      [
+        {
+          type: "TextSection",
+          props: { id: "story", backgroundImage: { mediaId: "shop" }, overlay: "60" },
+        },
+      ],
+      siteLibrary,
+      context,
+    );
+
+    // The section's first child, so its content is drawn over it.
+    expect(html).toMatch(
+      /^<section class="site-text-section [^"]* relative isolate overflow-hidden"><picture>/,
+    );
+    expect(html).toContain("bg-base-100/60");
+  });
+
+  it("changes nothing without an image", () => {
+    const html = renderNodesToHtml(
+      [{ type: "TextSection", props: { id: "story", overlay: "60" } }],
+      siteLibrary,
+      context,
+    );
+
+    expect(html).not.toContain("isolate");
+    expect(html).not.toContain("<picture>");
   });
 });

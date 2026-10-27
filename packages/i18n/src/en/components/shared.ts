@@ -41,6 +41,8 @@ export const shared = {
   "field.overlay.40": "Medium",
   "field.overlay.60": "Strong",
   "field.overlay.80": "Very strong",
+  "field.overlay.lowContrast":
+    "The text may be hard to read on some images: its contrast can fall to {ratio}:1, below the {required}:1 most people need. Choose a stronger overlay.",
   "field.overlayColor": "Overlay colour",
   "field.overlayColor.base": "Page background",
   "field.overlayColor.neutral": "Neutral",
