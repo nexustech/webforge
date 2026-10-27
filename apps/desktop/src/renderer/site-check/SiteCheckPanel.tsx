@@ -3,7 +3,7 @@ import { isMessageKey, plural, t } from "@webforge/i18n";
 import type { CheckLevel, CheckReport, Finding, RuleResult } from "@webforge/site-check";
 
 /** A finding as the panel writes it: where it is, and anything else worth saying. */
-export type DescribedFinding = { readonly place: string; readonly detail?: string | undefined };
+type DescribedFinding = { readonly place: string; readonly detail?: string | undefined };
 
 /** What the panel shows and does. */
 export type SiteCheckPanelProps = {

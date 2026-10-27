@@ -1,6 +1,6 @@
 # @webforge/pipeline
 
-Builds a self-contained static site from a `SiteSnapshot` and writes it to a folder ([research 07](../../research/stack/07-export-pipeline.md), [ADR 0005](../../docs/adr/0005-export-pipeline-spike.md)). Preview mode, progress events and the full Site Check rules come in Phase 3.
+Builds a self-contained static site from a `SiteSnapshot` and writes it to a folder ([research 07](../../research/stack/07-export-pipeline.md), [ADR 0005](../../docs/adr/0005-export-pipeline-spike.md)). Preview mode and progress events come in Phase 3. Site Check's rules are in `packages/site-check`, run in the renderer ([ADR 0015](../../docs/adr/0015-site-check-in-the-renderer.md)).
 
 ## Public API
 - `@webforge/pipeline` (`src/index.ts`):

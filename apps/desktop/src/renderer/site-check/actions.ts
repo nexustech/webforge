@@ -126,7 +126,7 @@ function renameDeviceNames({ session }: SiteCheckActions, pageId: PageId): void 
     const target = draft.pages[pageId];
     if (target === undefined) return;
     const folder = target.folder;
-    if (folder !== undefined && folder.split("/").some(isDeviceName)) {
+    if (folder?.split("/").some(isDeviceName)) {
       const segments = folder.split("/");
       const renamed = segments
         .map((segment, index) => {

@@ -66,9 +66,9 @@ flowchart TB
 |---|---|---|
 | **Main** | Window/menus, open/save `.wforge`, autosave transactions, versions, preview HTTP/SSE server, publishing, credentials, updates, the local MCP server for AI apps (F-AI-1), which forwards commands to the renderer | Render UI; hold editor state of truth |
 | **Preload** | Exposes a **typed, minimal API** via `contextBridge` (`window.webforge.*`) | Expose `ipcRenderer`, Node or Electron objects directly |
-| **Renderer (editor)** | UI, the in-memory document, history, selection, canvas engine | Access Node/fs directly (`nodeIntegration: false`, `sandbox: true`) |
+| **Renderer (editor)** | UI, the in-memory document, history, selection, canvas engine, Site Check ([ADR 0015](../docs/adr/0015-site-check-in-the-renderer.md)) | Access Node/fs directly (`nodeIntegration: false`, `sandbox: true`) |
 | **Canvas iframe** | Shows the page being edited with the **site's** CSS only (C8, `syncHostStyles: false`) | Load editor styles; run custom scripts unless the user enables it (05) |
-| **Build worker** (`utilityProcess`) | Export/preview builds, image conversion, Site Check | Block the UI; touch the network except during publish |
+| **Build worker** (`utilityProcess`) | Export/preview builds, image conversion | Block the UI; touch the network except during publish |
 
 **Electron hardening:** `contextIsolation: true`, `sandbox: true`, `nodeIntegration: false`, no `@electron/remote`, strict CSP, `will-navigate`/`window.open` handlers, Electron Fuses (disable `RunAsNode`, enable ASAR integrity, cookie encryption).
 
@@ -91,7 +91,8 @@ wforge/
 │   ├── commands/                Typed queries and commands for AI apps (F-AI-1) and the v1.1 assistant, over model + history
 │   ├── site-components/         Section & element components, fields, daisyUI markup, webforge.js behaviours
 │   ├── themes/                  Curated themes, fonts catalogue, theme → Tailwind @theme generation
-│   ├── pipeline/                Render, Tailwind compile, esbuild, images, site files, Site Check rules
+│   ├── site-check/              Site Check rules (F-CHK-1, X5) over the site document, run in the renderer (ADR 0015)
+│   ├── pipeline/                Render, Tailwind compile, esbuild, images, site files
 │   ├── publish/                 Folder/ZIP, FTP/FTPS/SFTP, Netlify publishers + manifest diffing
 │   ├── editor-ui/               shadcn/ui-based editor components, panels, dialogs
 │   ├── i18n/                    UI strings (English for MVP), glossary terms
@@ -177,7 +178,6 @@ interface ProjectStore {
 // packages/pipeline
 interface Pipeline {
   build(snapshot: SiteSnapshot, mode: 'preview' | 'export' | 'publish'): AsyncIterable<BuildEvent>
-  check(snapshot: SiteSnapshot, mode: 'export' | 'publish'): Promise<CheckResult[]>   // X5
 }
 
 // packages/publish
@@ -202,7 +202,7 @@ interface Publisher {
 
 **Export:**
 1. Snapshot.
-2. Site Check (export rules, X5).
+2. Site Check (export rules, X5), in the renderer before the build starts ([ADR 0015](../docs/adr/0015-site-check-in-the-renderer.md)).
 3. Render.
 4. Collect classes.
 5. CSS (readable, X4).
@@ -213,7 +213,7 @@ interface Publisher {
 10. Write to a temp folder, then atomically swap it in.
 
 **Publish:**
-1. Build with the stricter publish checks (X5).
+1. Site Check with the stricter publish rules (X5, ADR 0015), then build.
 2. Diff against the destination manifest.
 3. Upload assets → pages → `index.html`.
 4. Verify.

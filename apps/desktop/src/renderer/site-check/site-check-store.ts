@@ -5,10 +5,10 @@ import { CATALOGUE } from "@webforge/site-components/catalogue-data";
 import { createStore } from "zustand/vanilla";
 
 /** How long the site has to stay unchanged before it's checked again: typing doesn't recheck it. */
-export const RECHECK_DELAY_MS = 400;
+const RECHECK_DELAY_MS = 400;
 
 /** What Site Check shows: the latest check, and what the person ignored. */
-export type SiteCheckState = {
+type SiteCheckState = {
   readonly report: CheckReport;
   /** {@link ignoreKey}s of the findings the person ignored. */
   readonly ignored: ReadonlySet<string>;

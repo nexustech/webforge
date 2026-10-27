@@ -3,7 +3,6 @@ import {
   type MediaId,
   type MediaMeta,
   type NodeDoc,
-  type PageId,
   type SiteDoc,
 } from "@webforge/model";
 import { CATALOGUE } from "@webforge/site-components/catalogue-data";
@@ -20,9 +19,6 @@ export function siteWith(home: NodeDoc[] = [], changes: Partial<SiteDoc> = {}): 
   });
   return { ...site, ...changes };
 }
-
-/** The home page's id of `site`. */
-export const homeOf = (site: SiteDoc): PageId => site.homePageId;
 
 /** An element of `type` with `props`. */
 export const element = (
