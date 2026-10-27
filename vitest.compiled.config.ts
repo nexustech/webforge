@@ -40,6 +40,7 @@ export default defineConfig({
         },
       },
       {
+        extends: "./packages/engine/vitest.config.ts",
         plugins: [compiled()],
         test: {
           name: "engine (compiled)",
