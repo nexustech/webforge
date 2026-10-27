@@ -25,6 +25,7 @@ import {
   type FieldDef,
   fieldsHiddenBy,
   isIconName,
+  withLook,
 } from "@webforge/site-components";
 import { useEffect, useRef } from "react";
 import { applyAnchor, asLinkFieldChange } from "../links/index.js";
@@ -55,6 +56,7 @@ import {
 } from "./list-edit.js";
 import { overlayWarning } from "./overlay-warning.js";
 import { placedOverlay } from "./placed-overlay.js";
+import { resetValue } from "./reset-value.js";
 import {
   breakpointOf,
   DEVICES,
@@ -363,8 +365,9 @@ export function EditPanelHost({
   // element has gone, a change still on its way does nothing.
   const now = () => fieldTarget(history.document.getState(), library, pageId, nodeId);
 
-  // What a field's `unavailable` is asked about: the element's values, with its defaults.
-  const values = { ...component.defaults, ...node.props };
+  // What a field's `unavailable` is asked about: the element's values, over its kind's look from
+  // the theme (3.12) and its defaults.
+  const values = { ...component.defaults, ...withLook(node.props, node.type, theme.looks) };
   // A layout that doesn't use a field hides it; its value stays for the layouts that do (#311).
   const hidden = fieldsHiddenBy(component, values);
   const fields = Object.entries(component.fields).flatMap(([name, field]): EditPanelField[] => {
@@ -666,15 +669,18 @@ export function EditPanelHost({
       "props",
       label,
       (draft) => {
+        const look = draft.theme.looks?.[live.node.type] as
+          | Readonly<Record<string, unknown>>
+          | undefined;
         for (const name of known) {
           const responsive = component.fields[name]?.responsive === true;
-          const initial = component.defaults[name];
           live.write(draft, name, (stored) =>
-            !responsive
-              ? initial
-              : breakpoint === "desktop"
-                ? withValueAt(stored, "desktop", valueAt(initial, "desktop"))
-                : withoutOverride(stored, breakpoint),
+            resetValue(stored, {
+              responsive,
+              breakpoint,
+              initial: component.defaults[name],
+              look: look?.[name],
+            }),
           );
         }
       },
