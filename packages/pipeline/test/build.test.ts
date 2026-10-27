@@ -1038,3 +1038,40 @@ describe("buildSite: shared sections (F-ED-23, 3.3)", () => {
     expect(text(exported, "index.html")).not.toContain("SharedSectionCopy");
   }, 60_000);
 });
+
+describe("buildSite: section backgrounds (2.26)", () => {
+  it("draws a section's background image as a responsive picture, its classes in the stylesheet", async () => {
+    const base = sampleSite();
+    const [home, ...rest] = base.pages;
+    if (home === undefined) throw new Error("no home page");
+    const story: NodeDoc = {
+      type: "TextSection",
+      props: {
+        id: "story",
+        title: "Our story",
+        backgroundImage: { mediaId: "hero-photo" },
+        overlay: "60",
+        overlayColor: "neutral",
+      },
+    };
+    const site: SiteSnapshot = {
+      ...base,
+      pages: [{ ...home, doc: { ...home.doc, content: [...home.doc.content, story] } }, ...rest],
+    };
+
+    const exported = await buildSite(site, siteLibrary, resources);
+
+    const page = text(exported, "index.html");
+    expect(page).toContain('sizes="100vw"');
+    expect(page).toContain(
+      '<source type="image/webp" srcSet="assets/img/hero-640.webp 640w, assets/img/hero-1280.webp 1280w, assets/img/hero-1600.webp 1600w" sizes="100vw" />',
+    );
+    expect(page).toContain("bg-neutral/60");
+    expect(page).not.toContain("background-image");
+    const css = text(exported, fileNamed(exported, /^assets\/css\//));
+    for (const name of ["isolate", "-z-10", "text-neutral-content", String.raw`bg-neutral\/60`]) {
+      expect(css, name).toContain(`.${name}`);
+    }
+    expect(exported.report.warnings).toEqual([]);
+  }, 60_000);
+});

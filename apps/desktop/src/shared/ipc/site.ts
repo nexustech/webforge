@@ -67,11 +67,12 @@ const exportFailureReasonSchema = z.enum([
 
 /**
  * A problem the export found that didn't stop it (X5), for the export report: a link to a page or
- * file that isn't there, or an image deleted from Media. `page` is the page's path; `detail` what
- * the link pointed at, or the image's id. `not-minified`: *Minify output* left the page readable.
+ * file that isn't there, or an image deleted from Media. `page` is the page's path ("" for the
+ * whole site); `detail` what the link pointed at, or the image's id. `not-minified`: *Minify
+ * output* left the page readable. `missing-icon`, `small-icon`: the site icon gave no favicon.
  */
 export const exportWarningSchema = z.strictObject({
-  code: z.enum(["broken-link", "missing-image", "not-minified"]),
+  code: z.enum(["broken-link", "missing-image", "not-minified", "missing-icon", "small-icon"]),
   page: z.string().max(1024),
   detail: z.string().max(2048),
 });

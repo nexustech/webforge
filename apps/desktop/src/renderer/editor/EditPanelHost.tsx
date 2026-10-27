@@ -53,6 +53,8 @@ import {
   listChangeLabel,
   listItems,
 } from "./list-edit.js";
+import { overlayWarning } from "./overlay-warning.js";
+import { placedOverlay } from "./placed-overlay.js";
 import {
   breakpointOf,
   DEVICES,
@@ -309,6 +311,8 @@ export function EditPanelHost({
     },
     (a, b) => sameSlice(a, b, library),
   );
+  // The theme the section's overlay warning checks its text against (2.26).
+  const theme = useDocument(session, (site) => site.theme);
   const selectedId = target?.id;
   const breakpoint = breakpointOf(viewport);
   const device = t(`device.${breakpoint}`);
@@ -377,6 +381,7 @@ export function EditPanelHost({
     const responsive = field.responsive === true;
     const unavailable = field.unavailable?.(values);
     const help = unavailable ?? field.help;
+    const warning = overlayWarning(field, values, theme);
     // A text field that can show a Site Settings value gets a choice of what it shows (1.17).
     return withBindingChoice(name, field, node.props.bindings, [
       {
@@ -386,6 +391,7 @@ export function EditPanelHost({
         value: responsive ? valueAt(stored, breakpoint) : stored,
         ...(field.optionGroup === undefined ? {} : { optionGroup: field.optionGroup }),
         ...(help === undefined ? {} : { help }),
+        ...(warning === undefined ? {} : { warning }),
         ...(unavailable === undefined ? {} : { disabled: true }),
         ...(responsive && breakpoint !== "desktop" ? { responsive: true } : {}),
         ...(differsFromDefault(stored, storedOr(name, undefined), responsive, breakpoint)
@@ -535,10 +541,18 @@ export function EditPanelHost({
     // Typing in a field is one step per visit (D1), like typing on the canvas: a text field, or
     // an image's alt text for this placement.
     const typed = field.kind === "text" || field.kind === "media";
+    // A section's first background image brings the overlay its text needs (ST-9), in one step.
+    const overlay = placedOverlay(field, live.node.props, value, history.document.getState().theme);
+    const recipe = live.recipe(name, next);
     session.edit(
       field.kind === "text" ? "text" : "props",
       live.labelOf(name, field, at),
-      live.recipe(name, next),
+      overlay === undefined
+        ? recipe
+        : (draft) => {
+            recipe(draft);
+            live.write(draft, "overlay", () => overlay);
+          },
       { selectionAfter, ...(typed ? { coalesceKey: textKey } : {}) },
     );
     if (typed) {

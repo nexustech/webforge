@@ -124,6 +124,29 @@ describe("EditPanel", () => {
     expect(screen.getByLabelText("Size").getAttribute("aria-describedby")).toBeNull();
   });
 
+  it("shows a field's warning under it, before its help, and describes its control by both (2.26)", async () => {
+    const { user } = setup([
+      {
+        name: "overlay",
+        kind: "toggle",
+        label: "Overlay",
+        help: "A layer of colour over the image.",
+        warning: "The text may be hard to read on some images.",
+        group: "style",
+        value: false,
+      },
+    ]);
+    await user.click(screen.getByRole("tab", { name: t("editPanel.style") }));
+
+    const control = screen.getByRole("switch", { name: "Overlay" });
+    const described = document.getElementById(control.getAttribute("aria-describedby") ?? "");
+    expect(described?.textContent).toBe(
+      "The text may be hard to read on some images.A layer of colour over the image.",
+    );
+    // Its sign is for the eye only.
+    expect(described?.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
+  });
+
   it("starts on Style when the element has only style fields, and says when a tab is empty", () => {
     render(
       <EditPanel
