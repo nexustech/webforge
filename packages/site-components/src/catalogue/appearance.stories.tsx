@@ -78,6 +78,17 @@ export const ColouredButtonHovered: Story = {
   },
 };
 
+/**
+ * An Outline Button with a text colour of its own, hovered: it stays unfilled and darkens, so its
+ * label stays readable; daisyUI would fill it with the colour its label is in (2.22b).
+ */
+export const ColouredOutlineHovered: Story = {
+  ...holding([node("Button", { label: "Book a table", style: "outline", lookColor: "primary" })]),
+  play: async ({ canvasElement }) => {
+    await userEvent.hover(within(canvasElement).getByRole("link", { name: "Book a table" }));
+  },
+};
+
 /** Sections: a Hero, its title underlined in capitals. */
 export const Sections: Story = section("Hero");
 

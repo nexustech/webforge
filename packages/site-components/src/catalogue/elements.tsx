@@ -1,7 +1,7 @@
 import { t } from "@webforge/i18n";
 import { type Breakpoint, type Responsive, resolveResponsive } from "@webforge/model";
 import { createContext, type ReactNode, useContext } from "react";
-import { setsOwnColour } from "../appearance.js";
+import { whereOwnColour } from "../appearance.js";
 import { defineComponent, LOOK_TARGET } from "../define.js";
 import { MARGIN_FIELD, marginClasses } from "../frame.js";
 import { isIconName, LucideIcon } from "../icons.js";
@@ -13,6 +13,7 @@ import {
   entranceClasses,
   HOVER_FIELD,
   hoverClasses,
+  PICTURE_HOVER_FIELD,
 } from "../motion.js";
 import { Picture } from "../picture.js";
 import { PREVIEW_ATTRIBUTE } from "../previews.js";
@@ -103,7 +104,7 @@ const image = defineComponent({
     alignment: ALIGNMENT_FIELD,
     rounded: { kind: "toggle", label: t("field.rounded"), group: "style" },
     caption: { kind: "text", label: t("field.caption") },
-    hover: HOVER_FIELD,
+    hover: PICTURE_HOVER_FIELD,
     margin: MARGIN_FIELD,
     ...ENTRANCE_FIELDS,
   },
@@ -163,6 +164,10 @@ export const BUTTON_ALIGN_CLASS = {
   right: "justify-end",
 } as const;
 
+/** An Outline button's look at rest, held when hovered: no fill, its border and text its colour. */
+const OUTLINE_HELD =
+  " hover:[--btn-bg:#0000]! hover:[--btn-fg:var(--btn-color)]! hover:[--btn-border:var(--btn-color)]!";
+
 /** A link drawn as a button: its text, where it goes, its style and size. */
 const button = defineComponent({
   label: t("element.button"),
@@ -203,11 +208,17 @@ const button = defineComponent({
       values: { label: t("starter.bookingLabel") },
     },
   ],
+  lookTarget: true,
   render: ({ values, context }) => {
     const label = values.label.trim();
-    // A colour or background of its own outranks the button's hover colours (2.22b): it darkens
-    // when hovered instead, unless its hover row says otherwise.
-    const hover = values.hover === "none" && setsOwnColour(values) ? "darken" : values.hover;
+    // A colour or background of its own outranks the button's hover colours (2.22b): on the devices
+    // it is set for, it darkens when hovered instead, unless its hover row says otherwise. An
+    // Outline button also keeps its look there, as daisyUI would fill it with its own colour and
+    // hide the label (`--btn-*` are daisyUI's).
+    const own = whereOwnColour(
+      values,
+      `${values.hover === "none" ? hoverClasses("darken") : ""}${values.style === "outline" ? OUTLINE_HELD : ""}`,
+    );
     return (
       <div
         className={`site-button flex ${BUTTON_ALIGN_CLASS[values.alignment]}${marginClasses(values.margin)}${entranceClasses(values)}`}
@@ -215,7 +226,7 @@ const button = defineComponent({
       >
         {label === "" ? null : (
           <a
-            className={`${BUTTON_CLASSES[BUTTON_KIND[values.style][values.size]]}${hoverClasses(hover)}`}
+            className={`${BUTTON_CLASSES[BUTTON_KIND[values.style][values.size]]}${hoverClasses(values.hover)}${own}`}
             {...linkAttributes(values.link, context)}
             // Its Appearance styles the button, not the row that aligns it (2.22b).
             {...{ [LOOK_TARGET]: "" }}
@@ -480,7 +491,7 @@ const icon = defineComponent({
       options: ICON_COLOURS.map((value) => ({ label: t(`field.color.${value}`), value })),
     },
     alignment: ALIGNMENT_FIELD,
-    hover: HOVER_FIELD,
+    hover: PICTURE_HOVER_FIELD,
     margin: MARGIN_FIELD,
     ...ENTRANCE_FIELDS,
   },
@@ -493,6 +504,7 @@ const icon = defineComponent({
     hover: "none",
   },
   behaviours: entranceBehaviours,
+  lookTarget: true,
   render: ({ values }) => {
     const size = responsiveClasses(values.size, (value) => ICON_SIZE_CLASS[value]);
     const colour = colorClass("text", values.color);

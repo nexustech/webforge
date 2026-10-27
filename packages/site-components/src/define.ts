@@ -95,6 +95,11 @@ export type ComponentSpec<F extends Fields, Variant extends string = never> = Om
   readonly behaviours?:
     | readonly BehaviourName[]
     | ((values: ValuesOf<F, Variant>) => readonly BehaviourName[]);
+  /**
+   * An element whose Appearance styles a part of it, marked {@link LOOK_TARGET}, rather than its
+   * root (2.22b): the Button's button, not the row that aligns it. Only these are searched.
+   */
+  readonly lookTarget?: boolean;
 };
 
 /** The choices of a field with a fixed set of them, if it has one. */
@@ -201,8 +206,21 @@ function passesThrough(type: unknown): boolean {
  */
 export const LOOK_TARGET = "data-wf-look";
 
-/** `node` with `classes` on its element marked {@link LOOK_TARGET}, the mark gone; and if found. */
+/**
+ * `node` with `classes` on its element marked {@link LOOK_TARGET}, the mark gone; and if found. It
+ * looks at the node itself, then into its children at any depth, a list mapped from data included.
+ */
 function onTarget(node: ReactNode, classes: string): readonly [ReactNode, boolean] {
+  if (Array.isArray(node)) {
+    let found = false;
+    const placed = node.map((child: ReactNode) => {
+      if (found) return child;
+      const [next, here] = onTarget(child, classes);
+      found = here;
+      return next;
+    });
+    return found ? [placed, true] : [node, false];
+  }
   if (!isValidElement(node)) return [node, false];
   const props = node.props as {
     readonly className?: unknown;
@@ -210,67 +228,67 @@ function onTarget(node: ReactNode, classes: string): readonly [ReactNode, boolea
     readonly [LOOK_TARGET]?: unknown;
   };
   if (Object.hasOwn(props, LOOK_TARGET)) {
-    const own = typeof props.className === "string" ? props.className : "";
     return [
       cloneElement(node, {
         [LOOK_TARGET]: undefined,
-        ...(classes === "" ? {} : { className: own === "" ? classes : `${own} ${classes}` }),
+        ...(classes === "" ? {} : { className: joined(props.className, classes) }),
       } as Record<string, unknown>),
       true,
     ];
   }
-  const children = props.children;
+  const { children } = props;
   if (children === undefined) return [node, false];
-  let found = false;
-  const placed = (Array.isArray(children) ? children : [children]).map((child: ReactNode) => {
-    if (found) return child;
-    const [next, here] = onTarget(child, classes);
-    found = here;
-    return next;
-  });
-  return found
-    ? [cloneElement(node, {}, ...(Array.isArray(children) ? placed : [placed[0]])), true]
-    : [node, false];
+  const [placed, found] = onTarget(children, classes);
+  if (!found) return [node, false];
+  // Spread, so several children stay a list React keys by position, as they were.
+  return [
+    cloneElement(node, {}, ...(Array.isArray(children) ? (placed as ReactNode[]) : [placed])),
+    true,
+  ];
 }
+
+/** `own` classes, if a string, with `classes` after them. */
+const joined = (own: unknown, classes: string) =>
+  typeof own === "string" && own !== "" ? `${own} ${classes}` : classes;
 
 /**
  * An element's output with its Appearance (2.22): the Text and the other controls' classes after
- * its own, on the part it marks {@link LOOK_TARGET}, else on its root element (through a fragment
- * or a context's provider around it). What it holds is drawn without its section's title styling,
- * so a section's Appearance reaches no title but its own. Output with no HTML element at its root
- * is left as it is (a test checks every element's root is one).
+ * its own, on its root element (through a fragment or a context's provider around it), or, for a
+ * component with `lookTarget`, on the part it marks {@link LOOK_TARGET}, wherever that is. What it
+ * holds is drawn without its section's title styling, so a section's Appearance reaches no title
+ * but its own. Output with no HTML element at its root is left as it is (a test checks every
+ * element's root is one).
  */
-function withAppearance(output: ReactNode, classes: string): ReactNode {
+function withAppearance(output: ReactNode, classes: string, lookTarget: boolean): ReactNode {
   if (!isValidElement(output)) return output;
-  const props = output.props as { readonly className?: unknown; readonly children?: ReactNode };
   if (typeof output.type !== "string") {
-    return passesThrough(output.type) && isValidElement(props.children)
-      ? cloneElement(output, {}, withAppearance(props.children, classes))
+    const { children } = output.props as { readonly children?: ReactNode };
+    return passesThrough(output.type) && isValidElement(children)
+      ? cloneElement(output, {}, withAppearance(children, classes, lookTarget))
       : output;
   }
-  // The part marked to take the Appearance, if one is, among its children at any depth.
-  const children = props.children;
-  const list: readonly ReactNode[] =
-    children === undefined ? [] : Array.isArray(children) ? children : [children];
-  let marked = false;
-  const inside = list.map((child) => {
-    if (marked) return child;
-    const [next, here] = onTarget(child, classes);
-    marked = here;
-    return next;
-  });
-  const own = typeof props.className === "string" ? props.className : "";
+  // Only the components that mark a part are searched for one (Button, Icon).
+  const [marked, found] = lookTarget ? onTarget(output, classes) : [output, false];
+  const root = isValidElement(marked) ? marked : output;
+  const { className, children } = root.props as {
+    readonly className?: unknown;
+    readonly children?: ReactNode;
+  };
   const changed = (
-    classes === "" || marked ? {} : { className: own === "" ? classes : `${own} ${classes}` }
+    classes === "" || found ? {} : { className: joined(className, classes) }
   ) as Record<string, unknown>;
   // An element with nothing inside (an `<hr>`, HTML set as it is) has no title to keep it from.
-  return props.children === undefined
-    ? cloneElement(output, changed)
+  return children === undefined
+    ? cloneElement(root, changed)
     : cloneElement(
-        output,
+        root,
         changed,
         // Spread, so several children stay a list React keys by position, as they were.
-        createElement(SectionTitleAppearance.Provider, { value: "" }, ...inside),
+        createElement(
+          SectionTitleAppearance.Provider,
+          { value: "" },
+          ...(Array.isArray(children) ? children : [children]),
+        ),
       );
 }
 
@@ -315,7 +333,7 @@ function build<const F extends Fields, const Variant extends string = never>(
   spec: ComponentSpec<F, Variant>,
   framed: boolean,
 ): ComponentDef {
-  const { variants, render, textStyle, behaviours, ...def } = spec;
+  const { variants, render, textStyle, behaviours, lookTarget = false, ...def } = spec;
   const name = def.label.trim() === "" ? "A component" : `'${def.label}'`;
   function fail(problem: string): never {
     throw new Error(`${name} ${problem}`);
@@ -444,7 +462,7 @@ function build<const F extends Fields, const Variant extends string = never>(
       const classes = [appearanceTextClasses(values), appearanceBoxClasses(values)]
         .filter((part) => part !== "")
         .join(" ");
-      return withAppearance(output, classes);
+      return withAppearance(output, classes, lookTarget);
     },
     ...(textStyle === undefined ? {} : { textStyle: (stored) => textStyle(valuesOf(stored)) }),
     ...(behaviours === undefined

@@ -964,10 +964,6 @@
             {
               "label": "Darken",
               "value": "darken"
-            },
-            {
-              "label": "Underline",
-              "value": "underline"
             }
           ]
         },
@@ -1747,10 +1743,6 @@
             {
               "label": "Darken",
               "value": "darken"
-            },
-            {
-              "label": "Underline",
-              "value": "underline"
             }
           ]
         },

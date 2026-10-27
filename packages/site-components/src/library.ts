@@ -128,6 +128,17 @@ export function textStylesOf(node: NodeDoc, library: ComponentLibrary): TextStyl
 }
 
 /**
+ * Whether `value`, set once or per device (F-ED-4), is one that `on` accepts on any device, each
+ * device's as it takes effect there: a device without its own value has the next larger one's.
+ */
+export function onAnyDevice(value: unknown, on: (one: unknown) => boolean): boolean {
+  if (!isResponsiveValue(value as Responsive<unknown>)) return on(value);
+  return (["mobile", "tablet", "desktop"] as const).some((device) =>
+    on(resolveResponsive(value as Responsive<unknown>, device)),
+  );
+}
+
+/**
  * The fields `def`'s chosen layout doesn't use (#311), from its `values` (with its defaults): the
  * Edit panel hides them, and shows them again with their values once a layout uses them.
  */
@@ -138,13 +149,9 @@ export function fieldsHiddenBy(
   const variant = values.variant;
   const hidden = new Set(typeof variant === "string" ? (def.variantHides?.[variant] ?? []) : []);
   // The Appearance group's Border colour, only while it draws a border on some device (2.22b).
-  const border = values.lookBorder;
-  const borders = isResponsiveValue(border as Responsive<unknown>)
-    ? Object.values((border as { readonly $responsive: Record<string, unknown> }).$responsive)
-    : [border];
   if (
     Object.hasOwn(def.fields ?? {}, "lookBorderColor") &&
-    !borders.some((one) => one === "thin" || one === "thick")
+    !onAnyDevice(values.lookBorder, (one) => one === "thin" || one === "thick")
   ) {
     hidden.add("lookBorderColor");
   }

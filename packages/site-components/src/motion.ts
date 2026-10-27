@@ -126,6 +126,15 @@ export const HOVER_FIELD = {
 } as const satisfies FieldDef;
 
 /**
+ * The hover row on an element without text of its own to underline (2.22b): the Image, whose
+ * Underline would reach only its caption, and the Icon.
+ */
+export const PICTURE_HOVER_FIELD = {
+  ...HOVER_FIELD,
+  options: HOVER_FIELD.options.filter((option) => option.value !== "underline"),
+} as const satisfies FieldDef;
+
+/**
  * The cards' hover effect (F-DS-5), set on a section for all its cards (2.7's Features,
  * Testimonials, Team and Pricing), so every card does the same, those added later too.
  */

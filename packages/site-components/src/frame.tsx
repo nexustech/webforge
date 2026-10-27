@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import {
   APPEARANCE_FIELD_NAMES,
   APPEARANCE_FIELDS,
-  APPEARANCE_TEXT_FIELD_NAMES,
+  APPEARANCE_FIELDS_WITHOUT_TEXT,
   appearanceBoxClasses,
   appearanceTextClasses,
 } from "./appearance.js";
@@ -133,14 +133,7 @@ export function defineSection<const F extends Fields, const Variant extends stri
   spec: SectionSpec<F, Variant> & { readonly defaults: NoInfer<DefaultsOf<F & FrameFields>> },
 ): ComponentDef {
   const { name, frame, frameAttributes, render, fields, behaviours, titled, ...rest } = spec;
-  const appearance =
-    titled === false
-      ? Object.fromEntries(
-          Object.entries(APPEARANCE_FIELDS).filter(
-            ([field]) => !(APPEARANCE_TEXT_FIELD_NAMES as readonly string[]).includes(field),
-          ),
-        )
-      : APPEARANCE_FIELDS;
+  const appearance = titled === false ? APPEARANCE_FIELDS_WITHOUT_TEXT : APPEARANCE_FIELDS;
   for (const own of FRAME_FIELDS) {
     if (Object.hasOwn(fields, own)) {
       throw new Error(`'${spec.label}' declares its own "${own}": defineSection adds it`);

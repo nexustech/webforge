@@ -163,6 +163,13 @@ export const APPEARANCE_FIELD_NAMES = Object.keys(
   APPEARANCE_FIELDS,
 ) as readonly (keyof typeof APPEARANCE_FIELDS)[];
 
+/** The group without its Text controls: a section without a title of its own (2.22b). */
+export const APPEARANCE_FIELDS_WITHOUT_TEXT = Object.fromEntries(
+  Object.entries(APPEARANCE_FIELDS).filter(
+    ([name]) => !(APPEARANCE_TEXT_FIELD_NAMES as readonly string[]).includes(name),
+  ),
+) as Omit<typeof APPEARANCE_FIELDS, (typeof APPEARANCE_TEXT_FIELD_NAMES)[number]>;
+
 /** Each choice's classes, written in full; `default` adds none. `!` wins over the component's. */
 const SIZE_CLASSES: Readonly<Record<(typeof SIZES)[number], string>> = {
   default: "",
@@ -308,20 +315,27 @@ export function appearanceBoxClasses(values: AppearanceValues): string {
     .join(" ");
 }
 
-/** Whether a value set per device, or once, is one of `on` on any device. */
-function onAnyDevice(value: unknown, on: (one: unknown) => boolean): boolean {
-  if (!isResponsiveValue(value as Responsive<unknown>)) return on(value);
-  return DEVICES.some((device) => on(resolveResponsive(value as Responsive<unknown>, device)));
-}
-
 /** A colour of the group's own: a theme colour, not *Theme's*. */
 const ownColour = (value: unknown) => colorClass("text", value) !== "";
 
+/** Whether the group gives an item a colour or background of its own on `device`. */
+const ownColourOn = (values: AppearanceValues, device: Breakpoint) =>
+  [values.lookColor, values.lookBackground].some((value) =>
+    ownColour(
+      isResponsiveValue(value as Responsive<unknown>)
+        ? resolveResponsive(value as Responsive<unknown>, device)
+        : value,
+    ),
+  );
+
 /**
- * Whether the group gives an item a colour or background of its own on any device (2.22b): a
- * Button with one darkens when hovered unless its hover row says otherwise, as its own colours
- * would have, which the group's (marked to win) now outrank.
+ * `classes` on the devices where the group gives an item a colour or background of its own, and
+ * on no other, with a space before them to append to others (2.22b). A Button with one darkens when
+ * hovered unless its hover row says otherwise, as its own colours would have, which the group's
+ * (marked to win) now outrank; device by device, as the colour's own classes are.
  */
-export function setsOwnColour(values: AppearanceValues): boolean {
-  return onAnyDevice(values.lookColor, ownColour) || onAnyDevice(values.lookBackground, ownColour);
+export function whereOwnColour(values: AppearanceValues, classes: string): string {
+  const own = Object.fromEntries(DEVICES.map((device) => [device, ownColourOn(values, device)]));
+  const drawn = perDevice({ $responsive: own }, when(classes.trim()));
+  return drawn === "" ? "" : ` ${drawn}`;
 }
