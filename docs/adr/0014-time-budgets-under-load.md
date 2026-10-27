@@ -26,7 +26,7 @@ Re-running a failed job hides all three, and each makes the next failure harder 
      - **CI** (`CI=true`): Linux 2.7, Windows 3.7, macOS 4.3 CPU-s. One CI run on 27 Oct 2026 measured Linux 1.75–2.05, Windows 2.23–2.85 and macOS 2.09–3.26 CPU-s, across the nine openings (six templates, a template from the start screen, Personal / CV and the example).
      - **Locally:** three times CI's, or `WEBFORGE_E2E_CPU_SCALE` times. A development machine cost 2–3 times as much: 5.3–7.8 CPU-s on Windows. Its canvas is drawn on a larger, high-DPI screen (more pixels to raster and composite), and it shares its CPU with other work, whose switching costs our processes CPU time too.
      - **A miss** says which budget applied, CI's or the local one, with what was measured.
-   - **The backstop** (`OPEN_WALL_BACKSTOP_MS`, 6 s) catches what costs time but no CPU: an added timer, a lost event, IPC round trips in series. It is twice the target, so load doesn't trip it.
+   - **The backstop** (`OPEN_WALL_BACKSTOP_MS`) catches what costs time but no CPU: an added timer, a lost event, IPC round trips in series. On CI it is 6 s, twice the target, and CI's slowest opening took 2.1 s. Locally it is 12 s: openings took up to 5.3 s on a development machine under load.
    - **If a platform's Electron gives no `cumulativeCPUUsage`** (it is optional in Electron's types), the test fails and says so. It never skips.
    - **Nothing is retried.**
 3. **The 3 s is the product's target, checked where it means something:** `pnpm e2e:perf` (ADR 0007) opens each template on a quiet machine and checks each against 3 s, keeping the times in `e2e/perf-results/open-site.json`.
@@ -36,7 +36,7 @@ Re-running a failed job hides all three, and each makes the next failure harder 
    - Closing with nothing to save was timed against the save request's 5 s timeout. Under load, closing can also wait on the store gate (ADR 0013), behind a backup on a busy disk, and took 6–13 s with the request answered at once. The unit tests check that the start screen answers and that the window closes on the answer, so the E2E test no longer times the close.
 5. **Unit test timeouts scale to the run's workers** (`vitest.load.ts`).
    - They were set for CI's runners, where `pnpm test` runs 2 workers (4 vCPUs, `maxWorkers: "50%"`). A run with more workers gives each test as much more time: `workers / 2`, never less than 1. So CI's timeouts are as they were, and on a 12-thread machine (6 workers) they are three times as long.
-   - The renderer's and editor-ui's default is 15 s, scaled. A test that sets a longer one scales it with `scaledTestTimeout()` (`@webforge/test-utils/renderer`).
+   - The renderer's and editor-ui's default is 15 s, scaled, and the pipeline's Vitest defaults (5 s, hooks 10 s), scaled: its Tailwind compiles timed out under `pnpm check`. A renderer test that sets a longer one scales it with `scaledTestTimeout()` (`@webforge/test-utils/renderer`).
 
 ## Consequences
 - **Every run catches the opening doing more work, or waiting longer,** whatever else the machine runs. Whether it opens in 3 s is a question for a quiet machine: answer it with `pnpm e2e:perf` before a release, and after work that touches opening a site.

@@ -22,10 +22,11 @@ export const OPEN_WAIT = 30_000;
 export const BACKGROUND_WAIT = 45_000;
 
 /**
- * The wall-clock backstop for opening a site: twice the product's 3 s, so a busy machine doesn't
- * trip it, while a wait added to the path (a timer, a lost event) does.
+ * The wall-clock backstop for opening a site: on CI, twice the product's 3 s, so a busy runner
+ * doesn't trip it, while a wait added to the path (a timer, a lost event) does. Twice that again
+ * locally, where other work shares the machine: openings took up to 5.3 s there under load.
  */
-const OPEN_WALL_BACKSTOP_MS = 6_000;
+const OPEN_WALL_BACKSTOP_MS = process.env.CI === "true" ? 6_000 : 12_000;
 
 /**
  * The CPU time opening a site may cost on CI's runners, across Webforge's processes, by platform:
