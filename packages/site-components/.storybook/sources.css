@@ -20,3 +20,9 @@
 @source inline("{,md:,lg:}[&>*:last-child:nth-child(-n+3)]:col-span-{1,2}");
 @source inline("{,md:,lg:}[&>*:nth-child(2):nth-last-child(2)]:col-span-{1,2}");
 @source inline("{,md:,lg:}gap-{4,8,12}");
+/*
+ * The Appearance group's colours (2.22), a theme colour with or without a shade, which
+ * appearance.ts builds from the token: the stories set them for one device at a time. A test
+ * (src/storybook-css.test.ts) checks every one the group offers is here.
+ */
+@source inline("{text,bg,border}-{primary,secondary,accent,neutral,base-100,base-200,base-300,base-content}{,-50,-100,-200,-300,-400,-500,-600,-700,-800,-900,-950}!");

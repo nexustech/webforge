@@ -21,6 +21,7 @@ import { createFakeEngine, type FakeEngine } from "@webforge/test-utils/renderer
 import fc from "fast-check";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
+import { applyLook, lookChange } from "../clipboard/index.js";
 import {
   deleteSelected,
   duplicateSelected,
@@ -563,6 +564,29 @@ const commands: fc.Arbitrary<Command>[] = [
       });
     },
   })),
+  // A section's look (2.22), and Apply Look to Every… on the page or the site (2.27): one step
+  // over every page, the shared layout and shared sections, as confirmed.
+  fc
+    .record({ at: n, shadow: fc.constantFrom("small", "large", undefined) })
+    .map(({ at, shadow }) => ({
+      name: `section ${at} shadow ${String(shadow)}`,
+      run: (ctx) => sectionEdit(ctx, at, "lookShadow", () => shadow),
+    })),
+  fc
+    .record({ at: n, scope: fc.constantFrom("page" as const, "site" as const) })
+    .map(({ at, scope }) => ({
+      name: `apply the look of section ${at} on the ${scope}`,
+      run: (ctx) => {
+        ctx.connection.flush();
+        const { pageId } = ctx.session.ui.getState();
+        const page = ctx.session.history.document.getState().pages[pageId]?.doc;
+        const sections =
+          page === undefined ? [] : nodesOf(page).filter((x) => x.type === "Section");
+        ctx.session.select(sections[at % Math.max(sections.length, 1)]?.props.id ?? null);
+        const change = lookChange(ctx.session, scope);
+        if (change !== undefined) applyLook(ctx.session, change);
+      },
+    })),
   fc.record({ at: n, name: fc.constantFrom("Team", "Prices") }).map(({ at, name }) => ({
     name: `save section ${at} as shared section "${name}"`,
     run: (ctx) => {

@@ -2,6 +2,7 @@ import { toast } from "@webforge/editor-ui";
 import type { Area, EditorContext } from "../editor/areas.js";
 import { sharedCutConfirmation } from "../editor/shared-confirmations.js";
 import { followLayoutLock } from "../shell/preferences-store.js";
+import { registerLookCommands } from "./apply-look.js";
 import { preloadClipboard, registerClipboardCommands } from "./register-clipboard-commands.js";
 import { registerStyleCommands } from "./style-clipboard.js";
 
@@ -34,15 +35,28 @@ export const clipboardCommandsArea: Area<EditorContext> = {
     }),
 };
 
-/** Copy Style and Paste Style (1.37), after Cut, Copy and Paste (2.20, B1). */
+/**
+ * Copy Style and Paste Style (1.37), after Cut, Copy and Paste (2.20, B1); then Apply Look to
+ * Every… on this page and on the site (2.27, ST-4).
+ */
 export const styleCommandsArea: Area<EditorContext> = {
   id: "styleCommands",
-  register: ({ engine, session, commands, preferences }) =>
+  register: ({ engine, session, commands, preferences, siteWide }) =>
     engine.whileMounted(({ connection }) => {
       const styleCommands = registerStyleCommands(commands, session, connection.flush);
-      const stopLock = followLayoutLock(preferences, styleCommands.setLayoutLocked);
+      const lookCommands = registerLookCommands(
+        commands,
+        session,
+        connection.flush,
+        siteWide,
+        (message) => toast(message),
+      );
+      const stopLocks = [styleCommands, lookCommands].map((registered) =>
+        followLayoutLock(preferences, registered.setLayoutLocked),
+      );
       return () => {
-        stopLock();
+        for (const stop of stopLocks) stop();
+        lookCommands.remove();
         styleCommands.remove();
       };
     }),

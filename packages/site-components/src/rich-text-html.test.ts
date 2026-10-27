@@ -19,3 +19,17 @@ describe("sanitizeStoredRichText (4.8)", () => {
     expect(sanitizeRichText(html)).not.toContain("webforge:");
   });
 });
+
+describe("text marks in rich text (2.25, ST-3)", () => {
+  it("keeps underline and the theme's highlight and colour classes, and nothing else on a span", () => {
+    const html =
+      '<p><u>Read</u> <span class="bg-secondary/30">this</span> <span class="text-primary">now</span></p>';
+    expect(sanitizeRichText(html)).toBe(html);
+    expect(sanitizeStoredRichText(html)).toBe(html);
+    expect(
+      sanitizeRichText(
+        '<p><span class="text-primary evil" style="color:red" onclick="x()">Hi</span> <span class="font-black">there</span></p>',
+      ),
+    ).toBe('<p><span class="text-primary">Hi</span> <span>there</span></p>');
+  });
+});
