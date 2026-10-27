@@ -1,8 +1,9 @@
+import { httpsAddress } from "@webforge/model";
 import { Window } from "happy-dom";
 import type { ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterAll, describe, expect, it } from "vitest";
-import { FormField, formAction, HONEYPOT_NAME, httpsAddress, SiteForm } from "./form.js";
+import { FormField, formAction, SiteForm } from "./form.js";
 
 const happy = new Window();
 afterAll(() => happy.happyDOM.close());
@@ -73,7 +74,11 @@ describe("SiteForm (F-CM-1, F-CM-6, B6)", () => {
   it("posts plainly to its service, with the honeypot hidden from people", () => {
     const host = drawn(
       <SiteForm
-        target={{ action: "https://formspree.io/f/abcd", hidden: {} }}
+        target={{
+          action: "https://formspree.io/f/abcd",
+          hidden: {},
+          honeypot: { name: "_gotcha" },
+        }}
         label="Contact form"
         submitLabel="Send"
       >
@@ -90,7 +95,7 @@ describe("SiteForm (F-CM-1, F-CM-6, B6)", () => {
     });
     expect(form?.hasAttribute("data-wf-form-unset")).toBe(false);
     expect(form?.querySelector("button")?.hasAttribute("disabled")).toBe(false);
-    const honeypot = form?.querySelector(`input[name="${HONEYPOT_NAME}"]`);
+    const honeypot = form?.querySelector('input[name="_gotcha"]');
     expect(honeypot?.closest("[hidden]")).not.toBeNull();
     expect(honeypot?.getAttribute("tabindex")).toBe("-1");
     expect(honeypot?.getAttribute("autocomplete")).toBe("off");
@@ -101,7 +106,11 @@ describe("SiteForm (F-CM-1, F-CM-6, B6)", () => {
   it("adds the hidden fields a service needs", () => {
     const form = drawn(
       <SiteForm
-        target={{ action: "https://api.web3forms.com/submit", hidden: { access_key: "k" } }}
+        target={{
+          action: "https://api.web3forms.com/submit",
+          hidden: { access_key: "k" },
+          honeypot: { name: "botcheck", checkbox: true },
+        }}
         label="Form"
         submitLabel="Send"
       >
@@ -114,6 +123,10 @@ describe("SiteForm (F-CM-1, F-CM-6, B6)", () => {
       name: "access_key",
       value: "k",
     });
+    // Web3Forms' honeypot is a checkbox, hidden like any other (3.7).
+    const honeypot = form?.querySelector('input[name="botcheck"]');
+    expect(honeypot?.getAttribute("type")).toBe("checkbox");
+    expect(honeypot?.closest("[hidden]")).not.toBeNull();
   });
 
   it("with nowhere to send, posts nowhere, is marked for Site Check, and shows the hint", () => {
@@ -149,20 +162,24 @@ describe("formAction (F-CM-1, B3)", () => {
     expect(formAction({ kind: "formspree", formId: "xyzAbc12" })).toEqual({
       action: "https://formspree.io/f/xyzAbc12",
       hidden: {},
+      honeypot: { name: "_gotcha" },
     });
     expect(
       formAction({ kind: "web3forms", accessKey: "0f8fad5b-d9cb-469f-a165-70867728950e" }),
     ).toEqual({
       action: "https://api.web3forms.com/submit",
       hidden: { access_key: "0f8fad5b-d9cb-469f-a165-70867728950e" },
+      honeypot: { name: "botcheck", checkbox: true },
     });
     expect(formAction({ kind: "formsubmit", email: "rosa+web@example.com" })).toEqual({
       action: "https://formsubmit.co/rosa%2Bweb%40example.com",
       hidden: {},
+      honeypot: { name: "_honey" },
     });
     expect(formAction({ kind: "custom", url: "https://forms.example.com/in" })).toEqual({
       action: "https://forms.example.com/in",
       hidden: {},
+      honeypot: { name: "_gotcha" },
     });
   });
 
@@ -171,6 +188,25 @@ describe("formAction (F-CM-1, B3)", () => {
     expect(formAction({ kind: "netlify" })).toBe("netlify");
     // A custom address must be https, so a visitor's message never travels unencrypted.
     expect(formAction({ kind: "custom", url: "http://forms.example.com/in" })).toBe("insecure");
+  });
+
+  it("sends the visitor to the thank-you page where the service takes one (3.7)", () => {
+    const thanks = "https://rosas-bakery.example/thank-you.html";
+
+    expect(
+      formAction({ kind: "web3forms", accessKey: "0f8fad5b-d9cb-469f-a165-70867728950e" }, thanks),
+    ).toMatchObject({ hidden: { redirect: thanks } });
+    expect(formAction({ kind: "formsubmit", email: "rosa@example.com" }, thanks)).toMatchObject({
+      hidden: { _next: thanks },
+    });
+    // Formspree's redirect is a paid plan's setting, and a custom endpoint's conventions are its
+    // own: theirs show the service's own thank-you page.
+    expect(formAction({ kind: "formspree", formId: "xyzAbc12" }, thanks)).toMatchObject({
+      hidden: {},
+    });
+    expect(
+      formAction({ kind: "custom", url: "https://forms.example.com/in" }, thanks),
+    ).toMatchObject({ hidden: {} });
   });
 });
 

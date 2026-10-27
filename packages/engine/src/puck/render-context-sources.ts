@@ -21,6 +21,8 @@ export const RENDER_CONTEXT_SOURCES = {
   rawCustomCode: "export",
   // The Footer's Cookie settings: only an exported site has a consent banner to reopen.
   cookieSettings: "export",
+  // A form's thank-you page: an absolute address on the site, which only the export knows.
+  thanksPage: "export",
   // The canvas loads every image as it comes into view; only the export knows the first section.
   firstSection: "export",
   setting: "setSettings",

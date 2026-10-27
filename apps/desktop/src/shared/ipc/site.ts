@@ -72,7 +72,14 @@ const exportFailureReasonSchema = z.enum([
  * output* left the page readable. `missing-icon`, `small-icon`: the site icon gave no favicon.
  */
 export const exportWarningSchema = z.strictObject({
-  code: z.enum(["broken-link", "missing-image", "not-minified", "missing-icon", "small-icon"]),
+  code: z.enum([
+    "broken-link",
+    "missing-image",
+    "not-minified",
+    "missing-icon",
+    "small-icon",
+    "form-unset",
+  ]),
   page: z.string().max(1024),
   detail: z.string().max(2048),
 });
