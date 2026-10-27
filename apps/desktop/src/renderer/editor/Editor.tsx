@@ -24,7 +24,7 @@ import {
 } from "../shared-sections/SharedSectionCommands.js";
 import { widthOf } from "../shell/canvas-size.js";
 import { type CanvasView, connectCanvasView } from "../shell/canvas-view.js";
-import { useCommandRegistry } from "../shell/command-context.js";
+import { useCommand, useCommandRegistry } from "../shell/command-context.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { installCommandShortcuts } from "../shell/commands.js";
 import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
@@ -135,16 +135,20 @@ function undoHistoryPanel(
   };
 }
 
+/** The Appearance group's own actions (2.27): its look given to every other one of the kind. */
+const APPEARANCE_ACTIONS = ["edit.applyLookOnPage", "edit.applyLookOnSite"] as const;
+
 /**
  * The Edit panel as the preferences have it: with the Advanced tab in Advanced mode, the Content
- * tab only in Content mode (R9), and the option groups the person closed (UX-13).
+ * tab only in Content mode (R9), and the option groups the person closed (UX-13). The Appearance
+ * group's right-click menu has *Apply Look to Every…* (2.27), the Edit menu's own commands.
  */
 function PreferredEditPanel({
   preferences,
   ...props
 }: Omit<
   EditPanelHostProps,
-  "advanced" | "contentOnly" | "closedGroups" | "onClosedGroupsChange"
+  "advanced" | "contentOnly" | "closedGroups" | "onClosedGroupsChange" | "groupActions"
 > & {
   readonly preferences: PreferencesStore;
 }) {
@@ -157,9 +161,24 @@ function PreferredEditPanel({
     preferences,
     (state) => state.preferences.editPanel.closedGroups,
   );
+  const registry = useCommandRegistry();
+  const onPage = useCommand(APPEARANCE_ACTIONS[0]);
+  const onSite = useCommand(APPEARANCE_ACTIONS[1]);
+  const appearance = [onPage, onSite].flatMap((command) =>
+    command === undefined
+      ? []
+      : [
+          {
+            label: command.label,
+            enabled: command.enabled !== false,
+            onSelect: () => void registry.run(command.id),
+          },
+        ],
+  );
   return (
     <EditPanelHost
       {...props}
+      groupActions={(id) => (id === "appearance" ? appearance : [])}
       advanced={advanced}
       contentOnly={contentOnly}
       closedGroups={closedGroups}

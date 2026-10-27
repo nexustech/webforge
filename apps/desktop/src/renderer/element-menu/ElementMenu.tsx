@@ -26,6 +26,8 @@ export const ELEMENT_MENU_COMMANDS = {
   pasteLinked: "edit.pasteLinked",
   copyStyle: "edit.copyStyle",
   pasteStyle: "edit.pasteStyle",
+  applyLookOnPage: "edit.applyLookOnPage",
+  applyLookOnSite: "edit.applyLookOnSite",
   saveShared: "edit.saveSharedSection",
   detachShared: "edit.detachSharedSection",
   selectSimilar: "edit.selectSimilar",
@@ -55,7 +57,8 @@ export type ElementMenuProps = {
  * The selected element's right-click menu (1.35, UX-24): the same on the canvas and in Layers.
  * Rename, Duplicate, Save as shared section (or Detach, for a linked copy), Select similar, Select
  * parent (SP-9); Cut,
- * Copy, Paste and Paste as Linked Copy (F-ED-23); Copy Style and Paste Style (1.37); and Delete.
+ * Copy, Paste and Paste as Linked Copy (F-ED-23); Copy Style and Paste Style (1.37), and Apply Look
+ * to Every… on this page or the site (2.27); and Delete.
  * The element is selected before it opens, so each item acts on it.
  */
 export function ElementMenu({ at, onClose, onRename, onCloseFocus }: ElementMenuProps) {
@@ -75,6 +78,9 @@ export function ElementMenu({ at, onClose, onRename, onCloseFocus }: ElementMenu
   const clipboard = [cut, copy, paste, pasteLinked];
   const copyStyle = useCommand(ELEMENT_MENU_COMMANDS.copyStyle);
   const pasteStyle = useCommand(ELEMENT_MENU_COMMANDS.pasteStyle);
+  const applyLookOnPage = useCommand(ELEMENT_MENU_COMMANDS.applyLookOnPage);
+  const applyLookOnSite = useCommand(ELEMENT_MENU_COMMANDS.applyLookOnSite);
+  const style = [copyStyle, pasteStyle, applyLookOnPage, applyLookOnSite];
   // A linked copy can be detached; anything else can be saved, if it is a section.
   const shared = detach !== undefined && detach.enabled !== false ? detach : save;
 
@@ -136,9 +142,11 @@ export function ElementMenu({ at, onClose, onRename, onCloseFocus }: ElementMenu
         {item(copy)}
         {item(paste)}
         {item(pasteLinked)}
-        {copyStyle === undefined && pasteStyle === undefined ? null : <DropdownMenuSeparator />}
+        {style.every((command) => command === undefined) ? null : <DropdownMenuSeparator />}
         {item(copyStyle)}
         {item(pasteStyle)}
+        {item(applyLookOnPage)}
+        {item(applyLookOnSite)}
         <DropdownMenuSeparator />
         {item(remove, true)}
       </DropdownMenuContent>

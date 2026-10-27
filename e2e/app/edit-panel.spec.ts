@@ -121,6 +121,23 @@ test.describe("Edit panel", () => {
     await expect(canvas().locator("h3.site-heading")).toHaveCount(1);
   });
 
+  test("gives every heading on the page one heading's look, as one step (2.27, ST-4)", async () => {
+    await selectHeading();
+    await page.keyboard.press("ControlOrMeta+d");
+    await expect(canvas().locator(".site-heading")).toHaveCount(2);
+    // The copy is selected: give it a large shadow, and its look to the other heading.
+    await panel().getByRole("tab", { name: "Style" }).click();
+    await panel().getByLabel("Shadow", { exact: true }).selectOption("large");
+    const shadowed = canvas().locator(".site-heading[class*='shadow-lg!']");
+    await expect(shadowed).toHaveCount(1);
+    await chooseFromMenu(app, page, "Edit", "Apply Look to Every Heading on This Page");
+
+    await expect(shadowed).toHaveCount(2);
+    await expect(steps().first()).toHaveText("Applied the Heading look to 1 other");
+    await page.keyboard.press("ControlOrMeta+z");
+    await expect(shadowed).toHaveCount(1);
+  });
+
   test("makes one step of typing in a text field", async () => {
     await selectHeading();
     const field = panel().getByLabel("Text", { exact: true });

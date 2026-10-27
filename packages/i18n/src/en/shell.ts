@@ -169,6 +169,11 @@ export const shell = {
   "edit.copyStyle": "Copy Style",
   "edit.pasteStyle": "Paste Style",
   "edit.pasteStyleOnto": "Paste Style (onto a {item})",
+  // Gives every other one of the selected kind its look (2.27, ST-4); "any" while none is selected.
+  "edit.applyLook.page": "Apply Look to Every {item} on This Page",
+  "edit.applyLook.page.any": "Apply Look to All Like It on This Page",
+  "edit.applyLook.site": "Apply Look to Every {item} on the Site",
+  "edit.applyLook.site.any": "Apply Look to All Like It on the Site",
   "edit.selectAll": "Select All",
 
   // The canvas toolbar (F-ED-8): the page shown, the device view and the canvas width.
